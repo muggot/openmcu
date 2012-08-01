@@ -1,0 +1,20 @@
+The first line must be one of following presets:
+
+ultrafast, superfast, veryfast, faster, fast, medium, slow, slower, veryslow, placebo
+
+Warning: the speed of these presets scales dramatically.  Ultrafast is a full 100 times faster than placebo!
+
+
+
+The second line is tunings list
+Currently available tunings are:
+
+film,animation,grain,stillimage,psnr,ssim,fastdecode,zerolatency
+
+however multiple psy tunings cannot be used.
+film, animation, grain, stillimage, psnr, and ssim are psy tunings.
+
+
+Default codec options are: 
+veryfast
+psnr,zerolatency

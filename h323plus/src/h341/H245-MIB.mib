@@ -1,0 +1,2199 @@
+
+        -- Request For Comments
+
+H245-MIB DEFINITIONS ::= BEGIN
+         IMPORTS
+             Counter32, Integer32, OBJECT-TYPE, MODULE-IDENTITY
+                 FROM SNMPv2-SMI
+             DisplayString, TAddress,TruthValue
+                 FROM SNMPv2-TC
+             MODULE-COMPLIANCE, OBJECT-GROUP 
+                 FROM SNMPv2-CONF
+             ifIndex
+                 FROM IF-MIB
+             MmTAddressTag, mmH245Root, MmH323EndpointType
+                 FROM  MULTI-MEDIA-MIB-TC;
+
+         -- Define the top of this MIB.
+
+         --  this is the MIB module for the H.245 objects
+         h245  MODULE-IDENTITY
+             LAST-UPDATED "9812202253Z"      --  December 20, 1998
+             ORGANIZATION "ITU-T"
+             CONTACT-INFO
+             " ITU-T SG 16"
+             DESCRIPTION
+                " "
+                   ::= { mmH245Root 1 }
+
+        -- groups in h245 
+
+         h245Configuration    OBJECT IDENTIFIER ::= { h245 1 }
+         h245ControlChannel   OBJECT IDENTIFIER ::= { h245 2 }
+         h245CapExchange      OBJECT IDENTIFIER ::= { h245 3 }
+         h245LogChannels      OBJECT IDENTIFIER ::= { h245 4 }
+         h245Conference       OBJECT IDENTIFIER ::= { h245 5 }
+         h245Misc             OBJECT IDENTIFIER ::= { h245 6 }
+         h245MIBConformance   OBJECT IDENTIFIER ::= { h245 7 }
+
+
+        h245ConfigurationTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245ConfigurationTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about H.245 configuration parameters.
+                 It is a list of configuration parameter entries.
+                 The number of entries equals to the number of H.245 stacks in a system."
+             ::= { h245Configuration 1 }
+
+        h245ConfigurationTableEntry OBJECT-TYPE
+             SYNTAX H245ConfigurationTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe the H.245 configuration parameters."
+             INDEX { ifIndex }
+               ::= { h245ConfigurationTable 1 }
+
+        H245ConfigurationTableEntry ::=
+              SEQUENCE {
+                   h245ConfigT101Timer
+                       Integer32, 
+                   h245ConfigT102Timer
+                       Integer32, 
+                   h245ConfigT103Timer
+                       Integer32, 
+                   h245ConfigT104Timer
+                       Integer32, 
+                   h245ConfigT105Timer
+                       Integer32, 
+                   h245ConfigT106Timer
+                       Integer32,
+                   h245ConfigT107Timer
+                       Integer32, 
+                   h245ConfigT108Timer
+                       Integer32, 
+                   h245ConfigT109Timer
+                       Integer32, 
+                   h245ConfigN100Counter
+                       Integer32 
+                }
+
+        h245ConfigT101Timer  OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "This timer is used during Capability Exchange procedure. This timer is 
+                used in the AWAITING RESPONSE state. It specifies the maximum time during 
+                which no TerminalCapabilitySetAck or TerminalCapabilitySetReject message 
+                may be received."
+                 ::= { h245ConfigurationTableEntry  1 }
+
+         h245ConfigT102Timer  OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "This timer is used during Maintenance Loop procedure. This timer is used 
+               during the AWAITING RESPONSE state. It specifies the maximum allowed time 
+               during which no MaintenanceLoopAck or MaintenanceLoopReject message may 
+               be received ."
+                 ::= { h245ConfigurationTableEntry  2 }
+
+        h245ConfigT103Timer  OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "This timer is used during Uni-directional and 
+                Bi-directional Logical Channel Signalling procedure.  This timer is used 
+                in the AWAITING ESTABLISHMENT and AWAITING RELEASE states. It specifies 
+                the maximum  time during which no OpenLogicalChannelAck or 
+                OpenLogicalChannelReject or CloseLogicalChannelAck  message may be 
+                received."
+                 ::= { h245ConfigurationTableEntry 3  }
+
+         h245ConfigT104Timer  OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "This timer is used during H.223 Multiplex Table procedure. This timer is 
+                 used in the AWAITING RESPONSE state. It specifies the maximum time 
+                 during which no MultiplexEntrySendAck or 
+                 MultiplexEntrySendReject message may be received."
+                 ::= { h245ConfigurationTableEntry 4  }
+
+         h245ConfigT105Timer  OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "This timer is used during Round Trip Delay procedure. This timer is used 
+                 in the AWAITING RESPONSE state. It specifies the maximum time during 
+                 which no RoundTripDelayResponse message may be received."
+                 ::= { h245ConfigurationTableEntry 5 }
+
+        h245ConfigT106Timer  OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "This timer is used during Master Slave Determination procedure. This 
+                 timer is used in the OUTGOING AWAITING RESPONSE state and during the 
+                 INCOMING AWAITING RESPONSE state.  It specifies the maximum time during 
+                 which no acknowledgement message may be received."
+                 ::= { h245ConfigurationTableEntry 6 }
+
+        h245ConfigT107Timer  OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "This timer is used during Request Multiplex Entry procedure. This timer 
+                 is used during the AWAITING RESPONSE state. It specifies the maximum 
+                 time during which no RequestMultiplexEntryAck or 
+                 RequestMultiplexEntryReject message may be received."
+                 ::= { h245ConfigurationTableEntry 7 }
+
+        h245ConfigT108Timer  OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "This timer is used during SEND Logical Channel procedure. This timer is 
+                 used in the AWAITING RESPONSE state. It specifies the maximum time 
+                 during which no RequestMultiplexEntryAck or RequestMultiplexEntryReject 
+                 message may be received."
+                 ::= { h245ConfigurationTableEntry 8 }
+
+       h245ConfigT109Timer  OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "This timer is used during Mode Request procedure. This timer is used in 
+                 the AWAITING RESPONSE state.  It specifies the maximum time during which 
+                 no RequestModeAck or RequestModeReject message may be received."
+                 ::= { h245ConfigurationTableEntry 9 }
+
+       h245ConfigN100Counter  OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "This counter specifies the maximum number of times that 
+                 MasterSlaveDetermination messages will be sent during the 
+                 OUTGOING AWAITING RESPONSE state."
+                 ::= { h245ConfigurationTableEntry 10 }
+
+        h245ControlChannelStatsTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245ControlChannelStatsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about H.245 statistics.
+                 It is a list of statistics entries.
+                 The number of entries equals to the number of control channels for
+                 all H.245 stacks in a system."
+             ::= { h245ControlChannel 1 }
+
+        h245ControlChannelStatsTableEntry OBJECT-TYPE
+             SYNTAX H245ControlChannelStatsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+               "It contains objects that describe the H.245 control channel statistics. "
+             INDEX { ifIndex }
+               ::= { h245ControlChannelStatsTable 1 }
+
+        H245ControlChannelStatsTableEntry ::=
+              SEQUENCE {
+                   h245ControlChannelNumberOfListenPorts
+                       Integer32,
+                   h245ControlChannelMaxConnections
+                       Integer32,
+                   h245ControlChannelNumberOfListenFails
+                       Integer32,
+                   h245ControlChannelNumberOfActiveConnections
+                       Integer32,
+                   h245ControlChannelMasterSlaveMaxRetries
+                       Integer32, 
+                   h245ControlChannelConnectionAttemptsFail
+                       Counter32, 
+                   h245ControlChanneMasterSlavelDeterminations
+                       Counter32,
+                   h245ControlChannelMasterSlaveAcks
+                       Counter32,
+                   h245ControlChannelMasterSlaveRejects
+                       Counter32,
+                   h245ControlChannelMasterSlaveT106Rejects
+                       Counter32,
+                   h245ControlChannelMasterSlaveMSDRejects 
+                       Counter32,
+                   h245ControlChannelNumberOfMasterSlaveInconsistentFieldRejects 
+                       Counter32,
+                   h245ControlChannelMasterSlaveMaxCounterRejects
+                       Counter32, 
+                   h245ControlChannelMasterSlaveReleases 
+                      Counter32,
+                   h245ControlChannelNumberOfTunnels
+                      Integer32
+                   
+              }
+
+         h245ControlChannelNumberOfListenPorts OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of H245 Listen ports. These ports are
+                 used for the remote entity to send a connect on"
+                 ::= { h245ControlChannelStatsTableEntry 1 }
+
+         h245ControlChannelMaxConnections OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of maximum active h245 channels allowed."
+                 ::= { h245ControlChannelStatsTableEntry 2 }
+
+         h245ControlChannelNumberOfListenFails OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of Listen fails. The fail could be due
+                 to exhaustion of system resources"
+                 ::= { h245ControlChannelStatsTableEntry 3 }
+
+         h245ControlChannelNumberOfActiveConnections OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of the active H245 connections."
+                 ::= { h245ControlChannelStatsTableEntry 4 }
+
+        h245ControlChannelMasterSlaveMaxRetries OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of maximum master slave retries. Reties
+                 are needed when the result of master slave process
+                 is indeterminate"
+                 ::= { h245ControlChannelStatsTableEntry 5 }
+
+        h245ControlChannelConnectionAttemptsFail OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of failures when trying to connect to
+                 a listen port."
+                 ::= { h245ControlChannelStatsTableEntry 6 }
+
+        h245ControlChanneMasterSlavelDeterminations OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of MSD messages sent from a MSDSE to a peer MSDSE 
+                 for master/slave determination purpose." 
+                 ::= { h245ControlChannelStatsTableEntry 7 }
+
+        h245ControlChannelMasterSlaveAcks OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of acks that are used to confirm whether the terminal is 
+                 the master terminal or the slave terminal, as indicated by decision. 
+                 When decision is of type master, the terminal receiving this message 
+                 is the master terminal and when decision is of type slave, it is the 
+                 slave terminal. "
+             ::= { h245ControlChannelStatsTableEntry 8 }
+
+        h245ControlChannelMasterSlaveRejects OBJECT-TYPE
+              SYNTAX  Counter32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The number of rejects of the MasterSlaveDetermination message. "
+             ::= { h245ControlChannelStatsTableEntry 9 }
+
+        h245ControlChannelMasterSlaveT106Rejects OBJECT-TYPE
+              SYNTAX  Counter32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The number of rejects of the MasterSlaveDetermination message. When 
+                 the cause is of type identicalNumbers, the rejection was due to the 
+                 random numbers being equivalent and the terminal types being the same."
+             ::= { h245ControlChannelStatsTableEntry 10 }
+
+        h245ControlChannelMasterSlaveMSDRejects OBJECT-TYPE
+              SYNTAX  Counter32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The number of MSD rejects of the MasterSlaveDetermination message.
+             Rejects can happen due to different reasons like
+             identical random number after maximum tries, timeouts..."
+             ::= { h245ControlChannelStatsTableEntry 11 }
+
+        h245ControlChannelNumberOfMasterSlaveInconsistentFieldRejects OBJECT-TYPE
+              SYNTAX  Counter32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The number of rejects of the MasterSlaveDetermination
+             message. The cause is due to conflict in the status that
+             both entities arrive to."
+             ::= { h245ControlChannelStatsTableEntry 12 }
+
+        h245ControlChannelMasterSlaveMaxCounterRejects OBJECT-TYPE
+              SYNTAX  Counter32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The number of rejects of the MasterSlaveDetermination
+             message. There are many reasons why the rejection could
+             happen."
+             ::= { h245ControlChannelStatsTableEntry 13 }
+
+        h245ControlChannelMasterSlaveReleases OBJECT-TYPE
+              SYNTAX  Counter32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The number of rejects due to a time out. "
+             ::= { h245ControlChannelStatsTableEntry 14 }
+
+        h245ControlChannelNumberOfTunnels OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of the active H245 tunnels."
+                 ::= { h245ControlChannelStatsTableEntry 15 }
+
+        h245ControlChannelMasterSlaveTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245ControlChannelMasterSlaveTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about entities that are
+                 connected to this entity. It is a list of connection entries.
+                 The number of entries equals to the number of active connections."
+             ::= { h245ControlChannel 2 }
+
+        h245ControlChannelMasterSlaveTableEntry OBJECT-TYPE
+             SYNTAX H245ControlChannelMasterSlaveTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe the status of
+                  the master slave determination procedure."
+             INDEX {         ifIndex,
+                             h245ControlChannelSrcAddressTag, 
+                             h245ControlChannelSrcTransporTAddress,
+                             h245ControlChannelDesTAddressTag,
+                             h245ControlChannelDestTransporTAddress}
+               ::= { h245ControlChannelMasterSlaveTable 1 }
+
+        H245ControlChannelMasterSlaveTableEntry ::=
+              SEQUENCE {
+              h245ControlChannelSrcAddressTag
+                    MmTAddressTag,
+              h245ControlChannelSrcTransporTAddress
+                    TAddress,
+              h245ControlChannelDesTAddressTag
+                    MmTAddressTag,
+              h245ControlChannelDestTransporTAddress
+                    TAddress,
+              h245ControlChannelIndex
+                    Integer32,
+              h245ControlChannelMSDState
+                    INTEGER,
+              h245ControlChannelTerminalType
+                    MmH323EndpointType,
+              h245ControlChannelNumberOfMSDRetries
+                    Integer32,
+              h245ControlChannelIsTunneling
+                    TruthValue
+              
+              }
+
+        h245ControlChannelSrcAddressTag OBJECT-TYPE
+              SYNTAX  MmTAddressTag 
+              MAX-ACCESS   not-accessible
+              STATUS  current
+              DESCRIPTION
+                " It describes the type of address (IP v4, IPv6...)
+             of the source"
+             ::= { h245ControlChannelMasterSlaveTableEntry 1 }
+
+        h245ControlChannelSrcTransporTAddress OBJECT-TYPE
+              SYNTAX  TAddress 
+              MAX-ACCESS   not-accessible
+              STATUS  current
+              DESCRIPTION
+                "Source transport address. "
+             ::= { h245ControlChannelMasterSlaveTableEntry  2 }
+
+        h245ControlChannelDesTAddressTag OBJECT-TYPE
+              SYNTAX  MmTAddressTag 
+              MAX-ACCESS   not-accessible
+              STATUS  current
+              DESCRIPTION
+                " It describes the type of address (IP v4, IPv6...)
+             of the source"
+             ::= { h245ControlChannelMasterSlaveTableEntry  3 }
+
+        h245ControlChannelDestTransporTAddress OBJECT-TYPE
+              SYNTAX  TAddress 
+              MAX-ACCESS   not-accessible
+              STATUS  current
+              DESCRIPTION
+                "Remote transport address. "
+             ::= { h245ControlChannelMasterSlaveTableEntry  4 }
+
+        h245ControlChannelIndex OBJECT-TYPE
+              SYNTAX  Integer32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "It is an arbitrary number that is being incremented
+             by 1 for every entry in this table"
+             ::= {h245ControlChannelMasterSlaveTableEntry 5 }
+
+        h245ControlChannelMSDState OBJECT-TYPE
+              SYNTAX  INTEGER { outgoingWaitingResponse (1),
+                                incomingWaitingResponse (2),
+                                idle (3),
+                                master (4),
+                                slave (5)
+                              }
+
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "It describes the state of the master slave
+             determination procdure. It can be OUTGOING WAITING
+             RESPONSE, INCOMING WAITING RESPONSE, IDLE"
+             ::= {h245ControlChannelMasterSlaveTableEntry 6 }
+
+        h245ControlChannelTerminalType OBJECT-TYPE
+              SYNTAX  MmH323EndpointType
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "Terminal type represents the type of H.323 terminal: 
+                      50 - terminal without MC
+                      60 - gateway without MC
+                      70 - terminal with MC but without MP
+                      80 - gateway  with MC but without MP
+                     120 - gatekeeper with MC but without MP
+                     160 - MCU with MC but without MP
+                      90 - gateway with MC and Data MP
+                     130 - gatekeeper with MC and Data MP
+                     170 - MCU with MC and Data MP
+                     100 - gateway containing MC with Data and audio MP
+                     140 - gatekeeper containing MC with Data and audio MP
+                     180 - MCU containing MC with Data and audio MP
+                     110 - gateway containing MC with Data, Audio and Video MP
+                     150 - gatekeeper containing MC with Data, Audio and Video MP
+                     190 - MCU containing MC with Data, Audio and Video MP 
+                     240 - entity with active MC . "
+             ::= {h245ControlChannelMasterSlaveTableEntry 7 }
+
+        h245ControlChannelNumberOfMSDRetries OBJECT-TYPE
+              SYNTAX  Integer32
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The number of tries of master slave determination
+                 before a meaningful result is concluded. "
+             ::= {h245ControlChannelMasterSlaveTableEntry 8 }
+
+       h245ControlChannelIsTunneling OBJECT-TYPE
+              SYNTAX  TruthValue
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "This variable indicates if tunneling is used for this channel. "
+             ::= {h245ControlChannelMasterSlaveTableEntry 9 }
+
+       h245CapExchangeStatsTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245CapExchangeStatsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about H.245 statistics for capabilities 
+                 exchange procedure.
+                 It is a list of cap exchange statistics entries.
+                 The number of entries equals to the number of H.245 stacks in a system."
+             ::= { h245CapExchange 1 }
+
+        h245CapExchangeStatsTableEntry OBJECT-TYPE
+             SYNTAX H245CapExchangeStatsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe statistics for H.245 cap exchange procedure."
+             INDEX { ifIndex }
+               ::= { h245CapExchangeStatsTable 1 }
+
+        H245CapExchangeStatsTableEntry ::=
+              SEQUENCE {
+                   h245CapExchangeSets
+                       Counter32,
+                   h245CapExchangeAcks
+                       Counter32,
+                   h245CapExchangeRejects
+                       Counter32,
+                   h245CapExchangeRejectUnspecified
+                       Counter32, 
+                   h245CapExchangeRejectUndefinedTableEntryUsed
+                       Counter32,
+                   h245CapExchangeRejectDescriptorCapacityExceeded
+                       Counter32, 
+                   h245CapExchangeRejectTableEntryCapacityExeeded
+                       Counter32,
+                   h245CapExchangeReleases
+                       Counter32
+              }
+
+        h245CapExchangeSets OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of TerminalCapabilitySets that were sent and received 
+                 by the local CESE (Capability Exchange Signalling Entity).  A 
+                 TerminalCapabilitySet is used for the intention to signal a terminal's 
+                 capabilities to ensure that the only multimedia signals to be 
+                 transmitted are those that can be received and treated appropriately by 
+                 the receive terminal."
+             ::= { h245CapExchangeStatsTableEntry 1 }
+
+        h245CapExchangeAcks OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of TerminalCapabilitySetAcks that were sent and 
+                 received by local CESE (Capability Exchange Signalling Entity).  A 
+                 TerminalCapabilitySetAck is used as a confirmation for a 
+                 TerminalCapabilitySet that was successfully received and processed."
+             ::= { h245CapExchangeStatsTableEntry 2 }
+
+        h245CapExchangeRejects OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of TerminalCapabilitySetRejects that were sent and 
+                 received by the local CESE (Capability Exchange Signalling Entity).  A 
+                 TerminalCapabilitySetReject is used to indicate a failure due to a 
+                 specific error for a TerminalCapabilitySet that was received, but, yet 
+                 to be fully processed."
+             ::= { h245CapExchangeStatsTableEntry 3 }
+
+        h245CapExchangeRejectUnspecified  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of TerminalCapabilitySetRejects that were sent and 
+                 received by the local CESE (Capability Exchange Signalling Entity) with 
+                 the cause value set to unspecified.  This means that there was no cause 
+                 for the rejection of a TerminalCapabilitySet specified."
+             ::= { h245CapExchangeStatsTableEntry 4 }
+
+        h245CapExchangeRejectUndefinedTableEntryUsed  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of TerminalCapabilitySetRejects that were sent and 
+                 received by the local CESE (Capability Exchange Signalling Entity) with 
+                 the cause value set to undefinedTableEntryUsed.  This means that the 
+                 cause of the rejection of a TerminalCapabilitySet was due to a 
+                 capability descriptor made reference to a capability table entry number 
+                 in the capability table of the TerminalCapabilitySet was not defined."
+             ::= { h245CapExchangeStatsTableEntry 5 }
+
+        h245CapExchangeRejectDescriptorCapacityExceeded  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of TerminalCapabilitySetRejects that were sent and 
+                 received by the local CESE (Capability Exchange Signalling Entity) with 
+                 the cause value set to descriptorCapacityExceeded.  This means that the 
+                 cause of the rejection of a TerminalCapabilitySet was due to a terminal 
+                 incapable of storing all of the information from the 
+                 capabilityDescriptors of the TerminalCapabilitySet."
+             ::= { h245CapExchangeStatsTableEntry 6 }
+
+        h245CapExchangeRejectTableEntryCapacityExeeded OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of TerminalCapabilitySetRejects that were sent and 
+                 received by the local CESE (Capability Exchange Signalling Entity) with 
+                 the cause value set to tableEntryCapacityExceeded.  This means that the 
+                 cause of the rejection of a TerminalCapabilitySet was due to a terminal 
+                 incapable of storing some (indicated in the highestEntryNumberProcessed) 
+                 or all (indicated in the noneProcessed) of the information from the 
+                 capability table of the TerminalCapabilitySet."
+             ::= { h245CapExchangeStatsTableEntry 7 }
+
+        h245CapExchangeReleases  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of TerminalCapabilitySetReleases that were sent and 
+                 received by the local CESE (Capability Exchange Signalling Entity).  
+                 This means that a response for a TerminalCapabilitySet was not 
+                 received/issued in time. A timer expiry had occurred for the local
+                 CESE."
+             ::= { h245CapExchangeStatsTableEntry 8 }
+
+        h245CapExchangeCapabilityTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245CapExchangeCapabilityTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "Contains all the local incoming and outgoing CESEs (Capability Exchange 
+                 Signalling Entity) that currently exists in this terminal."
+             ::= { h245CapExchange 2 }
+
+        h245CapExchangeCapabilityTableEntry OBJECT-TYPE
+             SYNTAX H245CapExchangeCapabilityTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "Each entry contains either the local incoming or outgoing CESE 
+                  (Capability Exchange Signalling Entity) that is derived from a 
+                  particular H.245 Control Channel, Logical Channel 0, or H.245 session."
+             INDEX {ifIndex, h245ControlChannelIndex, h245CapExchangeDirection
+                   }
+               ::= { h245CapExchangeCapabilityTable 1 }
+
+        H245CapExchangeCapabilityTableEntry ::=
+              SEQUENCE {
+            h245CapExchangeDirection
+                     INTEGER,
+            h245CapExchangeState
+                    INTEGER,
+            h245CapExchangeProtocolId
+                    OCTET STRING,
+            h245CapExchangeRejectCause
+                    INTEGER,
+            h245CapExchangeMultiplexCapability
+                    DisplayString,
+            h245CapExchangeCapability
+                    DisplayString,
+            h245CapExchangeCapabilityDescriptors
+                    DisplayString
+            }
+
+       h245CapExchangeDirection OBJECT-TYPE
+             SYNTAX INTEGER { incoming (1),
+                              outgoing (2)
+                              }
+             MAX-ACCESS  not-accessible
+             STATUS current
+             DESCRIPTION
+                "Represents either the local incoming CESE or the local outgoing CESE  
+                 (Capability Exchange Signalling Entity)."
+                ::= { h245CapExchangeCapabilityTableEntry 1 }
+
+        h245CapExchangeState OBJECT-TYPE
+             SYNTAX INTEGER { sent (1), acked (2), reject (3), release (4) } 
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The current state of this CESE (Capability Exchange Signalling Entity)."
+                ::= { h245CapExchangeCapabilityTableEntry 2 }
+
+        h245CapExchangeProtocolId OBJECT-TYPE
+             SYNTAX OCTET STRING ( SIZE(1..128))
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The version of the H.245 protocol used.  This specifies how H.245 
+                 messages are formatted and used."
+                ::= { h245CapExchangeCapabilityTableEntry 3 }
+
+        h245CapExchangeRejectCause OBJECT-TYPE
+             SYNTAX INTEGER { unspecified (1),
+                              undefinedTableEntryUsed (2),
+                              descriptorCapacityExceeded (3),
+                              tableEntryCapacityExceeded (4)
+                            }
+
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The latest reject cause value extracted from the latest 
+                 TerminalCapabilitySetReject."
+                ::= { h245CapExchangeCapabilityTableEntry 4 }
+
+        h245CapExchangeMultiplexCapability OBJECT-TYPE
+             SYNTAX DisplayString 
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The latest multiplexCapability extracted from a TerminalCapabilitySet."
+                ::= { h245CapExchangeCapabilityTableEntry 5 }
+
+        h245CapExchangeCapability OBJECT-TYPE
+             SYNTAX DisplayString 
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The latest capabilityTable extracted from the latest TerminalCapabilitySet."
+                ::= { h245CapExchangeCapabilityTableEntry 6 }
+
+        h245CapExchangeCapabilityDescriptors OBJECT-TYPE
+             SYNTAX DisplayString 
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The latest capabilityDescriptors extracted from the latest 
+                 TerminalCapabilitySet."
+                ::= { h245CapExchangeCapabilityTableEntry 7 }
+
+        h245LogChannelsChannelTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245LogChannelsChannelTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "Contains all the local incoming and outgoing LCSEs 
+                 (Uni or Bi-directional Logical Channel Signalling Entity) 
+                 that currently exist in this terminal with their logical 
+                 channels open or in the process of being opened or closed."
+             ::= { h245LogChannels 1}
+
+        h245LogChannelsChannelTableEntry OBJECT-TYPE
+             SYNTAX H245LogChannelsChannelTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "Each entry contains either the local incoming or 
+                  outgoing LCSE (Uni or Bi-directional Logical Channel 
+                  Signalling Entity) that is derived from a particular 
+                  H.245 Control Channel, Logical Channel 0, or H.245 
+                  session with its logical channels that are currently 
+                  open or in the process of being opened or closed."
+             INDEX { ifIndex,
+                     h245ControlChannelIndex, 
+                     h245LogChannelsChannelNumber, 
+                     h245LogChannelsChannelDirection
+                   }
+               ::= { h245LogChannelsChannelTable 1 }
+
+        H245LogChannelsChannelTableEntry ::=
+              SEQUENCE {
+              h245LogChannelsChannelNumber
+                    Integer32,
+              h245LogChannelsChannelDirection
+                    INTEGER,
+              h245LogChannelsIndex
+                    Integer32,
+              h245LogChannelsChannelState
+                    INTEGER,
+              h245LogChannelsMediaTableType
+                    INTEGER
+             }
+
+       h245LogChannelsChannelNumber OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS  not-accessible
+             STATUS current
+             DESCRIPTION
+                "The forwardLogicalChannelNumber used to distinguish 
+                 this media channel by this LCSE (Uni or Bi-directional 
+                 Logical Channel Signalling Entity)."
+                ::= { h245LogChannelsChannelTableEntry 1 }
+
+       h245LogChannelsChannelDirection OBJECT-TYPE
+             SYNTAX INTEGER { receive(1), transmit (2) }
+             MAX-ACCESS  not-accessible
+             STATUS current
+             DESCRIPTION
+                "Represents the direction of this media channel used 
+                 by this LCSE (Uni or Bi-directional Logical Channel 
+                 Signalling Entity) ."
+                ::= { h245LogChannelsChannelTableEntry 2 }
+
+        h245LogChannelsIndex OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "A unique value representing this media channel."
+                ::= { h245LogChannelsChannelTableEntry 3 }
+
+        h245LogChannelsChannelState OBJECT-TYPE
+             SYNTAX INTEGER { awaitingEstablishment (1), established (2), 
+                              awaitingRelease (3), awaitingConfirmation (4) }
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The current state of the media channel which also 
+                 represents the state of this LCSE (Uni or Bi-directional 
+                 Logical Channel Signalling Entity)."
+                ::= { h245LogChannelsChannelTableEntry 4 }
+
+        h245LogChannelsMediaTableType OBJECT-TYPE
+             SYNTAX INTEGER { nonStandard (1),
+                              videoNonStandard (2),
+                              h261VideoCapability (3),
+                              h262VideoCapability (4),
+                              h263VideoCapability (5),
+                              is11172VideoCapability (6),
+                              audioNonStandard (7),
+                              g711Alaw64k (8),
+                              g711Alaw56k (9), 
+                              g711Ulaw64k (10), 
+                              g711Ulaw56k (11),
+                              g722-64k (12),
+                              g722-56k (13),
+                              g722-48k (14), 
+                              g7231 (15),
+                              g728 (16),
+                              g729 (17), 
+                              g729AnnexA (18), 
+                              is11172AudioCapability (19), 
+                              is13818AudioCapability (20),
+                              g729wAnnexB (21),
+                              g729AnnexAwAnnexB (22),
+                              g7231AnnexCCapability (23), 
+                              gsmFullRate (24), 
+                              gsmHalfRate (25), 
+                              gsmEnhancedFullRate (26),
+                              dataNonStandard (27),
+                              t120 (28),
+                              dsm-cc (29),
+                              userData (30),
+                              t84 (31),
+                              t434 (32),
+                              h224 (33), 
+                              nlpid (34),
+                              dsvdControl (35), 
+                              h222DataPartitioning (36),
+                              t30fax (37),
+                              t140 (38),
+                              h233EncryptionCapability (39),
+                              conferenceCapability (40),
+                              h235SecurityCapability (41),
+                              maxPendingReplacementFor (42),
+                              userInputCapability  (43),
+                              h225 (44),
+                              h222 (45),
+                              h223 (46),
+                              v76  (47)
+                            }
+
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The actual media or data type used for this 
+                 logical channel."
+                ::= { h245LogChannelsChannelTableEntry 5 }
+
+       h245LogChannelsH225Table OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245LogChannelsH225TableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "Contains the H2250LogicalChannelParameters that are used in all of 
+                 the logical channels that are currently opened on this terminal."
+             ::= { h245LogChannels 2 }
+
+       h245LogChannelsH225TableEntry OBJECT-TYPE
+             SYNTAX H245LogChannelsH225TableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "Each entry contains the actual specifics and options used in the
+                  H2250LogicalChannelParameters within a particular open logical 
+                  channel."
+             INDEX { ifIndex,
+                     h245LogChannelsIndex }
+               ::= { h245LogChannelsH225Table 1 }
+
+       H245LogChannelsH225TableEntry ::=
+              SEQUENCE {
+                 h245LogChannelsSessionId
+                    Integer32, 
+                 h245LogChannelsAssociateSessionId
+                    Integer32,
+                 h245LogChannelsMediaChannel
+                    TAddress,
+                 h245LogChannelsMediaGuaranteedDelivery
+                    TruthValue, 
+                 h245LogChannelsMediaControlChannel
+                    TAddress,
+                 h245LogChannelsMediaControlGuaranteedDelivery
+                    TruthValue,
+                 h245LogChannelsSilenceSuppression
+                    TruthValue,
+                 h245LogChannelsDestination
+                    OCTET STRING,
+                 h245LogChannelsDynamicRTPPayloadType
+                    Integer32,
+                 h245LogChannelsH261aVideoPacketization
+                    TruthValue,
+                 h245LogChannelsRTPPayloadDescriptor
+                    OCTET STRING,
+                 h245LogChannelsRTPPayloadType
+                    Integer32,
+                 h245LogChannelsTransportCapability
+                    DisplayString,
+                 h245LogChannelsRedundancyEncoding
+                    DisplayString,
+                 h245LogChannelsSrcTerminalLabel
+                    OCTET STRING
+               }
+
+       h245LogChannelsSessionId OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "A unique RTP or T.120 Session Identifier in a conference.  
+                 It is used by the transmitter to refer to the session to
+                 which the logical channel applies."
+                ::= { h245LogChannelsH225TableEntry 1 }
+
+       h245LogChannelsAssociateSessionId OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This is used to associate one session with another in a 
+                 conference.  A typical use will be to associate an audio
+                 session with a video session to indicate which sessions
+                 to process for lip synchronization."
+                ::= { h245LogChannelsH225TableEntry 2 }
+
+       h245LogChannelsMediaChannel OBJECT-TYPE
+             SYNTAX TAddress
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates a transporTAddress to be used for the logical 
+                 channel."
+                ::= { h245LogChannelsH225TableEntry 3 }
+
+       h245LogChannelsMediaGuaranteedDelivery OBJECT-TYPE
+             SYNTAX TruthValue
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates whether or not the underlying media transport
+                 should be selected to provide or not to provide 
+                 guaranteed delivery of data."
+                ::= { h245LogChannelsH225TableEntry 4 }
+
+       h245LogChannelsMediaControlChannel OBJECT-TYPE
+             SYNTAX TAddress
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates the media control channel in which the sender
+                 of the open logical channel will be listening for media
+                 control messages for this session.  This field is 
+                 present only when a media control channel is required."
+                ::= { h245LogChannelsH225TableEntry 5 }
+
+        h245LogChannelsMediaControlGuaranteedDelivery OBJECT-TYPE
+             SYNTAX TruthValue
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates whether or not the underlying media control
+                 transport should be selected to provide or not to 
+                 provide guaranteed delivery of data.  This field is 
+                 present only when a media control channel is required."
+                ::= { h245LogChannelsH225TableEntry 6 }
+
+        h245LogChannelsSilenceSuppression OBJECT-TYPE
+             SYNTAX TruthValue
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates whether the transmitter stops sending packets 
+                 during times of silence for bandwidth reasons.  This
+                 can only be enabled for an audio channel only."
+                ::= { h245LogChannelsH225TableEntry 7 }
+
+        h245LogChannelsDestination OBJECT-TYPE
+             SYNTAX OCTET STRING (SIZE(2))
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates the terminal label (composed of a mcu number
+                 and a terminal number) of the destination if one 
+                 has been assigned."
+                ::= { h245LogChannelsH225TableEntry 8 }
+
+         h245LogChannelsDynamicRTPPayloadType OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates a dynamic payload value which is used in H.323
+                 for the H.225.0 alternative H.261 video packetization
+                 scheme.  This field is present only when a dynamic RTP
+                 payload is in use."
+                ::= { h245LogChannelsH225TableEntry 9 }
+
+          h245LogChannelsH261aVideoPacketization OBJECT-TYPE
+             SYNTAX TruthValue
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates that the H.261 alternative RTP payload form is
+                 in use as described in H.225.0."
+                ::= { h245LogChannelsH225TableEntry 10 }
+
+         h245LogChannelsRTPPayloadDescriptor OBJECT-TYPE
+             SYNTAX OCTET STRING (SIZE (0..127))
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "If the rfc-number is chosen, it indicates the offical
+                 document of the IETF in which the payload format is 
+                 defined (OID).  Obsolete RFCs should not be referenced here.
+                 If the oid component is chosen, this identifies a payload
+                 format specified as part of a Recommendation defined by
+                 the ITU or an International Standard defined by the ISO
+                 and registered in the respective document under this 
+                 Object Indentifier."
+                ::= { h245LogChannelsH225TableEntry 11 }
+
+         h245LogChannelsRTPPayloadType OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates which payload type value used.  If the dynamic
+                 payload type is used, the values of this field and the
+                 logChannelsDynamicRTPPayloadType should match."
+                ::= { h245LogChannelsH225TableEntry 12 }           
+
+         h245LogChannelsTransportCapability  OBJECT-TYPE
+             SYNTAX DisplayString
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates optional transport capabilites such as quality
+                 of service and median channel type capabilites."
+                ::= { h245LogChannelsH225TableEntry 13 }
+
+         h245LogChannelsRedundancyEncoding OBJECT-TYPE
+             SYNTAX DisplayString
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Indicates which redundancy encoding modes are supported (if any).
+                 The redundancyEncoding indicates that the redundant encoding method 
+                 indicated in this parameter is to be used for this logical channel. 
+                 The primary encoding is defined by the dataType of the 
+                 forwardLogicalChannelParameters or the reverseLogicalChannelParameters, 
+                 respectively. The type of redundancy encoding to be applied for this 
+                 logical channel is identified by the redundancyEncodingMethod parameter, 
+                 the secondary encoding is specified in the secondaryEncoding parameter. 
+                 The DataType (audio, video, etc.) selected for both primary and 
+                 secondary encoding shall match and shall be in accordance with the 
+                 redundancyEncodingMethod selected." 
+                ::= { h245LogChannelsH225TableEntry 14 }
+
+        h245LogChannelsSrcTerminalLabel OBJECT-TYPE
+             SYNTAX OCTET STRING (SIZE(2))
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This is used to identify the terminal number of the sender of the 
+                 OpenLogicalChannel message."
+                ::= { h245LogChannelsH225TableEntry 15 }
+
+        h245LogChannelOpenLogicalChannelTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245LogChannelOpenLogicalChannelTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about statistics for H.245 open logical 
+                 channels.It is a list of statistics entries.
+                 The number of entries equals to the number of control channels for
+                 all H.245 stacks in a system."
+             ::= { h245LogChannels 3 }
+
+        h245LogChannelOpenLogicalChannelTableEntry OBJECT-TYPE
+             SYNTAX H245LogChannelOpenLogicalChannelTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe statistics for H.245 open logical 
+                  channel procedure."
+             INDEX { ifIndex }
+               ::= { h245LogChannelOpenLogicalChannelTable 1 }
+
+        H245LogChannelOpenLogicalChannelTableEntry ::=
+              SEQUENCE {
+                 h245LogChanOpenLogChanTotalRequests
+                       Counter32,
+                 h245LogChanOpenLogChanAcks
+                       Counter32,
+                 h245LogChanOpenLogChanConfirms
+                       Counter32,
+                 h245LogChanOpenLogChanRejects
+                       Counter32,
+                 h245LogChanOpenLogChanRejectUnspecified
+                       Counter32,
+                 h245LogChanOpenLogChanRejectUnsuitableReverseParameters
+                       Counter32, 
+                 h245LogChanOpenLogChanRejectDataTypeNotSupported
+                       Counter32,
+                 h245LogChanOpenLogChanRejectDataTypeNotAvailable
+                       Counter32,
+                 h245LogChanOpenLogChanRejectUnknownDataType
+                       Counter32,
+                 h245LogChanOpenLogChanRejectDataTypeALCombinationNotSupported
+                       Counter32,
+                 h245LogChanOpenLogChanRejectMulticastChannelNotAllowed
+                       Counter32,
+                 h245LogChanOpenLogChanRejectInsuffientBandwdith
+                       Counter32,
+                 h245LogChanOpenLogChanRejectSeparateStackEstablishmentFailed
+                       Counter32,
+                 h245LogChanOpenLogChanRejectInvalidSessionID
+                       Counter32,
+                 h245LogChanOpenLogChanRejectMasterSlaveConflict
+                       Counter32,
+                 h245LogChanOpenLogChanRejectWaitForCommunicationMode
+                       Counter32,
+                 h245LogChanOpenLogChanRejectInvalidDependentChannel
+                       Counter32,
+                 h245LogChansOpenLogChanRejectReplacementForRejected
+                       Counter32 
+                }
+
+         h245LogChanOpenLogChanTotalRequests  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of attempts to open a uni-directional 
+                 logical channel between an outgoing LCSE and a peer 
+                 incoming LCSE and a bi-directional logical channel 
+                 between an outgoing B-LCSE and a peer incoming B-LCSE."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 1 }
+
+         h245LogChanOpenLogChanAcks  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of confirmations to accept an open 
+                 logical channel request.  This would represent the 
+                 final stage of establishing a uni-directional channel
+                 that can be used for transmission."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 2 }
+
+         h245LogChanOpenLogChanConfirms  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of confirmations used for the purpose
+                 of bi-directional channel signaling that the 
+                 reverse channel is open and can be used for 
+                 transmission.  This represents the final stage of 
+                 establishing a bi-directional channel that can
+                 be used for transmission in both directions."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 3 }
+
+         h245LogChanOpenLogChanRejects  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of rejections used as a response 
+                 to a request to open a uni or a bi-directional logical 
+                 channel from a LCSE or B-LCSE."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 4 }
+
+         h245LogChanOpenLogChanRejectUnspecified  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of rejections used as a response to
+                 a request to open a uni or a bi-directional logical 
+                 channel from a LCSE or B-LCSE when the reason for the 
+                 rejection was unspecified."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 5 }
+
+         h245LogChanOpenLogChanRejectUnsuitableReverseParameters  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of rejections used as a response to
+                 a request to open a bi-directional logical 
+                 channel from a B-LCSE when the reason for the 
+                 rejection was the reverseLogicalChannelParameters 
+                 in the OpenLogicalChannel were inappropriate." 
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 6 }
+
+         h245LogChanOpenLogChanRejectDataTypeNotSupported  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of rejections used as a response to
+                 a request to open a uni or a bi-directional logical 
+                 channel from a LCSE or B-LCSE when the reason for the 
+                 rejection was due to a terminal not capable of supporting 
+                 the desired dataType."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 7 }
+
+         h245LogChanOpenLogChanRejectDataTypeNotAvailable  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of rejections used as a response to
+                 a request to open a uni or a bi-directional logical 
+                 channel from a LCSE or B-LCSE when the reason for the 
+                 rejection was due to a terminal not capable of supporting 
+                 the desired dataType simultaneously with the dataTypes
+                 of logical channels that are already open."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 8 }
+
+         h245LogChanOpenLogChanRejectUnknownDataType  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of rejections used as a response to
+                 a request to open a uni or a bi-directional logical 
+                 channel from a LCSE or B-LCSE when the reason for the 
+                 rejection was due to a terminal not understanding the 
+                 dataType indicated in the OpenLogicalChannel."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 9 }
+
+         h245LogChanOpenLogChanRejectDataTypeALCombinationNotSupported  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of rejections used as a response to
+                 a request to open a uni or a bi-directional logical 
+                 channel from a LCSE or B-LCSE when the reason for the 
+                 rejection was due to a terminal not capable of supporting 
+                 the dataType indicated in OpenLogicalChannel simultaneously 
+                 with the Adaptation Layer type indicated in 
+                 H223LogicalChannelParameters."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 10 }
+
+         h245LogChanOpenLogChanRejectMulticastChannelNotAllowed  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of rejections used as a response to
+                 a request to open a uni or a bi-directional logical 
+                 channel from a LCSE or B-LCSE when the reason for the 
+                 rejection was due to a multicast Channel that could 
+                 not be opened."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 11 }
+
+         h245LogChanOpenLogChanRejectInsuffientBandwdith OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The total number of rejections used as a response to
+                 a request to open a uni or a bi-directional logical 
+                 channel from a LCSE or B-LCSE when the reason for the 
+                 rejection was because permission to use the requested 
+                 bandwidth for the logical channel was denied."
+             ::= { h245LogChannelOpenLogicalChannelTableEntry 12 }
+
+         h245LogChanOpenLogChanRejectSeparateStackEstablishmentFailed  OBJECT-TYPE
+            SYNTAX  Counter32 
+            MAX-ACCESS  read-only
+            STATUS  current
+            DESCRIPTION
+               "The total number of rejections used as a response to
+                a request to open a uni or a bi-directional logical 
+                channel from a LCSE or B-LCSE when the reason for the 
+                rejection was due to a request to run the data portion 
+                of a call on a separate stack failed."
+            ::= { h245LogChannelOpenLogicalChannelTableEntry 13 }
+
+          h245LogChanOpenLogChanRejectInvalidSessionID  OBJECT-TYPE
+            SYNTAX  Counter32 
+            MAX-ACCESS  read-only
+            STATUS  current
+            DESCRIPTION
+               "The total number of rejections used as a response to
+                a request to open a uni or a bi-directional logical 
+                channel from a LCSE or B-LCSE when the reason for the 
+                rejection was due to an attempt by a slave to set 
+                the SessionID when opening a logical channel to the master."
+            ::= { h245LogChannelOpenLogicalChannelTableEntry 14 }
+
+         h245LogChanOpenLogChanRejectMasterSlaveConflict  OBJECT-TYPE
+            SYNTAX  Counter32 
+            MAX-ACCESS  read-only
+            STATUS  current
+            DESCRIPTION
+               "The total number of rejections used as a response to
+                a request to open a uni or a bi-directional logical 
+                channel from a LCSE or B-LCSE when the reason for the 
+                rejection was due to an attempt by a slave to open a
+                logical channel in which the master has determined a 
+                conflict may occur."
+            ::= { h245LogChannelOpenLogicalChannelTableEntry 15 }
+
+         h245LogChanOpenLogChanRejectWaitForCommunicationMode  OBJECT-TYPE
+            SYNTAX  Counter32 
+            MAX-ACCESS  read-only
+            STATUS  current
+            DESCRIPTION
+               "The total number of rejections used as a response to
+                a request to open a uni or a bi-directional logical 
+                channel from a LCSE or B-LCSE when the reason for the 
+                rejection was due to an attempt to open a logical channel 
+                before MC has transmitted the CommunicationModeCommand."
+            ::= { h245LogChannelOpenLogicalChannelTableEntry 16 }
+
+         h245LogChanOpenLogChanRejectInvalidDependentChannel  OBJECT-TYPE
+            SYNTAX  Counter32 
+            MAX-ACCESS  read-only
+            STATUS  current
+            DESCRIPTION
+               "The total number of rejections used as a response to
+                a request to open a uni or a bi-directional logical 
+                channel from a LCSE or B-LCSE when the reason for the 
+                rejection was due to an attempt to open a logical channel 
+                with a dependent channel specified which is not present."
+            ::= { h245LogChannelOpenLogicalChannelTableEntry 17 }
+
+          h245LogChansOpenLogChanRejectReplacementForRejected  OBJECT-TYPE
+            SYNTAX  Counter32 
+            MAX-ACCESS  read-only
+            STATUS  current
+            DESCRIPTION
+               "The total number of rejections used as a response to
+                a request to open a uni or a bi-directional logical 
+                channel from a LCSE or B-LCSE when the reason for the 
+                rejection was due to a logical channel of the type 
+                attempted cannot be opened using the replacementFor 
+                parameter."
+            ::= { h245LogChannelOpenLogicalChannelTableEntry 18 }
+
+        h245LogChannelCloseLogicalChannelTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245LogChannelCloseLogicalChannelTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about H.245 statistics for close 
+                 logical channel procedure.
+                 It is a list of statistics entries.
+                 The number of entries equals to the number of control channels for
+                 all H.245 stacks in a system."
+             ::= { h245LogChannels 4 }
+
+        h245LogChannelCloseLogicalChannelTableEntry OBJECT-TYPE
+             SYNTAX H245LogChannelCloseLogicalChannelTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe statistics for H.245 close logical 
+                  channel procedure."
+             INDEX { ifIndex }
+               ::= { h245LogChannelCloseLogicalChannelTable 1 }
+
+        H245LogChannelCloseLogicalChannelTableEntry ::=
+              SEQUENCE {
+                 h245LogChanCloseLogChannels
+                       Counter32,
+                 h245LogChanCloseLogChanAcks
+                       Counter32,
+                 h245LogChanCloseLogChanRequests
+                       Counter32,
+                 h245LogChanCloseLogChanRequestsAcks
+                       Counter32,
+                 h245LogChanCloseLogChanRequestRejects
+                       Counter32,
+                 h245LogChanCloseLogChanRequestReleases
+                       Counter32
+                 }
+
+         h245LogChanCloseLogChannels  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by the outgoing LCSE or B-LCSE to close 
+                 a logical channel between two peer LCSEs or B-LCSEs. 
+                 Note - In the case of a bi-directional logical channel, this closes both 
+                 forward and reverse channels. It is not possible to close one and not 
+                 the other."
+             ::= { h245LogChannelCloseLogicalChannelTableEntry 1 }
+
+         h245LogChanCloseLogChanAcks  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made to confirm the closing of a logical channel 
+                  connection. "
+             ::= { h245LogChannelCloseLogicalChannelTableEntry 2 }
+
+         h245LogChanCloseLogChanRequests  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by the outgoing CLCSE to request the closing 
+                 of a logical  channel connection between two peer LCSEs. "
+             ::= { h245LogChannelCloseLogicalChannelTableEntry 3 }
+
+         h245LogChanCloseLogChanRequestsAcks  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by the incoming CLCSE to indicate that the 
+                 logical channel connection will be closed. "
+             ::= { h245LogChannelCloseLogicalChannelTableEntry 4 }
+
+         h245LogChanCloseLogChanRequestRejects  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by the incoming CLCSE to indicate that 
+                 the logical channel connection will not be closed.
+                 The only valid cause value for rejecting to close a channel is 
+                 unspecified."
+             ::= { h245LogChannelCloseLogicalChannelTableEntry 5 }
+
+         h245LogChanCloseLogChanRequestReleases  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by the outgoing CLCSE in the case of a time 
+                 out."
+             ::= { h245LogChannelCloseLogicalChannelTableEntry 6 }
+
+         h245MiscRoundTripDelayTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245MiscRoundTripDelayTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about round trip delay tests. It is a 
+                list round trip delay entries.  The number of entries equals to the 
+                number of tests performed."
+             ::= { h245Misc 1 }
+
+        h245MiscRoundTripDelayTableEntry OBJECT-TYPE
+             SYNTAX H245MiscRoundTripDelayTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains information about the round trip delay messages."
+             INDEX {ifIndex, h245ControlChannelIndex }
+               ::= { h245MiscRoundTripDelayTable 1 }
+
+        H245MiscRoundTripDelayTableEntry ::=
+              SEQUENCE {
+            h245MiscRTDState
+                    INTEGER,
+            h245MiscT105TimerExpired
+                    TruthValue,
+            h245MiscLastRTDRequestSent 
+                    Integer32, 
+            h245MiscLastRTDRequestRcvd 
+                    Integer32, 
+            h245MiscLastRTDResponseSent 
+                    Integer32, 
+            h245MiscLastRTDResponseRcvd 
+                    Integer32
+            }
+
+        h245MiscRTDState OBJECT-TYPE
+              SYNTAX  INTEGER { idle (1), waiting (2)}
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The state of the round trip delay. It can be either
+                idle or waiting for response. "
+                ::= { h245MiscRoundTripDelayTableEntry 1 }
+
+        h245MiscT105TimerExpired OBJECT-TYPE
+              SYNTAX  TruthValue
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "Round trip delay timer expired waiting for a respinse
+                from the other entity. "
+                ::= { h245MiscRoundTripDelayTableEntry 2 }
+
+        h245MiscLastRTDRequestSent OBJECT-TYPE
+              SYNTAX  Integer32
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "Information about the last round trip delay request
+                sent. "
+                ::= { h245MiscRoundTripDelayTableEntry 3 }
+
+        h245MiscLastRTDRequestRcvd OBJECT-TYPE
+              SYNTAX  Integer32
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "Information about the last round trip delay request
+                received.  "
+                ::= { h245MiscRoundTripDelayTableEntry 4 }
+
+        h245MiscLastRTDResponseSent OBJECT-TYPE
+              SYNTAX  Integer32
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "Information about the last round trip delay response
+                sent. "
+                ::= { h245MiscRoundTripDelayTableEntry 5 }
+
+        h245MiscLastRTDResponseRcvd OBJECT-TYPE
+              SYNTAX  Integer32
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "Information about the last round trip delay response
+               received. "
+                ::= { h245MiscRoundTripDelayTableEntry 6 }
+
+        h245MiscMaintenanceLoopTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245MiscMaintenanceLoopTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about maintenance loop mode.
+                 It is a list of maintenance loop entries. 
+                 The number of entries equals to the number of maintenance loop 
+                 procedures. "
+             ::= { h245Misc 2 }
+
+        h245MiscMaintenanceLoopTableEntry OBJECT-TYPE
+             SYNTAX H245MiscMaintenanceLoopTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains entries that describe the maintenance
+                  loop procedure."
+             INDEX { ifIndex,
+                     h245ControlChannelIndex, 
+                     h245MiscMaintenanceLoopDirection 
+                   }
+                ::= { h245MiscMaintenanceLoopTable 1 }
+
+        H245MiscMaintenanceLoopTableEntry ::=
+              SEQUENCE {
+            h245MiscMaintenanceLoopDirection
+                    INTEGER,
+            h245MiscMLState 
+                    INTEGER, 
+            h245MiscNumberOfRequests 
+                    Counter32,
+            h245MiscNumberOfAcks
+                    Counter32,
+            h245MiscLastMLRequestOrAckType
+                    INTEGER,
+            h245MiscMLMediaOrLogicalChannelLoopRejectChannelNumber
+                    Integer32,
+            h245MiscNumberOfRejects
+                    Counter32,
+            h245MiscLastRejectType
+                    INTEGER,
+            h245MiscErrorCode
+                    INTEGER
+                    
+            }
+
+        h245MiscMaintenanceLoopDirection OBJECT-TYPE
+              SYNTAX  INTEGER { incoming (1), outgoing (2) }
+              MAX-ACCESS   not-accessible
+              STATUS  current
+              DESCRIPTION
+                "The direction could be either incoming or outgoing. "
+                ::= {h245MiscMaintenanceLoopTableEntry 1 }
+
+        h245MiscMLState OBJECT-TYPE
+              SYNTAX  INTEGER { notLooped (1), waiting (2), looped (3)}
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The state of the channel which can be: not looped,
+                waiting to be looped or looped. "
+                ::= {h245MiscMaintenanceLoopTableEntry 2 }
+
+        h245MiscNumberOfRequests  OBJECT-TYPE
+              SYNTAX  Counter32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "Number of loop requests on that channel. "
+                ::= {h245MiscMaintenanceLoopTableEntry 3 }
+
+        h245MiscNumberOfAcks  OBJECT-TYPE
+              SYNTAX  Counter32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "Number of maintenance loop acks on the channel."
+                ::= {h245MiscMaintenanceLoopTableEntry 4 }
+
+       h245MiscLastMLRequestOrAckType OBJECT-TYPE
+              SYNTAX  INTEGER { looped (1), notLooped (2), awaitingResponse (3)}
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The type of the last request or response received.
+                The type can be either media or logical channel loop. "
+                ::= {h245MiscMaintenanceLoopTableEntry 5 }
+
+        h245MiscMLMediaOrLogicalChannelLoopRejectChannelNumber OBJECT-TYPE
+              SYNTAX  Integer32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "If the loop rejecte is of type media loop or logical
+                channel loop then this represents the channel number
+                for the logical channel. "
+                ::= {h245MiscMaintenanceLoopTableEntry 6 }
+
+        h245MiscNumberOfRejects OBJECT-TYPE
+              SYNTAX  Counter32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "Number of loop requests that got rejected. "
+                ::= {h245MiscMaintenanceLoopTableEntry 7 }
+
+        h245MiscLastRejectType OBJECT-TYPE
+              SYNTAX  INTEGER {system-loop (1), media-loop (2), log-channel-loop (3)}
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The type of the last reject for the loop request."
+                ::= {h245MiscMaintenanceLoopTableEntry 8 }
+
+         h245MiscErrorCode OBJECT-TYPE
+              SYNTAX  INTEGER { can-not-perform-loop (1)}
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The error code that caused the rejection of the loop
+                request. "
+                ::= {h245MiscMaintenanceLoopTableEntry 9 }
+
+         h245ConferenceTerminalTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245ConferenceTerminalTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about the terminal 
+                 charachteristics that are related to a conference. 
+                 It is a list entries. The number of entries equals to 
+                 the number of conferences."
+             ::= { h245Conference 1 }
+
+        h245ConferenceTerminalTableEntry OBJECT-TYPE
+             SYNTAX H245ConferenceTerminalTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe a terminal as a conference participant."
+             INDEX { ifIndex,
+                     h245ConferenceConferenceId, 
+                     h245ConferenceTerminalLabel 
+                   }
+                ::= { h245ConferenceTerminalTable 1 }
+
+        H245ConferenceTerminalTableEntry ::=
+              SEQUENCE {
+            h245ConferenceConferenceId
+                     OCTET STRING (SIZE(1..32)),
+            h245ConferenceTerminalLabel
+                     OCTET STRING, 
+            h245ConferenceControlChannelIndex
+                     Integer32,
+            h245ConferenceBroadcaster
+                     TruthValue,
+            h245ConferenceConferenceChair
+                     TruthValue,
+            h245ConferenceMultipoint
+                     TruthValue
+            }
+
+         h245ConferenceConferenceId OBJECT-TYPE
+              SYNTAX  OCTET STRING (SIZE(1..32))
+              MAX-ACCESS   not-accessible
+              STATUS  current
+              DESCRIPTION
+                "The conference identifier."
+                ::= {h245ConferenceTerminalTableEntry 1 }
+
+         h245ConferenceTerminalLabel OBJECT-TYPE
+              SYNTAX  OCTET STRING (SIZE(2))
+              MAX-ACCESS not-accessible 
+           STATUS  current
+              DESCRIPTION
+                "The terminal label of this terminal "
+                ::= {h245ConferenceTerminalTableEntry 2 }
+
+         h245ConferenceControlChannelIndex OBJECT-TYPE
+              SYNTAX  Integer32 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The index of the control channel table that 
+                 identifies the control channel for the conference."
+                ::= {h245ConferenceTerminalTableEntry 3 }
+
+         h245ConferenceBroadcaster OBJECT-TYPE
+              SYNTAX  TruthValue 
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The indicator of the terminal being a broadcaster."
+                ::= {h245ConferenceTerminalTableEntry 4 }
+
+         h245ConferenceConferenceChair OBJECT-TYPE
+              SYNTAX  TruthValue
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The indicator of the terminal being a conference chair."
+                ::= {h245ConferenceTerminalTableEntry 5 }
+
+         h245ConferenceMultipoint OBJECT-TYPE
+              SYNTAX  TruthValue
+              MAX-ACCESS  read-only
+              STATUS  current
+              DESCRIPTION
+                "The indicator of the conference being a multipoint."
+                ::= {h245ConferenceTerminalTableEntry 6 }
+
+       h245ConferenceStatsTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H245ConferenceStatsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about conference statistics. 
+                 It is a list of conference statistics entries. 
+                 The number of entries equals to the number of conferences on all system interfaces."
+             ::= { h245Conference 2 }
+
+        h245ConferenceStatsTableEntry OBJECT-TYPE
+             SYNTAX H245ConferenceStatsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe conference statistics."
+             INDEX { ifIndex }
+               ::= { h245ConferenceStatsTable 1 }
+
+        H245ConferenceStatsTableEntry ::=
+              SEQUENCE {
+                   h245ConferenceBroadcastMyLogicalChannel
+                       Counter32,
+                   h245ConferenceCancelBroadcastMyLogicalChannel
+                       Counter32,
+                   h245ConferenceSendThisSource
+                       Counter32,
+                   h245ConferenceCancelSendThisSource
+                       Counter32,
+                   h245ConferenceDropConference
+                       Counter32,
+                   h245ConferenceEqualiseDelay
+                       Counter32,
+                   h245ConferenceZeroDelay
+                       Counter32,
+                   h245ConferenceMultipointModeCommand
+                       Counter32,
+                   h245ConferenceCancelMultipointModeCommand
+                       Counter32,
+                   h245ConferenceVideoFreezePicture
+                       Counter32,
+                   h245ConferenceVideoFastUpdatePicture
+                       Counter32,
+                   h245ConferenceVideoFastUpdateGOB
+                       Counter32,
+                   h245ConferenceVideoTemporalSpatialTradeOff
+                       Counter32,
+                   h245ConferenceVideoSendSyncEveryGOB
+                       Counter32,
+                   h245ConferenceVideoFastUpdateMB
+                       Counter32 
+              }
+
+         h245ConferenceBroadcastMyLogicalChannel OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by a terminal to transmit MCV command to 
+                 force an associated  MCU to broadcast its video signal used to transmit 
+                 the picture of a chairman or VIP,  alternatively to hold a picture 
+                 source during the transmission of graphics."
+             ::= { h245ConferenceStatsTableEntry 1 }
+
+         h245ConferenceCancelBroadcastMyLogicalChannel OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by a terminal to cancel MCV command. "
+             ::= { h245ConferenceStatsTableEntry 2 }
+
+         h245ConferenceSendThisSource OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by a terminal to send VCS command to MCU to 
+                  cause transmission to itself of the video from the terminal whose 
+                  identity number follows VCS."
+             ::= { h245ConferenceStatsTableEntry 3 }
+
+         h245ConferenceCancelSendThisSource OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by a terminal to cancel VCS and return to 
+                 automatic video switching at the MCU."
+             ::= { h245ConferenceStatsTableEntry 4 }
+
+         h245ConferenceDropConference OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by a terminal that is chair-control to drop 
+                 all terminals from the conference.  "
+             ::= { h245ConferenceStatsTableEntry 5 }
+
+         h245ConferenceEqualiseDelay  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The same meaning as the command ACE  in H.230."
+             ::= { h245ConferenceStatsTableEntry 6 }
+
+        h245ConferenceZeroDelay  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The same meaning as the command ACZ defined in H.230."
+             ::= { h245ConferenceStatsTableEntry 7 }
+
+        h245ConferenceMultipointModeCommand  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by the MCU to send request to a terminal to 
+                  comply with all MCU requestMode requests."
+             ::= { h245ConferenceStatsTableEntry 8 }
+
+        h245ConferenceCancelMultipointModeCommand  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of attempts made by the MCU to send a cancelation of a 
+                  MultipointModeCommand. "
+             ::= { h245ConferenceStatsTableEntry 9 }
+
+        h245ConferenceVideoFreezePicture  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of commands that are sent/received to/from the video decoder 
+                 to complete updating the current video frame and subsequently display 
+                 the frozen picture until receipt of the appropriate freeze-picture 
+                 release control signal. "
+             ::= { h245ConferenceStatsTableEntry 10 }
+
+        h245ConferenceVideoFastUpdatePicture  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of commands sent/received to enter the fast update mode."
+             ::= { h245ConferenceStatsTableEntry 11 }
+
+        h245ConferenceVideoFastUpdateGOB  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of commands sent/received by the video encoder to fast update 
+                 one or more GOBs."
+             ::= { h245ConferenceStatsTableEntry 12 }
+
+        h245ConferenceVideoTemporalSpatialTradeOff  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of commands sent/received by video encoder to change its 
+                 trade off between temporal and spatial resolution. "
+             ::= { h245ConferenceStatsTableEntry 13 }
+
+        h245ConferenceVideoSendSyncEveryGOB  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of commands sent/received by video encoder to use sync 
+                 for every GOB until the cancel command is received. "
+             ::= { h245ConferenceStatsTableEntry 14 }
+
+        h245ConferenceVideoFastUpdateMB  OBJECT-TYPE
+             SYNTAX  Counter32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of sent/received by video encoder to perform a fast update of 
+                 one or more MBs."
+             ::= { h245ConferenceStatsTableEntry 15 }
+
+--
+-- CONFORMANCE
+--
+
+h245MIBGroups  OBJECT IDENTIFIER ::= { h245MIBConformance 1 }
+
+--
+-- Groups for Conformance
+--
+
+h245ConfigurationGroup OBJECT-GROUP
+    OBJECTS {
+            h245ConfigT101Timer,
+            h245ConfigT102Timer,
+            h245ConfigT103Timer,
+            h245ConfigT104Timer,
+            h245ConfigT105Timer,
+            h245ConfigT106Timer,
+            h245ConfigT107Timer,
+            h245ConfigT108Timer,
+            h245ConfigT109Timer,
+            h245ConfigN100Counter
+       }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h245MIBGroups 1 }
+
+h245ControlChannelGroup OBJECT-GROUP
+    OBJECTS {
+            h245ControlChannelNumberOfListenPorts,
+            h245ControlChannelMaxConnections,
+            h245ControlChannelNumberOfListenFails,
+            h245ControlChannelNumberOfActiveConnections,
+            h245ControlChannelMasterSlaveMaxRetries,
+            h245ControlChannelConnectionAttemptsFail,
+            h245ControlChanneMasterSlavelDeterminations,
+            h245ControlChannelMasterSlaveAcks,
+            h245ControlChannelMasterSlaveRejects,
+            h245ControlChannelMasterSlaveT106Rejects,
+            h245ControlChannelMasterSlaveMSDRejects, 
+            h245ControlChannelNumberOfMasterSlaveInconsistentFieldRejects, 
+            h245ControlChannelMasterSlaveMaxCounterRejects,
+            h245ControlChannelMasterSlaveReleases,
+            h245ControlChannelNumberOfTunnels,
+--
+            h245ControlChannelIndex,
+            h245ControlChannelMSDState,
+            h245ControlChannelTerminalType,
+            h245ControlChannelNumberOfMSDRetries         
+       }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h245MIBGroups 2 }
+
+h245CapExchangeGroup OBJECT-GROUP
+    OBJECTS {
+            h245CapExchangeSets,
+            h245CapExchangeAcks,
+            h245CapExchangeRejects,
+            h245CapExchangeRejectUnspecified,
+            h245CapExchangeRejectUndefinedTableEntryUsed,
+            h245CapExchangeRejectDescriptorCapacityExceeded,
+            h245CapExchangeRejectTableEntryCapacityExeeded,
+            h245CapExchangeReleases,
+--
+            h245CapExchangeState,
+            h245CapExchangeProtocolId,
+            h245CapExchangeRejectCause,
+            h245CapExchangeMultiplexCapability,
+            h245CapExchangeCapability,
+            h245CapExchangeCapabilityDescriptors      
+       }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h245MIBGroups 3 }
+
+h245LogChannelsGroup OBJECT-GROUP
+    OBJECTS {
+            
+            h245LogChannelsIndex,
+            h245LogChannelsChannelState,
+            h245LogChannelsMediaTableType,
+--
+            h245LogChannelsSessionId,
+            h245LogChannelsAssociateSessionId,
+            h245LogChannelsMediaChannel,
+            h245LogChannelsMediaGuaranteedDelivery,
+            h245LogChannelsMediaControlChannel,
+            h245LogChannelsMediaControlGuaranteedDelivery,
+            h245LogChannelsSilenceSuppression,
+            h245LogChannelsDestination,
+            h245LogChannelsDynamicRTPPayloadType,
+            h245LogChannelsH261aVideoPacketization,
+            h245LogChannelsRTPPayloadDescriptor,
+            h245LogChannelsRTPPayloadType,
+            h245LogChannelsTransportCapability,
+            h245LogChannelsRedundancyEncoding,
+            h245LogChannelsSrcTerminalLabel,
+--
+            h245LogChanOpenLogChanTotalRequests,
+            h245LogChanOpenLogChanAcks,
+            h245LogChanOpenLogChanConfirms,
+            h245LogChanOpenLogChanRejects,
+            h245LogChanOpenLogChanRejectUnspecified,
+            h245LogChanOpenLogChanRejectUnsuitableReverseParameters,
+            h245LogChanOpenLogChanRejectDataTypeNotSupported,
+            h245LogChanOpenLogChanRejectDataTypeNotAvailable,
+            h245LogChanOpenLogChanRejectUnknownDataType,
+            h245LogChanOpenLogChanRejectDataTypeALCombinationNotSupported,
+            h245LogChanOpenLogChanRejectMulticastChannelNotAllowed,
+            h245LogChanOpenLogChanRejectInsuffientBandwdith,
+            h245LogChanOpenLogChanRejectSeparateStackEstablishmentFailed,
+            h245LogChanOpenLogChanRejectInvalidSessionID,
+            h245LogChanOpenLogChanRejectMasterSlaveConflict,
+            h245LogChanOpenLogChanRejectWaitForCommunicationMode,
+            h245LogChanOpenLogChanRejectInvalidDependentChannel,
+            h245LogChansOpenLogChanRejectReplacementForRejected,
+--
+            h245LogChanCloseLogChannels,
+            h245LogChanCloseLogChanAcks,
+            h245LogChanCloseLogChanRequests,
+            h245LogChanCloseLogChanRequestsAcks,
+            h245LogChanCloseLogChanRequestRejects,
+            h245LogChanCloseLogChanRequestReleases
+       }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h245MIBGroups 4 }
+
+h245ConferenceGroup OBJECT-GROUP
+    OBJECTS {
+            
+            h245ConferenceControlChannelIndex,
+            h245ConferenceBroadcaster,
+            h245ConferenceConferenceChair,
+            h245ConferenceMultipoint,
+--
+            h245ConferenceBroadcastMyLogicalChannel,
+            h245ConferenceCancelBroadcastMyLogicalChannel,
+            h245ConferenceSendThisSource,
+            h245ConferenceCancelSendThisSource,
+            h245ConferenceDropConference,
+            h245ConferenceEqualiseDelay,
+            h245ConferenceZeroDelay,
+            h245ConferenceMultipointModeCommand,
+            h245ConferenceCancelMultipointModeCommand,
+            h245ConferenceVideoFreezePicture,
+            h245ConferenceVideoFastUpdatePicture,
+            h245ConferenceVideoFastUpdateGOB,
+            h245ConferenceVideoTemporalSpatialTradeOff,
+            h245ConferenceVideoSendSyncEveryGOB,
+            h245ConferenceVideoFastUpdateMB
+       }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h245MIBGroups 5 }
+
+h245MiscGroup OBJECT-GROUP
+    OBJECTS {
+            h245MiscRTDState,
+            h245MiscT105TimerExpired,
+            h245MiscLastRTDRequestSent,
+            h245MiscLastRTDRequestRcvd, 
+            h245MiscLastRTDResponseSent, 
+            h245MiscLastRTDResponseRcvd ,
+--
+            h245MiscMLState, 
+            h245MiscNumberOfRequests, 
+            h245MiscNumberOfAcks,
+            h245MiscLastMLRequestOrAckType,
+            h245MiscMLMediaOrLogicalChannelLoopRejectChannelNumber,
+            h245MiscNumberOfRejects,
+            h245MiscLastRejectType,
+            h245MiscErrorCode
+       }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h245MIBGroups 6 }
+
+h245MIBCompliance        MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+        "The set of objects required for compliance."
+    MODULE
+        MANDATORY-GROUPS { h245ConfigurationGroup,  
+                           h245ControlChannelGroup,
+                           h245CapExchangeGroup,
+                           h245LogChannelsGroup,
+                           h245ConferenceGroup,
+                           h245MiscGroup
+                         }
+   ::= { h245MIBConformance  2 }
+               
+END         
+       

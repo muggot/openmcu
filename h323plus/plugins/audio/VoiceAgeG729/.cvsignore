@@ -1,0 +1,5 @@
+obj_*_*_d Debug
+obj_*_*_r Release
+NoTrace
+*.plg *.ncb *.opt *.Tags.WW *.vcproj.*.user
+va_g729

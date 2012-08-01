@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="Windows-1252"?>
+<VisualStudioProject
+	ProjectType="Visual C++"
+	Version="7.10"
+	Name="ASNParser"
+	ProjectGUID="{7D4C9E74-F196-4A30-859F-62748657B86B}"
+	RootNamespace="ASNParser"
+	SccProjectName=""
+	SccLocalPath="">
+	<Platforms>
+		<Platform
+			Name="Win32"/>
+	</Platforms>
+	<Configurations>
+		<Configuration
+			Name="Debug|Win32"
+			OutputDirectory=".\Debug"
+			IntermediateDirectory=".\Debug"
+			ConfigurationType="1"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="0"
+				AdditionalIncludeDirectories="..\..\include"
+				PreprocessorDefinitions="_DEBUG"
+				RuntimeLibrary="3"
+				DefaultCharIsUnsigned="TRUE"
+				RuntimeTypeInfo="TRUE"
+				UsePrecompiledHeader="3"
+				PrecompiledHeaderThrough="ptlib.h"
+				PrecompiledHeaderFile=".\Debug/asnparser.pch"
+				AssemblerListingLocation=".\Debug/"
+				ObjectFile=".\Debug/"
+				ProgramDataBaseFileName=".\Debug/"
+				WarningLevel="4"
+				SuppressStartupBanner="TRUE"
+				DebugInformationFormat="4"
+				CompileAs="0"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="ptlibd.lib odbc32.lib odbccp32.lib"
+				OutputFile=".\Debug/asnparser.exe"
+				LinkIncremental="2"
+				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="..\..\lib"
+				GenerateDebugInformation="TRUE"
+				ProgramDatabaseFile=".\Debug/asnparser.pdb"
+				SubSystem="1"/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Debug/asnparser.tlb"/>
+			<Tool
+				Name="VCPostBuildEventTool"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="_DEBUG"
+				Culture="3081"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory=".\Release"
+			IntermediateDirectory=".\Release"
+			ConfigurationType="1"
+			UseOfMFC="0"
+			ATLMinimizesCRunTimeLibraryUsage="FALSE">
+			<Tool
+				Name="VCCLCompilerTool"
+				InlineFunctionExpansion="1"
+				AdditionalIncludeDirectories="..\..\include"
+				PreprocessorDefinitions="NDEBUG"
+				StringPooling="TRUE"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="TRUE"
+				DefaultCharIsUnsigned="TRUE"
+				RuntimeTypeInfo="TRUE"
+				UsePrecompiledHeader="3"
+				PrecompiledHeaderThrough="ptlib.h"
+				PrecompiledHeaderFile=".\Release/asnparser.pch"
+				AssemblerListingLocation=".\Release/"
+				ObjectFile=".\Release/"
+				ProgramDataBaseFileName=".\Release/"
+				WarningLevel="4"
+				SuppressStartupBanner="TRUE"
+				CompileAs="0"/>
+			<Tool
+				Name="VCCustomBuildTool"/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalOptions="/MACHINE:I386"
+				AdditionalDependencies="ptlib.lib odbc32.lib odbccp32.lib"
+				OutputFile=".\Release/asnparser.exe"
+				LinkIncremental="1"
+				SuppressStartupBanner="TRUE"
+				AdditionalLibraryDirectories="..\..\lib"
+				ProgramDatabaseFile=".\Release/asnparser.pdb"
+				SubSystem="1"/>
+			<Tool
+				Name="VCMIDLTool"
+				TypeLibraryName=".\Release/asnparser.tlb"/>
+			<Tool
+				Name="VCPostBuildEventTool"
+				Description="Copying ASN parser to pwlib/lib directory."
+				CommandLine="copy Release\asnparser.exe ..\..\lib &gt; nul"/>
+			<Tool
+				Name="VCPreBuildEventTool"/>
+			<Tool
+				Name="VCPreLinkEventTool"/>
+			<Tool
+				Name="VCResourceCompilerTool"
+				PreprocessorDefinitions="NDEBUG"
+				Culture="3081"/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"/>
+			<Tool
+				Name="VCWebDeploymentTool"/>
+			<Tool
+				Name="VCManagedWrapperGeneratorTool"/>
+			<Tool
+				Name="VCAuxiliaryManagedWrapperGeneratorTool"/>
+		</Configuration>
+	</Configurations>
+	<References>
+	</References>
+	<Files>
+		<File
+			RelativePath=".\asn_grammar.cxx">
+			<FileConfiguration
+				Name="Debug|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					PreprocessorDefinitions="_DEBUG,MSDOS;$(NoInherit)"
+					UsePrecompiledHeader="0"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					PreprocessorDefinitions="NDEBUG,MSDOS;$(NoInherit)"
+					UsePrecompiledHeader="0"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath=".\asn_grammar.h">
+		</File>
+		<File
+			RelativePath=".\asn_grammar.y">
+			<FileConfiguration
+				Name="Debug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Performing Bison Step"
+					CommandLine="bison -t -v -d $(InputName).y
+copy $(InputName)_tab.c $(InputName).cxx
+copy $(InputName)_tab.h $(InputName).h
+"
+					Outputs="$(InputName).cxx;$(InputName).h"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Performing Bison Step"
+					CommandLine="bison -t -v -d $(InputName).y
+copy $(InputName)_tab.c $(InputName).cxx
+copy $(InputName)_tab.h $(InputName).h
+"
+					Outputs="$(InputName).cxx;$(InputName).h"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath=".\asn_lex.cxx">
+			<FileConfiguration
+				Name="Debug|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories="..\..\include;..\..\include\ptlib\msos"
+					UsePrecompiledHeader="0"
+					WarningLevel="2"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					AdditionalIncludeDirectories="..\..\include;..\..\include\ptlib\msos"
+					UsePrecompiledHeader="0"
+					WarningLevel="2"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath=".\asn_lex.l">
+			<FileConfiguration
+				Name="Debug|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Performing Lex Step"
+					CommandLine="flex -t $(InputName).l &gt; $(InputName).cxx
+"
+					AdditionalDependencies="asn_grammar.h;asn_grammar.cxx;"
+					Outputs="$(InputName).cxx"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32">
+				<Tool
+					Name="VCCustomBuildTool"
+					Description="Performing Lex Step"
+					CommandLine="flex -t $(InputName).l &gt; $(InputName).cxx
+"
+					AdditionalDependencies="asn_grammar.h;asn_grammar.cxx;"
+					Outputs="$(InputName).cxx"/>
+			</FileConfiguration>
+		</File>
+		<File
+			RelativePath=".\main.cxx">
+		</File>
+		<File
+			RelativePath=".\main.h">
+		</File>
+		<File
+			RelativePath=".\PreCompile.cpp">
+			<FileConfiguration
+				Name="Debug|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					UsePrecompiledHeader="1"/>
+			</FileConfiguration>
+			<FileConfiguration
+				Name="Release|Win32">
+				<Tool
+					Name="VCCLCompilerTool"
+					UsePrecompiledHeader="1"/>
+			</FileConfiguration>
+		</File>
+	</Files>
+	<Globals>
+	</Globals>
+</VisualStudioProject>

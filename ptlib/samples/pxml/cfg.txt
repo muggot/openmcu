@@ -1,0 +1,39 @@
+[Options]
+Input Directory=c:\data\from
+Output Directory=c:\data\to
+Archive Directory=c:\archive\from
+Error Directory=c:\error\from
+[Sender]
+Comm Choice=EMAIL
+Serial Port=COM1
+Serial Rate=9600
+Serial Bits=8
+Serial Stop Bit(s)=1
+Serial Parity=NoParity
+Serial In Flow Control=NoFlowControl
+Serial Out Flow Control=NoFlowControl
+FTP Address=192.168.0.2
+FTP Login=dli
+FTP Password=wellthisisntsecure
+E-mail Destination Address=diodice@cfl.rr.com
+E-mail Source Address=iodice@cfl.rr.com
+E-mail SMTP Server=smtp-server.cfl.rr.com
+TCP Address=192.168.0.2
+TCP Port=5678
+[Receiver]
+Comm Choice=EMAIL
+Serial Port=COM1
+Serial Rate=9600
+Serial Bits=8
+Serial Stop Bit(s)=1
+Serial Parity=NoParity
+Serial In Flow Control=NoFlowControl
+Serial Out Flow Control=NoFlowControl
+FTPAddress=192.168.0.2
+FTPLogin=dli
+FTPPassword=wellthisisntsecure
+E-mailUser=iodice@cfl.rr.com
+E-mailPassword=wellthisisntsecure
+E-mailSource Address=iodice@cfl.rr.com
+E-mailPOP3Server=pop-server.cfl.rr.com
+TCPPort=7890

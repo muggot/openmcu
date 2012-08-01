@@ -1,0 +1,24 @@
+MEDIA-TRAVERSAL {itu-t(0) recommendation(0) h(8) 460 19} DEFINITIONS AUTOMATIC TAGS ::=
+
+BEGIN
+
+IMPORTS
+                TransportAddress,
+		    TimeToLive
+	
+FROM MULTIMEDIA-SYSTEM-CONTROL; 
+
+TraversalParameters ::= SEQUENCE
+{
+multiplexedMediaChannel			TransportAddress	OPTIONAL,
+multiplexedMediaControlChannel	TransportAddress	OPTIONAL,
+multiplexID					INTEGER(0..4294967295) OPTIONAL,
+
+keepAliveChannel				TransportAddress	OPTIONAL,
+keepAlivePayloadType			INTEGER (0..127)  OPTIONAL,
+keepAliveInterval				TimeToLive		OPTIONAL,
+...	
+
+}
+
+END

@@ -1,0 +1,20 @@
+H230-CONFERENCE-CONTROL {iso(1) organisation(3) dod(6) internet(1) private(4) packetizer(17090) h323(0) oid(2) } 
+DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+Participant ::= SEQUENCE
+{
+   token	INTEGER (0..255),
+   number	BMPString (SIZE (1..256)),
+   name		BMPString (SIZE (1..256)) OPTIONAL,
+   vCard	OCTET STRING              OPTIONAL,
+   ...
+}
+
+ParticipantList ::= SEQUENCE
+{
+	list   SEQUENCE (SIZE (0..65535)) OF Participant,
+	...
+}
+
+END

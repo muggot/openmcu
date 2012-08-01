@@ -1,0 +1,33 @@
+Call-Waiting-Operations
+{
+  itu-t recommendation h 450 6 version1(0)  call-waiting-operations(0)
+}
+
+DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+  IMPORTS Extension FROM H4501 -- Manufacturer-specific-service-extension-definition
+          {
+            itu-t recommendation h 450 1 version1(0) msi-definition(18)
+          }
+
+          MixedExtension FROM H4504 -- Call-Hold-Operations
+          {
+            itu-t recommendation h 450 4 version1(0) call-hold-operations(0)
+          };
+
+  CallWaitingOperations	::= ENUMERATED
+  {
+    callWaiting(105)
+  }
+
+  CallWaitingArg ::= SEQUENCE
+  {
+    nbOfAddWaitingCalls INTEGER (0..255) OPTIONAL, -- indicates the number of waiting calls at the served user 
+                                                   -- in addition to the call to which this operation applies.
+    extensionArg        SEQUENCE SIZE (0..255) OF MixedExtension OPTIONAL,
+    ...
+  }
+
+END -- of Call-Waiting-Operations
+

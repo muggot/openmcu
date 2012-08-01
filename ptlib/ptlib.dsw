@@ -1,0 +1,332 @@
+Microsoft Developer Studio Workspace File, Format Version 6.00
+# WARNING: DO NOT EDIT OR DELETE THIS WORKSPACE FILE!
+
+###############################################################################
+
+Project: "Console"=.\src\ptlib\msos\Console.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "Console Components"=".\src\ptlib\msos\Console Components.dsp" - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "MergeSym"=.\tools\MergeSym\MergeSym.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Console
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Console Components
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "MsDevWizard"=.\tools\MsDevWizard\MsDevWizard.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "PTLib"=.\src\ptlib\msos\PTLib.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name MergeSym
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Console
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Console Components
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "PacketVxD"=.\Tools\PacketVxD\PacketVxD.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "SortedListTest"=.\samples\sortedlist\SortedListTest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name PTLib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "ThreadSafe"=.\SAMPLES\ThreadSafe\ThreadSafe.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name PTLib
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name Console Components
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "configure"=.\tools\configure\configure.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "dnstest"=.\samples\dnstest\dnstest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Console Components
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name PTLib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "factory"=.\samples\factory\factory.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name PTLib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "find_ip"=.\samples\find_ip\find_ip.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "ldaptest"=.\samples\ldaptest\ldaptest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Console Components
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name PTLib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "paec"=.\src\ptclib\speex_echo\PAEC.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "stunclient"=.\SAMPLES\stunclient\stunclient.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Console Components
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name PTLib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "timing"=.\samples\timing\timing.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "vidtest"=.\samples\vidtest\vidtest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+}}}
+
+###############################################################################
+
+Project: "vxmltest"=.\samples\vxmltest\vxmltest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Console Components
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "xmlrpc"=.\samples\xmlrpc\xmlrpc.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Console Components
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name PTLib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "xmlrpcsrvr"=.\samples\xmlrpcsrvr\xmlrpcsrvr.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Console Components
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Project: "xmpptest"=.\samples\xmpptest\xmpptest.dsp - Package Owner=<4>
+
+Package=<5>
+{{{
+}}}
+
+Package=<4>
+{{{
+    Begin Project Dependency
+    Project_Dep_Name Console Components
+    End Project Dependency
+    Begin Project Dependency
+    Project_Dep_Name PTLib
+    End Project Dependency
+}}}
+
+###############################################################################
+
+Global:
+
+Package=<5>
+{{{
+}}}
+
+Package=<3>
+{{{
+}}}
+
+###############################################################################
+

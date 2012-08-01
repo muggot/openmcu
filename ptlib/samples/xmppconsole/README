@@ -1,0 +1,47 @@
+This is a simple application to examine the operation of XMPP in a 
+console environment.
+
+It is a very very simple application, and the best explanation is to
+say that it allows you to send jabber messages between different
+applications. I will illustrate with the following example::
+
+Simple mode of operation to see it all in operation.
+
+Open 3 consoles.
+
+In each console, run the program with the following command line::
+
+xmpp -p myPassword -j myJabberId  -u myUserName
+
+
+myPassword is the password associated with your jabber ID
+
+myJabberid could be something like derek@indranet.co.nz
+
+myUserName could be something like BigD
+
+After everyting has run.
+
+Do R to list nodes 
+ I see::
+Node 1 of 3 is derek@jabber.indranet.co.nz/38703554721123119327849277
+Node 2 of 3 is derek@jabber.indranet.co.nz/37270709521123119663547752
+Node 3 of 3 is derek@jabber.indranet.co.nz/2225504041123119697216062
+
+
+then 
+ d 3 pigs can fly
+
+
+In the destination machine, you see the message:
+ Message received. Subject:pigs    body:can fly  from: derek@jabber.indranet.co.nz/36632012421123119331508316
+ 
+
+
+You are welcome to read the code, change the source etc.
+
+Please constribute any changes back to the group by sending the
+revised application, or a patch file to the openh323 mailing list.
+
+Thanks,
+ Derek Smithies.

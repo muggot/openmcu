@@ -1,0 +1,51 @@
+
+# Communication Object Schema
+#
+# Schema for Representing Communication Objects in an LDAP Directory
+#
+# Abstract
+#
+# This document defines the schema for representing Communication
+# objects in an LDAP directory [LDAPv3].  It defines schema elements
+# to represent a communication object URI [commURIObject].
+#
+#
+#
+#                     .1 = Communication related work
+#                     .1.1 = commURIObject
+#                     .1.1.1 = attributes
+#                     .1.1.2 = objectclass
+#                     .1.1.3 = syntax
+#
+# Attribute Type Definitions
+#
+#    The following attribute types are defined in this document:
+#
+#        commURI
+#
+attributetype (0.0.8.350.1.1.1.1.1
+     NAME 'commURI'
+     DESC 'Labeled URI format to point to the distinguished name of the commUniqueId'
+	EQUALITY caseExactMatch
+	SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+#	EQUALITY caseIgnoreIA5Match
+#	SUBSTR caseIgnoreIA5SubstringsMatch
+#	SYNTAX 1.3.6.1.4.1.1466.115.121.1.26{256} )
+
+# Object Class Definitions
+#
+#    The following object classes are defined in this document:
+#
+#        commURIObject
+#
+# commURIObject
+#
+#    This auxiliary object class represents a URI attribute type
+#
+objectclass (0.0.8.350.1.1.1.2.1
+     NAME 'commURIObject'
+     DESC 'object that contains the URI attribute type'
+     SUP top AUXILIARY
+     MAY ( commURI )
+        )
+

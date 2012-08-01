@@ -1,0 +1,166 @@
+H460PRES {itu-t(0) recommendation(0) h(8) 460 x} DEFINITIONS AUTOMATIC TAGS ::=
+
+BEGIN
+
+IMPORTS
+		AliasAddress,
+		TransportAddress,
+		TimeToLive,
+		GenericData,
+		CryptoH323Token
+	FROM MULTIMEDIA-SYSTEM-CONTROL
+		ClearToken
+	FROM H235-SECURITY-MESSAGES;
+
+--
+-- Presence Base Message
+--
+
+PresenceMessage ::= CHOICE
+{
+	presenceStatus		PresenceStatus,
+	presenceInstruct	PresenceInstruct,
+	presenceAuthorize	PresenceAuthorize,
+	presenceNotify		PresenceNotify,
+	presenceRequest		PresenceRequest,
+	presenceResponse	PresenceResponse,
+	presenceAlive		PresenceAlive,
+	presenceRemove		PresenceRemove,
+	presenceAlert		PresenceAlert,
+	...
+}
+
+--
+-- Presence Message
+--
+
+PresenceStatus ::= SEQUENCE  
+{
+	notification		SEQUENCE OF PresenceNotification,
+	instruction		SEQUENCE OF PresenceInstruction		OPTIONAL,
+	...
+}
+
+PresenceInstruct ::= SEQUENCE
+{
+	instruction		SEQUENCE OF PresenceInstruction,
+	...
+}
+
+PresenceAuthorize ::= SEQUENCE
+{
+	subscription		SEQUENCE OF PresenceSubscription,
+	...
+}
+
+PresenceNotify ::= SEQUENCE
+{
+	notification		SEQUENCE OF PresenceNotification,
+	...
+}
+
+PresenceRequest ::= SEQUENCE
+{
+	subscription		SEQUENCE OF PresenceSubscription,
+	tokens			SEQUENCE OF ClearToken			OPTIONAL,
+	cryptoTokens		SEQUENCE OF CryptoH323Token		OPTIONAL,
+	...
+}
+
+PresenceResponse ::= SEQUENCE
+{
+	subscription		SEQUENCE OF PresenceSubscription,
+	tokens			SEQUENCE OF ClearToken			OPTIONAL,
+	cryptoTokens		SEQUENCE OF CryptoH323Token		OPTIONAL,
+	...
+}
+
+PresenceAlive ::= SEQUENCE
+{
+	identifier		SEQUENCE OF PresenceIdentifier,
+	...
+}
+PresenceRemove ::= SEQUENCE
+{
+	identifier		SEQUENCE OF PresenceIdentifier,
+	...
+}
+
+PresenceAlert ::= SEQUENCE
+{
+	notification		SEQUENCE OF PresenceNotification,
+	...
+
+}
+
+--
+-- Presence Instruction
+--
+
+PresenceInstruction ::= CHOICE
+{
+	subscribe		AliasAddress,
+	unsubscribe		AliasAddress,
+	block			AliasAddress,
+	unblock			AliasAddress,
+	...
+}
+
+--
+-- Presence Subscription
+--
+
+PresenceSubscription ::= SEQUENCE
+{
+	subscribe		AliasAddress,    
+	aliases			SEQUENCE OF AliasAddress,
+	approved		BOOLEAN				OPTIONAL,
+	rasAddress		TransportAddress		OPTIONAL,  
+	timeToLive		TimeToLive			OPTIONAL,
+	identifier		PresenceIdentifier		OPTIONAL,
+	genericData		SEQUENCE OF GenericData		OPTIONAL,
+	...
+}
+
+PresenceIdentifier ::= SEQUENCE
+{
+	guid			OCTET STRING (SIZE(16)),
+	...
+}
+
+--
+-- Presence Notification
+--
+
+PresenceNotification ::= SEQUENCE
+{
+	presentity		Presentity,
+	aliasAddress		AliasAddress			OPTIONAL,         
+	subscribers		SEQUENCE OF PresenceIdentifier  OPTIONAL,
+	...	
+}
+
+PresenceState ::= CHOICE
+{
+	hidden           NULL,
+	available        NULL,  
+	online           NULL,
+	offline          NULL,
+	onCall           NULL,
+	voiceMail        NULL,
+	notAvailable     NULL,
+	generic          BMPString (SIZE (1..256)),
+	...
+}
+
+Presentity ::= SEQUENCE
+{
+	state			PresenceState,                     		-- Presence State 
+	display			BMPString (SIZE (1..256))	OPTIONAL, 	-- Basic ISO/IEC 10646-1 (Unicode)
+	geolocation		OCTET STRING			OPTIONAL, 	-- Geographic Location
+	genericData		SEQUENCE OF GenericData   	OPTIONAL,	-- Generic Presence Information                
+	...
+}
+
+END
+

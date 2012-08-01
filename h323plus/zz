@@ -1,0 +1,13 @@
+h323pluginmgr.cxx: In member function 'void cache::GetFrame(RTP_DataFrame&, unsigned int&, unsigned int&, unsigned int&)':
+h323pluginmgr.cxx:1638: warning: suggest explicit braces to avoid ambiguous 'else'
+h323pluginmgr.cxx:1639: warning: suggest explicit braces to avoid ambiguous 'else'
+h323pluginmgr.cxx: In member function 'virtual BOOL H323PluginVideoCodec::Write(const BYTE*, unsigned int, const RTP_DataFrame&, unsigned int&)':
+h323pluginmgr.cxx:2186: warning: comparison between signed and unsigned integer expressions
+h323pluginmgr.cxx:2186: warning: comparison between signed and unsigned integer expressions
+h323pluginmgr.cxx: In member function 'virtual void H323PluginCodecManager::OnLoadPlugin(PDynaLink&, INT)':
+h323pluginmgr.cxx:2843: warning: dereferencing type-punned pointer will break strict-aliasing rules
+h323pluginmgr.cxx: In member function 'void H323PluginCodecManager::RegisterCodecs(unsigned int, void*)':
+h323pluginmgr.cxx:2913: warning: suggest parentheses around && within ||
+h323pluginmgr.cxx: At global scope:
+h323pluginmgr.cxx:443: warning: 'i480MPI_tag' defined but not used
+h323pluginmgr.cxx:444: warning: 'p720MPI_tag' defined but not used

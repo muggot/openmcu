@@ -1,0 +1,237 @@
+/*! \mainpage Portable Tools Library
+
+\section contents Table of Contents
+
+\li \ref intro
+\li \ref overview
+\li \ref using
+\li \ref base
+\li \ref components
+\li \ref history
+
+
+\section intro Introduction
+
+This document provides reference information for the PTLib C++ class library. It is not intended
+as a tutorial document.
+
+Last updated 17 May, 2004
+
+Copyright (C) 1999-2003 Equivalence Pty Ltd, All right reserved 
+
+Portions Copyright (C) 2004 Post Increment, All Rights Reserved
+
+
+\section overview Overview
+
+PTLib is a moderately large C++ class library that originated many years ago as
+a method to produce applications that run on both Microsoft Windows and Unix
+X-Windows systems. It also was to have a Macintosh port as well, but this never
+eventuated. In those days it was called the PWLib the Portable Windows Library.
+
+Since then, the availability of multi-platform GUI toolkits such as KDE and wxWindows,
+and the development of the OpenH323 and OPAL projects as primary user of the library, 
+has emphasised the focus on networking, I/O portability, multi-threading
+and protocol portability. Mostly, the library is used to create high performance and
+highly portable network-centric applications. So all the GUI abstractions ahave been
+dropped and it was renamed the Portable Tools Library that you see today.
+
+In addition to these high level functions, basic "container" classes such as arrays,
+linear lists, sorted lists (RB Tree) and dictionaries (hash tables) are available. These
+were created before the emergence of STL as a standard, so unfortunately these 
+constructs are incompatible with iterators and generic algorithms.
+
+Development continues in this area, and future versions of PTLib will see increased
+use of, and compatibility with, STL, but it is a long and slow process.
+
+The library is used extensively by many companies for both commercial and Open Source
+products. The motivation in making PTLib available as Open Source was primarily to
+support the OpenH323 and OPAL projects, but it is definitely useful as a stand-alone
+library to anyone that wishes to write portable applications.
+
+The classes within PTLib are seperated into two types:
+\ref base 
+and
+\ref components 
+The
+\ref base 
+contain all of the essential support for constructs such as containers, threads and sockets
+that are dependent on platform specific features. All PTLib programs will require the
+\ref base 
+
+The
+\ref components
+implement functionality that is usually platform independent, and may not be required
+for all programs.  On some platforms (notably Windows) the
+\ref base
+and
+\ref components
+may be divided
+into discrete library archives. Other platforms (notably Unix platforms) combine all of the code into a single library 
+and rely on the linker to omit code that is not required.
+
+Note that previous versions of PTLib also contained GUI classes and GUI components, but support for these
+classes has been discontinued.
+
+\section using Using PTLib
+Tutorial introductions for PTLib are available elsewhere (see http://toncar.cz/openh323/tut), but some 
+information on how to create a simple program is always useful.
+
+Here is the canonical "Hello world!" program written using the PTLib infrastructure.
+
+\verbatim
+
+// hello.cxx
+
+#include <ptlib.h>
+
+class Hello : public PProcess
+{
+  PCLASSINFO(Hello, PProcess)
+  public:
+	void Main();
+};
+
+PCREATE_PROCESS(Hello)
+
+void Hello::Main()
+{
+  cout << "Hello world!\n";
+}
+
+// End of hello.cxx
+\endverbatim
+
+The PCREATE_PROCESS macro actually defines the #main()# function
+and creates an instance of Hello. This assures that everything is
+initialised in the correct order. C++ does initialisation of global
+statics badly (and destruction is even worse), so try to put
+everything into your PProcess descedent rather than globals.
+
+\section base Base Classes
+
+\subsection object_h Base Object Classes
+ \li PObject - the base class for all other classes in the PTLib
+ \li PContainer - the base class for all reference-counted classes in PTLib
+ \li PAbstractArray - base class for array of objects. Equivalent to the STL vector template class
+ \li PAbstractList - base class for lists of objects. Equivalent to the STL list template class
+ \li PAbstractDictionary - base class for dictionaries. Equivalent to the STL map template class
+ \li PString - base class for the string abstraction. Equivalent to the STL string class.
+
+\subsection channel I/O Channel Classes
+Classes that perform general I/O using the PChannel abstraction
+  \li PChannel - base class for all I/O channels
+  \li PIndirectChannel - a channel that encapsulates another channel
+  \li PConsoleChannel - channel for accessing the system console
+  \li PPipeChannel - execute a program and access input and output as a PChannel
+  \li PSerialChannel - access a serial communications port as a PChannel
+  \li PFile - access files on the host operating system using PChannels
+  \li PTextFile - access text files on the host operating system as PChannels
+  \li PStructuredFile - access files on the host operating system as arrays of structured records
+  \li PFilePath - access directories on the host operating system
+  \li PVideoChannel - read or write data to a video device as a PChannel. See also PVideoDevice and PColourConverter
+  \li PSoundChannel - read or write data to sound device as a PChannel
+  
+\subsection socket Socket Classes
+Implementation of a network sockets abstraction (roughly based on Berkeley sockets)
+  \li PSocket - base class for all network sockets
+  \li PIPSocket - base class for all sockets using the IP protocol
+  \li PUDPSocket - IP socket using the UDP protocol
+  \li PTCPSocket - IP socket using the TCP/IP protocol
+  \li PICMPSocket - IP socket using the ICMP protocl
+  \li PIPXSocket - base class for sockets using the IPX protocol
+  \li PEthSocket - socket interface for raw Ethernet interfaces
+
+\subsection thread Process and Thread Classes
+Classes that handle processes, multi-threading and synchronsiation.
+  \li PProcess - implements the primary thread of control for a running program
+  \li PServiceProcess - implements a "daemon" or "system process"
+  \li PThread - abstracts a thread of control or execution context
+  \li PSemaphore - synchronisation primitive based on a counter
+  \li PMutex - synchronisation primitive based on mutual exclusion
+  \li PCriticalSection - synchronisation primitive implementing exclusive access to a critical code section
+  \li PSyncPoint - allows multiple threads to sychronise to a specific code point. See also PSyncPointAck
+  \li PAtomicInteger - implements an integer counter with atomic increment and decrement operations
+
+\subsection misc Miscellaneous Classes
+  \li PArgList - parse a command line passed to a console program
+  \li PConfig - provide persistent storage for program settings using a platform-appropriate mechanism
+  \li PTime - abstracts the notion of a wall-clock time and date
+  \li PTimeInterval - abstracts the notion of a time interval as the difference between two PTime values
+  \li PDynaLink - implements a dynamically loadable code module
+  \li PRemoteConnection - controls for a dialup network connection
+  \li PMail - send an email using a platform-appropriate mechanism
+  \li PPluginManager - manage plugin code modules
+  \li PAbstractFactory - an implementation of the "Abstract Factory" paradigm using templates
+  \li PSmartPointer - a reference counted pointer
+  \li PNotifier - a notifier function that allows any class to call a member function on any other class
+  \li PSmartNotifierFunction - a smart notifier function that uses object IDs rather than pointers
+
+\section components Console Components
+
+\subsection http HTTP Classes
+Implementation of the HTTP protocol
+  \li PHTTP - base class for HTTP protocol. See also PHTTPClient and PHTTPServer
+  \li PURL - parse and maniulate uniform resource locations
+  \li PHTML - a string stream that formats HTML information
+  \li PHTTPForm - allows the creation of HTTP forms
+  \li PHTTPServiceProcess - a PServiceProcess descendant that contains a HTTP server
+
+\subsection protocol Protocol Classes
+Implementation of various Internet-related protocols. Some of these are implemented within PTLib - some require external libraries for support
+  \li PInternetProtocol - base class for all text-based Internet protocols
+  \li PPOP3 - base class for POP3 protocol classes. See also PPOP3Client and PPOP3Server
+  \li PSMTMP - base class for SMTP protocol classes. See also PSMTPClient and PSMTPServer
+  \li PFTP - base class for FTP protocol classes. See also PFTPClient and FTPServer
+  \li PMIMEInfo - implements a list of key-value pairs in MIME format
+  \li PTelnetSocket - implements the TELNET protocol
+  \li PSocksProtocol - base class for SOCKS protocol implementation. See also PSocks4Socket, PSocks5Socket, PSocksSocket, PSocksUDPSocket
+  \li PSTUNClient - implementation of a STUN client
+  \li PSNMP - base classs for SNMP protocol implementations. See also PSNMPClient and PSNMPServer
+  \li PSSLChannel - PIndirectChannel that implements the SSL protocol via OpenSSL. 
+  \li PSASL - implements the SASL protocol via the Cyrus SASL library
+  \li PXMLRPC - implements the XMLRPC protocol via the Expat XML library and the HTTP classes
+  \li PSOAPClient - implements a SOAP client
+  \li PLDAPSession - implements a LDAP client via the OpenLDAP library
+  \li PILSSession - implements a ILS client via the OpenLDAP library
+  \li XMPP::Stream - implements a XMPP (Jabber) stream as a PChannel.
+  
+\subsection misccomponents Miscellaneous Classes
+  \li PModem - a descendant of PSerialChannel that is customised for modems that obey the AT command set
+  \li PIpAccessControlList - a list of entries that allow specification of a range of IP addresses or networks
+  \li PRandom - a random number generator
+  \li PCypher - implementation of various code cyphers such as PMessageDigest5, PTEACypher, and PMessageDigestSHA1
+  \li PWAVFile - implements a AIFF format WAV file
+  \li PDTMFDecoder - decodes DTMF digits from a stream of PCM data
+  \li PMemoryFile - implements a PFile descendant that stores data in memory
+  \li PSDLVideoDevice - implement a vide display device using the SDL library
+  \li PXML - Implements a parser for XML using the Expat library
+  \li PVXMLChannel - Implements a parser for the VXML language
+  \li PTextToSpeech - Implement a Text to Speech converter
+
+\subsection asn ASN.1 Support Classes
+  \li PASN_Array 
+  \li PASN_BitString 
+  \li PASN_BMPString 
+  \li PASN_Boolean 
+  \li PASN_Choice 
+  \li PASN_ConstrainedObject 
+  \li PASN_ConstrainedString 
+  \li PASN_Enumeration 
+  \li PASN_GeneralisedTime 
+  \li PASN_Integer 
+  \li PASN_Null 
+  \li PASN_Object 
+  \li PASN_ObjectId 
+  \li PASN_OctetString 
+  \li PASN_Real 
+  \li PASN_Sequence 
+  \li PASN_Set 
+  \li PASN_Stream 
+  \li PASN_UniversalTime 
+
+\subsection history History
+
+\li 17 May 2004 - Converted from Doc++ to Doxygen format by Craig Southeren
+
+*/

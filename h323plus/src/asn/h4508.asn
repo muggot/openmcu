@@ -1,0 +1,57 @@
+Name-Operations
+{
+  itu-t recommendation h 450 8 version1(0) name-operations(0)
+}
+
+DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+  IMPORTS Extension FROM H4501 -- Manufacturer-specific-service-extension-definition
+          {
+            itu-t recommendation h 450 1 version1 (0) msi-definition (18) 
+          }
+
+          MixedExtension FROM H4505 -- Call-Hold-Operations 
+          {
+            itu-t recommendation h 450 4 version1(0) call-hold-operations(0)
+          };
+
+  NameOperations ::= ENUMERATED
+  {
+    callingName(0),
+    alertingName(1),
+    connectedName(2),
+    busyName(3)
+  }
+
+  Name ::= CHOICE
+  {
+    namePresentationAllowed    NamePresentationAllowed,
+    namePresentationRestricted NamePresentationRestricted,
+    nameNotAvailable           NULL,
+    ...
+  }
+
+  NamePresentationAllowed ::= CHOICE
+  {
+    simpleName	 SimpleName,
+    extendedName ExtendedName,
+    ...
+  }
+
+  NamePresentationRestricted ::= CHOICE
+  {
+    simpleName     SimpleName,
+    extendedName   ExtendedName,
+    restrictedNull NULL, -- only used in case of interworking where other network
+                         -- provides indication that the name is restricted without
+                         -- the name itself
+    ...
+  }
+
+  SimpleName ::= OCTET STRING (SIZE (1..50))
+
+  ExtendedName ::= BMPString(SIZE (1..256)) --Basic ISO/IEC 10646-1 (Unicode)
+
+END -- of Name-Operations
+

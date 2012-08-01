@@ -1,0 +1,58 @@
+
+# Communication Object Schema
+#
+# Schema for Representing Communication Objects in an LDAP Directory
+#
+# Abstract
+#
+# This document defines the schema for representing Communication
+# objects in an LDAP directory [LDAPv3].  It defines schema elements
+# to represent a communication object [commObject].
+#
+#
+#                     .1 = Communication related work
+#                     .1.2 = commObject
+#                     .1.2.1 = attributes
+#                     .1.2.2 = objectclass
+#                     .1.2.3 = syntax
+#
+#
+# Attribute Type Definitions
+#
+#    The following attribute types are defined in this document:
+#
+#        commUniqueId
+#        commOwner
+#        commPrivate
+#
+attributetype (0.0.8.350.1.1.2.1.1
+     NAME 'commUniqueId'
+     DESC 'To hold the endpoints unique Id'
+     EQUALITY caseIgnoreIA5Match
+     SUBSTR caseIgnoreIA5SubstringsMatch
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' )
+attributetype (0.0.8.350.1.1.2.1.2
+     NAME 'commOwner'
+     DESC 'Labeled URI to point back to the original owner'
+     EQUALITY caseExactMatch
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' )
+attributetype (0.0.8.350.1.1.2.1.3
+     NAME 'commPrivate'
+     DESC 'To decide whether the entry is visible to world or not'
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' )
+# Object Class Definitions
+#
+#    The following object classes are defined in this document:
+#
+#        commObject
+#
+# commObject
+#
+objectclass (0.0.8.350.1.1.2.2.1
+     NAME 'commObject'
+     DESC 'object that contains the Communication attributes'
+     SUP top STRUCTURAL
+     MUST commUniqueId
+     MAY ( commOwner $ commPrivate )
+     )
+

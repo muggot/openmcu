@@ -1,0 +1,164 @@
+#
+#
+# This defines the h323Person object class
+#
+# Supports PacPhone White Pages lookup
+#
+#
+# 1.3.6.1.4.1.17090.2 is the toplevel OID for this work
+#                  .2 = LDAP Directory 
+#                  .2.1 = persona
+#                  .2.1.1 = attributes
+#                  .2.1.2 = objectclass
+#                  .2.1.3 = syntax
+#
+#
+
+# h323personorgLogo
+# Used to store one or more images of a organisation logo using the JPEG File
+# Interchange Format [JFIF].
+# Note that the jpegPhoto attribute type was defined for use in the
+# Internet X.500 pilots but no referencable definition for it could be
+# located.
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.1
+	NAME 'h323personorgLogo'
+	DESC 'H323 organisation JPEG image'
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.28 )
+
+# h323personorgName
+# When displaying an entry, especially within a one-line summary list, it
+# is useful to be able to identify the organisation. h323orgName is defined 
+# for this purpose.
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.2
+	NAME 'h323personorgName'
+	DESC 'H323 organisation Name'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+
+# h323personPKCS12
+# PKCS #12 [PKCS12] provides a format for exchange of personal identity
+# information.  When such information is stored in a directory service,
+# the userPKCS12 attribute should be used. This attribute is to be stored
+# and requested in binary form, as 'h323personPKCS12;binary'.  The attribute
+# values are PFX PDUs stored as binary data.
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.3
+	NAME 'h323personPKCS12'
+	DESC 'Personal identity information, a PKCS #12 PFX'
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.5 )
+
+# h323personPhoto
+# Image must not exceed 64x64 pixels
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.4
+	NAME 'h323personPhoto'
+	DESC 'H323 user JPEG image'
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.28 )
+
+
+# h323personName
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.5
+	NAME 'h323personName'
+	DESC 'H323 UserName'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+# h323personTitle
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.6
+	NAME 'h323personTitle'
+	DESC 'H323 person Title'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+# h323personStreet
+attributetype (1.3.6.1.4.1.17090.2.1.1.7
+        NAME 'h323personStreet'
+	DESC 'h323 person Street'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15)
+
+# h323personLocation
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.8
+	NAME 'h323personLocation'
+	DESC 'H323 person Location'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+# h323personPostcode
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.9
+	NAME 'h323personPostcode'
+	DESC 'H323 person Postcode'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+# h323personEmail
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.10
+	NAME 'h323personEmail'
+	DESC 'H323 person Email'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+# h323personPhone
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.11
+	NAME 'h323personPhone'
+	DESC 'H323 person Phone'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+# h323personCell
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.12
+	NAME 'h323personCell'
+	DESC 'H323 person Cell'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+# h323personFax
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.13
+	NAME 'h323personFax'
+	DESC 'H323 person Fax'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+# h323personURL
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.14
+	NAME 'h323personURL'
+	DESC 'H323 person URL'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+# h323personGUID
+attributetype ( 1.3.6.1.4.1.17090.2.1.1.15
+	NAME 'h323personGUID'
+	DESC 'H323 person GUID'
+	EQUALITY caseIgnoreMatch
+	SUBSTR caseIgnoreSubstringsMatch
+	SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+	SINGLE-VALUE )
+
+objectclass ( 1.3.6.1.4.1.17090.2.1.2
+         NAME 'h323Person'
+         SUP top AUXILIARY
+         MAY ( h323personorgLogo $ h323personorgName $ h323personPKCS12 $ h323personPhoto $ h323personName $ 
+               h323personTitle $ h323personStreet $ h323personLocation $ h323personPostcode $ h323personEmail $
+               h323personPhone $ h323personCell $ h323personFax $ h323personURL $ h323personGUID )
+             )

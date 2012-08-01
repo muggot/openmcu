@@ -1,0 +1,133 @@
+#
+# Makefile for LPC-10
+#
+# Copyright (C) 2004 Post Increment, All Rights Reserved
+#
+# The contents of this file are subject to the Mozilla Public License
+# Version 1.0 (the "License"); you may not use this file except in
+# compliance with the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/
+#
+# Software distributed under the License is distributed on an "AS IS"
+# basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+# the License for the specific language governing rights and limitations
+# under the License.
+#
+# The Original Code is Open H323 library.
+#
+# The Initial Developer of the Original Code is Post Increment
+#
+# Contributor(s): ______________________________________.
+#
+# $Log: Makefile.in,v $
+# Revision 1.1  2007/10/22 07:40:48  shorne
+# *** empty log message ***
+#
+# Revision 1.4  2007/04/19 06:09:03  csoutheren
+# Fixed plugin build system to use better detection for OSX
+# Resolved 1636262 - Fix for audio plugins for OSX
+#
+# Revision 1.3  2006/08/10 04:10:20  csoutheren
+# Applied 1537305 - fixed build problems on 64 bit machines
+# Thanks to Stanislav Brabec
+#
+# Revision 1.2  2006/08/01 13:06:49  rjongbloed
+# Added a raft of unvalidated audio codecs from OpenH323 tree
+#
+# Revision 1.1.2.1  2006/07/22 13:42:49  rjongbloed
+# Added more plug ins
+#
+# Revision 1.1.2.1  2006/05/08 13:49:57  rjongbloed
+# Imported all the audio codec plug ins from OpenH323
+#
+# Revision 1.3  2004/08/22 04:20:19  csoutheren
+# Added -fPIC to build commands to fix problems on 64 bit platforms
+# Thanks to Klaus Kaempf
+#
+# Revision 1.2  2004/06/24 23:33:17  csoutheren
+# Changed Makefiles to ensure all plugins have correct suffix
+#
+# Revision 1.1  2004/05/04 11:32:37  csoutheren
+# Added LPC10 codec
+#
+#
+PREFIX=/usr/local
+exec_prefix = ${PREFIX}
+LIBDIR=${exec_prefix}/lib
+
+SONAME	= lpc10
+
+SRCDIR	= ./src
+OBJDIR	= ./obj
+
+CC	 	=gcc
+CFLAGS	 	=-g -O2
+CXX	 	=g++
+LDSO	 	=-shared -Wl,-soname,$(SONAME)
+PLUGINEXT	=so
+STDCCFLAGS	=-fPIC
+LDFLAGS		=
+
+HEADER_FILES	+= $(LPC10_INCDIR)/lpc10.h
+
+SRCS	+= lpc_10_codec.c \
+	   $(SRCDIR)/f2clib.c \
+	   $(SRCDIR)/analys.c \
+	   $(SRCDIR)/bsynz.c \
+	   $(SRCDIR)/chanwr.c \
+	   $(SRCDIR)/dcbias.c \
+	   $(SRCDIR)/decode_.c \
+	   $(SRCDIR)/deemp.c \
+	   $(SRCDIR)/difmag.c \
+	   $(SRCDIR)/dyptrk.c \
+	   $(SRCDIR)/encode_.c \
+	   $(SRCDIR)/energy.c \
+	   $(SRCDIR)/ham84.c \
+	   $(SRCDIR)/hp100.c \
+	   $(SRCDIR)/invert.c \
+	   $(SRCDIR)/irc2pc.c \
+	   $(SRCDIR)/ivfilt.c \
+	   $(SRCDIR)/lpcdec.c \
+	   $(SRCDIR)/lpcenc.c \
+	   $(SRCDIR)/lpcini.c \
+	   $(SRCDIR)/lpfilt.c \
+	   $(SRCDIR)/median.c \
+	   $(SRCDIR)/mload.c \
+	   $(SRCDIR)/onset.c \
+	   $(SRCDIR)/pitsyn.c \
+	   $(SRCDIR)/placea.c \
+	   $(SRCDIR)/placev.c \
+	   $(SRCDIR)/preemp.c \
+	   $(SRCDIR)/prepro.c \
+	   $(SRCDIR)/random.c \
+	   $(SRCDIR)/rcchk.c \
+	   $(SRCDIR)/synths.c \
+	   $(SRCDIR)/tbdm.c \
+	   $(SRCDIR)/voicin.c \
+	   $(SRCDIR)/vparms.c \
+
+vpath	%.o $(OBJDIR)
+vpath	%.c $(SRCDIR)
+
+$(OBJDIR)/%.o : %.c
+	@mkdir -p $(OBJDIR) >/dev/null 2>&1
+	$(CC) -I. -I../../../include -I./src $(STDCCFLAGS) $(CFLAGS) -c $< -o $@
+
+PLUGIN	= ./lpc10_audio_pwplugin.$(PLUGINEXT)
+
+OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(notdir $(SRCS))))
+
+$(PLUGIN): $(OBJECTS)
+	$(CC) $(LDSO) -o $@ $^ $(EXTRALIBS)
+
+install:
+	mkdir -p $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/
+	cp $(PLUGIN) $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/
+
+uninstall:
+	rm -f $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/$(PLUGIN)
+
+clean:
+	rm -f $(OBJECTS) $(PLUGIN)
+
+###########################################

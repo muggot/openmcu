@@ -1,0 +1,12 @@
+H350-SERVICE-CONTROL {iso(1) organisation(3) dod(6) internet(1) private(4) packetizer(17090) h350(2) service(1) } 
+DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+   
+H350ServiceControl ::= SEQUENCE
+{
+   ldapURL      IA5String,
+   ldapDN       IA5String
+}
+
+END

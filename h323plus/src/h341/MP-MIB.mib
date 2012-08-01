@@ -1,0 +1,557 @@
+
+MP-MIB DEFINITIONS ::= BEGIN
+
+         IMPORTS
+           Counter32, Integer32, OBJECT-TYPE, MODULE-IDENTITY
+                 FROM SNMPv2-SMI
+           TruthValue
+                 FROM SNMPv2-TC
+           MODULE-COMPLIANCE, OBJECT-GROUP
+                 FROM SNMPv2-CONF
+           ifIndex
+                 FROM IF-MIB
+           MmEndpointID, MmGlobalIdentifier, mmH323Root  
+                 FROM MULTI-MEDIA-MIB-TC;
+
+
+         -- Define the top of this MIB.
+         --  this is the MIB module for the H.323 MP objects
+         h323MP  MODULE-IDENTITY
+             LAST-UPDATED "9812182253Z"      -- December 18, 1998
+             ORGANIZATION "ITU-T"
+             CONTACT-INFO
+             " ITU-T SG 16"
+             DESCRIPTION
+                " "
+                  ::= { mmH323Root 5 }
+
+         -- groups in H.323 mp
+
+         h323MpConfig         OBJECT IDENTIFIER ::= { h323MP 1 }
+         h323MpConference     OBJECT IDENTIFIER ::= { h323MP 2 }
+
+
+         h323MpConfigTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323MpConfigTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about MP configuration. 
+                 It contains the number of MPs for a system.  
+                 The number of entries equals to the number of MPs."
+             ::= { h323MpConfig 1 }
+
+        h323MpConfigTableEntry OBJECT-TYPE
+             SYNTAX H323MpConfigTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe configuration parameters for MP."
+             INDEX { ifIndex }
+               ::= { h323MpConfigTable 1 }
+
+        H323MpConfigTableEntry ::=
+              SEQUENCE {
+              h323MpConfigMaxAudioMixCount
+                  Integer32,
+              h323MpConfigMaxVideoMixCount
+                  Integer32
+                  }
+
+        h323MpConfigMaxAudioMixCount OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Maximum number of participants allowed in the audio mix."
+                ::= { h323MpConfigTableEntry 1 }
+
+        h323MpConfigMaxVideoMixCount OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Maximum number of participants allowed in the video mix."
+                ::= { h323MpConfigTableEntry 2 }
+
+        h323MpConferenceTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323MpConferenceTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about running conferences. 
+                 It is a list of conference entries. The number of entries equals 
+                 to the number of running conferences."
+             ::= { h323MpConference 1 }
+
+         h323MpConferenceTableEntry OBJECT-TYPE
+             SYNTAX H323MpConferenceTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe a specific conference."
+             INDEX { ifIndex,
+                     h323MpConferenceConferenceId}
+               ::= { h323MpConferenceTable 1 }
+
+         H323MpConferenceTableEntry ::=
+              SEQUENCE {
+              h323MpConferenceConferenceId
+                  MmGlobalIdentifier,
+              h323MpConferenceAudioNoiseThreshold
+                  Integer32,
+              h323MpConferenceLipSyncEnable
+                  TruthValue
+              }
+
+      h323MpConferenceConferenceId OBJECT-TYPE
+             SYNTAX MmGlobalIdentifier
+             MAX-ACCESS  not-accessible
+             STATUS current
+             DESCRIPTION
+                "The conference identifier as specified in ITU-T H.323V2 specification."
+                ::= { h323MpConferenceTableEntry 1 }
+
+       h323MpConferenceAudioNoiseThreshold OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value represents the audio power level 
+                 above which the signal is detected as speech."
+                ::= { h323MpConferenceTableEntry 2 }
+
+      h323MpConferenceLipSyncEnable OBJECT-TYPE
+             SYNTAX TruthValue
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value indicates whether the lip 
+                 syncronization adjustments are performed."
+                ::= { h323MpConferenceTableEntry 3 }
+
+         h323MpConferenceParticipantsTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323MpConferenceParticipantsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about conference participants. 
+                 It is a list of participant entries. The number of entries equals 
+                 the number of participants for all conferences."
+             ::= { h323MpConference 2 }
+
+         h323MpConferenceParticipantsTableEntry OBJECT-TYPE
+             SYNTAX H323MpConferenceParticipantsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe a specific conference participant."
+             INDEX { ifIndex, 
+                     h323MpConferenceConferenceId, 
+                     h323MpConferenceParticipantsTableIndex }
+               ::= { h323MpConferenceParticipantsTable 1 }
+
+         H323MpConferenceParticipantsTableEntry ::=
+              SEQUENCE {
+            h323MpConferenceParticipantsTableIndex
+                    Integer32,
+            h323MpConferenceParticipantsEndpointId
+                    MmEndpointID,
+            h323MpConferenceParticipantsTransmitAudioState
+                    INTEGER,
+            h323MpConferenceParticipantsReceiveAudioState
+                    INTEGER,
+            h323MpConferenceParticipantsTransmitVideoState
+                    INTEGER,
+            h323MpConferenceParticipantsReceiveVideoState
+                    INTEGER,
+            h323MpConferenceParticipantsLoudnessMeasurement
+                    Integer32,
+            h323MpConferenceParticipantsVoiceActivity
+                    TruthValue,
+            h323MpConferenceParticipantsInputAudioGain
+                    Integer32,
+            h323MpConferenceParticipantsOutputAudioGain
+                    Integer32,
+            h323MpConferenceParticipantsMaxAudioEncoderPayloadSize
+                    Integer32,
+            h323MpConferenceParticipantsMaxAudioDecoderPayloadSize
+                    Integer32,
+            h323MpConferenceParticipantsTotalPacketsTransmitted
+                    Counter32,
+            h323MpConferenceParticipantsTotalPacketsReceived
+                    Counter32,
+            h323MpConferenceParticipantsInvalidPacketErrors
+                    Counter32,
+            h323MpConferenceParticipantsLateAudioPacketsDropped
+                    Counter32,
+            h323MpConferenceParticipantsReceivedSilencePackets
+                    Counter32,
+            h323MpConferenceParticipantsSilencePacketsGenerated
+                    Counter32,
+            h323MpConferenceParticipantsVideoFrameRate
+                    Integer32,
+            h323MpConferenceParticipantsVideoResolution
+                    INTEGER,
+            h323MpConferenceParticipantsFullPictureCounter
+                    Integer32
+            }
+
+         h323MpConferenceParticipantsTableIndex OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS  not-accessible
+             STATUS current
+             DESCRIPTION
+                "An arbitrary index to this table. This index is one for the 
+                 first participant for every given conference. It is incremented by one 
+                 for each subsequent participant of the same conference. The last index 
+                 for a particular conference is equal to the number of participants for
+                 that conference."
+                ::= { h323MpConferenceParticipantsTableEntry 1 }
+
+         h323MpConferenceParticipantsEndpointId OBJECT-TYPE
+             SYNTAX MmEndpointID
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The H.323 id of this participant as described in ITU-T H.323V2 specification."
+                ::= { h323MpConferenceParticipantsTableEntry 2 }
+
+         h323MpConferenceParticipantsTransmitAudioState OBJECT-TYPE
+             SYNTAX INTEGER {normal (1), mute (2), toneGeneration (3), off (4)}
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value indicates the state of transmitted audio: 
+                 normal         - transmit normal audio
+                 toneGeneration - transmit test tone
+                 mute           - transmit silence audio
+                 off            - no audio is transmitted"
+                ::= { h323MpConferenceParticipantsTableEntry 3 }
+
+         h323MpConferenceParticipantsReceiveAudioState OBJECT-TYPE
+             SYNTAX INTEGER {normal (1), loopBack (2), block (3), off (4)}
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value indicates the state of received audio: 
+                 normal         - receive normal audio
+                 loopBack       - received audio presented unchanged to the transmitter
+                 block          - received audio is not part of the mix
+                 off            - no audio is received"
+                ::= { h323MpConferenceParticipantsTableEntry 4 }
+
+         h323MpConferenceParticipantsTransmitVideoState OBJECT-TYPE
+             SYNTAX INTEGER {on (1), off (2)}
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value indicates the state of transmitted video: 
+                 on  - normal video is transmitted 
+                 off - no video is transmitted."
+                ::= { h323MpConferenceParticipantsTableEntry 5 }
+
+         h323MpConferenceParticipantsReceiveVideoState OBJECT-TYPE
+             SYNTAX INTEGER {normal (1), block (2), off (3)}
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value indicates the state of transmitted video: 
+                 normal  - normal video is received
+                 block   - received video is not displayed 
+                 off     - no video is transmitted."
+                ::= { h323MpConferenceParticipantsTableEntry 6 }
+
+         h323MpConferenceParticipantsLoudnessMeasurement OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This is the current loudness measurement value in dB."
+                ::= { h323MpConferenceParticipantsTableEntry 7 }
+
+         h323MpConferenceParticipantsVoiceActivity OBJECT-TYPE
+             SYNTAX TruthValue
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value is True when the speech is detected."
+                ::= { h323MpConferenceParticipantsTableEntry 8 }
+
+         h323MpConferenceParticipantsInputAudioGain OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value reflects the current input volume adjustment in dB."
+                ::= { h323MpConferenceParticipantsTableEntry 9 }
+
+         h323MpConferenceParticipantsOutputAudioGain OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value reflects the current output volume adjustment in dB."
+                ::= { h323MpConferenceParticipantsTableEntry 10 }
+
+         h323MpConferenceParticipantsMaxAudioEncoderPayloadSize OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The maximum size of payload in ms."
+                ::= { h323MpConferenceParticipantsTableEntry 11 }
+
+         h323MpConferenceParticipantsMaxAudioDecoderPayloadSize OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The maximum size of payload in ms."
+                ::= { h323MpConferenceParticipantsTableEntry 12 }
+
+         h323MpConferenceParticipantsTotalPacketsTransmitted OBJECT-TYPE
+             SYNTAX Counter32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The total number of transmitted packets."
+                ::= { h323MpConferenceParticipantsTableEntry 13 }
+
+         h323MpConferenceParticipantsTotalPacketsReceived OBJECT-TYPE
+             SYNTAX Counter32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The total number of received packets."
+                ::= { h323MpConferenceParticipantsTableEntry 14 }
+
+         h323MpConferenceParticipantsInvalidPacketErrors OBJECT-TYPE
+             SYNTAX Counter32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The total number of packets with invalid packet errors."
+                ::= { h323MpConferenceParticipantsTableEntry 15 }
+
+          h323MpConferenceParticipantsLateAudioPacketsDropped OBJECT-TYPE
+             SYNTAX Counter32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The total number of packets that arrived too late to be processed."
+                ::= { h323MpConferenceParticipantsTableEntry 16 }
+
+         h323MpConferenceParticipantsReceivedSilencePackets OBJECT-TYPE
+             SYNTAX Counter32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The total number of silence packets that were received."
+                ::= { h323MpConferenceParticipantsTableEntry 17 }
+
+         h323MpConferenceParticipantsSilencePacketsGenerated OBJECT-TYPE
+             SYNTAX Counter32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The total number of silence packets that were generated."
+                ::= { h323MpConferenceParticipantsTableEntry 18 }
+
+         h323MpConferenceParticipantsVideoFrameRate OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value represents the current measured frame rate received."
+                ::= { h323MpConferenceParticipantsTableEntry 19 }
+
+         h323MpConferenceParticipantsVideoResolution OBJECT-TYPE
+             SYNTAX INTEGER { h263SubQCIF (1),h263QCIF (2),
+                              h263CIF(3), h2634CIF(4), 
+                              h26316CIF(5),  h263Reserved (6), 
+                              h261QCIF(7),h261CIF(8)  }
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Received video resolution."
+                ::= { h323MpConferenceParticipantsTableEntry 20 }
+
+        h323MpConferenceParticipantsFullPictureCounter OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value represents the number of full image pictures received."
+                ::= { h323MpConferenceParticipantsTableEntry 21 }
+
+         h323MpConferenceGlobalAudioMixTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323MpConferenceGlobalAudioMixTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about conference participants 
+                 that are present in a global audio mix. 
+                 It is a list of participant entries. The number of entries equals 
+                 to the sum of all audio mix participants in all conferences."
+             ::= { h323MpConference 3 }
+
+         h323MpConferenceGlobalAudioMixTableEntry OBJECT-TYPE
+             SYNTAX H323MpConferenceGlobalAudioMixTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe the participants."
+             INDEX { ifIndex,
+                     h323MpConferenceConferenceId, 
+                     h323MpConferenceGlobalAudioMixTableIndex }
+               ::= { h323MpConferenceGlobalAudioMixTable 1 }
+
+         H323MpConferenceGlobalAudioMixTableEntry ::=
+              SEQUENCE {
+              h323MpConferenceGlobalAudioMixTableIndex
+                  Integer32,
+              h323MpConferenceGlobalAudioMixTerminalIdentifier
+                  MmEndpointID
+              }
+
+         h323MpConferenceGlobalAudioMixTableIndex OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS  not-accessible
+             STATUS current
+             DESCRIPTION
+                "An arbitrary index to this table. This index is one for the 
+                 first participant for every given conference. It is incremented by one 
+                 for each subsequent participant of the same conference. The last index 
+                 for a particular conference is equal to the number of participants for 
+                 that conference."
+                ::= { h323MpConferenceGlobalAudioMixTableEntry 1 }
+
+         h323MpConferenceGlobalAudioMixTerminalIdentifier OBJECT-TYPE
+             SYNTAX MmEndpointID
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The H.323 id of this participant as described in ITU-T H.323V2 specification."
+                ::= { h323MpConferenceGlobalAudioMixTableEntry 2 }
+
+         h323MpConferenceGlobalVideoMixTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323MpConferenceGlobalVideoMixTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about conference participants 
+                 that are present in a global video mix. 
+                 It is a list of participant entries. The number of entries equals 
+                 to the sum of all video mix participants in all conferences."
+             ::= { h323MpConference 4 }
+
+         h323MpConferenceGlobalVideoMixTableEntry OBJECT-TYPE
+             SYNTAX H323MpConferenceGlobalVideoMixTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe the participants."
+             INDEX { ifIndex,
+                     h323MpConferenceConferenceId, 
+                     h323MpConferenceGlobalVideoMixTableIndex }
+               ::= { h323MpConferenceGlobalVideoMixTable 1 }
+
+         H323MpConferenceGlobalVideoMixTableEntry ::=
+              SEQUENCE {
+              h323MpConferenceGlobalVideoMixTableIndex
+                  Integer32,
+              h323MpConferenceGlobalVideoMixTerminalIdentifier
+                  MmEndpointID
+              }
+
+         h323MpConferenceGlobalVideoMixTableIndex OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS  not-accessible
+             STATUS current
+             DESCRIPTION
+                "An arbitrary index to this table. This index is one for the 
+                 first participant for every given conference. It is incremented by one 
+                 for each subsequent participant of the same conference. The last index 
+                 for a particular conference is equal to the number of participants for 
+                 that conference."
+                ::= { h323MpConferenceGlobalVideoMixTableEntry 1 }
+
+         h323MpConferenceGlobalVideoMixTerminalIdentifier OBJECT-TYPE
+             SYNTAX MmEndpointID
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The H.323 id of this participant as described in ITU-T H.323V2 specification."
+                ::= { h323MpConferenceGlobalVideoMixTableEntry 2 }
+
+
+-- conformance; stating the mandatory requirements for the MIB
+
+
+--
+-- CONFORMANCE
+--
+mpMIBConformance    OBJECT IDENTIFIER ::= { h323MP 3 }
+mpMIBGroups         OBJECT IDENTIFIER ::= { mpMIBConformance 1 }
+
+--
+-- Groups for Conformance
+--
+
+h323MpConfigGroup OBJECT-GROUP
+    OBJECTS {
+        h323MpConfigMaxAudioMixCount, 
+        h323MpConfigMaxVideoMixCount 
+      }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { mpMIBGroups 1 }
+
+h323MpConferenceGroup    OBJECT-GROUP
+    OBJECTS {
+
+      h323MpConferenceAudioNoiseThreshold,
+      h323MpConferenceLipSyncEnable,
+      
+      h323MpConferenceParticipantsEndpointId,
+      h323MpConferenceParticipantsTransmitAudioState,
+      h323MpConferenceParticipantsReceiveAudioState,
+      h323MpConferenceParticipantsTransmitVideoState,
+      h323MpConferenceParticipantsReceiveVideoState,
+      h323MpConferenceParticipantsLoudnessMeasurement,
+      h323MpConferenceParticipantsVoiceActivity,
+      h323MpConferenceParticipantsInputAudioGain,
+      h323MpConferenceParticipantsOutputAudioGain,
+      h323MpConferenceParticipantsMaxAudioEncoderPayloadSize,
+      h323MpConferenceParticipantsMaxAudioDecoderPayloadSize,
+      h323MpConferenceParticipantsTotalPacketsTransmitted,
+      h323MpConferenceParticipantsTotalPacketsReceived,
+      h323MpConferenceParticipantsLateAudioPacketsDropped,
+      h323MpConferenceParticipantsReceivedSilencePackets,
+      h323MpConferenceParticipantsSilencePacketsGenerated,
+      h323MpConferenceParticipantsVideoFrameRate,
+      h323MpConferenceParticipantsVideoResolution,
+      h323MpConferenceParticipantsFullPictureCounter,
+      
+      h323MpConferenceGlobalAudioMixTerminalIdentifier,
+      
+      h323MpConferenceGlobalVideoMixTerminalIdentifier
+      
+    }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { mpMIBGroups 2 }
+
+
+mpMIBCompliance        MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+        "The set of objects required for compliance."
+    MODULE
+        MANDATORY-GROUPS { h323MpConfigGroup, h323MpConferenceGroup }
+    ::= { mpMIBConformance 2 }
+
+END

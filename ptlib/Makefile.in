@@ -1,0 +1,314 @@
+#
+# Makefile
+#
+# Make file for pwlib library
+#
+# Portable Windows Library
+#
+# Copyright (c) 1993-1998 Equivalence Pty. Ltd.
+#
+# The contents of this file are subject to the Mozilla Public License
+# Version 1.0 (the "License"); you may not use this file except in
+# compliance with the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/
+#
+# Software distributed under the License is distributed on an "AS IS"
+# basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+# the License for the specific language governing rights and limitations
+# under the License.
+#
+# The Original Code is Portable Windows Library.
+#
+# The Initial Developer of the Original Code is Equivalence Pty. Ltd.
+#
+# Portions are Copyright (C) 1993 Free Software Foundation, Inc.
+# All Rights Reserved.
+# 
+# Contributor(s): ______________________________________.
+#
+# $Log: Makefile.in,v $
+# Revision 1.30  2006/11/20 07:17:06  csoutheren
+# Fix Makefile to work when plugins not available
+#
+# Revision 1.29  2005/04/06 10:10:54  dsandras
+# Fixed install target with DESTDIR thanks to Stefan Bruens.
+#
+# Revision 1.28  2004/06/24 12:46:48  csoutheren
+# Fixed path in plugin install
+#
+# Revision 1.27  2004/06/17 23:17:16  csoutheren
+# Fixed permissions on install directories as suggested by Al Piszcz
+#
+# Revision 1.26  2004/05/17 06:05:20  csoutheren
+# Changed "make docs" to use doxygen
+# Added new config file and main page
+#
+# Revision 1.25  2004/05/04 08:23:19  dsandras
+# Fixed installation of plugins. Fixed uninstallation of plugins.
+#
+# Revision 1.24  2004/05/03 12:33:18  csoutheren
+# Fixed install problem with ptlib-config
+#
+# Revision 1.23  2004/05/03 12:01:23  csoutheren
+# Fixed install target
+# Updated configure
+#
+# Revision 1.22  2004/04/29 15:01:43  csoutheren
+# Fixed INSTALL var
+#
+# Revision 1.21  2004/04/29 14:07:06  csoutheren
+# Changed install target to use $(INSTALL)
+# Various makefile cleanups and verified install and uninstall targets
+# Removed some vestiges of old GUI code
+#
+# Revision 1.20  2004/04/20 10:02:46  csoutheren
+# Remove usage of asnparser from the Makefile
+#
+# Revision 1.19  2004/04/13 11:48:36  csoutheren
+# asnparser no longer built by default
+#
+# Revision 1.18  2004/02/26 12:04:10  csoutheren
+# Added changes to increase portability to 64bit platforms, thanks to Klaus Kaempf
+#
+# Revision 1.17  2004/02/01 12:12:37  dsandras
+# Fixed default target to optshared.
+#
+# Revision 1.16  2004/02/01 11:46:39  dsandras
+# Set default target to "optshared".
+#
+# Revision 1.15  2003/12/12 06:40:47  rogerhardiman
+# get plugins to install on FreeBSD
+#
+# Revision 1.14  2003/11/25 09:51:11  dsandras
+# Fixed make install on Linux.
+#
+# Revision 1.13  2003/11/24 09:53:31  rogerhardiman
+# Make the install target work on non-linux platforms. (Tested on FreeBSD).
+#
+# Revision 1.12  2003/11/14 06:01:11  csoutheren
+# Fixed HAS_PLUGIN define
+#
+# Revision 1.11  2003/09/01 09:37:04  dsandras
+# Fixed DESTDIR support thanks to Stefan Brüns <lurchi@kawo1.rwth-aachen.de>.
+#
+# Revision 1.10  2003/08/27 09:46:07  dsandras
+# Readded DESTDIR support (thanks to Stefan Bruens <lurch@gmx.li>)
+#
+# Revision 1.9  2003/07/29 11:22:17  csoutheren
+# Removed trailing slash from vars.
+#
+# Revision 1.8  2003/07/28 18:13:02  dsandras
+# Added patch from Alexander Larsson <alexl@redhat.com> to add --libdir support to configure.
+#
+# Revision 1.7  2003/07/28 14:09:34  dsandras
+#
+# Make sure permissions are correct on include/ptlib/unix/ptlib.
+#
+# Revision 1.6  2003/07/28 09:08:21  dsandras
+#
+# Fixed same kind of things for "make uninstall".
+#
+# Revision 1.5  2003/07/28 09:05:04  dsandras
+#
+# Make sure that things are installed in $(DESTDIR)$(PREFIX) and not only $(DESTDIR). Use the style used in all distributions for headers of $(DESTIR)$(PREFIX).
+#
+# Revision 1.4  2003/07/24 22:01:42  dereksmithies
+# Add fixes from Peter Nixon  for fixing install problems. Thanks.
+#
+# Revision 1.3  2003/05/22 12:13:44  dsandras
+#
+# Fixes permissions after "make install".
+#
+# Revision 1.3  2003/05/22 10:59:23  dsandras
+# Fixes permissions after "make install".
+#
+# Revision 1.2  2003/05/16 19:10:23  shawn
+# Replaces "so" with @SHAREDLIBEXT@ so `make install' works on platforms
+# that do not use "so" as shared library filename extension.
+#
+# Revision 1.1  2003/04/28 01:09:24  craigs
+# Initial version
+#
+# Revision 1.26  2003/04/16 07:16:55  craigs
+# Modified for new autoconf based configuration
+#
+# Revision 1.25  2002/12/04 19:35:47  rogerh
+# Remove un-needed / at the end of PREFIX
+#
+# Revision 1.24  2002/11/13 23:45:19  robertj
+# Added install and uninstall targets, thanks Damien Sandras
+#
+# Revision 1.23  2002/10/17 13:44:27  robertj
+# Port to RTEMS, thanks Vladimir Nesic.
+#
+# Revision 1.22  2001/08/06 19:35:27  rogerh
+# Include the relevent header file based on the version of OpenBSD.
+# Submitted by Marius Aamodt Eriksen <marius@umich.edu>
+#
+# Revision 1.21  2001/07/30 07:45:54  robertj
+# Added "all" target with double colon.
+#
+# Revision 1.20  2001/04/23 00:44:30  robertj
+# Spelt update correctly!
+#
+# Revision 1.19  2001/04/23 00:43:55  robertj
+# Added make update target to get from cvs and rebuild
+#
+# Revision 1.18  2001/04/17 06:30:37  robertj
+# Altered so can use tagbuild target in root directory.
+#
+# Revision 1.17  2001/03/20 03:33:18  robertj
+# Major improvement to multiple targets over subdirectories, thanks Jac Goudsmit
+#
+# Revision 1.16  2000/11/01 04:39:20  robertj
+# Made sure opt is first so frech build works
+#
+# Revision 1.15  2000/11/01 02:42:46  robertj
+# Added optnoshared to build all default target.
+#
+# Revision 1.14  2000/10/30 05:49:25  robertj
+# Made make all do bothdepend both
+#
+# Revision 1.13  2000/06/26 11:17:19  robertj
+# Nucleus++ port (incomplete).
+#
+# Revision 1.12  2000/04/26 02:50:12  robertj
+# Fixed build of correct GUI directory.
+#
+# Revision 1.11  2000/04/26 01:03:46  robertj
+# Removed tarfile creation target, this is done differently now.
+#
+# Revision 1.10  2000/02/04 19:32:16  craigs
+# Added targets for unshared libraries etc
+#
+# Revision 1.9  1999/11/30 00:22:54  robertj
+# Updated documentation for doc++
+#
+# Revision 1.8  1999/06/09 16:09:20  robertj
+# Fixed tarball construction not include windows directories
+#
+# Revision 1.7  1999/06/09 15:41:18  robertj
+# Added better UI to make files.
+#
+# Revision 1.6  1999/04/22 02:37:00  robertj
+# Added history file.
+#
+# Revision 1.5  1999/03/10 04:26:57  robertj
+# More documentation changes.
+#
+# Revision 1.4  1999/03/09 08:07:00  robertj
+# Documentation support.
+#
+# Revision 1.3  1999/01/22 00:30:45  robertj
+# Yet more build environment changes.
+#
+# Revision 1.2  1999/01/16 23:15:11  robertj
+# Added ability to NOT have th gui stuff.
+#
+# Revision 1.1  1999/01/16 04:00:14  robertj
+# Initial revision
+#
+#
+
+PREFIX=@INSTALLPREFIX@
+exec_prefix = ${PREFIX}
+LIBDIR=@LIBDIR@
+export PTLIBDIR=@PTLIBDIR@
+
+INSTALL=@INSTALL@
+
+default :: optshared
+
+all :: 
+
+TARGETDIR=@TARGETDIR@
+
+include make/ptlib.mak
+
+SUBDIRS := src/ptlib/$(TARGETDIR)
+ifeq (1, $(HAS_PLUGINS))
+SUBDIRS += plugins
+endif
+
+# override P_SHAREDLIB for specific targets
+optshared   debugshared   bothshared   :: P_SHAREDLIB=1
+optnoshared debugnoshared bothnoshared :: P_SHAREDLIB=0
+
+# all these targets are just passed to all subdirectories
+$(subst tagbuild,,$(STANDARD_TARGETS)) ::
+	set -e; $(foreach dir,$(SUBDIRS),if test -e $(dir) ; then $(MAKE) -C $(dir) $@; fi; )
+
+update:
+	cvs update
+	$(MAKE) bothdepend both
+
+ptlib:
+	$(MAKE) -C src/ptlib/$(TARGETDIR) both
+
+docs: 
+	doxygen ptlib_cfg.dxy
+
+install:
+	( for dir in $(DESTDIR)$(LIBDIR) \
+		     $(DESTDIR)$(PREFIX)/bin \
+		     $(DESTDIR)$(PREFIX)/include/ptlib \
+                     $(DESTDIR)$(PREFIX)/include/ptlib/unix/ptlib \
+                     $(DESTDIR)$(PREFIX)/include/ptclib \
+                     $(DESTDIR)$(PREFIX)/share/ptlib/make ; \
+		do mkdir -p $$dir ; chmod 755 $$dir ; \
+	done )
+	$(INSTALL) -m 444 lib/$(PTLIB_FILE).@MAJOR_VERSION@.@MINOR_VERSION@@BUILD_TYPE@@BUILD_NUMBER@ $(DESTDIR)$(LIBDIR)
+	(cd $(DESTDIR)$(LIBDIR) ; \
+		rm -f  $(PTLIB_FILE).@MAJOR_VERSION@.@MINOR_VERSION@ ; \
+		ln -sf $(PTLIB_FILE).@MAJOR_VERSION@.@MINOR_VERSION@@BUILD_TYPE@@BUILD_NUMBER@ $(PTLIB_FILE).@MAJOR_VERSION@.@MINOR_VERSION@ \
+	)
+	(cd $(DESTDIR)$(LIBDIR) ; \
+		rm -f  $(PTLIB_FILE).@MAJOR_VERSION@ ; \
+		ln -sf $(PTLIB_FILE).@MAJOR_VERSION@.@MINOR_VERSION@@BUILD_TYPE@@BUILD_NUMBER@ $(PTLIB_FILE).@MAJOR_VERSION@ \
+	)
+	(cd $(DESTDIR)$(LIBDIR) ; \
+		rm -f  $(PTLIB_FILE) ; \
+		ln -sf $(PTLIB_FILE).@MAJOR_VERSION@.@MINOR_VERSION@@BUILD_TYPE@@BUILD_NUMBER@ $(PTLIB_FILE) \
+	)
+	(cd $(DESTDIR)$(LIBDIR); \
+		rm -f  libpt.@SHAREDLIBEXT@ ; \
+		ln -sf $(PTLIB_FILE) libpt.@SHAREDLIBEXT@ \
+	)
+ifeq (1, $(HAS_PLUGINS))
+	cd plugins/ptlib/device/ ; \
+	( for dir in ./* ;\
+		do mkdir -p $(DESTDIR)$(LIBDIR)/ptlib/devices/$$dir ; \
+		chmod 755 $(DESTDIR)$(LIBDIR)/ptlib/devices/$$dir ; \
+		(for fn in ./$$dir/*.so ; \
+			do $(INSTALL) -m 444 $$fn $(DESTDIR)$(LIBDIR)/ptlib/devices/$$dir; \
+		done ); \
+	done )
+endif
+	$(INSTALL) -m 444 include/ptlib.h                $(DESTDIR)$(PREFIX)/include
+	$(INSTALL) -m 444 include/ptbuildopts.h          $(DESTDIR)$(PREFIX)/include
+	(for fn in include/ptlib/*.h include/ptlib/*.inl; \
+		do $(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/include/ptlib; \
+	done)
+	(for fn in include/ptlib/unix/ptlib/*.h include/ptlib/unix/ptlib/*.inl ; \
+		do $(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/include/ptlib/unix/ptlib ; \
+	done)
+	(for fn in include/ptclib/*.h ; \
+		do $(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/include/ptclib; \
+	done)
+	(for fn in make/*.mak ; \
+		do $(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/share/ptlib/make; \
+	done)
+	$(INSTALL) -m 755 make/ptlib-config $(DESTDIR)$(PREFIX)/share/ptlib/make/
+	(cd $(DESTDIR)$(PREFIX)/bin; rm -f ptlib-config ; ln -snf ../share/ptlib/make/ptlib-config ptlib-config)
+
+uninstall:
+	rm -rf $(DESTDIR)$(PREFIX)/include/ptlib \
+	       $(DESTDIR)$(PREFIX)/include/ptclib \
+	       $(DESTDIR)$(PREFIX)/include/ptlib.h \
+	       $(DESTDIR)$(PREFIX)/include/ptbuildopts.h \
+	       $(DESTDIR)$(PREFIX)/share/ptlib \
+	       $(DESTDIR)$(LIBDIR)/ptlib/devices \
+	rm -f $(DESTDIR)@libdir@/$(PTLIB_FILE)* \
+              @libdir@/libpt.so 
+
+# End of Makefile.in

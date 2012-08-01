@@ -1,0 +1,650 @@
+
+-- This defines the MIB in support of the H323 Gatekeeper-
+
+H323-GATEKEEPER-MIB DEFINITIONS ::= BEGIN
+
+    IMPORTS     MODULE-IDENTITY, OBJECT-TYPE, NOTIFICATION-TYPE,
+                Counter32, Unsigned32 , TimeTicks, Integer32   
+         FROM SNMPv2-SMI
+                RowStatus, TAddress, TruthValue, DisplayString, DateAndTime
+         FROM SNMPv2-TC
+                MODULE-COMPLIANCE, OBJECT-GROUP
+         FROM SNMPv2-CONF
+               ifIndex
+         FROM IF-MIB
+               MmGatekeeperID, MmTAddressTag, mmH323Root,
+               MmErrorSeverity, MmErrorProbableCause, MmControlsCommands
+         FROM MULTI-MEDIA-MIB-TC;
+
+
+h323Gatekeeper 
+    MODULE-IDENTITY
+       LAST-UPDATED "9812181200Z" -- December 18, 1998
+       ORGANIZATION "ITU-T"
+       CONTACT-INFO "ITU-T SG 16"
+    DESCRIPTION
+        "The MIB Module supports the functions of a H323 gatekeeper."
+    REVISION      "9805101200Z"
+    DESCRIPTION
+        "The initial version of the mib."
+    ::= { mmH323Root 6} 
+--
+-- 
+--
+h323GatekeeperZone               OBJECT IDENTIFIER ::= { h323Gatekeeper 1 }
+h323GatekeeperSystem             OBJECT IDENTIFIER ::= { h323Gatekeeper 2 }
+h323GatekeeperConfiguration      OBJECT IDENTIFIER ::= { h323Gatekeeper 3 }
+h323GatekeeperStatistics         OBJECT IDENTIFIER ::= { h323Gatekeeper 4 }
+h323GatekeeperControls           OBJECT IDENTIFIER ::= { h323Gatekeeper 5 }
+h323GatekeeperNotifications      OBJECT IDENTIFIER ::= { h323Gatekeeper 6 0 }
+
+-- System 
+h323GatekeeperSystemTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323GatekeeperSystemEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table describes the system information 
+             for instances of a gatekeeper."
+             ::= { h323GatekeeperSystem 1 }
+
+h323GatekeeperSystemEntry OBJECT-TYPE
+             SYNTAX H323GatekeeperSystemEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe the system."
+             INDEX { ifIndex }
+               ::= { h323GatekeeperSystemTable 1 }
+
+H323GatekeeperSystemEntry ::=
+              SEQUENCE {
+                h323GatekeeperSystemNameAndMaker 
+                    DisplayString,
+                h323GatekeeperSystemSoftwareVersionNumber 
+                    DisplayString,
+                h323GatekeeperSystemHardwareVersionNumber 
+                    DisplayString,
+                h323GatekeeperSystemContact 
+                    DisplayString,
+                h323GatekeeperSystemt35CountryCode 
+                    INTEGER, 
+                h323GatekeeperSystemt35CountryCodeExtention 
+                     INTEGER,
+                h323GatekeeperSystemt35ManufacturerCode 
+                    INTEGER, 
+                h323GatekeeperSystemLocation 
+                    DisplayString,
+                h323GatekeeperSystemUptime 
+                    TimeTicks,
+                h323GatekeeperSystemLocalTime 
+                    DateAndTime
+              }
+
+h323GatekeeperSystemNameAndMaker OBJECT-TYPE 
+        SYNTAX DisplayString(SIZE (0..255))
+        MAX-ACCESS read-only 
+        STATUS current 
+        DESCRIPTION 
+              "This entity's name and maker name.
+               A textual description of this entity may
+               be appended after the maker name.
+              "
+        ::= { h323GatekeeperSystemEntry 1 } 
+
+h323GatekeeperSystemSoftwareVersionNumber OBJECT-TYPE 
+        SYNTAX DisplayString
+        MAX-ACCESS read-only 
+        STATUS current 
+        DESCRIPTION "Software version number (major and minor)"
+        ::= { h323GatekeeperSystemEntry 2 } 
+
+h323GatekeeperSystemHardwareVersionNumber OBJECT-TYPE 
+               SYNTAX DisplayString
+                MAX-ACCESS read-only 
+               STATUS current 
+               DESCRIPTION "Hardware version number"
+           ::= { h323GatekeeperSystemEntry 3 } 
+
+h323GatekeeperSystemContact OBJECT-TYPE
+               SYNTAX DisplayString (SIZE (0..255))
+               MAX-ACCESS read-only
+               STATUS current
+               DESCRIPTION
+               "The textual identification of the contact person
+               for this managed node, together with
+               information on how to contact this person."
+          ::= { h323GatekeeperSystemEntry 4 }
+
+h323GatekeeperSystemt35CountryCode OBJECT-TYPE
+               SYNTAX INTEGER (0..255)
+               MAX-ACCESS read-only
+               STATUS current
+               DESCRIPTION
+               "Country code, per T.35."
+          ::= { h323GatekeeperSystemEntry 5 }
+
+h323GatekeeperSystemt35CountryCodeExtention OBJECT-TYPE
+               SYNTAX INTEGER (0..255)
+               MAX-ACCESS read-only
+               STATUS current
+               DESCRIPTION
+               "Assigned nationally."
+          ::= { h323GatekeeperSystemEntry 6 }
+
+h323GatekeeperSystemt35ManufacturerCode OBJECT-TYPE
+               SYNTAX INTEGER (0..65535)
+               MAX-ACCESS read-only
+               STATUS current
+               DESCRIPTION
+               "Assigned nationally."
+          ::= { h323GatekeeperSystemEntry 7 }
+
+h323GatekeeperSystemLocation OBJECT-TYPE
+               SYNTAX DisplayString (SIZE (0..255))
+               MAX-ACCESS read-only
+               STATUS current
+               DESCRIPTION
+               "The physical location of this system. For instance, closet,
+               terminal room and so on"
+          ::= { h323GatekeeperSystemEntry 8 }
+
+h323GatekeeperSystemUptime OBJECT-TYPE
+               SYNTAX TimeTicks
+               MAX-ACCESS read-only
+               STATUS current
+               DESCRIPTION
+               "The amount of time (in hundredths of a second) since
+               this system was last initialized.  Note that this
+               is different from sysUpTime in MIB-II  because
+               sysUpTime is the uptime of the network management
+               portion of the system."
+          ::= { h323GatekeeperSystemEntry 9 }
+
+h323GatekeeperSystemLocalTime OBJECT-TYPE
+               SYNTAX DateAndTime
+               MAX-ACCESS read-write
+               STATUS current
+               DESCRIPTION
+                         "The local date and time of day."
+     ::= { h323GatekeeperSystemEntry 10 }
+--
+-- Configuration objects
+--
+h323GatekeeperConfigurationTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323GatekeeperConfigurationEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains configuration information 
+                 for instances of a gatekeeper."
+             ::= { h323GatekeeperConfiguration 1 }
+
+h323GatekeeperConfigurationEntry OBJECT-TYPE
+             SYNTAX H323GatekeeperConfigurationEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe the configuration."
+             INDEX { ifIndex }
+               ::= { h323GatekeeperConfigurationTable 1 }
+
+H323GatekeeperConfigurationEntry ::=
+              SEQUENCE {
+                h323GatekeeperConfigurationEnableNotifications 
+                     INTEGER,
+                h323GatekeeperConfigurationRegistrationMode 
+                     INTEGER
+                 
+               }
+
+h323GatekeeperConfigurationEnableNotifications OBJECT-TYPE 
+        SYNTAX INTEGER { enabled(1), disabled(2) } 
+        MAX-ACCESS read-write 
+        STATUS current 
+        DESCRIPTION 
+          "Indicates whether notifications should be generated 
+           for this entity. The default is disabled."
+   ::= { h323GatekeeperConfigurationEntry 1 }
+
+h323GatekeeperConfigurationRegistrationMode OBJECT-TYPE 
+        SYNTAX INTEGER { acceptAll(1), acceptNone(2), acceptPredefined(3) } 
+        MAX-ACCESS read-write 
+        STATUS current 
+        DESCRIPTION 
+          "Indicates whether gatekeeper allows : 
+           1 - all endpoints to register dynamically
+           2 - no endpoints to register dynamically
+           3 - only predefined endpoints to register dynamically
+          "
+ ::= { h323GatekeeperConfigurationEntry 2 }
+
+--
+-- Zone Information.  
+--
+h323ZoneTable OBJECT-TYPE
+    SYNTAX     SEQUENCE OF H323ZoneEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+        "The table contains the local zones supported by the Gatekeeper
+        and the remote zones which the Gatekeeper may or has interacted
+        with."
+    ::= { h323GatekeeperZone 1 }
+
+h323ZoneEntry OBJECT-TYPE
+    SYNTAX     H323ZoneEntry
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+        "An entry (conceptual row) in the h323ZoneTable. An entry may be
+        created administratively or by the gatekeeper during normal
+        gatekeeper operations.
+       
+        Unless otherwise specified, writable objects may be changed
+        while h323ZoneRowStatus
+        is 'active'."
+    INDEX      { ifIndex, h323ZoneIndex }
+    ::= { h323ZoneTable 1 }
+
+H323ZoneEntry::= SEQUENCE {
+    h323ZoneIndex  
+        Integer32,
+    h323ZoneZoneName                        
+        MmGatekeeperID,
+    h323ZoneRasSignalAddressTag   
+         MmTAddressTag,
+    h323ZoneRasSignalAddress          
+        TAddress,
+    h323ZoneMaxBandwidth                
+        Unsigned32,
+    h323ZoneAllocatedBandwidth       
+        Integer32,
+    h323ZoneIrrFrequency                    
+        INTEGER,
+    h323ZoneLocalZone                       
+        TruthValue, 
+    h323ZoneAdmissions                     
+        Counter32, 
+    h323ZoneAdmissionsRejected      
+        Counter32,
+    h323ZoneRowStatus                       
+        RowStatus
+}
+
+h323ZoneIndex OBJECT-TYPE
+    SYNTAX     Integer32
+    MAX-ACCESS not-accessible
+    STATUS     current
+    DESCRIPTION
+        "An  unsigned integer value whose only significance is to
+        uniquely identify the conceptual row.  The value has no
+        significance."
+    ::= { h323ZoneEntry 1 }
+
+h323ZoneZoneName OBJECT-TYPE
+    SYNTAX     MmGatekeeperID
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+        "The name of the zone as fully qualifed name. 
+                e.g.  zone1.area1.company.com
+        "
+    ::= { h323ZoneEntry 2 }
+
+h323ZoneRasSignalAddressTag OBJECT-TYPE
+    SYNTAX     MmTAddressTag
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+        "The tag identifying the underlying type of
+        h323ZoneRasSignalAddress."
+    DEFVAL { ipv4 }
+    ::= { h323ZoneEntry 3 }
+
+h323ZoneRasSignalAddress OBJECT-TYPE
+    SYNTAX     TAddress
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+        "A RAS Signal transport address of the gatekeeper supporting
+        the zone. "
+    DEFVAL { '00000000'H }
+    ::= { h323ZoneEntry 4 }
+
+h323ZoneMaxBandwidth OBJECT-TYPE
+    SYNTAX     Unsigned32(0..2147483647)
+    UNITS      "100 bps"
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+        "The maximum bidirectional bandwidth which a gatekeeper can
+        allocate to  all calls in the zone.  If h323ZoneLocalFlag is
+        'false' then this object may be 0, indicating unknown. 
+        
+         h323ZoneMaxBandwidth is the total bidirectional data flow in
+        units of hundred bits per second (bps).  A value of 10 is
+        1000bps."
+    ::= { h323ZoneEntry 5 }
+
+h323ZoneAllocatedBandwidth OBJECT-TYPE
+    SYNTAX     Integer32
+    UNITS      "100 bps"
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+        "The total bidirectional bandwidth allocated by the gatekeeper
+        to the active calls.  If h323ZoneLocalFlag is 'false' then this
+        object does not apply.
+        
+        The value is in units of hundred bits per second, i.e.  a value
+        of 10 is 1000 bps. This value may not exceed the value of
+        h323ZoneMaxBandwidth."
+    ::= { h323ZoneEntry 6 }
+
+h323ZoneIrrFrequency OBJECT-TYPE
+    SYNTAX     INTEGER (1..65535)
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+        "The IRR time a gatekeeper returns in a ACF."
+    DEFVAL { 60 }
+    ::= { h323ZoneEntry 7 }
+
+h323ZoneLocalZone OBJECT-TYPE
+    SYNTAX     TruthValue
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+        "If this gatekeeper manages the zone, then this value is 'true'
+        otherwise it is false."
+    DEFVAL { true }
+    ::= { h323ZoneEntry 8 }
+
+h323ZoneAdmissions OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+        "The number of ACFs by the gatekeeper.  If
+        h323ZoneLocalZone is 'false' then the value of this object
+        has no meaning."
+    ::= { h323ZoneEntry 9 }
+
+h323ZoneAdmissionsRejected OBJECT-TYPE
+    SYNTAX     Counter32
+    MAX-ACCESS read-only
+    STATUS     current
+    DESCRIPTION
+        "The number of ARJ sent by the gatekeeper.  If h323ZoneLocalZone
+        is 'false' then the value of this object has no meaning."
+    ::= { h323ZoneEntry 10 }
+
+h323ZoneRowStatus OBJECT-TYPE
+    SYNTAX     RowStatus
+    MAX-ACCESS read-create
+    STATUS     current
+    DESCRIPTION
+        "The row status of the entry. This object is required to create
+        or delete rows administratively.
+       
+        A agent implementing this object is not required to support the
+        values 'createAndWait' and 'notInService'."
+    ::= { h323ZoneEntry 11 }
+
+
+--
+-- GK Statistics
+--
+
+h323GatekeeperStatisticsTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323GatekeeperStatisticsEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains statistics information 
+             for instances of a gatekeeper."
+             ::= { h323GatekeeperStatistics 1 }
+
+h323GatekeeperStatisticsEntry OBJECT-TYPE
+             SYNTAX H323GatekeeperStatisticsEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe the statistics."
+             INDEX { ifIndex }
+               ::= { h323GatekeeperStatisticsTable 1 }
+
+H323GatekeeperStatisticsEntry ::=
+              SEQUENCE {
+                 h323GatekeeperStatisticsTotalErrors 
+                     Counter32,
+                 h323GatekeeperStatisticsLastErrorEventTime 
+                     DateAndTime,
+                 h323GatekeeperStatisticsLastErrorSeverity 
+                     MmErrorSeverity,
+                 h323GatekeeperStatisticsLastErrorProbableCause 
+                     MmErrorProbableCause,
+                 h323GatekeeperStatisticsLastErrorAdditionalText 
+                     DisplayString,
+                 h323GatekeeperStatisticsZoneNo
+                    Counter32
+                }
+
+h323GatekeeperStatisticsTotalErrors OBJECT-TYPE
+             SYNTAX Counter32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                  "Total number of GK errors that have occurred 
+             in the gateway since the last startup"
+        ::= { h323GatekeeperStatisticsEntry 1 }
+
+h323GatekeeperStatisticsLastErrorEventTime OBJECT-TYPE
+             SYNTAX DateAndTime
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+             " The date and time for the most recent error that
+             has occurred in the gatekeeper."   
+     ::= { h323GatekeeperStatisticsEntry 2 }
+
+h323GatekeeperStatisticsLastErrorSeverity OBJECT-TYPE
+             SYNTAX MmErrorSeverity
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                  "Severity for the most recent error that
+             has occurred in the gatekeeper."
+        ::= { h323GatekeeperStatisticsEntry 3 }
+
+h323GatekeeperStatisticsLastErrorProbableCause OBJECT-TYPE
+             SYNTAX MmErrorProbableCause
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                  "Probable Cause for the most recent error that
+             has occurred in the gatekeeper. This value must be one 
+             of the given probable causes for errors on an entity. 
+             Values for probable causes for errors on a call or 
+             errors on a connection do not apply."
+        ::= { h323GatekeeperStatisticsEntry 4 }
+
+h323GatekeeperStatisticsLastErrorAdditionalText OBJECT-TYPE
+             SYNTAX DisplayString
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                  "String Description of the most recent error
+                   that has occurred in the gatekeeper."
+        ::= { h323GatekeeperStatisticsEntry 5 }
+
+h323GatekeeperStatisticsZoneNo OBJECT-TYPE
+             SYNTAX  Counter32
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of h323 local zones supported by the Gatekeeper
+                 and the remote zones which the Gatekeeper may or has 
+                 interacted with."
+                 ::= { h323GatekeeperStatisticsEntry 6 }
+
+
+-- Commands and controls
+h323GatekeeperControlsCommands OBJECT-TYPE 
+       SYNTAX MmControlsCommands
+       MAX-ACCESS read-write 
+       STATUS current 
+       DESCRIPTION 
+          "A value that represents a command for the gateway.
+          For the list of possible commands, please refer to 
+          MmControlsCommands "
+   ::= { h323GatekeeperControls 1}   
+
+
+-- Notifications
+-- General Gatekeeper Notifications 
+
+h323GatekeeperStart NOTIFICATION-TYPE
+       OBJECTS { ifIndex }
+STATUS  current
+DESCRIPTION
+   "Signifies that the gatekeeper has started. All MIB counters
+        have gone to zero."
+::= { h323GatekeeperNotifications 1}
+
+h323GatekeeperGoingDown NOTIFICATION-TYPE
+       OBJECTS { ifIndex }
+STATUS  current
+DESCRIPTION
+   "Signifies that the gatekeeper is about to go down"
+::= { h323GatekeeperNotifications 2 }
+
+h323GatekeeperError NOTIFICATION-TYPE
+       OBJECTS {  
+           ifIndex,
+           h323GatekeeperStatisticsLastErrorEventTime,
+           h323GatekeeperStatisticsLastErrorSeverity,
+           h323GatekeeperStatisticsLastErrorProbableCause 
+        }
+STATUS  current
+DESCRIPTION
+   "Signifies that an error has occurred in the Gatekeeper. "
+::= { h323GatekeeperNotifications 3 }
+
+
+
+--
+-- CONFORMANCE
+--
+
+h323GatekeeperMIBConformance    OBJECT IDENTIFIER ::= { h323Gatekeeper 7 }
+h323GatekeeperMIBCompliance     OBJECT IDENTIFIER ::= { h323GatekeeperMIBConformance 1 }
+h323GatekeeperMIBGroups         OBJECT IDENTIFIER ::= { h323GatekeeperMIBConformance 2 }
+
+h323GatekeeperCompliance        MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+        "The set of objects required for compliance."
+    MODULE
+        MANDATORY-GROUPS { 
+            h323GatekeeperZoneGroup, 
+            h323GatekeeperSystem,
+            h323GatekeeperConfigurationGroup,
+            h323GatekeeperStatisticsGroup,
+            h323GatekeeperNotificationsGroup,
+            h323GatekeeperControlsGroup
+       }
+        
+   ::= { h323GatekeeperMIBCompliance 1 }
+
+--
+-- Groups for Conformance
+--
+
+h323GatekeeperSystemGroup OBJECT-GROUP
+    OBJECTS {
+       h323GatekeeperSystemNameAndMaker, 
+       h323GatekeeperSystemSoftwareVersionNumber,
+       h323GatekeeperSystemHardwareVersionNumber,  
+       h323GatekeeperSystemContact,
+       h323GatekeeperSystemt35CountryCode, 
+       h323GatekeeperSystemt35CountryCodeExtention,
+       h323GatekeeperSystemt35ManufacturerCode, 
+       h323GatekeeperSystemLocation,
+       h323GatekeeperSystemUptime,
+       h323GatekeeperSystemLocalTime 
+    }
+    STATUS  current
+    DESCRIPTION
+       "The set of objects a gatekeeper must support 
+      for the GK System Description."
+    ::= { h323GatekeeperMIBGroups 1 }
+
+h323GatekeeperConfigurationGroup OBJECT-GROUP
+    OBJECTS {
+       h323GatekeeperConfigurationEnableNotifications
+    }
+    STATUS  current
+    DESCRIPTION
+       "The set of objects a gatekeeper must support 
+      for the GK Configuration."
+    ::= { h323GatekeeperMIBGroups 2 }
+
+h323GatekeeperZoneGroup OBJECT-GROUP
+    OBJECTS {
+       h323ZoneZoneName,
+       h323ZoneRasSignalAddressTag,
+       h323ZoneRasSignalAddress,
+       h323ZoneMaxBandwidth,
+       h323ZoneAllocatedBandwidth,
+       h323ZoneIrrFrequency,
+       h323ZoneLocalZone,
+       h323ZoneAdmissions,
+       h323ZoneAdmissionsRejected,
+       h323ZoneRowStatus
+    }
+    STATUS  current
+    DESCRIPTION
+       "The set of objects a gatekeeper must support for local and remote
+       zones."
+    ::= { h323GatekeeperMIBGroups 3 }
+
+h323GatekeeperStatisticsGroup OBJECT-GROUP
+    OBJECTS {
+       h323GatekeeperStatisticsTotalErrors,
+       h323GatekeeperStatisticsLastErrorEventTime,
+       h323GatekeeperStatisticsLastErrorSeverity,
+       h323GatekeeperStatisticsLastErrorProbableCause,
+       h323GatekeeperStatisticsLastErrorAdditionalText,
+       h323GatekeeperStatisticsZoneNo
+    }
+    STATUS  current
+    DESCRIPTION
+       "The set of objects a gatekeeper must support for statistics."
+    ::= { h323GatekeeperMIBGroups 4 }
+
+
+h323GatekeeperControlsGroup OBJECT-GROUP
+    OBJECTS {
+       h323GatekeeperControlsCommands
+    }
+    STATUS  current
+    DESCRIPTION
+       "The set of objects a gatekeeper must support for controls."
+    ::= { h323GatekeeperMIBGroups 5 }
+
+
+h323GatekeeperNotificationsGroup OBJECT-GROUP
+    OBJECTS {
+       h323GatekeeperStart,
+       h323GatekeeperGoingDown,
+       h323GatekeeperError 
+    }
+    STATUS  current
+    DESCRIPTION
+       "The set of objects a gatekeeper must support for notifications."
+    ::= { h323GatekeeperMIBGroups 6 }
+
+
+END

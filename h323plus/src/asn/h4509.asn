@@ -1,0 +1,102 @@
+Call-Completion-Operations
+{
+  itu-t recommendation h 450 9 version1(0) call-completion-operations(0)
+}
+
+DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+  IMPORTS Extension FROM H4501 -- Manufacturer-specific-service-extension-definition
+          {
+            itu-t recommendation h 450 1 version1(0) msi-definition(18)
+          }
+
+          CallIdentifier FROM H225 -- H323-MESSAGES see H.225.0
+
+          EndpointAddress FROM H4501 -- Addressing-Data-Elements
+          {
+            itu-t recommendation h 450 1 version1(0) addressing-data-elements (9)
+          }
+
+          MixedExtension, undefined FROM H4504 -- Call-Hold-Operations 
+          {
+            itu-t recommendation h 450 4 version1(0) call-hold-operations(0)
+          }
+
+          supplementaryServiceInteractionNotAllowed FROM H4501 -- H4501-General-Error-List
+          {
+            itu-t recommendation h 450 1 version1(0) general-error-list (1)
+          }
+
+          BasicService FROM H4507 -- Message-Waiting-Indication-Operations 
+          {
+            itu-t recommendation h 450 7 version1(0) message-waiting-operations(0)
+          };
+
+  H323CallCompletionOperations ::= ENUMERATED
+  {
+    ccbsRequest(40),
+    ccnrRequest(27),
+    ccCancel(28),
+    ccExecPossible(29),
+    ccRingout(31),
+    ccSuspend(32),
+    ccResume(33)
+  }
+
+  CcRequestArg ::= SEQUENCE
+  {
+    numberA               EndpointAddress,
+    numberB               EndpointAddress,
+    ccIdentifier          CallIdentifier  OPTIONAL, -- If present, it shall be used as the prime mechanism for associating
+                                                    -- the unsuccessful call, the CC Request and the CC Call.
+    service               BasicService,
+    can-retain-service    BOOLEAN,
+    retain-sig-connection BOOLEAN OPTIONAL,
+    extension             SEQUENCE SIZE (0..255) OF MixedExtension  OPTIONAL,
+    ...
+  }
+
+  CcRequestRes ::= SEQUENCE
+  {
+    retain-service BOOLEAN,
+    extension      SEQUENCE SIZE (0..255) OF MixedExtension  OPTIONAL,
+    ...
+  }
+
+  CcArg ::= CHOICE
+  {
+    shortArg CcShortArg, -- if signalling conection is retained
+    longArg  CcLongArg,  -- if connection release option applies
+    ...
+  }
+
+  CcShortArg ::= SEQUENCE
+  {
+    ccIdentifier CallIdentifier OPTIONAL,
+    extension    SEQUENCE SIZE (0..255) OF MixedExtension  OPTIONAL,
+    ...
+  }
+
+
+  CcLongArg ::= SEQUENCE
+  {
+    numberA      EndpointAddress  OPTIONAL,
+    numberB      EndpointAddress  OPTIONAL,
+    ccIdentifier CallIdentifier  OPTIONAL,
+    service      BasicService  OPTIONAL, -- these elements are used to identify the proper CC Request. 
+                                         -- The ccIdentifier if present shall be the prime mechanism for this purpose.
+    extension    SEQUENCE SIZE (0..255) OF MixedExtension  OPTIONAL,
+    ...
+  }
+
+
+  CallCompletionErrors ::= ENUMERATED
+  {
+    shortTermRejection(1010),
+    longTermRejection(1011),
+    remoteUserBusyAgain(1012),
+    failureToMatch(1013)
+  }
+
+END -- of Call-Completion-Operations

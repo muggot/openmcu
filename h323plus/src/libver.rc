@@ -1,0 +1,119 @@
+/*
+ * libver.rc
+ *
+ * Library version resource.
+ *
+ * Copyright (c) 1993-1998 Equivalence Pty. Ltd.
+ *
+ * The contents of this file are subject to the Mozilla Public License
+ * Version 1.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+ * the License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * The Original Code is Open H323 Library.
+ *
+ * The Initial Developer of the Original Code is Equivalence Pty. Ltd.
+ *
+ * Contributor(s): ______________________________________.
+ */
+
+#include <winver.h>
+#include "../version.h"
+
+
+
+#ifndef PRODUCT
+#define	PRODUCT OpenH323
+#endif
+
+#ifndef MANUFACTURER_NAME
+#define	MANUFACTURER_NAME   "Equivalence Pty. Ltd."
+#endif
+
+#ifndef PRODUCT_DESCRIPTION
+#define PRODUCT_DESCRIPTION "Open H.323 Library"
+#endif
+
+
+
+#define AlphaCode   alpha
+#define BetaCode    beta
+#define ReleaseCode pl
+
+
+#define MkStr2(s) #s
+#define MkStr(s) MkStr2(s)
+
+#if BUILD_NUMBER==0
+#define VERSION_STRING MkStr(MAJOR_VERSION) "." MkStr(MINOR_VERSION)
+#else
+#define VERSION_STRING MkStr(MAJOR_VERSION) "." MkStr(MINOR_VERSION) MkStr(BUILD_TYPE) MkStr(BUILD_NUMBER)
+#endif
+
+
+#ifndef PRODUCT_NAME
+#define	PRODUCT_NAME MkStr(PRODUCT)
+#endif
+
+#ifndef EXECUTABLE_NAME
+#ifdef _DEBUG
+#define EXECUTABLE_NAME	PRODUCT_NAME "d.dll"
+#else
+#ifdef PTRACING
+#define EXECUTABLE_NAME	PRODUCT_NAME ".dll"
+#else
+#define EXECUTABLE_NAME	PRODUCT_NAME "n.dll"
+#endif
+#endif
+#endif
+
+
+
+VS_VERSION_INFO VERSIONINFO
+
+#define pl 0
+#define beta 1
+#define alpha 2
+  FILEVERSION     MAJOR_VERSION,MINOR_VERSION,BUILD_NUMBER,BUILD_TYPE
+  PRODUCTVERSION  MAJOR_VERSION,MINOR_VERSION,BUILD_NUMBER,BUILD_TYPE
+#undef alpha
+#undef beta
+#undef pl
+
+  FILEFLAGSMASK   VS_FFI_FILEFLAGSMASK
+#ifdef _DEBUG
+  FILEFLAGS       VS_FF_DEBUG
+#else
+  FILEFLAGS       0
+#endif
+  FILEOS          VOS_NT_WINDOWS32
+  FILETYPE        VFT_APP
+  FILESUBTYPE     VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "0c0904b0"
+        BEGIN
+            VALUE "CompanyName",      MANUFACTURER_NAME "\0"
+            VALUE "FileDescription",  PRODUCT_DESCRIPTION "\0"
+            VALUE "FileVersion",      VERSION_STRING "\0"
+            VALUE "InternalName",     PRODUCT_NAME "\0"
+            VALUE "LegalCopyright",   "Copyright © " MANUFACTURER_NAME " 1993-2000\0"
+            VALUE "OriginalFilename", EXECUTABLE_NAME "\0"
+            VALUE "ProductName",      PRODUCT_DESCRIPTION "\0"
+            VALUE "ProductVersion",   VERSION_STRING "\0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0xc09, 1200
+    END
+END
+
+
+///////////////////////////////////////////////////////////////////////////////

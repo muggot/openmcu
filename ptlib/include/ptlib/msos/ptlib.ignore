@@ -1,0 +1,35 @@
+EXPORTS
+    _regcomp @3549 NONAME ;_regcomp
+    _regerror @3550 NONAME ;_regerror
+    _regexec @3551 NONAME ;_regexec
+    _regfree @3552 NONAME ;_regfree
+    _WspiapiClone@8 @3907 NONAME ;_WspiapiClone@8
+    _WspiapiFreeAddrInfo@4 @3908 NONAME ;_WspiapiFreeAddrInfo@4
+    _WspiapiGetAddrInfo@16 @3909 NONAME ;_WspiapiGetAddrInfo@16
+    _WspiapiGetNameInfo@28 @3910 NONAME ;_WspiapiGetNameInfo@28
+    _WspiapiLegacyFreeAddrInfo@4 @3911 NONAME ;_WspiapiLegacyFreeAddrInfo@4
+    _WspiapiLegacyGetAddrInfo@16 @3912 NONAME ;_WspiapiLegacyGetAddrInfo@16
+    _WspiapiLegacyGetNameInfo@28 @3913 NONAME ;_WspiapiLegacyGetNameInfo@28
+    _WspiapiLoad@4 @3914 NONAME ;_WspiapiLoad@4
+    _WspiapiLookupNode@24 @3915 NONAME ;_WspiapiLookupNode@24
+    _WspiapiNewAddrInfo@16 @3916 NONAME ;_WspiapiNewAddrInfo@16
+    _WspiapiParseV4Address@8 @3917 NONAME ;_WspiapiParseV4Address@8
+    _WspiapiQueryDNS@24 @3918 NONAME ;_WspiapiQueryDNS@24
+    _WspiapiStrdup@4 @3919 NONAME ;_WspiapiStrdup@4
+    ___dummy
+    _CLSID_Registrar @15861 NONAME
+    _CLSID_StdGlobalInterfaceTable @15862 NONAME
+    _IID_IAxWinAmbientDispatch @15863 NONAME
+    _IID_IAxWinAmbientDispatchEx @15864 NONAME
+    _IID_IAxWinHostWindow @15865 NONAME
+    _IID_IAxWinHostWindowLic @15866 NONAME
+    _IID_IDocHostUIHandlerDispatch @15867 NONAME
+    _IID_IInternalConnection @15868 NONAME
+    _IID_IRegistrar @15869 NONAME
+    _LIBID_ATLLib @15870 NONAME
+    __GUID_12e3cca9_7518_44c5_a5e7_ba5a79cb929e @15871 NONAME
+    __GUID_2d3d3845_39af_4850_bbf9_40b49780011d @15872 NONAME
+    __GUID_6c44df74_72b9_4992_a1ec_ef996e0422d4 @15873 NONAME
+    ___pobjMapEntryFirst @15874 NONAME
+    ___pobjMapEntryLast @15875 NONAME
+    

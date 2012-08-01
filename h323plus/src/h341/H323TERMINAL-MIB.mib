@@ -1,0 +1,447 @@
+
+--
+-- This defines the MIB in support of the ITU-T H.323 terminal
+-- 
+
+H323TERMINAL-MIB DEFINITIONS ::= BEGIN
+      IMPORTS
+            MODULE-IDENTITY, OBJECT-TYPE, Integer32,
+            TimeTicks 
+                  FROM SNMPv2-SMI
+            DisplayString, DateAndTime
+                  FROM SNMPv2-TC
+            MODULE-COMPLIANCE, OBJECT-GROUP
+                  FROM SNMPv2-CONF
+            ifIndex
+                  FROM IF-MIB
+            mmH323Root, MmTerminalVideoCapability, MmTerminalAudioCapability,
+            MmTerminalDataCapability
+                  FROM  MULTI-MEDIA-MIB-TC;
+
+      h323Terminal MODULE-IDENTITY
+            LAST-UPDATED "9812181400Z" -- December 18, 1998
+            ORGANIZATION "ITU-T"
+            CONTACT-INFO
+                  "ITU-T SG-16"
+            DESCRIPTION
+                  "This MIB module supports the functions of an 
+                  ITU-T H.323 terminal"
+            REVISION "9812181400Z" -- December 18, 1998
+            DESCRIPTION
+                  "The H323 terminal mib"
+      ::= { mmH323Root 3}      
+
+      h323TermSystem            OBJECT IDENTIFIER ::= { h323Terminal 1}
+      h323TermCapability        OBJECT IDENTIFIER ::= { h323Terminal 2}      
+      h323TermControl           OBJECT IDENTIFIER ::= { h323Terminal 3}
+
+-- Terminal description group
+-- Implementation of the terminal description group is mandatory for all 
+-- H.323 terminals. If an agent is not configured to have a value for any
+-- of these variables, a string of length 0 is returned.
+
+      h323TermSystemTable OBJECT-TYPE
+            SYNTAX SEQUENCE  OF H323TermSystemEntry
+            MAX-ACCESS not-accessible
+            STATUS current
+            DESCRIPTION
+                  "This table contains the terminal description of
+                  a terminal indexed by ifIndex."
+     ::= { h323TermSystem 1 }
+
+     h323TermSystemEntry OBJECT-TYPE
+            SYNTAX H323TermSystemEntry
+            MAX-ACCESS not-accessible
+            STATUS current
+            DESCRIPTION
+                  "It contains objects that describe the terminal."
+            INDEX {ifIndex}
+     ::= { h323TermSystemTable 1 }
+
+     H323TermSystemEntry ::=
+            SEQUENCE {
+                  h323TermSystemDescr                        DisplayString,
+                  h323TermSystemHWVersionNo                  DisplayString,
+                  h323TermSystemSWVersionNo                  DisplayString,
+                  h323TermSystemContact                      DisplayString, 
+                  h323TermSystemt35CountryCode               INTEGER,
+                  h323TermSystemt35CountryCodeExtention      INTEGER,
+                  h323TermSystemt35ManufacturerCode          INTEGER,
+                  h323TermSystemLocation                     DisplayString,
+                  h323TermSystemUptime                       TimeTicks,
+                  h323TermSystemLocalTime                    DateAndTime,
+                  h323TermSystemDiagnostics                  Integer32,
+                  h323TermSystemStatus                       INTEGER
+            }
+
+      h323TermSystemDescr OBJECT-TYPE
+             SYNTAX DisplayString (SIZE (0..255))
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                   "A textual description of the terminal. Name of 
+                    manufacturer."
+      ::= { h323TermSystemEntry 1 }
+
+      h323TermSystemHWVersionNo OBJECT-TYPE
+             SYNTAX DisplayString (SIZE (0..255))
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                   "Hardware version number."
+      ::= { h323TermSystemEntry 2 }
+
+      h323TermSystemSWVersionNo OBJECT-TYPE
+             SYNTAX DisplayString (SIZE (0..255))
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                   "Software version number."
+      ::= { h323TermSystemEntry 3 }
+
+     h323TermSystemContact OBJECT-TYPE
+             SYNTAX DisplayString (SIZE (0..255))
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                   "The textual identification of the contact person
+                   for this managed node, together with information
+                   on how to contact this person."
+     ::= { h323TermSystemEntry 4 }
+
+     h323TermSystemt35CountryCode OBJECT-TYPE
+             SYNTAX INTEGER (0..255)
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+		           "Country code, per T.35 Annex A."
+     ::= { h323TermSystemEntry 5 }
+     
+     h323TermSystemt35CountryCodeExtention OBJECT-TYPE
+             SYNTAX INTEGER (0..255)
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "Assigned nationally, unless the country code
+                 is 255, in which case this value shall contain
+                 the country code found in T.35 Annex B."
+     ::= { h323TermSystemEntry 6 }
+
+     h323TermSystemt35ManufacturerCode OBJECT-TYPE
+             SYNTAX INTEGER (0..65535)
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                   "Assigned nationally."
+     ::= { h323TermSystemEntry 7 }
+
+     h323TermSystemLocation OBJECT-TYPE
+             SYNTAX DisplayString (SIZE (0..255))
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                   "The physical location of this system. For instance, closet, 
+                  terminal room and so on"
+     ::= { h323TermSystemEntry 8 }
+
+     h323TermSystemUptime OBJECT-TYPE
+             SYNTAX TimeTicks
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                  "The amount of time (in hundredths of a second) since 
+                  this H323 terminal was last initialized.  Note that this 
+                  is different from sysUpTime in MIB-II because 
+                  sysUpTime  is the uptime of the network management 
+                  portion of the system."
+     ::= { h323TermSystemEntry 9 }
+
+     h323TermSystemLocalTime OBJECT-TYPE
+             SYNTAX DateAndTime
+             MAX-ACCESS read-write
+             STATUS current
+             DESCRIPTION
+                    "The local date and time of day."
+     ::= { h323TermSystemEntry 10 }
+
+     h323TermSystemDiagnostics OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                   "Indicates the results of the last diagnostic routine 
+                       performed
+                       noResults(1)         No diagnostic has yet been performed,
+                       passed(2)            the diagnostic has been passed,
+                       hardwareFault(3)     Hardware fault was detected,
+                       softwareFault(4)     Software fault was detected"
+      ::= { h323TermSystemEntry 11 }
+
+      h323TermSystemStatus OBJECT-TYPE
+             SYNTAX INTEGER { 
+                       callSetup (1),
+                       callinProgress(2),
+                       callHangUp(3),
+                       idle(4)
+                   }
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                     "General status of the terminal"
+      ::= { h323TermSystemEntry 12 }
+
+      -- H323 Terminal capabilities
+      --
+      h323TerminalCapsTable OBJECT-TYPE
+             SYNTAX SEQUENCE  OF H323TerminalCapsEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                   "This table contains the capability of
+                  a terminal indexed by ifIndex."
+      ::= { h323TermCapability 1 }
+
+      h323TerminalCapsEntry OBJECT-TYPE
+             SYNTAX H323TerminalCapsEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                   "It conatins objects that describe the capability."
+             INDEX {ifIndex}
+      ::= { h323TerminalCapsTable 1 }
+
+      H323TerminalCapsEntry ::=
+            SEQUENCE {
+                  h323TerminalCapsMaxLineRate 
+                         Integer32,
+                  h323TerminalCapsVideoCaps  
+                         MmTerminalVideoCapability,
+                  h323TerminalCapsMaxVideoRate            
+                         Integer32,
+                  h323TerminalCapsAudioCaps            
+                         MmTerminalAudioCapability,
+                  h323TerminalCapsDataCaps            
+                         MmTerminalDataCapability,
+                  h323TerminalCapsRDCCaps                  
+                         Integer32
+            }
+
+      h323TerminalCapsMaxLineRate OBJECT-TYPE
+            SYNTAX Integer32
+            MAX-ACCESS read-only
+            STATUS current
+            DESCRIPTION
+                  "This object represents maximum line rate of combined
+                  audio/video and data in kbit/s of this terminal."
+      ::= { h323TerminalCapsEntry 1 }
+
+      h323TerminalCapsVideoCaps OBJECT-TYPE
+            SYNTAX MmTerminalVideoCapability
+            MAX-ACCESS read-only
+            STATUS current
+            DESCRIPTION
+                  "This object represents the video capabilities of this
+                  terminal"
+      ::= { h323TerminalCapsEntry 2 }
+
+      h323TerminalCapsMaxVideoRate OBJECT-TYPE
+            SYNTAX  Integer32 
+            MAX-ACCESS  read-only
+            STATUS  current
+            DESCRIPTION
+                  "The maximum bit rate that the video channel can do."
+      ::= { h323TerminalCapsEntry 3 }
+
+      h323TerminalCapsAudioCaps OBJECT-TYPE
+            SYNTAX MmTerminalAudioCapability
+            MAX-ACCESS read-only
+            STATUS current
+            DESCRIPTION
+                  "This object represents the audio capabilities of this
+                  terminal. "
+      ::= { h323TerminalCapsEntry 4 }
+
+      h323TerminalCapsDataCaps OBJECT-TYPE
+            SYNTAX MmTerminalDataCapability 
+            MAX-ACCESS read-only
+            STATUS current
+            DESCRIPTION
+                  "This object represents the data application
+                  capability of the terminal. "
+      ::= { h323TerminalCapsEntry 5 }
+
+      h323TerminalCapsRDCCaps OBJECT-TYPE
+            SYNTAX Integer32
+            MAX-ACCESS read-only
+            STATUS current
+            DESCRIPTION
+                  "This object represents the Remote Device Control
+                  capability of the terminal.    
+                        other                 0   
+                        FECC                  1   -- Far-end Camera Control
+    
+                  Bits are numbered starting with the most
+                  significant bit of the first byte being bit 0, the
+                  least significant bit of the first byte being bit
+                  7, the most significant bit of the second byte
+                  being bit 8, and so on.  A one bit encodes that
+                  the capability is supported, a zero bit encodes that
+                  the capability is not supported." 
+      ::= { h323TerminalCapsEntry 6 }
+
+      -- Terminal control group
+      -- This group contains variables used to control a H.323 terminal.
+
+      h323TerminalControlTable OBJECT-TYPE
+            SYNTAX SEQUENCE  OF H323TerminalControlEntry
+            MAX-ACCESS not-accessible
+            STATUS current
+            DESCRIPTION
+                   "This table contains the control funciton of
+                   a terminal indexed by ifIndex."
+      ::= { h323TermControl 1 }
+
+      h323TerminalControlEntry OBJECT-TYPE
+            SYNTAX H323TerminalControlEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                   "It conatins objects that control the terminal."
+            INDEX {ifIndex}
+      ::= { h323TerminalControlTable 1 }
+
+      H323TerminalControlEntry ::=
+            SEQUENCE {
+                  h323TerminalControlAdminControl               INTEGER,
+                  h323TerminalControlEnableLocalLoopback        INTEGER,
+                  h323TerminalControlEnableRemoteLoopback       INTEGER
+        }
+
+      h323TerminalControlAdminControl OBJECT-TYPE
+             SYNTAX INTEGER { run(1), reset(2), diagnose(3), stop(4) }
+             MAX-ACCESS read-write
+             STATUS current
+             DESCRIPTION
+                   "The desired state of the H323 terminal.  Setting the value 
+                   if this object to these values will have the 
+                   following actions:
+                   run(1)            The H323 terminal will enter the run state,
+                   reset(2)          The H323 terminal will reset,
+                   diagnose(3)       Will activate the diagnostic routine,
+                   stop(4)           Will halt the H323 terminal."
+      ::= { h323TerminalControlEntry 1 }
+
+      h323TerminalControlEnableLocalLoopback  OBJECT-TYPE
+            SYNTAX  INTEGER {
+                        enable(1),
+                        disable(2)
+                        }
+            MAX-ACCESS  read-write
+            STATUS  current
+            DESCRIPTION
+                  "Enable or disable local system loopback on a video 
+                  conference system. Local loopbacks loop back the audio, 
+                  video and data streams in a call. Once looped back, 
+                  a new call will show up in the Call Table and the 
+                  user can observe the audio/video/data rates to assure 
+                  that these components are working properly."
+      ::= { h323TerminalControlEntry 2 }
+
+      h323TerminalControlEnableRemoteLoopback  OBJECT-TYPE
+            SYNTAX  INTEGER{
+                        enable(1),
+                        disable(2)
+                        }
+            MAX-ACCESS  read-write
+            STATUS  current
+            DESCRIPTION
+                  "Enable or disable remote system loopback on a video
+                  conference system. Remote loopbacks loop back the audio
+                  and video streams from the remote system in
+                  a call.. When the remote system 
+                  calls in, a new call will show up in the 
+                  Call Table and the user can observe the
+                  audio/video/data rates to assure that these
+                  components are coming in properly from the
+                  remote system."
+      ::= { h323TerminalControlEntry 3 }
+
+      --
+      -- CONFORMANCE
+      --
+
+      h323TerminalMIBConfs      OBJECT IDENTIFIER ::= { h323Terminal 5 }
+      h323TerminalMIBGroups     OBJECT IDENTIFIER ::= { h323TerminalMIBConfs 1 }
+      h323TerminalMIBCompl      OBJECT IDENTIFIER ::= { h323TerminalMIBConfs 2 }      
+      --
+      -- Groups for conformance
+      --
+      h323TerminalDesrGroup      OBJECT-GROUP
+            OBJECTS {
+                  h323TermSystemDescr,
+                  h323TermSystemHWVersionNo,
+                  h323TermSystemSWVersionNo, 
+                  h323TermSystemContact,
+                  h323TermSystemt35CountryCode,
+                  h323TermSystemt35CountryCodeExtention, 
+                  h323TermSystemt35ManufacturerCode, 
+                  h323TermSystemLocation,
+                  h323TermSystemUptime,
+                  h323TermSystemLocalTime,
+                  h323TermSystemDiagnostics, 
+                  h323TermSystemStatus
+            }
+            STATUS current
+            DESCRIPTION
+                  "A collection of objects providing the description 
+                  of the terminal"
+      ::= { h323TerminalMIBGroups 1}
+
+      h323TerminalCapsGroup      OBJECT-GROUP
+            OBJECTS {
+                  h323TerminalCapsMaxLineRate,
+                  h323TerminalCapsVideoCaps,
+                  h323TerminalCapsMaxVideoRate,
+                  h323TerminalCapsAudioCaps,
+                  h323TerminalCapsDataCaps,
+                  h323TerminalCapsRDCCaps
+                  }
+            STATUS current
+            DESCRIPTION
+                  "A collection of objects providing capabilities of 
+                  the terminal"
+      ::= { h323TerminalMIBGroups 2}
+
+      h323TerminalControlGroup       OBJECT-GROUP
+            OBJECTS {
+                  h323TerminalControlAdminControl, 
+                  h323TerminalControlEnableLocalLoopback,  
+                  h323TerminalControlEnableRemoteLoopback  
+                  }
+            STATUS current
+            DESCRIPTION
+                  "A collection of objects providing the ability 
+                  to invoke terminal functions"
+      ::= { h323TerminalMIBGroups 4}
+
+      h323TerminalCompliance      MODULE-COMPLIANCE
+            STATUS      current
+            DESCRIPTION      
+                  "The set of objects required for compliance"
+            MODULE
+            MANDATORY-GROUPS       { 
+                        h323TerminalDesrGroup, 
+                        h323TerminalCapsGroup
+                        }
+
+            GROUP            h323TerminalControlGroup
+            DESCRIPTION
+                  "This group is optional.  H323 terminals under a 
+                  centralized control via  a network management protocol
+                  are  strongly encouraged to use this group to enable the 
+                  remote control functions."
+       ::= { h323TerminalMIBCompl 1 }
+
+END
+
+

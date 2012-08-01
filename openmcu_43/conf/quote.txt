@@ -1,0 +1,366 @@
+$WELCOME$
+<p>
+Окно <b>Parameters</b> позволяет задать общие параметры работы сервера. Все изменения сохраняются в файле (по умолчанию в .pwlib_config/.ini).<br />
+Окно <b>MCU Status</b> позволяет просматривать в реальном времени статистику и параметры подключения терминалов.<br /> 
+Окно <b>Invite user</b> предназначено для отправки приглашений в конференцию от мцу на терминалы.</br>
+Для подключения в поле Room Name нужно указать имя конференции 
+к которой будет подключен терминал 
+(для подключения к конференции по умолчанию нужно указать имя room101), 
+в поле Address набрать IP адрес 
+(или номер при использовании гейткипера) 
+подключаемого терминала и нажать кнопочку Invite. 
+В результате на терминал уйдет вызов.<br />
+Окно <b>Room Control</b> предназначено для управления конференциями. Подробнее в инструкции.
+</p>
+<p>Конференция, созданная подключением первого терминала, изначально работает в неуправляемом режиме, при этом все участники конференции видят одинаковую картинку.
+В неуправляемом режиме мцу автоматически меняет раскладку экрана в зависимости от количества подключенных пользователей в следующем порядке: 1x1; 2x2; 3x3; 4x4. После подключения 16 пользователей все последующие подключенные пользователи будут не видны на экранах терминалов, но будут видеть первых 16 пользователей.
+Звук в неуправляемом режиме передается и воспроизводится от всех подключенных участников.</p>
+$$
+$STATUS$
+Станица <b>MCU Status</b> позволяет просматривать в реальном времени 
+статистику и параметры подключения терминалов.
+$$
+$INVITE$
+Для подключения в поле Room Name нужно указать имя конференции 
+к которой будет подключен терминал (для подключения к конференции 
+по умолчанию нужно указать имя room101), в поле Address 
+набрать IP адрес (или номер при использовании гейткипера) 
+подключаемого терминала и нажать кнопочку Invite. 
+В результате на терминал уйдет вызов.
+$$
+$INVITE_F$
+В запросе на подключение была допущена ошибка.
+$$
+$INVITE_S$
+Запрос на подключение успешно отправлен на удаленный терминал.
+$$
+$SELECT$
+Выберите комнату для управления и нажмите кнопку Select.
+$$
+$CONTROL$
+<div id='rclh' onclick='document.getElementById("rclh").innerHTML="Эта страница предназначена для управления конференцией. Управление раскладкой позволяет выбрать видимых участников конференции и назначить им нужное расположение на экране. Для каждой позиции в раскладке можно явно указать видимого участника конференции, либо оставить позицию пустой, либо указать, что позиция выбрана для автоматической активации по голосовой активности.<br>За автоматическую активацию по голосовой активности отвечают два режима VAD и VAD2. Если позиции в раскладке назначить режим VAD, то это будет означать, что позицию может занять любой терминал, с которого идет активный звуковой сигнал.<br>Замена терминала на занятой VAD позиции возможна по истечении интервала Voice activation timeout.";'>[?] Эта страница предназначена для...</div>
+</div>
+<input id=autoinvite type=checkbox onclick="document.getElementById('autorecall').disabled=!this.checked;document.cookie='autoinv='+this.checked"> Inactive auto-invite <a class="btn btn-mini" href=# onclick="document.getElementById('autoinvite').checked=true;every30s()">now</a>
+( <input id=autostopinvite type=checkbox> stop when done: <span id='autostopinvitenotice'>...</span> )
+<script language="javascript"><!--
+ function rotate_positions(d){
+  var n=37;
+  do {
+   n--;
+   eval("var e=!document.forms[0].usr"+n);
+   if(n<=0)if(!e) return e;
+  } while (e);
+  if(d==0)var q=document.forms[0].usr0.value; else eval("var q=document.forms[0].usr"+n+".value;");
+  for(var i=0;i<n;i++)
+   if(d==0)eval("document.forms[0].usr"+i+".value=document.forms[0].usr"+(i+1)+".value;");
+   else eval("document.forms[0].usr"+(n-i)+".value=document.forms[0].usr"+(n-i-1)+".value;");
+  if(d!=0)document.forms[0].usr0.value=q; else eval("document.forms[0].usr"+n+".value=q;");
+  document.forms[0].sendit.click();
+  return false;
+ }
+ function getcookie(name){
+  var regexp=new RegExp("(?:; )?"+name+"=([^;]*);?");
+  if (regexp.test(document.cookie)) return decodeURIComponent(RegExp["$1"]);
+//  if (regexp.test(document.cookie)) return unescape(RegExp["$1"]);
+  return false;
+ }
+ function every30s(){
+  if(document.getElementById('autoinvite').checked){
+   if(document.getElementById('autorecall').checked)document.cookie='recall=1';
+   var regexp=new RegExp(/([^\[]+)\]$/);
+
+   tim=[]; var i=0; while (document.getElementById('tim_'+i)){
+    if(regexp.test(document.getElementById('tim_'+i).innerHTML)) tim.push(RegExp["$1"]);
+    i++;
+   }
+   tam=''; i=0; while (document.getElementById('tam_'+i)){
+    if(regexp.test(document.getElementById('tam_'+i).innerHTML)) tam+=','+RegExp["$1"];
+    i++;
+   }
+   var tc=0;
+   for(i=0;i<tim.length;i++)if(tam.indexOf(tim[i])<0){
+    document.getElementById('iinv_'+i).checked=true;
+    tc++;
+   }
+   if((tc==0)&&(document.getElementById('autostopinvite').checked))document.getElementById('autostopinvitenotice').innerHTML='DONE';
+   else document.forms[0].sendit.click();
+  }
+  setTimeout(every30s,30000);
+ }
+ eval("document.getElementById('autoinvite').checked="+getcookie('autoinv'));
+ setTimeout(every30s,30000);
+//--></script>
+
+&nbsp;<input id=autorecall type=checkbox onclick="document.cookie='autorec='+this.checked">  Auto recall preset after auto-invite
+<br><b>Preset ID:</b>  <input id=presetname size=8 maxlength=12 onkeyup="{var s=pstrip(this.value);if(s!=this.value)this.value=s;}">
+<input class="btn btn-info" type=button value='Save' onclick='javascript:if(wpcheck())save_preset();'>
+<input class="btn btn-danger" type=button value='Del' onclick='javascript:if(wpcheck())delete_preset();'> <span id=presets>*</span><br />
+<script language="javascript"><!--
+ fv_ids=Array('room','moderated','vidmemnum','muteUnvisible','VAdelay','VAtimeout','VAlevel','usr0','usr1','usr2','usr3','usr4','usr5','usr6','usr7','usr8','usr9','usr10','usr11','usr12','usr13','usr14','usr15','usr16','usr17','usr18','usr19','usr20','usr21','usr22','usr23','usr24','usr25','usr26','usr27','usr28','usr29','usr30','usr31','usr32','usr33','usr34','usr35');
+ eval("document.getElementById('autorecall').checked="+getcookie('autorec'));
+ document.getElementById('autorecall').disabled=!document.getElementById('autoinvite').checked;
+ prst=getcookie('prst');
+ apr=getcookie('apr');
+ if(apr!==false){
+  document.getElementById('presetname').value=apr;
+ }
+ show_presets();
+ function maybe_making_autorecall(){
+  if(getcookie('recall')==1){
+   document.cookie='recall=0';
+   if(typeof apr!=='undefined')if(apr!=='')if(apr!==false)precall(apr);
+  }
+ }
+ function show_presets(){
+  var s='No presets to recall.';
+  if((prst!==false)&&(prst!=='')){
+   prsts=prst.split('#');
+   prsts.sort();
+   var comma=false;
+   var r='';
+   for(var i in prsts){
+    var p=prsts[i].split('|');
+    if(comma)r+=' ';
+    r+=" <a class='btn btn-mini' href=# onclick='javascript:precall(\""+p[0]+"\")'>"+p[0]+"</a>";
+    comma=true;
+   }
+   if(r!='')s='<b>Recall:</b> '+r;
+  }
+  document.getElementById('presets').innerHTML=s;
+ }
+ function precall(id){
+  prsts=prst.split('#');
+  for(var i in prsts){
+   var p0=prsts[i];
+   p=p0.split('|');
+   if(p[0]==id){
+    k=1;
+    for(var j in fv_ids){
+     if(fv_ids[j]=='vidmemnum'){
+      var p_k=p[k]+"";
+      p_k=p_k.replace(/\%7C/g,'|').replace(/\%23/g,'#');
+      for(var ii=selvmn.length-1;ii>=0;ii--) selvmn.remove(ii);
+      for(var ii=0;ii<backupvmp.length;ii++){
+       var option=document.createElement("option");
+       option.text=backupvmp[ii];
+       option.value=ii;
+       try { selvmn.add(option,selvmn.options[null]); } catch (e) { selvmn.add(option,null); }
+       if(p_k==option.text) selvmn.selectedIndex=ii;
+      }
+     } else {
+      if(fv_ids[j].substr(0,3)=='usr') {
+       fv_smartset(fv_ids[j],user_decode(p[k]));
+      } else {
+       if(typeof p[k]!=='undefined') fv_smartset(fv_ids[j],p[k]); else fv_smartset(fv_ids[j],'');
+      }
+     }
+     k++;
+    }
+    document.cookie='apr='+id;
+    document.forms[0].sendit.click();
+    return true;
+   }
+  }
+  alert('Could not recall preset, please reload page');
+ }
+ function fv_smartset(v,value){
+  eval("if(!document.forms[0]."+v+"){var ie=document.createElement('input');ie.setAttribute('type','hidden');ie.setAttribute('name','"+v+"');document.forms[0].appendChild(ie);}if((v=='moderated')||(v=='muteUnvisible')){document.forms[0]."+v+".checked=(value==1);}else{document.forms[0]."+v+".value=value;}");
+ }
+ function fv_smartget(v){
+  var p='document.forms[0].'+v;
+  eval("if("+p+"){if("+p+".type=='checkbox'){r="+p+".checked+0;}else if(("+p+".type=='select-one')&&(v!='vidmemnum')){r="+p+".options["+p+".selectedIndex].text;}else{r="+p+".value;}}else{r='';}");
+  if(r.length>9)if(r.lastIndexOf(']')==r.length-1){
+   var i1=r.lastIndexOf('[');
+   if(i1!=-1) r=r.substring(i1+1,r.length-1);
+  }
+  return r;
+ }
+ function pstrip(s){
+//  return s.replace(/[\s\'\"\;\=\|\#\<\>\&]/gi,'');
+  return s.replace(/[^A-Z0-9a-z-_]/gi,'');
+ }
+ function wpcheck(){
+  if(document.getElementById("disable_pe").checked){
+   alert("You must enable preset changing first!");
+   return false;
+  }
+  return true;
+ }
+ function save_preset(){
+  var name=pstrip(document.getElementById('presetname').value);
+  if (name!='') {
+   document.cookie='apr='+name;
+   l='';
+   for(var i in fv_ids){
+    var f=fv_ids[i];
+    if(l!='')l+='|';
+    if(f=='vidmemnum'){
+     l+=selvmn.options[selvmn.selectedIndex].text.replace(/\|/g,'%7C').replace(/\#/g,'%23');
+    } else l+=fv_smartget(f);
+   }
+   while(l.substring(l.length-2,l.length)=='||')l=l.substring(0,l.length-1);
+   var o=prst;
+   if (o===false) o=name+'|'+l; else
+   if (o=='') o=name+'|'+l; else {
+    var a=o.split('#');
+    var f=false;
+    for (var i in a){
+     var a0=a[i].split('|');
+     if (a0[0]==name) {
+      a[i]=name+'|'+l;
+      o=a.join('#');
+      f=true;
+      break;
+     }
+    }
+    if (!f) o+='#'+name+'|'+l;
+   }
+   var t1=[];
+   for(var i=0x410;i<0x450;i++)t1[i]=i-0x350;
+   t1[0x410]=0xA8; t1[0x451]=0xB8;
+   var o1=o; o='';
+   for(var i=0;i<o1.length;i++)if(typeof t1[o1.charCodeAt(i)]=='undefined')o+=o1.charAt(i); else o+=String.fromCharCode(t1[o1.charCodeAt(i)]);
+   document.cookie='prst='+o+'; expires=Sun, 1 Mar 2037 00:00:00';
+   prst=o1;
+   show_presets();
+  }
+ }
+ function delete_preset(){
+  var name=pstrip(document.getElementById('presetname').value);
+  var o=prst;
+  if (o!==false) {
+   var r='';
+   var a=o.split('#');
+   var f=false;
+   for (var i in a) {
+    var a0=a[i].split('|');
+    if (a0[0]!=name) {
+     if(r!='')r+='#';
+     r+=a[i];
+    }
+   }
+   document.cookie='prst='+r+'; expires=Sun, 1 Mar 2037 00:00:00';
+   prst=r;
+   show_presets();
+  }
+ }
+ function user_decode(str){
+  if (typeof users_ids==='undefined') {
+   users_ids=[];
+   var tables=document.getElementsByTagName('table');
+   for(var t=0;t<tables.length;t++){
+    for(var r=0;r<tables[t].rows.length;r++) if (tables[t].rows[r].cells.length!=5) {break;} else {
+     var c2=tables[t].rows[r].cells[1].innerHTML;
+     var c2p=c2.search('name=m');
+     if (c2p>6) {
+      var id=c2.substring(c2p+6,c2.length-1);
+     } else {
+      var c2p=c2.search('name="m');
+      if (c2p>6) {
+       var c2p2=c2.substr(c2p+7).search('"');
+       if (c2p2>0) {
+        var id=c2.substr(c2p+7,c2p2);
+       } else var id=false;
+      } else var id=false;
+     }
+     if (id!==false){
+      cstr=tables[t].rows[r].cells[0].innerHTML;
+      if(cstr.length>9)if(cstr.lastIndexOf(']')==cstr.length-1){
+       var i1=cstr.lastIndexOf('[');
+       if(i1!=-1) cstr=cstr.substring(i1+1,cstr.length-1);
+      }
+      users_ids[cstr]=id;
+     }
+    }
+   }
+  }
+  if(str=='VAD')return -1;
+  if(str=='VAD2')return -2;
+  if(str=='')return 0;
+  if(typeof users_ids[str]==='undefined') return 0;
+  return users_ids[str];
+ }
+ function prraw(){
+  document.getElementById('presets').innerHTML="<input id=prrawdata size=40 maxlength=3950>  <input class='btn btn-info' type=button value='Save' onclick='javascript:if(wpcheck()){document.cookie=\"prst=\"+document.getElementById(\"prrawdata\").value+\"; expires=Sun, 1 Mar 2037 00:00:00\";prst=document.getElementById(\"prrawdata\").value;show_presets();}'>  <input class='btn btn-info' type=button value='Close' onclick='show_presets()'>";
+  if(prst!==false)document.getElementById('prrawdata').value=prst;
+  document.getElementById('prrawdata').focus();
+  document.getElementById('prrawdata').select();
+ }
+ function handle_tags(s){
+  if(typeof tags_init=='undefined'){
+   var s0=getcookie('tag'); if(s0!==false) s=s0;
+   tags_map=Array();
+   tags_count=Array();
+   tags_fs=Array();
+   just_tags=Array();
+   max_tag=1;
+   for(var i=0;i<tags.length;i++){
+    var t=tags[i].split(',');
+    for(var j=0;j<t.length;j++){
+     tag=t[j]+"";
+     tag=tag.replace(/(^[\s\t\n\r]+)|([\s\t\n\r]+$)/g, "");
+     if(tag!=""){
+      var sl=","+just_tags.join(",")+",";
+      if(sl.indexOf(","+tag+",")<0){
+       tags_map[tag]=i;
+       tags_count[tag]=1;
+       just_tags[just_tags.length]=tag;
+      } else {
+       tags_map[tag]+=","+i;
+       tags_count[tag]++;
+       if(tags_count[tag]>max_tag)max_tag=tags_count[tag];
+      }
+     }
+    }
+   }
+   var fontsize_min=11;
+   var fontsize_max=16;
+   var font_mul=(fontsize_max-fontsize_min)/max_tag;
+   for(var i=0;i<just_tags.length;i++) tags_fs[just_tags[i]]=fontsize_min+Math.round(font_mul*tags_count[just_tags[i]]);
+   sort_tags=just_tags;
+   sort_tags.sort();
+   selvmn=document.getElementById('vidmemnum');
+   backupvmp=Array();
+   for(var i=0;i<selvmn.length;i++){
+    backupvmp[i]=selvmn.options[i].text;
+   }
+   tags_init=1;
+  }
+
+///common part:
+  var selopt=selvmn.options[selvmn.selectedIndex].text;
+  tags_links="<a href=# class='btn btn-mini' onclick='javascript:{selvmn.selectedIndex=(selvmn.selectedIndex+selvmn.length-1)%selvmn.length;document.forms[0].sendit.click();}'>&lt;&lt;</a> Layout ";
+  tags_links+="<a href=# class='btn btn-mini' onclick='javascript:{selvmn.selectedIndex=(selvmn.selectedIndex+1)%selvmn.length;document.forms[0].sendit.click();}'>&gt;&gt;</a>";
+  tags_links+="&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Tags: ";
+  for(var i=0;i<sort_tags.length;i++){
+   if(s!=sort_tags[i]){
+    tags_links+="<span class='btn btn-mini' style='font-weight:normal;font-size:"+tags_fs[sort_tags[i]]+"px' onclick='handle_tags(\""+sort_tags[i]+"\")'>"+sort_tags[i]+"</span>";
+   } else {
+    tags_links+="<span style='font-size:"+tags_fs[sort_tags[i]]+"px;color:red'>"+sort_tags[i]+"</span>";
+   }
+   if(i<sort_tags.length-1) tags_links+=', ';
+  }
+  tags_links+=".";
+  document.getElementById('tags_here').innerHTML=tags_links;
+
+  for(var i=selvmn.length-1;i>=0;i--) selvmn.remove(i);
+  var modes=tags_map[s]+"";
+  modes=modes.split(',');
+  for(var i=0;i<modes.length;i++){
+   var option=document.createElement("option");
+   option.text=backupvmp[modes[i]];
+   option.value=modes[i];
+   try {
+    selvmn.add(option,selvmn.options[null]);
+   } catch (e) {
+    selvmn.add(option,null);
+   }
+   if(selopt==option.text) selvmn.selectedIndex=i;
+  }
+  document.cookie='tag='+s;
+ }
+//--></script>
+<input id=disable_pe type=checkbox checked> Disable preset changing (write protection).
+<a href=# onclick='prraw()'>Raw</a> data (for making import&amp;export)
+
+$$

@@ -1,0 +1,70 @@
+Microsoft Visual Studio Solution File, Format Version 8.00
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hello World", "samples\hello_world\hello.vcproj", "{D38CA533-D522-4D9E-B2C9-D59F6C415268}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PTLib Static", "src\ptlib\msos\Console.vcproj", "{E61B4DFB-0CAB-46DD-BB02-1AFFD61DB7F5}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PTLib DLL", "src\ptlib\msos\PTLib.vcproj", "{85F4F26A-1A5D-4685-A48A-448102C5C5BC}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MergeSym", "tools\MergeSym\MergeSym.vcproj", "{F34BE504-015A-42E6-9342-3800EAD5F561}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "configure", "tools\configure\configure.vcproj", "{9C8D0100-6709-4628-9993-69F443AF69E8}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "paec", "src\ptclib\speex_echo\PAEC.vcproj", "{6316EB4E-0F57-4491-9383-22072AF3D996}"
+	ProjectSection(ProjectDependencies) = postProject
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfiguration) = preSolution
+		Debug = Debug
+		Pseudo-Debug = Pseudo-Debug
+		Release = Release
+	EndGlobalSection
+	GlobalSection(ProjectConfiguration) = postSolution
+		{E61B4DFB-0CAB-46DD-BB02-1AFFD61DB7F5}.Debug.ActiveCfg = Debug|Win32
+		{E61B4DFB-0CAB-46DD-BB02-1AFFD61DB7F5}.Debug.Build.0 = Debug|Win32
+		{E61B4DFB-0CAB-46DD-BB02-1AFFD61DB7F5}.Pseudo-Debug.ActiveCfg = Debug|Win32
+		{E61B4DFB-0CAB-46DD-BB02-1AFFD61DB7F5}.Release.ActiveCfg = Release|Win32
+		{E61B4DFB-0CAB-46DD-BB02-1AFFD61DB7F5}.Release.Build.0 = Release|Win32
+		{F34BE504-015A-42E6-9342-3800EAD5F561}.Debug.ActiveCfg = Debug|Win32
+		{F34BE504-015A-42E6-9342-3800EAD5F561}.Pseudo-Debug.ActiveCfg = Debug|Win32
+		{F34BE504-015A-42E6-9342-3800EAD5F561}.Release.ActiveCfg = Release|Win32
+		{F34BE504-015A-42E6-9342-3800EAD5F561}.Release.Build.0 = Release|Win32
+		{85F4F26A-1A5D-4685-A48A-448102C5C5BC}.Debug.ActiveCfg = Debug|Win32
+		{85F4F26A-1A5D-4685-A48A-448102C5C5BC}.Debug.Build.0 = Debug|Win32
+		{85F4F26A-1A5D-4685-A48A-448102C5C5BC}.Pseudo-Debug.ActiveCfg = Debug|Win32
+		{85F4F26A-1A5D-4685-A48A-448102C5C5BC}.Release.ActiveCfg = Release|Win32
+		{85F4F26A-1A5D-4685-A48A-448102C5C5BC}.Release.Build.0 = Release|Win32
+		{9C8D0100-6709-4628-9993-69F443AF69E8}.Debug.ActiveCfg = Debug|Win32
+		{9C8D0100-6709-4628-9993-69F443AF69E8}.Debug.Build.0 = Debug|Win32
+		{9C8D0100-6709-4628-9993-69F443AF69E8}.Pseudo-Debug.ActiveCfg = Debug|Win32
+		{9C8D0100-6709-4628-9993-69F443AF69E8}.Pseudo-Debug.Build.0 = Debug|Win32
+		{9C8D0100-6709-4628-9993-69F443AF69E8}.Release.ActiveCfg = Release|Win32
+		{9C8D0100-6709-4628-9993-69F443AF69E8}.Release.Build.0 = Release|Win32
+		{6316EB4E-0F57-4491-9383-22072AF3D996}.Debug.ActiveCfg = Debug|Win32
+		{6316EB4E-0F57-4491-9383-22072AF3D996}.Debug.Build.0 = Debug|Win32
+		{6316EB4E-0F57-4491-9383-22072AF3D996}.Pseudo-Debug.ActiveCfg = Debug|Win32
+		{6316EB4E-0F57-4491-9383-22072AF3D996}.Pseudo-Debug.Build.0 = Debug|Win32
+		{6316EB4E-0F57-4491-9383-22072AF3D996}.Release.ActiveCfg = Release|Win32
+		{6316EB4E-0F57-4491-9383-22072AF3D996}.Release.Build.0 = Release|Win32
+		{D38CA533-D522-4D9E-B2C9-D59F6C415268}.Debug.ActiveCfg = Debug|Win32
+		{D38CA533-D522-4D9E-B2C9-D59F6C415268}.Debug.Build.0 = Debug|Win32
+		{D38CA533-D522-4D9E-B2C9-D59F6C415268}.Pseudo-Debug.ActiveCfg = Debug|Win32
+		{D38CA533-D522-4D9E-B2C9-D59F6C415268}.Pseudo-Debug.Build.0 = Debug|Win32
+		{D38CA533-D522-4D9E-B2C9-D59F6C415268}.Release.ActiveCfg = Release|Win32
+		{D38CA533-D522-4D9E-B2C9-D59F6C415268}.Release.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+	EndGlobalSection
+	GlobalSection(ExtensibilityAddIns) = postSolution
+	EndGlobalSection
+EndGlobal

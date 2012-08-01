@@ -1,0 +1,80 @@
+'\" t
+.\" Man page for asnparser
+.\" Santiago Garcia Mantinan (manty) 18 Jul 2001
+.\"
+.TH asnparser 1 "18 Jul 2001"
+.LO 1
+.SH NAME
+asnparser \- ASN.1 to C/C++ converter
+.SH SYNOPSIS
+.B asnparser
+[\fIoptions\fR]... \fIasnfile\fR
+.SH DESCRIPTION
+.PP
+.B asnparser
+is a command line application that helps to convert ASN.1 description files
+to C/C++ applications.
+
+.SH OPTIONS
+.PP
+All of the command line options to
+.B asnparser
+can be specified in long form, and the most commonly used options also have
+single character equivalents.
+
+.TP
+\fB\-c\fR, \fB\-\-c++\fR
+Generate C++ files.
+
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+Output a copious debug info on stderr.
+
+.TP
+\fB\-e\fR, \fB\-\-echo\fR
+Echo input file on stdout.
+
+.TP
+\fB\-i\fR, \fB\-\-inlines\fR
+Use C++ inlines.
+
+.TP
+\fB\-m\fR, \fB\-\-module\fR \fIname\fR
+Sets the module name prefix/namespace to \fIname\fR.
+
+.TP
+\fB\-n\fR, \fB\-\-namespace\fR
+Use C++ namespace.
+
+.TP
+\fB\-o\fR, \fB\-\-output\fR \fIfile\fR
+Sets the output filename or directory to \fIname\fR.
+
+.TP
+\fB\-r\fR, \fB\-\-rename\fR \fIfrom=to\fR
+Rename import module from \fIfrom\fR to \fIto\fR.
+
+.TP
+\fB\-s\fR[n], \fB\-\-split\fR[n]
+Split output into n files (n defaults to 2).
+
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+Verbose output, using this option multiple times will give even more verbose
+output.
+
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Display program version and exit.
+
+.SH EXAMPLES
+.PP
+
+.TP
+asnparser -m H225 -r MULTIMEDIA-SYSTEM-CONTROL=H245 -c h225.asn
+
+.TP
+asnparser -s3 -m H245 -c h245.asn
+
+.SH "SEE ALSO"
+None

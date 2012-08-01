@@ -1,0 +1,1070 @@
+
+H225-MIB DEFINITIONS ::= BEGIN
+
+         IMPORTS  Counter32, Integer32, Unsigned32, NOTIFICATION-TYPE,
+                  OBJECT-TYPE, MODULE-IDENTITY
+           FROM SNMPv2-SMI
+                  DisplayString, TAddress, DateAndTime
+           FROM SNMPv2-TC
+                  ifIndex
+           FROM IF-MIB
+                  MODULE-COMPLIANCE, OBJECT-GROUP
+           FROM SNMPv2-CONF
+                  MmTAddressTag, mmH323Root,
+                  MmGlobalIdentifier, MmAliasTag, MmAliasAddress, MmH323EndpointType,  MmH225Crv, MmCallType 
+           FROM MULTI-MEDIA-MIB-TC; 
+  
+
+    h225CallSignaling MODULE-IDENTITY
+       LAST-UPDATED "9812221200Z" -- December 14, 1998
+       ORGANIZATION " ITU-T SG 16 "
+       CONTACT-INFO " ITU-T SG 16 "
+    DESCRIPTION
+        "The MIB Module supports the functions of a H.225 call signaling ."
+    REVISION      "9812141200Z"
+    DESCRIPTION
+        "The initial version of the mib."
+    ::= { mmH323Root 1} 
+
+         -- groups in h225
+         
+    callSignalConfig            OBJECT IDENTIFIER ::= { h225CallSignaling 1 }
+    callSignalStats               OBJECT IDENTIFIER ::= { h225CallSignaling 2 }
+    connections                   OBJECT IDENTIFIER ::= { h225CallSignaling 3 }
+    callSignalEvents            OBJECT IDENTIFIER ::= { h225CallSignaling 4 0 }                  
+    callSignalingMIBConformance OBJECT IDENTIFIER ::= { h225CallSignaling 5 }
+
+callSignalConfigTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF CallSignalConfigEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains configuration information 
+             for instances of a call signaling protocol."
+             ::= { callSignalConfig  1}
+
+callSignalConfigEntry OBJECT-TYPE
+             SYNTAX CallSignalConfigEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe the configuration."
+             INDEX { ifIndex }
+               ::= { callSignalConfigTable 1 }
+
+CallSignalConfigEntry::=
+              SEQUENCE {
+                 callSignalConfigMaxConnections 
+                    Integer32,
+                 callSignalConfigAvailableConnections 
+                    Integer32,
+                 callSignalConfigT303 
+                    Integer32,
+                 callSignalConfigT301 
+                    Integer32,
+                 callSignalConfigEnableNotifications 
+                    INTEGER
+                }
+
+         callSignalConfigMaxConnections OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The maximum number of connections the H.225 entity can                            
+                possibly have."
+                 ::= { callSignalConfigEntry 1 }
+
+         callSignalConfigAvailableConnections OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                " The number of available connections, out of
+                 callSignalConfigMaxConnections."
+                 ::= { callSignalConfigEntry 2 }
+
+         callSignalConfigT303 OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "The amount of time the calling endpoint waits for an 
+                ALERTING, CALL PROCEEDING, CONNECT, RELEASE COMPLETE 
+                or other message the called endpoint after it has sent 
+                a SETUP message. The time value is in seconds. "
+             ::= { callSignalConfigEntry 3 }
+
+        callSignalConfigT301 OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-write
+             STATUS  current
+             DESCRIPTION
+                "The amount of time after which the calling endpoint should 
+                 stop waiting for the called endpoint to respond. The time 
+                 value is in seconds. "
+                 ::= { callSignalConfigEntry 4 }
+
+      callSignalConfigEnableNotifications OBJECT-TYPE 
+           SYNTAX INTEGER { enabled(1), disabled(2) } 
+           MAX-ACCESS read-write 
+           STATUS current 
+           DESCRIPTION 
+             "Indicates whether notifications should be generated 
+             from this MIB. The default is disabled."
+ ::= { callSignalConfigEntry 5}
+
+--
+-- Statistics
+--
+callSignalStatsTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF CallSignalStatsEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains statistics information 
+             for instances of a call signaling protocol."
+             ::= { callSignalStats  1}
+
+callSignalStatsEntry OBJECT-TYPE
+             SYNTAX CallSignalStatsEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe statistics."
+             INDEX { ifIndex }
+               ::= { callSignalStatsTable 1 }
+
+CallSignalStatsEntry::= SEQUENCE {
+             callSignalStatsCallConnectionsIn
+                      Counter32,
+             callSignalStatsCallConnectionsOut
+                      Counter32,
+             callSignalStatsAlertingMsgsIn
+                      Counter32,
+             callSignalStatsAlertingMsgsOut
+                      Counter32,
+             callSignalStatsCallProceedingsIn
+                      Counter32,
+             callSignalStatsCallProceedingsOut
+                      Counter32,
+             callSignalStatsSetupMsgsIn
+                      Counter32,
+             callSignalStatsSetupMsgsOut
+                      Counter32,
+             callSignalStatsSetupAckMsgsIn
+                      Counter32,
+             callSignalStatsSetupAckMsgsOut
+                      Counter32,
+             callSignalStatsProgressMsgsIn
+                      Counter32,
+             callSignalStatsProgressMsgsOut
+                      Counter32,
+             callSignalStatsReleaseCompleteMsgsIn
+                      Counter32,
+             callSignalStatsReleaseCompleteMsgsOut
+                      Counter32,
+             callSignalStatsStatusMsgsIn
+                      Counter32,
+             callSignalStatsStatusMsgsOut
+                      Counter32,
+             callSignalStatsStatusInquiryMsgsIn
+                      Counter32,
+             callSignalStatsStatusInquiryMsgsOut
+                      Counter32,
+             callSignalStatsFacilityMsgsIn
+                      Counter32,
+             callSignalStatsFacilityMsgsOut
+                      Counter32,
+             callSignalStatsInfoMsgsIn
+                      Counter32,
+             callSignalStatsInfoMsgsOut
+                      Counter32,
+             callSignalStatsNotifyMsgsIn
+                      Counter32,
+             callSignalStatsNotifyMsgsOut
+                      Counter32,
+             callSignalStatsAverageCallDuration
+     	  	          Integer32,
+             callSignalStatsCallConnections
+                      Counter32,
+             callSignalStatsAlertingMsgs
+                      Counter32,
+             callSignalStatsCallProceedings
+                      Counter32,
+             callSignalStatsSetupMsgs
+                      Counter32,
+             callSignalStatsSetupAckMsgs
+                      Counter32,
+             callSignalStatsProgressMsgs
+                      Counter32,
+             callSignalStatsReleaseCompleteMsgs
+                      Counter32,
+             callSignalStatsStatusMsgs
+                      Counter32,
+             callSignalStatsStatusInquiryMsgs
+                      Counter32, 
+             callSignalStatsFacilityMsgs
+                      Counter32,
+             callSignalStatsInfoMsgs
+                      Counter32,
+             callSignalStatsNotifyMsgs
+                      Counter32
+         }
+
+     callSignalStatsCallConnectionsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of successful connections in which this entity
+              has been a callee."
+         ::= { callSignalStatsEntry 1 }
+     callSignalStatsCallConnectionsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of successful connections in which this entity
+              has been a caller."
+         ::= { callSignalStatsEntry 2 }
+     callSignalStatsAlertingMsgsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of alerting messages received by this entity."
+         ::= { callSignalStatsEntry 3 }
+     callSignalStatsAlertingMsgsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of alerting messages sent by this entity."
+         ::= { callSignalStatsEntry 4 }
+     callSignalStatsCallProceedingsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of call proceeding messages received by this
+              entity."
+         ::= { callSignalStatsEntry 5 }
+     callSignalStatsCallProceedingsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of call proceeding messages sent by this entity."
+         ::= { callSignalStatsEntry 6 }
+
+
+     callSignalStatsSetupMsgsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of setup messages received by this entity."
+         ::= { callSignalStatsEntry 7 }
+     callSignalStatsSetupMsgsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of setup messages sent by this entity."
+         ::= { callSignalStatsEntry 8 }
+     callSignalStatsSetupAckMsgsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of setupAck messages received by this entity."
+         ::= { callSignalStatsEntry 9 }
+     callSignalStatsSetupAckMsgsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of setupAck messages sent by this entity."
+         ::= { callSignalStatsEntry 10 }
+     callSignalStatsProgressMsgsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of progress messages received by this entity."
+         ::= { callSignalStatsEntry 11 }
+     callSignalStatsProgressMsgsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of progress messages sent by this entity."
+         ::= { callSignalStatsEntry 12 }
+
+     callSignalStatsReleaseCompleteMsgsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of release complete messages received by this
+              entity."
+         ::= { callSignalStatsEntry 13 }
+     callSignalStatsReleaseCompleteMsgsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of release complete messages sent by this
+              entity."
+         ::= { callSignalStatsEntry 14 }
+     callSignalStatsStatusMsgsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of status messages received by this entity."
+         ::= { callSignalStatsEntry 15 }
+     callSignalStatsStatusMsgsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of status messages sent by this entity."
+         ::= { callSignalStatsEntry 16 }
+     callSignalStatsStatusInquiryMsgsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of status inquiry messages received by this
+              entity."
+         ::= { callSignalStatsEntry 17 }
+
+     callSignalStatsStatusInquiryMsgsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of status inquiry messages sent by this
+              entity."
+         ::= { callSignalStatsEntry 18 }
+     callSignalStatsFacilityMsgsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of connect messages received by this entity."
+         ::= { callSignalStatsEntry 19 }
+     callSignalStatsFacilityMsgsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of connect messages sent by this entity."
+         ::= { callSignalStatsEntry 20 }
+     callSignalStatsInfoMsgsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of info messages received by this entity."
+         ::= { callSignalStatsEntry 21 }
+     callSignalStatsInfoMsgsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of info messages sent by this entity."
+         ::= { callSignalStatsEntry 22 }
+
+     callSignalStatsNotifyMsgsIn OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of notify messages received by this entity."
+         ::= { callSignalStatsEntry 23 }
+     callSignalStatsNotifyMsgsOut OBJECT-TYPE
+         SYNTAX      Counter32
+         MAX-ACCESS  read-only
+         STATUS      deprecated
+         DESCRIPTION
+             "The number of notify messages sent by this entity."
+         ::= { callSignalStatsEntry 24 }
+     
+     callSignalStatsAverageCallDuration OBJECT-TYPE
+              SYNTAX      Integer32
+              MAX-ACCESS  read-only
+              STATUS      current
+              DESCRIPTION
+                  "The average duration of the call in minutes since 
+                   system boot time. "
+              ::= { callSignalStatsEntry 25 }
+
+     callSignalStatsCallConnections OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of successful connections ."
+                       ::= { callSignalStatsEntry 26 }
+     
+     callSignalStatsAlertingMsgs OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of alerting messages."
+                       ::= { callSignalStatsEntry 27 }
+     
+     callSignalStatsCallProceedings OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of call proceeding messages."
+                       ::= { callSignalStatsEntry 28 }
+     
+     callSignalStatsSetupMsgs OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of setup messages."
+                       ::= { callSignalStatsEntry 29 }
+     
+     callSignalStatsSetupAckMsgs OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of setupAck messages."
+                       ::= { callSignalStatsEntry 30 }
+     
+     callSignalStatsProgressMsgs OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of progress messages."
+                       ::= { callSignalStatsEntry 31 }
+     
+     
+     
+     callSignalStatsReleaseCompleteMsgs OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of release complete messages."
+                       ::= { callSignalStatsEntry 32 }
+     
+     callSignalStatsStatusMsgs OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of status messages."
+                       ::= { callSignalStatsEntry 33 }
+     
+     
+     
+     callSignalStatsStatusInquiryMsgs OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of status inquiry messages."
+                       ::= { callSignalStatsEntry 34 }
+     
+     callSignalStatsFacilityMsgs OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of connect messages."
+                       ::= { callSignalStatsEntry 35 }
+     
+     callSignalStatsInfoMsgs OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of info messages."
+                       ::= { callSignalStatsEntry 36 }
+     
+     callSignalStatsNotifyMsgs OBJECT-TYPE
+                   SYNTAX  Counter32
+                   MAX-ACCESS  read-only
+                   STATUS  current
+                   DESCRIPTION
+                      "The number of notify messages."
+                       ::= { callSignalStatsEntry 37 }
+
+          connectionsActiveConnections OBJECT-TYPE
+             SYNTAX  Integer32 
+             MAX-ACCESS  read-only
+             STATUS  current
+             DESCRIPTION
+                "The number of active connections."
+                 ::= { connections 1 }
+
+          connectionsTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF ConnectionsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about entities that are
+                 connected to this entity. It is a list of connection 
+                 entries. The number of entries equals to the number of 
+                 active connections."
+             ::= { connections 2 }
+
+         connectionsTableEntry OBJECT-TYPE
+             SYNTAX ConnectionsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe connections that are
+                  remotely connected to this callable H.323 entity for a 
+                  conference."
+             INDEX { ifIndex,
+                     connectionsSrcTransporTAddressTag,
+                     connectionsSrcTransporTAddress,
+                     connectionsCallIdentifier}
+               ::= { connectionsTable 1 }
+
+         ConnectionsTableEntry ::=
+              SEQUENCE {
+              connectionsSrcTransporTAddressTag
+                    MmTAddressTag,
+             connectionsSrcTransporTAddress
+                    TAddress,
+              connectionsCallIdentifier
+                    MmGlobalIdentifier,
+             connectionsRole 
+                     INTEGER, 
+              connectionsState
+                     INTEGER,
+              connectionsDestTransporTAddressTag
+                    MmTAddressTag,
+              connectionsDestTransporTAddress
+                     TAddress,
+              connectionsDestAliasTag
+                     MmAliasTag,
+              connectionsDestAlias
+                     MmAliasAddress,
+              connectionsSrcH245SigTransporTAddressTag
+                     MmTAddressTag,
+              connectionsSrcH245SigTransporTAddress
+                     TAddress,
+              connectionsDestH245SigTransporTAddressTag
+                     MmTAddressTag,
+              connectionsDestH245SigTransporTAddress
+                     TAddress,
+              connectionsConfId
+                     MmGlobalIdentifier,    
+              connectionsCalledPartyNumber
+                     DisplayString,
+              connectionsDestXtraCallingNumber1
+                      DisplayString,
+              connectionsDestXtraCallingNumber2
+                      DisplayString,
+              connectionsDestXtraCallingNumber3
+                      DisplayString,
+              connectionsDestXtraCallingNumber4
+                      DisplayString,
+              connectionsDestXtraCallingNumber5
+                      DisplayString,
+              connectionsFastCall
+                      INTEGER,
+              connectionsSecurity
+                      INTEGER,
+              connectionsH245Tunneling
+                      INTEGER,
+              connectionsCanOverlapSend
+                      INTEGER,
+              connectionsCRV
+                      MmH225Crv,
+              connectionsCallType
+                      MmCallType,
+              connectionsRemoteExtensionAddress
+                      OCTET STRING,
+              connectionsExtraCRV1
+                      MmH225Crv,
+              connectionsExtraCRV2
+                      MmH225Crv,
+              connectionsConnectionStartTime
+                      DateAndTime,
+              connectionsEndpointType
+                      MmH323EndpointType,
+              connectionsReleaseCompleteReason
+                      INTEGER
+        
+            }
+
+         connectionsSrcTransporTAddressTag OBJECT-TYPE
+             SYNTAX MmTAddressTag
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "The transport address tag of the endpoint."
+                ::= { connectionsTableEntry 1 }
+
+         connectionsSrcTransporTAddress OBJECT-TYPE
+             SYNTAX TAddress
+             MAX-ACCESS  not-accessible
+             STATUS current
+             DESCRIPTION
+                "The transport address of the source endpoint that initiated
+                 the connection."
+                 ::= { connectionsTableEntry 2 }
+
+         connectionsCallIdentifier OBJECT-TYPE
+             SYNTAX MmGlobalIdentifier
+             MAX-ACCESS not-accessible  
+             STATUS current
+             DESCRIPTION
+                "The call identifier."
+                ::= { connectionsTableEntry 3 }
+
+         connectionsRole OBJECT-TYPE 
+             SYNTAX INTEGER { caller(1), callee(2)} 
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value reflects the role this entity plays 
+                 in this connection being either a caller or a callee.  "
+                 ::= { connectionsTableEntry 4 }
+
+         connectionsState OBJECT-TYPE
+             SYNTAX INTEGER { callInitiated (1), callDelivered (2), 
+                 callPresent (3), callReceived (4), connectRequest (5), 
+                 callProceeding (6), active (7),disconnectRequest (8), 
+                 disconnectIndication (9), releaseRequest (10) }
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The state of the H.225 state machine as per Q.931. 
+                 Outgoing calls:
+                 callInitiated - when the user requests call establishment 
+                 from the network
+                 callDelivered - when the calling user has received an 
+                 indication that remote user alerting has been initiated.
+                 Incoming calls:
+                 callPresent - when the user has received a call 
+                 establishment but not yet responded.
+                 callReceived - when the user has indicated alerting but not 
+                 yet answered.
+                 connectRequest - when the user has answered the call and is 
+                 waiting to be awarded the call.
+                 
+                 Incoming/Outgoing:
+                 callProceeding - when the user has received/sent 
+                 acknowledgement that the network has received all call 
+                 information necessary to effect call establishment.
+                 active - when the user has received/sent an acknoledgement 
+                 from/to the network that the user has been awarded the call. 
+                 disconnectRequest - when the user has requested the network 
+                 to clear the end-to-end connection.
+                 disconnectIndication - when the user has received an 
+                 invitation to disconnect to disconnect because the network 
+                 has disconnected the end-to-end connection.
+                 releaseRequest - when the user has requested the network to 
+                 release and is waiting for a responce."
+                 ::= { connectionsTableEntry 5 }
+
+        connectionsDestTransporTAddressTag OBJECT-TYPE
+             SYNTAX MmTAddressTag
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The transport address tag of the endpoint."
+                ::= { connectionsTableEntry 6 }
+
+        connectionsDestTransporTAddress OBJECT-TYPE
+              SYNTAX TAddress
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The transport address of the destination endpoint."
+                  ::= { connectionsTableEntry 7 }
+
+       connectionsDestAliasTag  OBJECT-TYPE
+             SYNTAX MmAliasTag
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The alias tag of the registred endpoint."
+                ::= {connectionsTableEntry 8 }
+
+        connectionsDestAlias OBJECT-TYPE
+              SYNTAX MmAliasAddress
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The transport port of the destination endpoint. "
+                  ::= { connectionsTableEntry 9 }
+
+         connectionsSrcH245SigTransporTAddressTag OBJECT-TYPE
+             SYNTAX MmTAddressTag
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The transport address tag of the endpoint."
+                ::= { connectionsTableEntry 10 }
+
+         connectionsSrcH245SigTransporTAddress OBJECT-TYPE
+              SYNTAX TAddress
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The H245 IP address of the source endpoint. "
+                 ::= { connectionsTableEntry 11 }
+
+        connectionsDestH245SigTransporTAddressTag OBJECT-TYPE
+             SYNTAX MmTAddressTag
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The transport address tag of the endpoint."
+                ::= { connectionsTableEntry 12 }
+
+       connectionsDestH245SigTransporTAddress OBJECT-TYPE
+              SYNTAX TAddress
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The transport address of the destination endpoint. "
+                 ::= { connectionsTableEntry 13 }
+
+       connectionsConfId  OBJECT-TYPE
+              SYNTAX MmGlobalIdentifier
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The conference id for this connection. "
+                  ::= { connectionsTableEntry 14 }
+
+         connectionsCalledPartyNumber  OBJECT-TYPE
+              SYNTAX DisplayString
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The primary e164 address of the destination endpoint. "
+                  ::= { connectionsTableEntry 15 }
+
+         connectionsDestXtraCallingNumber1 OBJECT-TYPE
+              SYNTAX DisplayString
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The secondary info e164 address of the destination endpoint. "
+                  ::= { connectionsTableEntry 16 }
+
+         connectionsDestXtraCallingNumber2 OBJECT-TYPE
+              SYNTAX DisplayString
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The third info e164 address of the destination endpoint. "
+                  ::= { connectionsTableEntry 17 }
+
+        connectionsDestXtraCallingNumber3 OBJECT-TYPE
+              SYNTAX DisplayString
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The fourth info e164 address of the destination endpoint."
+                  ::= { connectionsTableEntry 18 }
+
+       connectionsDestXtraCallingNumber4 OBJECT-TYPE
+              SYNTAX DisplayString
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The fifth info e164 address of the destination endpoint."
+                  ::= { connectionsTableEntry 19 }
+
+       connectionsDestXtraCallingNumber5 OBJECT-TYPE
+              SYNTAX DisplayString
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The sixth info e164 address of the destination endpoint. "
+                  ::= { connectionsTableEntry 20 }
+
+       connectionsFastCall OBJECT-TYPE
+              SYNTAX INTEGER { true(1),false(2)}
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "Indicator of fast call usage for this connection." 
+                  ::= { connectionsTableEntry 21 }
+
+       connectionsSecurity  OBJECT-TYPE
+              SYNTAX INTEGER {true(1),false(2)}
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "Indicator of encryption usage for this connection. "
+                  ::= { connectionsTableEntry 22 }
+
+        connectionsH245Tunneling OBJECT-TYPE
+              SYNTAX INTEGER {
+                  notSupported(1), 
+                  available(2), 
+                  active(3), 
+                  closing(4), 
+                  closed(5)
+              }
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "Indicator of H245 tunneling usage for this connection. "
+                  ::= { connectionsTableEntry 23 }
+
+       connectionsCanOverlapSend  OBJECT-TYPE
+              SYNTAX INTEGER {true(1),false(2)}
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "Indicator of canOverLap usage for this connection. "
+                  ::= { connectionsTableEntry 24 }
+
+       connectionsCRV  OBJECT-TYPE
+              SYNTAX MmH225Crv
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The call reference value."
+                  ::= { connectionsTableEntry 25 }
+
+        connectionsCallType  OBJECT-TYPE
+              SYNTAX MmCallType
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The type of the call for this connection. "
+                  ::= { connectionsTableEntry 26 }
+
+        connectionsRemoteExtensionAddress  OBJECT-TYPE
+              SYNTAX OCTET STRING
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The additional address for GW-GW calls "
+                  ::= { connectionsTableEntry 27 }
+
+        connectionsExtraCRV1  OBJECT-TYPE
+              SYNTAX MmH225Crv
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The additional call reference value."
+                  ::= { connectionsTableEntry 28 }
+
+        connectionsExtraCRV2  OBJECT-TYPE
+              SYNTAX MmH225Crv
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The additional call reference value. "
+                  ::= { connectionsTableEntry 29 }
+
+        connectionsConnectionStartTime  OBJECT-TYPE
+              SYNTAX DateAndTime
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The date and time of the start of this call. "
+                  ::= { connectionsTableEntry 30 }
+
+      connectionsEndpointType OBJECT-TYPE
+              SYNTAX MmH323EndpointType
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "Terminal type represents the type of H.323 terminal: 
+                                50  - terminal without MC
+                                60  - gateway without MC
+                                70  - terminal with MC but without MP
+                                80  - gateway  with MC but without MP
+                                120 - gatekeeper with MC but without MP
+                                160 - MCU with MC but without MP
+                                90  - gateway with MC and Data MP
+                                130 - gatekeeper with MC and Data MP
+                                170 - MCU with MC and Data MP
+                                100 - gateway containing MC with Data and 
+                                      audio MP
+                                140 - gatekeeper containing MC with Data and 
+                                      audio MP
+                                180 - MCU containing MC with Data and audio 
+                                      MP
+                                110 - gateway containing MC with Data, Audio 
+                                      and Video MP
+                                150 - gatekeeper containing MC with Data, 
+                                      Audio and Video MP
+                                190 - MCU containing MC with Data, Audio and 
+                                      Video MP 
+                                240 - entity with active MC . "
+                  ::= { connectionsTableEntry 31 }
+
+        connectionsReleaseCompleteReason  OBJECT-TYPE
+              SYNTAX INTEGER { 
+                  noBandwidth(34), 
+                  gatekeeperResourcesUnavailable(47),
+                  unreachableDestination(3), 
+                  destinationReject(16), 
+                  invalidRevision(88),
+                  noPermission(111), 
+                  unreachableGatekeeper(38), 
+                  gatewayResources(42), 
+                  badFormaTAddress(28),  
+                  adaptiveBusy(41),
+                  inConference(17),  
+                  undefined(31)
+                 }
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "The date and time of the start of this call. "
+                  ::= { connectionsTableEntry 32 }  
+
+        callReleaseComplete NOTIFICATION-TYPE
+              OBJECTS   { ifIndex, connectionsReleaseCompleteReason }
+              STATUS current
+              DESCRIPTION
+                 "This message will be sent in the case of on generation and 
+                  reception of releaseComplete for the following reasons:
+                  
+                  34 - noBandwidth; no circuit/channel available
+                  47 - gatekeeperResources; resource unavailable
+                  3 -  unreachableDestination; no route to destination
+                  16 - destinationReject; destination did not accept this call
+                  88 - invalidRevision; incompatible destination
+                  111- noPermission; Interworking unspecified
+                  38 - unreachableGatekeeper; network out of order
+                  42 - gatewayResources; switching equipment congestion
+                  28 - badFormaTAddress; invalid number format
+                  41 - adaptiveBusy; Temporary Failure
+                  17 - inConference; user busy
+                  31 - undefined. "
+                  ::= {callSignalEvents 1}
+
+
+-- CONFORMANCE
+--
+callSignalingMIBGroups  OBJECT IDENTIFIER ::= { callSignalingMIBConformance 1 }
+
+--
+-- Groups for Conformance
+--
+
+callSignalConfigGroup OBJECT-GROUP
+    OBJECTS {
+    callSignalConfigMaxConnections, 
+    callSignalConfigAvailableConnections,
+    callSignalConfigT303,
+    callSignalConfigT301,
+    callSignalConfigEnableNotifications
+    }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { callSignalingMIBGroups 1 }
+
+callSignalStatsGroup    OBJECT-GROUP
+    OBJECTS {
+    callSignalStatsCallConnectionsIn, 
+    callSignalStatsCallConnectionsOut, 
+    callSignalStatsAlertingMsgsIn, 
+    callSignalStatsAlertingMsgsOut, 
+    callSignalStatsCallProceedingsIn, 
+    callSignalStatsCallProceedingsOut, 
+    callSignalStatsSetupMsgsIn, 
+    callSignalStatsSetupMsgsOut, 
+    callSignalStatsSetupAckMsgsIn, 
+    callSignalStatsSetupAckMsgsOut,
+    callSignalStatsProgressMsgsIn, 
+    callSignalStatsProgressMsgsOut, 
+    callSignalStatsReleaseCompleteMsgsIn, 
+    callSignalStatsReleaseCompleteMsgsOut, 
+    callSignalStatsStatusMsgsIn,
+    callSignalStatsStatusMsgsOut, 
+    callSignalStatsStatusInquiryMsgsIn, 
+    callSignalStatsStatusInquiryMsgsOut,
+    callSignalStatsFacilityMsgsIn, 
+    callSignalStatsFacilityMsgsOut, 
+    callSignalStatsInfoMsgsIn,
+    callSignalStatsInfoMsgsOut,
+    callSignalStatsNotifyMsgsIn,
+    callSignalStatsNotifyMsgsOut,
+    callSignalStatsAverageCallDuration
+    }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { callSignalingMIBGroups 2 }
+
+connectionsGroup    OBJECT-GROUP
+    OBJECTS {
+    connectionsActiveConnections, 
+    
+    connectionsRole, 
+    connectionsState,
+    connectionsDestTransporTAddressTag,
+    connectionsDestTransporTAddress,
+    connectionsDestAliasTag,
+    connectionsDestAlias,
+    connectionsSrcH245SigTransporTAddressTag,
+    connectionsSrcH245SigTransporTAddress,
+    connectionsDestH245SigTransporTAddressTag,
+    connectionsDestH245SigTransporTAddress,
+    connectionsConfId,
+    connectionsCalledPartyNumber,
+    connectionsDestXtraCallingNumber1,
+    connectionsDestXtraCallingNumber2,
+    connectionsDestXtraCallingNumber3,
+    connectionsDestXtraCallingNumber4,
+    connectionsDestXtraCallingNumber5,
+    connectionsFastCall,
+    connectionsSecurity,
+    connectionsH245Tunneling,
+    connectionsCanOverlapSend,
+    connectionsCRV,
+    connectionsCallType,
+    connectionsRemoteExtensionAddress,
+    connectionsExtraCRV1,
+    connectionsExtraCRV2,
+    connectionsConnectionStartTime,
+    connectionsReleaseCompleteReason
+                                     
+    }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { callSignalingMIBGroups 3 }
+
+callSignalEventsGroup    OBJECT-GROUP
+    OBJECTS {
+    connectionsReleaseCompleteReason 
+    }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { callSignalingMIBGroups 4 }
+
+callSignalingMIBCompliance        MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+        "The set of objects required for compliance."
+    MODULE
+        MANDATORY-GROUPS {callSignalConfigGroup, callSignalStatsGroup, connectionsGroup, callSignalEvents }
+       
+   ::= { callSignalingMIBConformance 2 }
+
+END
+
+

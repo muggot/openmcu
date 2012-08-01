@@ -1,0 +1,64 @@
+2007-10-22 13:22  rjongbloed
+
+	* Makefile.in, ReadMe.txt, configure, configure.ac,
+	  make/common.mak, make/plugins.mak, make/ptbuildopts.mak.in,
+	  make/ptlib-config.in, make/ptlib.mak, make/unix.mak,
+	  plugins/configure, plugins/configure.in,
+	  plugins/sound_alsa/Makefile, plugins/sound_esd/Makefile,
+	  plugins/sound_oss/Makefile, plugins/sound_sunaudio/Makefile,
+	  plugins/vidinput_avc/Makefile, plugins/vidinput_bsd/Makefile,
+	  plugins/vidinput_dc/Makefile.in, plugins/vidinput_v4l/Makefile,
+	  plugins/vidinput_v4l2/Makefile, ptlib.dxx, ptlib.dxy,
+	  samples/ThreadSafe/Makefile, samples/address/Makefile,
+	  samples/audio/Makefile, samples/dnstest/Makefile,
+	  samples/dtmftest/Makefile, samples/emailtest/Makefile,
+	  samples/factory/Makefile, samples/find_ip/Makefile,
+	  samples/hello_world/Makefile, samples/ipv6test/Makefile,
+	  samples/ldaptest/Makefile, samples/md5/Makefile,
+	  samples/netif/Makefile, samples/ptimer/Makefile,
+	  samples/pxml/Makefile, samples/queue/Makefile,
+	  samples/safetest/Makefile, samples/serial/Makefile,
+	  samples/sortedlist/Makefile, samples/strtest/Makefile,
+	  samples/stunclient/Makefile, samples/thread/Makefile,
+	  samples/threadex/Makefile, samples/timing/Makefile,
+	  samples/vidtest/Makefile, samples/wavfile/Makefile,
+	  samples/xmlrpc/Makefile, samples/xmlrpcsrvr/Makefile,
+	  samples/xmppconsole/Makefile, samples/xmpptest/Makefile,
+	  src/ptlib/Nucleus++/Makefile, src/ptlib/msos/Makefile,
+	  src/ptlib/unix/Makefile, tools/StringTest/Makefile,
+	  tools/asnparser/Makefile, tools/plugintest/Makefile:
+	  Many more PWLIBs changed to PTLIBs.
+
+2007-11-16 00:52  rjongbloed
+
+	* src/ptclib/psockbun.cxx:
+	  Fixed possible crash in socket bundling due to dangling pointer,
+	  thanks Richard Quan
+
+2007-11-16 00:54  rjongbloed
+
+	* src/ptclib/psockbun.cxx, src/ptlib/common/sockets.cxx:
+	  Fixed issue with writing broadcast UDP packets.
+
+2007-11-16 00:56  rjongbloed
+
+	* src/ptclib/psockbun.cxx:
+	  Fixed read timeout on socket bundle.
+
+2007-11-19 07:49  csoutheren
+
+	* include/ptclib/http.h:
+	  Add missing ptbuildopts.h
+
+2007-11-20 08:37  rjongbloed
+
+	* samples/hello_world/helloDLL_2005.vcproj,
+	  samples/hello_world/hello_2005.vcproj:
+	  Changed so can build in directory other than ptlib.
+
+2007-11-20 08:39  rjongbloed
+
+	* ChangeLog.txt:
+	  Change log not contained in source control, but generated for
+	  every release.
+

@@ -1,0 +1,11 @@
+This plugin implements an interface to the AMR-NB codec for OpenH323.
+
+For licensing reasons, the amr codec itself is not distributed with this
+plugin. Instead, you must download it yourself from
+http://www.3gpp.org/ftp/Specs/archive/26_series/26.104/26104-610.zip
+
+Unzip that file, and unzip the file 26104-610_ANSI_C_source_code.zip within
+it into this directory.
+
+ 
+

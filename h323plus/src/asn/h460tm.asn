@@ -1,0 +1,22 @@
+H460TM {itu-t(0) recommendation(0) h(8) 460 x} DEFINITIONS AUTOMATIC TAGS ::=
+
+BEGIN
+
+TMmode ::= ENUMERATED
+{
+	tmOpen		(1),
+	tmPublic	(2),
+	tmPrivate	(3),
+	tmBroadcast	(4),
+	tmReceive	(5)
+}
+
+MultipointTM ::= SEQUENCE
+{
+        message	        BMPString (SIZE (1..256)),         -- Basic ISO/IEC 10646-1 (Unicode)
+	sender		INTEGER (1..65535)   OPTIONAL,     -- source user id
+        receiver	INTEGER (1..65535)   OPTIONAL,     -- destination user id
+        ...
+}
+
+END

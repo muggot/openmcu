@@ -1,0 +1,11 @@
+;
+; uninstall.def : Declares the module parameters for the DLL.
+;
+
+;LIBRARY      UNINSTALL
+DESCRIPTION  'Equivalence InstallShield Support DLL'
+
+EXPORTS
+		UninstInitialize 
+		UninstUnInitialize 
+		InstallFunc

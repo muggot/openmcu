@@ -1,0 +1,180 @@
+Call-Transfer-Operations
+{
+   itu-t recommendation h 450 2 version1(0) call-transfer-operations(0)
+}
+
+DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+
+   IMPORTS Extension FROM H4501 -- Manufacturer-specific-service-extension-definition
+   {
+      itu-t recommendation h 450 1 version1(0) msi-definition(18)
+   }
+   notAvailable, supplementaryServiceInteractionNotAllowed,
+   invalidCallState FROM H4501 -- H4501-General-Error-List
+   {
+     itu-t recommendation h 450 1 version1(0) general-error-list(1)
+   }
+   EndpointAddress, PartySubaddress FROM H4501 -- Addressing-Data-Elements
+   {
+      itu-t recommendation h 450 1 version1(0) addressing-data-elements(9)
+   }
+   NonStandardParameter FROM H225 -- H323-MESSAGES
+   H225InformationElement FROM H4501 -- H225-generic-parameters-definition
+   {
+      itu-t recommendation h 450 1 version1(0) h225-generic-parameters(6)
+   };
+
+   DummyArg ::= CHOICE
+   {
+      extensionSeq ExtensionSeq,
+      nonStandardData NonStandardParameter
+   }
+
+   DummyRes ::= CHOICE
+   {
+      extensionSeq ExtensionSeq,
+      nonStandardData NonStandardParameter
+   }
+
+   CTInitiateArg ::= SEQUENCE
+   {
+      callIdentity CallIdentity,
+      reroutingNumber EndpointAddress,
+      argumentExtension CHOICE
+      {
+         extensionSeq ExtensionSeq,
+         nonStandardData NonStandardParameter
+      }
+      OPTIONAL,
+      ...
+   }
+
+   CTSetupArg ::= SEQUENCE
+   {
+      callIdentity CallIdentity,
+      transferringNumber EndpointAddress OPTIONAL,
+      argumentExtension CHOICE
+      {
+         extensionSeq ExtensionSeq,
+         nonStandardData NonStandardParameter
+      }
+      OPTIONAL,
+      ...
+   }
+
+   CTIdentifyRes ::= SEQUENCE
+   {
+      callIdentity CallIdentity,
+      reroutingNumber EndpointAddress,
+      resultExtension CHOICE
+      {
+         extensionSeq ExtensionSeq,
+         nonStandardData NonStandardParameter
+      }
+      OPTIONAL,
+      ...
+   }
+
+   CTUpdateArg ::= SEQUENCE
+   {
+      redirectionNumber EndpointAddress,
+      redirectionInfo BMPString (SIZE(1..128)) OPTIONAL,
+      basicCallInfoElements H225InformationElement OPTIONAL,
+      -- Information element
+      -- Progress indicator may be conveyed
+      argumentExtension CHOICE
+      {
+         extensionSeq ExtensionSeq,
+         nonStandardData NonStandardParameter
+      }
+      OPTIONAL,
+      ...
+   }
+
+   SubaddressTransferArg ::= SEQUENCE
+   {
+      redirectionSubaddress PartySubaddress,
+      argumentExtension CHOICE
+      {
+         extensionSeq ExtensionSeq,
+         nonStandardData NonStandardParameter
+      }
+      OPTIONAL,
+      ...
+   }
+
+   CTCompleteArg ::= SEQUENCE
+   {
+      endDesignation EndDesignation,
+      redirectionNumber EndpointAddress,
+      -- number of new connected user
+      basicCallInfoElements H225InformationElement OPTIONAL,
+      -- Information element Progress indicator may be conveyed
+      redirectionInfo BMPString (SIZE(1..128)) OPTIONAL,
+      callStatus CallStatus DEFAULT answered,
+      argumentExtension CHOICE
+      {
+         extensionSeq ExtensionSeq,
+         nonStandardData NonStandardParameter
+      }
+      OPTIONAL,
+      ...
+   }
+
+   EndDesignation ::= ENUMERATED
+   {
+      primaryEnd(0),
+      secondaryEnd(1),
+      ...
+   }
+
+   CallStatus ::= ENUMERATED
+   {
+      answered(0),
+      alerting(1),
+      ...
+   }
+
+   CTActiveArg ::= SEQUENCE
+   {
+      connectedAddress EndpointAddress,
+      -- number of new connected user
+      basicCallInfoElements H225InformationElement OPTIONAL,
+      -- Information element Progress indicator may be conveyed
+      connectedInfo BMPString (SIZE(1..128)) OPTIONAL,
+      argumentExtension CHOICE
+      {
+         extensionSeq ExtensionSeq,
+         nonStandardData NonStandardParameter
+      }
+      OPTIONAL,
+      ...
+   }
+
+   CallIdentity ::= NumericString (SIZE(0..4))
+   -- size 0 means ’empty’
+
+   ExtensionSeq ::= SEQUENCE OF Extension
+
+   CallTransferOperation ::= ENUMERATED
+   {
+      callTransferIdentify (7),
+      callTransferAbandon (8),
+      callTransferInitiate (9),
+      callTransferSetup (10),
+      callTransferUpdate (13),
+      subaddressTransfer (14),
+      callTransferComplete (12),
+      callTransferActive (11)
+   }
+
+   CallTransferErrors ::= ENUMERATED
+   {
+      unspecified (1008),
+      invalidReroutingNumber (1004),
+      unrecognizedCallIdentity (1005),
+      establishmentFailure (1006)
+   }
+
+END -- of Call-Transfer-Operations

@@ -1,0 +1,564 @@
+
+H323MC-MIB DEFINITIONS ::= BEGIN
+
+         IMPORTS
+           Integer32,  OBJECT-TYPE, MODULE-IDENTITY, NOTIFICATION-TYPE
+                 FROM SNMPv2-SMI
+           TAddress,  TruthValue, DateAndTime, DisplayString
+                 FROM SNMPv2-TC
+           MODULE-COMPLIANCE, OBJECT-GROUP
+                 FROM SNMPv2-CONF
+           ifIndex
+                 FROM IF-MIB
+           MmTAddressTag, MmGlobalIdentifier, mmH323Root
+                 FROM MULTI-MEDIA-MIB-TC;
+
+          --  this is the MIB module for the H.323 MC objects
+         h323MC  MODULE-IDENTITY
+             LAST-UPDATED "9812172253Z"      -- December 17, 1998
+             ORGANIZATION "ITU-T"
+             CONTACT-INFO
+             "ITU-T SG 16 "
+             DESCRIPTION
+                " "
+                   ::= { mmH323Root 4 }
+
+         --groups in H.323 MC
+         h323McSystem           OBJECT IDENTIFIER ::= { h323MC 1 }
+         h323McConfig            OBJECT IDENTIFIER ::= { h323MC 2 }
+         h323McConference    OBJECT IDENTIFIER ::= { h323MC 3 }
+         h323McStats               OBJECT IDENTIFIER ::= { h323MC 4 }
+         h323McControls         OBJECT IDENTIFIER ::= { h323MC 5 } 
+         h323McEvents            OBJECT IDENTIFIER ::= { h323MC 6 0 } 
+
+
+         h323McSystemTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323McSystemTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about MC system."
+             ::= { h323McSystem 1 }
+
+         h323McSystemTableEntry OBJECT-TYPE
+             SYNTAX H323McSystemTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe MC system parameters."
+             INDEX { ifIndex }
+               ::= { h323McSystemTable 1 }
+
+         H323McSystemTableEntry ::=
+              SEQUENCE {
+              h323McSystemNameAndMaker
+                  DisplayString,
+              h323McSystemSoftwareVersionNumber
+                  DisplayString,
+              h323McSystemHardwareVersionNumber
+                  DisplayString,
+              h323McSystemStartUpTime
+                  DateAndTime
+              }
+
+          h323McSystemNameAndMaker OBJECT-TYPE 
+                   SYNTAX DisplayString(SIZE (0..255))
+                   MAX-ACCESS read-only 
+                   STATUS current 
+                   DESCRIPTION "The MC name and maker name"
+               ::= { h323McSystemTableEntry 1 } 
+
+          h323McSystemSoftwareVersionNumber OBJECT-TYPE 
+                   SYNTAX DisplayString
+                   MAX-ACCESS read-only 
+                   STATUS current 
+                   DESCRIPTION "Software version number (major and minor)"
+               ::= { h323McSystemTableEntry 2 } 
+
+          h323McSystemHardwareVersionNumber OBJECT-TYPE 
+                   SYNTAX DisplayString
+                   MAX-ACCESS read-only 
+                   STATUS current 
+                   DESCRIPTION "Hardware version number"
+               ::= { h323McSystemTableEntry 3 } 
+
+        h323McSystemStartUpTime OBJECT-TYPE
+             SYNTAX DateAndTime
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                 "The time and date that the MC was started"
+                 ::= { h323McSystemTableEntry 4 }
+
+         h323McConfigTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323McConfigTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about MC configuration.
+                 It is a list of MC configuration parameters entries. 
+                 The number of entries equals to the number of MCs."
+             ::= { h323McConfig 1 }
+
+         h323McConfigTableEntry OBJECT-TYPE
+             SYNTAX H323McConfigTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe MC configuration parameters."
+             INDEX { ifIndex }
+               ::= { h323McConfigTable 1 }
+
+         H323McConfigTableEntry ::=
+              SEQUENCE {
+              h323McConfigMcCallSignalingTag
+                  MmTAddressTag,
+              h323McConfigMcCallSignalingAddress
+                  TAddress,
+              h323McConfigGatekeeperAddressTag
+                  MmTAddressTag,
+              h323McConfigGatekeeperAddress
+                  TAddress,
+              h323McConfigIsRegisteredWithGatekeeper
+                  TruthValue,
+              h323McConfigEnableNotifications
+                  INTEGER
+              }   
+
+         h323McConfigMcCallSignalingTag OBJECT-TYPE
+             SYNTAX MmTAddressTag
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The MC call signaling address tag."
+                ::= { h323McConfigTableEntry 1 }
+
+         h323McConfigMcCallSignalingAddress OBJECT-TYPE
+             SYNTAX TAddress
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The MC call signaling address."
+                ::= { h323McConfigTableEntry 2 }
+
+         h323McConfigGatekeeperAddressTag OBJECT-TYPE
+             SYNTAX MmTAddressTag
+             MAX-ACCESS read-write
+             STATUS current
+             DESCRIPTION
+                "The GK address tag." 
+                ::= { h323McConfigTableEntry 3 }
+
+         h323McConfigGatekeeperAddress OBJECT-TYPE
+             SYNTAX TAddress
+             MAX-ACCESS read-write
+             STATUS current
+             DESCRIPTION
+                "The address of the gatekeeper that MC is registered with. 
+                 The network manager may request MC to register with a particular GK by
+                 setting the GK address."
+                ::= { h323McConfigTableEntry 4 }
+
+         h323McConfigIsRegisteredWithGatekeeper OBJECT-TYPE
+             SYNTAX TruthValue
+             MAX-ACCESS read-write
+             STATUS current
+             DESCRIPTION
+                "This value indicates if MC is registered with the gatekeeper." 
+                 ::= { h323McConfigTableEntry 5 }
+
+        h323McConfigEnableNotifications OBJECT-TYPE 
+             SYNTAX INTEGER { enabled(1), disabled(2) } 
+             MAX-ACCESS read-write 
+             STATUS current 
+             DESCRIPTION 
+                "Indicates whether notifications should be generated 
+                 for this entity. "
+                 ::= { h323McConfigTableEntry 6 }
+
+       h323McConferenceTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323McConferenceTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about running conferences. 
+                 It is a list of conference entries. The number of entries equals 
+                 to the number of running conferences."
+             ::= { h323McConference 1 }
+
+         h323McConferenceTableEntry OBJECT-TYPE
+             SYNTAX H323McConferenceTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe the conferences."
+             INDEX { ifIndex,
+                     h323McConferenceConferenceId}
+               ::= { h323McConferenceTable 1 }
+
+         H323McConferenceTableEntry ::=
+              SEQUENCE {
+              h323McConferenceConferenceId
+                  MmGlobalIdentifier,
+              h323McConferenceConferenceStartTime
+                  DateAndTime,
+              h323McConferenceConferenceEndTime
+                  DateAndTime,
+              h323McConferenceCentralizedOrDistributed
+                  INTEGER,
+              h323McConferenceUniOrMulticast
+                  INTEGER,
+              h323McConferenceActiveMcAddress
+                  TAddress
+              }
+
+        h323McConferenceConferenceId OBJECT-TYPE
+             SYNTAX MmGlobalIdentifier
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The conference identifier."
+                ::= { h323McConferenceTableEntry 1 }
+
+        h323McConferenceConferenceStartTime OBJECT-TYPE
+             SYNTAX DateAndTime
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The conference start time."
+                ::= { h323McConferenceTableEntry 2 }
+
+        h323McConferenceConferenceEndTime OBJECT-TYPE
+             SYNTAX DateAndTime
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The conference end time."
+                ::= { h323McConferenceTableEntry 3 }
+
+        h323McConferenceCentralizedOrDistributed OBJECT-TYPE
+             SYNTAX INTEGER {centralized (1), distributed (2)}
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value indicates whether the conference is centralized or distributed."
+                ::= { h323McConferenceTableEntry 4 }
+
+         h323McConferenceUniOrMulticast OBJECT-TYPE
+             SYNTAX INTEGER {unicast (1), multicast (2)}
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "This value indicates whether the conference is unicast or multicast."
+                ::= { h323McConferenceTableEntry 5 }
+
+         h323McConferenceActiveMcAddress OBJECT-TYPE
+             SYNTAX TAddress
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The address of active MC. In case of cascading this value is different 
+                 than MC's own address."
+                ::= { h323McConferenceTableEntry 6 }
+
+         h323McConferenceParticipantsTable OBJECT-TYPE
+             SYNTAX SEQUENCE OF H323McConferenceParticipantsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION
+                "This table contains information about conference participants. 
+                 It is a list of participant entries. The number of entries equals to the 
+                 sum of all participants for all conferences."
+             ::= {h323McConference 2 }
+
+        h323McConferenceParticipantsTableEntry OBJECT-TYPE
+             SYNTAX H323McConferenceParticipantsTableEntry
+             MAX-ACCESS not-accessible
+             STATUS current
+             DESCRIPTION 
+                 "It contains objects that describe a conference participant."
+             INDEX { ifIndex,
+                     h323McConferenceConferenceId, 
+                     h323McConferenceParticipantsTableIndex }
+               ::= { h323McConferenceParticipantsTable 1 }
+
+        H323McConferenceParticipantsTableEntry ::=
+              SEQUENCE {
+            h323McConferenceParticipantsTableIndex
+                    Integer32,
+            h323McConferenceParticipantsTerminalLabel
+                    OCTET STRING,
+            h323McConferenceParticipantsCallSignalingTAddressTag
+                    MmTAddressTag,
+            h323McConferenceParticipantsCallSignalingAddress
+                    TAddress,
+            h323McConferenceParticipantsCallId
+                    MmGlobalIdentifier,
+            h323McConferenceParticipantsControlChannelIndex
+                    Integer32,
+            h323McConferenceParticipantsNumberOfLogicalChannels
+                    Integer32,
+            h323McConferenceParticipantsRtpSessionIndex
+                    Integer32
+            }
+
+        h323McConferenceParticipantsTableIndex OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS  not-accessible
+             STATUS current
+             DESCRIPTION
+                "An arbitrary index to this table. This index is one for the 
+                 first participant for every given conference. It is incremented by one 
+                 for each subsequent participant of the same conference. The last index 
+                 for a particular conference is equal to the number of participants for 
+                 that conference."
+                ::= { h323McConferenceParticipantsTableEntry 1 }
+
+
+        h323McConferenceParticipantsTerminalLabel OBJECT-TYPE
+             SYNTAX OCTET STRING (SIZE(2))
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The terminal label of this terminal. The first byte represents MCU 
+                 number and the second byte represents the terminal number."
+                ::= { h323McConferenceParticipantsTableEntry 2 }
+
+       h323McConferenceParticipantsCallSignalingTAddressTag OBJECT-TYPE
+             SYNTAX MmTAddressTag
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The terminal call signaling address type."
+                ::= { h323McConferenceParticipantsTableEntry 3 }
+
+       h323McConferenceParticipantsCallSignalingAddress OBJECT-TYPE
+             SYNTAX TAddress
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The terminal call signaling address."
+                ::= { h323McConferenceParticipantsTableEntry 4 }
+
+       h323McConferenceParticipantsCallId OBJECT-TYPE
+             SYNTAX MmGlobalIdentifier
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The call identifier."
+                ::= { h323McConferenceParticipantsTableEntry 5 }
+
+       h323McConferenceParticipantsControlChannelIndex OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The index to the control channel table in H.245 MIB. "
+                ::= { h323McConferenceParticipantsTableEntry 6 }
+
+      h323McConferenceParticipantsNumberOfLogicalChannels OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The number of logical channels that are used by this participant."
+                ::= { h323McConferenceParticipantsTableEntry 7 }
+
+      h323McConferenceParticipantsRtpSessionIndex OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The index to the RTP session table in RTP MIB"
+                ::= { h323McConferenceParticipantsTableEntry 8 }
+
+       h323McStatsTotalConferences OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The total number of conferences since system start up time."
+                ::= { h323McStats 1 }
+
+       h323McStatsSuccessfullyCompletedConferences OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The number of conferences that completed successfully."
+                ::= { h323McStats 2 }
+
+       h323McStatsAbnormalyTerminatedConferences OBJECT-TYPE
+             SYNTAX Integer32
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The number of conferences that were terminated abnormaly."
+                ::= { h323McStats 3 }
+
+-- Commands and controls
+ 
+h323McControlsCommands OBJECT-TYPE 
+       SYNTAX INTEGER { 
+                       other(1),
+                       abruptRestart(2),
+                       gracefulRestart (3),
+                       abruptShutdown(4),
+                       gracefulShutdown (5),
+                       enterQuiescence (6),
+                       exitQuiescence (7),
+                       startLog(8), 
+                       stopLog(9),
+                       resetStatistics(10), 
+                       runDiagnostic(11)
+        } 
+       MAX-ACCESS read-write 
+       STATUS current 
+       DESCRIPTION 
+          "A value that represents a command for the MC.
+           1. Other             (for proprietary extensions)
+           2. Abrupt Restart    (Drastic Restart)
+           3. Graceful Restart  (Restart after all calls have terminated. 
+                                 Meanwhile, accept no calls) 
+           4. Abrupt Shutdown   (Drastic Restart)
+           5. Graceful Shutdown (Shutdown after all calls have terminated.
+                                 Meanwhile, accept no calls) 
+           6. Enter Quiescence Mode (Disable receiving of calls)
+           7. Exit  Quiescence Mode (Enable  receiving of calls)
+           8. Start Error/Log Reporting
+           9. Stop Error/Log Reporting
+          10. Reset Statistics
+          11. Run Diagnostic"
+::= { h323McControls 1}   
+
+        lastConferenceTerminationReason OBJECT-TYPE
+              SYNTAX INTEGER { normalTermination (1), administrativelyTerminated(2)}
+              MAX-ACCESS read-only
+              STATUS current
+              DESCRIPTION
+                 "This value identifies the reason for the conference termination."
+                  ::= { h323McEvents 1 }
+
+        lastTerminatedConferenceId  OBJECT-TYPE
+             SYNTAX MmGlobalIdentifier
+             MAX-ACCESS read-only
+             STATUS current
+             DESCRIPTION
+                "The number of conferences that were terminated abnormaly."
+                ::= { h323McEvents 2 }
+
+        conferenceTermination NOTIFICATION-TYPE
+             OBJECTS  { lastTerminatedConferenceId, lastConferenceTerminationReason, ifIndex }
+             STATUS current
+             DESCRIPTION
+                 "This message will be sent on conference termination
+                  for the following reasons:
+                  1 - normally terminated  
+                  2 - administratively terminated 
+                  "
+                  ::= {h323McEvents 3}
+
+-- conformance; stating the mandatory requirements for the MIB
+--
+-- CONFORMANCE
+--
+
+h323McMIBConformance    OBJECT IDENTIFIER ::= { h323MC 7 }
+h323McMIBGroups         OBJECT IDENTIFIER ::= { h323McMIBConformance 1 }
+
+--
+-- Groups for Conformance
+--
+h323McSystemGroup OBJECT-GROUP
+    OBJECTS {
+       h323McSystemNameAndMaker,
+       h323McSystemSoftwareVersionNumber,
+       h323McSystemHardwareVersionNumber,
+       h323McSystemStartUpTime
+     }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h323McMIBGroups 1 }
+
+h323McConfigGroup OBJECT-GROUP
+    OBJECTS {
+       h323McConfigMcCallSignalingTag, 
+       h323McConfigMcCallSignalingAddress,
+       h323McConfigGatekeeperAddressTag, 
+       h323McConfigGatekeeperAddress, 
+       h323McConfigIsRegisteredWithGatekeeper,
+       h323McConfigEnableNotifications
+       
+     }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h323McMIBGroups 2 }
+
+h323McConferenceGroup    OBJECT-GROUP
+    OBJECTS {
+      h323McConferenceConferenceId,
+      h323McConferenceConferenceStartTime,
+      h323McConferenceConferenceEndTime,
+      h323McConferenceCentralizedOrDistributed,
+      h323McConferenceUniOrMulticast,
+      h323McConferenceActiveMcAddress,
+      h323McConferenceParticipantsTerminalLabel,
+      h323McConferenceParticipantsCallSignalingTAddressTag,
+      h323McConferenceParticipantsCallSignalingAddress,
+      h323McConferenceParticipantsCallId,
+      h323McConferenceParticipantsControlChannelIndex,
+      h323McConferenceParticipantsNumberOfLogicalChannels,
+      h323McConferenceParticipantsRtpSessionIndex
+    }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h323McMIBGroups 3 }
+
+h323McStatsGroup    OBJECT-GROUP
+    OBJECTS {
+     h323McStatsTotalConferences, 
+     h323McStatsSuccessfullyCompletedConferences, 
+     h323McStatsAbnormalyTerminatedConferences 
+    }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h323McMIBGroups 4 }
+
+h323McControlsGroup    OBJECT-GROUP
+    OBJECTS {
+     h323McControlsCommands
+    }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h323McMIBGroups 5 }
+
+h323McEventsGroup     OBJECT-GROUP
+    OBJECTS {
+      lastConferenceTerminationReason,
+      lastTerminatedConferenceId,
+      conferenceTermination    
+    }
+    STATUS  current
+    DESCRIPTION
+       "."
+    ::= { h323McMIBGroups 6 }
+
+h323McMIBCompliance        MODULE-COMPLIANCE
+    STATUS      current
+    DESCRIPTION
+        "The set of objects required for compliance."
+    MODULE
+        MANDATORY-GROUPS { h323McSystemGroup, 
+                           h323McConfigGroup, 
+                           h323McConferenceGroup, 
+                           h323McStatsGroup, 
+                           h323McControlsGroup,
+                           h323McEventsGroup }
+    ::= { h323McMIBConformance 2 }
+
+END

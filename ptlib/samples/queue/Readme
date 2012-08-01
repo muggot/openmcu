@@ -1,0 +1,50 @@
+/*! \mainpage  PQueueChannel test program
+
+\section into Introduction 
+This application is a tool for testing the PQueueChannel class in pwlib.  One
+use of this class would be as a buffer between a sound card (requiring 320
+bytes of data every 20ms) and a codec (which generates 480 bytes of data every
+30ms).
+
+\section arch Architecture
+
+The code contains one class, QueueProcess, which contains three threads of
+operation. The threads are
+\li generates data, and places it on the queue
+\li reads in data, grabbing bytes from the queue
+\li the core process, which evaluates the command line and launches the
+    generate and read threads.
+
+The generate process starts running, and places several blocks of data on
+the queue. In this way, there is a buffer on the queue of data.
+
+The default parameters are such that the number of bytes (per second)
+placed on the queue is identical to the number of bytes (per second)
+removed from the queue. Consequently, the read process should never catch
+up on the write process, (which would empty the queue to zero bytes).
+
+\section parms Command line parameters
+
+The command line parameters are as you would expect from a pwlib
+application,
+
+ \code -h  \endcode report help message
+
+ \code -v  \endcode report current version
+
+ \code  -t \endcode specify log level, use more times for more detail
+
+ \code -o  \endcode logfile  set the name of the log file.
+
+\section typical Sample command line
+
+With the command line
+\code queue -i 1000 -ttt -o log.txt \endcode
+
+\li the write process puts (every 20ms) 320 bytes on the queue
+\li the read process pulls (every 30ms) 480 bytes from the queue
+
+and this repeats 1000 times. A log file is written to disk describing when
+each read and write happens.
+
+*/

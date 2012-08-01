@@ -1,0 +1,122 @@
+Remote-Operations-Apdus
+{
+   itu-t recommendation h 450 1 version1(0) remote-operations-apdus(11)
+}
+
+DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+   -- exports everything
+
+   ROS ::= CHOICE
+   {
+      invoke       [1]  Invoke,
+      returnResult [2]  ReturnResult,
+      returnError  [3]  ReturnError,
+      reject       [4]  Reject
+   }
+
+   Invoke ::= SEQUENCE
+   {
+      invokeId InvokeId (0..65535),
+      linkedId InvokeId OPTIONAL,
+      opcode Code,
+      argument OCTET STRING OPTIONAL   -- argument is an OpenType constrained by the opcode
+   }
+
+   ReturnResult ::= SEQUENCE
+   {
+      invokeId InvokeId,
+      result SEQUENCE
+      {
+         opcode Code,
+         result OCTET STRING,    -- result is an OpenType constrained by the opcode
+         ...
+      } OPTIONAL
+   }
+
+   ReturnError ::= SEQUENCE
+   {
+      invokeId InvokeId,
+      errorCode Code,
+      parameter OCTET STRING OPTIONAL     -- parameter is an OpenType constrained by the opcode
+   }
+
+   Reject ::= SEQUENCE
+   {
+      invokeId InvokeId,
+      problem CHOICE
+      {
+         general GeneralProblem,
+         invoke InvokeProblem,
+         returnResult ReturnResultProblem,
+         returnError ReturnErrorProblem
+      }
+   }
+
+   GeneralProblem ::= INTEGER
+   {
+      unrecognizedComponent (0),
+      mistypedComponent (1),
+      badlyStructuredComponent (2)
+   }
+
+   InvokeProblem ::= INTEGER
+   {
+      duplicateInvocation (0),
+      unrecognizedOperation (1),
+      mistypedArgument (2),
+      resourceLimitation (3),
+      releaseInProgress (4),
+      unrecognizedLinkedId (5),
+      linkedResponseUnexpected (6),
+      unexpectedLinkedOperation (7)
+   }
+
+   ReturnResultProblem ::= INTEGER
+   {
+      unrecognizedInvocation (0),
+      resultResponseUnexpected (1),
+      mistypedResult (2)
+   }
+
+   ReturnErrorProblem ::= INTEGER
+   {
+      unrecognizedInvocation (0),
+      errorResponseUnexpected (1),
+      unrecognizedError (2),
+      unexpectedError (3),
+      mistypedParameter (4)
+   }
+
+   RejectProblem ::= INTEGER
+   {
+      general-unrecognizedPDU (0),
+      general-mistypedPDU (1),
+      general-badlyStructuredPDU (2),
+      invoke-duplicateInvocation (10),
+      invoke-unrecognizedOperation (11),
+      invoke-mistypedArgument (12),
+      invoke-resourceLimitation (13),
+      invoke-releaseInProgress (14),
+      invoke-unrecognizedLinkedId (15),
+      invoke-linkedResponseUnexpected (16),
+      invoke-unexpectedLinkedOperation (17),
+      returnResult-unrecognizedInvocation (20),
+      returnResult-resultResponseUnexpected (21),
+      returnResult-mistypedResult (22),
+      returnError-unrecognizedInvocation (30),
+      returnError-errorResponseUnexpected (31),
+      returnError-unrecognizedError (32),
+      returnError-unexpectedError (33),
+      returnError-mistypedParameter (34)
+   }
+
+   InvokeId ::= INTEGER
+
+   Code ::= CHOICE -- from X.880
+   {
+      local INTEGER,
+      global OBJECT IDENTIFIER
+   }
+
+END -- end of Remote-Operations-Apdus definitions

@@ -1,0 +1,286 @@
+AC_INIT(../include/ptlib.h)
+
+AC_PROG_CXX
+
+dnl ########################################################################
+dnl set the PREFIX accordingly
+if test "x$prefix" = "xNONE"; then
+   INSTALLPREFIX="/usr/local"
+else
+   INSTALLPREFIX="${prefix}"
+fi
+
+AC_SUBST(INSTALLPREFIX)
+
+dnl ########################################################################
+dnl set LIBDIR accordingly
+LIBDIR="${libdir}"
+AC_SUBST(LIBDIR)
+
+AC_ARG_ENABLE(plugins,           disable plugin support])
+if test "${enable_plugins}z" = "z" ; then
+  enable_plugins=yes
+fi
+if test "$enable_plugins" = "no" ; then
+  AC_MSG_NOTICE(Plugins disabled)
+else
+ 
+
+AC_ARG_ENABLE(audio,
+       [  --disable-audio        disable audio support])
+if test "${enable_audio}z" = "z" ; then
+  enable_audio=yes
+fi
+
+if test "${enable_audio}" = "yes" ; then
+
+dnl #########################################################################
+dnl check for Alsa sound support
+dnl ########################################################################
+
+AC_ARG_ENABLE(alsa, [  --enable-alsa           enable ALSA audio support],,enable_alsa=yes)
+
+if test "${enable_alsa}z" = "yesz" ; then
+  AC_CHECK_HEADER(alsa/asoundlib.h, ALSAHDR=1)
+  AC_MSG_CHECKING(for ALSA sound support)
+  if test "${ALSAHDR}z" != "z"; then
+    AC_SUBST(HAS_ALSA, 1)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+
+dnl #########################################################################
+dnl check for ESD sound support
+dnl ########################################################################
+
+AC_ARG_ENABLE(esd, [  --enable-esd            enable ESD audio support],,enable_esd=no)
+
+if test "${enable_esd}z" = "yesz" ; then
+  AC_CHECK_HEADER(esd.h, ESDHDR=1)
+  AC_MSG_CHECKING(for ESD sound support)
+  if test "${ESDHDR}z" != "z"; then
+    AC_SUBST(HAS_ESD, 1)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+
+dnl #########################################################################
+dnl check for OSS sound support
+dnl ########################################################################
+
+AC_ARG_ENABLE(oss, [  --enable-oss            enable OSS audio support],,enable_oss=no)
+
+if test "${enable_oss}z" = "yesz" ; then
+  AC_CHECK_HEADER(sys/soundcard.h, SNDCARDHDR=1)
+  AC_MSG_CHECKING(for OSS sound support)
+  if test "${SNDCARDHDR}z" != "z"; then
+    AC_SUBST(HAS_OSS, 1)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+
+dnl #########################################################################
+dnl check for sunaudio sound support
+dnl ########################################################################
+
+AC_ARG_ENABLE(sunaudio, [  --enable-sunaudio            enable  Sun audio support],,enable_sunaudio=no)
+
+if test "${enable_sunaudio}z" = "yesz" ; then
+  AC_CHECK_HEADER(sys/conf.h, SNDCARDHDR=1)
+  AC_MSG_CHECKING(for Sun audio sound support)
+  if test "${SNDCARDHDR}z" != "z"; then
+    AC_SUBST(HAS_SUNAUDIO, 1)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+fi # enable_audio
+
+AC_ARG_ENABLE(video,
+       [  --disable-video         disable video device support])
+
+if test "${enable_video}z" = "z" ; then
+  enable_video=yes
+fi
+
+if test "$enable_video" = "yes" ; then
+
+dnl #########################################################################
+dnl check for V4L video support
+dnl ########################################################################
+
+AC_ARG_ENABLE(v4l, [  --enable-v4l            enable V4L video support],,enable_v4l=yes)
+
+if test "${enable_v4l}z" = "yesz" ; then
+  AC_CHECK_HEADER(linux/videodev.h, V4LHDR=1)
+  AC_MSG_CHECKING(for V4L video support)
+  if test "${V4LHDR}z" != "z"; then
+    AC_SUBST(HAS_V4L, 1)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+
+dnl #########################################################################
+dnl check for V4L2 video support
+dnl ########################################################################
+
+AC_ARG_ENABLE(v4l2, [  --enable-v4l2            enable V4L2 video support],,enable_v4l2=yes)
+
+if test "${enable_v4l2}z" = "yesz" ; then
+  if test "${OSTYPE}z" = "solaris2.11z"; then
+    VIDEODEV="sys/videodev2.h"
+  else
+    VIDEODEV="linux/videodev2.h"
+  fi
+  AC_CHECK_HEADER($VIDEODEV, 
+                  [V4L2HDR=1],
+                  [
+		    # We can't use AC_CHECK_HEADER again because
+                    # the value is cached, perhaps we have another
+                    # method to do this more cleanly ?
+		    AC_MSG_CHECKING([for $VIDEODEV with sys/types.h])
+		    AC_TRY_COMPILE([
+					#ifdef __linux__
+					#include <sys/types.h>
+					#include <linux/types.h>
+                                        #else
+                                        #ifdef __sun
+                                        #include <sys/types.h>
+                                        #include <sys/time.h>
+                                        #else
+					#error "not supported"
+					#endif
+					#endif
+					#include "$VIDEODEV"
+				    ],
+				    [
+				        return 0;
+				    ],
+				    [
+				        V4L2HDR=1
+				        AC_MSG_RESULT(yes)
+				    ],
+                                    [
+				        AC_MSG_RESULT(no)
+                                    ])
+                  ], 
+		[
+		#ifdef __linux__
+		#include <linux/types.h>
+		#endif
+		])
+  AC_MSG_CHECKING(for V4L2 video support)
+  if test "${V4L2HDR}z" != "z"; then
+    AC_SUBST(HAS_V4L2, 1)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+
+dnl #########################################################################
+dnl check for BSD video capture support
+dnl ########################################################################
+
+AC_ARG_ENABLE(bsdvideo, [  --enable-bsdvideo       enable BSD video support],,enable_bsdvideo=yes)
+
+if test "${enable_bsdvideo}z" = "yesz" ; then
+  AC_CHECK_HEADER(machine/ioctl_meteor.h, BSDVIDEOHDR=1)
+  AC_CHECK_HEADER(i386/ioctl_meteor.h, BSDVIDEOHDR=1)
+  AC_CHECK_HEADER(dev/ic/bt8xx.h, BSDVIDEOHDR=1)
+  AC_MSG_CHECKING(for BSD video support)
+  if test "${BSDVIDEOHDR}z" != "z"; then
+    AC_SUBST(HAS_BSDVIDEOCAP, 1)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+
+dnl #########################################################################
+dnl check for AVC video support
+dnl ########################################################################
+
+AC_ARG_ENABLE(avc, [  --enable-avc            enable IEEE1394/AVC video support],,enable_avc=yes)
+
+if test "${enable_avc}z" = "yesz" ; then
+  AC_CHECK_HEADER(libavc1394/avc1394.h, AVC1394HDR=1)
+  AC_CHECK_HEADER(libdv/dv.h, DVHDR=1)
+  AC_CHECK_HEADER(libraw1394/raw1394.h, RAW1394HDR=1)
+  AC_MSG_CHECKING(for IEEE1394/AVC video support)
+  if test "${AVC1394HDR}z" != "z" -a "${DVHDR}z" != "z" -a "${RAW1394HDR}z" != "z"; then
+    AC_SUBST(HAS_AVC1394, 1)
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+
+dnl #########################################################################
+dnl check for DC video support
+dnl ########################################################################
+
+AC_ARG_ENABLE(dc, [  --enable-dc             enable IEEE1394/DC video support],,enable_dc=yes)
+
+if test "${enable_dc}z" = "yesz" ; then
+  AC_CHECK_HEADER(libdc1394/dc1394_control.h, DC1394HDR=1)
+  AC_CHECK_HEADER(libraw1394/raw1394.h, RAW1394HDR=1)
+  AC_MSG_CHECKING(for IEEE1394/DC video support)
+  if test "${DC1394HDR}z" != "z" -a "${RAW1394HDR}z" != "z"; then
+    AC_SUBST(HAS_DC1394, 1)
+    AC_MSG_RESULT(yes)
+    AC_MSG_CHECKING(if dc1394_dma_setup_capture has 12 parms)
+    AC_COMPILE_IFELSE([[
+#include "libdc1394/dc1394_control.h"
+int main(int ac,char **av)
+{
+  raw1394handle_t handle;
+  nodeid_t node;
+  int channel;
+  int format;
+  int mode;
+  int speed;
+  int frame_rate; 
+  int num_dma_buffers;
+  int do_extra_buffering;
+  int drop_frames;
+  const char *dma_device_file;
+  dc1394_cameracapture *camera;
+  dc1394_dma_setup_capture(handle, node, channel, format, mode, speed, frame_rate, num_dma_buffers,
+			   do_extra_buffering, drop_frames, dma_device_file, camera);
+  return 0;
+}
+]],NEW_DC_API=1, NEW_DC_API=0)
+    if test "$NEW_DC_API" = "1" ; then
+      AC_SUBST(DC_CFLAGS, -DNEW_DC_API)
+      AC_MSG_RESULT(yes)
+    else
+      AC_SUBST(DC_CFLAGS)
+      AC_MSG_RESULT(no)
+    fi
+  else
+    AC_MSG_RESULT(no)
+  fi
+fi
+
+fi
+dnl end of test for video
+
+fi # enable_plugins
+
+dnl ########################################################################
+dnl output header file
+
+AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES(vidinput_dc/Makefile)
+
+AC_OUTPUT()

@@ -1,0 +1,23 @@
+SIGNALLING-TRAVERSAL {itu-t(0) recommendation(0) h(8) 460 18 version(0)1} 
+DEFINITIONS AUTOMATIC TAGS ::=
+
+BEGIN
+IMPORTS
+	CallIdentifier, TimeToLive, TransportAddress
+FROM H323-MESSAGES; 
+
+IncomingCallIndication	::= SEQUENCE
+{
+	callSignallingAddress	TransportAddress,
+	callID				CallIdentifier,
+	...
+}
+
+LRQKeepAliveData		::= SEQUENCE
+{
+	lrqKeepAliveInterval	TimeToLive,	-- keep-alive interval (seconds)
+	...
+}
+
+	
+END

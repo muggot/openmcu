@@ -1,0 +1,233 @@
+H4501-Supplementary-ServiceAPDU-Structure
+{
+   itu-t recommendation h 450 1 version1(0) h4501-facility-information-structure(2)
+}
+
+DEFINITIONS AUTOMATIC TAGS ::=
+BEGIN
+   IMPORTS AliasAddress, PartyNumber FROM H225 -- H323-MESSAGES
+   ROS, Code FROM X880 -- Remote-Operations-Apdu
+   {
+      itu-t recommendation h 450 1 version1(0) remote-operations-apdus(11)
+   };
+
+   SupplementaryService ::= SEQUENCE
+   {
+      networkFacilityExtension NetworkFacilityExtension OPTIONAL, -- see 8.1
+      interpretationApdu InterpretationApdu OPTIONAL, -- see 8.2
+      serviceApdu ServiceApdus, -- H.450.x supplementary services
+      ...
+   }
+
+   NetworkFacilityExtension ::= SEQUENCE
+   {
+      sourceEntity EntityType,
+      sourceEntityAddress AddressInformation OPTIONAL,
+      destinationEntity EntityType,
+      destinationEntityAddress AddressInformation OPTIONAL,
+      ...
+   }
+
+   EntityType ::= CHOICE
+   {
+      endpoint NULL,
+      anyEntity NULL,
+      ...
+   }
+
+   AddressInformation ::= AliasAddress
+
+   InterpretationApdu ::= CHOICE
+   {
+      discardAnyUnrecognizedInvokePdu NULL,
+      clearCallIfAnyInvokePduNotRecognized NULL,
+      -- this value also applies to Call independent signalling connections
+      rejectAnyUnrecognizedInvokePdu NULL,
+      -- this coding is implied by the absence of an interpretation APDU.
+      ...
+   }
+
+   ServiceApdus ::= CHOICE
+   {
+      rosApdus SEQUENCE SIZE (1..MAX) OF ROS,
+      -- see 8.3; other alternatives may be defined in future versions
+      ...
+   }
+
+   InvokeIdSet INTEGER ::= {InvokeIDs,...}
+   InvokeIDs ::= INTEGER (0..65535)
+
+-- The following ASN.1 definitions are taken from:
+-- Addressing-Data-Elements
+-- {
+--    itu-t recommendation h 450 1 version1(0) addressing-data-elements(9)
+-- }
+-- They are included here directly for simplicity.
+
+   PresentedAddressScreened ::= CHOICE
+   {
+      presentationAllowedAddress AddressScreened,
+      presentationRestricted NULL,
+      numberNotAvailableDueToInterworking NULL,
+      presentationRestrictedAddress AddressScreened,
+      ...
+   }
+
+   PresentedAddressUnscreened ::= CHOICE
+   {
+      presentationAllowedAddress Address,
+      presentationRestricted NULL,
+      numberNotAvailableDueToInterworking NULL,
+      presentationRestrictedAddress Address,
+      ...
+   }
+
+   PresentedNumberScreened ::= CHOICE
+   {
+      presentationAllowedAddress NumberScreened,
+      presentationRestricted NULL,
+      numberNotAvailableDueToInterworking NULL,
+      presentationRestrictedAddress NumberScreened,
+      ...
+   }
+
+   PresentedNumberUnscreened ::= CHOICE
+   {
+      presentationAllowedAddress PartyNumber,
+      presentationRestricted NULL,
+      numberNotAvailableDueToInterworking NULL,
+      presentationRestrictedAddress PartyNumber,
+      ...
+   }
+
+   AddressScreened ::= SEQUENCE
+   {
+      partyNumber PartyNumber,
+      screeningIndicator ScreeningIndicator,
+      partySubaddress PartySubaddress OPTIONAL,
+      ...
+   }
+
+   NumberScreened ::= SEQUENCE
+   {
+      partyNumber PartyNumber,
+      screeningIndicator ScreeningIndicator,
+      ...
+   }
+
+   Address ::= SEQUENCE
+   {
+      partyNumber PartyNumber,
+      partySubaddress PartySubaddress OPTIONAL,
+      ...
+   }
+
+   -- PartyNumber defined in Recommendation H.225.0
+   -- PublicPartyNumber defined in Recommendation H.225.0
+   -- PrivatePartyNumber defined in Recommendation H.225.0
+   -- NumberDigits defined in Recommendation H.225.0
+   -- PublicTypeOfNumber defined in Recommendation H.225.0
+   -- PrivateTypeOfNumber defined in Recommendation H.225.0
+
+   EndpointAddress ::= SEQUENCE
+   {
+      destinationAddress SEQUENCE OF AliasAddress,
+      -- multiple alias addresses may be used to address the same H.323 endpoint
+      remoteExtensionAddress AliasAddress OPTIONAL,
+      ...
+   }
+
+   PartySubaddress ::= CHOICE
+   {
+      userSpecifiedSubaddress UserSpecifiedSubaddress,
+      -- not recommended.
+      nsapSubaddress NSAPSubaddress,
+      -- according to Recommendation X.213.
+      ...
+   }
+
+   UserSpecifiedSubaddress ::= SEQUENCE
+   {
+      subaddressInformation SubaddressInformation,
+      oddCountIndicator BOOLEAN OPTIONAL,
+      -- used when the coding of subaddress is BCD
+      ...
+   }
+
+   NSAPSubaddress ::= OCTET STRING (SIZE(1..20))
+   -- specified according to X.213. Some networks may
+   -- limit the subaddress value to some other length
+   -- e.g. 4 octets
+
+   SubaddressInformation ::= OCTET STRING (SIZE(1..20))
+   -- coded according to user requirements. Some networks
+   -- may limit the subaddress value to some other length
+   -- e.g. 4 octets
+
+   ScreeningIndicator ::= ENUMERATED
+   {
+      userProvidedNotScreened (0),
+      -- number was provided by a remote user
+      -- , and has not been screened by a gatekeeper
+      userProvidedVerifiedAndPassed (1),
+      -- number was provided by a user
+      -- equipment (or by a remote network), and has
+      -- been screened by a gatekeeper
+      userProvidedVerifiedAndFailed (2),
+      -- not used, value reserved.
+      networkProvided (3),
+      -- number was provided by a gatekeeper
+      ...
+   }
+
+   PresentationAllowedIndicator ::= BOOLEAN
+
+-- The following ASN.1 definitions are taken from:
+-- H4501-General-Error-List
+-- {
+--    itu-t recommendation h 450 1 version1(0) general-error-list (1)
+-- }
+-- They are included here directly for simplicity.
+
+   -- The following errors are based on the error definitions of Recommendation Q.950.
+
+   GeneralErrorList ::= ENUMERATED
+   {
+      userNotSubscribed (0),
+      rejectedByNetwork (1),
+      rejectedByUser (2),
+      notAvailable (3),
+      insufficientInformation (5),
+      invalidServedUserNumber (6),
+      invalidCallState (7),
+      basicServiceNotProvided (8),
+      notIncomingCall (9),
+      supplementaryServiceInteractionNotAllowed (10),
+      resourceUnavailable (11),
+      callFailure (25),
+      proceduralError (43)
+   }
+
+-- The following ASN.1 definitions are taken from:
+-- H225-generic-parameters-definition
+-- {
+--    itu-t recommendation h 450 1 version1(0) h225-generic-parameters(6)
+-- }
+-- They are included here directly for simplicity.
+
+   H225InformationElement ::= OCTET STRING
+
+-- The following ASN.1 definitions are taken from:
+-- Manufacturer-specific-service-extension-definition
+-- {
+--    itu-t recommendation h 450 1 version1(0) msi-definition (18)
+-- }
+-- They are included here directly for simplicity.
+
+   Extension ::= SEQUENCE
+   {
+      extensionId Code,
+      extensionArgument OCTET STRING -- extensionArgument is an Open Type constrained by the extensionId
+   }
+
+END -- of H4501-Supplementary-ServiceAPDU-Structure

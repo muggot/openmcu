@@ -1,0 +1,110 @@
+# h323Identity Object Schema
+#
+# Schema for representing h323Identity Object in an LDAP Directory
+# 
+# Abstract
+# 
+# This document defines the schema for representing h323Identity 
+# object in an LDAP directory [LDAPv3].  It defines schema elements
+# to represent an h323Identity object [h323Identity].
+# 
+#                     .1 = Communication related work
+#                     .1.3 = h323Identity
+#                     .1.3.1 = attributes
+#                     .1.3.2 = objectclass
+#                     .1.3.3 = syntax
+#
+#
+#
+# Attribute Type Definitions
+# 
+#    The following attribute types are defined in this document:
+# 
+#        h323IdentityGKDomain
+#        h323Identityh323-ID
+#        h323IdentitydialedDigits
+#        h323Identityemail-ID
+#        h323IdentityURL-ID
+#        h323IdentitytransportID
+#        h323IdentitypartyNumber
+#        h323IdentitymobileUIM   
+#        h323IdentityEndpointType
+#        h323IdentityServiceLevel   
+#
+attributetype (0.0.8.350.1.1.3.1.1 
+     NAME 'h323IdentityGKDomain' 
+     DESC 'FQDN of the Gatekeeper' 
+     EQUALITY caseIgnoreIA5Match 
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' ) 
+attributetype (0.0.8.350.1.1.3.1.2 
+     NAME 'h323Identityh323-ID' 
+     DESC 'specifies the endpoint address alias as specified in H.323' 
+     EQUALITY caseIgnoreIA5Match 
+     SUBSTR caseIgnoreIA5SubstringsMatch 
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' ) 
+attributetype (0.0.8.350.1.1.3.1.3 
+     NAME 'h323IdentitydialedDigits' 
+     DESC 'Specifies the endpoint dialled digits as specified in H.323' 
+     EQUALITY caseIgnoreIA5Match 
+     SUBSTR caseIgnoreIA5SubstringsMatch 
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' ) 
+attributetype (0.0.8.350.1.1.3.1.4 
+     NAME 'h323Identityemail-ID' 
+     DESC 'Specifies an H.323 entity that can be reached using H.323' 
+     EQUALITY caseIgnoreIA5Match 
+     SUBSTR caseIgnoreIA5SubstringsMatch 
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' ) 
+attributetype (0.0.8.350.1.1.3.1.5 
+     NAME 'h323IdentityURL-ID' 
+     DESC 'H.323 specs' 
+     EQUALITY caseExactMatch 
+     SUBSTR caseExactSubstringsMatch 
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' ) 
+attributetype (0.0.8.350.1.1.3.1.6 
+     NAME 'h323IdentitytransportID' 
+     DESC 'specifies endpoint transport Id as defined in H.323' 
+     EQUALITY caseIgnoreIA5Match 
+     SUBSTR caseIgnoreIA5SubstringsMatch 
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' ) 
+attributetype (0.0.8.350.1.1.3.1.7 
+     NAME 'h323IdentitypartyNumber' 
+     DESC 'endpoint party Number as defined in H.323' 
+     EQUALITY caseIgnoreIA5Match 
+     SUBSTR caseIgnoreIA5SubstringsMatch 
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' ) 
+attributetype (0.0.8.350.1.1.3.1.8 
+     NAME 'h323IdentitymobileUIM' 
+     DESC 'endpoint mobile UIM as defined in H.323 document' 
+     EQUALITY caseIgnoreIA5Match 
+     SUBSTR caseIgnoreIA5SubstringsMatch 
+     SYNTAX '1.3.6.1.4.1.1466.115.121.1.26' ) 
+attributetype (0.0.8.350.1.1.3.1.9 
+  NAME 'h323IdentityEndpointType' 
+  DESC 'The endpoint H.323 type as defined in ITU-T H.323v4.' 
+  EQUALITY caseIgnoreMatch 
+  SUBSTR caseIgnoreSubstringsMatch 
+  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' ) 
+attributetype (0.0.8.350.1.1.3.1.10 
+  NAME 'h323IdentityServiceLevel' 
+  DESC 'To define services a user can belong to.' 
+  EQUALITY caseIgnoreMatch 
+  SUBSTR caseIgnoreSubstringsMatch 
+  SYNTAX '1.3.6.1.4.1.1466.115.121.1.15' ) 
+
+# Object Class Definitions
+# 
+#    The following object class is defined in this document:
+# 
+#        h323Identity
+# 
+objectclass (0.0.8.350.1.1.3.2.1 
+     NAME 'h323Identity' 
+     DESC 'h323Identity object' 
+     SUP top AUXILIARY
+     MAY ( h323IdentityGKDomain $ h323Identityh323-ID $ 
+          h323IdentitydialedDigits $ h323Identityemail-ID $ 
+          h323IdentityURL-ID $ h323IdentitytransportID $ 
+          h323IdentitypartyNumber $ h323IdentitymobileUIM $ 
+          h323IdentityEndpointType $ h323IdentityServiceLevel ) 
+     ) 
+

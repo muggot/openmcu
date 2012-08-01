@@ -1,0 +1,154 @@
+../ptlib/device/videoinput/vidinput_bsd.o: vidinput_bsd.cxx vidinput_bsd.h /usr/include/sys/mman.h \
+  /usr/include/sys/cdefs.h /usr/include/sys/_types.h \
+  /usr/include/machine/_types.h /root/ptlib_v2_0_1/include/ptlib.h \
+  /root/ptlib_v2_0_1/include/ptbuildopts.h \
+  /root/ptlib_v2_0_1/include/ptlib/contain.h \
+  /root/ptlib_v2_0_1/include/ptlib/object.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/contain.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/pmachdep.h \
+  /usr/include/pthread.h /usr/include/sys/_pthreadtypes.h \
+  /usr/include/machine/_limits.h /usr/include/sys/_sigset.h \
+  /usr/include/sched.h /usr/include/time.h /usr/include/sys/_null.h \
+  /usr/include/sys/timespec.h /usr/include/paths.h /usr/include/errno.h \
+  /usr/include/dlfcn.h /usr/include/termios.h /usr/include/sys/ttycom.h \
+  /usr/include/sys/ioccom.h /usr/include/sys/ttydefaults.h \
+  /usr/include/sys/fcntl.h /usr/include/sys/filio.h \
+  /usr/include/sys/socket.h /usr/include/sys/_iovec.h \
+  /usr/include/machine/param.h /usr/include/sys/sockio.h \
+  /usr/include/sys/signal.h /usr/include/machine/signal.h \
+  /usr/include/machine/trap.h /usr/include/net/if.h \
+  /usr/include/sys/time.h /usr/include/sys/_timeval.h \
+  /usr/include/sys/types.h /usr/include/machine/endian.h \
+  /usr/include/sys/select.h /usr/include/netinet/tcp.h \
+  /usr/include/netdb.h /usr/include/dirent.h /usr/include/sys/dirent.h \
+  /usr/include/limits.h /usr/include/sys/limits.h \
+  /usr/include/sys/syslimits.h /usr/include/netinet/in.h \
+  /usr/include/netinet6/in6.h /usr/include/arpa/inet.h \
+  /usr/include/semaphore.h /usr/include/unistd.h \
+  /usr/include/sys/unistd.h /usr/include/ctype.h /usr/include/_ctype.h \
+  /usr/include/runetype.h /usr/include/c++/4.2/cmath \
+  /usr/include/c++/4.2/bits/c++config.h \
+  /usr/include/c++/4.2/bits/os_defines.h \
+  /usr/include/c++/4.2/bits/cpu_defines.h \
+  /usr/include/c++/4.2/bits/cpp_type_traits.h \
+  /usr/include/c++/4.2/ext/type_traits.h /usr/include/c++/4.2/cstddef \
+  /usr/include/stddef.h /usr/include/c++/4.2/utility \
+  /usr/include/c++/4.2/bits/stl_relops.h \
+  /usr/include/c++/4.2/bits/stl_pair.h /usr/include/math.h \
+  /usr/include/c++/4.2/bits/cmath.tcc /usr/include/stdio.h \
+  /usr/include/stdarg.h /usr/include/stdlib.h /usr/include/string.h \
+  /usr/include/strings.h /usr/include/c++/4.2/string \
+  /usr/include/c++/4.2/bits/stringfwd.h \
+  /usr/include/c++/4.2/bits/char_traits.h /usr/include/c++/4.2/cstring \
+  /usr/include/c++/4.2/bits/stl_algobase.h /usr/include/c++/4.2/climits \
+  /usr/include/c++/4.2/cstdlib /usr/include/c++/4.2/iosfwd \
+  /usr/include/c++/4.2/bits/c++locale.h /usr/include/c++/4.2/clocale \
+  /usr/include/locale.h /usr/include/c++/4.2/cstdio \
+  /usr/include/c++/4.2/cstdarg /usr/include/c++/4.2/bits/c++io.h \
+  /usr/include/c++/4.2/bits/gthr.h \
+  /usr/include/c++/4.2/bits/gthr-default.h /usr/include/c++/4.2/cctype \
+  /usr/include/c++/4.2/bits/postypes.h /usr/include/c++/4.2/cwchar \
+  /usr/include/c++/4.2/ctime /usr/include/wchar.h /usr/include/stdint.h \
+  /usr/include/machine/_stdint.h /usr/include/c++/4.2/bits/functexcept.h \
+  /usr/include/c++/4.2/exception_defines.h \
+  /usr/include/c++/4.2/bits/stl_iterator_base_types.h \
+  /usr/include/c++/4.2/bits/stl_iterator_base_funcs.h \
+  /usr/include/c++/4.2/bits/concept_check.h \
+  /usr/include/c++/4.2/bits/stl_iterator.h \
+  /usr/include/c++/4.2/debug/debug.h /usr/include/c++/4.2/memory \
+  /usr/include/c++/4.2/bits/allocator.h \
+  /usr/include/c++/4.2/bits/c++allocator.h \
+  /usr/include/c++/4.2/ext/new_allocator.h /usr/include/c++/4.2/new \
+  /usr/include/c++/4.2/exception \
+  /usr/include/c++/4.2/bits/stl_construct.h \
+  /usr/include/c++/4.2/bits/stl_uninitialized.h \
+  /usr/include/c++/4.2/bits/stl_raw_storage_iter.h \
+  /usr/include/c++/4.2/limits /usr/include/c++/4.2/bits/ostream_insert.h \
+  /usr/include/c++/4.2/bits/stl_function.h \
+  /usr/include/c++/4.2/bits/basic_string.h \
+  /usr/include/c++/4.2/ext/atomicity.h \
+  /usr/include/c++/4.2/bits/atomic_word.h /usr/include/c++/4.2/algorithm \
+  /usr/include/c++/4.2/bits/stl_algo.h \
+  /usr/include/c++/4.2/bits/stl_heap.h \
+  /usr/include/c++/4.2/bits/stl_tempbuf.h \
+  /usr/include/c++/4.2/bits/basic_string.tcc /usr/include/c++/4.2/iomanip \
+  /usr/include/c++/4.2/istream /usr/include/c++/4.2/ios \
+  /usr/include/c++/4.2/bits/localefwd.h \
+  /usr/include/c++/4.2/bits/ios_base.h \
+  /usr/include/c++/4.2/bits/locale_classes.h \
+  /usr/include/c++/4.2/streambuf /usr/include/c++/4.2/bits/streambuf.tcc \
+  /usr/include/c++/4.2/bits/basic_ios.h \
+  /usr/include/c++/4.2/bits/streambuf_iterator.h \
+  /usr/include/c++/4.2/bits/locale_facets.h /usr/include/c++/4.2/cwctype \
+  /usr/include/wctype.h /usr/include/c++/4.2/bits/ctype_base.h \
+  /usr/include/c++/4.2/bits/ctype_inline.h \
+  /usr/include/c++/4.2/bits/codecvt.h \
+  /usr/include/c++/4.2/bits/time_members.h \
+  /usr/include/c++/4.2/bits/messages_members.h \
+  /usr/include/c++/4.2/bits/basic_ios.tcc \
+  /usr/include/c++/4.2/bits/istream.tcc /usr/include/c++/4.2/locale \
+  /usr/include/c++/4.2/bits/locale_facets.tcc \
+  /usr/include/c++/4.2/typeinfo /usr/include/c++/4.2/ostream \
+  /usr/include/c++/4.2/bits/ostream.tcc /usr/include/c++/4.2/functional \
+  /usr/include/c++/4.2/iostream /usr/include/c++/4.2/sstream \
+  /usr/include/c++/4.2/bits/sstream.tcc \
+  /root/ptlib_v2_0_1/include/ptlib/critsec.h \
+  /root/ptlib_v2_0_1/include/ptlib/psync.h \
+  /root/ptlib_v2_0_1/include/ptlib/array.h \
+  /root/ptlib_v2_0_1/include/ptlib/lists.h \
+  /root/ptlib_v2_0_1/include/ptlib/dict.h \
+  /root/ptlib_v2_0_1/include/ptlib/pstring.h /usr/include/c++/4.2/vector \
+  /usr/include/c++/4.2/bits/stl_vector.h \
+  /usr/include/c++/4.2/bits/stl_bvector.h \
+  /usr/include/c++/4.2/bits/vector.tcc \
+  /root/ptlib_v2_0_1/include/ptlib/ptime.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/ptime.h \
+  /root/ptlib_v2_0_1/include/ptlib/timeint.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/timeint.h \
+  /root/ptlib_v2_0_1/include/ptlib/timer.h \
+  /root/ptlib_v2_0_1/include/ptlib/notifier.h \
+  /root/ptlib_v2_0_1/include/ptlib/smartptr.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/timer.h \
+  /root/ptlib_v2_0_1/include/ptlib/pdirect.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/pdirect.h \
+  /root/ptlib_v2_0_1/include/ptlib/filepath.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/filepath.h \
+  /root/ptlib_v2_0_1/include/ptlib/config.h \
+  /root/ptlib_v2_0_1/include/ptbuildopts.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/config.h \
+  /root/ptlib_v2_0_1/include/ptlib/args.h \
+  /root/ptlib_v2_0_1/include/ptlib/thread.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/thread.h \
+  /root/ptlib_v2_0_1/include/ptlib/semaphor.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/semaphor.h \
+  /root/ptlib_v2_0_1/include/ptlib/mutex.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/mutex.h \
+  /root/ptlib_v2_0_1/include/ptlib/syncpoint.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/syncpoint.h \
+  /root/ptlib_v2_0_1/include/ptlib/syncthrd.h \
+  /root/ptlib_v2_0_1/include/ptlib/psharedptr.h \
+  /root/ptlib_v2_0_1/include/ptlib/dynalink.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/dynalink.h \
+  /root/ptlib_v2_0_1/include/ptlib/indchan.h \
+  /root/ptlib_v2_0_1/include/ptlib/channel.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/channel.h \
+  /root/ptlib_v2_0_1/include/ptlib/file.h /usr/include/sys/stat.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/file.h \
+  /root/ptlib_v2_0_1/include/ptlib/textfile.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/textfile.h \
+  /root/ptlib_v2_0_1/include/ptlib/sfile.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/sfile.h \
+  /root/ptlib_v2_0_1/include/ptlib/conchan.h \
+  /root/ptlib_v2_0_1/include/ptlib/unix/ptlib/conchan.h \
+  /root/ptlib_v2_0_1/include/ptlib/videoio.h \
+  /root/ptlib_v2_0_1/include/ptlib/plugin.h \
+  /root/ptlib_v2_0_1/include/ptlib/pfactory.h /usr/include/c++/4.2/map \
+  /usr/include/c++/4.2/bits/stl_tree.h \
+  /usr/include/c++/4.2/bits/stl_map.h \
+  /usr/include/c++/4.2/bits/stl_multimap.h \
+  /root/ptlib_v2_0_1/include/ptlib/pluginmgr.h \
+  /root/ptlib_v2_0_1/include/ptlib/vconvert.h \
+  /root/ptlib_v2_0_1/include/ptbuildopts.h \
+  /root/ptlib_v2_0_1/include/ptclib/delaychan.h /usr/include/sys/param.h \
+  /usr/include/dev/bktr/ioctl_meteor.h \
+  /root/ptlib_v2_0_1/include/ptlib/contain.inl

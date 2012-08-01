@@ -1,0 +1,403 @@
+#
+# Makefile
+#
+# Make file for Open H323 library
+#
+# Copyright (c) 1998-2000 Equivalence Pty. Ltd.
+#
+# The contents of this file are subject to the Mozilla Public License
+# Version 1.0 (the "License"); you may not use this file except in
+# compliance with the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/
+#
+# Software distributed under the License is distributed on an "AS IS"
+# basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+# the License for the specific language governing rights and limitations
+# under the License.
+#
+# The Original Code is Open H323 library.
+#
+# The Initial Developer of the Original Code is Equivalence Pty. Ltd.
+#
+# Contributor(s): ______________________________________.
+#
+# $Log: Makefile.in,v $
+# Revision 1.3  2007/12/26 23:32:47  shorne
+# Fix for Install
+#
+# Revision 1.2  2007/08/20 19:13:27  shorne
+# Added Generic Capability support. Fixed Linux compile errors
+#
+# Revision 1.1  2007/08/06 20:50:47  shorne
+# First commit of h323plus
+#
+# Revision 1.20  2006/08/10 04:14:21  csoutheren
+# Fixed problem with usage of SHAREDLIBEXT
+#
+# Revision 1.19  2005/08/04 19:31:59  csoutheren
+# Applied patch #1243078
+# Fixed links for library when using make install
+# Thanks to Alain Nakache
+#
+# Revision 1.18  2004/11/27 18:42:15  rogerhardiman
+# Use $(MAKE) and not 'make'. Needed for FreeBSD which uses gmake.
+#
+# Revision 1.17  2004/08/22 04:21:45  csoutheren
+# Fixed make install to create all target directories
+# Thanks to Klaus Kaempf
+#
+# Revision 1.16  2004/06/24 13:20:38  csoutheren
+# Checked in possible fix for bug 970090
+#
+# Revision 1.15  2004/06/17 23:17:38  csoutheren
+# Fixed permissions on install directories as suggested by Al Piszcz
+#
+# Revision 1.14  2004/05/17 06:08:47  csoutheren
+# Changed "make docs" to use Doxygen
+# Added new doc main page and config file
+#
+# Revision 1.13  2004/05/03 13:01:29  csoutheren
+# Fixed still more problems in install targets
+#
+# Revision 1.12  2004/05/03 12:33:54  csoutheren
+# Changed install target to work on multiple platforms
+#
+# Revision 1.11  2004/04/29 15:03:00  csoutheren
+# Fixed INSTALL var
+#
+# Revision 1.10  2004/04/29 14:47:55  csoutheren
+# Reconfigured plugin makefiles per suggestions from Damien Sandras
+# Changed install targets to use $(INSTALL)
+#
+# Revision 1.9  2004/04/27 10:18:03  csoutheren
+# Added plugins to standard builds
+#
+# Revision 1.8  2004/04/13 23:13:49  csoutheren
+# Change default build to library only
+# Added "apps" target for applications
+#
+# Revision 1.7  2004/02/26 12:08:55  csoutheren
+# Fixed various problems thanks to Klaus Kaempf
+#
+# Revision 1.6  2004/02/01 12:24:11  dsandras
+# Set default target to optshared.
+#
+# Revision 1.5  2003/09/01 09:38:29  dsandras
+# Fixed install target thanks to Stefan Brüns <lurchi@kawo1.rwth-aachen.de>.
+#
+# Revision 1.4  2003/08/27 09:39:49  dsandras
+# Readded DESTDIR support (thanks to Stefan Bruns <lurch@gmx.li>)
+#
+# Revision 1.3  2003/07/28 19:30:29  dsandras
+# Do not export the PREFIX as it can give problems to compile other openh323
+# software..
+#
+# Revision 1.2  2003/07/28 18:55:49  dsandras
+# Added --libdir support thanks to Alexander Larsson <alexl@redhat.com>.
+#
+# Revision 1.1  2003/05/22 12:25:38  dsandras
+#
+# Initial commit.
+#
+# Revision 1.62  2002/12/04 19:36:30  rogerh
+# Remove un-needed / in PREFIX
+#
+# Revision 1.61  2002/11/13 23:52:23  robertj
+# Added install and uninstall targets, thanks Damien Sandras
+#
+# Revision 1.60  2002/07/19 01:51:41  robertj
+# Fixed up directory defaults for openh323 directory.
+#
+# Revision 1.59  2002/02/11 06:20:07  robertj
+# Moved version.h to root directory so have one for the library and not just
+#   the sample application. SimpH323 uses the library version so they remain
+#   in sync.
+#
+# Revision 1.58  2001/11/11 23:07:52  robertj
+# Some clean ups after T.38 commit, thanks Adam Lazur
+#
+# Revision 1.57  2001/11/09 05:39:54  craigs
+# Added initial T.38 support thanks to Adam Lazur
+#
+# Revision 1.56  2001/09/14 08:57:39  robertj
+# Added update target to do cvs update and rebuild all
+#
+# Revision 1.55  2001/05/17 00:01:06  robertj
+# Fixed stupid mistake with included make file
+#
+# Revision 1.54  2001/05/16 07:43:33  robertj
+# Fixed location of version file
+#
+# Revision 1.53  2001/05/16 07:42:38  robertj
+# Changed Makefile to use common stuff, primarily so can go tagbuild
+#
+# Revision 1.52  2001/03/20 04:08:33  robertj
+# Major improvement to multiple targets over subdirectories, thanks Jac Goudsmit
+#
+# Revision 1.51  2000/05/18 11:53:33  robertj
+# Changes to support doc++ documentation generation.
+#
+# Revision 1.50  2000/05/11 02:27:52  robertj
+# Removed "sample" directory and added "samples/simple" for demo app.
+#
+# Revision 1.49  2000/05/02 04:32:23  robertj
+# Fixed copyright notice comment.
+#
+# Revision 1.48  2000/04/26 01:07:23  robertj
+# Removed tarfile creation target, this is done differently now.
+#
+# Revision 1.47  2000/04/06 20:10:53  craigs
+# Added install target
+#
+# Revision 1.46  2000/03/24 03:17:44  robertj
+# Directory restructuring.
+#
+# Revision 1.45  2000/03/08 00:25:09  robertj
+# Changed check for compile of openphone to be AND not OR.
+#
+# Revision 1.44  2000/03/03 18:04:01  craigs
+# Fixed problem with openphone being built when no GUI code installed
+#
+# Revision 1.43  2000/03/03 12:20:40  robertj
+# Fixed non fatal error in make rules and allowed for missing sample apps.
+#
+# Revision 1.42  2000/02/24 11:53:31  craigs
+# Fixed problem with .o files not going into correct directory
+#
+# Revision 1.41  2000/02/24 11:17:01  craigs
+# Fixed problem with making PW projects
+#
+# Revision 1.40  2000/02/16 12:38:31  craigs
+# Fixed problem with noshared targets
+#
+# Revision 1.39  2000/02/04 04:59:31  craigs
+# Changed for new library make system and makefile layout
+#
+# Revision 1.38  2000/02/02 04:09:12  craigs
+# Changed to use subdirectories
+#
+# Revision 1.35  2000/01/13 04:03:45  robertj
+# Added video transmission
+#
+# Revision 1.34  2000/01/04 00:22:28  craigs
+# Changed directory list
+#
+# Revision 1.33  1999/12/29 01:27:01  craigs
+# Added detection of new Linux kernel telephony code
+#
+# Revision 1.32  1999/12/24 00:27:39  robertj
+# Added LID abstraction and split RTP classes from H323.
+#
+# Revision 1.31  1999/12/16 05:48:36  robertj
+# Fixed problem with correct inclusion of ixj files under Linux.
+#
+# Revision 1.30  1999/11/19 14:01:41  craigs
+# Added ixjuser.h to the tarfiles
+#
+# Revision 1.29  1999/11/19 13:13:40  craigs
+# Changed to add CVS directories to the tarball
+#
+# Revision 1.28  1999/11/16 13:45:12  craigs
+# Fixed dependencies to be SMP friendly
+#
+# Revision 1.27  1999/11/12 04:51:34  craigs
+# Fixed problem with excluding IXJ device on Linux
+#
+# Revision 1.26  1999/11/07 03:43:38  craigs
+# Added conditional for ixj files for linux only
+#
+# Revision 1.25  1999/11/02 01:22:26  robertj
+# Added answering machine
+#
+# Revision 1.24  1999/10/24 14:43:20  robertj
+# Added platform independent support for Quicknet xJACK cards.
+#
+# Revision 1.23  1999/10/11 07:35:03  craigs
+# Added missing config.h to VIC sources macro
+#
+# Revision 1.22  1999/09/27 01:22:45  robertj
+# Added H.261 video support via vic code.
+#
+# Revision 1.21  1999/09/21 08:33:58  craigs
+# Added support for VIC video codecs
+#
+# Revision 1.20  1999/09/09 01:14:49  robertj
+# Added support for video capabilities & codec, still needs the actual codec itself!
+#
+# Revision 1.19  1999/09/03 14:05:19  robertj
+# Fixed creation of tarball
+#
+# Revision 1.18  1999/08/31 12:43:04  robertj
+# Added gatekeeper supprt.
+#
+# Revision 1.17  1999/08/25 07:11:54  robertj
+# Unix port
+#
+# Revision 1.16  1999/08/09 04:51:21  robertj
+# Added subdirectories to build, including dump323
+#
+# Revision 1.15  1999/07/31 04:09:11  robertj
+# Added ability to create binary with no tracing code in it.
+#
+# Revision 1.14  1999/07/26 09:18:28  craigs
+# Added README.QUICKNET file to test app
+#
+# Revision 1.13  1999/07/26 07:22:10  craigs
+# Added files for quicknet test apps
+#
+# Revision 1.12  1999/07/10 03:42:26  robertj
+# Added automatic version inclusion in tar file.
+#
+# Revision 1.11  1999/06/28 09:48:57  robertj
+# Fixed dependencies for GSM files
+#
+# Revision 1.10  1999/06/25 17:51:08  robertj
+# Fixed tarball
+#
+# Revision 1.9  1999/06/25 17:20:18  robertj
+# New directory structure.
+#
+# Revision 1.8  1999/06/22 14:40:19  robertj
+# Added GSM code.
+#
+# Revision 1.7  1999/06/14 09:09:36  robertj
+# Transmit channel and RTP implementation.
+#
+# Revision 1.6  1999/06/09 06:51:57  robertj
+# Added tracing to optimised version.
+#
+# Revision 1.5  1999/06/09 06:18:00  robertj
+# GCC compatibiltiy.
+#
+# Revision 1.4  1999/06/07 00:32:41  robertj
+# Put packet dump code back in
+#
+# Revision 1.3  1999/06/06 06:06:36  robertj
+# Changes for new ASN compiler and v2 protocol ASN files.
+#
+# Revision 1.2  1999/01/16 11:16:53  robertj
+# Fixed library name
+#
+# Revision 1.1  1999/01/16 10:32:26  robertj
+# Initial revision
+#
+
+PREFIX=@INSTALLPREFIX@
+exec_prefix = $(PREFIX)
+LIBDIR=@LIBDIR@
+export OPENH323DIR=@OPENH323DIR@
+
+INSTALL=@INSTALL@
+
+default :: optshared
+
+all :: bothdepend both
+
+include $(OPENH323DIR)/openh323u.mak
+
+
+# export NOAUDIOCODECS=true
+# export NOVIDEO=true
+
+SUBDIRS := samples/simple
+
+ifneq (,$(wildcard dump323))
+SUBDIRS += dump323
+endif
+
+ifneq (,$(wildcard openam))
+SUBDIRS += openam
+endif
+
+ifneq (,$(wildcard pstngw))
+SUBDIRS += pstngw
+endif
+
+ifneq (,$(wildcard openphone))
+ifneq (,$(wildcard $(PWLIBDIR)/src/pwlib))
+SUBDIRS += openphone
+endif
+endif
+
+PREFIX=@INSTALLPREFIX@/
+exec_prefix = ${PREFIX}
+LIBDIR=@LIBDIR@
+
+ifndef PREFIX
+PREFIX=/usr/local
+endif
+
+update:
+	cvs update
+	$(MAKE) all
+
+# standard build command
+$(subst tagbuild,,$(STANDARD_TARGETS)) ::
+	$(MAKE) -C src $@
+
+notrace::
+	$(MAKE) NOTRACE=1
+
+docs: 
+	doxygen openh323_cfg.dxy
+
+install:
+	mkdir -p $(DESTDIR)$(LIBDIR)
+	rm -f $(DESTDIR)$(LIBDIR)/libh323_*_r.so*
+	$(INSTALL) -m 444 lib/$(OH323_FILE).@MAJOR_VERSION@.@MINOR_VERSION@.@BUILD_NUMBER@ $(DESTDIR)$(LIBDIR)
+	(cd $(DESTDIR)$(LIBDIR) ; \
+		rm -f  $(OH323_FILE).@MAJOR_VERSION@.@MINOR_VERSION@ ; \
+		ln -sf $(OH323_FILE).@MAJOR_VERSION@.@MINOR_VERSION@.@BUILD_NUMBER@ $(OH323_FILE).@MAJOR_VERSION@.@MINOR_VERSION@ \
+	)
+	(cd $(DESTDIR)$(LIBDIR) ; \
+		rm -f  $(OH323_FILE).@MAJOR_VERSION@ ; \
+		ln -sf $(OH323_FILE).@MAJOR_VERSION@.@MINOR_VERSION@.@BUILD_NUMBER@ $(OH323_FILE).@MAJOR_VERSION@ \
+	)
+	(cd $(DESTDIR)$(LIBDIR) ; \
+		rm -f  $(OH323_FILE) ; \
+		ln -sf $(OH323_FILE).@MAJOR_VERSION@.@MINOR_VERSION@.@BUILD_NUMBER@ $(OH323_FILE) \
+	)
+	(cd $(DESTDIR)$(LIBDIR); \
+		rm -f  libopenh323.$(SHAREDLIBEXT) ; \
+		ln -sf $(OH323_FILE) libopenh323.$(SHAREDLIBEXT) \
+	)
+	( for dir in $(DESTDIR)$(LIBDIR) \
+		     $(DESTDIR)$(PREFIX)/include/openh323 \
+		     $(DESTDIR)$(PREFIX)/include/openh323/codec \
+		     $(DESTDIR)$(PREFIX)/include/openh323/h230 \
+		     $(DESTDIR)$(PREFIX)/include/openh323/h341 \
+		     $(DESTDIR)$(PREFIX)/include/openh323/h350 \
+		     $(DESTDIR)$(PREFIX)/include/openh323/h450 \
+		     $(DESTDIR)$(PREFIX)/include/openh323/h460 \
+		     $(DESTDIR)$(PREFIX)/share/openh323 ;\
+		do mkdir -p $$dir ; chmod 755 $$dir ; \
+	done)
+	( for fn in include/*.h ; do \
+		$(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/include/openh323 ; \
+	done)
+	( for fn in include/codec/*.h ; do \
+		$(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/include/openh323/codec ; \
+	done)
+	( for fn in include/h230/*.h ; do \
+		$(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/include/openh323/h230 ; \
+	done)
+	( for fn in include/h341/*.h ; do \
+		$(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/include/openh323/h341 ; \
+	done)
+	( for fn in include/h350/*.h ; do \
+		$(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/include/openh323/h350 ; \
+	done)
+	( for fn in include/h450/*.h ; do \
+		$(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/include/openh323/h450 ; \
+	done)
+	( for fn in include/h460/*.h ; do \
+		$(INSTALL) -m 444 $$fn $(DESTDIR)$(PREFIX)/include/openh323/h460 ; \
+	done)
+	$(INSTALL) -m 444 openh323u.mak $(DESTDIR)$(PREFIX)/share/openh323
+
+uninstall:
+	rm -rf $(DESTDIR)$(PREFIX)/include/openh323 \
+	       $(PREFIX)/share/openh323
+	rm -f $(DESTDIR)$(LIBDIR)/$(OH323_FILE) \
+	      $(DESTDIR)$(LIBDIR)/libopenh323.so
+
