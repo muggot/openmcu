@@ -48,7 +48,9 @@ class OpenMCUH323EndPoint : public H323EndPoint
     PString GetMemberList(Conference & conference, ConferenceMemberId id);
     BOOL MemberExist(Conference & conference, ConferenceMemberId id);
     PString GetMemberListOpts(Conference & conference);
+    PString GetMemberListOptsJavascript(Conference & conference);
     void SetMemberListOpts(Conference & conference, const PStringToString & data);
+    PString SetMemberOptionOTF(const PString room, const PStringToString & data);
     void OfflineMembersManager(Conference & conference,const PStringToString & data);
     PString GetRoomList(const PString & block);
     PString SetRoomParams(const PStringToString & data);

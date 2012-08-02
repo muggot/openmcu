@@ -4,12 +4,14 @@
 #include "version.h"
 #include "mcu.h"
 #include "h323.h"
+#include "jpeglib.h"
 
 const WORD DefaultHTTPPort = 1420;
 
 extern PHTTPServiceProcess::Info ProductInfo;
 
 static const char LogLevelKey[]           = "Log Level";
+static const char TraceLevelKey[]         = "Trace level";
 static const char UserNameKey[]           = "Username";
 static const char PasswordKey[]           = "Password";
 static const char HttpPortKey[]           = "HTTP Port";
@@ -24,6 +26,8 @@ static const char DefaultRoomTimeLimitKey[] = "Room time limit";
 
 static const char DefaultCallLogFilename[] = "mcu_log.txt"; 
 static const char DefaultRoom[]            = "room101";
+static const char CreateEmptyRoomKey[]     = "Auto create empty room";
+static const char AllowLoopbackCallsKey[]  = "Allow loopback during bulk invite";
 
 #if OPENMCU_VIDEO
 static const char ForceSplitVideoKey[]   = "Force split screen video";
@@ -33,6 +37,26 @@ static const char ForceSplitVideoKey[]   = "Force split screen video";
 
 
 ///////////////////////////////////////////////////////////////
+
+class MyPConfigPage : public PConfigPage
+{
+ public:
+   MyPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : PConfigPage(app,title,section,auth){};
+   void SetString(PString str){string=str;};
+   PString GetString(){return string;};
+ private:
+};
+
+class JpegFrameHTTP : public PServiceHTTPString
+{
+  public:
+    JpegFrameHTTP(OpenMCU & app, PHTTPAuthority & auth);
+    BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
+    PMutex mutex;
+  private:
+    OpenMCU & app;
+};
 
 class MainStatusPage : public PServiceHTTPString
 {
@@ -53,8 +77,6 @@ class MainStatusPage : public PServiceHTTPString
 
 class InvitePage : public PServiceHTTPString
 {
- // PCLASSINFO(InvitePage, PServiceHTTPString);
-
   public:
     InvitePage(OpenMCU & app, PHTTPAuthority & auth);
 
@@ -70,8 +92,6 @@ class InvitePage : public PServiceHTTPString
 
 class SelectRoomPage : public PServiceHTTPString
 {
- // PCLASSINFO(MainStatusPage, PServiceHTTPString);
-
   public:
     SelectRoomPage(OpenMCU & app, PHTTPAuthority & auth);
     
@@ -84,6 +104,8 @@ class SelectRoomPage : public PServiceHTTPString
   private:
     OpenMCU & app;
 };
+
+
 
 
 ///////////////////////////////////////////////////////////////
@@ -163,8 +185,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 //  SetLogLevel((PSystemLog::Level)cfg.GetInteger(LogLevelKey, GetLogLevel()));
 #if PTRACING
 
-    SetLogLevel(PSystemLog::Debug6);
-    PTrace::Initialise(6,"trace.txt");
+//    SetLogLevel(PSystemLog::Debug6);
+//    PTrace::Initialise(6,"trace.txt");
+    int TraceLevel=cfg.GetInteger(TraceLevelKey, 6);
+    SetLogLevel((PSystemLog::Level)TraceLevel);
+    PTrace::Initialise(TraceLevel,"trace.txt");
 
 /*  if (GetLogLevel() >= PSystemLog::Warning)
     PTrace::SetLevel(GetLogLevel()-PSystemLog::Warning);
@@ -181,7 +206,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   PHTTPSimpleAuth authority(GetName(), adminUserName, adminPassword);
 
   // Create the parameters URL page, and start adding fields to it
-  PConfigPage * rsrc = new PConfigPage(*this, "Parameters", "Parameters", authority);
+  MyPConfigPage * rsrc = new MyPConfigPage(*this, "Parameters", "Parameters", authority);
 
   // HTTP authentication username/password
   rsrc->Add(new PHTTPStringField(UserNameKey, 25, adminUserName));
@@ -192,6 +217,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
                                   PSystemLog::Fatal, PSystemLog::NumLogLevels-1,
                                   GetLogLevel(),
                                   "1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug"));
+
+  // Trace level
+  rsrc->Add(new PHTTPIntegerField(TraceLevelKey, 0, 6, TraceLevel, "0...6"));
 
 #if P_SSL
   // SSL certificate file.
@@ -213,6 +241,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
   rsrc->Add(new PHTTPStringField(DefaultRoomKey, 25, defaultRoomName));
 
+  // create/don't create empty room with default name at start:
+  rsrc->Add(new PHTTPBooleanField(CreateEmptyRoomKey, FALSE));
+
   // get conference time limit 
   roomTimeLimit = cfg.GetInteger(DefaultRoomTimeLimitKey, 0);
   rsrc->Add(new PHTTPIntegerField(DefaultRoomTimeLimitKey, 0, 10800, roomTimeLimit));
@@ -223,8 +254,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   logFilename = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
   rsrc->Add(new PHTTPStringField(CallLogFilenameKey, 50, logFilename));
 
+  // allow/disallow self-invite:
+  allowLoopbackCalls = cfg.GetBoolean(AllowLoopbackCallsKey, FALSE);
+  rsrc->Add(new PHTTPBooleanField(AllowLoopbackCallsKey, allowLoopbackCalls));
+
 #if OPENMCU_VIDEO
-  forceScreenSplit = cfg.GetBoolean(ForceSplitVideoKey, FALSE);
+  forceScreenSplit = cfg.GetBoolean(ForceSplitVideoKey, TRUE);
   rsrc->Add(new PHTTPBooleanField(ForceSplitVideoKey, forceScreenSplit));
 #endif
 
@@ -232,6 +267,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   PServiceHTML html("System Parameters");
   rsrc->BuildHTML(html);
   httpNameSpace.AddResource(rsrc, PHTTPSpace::Overwrite);
+  PStringStream html0; BeginPage(html0,"Parameters","Parameters","$PARAMETERS$");
+  PString html1 = rsrc->GetString();
+  PStringStream html2; EndPage(html2,GetCopyrightText());
+  PStringStream htmlpage; htmlpage << html0 << html1 << html2;
+  rsrc->SetString(htmlpage);
 
   // Create the status page
   httpNameSpace.AddResource(new MainStatusPage(*this, authority), PHTTPSpace::Overwrite);
@@ -241,6 +281,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // Create room selection page
   httpNameSpace.AddResource(new SelectRoomPage(*this, authority), PHTTPSpace::Overwrite);
+
+  // Create JPEG frame via HTTP
+  httpNameSpace.AddResource(new JpegFrameHTTP(*this, authority), PHTTPSpace::Overwrite);
 
   // Add log file links
   if (!systemLogFileName && (systemLogFileName != "-")) {
@@ -273,6 +316,16 @@ BOOL OpenMCU::Initialise(const char * initMsg)
                         "<!--#equival mcuinfo-->";
   httpNameSpace.AddResource(new PServiceHTTPString("monitor.txt", monitorText, "text/plain", authority), PHTTPSpace::Overwrite);
 
+  // adding gif images for OTF Control:
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_mic_on.gif"), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_mic_off.gif"), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_drop_Abdylas_Tynyshov.gif"), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_vad.gif"), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_disable.gif"), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_chosenvan.gif"), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_invite_Everaldo_Coelho.gif"), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_launched_Ypf.gif"), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_remove.gif"), PHTTPSpace::Overwrite);
 
   // set up the HTTP port for listening & start the first HTTP thread
   if (ListenForHTTP(httpPort))
@@ -281,6 +334,8 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     PSYSTEMLOG(Fatal, "Cannot run without HTTP port: " << httpListeningSocket->GetErrorText());
     return FALSE;
   }
+
+  if(cfg.GetBoolean(CreateEmptyRoomKey, FALSE)) GetEndpoint().OutgoingConferenceRequest(defaultRoomName);
 
   PSYSTEMLOG(Info, "Service " << GetName() << ' ' << initMsg);
   return TRUE;
@@ -338,7 +393,7 @@ PCREATE_SERVICE_MACRO_BLOCK(RoomStatus,P_EMPTY,P_EMPTY,block)
 }
 
 MainStatusPage::MainStatusPage(OpenMCU & _app, PHTTPAuthority & auth)
-  : PServiceHTTPString("Status", "", "text/html; charset=windows-1251", auth),
+  : PServiceHTTPString("Status", "", "text/html; charset=utf-8", auth),
     app(_app)
 {
   PStringStream html;
@@ -381,24 +436,103 @@ BOOL MainStatusPage::Post(PHTTPRequest & request,
 
 ///////////////////////////////////////////////////////////////
 
+
+JpegFrameHTTP::JpegFrameHTTP(OpenMCU & _app, PHTTPAuthority & auth)
+  : PServiceHTTPString("Jpeg", "", "image/jpeg", auth),
+    app(_app)
+{
+  PTRACE(6,"jpeg\tJpegFrameHTTP constructed");
+}
+BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
+{
+  PWaitAndSignal m(mutex);
+  const int width=352, height=288;
+  FILE * outfile;
+  PStringStream room; room << url; if(room.Find("Jpeg?room=")!=0)return FALSE;
+  room=room.Right(room.GetLength()-10);
+  PINDEX amppos;
+  if((amppos=room.Find("&"))!=P_MAX_INDEX) room=room.Left(amppos);
+  PString imgstr = "image." + room + ".jpg"; const char *imgname = imgstr;
+  struct stat buf;
+  BOOL hit=false;
+  if(!stat(imgname,&buf)){
+    const unsigned long t0=buf.st_mtime;
+    const unsigned long t1=time(0);
+    if(t1-t0<2) hit=true;
+    PTRACE(6,"jpeg\tOnGET hit_cache=" << hit << " st_mtime=" << t0 << " time=" << t1);
+  } else PTRACE(6,"jpeg\tOnGET hit_cache=0, cant stat " << imgname);
+  if(!hit)
+  {
+    ConferenceListType & conferenceList = app.GetEndpoint().GetConferenceManager().GetConferenceList();
+    ConferenceListType::iterator r; for(r = conferenceList.begin(); r != conferenceList.end(); ++r)
+    {
+      Conference & conference = *(r->second);
+      if(conference.GetNumber()==room)
+      {
+        struct jpeg_compress_struct cinfo; struct jpeg_error_mgr jerr;
+        JSAMPROW row_pointer[1]; int row_stride;
+        cinfo.err = jpeg_std_error(&jerr);
+        jpeg_create_compress(&cinfo);
+        cinfo.image_width = width; cinfo.image_height = height; cinfo.input_components = 3; cinfo.in_color_space = JCS_RGB;
+        PINDEX amount=width*height*3/2;
+        unsigned char *videoData=new unsigned char[amount];
+        conference.ReadMemberVideo((ConferenceMember*)this,(void*)videoData,width,height,amount);
+        PColourConverter * converter = PColourConverter::Create("YUV420P", "RGB24", width, height);
+        converter->SetDstFrameSize(width, height);
+        unsigned char * bitmap = new unsigned char[width*height*3];
+        converter->Convert(videoData,bitmap);
+        delete converter;
+        delete videoData;
+        if((outfile = fopen(imgname, "wb")) != NULL)
+        {
+          jpeg_stdio_dest(&cinfo,outfile);
+          jpeg_set_defaults(&cinfo);
+          jpeg_start_compress(&cinfo,TRUE);
+          row_stride = cinfo.image_width * 3;
+          while (cinfo.next_scanline < cinfo.image_height) {
+            row_pointer[0] = (JSAMPLE *) & bitmap [cinfo.next_scanline * row_stride];
+            (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+          }
+          jpeg_finish_compress(&cinfo);
+          fclose(outfile);
+          jpeg_destroy_compress(&cinfo);
+          delete bitmap;
+        }
+      }
+    }
+  }
+
+  outfile=fopen(imgname,"r");
+  if(outfile){
+    fseek(outfile,0,SEEK_END);
+    PINDEX f_size=ftell(outfile);
+    rewind(outfile);
+    PBYTEArray jpeg_data(f_size);
+    fread(jpeg_data.GetPointer(),1,f_size,outfile);
+    fclose(outfile);
+    PTRACE(6,"jpeg\tOnGETData url=" << url << " room=" << room << " size=" << f_size);
+    server.Write((const char *)jpeg_data.GetPointer(), f_size);
+  }
+  return FALSE;
+}
+
 InvitePage::InvitePage(OpenMCU & _app, PHTTPAuthority & auth)
-  : PServiceHTTPString("Invite", "", "text/html; charset=windows-1251", auth),
+  : PServiceHTTPString("Invite", "", "text/html; charset=utf-8", auth),
     app(_app)
 {
   PStringStream html;
-  
 
   BeginPage(html,"Invite User","Invite User","$INVITE$");
 
-     html << "<p>"
+  html << "<p>"
 
     << "<form method=\"POST\" class=\"well form-inline\">"
-    << "<input type=\"text\" class=\"input-small\" placeholder=\"Room Name\" name=\"room\" > "
-    << "<input type=\"text\" class=\"input-small\" placeholder=\"Address\" name=\"address\">"
+    << "<input type=\"text\" class=\"input-small\" placeholder=\"" << app.GetDefaultRoomName() << "\" name=\"room\" value=\"" << app.GetDefaultRoomName() << "\"> "
+    << "<input type=\"text\" class=\"input-small\" placeholder=\"Address\" name=\"address\"><script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
     << "&nbsp;&nbsp;<input type=\"submit\" class=\"btn\" value=\"Invite\">"
     << "</form>";
 
-         EndPage(html,app.GetCopyrightText());
+  EndPage(html,app.GetCopyrightText());
 
   string = html;
 }
@@ -447,8 +581,8 @@ BOOL InvitePage::Post(PHTTPRequest & request,
 
   html << "<p><h3>Invite another:</h3>"
     << "<form method=\"POST\" class=\"well form-inline\">"
-    << "<input type=\"text\" class=\"input-small\" name=\"room\" placeholder=\"" << room << "\" > "
-    << "<input type=\"text\" class=\"input-small\" name=\"address\" placeholder=\"address\">"
+    << "<input type=\"text\" class=\"input-small\" name=\"room\" placeholder=\"" << room << "\" value=\"" << room << "\"> "
+    << "<input type=\"text\" class=\"input-small\" name=\"address\" placeholder=\"address\"><script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
     << "&nbsp;&nbsp;&nbsp;<input type=\"submit\" class=\"btn\" value=\"Invite\">"
     << "</form>";
 
@@ -463,7 +597,7 @@ PCREATE_SERVICE_MACRO_BLOCK(RoomList,P_EMPTY,P_EMPTY,block)
 }
 
 SelectRoomPage::SelectRoomPage(OpenMCU & _app, PHTTPAuthority & auth)
-  : PServiceHTTPString("Select", "", "text/html; charset=windows-1251", auth),
+  : PServiceHTTPString("Select", "", "text/html; charset=utf-8", auth),
     app(_app)
 {
   PStringStream html;
@@ -480,16 +614,15 @@ SelectRoomPage::SelectRoomPage(OpenMCU & _app, PHTTPAuthority & auth)
   string = html;
 }
 
-
 BOOL SelectRoomPage::Post(PHTTPRequest & request,
                           const PStringToString & data,
                           PHTML & msg)
 {
-
-  
   msg << OpenMCU::Current().GetEndpoint().SetRoomParams(data);
   return TRUE;
 }
+
+
 
 
 // End of File ///////////////////////////////////////////////////////////////

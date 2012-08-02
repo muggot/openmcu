@@ -73,6 +73,12 @@
 #define TSQCIF_HEIGHT   (CIF_HEIGHT*3 / 4)
 #define TSQCIF_SIZE     (TSQCIF_WIDTH*TSQCIF_HEIGHT*3/2)
 
+
+#define _IMGST 1
+#define _IMGST1 2
+#define _IMGST2 4
+
+
 typedef void * ConferenceMemberId;
 
 ////////////////////////////////////////////////////
@@ -144,21 +150,21 @@ class ConferenceMember;
 #define VMPC_DEFAULT_BORDER 1
 #define VMPC_DEFAULT_VIDNUM 0
 #define VMPC_DEFAULT_TAGS "all"
-#define VMPC_DEFAULT_LABEL_MASK 32
+#define VMPC_DEFAULT_LABEL_MASK 24
 #define VMPC_DEFAULT_LABEL_TEXT "%username%"
 #define VMPC_DEFAULT_LABEL_COLOR 0x0ffffff
-#define VMPC_DEFAULT_LABEL_BGCOLOR 0x0000ff
+#define VMPC_DEFAULT_LABEL_BGCOLOR 0x004040
 #define VMPC_DEFALUT_SCALE_MODE 1
 #define VMPC_DEFAULT_FONTFILE "Russo_One.ttf"
 #define VMPC_DEFAULT_FONTSIZE "1/16"
-#define VMPC_DEFAULT_BORDER_LEFT "1/80"
-#define VMPC_DEFAULT_BORDER_RIGHT "1/80"
+#define VMPC_DEFAULT_BORDER_LEFT "5/80"
+#define VMPC_DEFAULT_BORDER_RIGHT "5/80"
 #define VMPC_DEFAULT_BORDER_TOP "0"
-#define VMPC_DEFAULT_BORDER_BOTTOM "1/80"
+#define VMPC_DEFAULT_BORDER_BOTTOM "1/60"
 #define VMPC_DEFAULT_CUT_BEFORE_BRACKET 1
 #define VMPC_DEFAULT_REALLOCATE_ON_DISCONNECT 0
 #define VMPC_DEFAULT_NEW_FROM_BEGIN 1
-#define VMPC_DEFAULT_MOCKUP_WIDTH 500
+#define VMPC_DEFAULT_MOCKUP_WIDTH 367
 #define VMPC_DEFAULT_MOCKUP_HEIGHT 300
 
 struct VMPBlock {
@@ -185,7 +191,7 @@ class VideoMixConfigurator {
     VideoMixConfigurator(long _w = CIF4_WIDTH, long _h = CIF4_HEIGHT);
     ~VideoMixConfigurator();
     VMPCfgLayout *vmconf; // *configuration*
-    long vmconfs; // count of vmconf
+    unsigned vmconfs; // count of vmconf
     char fontfile[256];
     unsigned bfw,bfh; // base frame values for "resize" frames
     virtual void go(unsigned frame_width, unsigned frame_height);
@@ -253,7 +259,7 @@ class MCUVideoMixer
     { }
 
     VideoMixPosition *vmpList;
-    int vmpNum;
+    unsigned vmpNum;
     
     void VMPListInit() 
     { 
@@ -313,7 +319,7 @@ class MCUVideoMixer
      pVMP->next = NULL;
      vmpNum++;
     }
-    
+
     void VMPListDelVMP(VideoMixPosition *pVMP)
     {
      if(pVMP->next!=NULL) pVMP->next->prev=pVMP->prev;
@@ -361,6 +367,9 @@ class MCUVideoMixer
     virtual void WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
     virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
     virtual void WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
+    virtual void WriteArbitrarySubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount) = 0;
+    virtual void NullRectangle(int x,int y,int w,int h) = 0;
+    virtual void NullAllFrameStores() = 0;
 
     virtual BOOL AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr) = 0;
     virtual void RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr) = 0;
@@ -414,8 +423,9 @@ class MCUVideoMixer
     static void ConvertQCIFToCIF(const void * _src, void * _dst);
     static void ConvertCIFToCIF4(const void * _src, void * _dst);
     static void ConvertCIF4ToCIF16(const void * _src, void * _dst);
-    static void ConvertFRAMEToFRAME4(const void * _src, void * _dst, unsigned w, unsigned h);
+//    static void ConvertFRAMEToFRAME4(const void * _src, void * _dst, unsigned w, unsigned h);
     static void ConvertFRAMEToCUSTOM_FRAME(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh);
+    static void ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh);
     static void ConvertCIFToTQCIF(const void * _src, void * _dst);
     static void ConvertCIF4ToTCIF(const void * _src, void * _dst);
     static void ConvertCIF16ToTCIF(const void * _src, void * _dst);
@@ -427,7 +437,7 @@ class MCUVideoMixer
     static void ConvertCIFToQCIF(const void * _src, void * _dst);
     static void Convert2To1(const void * _src, void * _dst, unsigned int w, unsigned int h);
     static void Convert1To2(const void * _src, void * _dst, unsigned int w, unsigned int h);
-    static void ConvertCIFToQCIF3(const void * _src, void * _dst);
+//    static void ConvertCIFToQCIF3(const void * _src, void * _dst);
     static void ConvertCIFToQ3CIF(const void * _src, void * _dst);
     static void ConvertCIF4ToQ3CIF4(const void * _src, void * _dst);
     static void ConvertCIF16ToQ3CIF16(const void * _src, void * _dst);
@@ -438,6 +448,9 @@ class MCUVideoMixer
     static void ConvertCIF4ToQCIF(const void * _src, void * _dst);
     static void ConvertCIFToSQCIF(const void * _src, void * _dst);
     static void VideoSplitLines(void * dst,VideoMixPosition & vmp,unsigned int fw,unsigned int fh);
+    virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
+    BOOL forceScreenSplit;
+
 };
 
 class MCUSimpleVideoMixer : public MCUVideoMixer
@@ -456,11 +469,14 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
     virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
     virtual void WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
+    virtual void WriteArbitrarySubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount);
+    virtual void NullRectangle(int x,int y,int w,int h);
+    virtual void NullAllFrameStores();
 
     virtual BOOL AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
     virtual void RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
     virtual BOOL MyAddVideoSource(int num, ConferenceMemberId *idp);
-    
+
     virtual void MyRemoveVideoSource(int pos, BOOL flag);
     virtual void MyRemoveVideoSourceById(ConferenceMemberId id, BOOL flag);
     virtual void MyRemoveAllVideoSource();
@@ -472,7 +488,15 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual ConferenceMemberId GetPositionId(int pos);
     virtual ConferenceMemberId SetVADPosition(ConferenceMemberId id, int chosenVan, unsigned short timeout);
     virtual BOOL SetVAD2Position(ConferenceMemberId id);
- 
+//    virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
+    virtual void imageStores_operational_size(long w, long h, BYTE mask){
+//PTRACE(6,"iSos\t" << w << " " << h << " " << mask);
+      long s=w*h*3/2;
+      if(mask&_IMGST)if(s>imageStore_size){imageStore.SetSize(s);imageStore_size=s;}
+      if(mask&_IMGST1)if(s>imageStore1_size){imageStore1.SetSize(s);imageStore1_size=s;}
+      if(mask&_IMGST2)if(s>imageStore2_size){imageStore2.SetSize(s);imageStore2_size=s;}
+     }
+
   protected:
     virtual void CalcVideoSplitSize(unsigned int imageCount, int & subImageWidth, int & subImageHeight, int & cols, int & rows);
     virtual void MyCalcVideoSplitSize(unsigned int imageCount, int *subImageWidth, int *subImageHeight, int *cols, int *rows);
@@ -481,13 +505,14 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     BOOL ReadSrcFrame(VideoFrameStoreList & srcFrameStores, void * buffer, int width, int height, PINDEX & amount);
 
     PMutex mutex;
-    BOOL forceScreenSplit;
+//    BOOL forceScreenSplit;
 
     VideoFrameStoreList frameStores;  // list of framestores for data
 
     PBYTEArray imageStore;        // temporary conversion store
     PBYTEArray imageStore1;        // temporary conversion store
     PBYTEArray imageStore2;        // temporary conversion store
+    long imageStore_size, imageStore1_size, imageStore2_size;
     PColourConverter * converter; // CIF to QCIF converter
     int specialLayout;
 };

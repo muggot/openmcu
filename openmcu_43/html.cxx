@@ -1,8 +1,17 @@
+#include <ptlib.h>
 #include "mcu.h"
 #include <stdio.h>
 #include <string.h>
 
-void BeginPage (PStringStream &html, char *ptitle, char *title, char *quotekey) 
+PString Browser_Language(PHTTPRequest & request)
+{
+  PMIMEInfo mime = request.server.GetConnectionInfo().GetMIME();
+  if(mime.Contains("Accept-Language"))
+    if(mime("Accept-Language").Find("ru-")==0) return "RU";
+  return "EN";
+}
+
+void BeginPage (PStringStream &html, const char *ptitle, const char *title, const char *quotekey) 
 {
   long p_size;
   char * p_buffer;

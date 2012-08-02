@@ -57,6 +57,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     { return FALSE; }
 
     PString GetDefaultRoomName() const { return defaultRoomName; }
+    BOOL IsLoopbackCallsAllowed() const { return allowLoopbackCalls; }
     PString GetNewRoomNumber();
     void LogMessage(const PString & str);
 
@@ -90,6 +91,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     long GetCodec(const PString & codecname);
 
     PString    defaultRoomName;
+    BOOL       allowLoopbackCalls;
     PFilePath  logFilename;
     int        roomTimeLimit;
 
@@ -99,7 +101,7 @@ class OpenMCU : public OpenMCUProcessAncestor
 };
 
 
-void BeginPage (PStringStream &html, char *ptitle, char *title, char *quotekey);
+void BeginPage (PStringStream &html, const char *ptitle, const char *title, const char *quotekey);
 void EndPage (PStringStream &html, PString copyr);
 
 

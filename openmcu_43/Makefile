@@ -79,7 +79,7 @@ PROG		= openmcu
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx
 HDRS		:= conference.h config.h filemembers.h h323.h mcu.h version.h
 
-LDLIBS		= -lfreetype -lswresample
+LDLIBS		= -lfreetype -lswresample -ljpeg
 STDCCFLAGS	= -I/usr/local/include/freetype2 -D__STDC_CONSTANT_MACROS
 
 ifndef OPENH323DIR

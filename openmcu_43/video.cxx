@@ -132,8 +132,10 @@ BOOL PVideoInputDevice_OpenMCU::GetFrameSizeLimits(unsigned & minWidth,
                                            unsigned & maxWidth,
                                            unsigned & maxHeight) 
 {
-  maxWidth  = CIF16_WIDTH;
-  maxHeight = CIF16_HEIGHT;
+//  maxWidth  = CIF16_WIDTH;
+//  maxHeight = CIF16_HEIGHT;
+  maxWidth  = 2048;
+  maxHeight = 2048;
   minWidth  = QCIF_WIDTH;
   minHeight = QCIF_HEIGHT;
 
@@ -337,7 +339,7 @@ MCUVideoMixer::VideoMixPosition::VideoMixPosition(ConferenceMemberId _id,  int _
 }
 
 unsigned MCUSimpleVideoMixer::printsubs_calc(unsigned v, char s[10]){
- PTRACE(6,"FreeType\tprintsubs_calc in " << v << " / " << s);
+// PTRACE(6,"FreeType\tprintsubs_calc in " << v << " / " << s);
  int slashpos=-1;
  char s2[10];
  for(int i=0;i<10;i++){
@@ -346,7 +348,7 @@ unsigned MCUSimpleVideoMixer::printsubs_calc(unsigned v, char s[10]){
   if(s[i]=='/') slashpos=i;
  }
  if (slashpos==-1) {
-  PTRACE(6,"FreeType\tprintsubs_calc out " << s);
+//  PTRACE(6,"FreeType\tprintsubs_calc out " << s);
   return atoi(s);
  }
  s2[slashpos]=0;
@@ -355,7 +357,7 @@ unsigned MCUSimpleVideoMixer::printsubs_calc(unsigned v, char s[10]){
  s2[9-slashpos]=0;
  unsigned div=atoi(s2);
  if(div>0) {
-  PTRACE(6,"FreeType\tprintsubs_calc out " << v << "*" << mul << "/" << div);
+//  PTRACE(6,"FreeType\tprintsubs_calc out " << v << "*" << mul << "/" << div);
   return v*mul/div;
  }
  PTRACE(6,"FreeType\tprintsubs_calc out !DIVISION BY ZERO! " << v << "*" << mul << "/" << div);
@@ -363,153 +365,109 @@ unsigned MCUSimpleVideoMixer::printsubs_calc(unsigned v, char s[10]){
 }
 
 void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer, unsigned int fw, unsigned int fh, unsigned int ft_properties){
- if(vmp.label_init) {
-  if(ft_properties & 16)
-  {
-    MixRectIntoFrameGrayscale(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,1);
-    ReplaceUV_Rect((BYTE *)buffer,fw,fh,
-    OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor>>8,
-    OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor&0xFF,
-    0,vmp.label_y,fw,vmp.label_h);
-  }
-  if(ft_properties & 64) MixRectIntoFrameSubsMode(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,0);
-  if(!(ft_properties & 80)) CopyRectIntoFrame(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh);
- } else {
-  vmp.fc++; if(vmp.fc>=50) {
-   unsigned int x, y, w, h, ft_fontsizepix;
-   if(vmp.height*fw>vmp.width*fh){
-    w=fh*vmp.width/vmp.height;
-    h=fh;
-//    ft_fontsizepix=fh/16;
-    ft_fontsizepix=printsubs_calc(fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].fontsize);
-    y=ft_fontsizepix/2;
-    x=(fw-w)/2;
-    h-=y;
-//    PTRACE(6,"FreeType\tResized(h): x=" << x << "; y=" << y << "; fw=" << fw << "; fh=" << fh << "; w=" << w << "; h=" << h << "; fsp=" << ft_fontsizepix);
-   }
-   else if(vmp.height*fw<vmp.width*fh){
-    w=fw;
-    h=fw*vmp.height/vmp.width;
-    ft_fontsizepix=printsubs_calc(fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].fontsize);
-//    ft_fontsizepix=fh/16;
-    y=ft_fontsizepix/2;
-    h-=y;
-    x=0;
-    y+=(fh-h)/2;
-//    PTRACE(6,"FreeType\tResized(v): x=" << x << "; y=" << y << "; fw=" << fw << "; fh=" << fh << "; w=" << w << "; h=" << h << "; fsp=" << ft_fontsizepix);
-   } else
-   {
-    w=fw;
-    h=fh;
-//    ft_fontsizepix=fh/16;
-    ft_fontsizepix=printsubs_calc(fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].fontsize);
-    x=0;
-    y=ft_fontsizepix/2;
-    h-=y;
-//    PTRACE(6,"FreeType\tExact(hv): x=" << x << "; y=" << y << "; fw=" << fw << "; fh=" << fh << "; w=" << w << "; h=" << h << "; fsp=" << ft_fontsizepix);
-   }
-//   const PString ft_font="/usr/share/fonts/truetype/ariblk.ttf";
-   int ft_borderxl=printsubs_calc(w,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_left);
-//   int ft_borderxl=w/80+(1-(ft_properties&1))*(w/17); //add little space from left if no h. centering
-//   int ft_borderxr=ft_borderxl;
-//   int ft_borderyt=0;
-//   int ft_borderyb=h/80;
-   int ft_borderxr=printsubs_calc(w,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_right);
-   int ft_borderyt=printsubs_calc(h,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_top);
-   int ft_borderyb=printsubs_calc(h,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_bottom);
-   if(ft_error==555){
-     PTRACE(3,"FreeType\tInitialization");
-     ft_error=FT_Init_FreeType(&ft_library);
-     if(!ft_error) {
-//      ft_error = FT_New_Face(ft_library,ft_font,0,&ft_face);
-      ft_error = FT_New_Face(ft_library,OpenMCU::vmcfg.fontfile,0,&ft_face);
-//      if(!ft_error)PTRACE(3,"FreeType\tTruetype font loaded"); else PTRACE(3,"FreeType\tCould not load truetype font: " << ft_font);
-      if(!ft_error)PTRACE(3,"FreeType\tTruetype font " << OpenMCU::vmcfg.fontfile << " loaded"); else PTRACE(3,"FreeType\tCould not load truetype font: " << OpenMCU::vmcfg.fontfile);
-     }
-     if(!ft_error) ft_use_kerning=FT_HAS_KERNING(ft_face);
-   }
-
-   if(!ft_error) ft_error = FT_Set_Pixel_Sizes(ft_face,0,ft_fontsizepix);
-   PTRACE(3,"FreeType\tGetting username");
-   PString username=OpenMCU::Current().GetEndpoint().GetUsername(vmp.id);
-   PTRACE(3,"FreeType\tUsername we have got: " << username << ". Preparing ft_slot");
-
-   if(!ft_error) if(strlen((const char *)username)<1)vmp.fc=0; else{
-    FT_GlyphSlot ft_slot=ft_face->glyph;
-    int pen_x=x+ft_borderxl;
-    int pen_y=y+ft_borderyt;
-    int pen_x_max=pen_x;
-    unsigned int charcode;
-    ft_previous=0;
-    PTRACE(3,"FreeType\tFilling imageStore2 with bgcolor");
-//    FillYUVFrame_YUV(imageStore2.GetPointer(),0,0x0F0,0x6E,fw,fh);
-    FillYUVFrame_YUV(imageStore2.GetPointer(),0,
-     OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor>>8,
-     OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor&0xFF,
-     fw,fh);
-    for(unsigned int i=0;i<strlen((const char *)username);++i){
-    PTRACE(3,"FreeType\tDecoding character " << i << " of " << username << ": " << username[i]);
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].cut_before_bracket){
-     if(username[i+1]=='[') break;
-     if(username[i+1]=='(') break;
+  if(vmp.label_init) {
+    if(ft_properties & 16) {
+      MixRectIntoFrameGrayscale(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,1);
+      ReplaceUV_Rect((BYTE *)buffer,fw,fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor>>8,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor&0xFF,0,vmp.label_y,fw,vmp.label_h);
     }
+    if(ft_properties & 64) MixRectIntoFrameSubsMode(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,0);
+    if(!(ft_properties & 80)) CopyRectIntoFrame(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh);
+    return;
+  }
+
+  vmp.fc++;
+  if(vmp.fc<50) return;
+
+  if (ft_error==555) {
+    PTRACE(3,"FreeType\tInitialization");
+    if ((ft_error = FT_Init_FreeType(&ft_library))) return;
+    ft_error = FT_New_Face(ft_library,OpenMCU::vmcfg.fontfile,0,&ft_face);
+    if (!ft_error){
+      PTRACE(3,"FreeType\tTruetype font " << OpenMCU::vmcfg.fontfile << " loaded");
+      ft_use_kerning=FT_HAS_KERNING(ft_face);
+    }
+    else PTRACE(3,"FreeType\tCould not load truetype font: " << OpenMCU::vmcfg.fontfile);
+  }
+
+  if(ft_error) return;
+
+  unsigned int x, y, w, h, ft_fontsizepix;
+  if(vmp.height*fw>vmp.width*fh){
+    w=fh*vmp.width/vmp.height; h=fh;
+    ft_fontsizepix=printsubs_calc(fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].fontsize);
+    y=ft_fontsizepix/2; x=(fw-w)/2; h-=y;
+  } else if(vmp.height*fw<vmp.width*fh){
+    w=fw; h=fw*vmp.height/vmp.width;
+    ft_fontsizepix=printsubs_calc(fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].fontsize);
+    y=ft_fontsizepix/2; h-=y; x=0; y+=(fh-h)/2;
+  } else {
+    w=fw; h=fh;
+    ft_fontsizepix=printsubs_calc(fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].fontsize);
+    x=0; y=ft_fontsizepix/2; h-=y;
+  }
+  int ft_borderxl=printsubs_calc(w,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_left);
+  int ft_borderxr=printsubs_calc(w,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_right);
+  int ft_borderyt=printsubs_calc(h,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_top);
+  int ft_borderyb=printsubs_calc(h,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_bottom);
+
+  if((ft_error = FT_Set_Pixel_Sizes(ft_face,0,ft_fontsizepix))) return;
+  PString username=OpenMCU::Current().GetEndpoint().GetUsername(vmp.id);
+
+  if(strlen((const char *)username)<1){ vmp.fc=0; return; }
+
+  FT_GlyphSlot ft_slot=ft_face->glyph;
+  int pen_x=x+ft_borderxl; int pen_y=y+ft_borderyt;
+  int pen_x_max=pen_x;
+  unsigned int charcode; ft_previous=0;
+  imageStores_operational_size(fw,fh,_IMGST2);
+  FillYUVFrame_YUV(imageStore2.GetPointer(),0,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor>>8,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor&0xFF,fw,fh);
+  for(unsigned int i=0;i<strlen((const char *)username);++i)
+  {
+    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].cut_before_bracket){ if(username[i+1]=='[') break; if(username[i+1]=='(') break; }
     charcode=(BYTE)username[i];
-    if(charcode==185)charcode=0x2116; else
-    if(charcode==168)charcode=0x1025; else
-    if(charcode==184)charcode=0x1105;
-    if(charcode==208){
-       i++;
-       charcode=(BYTE)username[i];
-       charcode=1024+(charcode&127);
-      } else
-//      if(charcode==209){
-//       i++;
-//       charcode=(BYTE)username[i];
-//       charcode=960+charcode;
-//      } else
-     if(charcode>191)charcode=0x0410+(charcode&63);
-     PTRACE(3,"FreeType\tResulting charcode: " << charcode << ". FT_Get_Char_Index");
-     ft_glyph_index=FT_Get_Char_Index(ft_face,charcode);
-     if(ft_use_kerning&&ft_previous&&ft_glyph_index){
+    if(!(charcode&128)){ // 0xxxxxxx
+    } else if(((charcode&224)==192)&&(i+1<strlen((const char *)username))){ //110xxxxx 10xxxxxx
+      i++;
+      charcode=((charcode&31)<<6)+((BYTE)username[i]&63);
+    } else if(((charcode&240)==224)&&(i+2<strlen((const char *)username))){ //1110xxxx 10xxxxxx 10xxxxxx
+      charcode=((charcode&15)<<12) + (((unsigned int)((BYTE)username[i+1]&63))<<6) + ((BYTE)username[i+2]&63);
+      i+=2;
+    } else if(((charcode&248)==240)&&(i+3<strlen((const char *)username))){ //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
+       charcode=((charcode&7)<<18) + (((unsigned int)((BYTE)username[i+1]&63))<<12) + (((unsigned int)((BYTE)username[i+2]&63))<<6) + ((BYTE)username[i+3]&63);
+       i+=3;
+    }
+    ft_glyph_index=FT_Get_Char_Index(ft_face,charcode);
+    if(ft_use_kerning&&ft_previous&&ft_glyph_index){
       FT_Vector delta;
-      PTRACE(3,"FreeType\tGetting kerning info");
       FT_Get_Kerning(ft_face,ft_previous,ft_glyph_index,FT_KERNING_DEFAULT,&delta);
       pen_x+=delta.x>>6;
-     }
-     PTRACE(3,"FreeType\tLoading glyph");
-     ft_error=FT_Load_Glyph(ft_face,ft_glyph_index,FT_LOAD_RENDER);
-     if(!ft_error) {
-      if(pen_x+(ft_slot->advance.x>>6)+ft_borderxr-x >= w){
-       if(pen_x_max<pen_x)pen_x_max=pen_x;
-       pen_x=x+ft_borderxl;
-       pen_y+=ft_fontsizepix;
-       if(pen_y+ft_fontsizepix+ft_borderyb-y >= h) break;
-      }
-      PTRACE(3,"FreeType\tBitmap copying to buffer (" << pen_x << "," << pen_y << ")");
-      if(fw==CIF_WIDTH && fh==CIF_HEIGHT) CopyGrayscaleIntoCIF((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows);
-      else if(fw==CIF4_WIDTH && fh==CIF4_HEIGHT) CopyGrayscaleIntoCIF4((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows);
-      else if(fw==CIF16_WIDTH && fh==CIF16_HEIGHT) CopyGrayscaleIntoCIF16((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows);
-      else CopyGrayscaleIntoFrame((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows,fw,fh);
-      pen_x+=ft_slot->advance.x>>6;
-      ft_previous=ft_glyph_index;
-     }
     }
-    if(pen_x_max<pen_x)pen_x_max=pen_x;
-    int ft_width=ft_borderxr+pen_x_max-x; //pen_x_max already contain ft_borderxl
-    int ft_height=ft_borderyb+pen_y+ft_fontsizepix-y; //pen_y already contain ft_borderyt
-    PTRACE(3,"FreeType\tSetting vmp buffer size to " << (ft_width*ft_height*3/2));
-    vmp.label_buffer.SetSize(ft_width*ft_height*3/2);
-    PTRACE(3,"FreeType\tCopying colored bitmap to vmp.label_buffer");
-    CopyRectFromFrame(imageStore2.GetPointer(),vmp.label_buffer.GetPointer(),x,y,ft_width,ft_height,fw,fh);
-    if((ft_properties&4)>0)vmp.label_x=fw-x-ft_width; else if(ft_properties&1)vmp.label_x=(fw-ft_width)>>1; else vmp.label_x=x;
-    if((ft_properties&8)>0)vmp.label_y=fh-y-ft_height; else if((ft_properties&2)>0)vmp.label_y=(fh-ft_height)>>1; else vmp.label_y=y;
-    vmp.label_w=ft_width;
-    vmp.label_h=ft_height;
-    vmp.fc=0;
-    vmp.label_init=TRUE;
-   }
+    if((ft_error=FT_Load_Glyph(ft_face,ft_glyph_index,FT_LOAD_RENDER))) return;
+    if(pen_x+(ft_slot->advance.x>>6)+ft_borderxr-x >= w){
+      if(pen_x_max<pen_x)pen_x_max=pen_x;
+      pen_x=x+ft_borderxl;
+      pen_y+=ft_fontsizepix;
+      if(pen_y+ft_fontsizepix+ft_borderyb-y >= h) break;
+    }
+    if(fw==CIF_WIDTH && fh==CIF_HEIGHT) CopyGrayscaleIntoCIF((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows);
+    else if(fw==CIF4_WIDTH && fh==CIF4_HEIGHT) CopyGrayscaleIntoCIF4((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows);
+    else if(fw==CIF16_WIDTH && fh==CIF16_HEIGHT) CopyGrayscaleIntoCIF16((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows);
+    else CopyGrayscaleIntoFrame((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows,fw,fh);
+    pen_x+=ft_slot->advance.x>>6;
+    ft_previous=ft_glyph_index;
   }
- }
+  if(pen_x_max<pen_x)pen_x_max=pen_x;
+  int ft_width=ft_borderxr+pen_x_max-x; //pen_x_max already contain ft_borderxl
+  int ft_height=ft_borderyb+pen_y+ft_fontsizepix-y; //pen_y already contain ft_borderyt
+  PTRACE(3,"FreeType\tSetting vmp buffer size to " << (ft_width*ft_height*3/2));
+  vmp.label_buffer.SetSize(ft_width*ft_height*3/2);
+  CopyRectFromFrame(imageStore2.GetPointer(),vmp.label_buffer.GetPointer(),x,y,ft_width,ft_height,fw,fh);
+  if((ft_properties&4)>0)vmp.label_x=fw-x-ft_width; else if(ft_properties&1)vmp.label_x=(fw-ft_width)>>1; else vmp.label_x=x;
+  if((ft_properties&8)>0)vmp.label_y=fh-y-ft_height; else if((ft_properties&2)>0)vmp.label_y=(fh-ft_height)>>1; else vmp.label_y=y;
+  vmp.label_w=ft_width;
+  vmp.label_h=ft_height;
+  vmp.fc=0;
+  vmp.label_init=TRUE;
 }
 
 void MCUVideoMixer::ConvertRGBToYUV(BYTE R, BYTE G, BYTE B, BYTE & Y, BYTE & U, BYTE & V)
@@ -623,7 +581,7 @@ void MCUVideoMixer::ReplaceUV_Rect(void * frame, int frameWidth, int frameHeight
   unsigned int offsetV=cw*ch+offsetU;
   BYTE * UPtr = (BYTE*)frame + offsetU;
   BYTE * VPtr = (BYTE*)frame + offsetV;
-  for (int rr=0;rr<rch;rr++) {
+  for (unsigned int rr=0;rr<rch;rr++) {
     memset(UPtr, U, rcw);
     memset(VPtr, V, rcw);
     UPtr += cw;
@@ -2234,6 +2192,66 @@ void MCUVideoMixer::ConvertFRAMEToCUSTOM_FRAME(const void * _src, void * _dst, u
 
 }
 
+void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh)
+{
+//PTRACE(6,"ResizeYUV420P\t" << sw << " " << sh << " " << dw << " " << dh);
+  if(sw==dw && sh==dh) // same size
+    memcpy(_dst,_src,dw*dh*3/2);
+
+  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==TCIF_WIDTH    && dh==TCIF_HEIGHT)   // CIF16 -> TCIF
+    ConvertCIF16ToTCIF(_src,_dst);
+  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==Q3CIF16_WIDTH && dh==Q3CIF16_HEIGHT)// CIF16 -> Q3CIF16
+    ConvertCIF16ToQ3CIF16(_src,_dst);
+  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==CIF4_WIDTH    && dh==CIF4_HEIGHT)   // CIF16 -> CIF4
+    ConvertCIF16ToCIF4(_src,_dst);
+  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==Q3CIF4_WIDTH  && dh==Q3CIF4_HEIGHT) // CIF16 -> Q3CIF4
+    ConvertCIF16ToQ3CIF4(_src,_dst);
+  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==CIF_WIDTH     && dh==CIF_HEIGHT)    // CIF16 -> CIF
+    ConvertCIF16ToCIF(_src,_dst);
+
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==CIF16_WIDTH  && dh==CIF16_HEIGHT)  // CIF4 -> CIF16
+    ConvertCIF4ToCIF16(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==TCIF_WIDTH   && dh==TCIF_HEIGHT)   // CIF4 -> TCIF
+    ConvertCIF4ToTCIF(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==TQCIF_WIDTH  && dh==TQCIF_HEIGHT)  // CIF4 -> TQCIF
+    ConvertCIF4ToTQCIF(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==CIF_WIDTH    && dh==CIF_HEIGHT)    // CIF4 -> CIF
+    ConvertCIF4ToCIF(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==Q3CIF4_WIDTH && dh==Q3CIF4_HEIGHT) // CIF4 -> Q3CIF4
+    ConvertCIF4ToQ3CIF4(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==QCIF_WIDTH   && dh==QCIF_HEIGHT)   // CIF4 -> QCIF
+    ConvertCIF4ToQCIF(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==Q3CIF_WIDTH  && dh==Q3CIF_HEIGHT)  // CIF4 -> CIF16
+    ConvertCIF4ToQ3CIF(_src,_dst);
+
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==CIF4_WIDTH   && dh==CIF4_HEIGHT)   // CIF -> CIF4
+    ConvertCIFToCIF4(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==TQCIF_WIDTH  && dh==TQCIF_HEIGHT)  // CIF -> TQCIF
+    ConvertCIFToTQCIF(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==TQCIF_WIDTH  && dh==TQCIF_HEIGHT)  // CIF -> TSQCIF
+    ConvertCIFToTSQCIF(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==Q3CIF_WIDTH  && dh==Q3CIF_HEIGHT)  // CIF -> Q3CIF
+    ConvertCIFToQ3CIF(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==QCIF_WIDTH   && dh==QCIF_HEIGHT)   // CIF -> QCIF
+    ConvertCIFToQCIF(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==SQ3CIF_WIDTH && dh==SQ3CIF_HEIGHT) // CIF -> SQ3CIF
+    ConvertCIFToSQ3CIF(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==SQCIF_WIDTH  && dh==SQCIF_HEIGHT)  // CIF -> SQCIF
+    ConvertCIFToSQCIF(_src,_dst);
+
+  else if(sw==QCIF_WIDTH && sh==QCIF_HEIGHT && dw==CIF4_WIDTH && dh==CIF4_HEIGHT) // QCIF -> CIF4
+    ConvertQCIFToCIF4(_src,_dst);
+  else if(sw==QCIF_WIDTH && sh==QCIF_HEIGHT && dw==CIF_WIDTH && dh==CIF_HEIGHT)   // QCIF -> CIF
+    ConvertQCIFToCIF(_src,_dst);
+
+  else if((sw<<1)==dw && (sh<<1)==dh) // needs 2x zoom
+    Convert1To2(_src, _dst, sw, sh);
+  else if((dw<<1)==sw && (dh<<1)==sh) // needs 2x reduce
+    Convert2To1(_src, _dst, sw, sh);
+
+  else ConvertFRAMEToCUSTOM_FRAME(_src,_dst,sw,sh,dw,dh);
+}
+
 void MCUVideoMixer::ConvertQCIFToCIF(const void * _src, void * _dst)
 {
   BYTE * src = (BYTE *)_src;
@@ -2265,7 +2283,7 @@ void MCUVideoMixer::ConvertQCIFToCIF(const void * _src, void * _dst)
    dst[1] = dst[QCIF_WIDTH*2+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[QCIF_WIDTH*2] = dst[QCIF_WIDTH*2] = srcRow[0];
+  dst[0] = dst[1] = dst[QCIF_WIDTH*2] = dst[QCIF_WIDTH*2+1] = srcRow[0];
   srcRow++; dst += 2; dst += QCIF_WIDTH*2;
 
   for (y = 1; y < QCIF_HEIGHT/2; y++) 
@@ -2288,7 +2306,7 @@ void MCUVideoMixer::ConvertQCIFToCIF(const void * _src, void * _dst)
    dst[1] = dst[QCIF_WIDTH+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[QCIF_WIDTH] = dst[QCIF_WIDTH] = srcRow[0];
+  dst[0] = dst[1] = dst[QCIF_WIDTH] = dst[QCIF_WIDTH+1] = srcRow[0];
   srcRow++; dst += 2; dst += QCIF_WIDTH;
 
   for (y = 1; y < QCIF_HEIGHT/2; y++) 
@@ -2311,7 +2329,7 @@ void MCUVideoMixer::ConvertQCIFToCIF(const void * _src, void * _dst)
    dst[1] = dst[QCIF_WIDTH+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[QCIF_WIDTH] = dst[QCIF_WIDTH] = srcRow[0];
+  dst[0] = dst[1] = dst[QCIF_WIDTH] = dst[QCIF_WIDTH+1] = srcRow[0];
   srcRow++; dst += 2; dst += QCIF_WIDTH;
 }
 
@@ -2347,7 +2365,7 @@ void MCUVideoMixer::ConvertCIFToCIF4(const void * _src, void * _dst)
    dst[1] = dst[CIF_WIDTH*2+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[CIF_WIDTH*2] = dst[CIF_WIDTH*2] = srcRow[0];
+  dst[0] = dst[1] = dst[CIF_WIDTH*2] = dst[CIF_WIDTH*2+1] = srcRow[0];
   srcRow++; dst += 2; dst += CIF_WIDTH*2;
 
   for (y = 1; y < CIF_HEIGHT/2; y++) 
@@ -2370,7 +2388,7 @@ void MCUVideoMixer::ConvertCIFToCIF4(const void * _src, void * _dst)
    dst[1] = dst[CIF_WIDTH+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[CIF_WIDTH] = dst[CIF_WIDTH] = srcRow[0];
+  dst[0] = dst[1] = dst[CIF_WIDTH] = dst[CIF_WIDTH+1] = srcRow[0];
   srcRow++; dst += 2; dst += CIF_WIDTH;
 
   for (y = 1; y < CIF_HEIGHT/2; y++) 
@@ -2393,7 +2411,7 @@ void MCUVideoMixer::ConvertCIFToCIF4(const void * _src, void * _dst)
    dst[1] = dst[CIF_WIDTH+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[CIF_WIDTH] = dst[CIF_WIDTH] = srcRow[0];
+  dst[0] = dst[1] = dst[CIF_WIDTH] = dst[CIF_WIDTH+1] = srcRow[0];
   srcRow++; dst += 2; dst += CIF_WIDTH;
 }
 
@@ -2428,7 +2446,7 @@ void MCUVideoMixer::ConvertCIF4ToCIF16(const void * _src, void * _dst)
    dst[1] = dst[CIF4_WIDTH*2+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[CIF4_WIDTH*2] = dst[CIF4_WIDTH*2] = srcRow[0];
+  dst[0] = dst[1] = dst[CIF4_WIDTH*2] = dst[CIF4_WIDTH*2+1] = srcRow[0];
   srcRow++; dst += 2; dst += CIF4_WIDTH*2;
 
   for (y = 1; y < CIF4_HEIGHT/2; y++) 
@@ -2451,7 +2469,7 @@ void MCUVideoMixer::ConvertCIF4ToCIF16(const void * _src, void * _dst)
    dst[1] = dst[CIF4_WIDTH+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[CIF4_WIDTH] = dst[CIF4_WIDTH] = srcRow[0];
+  dst[0] = dst[1] = dst[CIF4_WIDTH] = dst[CIF4_WIDTH+1] = srcRow[0];
   srcRow++; dst += 2; dst += CIF4_WIDTH;
 
   for (y = 1; y < CIF4_HEIGHT/2; y++) 
@@ -2474,7 +2492,7 @@ void MCUVideoMixer::ConvertCIF4ToCIF16(const void * _src, void * _dst)
    dst[1] = dst[CIF4_WIDTH+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[CIF4_WIDTH] = dst[CIF4_WIDTH] = srcRow[0];
+  dst[0] = dst[1] = dst[CIF4_WIDTH] = dst[CIF4_WIDTH+1] = srcRow[0];
   srcRow++; dst += 2; dst += CIF4_WIDTH;
 }
 
@@ -2512,7 +2530,7 @@ void MCUVideoMixer::Convert1To2(const void * _src, void * _dst, unsigned int w, 
    dst[1] = dst[w2+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[w2] = dst[w2] = srcRow[0];
+  dst[0] = dst[1] = dst[w2] = dst[w2+1] = srcRow[0];
   srcRow++; dst += 2; dst += w2;
 
   w2=w>>1;
@@ -2536,7 +2554,7 @@ void MCUVideoMixer::Convert1To2(const void * _src, void * _dst, unsigned int w, 
    dst[1] = dst[w+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[w] = dst[w] = srcRow[0];
+  dst[0] = dst[1] = dst[w] = dst[w+1] = srcRow[0];
   srcRow++; dst += 2; dst += w;
 
   for (y = 1; y < (h>>1); y++) 
@@ -2559,7 +2577,7 @@ void MCUVideoMixer::Convert1To2(const void * _src, void * _dst, unsigned int w, 
    dst[1] = dst[w+1] = (srcRow[0]+srcRow[1])>>1;
    dst+=2; srcRow++;
   }
-  dst[0] = dst[1] = dst[w] = dst[w] = srcRow[0];
+  dst[0] = dst[1] = dst[w] = dst[w+1] = srcRow[0];
   srcRow++; dst += 2; dst += w;
 }
 
@@ -2818,7 +2836,7 @@ void MCUVideoMixer::ConvertQCIFToCIF4(const void * _src, void * _dst)
 }
 
 void MCUVideoMixer::VideoSplitLines(void * dst, VideoMixPosition & vmp, unsigned int fw, unsigned int fh){
- int i;
+ unsigned int i;
  BYTE * d = (BYTE *)dst;
  for(i=1;i<fh-1;i++){
   if(d[i*fw]>127)d[i*fw]=255;else if(d[i*fw]<63)d[i*fw]=64; else d[i*fw]<<=1;
@@ -2839,13 +2857,17 @@ void MCUVideoMixer::VideoSplitLines(void * dst, VideoMixPosition & vmp, unsigned
 ///////////////////////////////////////////////////////////////////////////////////////
 
 MCUSimpleVideoMixer::MCUSimpleVideoMixer(BOOL _forceScreenSplit)
-  : forceScreenSplit(_forceScreenSplit)
+//  : forceScreenSplit(_forceScreenSplit)
 {
+  forceScreenSplit = _forceScreenSplit;
   VMPListInit();
   frameStores.AddFrameStore(CIF4_WIDTH, CIF4_HEIGHT);
-  imageStore.SetSize(CIF16_SIZE);
-  imageStore1.SetSize(CIF16_SIZE);
-  imageStore2.SetSize(CIF16_SIZE);
+  imageStore_size=0;
+  imageStore1_size=0;
+  imageStore2_size=0;
+//  imageStore.SetSize(CIF16_SIZE);
+//  imageStore1.SetSize(CIF16_SIZE);
+//  imageStore2.SetSize(CIF16_SIZE);
 
   converter = PColourConverter::Create("YUV420P", "YUV420P", CIF16_WIDTH, CIF16_HEIGHT);
   specialLayout = 0;
@@ -2856,18 +2878,21 @@ BOOL MCUSimpleVideoMixer::ReadFrame(ConferenceMember &, void * buffer, int width
   PWaitAndSignal m(mutex);
 
   // special case of one member means fill with black
-  if (!forceScreenSplit && rows == 0) {
+//  if (!forceScreenSplit && rows == 0) {
+  if (!forceScreenSplit && vmpNum <= 1) {
     VideoFrameStoreList::FrameStore & fs = frameStores.GetFrameStore(width, height);
     if (!fs.valid) {
       if (!OpenMCU::Current().GetPreMediaFrame(fs.data.GetPointer(), width, height, amount))
         FillYUVFrame(fs.data.GetPointer(), 0, 0, 0, width, height);
       fs.valid = TRUE;
+      fs.used = 300;
     }
     memcpy(buffer, fs.data.GetPointer(), amount);
   }
 
   // special case of two members means we do nothing, and tell caller to look for full screen version of other video
-  if (!forceScreenSplit && rows == 1) 
+//  if (!forceScreenSplit && rows == 1) 
+  if (!forceScreenSplit && vmpNum == 2)
     return FALSE;
 
   return ReadMixedFrame(buffer, width, height, amount);
@@ -2883,6 +2908,7 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
   {
    if(width*CIF_HEIGHT!=height*CIF_WIDTH || 
       (width!=CIF_WIDTH && width!=CIF4_WIDTH && width!=CIF16_WIDTH)) // non standart frame
+//eg width=16; height=9; 16*9>9*11=TRUE; nw=9*11/9=11;
    {
     int nw,nh;
     if(width*CIF_HEIGHT == height*CIF_WIDTH) { nw=width; nh=height; }
@@ -2896,6 +2922,7 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
      cifFs.used=300;
      if(cifFs.valid)
      {
+      imageStores_operational_size(nw,nh,_IMGST2);
       ConvertFRAMEToCUSTOM_FRAME(cifFs.data.GetPointer(),imageStore2.GetPointer(), CIF_WIDTH, CIF_HEIGHT,nw,nh);
       CopyRectIntoFrame(imageStore2.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
       Fs.valid=1;
@@ -2907,6 +2934,7 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
      cif4Fs.used=300;
      if(cif4Fs.valid)
      {
+      imageStores_operational_size(nw,nh,_IMGST2);
       ConvertFRAMEToCUSTOM_FRAME(cif4Fs.data.GetPointer(),imageStore2.GetPointer(), CIF4_WIDTH, CIF4_HEIGHT,nw,nh);
       CopyRectIntoFrame(imageStore2.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
 //      nw = CIF4_WIDTH; nh = CIF4_HEIGHT;
@@ -2921,6 +2949,7 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
      cif16Fs.used=300;
      if(cif16Fs.valid)
      {
+      imageStores_operational_size(nw,nh,_IMGST2);
       ConvertFRAMEToCUSTOM_FRAME(cif16Fs.data.GetPointer(),imageStore2.GetPointer(), CIF16_WIDTH, CIF16_HEIGHT,nw,nh);
       CopyRectIntoFrame(imageStore2.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
       Fs.valid=1;
@@ -2928,7 +2957,7 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
     } 
    }
   }
-   
+
   if (!Fs.valid) 
   {
    if (!OpenMCU::Current().GetPreMediaFrame(Fs.data.GetPointer(), width, height, amount))
@@ -2954,11 +2983,13 @@ BOOL MCUSimpleVideoMixer::WriteFrame(ConferenceMemberId id, const void * buffer,
   PWaitAndSignal m(mutex);
 
   // special case of one member means we do nothing, and don't bother looking for other user to copy from
-  if (!forceScreenSplit && rows == 0) 
+//  if (!forceScreenSplit && rows == 0) 
+  if (!forceScreenSplit && vmpNum <= 1) 
     return TRUE;
 
   // special case of two members means we do nothing, and tell caller to look for another frame to write to
-  if (!forceScreenSplit && rows == 1) 
+//  if (!forceScreenSplit && rows == 1) 
+  if (!forceScreenSplit && vmpNum == 2) 
     return FALSE;
 
   // write data into sub frame of mixed image
@@ -3102,6 +3133,7 @@ void MCUSimpleVideoMixer::MyCalcVideoSplitSize(unsigned int imageCount, int *sub
 
 void MCUSimpleVideoMixer::ReallocatePositions()
 {
+/*
   VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
   VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
   FillCIF4YUVFrame(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0);
@@ -3110,7 +3142,8 @@ void MCUSimpleVideoMixer::ReallocatePositions()
   frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT);
   cifFs.valid = 1;
   cif16Fs.valid = 1;
-
+*/
+  NullAllFrameStores();
   VideoMixPosition *r;
   unsigned int i = 0;
   r = vmpList->next;
@@ -3147,17 +3180,19 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
   }
 
 // finding best matching layout (newsL):
-  int newsL=-1; int maxL=-1; int maxV=99999;
-  for(long i=0;i<OpenMCU::vmcfg.vmconfs;i++) if(OpenMCU::vmcfg.vmconf[i].splitcfg.mode_mask&1)
+  int newsL=-1; int maxL=-1; unsigned maxV=99999;
+  for(unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++) if(OpenMCU::vmcfg.vmconf[i].splitcfg.mode_mask&1)
   {
     if(OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum==vmpNum+1) { newsL=i; break; }
     else if((OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum>vmpNum)&&(OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum<maxV))
     {
      maxV=OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum;
-     maxL=i;
+     maxL=(int)i;
     }
   }
-  if(newsL==-1) if(maxL!=-1) newsL=maxL; else newsL=specialLayout;
+  if(newsL==-1) {
+    if(maxL!=-1) newsL=maxL; else newsL=specialLayout;
+  }
 
   if ((newsL != specialLayout)||(vmpNum==0)) // split changed or first vmp
   {
@@ -3172,10 +3207,10 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
   }
   else  // otherwise find an empty position
   {
-    for(int i=0;i<OpenMCU::vmcfg.vmconf[newsL].splitcfg.vidnum;i++)
+    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[newsL].splitcfg.vidnum;i++)
     {
       newPosition = vmpList->next;
-      while (newPosition != NULL) { if (newPosition->n != i) newPosition=newPosition->next; else break; }
+      while (newPosition != NULL) { if (newPosition->n != (int)i) newPosition=newPosition->next; else break; }
       if(newPosition==NULL) // empty position found
       {
         newPosition = CreateVideoMixPosition(id, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].posx, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].posy, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].width, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].height);
@@ -3214,21 +3249,24 @@ void MCUSimpleVideoMixer::RemoveVideoSource(ConferenceMemberId id, ConferenceMem
     VideoMixPosition & vmp = *pVMP;
     VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
     VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
-    PINDEX retsz;
+//    PINDEX retsz;
     if (vmpNum == 1)
     {
-     if(!OpenMCU::Current().GetPreMediaFrame(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), CIF4_WIDTH, CIF4_HEIGHT, retsz))
+/*     if(!OpenMCU::Current().GetPreMediaFrame(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), CIF4_WIDTH, CIF4_HEIGHT, retsz))
       FillCIF4YUVFrame(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0);
      if(!OpenMCU::Current().GetPreMediaFrame(cifFs.data.GetPointer(), CIF_WIDTH, CIF_HEIGHT, retsz))
       FillCIFYUVFrame(cifFs.data.GetPointer(), 0, 0, 0);
      if(!OpenMCU::Current().GetPreMediaFrame(cif16Fs.data.GetPointer(), CIF16_WIDTH, CIF16_HEIGHT, retsz))
       FillCIF16YUVFrame(cif16Fs.data.GetPointer(), 0, 0, 0);
+*/    NullAllFrameStores();
     }
     else
     {
-      FillCIF4YUVRect(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0, vmp.xpos, vmp.ypos, vmp.width, vmp.height);
+/*      FillCIF4YUVRect(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0, vmp.xpos, vmp.ypos, vmp.width, vmp.height);
       FillCIFYUVRect(cifFs.data.GetPointer(), 0, 0, 0, vmp.xpos/2, vmp.ypos/2, vmp.width/2, vmp.height/2);
       FillCIF16YUVRect(cif16Fs.data.GetPointer(), 0, 0, 0, vmp.xpos*2, vmp.ypos*2, vmp.width*2, vmp.height*2);
+*/
+      NullRectangle(vmp.xpos,vmp.ypos,vmp.width,vmp.height);
     }  
     frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT);
     cifFs.valid = 1;
@@ -3246,14 +3284,16 @@ void MCUSimpleVideoMixer::RemoveVideoSource(ConferenceMemberId id, ConferenceMem
   int newSubImageWidth, newSubImageHeight, newCols, newRows; 
   CalcVideoSplitSize((unsigned int)vmpNum, newSubImageWidth, newSubImageHeight, newCols, newRows);
 */
-  int newsL=-1; int maxL=-1; int maxV=99999;
-  for(long i=0;i<OpenMCU::vmcfg.vmconfs;i++) if(OpenMCU::vmcfg.vmconf[i].splitcfg.mode_mask&1)
+  int newsL=-1; int maxL=-1; unsigned maxV=99999;
+  for(unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++) if(OpenMCU::vmcfg.vmconf[i].splitcfg.mode_mask&1)
   {
     if(OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum==vmpNum) { newsL=i; break; }
     else if((OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum>vmpNum)&&(OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum<maxV))
     { maxV=OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum; maxL=i; }
   }
-  if(newsL==-1) if(maxL!=-1) newsL=maxL; else newsL=specialLayout;
+  if(newsL==-1) {
+    if(maxL!=-1) newsL=maxL; else newsL=specialLayout;
+  }
 
 
 
@@ -3385,7 +3425,7 @@ ConferenceMemberId MCUSimpleVideoMixer::SetVADPosition(ConferenceMemberId id, in
 BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMemberId id)
 {
  int maxStatus=0;
- ConferenceMemberId maxId;
+// ConferenceMemberId maxId;
  VideoMixPosition *VAD2vmp=NULL;
  
   PWaitAndSignal m(mutex);
@@ -3393,6 +3433,7 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMemberId id)
   if(GetPositionType(id)!=2) return FALSE;
 
   VideoMixPosition *r = vmpList->next;
+ ConferenceMemberId maxId=r->id; // tried to remove warning "'maxId' may be used uninitialized in this function" (kay27)
   while(r != NULL)
   {
    VideoMixPosition & vmp = *r;
@@ -3415,9 +3456,11 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMemberId id)
   VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
   if((long)maxId>=0 && (long)maxId<100)
   {
-   FillCIF4YUVRect(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0, oldVMP->xpos, oldVMP->ypos, oldVMP->width, oldVMP->height);
+/*   FillCIF4YUVRect(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0, oldVMP->xpos, oldVMP->ypos, oldVMP->width, oldVMP->height);
    FillCIFYUVRect(cifFs.data.GetPointer(), 0, 0, 0, oldVMP->xpos/2, oldVMP->ypos/2, oldVMP->width/2, oldVMP->height/2);
    FillCIF16YUVRect(cif16Fs.data.GetPointer(), 0, 0, 0, oldVMP->xpos*2, oldVMP->ypos*2, oldVMP->width*2, oldVMP->height*2);
+*/
+    NullRectangle(oldVMP->xpos,oldVMP->ypos,oldVMP->width,oldVMP->height);
   }
   frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT);
   cifFs.valid = 1;
@@ -3435,8 +3478,9 @@ BOOL MCUSimpleVideoMixer::MyAddVideoSource(int num, ConferenceMemberId *idp)
 
   VideoMixPosition * newPosition = NULL;
 
-  int i,j,x,y,w,h;
-  for(i=0;i<OpenMCU::vmcfg.vmconf[num].splitcfg.vidnum;i++)
+  unsigned i;
+  int x,y,w,h;
+  for(i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;i++)
   {
    if(idp[i]==NULL) continue;
    x=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].posx;
@@ -3453,8 +3497,9 @@ BOOL MCUSimpleVideoMixer::MyAddVideoSource(int num, ConferenceMemberId *idp)
     { newPosition->type=3; newPosition->id=(void *)i; } // new vad2 position
    else newPosition->type=1; // static position
    newPosition->label_init=FALSE;
-   VMPListInsVMP(newPosition);
-/// was commented since at lease p35. let's uncomment and test:
+//   VMPListInsVMP(newPosition);
+   if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin) VMPListInsVMP(newPosition); else VMPListAddVMP(newPosition);
+/// was commented since at least p35. let's uncomment and test:
    if (newPosition != NULL) {
      PBYTEArray fs(CIF4_SIZE);
      int amount = newPosition->width*newPosition->height*3/2;
@@ -3478,6 +3523,9 @@ void MCUSimpleVideoMixer::MyRemoveVideoSource(int pos, BOOL flag)
 //   if (vmp.ypos/subImageHeight*cols+vmp.xpos/subImageWidth == pos ) 
    if (vmp.n == pos ) 
     {
+//     ClearVMP(vmp);
+     NullRectangle(vmp.xpos,vmp.ypos,vmp.width,vmp.height);
+/*
      VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
      VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
      if (vmpNum == 1)
@@ -3493,6 +3541,7 @@ void MCUSimpleVideoMixer::MyRemoveVideoSource(int pos, BOOL flag)
       FillCIF16YUVRect(cif16Fs.data.GetPointer(), 0, 0, 0, vmp.xpos*2, vmp.ypos*2, vmp.width*2, vmp.height*2);
      } 
      frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT); cifFs.valid = 1; cif16Fs.valid = 1;
+*/
      if(flag) { VMPListDelVMP(r); delete r; } // static pos
      else { vmp.status = 0; vmp.id = (void *)pos; } // vad pos
      return;
@@ -3522,13 +3571,120 @@ void MCUSimpleVideoMixer::MyRemoveAllVideoSource()
  cout << "MyRemoveAllVideoSource\n";
 
  VMPListClear();
+/*
  VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
  VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
  FillCIF4YUVFrame(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0);
  FillCIFYUVFrame(cifFs.data.GetPointer(), 0, 0, 0);
  FillCIF16YUVFrame(cif16Fs.data.GetPointer(), 0, 0, 0);
  frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT); cifFs.valid = 1; cif16Fs.valid = 1;
+*/
+ NullAllFrameStores();
 }
+
+void MCUSimpleVideoMixer::NullAllFrameStores(){
+  PWaitAndSignal m(mutex);
+  VideoFrameStoreList::VideoFrameStoreListMapType::iterator r; // trying write to all using frames
+  for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++){
+    VideoFrameStoreList::FrameStore & vf = *(r->second);
+//    if(vf.used<=0) continue;
+    if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
+    vf.used--; //PINDEX amount=vf.width*vf.height*3/2;
+//    if (!OpenMCU::Current().GetPreMediaFrame(vf.data.GetPointer(), vf.width, vf.height, amount))
+      FillYUVFrame(vf.data.GetPointer(), 0, 0, 0, vf.width, vf.height);
+    vf.valid=1;
+  }
+}
+
+void MCUSimpleVideoMixer::NullRectangle(int x, int y, int w, int h){
+  PWaitAndSignal m(mutex);
+  VideoFrameStoreList::VideoFrameStoreListMapType::iterator r; // trying write to all using frames
+  for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++){
+    VideoFrameStoreList::FrameStore & vf = *(r->second);
+//    if(vf.used<=0) continue;
+    if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
+    vf.used--;
+    int pw=w*vf.width/CIF4_WIDTH; // pixel w&h of vmp-->fs
+    int ph=h*vf.height/CIF4_HEIGHT;
+    if(pw<2 || ph<2) continue; //PINDEX amount=pw*ph*3/2;
+    imageStores_operational_size(pw,ph,_IMGST);
+    const void *ist = imageStore.GetPointer();
+//    if (!OpenMCU::Current().GetPreMediaFrame(imageStore.GetPointer(), pw, ph, amount))
+      FillYUVFrame(imageStore.GetPointer(), 0, 0, 0, pw, ph);
+    int px=x*vf.width/CIF4_WIDTH; // pixel x&y of vmp-->fs
+    int py=y*vf.height/CIF4_HEIGHT;
+    CopyRectIntoFrame(ist,vf.data.GetPointer(),px,py,pw,ph,vf.width,vf.height);
+/*    CopyRFromRIntoR(ist,
+      ist, vf.GetPointer(),
+        px, py, pw, ph,
+        0,0,pw,ph,
+        vf.width, vf.height,
+        pw, ph
+    ); */
+//    frameStores.InvalidateExcept(vf.width, vf.height);
+    vf.valid=1;
+  }
+}
+
+void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount)
+{
+  PWaitAndSignal m(mutex);
+  VideoFrameStoreList::VideoFrameStoreListMapType::iterator r; // trying write to all using frames
+  for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++){
+    VideoFrameStoreList::FrameStore & vf = *(r->second);
+    if(vf.used<=0) continue;
+    if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
+
+    vf.used--;
+    // printing subtitles in source frame buffer:
+    if(!(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask&32)) Print_Subtitles(vmp,(void *)buffer,width,height,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask);
+
+    int pw=vmp.width*vf.width/CIF4_WIDTH; // pixel w&h of vmp-->fs
+    int ph=vmp.height*vf.height/CIF4_HEIGHT;
+    if(pw<2 || ph<2) continue;
+//PTRACE(6,"WriteArbitrarySubFrame\t" << vmp.n << "(" << width << "x" << height << ") -> [" << vf.width << "x" << vf.height << "]: " << vf.valid << "/" << vf.used);
+
+//    const void *ist = imageStore.GetPointer();
+    const void *ist;
+    if(pw==width && ph==height) ist = buffer; //same size
+    else if(pw*height<ph*width){
+      imageStores_operational_size(ph*width/height,ph,_IMGST+_IMGST1);
+      ResizeYUV420P((const BYTE *)buffer,    imageStore1.GetPointer(), width, height, ph*width/height, ph);
+      CopyRectFromFrame         (imageStore1.GetPointer(),imageStore.GetPointer() , (ph*width/height-pw)/2, 0, pw, ph, ph*width/height, ph);
+      ist=imageStore.GetPointer();
+    }
+    else if(pw*height>ph*width){
+      imageStores_operational_size(pw,pw*height/width,_IMGST+_IMGST1);
+      ResizeYUV420P((const BYTE *)buffer,    imageStore1.GetPointer(), width, height, pw, pw*height/width);
+      CopyRectFromFrame         (imageStore1.GetPointer(),imageStore.GetPointer() , 0, (pw*height/width-ph)/2, pw, ph, pw, pw*height/width);
+      ist=imageStore.GetPointer();
+    }
+    else { // fit. scale
+      imageStores_operational_size(pw,ph,_IMGST);
+      ResizeYUV420P((const BYTE *)buffer,    imageStore.GetPointer() , width, height, pw, ph);
+      ist=imageStore.GetPointer();
+    }
+    // border (split lines):
+    if (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist, vmp, pw, ph);
+
+    int px=vmp.xpos*vf.width/CIF4_WIDTH; // pixel x&y of vmp-->fs
+    int py=vmp.ypos*vf.height/CIF4_HEIGHT;
+    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++) CopyRFromRIntoR(
+      ist, vf.data.GetPointer(),
+        px, py, pw, ph,
+        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx*vf.width/CIF4_WIDTH,
+        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy*vf.height/CIF4_HEIGHT,
+        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width*vf.width/CIF4_WIDTH,
+        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height*vf.height/CIF4_HEIGHT,
+        vf.width, vf.height,
+        pw, ph
+    );
+
+//    frameStores.InvalidateExcept(vf.width, vf.height);
+    vf.valid=1;
+  }
+}
+
 
 void MCUSimpleVideoMixer::WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount)
 {
@@ -3614,7 +3770,7 @@ void MCUSimpleVideoMixer::WriteCIF16SubFrame(VideoMixPosition & vmp, const void 
       void *ist4=imageStore1.GetPointer();
       VideoSplitLines((void *)ist4,vmp,vmp.width,vmp.height);
     }
-    for(long i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
+    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
     {
        CopyRFromRIntoR(imageStore1.GetPointer(),cif4Fs.data.GetPointer(),
         vmp.xpos, vmp.ypos, vmp.width, vmp.height,
@@ -3630,14 +3786,15 @@ void MCUSimpleVideoMixer::WriteCIF16SubFrame(VideoMixPosition & vmp, const void 
   }
 
 //  if(cifFs.used>0) Convert2To1(imageStore1.GetPointer(),imageStore.GetPointer(),vmp.width,vmp.height);
-  if(cifFs.used>0)
-   if(!(vmp.width&3))Convert2To1(imageStore1.GetPointer(),imageStore.GetPointer(),vmp.width,vmp.height);
-   else ConvertFRAMEToCUSTOM_FRAME(imageStore1.GetPointer(),imageStore.GetPointer(),vmp.width,vmp.height,(vmp.width+1)/2,(vmp.height+1)/2);
+  if(cifFs.used>0) {
+    if(!(vmp.width&3))Convert2To1(imageStore1.GetPointer(),imageStore.GetPointer(),vmp.width,vmp.height);
+    else ConvertFRAMEToCUSTOM_FRAME(imageStore1.GetPointer(),imageStore.GetPointer(),vmp.width,vmp.height,(vmp.width+1)/2,(vmp.height+1)/2);
+  }
 
   if(cifFs.used>0)
   {
     if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist,vmp,(vmp.width+1)/2,(vmp.height+1)/2);
-    for(long i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
+    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
     {
        CopyRFromRIntoR(imageStore.GetPointer(),cifFs.data.GetPointer(),
         (vmp.xpos+1)/2, (vmp.ypos+1)/2, (vmp.width+1)/2, (vmp.height+1)/2,
@@ -3766,7 +3923,7 @@ void MCUSimpleVideoMixer::WriteCIF4SubFrame(VideoMixPosition & vmp, const void *
   if(cif4Fs.used>0)
   {
     if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist4,vmp,vmp.width,vmp.height);
-    for(long i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
+    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
     {
        CopyRFromRIntoR(ist4,cif4Fs.data.GetPointer(),
         vmp.xpos, vmp.ypos, vmp.width, vmp.height,
@@ -3781,14 +3938,15 @@ void MCUSimpleVideoMixer::WriteCIF4SubFrame(VideoMixPosition & vmp, const void *
     }
   }
 
-  if(cifFs.used>0)
-   if(!(vmp.width&3))Convert2To1(ist4,imageStore1.GetPointer(),vmp.width,vmp.height);
-   else ConvertFRAMEToCUSTOM_FRAME(ist4,imageStore1.GetPointer(),vmp.width,vmp.height,(vmp.width+1)/2,(vmp.height+1)/2);
+  if(cifFs.used>0) {
+    if(!(vmp.width&3))Convert2To1(ist4,imageStore1.GetPointer(),vmp.width,vmp.height);
+    else ConvertFRAMEToCUSTOM_FRAME(ist4,imageStore1.GetPointer(),vmp.width,vmp.height,(vmp.width+1)/2,(vmp.height+1)/2);
+  }
 
   if(cifFs.used>0)
   {
     if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist,vmp,(vmp.width+1)/2,(vmp.height+1)/2);
-    for(long i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
+    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
     {
        CopyRFromRIntoR(ist,cifFs.data.GetPointer(),
         (vmp.xpos+1)/2, (vmp.ypos+1)/2, (vmp.width+1)/2, (vmp.height+1)/2,
@@ -3909,7 +4067,7 @@ void MCUSimpleVideoMixer::WriteCIFSubFrame(VideoMixPosition & vmp, const void * 
   if(cifFs.used>0)
   {
     if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist,vmp,(vmp.width+1)/2,(vmp.height+1)/2);
-    for(long i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
+    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
     {
        CopyRFromRIntoR(ist,cifFs.data.GetPointer(),
         (vmp.xpos+1)/2, (vmp.ypos+1)/2, (vmp.width+1)/2, (vmp.height+1)/2,
@@ -3928,7 +4086,7 @@ void MCUSimpleVideoMixer::WriteCIFSubFrame(VideoMixPosition & vmp, const void * 
   if(cif4Fs.used>0)
   {
     if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines(imageStore.GetPointer(),vmp,vmp.width,vmp.height);
-    for(long i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
+    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
     {
        CopyRFromRIntoR(ist4,cif4Fs.data.GetPointer(),
         vmp.xpos, vmp.ypos, vmp.width, vmp.height,
@@ -3949,7 +4107,7 @@ void MCUSimpleVideoMixer::WriteCIFSubFrame(VideoMixPosition & vmp, const void * 
   if(cif16Fs.used>0)
   {
     if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines(imageStore1.GetPointer(),vmp,vmp.width*2,vmp.height*2);
-    for(long i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
+    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
     {
        CopyRFromRIntoR(ist16,cif16Fs.data.GetPointer(),
         vmp.xpos << 1, vmp.ypos << 1, vmp.width << 1, vmp.height << 1,
@@ -3972,6 +4130,7 @@ void MCUSimpleVideoMixer::WriteCIFSubFrame(VideoMixPosition & vmp, const void * 
 
 BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount)
 {
+WriteArbitrarySubFrame(vmp,buffer,width,height,amount); return TRUE;
  if(width==CIF_WIDTH && height==CIF_HEIGHT) 
   { WriteCIFSubFrame(vmp,buffer,amount); return TRUE; }
  if(width==CIF4_WIDTH && height==CIF4_HEIGHT)
@@ -4130,7 +4289,7 @@ VideoMixConfigurator::VideoMixConfigurator(long _w, long _h){
 }
 
 VideoMixConfigurator::~VideoMixConfigurator(){
- for(long ii=0;ii<vmconfs;ii++) { //attempt to delete all
+ for(unsigned ii=0;ii<vmconfs;ii++) { //attempt to delete all
   vmconf[ii].vmpcfg=(VMPCfgOptions *)realloc((void *)(vmconf[ii].vmpcfg),0);
   vmconf[ii].vmpcfg=NULL;
  }
@@ -4380,10 +4539,10 @@ void VideoMixConfigurator::geometry(){ // find and store visible blocks of frame
      vmconf[i].vmpcfg[j].blks=1;
 //     cout << "*ctrl/i: i=" << i << " j=" << j << " posx=" << vmconf[i].vmpcfg[j].blk[0].posx << "\n";
    }
-   for(unsigned j=0;j<vmconf[i].splitcfg.vidnum-1;j++) for (long k=j+1; k<vmconf[i].splitcfg.vidnum;k++)
+   for(unsigned j=0;j<vmconf[i].splitcfg.vidnum-1;j++) for (unsigned k=j+1; k<vmconf[i].splitcfg.vidnum;k++)
    {
-     long bn=vmconf[i].vmpcfg[j].blks; //remember initial value of blocks
-     long b0=0; // block index
+     unsigned bn=vmconf[i].vmpcfg[j].blks; //remember initial value of blocks
+     unsigned b0=0; // block index
      while ((b0<bn)&&(b0<vmconf[i].vmpcfg[j].blks)) {
        unsigned b1=frame_splitter(
          vmconf[i].vmpcfg[j].blk,b0,
@@ -4581,7 +4740,7 @@ void VideoMixConfigurator::option_set(const char* p, const char* v, char* &f_buf
 
 bool VideoMixConfigurator::option_cmp(const char* p,const char* str){
    if(strlen(p)!=strlen(str))return false;
-   for(long i=0;i<strlen(str);i++)if(p[i]!=str[i]) return false;
+   for(unsigned i=0;i<strlen(str);i++)if(p[i]!=str[i]) return false;
    return true;
   }
 

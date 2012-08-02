@@ -94,7 +94,7 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   new ConferenceFileMember(conference, (const PString) "recorder" , PFile::WriteOnly); 
 
   // add encoder cache member
-  OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+//  OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 /*
   int i=0;
   if(ep.cvCaps!=NULL)
@@ -107,7 +107,9 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   }
 */
   FILE *membLst;
-  membLst = fopen("members.conf","rt");
+  PString name="members_"+conference->GetNumber()+".conf";
+  membLst = fopen(name,"rt");
+  if (membLst==NULL) membLst = fopen("members.conf","rt");
   if(membLst!=NULL)
   {
    char buf[128];
@@ -373,6 +375,15 @@ void Conference::InviteMember(const char *membName)
  OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
  PString h323Token;
  PString * userData = new PString(number);
+ H323TransportAddressArray taa = ep.GetInterfaceAddresses(TRUE,NULL);
+
+ if(!OpenMCU::Current().IsLoopbackCallsAllowed()){
+   for(PINDEX i=0;i<taa.GetSize();i++)
+   if(taa[i].Find("ip$"+address+":") == 0) {
+     PTRACE(6,"Conference\tInviteMember LOCAL IP REJECTED (" << taa[i] << "): " << membName << " -> address=" << address << ";h323Token=" << h323Token << ";userData=" << userData);
+     return;
+   }
+ }
  if (ep.MakeCall(address, h323Token, userData) == NULL) cout << "Invite err\n";
 }
 
@@ -1164,6 +1175,8 @@ void ConferenceConnection::Mix(BYTE * dst, const BYTE * src, PINDEX count, PINDE
 #else   //Just add up all the channels.
     if ((newVal + srcVal) > 0x7fff)
       dstVal = 0x7fff;
+    else
+    if ((newVal + srcVal) < -0x8000) dstVal = -0x8000;
     else
       dstVal += srcVal;
 #endif

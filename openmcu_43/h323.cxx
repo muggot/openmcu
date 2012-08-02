@@ -1,6 +1,7 @@
 
 #include <ptlib.h>
 #include <ptlib/video.h>
+#include <ptlib/args.h>
 
 #include "version.h"
 #include "mcu.h"
@@ -29,6 +30,7 @@ static const char GatekeeperPrefixesKey[] = "Gatekeeper Prefixes";
 static const char GatekeeperModeKey[]     = "Gatekeeper Mode";
 static const char GatekeeperKey[]         = "Gatekeeper";
 static const char DisableCodecsKey[]      = "Disable codecs";
+static const char NATRouterIPKey[]        = "NAT Router IP";
 
 static const char * GKModeLabels[] = { 
    "No gatekeeper", 
@@ -162,20 +164,22 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   rsrc->Add(new PHTTPBooleanField(EnableVideoKey, enableVideo));
 
   videoRate = cfg.GetInteger(VideoFrameRateKey, DefaultVideoFrameRate);
-  rsrc->Add(new PHTTPIntegerField(VideoFrameRateKey, 1, 30, videoRate));
+  rsrc->Add(new PHTTPIntegerField(VideoFrameRateKey, 1, 30, videoRate,"For outgoing video: 1..30"));
 
   videoTxQuality = cfg.GetInteger(VideoQualityKey, DefaultVideoQuality);
   rsrc->Add(new PHTTPIntegerField(VideoQualityKey, 1, 30, videoTxQuality));
 #endif
 
-  /*
-  if (args.GetOptionString('q').IsEmpty()) {
-    endpoint.behind_masq = FALSE;
+  // NAT Router IP
+  PString nat_ip = cfg.GetString(NATRouterIPKey);
+  rsrc->Add(new PHTTPStringField(NATRouterIPKey, 25, nat_ip,"Type global IP address or leave blank if OpenMCU isn't behind NAT"));
+  if (nat_ip.Trim().IsEmpty()) {
+    behind_masq = FALSE;
   } else {
-    endpoint.masqAddressPtr = new PIPSocket::Address(args.GetOptionString('q'));
-    endpoint.behind_masq = TRUE;
-    cout << "Masquerading as address " << *(endpoint.masqAddressPtr) << endl;
-  } */
+    masqAddressPtr = new PIPSocket::Address(nat_ip);
+    behind_masq = TRUE;
+    cout << "Masquerading as address " << *(masqAddressPtr) << endl;
+  }
 
 
   capabilities.RemoveAll();
@@ -320,11 +324,32 @@ H323Connection * OpenMCUH323EndPoint::CreateConnection(
 
 void OpenMCUH323EndPoint::TranslateTCPAddress(PIPSocket::Address &localAddr, const PIPSocket::Address &remoteAddr)
 {
-
-//  if (this->behind_masq && 
-//      (remoteAddr.Byte1() != 192)) {
-//    localAddr = *(this->masqAddressPtr);
-//  }
+  if (this->behind_masq)
+  {
+    BYTE byte1=localAddr.Byte1();
+    BYTE byte2=localAddr.Byte2();
+    const BOOL local_mcu=(
+       (byte1==10)                       // LAN class A
+     ||((byte1==172)&&((byte2&240)==16)) // LAN class B
+     ||((byte1==192)&&(byte2==168))      // LAN class C
+     ||((byte1==169)&&(byte2==254))      // APIPA/IPAC/zeroconf (probably LAN)
+    );
+    if(!local_mcu){
+      PTRACE(6,"h323.cxx(openmcu)\tTranslateTCPAddress: remoteAddr=" << remoteAddr << ", localAddr=" << localAddr << " - not changed (source is GLOBAL)");
+      return;
+    }
+    byte1=remoteAddr.Byte1();
+    byte2=remoteAddr.Byte2();
+    if((byte1==10)                       // LAN class A
+     ||((byte1==172)&&((byte2&240)==16)) // LAN class B
+     ||((byte1==192)&&(byte2==168))      // LAN class C
+     ||((byte1==169)&&(byte2==254))      // APIPA/IPAC/zeroconf (probably LAN)
+    ) PTRACE(6,"h323.cxx(openmcu)\tTranslateTCPAddress: remoteAddr=" << remoteAddr << ", localAddr=" << localAddr << " - not changed (destination is LAN)");
+    else {
+      PTRACE(6,"h323.cxx(openmcu)\tTranslateTCPAddress: remoteAddr=" << remoteAddr << ", localAddr=" << localAddr << " ***changing to " << *(this->masqAddressPtr));
+      localAddr=*(this->masqAddressPtr);
+    }
+  } else PTRACE(6,"h323.cxx(openmcu)\tTranslateTCPAddress: remoteAddr=" << remoteAddr << ", localAddr=" << localAddr << " - nothing changed ('NAT Router IP' not configured)");
   return;
 }
 
@@ -521,30 +546,22 @@ PString OpenMCUH323EndPoint::GetMemberList(Conference & conference, ConferenceMe
  {
   ConferenceMember * member = s->second;
   if(member==NULL) continue;
-  int mint[1];
-  ConferenceMemberId *mid=(ConferenceMemberId *) mint;
-  mid[0]=member->GetID();
-  if(mint[0]!=0)
+//  int mint[1];
+//  ConferenceMemberId *mid=(ConferenceMemberId *) mint;
+//  mid[0]=member->GetID();
+//  if(mint[0]!=0)
+  long mint=(long)member->GetID();
+  if(mint!=0)
   {
-   PString username0=s->first;
-   PString username;
-   BOOL b = FALSE;
-   for (unsigned int i=0;i<strlen(username0);i++)
-   {
-    if(username0[i]=='[')
-    {
-     if(username[strlen(username)-1]!=' ') username += ' '; 
-     b = TRUE;
-    }
-    if((i<12) || b) username += username0[i];
-   }
+   PString username=s->first;
    members << "<option"
-	<< ((mid[0]==id)?" selected ":" ")
-	<< "value=\"" << mint[0] << "\">"
+//	<< ((mid[0]==id)?" selected ":" ")
+//	<< "value=\"" << mint[0] << "\">"
+	<< ((mint==(long)id)?" selected ":" ")
+	<< "value=\"" << mint << "\">"
 	<< username << "</option>";
   }
  }
-
  return members;
 }
 
@@ -579,20 +596,25 @@ PString OpenMCUH323EndPoint::GetMemberListOpts(Conference & conference)
  {
   ConferenceMember * member = s->second;
   if(member==NULL) continue;
-  int mint[1];
-  ConferenceMemberId *mid=(ConferenceMemberId *) mint;
-  mid[0]=member->GetID();
+//  long mint[1];
+//  ConferenceMemberId *mid=(ConferenceMemberId *) mint;
+//  mid[0]=member->GetID();
+  long mint=(long)member->GetID();
    members << "<tr>"; 
   members << "<th id=\"tam_" << i << "\" >";
   members << s->first;
   members << "<th>";
-  members << "<input type=\"checkbox\" name=\"m" << mint[0] << "\" value=\"+\" " << ((member->muteIncoming)?"checked":"") << ">";
+//  members << "<input type=\"checkbox\" name=\"m" << mint[0] << "\" value=\"+\" " << ((member->muteIncoming)?"checked":"") << ">";
+  members << "<input type=\"checkbox\" name=\"m" << mint << "\" value=\"+\" " << ((member->muteIncoming)?"checked":"") << ">";
   members << "<th>";
-  members << "<input type=\"checkbox\" name=\"v" << mint[0] << "\" value=\"+\" " << ((member->disableVAD)?"checked":"") << ">";
+//  members << "<input type=\"checkbox\" name=\"v" << mint[0] << "\" value=\"+\" " << ((member->disableVAD)?"checked":"") << ">";
+  members << "<input type=\"checkbox\" name=\"v" << mint << "\" value=\"+\" " << ((member->disableVAD)?"checked":"") << ">";
   members << "<th>";
-  members << "<input type=\"checkbox\" name=\"c" << mint[0] << "\" value=\"+\" " << ((member->chosenVan)?"checked":"") << ">";
+//  members << "<input type=\"checkbox\" name=\"c" << mint[0] << "\" value=\"+\" " << ((member->chosenVan)?"checked":"") << ">";
+  members << "<input type=\"checkbox\" name=\"c" << mint << "\" value=\"+\" " << ((member->chosenVan)?"checked":"") << ">";
   members << "<th>";
-  members << "<input type=\"checkbox\" name=\"d" << mint[0] << "\" value=\"+\">";
+//  members << "<input type=\"checkbox\" name=\"d" << mint[0] << "\" value=\"+\">";
+  members << "<input type=\"checkbox\" name=\"d" << mint << "\" value=\"+\">";
   i++;
  }
  members << "<tr>"; 
@@ -638,6 +660,162 @@ PString OpenMCUH323EndPoint::GetMemberListOpts(Conference & conference)
  members << "</td></table>";
 
  return members;
+}
+
+PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
+{
+ PStringStream members;
+ PWaitAndSignal m(conference.GetMutex());
+ Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
+ Conference::MemberNameList::const_iterator s;
+ members << "members=Array(";
+ int i=0;
+ for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
+ {
+  PString username=s->first;
+  username.Replace("&","&amp;",TRUE,0);
+  username.Replace("\"","&quot;",TRUE,0);
+  ConferenceMember * member = s->second;
+  if(member==NULL){ // inactive member
+    if(i>0) members << ",";
+    members << "Array(0"
+      << ",0"
+      << ",\"" << username << "\""
+      << ",0"
+      << ",0"
+      << ",0"
+      << ")";
+    i++;
+  } else {          //   active member
+    if(i>0) members << ",";
+    members << "Array(1"
+      << ",\"" << dec << (long)member->GetID() << "\""
+//      << ",\"" << s->first << "\""
+      << ",\"" << username << "\""
+      << "," << member->muteIncoming
+      << "," << member->disableVAD
+      << "," << member->chosenVan
+      << ")";
+    i++;
+  }
+ }
+ members << ");";
+ PTRACE(6,"GetMemberListOptsJavascript\t" << members);
+ return members;
+}
+
+PString OpenMCUH323EndPoint::SetMemberOptionOTF(const PString room,const PStringToString & data)
+{
+  if(!data.Contains("mid")) return "ERROR: &mid does not set"; if(!data.Contains("action")) return "ERROR: &action does not set";
+  int action=data("action").AsInteger();
+
+  if(action>=64) { // MEMBERLIST CONTROL:
+    PTRACE(6,"OTFControl\troom=" << room << "; action=" << action);
+    PWaitAndSignal m2(conferenceManager.GetConferenceListMutex());
+    ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
+    ConferenceListType::iterator r;
+    for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
+    if(r == conferenceList.end() ) return "Bad room";
+    Conference & conference = *(r->second);
+    PWaitAndSignal m(conference.GetMutex());
+    switch(action){
+      case 64: // Drop ALL active connections
+      {
+        Conference::MemberList & memberList = conference.GetMemberList();
+        Conference::MemberList::const_iterator s;
+        int i = memberList.size(); s = memberList.end(); s--; while(i!=0) {
+          ConferenceMember * member = s->second; s--; i--;
+          if(member->GetName()=="file recorder") continue;
+          memberList.erase(member->GetID()); member->Close();
+        }
+        return "OK";
+      } break;
+      case 65: // Invite ALL inactive members
+      {
+        Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
+        Conference::MemberNameList::const_iterator s;
+        for (s = memberNameList.begin(); s != memberNameList.end(); ++s) if(s->second==NULL) {
+//          PTRACE(6,"OTF\tInviting " << s->first << " as offline member from the list");
+          conference.InviteMember(s->first);
+        }
+        return "OK";
+      } break;
+      case 66: // Remove ALL inactive members
+      {
+        Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
+        Conference::MemberNameList::const_iterator s;
+        for (s = memberNameList.begin(); s != memberNameList.end(); ++s) if(s->second==NULL) conference.RemoveOfflineMemberFromNameList((PString &)(s->first));
+        return "OK";
+      } break;
+      case 67: // Save members.conf
+      {
+        Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
+        Conference::MemberNameList::const_iterator s;
+        FILE *membLst;
+        PString name="members_"+room+".conf";
+//        membLst = fopen("members.conf","w");
+        membLst = fopen(name,"w");
+        if(membLst!=NULL){
+          for (s = memberNameList.begin(); s != memberNameList.end(); ++s) fputs(s->first+"\n",membLst);
+          fclose(membLst);
+        }
+        return "OK";
+      } break;
+    }
+    return "OK";
+
+  } else if(action < 32) { // ONLINE MEMBER CONTROL:
+    long mid_otf=data("mid").AsInteger(); PTRACE(6,"OTFControl\troom=" << room << "; mid=" << mid_otf << "; action=" << action);
+    PWaitAndSignal m2(conferenceManager.GetConferenceListMutex());
+    ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
+    ConferenceListType::iterator r;
+    for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
+    if(r == conferenceList.end() ) return "Bad room";
+    Conference & conference = *(r->second);
+    PWaitAndSignal m(conference.GetMutex());
+    Conference::MemberList & memberList = conference.GetMemberList();
+    Conference::MemberList::const_iterator s;
+    for (s = memberList.begin(); s != memberList.end(); ++s) {
+      ConferenceMember * member = s->second;
+      if(member->GetName()=="file recorder") continue;
+      ConferenceMemberId mid = member->GetID();
+      if((long)mid==mid_otf) switch(action){
+        case 0: member->muteIncoming=FALSE; return "OK"; break;
+        case 1: member->muteIncoming=TRUE; return "OK"; break;
+        case 2: member->disableVAD=FALSE; return "OK"; break;
+        case 3: member->disableVAD=TRUE; return "OK"; break;
+        case 4: member->chosenVan=FALSE; return "OK"; break;
+        case 5: member->chosenVan=TRUE; return "OK"; break;
+        case 7: memberList.erase(member->GetID()); member->Close(); return "OK"; break;
+        case 8: member->disableVAD=FALSE; member->chosenVan=FALSE; return "OK"; break;
+        case 9: member->disableVAD=FALSE; member->chosenVan=TRUE; return "OK"; break;
+        case 10: member->disableVAD=TRUE; member->chosenVan=FALSE; return "OK"; break;
+      }
+    }
+    return "OK";
+
+  }; // OFFLINE MEMBER CONTROL:
+  PString mid_otf=data("mid"); PTRACE(6,"OTFControl\troom=" << room << "; mid=" << mid_otf << "; action=" << action);
+  PWaitAndSignal m2(conferenceManager.GetConferenceListMutex());
+  ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
+  ConferenceListType::iterator r;
+  for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
+  if(r == conferenceList.end() ) return "Bad room";
+  Conference & conference = *(r->second);
+  PWaitAndSignal m(conference.GetMutex());
+  Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
+  Conference::MemberNameList::const_iterator s;
+  for (s = memberNameList.begin(); s != memberNameList.end(); ++s) {
+    ConferenceMember * member = s->second;
+    if(member!=NULL) continue; //online member
+    PString arg = s->first;
+    if(arg==mid_otf) switch(action){
+      case 32: conference.InviteMember(arg); return "OK"; break;
+      case 33: conference.RemoveOfflineMemberFromNameList(arg); return "OK"; break;
+    }
+  }
+
+  return "OK";
 }
 
 void OpenMCUH323EndPoint::SetMemberListOpts(Conference & conference,const PStringToString & data)
@@ -766,78 +944,106 @@ PString OpenMCUH323EndPoint::GetRoomList(const PString & block)
 
 PString OpenMCUH323EndPoint::RoomCtrlPage(const PString room, BOOL ctrl, int n, Conference & conference, ConferenceMemberId *idp)
 {
- int i,j;
+// int i,j;
  PStringStream page;
 
  BeginPage(page,"Room Control","Room Control","$CONTROL$");
 
  page << "<p>"
    << "<form  method=POST>"
-   << "<input size=\"12\" type=\"text\" name=\"room\" value=\"" << room << "\"> "
+   << "<input size=\"15\" type=\"text\" name=\"room\" value=\"" << room << "\"> "
    << "<input type=\"checkbox\" name=\"moderated\" value=\"+\" " << ((ctrl==TRUE)?"checked":"")
    << "> Control "
    << "<span style='width:20px'>&nbsp;</span>"
    << "<input type=\"checkbox\" name=\"muteUnvisible\" value=\"+\" " << ((conference.IsMuteUnvisible())?"checked":"")
    << "><b> Mute invisibles</b>"
-   << "<span style='width:20px'>&nbsp;</span>"
-   << "<span style='padding-left:30px;background-color:#cff'><b>VAD: </b>"
-    << "<input type=\"text\" size=\"3\" name=\"VAlevel\" value=\"" << conference.VAlevel << "\"><span class=\"add-on\"> min. volume (0..65535)</span>"
-    << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"text\" size=\"3\" name=\"VAdelay\" value=\"" << conference.VAdelay << "\"><span class=\"add-on\"> delay (ms)</span>"
-    << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input type=\"text\" size=\"3\" name=\"VAtimeout\" value=\"" << conference.VAtimeout << "\"><span class=\"add-on\"> timeout (ms)</span>"
+//   << "&nbsp;<input type=button class=\"btn btn-success\" onclick=\"javascript:document.forms[0].sendit.click()\" value=\"Set\">"
+   << "&nbsp;<input type=submit id='sendit' name='sendit' button class=\"btn btn-success\" value=\"Set\">"
+   << "&nbsp;&nbsp;"
+   << "<span class=\"input-prepend\"><span style='padding-left:20px;'><span class=\"add-on\"><b>VAD: </b></span></span>"
+    << "<span class=\"input-append\"><input type=\"text\" size=\"3\" name=\"VAlevel\" value=\"" << conference.VAlevel << "\"><span class=\"add-on\"> min. volume (0..65535)</span>"
+    << "&nbsp;&nbsp;<input type=\"text\" size=\"3\" name=\"VAdelay\" value=\"" << conference.VAdelay << "\"><span class=\"add-on\"> delay (ms)</span>"
+    << "&nbsp;&nbsp;<input type=\"text\" size=\"3\" name=\"VAtimeout\" value=\"" << conference.VAtimeout << "\"><span class=\"add-on\"> timeout (ms)</span>"
 //       << "<input type=\"text\" name=\"echoLevel\" value=\"" << conference.echoLevel << "\">Echo level treshhold<p>"
-    << "</span>"
+    << "</span></span>"
 
 
    << "<br>"
-   << "<div class=\"input-append\"><select name=\"vidmemnum\" id=\"vidmemnum\">";
- for(long ii=0;ii<OpenMCU::vmcfg.vmconfs;ii++)
+   << "<div class=\"input-append\">"
+   << "<a href=# class='btn btn-mini' onclick='javascript:{selvmn.selectedIndex=(selvmn.selectedIndex+selvmn.length-1)%selvmn.length;document.forms[0].sendit.click();}'>&lt;&lt;</a>"
+   << "<select name=\"vidmemnum\" id=\"vidmemnum\">";
+ for(unsigned ii=0;ii<OpenMCU::vmcfg.vmconfs;ii++)
  {
    if(((OpenMCU::vmcfg.vmconf[ii].splitcfg.mode_mask)&2))
    {
-     page << "<option " << ((n==ii)?"selected ":"") << "value=" << ii << ">" << OpenMCU::vmcfg.vmconf[ii].splitcfg.Id << "</option>";
+     page << "<option " << (((unsigned)n==ii)?"selected ":"") << "value=" << ii << ">" << OpenMCU::vmcfg.vmconf[ii].splitcfg.Id << "</option>";
    }
  }
  page
    << "</select>"
-   << "&nbsp;<input type=button class=\"btn btn-success\" onclick=\"javascript:document.forms[0].sendit.click()\" value=\"Set\">"
-   << "<br><span id=\"tags_here\">&nbsp;</span>"
-   << "</p></div><br><table class=\"table table-striped table-bordered table-condensed\" >";
+   << "<a href=# class='btn btn-mini' onclick='javascript:{selvmn.selectedIndex=(selvmn.selectedIndex+1)%selvmn.length;document.forms[0].sendit.click();}'>&gt;&gt;</a>"
 
- page << "<tr><th width=" << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width << " height=" << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_height << " style='background-color:888'>";
- page << "<div style='width:" << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width << "px;height:" << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_height << "px;background-color:#888'>";
+   << " <span id=\"tags_here\">&nbsp;</span>"
+   << "</p></div><br>";
 
- for(long ii=0;ii<OpenMCU::vmcfg.vmconf[n].splitcfg.vidnum;ii++)
+ page << "<div style='text-align:center'><div style='margin-left:auto;margin-right:auto;width:" << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width << "px;height:" << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_height << "px;background:#fff'>";
+  page << "<div id='aaa' style='position:relative;left:0;top:0;width:0px;height:0px'>";
+  page << "<img style='position:absolute' id='mainframe' width="
+    << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width
+    << " height="
+    << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_height
+    << " src='Jpeg?room=" << room << "'/>";
+  page << "</div>";
+
+ page << "<div id='pbase' style='position:relative;left:0;top:0;width:0px;height:0px'></div>";
+  page << "<div id='pp_2' style='position:relative;top:0px;left:" << (OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width+4) << "px;width:0px;height:0px;opacity:0.7;filter:progid:DXImageTransform.Microsoft.Alpha(opacity=70)'>";
+   page << "<div onmouseover='ddover(event,this,-2)' onmouseout='ddout(event,this,-2)' id='members_pan' style='position:absolute;width:277px;height:" << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_height << "px'>...</div>";
+  page << "</div>";
+
+ for(unsigned ii=0;ii<OpenMCU::vmcfg.vmconf[n].splitcfg.vidnum;ii++)
  {
    page
-     << "<div style='position:relative;left:" << OpenMCU::vmcfg.vmconf[n].vmpcfg[ii].posx*OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width/OpenMCU::vmcfg.bfw << "px;"
+     << "<div id='pp" << ii << "' style='position:relative;left:" << OpenMCU::vmcfg.vmconf[n].vmpcfg[ii].posx*OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width/OpenMCU::vmcfg.bfw << "px;"
      << "top:" << OpenMCU::vmcfg.vmconf[n].vmpcfg[ii].posy*OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_height/OpenMCU::vmcfg.bfh << "px;width:0;height:0'>"
-     << "<div style='overflow:hidden;"
-     << "position:absolute;background-color:#cff;text-align:center;border:1px solid #000;"
+     << "<div onmousedown='ddstart(event,this," << ii << ",0)' onmouseover='ddover(event,this," << ii << ")' onmouseout='ddout(event,this," << ii << ")' style='overflow:hidden;opacity:0.5;filter:alpha(opacity=50);"
+     << "position:absolute;background-color:#F2F2F2;text-align:center;border:1px solid #56BBD9;padding:0;cursor:move;"
      << "width:" << (OpenMCU::vmcfg.vmconf[n].vmpcfg[ii].width*OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width/OpenMCU::vmcfg.bfw-2) << "px;"
      << "height:" << (OpenMCU::vmcfg.vmconf[n].vmpcfg[ii].height*OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_height/OpenMCU::vmcfg.bfh-2) << "px"
      << "'>";
    page
-     << "<select name=\"usr" << ii << "\">"
+     << "<select onmouseover='prvnt=0' onmouseout='prvnt=1' onchange='uncheck_recall();form_gather_and_send();members_refresh()' name=\"usr" << ii << "\">"
      << GetMemberList(conference,idp[ii])
      << "</select><br>Position " << ii
      << "</div></div>";
  }
 
 
+
  PStringStream tags;
- for(long ii=0;ii<OpenMCU::vmcfg.vmconfs;ii++) {
+ for(unsigned ii=0;ii<OpenMCU::vmcfg.vmconfs;ii++) {
    tags << "tags[" << ii << "]=\"" << OpenMCU::vmcfg.vmconf[ii].splitcfg.tags << "\"; ";
  }
 
- page << "</div></th></tr>";
- page << "</table>"
-   << "<p><center>"
+ page << "</div></div>";
+
+//page << "</td><td width='50%' valign=top id='members_pan'>. . .</td></tr></table>";
+
+// page << "<p><center>"
+ page << "<center>"
    << " <a href=# onclick='javascript:rotate_positions(0)'>&lt;--</a> "
-   << "<input class=\"btn btn-success btn-large\" type=\"submit\" id=\"sendit\" name=\"sendit\" value=\"   Set   \">"
+//   << "<input class=\"btn btn-success btn-large\" type=\"submit\" id=\"sendit\" name=\"sendit\" value=\"   Set   \">"
+   << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
    << " <a href=# onclick='javascript:rotate_positions(1)'>--&gt;</a></center> "
-   << "<p>"
-   << GetMemberListOpts(conference)
-   << "<script language=\"javascript\"><!--\ntags=Array(); " << tags << "if(window.handle_tags)handle_tags(\"all\"); //--></script>"
+//   << "<p>"
+//   << GetMemberListOpts(conference)
+   << "<script language=\"javascript\"><!--\n"
+   << "var " << GetMemberListOptsJavascript(conference) << "\n"
+   << "var tags=Array(); " << tags << "if(window.handle_tags)handle_tags(\"all\"); "
+   << "function frameload(){frame=new Image(); frame.onload=function(){reframe();}; frame.src=''; frame.src='Jpeg?room=" << room << "&rand='+Math.random();};"
+//   << "function reframe(){document.getElementById('mainframe').style.backgroundImage='url('+frame.src+')'; setTimeout(frameload,2000);};"
+   << "function reframe(){document.getElementById('mainframe').src=frame.src; setTimeout(frameload,1999);};"
+//   << "function reframe(){document.getElementById('mainframe').src=frame.src; frameload();};"
+   << "frameload(); //--></script>"
    << "</form>";
  EndPage(page,OpenMCU::Current().GetCopyrightText());
  return page;
@@ -865,16 +1071,53 @@ void OpenMCUH323EndPoint::UnmoderateConference(Conference & conference)
 
 PString OpenMCUH323EndPoint::SetRoomParams(const PStringToString & data)
 {
+  PTRACE(6,"SetRoomParams\tdata: " << data);
   PString substitution;
   PString room = data("room");
+
+  BOOL xmlhttprequest=!data.Contains("sendit"); // XMLHTTPRequest
+
+  // "On-the-Fly" Control via XMLHTTPRequest:
+  if (xmlhttprequest) if(data.Contains("otfctrl")) return SetMemberOptionOTF(room,data);
+
+  if(data.Contains("refresh")) // JavaScript data refreshing
+  {
+    PTRACE(6,"SetRoomParams\tJavascript data refresh");
+    ConferenceListType::iterator r;
+    PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
+    ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
+    for (r = conferenceList.begin(); r != conferenceList.end(); ++r) 
+    {
+      if(r->second->GetNumber() == room) break;
+    }
+    if(r == conferenceList.end() ) return "Bad room";
+    Conference & conference = *(r->second);
+    return GetMemberListOptsJavascript(conference);
+  }
+
+  if(!data.Contains("vidmemnum")) // Operator just entered
+  {
+    PTRACE(6,"SetRoomParams\tOperator entrance detected");
+    ConferenceListType::iterator r;
+    PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
+    ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
+    for (r = conferenceList.begin(); r != conferenceList.end(); ++r) 
+    {
+      if(r->second->GetNumber() == room) break;
+    }
+    if(r == conferenceList.end() ) return "Bad room";
+    Conference & conference = *(r->second);
+    MCUVideoMixer * mixer = conference.GetVideoMixer();
+    ConferenceMemberId idr[100];
+    for(int i=0;i<100;i++) idr[i]=mixer->GetPositionId(i);
+    return RoomCtrlPage(room,conference.IsModerated()=="+",mixer->GetPositionSet(),conference,idr);
+  }
+
   PString mode = data("moderated");
   PString globalmute = data("muteUnvisible");
   PString pvidnum = data("vidmemnum");
   int vidnum = pvidnum.AsInteger();
-  int sqrv = sqrt(vidnum);
-//  if(sqrv*sqrv < vidnum) { sqrv++; vidnum=sqrv*sqrv; }
-
-//  PTRACE(6,"h323.cxx\tSetRoomParams:\n" << data);
+//  int sqrv = sqrt(vidnum);
 
   long usr[100];
   ConferenceMemberId *idl=(ConferenceMemberId *) usr;
@@ -903,12 +1146,16 @@ PString OpenMCUH323EndPoint::SetRoomParams(const PStringToString & data)
 
   Conference & conference = *(r->second);
 
-  OfflineMembersManager(conference,data);
-  
-  if(mode == "+") conference.SetModerated(TRUE); 
-  else 
-  {
+// this type of control was replaced by "on the fly" control:
+//  OfflineMembersManager(conference,data);
+
+  if(mode == "+") {
+    conference.SetModerated(TRUE);
+    conference.GetVideoMixer()->SetForceScreenSplit(TRUE);
+  }
+  else {
    conference.SetModerated(FALSE);
+   conference.GetVideoMixer()->SetForceScreenSplit(OpenMCU::Current().GetForceScreenSplit());
    UnmoderateConference(conference);
 //   return RoomCtrlPage(room,FALSE,sqrv,conference,idl);
    return RoomCtrlPage(room,FALSE,vidnum,conference,idl);
@@ -925,9 +1172,10 @@ PString OpenMCUH323EndPoint::SetRoomParams(const PStringToString & data)
   conference.VAlevel = pstr.AsInteger(); 
   pstr = data("echoLevel");
   conference.echoLevel = pstr.AsInteger(); 
-  
-  SetMemberListOpts(conference,data);
-  
+
+// this type of control was replaced by "on the fly" control:
+//  if(!xmlhttprequest) SetMemberListOpts(conference,data);
+
   MCUVideoMixer * mixer = conference.GetVideoMixer();
   if(mixer->GetPositionSet()!=vidnum) // set has been changed, clear all pos
   {
@@ -950,6 +1198,7 @@ PString OpenMCUH323EndPoint::SetRoomParams(const PStringToString & data)
   conference.FreezeVideo(NULL);
 
 //  return RoomCtrlPage(room,TRUE,sqrv,conference,idr);
+  if (xmlhttprequest) return "OK";
   return RoomCtrlPage(room,TRUE,vidnum,conference,idr);
 }
 
@@ -1013,11 +1262,10 @@ PString OpenMCUH323EndPoint::GetUsername(ConferenceMemberId id)
       for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
       {
         ConferenceMember * member = s->second;
-        if(member != NULL) if (member->GetID()==id){
-         output << s->first;
-         return output;
-        } else
-        if(member==id) output2 << s->first;
+        if(member != NULL) {
+          if (member->GetID()==id){ output << s->first; return output; }
+          else if(member==id) output2 << s->first;
+        }
       }
     }
   }
@@ -1372,7 +1620,8 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
       return FALSE;
     }
 
-    int fr=ep.GetVideoFrameRate();
+//    int fr=ep.GetVideoFrameRate();
+    unsigned fr=ep.GetVideoFrameRate();
     if(fr > codec.GetTargetFrameRate()) fr=codec.GetTargetFrameRate();
     else codec.SetTargetFrameTimeMs(1000/fr);
 
@@ -1380,10 +1629,10 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
     cout << codec.formatString << "\n";
 
     videoTransmitCodecName = codec.formatString; // override previous definition
-    
+
     if(GetRemoteApplication().Find("PCS-G") != P_MAX_INDEX && codec.formatString.Find("H.264") != P_MAX_INDEX) 
        codec.cacheMode = 3;
-    
+
     if(!codec.cacheMode) 
     {
      if(!codec.CheckCacheRTP()) 
@@ -1650,7 +1899,7 @@ void OpenMCUH323Connection::OnWelcomeStateChanged()
 {
   PFilePath fn;
 
-  OpenMCU & mcu = OpenMCU::Current();
+//  OpenMCU & mcu = OpenMCU::Current();
 
   switch(welcomeState) {
 
