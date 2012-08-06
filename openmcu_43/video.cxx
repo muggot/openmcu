@@ -15,6 +15,7 @@
 
 #define MAX_SUBFRAMES   100
 
+#if USE_FREETYPE
 #include <ft2build.h>
 #include FT_FREETYPE_H
 FT_Library ft_library;
@@ -23,6 +24,11 @@ FT_Bool ft_use_kerning;
 FT_UInt ft_glyph_index,ft_previous;
 int ft_error=555;
 BOOL ft_subtitles=FALSE;
+#endif
+
+#if USE_LIBYUV
+#include <libyuv/scale.h>
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////
 //
@@ -2194,7 +2200,21 @@ void MCUVideoMixer::ConvertFRAMEToCUSTOM_FRAME(const void * _src, void * _dst, u
 
 void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh)
 {
-//PTRACE(6,"ResizeYUV420P\t" << sw << " " << sh << " " << dw << " " << dh);
+#if USE_LIBYUV
+//    PTRACE(6,"ResizeYUV420P\t" << sw << " " << sh << " " << dw << " " << dh << " with libyuv");
+  libyuv::I420Scale(
+    /* src_y */     (const uint8*)_src,                         /* src_stride_y */ sw,
+    /* src_u */     (const uint8*)((long)_src+sw*sh),           /* src_stride_u */ (int)(sw >> 1),
+    /* src_v */     (const uint8*)((long)_src+sw*sh*5/4),       /* src_stride_v */ (int)(sw >> 1),
+    /* src_width */ (int)sw,                                    /* src_height */   (int)sh,
+    /* dst_y */     (uint8*)_dst,                               /* dst_stride_y */ (int)dw,
+    /* dst_u */     (uint8*)((long)_dst+dw*dh),                 /* dst_stride_u */ (int)(dw >> 1),
+    /* dst_v */     (uint8*)((long)_dst+dw*dh+(dw>>1)*(dh>>1)), /* dst_stride_v */ (int)(dw >> 1),
+    /* dst_width */ (int)dw,                                    /* dst_height */   (int)dh,
+    /* filtering */ LIBYUV_FILTER
+  );
+#else
+//  PTRACE(6,"ResizeYUV420P\t" << sw << " " << sh << " " << dw << " " << dh);
   if(sw==dw && sh==dh) // same size
     memcpy(_dst,_src,dw*dh*3/2);
 
@@ -2250,6 +2270,7 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
     Convert2To1(_src, _dst, sw, sh);
 
   else ConvertFRAMEToCUSTOM_FRAME(_src,_dst,sw,sh,dw,dh);
+#endif
 }
 
 void MCUVideoMixer::ConvertQCIFToCIF(const void * _src, void * _dst)

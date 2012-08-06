@@ -14,6 +14,16 @@
 #define OPENMCU_VIDEO   1
 #endif
 
+// enable freetype2, libjpeg, libyuv for video
+#if OPENMCU_VIDEO
+#define USE_FREETYPE	1
+#define USE_LIBJPEG	1
+#define USE_LIBYUV	0
+//#define LIBYUV_FILTER	libyuv::kFilterNone
+//#define LIBYUV_FILTER	libyuv::kFilterBilinear
+#define LIBYUV_FILTER	libyuv::kFilterBox
+#endif
+
 #undef P_SSL
 
 #endif // _OpenMCU_CONFIG_H
