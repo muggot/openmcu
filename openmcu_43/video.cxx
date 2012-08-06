@@ -344,6 +344,7 @@ MCUVideoMixer::VideoMixPosition::VideoMixPosition(ConferenceMemberId _id,  int _
   fc = 0;
 }
 
+#if USE_FREETYPE
 unsigned MCUSimpleVideoMixer::printsubs_calc(unsigned v, char s[10]){
 // PTRACE(6,"FreeType\tprintsubs_calc in " << v << " / " << s);
  int slashpos=-1;
@@ -475,6 +476,7 @@ void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer,
   vmp.fc=0;
   vmp.label_init=TRUE;
 }
+#endif
 
 void MCUVideoMixer::ConvertRGBToYUV(BYTE R, BYTE G, BYTE B, BYTE & Y, BYTE & U, BYTE & V)
 {
@@ -905,6 +907,7 @@ void MCUVideoMixer::MixRectIntoFrameSubsMode(const void * _src, void * _dst, int
  }
 }
 */
+#if USE_FREETYPE
 void MCUVideoMixer::MixRectIntoFrameSubsMode(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh, BYTE wide)
 {
  if(xpos+width > fw || ypos+height > fh) return;
@@ -944,6 +947,7 @@ void MCUVideoMixer::MixRectIntoFrameSubsMode(const void * _src, void * _dst, int
   dst+=(fw-width);
  }
 }
+#endif
 
 void MCUVideoMixer::CopyRectIntoRect(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh)
 {
@@ -997,6 +1001,79 @@ void MCUVideoMixer::CopyRectFromFrame(const void * _src, void * _dst, int xpos, 
    { memcpy(dst, src, width/2); dst += width/2; src += fw/2; }
 }
 
+void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh)
+{
+  if(sw==dw && sh==dh) // same size
+    memcpy(_dst,_src,dw*dh*3/2);
+#if USE_LIBYUV
+  else libyuv::I420Scale(
+    /* src_y */     (const uint8*)_src,                         /* src_stride_y */ sw,
+    /* src_u */     (const uint8*)((long)_src+sw*sh),           /* src_stride_u */ (int)(sw >> 1),
+    /* src_v */     (const uint8*)((long)_src+sw*sh*5/4),       /* src_stride_v */ (int)(sw >> 1),
+    /* src_width */ (int)sw,                                    /* src_height */   (int)sh,
+    /* dst_y */     (uint8*)_dst,                               /* dst_stride_y */ (int)dw,
+    /* dst_u */     (uint8*)((long)_dst+dw*dh),                 /* dst_stride_u */ (int)(dw >> 1),
+    /* dst_v */     (uint8*)((long)_dst+dw*dh+(dw>>1)*(dh>>1)), /* dst_stride_v */ (int)(dw >> 1),
+    /* dst_width */ (int)dw,                                    /* dst_height */   (int)dh,
+    /* filtering */ libyuv::LIBYUV_FILTER
+  );
+#else
+  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==TCIF_WIDTH    && dh==TCIF_HEIGHT)   // CIF16 -> TCIF
+    ConvertCIF16ToTCIF(_src,_dst);
+  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==Q3CIF16_WIDTH && dh==Q3CIF16_HEIGHT)// CIF16 -> Q3CIF16
+    ConvertCIF16ToQ3CIF16(_src,_dst);
+  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==CIF4_WIDTH    && dh==CIF4_HEIGHT)   // CIF16 -> CIF4
+    ConvertCIF16ToCIF4(_src,_dst);
+  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==Q3CIF4_WIDTH  && dh==Q3CIF4_HEIGHT) // CIF16 -> Q3CIF4
+    ConvertCIF16ToQ3CIF4(_src,_dst);
+  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==CIF_WIDTH     && dh==CIF_HEIGHT)    // CIF16 -> CIF
+    ConvertCIF16ToCIF(_src,_dst);
+
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==CIF16_WIDTH  && dh==CIF16_HEIGHT)  // CIF4 -> CIF16
+    ConvertCIF4ToCIF16(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==TCIF_WIDTH   && dh==TCIF_HEIGHT)   // CIF4 -> TCIF
+    ConvertCIF4ToTCIF(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==TQCIF_WIDTH  && dh==TQCIF_HEIGHT)  // CIF4 -> TQCIF
+    ConvertCIF4ToTQCIF(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==CIF_WIDTH    && dh==CIF_HEIGHT)    // CIF4 -> CIF
+    ConvertCIF4ToCIF(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==Q3CIF4_WIDTH && dh==Q3CIF4_HEIGHT) // CIF4 -> Q3CIF4
+    ConvertCIF4ToQ3CIF4(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==QCIF_WIDTH   && dh==QCIF_HEIGHT)   // CIF4 -> QCIF
+    ConvertCIF4ToQCIF(_src,_dst);
+  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==Q3CIF_WIDTH  && dh==Q3CIF_HEIGHT)  // CIF4 -> CIF16
+    ConvertCIF4ToQ3CIF(_src,_dst);
+
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==CIF4_WIDTH   && dh==CIF4_HEIGHT)   // CIF -> CIF4
+    ConvertCIFToCIF4(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==TQCIF_WIDTH  && dh==TQCIF_HEIGHT)  // CIF -> TQCIF
+    ConvertCIFToTQCIF(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==TQCIF_WIDTH  && dh==TQCIF_HEIGHT)  // CIF -> TSQCIF
+    ConvertCIFToTSQCIF(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==Q3CIF_WIDTH  && dh==Q3CIF_HEIGHT)  // CIF -> Q3CIF
+    ConvertCIFToQ3CIF(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==QCIF_WIDTH   && dh==QCIF_HEIGHT)   // CIF -> QCIF
+    ConvertCIFToQCIF(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==SQ3CIF_WIDTH && dh==SQ3CIF_HEIGHT) // CIF -> SQ3CIF
+    ConvertCIFToSQ3CIF(_src,_dst);
+  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==SQCIF_WIDTH  && dh==SQCIF_HEIGHT)  // CIF -> SQCIF
+    ConvertCIFToSQCIF(_src,_dst);
+
+  else if(sw==QCIF_WIDTH && sh==QCIF_HEIGHT && dw==CIF4_WIDTH && dh==CIF4_HEIGHT) // QCIF -> CIF4
+    ConvertQCIFToCIF4(_src,_dst);
+  else if(sw==QCIF_WIDTH && sh==QCIF_HEIGHT && dw==CIF_WIDTH && dh==CIF_HEIGHT)   // QCIF -> CIF
+    ConvertQCIFToCIF(_src,_dst);
+
+  else if((sw<<1)==dw && (sh<<1)==dh) // needs 2x zoom
+    Convert1To2(_src, _dst, sw, sh);
+  else if((dw<<1)==sw && (dh<<1)==sh) // needs 2x reduce
+    Convert2To1(_src, _dst, sw, sh);
+
+  else ConvertFRAMEToCUSTOM_FRAME(_src,_dst,sw,sh,dw,dh);
+#endif
+}
+
+#if USE_LIBYUV==0
 void MCUVideoMixer::ConvertCIF4ToCIF(const void * _src, void * _dst)
 {
   unsigned char * src = (unsigned char *)_src;
@@ -2198,81 +2275,6 @@ void MCUVideoMixer::ConvertFRAMEToCUSTOM_FRAME(const void * _src, void * _dst, u
 
 }
 
-void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh)
-{
-#if USE_LIBYUV
-//    PTRACE(6,"ResizeYUV420P\t" << sw << " " << sh << " " << dw << " " << dh << " with libyuv");
-  libyuv::I420Scale(
-    /* src_y */     (const uint8*)_src,                         /* src_stride_y */ sw,
-    /* src_u */     (const uint8*)((long)_src+sw*sh),           /* src_stride_u */ (int)(sw >> 1),
-    /* src_v */     (const uint8*)((long)_src+sw*sh*5/4),       /* src_stride_v */ (int)(sw >> 1),
-    /* src_width */ (int)sw,                                    /* src_height */   (int)sh,
-    /* dst_y */     (uint8*)_dst,                               /* dst_stride_y */ (int)dw,
-    /* dst_u */     (uint8*)((long)_dst+dw*dh),                 /* dst_stride_u */ (int)(dw >> 1),
-    /* dst_v */     (uint8*)((long)_dst+dw*dh+(dw>>1)*(dh>>1)), /* dst_stride_v */ (int)(dw >> 1),
-    /* dst_width */ (int)dw,                                    /* dst_height */   (int)dh,
-    /* filtering */ LIBYUV_FILTER
-  );
-#else
-//  PTRACE(6,"ResizeYUV420P\t" << sw << " " << sh << " " << dw << " " << dh);
-  if(sw==dw && sh==dh) // same size
-    memcpy(_dst,_src,dw*dh*3/2);
-
-  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==TCIF_WIDTH    && dh==TCIF_HEIGHT)   // CIF16 -> TCIF
-    ConvertCIF16ToTCIF(_src,_dst);
-  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==Q3CIF16_WIDTH && dh==Q3CIF16_HEIGHT)// CIF16 -> Q3CIF16
-    ConvertCIF16ToQ3CIF16(_src,_dst);
-  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==CIF4_WIDTH    && dh==CIF4_HEIGHT)   // CIF16 -> CIF4
-    ConvertCIF16ToCIF4(_src,_dst);
-  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==Q3CIF4_WIDTH  && dh==Q3CIF4_HEIGHT) // CIF16 -> Q3CIF4
-    ConvertCIF16ToQ3CIF4(_src,_dst);
-  else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==CIF_WIDTH     && dh==CIF_HEIGHT)    // CIF16 -> CIF
-    ConvertCIF16ToCIF(_src,_dst);
-
-  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==CIF16_WIDTH  && dh==CIF16_HEIGHT)  // CIF4 -> CIF16
-    ConvertCIF4ToCIF16(_src,_dst);
-  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==TCIF_WIDTH   && dh==TCIF_HEIGHT)   // CIF4 -> TCIF
-    ConvertCIF4ToTCIF(_src,_dst);
-  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==TQCIF_WIDTH  && dh==TQCIF_HEIGHT)  // CIF4 -> TQCIF
-    ConvertCIF4ToTQCIF(_src,_dst);
-  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==CIF_WIDTH    && dh==CIF_HEIGHT)    // CIF4 -> CIF
-    ConvertCIF4ToCIF(_src,_dst);
-  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==Q3CIF4_WIDTH && dh==Q3CIF4_HEIGHT) // CIF4 -> Q3CIF4
-    ConvertCIF4ToQ3CIF4(_src,_dst);
-  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==QCIF_WIDTH   && dh==QCIF_HEIGHT)   // CIF4 -> QCIF
-    ConvertCIF4ToQCIF(_src,_dst);
-  else if(sw==CIF4_WIDTH && sh==CIF4_HEIGHT && dw==Q3CIF_WIDTH  && dh==Q3CIF_HEIGHT)  // CIF4 -> CIF16
-    ConvertCIF4ToQ3CIF(_src,_dst);
-
-  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==CIF4_WIDTH   && dh==CIF4_HEIGHT)   // CIF -> CIF4
-    ConvertCIFToCIF4(_src,_dst);
-  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==TQCIF_WIDTH  && dh==TQCIF_HEIGHT)  // CIF -> TQCIF
-    ConvertCIFToTQCIF(_src,_dst);
-  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==TQCIF_WIDTH  && dh==TQCIF_HEIGHT)  // CIF -> TSQCIF
-    ConvertCIFToTSQCIF(_src,_dst);
-  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==Q3CIF_WIDTH  && dh==Q3CIF_HEIGHT)  // CIF -> Q3CIF
-    ConvertCIFToQ3CIF(_src,_dst);
-  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==QCIF_WIDTH   && dh==QCIF_HEIGHT)   // CIF -> QCIF
-    ConvertCIFToQCIF(_src,_dst);
-  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==SQ3CIF_WIDTH && dh==SQ3CIF_HEIGHT) // CIF -> SQ3CIF
-    ConvertCIFToSQ3CIF(_src,_dst);
-  else if(sw==CIF_WIDTH && sh==CIF_HEIGHT && dw==SQCIF_WIDTH  && dh==SQCIF_HEIGHT)  // CIF -> SQCIF
-    ConvertCIFToSQCIF(_src,_dst);
-
-  else if(sw==QCIF_WIDTH && sh==QCIF_HEIGHT && dw==CIF4_WIDTH && dh==CIF4_HEIGHT) // QCIF -> CIF4
-    ConvertQCIFToCIF4(_src,_dst);
-  else if(sw==QCIF_WIDTH && sh==QCIF_HEIGHT && dw==CIF_WIDTH && dh==CIF_HEIGHT)   // QCIF -> CIF
-    ConvertQCIFToCIF(_src,_dst);
-
-  else if((sw<<1)==dw && (sh<<1)==dh) // needs 2x zoom
-    Convert1To2(_src, _dst, sw, sh);
-  else if((dw<<1)==sw && (dh<<1)==sh) // needs 2x reduce
-    Convert2To1(_src, _dst, sw, sh);
-
-  else ConvertFRAMEToCUSTOM_FRAME(_src,_dst,sw,sh,dw,dh);
-#endif
-}
-
 void MCUVideoMixer::ConvertQCIFToCIF(const void * _src, void * _dst)
 {
   BYTE * src = (BYTE *)_src;
@@ -2855,6 +2857,7 @@ void MCUVideoMixer::ConvertQCIFToCIF4(const void * _src, void * _dst)
     src += QCIF_WIDTH/2;
   }
 }
+#endif // #if USE_LIBYUV==0
 
 void MCUVideoMixer::VideoSplitLines(void * dst, VideoMixPosition & vmp, unsigned int fw, unsigned int fh){
  unsigned int i;
@@ -2944,7 +2947,8 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
      if(cifFs.valid)
      {
       imageStores_operational_size(nw,nh,_IMGST2);
-      ConvertFRAMEToCUSTOM_FRAME(cifFs.data.GetPointer(),imageStore2.GetPointer(), CIF_WIDTH, CIF_HEIGHT,nw,nh);
+//      ConvertFRAMEToCUSTOM_FRAME(cifFs.data.GetPointer(),imageStore2.GetPointer(), CIF_WIDTH, CIF_HEIGHT,nw,nh);
+      ResizeYUV420P(cifFs.data.GetPointer(),imageStore2.GetPointer(), CIF_WIDTH, CIF_HEIGHT,nw,nh);
       CopyRectIntoFrame(imageStore2.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
       Fs.valid=1;
      } 
@@ -2956,7 +2960,8 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
      if(cif4Fs.valid)
      {
       imageStores_operational_size(nw,nh,_IMGST2);
-      ConvertFRAMEToCUSTOM_FRAME(cif4Fs.data.GetPointer(),imageStore2.GetPointer(), CIF4_WIDTH, CIF4_HEIGHT,nw,nh);
+//      ConvertFRAMEToCUSTOM_FRAME(cif4Fs.data.GetPointer(),imageStore2.GetPointer(), CIF4_WIDTH, CIF4_HEIGHT,nw,nh);
+      ResizeYUV420P(cif4Fs.data.GetPointer(),imageStore2.GetPointer(), CIF4_WIDTH, CIF4_HEIGHT,nw,nh);
       CopyRectIntoFrame(imageStore2.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
 //      nw = CIF4_WIDTH; nh = CIF4_HEIGHT;
 //      CopyRectIntoFrame(cif4Fs.data.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
@@ -2971,7 +2976,8 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
      if(cif16Fs.valid)
      {
       imageStores_operational_size(nw,nh,_IMGST2);
-      ConvertFRAMEToCUSTOM_FRAME(cif16Fs.data.GetPointer(),imageStore2.GetPointer(), CIF16_WIDTH, CIF16_HEIGHT,nw,nh);
+//      ConvertFRAMEToCUSTOM_FRAME(cif16Fs.data.GetPointer(),imageStore2.GetPointer(), CIF16_WIDTH, CIF16_HEIGHT,nw,nh);
+      ResizeYUV420P(cif16Fs.data.GetPointer(),imageStore2.GetPointer(), CIF16_WIDTH, CIF16_HEIGHT,nw,nh);
       CopyRectIntoFrame(imageStore2.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
       Fs.valid=1;
      } 
@@ -3657,8 +3663,11 @@ void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const v
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
 
     vf.used--;
+
+#if USE_FREETYPE
     // printing subtitles in source frame buffer:
     if(!(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask&32)) Print_Subtitles(vmp,(void *)buffer,width,height,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask);
+#endif
 
     int pw=vmp.width*vf.width/CIF4_WIDTH; // pixel w&h of vmp-->fs
     int ph=vmp.height*vf.height/CIF4_HEIGHT;
@@ -3706,7 +3715,7 @@ void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const v
   }
 }
 
-
+/*
 void MCUSimpleVideoMixer::WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount)
 {
   PWaitAndSignal m(mutex);
@@ -4148,10 +4157,11 @@ void MCUSimpleVideoMixer::WriteCIFSubFrame(VideoMixPosition & vmp, const void * 
   
   return;
 }
+*/
 
 BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount)
 {
-WriteArbitrarySubFrame(vmp,buffer,width,height,amount); return TRUE;
+WriteArbitrarySubFrame(vmp,buffer,width,height,amount); return TRUE; /*
  if(width==CIF_WIDTH && height==CIF_HEIGHT) 
   { WriteCIFSubFrame(vmp,buffer,amount); return TRUE; }
  if(width==CIF4_WIDTH && height==CIF4_HEIGHT)
@@ -4195,7 +4205,7 @@ WriteArbitrarySubFrame(vmp,buffer,width,height,amount); return TRUE;
   WriteCIF16SubFrame(vmp,imageStore2.GetPointer(),CIF16_SIZE); return TRUE;
  } 
 
-  return TRUE;
+  return TRUE; */
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -4344,6 +4354,7 @@ void VideoMixConfigurator::go(unsigned frame_width, unsigned frame_height)
    opts[i].width=VMPC_DEFAULT_WIDTH;
    opts[i].height=VMPC_DEFAULT_HEIGHT;
    opts[i].border=VMPC_DEFAULT_BORDER;
+#if USE_FREETYPE
    opts[i].label_mask=VMPC_DEFAULT_LABEL_MASK;
    strcpy(opts[i].label_text,VMPC_DEFAULT_LABEL_TEXT);
    opts[i].label_color=VMPC_DEFAULT_LABEL_COLOR;
@@ -4354,6 +4365,7 @@ void VideoMixConfigurator::go(unsigned frame_width, unsigned frame_height)
    strcpy(opts[i].border_top,VMPC_DEFAULT_BORDER_TOP);
    strcpy(opts[i].border_bottom,VMPC_DEFAULT_BORDER_BOTTOM);
    opts[i].cut_before_bracket=VMPC_DEFAULT_CUT_BEFORE_BRACKET;
+#endif
   }
   parser(f_buff,f_size);
   delete f_buff;
@@ -4714,6 +4726,7 @@ void VideoMixConfigurator::option_set(const char* p, const char* v, char* &f_buf
 //   else if(option_cmp((const char *)p,(const char *)"position_width")) opts[ldm].width=((atoi(v)*bfw)/fw[ldm]+1)&0xFFFFFE;
    else if(option_cmp((const char *)p,(const char *)"position_height")) opts[ldm].height=(atoi(v)*bfh)/fh[ldm];
 //   else if(option_cmp((const char *)p,(const char *)"position_height")) opts[ldm].height=((atoi(v)*bfh)/fh[ldm]+1)&0xFFFFFE;
+#if USE_FREETYPE
    else if(option_cmp((const char *)p,(const char *)"label_mask")) opts[ldm].label_mask=atoi(v);
    else if(option_cmp((const char *)p,(const char *)"label_color")) {
     int tempc=0xFFFFFF; sscanf(v,"%x",&tempc); int R=(tempc>>16)&255; int G=(tempc>>8)&255; int B=tempc&255;
@@ -4752,6 +4765,7 @@ void VideoMixConfigurator::option_set(const char* p, const char* v, char* &f_buf
     warning(f_buff,line,lo,"border_bottom value too long (max 10 chars allowed)",pos,pos1);
    }
    else if(option_cmp((const char *)p,(const char *)"cut_before_bracket")) opts[ldm].cut_before_bracket=atoi(v);
+#endif
    else if(option_cmp((const char *)p,(const char *)"reallocate_on_disconnect")) sopts[ldm].reallocate_on_disconnect=atoi(v);
    else if(option_cmp((const char *)p,(const char *)"new_members_first")) sopts[ldm].new_from_begin=atoi(v);
    else if(option_cmp((const char *)p,(const char *)"mockup_width")) sopts[ldm].mockup_width=atoi(v);

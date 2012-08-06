@@ -150,11 +150,17 @@ class ConferenceMember;
 #define VMPC_DEFAULT_BORDER 1
 #define VMPC_DEFAULT_VIDNUM 0
 #define VMPC_DEFAULT_TAGS "all"
+#define VMPC_DEFALUT_SCALE_MODE 1
+#define VMPC_DEFAULT_REALLOCATE_ON_DISCONNECT 0
+#define VMPC_DEFAULT_NEW_FROM_BEGIN 1
+#define VMPC_DEFAULT_MOCKUP_WIDTH 367
+#define VMPC_DEFAULT_MOCKUP_HEIGHT 300
+
+#ifdef USE_FREETYPE
 #define VMPC_DEFAULT_LABEL_MASK 24
 #define VMPC_DEFAULT_LABEL_TEXT "%username%"
 #define VMPC_DEFAULT_LABEL_COLOR 0x0ffffff
 #define VMPC_DEFAULT_LABEL_BGCOLOR 0x004040
-#define VMPC_DEFALUT_SCALE_MODE 1
 #define VMPC_DEFAULT_FONTFILE "Russo_One.ttf"
 #define VMPC_DEFAULT_FONTSIZE "1/16"
 #define VMPC_DEFAULT_BORDER_LEFT "5/80"
@@ -162,10 +168,7 @@ class ConferenceMember;
 #define VMPC_DEFAULT_BORDER_TOP "0"
 #define VMPC_DEFAULT_BORDER_BOTTOM "1/60"
 #define VMPC_DEFAULT_CUT_BEFORE_BRACKET 1
-#define VMPC_DEFAULT_REALLOCATE_ON_DISCONNECT 0
-#define VMPC_DEFAULT_NEW_FROM_BEGIN 1
-#define VMPC_DEFAULT_MOCKUP_WIDTH 367
-#define VMPC_DEFAULT_MOCKUP_HEIGHT 300
+#endif
 
 struct VMPBlock {
  unsigned posx,posy,width,height;
@@ -364,9 +367,9 @@ class MCUVideoMixer
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount) = 0;
 
     virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount) = 0;
-    virtual void WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
-    virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
-    virtual void WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
+//    virtual void WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
+//    virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
+//    virtual void WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
     virtual void WriteArbitrarySubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount) = 0;
     virtual void NullRectangle(int x,int y,int w,int h) = 0;
     virtual void NullAllFrameStores() = 0;
@@ -417,15 +420,18 @@ class MCUVideoMixer
     static void CopyRFromRIntoR(const void *_s, void * _d, int xp, int yp, int w, int h, int rx_abs, int ry_abs, int rw, int rh, int fw, int fh, int lim_w, int lim_h);
     static void CopyRectIntoFrame(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh);
     static void MixRectIntoFrameGrayscale(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh, BYTE wide);
+#if USE_FREETYPE
     static void MixRectIntoFrameSubsMode(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh, BYTE wide);
+#endif
     static void CopyRectIntoRect(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh);
     static void CopyRectFromFrame(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh);
+    static void ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh);
+#if USE_LIBYUV==0
     static void ConvertQCIFToCIF(const void * _src, void * _dst);
     static void ConvertCIFToCIF4(const void * _src, void * _dst);
     static void ConvertCIF4ToCIF16(const void * _src, void * _dst);
 //    static void ConvertFRAMEToFRAME4(const void * _src, void * _dst, unsigned w, unsigned h);
     static void ConvertFRAMEToCUSTOM_FRAME(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh);
-    static void ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh);
     static void ConvertCIFToTQCIF(const void * _src, void * _dst);
     static void ConvertCIF4ToTCIF(const void * _src, void * _dst);
     static void ConvertCIF16ToTCIF(const void * _src, void * _dst);
@@ -447,6 +453,7 @@ class MCUVideoMixer
     static void ConvertCIF16ToCIF(const void * _src, void * _dst);
     static void ConvertCIF4ToQCIF(const void * _src, void * _dst);
     static void ConvertCIFToSQCIF(const void * _src, void * _dst);
+#endif
     static void VideoSplitLines(void * dst,VideoMixPosition & vmp,unsigned int fw,unsigned int fh);
     virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
     BOOL forceScreenSplit;
@@ -463,12 +470,16 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual BOOL ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount);
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount);
 
+#if USE_FREETYPE
     virtual unsigned printsubs_calc(unsigned v, char s[10]);
     virtual void Print_Subtitles(VideoMixPosition & vmp, void * buffer, unsigned int fw, unsigned int fh, unsigned int ft_properties);
+#endif
     virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount);
+/*
     virtual void WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
     virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
     virtual void WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
+*/
     virtual void WriteArbitrarySubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount);
     virtual void NullRectangle(int x,int y,int w,int h);
     virtual void NullAllFrameStores();

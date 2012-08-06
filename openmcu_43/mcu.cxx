@@ -4,7 +4,10 @@
 #include "version.h"
 #include "mcu.h"
 #include "h323.h"
+
+#if USE_LIBJPEG
 #include "jpeglib.h"
+#endif
 
 const WORD DefaultHTTPPort = 1420;
 
@@ -48,6 +51,7 @@ class MyPConfigPage : public PConfigPage
  private:
 };
 
+#if USE_LIBJPEG
 class JpegFrameHTTP : public PServiceHTTPString
 {
   public:
@@ -57,6 +61,7 @@ class JpegFrameHTTP : public PServiceHTTPString
   private:
     OpenMCU & app;
 };
+#endif
 
 class MainStatusPage : public PServiceHTTPString
 {
@@ -282,8 +287,10 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // Create room selection page
   httpNameSpace.AddResource(new SelectRoomPage(*this, authority), PHTTPSpace::Overwrite);
 
+#if USE_LIBJPEG
   // Create JPEG frame via HTTP
   httpNameSpace.AddResource(new JpegFrameHTTP(*this, authority), PHTTPSpace::Overwrite);
+#endif
 
   // Add log file links
   if (!systemLogFileName && (systemLogFileName != "-")) {
@@ -437,6 +444,7 @@ BOOL MainStatusPage::Post(PHTTPRequest & request,
 ///////////////////////////////////////////////////////////////
 
 
+#if USE_LIBJPEG
 JpegFrameHTTP::JpegFrameHTTP(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Jpeg", "", "image/jpeg", auth),
     app(_app)
@@ -515,6 +523,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   }
   return FALSE;
 }
+#endif //#if USE_LIBJPEG
 
 InvitePage::InvitePage(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Invite", "", "text/html; charset=utf-8", auth),

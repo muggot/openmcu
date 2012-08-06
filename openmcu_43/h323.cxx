@@ -987,11 +987,13 @@ PString OpenMCUH323EndPoint::RoomCtrlPage(const PString room, BOOL ctrl, int n, 
 
  page << "<div style='text-align:center'><div style='margin-left:auto;margin-right:auto;width:" << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width << "px;height:" << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_height << "px;background:#fff'>";
   page << "<div id='aaa' style='position:relative;left:0;top:0;width:0px;height:0px'>";
+#if USE_LIBJPEG
   page << "<img style='position:absolute' id='mainframe' width="
     << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width
     << " height="
     << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_height
     << " src='Jpeg?room=" << room << "'/>";
+#endif
   page << "</div>";
 
  page << "<div id='pbase' style='position:relative;left:0;top:0;width:0px;height:0px'></div>";
@@ -1038,11 +1040,12 @@ PString OpenMCUH323EndPoint::RoomCtrlPage(const PString room, BOOL ctrl, int n, 
    << "<script language=\"javascript\"><!--\n"
    << "var " << GetMemberListOptsJavascript(conference) << "\n"
    << "var tags=Array(); " << tags << "if(window.handle_tags)handle_tags(\"all\"); "
+#if USE_LIBJPEG
    << "function frameload(){frame=new Image(); frame.onload=function(){reframe();}; frame.src=''; frame.src='Jpeg?room=" << room << "&rand='+Math.random();};"
-//   << "function reframe(){document.getElementById('mainframe').style.backgroundImage='url('+frame.src+')'; setTimeout(frameload,2000);};"
    << "function reframe(){document.getElementById('mainframe').src=frame.src; setTimeout(frameload,1999);};"
-//   << "function reframe(){document.getElementById('mainframe').src=frame.src; frameload();};"
-   << "frameload(); //--></script>"
+   << "frameload(); "
+#endif
+   << "//--></script>"
    << "</form>";
  EndPage(page,OpenMCU::Current().GetCopyrightText());
  return page;

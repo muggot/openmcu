@@ -1,4 +1,3 @@
-
 #ifndef _OpenMCU_CONFIG_H
 #define _OpenMCU_CONFIG_H
 
@@ -14,15 +13,18 @@
 #define OPENMCU_VIDEO   1
 #endif
 
-// enable freetype2, libjpeg, libyuv for video
-#if OPENMCU_VIDEO
+// enable/disable freetype2 (rendering names)
 #define USE_FREETYPE	1
+
+// enable/disable libjpeg (live video frames in Room Control Page)
 #define USE_LIBJPEG	1
+
+// enable/disable libyuv (optimized frame resize)
 #define USE_LIBYUV	0
-//#define LIBYUV_FILTER	libyuv::kFilterNone
-//#define LIBYUV_FILTER	libyuv::kFilterBilinear
-#define LIBYUV_FILTER	libyuv::kFilterBox
-#endif
+
+// libyuv filtering type: kFilterNone|kFilterBilinear|kFilterBox
+#define LIBYUV_FILTER	kFilterBox
+
 
 #undef P_SSL
 

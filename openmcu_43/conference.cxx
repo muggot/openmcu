@@ -946,6 +946,9 @@ void * ConferenceMember::OnExternalReadVideo(ConferenceMemberId id, int width, i
   // create a new destinationf framestore
   VideoFrameStoreList::FrameStore & destFs = memberFrameStores.GetFrameStore(width, height);
 
+  MCUVideoMixer::ResizeYUV420P(nearestFs.data.GetPointer(), destFs.data.GetPointer(), nearestFs.width, nearestFs.height, width, height);
+  destFs.valid = TRUE;
+/*
   // if src is qcif, and dest is cif, then do special case
   if ((nearestFs.width == QCIF_WIDTH) && 
       (nearestFs.height == QCIF_HEIGHT) &&
@@ -977,7 +980,7 @@ void * ConferenceMember::OnExternalReadVideo(ConferenceMemberId id, int width, i
     fsConverter->Convert(nearestFs.data.GetPointer(), destFs.data.GetPointer(), nearestFs.width * nearestFs.height * 3 / 2, &bytesReturned);
     destFs.valid = TRUE;
   }
-
+*/
   return destFs.data.GetPointer();
 }
 

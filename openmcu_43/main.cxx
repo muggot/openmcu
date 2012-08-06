@@ -111,6 +111,9 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
   {
    PTRACE(2, "MCU\tGetPreMediaFrame with logo:" << width << "x" << height);
 
+   MCUVideoMixer::ResizeYUV420P(logo,buffer,CIF4_WIDTH,CIF4_HEIGHT,width,height);
+   return TRUE;
+/*
    if (width == QCIF_WIDTH && height == QCIF_HEIGHT) {
     MCUVideoMixer::ConvertCIF4ToQCIF(logo, buffer);
     return TRUE;
@@ -148,10 +151,13 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
     MCUVideoMixer::ConvertFRAMEToCUSTOM_FRAME(logo, buffer, CIF4_WIDTH, CIF4_HEIGHT, width, height);
     return TRUE;
    }
+*/
   }
   else
   {
-   if (width == QCIF_WIDTH && height == QCIF_HEIGHT) {
+   MCUVideoMixer::ResizeYUV420P(ImageData, buffer, QCIF_WIDTH, QCIF_HEIGHT, width, height);
+   return TRUE;
+/*   if (width == QCIF_WIDTH && height == QCIF_HEIGHT) {
      memcpy(buffer, ImageData, QCIF_SIZE);
      return TRUE;
    }
@@ -162,7 +168,7 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
    else if (width == CIF4_WIDTH && height == CIF4_HEIGHT) {
     MCUVideoMixer::ConvertQCIFToCIF4(ImageData, buffer);
     return TRUE;
-   } 
+   } */
   }
   return FALSE;
 }

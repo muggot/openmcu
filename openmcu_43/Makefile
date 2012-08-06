@@ -80,6 +80,8 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
 HDRS		:= conference.h config.h filemembers.h h323.h mcu.h version.h
 
 LDLIBS		= -lfreetype -lswresample -ljpeg
+#LDLIBS		= -lfreetype -lswresample -ljpeg -lyuv
+
 STDCCFLAGS	= -I/usr/local/include/freetype2 -D__STDC_CONSTANT_MACROS
 
 ifndef OPENH323DIR
