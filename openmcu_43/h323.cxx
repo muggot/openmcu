@@ -12,6 +12,10 @@
 
 #if OPENMCU_VIDEO
 
+#if USE_LIBYUV
+#include <libyuv/scale.h>
+#endif
+
 const unsigned int DefaultVideoFrameRate = 10;
 const unsigned int DefaultVideoQuality   = 10;
 static const char EnableVideoKey[]       = "Enable video";
@@ -418,6 +422,7 @@ members << "<tr>"
                     << conn->GetAudioTransmitCodecName() << '/' << conn->GetAudioReceiveCodecName()
 #if OPENMCU_VIDEO
                     << "<BR>" << conn->GetVideoTransmitCodecName() << " / " << conn->GetVideoReceiveCodecName()
+                      << "@" << connMember->GetVideoTxFrameSize()
 #endif
                     << "</td><td>"   
                     << session->GetPacketsSent() << '/' << session->GetOctetsSent() 
@@ -760,6 +765,16 @@ PString OpenMCUH323EndPoint::SetMemberOptionOTF(const PString room,const PString
         }
         return "OK";
       } break;
+#if USE_LIBYUV
+      case 68: // libyuv filtering control
+      {
+        long mid=data("mid").AsInteger();
+        if(mid==1) OpenMCU::Current().SetScaleFilter(libyuv::kFilterBilinear);
+        else if(mid==2) OpenMCU::Current().SetScaleFilter(libyuv::kFilterBox);
+        else OpenMCU::Current().SetScaleFilter(libyuv::kFilterNone);
+        return "OK";
+      } break;
+#endif
     }
     return "OK";
 
@@ -950,15 +965,28 @@ PString OpenMCUH323EndPoint::RoomCtrlPage(const PString room, BOOL ctrl, int n, 
 
  page << "<p>"
    << "<form  method=POST>"
-   << "<input size=\"15\" type=\"text\" name=\"room\" value=\"" << room << "\"> "
+   << "<input size=\"12\" type=\"text\" name=\"room\" value=\"" << room << "\"> "
    << "<input type=\"checkbox\" name=\"moderated\" value=\"+\" " << ((ctrl==TRUE)?"checked":"")
-   << "> Control "
+   << "> <b>Ctrl</b> "
    << "<span style='width:20px'>&nbsp;</span>"
    << "<input type=\"checkbox\" name=\"muteUnvisible\" value=\"+\" " << ((conference.IsMuteUnvisible())?"checked":"")
-   << "><b> Mute invisibles</b>"
+   << "><b> Mute invis.</b>"
 //   << "&nbsp;<input type=button class=\"btn btn-success\" onclick=\"javascript:document.forms[0].sendit.click()\" value=\"Set\">"
    << "&nbsp;<input type=submit id='sendit' name='sendit' button class=\"btn btn-success\" value=\"Set\">"
-   << "&nbsp;&nbsp;"
+#if USE_LIBYUV
+   << "<span class=\"input-prepend\"><span style='padding-left:20px;'><span class=\"add-on\"><b>Flt: </b></span></span>"
+    << "<span class=\"input-append\"><span class=\"add-on\" style=\"width:30px;background-color:#edd;overflow:hidden;text-align:center;cursor:pointer\" id=\"flt\" onclick=\""
+     << "if(this.innerHTML=='None'){this.innerHTML='Bilinear';queue_otf_request(1,68);}"
+     << "else if(this.innerHTML=='Bilinear'){this.innerHTML='Box';queue_otf_request(2,68);}"
+     << "else {this.innerHTML='None';queue_otf_request(0,68);}"
+     << "\">";
+    libyuv::FilterMode filter=OpenMCU::Current().GetScaleFilter();
+    if(filter==libyuv::kFilterBilinear) page << "Bilinear";
+    else if(filter==libyuv::kFilterBox) page << "Box";
+    else page << "None";
+    page << "</span>"
+#endif
+//   << "&nbsp;"
    << "<span class=\"input-prepend\"><span style='padding-left:20px;'><span class=\"add-on\"><b>VAD: </b></span></span>"
     << "<span class=\"input-append\"><input type=\"text\" size=\"3\" name=\"VAlevel\" value=\"" << conference.VAlevel << "\"><span class=\"add-on\"> min. volume (0..65535)</span>"
     << "&nbsp;&nbsp;<input type=\"text\" size=\"3\" name=\"VAdelay\" value=\"" << conference.VAdelay << "\"><span class=\"add-on\"> delay (ms)</span>"
@@ -997,7 +1025,8 @@ PString OpenMCUH323EndPoint::RoomCtrlPage(const PString room, BOOL ctrl, int n, 
   page << "</div>";
 
  page << "<div id='pbase' style='position:relative;left:0;top:0;width:0px;height:0px'></div>";
-  page << "<div id='pp_2' style='position:relative;top:0px;left:" << (OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width+4) << "px;width:0px;height:0px;opacity:0.7;filter:progid:DXImageTransform.Microsoft.Alpha(opacity=70)'>";
+//  page << "<div id='pp_2' style='position:relative;top:0px;left:" << (OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width+4) << "px;width:0px;height:0px;opacity:0.7;filter:progid:DXImageTransform.Microsoft.Alpha(opacity=70)'>";
+  page << "<div id='pp_2' style='position:relative;top:0px;left:" << (OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_width+4) << "px;width:0px;height:0px;opacity:0.7'>";
    page << "<div onmouseover='ddover(event,this,-2)' onmouseout='ddout(event,this,-2)' id='members_pan' style='position:absolute;width:277px;height:" << OpenMCU::vmcfg.vmconf[n].splitcfg.mockup_height << "px'>...</div>";
   page << "</div>";
 

@@ -23,7 +23,7 @@
 #define USE_LIBYUV	0
 
 // libyuv filtering type: kFilterNone|kFilterBilinear|kFilterBox
-#define LIBYUV_FILTER	kFilterBox
+#define LIBYUV_FILTER	kFilterBilinear
 
 
 #undef P_SSL

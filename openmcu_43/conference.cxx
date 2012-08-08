@@ -745,6 +745,7 @@ ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId 
   firstFrameReceiveTime = -1;
   totalVideoFramesSent = 0;
   firstFrameSendTime = -1;
+  txFrameWidth = 0; txFrameHeight = 0;
   vad = 0;
   muteIncoming = FALSE;
   disableVAD = FALSE;
@@ -898,6 +899,7 @@ void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & 
 void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PINDEX amount)
 {
   ++totalVideoFramesReceived;
+  txFrameWidth=width; txFrameHeight=height;
   if (!firstFrameReceiveTime.IsValid())
     firstFrameReceiveTime = PTime();
 

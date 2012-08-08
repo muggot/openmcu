@@ -266,6 +266,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #if OPENMCU_VIDEO
   forceScreenSplit = cfg.GetBoolean(ForceSplitVideoKey, TRUE);
   rsrc->Add(new PHTTPBooleanField(ForceSplitVideoKey, forceScreenSplit));
+#if USE_LIBYUV
+  scaleFilter=libyuv::LIBYUV_FILTER;
+#endif
 #endif
 
   // Finished the resource to add, generate HTML for it and add to name space

@@ -81,6 +81,11 @@ class OpenMCU : public OpenMCUProcessAncestor
     virtual BOOL GetEmptyMediaFrame(void * buffer, int width, int height, PINDEX & amount)
     { return GetPreMediaFrame(buffer, width, height, amount); }
 
+#if USE_LIBYUV
+    virtual libyuv::FilterMode GetScaleFilter(){ return scaleFilter; }
+    virtual void SetScaleFilter(libyuv::FilterMode newScaleFilter){ scaleFilter=newScaleFilter; }
+#endif
+
 #endif
 
 	static int defaultRoomCount;
@@ -97,6 +102,9 @@ class OpenMCU : public OpenMCUProcessAncestor
 
 #if OPENMCU_VIDEO
     BOOL forceScreenSplit;
+#if USE_LIBYUV
+    libyuv::FilterMode scaleFilter;
+#endif
 #endif
 };
 

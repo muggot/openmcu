@@ -78,6 +78,9 @@
 #define _IMGST1 2
 #define _IMGST2 4
 
+#if USE_LIBYUV
+#include <libyuv/scale.h>
+#endif
 
 typedef void * ConferenceMemberId;
 
@@ -501,7 +504,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual BOOL SetVAD2Position(ConferenceMemberId id);
 //    virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
     virtual void imageStores_operational_size(long w, long h, BYTE mask){
-//PTRACE(6,"iSos\t" << w << " " << h << " " << mask);
       long s=w*h*3/2;
       if(mask&_IMGST)if(s>imageStore_size){imageStore.SetSize(s);imageStore_size=s;}
       if(mask&_IMGST1)if(s>imageStore1_size){imageStore1.SetSize(s);imageStore1_size=s;}
@@ -785,6 +787,13 @@ class ConferenceMember : public PObject
       else 
         return totalVideoFramesSent * 1000.0 / ((PTime() - firstFrameSendTime).GetMilliSeconds()); }
 
+    PString GetVideoTxFrameSize() const
+    {
+      PStringStream res;
+      res << txFrameWidth << "x" << txFrameHeight;
+      return res;
+    }
+
     double GetVideoRxFrameRate() const
     { 
       if (totalVideoFramesReceived == 0)
@@ -868,6 +877,8 @@ class ConferenceMember : public PObject
 
     PTime firstFrameReceiveTime;
     PINDEX totalVideoFramesReceived;
+    
+    int txFrameWidth, txFrameHeight;
 #endif
 };
 

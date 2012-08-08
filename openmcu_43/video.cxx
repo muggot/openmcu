@@ -1015,7 +1015,7 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
     /* dst_u */     (uint8*)((long)_dst+dw*dh),                 /* dst_stride_u */ (int)(dw >> 1),
     /* dst_v */     (uint8*)((long)_dst+dw*dh+(dw>>1)*(dh>>1)), /* dst_stride_v */ (int)(dw >> 1),
     /* dst_width */ (int)dw,                                    /* dst_height */   (int)dh,
-    /* filtering */ libyuv::LIBYUV_FILTER
+    /* filtering */ OpenMCU::Current().GetScaleFilter()
   );
 #else
   else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==TCIF_WIDTH    && dh==TCIF_HEIGHT)   // CIF16 -> TCIF
