@@ -1031,6 +1031,115 @@ RTP_Session::SendReceiveStatus RTP_Session::OnSendData(RTP_DataFrame & frame)
   return e_ProcessPacket;
 }
 
+void RTP_Session::SetLastTimeRTPQueue(void)
+{
+  PTime oldTime;
+  std::map<WORD, RTP_DataFrame *>::iterator r;
+
+  for(r = frameQueue.begin(); r != frameQueue.end(); r++) 
+  {
+   if(oldTime > r->second->localTimeStamp) oldTime = r->second->localTimeStamp;
+  }
+  lastWriteTime = oldTime;
+}
+
+void RTP_Session::CopyRTPDataFrame(RTP_DataFrame & dstFrame, RTP_DataFrame & srcFrame)
+{
+  PINDEX frameSize=srcFrame.GetSize();
+  dstFrame.SetSize(frameSize);
+  memcpy(dstFrame.GetPointer(),srcFrame.GetPointer(),frameSize);
+  frameSize = srcFrame.GetPayloadSize();
+  dstFrame.SetPayloadSize(frameSize);
+}
+
+
+BOOL RTP_Session::ReadRTPQueue(RTP_DataFrame & frame)
+{
+ PTRACE(6, "RTP\tReadRTPQueue");
+ if(frameQueue.size() == 0) return FALSE; // queue is empty
+
+ std::map<WORD, RTP_DataFrame *>::iterator r = frameQueue.find(expectedSequenceNumber);
+
+ if (r != frameQueue.end())
+ {
+  CopyRTPDataFrame(frame,*(r->second));
+  delete r->second;
+  frameQueue.erase(r);
+  SetLastTimeRTPQueue();
+  PTRACE(6, "RTP\tReadRTPQueue Get frame from queue " << expectedSequenceNumber << " " << frame.GetSequenceNumber());
+  return TRUE;
+ }
+
+ if((PTime() - lastWriteTime).GetMilliSeconds() > 250)
+ {
+  WORD i = 0; while( (r = frameQueue.find(expectedSequenceNumber + i)) == frameQueue.end()) i++;
+  PTRACE(6, "RTP\tReadRTPQueue Timeout, return first frame from queue " << expectedSequenceNumber + i);
+  CopyRTPDataFrame(frame,*(r->second));
+  delete r->second;
+  frameQueue.erase(r);
+  return TRUE;
+ }
+
+ return FALSE;
+}
+
+BOOL RTP_Session::ProcessRTPQueue(RTP_DataFrame & frame)
+{
+ PTRACE(6, "RTP\tProcessRTPQueue");
+ WORD sequenceNumber = frame.GetSequenceNumber();
+ if (sequenceNumber == expectedSequenceNumber) return TRUE;
+// if (sequenceNumber > 65435 && expectedSequenceNumber < 100) return;
+ if (sequenceNumber < expectedSequenceNumber) return TRUE;
+
+ PTime now;  // Get timestamp now
+
+// if((now - lastWriteTime).GetMilliSeconds() > 250 && frameQueue.size() == 0) return TRUE;
+
+// Out of order frame received, needs to put it in queue
+ std::map<WORD, RTP_DataFrame *>::iterator r = frameQueue.find(sequenceNumber);
+ if (r != frameQueue.end()) // duplicate frame
+ {
+  delete r->second;  
+  frameQueue.erase(r);  
+  SetLastTimeRTPQueue();
+ }
+
+ frame.localTimeStamp = now;
+
+ RTP_DataFrame * newFrame = new RTP_DataFrame();
+ CopyRTPDataFrame(*newFrame,frame);
+
+ frameQueue.insert(std::map<WORD, RTP_DataFrame *>::value_type(sequenceNumber, newFrame));
+ SetLastTimeRTPQueue();
+ PTRACE(6, "RTP\tProcessRTPQueue Put frame into queue " << sequenceNumber);
+
+ r = frameQueue.find(expectedSequenceNumber);
+
+ if (r != frameQueue.end())
+ {
+  PTRACE(6, "RTP\tProcessRTPQueue Get frame from queue " << expectedSequenceNumber);
+  CopyRTPDataFrame(frame,*(r->second));
+  delete r->second;
+  frameQueue.erase(r);
+  SetLastTimeRTPQueue();
+  return TRUE;
+ }
+ 
+ if((now - lastWriteTime).GetMilliSeconds() > 250) // Timeout, return first frame from queue
+ {
+  WORD i = 0; while( (r = frameQueue.find(expectedSequenceNumber + i)) == frameQueue.end()) i++;
+  PTRACE(6, "RTP\tProcessRTPQueue Timeout, return first frame from queue " << expectedSequenceNumber + i);
+  CopyRTPDataFrame(frame,*(r->second));
+  delete r->second;
+  frameQueue.erase(r);
+  return TRUE;
+ }
+
+ frame.SetSequenceNumber(expectedSequenceNumber-1);
+ return FALSE;
+}
+
+
 
 RTP_Session::SendReceiveStatus RTP_Session::OnReceiveData(const RTP_DataFrame & frame, const RTP_UDP & rtp)
 {
@@ -1069,6 +1178,8 @@ RTP_Session::SendReceiveStatus RTP_Session::OnReceiveData(const RTP_DataFrame & 
              << " ignored, expecting SSRC=" << syncSourceIn);
       return e_IgnorePacket; // Non fatal error, just ignore
     }
+
+    if(jitter == NULL) ProcessRTPQueue(const_cast < RTP_DataFrame & > (frame));
 
     WORD sequenceNumber = frame.GetSequenceNumber();
     if (sequenceNumber == expectedSequenceNumber) {
@@ -1827,7 +1938,18 @@ BOOL RTP_UDP::SetRemoteSocketInfo(PIPSocket::Address address, WORD port, BOOL is
 
 BOOL RTP_UDP::ReadData(RTP_DataFrame & frame, BOOL loop)
 {
-  do {
+  do 
+  {
+   if(jitter == NULL)
+    {
+     if(ReadRTPQueue(frame))
+      {
+       PTRACE(2, "RTP\tReadData Get frame from queue " << frame.GetSequenceNumber());
+       OnReceiveData(frame,*this);
+       return TRUE; // Got frame from queue
+      }
+    }
+
 #ifdef H323_RTP_AGGREGATE
     PTime start;
 #endif
