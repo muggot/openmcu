@@ -22,9 +22,22 @@ FT_Library ft_library;
 FT_Face ft_face;
 FT_Bool ft_use_kerning;
 FT_UInt ft_glyph_index,ft_previous;
-int ft_error=555;
 BOOL ft_subtitles=FALSE;
-#endif
+// Fake error code mean that we need initialize labels from scratch:
+#define FT_INITIAL_ERROR 555
+// Number of frames skipped before render label:
+#define FT_SKIPFRAMES    50
+// Label's options:
+#define FT_P_H_CENTER    0x0001
+#define FT_P_V_CENTER    0x0002
+#define FT_P_RIGHT       0x0004
+#define FT_P_BOTTOM      0x0008
+#define FT_P_TRANSPARENT 0x0010
+#define FT_P_DISABLED    0x0020
+#define FT_P_SUBTITLES   0x0040
+#define FT_P_REALTIME    0x0080
+int ft_error=FT_INITIAL_ERROR;
+#endif // #if USE_FREETYPE
 
 #if USE_LIBYUV
 #include <libyuv/scale.h>
@@ -346,135 +359,127 @@ MCUVideoMixer::VideoMixPosition::VideoMixPosition(ConferenceMemberId _id,  int _
 
 #if USE_FREETYPE
 unsigned MCUSimpleVideoMixer::printsubs_calc(unsigned v, char s[10]){
-// PTRACE(6,"FreeType\tprintsubs_calc in " << v << " / " << s);
- int slashpos=-1;
- char s2[10];
- for(int i=0;i<10;i++){
-  s2[i]=s[i];
-  if(s[i]==0) break;
-  if(s[i]=='/') slashpos=i;
- }
- if (slashpos==-1) {
-//  PTRACE(6,"FreeType\tprintsubs_calc out " << s);
-  return atoi(s);
- }
- s2[slashpos]=0;
- unsigned mul=atoi(s2);
+ int slashpos=-1; char s2[10];
+ for(int i=0;i<10;i++){ s2[i]=s[i]; if(s[i]==0) break; if(s[i]=='/') slashpos=i; }
+ if (slashpos==-1) return atoi(s);
+ s2[slashpos]=0; unsigned mul=atoi(s2);
  for(int i=slashpos+1;i<10;i++) s2[i-slashpos-1]=s[i];
- s2[9-slashpos]=0;
- unsigned div=atoi(s2);
- if(div>0) {
-//  PTRACE(6,"FreeType\tprintsubs_calc out " << v << "*" << mul << "/" << div);
-  return v*mul/div;
- }
+ s2[9-slashpos]=0; unsigned div=atoi(s2);
+ if(div>0) return v*mul/div;
  PTRACE(6,"FreeType\tprintsubs_calc out !DIVISION BY ZERO! " << v << "*" << mul << "/" << div);
  return 1;
 }
 
 void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer, unsigned int fw, unsigned int fh, unsigned int ft_properties){
-  if(vmp.label_init) {
-    if(ft_properties & 16) {
+  vmp.fc++; if(vmp.fc<FT_SKIPFRAMES) return; // Frame counter
+  VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
+  if(!(ft_properties & FT_P_REALTIME)) if(vmp.label_init) { // Pasting from buffer
+    if(ft_properties & FT_P_TRANSPARENT) {
       MixRectIntoFrameGrayscale(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,1);
-      ReplaceUV_Rect((BYTE *)buffer,fw,fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor>>8,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor&0xFF,0,vmp.label_y,fw,vmp.label_h);
+      ReplaceUV_Rect((BYTE *)buffer,fw,fh,vmpcfg.label_bgcolor>>8,vmpcfg.label_bgcolor&0xFF,0,vmp.label_y,fw,vmp.label_h);
     }
-    if(ft_properties & 64) MixRectIntoFrameSubsMode(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,0);
-    if(!(ft_properties & 80)) CopyRectIntoFrame(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh);
+    if(ft_properties & FT_P_SUBTITLES) MixRectIntoFrameSubsMode(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,0);
+    if(!(ft_properties & (FT_P_SUBTITLES + FT_P_TRANSPARENT))) CopyRectIntoFrame(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh);
     return;
   }
-
-  vmp.fc++;
-  if(vmp.fc<50) return;
-
-  if (ft_error==555) {
-    PTRACE(3,"FreeType\tInitialization");
-    if ((ft_error = FT_Init_FreeType(&ft_library))) return;
+  if (ft_error==FT_INITIAL_ERROR) { // Initialization
+    PTRACE(3,"FreeType\tInitialization"); if ((ft_error = FT_Init_FreeType(&ft_library))) return;
     ft_error = FT_New_Face(ft_library,OpenMCU::vmcfg.fontfile,0,&ft_face);
-    if (!ft_error){
-      PTRACE(3,"FreeType\tTruetype font " << OpenMCU::vmcfg.fontfile << " loaded");
-      ft_use_kerning=FT_HAS_KERNING(ft_face);
-    }
+    if (!ft_error){ ft_use_kerning=FT_HAS_KERNING(ft_face); PTRACE(3,"FreeType\tTruetype font " << OpenMCU::vmcfg.fontfile << " loaded with" << (ft_use_kerning?"":"out") << " kerning"); }
     else PTRACE(3,"FreeType\tCould not load truetype font: " << OpenMCU::vmcfg.fontfile);
   }
-
-  if(ft_error) return;
-
+  if(ft_error) return; // Stop using freetype on fail
   unsigned int x, y, w, h, ft_fontsizepix;
-  if(vmp.height*fw>vmp.width*fh){
-    w=fh*vmp.width/vmp.height; h=fh;
-    ft_fontsizepix=printsubs_calc(fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].fontsize);
-    y=ft_fontsizepix/2; x=(fw-w)/2; h-=y;
-  } else if(vmp.height*fw<vmp.width*fh){
-    w=fw; h=fw*vmp.height/vmp.width;
-    ft_fontsizepix=printsubs_calc(fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].fontsize);
-    y=ft_fontsizepix/2; h-=y; x=0; y+=(fh-h)/2;
-  } else {
-    w=fw; h=fh;
-    ft_fontsizepix=printsubs_calc(fh,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].fontsize);
-    x=0; y=ft_fontsizepix/2; h-=y;
-  }
-  int ft_borderxl=printsubs_calc(w,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_left);
-  int ft_borderxr=printsubs_calc(w,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_right);
-  int ft_borderyt=printsubs_calc(h,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_top);
-  int ft_borderyb=printsubs_calc(h,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border_bottom);
+  if(ft_properties & FT_P_REALTIME){ w=fw; h=fh; ft_fontsizepix=printsubs_calc(fh,vmpcfg.fontsize); x=0; y=ft_fontsizepix/2; h-=y; }
+  else if(vmp.height*fw>vmp.width*fh){ w=fh*vmp.width/vmp.height; h=fh; ft_fontsizepix=printsubs_calc(fh,vmpcfg.fontsize); y=ft_fontsizepix/2; x=(fw-w)/2; h-=y; }
+  else if(vmp.height*fw<vmp.width*fh){ w=fw; h=fw*vmp.height/vmp.width; ft_fontsizepix=printsubs_calc(fh,vmpcfg.fontsize); y=ft_fontsizepix/2; h-=y; x=0; y+=(fh-h)/2; }
+  else { w=fw; h=fh; ft_fontsizepix=printsubs_calc(fh,vmpcfg.fontsize); x=0; y=ft_fontsizepix/2; h-=y; }
+  int ft_borderxl=printsubs_calc(w,vmpcfg.border_left);
+  int ft_borderxr=printsubs_calc(w,vmpcfg.border_right);
+  int ft_borderyt=printsubs_calc(h,vmpcfg.border_top);
+  int ft_borderyb=printsubs_calc(h,vmpcfg.border_bottom);
 
   if((ft_error = FT_Set_Pixel_Sizes(ft_face,0,ft_fontsizepix))) return;
-  PString username=OpenMCU::Current().GetEndpoint().GetUsername(vmp.id);
+  if(vmp.terminalName.GetLength()==0) vmp.terminalName=OpenMCU::Current().GetEndpoint().GetUsername(vmp.id);
 
-  if(strlen((const char *)username)<1){ vmp.fc=0; return; }
-
-  FT_GlyphSlot ft_slot=ft_face->glyph;
+  struct Bitmaps{ PBYTEArray *bmp; int l, t, w, h, x; }; Bitmaps *ft_bmps=NULL; PINDEX slotCounter=0;
   int pen_x=x+ft_borderxl; int pen_y=y+ft_borderyt;
   int pen_x_max=pen_x;
-  unsigned int charcode; ft_previous=0;
-  imageStores_operational_size(fw,fh,_IMGST2);
-  FillYUVFrame_YUV(imageStore2.GetPointer(),0,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor>>8,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_bgcolor&0xFF,fw,fh);
-  for(unsigned int i=0;i<strlen((const char *)username);++i)
-  {
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].cut_before_bracket){ if(username[i+1]=='[') break; if(username[i+1]=='(') break; }
-    charcode=(BYTE)username[i];
-    if(!(charcode&128)){ // 0xxxxxxx
-    } else if(((charcode&224)==192)&&(i+1<strlen((const char *)username))){ //110xxxxx 10xxxxxx
-      i++;
-      charcode=((charcode&31)<<6)+((BYTE)username[i]&63);
-    } else if(((charcode&240)==224)&&(i+2<strlen((const char *)username))){ //1110xxxx 10xxxxxx 10xxxxxx
-      charcode=((charcode&15)<<12) + (((unsigned int)((BYTE)username[i+1]&63))<<6) + ((BYTE)username[i+2]&63);
-      i+=2;
-    } else if(((charcode&248)==240)&&(i+3<strlen((const char *)username))){ //11110xxx 10xxxxxx 10xxxxxx 10xxxxxx
-       charcode=((charcode&7)<<18) + (((unsigned int)((BYTE)username[i+1]&63))<<12) + (((unsigned int)((BYTE)username[i+2]&63))<<6) + ((BYTE)username[i+3]&63);
-       i+=3;
-    }
+  unsigned int charcode, c2, ft_previous=0;
+  PINDEX len=vmp.terminalName.GetLength(); for(PINDEX i=0;i<len;++i) {
+    charcode=(BYTE)vmp.terminalName[i]; if(i<len-1)c2=(BYTE)vmp.terminalName[i+1]; else c2=0;
+    if(vmpcfg.cut_before_bracket) if(charcode==' ') if(c2=='[' || c2=='(') break;
+    if(!(charcode&128))                                               { /* 0xxxxxxx */ } // utf-8 -> unicode
+    else if(((charcode&224)==192)&&(i+1<vmp.terminalName.GetLength())){ /* 110xxxxx 10xxxxxx */ charcode=((charcode&31)<<6)+(c2&63); i++; }
+    else if(((charcode&240)==224)&&(i+2<vmp.terminalName.GetLength())){ /* 1110xxxx 10xxxxxx 10xxxxxx */ charcode=((charcode&15)<<12) + (((unsigned int)(c2&63))<<6) + ((BYTE)vmp.terminalName[i+2]&63); i+=2; }
+    else if(((charcode&248)==240)&&(i+3<vmp.terminalName.GetLength())){ /* 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx */ charcode=((charcode&7)<<18) + (((unsigned int)(c2&63))<<12) + (((unsigned int)((BYTE)vmp.terminalName[i+2]&63))<<6) + ((BYTE)vmp.terminalName[i+3]&63); i+=3; }
+    ft_bmps=(Bitmaps*)realloc((void *)ft_bmps,(slotCounter+1)*sizeof(Bitmaps));
+    FT_GlyphSlot ft_slot=ft_face->glyph;
     ft_glyph_index=FT_Get_Char_Index(ft_face,charcode);
-    if(ft_use_kerning&&ft_previous&&ft_glyph_index){
-      FT_Vector delta;
-      FT_Get_Kerning(ft_face,ft_previous,ft_glyph_index,FT_KERNING_DEFAULT,&delta);
-      pen_x+=delta.x>>6;
+    if(ft_use_kerning && ft_previous && ft_glyph_index){ FT_Vector delta; FT_Get_Kerning(ft_face,ft_previous,ft_glyph_index,FT_KERNING_DEFAULT,&delta); pen_x+=delta.x>>6; }
+    if( (ft_error = FT_Load_Glyph(ft_face,ft_glyph_index,FT_LOAD_RENDER)) ) {
+      PTRACE(1,"FreeType\tError " << ft_error << " during FT_Load_Glyph. Debug info:\n\tvmp.fc=" << vmp.fc << "\n\tcharcode=" << charcode << "\n\ti=" << i << "/" << len << "\n\ttext=" << vmp.terminalName << "\n\n\n\n\t*** Further use of FreeType will blocked! ***\n\n\n");
+      for(PINDEX i=slotCounter-1;i>=0;i--) {ft_bmps[i].bmp->SetSize(0); delete ft_bmps[i].bmp; }
+      free((void*)ft_bmps); return;
     }
-    if((ft_error=FT_Load_Glyph(ft_face,ft_glyph_index,FT_LOAD_RENDER))) return;
-    if(pen_x+(ft_slot->advance.x>>6)+ft_borderxr-x >= w){
-      if(pen_x_max<pen_x)pen_x_max=pen_x;
-      pen_x=x+ft_borderxl;
-      pen_y+=ft_fontsizepix;
-      if(pen_y+ft_fontsizepix+ft_borderyb-y >= h) break;
+    Bitmaps & ft_bmp = ft_bmps[slotCounter];
+    if(pen_x + (ft_slot->advance.x>>6) + ft_borderxr-x >= w){ // checking horizontal frame overflow
+      if(pen_x_max < pen_x)pen_x_max=pen_x; // store max. h. pos in pen_x_max
+      pen_x = x+ft_borderxl; // cr
+      pen_y += ft_fontsizepix; // lf
+      if(pen_y + ft_fontsizepix + ft_borderyb-y >= h) break; // checking vertical frame overflow
     }
-    if(fw==CIF_WIDTH && fh==CIF_HEIGHT) CopyGrayscaleIntoCIF((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows);
-    else if(fw==CIF4_WIDTH && fh==CIF4_HEIGHT) CopyGrayscaleIntoCIF4((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows);
-    else if(fw==CIF16_WIDTH && fh==CIF16_HEIGHT) CopyGrayscaleIntoCIF16((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows);
-    else CopyGrayscaleIntoFrame((const BYTE *)(&ft_slot->bitmap)->buffer,imageStore2.GetPointer(),pen_x+ft_slot->bitmap_left,pen_y+ft_fontsizepix-ft_slot->bitmap_top,(&ft_slot->bitmap)->width,(&ft_slot->bitmap)->rows,fw,fh);
+    ft_bmp.x=pen_x-x;
+    ft_bmp.l=ft_slot->bitmap_left;
+    ft_bmp.t=ft_slot->bitmap_top;
+    ft_bmp.w=(&ft_slot->bitmap)->width;
+    ft_bmp.h=(&ft_slot->bitmap)->rows;
+    ft_bmp.bmp=new PBYTEArray;
+    ft_bmp.bmp->SetSize(ft_bmp.w*ft_bmp.h);
+    memcpy(ft_bmp.bmp->GetPointer(),(&ft_slot->bitmap)->buffer,ft_bmp.w*ft_bmp.h);
     pen_x+=ft_slot->advance.x>>6;
-    ft_previous=ft_glyph_index;
+    ft_previous=ft_glyph_index; slotCounter++;
   }
-  if(pen_x_max<pen_x)pen_x_max=pen_x;
+  if(pen_x_max < pen_x)pen_x_max=pen_x;
   int ft_width=ft_borderxr+pen_x_max-x; //pen_x_max already contain ft_borderxl
   int ft_height=ft_borderyb+pen_y+ft_fontsizepix-y; //pen_y already contain ft_borderyt
-  PTRACE(3,"FreeType\tSetting vmp buffer size to " << (ft_width*ft_height*3/2));
-  vmp.label_buffer.SetSize(ft_width*ft_height*3/2);
-  CopyRectFromFrame(imageStore2.GetPointer(),vmp.label_buffer.GetPointer(),x,y,ft_width,ft_height,fw,fh);
-  if((ft_properties&4)>0)vmp.label_x=fw-x-ft_width; else if(ft_properties&1)vmp.label_x=(fw-ft_width)>>1; else vmp.label_x=x;
-  if((ft_properties&8)>0)vmp.label_y=fh-y-ft_height; else if((ft_properties&2)>0)vmp.label_y=(fh-ft_height)>>1; else vmp.label_y=y;
-  vmp.label_w=ft_width;
-  vmp.label_h=ft_height;
-  vmp.fc=0;
-  vmp.label_init=TRUE;
+  if(ft_properties & FT_P_RIGHT) vmp.label_x=fw-x-ft_width; else if(ft_properties & FT_P_H_CENTER)vmp.label_x=(fw-ft_width)>>1; else vmp.label_x=x;
+  if(ft_properties & FT_P_BOTTOM) vmp.label_y=fh-y-ft_height; else if(ft_properties & FT_P_V_CENTER)vmp.label_y=(fh-ft_height)>>1; else vmp.label_y=y;
+  vmp.label_w=ft_width; vmp.label_h=ft_height;
+
+  if(ft_properties & FT_P_REALTIME){ // rendering
+    PTRACE(3,"FreeType\tSetting temp. vmp buffer size to " << (ft_width*ft_height*3/2));
+    if(vmp.label_buffer.GetSize()<ft_width*ft_height*3/2)vmp.label_buffer.SetSize(ft_width*ft_height*3/2);
+    FillYUVFrame_YUV(vmp.label_buffer.GetPointer(),0,vmpcfg.label_bgcolor>>8,vmpcfg.label_bgcolor&0xFF,ft_width,ft_height);
+//    memset(vmp.label_buffer.GetPointer(),0,ft_width*ft_height*3/2); // remove "*3/2" ???
+    pen_y=ft_borderyt;
+    for(PINDEX i=0;i<slotCounter;i++){
+     if(i>0) if(ft_bmps[i].x < ft_bmps[i-1].x) pen_y+=ft_fontsizepix; //lf
+     CopyGrayscaleIntoFrame( ft_bmps[i].bmp->GetPointer(), vmp.label_buffer.GetPointer(),
+       ft_bmps[i].l+ft_bmps[i].x, pen_y+ft_fontsizepix-ft_bmps[i].t,
+       ft_bmps[i].w, ft_bmps[i].h,  ft_width, ft_height );
+    }
+    if(ft_properties & FT_P_TRANSPARENT) {
+      MixRectIntoFrameGrayscale(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,1);
+      ReplaceUV_Rect((BYTE *)buffer,fw,fh,vmpcfg.label_bgcolor>>8,vmpcfg.label_bgcolor&0xFF,0,vmp.label_y,fw,vmp.label_h);
+    }
+    if(ft_properties & FT_P_SUBTITLES) MixRectIntoFrameSubsMode(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,0);
+    if(!(ft_properties & (FT_P_SUBTITLES + FT_P_TRANSPARENT))) CopyRectIntoFrame(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh);
+  } else { // buffering
+    PTRACE(3,"FreeType\tRendering label to vmp.label_buffer[" << (ft_width*ft_height*3/2) << "]");
+    if(vmp.label_buffer.GetSize()<ft_width*ft_height*3/2)vmp.label_buffer.SetSize(ft_width*ft_height*3/2);
+      FillYUVFrame_YUV(vmp.label_buffer.GetPointer(),0,vmpcfg.label_bgcolor>>8,vmpcfg.label_bgcolor&0xFF,ft_width,ft_height);
+      pen_y=ft_borderyt;
+    for(PINDEX i=0;i<slotCounter;i++){
+     if(i>0) if(ft_bmps[i].x < ft_bmps[i-1].x) pen_y+=ft_fontsizepix; //lf
+     CopyGrayscaleIntoFrame( ft_bmps[i].bmp->GetPointer(), vmp.label_buffer.GetPointer(),
+       ft_bmps[i].l+ft_bmps[i].x, pen_y+ft_fontsizepix-ft_bmps[i].t,
+       ft_bmps[i].w, ft_bmps[i].h,  ft_width, ft_height );
+    }
+    vmp.label_init=TRUE;
+  }
+  for(PINDEX i=slotCounter-1;i>=0;i--) {ft_bmps[i].bmp->SetSize(0); delete ft_bmps[i].bmp; }
+  free((void*)ft_bmps);
 }
 #endif
 
@@ -491,8 +496,8 @@ void MCUVideoMixer::FillYUVFrame(void * buffer, BYTE R, BYTE G, BYTE B, int w, i
   ConvertRGBToYUV(R, G, B, Y, U, V);
 
   const int ysize = w*h;
-  const int usize = w*h/4;
-  const int vsize = w*h/4;
+  const int usize = (w>>1)*(h>>1);
+  const int vsize = usize;
 
   memset((BYTE *)buffer + 0,             Y, ysize);
   memset((BYTE *)buffer + ysize,         U, usize);
@@ -502,8 +507,8 @@ void MCUVideoMixer::FillYUVFrame(void * buffer, BYTE R, BYTE G, BYTE B, int w, i
 void MCUVideoMixer::FillYUVFrame_YUV(void * buffer, BYTE Y, BYTE U, BYTE V, int w, int h)
 {
   const int ysize = w*h;
-  const int usize = w*h/4;
-  const int vsize = w*h/4;
+  const int usize = (w/2)*(h/2);
+  const int vsize = usize;
 
   memset((BYTE *)buffer + 0,             Y, ysize);
   memset((BYTE *)buffer + ysize,         U, usize);
@@ -3665,8 +3670,8 @@ void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const v
     vf.used--;
 
 #if USE_FREETYPE
-    // printing subtitles in source frame buffer:
-    if(!(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask&32)) Print_Subtitles(vmp,(void *)buffer,width,height,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask);
+    // printing subtitles in source frame buffer (fast):
+    if(!(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask & (FT_P_REALTIME + FT_P_DISABLED))) Print_Subtitles(vmp,(void *)buffer,width,height,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask);
 #endif
 
     int pw=vmp.width*vf.width/CIF4_WIDTH; // pixel w&h of vmp-->fs
@@ -3696,6 +3701,11 @@ void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const v
     }
     // border (split lines):
     if (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist, vmp, pw, ph);
+
+#if USE_FREETYPE
+    // printing subtitles (realtime rendering):
+    if((OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask & (FT_P_REALTIME + FT_P_DISABLED)) == FT_P_REALTIME) Print_Subtitles(vmp,(void *)ist,pw,ph,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask);
+#endif
 
     int px=vmp.xpos*vf.width/CIF4_WIDTH; // pixel x&y of vmp-->fs
     int py=vmp.ypos*vf.height/CIF4_HEIGHT;

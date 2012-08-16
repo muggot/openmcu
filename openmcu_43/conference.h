@@ -259,6 +259,7 @@ class MCUVideoMixer
 	BOOL label_init;
 	unsigned int fc;
 	PBYTEArray label_buffer;
+	PString terminalName;
     };
 
     virtual ~MCUVideoMixer()

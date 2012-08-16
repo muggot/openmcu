@@ -1280,14 +1280,14 @@ PString OpenMCUH323EndPoint::GetUsername(ConferenceMemberId id)
 {
   PStringStream output;
   PStringStream output2;
-  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
+//  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
 
   ConferenceListType::iterator r;
   for (r = conferenceList.begin(); r != conferenceList.end(); ++r) {
     Conference & conference = *(r->second);
     {
-      PWaitAndSignal m(conference.GetMutex());
+//      PWaitAndSignal m(conference.GetMutex());
       Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
       Conference::MemberNameList::const_iterator s;
       for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
