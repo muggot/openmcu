@@ -829,6 +829,14 @@ RTP_Session::~RTP_Session()
 #ifndef NO_H323_AUDIO_CODECS
   delete jitter;
 #endif
+
+  std::map<WORD, RTP_DataFrame *>::iterator r;
+  while(frameQueue.size() > 0)
+  {
+   r = frameQueue.begin();
+   delete r->second;
+   frameQueue.erase(r);
+  }
 }
 
 
