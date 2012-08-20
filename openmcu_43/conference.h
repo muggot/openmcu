@@ -141,36 +141,36 @@ class VideoFrameStoreList {
 class ConferenceMember;
 
 /// Video Mixer Configurator - Begin ///
-#define VMPC_CONFIGURATION_NAME "layouts.conf"
-#define VMPC_DEFAULT_ID "undefined"
-#define VMPC_DEFAULT_FW 704
-#define VMPC_DEFAULT_FH 576
-#define VMPC_DEFAULT_POSX 0
-#define VMPC_DEFAULT_POSY 0
-#define VMPC_DEFAULT_WIDTH VMPC_DEFAULT_FW/2
-#define VMPC_DEFAULT_HEIGHT VMPC_DEFAULT_FH/2
-#define VMPC_DEFAULT_MODE_MASK 0
-#define VMPC_DEFAULT_BORDER 1
-#define VMPC_DEFAULT_VIDNUM 0
-#define VMPC_DEFAULT_TAGS "all"
-#define VMPC_DEFALUT_SCALE_MODE 1
+#define VMPC_CONFIGURATION_NAME               "layouts.conf"
+#define VMPC_DEFAULT_ID                       "undefined"
+#define VMPC_DEFAULT_FW                       704
+#define VMPC_DEFAULT_FH                       576
+#define VMPC_DEFAULT_POSX                     0
+#define VMPC_DEFAULT_POSY                     0
+#define VMPC_DEFAULT_WIDTH                    VMPC_DEFAULT_FW/2
+#define VMPC_DEFAULT_HEIGHT                   VMPC_DEFAULT_FH/2
+#define VMPC_DEFAULT_MODE_MASK                0
+#define VMPC_DEFAULT_BORDER                   1
+#define VMPC_DEFAULT_VIDNUM                   0
+#define VMPC_DEFAULT_TAGS                     "all"
+#define VMPC_DEFALUT_SCALE_MODE               1
 #define VMPC_DEFAULT_REALLOCATE_ON_DISCONNECT 0
-#define VMPC_DEFAULT_NEW_FROM_BEGIN 1
-#define VMPC_DEFAULT_MOCKUP_WIDTH 367
-#define VMPC_DEFAULT_MOCKUP_HEIGHT 300
+#define VMPC_DEFAULT_NEW_FROM_BEGIN           1
+#define VMPC_DEFAULT_MOCKUP_WIDTH             367
+#define VMPC_DEFAULT_MOCKUP_HEIGHT            300
 
 #ifdef USE_FREETYPE
-#define VMPC_DEFAULT_LABEL_MASK 24
-#define VMPC_DEFAULT_LABEL_TEXT "%username%"
-#define VMPC_DEFAULT_LABEL_COLOR 0x0ffffff
-#define VMPC_DEFAULT_LABEL_BGCOLOR 0x004040
-#define VMPC_DEFAULT_FONTFILE "Russo_One.ttf"
-#define VMPC_DEFAULT_FONTSIZE "1/16"
-#define VMPC_DEFAULT_BORDER_LEFT "5/80"
-#define VMPC_DEFAULT_BORDER_RIGHT "5/80"
-#define VMPC_DEFAULT_BORDER_TOP "0"
-#define VMPC_DEFAULT_BORDER_BOTTOM "1/60"
-#define VMPC_DEFAULT_CUT_BEFORE_BRACKET 1
+#define VMPC_DEFAULT_LABEL_MASK               152
+#define VMPC_DEFAULT_LABEL_TEXT               "%username%"
+#define VMPC_DEFAULT_LABEL_COLOR              0x0ffffff
+#define VMPC_DEFAULT_LABEL_BGCOLOR            0x004040
+#define VMPC_DEFAULT_FONTFILE                 "Russo_One.ttf"
+#define VMPC_DEFAULT_FONTSIZE                 "1/16"
+#define VMPC_DEFAULT_BORDER_LEFT              "5/80"
+#define VMPC_DEFAULT_BORDER_RIGHT             "5/80"
+#define VMPC_DEFAULT_BORDER_TOP               "0"
+#define VMPC_DEFAULT_BORDER_BOTTOM            "1/60"
+#define VMPC_DEFAULT_CUT_BEFORE_BRACKET       1
 #endif
 
 struct VMPBlock {
@@ -178,7 +178,7 @@ struct VMPBlock {
 };
 
 struct VMPCfgOptions {
- unsigned posx, posy, width, height, border, label_mask, label_color, label_bgcolor, scale_mode, blks, zidx, charset;
+ unsigned posx, posy, width, height, border, label_mask, label_color, label_bgcolor, scale_mode, blks;
  char label_text[64];
  bool cut_before_bracket;
  char fontsize[10], border_left[10], border_right[10], border_top[10], border_bottom[10];
@@ -788,10 +788,10 @@ class ConferenceMember : public PObject
       else 
         return totalVideoFramesSent * 1000.0 / ((PTime() - firstFrameSendTime).GetMilliSeconds()); }
 
-    PString GetVideoTxFrameSize() const
+    PString GetVideoRxFrameSize() const
     {
       PStringStream res;
-      res << txFrameWidth << "x" << txFrameHeight;
+      res << rxFrameWidth << "x" << rxFrameHeight;
       return res;
     }
 
@@ -879,7 +879,7 @@ class ConferenceMember : public PObject
     PTime firstFrameReceiveTime;
     PINDEX totalVideoFramesReceived;
     
-    int txFrameWidth, txFrameHeight;
+    int rxFrameWidth, rxFrameHeight;
 #endif
 };
 

@@ -225,6 +225,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\html.cxx"
+				>
+			</File>
+			<File
 				RelativePath=".\precompile.cxx"
 				>
 				<FileConfiguration

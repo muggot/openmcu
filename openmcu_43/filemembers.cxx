@@ -1,5 +1,22 @@
 #include <ptlib.h>
+
+#ifdef _WIN32
+
+#define __S_IREAD       0400    /* Read by owner.  */
+#define __S_IWRITE      0200    /* Write by owner.  */
+#define __S_IEXEC       0100    /* Execute by owner.  */
+#define S_IRUSR __S_IREAD       /* Read by owner.  */
+#define S_IWUSR __S_IWRITE      /* Write by owner.  */
+#define S_IRGRP (S_IRUSR >> 3)  /* Read by group.  */
+#define S_IROTH (S_IRGRP >> 3)  /* Read by others.  */
+#define DONT_USE_MKFIFO 1
+
+#else //!_WIN32
+
 #include <unistd.h>
+
+#endif //_WIN32
+
 //#include "conference.h"
 #include "mcu.h"
 //#include "filemembers.h"
@@ -203,8 +220,10 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
   PString cstr = "sound." + conference->GetNumber();
   const char *cname = cstr;
   cout << "cname= " << cname << "\n";
+#ifndef DONT_USE_MKFIFO
   mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
   int SS=open(cname,O_WRONLY);
+#endif
   PBYTEArray pcmData(960);
   PAdaptiveDelay audioDelay;
   int success=0;
@@ -216,16 +235,20 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
     // read a block of data
     ReadAudio(pcmData.GetPointer(), pcmData.GetSize());
 
+#ifndef DONT_USE_MKFIFO
     // write to the file
     if (write(SS,(const void *)pcmData.GetPointer(), pcmData.GetSize())<0) 
      { close(SS); SS=open(cname,O_WRONLY); success=0; audioDelay.Restart(); }
     else if(success==0) { success++; audioDelay.Restart(); } 
 //    cout << "Write ";
+#endif
     // and delay
     audioDelay.Delay(pcmData.GetSize() / 32);
   }
 
+#ifndef DONT_USE_MKFIFO
   close(SS);
+#endif
   ConferenceManager & mgr = conference->GetManager();
   mgr.RemoveMember(conference->GetID(), this);
 }
@@ -235,8 +258,10 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
   PString cstr = "video." + conference->GetNumber();
   const char *cname = cstr;
   cout << "cname= " << cname << "\n";
+#ifndef DONT_USE_MKFIFO
   mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
   int SV=open(cname,O_WRONLY);
+#endif
   int amount = CIF4_WIDTH*CIF4_HEIGHT*3/2;
   PBYTEArray videoData(amount);
   PAdaptiveDelay videoDelay;
@@ -247,16 +272,20 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
     // read a block of data
     conference->ReadMemberVideo(this,videoData.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT,amount);
 
+#ifndef DONT_USE_MKFIFO
     // write to the file
     if (write(SV,(const void *)videoData.GetPointer(), amount)<0) 
      { close(SV); SV=open(cname,O_WRONLY); success=0; videoDelay.Restart();}
     else if(success==0) { success++; videoDelay.Restart(); }
+#endif
 
     // and delay
     videoDelay.Delay(100);
   }
 
+#ifndef DONT_USE_MKFIFO
   close(SV);
+#endif
 }
 
 void ConferenceFileMember::ReadThread(PThread &, INT)

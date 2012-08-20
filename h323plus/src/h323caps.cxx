@@ -3013,7 +3013,7 @@ H323Capabilities::H323Capabilities(const H323Connection & connection,
     {
      if (pdu->m_capabilityTable[i].HasOptionalField(H245_CapabilityTableEntry::e_capability))
      {
-      if(pdu->m_capabilityTable[i].m_capability.GetTag() == H245_Capability::H245_Capability::e_receiveVideoCapability)
+      if(pdu->m_capabilityTable[i].m_capability.GetTag() == H245_Capability::e_receiveVideoCapability)
       {
        H245_VideoCapability & video = pdu->m_capabilityTable[i].m_capability;
        if(video.GetTag() == 3) //h263

@@ -10,10 +10,12 @@
 #include <ptlib/videoio.h>
 #include <opalwavfile.h>
 
+#if USE_SWRESAMPLE
 extern "C" {
 #include <libswresample/swresample.h>
 #include <libavutil/audioconvert.h>
 };
+#endif //USE_SWRESAMPLE
 
 #include "config.h"
 class OpenMCUH323EndPoint : public H323EndPoint
@@ -107,7 +109,11 @@ class OutgoingAudio : public PChannel
     OpenMCUH323Connection & conn;
 
     unsigned int sampleRate;
+#if USE_SWRESAMPLE
     struct SwrContext *swrc;
+#else
+    BOOL swrc;
+#endif
     PShortArray swr_buf;
 
     PAdaptiveDelay delay;
@@ -131,7 +137,11 @@ class IncomingAudio : public PChannel
     OpenMCUH323Connection & conn;
 
     unsigned int sampleRate;
+#if USE_SWRESAMPLE
     struct SwrContext *swrc;
+#else
+    BOOL swrc;
+#endif
     PShortArray swr_buf;
 
     PMutex audioChanMutex;
