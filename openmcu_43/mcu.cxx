@@ -217,11 +217,17 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   rsrc->Add(new PHTTPStringField(UserNameKey, 25, adminUserName));
   rsrc->Add(new PHTTPPasswordField(PasswordKey, 25, adminPassword));
 
+//rsrc->Add(new PHTTPStringField("<h3>Other</h3><!--", 1, "","<td></td><td></td>"));
+
   // Log level for messages
   rsrc->Add(new PHTTPIntegerField(LogLevelKey,
                                   PSystemLog::Fatal, PSystemLog::NumLogLevels-1,
                                   GetLogLevel(),
                                   "1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug"));
+
+  // default log file name
+  logFilename = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
+  rsrc->Add(new PHTTPStringField(CallLogFilenameKey, 50, logFilename));
 
   // Trace level
   rsrc->Add(new PHTTPIntegerField(TraceLevelKey, 0, 6, TraceLevel, "0...6"));
@@ -242,6 +248,14 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   endpoint->Initialise(cfg, rsrc);
 
+#if OPENMCU_VIDEO
+  forceScreenSplit = cfg.GetBoolean(ForceSplitVideoKey, TRUE);
+  rsrc->Add(new PHTTPBooleanField(ForceSplitVideoKey, forceScreenSplit));
+#if USE_LIBYUV
+  scaleFilter=libyuv::LIBYUV_FILTER;
+#endif
+#endif
+
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
   rsrc->Add(new PHTTPStringField(DefaultRoomKey, 25, defaultRoomName));
@@ -255,21 +269,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   OnCreateConfigPage(cfg, *rsrc);
 
-  // default log file name
-  logFilename = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
-  rsrc->Add(new PHTTPStringField(CallLogFilenameKey, 50, logFilename));
-
   // allow/disallow self-invite:
   allowLoopbackCalls = cfg.GetBoolean(AllowLoopbackCallsKey, FALSE);
   rsrc->Add(new PHTTPBooleanField(AllowLoopbackCallsKey, allowLoopbackCalls));
-
-#if OPENMCU_VIDEO
-  forceScreenSplit = cfg.GetBoolean(ForceSplitVideoKey, TRUE);
-  rsrc->Add(new PHTTPBooleanField(ForceSplitVideoKey, forceScreenSplit));
-#if USE_LIBYUV
-  scaleFilter=libyuv::LIBYUV_FILTER;
-#endif
-#endif
 
   // Finished the resource to add, generate HTML for it and add to name space
   PServiceHTML html("System Parameters");
@@ -279,6 +281,13 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   PString html1 = rsrc->GetString();
   PStringStream html2; EndPage(html2,GetCopyrightText());
   PStringStream htmlpage; htmlpage << html0 << html1 << html2;
+//Make sections (DJs3000):
+  htmlpage.Replace("right>Username<TD","left colspan=3><h3>Authentication</h3></tr><tr><td align=RIGHT>Username<TD");
+  htmlpage.Replace("right>Enable video<TD","left colspan=3><h3>Video</h3></tr><tr><td align=RIGHT>Enable video<TD");
+//  htmlpage.Replace("right>Connecting WAV File<TD","left colspan=3><h3>Sound [DISABLED]</h3></tr><tr><td align=RIGHT>Connecting WAV File<TD");
+  htmlpage.Replace("right>HTTP Port<TD","left colspan=3><h3>Network</h3></tr><tr><td align=RIGHT>HTTP Port<TD");
+  htmlpage.Replace("right>Log Level<TD","left colspan=3><h3>Logs</h3></tr><tr><td align=RIGHT>Log Level<TD");
+  htmlpage.Replace("right>Default room<TD","left colspan=3><h3>Other</h3></tr><tr><td align=RIGHT>Default room<TD");
   rsrc->SetString(htmlpage);
 
   // Create the status page

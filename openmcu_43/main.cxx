@@ -64,15 +64,15 @@ void MyMCU::OnCreateConfigPage(PConfig & cfg, PConfigPage & rsrc)
 {
   // get WAV file played to a user when they enter a conference
   connectingWAVFile = cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile);
-  rsrc.Add(new PHTTPStringField(ConnectingWAVFileKey, 50, connectingWAVFile));
+//  rsrc.Add(new PHTTPStringField(ConnectingWAVFileKey, 50, connectingWAVFile));
 
   // get WAV file played to a conference when a new user enters
   enteringWAVFile = cfg.GetString(EnteringWAVFileKey, DefaultEnteringWAVFile);
-  rsrc.Add(new PHTTPStringField(EnteringWAVFileKey, 50, enteringWAVFile));
+//  rsrc.Add(new PHTTPStringField(EnteringWAVFileKey, 50, enteringWAVFile));
 
   // get WAV file played to a conference when a new user enters
   leavingWAVFile = cfg.GetString(LeavingWAVFileKey, DefaultLeavingWAVFile);
-  rsrc.Add(new PHTTPStringField(LeavingWAVFileKey, 50, leavingWAVFile));
+//  rsrc.Add(new PHTTPStringField(LeavingWAVFileKey, 50, leavingWAVFile));
 }
 
 #if OPENMCU_VIDEO

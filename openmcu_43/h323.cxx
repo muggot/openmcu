@@ -108,6 +108,18 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   AliasList.RemoveAll();
   localAliasNames.RemoveAll();
 
+///////////////////////////////////////////
+// NAT Router IP
+  PString nat_ip = cfg.GetString(NATRouterIPKey);
+  rsrc->Add(new PHTTPStringField(NATRouterIPKey, 25, nat_ip,"Type global IP address or leave blank if OpenMCU isn't behind NAT"));
+  if (nat_ip.Trim().IsEmpty()) {
+    behind_masq = FALSE;
+  } else {
+    masqAddressPtr = new PIPSocket::Address(nat_ip);
+    behind_masq = TRUE;
+    cout << "Masquerading as address " << *(masqAddressPtr) << endl;
+  }
+
 //////////////////////////////////////////////////////
 // Gatekeeper mode
   PStringArray labels(GKMODE_LABEL_COUNT, GKModeLabels); 
@@ -173,20 +185,8 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   rsrc->Add(new PHTTPIntegerField(VideoQualityKey, 1, 30, videoTxQuality));
 #endif
 
-  // NAT Router IP
-  PString nat_ip = cfg.GetString(NATRouterIPKey);
-  rsrc->Add(new PHTTPStringField(NATRouterIPKey, 25, nat_ip,"Type global IP address or leave blank if OpenMCU isn't behind NAT"));
-  if (nat_ip.Trim().IsEmpty()) {
-    behind_masq = FALSE;
-  } else {
-    masqAddressPtr = new PIPSocket::Address(nat_ip);
-    behind_masq = TRUE;
-    cout << "Masquerading as address " << *(masqAddressPtr) << endl;
-  }
-
 
   capabilities.RemoveAll();
-
 
   FILE *capCfg;
   int capsNum=0;
@@ -1280,14 +1280,18 @@ PString OpenMCUH323EndPoint::GetUsername(ConferenceMemberId id)
 {
   PStringStream output;
   PStringStream output2;
-//  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
+  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
 
   ConferenceListType::iterator r;
   for (r = conferenceList.begin(); r != conferenceList.end(); ++r) {
     Conference & conference = *(r->second);
     {
-//      PWaitAndSignal m(conference.GetMutex());
+      if(conference.GetMutex().WillBlock()) {
+        PTRACE(6,"GetUsername\tPreventing deadlock: empty string will returned");
+        return output;
+      }
+      PWaitAndSignal m(conference.GetMutex());
       Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
       Conference::MemberNameList::const_iterator s;
       for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 

@@ -26,7 +26,9 @@ BOOL ft_subtitles=FALSE;
 // Fake error code mean that we need initialize labels from scratch:
 #define FT_INITIAL_ERROR 555
 // Number of frames skipped before render label:
-#define FT_SKIPFRAMES    50
+#define FT_SKIPFRAMES    1
+// Number of getting username attempts:
+#define FT_ATTEMPTS      50
 // Label's options:
 #define FT_P_H_CENTER    0x0001
 #define FT_P_V_CENTER    0x0002
@@ -151,8 +153,6 @@ BOOL PVideoInputDevice_OpenMCU::GetFrameSizeLimits(unsigned & minWidth,
                                            unsigned & maxWidth,
                                            unsigned & maxHeight) 
 {
-//  maxWidth  = CIF16_WIDTH;
-//  maxHeight = CIF16_HEIGHT;
   maxWidth  = 2048;
   maxHeight = 2048;
   minWidth  = QCIF_WIDTH;
@@ -374,13 +374,16 @@ void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer,
   vmp.fc++; if(vmp.fc<FT_SKIPFRAMES) return; // Frame counter
   VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
   if(!(ft_properties & FT_P_REALTIME)) if(vmp.label_init) { // Pasting from buffer
-    if(ft_properties & FT_P_TRANSPARENT) {
-      MixRectIntoFrameGrayscale(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,1);
-      ReplaceUV_Rect((BYTE *)buffer,fw,fh,vmpcfg.label_bgcolor>>8,vmpcfg.label_bgcolor&0xFF,0,vmp.label_y,fw,vmp.label_h);
+    if(vmp.label_buffer_fw!=fw || vmp.label_buffer_fh!=fh) vmp.label_init=false; // Checking for changed frame size
+    else {
+      if(ft_properties & FT_P_TRANSPARENT) {
+        MixRectIntoFrameGrayscale(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,1);
+        ReplaceUV_Rect((BYTE *)buffer,fw,fh,vmpcfg.label_bgcolor>>8,vmpcfg.label_bgcolor&0xFF,0,vmp.label_y,fw,vmp.label_h);
+      }
+      if(ft_properties & FT_P_SUBTITLES) MixRectIntoFrameSubsMode(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,0);
+      if(!(ft_properties & (FT_P_SUBTITLES + FT_P_TRANSPARENT))) CopyRectIntoFrame(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh);
+      return;
     }
-    if(ft_properties & FT_P_SUBTITLES) MixRectIntoFrameSubsMode(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,0);
-    if(!(ft_properties & (FT_P_SUBTITLES + FT_P_TRANSPARENT))) CopyRectIntoFrame(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh);
-    return;
   }
   if (ft_error==FT_INITIAL_ERROR) { // Initialization
     PTRACE(3,"FreeType\tInitialization"); if ((ft_error = FT_Init_FreeType(&ft_library))) return;
@@ -400,7 +403,10 @@ void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer,
   int ft_borderyb=printsubs_calc(h,vmpcfg.border_bottom);
 
   if((ft_error = FT_Set_Pixel_Sizes(ft_face,0,ft_fontsizepix))) return;
-  if(vmp.terminalName.GetLength()==0) vmp.terminalName=OpenMCU::Current().GetEndpoint().GetUsername(vmp.id);
+  if(vmp.terminalName.GetLength()==0) if(vmp.fc<FT_SKIPFRAMES+FT_ATTEMPTS) {
+    vmp.terminalName=OpenMCU::Current().GetEndpoint().GetUsername(vmp.id);
+    if(vmp.terminalName.GetLength()==0) return;
+  }
 
   struct Bitmaps{ PBYTEArray *bmp; int l, t, w, h, x; }; Bitmaps *ft_bmps=NULL; PINDEX slotCounter=0;
   int pen_x=x+ft_borderxl; int pen_y=y+ft_borderyt;
@@ -465,6 +471,7 @@ void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer,
     }
     if(ft_properties & FT_P_SUBTITLES) MixRectIntoFrameSubsMode(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh,0);
     if(!(ft_properties & (FT_P_SUBTITLES + FT_P_TRANSPARENT))) CopyRectIntoFrame(vmp.label_buffer,(BYTE *)buffer,vmp.label_x,vmp.label_y,vmp.label_w,vmp.label_h,fw,fh);
+    vmp.label_init=FALSE;
   } else { // buffering
     PTRACE(3,"FreeType\tRendering label to vmp.label_buffer[" << (ft_width*ft_height*3/2) << "]");
     if(vmp.label_buffer.GetSize()<ft_width*ft_height*3/2)vmp.label_buffer.SetSize(ft_width*ft_height*3/2);
@@ -476,6 +483,8 @@ void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer,
        ft_bmps[i].l+ft_bmps[i].x, pen_y+ft_fontsizepix-ft_bmps[i].t,
        ft_bmps[i].w, ft_bmps[i].h,  ft_width, ft_height );
     }
+    vmp.label_buffer_fw=fw;
+    vmp.label_buffer_fh=fh;
     vmp.label_init=TRUE;
   }
   for(PINDEX i=slotCounter-1;i>=0;i--) {ft_bmps[i].bmp->SetSize(0); delete ft_bmps[i].bmp; }
@@ -3660,6 +3669,7 @@ void MCUSimpleVideoMixer::NullRectangle(int x, int y, int w, int h){
 
 void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount)
 {
+  VMPCfgOptions & vmpcfg=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
   PWaitAndSignal m(mutex);
   VideoFrameStoreList::VideoFrameStoreListMapType::iterator r; // trying write to all using frames
   for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++){
@@ -3671,7 +3681,7 @@ void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const v
 
 #if USE_FREETYPE
     // printing subtitles in source frame buffer (fast):
-    if(!(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask & (FT_P_REALTIME + FT_P_DISABLED))) Print_Subtitles(vmp,(void *)buffer,width,height,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask);
+    if(!(vmpcfg.label_mask&(FT_P_REALTIME+FT_P_DISABLED))) Print_Subtitles(vmp,(void *)buffer,width,height,vmpcfg.label_mask);
 #endif
 
     int pw=vmp.width*vf.width/CIF4_WIDTH; // pixel w&h of vmp-->fs
@@ -3700,25 +3710,19 @@ void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const v
       ist=imageStore.GetPointer();
     }
     // border (split lines):
-    if (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist, vmp, pw, ph);
+    if (vmpcfg.border) VideoSplitLines((void *)ist, vmp, pw, ph);
 
 #if USE_FREETYPE
     // printing subtitles (realtime rendering):
-    if((OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask & (FT_P_REALTIME + FT_P_DISABLED)) == FT_P_REALTIME) Print_Subtitles(vmp,(void *)ist,pw,ph,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask);
+    if((vmpcfg.label_mask&(FT_P_REALTIME+FT_P_DISABLED)) == FT_P_REALTIME) Print_Subtitles(vmp,(void *)ist,pw,ph,vmpcfg.label_mask);
 #endif
 
     int px=vmp.xpos*vf.width/CIF4_WIDTH; // pixel x&y of vmp-->fs
     int py=vmp.ypos*vf.height/CIF4_HEIGHT;
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++) CopyRFromRIntoR(
-      ist, vf.data.GetPointer(),
-        px, py, pw, ph,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx*vf.width/CIF4_WIDTH,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy*vf.height/CIF4_HEIGHT,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width*vf.width/CIF4_WIDTH,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height*vf.height/CIF4_HEIGHT,
-        vf.width, vf.height,
-        pw, ph
-    );
+    for(unsigned i=0;i<vmpcfg.blks;i++) CopyRFromRIntoR( ist, vf.data.GetPointer(), px, py, pw, ph,
+        vmpcfg.blk[i].posx*vf.width/CIF4_WIDTH, vmpcfg.blk[i].posy*vf.height/CIF4_HEIGHT,
+        vmpcfg.blk[i].width*vf.width/CIF4_WIDTH, vmpcfg.blk[i].height*vf.height/CIF4_HEIGHT,
+        vf.width, vf.height, pw, ph );
 
 //    frameStores.InvalidateExcept(vf.width, vf.height);
     vf.valid=1;
