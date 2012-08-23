@@ -1280,6 +1280,10 @@ PString OpenMCUH323EndPoint::GetUsername(ConferenceMemberId id)
 {
   PStringStream output;
   PStringStream output2;
+  if(conferenceManager.GetConferenceListMutex().WillBlock()) {
+    PTRACE(6,"GetUsername\tPossible deadlock, empty string will returned");
+    return output;
+  }
   PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
 

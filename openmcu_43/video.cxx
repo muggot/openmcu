@@ -28,7 +28,7 @@ BOOL ft_subtitles=FALSE;
 // Number of frames skipped before render label:
 #define FT_SKIPFRAMES    1
 // Number of getting username attempts:
-#define FT_ATTEMPTS      50
+#define FT_ATTEMPTS      100
 // Label's options:
 #define FT_P_H_CENTER    0x0001
 #define FT_P_V_CENTER    0x0002
