@@ -1111,7 +1111,28 @@ OpalMediaOption * OpalMediaFormat::FindOption(const PString & name) const
   if (index == P_MAX_INDEX)
     return NULL;
 
-  return &options[index];
+// The following part was modified corresponding the Ilya Pleshchinskii's fix,
+// for more details see: http://www.spinics.net/lists/openh323/msg16546.html
+
+//  return &options[index];
+
+// begin of Ilya fix
+  OpalMediaOption * op = &options[index];
+  int i = 0;
+  while ((op->GetName() != name) && (i < 50))
+  {
+    OpalMediaOptionString search(name, false);
+    PINDEX index = options.GetValuesIndex(search);
+    if (index == P_MAX_INDEX)
+      return NULL;
+    op = &options[index];
+    i++;
+  }
+  if (op->GetName() != name)
+    return NULL;
+  return op;
+// end of Ilya fix
+
 }
 
 
