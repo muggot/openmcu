@@ -860,7 +860,7 @@ class H323Connection : public PObject
 
     /**Write a PDU to the signalling channel.
       */
-    BOOL WriteSignalPDU(
+    virtual BOOL WriteSignalPDU(
       H323SignalPDU & pdu       ///< PDU to write.
     );
 

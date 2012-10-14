@@ -804,7 +804,7 @@ RTP_Session::RTP_Session(
 
 RTP_Session::~RTP_Session()
 {
-  userData->OnFinalStatistics(*this);
+  if(userData) userData->OnFinalStatistics(*this);
 
   PTRACE_IF(2, packetsSent != 0 || packetsReceived != 0,
             "RTP\tFinal statistics:\n"
@@ -824,7 +824,7 @@ RTP_Session::~RTP_Session()
             "    averageJitter     = " << (jitterLevel >> 7) << "\n"
             "    maximumJitter     = " << (maximumJitterLevel >> 7)
             );
-  delete userData;
+  if(userData) delete userData;
 
 #ifndef NO_H323_AUDIO_CODECS
   delete jitter;
@@ -874,7 +874,7 @@ void RTP_Session::SetToolName(const PString & name)
 
 void RTP_Session::SetUserData(RTP_UserData * data)
 {
-  delete userData;
+  if(userData) delete userData;
   userData = data;
 }
 
@@ -1063,7 +1063,6 @@ void RTP_Session::CopyRTPDataFrame(RTP_DataFrame & dstFrame, RTP_DataFrame & src
 
 BOOL RTP_Session::ReadRTPQueue(RTP_DataFrame & frame)
 {
- PTRACE(6, "RTP\tReadRTPQueue");
  if(frameQueue.size() == 0) return FALSE; // queue is empty
 
  std::map<WORD, RTP_DataFrame *>::iterator r = frameQueue.find(expectedSequenceNumber);
@@ -1093,11 +1092,13 @@ BOOL RTP_Session::ReadRTPQueue(RTP_DataFrame & frame)
 
 BOOL RTP_Session::ProcessRTPQueue(RTP_DataFrame & frame)
 {
- PTRACE(6, "RTP\tProcessRTPQueue");
  WORD sequenceNumber = frame.GetSequenceNumber();
  if (sequenceNumber == expectedSequenceNumber) return TRUE;
-// if (sequenceNumber > 65435 && expectedSequenceNumber < 100) return;
- if (sequenceNumber < expectedSequenceNumber) return TRUE;
+ if (frame.GetTimestamp() < lastRcvdTimeStamp)
+ {
+  PTRACE(6, "RTP\tProcessRTPQueue out of order old frame received " << sequenceNumber << " " << lastRcvdTimeStamp << " > " << frame.GetTimestamp());
+  return TRUE;
+ }
 
  PTime now;  // Get timestamp now
 
@@ -1168,6 +1169,7 @@ RTP_Session::SendReceiveStatus RTP_Session::OnReceiveData(const RTP_DataFrame & 
   // Check packet sequence numbers
   if (packetsReceived == 0) {
     expectedSequenceNumber = (WORD)(frame.GetSequenceNumber() + 1);
+    lastRcvdTimeStamp = frame.GetTimestamp();
     firstDataReceivedTime = PTime();
     PTRACE(2, "RTP\tFirst data:"
               " ver=" << frame.GetVersion()
@@ -1190,7 +1192,9 @@ RTP_Session::SendReceiveStatus RTP_Session::OnReceiveData(const RTP_DataFrame & 
     if(jitter == NULL) ProcessRTPQueue(const_cast < RTP_DataFrame & > (frame));
 
     WORD sequenceNumber = frame.GetSequenceNumber();
-    if (sequenceNumber == expectedSequenceNumber) {
+    if (sequenceNumber == expectedSequenceNumber) 
+    {
+      lastRcvdTimeStamp = frame.GetTimestamp();
       expectedSequenceNumber++;
       consecutiveOutOfOrderPackets = 0;
       // Only do statistics on packets after first received in talk burst
@@ -1488,6 +1492,7 @@ void RTP_Session::OnRxSenderReport(const SenderReport & PTRACE_PARAM(sender),
   for (PINDEX i = 0; i < reports.GetSize(); i++)
     PTRACE(3, "RTP\tOnRxSenderReport RR: " << reports[i]);
 #endif
+ octetsReceived++;
 }
 
 
@@ -1499,6 +1504,7 @@ void RTP_Session::OnRxReceiverReport(DWORD PTRACE_PARAM(src),
   for (PINDEX i = 0; i < reports.GetSize(); i++)
     PTRACE(3, "RTP\tOnReceiverReport RR: " << reports[i]);
 #endif
+ octetsReceived++;
 }
 
 
@@ -1952,7 +1958,6 @@ BOOL RTP_UDP::ReadData(RTP_DataFrame & frame, BOOL loop)
     {
      if(ReadRTPQueue(frame))
       {
-       PTRACE(2, "RTP\tReadData Get frame from queue " << frame.GetSequenceNumber());
        OnReceiveData(frame,*this);
        return TRUE; // Got frame from queue
       }

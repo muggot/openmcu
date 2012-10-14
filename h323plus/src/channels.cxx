@@ -671,6 +671,7 @@ H323Channel::H323Channel(H323Connection & conn, const H323Capability & cap)
 H323Channel::~H323Channel()
 {
   connection.UseBandwidth(bandwidthUsed, TRUE);
+  PTRACE(3, "LogChan\tDeleting codec and capability");
 
   delete codec;
   delete capability;
@@ -1567,6 +1568,7 @@ void H323_RTPChannel::Receive()
           rtpTimestamp += codecFrameRate;
           size -= written != 0 ? written : size;
           ptr += written;
+          PTRACE(6, "H323RTP\tWrite to decoder");          
         }
         PTRACE_IF(1, size < 0, "H323RTP\tPayload size too small, short " << -size << " bytes.");
       }

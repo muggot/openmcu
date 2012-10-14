@@ -1,0 +1,822 @@
+$WELCOME$
+<p>
+Окно <b>Parameters</b> позволяет задать общие параметры работы сервера. Все изменения сохраняются в файле (по умолчанию в .pwlib_config/.ini).<br />
+Окно <b>MCU Status</b> позволяет просматривать в реальном времени статистику и параметры подключения терминалов.<br />
+Окно <b>Invite user</b> предназначено для отправки приглашений в конференцию от OpenMCU на терминалы.<br/>
+Для подключения, в поле &laquo;Room Name&raquo; нужно указать имя конференции, 
+к которой будет подключен терминал 
+(для подключения к конференции по умолчанию нужно указать имя комнаты по умолчанию &mdash; <i>Default room</i> в настройках, обычно <b>room101</b>), 
+в поле &laquo;Address&raquo; набрать IP-адрес 
+(или номер при использовании гейткипера) 
+подключаемого терминала и нажать кнопочку &laquo;Invite&raquo;. 
+В результате на терминал уйдет вызов.<br />
+Окно <b>Room Control</b> предназначено для управления конференциями. Подробнее в инструкции.
+</p>
+<p>Конференция, созданная подключением первого терминала, изначально работает в неуправляемом режиме, при этом все участники конференции видят одинаковую картинку.
+В неуправляемом режиме OpenMCU автоматически меняет раскладку экрана в зависимости от количества подключенных пользователей в порядке, определённом в файле layouts.conf. После подключения 100 пользователей все последующие подключенные пользователи будут не видны на экранах терминалов, но будут видеть первых 100 пользователей.
+Звук в неуправляемом режиме передается и воспроизводится от всех подключенных участников.</p>
+$$
+$PARAMETERS$
+$$
+$STATUS$
+Станица <b>MCU Status</b> позволяет просматривать в реальном времени 
+статистику и параметры подключения терминалов.
+$$
+$INVITE$
+Для подключения в поле Room Name нужно указать имя конференции 
+к которой будет подключен терминал (для подключения к конференции 
+по умолчанию нужно указать имя room101), в поле Address 
+набрать IP адрес (или номер при использовании гейткипера) 
+подключаемого терминала и нажать кнопочку Invite. 
+В результате на терминал уйдет вызов.
+$$
+$INVITE_F$
+В запросе на подключение была допущена ошибка.
+$$
+$INVITE_S$
+Запрос на подключение успешно отправлен на удаленный терминал.
+$$
+$SELECT$
+Выберите комнату для управления и нажмите кнопку Select.
+$$
+$CONTROL$
+<div id='rclh' onclick='document.getElementById("rclh").innerHTML="Эта страница предназначена для управления конференцией. Управление раскладкой позволяет выбрать видимых участников конференции и назначить им нужное расположение на экране. Для каждой позиции в раскладке можно явно указать видимого участника конференции, либо оставить позицию пустой, либо указать, что позиция выбрана для автоматической активации по голосовой активности.<br>За автоматическую активацию по голосовой активности отвечают два режима VAD и VAD2. Если позиции в раскладке назначить режим VAD, то это будет означать, что позицию может занять любой терминал, с которого идет активный звуковой сигнал.<br>Замена терминала на занятой VAD позиции возможна по истечении интервала Voice activation timeout.";'>[?] Эта страница предназначена для...</div>
+</div>
+<input id='autoinvite' type=checkbox onclick="document.cookie='autoinv='+this.checked"> Invite all
+<input id='autorecall' type=checkbox onclick="document.cookie='autorec='+this.checked"> Force preset:
+<input id='presetname' size=10 maxlength=12 onkeyup="{var s=pstrip(this.value);if(s!=this.value)this.value=s;}">
+<input class="btn btn-info" type=button value='Save' onclick='javascript:if(wpcheck())save_preset();'>
+<input class="btn btn-danger" type=button value='Del' onclick='javascript:if(wpcheck())delete_preset();'>
+<input id=disable_pe type=checkbox checked> W/p
+(<a href=# onclick='prraw()'>raw</a>)
+<span id=presets>*</span>
+
+<script language="javascript"><!--
+
+var max_subframes=100;
+
+var debug=false; if(debug)document.write('<div style="width:800px;height:80px;overflow:auto;border:1px dotted red" id="debug1">'); function dmsg(s){if(debug){document.getElementById('debug1').innerHTML+=s+'. ';document.getElementById('debug1').scrollTop=document.getElementById('debug1').scrollHeight;}}
+
+var fv_ids=Array('room','tag','moderated','vidmemnum','muteUnvisible','VAdelay','VAtimeout','VAlevel');
+var idsl=fv_ids.length;
+for(var i=0;i<max_subframes;i++)fv_ids[i+idsl]='usr'+i;
+var dd_in_progress=false;
+var query_active=false;
+var appendedflying=false;
+var dd_over=0;
+var dd_over_sel=-1;
+var prvnt=1;
+var mrefreshing=false;
+
+var query_gas = 0; // query status for 'form_gather_and_send()'
+var query_gas_result = 0; // query result of 'form_gather_and_send()': 0=OK; -1=FAIL; 1=in progress
+
+var otfrq=Array(); // on the fly control command queue
+var otf_in_progress = false; // on the fly control request flag
+
+var invall=false;
+
+var dd_moving_pos=false; // position for d&d
+var dd_moving_marker=0; // panel marker for d&d
+var dd_ex_marker=0;
+
+var recallflag=false;
+var offliners=false;
+
+eval("document.getElementById('autoinvite').checked="+getcookie('autoinv'));
+eval("document.getElementById('autorecall').checked="+getcookie('autorec'));
+
+prst=getcookie('prst'); apr=getcookie('apr');
+if(apr!==false) document.getElementById('presetname').value=apr;
+show_presets();
+
+function uncheck_recall(){
+ document.cookie='autorec=false';
+ document.getElementById('autorecall').checked=false;
+}
+
+function rotate_positions(d){
+  var n=max_subframes;
+  do {
+   n--;
+   eval("var e=!document.forms[0].usr"+n);
+   if(n<=0)if(!e) return e;
+  } while (e);
+  if(d==0)var q=document.forms[0].usr0.value; else eval("var q=document.forms[0].usr"+n+".value;");
+  uncheck_recall();
+  for(var i=0;i<n;i++)
+   if(d==0)eval("set_create_usr_value("+i+",document.forms[0].usr"+(i+1)+".value)");
+   else eval("set_create_usr_value("+(n-i)+",document.forms[0].usr"+(n-i-1)+".value)");
+  if(d!=0)set_create_usr_value(0,q); else set_create_usr_value(n,q);
+  return update_or_reload(false);
+}
+
+function getcookie(name){
+  var regexp=new RegExp("(?:; )?"+name+"=([^;]*);?");
+  if (regexp.test(document.cookie)) return decodeURIComponent(RegExp["$1"]);
+  return false;
+}
+
+function show_presets(){
+  var s='No presets created.'; if((prst!==false)&&(prst!=='')){
+   prsts=prst.split('#'); prsts.sort();
+   var comma=false; var r='';
+   for(var i in prsts){
+    var p=prsts[i].split('|'); if(comma)r+=' ';
+    r+=" <a class='btn btn-mini' href=# onclick='javascript:precall(\""+p[0]+"\")'>"+p[0]+"</a>";
+    comma=true;
+   }
+//   if(r!='')s='<b>Recall:</b> '+r;
+   if(r!='')s=r;
+  }
+  document.getElementById('presets').innerHTML=s;
+}
+
+function descreen1(s){ s+="";return s.replace(/\%7C/g,'|').replace(/\%23/g,'#'); }
+
+function screen1(s){ s+=""; return s.replace(/\|/g,'%7C').replace(/\#/g,'%23'); }
+
+function precall(id){ // recall preset by it's id
+  prsts=prst.split('#');
+  for(var i in prsts){
+   var p0=prsts[i];
+   p=p0.split('|');
+   if(p[0]==id){
+    k=1;
+    for(var j in fv_ids){
+      if(fv_ids[j]=='vidmemnum'){
+          var p_k=descreen1(p[k]);
+          for(var ii=selvmn.length-1;ii>=0;ii--) selvmn.remove(ii);
+          for(var ii=0;ii<backupvmp.length;ii++){
+            var option=document.createElement("option");
+            option.text=backupvmp[ii]; option.value=ii;
+            try { selvmn.add(option,selvmn.options[null]); } catch (e) { selvmn.add(option,null); }
+            if(p_k==option.text) selvmn.selectedIndex=ii;
+          }
+      }
+      else if(fv_ids[j].substr(0,3)=='usr') fv_smartset(fv_ids[j],user_decode(p[k]));
+      else if(fv_ids[j]=='tag') {
+        if(p[k].substr(0,3)!='v2.') {k--; handle_tags('all');}
+        else handle_tags(descreen1(p[k]).substr(3));
+      }
+      else
+        if(typeof p[k]!=='undefined') fv_smartset(fv_ids[j],p[k]);
+        else fv_smartset(fv_ids[j],'');
+
+      k++;
+    }
+    document.cookie='apr='+id;
+    return update_or_reload(true);
+//    document.forms[0].sendit.click();
+//    return true;
+   }
+  }
+  alert('Could not recall preset, please reload page');
+}
+
+function autoprecall(){
+  if(dd_in_progress)return false;
+  if(apr=='') {uncheck_recall();return false;}
+  prsts=prst.split('#');
+  for(var i in prsts){
+   var p0=prsts[i];
+   p=p0.split('|');
+   if(p[0]==apr){
+    k=1;
+    var flag=false;
+    for(var j in fv_ids){
+      var access="document.forms[0]."+fv_ids[j];
+      var before=false;
+      eval("if("+access+")before="+access+".value");
+      if(fv_ids[j]=='vidmemnum') {
+        if (descreen1(p[k]) != selvmn.options[selvmn.selectedIndex].text) {
+          return precall(apr)
+        }
+      }
+      else if(fv_ids[j].substr(0,3)=='usr') fv_smartset(fv_ids[j],user_decode(p[k]));
+      else if(fv_ids[j]=='tag') {
+        if(p[k].substr(0,3)!='v2.') {k--; handle_tags('all');}
+        else handle_tags(descreen1(p[k]).substr(3));
+      }
+      else if(typeof p[k]!=='undefined') fv_smartset(fv_ids[j],p[k]);
+      var after=false;
+      eval("if("+access+")after="+access+".value");
+      flag|=(before!=after);
+      k++;
+    }
+    if(flag)return form_gather_and_send(); else return true;
+   }
+  }
+  return false;
+}
+
+function fv_smartset(v,value){ eval("if(!document.forms[0]."+v+"){var ie=document.createElement('input');ie.setAttribute('type','hidden');ie.setAttribute('name','"+v+"');document.forms[0].appendChild(ie);}if((v=='moderated')||(v=='muteUnvisible')){document.forms[0]."+v+".checked=(value==1);}else if(v.substr(0,3)=='usr')set_create_usr_value(v.substr(3),value); else document.forms[0]."+v+".value=value;"); }
+
+function fv_smartget(v){
+  var p='document.forms[0].'+v;
+  eval("if("+p+"){if("+p+".type=='checkbox'){r="+p+".checked+0;}else if(("+p+".type=='select-one')&&(v!='vidmemnum')){r="+p+".options["+p+".selectedIndex].text;}else{r="+p+".value;}}else{r='';}");
+  if(r.length>9)if(r.lastIndexOf(']')==r.length-1){
+   var i1=r.lastIndexOf('[');
+   if(i1!=-1) r=r.substring(i1+1,r.length-1);
+  }
+  return r;
+}
+
+function pstrip(s){ return s.replace(/[^А-Яа-яA-Z0-9a-z-_]/gi,''); }
+
+function wpcheck(){ if(document.getElementById("disable_pe").checked){ alert("Please uncheck 'W/p' first."); return false; } return true; }
+
+function save_preset(){
+  var name=pstrip(document.getElementById('presetname').value);
+  if (name!='') {
+   document.cookie='apr='+name;
+   apr=name;
+   l='';
+   for(var i in fv_ids){
+    var f=fv_ids[i];
+    if(l!='')l+='|';
+    if(f=='vidmemnum') l+=screen1(selvmn.options[selvmn.selectedIndex].text);
+    else if(f=='tag') l+='v2.'+screen1(getcookie('tag'));
+    else l+=fv_smartget(f);
+   }
+   while(l.substring(l.length-2,l.length)=='||')l=l.substring(0,l.length-1);
+   var o=prst;
+   if (o===false) o=name+'|'+l; else
+   if (o=='') o=name+'|'+l; else {
+    var a=o.split('#');
+    var f=false;
+    for (var i in a){
+     var a0=a[i].split('|');
+     if (a0[0]==name) {
+      a[i]=name+'|'+l;
+      o=a.join('#');
+      f=true;
+      break;
+     }
+    }
+    if (!f) o+='#'+name+'|'+l;
+   }
+   document.cookie='prst='+o+'; expires=Sun, 1 Mar 2037 00:00:00';
+   prst=o; show_presets();
+  }
+}
+
+function delete_preset(){
+  var name=pstrip(document.getElementById('presetname').value);
+  var o=prst; if (o!==false) {
+   var r=''; var a=o.split('#'); var f=false;
+   for (var i in a) {
+    var a0=a[i].split('|'); if (a0[0]!=name) { if(r!='')r+='#'; r+=a[i]; }
+   }
+   document.cookie='prst='+r+'; expires=Sun, 1 Mar 2037 00:00:00';
+   prst=r; show_presets();
+  }
+}
+
+function user_decode(str){
+  if(str=='VAD')return -1;
+  if(str=='VAD2')return -2;
+  if(str=='')return 0;
+  if(typeof members==='undefined') return 0;
+  str=' ['+str+']'; var stlen=str.length;
+  for(var i=0;i<members.length;i++) if(members[i][2].indexOf(str)>=members[i][2].length-stlen) return members[i][1];
+  return 0;
+}
+
+function prraw(){ // templates import & export via raw string
+  document.getElementById('presets').innerHTML="<input id=prrawdata size=40 maxlength=3950>  <input class='btn btn-info' type=button value='Save' onclick='javascript:if(wpcheck()){document.cookie=\"prst=\"+document.getElementById(\"prrawdata\").value+\"; expires=Sun, 1 Mar 2037 00:00:00\";prst=document.getElementById(\"prrawdata\").value;show_presets();}'>  <input class='btn btn-info' type=button value='Close' onclick='show_presets()'>";
+  if(prst!==false)document.getElementById('prrawdata').value=prst;
+  document.getElementById('prrawdata').focus();
+  document.getElementById('prrawdata').select();
+}
+
+function update_or_reload(layout_changed){ if(layout_changed)return document.forms[0].sendit.click(); else return form_gather_and_send(); }
+
+function my_trim(s){ s+=""; return s.replace(/(^[\s\t\n\r]+)|([\s\t\n\r]+$)/g, ""); }
+
+function handle_tags(s){
+/// init. part:
+  var fontsize_min=10; var fontsize_max=16;
+  if(typeof tags_init=='undefined'){
+   var s0=getcookie('tag'); if(s0!==false) s=s0;
+   tags_map=Array(); tags_count=Array(); tags_fs=Array(); just_tags=Array(); max_tag=1;
+   for(var i=0;i<tags.length;i++){
+    var t=tags[i].split(',');
+    for(var j=0;j<t.length;j++){
+     tag=my_trim(t[j]);
+     if(tag!=""){
+       var sl=","+just_tags.join(",")+",";
+       if(sl.indexOf(","+tag+",")<0){ tags_map[tag]=i; tags_count[tag]=1; just_tags[just_tags.length]=tag; }
+       else { tags_map[tag]+=","+i; tags_count[tag]++; if(tags_count[tag]>max_tag)max_tag=tags_count[tag]; }
+     }
+    }
+   }
+   var font_mul=(fontsize_max-fontsize_min)/max_tag;
+   for(var i=0;i<just_tags.length;i++) tags_fs[just_tags[i]]=fontsize_min+Math.round(font_mul*tags_count[just_tags[i]]);
+   sort_tags=just_tags; sort_tags.sort(); selvmn=document.getElementById('vidmemnum'); backupvmp=Array();
+   for(var i=0;i<selvmn.length;i++) backupvmp[i]=selvmn.options[i].text; tags_init=1;
+  }
+///common part:
+  var selopt=selvmn.options[selvmn.selectedIndex].text;
+  tags_links="Tags: ";
+  for(var i=0;i<sort_tags.length;i++){
+   if(s!=sort_tags[i]){
+    tags_links+="<span class='btn btn-mini' style='font-weight:normal;font-size:"+tags_fs[sort_tags[i]]+"px' onclick='handle_tags(\""+sort_tags[i]+"\")'>"+sort_tags[i]+"</span>";
+   } else {
+    tags_links+="<span style='font-size:"+tags_fs[sort_tags[i]]+"px;color:red'>"+sort_tags[i]+"</span>";
+   }
+   if(i<sort_tags.length-1) tags_links+=' ';
+  }
+  document.getElementById('tags_here').innerHTML=tags_links;
+  for(var i=selvmn.length-1;i>=0;i--) selvmn.remove(i);
+  var modes=tags_map[s]+"";
+  modes=modes.split(',');
+  for(var i=0;i<modes.length;i++){
+   var option=document.createElement("option");
+   option.text=backupvmp[modes[i]];
+   option.value=modes[i];
+   try {
+    selvmn.add(option,selvmn.options[null]);
+   } catch (e) {
+    selvmn.add(option,null);
+   }
+   if(selopt==option.text) selvmn.selectedIndex=i;
+  }
+  document.cookie='tag='+s;
+}
+
+function ddstart(event,obj,npos,panel_marker){
+ if(dd_in_progress)return false; if(query_active)return false;
+ dd_moving_pos=npos;
+ dd_moving_marker=panel_marker;
+ dd_over_sel=-1;
+ dd_in_progress=true;
+ draggingobject=obj;
+ backupedbgcolor=obj.style.backgroundColor;
+ obj.style.backgroundColor='#557';
+ somethingflying=document.createElement('div');
+ var s=somethingflying.style;
+ s.width=obj.style.width;
+ s.height=obj.style.height;
+ s.border='1px dotted red';
+ if(panel_marker)somethingflying.innerHTML=obj.innerHTML;
+ s.backgroundColor=backupedbgcolor;
+ s.position='absolute';
+ s.cursor='move';
+ s.opacity='0.5';
+ s.filter="progid:DXImageTransform.Microsoft.Alpha(opacity=50)";
+ sfo_x=event.clientX;
+ sfo_y=event.clientY;
+ if(panel_marker==0){ // from mockup:
+  base_offset_x=document.getElementById('pp'+npos).offsetLeft-document.getElementById('pbase').offsetLeft;
+  base_offset_y=document.getElementById('pp'+npos).offsetTop-document.getElementById('pbase').offsetTop;
+ } else { // from right list panel:
+  var id=npos+"";
+  if(id.substr(0,1)=='-')id='_'+id.substr(1);
+  base_offset_x=document.getElementById('rpan_'+id).offsetLeft+document.getElementById('pp_2').offsetLeft-document.getElementById('pbase').offsetLeft;
+  base_offset_y=document.getElementById('rpan_'+id).offsetTop+document.getElementById('pp_2').offsetTop-document.getElementById('pbase').offsetTop;
+  if(panel_marker==1)base_offset_x+=23;
+  if(panel_marker==2)base_offset_x+=56;
+  base_offset_y-=document.getElementById('right_scroller').scrollTop;
+ }
+ appendedflying=false;
+ somethingflying.style.left=base_offset_x;
+ somethingflying.style.top=base_offset_y;
+ if(prvnt){
+  if(event.preventDefault)event.preventDefault(); else event.returnValue=false;
+  return false;
+ }
+}
+
+function ddprogress(event){
+ if(!dd_in_progress) return true;
+ if(!appendedflying){
+  appendedflying=true;
+  document.getElementById('pbase').appendChild(somethingflying);
+  somethingflying.style.backgroundColor='#9fc';
+  somethingflying.style.border='1px solid red';
+ }
+ somethingflying.style.left=base_offset_x-sfo_x+event.clientX+'px';
+ somethingflying.style.top=base_offset_y-sfo_y+event.clientY+'px';
+ if(event.preventDefault)event.preventDefault(); else event.returnValue=false;
+ return false;
+}
+
+function ddstop(event){
+ var ddos=dd_over_sel;
+ if(!dd_in_progress) return true;
+ if(dd_over!==0)ddout(event,dd_over,dd_over_sel);
+ dd_in_progress=false;
+ if(appendedflying) document.getElementById('pbase').removeChild(somethingflying);
+ appendedflying=false;
+ draggingobject.style.backgroundColor=backupedbgcolor;
+ if(ddos!=-1)dd_exchange_positions(dd_moving_pos,ddos);
+ return false;
+}
+
+function ddover(event,obj,npos){
+ if(!dd_in_progress) return true;
+ if(dd_over===obj)return false;
+ if((dd_moving_marker==0)&&(dd_moving_pos===npos)) {dd_over_sel=-1;return false;}
+ if(dd_moving_marker&&(document.getElementById('members_pan')==obj)) {dd_over_sel=-1;return false;}
+ if(dd_over!==0)ddout(event,dd_over,npos);
+ dd_over=obj;
+ dd_over_bgbkp=obj.style.backgroundColor;
+ if(npos==-2) {
+  if(dd_moving_pos>0) obj.style.backgroundColor='#ccc';
+ } else obj.style.backgroundColor='#f00';
+ dd_over_sel=npos;
+}
+
+function ddout(event,obj,npos){
+ if(!dd_in_progress) return true;
+ if(dd_over===0) return true;
+ dd_over.style.backgroundColor=dd_over_bgbkp;
+ dd_over=0;
+ dd_over_sel=-1;
+ return false;
+}
+
+function dd_exchange_positions(p1,p2){
+// alert(p1+' <--> '+p2+' ('+dd_moving_marker+')');
+ dd_ex_1=p1;
+ dd_ex_2=p2;
+ dd_ex_marker=dd_moving_marker;
+ query_active=1;
+ var d=document.forms[0];
+ var cmd=
+    'room='         + d.room.value;
+ if(d.moderated.checked)cmd+='&moderated=%2B';
+ if(d.muteUnvisible.checked)cmd+='&muteUnvisible=%2B';
+ cmd
+ +='&VAlevel='      + d.VAlevel.value
+  +'&VAdelay='      + d.VAdelay.value
+  +'&VAtimeout='    + d.VAtimeout.value
+  +'&vidmemnum='    + d.vidmemnum.value
+ ;
+ if((dd_moving_marker)&&(dd_ex_2<0)) return dd_exchange_positions_ok();
+ else if(dd_ex_2==-2) for(var i=0;i<max_subframes;i++){
+   eval('if(document.forms[0].usr'+i+')var value=document.forms[0].usr'+i+'.value;else var value=0;');
+   if(i==p1)value=0;
+   cmd+='&usr'+i+'='+value;
+ } else if(!dd_moving_marker) for(var i=0;i<max_subframes;i++){
+   eval('if(document.forms[0].usr'+i+')var value=document.forms[0].usr'+i+'.value;else var value=0;');
+   var j=i;
+   if(i==p1)j=p2;
+   if(i==p2)j=p1;
+   cmd+='&usr'+j+'='+value;
+ } else for(var i=0;i<max_subframes;i++){
+   eval('if(document.forms[0].usr'+i+')var value=document.forms[0].usr'+i+'.value;else var value=0;');
+   if(i==p2)if(dd_moving_marker==100)value=p1;else if(dd_moving_marker==5)value=0;else value=-dd_moving_marker;
+   cmd+='&usr'+i+'='+value;
+ }
+ cmd=cmd.replace(/\+/g,'%2B');
+ cro=createRequestObject();
+ cro.open('POST','Select',true);
+ cro.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+ cro.setRequestHeader("Content-length", cmd.length);
+ cro.setRequestHeader("Connection", "close");
+ cro.onreadystatechange=requestresult;
+ cro.send(cmd);
+}
+
+function form_gather_and_send(){
+ if(query_gas) return false; query_gas=1; var d=document.forms[0];
+ query_gas_result=1;
+ var cmd=
+    'room='         + d.room.value;
+ if(d.moderated.checked)cmd+='&moderated=%2B';
+ if(d.muteUnvisible.checked)cmd+='&muteUnvisible=%2B';
+ cmd
+ +='&VAlevel='      + d.VAlevel.value
+  +'&VAdelay='      + d.VAdelay.value
+  +'&VAtimeout='    + d.VAtimeout.value
+  +'&vidmemnum='    + d.vidmemnum.value
+ ;
+ for(var i=0;i<max_subframes;i++) eval('if(document.forms[0].usr'+i+')cmd+="&usr"+i+"="+document.forms[0].usr'+i+'.value;else cmd+="&usr"+i+"=0";');
+ cmd=cmd.replace(/\+/g,'%2B');
+ cro_gas=createRequestObject();
+ cro_gas.open('POST','Select',true);
+ cro_gas.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+ cro_gas.setRequestHeader("Content-length", cmd.length);
+ cro_gas.setRequestHeader("Connection", "close");
+ cro_gas.onreadystatechange=gas_result;
+ cro_gas.send(cmd);
+}
+
+function gas_result(){
+ try {
+  if (cro_gas.readyState==4) {
+   if (cro_gas.status==200) query_gas_result=0; else query_gas_result=-1;
+   cro_gas.abort();
+   query_gas=0;
+  }
+ } catch (e) { ; }
+}
+
+function set_create_usr_value(n,id){
+// alert('scuv('+n+','+id+')');
+ var d=false; eval('if(document.forms[0].usr'+n+')d=document.forms[0].usr'+n);
+ if(d===false) return false;
+ if(d.type!='select-one') return false;
+ var flag=false;
+ for(var i=0;i<d.length;i++)if(d.options[i].value==id) {flag=true;d.selectedIndex=i;break;}
+ if (flag) return true;
+ var option=document.createElement("option");
+ option.text=member_read_by_id(id,2);
+ option.value=id;
+ try {
+   d.add(option,selvmn.options[null]);
+ } catch (e) {
+   d.add(option,null);
+ }
+ d.selectedIndex=d.length-1;
+ return true;
+}
+
+function dd_exchange_positions_ok(){
+ if(dd_ex_marker&&(dd_ex_2<0)){
+ } else if(dd_ex_2==-2){
+  uncheck_recall();
+  eval('document.forms[0].usr'+dd_ex_1+'.value=0;');
+ } else if(dd_ex_marker){
+  uncheck_recall();
+  if(dd_ex_marker==5)set_create_usr_value(dd_ex_2,0);
+  else if(dd_ex_marker==100)set_create_usr_value(dd_ex_2,dd_ex_1);
+  else set_create_usr_value(dd_ex_2,-dd_ex_marker);
+ } else {
+  uncheck_recall();
+  eval('var q=document.forms[0].usr'+dd_ex_1+'.value;');
+  eval('set_create_usr_value(dd_ex_1,document.forms[0].usr'+dd_ex_2+'.value);');
+  set_create_usr_value(dd_ex_2,q);
+ }
+ query_active=0;
+ members_refresh();
+}
+
+function dd_exchange_positions_fail(){ //just try swap them in form and submit form
+ dd_exchange_positions_ok();
+ document.getElementById('sendit').click();
+ return false;
+}
+
+function createRequestObject(){
+ if (typeof XMLHttpRequest==='undefined'){
+  XMLHttpRequest=function(){
+   try { return new ActiveXObject("Msxml2.XMLHTTP.6.0"); } catch(e) {}
+   try { return new ActiveXObject("Msxml2.XMLHTTP.3.0"); } catch(e) {}
+   try { return new ActiveXObject("Msxml2.XMLHTTP"); } catch(e) {}
+   try { return new ActiveXObject("Microsoft.XMLHTTP"); } catch(e) {}
+   return false;
+ }} return new XMLHttpRequest();
+}
+
+function requestresult(){
+ var ok=false;
+ try {
+  if (cro.readyState==4)
+  if (cro.status==200) { ok=true; cro.abort(); dd_exchange_positions_ok(); return true; }
+  else dd_exchange_positions_fail();
+ } catch (e) { ; }
+}
+
+function queue_otf_request(mid_otf,action){
+ var q=Array(mid_otf,action);
+ var len=otfrq.push(q);
+ dmsg('NR!len='+len);
+ if(len==1)dmsg('OTF w/started');
+ if(len==1) start_otf_control();
+}
+
+function start_otf_control(){
+ if(otf_in_progress) {dmsg('delay333');return setTimeout(start_otf_control,333);}
+ otf_in_progress=true;
+ if(otfrq.length==0) { otf_in_progress=false; return; }
+ var data=otfrq.pop();
+ var cmd='room='+document.forms[0].room.value
+   + '&otfctrl=1'
+   + '&mid='+data[0]
+   + '&action='+data[1]; dmsg('Sending '+cmd+' (ql '+otfrq.length+'). ');
+ otf_timer=setTimeout(otf_fail,2000);
+ cro_otf=createRequestObject();
+ cro_otf.open('POST','Select',true);
+ cro_otf.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+ cro_otf.setRequestHeader("Content-length", cmd.length);
+ cro_otf.setRequestHeader("Connection", "close");
+ cro_otf.onreadystatechange=otf_result;
+ cro_otf.send(cmd);dmsg('&gt;&gt;');
+}
+
+function otf_result(){
+ try {
+  if (cro_otf.readyState==4) {
+   if (cro_otf.status==200) {
+    clearTimeout(otf_timer);
+    cro_otf.abort();
+    otf_in_progress=false;
+    dmsg('&lt;&lt;ql='+otfrq.length);
+    if(otfrq.length>0) start_otf_control();
+   } else {
+    otfrq=Array();
+    cro_otf.abort();
+    clearTimeout(otf_timer);
+    alert('On-the-Fly Control error: reply code='+cro_gas.status+'.');
+    otf_in_progress=false;
+   }
+  }
+ } catch (e) {
+ }
+}
+
+function otf_fail(){
+ cro_otf.abort(); otf_in_progress=false; otfrq=Array();
+ alert('On-the-Fly Control request cancelled by timeout.');
+}
+
+function member_modify_by_id(id,index,value){
+ if(typeof members==='undefined') return false;
+ for(var i=0;i<members.length;i++) if(members[i][0]) if(members[i][1]==id){
+    members[i][index]=value;
+    return true;
+ }
+ return false;
+}
+
+function member_read_by_id(id,index){
+ if(typeof members==='undefined') return false;
+ for(var i=0;i<members.length;i++) if(members[i][0]) if(members[i][1]==id) return members[i][index];
+ return false;
+}
+
+function muteunmute(obj,mid){ dmsg('Mute('+mid+')'); var mute=member_read_by_id(mid,3); obj.src='openmcu.ru_mic_o'+(mute?'n':'ff')+'.gif'; queue_otf_request(mid,1-mute); member_modify_by_id(mid,3,1-mute); return false; }
+
+function vadoptions(obj,mid){
+ var disv=member_read_by_id(mid,4);
+ var cvan=member_read_by_id(mid,5);
+ if(!(cvan|disv))var cmd=8; else if(cvan)var cmd=9;else var cmd=10;
+ cmd=((cmd-7))%3+8;
+ queue_otf_request(mid,cmd);
+ obj.src='openmcu.ru_vad_'+((cmd==8)?'vad':'')+((cmd==9)?'chosenvan':'')+((cmd==10)?'disable':'')+'.gif';
+ disv=0; cvan=0;
+ if(cmd==9) cvan=1;
+ if(cmd==10) disv=1;
+ member_modify_by_id(mid,4,disv);
+ member_modify_by_id(mid,5,cvan);
+ return false;
+}
+
+function inviteoffline(obj,mname){ queue_otf_request(mname,32); obj.src='openmcu.ru_launched_Ypf.gif'; }
+
+function removeoffline(obj,mname){ if(confirm("Remove "+decodeURIComponent(mname)+"?")) {queue_otf_request(mname,33); obj.src='openmcu.ru_launched_Ypf.gif'; }}
+
+function disablevad_yes_no(obj,mid,disv){ obj.style.color='#ff0'; queue_otf_request(mid,3-disv); return false; }
+
+function chosenvan_yes_no(obj,mid,cvan){ obj.style.color='#ff0'; queue_otf_request(mid,5-cvan); return false; }
+
+function kick_confirm(obj,mid,mname){ if(confirm("Drop connection with "+decodeURIComponent(mname)+"?")) {queue_otf_request(mid,7); obj.src='openmcu.ru_launched_Ypf.gif'; }}
+
+function drop_all(obj){ if(confirm('Drop ALL active connections?')) {queue_otf_request(0,64); obj.innerHTML='<img src="openmcu.ru_launched_Ypf.gif" width=15 height=15>';}}
+
+function invite_all(obj){ if(confirm('Invite ALL inactive members?')) {queue_otf_request(0,65); obj.innerHTML='<img src="openmcu.ru_launched_Ypf.gif" width=15 height=15>';}}
+
+function remove_all(obj){ if(confirm('Remove ALL inactive members from list?')) {queue_otf_request(0,66); obj.innerHTML='<img src="openmcu.ru_launched_Ypf.gif" width=15 height=15>';}}
+
+function save_members_conf(obj){ if(confirm('Rewrite members.conf?')) {queue_otf_request(0,67); obj.innerHTML='<img src="openmcu.ru_launched_Ypf.gif" width=15 height=15>';}}
+
+function format_mmbr_button(m,st){
+ var bgcolors=Array('#d3d4d5','#f5fffa','#f5ccff');
+ var shadowcolors=Array('#000','green','magenta');
+ var s='<div style="border-bottom:1px dotted '+shadowcolors[st]+';border-right:1px dotted '+shadowcolors[st]+';width:275px;overflow:hidden;height:17px;line-height:15px;padding:1px;border-radius:4px;margin-bottom:2px;text-align:left;background-color:'+bgcolors[st];
+ var id=m[1]+"";
+ if(id.substr(0,1)=='-')id='_'+id.substr(1);
+// if(st==1) s+=';cursor:move" id="rpan_'+id+'" onmousedown="ddstart(event,this,'+(-m[1])+',100)"';
+ if(st==1) s+=';cursor:move" id="rpan_'+id+'" onmousedown="ddstart(event,this,'+m[1]+',100)"';
+ else s+='"';
+ var uname=m[2]+"";
+ var bpos=uname.lastIndexOf('[');
+ var b2pos=uname.lastIndexOf(']');
+ if(bpos!=-1)if(b2pos>bpos){
+  ip=uname.substring(bpos+1,b2pos); uname=uname.substr(0,bpos);
+  bpos=uname.lastIndexOf('('); b2pos=uname.lastIndexOf(')'); if(bpos!=-1)if(b2pos>bpos) uname=uname.substr(0,bpos);
+ }
+
+ var quo='"';
+
+ if(st>0) var mute='<img onclick="muteunmute(this,'+m[1]+')" style="cursor:pointer" src="openmcu.ru_mic_'+(m[3]?'off':'on')+'.gif" alt="'+(m[3]?'Unmute':'Mute')+'" width=15 height=15>';
+ else var mute="<img onclick='inviteoffline(this,"+quo+encodeURIComponent(m[2])+quo+")' style='cursor:pointer' src='openmcu.ru_invite_Everaldo_Coelho.gif' width=15 weight=15 alt='Invite'>";
+
+ if(!(m[4]|m[5]))var cmd=8; else if(m[5]) var cmd=9; else var cmd=10;
+ if(st>0) var vad='<img onclick="vadoptions(this,'+m[1]+')" style="cursor:pointer" src="openmcu.ru_vad_'+((cmd==8)?'vad':'')+((cmd==9)?'chosenvan':'')+((cmd==10)?'disable':'')+'.gif" alt="'+((cmd==8)?'Normal':'')+((cmd==9)?'Van':'')+((cmd==10)?'VAD disabled':'')+'" width=15 height=15>';
+ else var vad='';
+
+ if(st>0) var kick="<img onclick='kick_confirm(this,"+m[1]+","+quo+encodeURIComponent(m[2])+quo+")' style='cursor:pointer' src='openmcu.ru_drop_Abdylas_Tynyshov.gif' width=15 height=15 alt='Drop'>";
+ else var kick="<img onclick='removeoffline(this,"+quo+encodeURIComponent(m[2])+quo+")' style='cursor:pointer' src='openmcu.ru_remove.gif' width=15 height=15 alt='Remove'>";
+//if(st>0)ip=id;
+ ip='<span style="color:'+((st==0)?'#fff':'blue')+';font-size:10px">'+ip+'</span>';
+ s+='>'; var dpre='<div style="width:0px;height:0px;position:relative;top:0px;left:';
+ s+=dpre+'0px"><div style="vertical-align:-1px;overflow:hidden;text-align:center;width:15px;height:15px;line-height:15px">'+mute+"</div></div>";
+ s+=dpre+'15px"><div style="vertical-align:-1px;overflow:hidden;text-align:center;width:15px;height:15px;line-height:15px">'+vad+"</div></div>";
+ s+=dpre+'30px"><div style="vertical-align:-1px;overflow:hidden;padding-left:4px;width:135px;height:15px;line-height:15px">'+uname+"</div></div>";
+ s+=dpre+'165px"><div style="vertical-align:-1px;overflow:hidden;width:75px;height:15px;line-height:15px">'+ip+"</div></div>";
+ s+=dpre+'240px"><div style="vertical-align:-1px;overflow:hidden;width:15px;height:15px;line-height:15px">'+kick+"</div></div>";
+ s+='</div>';
+
+ return s;
+}
+
+function additional_panel(){
+  var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
+  var dmain="px'><div style='background-color:#eff;padding:0;border-top:1px dotted #165;border-left:1px dotted #054;border-bottom:1px solid #165;border-right:1px solid #054;border-radius:4px;height:17px;line-height:15px;text-align:center;";
+  var cm="cursor:move;width:"; var cp="cursor:pointer;width:";
+  var s="<div style='width:275px;height:17px;margin-bottom:5px'>"
+   +dpre+"0"+dmain+cm+"20px' id='rpan_5' onmousedown='ddstart(event,this,5,5)'>---</div></div>"
+   +dpre+"23"+dmain+cm+"30px' id='rpan_1' onmousedown='ddstart(event,this,1,1)'>VAD</div></div>"
+   +dpre+"56"+dmain+cm+"36px' id='rpan_2' onmousedown='ddstart(event,this,2,2)'>VAD2</div></div>"
+   +dpre+"102"+dmain+cp+"28px;background-color:#ccc' onclick='invite_all(this)'><span style='font-weight:bold;color:gray'><img width=15 height=15 alt='Inv.' src='openmcu.ru_invite_Everaldo_Coelho.gif'>*</span></div></div>"
+   +dpre+"133"+dmain+cp+"28px;background-color:#ccc' onclick='remove_all(this)'><span style='font-weight:bold;color:gray'><img width=15 height=15 alt='Rem.' src='openmcu.ru_remove.gif'>*</span></div></div>"
+   +dpre+"171"+dmain+cp+"40px;background-color:#fcc' onclick='drop_all(this)'><span style='font-weight:bold;color:red'><img width=15 height=15 alt='Drop' src='openmcu.ru_drop_Abdylas_Tynyshov.gif'>*</span></div></div>"
+   +dpre+"221"+dmain+cp+"51px;text-align:left;padding-left:4px' onclick='save_members_conf(this)'>Save</div></div>"
+   +"</div>";
+  return s;
+}
+
+function init_refresh(){
+ mrefreshing=true;
+ setTimeout(refresh_loop,6000);
+}
+
+function refresh_loop(){
+ if(!dd_in_progress){
+  rquery_active=1;
+  var cmd='room='+document.forms[0].room.value+'&refresh=1';
+  rcro=createRequestObject();
+  rcro.open('POST','Select',true);
+  rcro.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  rcro.setRequestHeader("Content-length", cmd.length);
+  rcro.setRequestHeader("Connection", "close");
+  rcro.onreadystatechange=rrequestresult;
+  rcro.send(cmd);
+ } else setTimeout(refresh_loop,999);
+}
+
+function rrequestresult(){
+ try {
+  if (rcro.readyState==4)
+  if (rcro.status==200) {
+   eval(rcro.responseText);
+   rcro.abort();
+   members_refresh();
+   if(recallflag)if(document.getElementById('autorecall').checked)autoprecall();
+   if(offliners)if(document.getElementById('autoinvite').checked)if(invall===false)invall=setTimeout(inviteall,777);
+   setTimeout(refresh_loop,6000);
+  }
+  rquery_active=0;
+ } catch (e) { ; }
+}
+
+function members_refresh(){
+ if(typeof members==='undefined'){
+  document.getElementById('members_pan').innerHTML='ERROR: <i>members</i> variable not set';
+  return false;
+ }
+ if(!document.getElementById('right_scroller')) document.getElementById('members_pan').innerHTML='<div id="right_scroller" style="width:277px;height:333px;overflow:hidden;overflow-y:auto">Initializing panel...</div>';
+ var formids=',';
+ offliners=false;
+ for(var i=0;i<max_subframes;i++) eval('if(document.forms[0].usr'+i+'){formids+=document.forms[0].usr'+i+'.value+",";}');
+ var vmr='';
+ var amr='';
+ var imr='';
+ for(i=0;i<members.length;i++){
+  mmbr=members[i];
+  if(mmbr[0])
+   if(formids.indexOf(','+mmbr[1]+',')>=0) vmr+=format_mmbr_button(mmbr,2);
+   else amr+=format_mmbr_button(mmbr,1);
+  else {imr+=format_mmbr_button(mmbr,0);offliners=true;}
+ }
+ recallflag=(formids!=',');
+// var panel_exist=false; var scroll=0;
+// if(document.getElementById('right_pan')){
+//  scroll=document.getElementById('right_pan').scrollTop;
+//  panel_exist=true;
+// }
+// dmsg('scroll='+scroll+'; panel_exist='+panel_exist);
+ result='<div style="width:277px" id="right_pan">'+additional_panel()+amr+vmr+imr+'</div>';
+ var mp=document.getElementById('right_scroller');
+ if(mp.innerHTML!=result){
+  mp.innerHTML=result;
+//  if(panel_exist)document.getElementById('right_pan').scrollTop=scroll;
+ }
+ if(!mrefreshing) init_refresh();
+ return true;
+}
+
+function inviteall(){
+  invall=1;
+  queue_otf_request(0,65);
+  invall=false;
+}
+
+setTimeout(members_refresh,1333);
+
+//--></script>
+$$
