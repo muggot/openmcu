@@ -109,7 +109,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
       {
        remoteName = "hz";
        remotePartyName = "hz1";
-       remoteApplication = "PCS-";
+       remoteApplication = "test";
        requestedRoom = "room101";
        sdp_seq = 0;
        sdp_id = time(NULL);
