@@ -917,6 +917,7 @@ class RTP_Session : public PObject
 #endif
     std::map<WORD, RTP_DataFrame *> frameQueue;
     PTime lastWriteTime;
+    DWORD lastRcvdTimeStamp;
     void   SetLastTimeRTPQueue();
     BOOL   ReadRTPQueue(RTP_DataFrame&);
     BOOL   ProcessRTPQueue(RTP_DataFrame&);
