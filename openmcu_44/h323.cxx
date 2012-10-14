@@ -1381,6 +1381,16 @@ PString OpenMCUH323EndPoint::IncomingConferenceRequest(H323Connection & connecti
   return PString::Empty();
 }
 
+
+void OpenMCUH323EndPoint::OnIncomingSipConnection(PString &callToken, H323Connection &connection)
+{
+ connectionsMutex.Wait();
+  PTRACE(3, "MCU\tSip connection");
+ connectionsActive.SetAt(callToken, &connection);
+ connectionsMutex.Signal();
+}
+
+
 ///////////////////////////////////////////////////////////////
 
 NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, ConferenceMember * _memberToIgnore)
@@ -1457,6 +1467,8 @@ OpenMCUH323Connection::OpenMCUH323Connection(OpenMCUH323EndPoint & _ep, unsigned
 
 OpenMCUH323Connection::~OpenMCUH323Connection()
 {
+ PThread::Sleep(500);
+ connMutex.Wait();
 }
 
 void OpenMCUH323Connection::SetupCacheConnection(PString & format, Conference * conf, ConferenceMember * memb)
@@ -1502,6 +1514,7 @@ BOOL OpenMCUH323Connection::OnReceivedCallProceeding(const H323SignalPDU & proce
 
 void OpenMCUH323Connection::CleanUpOnCallEnd()
 {
+  PTRACE(1, "OpenMCUH323Connection\tCleanUpOnCallEnd");
   videoReceiveCodecName = videoTransmitCodecName = "none";
   videoReceiveCodec = NULL;
   videoTransmitCodec = NULL;
@@ -2112,7 +2125,7 @@ void H323Connection_ConferenceMember::SetName()
 {
  if(id!=this)
  {
-  cout << "SetName\n";
+  cout << "SetName " << h323Token << "\n";
   int connLock = 0;
   OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
   if(conn == NULL)
@@ -2193,6 +2206,7 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
 
 void OpenMCUH323Connection::LogCall(const BOOL accepted)
 {
+  if(!controlChannel && !signallingChannel) return;
   H323TransportAddress address = GetControlChannel().GetRemoteAddress();
   PIPSocket::Address ip;
   WORD port;
