@@ -44,12 +44,15 @@ class OpenMCUSipEndPoint : public PThread
 {
   public:
    OpenMCUSipEndPoint(OpenMCUH323EndPoint *_ep):
-     PThread(10000), //,NoAutoDeleteThread,NormalPriority,"SIP Listener:%0x"),
+     PThread(10000,NoAutoDeleteThread,NormalPriority,"SIP Listener:%0x"),
      ep(_ep)
     {
+     terminating = 0;
      Resume();
     }
-    
+   ~OpenMCUSipEndPoint()
+   {
+   }
    void Main();
    static int /*__attribute__((cdecl))*/ ProcessSipEventWrap_cb(nta_agent_magic_t *context,
                                              nta_agent_t *agent,
@@ -61,6 +64,7 @@ class OpenMCUSipEndPoint : public PThread
 
 //    H323Connection * connectionToDelete = connectionsActive.RemoveAt(token);
 
+   int terminating;
           
   protected:
    void MainLoop();
@@ -109,7 +113,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
       {
        remoteName = "hz";
        remotePartyName = "hz1";
-       remoteApplication = "test";
+       remoteApplication = "PCS-";
        requestedRoom = "room101";
        sdp_seq = 0;
        sdp_id = time(NULL);

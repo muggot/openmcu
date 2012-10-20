@@ -125,8 +125,8 @@ void OpenMCUSipConnection::DeleteMediaChannels(int pt)
 {
  if(pt<0) return;
  SipCapMapType::iterator cir = sipCaps.find(pt);
- if(cir->second->inpChan) delete cir->second->inpChan;
- if(cir->second->outChan) delete cir->second->outChan;
+ if(cir->second->inpChan) { delete cir->second->inpChan; cir->second->inpChan = NULL; }
+ if(cir->second->outChan) { delete cir->second->outChan; cir->second->outChan = NULL; }
 }
 
 void OpenMCUSipConnection::DeleteChannels()
@@ -138,6 +138,9 @@ void OpenMCUSipConnection::DeleteChannels()
 void OpenMCUSipConnection::CleanUpOnCallEnd()
 {
   PTRACE(1, "MCUSIP\tCleanUpOnCallEnd");
+  StopTransmitChannels();
+  StopReceiveChannels();
+  DeleteChannels();
   videoReceiveCodecName = videoTransmitCodecName = "none";
   videoReceiveCodec = NULL;
   videoTransmitCodec = NULL;
@@ -164,7 +167,8 @@ void OpenMCUSipConnection::FindCapability_H263(SipCapability &c,PStringArray &ke
     if(c.cap == NULL) return;
     vcap = c.payload; c.h323 = H323Name; c.parm += keys[kn]; 
     OpalMediaFormat & wf = c.cap->GetWritableMediaFormat(); 
-    int mpi = (keys[kn].Mid(SIPName.GetSize()+1)).AsInteger();
+    int mpi = (keys[kn].Mid(SIPName.GetLength()+1)).AsInteger();
+    cout << "mpi " << mpi << "\n";
     wf.SetOptionInteger(SIPName + " MPI",mpi);
     return; 
    } 
@@ -175,6 +179,7 @@ void OpenMCUSipConnection::SelectCapability_H263(SipCapability &c,PStringArray &
 {
  int f=0; // annex f
  PStringArray keys = c.parm.Tokenise(";");
+ c.parm = "";
  for(int kn=0; kn<keys.GetSize(); kn++) 
   { if(keys[kn] == "F=1") { c.parm = "F=1;"; f=1; break; } }
  
@@ -494,6 +499,10 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
 
  PString request = sip->sip_request->rq_method_name;
  
+ size_t sip_msg_len = 0;
+ char * sip_msg = msg_as_string(&home, msg, NULL, 0, &sip_msg_len);
+ 
+ PTRACE(1, "MCUSIP\tReceived SIP message: \n" << sip_msg);
  cout << request << "\n";
 
  if(request == "INVITE")
@@ -501,6 +510,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   if(sip->sip_payload==NULL) return 0;
   if(sip->sip_payload->pl_data==NULL) return 0;
 
+  PTRACE(1, "MCUSIP\tReceived SIP SDP\n" << sip->sip_payload->pl_data);
 
   SipConnectionMapType::iterator scr = sipConnMap.find(sik);
   if(scr != sipConnMap.end()) return 0; // connection already exist, ignoring invite
@@ -524,9 +534,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   PTRACE(1, "MCUSIP\tNew SIP BYE");
   OpenMCUSipConnection *sCon = scr->second;
   sipConnMap.erase(sik);
-  sCon->StopTransmitChannels();
-  sCon->StopReceiveChannels();
-  sCon->DeleteChannels();
   sCon->sdp_msg.MakeEmpty();
   sCon->SipReply200(agent, msg);
   sCon->LeaveConference(); // leave conference and delete connection
@@ -546,14 +553,15 @@ void OpenMCUSipEndPoint::MainLoop()
  SipConnectionMapType::iterator scr;
  while(1)
  {
+  if(terminating) return;
   for (scr = sipConnMap.begin(); scr != sipConnMap.end(); scr++) 
   {
    OpenMCUSipConnection *sCon = scr->second;
    RTP_Session * as = sCon->GetSession(RTP_Session::DefaultAudioSessionID);
    RTP_Session * vs = sCon->GetSession(RTP_Session::DefaultVideoSessionID);
    int count = 0;
-   if(as) count += as->GetOctetsReceived();
-   if(vs) count += vs->GetOctetsReceived();
+   if(as) count += as->GetPacketsReceived() + as->GetRtpcReceived();
+   if(vs) count += vs->GetPacketsReceived() + vs->GetRtpcReceived();
    if(count == sCon->inpBytes) sCon->noInpTimeout++;
    else { sCon->noInpTimeout = 0; sCon->inpBytes = count; }
    if(sCon->noInpTimeout == 30) // 15 sec timeout

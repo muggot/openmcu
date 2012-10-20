@@ -818,6 +818,10 @@ class RTP_Session : public PObject
     /**Get total number of octets received in session.
       */
     DWORD GetOctetsReceived() const { return octetsReceived; }
+    
+    /**Get total number of control packets received in session.
+      */
+    DWORD GetRtpcReceived() const { return rtpcReceived; }
 
     /**Get total number received packets lost in session.
       */
@@ -943,6 +947,7 @@ class RTP_Session : public PObject
     DWORD octetsSent;
     DWORD packetsReceived;
     DWORD octetsReceived;
+    DWORD rtpcReceived;
     DWORD packetsLost;
     DWORD packetsOutOfOrder;
     DWORD averageSendTime;

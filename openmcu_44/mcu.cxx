@@ -6,7 +6,9 @@
 #include "h323.h"
 
 #if USE_LIBJPEG
-#include "jpeglib.h"
+extern "C" {
+#include <jpeglib.h>
+}
 #endif
 
 const WORD DefaultHTTPPort = 1420;
@@ -156,6 +158,8 @@ BOOL OpenMCU::OnStart()
 
 void OpenMCU::OnStop()
 {
+  sipendpoint->terminating = 1;
+  sipendpoint->WaitForTermination(10000);
   delete sipendpoint;
   sipendpoint = NULL;
 
