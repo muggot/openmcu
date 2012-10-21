@@ -120,6 +120,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
        noInpTimeout = 0;
        inpBytes = 0;
        bandwidth = 0;
+       connectedTime = PTime();
       }
   int ProcessInviteEvent(sip_t *sip);
   void StartTransmitChannels();
