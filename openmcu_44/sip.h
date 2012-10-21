@@ -111,14 +111,15 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   OpenMCUSipConnection(OpenMCUSipEndPoint *_sep, OpenMCUH323EndPoint *_ep):
       sep(_sep), OpenMCUH323Connection(*_ep, 0, NULL)
       {
-       remoteName = "hz";
-       remotePartyName = "hz1";
-       remoteApplication = "PCS-";
+       remoteName = "";
+       remotePartyName = "";
+       remoteApplication = "SIP terminal";
        requestedRoom = "room101";
        sdp_seq = 0;
        sdp_id = time(NULL);
        noInpTimeout = 0;
        inpBytes = 0;
+       bandwidth = 0;
       }
   int ProcessInviteEvent(sip_t *sip);
   void StartTransmitChannels();
@@ -162,6 +163,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
  PString remoteIP; // from sip invite message
  unsigned int sdp_seq;
  unsigned int sdp_id;
+ int bandwidth;
 };
 
  

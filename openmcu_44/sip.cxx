@@ -199,6 +199,7 @@ void OpenMCUSipConnection::SelectCapability_H263(SipCapability &c,PStringArray &
   OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
   wf.SetOptionBoolean("_advancedPrediction",f);
   if(c.bandwidth) wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
+  else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
  }
 }
 
@@ -235,6 +236,7 @@ void OpenMCUSipConnection::SelectCapability_H263p(SipCapability &c,PStringArray 
   wf.SetOptionBoolean("_arithmeticCoding",e);
   wf.SetOptionBoolean("_pbFrames",g);
   if(c.bandwidth) wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
+  else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
  }
 }
 
@@ -312,7 +314,8 @@ void OpenMCUSipConnection::SelectCapability_H264(SipCapability &c,PStringArray &
  if(c.cap)
  {
   OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
-  wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
+  if(c.bandwidth) wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
+  else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
   wf.SetOptionInteger("Generic Parameter 42",level);
   vcap = c.payload;
  }
@@ -333,6 +336,9 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
   requestedRoom = sip->sip_to->a_url->url_user;
  remotePartyAddress = sip->sip_from->a_url->url_host;
  remotePartyName = sip->sip_from->a_url->url_user;
+ remoteName = remotePartyName;
+ if(sip->sip_user_agent && sip->sip_user_agent->g_string)
+  remoteApplication = sip->sip_user_agent->g_string;
  callToken = remotePartyName + "@" + remotePartyAddress + ":" + PString(sip->sip_call_id->i_id);
 
  cout << "Name: " << remotePartyName << " Addr: " << remotePartyAddress << "\n";
@@ -357,7 +363,7 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
     SipCapability *c = new SipCapability(par[cn],media,dir,port,bw);
     caps.insert(SipCapMapType::value_type(par[cn],c));
    }
-   port = -1, media = -1, dir = def_dir; // reset media level values to default
+   port = -1; media = -1; bw = 0; dir = def_dir; // reset media level values to default
    if(words.GetSize() < 4) continue; // empty fmt list
    if(words[2] != "RTP/AVP") continue; // non rtp media is not supported
    if(words[0].Find("audio")!=P_MAX_INDEX) media = 0;
@@ -405,6 +411,7 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
    PStringArray tokens = words[0].Tokenise(":");
    if(tokens.GetSize() < 2) continue; // invalid bandwidth string
    if(tokens[0] == "b=AS") bw = tokens[1].AsInteger();
+   if(media == -1) { bandwidth = bw; bw = 0; } // connection level value
   }
   cout << "line: " + sdp_sa[line] + "\r\n";
  } 
@@ -459,7 +466,9 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
  sdp_msg = sdp_msg + localIP + "\r\n";
  sdp_msg = sdp_msg + "s=openmcu\r\n";
  sdp_msg = sdp_msg + "c=IN IP4 ";
- sdp_msg = sdp_msg + localIP + "\r\nt=0 0\r\n";
+ sdp_msg = sdp_msg + localIP + "\r\n";
+ if(bandwidth) sdp_msg = sdp_msg + "b=AS:" + PString(bandwidth) + "\r\n";
+ sdp_msg = sdp_msg + "t=0 0\r\n";
  CreateLogicalChannels();
  ep.OnIncomingSipConnection(callToken,*this);
  JoinConference(requestedRoom);
