@@ -271,14 +271,27 @@ const struct h241_to_x264_level {
 void OpenMCUSipConnection::SelectCapability_H264(SipCapability &c,PStringArray &tvCaps)
 {
  int profile = 0, level = 0;
+ int max_mbps = 0, max_fs = 0, max_br = 0;
  PStringArray keys = c.parm.Tokenise(";");
  for(int kn = 0; kn < keys.GetSize(); kn++) 
  { 
   if(keys[kn].Find("profile-level-id=") == 0) 
-   { 
-    int p = (keys[kn].Tokenise("=")[1]).AsInteger(16);
-    profile = (p>>16); level = (p&255);
-   } 
+  { 
+   int p = (keys[kn].Tokenise("=")[1]).AsInteger(16);
+   profile = (p>>16); level = (p&255);
+  } 
+  else if(keys[kn].Find("max-mbps=") == 0) 
+  { 
+   max_mbps = (keys[kn].Tokenise("=")[1]).AsInteger();
+  } 
+  else if(keys[kn].Find("max-fs=") == 0) 
+  { 
+   max_fs = (keys[kn].Tokenise("=")[1]).AsInteger();
+  } 
+  else if(keys[kn].Find("max-br=") == 0) 
+  { 
+   max_br = (keys[kn].Tokenise("=")[1]).AsInteger();
+  } 
  }
  cout << "profile " << profile << " level " << level << "\n";
  if(profile == 0 || level == 0) return;
@@ -318,6 +331,9 @@ void OpenMCUSipConnection::SelectCapability_H264(SipCapability &c,PStringArray &
   else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
   wf.SetOptionInteger("Generic Parameter 42",level);
   vcap = c.payload;
+  wf.SetOptionInteger("Generic Parameter 3",max_mbps);
+  wf.SetOptionInteger("Generic Parameter 4",max_fs);
+  wf.SetOptionInteger("Generic Parameter 6",max_br);
  }
 }
 
@@ -411,6 +427,7 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
    PStringArray tokens = words[0].Tokenise(":");
    if(tokens.GetSize() < 2) continue; // invalid bandwidth string
    if(tokens[0] == "b=AS") bw = tokens[1].AsInteger();
+   if(tokens[0] == "b=TIAS") bw = tokens[1].AsInteger()/1000;
    if(media == -1) { bandwidth = bw; bw = 0; } // connection level value
   }
   cout << "line: " + sdp_sa[line] + "\r\n";

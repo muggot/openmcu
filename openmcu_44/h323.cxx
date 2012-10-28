@@ -1682,7 +1682,7 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
 
     videoTransmitCodecName = codec.formatString; // override previous definition
 
-    if(GetRemoteApplication().Find("PCS-G") != P_MAX_INDEX && codec.formatString.Find("H.264") != P_MAX_INDEX) 
+    if(GetRemoteApplication().Find("PCS-") != P_MAX_INDEX && codec.formatString.Find("H.264") != P_MAX_INDEX) 
        codec.cacheMode = 3;
 
     if(!codec.cacheMode) 

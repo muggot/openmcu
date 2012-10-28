@@ -109,7 +109,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
 {
  public:
   OpenMCUSipConnection(OpenMCUSipEndPoint *_sep, OpenMCUH323EndPoint *_ep):
-      sep(_sep), OpenMCUH323Connection(*_ep, 0, NULL)
+      OpenMCUH323Connection(*_ep, 0, NULL), sep(_sep)
       {
        remoteName = "";
        remotePartyName = "";
