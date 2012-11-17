@@ -686,7 +686,13 @@ function save_members_conf(obj){ if(confirm('Rewrite members.conf?')) {queue_otf
 function format_mmbr_button(m,st){
  var bgcolors=Array('#d3d4d5','#f5fffa','#f5ccff');
  var shadowcolors=Array('#000','green','magenta');
- var s='<div style="border-bottom:1px dotted '+shadowcolors[st]+';border-right:1px dotted '+shadowcolors[st]+';width:275px;overflow:hidden;height:17px;line-height:15px;padding:1px;border-radius:4px;margin-bottom:2px;text-align:left;background-color:'+bgcolors[st];
+ var s='<div style="';
+ if(m[6]>5000) s+='border:2px solid #a00;padding:0px';
+ else if(m[6]>1000) s+='border:2px solid #0a0;padding:0px';
+ else if(m[6]>100) s+='border:1px solid #0a0;padding:1px';
+ else if(m[6]>10) s+='border:1px solid #afa;padding:1px';
+ else s+='border-bottom:1px dotted '+shadowcolors[st]+';border-right:1px dotted '+shadowcolors[st]+';padding:1px';
+ s+=';width:275px;overflow:hidden;height:17px;line-height:15px;border-radius:4px;margin-bottom:2px;text-align:left;background-color:'+bgcolors[st];
  var id=m[1]+"";
  if(id.substr(0,1)=='-')id='_'+id.substr(1);
 // if(st==1) s+=';cursor:move" id="rpan_'+id+'" onmousedown="ddstart(event,this,'+(-m[1])+',100)"';

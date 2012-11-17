@@ -846,6 +846,11 @@ class ConferenceMember : public PObject
     {
     }
 
+    virtual unsigned GetAudioLevel() const
+    {
+      return audioLevel;
+    }
+
     BOOL muteIncoming;
     BOOL disableVAD;
     BOOL chosenVan; // allways visible, but can change place on frame, used in 5+1 layout

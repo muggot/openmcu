@@ -688,6 +688,7 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
       << ",0"
       << ",0"
       << ",0"
+      << ",0"
       << ")";
     i++;
   } else {          //   active member
@@ -699,6 +700,7 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
       << "," << member->muteIncoming
       << "," << member->disableVAD
       << "," << member->chosenVan
+      << "," << member->GetAudioLevel()
       << ")";
     i++;
   }
@@ -1280,10 +1282,12 @@ PString OpenMCUH323EndPoint::GetUsername(ConferenceMemberId id)
 {
   PStringStream output;
   PStringStream output2;
+#ifndef _WIN32
   if(conferenceManager.GetConferenceListMutex().WillBlock()) {
     PTRACE(6,"GetUsername\tPossible deadlock, empty string will returned");
     return output;
   }
+#endif
   PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
 
@@ -1291,10 +1295,12 @@ PString OpenMCUH323EndPoint::GetUsername(ConferenceMemberId id)
   for (r = conferenceList.begin(); r != conferenceList.end(); ++r) {
     Conference & conference = *(r->second);
     {
+#ifndef _WIN32
       if(conference.GetMutex().WillBlock()) {
         PTRACE(6,"GetUsername\tPreventing deadlock: empty string will returned");
         return output;
       }
+#endif
       PWaitAndSignal m(conference.GetMutex());
       Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
       Conference::MemberNameList::const_iterator s;
