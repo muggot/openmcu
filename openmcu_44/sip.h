@@ -9,12 +9,15 @@
 #include <sofia-sip/stun_tag.h>
 #include <sofia-sip/sip_status.h>
 #include <sofia-sip/sip_header.h>
+#include <sofia-sip/sip_util.h>
+#include <sofia-sip/su_log.h>
 
 class OpenMCUSipConnection;
 
 class SipKey
 {
  public:
+ SipKey() { addr = port = 0; }
  int addr; // remote ip
  int port; // remote port
  PString sid; // sdp session-id
@@ -64,6 +67,7 @@ class OpenMCUSipEndPoint : public PThread
 
 //    H323Connection * connectionToDelete = connectionsActive.RemoveAt(token);
 
+   int ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon);
    int terminating;
           
   protected:
@@ -105,6 +109,39 @@ class SipCapability
 
 typedef std::map<int, SipCapability *> SipCapMapType;
 
+
+class H323toSipQueue
+{
+ public:
+  H323toSipQueue() : 
+   rp(0), wp(0), qsize(100) 
+   { for(int i=0; i<100; i++) queue[i] = NULL; }
+  ~H323toSipQueue() { for (int i=0; i<100; i++) if(queue[i]) delete queue[i]; } 
+  BOOL Push(PString *cmd)
+  {
+   int tp = wp;
+   if(queue[wp] != NULL) 
+   {
+    PTRACE(1, "MCUSIP\tH323toSipQueue full, " << *cmd << "message lost");
+    return FALSE;
+   }
+   wp = (wp+1)%qsize; queue[tp] = cmd;
+   return TRUE;
+  }
+  PString *Pop()
+  {
+   if(queue[rp] == NULL) return NULL;
+   PString *cmd = queue[rp];
+   queue[rp] = NULL; rp++;
+   return cmd;
+  }
+ protected:
+  int rp;
+  int wp;
+  int qsize;
+  PString *queue[100];
+};
+
 class OpenMCUSipConnection : public OpenMCUH323Connection
 {
  public:
@@ -121,7 +158,14 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
        inpBytes = 0;
        bandwidth = 0;
        connectedTime = PTime();
+       sip_msg = NULL;
       }
+  ~OpenMCUSipConnection()
+  {
+   PTRACE(1, "OpenMCUHSipConnection\tDestructor called");
+   if(sip_msg) msg_destroy(sip_msg);
+  }
+      
   int ProcessInviteEvent(sip_t *sip);
   void StartTransmitChannels();
   void StartReceiveChannels();
@@ -135,6 +179,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   void SelectCapability_H263p(SipCapability &c,PStringArray &tvCaps);
   void SelectCapability_H264(SipCapability &c,PStringArray &tvCaps);
   void SipReply200(nta_agent_t *agent, msg_t *msg);
+  void SipProcessACK(nta_agent_t *agent, msg_t *msg);
   void StopChannel(int pt, int dir);
   void StopTransmitChannels();
   void StopReceiveChannels();
@@ -142,14 +187,18 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   void DeleteChannels();
   PString sdp_msg;
   void CleanUpOnCallEnd();
+  void LeaveConference();
+  void LeaveConference(BOOL remove);
 //  virtual BOOL ClearCall(
 //      CallEndReason reason = EndedByLocalUser  ///< Reason for call clearing
 //    ) { return TRUE; }
   virtual BOOL WriteSignalPDU(
       H323SignalPDU & pdu       ///< PDU to write.
     ) { return TRUE; }
+  int SendBYE(nta_agent_t *agent);
   int noInpTimeout;
   int inpBytes;
+ H323toSipQueue cmdQueue;
 
  protected:
  OpenMCUSipEndPoint *sep;
@@ -165,6 +214,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
  unsigned int sdp_seq;
  unsigned int sdp_id;
  int bandwidth;
+ msg_t *sip_msg;
 };
 
  

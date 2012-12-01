@@ -1,5 +1,20 @@
 #include "mcu.h"
 
+void OpenMCUSipConnection::LeaveConference()
+{
+ PString *bye = new PString("BYE");
+ cmdQueue.Push(bye); // Queue is not thread safe for multiple writers, so connection must be locked before call this
+ LeaveConference(FALSE);
+}
+
+void OpenMCUSipConnection::LeaveConference(BOOL remove)
+{
+//  PWaitAndSignal m(connMutex);
+ PTRACE(1, "MCUSIP\tLeaveConference " << remove);
+ if(remove == FALSE) return;
+ OpenMCUH323Connection::LeaveConference();
+}
+
 RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
 {
   int id = (!sc->media)?RTP_Session::DefaultAudioSessionID:RTP_Session::DefaultVideoSessionID;
@@ -359,7 +374,7 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
 
  cout << "Name: " << remotePartyName << " Addr: " << remotePartyAddress << "\n";
 
- int port = -1, media = -1, def_dir = 3, dir = 3, def_bw = 0, bw = 0;
+ int port = -1, media = -1, def_dir = 3, dir = 3, bw = 0;
  for(int line=0; line<sdp_sa.GetSize(); line++)
  {
   char tag = sdp_sa[line][0];
@@ -495,6 +510,9 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
 
 void OpenMCUSipConnection::SipReply200(nta_agent_t *agent, msg_t *msg)
 {
+  if(sip_msg) msg_destroy(sip_msg);
+  sip_msg = msg_dup(msg);
+  
   PString contact = "<sip:" + requestedRoom + "@" + localIP + ":5060>";
 
   PTRACE(1, "MCUSIP\tSending SIP 200 OK to " << contact << " msg " << sdp_msg);
@@ -514,16 +532,124 @@ void OpenMCUSipConnection::SipReply200(nta_agent_t *agent, msg_t *msg)
   StartTransmitChannels();
 }
 
+int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
+{
+  PString contact = "<sip:" + requestedRoom + "@" + localIP + ":5060>";
+  PTRACE(1, "MCUSIP\tSending BYE to " << contact);
+
+  sip_t *sip = sip_object(sip_msg);
+  msg_t *amsg = nta_msg_create(agent, 0);
+  sip_t *asip = sip_object(amsg);
+  msg_t *bmsg = NULL;
+  sip_t *bsip;
+  url_string_t const *ruri;
+  nta_outgoing_t *bye = NULL;
+  sip_cseq_t *cseq;
+  sip_request_t *rq;
+  sip_route_t *route = NULL, *r, r0[1];
+  su_home_t *home = msg_home(amsg);
+
+  if (asip == NULL)
+    return -1;
+
+  sip_add_tl(amsg, asip,
+	     SIPTAG_TO(sip->sip_from),
+	     SIPTAG_FROM(sip->sip_to),
+	     SIPTAG_CALL_ID(sip->sip_call_id),
+	     TAG_END());
+
+  if (sip->sip_contact) {
+    ruri = (url_string_t const *)sip->sip_contact->m_url;
+  } else {
+    ruri = (url_string_t const *)sip->sip_to->a_url;
+  }
+
+  /* Reverse (and fix) record route */
+  route = sip_route_reverse(home, sip->sip_record_route);
+
+  if (route && !url_has_param(route->r_url, "lr")) {
+    for (r = route; r->r_next; r = r->r_next)
+      ;
+
+    /* Append r-uri */
+    *sip_route_init(r0)->r_url = *ruri->us_url;
+    r->r_next = sip_route_dup(home, r0);
+
+    /* Use topmost route as request-uri */
+    ruri = (url_string_t const *)route->r_url;
+    route = route->r_next;
+  }
+
+  msg_header_insert(amsg, (msg_pub_t *)asip, (msg_header_t *)route);
+
+  bmsg = msg_copy(amsg); bsip = sip_object(bmsg);
+
+  home = msg_home(bmsg);
+
+  if (!(cseq = sip_cseq_create(home, 0x7fffffff, SIP_METHOD_BYE)))
+    goto err;
+  else
+    msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)cseq);
+
+  if (!(rq = sip_request_create(home, SIP_METHOD_BYE, ruri, NULL)))
+    goto err;
+  else
+    msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)rq);
+
+  if (!(bye = nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
+				   NTATAG_STATELESS(1),
+				   TAG_END())))
+    goto err;
+
+//  msg_destroy(msg);
+  return 0;
+
+ err:
+  msg_destroy(amsg);
+  msg_destroy(bmsg);
+  return -1;
+}
+
+void OpenMCUSipConnection::SipProcessACK(nta_agent_t *agent, msg_t *msg)
+{
+  if(sip_msg) msg_destroy(sip_msg);
+  sip_msg = msg_dup(msg);
+}
+
+int OpenMCUSipEndPoint::ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon)
+{
+ PString *cmd = sCon->cmdQueue.Pop() ;
+ while(cmd != NULL)
+ {
+  if(*cmd == "BYE")
+  {
+   delete cmd;
+   sCon->SendBYE(agent);
+   sCon->StopTransmitChannels();
+   sCon->StopReceiveChannels();
+   sCon->DeleteChannels();
+   sCon->LeaveConference(TRUE); // leave conference and delete connection
+   cmd = sCon->cmdQueue.Pop() ;
+   PTRACE(1, "MCUSIP\tSIP BYE sent\n");
+   return 1;
+  }
+  cmd = sCon->cmdQueue.Pop() ;
+ }
+ return 0;
+}
+
 int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
                        msg_t *msg,
                        sip_t *sip)
 {
  SipKey sik;
  sik.addr = inet_addr(sip->sip_via->v_host);
- sik.port = atoi(sip->sip_via->v_port);
+ if(sip->sip_via->v_port) sik.port = atoi(sip->sip_via->v_port);
  sik.sid = sip->sip_call_id->i_id;
 
- PString request = sip->sip_request->rq_method_name;
+ PString request;
+ if(sip->sip_request && sip->sip_request->rq_method_name) 
+   request = sip->sip_request->rq_method_name;
  
  size_t sip_msg_len = 0;
  char * sip_msg = msg_as_string(&home, msg, NULL, 0, &sip_msg_len);
@@ -552,6 +678,15 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   sipConnMap.insert(SipConnectionMapType::value_type(sik,sCon));
   return 0;
  }
+ if(request == "ACK")
+ {
+  SipConnectionMapType::iterator scr = sipConnMap.find(sik);
+  if(scr == sipConnMap.end()) return 0;
+  
+  PTRACE(1, "MCUSIP\tNew SIP ACK accepted");
+  OpenMCUSipConnection *sCon = scr->second;
+  sCon->SipProcessACK(agent,msg);
+ }
  if(request == "BYE")
  {
   SipConnectionMapType::iterator scr = sipConnMap.find(sik);
@@ -562,7 +697,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   sipConnMap.erase(sik);
   sCon->sdp_msg.MakeEmpty();
   sCon->SipReply200(agent, msg);
-  sCon->LeaveConference(); // leave conference and delete connection
+  sCon->LeaveConference(TRUE); // leave conference and delete connection
   return 0;
  }
  if(request == "OPTIONS")
@@ -597,10 +732,13 @@ void OpenMCUSipEndPoint::MainLoop()
     sCon->StopTransmitChannels();
     sCon->StopReceiveChannels();
     sCon->DeleteChannels();
-    sCon->LeaveConference(); // leave conference and delete connection
+    sCon->LeaveConference(TRUE); // leave conference and delete connection
     break;
    }
+   int bye = ProcessH323toSipQueue(scr->first,sCon);
+   if(bye) { SipKey key = scr->first; scr++; sipConnMap.erase(key); if(scr == sipConnMap.end()) break; }
   }
+  PTRACE(1, "MCUSIP\tSIP Down to sleep");
   su_root_sleep(root,500);
  }
 }
@@ -609,6 +747,7 @@ void OpenMCUSipEndPoint::Main()
 {
  su_init();
  su_home_init(&home);
+ su_log_set_level(NULL, 9);
  root = su_root_create(NULL);
 
  if(root == NULL) return;
