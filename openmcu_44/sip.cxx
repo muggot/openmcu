@@ -35,7 +35,10 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    sc->sdp = PString("m=") + ((!sc->media)?"audio ":"video ")
            + PString(sc->lport) + " RTP/AVP " + PString(pt) + "\r\n";
    if(sc->bandwidth) sc->sdp = sc->sdp + "b=AS:" + PString(sc->bandwidth) + "\r\n";
-   sc->sdp = sc->sdp + "a=sendrecv\r\n";
+   if(sc->dir == 3) sc->sdp = sc->sdp + "a=sendrecv\r\n";
+   else if(sc->dir == 1) sc->sdp = sc->sdp + "a=sendonly\r\n";
+   else if(sc->dir == 2) sc->sdp = sc->sdp + "a=recvonly\r\n";
+   else if(sc->dir == 0) sc->sdp = sc->sdp + "a=inactive\r\n";
    if(pt != 0 && pt != 8)
    {
     sc->sdp = sc->sdp + "a=rtpmap:" + PString(pt) + " " + sc->format + "/" + PString(sc->clock);
@@ -101,8 +104,8 @@ void OpenMCUSipConnection::StartChannel(int pt, int dir)
 {
  if(pt<0) return;
  SipCapMapType::iterator cir = sipCaps.find(pt);
- if(dir == 0 && cir->second->inpChan && !cir->second->inpChan->IsRunning()) cir->second->inpChan->Start();
- if(dir == 1 && cir->second->outChan && !cir->second->outChan->IsRunning()) cir->second->outChan->Start();
+ if(dir == 0 && (cir->second->dir&2) && cir->second->inpChan && !cir->second->inpChan->IsRunning()) cir->second->inpChan->Start();
+ if(dir == 1 && (cir->second->dir&1) && cir->second->outChan && !cir->second->outChan->IsRunning()) cir->second->outChan->Start();
 }
 
 void OpenMCUSipConnection::StartReceiveChannels()
@@ -355,7 +358,7 @@ void OpenMCUSipConnection::SelectCapability_H264(SipCapability &c,PStringArray &
 
 int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite)
 {
- int par_len = 0;
+ int par_len = 0, par_mbeg = 0;
  int port = -1, media = -1, def_dir = 3, dir = 3, bw = 0;
  for(int line=0; line<sdp_sa.GetSize(); line++)
  {
@@ -385,13 +388,14 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
   }
   else if(tag == 'm')
   {
-   for(int cn=0; cn<par.GetSize(); cn++)
+   for(int cn=par_mbeg; cn<par.GetSize(); cn++)
    {
     SipCapMapType::iterator cir = caps.find(par[cn]);
-    if(cir != caps.end()) continue; // payload found, here is nothing to do
+    if(cir != caps.end()) { cir->second->dir = dir;  continue; } // payload found, here is nothing to do
     SipCapability *c = new SipCapability(par[cn],media,dir,port,bw);
     caps.insert(SipCapMapType::value_type(par[cn],c));
    }
+   par_mbeg = par.GetSize();
    port = -1; media = -1; bw = 0; dir = def_dir; // reset media level values to default
    if(words.GetSize() < 4) continue; // empty fmt list
    if(words[2] != "RTP/AVP") continue; // non rtp media is not supported
@@ -446,10 +450,14 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
   cout << "line: " + sdp_sa[line] + "\r\n";
  } 
 
- for(int cn=0; cn<par.GetSize(); cn++)
+ for(int cn=par_mbeg; cn<par.GetSize(); cn++)
  {
   SipCapMapType::iterator cir = caps.find(par[cn]);
-  if(cir != caps.end()) { cir->second->Print(); continue; } // payload found, here is nothing to do
+  if(cir != caps.end()) 
+  {
+   cir->second->dir = dir;
+   cir->second->Print(); continue; 
+  } // payload found
   SipCapability *c = new SipCapability(par[cn],media,dir,port,bw);
   caps.insert(SipCapMapType::value_type(par[cn],c));
   c->Print();
