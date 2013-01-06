@@ -32,18 +32,19 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    session->Open(lIP,5000,10000,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
    session->SetRemoteSocketInfo(rIP,sc->port,TRUE);
    sc->lport = session->GetLocalDataPort();
-   sdp_msg = sdp_msg + "m=" + ((!sc->media)?"audio ":"video ")
+   sc->sdp = PString("m=") + ((!sc->media)?"audio ":"video ")
            + PString(sc->lport) + " RTP/AVP " + PString(pt) + "\r\n";
-   if(sc->bandwidth) sdp_msg = sdp_msg + "b=AS:" + PString(sc->bandwidth) + "\r\n";
-   sdp_msg = sdp_msg + "a=sendrecv\r\n";
+   if(sc->bandwidth) sc->sdp = sc->sdp + "b=AS:" + PString(sc->bandwidth) + "\r\n";
+   sc->sdp = sc->sdp + "a=sendrecv\r\n";
    if(pt != 0 && pt != 8)
    {
-    sdp_msg = sdp_msg + "a=rtpmap:" + PString(pt) + " " + sc->format + "/" + PString(sc->clock);
-    if(sc->cnum) sdp_msg = sdp_msg + "/" + PString(sc->cnum);
-    sdp_msg = sdp_msg + "\r\n";
+    sc->sdp = sc->sdp + "a=rtpmap:" + PString(pt) + " " + sc->format + "/" + PString(sc->clock);
+    if(sc->cnum) sc->sdp = sc->sdp + "/" + PString(sc->cnum);
+    sc->sdp = sc->sdp + "\r\n";
     if(!sc->parm.IsEmpty())
-     sdp_msg = sdp_msg + "a=fmtp:" + PString(pt) + " " + sc->parm + "\r\n";
+     sc->sdp = sc->sdp + "a=fmtp:" + PString(pt) + " " + sc->parm + "\r\n";
    }
+   sdp_msg += sc->sdp;
   }
   return session;
 }
@@ -100,8 +101,8 @@ void OpenMCUSipConnection::StartChannel(int pt, int dir)
 {
  if(pt<0) return;
  SipCapMapType::iterator cir = sipCaps.find(pt);
- if(dir == 0 && cir->second->inpChan) cir->second->inpChan->Start();
- if(dir == 1 && cir->second->outChan) cir->second->outChan->Start();
+ if(dir == 0 && cir->second->inpChan && !cir->second->inpChan->IsRunning()) cir->second->inpChan->Start();
+ if(dir == 1 && cir->second->outChan && !cir->second->outChan->IsRunning()) cir->second->outChan->Start();
 }
 
 void OpenMCUSipConnection::StartReceiveChannels()
@@ -352,28 +353,9 @@ void OpenMCUSipConnection::SelectCapability_H264(SipCapability &c,PStringArray &
  }
 }
 
-
-int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
+int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite)
 {
- PString request = sip->sip_request->rq_method_name;
- sdp_s = sip->sip_payload->pl_data;
- PStringArray sdp_sa = sdp_s.Lines();
- PIntArray &par = sipCapsId; // full payloads list
  int par_len = 0;
- SipCapMapType &caps = sipCaps;
- 
- localIP = sip->sip_to->a_url->url_host;
- if(sip->sip_to->a_url->url_user && sip->sip_to->a_url->url_user[0]!=0)
-  requestedRoom = sip->sip_to->a_url->url_user;
- remotePartyAddress = sip->sip_from->a_url->url_host;
- remotePartyName = sip->sip_from->a_url->url_user;
- remoteName = remotePartyName;
- if(sip->sip_user_agent && sip->sip_user_agent->g_string)
-  remoteApplication = sip->sip_user_agent->g_string;
- callToken = remotePartyName + "@" + remotePartyAddress + ":" + PString(sip->sip_call_id->i_id);
-
- cout << "Name: " << remotePartyName << " Addr: " << remotePartyAddress << "\n";
-
  int port = -1, media = -1, def_dir = 3, dir = 3, bw = 0;
  for(int line=0; line<sdp_sa.GetSize(); line++)
  {
@@ -382,7 +364,23 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
 
   if(tag =='o')
   {
+   if(reinvite)
+   {
+    if(words.GetSize() < 6) return 0; // wrong format
+    if(words[1] != sess_id) return 0; // wrong sdp session id
+    if(words[2].AsInteger() <= sess_ver.AsInteger()) return 0; // wrong sdp version
+    // ok, this is actualy reinvite, lets handle it
+    // we will not proccess the case of changing ip address
+    sess_username = words[0];
+    sess_id = words[1];
+    sess_ver = words[2];
+    remoteIP = words[5];
+    continue;
+   }
    if(words.GetSize() < 6) continue;
+   sess_username = words[0];
+   sess_id = words[1];
+   sess_ver = words[2];
    remoteIP = words[5];
   }
   else if(tag == 'm')
@@ -488,7 +486,9 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
    else if(c.format.ToLower() == "h264") SelectCapability_H264(c,tvCaps);
   }
  }
+
  cout << scap << " " << vcap << "\r\n";
+
  sdp_msg = "v=0\r\no=";
  sdp_msg = sdp_msg + requestedRoom + " ";
  sdp_seq++;
@@ -501,10 +501,114 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
  sdp_msg = sdp_msg + localIP + "\r\n";
  if(bandwidth) sdp_msg = sdp_msg + "b=AS:" + PString(bandwidth) + "\r\n";
  sdp_msg = sdp_msg + "t=0 0\r\n";
+ return 1;
+}
+
+
+int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
+{
+// PString request = sip->sip_request->rq_method_name;
+ sdp_s = sip->sip_payload->pl_data;
+ PStringArray sdp_sa = sdp_s.Lines();
+ 
+ localIP = sip->sip_to->a_url->url_host;
+ if(sip->sip_to->a_url->url_user && sip->sip_to->a_url->url_user[0]!=0)
+  requestedRoom = sip->sip_to->a_url->url_user;
+ remotePartyAddress = sip->sip_from->a_url->url_host;
+ remotePartyName = sip->sip_from->a_url->url_user;
+ remoteName = remotePartyName;
+ if(sip->sip_user_agent && sip->sip_user_agent->g_string)
+  remoteApplication = sip->sip_user_agent->g_string;
+ callToken = remotePartyName + "@" + remotePartyAddress + ":" + PString(sip->sip_call_id->i_id);
+
+ cout << "Name: " << remotePartyName << " Addr: " << remotePartyAddress << "\n";
+
+ ProcessSDP(sdp_sa, sipCapsId, sipCaps, 0);
+
  CreateLogicalChannels();
  ep.OnIncomingSipConnection(callToken,*this);
  JoinConference(requestedRoom);
  if(conferenceMember == NULL || conference == NULL) return 0;
+ return 1;
+}
+
+int OpenMCUSipConnection::ProcessReInviteEvent(sip_t *sip)
+{
+ PString sdp = sip->sip_payload->pl_data;
+ PStringArray sdp_sa = sdp.Lines();
+ PIntArray new_par;
+ SipCapMapType new_caps;
+ 
+ int cur_scap = scap;
+ int cur_vcap = vcap;
+ PString cur_sdp_msg = sdp_msg;
+
+ if( !ProcessSDP(sdp_sa,new_par,new_caps,1) ) return 0;
+ 
+ int sflag = 1; // 0 - no changes
+ cout << "Scap: " << scap << " Cur_Scap: " << cur_scap << "\n";
+ if(scap >= 0 && cur_scap >= 0)
+ {
+  SipCapMapType::iterator cir = sipCaps.find(cur_scap);
+  SipCapability *cur_sc = cir->second;
+  cir = new_caps.find(scap);
+  SipCapability *new_sc = cir->second;
+  sflag = new_sc->CmpSipCaps(*cur_sc);
+  if(!sflag) sdp_msg += new_sc->sdp;
+ }
+ else if(scap < 0 && cur_scap < 0) sflag = 0;
+ if(sflag && cur_scap>=0)
+ {
+  StopChannel(cur_scap,1);
+  StopChannel(cur_scap,0);
+  DeleteMediaChannels(cur_scap);
+ }
+
+ int vflag = 1; // 0 - no changes
+ if(vcap >= 0 && cur_vcap >= 0)
+ {
+  SipCapMapType::iterator cir = sipCaps.find(cur_vcap);
+  SipCapability *cur_sc = cir->second;
+  cir = new_caps.find(vcap);
+  SipCapability *new_sc = cir->second;
+  vflag = new_sc->CmpSipCaps(*cur_sc);
+  if(!vflag) sdp_msg += new_sc->sdp;
+ }
+ else if(vcap < 0 && cur_vcap < 0) vflag = 0;
+ if(vflag && cur_vcap>=0)
+ {
+  StopChannel(cur_vcap,1);
+  StopChannel(cur_vcap,0);
+  DeleteMediaChannels(cur_vcap);
+ }
+ 
+ if(!sflag && !vflag) // nothing changed
+ {
+  // sending old sdp
+  return 1;
+ }
+
+ sipCapsId.SetSize(0);
+ sipCaps.clear();
+ sipCapsId = new_par;
+ sipCaps = new_caps;
+ 
+ if(scap<0 && vcap<0) // all closed. end of session
+ {
+  return 0;
+ }
+  
+ if(sflag && scap>=0)
+ {
+  CreateAudioChannel(scap,0);
+  CreateAudioChannel(scap,1);
+ }
+ 
+ if(vflag && vcap>=0)
+ {
+  CreateVideoChannel(vcap,0);
+  CreateVideoChannel(vcap,1);
+ }
  return 1;
 }
 
@@ -529,7 +633,6 @@ void OpenMCUSipConnection::SipReply200(nta_agent_t *agent, msg_t *msg)
                  SIPTAG_CONTENT_TYPE_STR("application/sdp"), SIPTAG_PAYLOAD(&sdp), TAG_END());
   free(sdp_txt);
   StartReceiveChannels();
-  StartTransmitChannels();
 }
 
 int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
@@ -665,16 +768,26 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   PTRACE(1, "MCUSIP\tReceived SIP SDP\n" << sip->sip_payload->pl_data);
 
   SipConnectionMapType::iterator scr = sipConnMap.find(sik);
-  if(scr != sipConnMap.end()) return 0; // connection already exist, ignoring invite
+  if(scr != sipConnMap.end())  // connection already exist, process reinvite
+  {
+   OpenMCUSipConnection *sCon = scr->second;
+   if(!sCon->ProcessReInviteEvent(sip)) 
+   {
+    return 0;
+   }
+   sCon->SipReply200(agent, msg); // send ok and start logical channels
+   return 0;
+  }
 
   PTRACE(1, "MCUSIP\tNew SIP INVITE");
 
   OpenMCUSipConnection *sCon = new OpenMCUSipConnection(this, ep);
   if(!sCon->ProcessInviteEvent(sip)) 
   {
-   return 0; // here we can sen nothing or 486
+   delete sCon;
+   return 0; // here we can see nothing or 486
   }
-  sCon->SipReply200(agent, msg); // send ok and start logical channels
+  sCon->SipReply200(agent, msg); // send ok and start receive logical channels
   sipConnMap.insert(SipConnectionMapType::value_type(sik,sCon));
   return 0;
  }
@@ -686,6 +799,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   PTRACE(1, "MCUSIP\tNew SIP ACK accepted");
   OpenMCUSipConnection *sCon = scr->second;
   sCon->SipProcessACK(agent,msg);
+  sCon->StartTransmitChannels(); // start transmit logical channels
  }
  if(request == "BYE")
  {

@@ -90,6 +90,22 @@ class SipCapability
   { clock = 0; cnum = 0; cap = NULL; inpChan = NULL; outChan = NULL; }
   
  void Print();
+ int CmpSipCaps(SipCapability &c)
+ {
+  if(payload != c.payload) return 1;
+  if(media != c.media) return 1;
+  if(dir != c.dir) return 1;
+  if(port != c.port) return 1;
+  if(bandwidth != c.bandwidth) return 1;
+  if(clock != c.clock) return 1;
+  if(cnum != c.cnum) return 1;
+  if(format != c.format) return 1;
+  if(parm != c.parm) return 1;
+  sdp = c.sdp;
+  inpChan = c.inpChan;
+  outChan = c.outChan;
+  return 0;
+ }
 
  int payload; // payload type
  int media; // media type 0 - audio, 1 - video, 2 - other
@@ -102,6 +118,7 @@ class SipCapability
  PString format; // codec name
  PString parm; // parameters string
  PString h323; // found h323 capability name
+ PString sdp; // sdp section
  H323Capability *cap;
  H323_RTPChannel *inpChan;
  H323_RTPChannel *outChan;
@@ -167,6 +184,8 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   }
       
   int ProcessInviteEvent(sip_t *sip);
+  int ProcessReInviteEvent(sip_t *sip);
+  int ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite);
   void StartTransmitChannels();
   void StartReceiveChannels();
   void StartChannel(int pt, int dir);
@@ -215,6 +234,9 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
  unsigned int sdp_id;
  int bandwidth;
  msg_t *sip_msg;
+ PString sess_id;
+ PString sess_ver;
+ PString sess_username;
 };
 
  
