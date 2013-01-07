@@ -522,7 +522,14 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
  localIP = sip->sip_to->a_url->url_host;
  if(sip->sip_to->a_url->url_user && sip->sip_to->a_url->url_user[0]!=0)
   requestedRoom = sip->sip_to->a_url->url_user;
- remotePartyAddress = sip->sip_from->a_url->url_host;
+
+ if(sip->sip_contact && sip->sip_contact->m_url && sip->sip_contact->m_url->url_host)
+    remotePartyAddress = sip->sip_contact->m_url->url_host;
+ else if(sip->sip_via && sip->sip_via->v_host) 
+    remotePartyAddress = sip->sip_via->v_host;
+ else if(sip->sip_from && sip->sip_from->a_url)
+    remotePartyAddress = sip->sip_from->a_url->url_host;
+
  remotePartyName = sip->sip_from->a_url->url_user;
  remoteName = remotePartyName;
  if(sip->sip_user_agent && sip->sip_user_agent->g_string)
