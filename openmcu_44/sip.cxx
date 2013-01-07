@@ -524,11 +524,11 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
   requestedRoom = sip->sip_to->a_url->url_user;
 
  if(sip->sip_contact && sip->sip_contact->m_url && sip->sip_contact->m_url->url_host)
-    remotePartyAddress = sip->sip_contact->m_url->url_host;
+    remotePartyAddress = PString("sip#") + sip->sip_contact->m_url->url_host;
  else if(sip->sip_via && sip->sip_via->v_host) 
-    remotePartyAddress = sip->sip_via->v_host;
+    remotePartyAddress = PString("sip#") + sip->sip_via->v_host;
  else if(sip->sip_from && sip->sip_from->a_url)
-    remotePartyAddress = sip->sip_from->a_url->url_host;
+    remotePartyAddress = PString("sip#") + sip->sip_from->a_url->url_host;
 
  remotePartyName = sip->sip_from->a_url->url_user;
  remoteName = remotePartyName;
