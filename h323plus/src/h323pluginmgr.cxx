@@ -1753,6 +1753,8 @@ class H323PluginVideoCodec : public H323VideoCodec
         { (*codec->destroyCodec)(codec, context); codec = NULL; }
      }
 
+    virtual unsigned int GetEncoderSeqN(){ return codecCache->GetLastFrameNum(); }
+
     virtual void DetachCacheRTP() 
     { 
     cout << "DetachCacheRTP\n";
@@ -2005,6 +2007,12 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
 
         unsigned char * data = OPAL_VIDEO_FRAME_DATA_PTR(frameHeader);
         unsigned byteRead = (vw * vh * 3)/2;
+
+////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////// FOR MUGGOT //////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////
+// Here is cacheMode value check. If it equals to 0 - it fails. That's why I used
+// cacheMode 1 when OpenMCU works without 'Force split screen video' checkbox :( /kay27
         if (!rawDataChannel->Read(data, byteRead) || !cacheMode) {
             PTRACE(3, "PLUGIN\tFailed to read data from video grabber");
             videoIn->EnableAccess();

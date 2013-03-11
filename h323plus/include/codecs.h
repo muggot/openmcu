@@ -1147,11 +1147,14 @@ class H323VideoCodec : public H323Codec
    virtual void DetachCacheRTP() { return; } 
    virtual void NewCacheRTP() { return; } 
    virtual int GetCacheUsersNumber() { return 0; }
+   virtual unsigned int GetEncoderSeqN() { return 0; }
 
 
   unsigned int encoderCacheKey; // used for caching encoded frames
   PString formatString;
   unsigned cacheMode; // 0 - no cache, 1 - cached, 2 - caching
+
+  PMutex & GetVideoHandlerMutex() { return videoHandlerActive; }
 
   protected:
 
