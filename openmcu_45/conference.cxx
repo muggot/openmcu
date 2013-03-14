@@ -1370,6 +1370,7 @@ void Conference::PutChosenVan()
       while(vmr!=NULL){
         i=vmr->mixer->GetPositionStatus(r->second->GetID());
         if(i < 0) vmr->mixer->SetVADPosition(r->second->GetID(),r->second->chosenVan,VAtimeout);
+        vmr = vmr->next;
       }
     }
   }

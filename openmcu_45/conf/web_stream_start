@@ -3,8 +3,8 @@
 ./ffserver -f ffserver.conf &
 
 ./ffmpeg -y\
- -r 10 -s 4cif -f rawvideo -i ../video.$1\
- -ar 16000 -f s16le -i ../sound.$1\
+ -r 10 -s 4cif -f rawvideo -i video.$1\
+ -ar 16000 -f s16le -i sound.$1\
  http://127.0.0.1:8090/feed.ffm
 
 kill %1

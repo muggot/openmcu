@@ -72,10 +72,6 @@ var VAD_FIELD_STYLE="width:40px;background-color:#fce;border-radius:5px;color:bl
 
 var OTFC_UNMUTE                  =  0; // corresponds to h323.h
 var OTFC_MUTE                    =  1;
-var OTFC_DISABLE_VAD_RESET       =  2;
-var OTFC_DISABLE_VAD_SET         =  3;
-var OTFC_CHOSEN_VAN_RESET        =  4;
-var OTFC_CHOSEN_VAN_SET          =  5;
 var OTFC_DROP_MEMBER             =  7;
 var OTFC_VAD_NORMAL              =  8;
 var OTFC_VAD_CHOSEN_VAN          =  9;
@@ -910,7 +906,7 @@ function top_panel(){
       roomStrings[i]=conf[0][9][i][0]+conf[0][9][i][2]+' ('+(conf[0][9][i][1])+')';
     }
   } catch(e){ return false;}
-  var c="<table width='100%'><tr><td width='75%'>"
+  var c="<table width='100%'><tr><td width='70%'>"
     c+="<form style='margin:0px;padding:0px' name='FakeForm1'>";
     c+="<select class='btn btn-large btn-";
     if(isModerated)c+="success"; else c+="primary";
@@ -926,8 +922,6 @@ function top_panel(){
     else c+='Take contrl';
   c+="' />";
 
-//  c+="</td><td width='40%' align=center>";
-
   c+="<input onclick='javascript:{if(checkcontrol())queue_otf_request(OTFC_GLOBAL_MUTE,"+(!globalMute)+");}' type='button' class='btn btn-large btn-";
     if(globalMute)c+="warning' value='Unmute'>";
     else c+="inverse' value='Mute invis.'>";
@@ -937,15 +931,20 @@ function top_panel(){
   try
   {
     yuvfltidx=conf[0][10];
-    yuvflt=libyuv_flt_desc[ yuvfltidx ];
+    if(yuvfltidx!=-1) yuvflt=libyuv_flt_desc[ yuvfltidx ];
   } catch(e) {
-    yuvfltidx=0;
+    yuvfltidx=-1;
     yuvflt='None';
   }
 
-  c+="<input onclick='javascript:{queue_otf_request("+OTFC_YUV_FILTER_MODE+","+((yuvfltidx+1)%3)+");}' type='button' class='btn btn-large btn-info' value='Flt: " + yuvflt + "'>";
+  if(yuvfltidx != -1)
+  {
+    c += "<input onclick='javascript:{queue_otf_request("
+      +  OTFC_YUV_FILTER_MODE + "," + ((yuvfltidx+1)%3)
+      +  ");}' type='button' class='btn btn-large btn-info' value='Flt: " + yuvflt + "'>";
+  }
 
-  c+="</td><td width='25%' align=right id='savetpl' name='savetpl'>";
+  c+="</td><td width='30%' align=right id='savetpl' name='savetpl'>";
 
 
   c+="<input type='button' class='btn btn-large btn-danger' style='width:20px;padding-left:0px;padding-right:0px;margin-right:1px' value='&ndash;' onclick='javascript:{if(confirm(\"Template \"+document.getElementById(\"templateSelector\").value+\" will be deleted\"))queue_otf_request("+OTFC_DELETE_TEMPLATE+",document.getElementById(\"templateSelector\").value);}'>";

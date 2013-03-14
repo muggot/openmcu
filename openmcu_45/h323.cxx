@@ -616,7 +616,7 @@ PString OpenMCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 #if USE_LIBYUV
     r << "," << OpenMCU::Current().GetScaleFilter();                      // [0][10] = libyuv resizer filter mode
 #else
-    r << ",0";
+    r << ",-1";
 #endif
 
   r << ")"; //l2 close
@@ -1089,14 +1089,6 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
   { member->muteIncoming=FALSE; cmd << "iunmute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
   if( action == OTFC_MUTE)
   { member->muteIncoming=TRUE; cmd << "imute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
-  if( action == OTFC_DISABLE_VAD_RESET )
-  { member->disableVAD=FALSE; cmd << "ivad(" << v << "," << ((member->chosenVan)?1:0) << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
-  if( action == OTFC_DISABLE_VAD_SET )
-  { member->disableVAD=TRUE; cmd << "ivad(" << v << ",2)"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
-  if( action == OTFC_CHOSEN_VAN_RESET )
-  { member->chosenVan=FALSE; cmd << "ivad(" << v << "," << ((member->disableVAD)?2:0) << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
-  if( action == OTFC_CHOSEN_VAN_SET )
-  { member->chosenVan=TRUE; cmd << "ivad(" << v << ",1)"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
   if( action == OTFC_DROP_MEMBER )
   {
     // MAY CAUSE DEADLOCK PWaitAndSignal m(conference->GetMutex();
@@ -1105,11 +1097,35 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     OTF_RET_OK;
   }
   if (action == OTFC_VAD_NORMAL)
-  { member->disableVAD=FALSE; member->chosenVan=FALSE; cmd << "ivad(" << v << ",0)"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
+  {
+    member->disableVAD=FALSE;
+    member->chosenVan=FALSE;
+    conferenceManager.UnlockConference();
+    conference->PutChosenVan();
+    cmd << "ivad(" << v << ",0)";
+    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
+    return "OK";
+  }
   if (action == OTFC_VAD_CHOSEN_VAN)
-  { member->disableVAD=FALSE; member->chosenVan=TRUE; cmd << "ivad(" << v << ",1)"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
+  {
+    member->disableVAD=FALSE;
+    member->chosenVan=TRUE;
+    conferenceManager.UnlockConference();
+    conference->PutChosenVan();
+    cmd << "ivad(" << v << ",1)";
+    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
+    return "OK";
+  }
   if (action == OTFC_VAD_DISABLE_VAD)
-  { member->disableVAD=TRUE; member->chosenVan=FALSE; cmd << "ivad(" << v << ",2)"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
+  {
+    member->disableVAD=TRUE;
+    member->chosenVan=FALSE;
+    conferenceManager.UnlockConference();
+    conference->PutChosenVan();
+    cmd << "ivad(" << v << ",2)";
+    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
+    return "OK";
+  }
   if (action == OTFC_SET_MEMBER_VIDEO_MIXER)
   { unsigned option = data("o").AsInteger();
     if(SetMemberVideoMixer(*conference,member,option))
