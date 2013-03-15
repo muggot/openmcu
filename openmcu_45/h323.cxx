@@ -854,19 +854,21 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
   { conference->RemoveOfflineMemberFromNameList(value); OTF_RET_OK; }
   if(action == OTFC_DROP_ALL_ACTIVE_MEMBERS)
   {
-    //PWaitAndSignal m(conference->GetMutex());
+    conferenceManager.UnlockConference();
+    PWaitAndSignal m(conference->GetMutex());
     Conference::MemberList & memberList = conference->GetMemberList();
-    Conference::MemberList::const_iterator r;
+    Conference::MemberList::iterator r;
     for (r = memberList.begin(); r != memberList.end(); ++r)
-    { ConferenceMember * member = r->second;
+    {
+      ConferenceMember * member = r->second;
       if(member->GetName()=="file recorder") continue;
       if(member->GetName()=="cache") continue;
-      memberList.erase(member->GetID());
       member->Close();
+//      memberList.erase(r->first);
     }
     OpenMCU::Current().HttpWriteEventRoom("Active members dropped by operator",room);
     OpenMCU::Current().HttpWriteCmdRoom("drop_all()",room);
-    OTF_RET_OK;
+    return "OK";
   }
   if(action == OTFC_INVITE_ALL_INACT_MMBRS)
   { Conference::MemberNameList & memberNameList = conference->GetMemberNameList();
@@ -1092,7 +1094,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
   if( action == OTFC_DROP_MEMBER )
   {
     // MAY CAUSE DEADLOCK PWaitAndSignal m(conference->GetMutex();
-    conference->GetMemberList().erase(member->GetID());
+//    conference->GetMemberList().erase(member->GetID());
     member->Close();
     OTF_RET_OK;
   }
@@ -1476,12 +1478,16 @@ PString OpenMCUH323EndPoint::GetMonitorText()
     Conference::MemberList::const_iterator s;
     PINDEX num = 0;
     for (s = memberList.begin(); s != memberList.end(); ++s)
-    { ConferenceMember * member = s->second; if (member != NULL)
+    { ConferenceMember * member = s->second;
+      if (member != NULL)
       { output << "[Member " << ++num << "]\n";
         PStringStream hdr; hdr << "  ";
-        output << hdr << "Title: " << hex << member->GetTitle() << "\n"
-               << hdr << "Name: " << hex << member->GetName() << "\n"
-               << hdr << "Outgoing video mixer: " << hex << member->GetVideoMixerNumber() << "\n"
+        PString name = member->GetName();
+        BOOL isFileMember = (name=="cache" || name == "file recorder");
+        output << hdr << "Title: " << hex << member->GetTitle();
+        if (isFileMember) output << " (file object)";
+        output << hdr << "Name: " << name << "\n"
+               << hdr << "Outgoing video mixer: " << member->GetVideoMixerNumber() << "\n"
                << hdr << "Duration: " << (PTime() - member->GetStartTime()) << "\n"
                << member->GetMonitorInfo(hdr);
         H323Connection_ConferenceMember * connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
@@ -1490,14 +1496,19 @@ PString OpenMCUH323EndPoint::GetMonitorText()
           OpenMCUH323Connection * conn = (OpenMCUH323Connection *)FindConnectionWithoutLock(connMember->GetH323Token());
           output << hdr << "Connection: " << hex << conn << "\n";
         }
-        ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
-        if(fileMember!=NULL)
-        { output << hdr << "Name: " << fileMember->GetName() << " (filemember)\n";
-          if(fileMember->GetName()!="cache") output << hdr << "Format: " << fileMember->GetFormat() << "\n";
-          if(fileMember->GetName()!="file recorder")output << hdr << "VFormat: " << fileMember->GetVFormat() << "\n";
-          output << hdr << "IsVisible: " << fileMember->IsVisible() << "\n";
-          output << hdr << "Status: " << (fileMember->status?"Awake":"Sleeping") << "\n";
-          if(fileMember->codec!=NULL) output << hdr << "EncoderSeqN: " << dec << fileMember->codec->GetEncoderSeqN() << "\n";
+        if(isFileMember)
+        {
+          ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
+          if(fileMember!=NULL)
+          {
+            if(name != "cache") output << hdr << "Format: " << fileMember->GetFormat() << "\n";
+            if(name != "file recorder")output << hdr << "VFormat: " << fileMember->GetVFormat() << "\n";
+            output << hdr << "IsVisible: " << fileMember->IsVisible() << "\n";
+            output << hdr << "Status: " << (fileMember->status?"Awake":"Sleeping") << "\n";
+#ifndef _WIN32
+            if(fileMember->codec) output << hdr << "EncoderSeqN: " << dec << fileMember->codec->GetEncoderSeqN() << "\n";
+#endif
+          }
         }
         if(member->videoMixer!=NULL)
         { output << hdr << "Video Mixer ID: " << member->videoMixer << "\n";
