@@ -3193,6 +3193,7 @@ void MCUSimpleVideoMixer::ReallocatePositions()
    VideoMixPosition & vmp = *r;
    vmp.n      = i;
    vmp.label_init = FALSE;
+   vmp.terminalName = "";
    vmp.fc     = 0;
    vmp.xpos=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].posx;
    vmp.ypos=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].posy;
@@ -3271,7 +3272,7 @@ void MCUSimpleVideoMixer::Scroll(BOOL reverse)
     if(reverse)v->n=(v->n+n-1)%n; else v->n=(v->n+1)%n;
     VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[v->n];
     v->xpos=o.posx; v->ypos=o.posy; v->width=o.width; v->height=o.height;
-    v->label_init=FALSE;
+    v->label_init=FALSE; v->terminalName=""; v->fc=FALSE;
     v=v->next;
   }
   NullAllFrameStores();
@@ -3357,7 +3358,7 @@ void MCUSimpleVideoMixer::Revert()
   { v->n=n-v->n-1;
     VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[v->n];
     v->xpos=o.posx; v->ypos=o.posy; v->width=o.width; v->height=o.height;
-    v->label_init=FALSE;
+    v->label_init=FALSE; v->terminalName=""; v->fc=0;
     v=v->next;
   }
   NullAllFrameStores();
@@ -3799,6 +3800,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMemberId id
         v->id=(void*)v->n;
         v->label_init=FALSE;
         v->terminalName="";
+        v->fc=0;
         return;
       }
 
@@ -3807,6 +3809,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMemberId id
       v->id=id;
       v->label_init=FALSE;
       v->terminalName="";
+      v->fc=0;
       return;
     }
 
@@ -3825,7 +3828,6 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMemberId id
   newPosition->type=type;
   newPosition->n=pos;
   newPosition->label_init=FALSE;
-  newPosition->terminalName="";
 
   if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
     VMPListInsVMP(newPosition);
@@ -3854,6 +3856,8 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
     v2->height=o.height;
     v2->n=pos1;
     v2->label_init=FALSE;
+    v2->terminalName="";
+    v2->fc=0;
     return;
   }
 
@@ -3863,10 +3867,12 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
   v1->id=v2->id;
   v1->terminalName=v2->terminalName;
   v1->label_init=FALSE;
+  v1->fc=0;
 
   v2->id=id0;
   v2->terminalName=tn0;
   v2->label_init=FALSE;
+  v2->fc=0;
 }
 
 
@@ -4714,6 +4720,7 @@ PTRACE(6,"EchoVideoMixer\tAddVideoSource+" << flush);
     vmpList->next->id=id;
     vmpList->next->terminalName = "";
     vmpList->next->label_init=FALSE;
+    vmpList->next->fc=0;
   }
 PTRACE(6,"EchoVideoMixer\tAddVideoSource-" << flush);
 
