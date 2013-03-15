@@ -1778,7 +1778,7 @@ void H323Connection::SetRemoteApplication(const H225_EndpointType & pdu)
       }
     }
 
-    if(remoteApplication.Find("MyPhone")!=P_MAX_INDEX || remoteApplication.Find("Polycom ViaVideo  Release 8.0: 8.0.2")!=P_MAX_INDEX)
+    if(remoteApplication.Find("MyPhone")!=P_MAX_INDEX || remoteApplication.Find("Polycom ViaVideo  Release 8.0")!=P_MAX_INDEX)
     { // as they called project "russian fork" - they definitely suggested themselves (kay27)
       static const int table[128] = { // cp1251 -> utf8 translation based on http://www.linux.org.ru/forum/development/3968525
         0x82D0,0x83D0,  0x9A80E2,0x93D1,  0x9E80E2,0xA680E2,0xA080E2,0xA180E2,0xAC82E2,0xB080E2,0x89D0,0xB980E2,0x8AD0,0x8CD0,0x8BD0,0x8FD0,
