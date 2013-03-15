@@ -3673,7 +3673,7 @@ ConferenceMemberId MCUSimpleVideoMixer::SetVADPosition(ConferenceMemberId id, in
 
   if(maxId==(void *)(-1)) return NULL;
   if(maxStatus < timeout && chosenVan==0) return NULL;
-  VADvmp->id=id; VADvmp->status=0; VADvmp->chosenVan=chosenVan;
+  VADvmp->id=id; VADvmp->status=0; VADvmp->chosenVan=chosenVan; VADvmp->terminalName=""; VADvmp->label_init=FALSE; VADvmp->fc=0;
   frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT);
   
   cout << "SetVADPosition\n";
@@ -3708,6 +3708,7 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMemberId id)
   int pos = GetPositionNum(id);
   int cv = VAD2vmp->chosenVan;
   VAD2vmp->id=id; VAD2vmp->status=0; VAD2vmp->chosenVan=oldVMP->chosenVan;
+  VAD2vmp->terminalName=""; VAD2vmp->label_init=FALSE; VAD2vmp->fc=0;
   if((long)maxId>=0 && (long)maxId<100) maxId=(ConferenceMemberId)pos;
   oldVMP->id=maxId; oldVMP->status=0; oldVMP->chosenVan=cv;
   
