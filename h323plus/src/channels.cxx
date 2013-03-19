@@ -1349,12 +1349,7 @@ class CodecReadAnalyser
     else if(frame.GetMarker())
     {
      now = PTimer::Tick();
-     nextTimestamp = rtpTimestamp + (now - lastFrameTick).GetInterval();
-     lastFrameTick = now;
-//
-//     if(codec->GetFrameRate()!=0)
-//      nextTimestamp = rtpTimestamp+90000/codec->GetFrameRate();
-//     else nextTimestamp = rtpTimestamp+1;
+     nextTimestamp = (now - lastFrameTick).GetInterval() * 90;
     }
 
 #if PTRACING
