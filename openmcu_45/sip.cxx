@@ -532,6 +532,7 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
     remotePartyAddress = PString("sip#") + sip->sip_from->a_url->url_host;
 
  remotePartyName = sip->sip_from->a_url->url_user;
+ PStringToString data; PURL::SplitQueryVars("partyName="+remotePartyName,data); remotePartyName=data("partyName");
  remoteName = remotePartyName;
  if(sip->sip_user_agent && sip->sip_user_agent->g_string)
   remoteApplication = sip->sip_user_agent->g_string;
