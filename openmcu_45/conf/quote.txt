@@ -694,7 +694,9 @@ function members_refresh(){
   document.getElementById('members_pan').innerHTML='ERROR: <i>members</i> variable not set';
   return false;
  }
- if(!document.getElementById('right_scroller')) document.getElementById('members_pan').innerHTML='<div id="right_scroller" style="width:277px;height:333px;overflow:hidden;overflow-y:auto">Initializing panel...</div>';
+ var p_height=200;
+ if(typeof total_height!='undefined') p_height=total_height-2;
+ if(!document.getElementById('right_scroller')) document.getElementById('members_pan').innerHTML='<div id="right_scroller" style="width:277px;height:'+p_height+'px;overflow:hidden;overflow-y:auto">Initializing panel...</div>';
 // var formids=',';
  offliners=false;
 // for(var i=0;i<max_subframes;i++) eval('if(document.forms[0].usr'+i+'){formids+=document.forms[0].usr'+i+'.value+",";}');
