@@ -71,6 +71,12 @@
 
 DECLARE_TRACER
 
+#define CODEC_FLAG_H263P_UMV 0x02000000
+#define CODEC_FLAG_H263P_SLICE_STRUCT 0x10000000
+#define CODEC_FLAG_H263P_AIV 0x00000008
+#define CODEC_FLAG_OBMC 0x00000001
+#define FF_I_TYPE 1
+
 extern "C" {
 #include LIBAVCODEC_HEADER
 };
@@ -232,7 +238,11 @@ H263_Base_EncoderContext::~H263_Base_EncoderContext()
   free(_inputFrameBuffer);
 }
 
+#if LIBAVCODEC_VERSION_MAJOR >= 54
+bool H263_Base_EncoderContext::Open(AVCodecID codecId)
+#else
 bool H263_Base_EncoderContext::Open(CodecID codecId)
+#endif
 {
   TRACE_AND_LOG(tracer, 1, "Opening encoder");
 
@@ -242,7 +252,11 @@ bool H263_Base_EncoderContext::Open(CodecID codecId)
     return false;
   }
 
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
+  _context = avcodec_alloc_context3(_codec);
+#else
   _context = avcodec_alloc_context();
+#endif
   if (_context == NULL) {
     TRACE_AND_LOG(tracer, 1, "Failed to allocate context for encoder");
     return false;
@@ -277,7 +291,11 @@ bool H263_Base_EncoderContext::Open(CodecID codecId)
   _context->flags |= CODEC_FLAG_PASS1;
 
   _context->error_concealment = 3;
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(54,25,0)
+  _context->err_recognition = 5;
+#else
   _context->error_recognition = 5;
+#endif
 
   // debugging flags
   if (Trace::CanTraceUserPlane(4)) {
@@ -489,7 +507,11 @@ bool H263_Base_EncoderContext::OpenCodec()
   CODEC_TRACER_FLAG(tracer, CODEC_FLAG_LOOP_FILTER);
   CODEC_TRACER_FLAG(tracer, CODEC_FLAG_H263P_AIV);
 
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
+  return avcodec_open2(_context, _codec, NULL) == 0;
+#else
   return avcodec_open(_context, _codec) == 0;
+#endif
 }
 
 void H263_Base_EncoderContext::CloseCodec()
@@ -926,7 +948,11 @@ H263_Base_DecoderContext::H263_Base_DecoderContext(const char * _prefix)
     return;
   }
 
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
+  _context = avcodec_alloc_context3(_codec);
+#else
   _context = avcodec_alloc_context();
+#endif
   if (_context == NULL) {
     TRACE_AND_LOG(tracer, 1, "Failed to allocate context for decoder");
     return;
@@ -975,7 +1001,11 @@ bool H263_Base_DecoderContext::OpenCodec()
     return 0;
   }
 
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
+  if (avcodec_open2(_context, _codec, NULL) < 0) {
+#else
   if (avcodec_open(_context, _codec) < 0) {
+#endif
     TRACE_AND_LOG(tracer, 1, "Failed to open H.263 decoder");
     return false;
   }

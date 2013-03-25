@@ -193,7 +193,11 @@ H264DecoderContext::H264DecoderContext()
     return;
   }
 
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
+  _context = avcodec_alloc_context3(_codec);
+#else
   _context = avcodec_alloc_context();
+#endif
   if (_context == NULL) {
     cout << "H264\tDecoder\tFailed to allocate context for decoder\n";
     return;
@@ -207,7 +211,11 @@ H264DecoderContext::H264DecoderContext()
 
   av_init_packet(&_pkt);
 
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
+  if (avcodec_open2(_context, _codec, NULL) < 0) {
+#else
   if (avcodec_open(_context, _codec) < 0) {
+#endif
     cout << "H264\tDecoder\tFailed to open H.264 decoder\n";
     return;
   }

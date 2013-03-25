@@ -111,8 +111,11 @@ class H263_Base_EncoderContext
     virtual ~H263_Base_EncoderContext();
 
     virtual bool Open() = 0;
+#if LIBAVCODEC_VERSION_MAJOR >= 54
+    virtual bool Open(AVCodecID codecId);
+#else
     virtual bool Open(CodecID codecId);
-
+#endif
     virtual int EncodeFrames(const BYTE * src, unsigned & srcLen, BYTE * dst, unsigned & dstLen, unsigned int & flags) = 0;
     void SetMaxKeyFramePeriod (unsigned period);
     void SetTargetBitrate (unsigned rate);
