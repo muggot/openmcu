@@ -381,7 +381,7 @@ void Conference::LoadTemplate(PString tpl)
           MemberNameList::const_iterator r = memberNameList.find(memberInternalName);
           BOOL offline = (r == memberNameList.end());
 
-          if(offline) memberNameList.insert(MemberNameList::value_type(memberInternalName, NULL)); else offline = (r->second == NULL);
+          if(offline) memberNameList.insert(MemberNameList::value_type(memberInternalName, (ConferenceMember*)NULL)); else offline = (r->second == NULL);
 
           if(offline && memberAutoDial) // finally: offline and have to be called
           {

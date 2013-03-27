@@ -35,5 +35,10 @@
 
 #undef P_SSL
 
+#ifdef _WIN32
+#undef USE_SWRESAMPLE
+#define USE_SWRESAMPLE 0
+#endif
+
 #endif // _OpenMCU_CONFIG_H
 
