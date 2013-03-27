@@ -3672,9 +3672,12 @@ ConferenceMemberId MCUSimpleVideoMixer::SetVADPosition(ConferenceMemberId id, in
    r=r->next;
   }
 
-  if(maxId==(void *)(-1)) return NULL;
-  if(maxStatus < timeout && chosenVan==0) return NULL;
-  VADvmp->id=id; VADvmp->status=0; VADvmp->chosenVan=chosenVan; VADvmp->terminalName=""; VADvmp->label_init=FALSE; VADvmp->fc=0;
+//  if(maxId==(void *)(-1)) return NULL;
+  if((long)maxId == -1) return NULL;
+
+  if((maxStatus < timeout) && (!chosenVan)) return NULL;
+  VADvmp->id=id; VADvmp->status=0; VADvmp->chosenVan=chosenVan;
+  VADvmp->terminalName=""; VADvmp->label_init=FALSE; VADvmp->fc=0;
   frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT);
   
   cout << "SetVADPosition\n";
@@ -3712,7 +3715,8 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMemberId id)
   VAD2vmp->terminalName=""; VAD2vmp->label_init=FALSE; VAD2vmp->fc=0;
   if((long)maxId>=0 && (long)maxId<100) maxId=(ConferenceMemberId)pos;
   oldVMP->id=maxId; oldVMP->status=0; oldVMP->chosenVan=cv;
-  
+  oldVMP->terminalName=""; oldVMP->label_init=FALSE; oldVMP->fc=0;
+
   VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
   VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
   if((long)maxId>=0 && (long)maxId<100)

@@ -1364,8 +1364,8 @@ void Conference::PutChosenVan()
   int i;
   PWaitAndSignal m(memberListMutex);
   MemberList::iterator r;
-  for (r = memberList.begin(); r != memberList.end(); r++) {
-    if(r->second->chosenVan!=0) {
+  for (r = memberList.begin(); r != memberList.end(); ++r) {
+    if(r->second->chosenVan) {
       VideoMixerRecord * vmr = videoMixerList;
       while(vmr!=NULL){
         i=vmr->mixer->GetPositionStatus(r->second->GetID());

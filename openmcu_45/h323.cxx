@@ -1114,6 +1114,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     member->chosenVan=TRUE;
     conferenceManager.UnlockConference();
     conference->PutChosenVan();
+    conference->FreezeVideo(member->GetID());
     cmd << "ivad(" << v << ",1)";
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
     return "OK";
