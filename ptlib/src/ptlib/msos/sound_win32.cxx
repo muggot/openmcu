@@ -27,6 +27,11 @@
  * Contributor(s): ______________________________________.
  *
  * $Log: sound_win32.cxx,v $
+ *
+ *
+ * Revision 1.22  2013/01/25 zaozerskiy (zaozerskiy@mail.ru)
+ * Добавлено управление микрофоном для ОС Windows SetVolume и GetVolume
+ *
  * Revision 1.21  2007/10/03 01:18:47  rjongbloed
  * Fixed build for Windows Mobile 5 and added Windows Mobile 6
  *
@@ -205,7 +210,6 @@
  *
  * Revision 1.1  1999/02/16 06:02:07  robertj
  * Major implementation to Linux OSS model
- *
  */
 
 #define P_FORCE_STATIC_PLUGIN
@@ -1553,106 +1557,294 @@ PString PSoundChannelWin32::GetErrorText(ErrorGroup group) const
 
 BOOL PSoundChannelWin32::SetVolume(unsigned newVolume)
 {
-   if (!IsOpen())
-     return SetErrorValues(NotOpen, EBADF);
+	if (!IsOpen())
+		return SetErrorValues(NotOpen, EBADF);
 
-   DWORD rawVolume = newVolume*65536/100;
-   if (rawVolume > 65535)
-     rawVolume = 65535;
+	DWORD rawVolume = newVolume*65536/100;
+	if (rawVolume > 65535)
+		rawVolume = 65535;
 
-   WAVEOUTCAPS caps;
-   if (waveOutGetDevCaps((UINT) hWaveOut, &caps, sizeof(caps)) == MMSYSERR_NOERROR) {
-     // If the device does not support L/R volume only the low word matters
-     if ((caps.dwSupport & WAVECAPS_LRVOLUME) != 0) {
-       // Mantain balance
-       DWORD oldVolume = 0;
-       if (waveOutGetVolume(hWaveOut, &oldVolume) == MMSYSERR_NOERROR) {
-         // GetVolume() is supposed to return the value we intended to set.
-         // So do the proper calculations
-         // 1. (L + R) / 2 = rawVolume      -> GetVolume() formula
-         // 2. L / R       = oldL / oldR    -> Unmodified balance
-         // Being:
-         // oldL = LOWORD(oldVolume)
-         // oldR = HIWORD(oldVolume)
-         
-         DWORD rVol, lVol;
-         DWORD oldL, oldR;
-         
-         // Old volume values
-         oldL = LOWORD(oldVolume);
-         oldR = HIWORD(oldVolume);
-         
-         lVol = rVol = 0;
-         
-         // First sort out extreme cases
-         if ( oldL == oldR )
-           rVol = lVol = rawVolume;
-         else if ( oldL == 0 )
-           rVol = rawVolume;
-         else if ( oldR == 0 )
-           lVol = rawVolume;
-         else {
+	UINT tId;
+	if (direction == Recorder) 
+	{
+		tId = (UINT)hWaveIn;
+
+
+		HMIXER hMixer;
+		HRESULT hr;	
+		hr = mixerOpen(&hMixer, tId, 0, 0, MIXER_OBJECTF_HWAVEIN);
+		if ( FAILED( hr ) ) 
+		{
+			printf("error - mixerOpen\n");
+			return SetErrorValues(NotFound, hr|PWIN32ErrorFlag);
+		}
+
+		MIXERLINE mxl;
+		memset(&mxl, 0, sizeof(MIXERLINE));
+		mxl.cbStruct = sizeof(MIXERLINE);
+		mxl.dwComponentType = MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE;//MIXERLINE_COMPONENTTYPE_DST_WAVEIN;
+		hr = mixerGetLineInfo((HMIXEROBJ)hMixer, &mxl, MIXER_GETLINEINFOF_COMPONENTTYPE);
+
+		if (FAILED(hr) || mxl.cControls==0)
+		{
+			///////////////////// - хз винда тупит!!! ///////////////////////////////
+			mxl.dwComponentType = MIXERLINE_COMPONENTTYPE_DST_WAVEIN;
+			hr = mixerGetLineInfo((HMIXEROBJ)hMixer, &mxl, MIXER_GETLINEINFOF_COMPONENTTYPE);
+			if (FAILED(hr) || mxl.cControls==0)
+			{
+				printf("error - mixerGetLineInfo (%s) mxl.cControls=%d\n", mxl.szName, mxl.cControls);
+				mixerClose(hMixer);
+				return SetErrorValues(NotFound, hr|PWIN32ErrorFlag);
+			}
+		}
+
+		MIXERCONTROL mc;
+		MIXERLINECONTROLS mxlc;
+
+		memset(&mxlc, 0, sizeof(MIXERLINECONTROLS));
+		memset(&mc, 0, sizeof(MIXERCONTROL));
+
+		mxlc.cbStruct = sizeof(MIXERLINECONTROLS);
+		mxlc.dwLineID = mxl.dwLineID;
+		mxlc.dwControlType = MIXERCONTROL_CONTROLTYPE_VOLUME;
+		mxlc.cControls = 1;
+		mxlc.pamxctrl = &mc;
+		mxlc.cbmxctrl = sizeof(MIXERCONTROL);
+
+		hr = mixerGetLineControls((HMIXEROBJ)hMixer, &mxlc, MIXER_GETLINECONTROLSF_ONEBYTYPE);
+		if(FAILED(hr))
+		{
+			printf("error - mixerGetLineControls (%s)\n", mc.szName);
+			mixerClose(hMixer);
+			return SetErrorValues(NotFound, hr|PWIN32ErrorFlag);
+		}
+
+		if(mxl.cChannels==0)
+		{
+			printf("error - mxl.cChannels==0\n");
+			mixerClose(hMixer);
+			return SetErrorValues(NotFound, hr|PWIN32ErrorFlag);
+		}
+
+		// getting value
+		MIXERCONTROLDETAILS mxcd;
+		memset(&mxcd, 0, sizeof(MIXERCONTROLDETAILS));
+		mxcd.cbStruct = sizeof(MIXERCONTROLDETAILS);
+		mxcd.cChannels = mxl.cChannels;
+		mxcd.dwControlID = mc.dwControlID;
+
+		MIXERCONTROLDETAILS_UNSIGNED mxdu[2];
+		mxdu[0].dwValue = (newVolume*65535.0/100.0);//(mc.Bounds.dwMaximum - mc.Bounds.dwMinimum));
+		mxdu[1].dwValue = mxdu[0].dwValue;
+		mxcd.cbDetails = sizeof(MIXERCONTROLDETAILS_UNSIGNED) * mxcd.cChannels;
+		mxcd.paDetails = mxdu;
+
+		if( (hr = mixerSetControlDetails((HMIXEROBJ)hMixer, &mxcd, MIXER_SETCONTROLDETAILSF_VALUE)) != MMSYSERR_NOERROR)
+		{
+			printf("error - mixerSetControlDetails\n");
+			mixerClose(hMixer);
+			return SetErrorValues(NotFound, hr|PWIN32ErrorFlag);
+		}
+
+		printf("newVolume = %d\n", newVolume);
+		mixerClose(hMixer);
+		return TRUE;
+	}
+	else
+	{
+		tId = (UINT) hWaveOut;
+	}
+
+	WAVEOUTCAPS caps;
+	if (waveOutGetDevCaps(tId, &caps, sizeof(caps)) == MMSYSERR_NOERROR) 
+	{
+		// If the device does not support L/R volume only the low word matters
+		if ((caps.dwSupport & WAVECAPS_LRVOLUME) != 0) 
+		{
+			// Mantain balance
+			DWORD oldVolume = 0;
+			if (waveOutGetVolume(hWaveOut, &oldVolume) == MMSYSERR_NOERROR)
+			{
+				// GetVolume() is supposed to return the value we intended to set.
+				// So do the proper calculations
+				// 1. (L + R) / 2 = rawVolume      -> GetVolume() formula
+				// 2. L / R       = oldL / oldR    -> Unmodified balance
+				// Being:
+				// oldL = LOWORD(oldVolume)
+				// oldR = HIWORD(oldVolume)
+
+				DWORD rVol, lVol;
+				DWORD oldL, oldR;
+
+				// Old volume values
+				oldL = LOWORD(oldVolume);
+				oldR = HIWORD(oldVolume);
+
+				lVol = rVol = 0;
+
+				// First sort out extreme cases
+				if ( oldL == oldR )
+					rVol = lVol = rawVolume;
+				else if ( oldL == 0 )
+					rVol = rawVolume;
+				else if ( oldR == 0 )
+					lVol = rawVolume;
+				else {
 #ifndef _WIN32_WCE
-           rVol = ::MulDiv( 2 * rawVolume, oldR, oldL + oldR );
-           lVol = ::MulDiv( rVol, oldL, oldR );
+					rVol = ::MulDiv( 2 * rawVolume, oldR, oldL + oldR );
+					lVol = ::MulDiv( rVol, oldL, oldR );
 #else
-           rVol = 2 * rawVolume * oldR / ( oldL + oldR );
-           lVol = rVol * oldL / oldR;
+					rVol = 2 * rawVolume * oldR / ( oldL + oldR );
+					lVol = rVol * oldL / oldR;
 #endif
-         }
-         
-         rawVolume = MAKELPARAM(lVol, rVol);
-       }
-       else {
-         // Couldn't get current volume. Assume centered balance
-         rawVolume = MAKELPARAM(rawVolume, rawVolume);
-       }
-     }
-   }
-   else {
-     // Couldn't get device caps. Assume centered balance
-     // If the device does not support independant L/R volume
-     // the high-order word (R) is ignored
-     rawVolume = MAKELPARAM(rawVolume, rawVolume);
-   }
+				}
 
-   if (direction == Recorder) {
-     // Does not appear to be an input volume!!
-   }
-   else {
-     DWORD osError = waveOutSetVolume(hWaveOut, rawVolume);
-     if (osError != MMSYSERR_NOERROR)
-       return SetErrorValues(Miscellaneous, osError|PWIN32ErrorFlag);
-   }
+				rawVolume = MAKELPARAM(lVol, rVol);
+			}
+			else 
+			{
+				// Couldn't get current volume. Assume centered balance
+				rawVolume = MAKELPARAM(rawVolume, rawVolume);
+			}
+		}
+	}
+	else
+	{
+		// Couldn't get device caps. Assume centered balance
+		// If the device does not support independant L/R volume
+		// the high-order word (R) is ignored
+		rawVolume = MAKELPARAM(rawVolume, rawVolume);
+	}
 
-   return TRUE;
+	if (direction == Recorder)
+	{
+		// Does not appear to be an input volume!!
+	}
+	else 
+	{
+		DWORD osError = waveOutSetVolume(hWaveOut, rawVolume);
+		if (osError != MMSYSERR_NOERROR)
+			return SetErrorValues(Miscellaneous, osError|PWIN32ErrorFlag);
+	}
+
+	return TRUE;
 }
 
 
 
 BOOL PSoundChannelWin32::GetVolume(unsigned & oldVolume)
 {
-   if (!IsOpen())
-     return SetErrorValues(NotOpen, EBADF);
+	if (!IsOpen())
+		return SetErrorValues(NotOpen, EBADF);
 
-   DWORD rawVolume = 0;
+	DWORD rawVolume = 0;
+	UINT tId;
 
-   if (direction == Recorder) {
-     // Does not appear to be an input volume!!
-   }
-   else {
-     DWORD osError = waveOutGetVolume(hWaveOut, &rawVolume);
-     if (osError != MMSYSERR_NOERROR)
-       return SetErrorValues(Miscellaneous, osError|PWIN32ErrorFlag);
-   }
+	if (direction == Recorder) 
+	{
+		tId = (UINT)hWaveIn;
 
-   WAVEOUTCAPS caps;
-   if (waveOutGetDevCaps((UINT) hWaveOut, &caps, sizeof(caps)) == MMSYSERR_NOERROR &&
-                                               (caps.dwSupport & WAVECAPS_LRVOLUME) != 0)
-     rawVolume = (HIWORD(rawVolume) + LOWORD(rawVolume)) / 2;
+		HMIXER hMixer;
+		HRESULT hr;	
+		hr = mixerOpen(&hMixer, tId, 0, 0, MIXER_OBJECTF_HWAVEIN);
+		if ( FAILED( hr ) ) 
+		{
+			printf("error - mixerOpen\n");
+			return SetErrorValues(NotFound, hr|PWIN32ErrorFlag);
+		}
 
-   oldVolume = rawVolume*100/65536;
-   return TRUE;
+		MIXERLINE mxl;
+		memset(&mxl, 0, sizeof(MIXERLINE));
+		mxl.cbStruct = sizeof(MIXERLINE);
+		mxl.dwComponentType = MIXERLINE_COMPONENTTYPE_SRC_MICROPHONE;//MIXERLINE_COMPONENTTYPE_DST_WAVEIN;
+		hr = mixerGetLineInfo((HMIXEROBJ)hMixer, &mxl, MIXER_GETLINEINFOF_COMPONENTTYPE);
+
+		if (FAILED(hr) || mxl.cControls==0)
+		{
+			///////////////////// - хз винда тупит!!! ///////////////////////////////
+			mxl.dwComponentType = MIXERLINE_COMPONENTTYPE_DST_WAVEIN;
+			hr = mixerGetLineInfo((HMIXEROBJ)hMixer, &mxl, MIXER_GETLINEINFOF_COMPONENTTYPE);
+			if (FAILED(hr) || mxl.cControls==0)
+			{
+				printf("error - mixerGetLineInfo (%s) mxl.cControls=%d\n", mxl.szName, mxl.cControls);
+				mixerClose(hMixer);
+				return SetErrorValues(NotFound, hr|PWIN32ErrorFlag);
+			}
+		}
+
+		MIXERCONTROL mc;
+		MIXERLINECONTROLS mxlc;
+
+		memset(&mxlc, 0, sizeof(MIXERLINECONTROLS));
+		memset(&mc, 0, sizeof(MIXERCONTROL));
+
+		mxlc.cbStruct = sizeof(MIXERLINECONTROLS);
+		mxlc.dwLineID = mxl.dwLineID;
+		mxlc.dwControlType = MIXERCONTROL_CONTROLTYPE_VOLUME;
+		mxlc.cControls = 1;
+		mxlc.pamxctrl = &mc;
+		mxlc.cbmxctrl = sizeof(MIXERCONTROL);
+
+		hr = mixerGetLineControls((HMIXEROBJ)hMixer, &mxlc, MIXER_GETLINECONTROLSF_ONEBYTYPE);
+		if(FAILED(hr))
+		{
+			printf("error - mixerGetLineControls (%s)\n", mc.szName);
+			mixerClose(hMixer);
+			return SetErrorValues(NotFound, hr|PWIN32ErrorFlag);
+		}
+
+		if(mxl.cChannels==0)
+		{
+			printf("error - mxl.cChannels==0\n");
+			mixerClose(hMixer);
+			return SetErrorValues(NotFound, hr|PWIN32ErrorFlag);
+		}
+
+		// getting value
+		MIXERCONTROLDETAILS mxcd;
+		memset(&mxcd, 0, sizeof(MIXERCONTROLDETAILS));
+		mxcd.cbStruct = sizeof(MIXERCONTROLDETAILS);
+		mxcd.cChannels = mxl.cChannels;
+		mxcd.dwControlID = mc.dwControlID;
+
+		MIXERCONTROLDETAILS_UNSIGNED mxdu[2];
+		memset(mxdu, 0, sizeof(MIXERCONTROLDETAILS_UNSIGNED)*2);
+		mxdu[0].dwValue = -1; 
+		mxdu[1].dwValue = -1; 
+		mxcd.cbDetails = sizeof(MIXERCONTROLDETAILS_UNSIGNED)*mxcd.cChannels;
+		mxcd.paDetails = mxdu;
+
+		if( (hr = mixerGetControlDetails((HMIXEROBJ)hMixer, &mxcd, MIXER_SETCONTROLDETAILSF_VALUE)) != MMSYSERR_NOERROR)
+		{
+			printf("error - mixerSetControlDetails\n");
+			mixerClose(hMixer);
+			return SetErrorValues(NotFound, hr|PWIN32ErrorFlag);
+		}
+
+		mixerClose(hMixer);
+
+		if(mxcd.cChannels==1)
+			oldVolume = ((double)mxdu[0].dwValue/65535.0*100.0);
+		if(mxcd.cChannels==2)
+			oldVolume = ((double)(mxdu[0].dwValue+mxdu[1].dwValue)/2.0/65535.0*100.0);
+		printf("oldVolume = %d\n", oldVolume);
+		return TRUE;
+	}
+	else
+	{
+		tId = (UINT)hWaveOut;
+		DWORD osError = waveOutGetVolume(hWaveOut, &rawVolume);
+		if (osError != MMSYSERR_NOERROR)
+			return SetErrorValues(Miscellaneous, osError|PWIN32ErrorFlag);
+	}
+
+	WAVEOUTCAPS caps;
+	if (waveOutGetDevCaps(tId, &caps, sizeof(caps)) == MMSYSERR_NOERROR &&
+		(caps.dwSupport & WAVECAPS_LRVOLUME) != 0)
+		rawVolume = (HIWORD(rawVolume) + LOWORD(rawVolume)) / 2;
+
+	oldVolume = rawVolume*100/65536;
+	return TRUE;
 }
 
 // End of File ///////////////////////////////////////////////////////////////

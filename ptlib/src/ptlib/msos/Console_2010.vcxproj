@@ -1,0 +1,517 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="No Trace|Win32">
+      <Configuration>No Trace</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>PTLib Static</ProjectName>
+    <ProjectGuid>{D11E1C9D-406C-4D7C-8F37-913C0BFD9E0D}</ProjectGuid>
+    <RootNamespace>PTLib Static</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.21006.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\..\Lib\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\..\Lib\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)$(Configuration)\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">..\..\..\Lib\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">$(OutDir)$(Configuration)\</IntDir>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\include;$(IncludePath)</IncludePath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)..\..\..\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">$(ProjectDir)..\..\..\include;$(IncludePath)</IncludePath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">$(ProjectDir)..\..\..\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\include;$(IncludePath)</IncludePath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)..\..\..\lib;$(LibraryPath)</LibraryPath>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">ptlibs</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">ptlibsd</TargetName>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">ptlibsn</TargetName>
+    <ExecutablePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">c:\tools;$(ExecutablePath)</ExecutablePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>..\..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;PTRACING=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>ptlib.h</PrecompiledHeaderFile>
+      <BrowseInformation>true</BrowseInformation>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <DisableSpecificWarnings>
+      </DisableSpecificWarnings>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0c09</Culture>
+    </ResourceCompile>
+    <Lib />
+    <PreBuildEvent>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>..\..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>NDEBUG;_LIB;PTRACING=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <PrecompiledHeaderFile>ptlib.h</PrecompiledHeaderFile>
+      <WarningLevel>Level4</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0c09</Culture>
+    </ResourceCompile>
+    <Lib />
+    <PreBuildEvent>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>..\..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;PTRACING=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <RuntimeTypeInfo>true</RuntimeTypeInfo>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>ptlib.h</PrecompiledHeaderFile>
+      <WarningLevel>Level4</WarningLevel>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0c09</Culture>
+    </ResourceCompile>
+    <Lib />
+    <PreBuildEvent>
+      <Command>
+      </Command>
+      <Message>
+      </Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\ptclib\sockagg.cxx" />
+    <ClCompile Include="assert.cxx">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\common\collect.cxx" />
+    <ClCompile Include="..\common\contain.cxx" />
+    <ClCompile Include="ethsock.cxx" />
+    <ClCompile Include="..\common\getdate_tab.c">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="icmp.cxx" />
+    <ClCompile Include="mail.cxx" />
+    <ClCompile Include="..\common\notifier_ext.cxx" />
+    <ClCompile Include="..\common\object.cxx" />
+    <ClCompile Include="..\common\osutils.cxx" />
+    <ClCompile Include="..\Common\pchannel.cxx" />
+    <ClCompile Include="..\Common\pconfig.cxx" />
+    <ClCompile Include="..\common\pethsock.cxx" />
+    <ClCompile Include="pipe.cxx" />
+    <ClCompile Include="..\common\pipechan.cxx" />
+    <ClCompile Include="..\common\pluginmgr.cxx" />
+    <ClCompile Include="..\common\ptime.cxx" />
+    <ClCompile Include="ptlib.cxx" />
+    <ClCompile Include="..\common\pvidchan.cxx" />
+    <ClCompile Include="..\common\qos.cxx" />
+    <ClCompile Include="remconn.cxx" />
+    <ClCompile Include="..\common\safecoll.cxx" />
+    <ClCompile Include="..\Common\serial.cxx" />
+    <ClCompile Include="..\common\sfile.cxx" />
+    <ClCompile Include="..\common\sockets.cxx" />
+    <ClCompile Include="..\common\sound.cxx" />
+    <ClCompile Include="sound_directsound.cxx" />
+    <ClCompile Include="sound_win32.cxx" />
+    <ClCompile Include="svcproc.cxx" />
+    <ClCompile Include="..\common\vconvert.cxx" />
+    <ClCompile Include="..\common\vfakeio.cxx" />
+    <ClCompile Include="vfw.cxx" />
+    <ClCompile Include="..\common\videoio.cxx" />
+    <ClCompile Include="win32.cxx" />
+    <ClCompile Include="wincfg.cxx" />
+    <ClCompile Include="winserial.cxx" />
+    <ClCompile Include="winsock.cxx" />
+    <ClCompile Include="..\..\ptclib\asnber.cxx">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\ptclib\asner.cxx" />
+    <ClCompile Include="..\..\ptclib\asnper.cxx">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\ptclib\asnxer.cxx">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\ptclib\cypher.cxx" />
+    <ClCompile Include="..\..\ptclib\delaychan.cxx" />
+    <ClCompile Include="..\..\ptclib\dtmf.cxx" />
+    <ClCompile Include="..\..\ptclib\enum.cxx" />
+    <ClCompile Include="..\..\ptclib\ftp.cxx" />
+    <ClCompile Include="..\..\ptclib\ftpclnt.cxx" />
+    <ClCompile Include="..\..\ptclib\ftpsrvr.cxx" />
+    <ClCompile Include="..\..\ptclib\guid.cxx" />
+    <ClCompile Include="..\..\ptclib\html.cxx" />
+    <ClCompile Include="..\..\ptclib\http.cxx" />
+    <ClCompile Include="..\..\ptclib\httpclnt.cxx" />
+    <ClCompile Include="..\..\ptclib\httpform.cxx" />
+    <ClCompile Include="..\..\ptclib\httpsrvr.cxx" />
+    <ClCompile Include="..\..\ptclib\httpsvc.cxx" />
+    <ClCompile Include="..\..\ptclib\inetmail.cxx" />
+    <ClCompile Include="..\..\ptclib\inetprot.cxx" />
+    <ClCompile Include="..\..\ptclib\ipacl.cxx" />
+    <ClCompile Include="..\..\ptclib\memfile.cxx" />
+    <ClCompile Include="..\..\ptclib\modem.cxx" />
+    <ClCompile Include="..\..\ptclib\pasn.cxx" />
+    <ClCompile Include="..\..\ptclib\pdns.cxx" />
+    <ClCompile Include="..\..\ptclib\pils.cxx" />
+    <ClCompile Include="..\..\ptclib\pldap.cxx" />
+    <ClCompile Include="..\..\ptclib\pnat.cxx" />
+    <ClCompile Include="..\..\ptclib\podbc.cxx" />
+    <ClCompile Include="..\..\ptclib\psasl.cxx" />
+    <ClCompile Include="..\..\ptclib\psnmp.cxx" />
+    <ClCompile Include="..\..\ptclib\psoap.cxx" />
+    <ClCompile Include="..\..\ptclib\psockbun.cxx" />
+    <ClCompile Include="..\..\ptclib\pssl.cxx" />
+    <ClCompile Include="..\..\ptclib\pstun.cxx" />
+    <ClCompile Include="..\..\ptclib\ptts.cxx">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="..\..\ptclib\pvfiledev.cxx" />
+    <ClCompile Include="..\..\ptclib\pvidfile.cxx" />
+    <ClCompile Include="..\..\ptclib\pwavfile.cxx" />
+    <ClCompile Include="..\..\ptclib\pwavfiledev.cxx" />
+    <ClCompile Include="..\..\ptclib\pxml.cxx" />
+    <ClCompile Include="..\..\ptclib\pxmlrpc.cxx" />
+    <ClCompile Include="..\..\ptclib\pxmlrpcs.cxx" />
+    <ClCompile Include="..\..\ptclib\qchannel.cxx" />
+    <ClCompile Include="..\..\ptclib\random.cxx" />
+    <ClCompile Include="..\..\ptclib\rfc1155.cxx" />
+    <ClCompile Include="..\..\ptclib\shttpsvc.cxx" />
+    <ClCompile Include="..\..\ptclib\snmp.cxx" />
+    <ClCompile Include="..\..\ptclib\snmpclnt.cxx" />
+    <ClCompile Include="..\..\ptclib\snmpserv.cxx" />
+    <ClCompile Include="..\..\ptclib\socks.cxx" />
+    <ClCompile Include="..\..\ptclib\telnet.cxx" />
+    <ClCompile Include="..\..\ptclib\vsdl.cxx" />
+    <ClCompile Include="..\..\ptclib\vxml.cxx" />
+    <ClCompile Include="..\..\ptclib\xmpp.cxx" />
+    <ClCompile Include="..\..\ptclib\xmpp_c2s.cxx" />
+    <ClCompile Include="..\..\ptclib\xmpp_muc.cxx" />
+    <ClCompile Include="..\..\ptclib\xmpp_roster.cxx" />
+    <ClCompile Include="..\common\regex\regcomp.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Level1</WarningLevel>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">Level1</WarningLevel>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Level1</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="..\common\regex\regerror.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Level1</WarningLevel>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">Level1</WarningLevel>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Level1</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="..\common\regex\regexec.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Level1</WarningLevel>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">Level1</WarningLevel>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Level1</WarningLevel>
+    </ClCompile>
+    <ClCompile Include="..\common\regex\regfree.c">
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Level1</WarningLevel>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">Level1</WarningLevel>
+      <AdditionalIncludeDirectories Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\common\regex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+      <WarningLevel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Level1</WarningLevel>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\common\getdate.y">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">bison -o ../common/getdate_tab.c ../common/getdate.y
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../common/getdate_tab.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">bison -o ../common/getdate_tab.c ../common/getdate.y
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">../common/getdate_tab.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">bison -o ../common/getdate_tab.c ../common/getdate.y
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">../common/getdate_tab.c;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\include\ptbuildopts.h.in">
+      <FileType>Document</FileType>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Configuring Build Options</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd $(ProjectDir)\..\..\..
+configure --no-search --exclude-env=VSNET2010_PTLIB_CONFIGURE_EXCLUDE_DIRS %PTLIB_CONFIGURE_OPTIONS% %PWLIB_CONFIGURE_OPTIONS%
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)\..\..\..\configure.ac;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)ptbuildopts.h;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">Configuring Build Options</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">cd $(ProjectDir)\..\..\..
+configure --no-search --exclude-env=VSNET2010_PTLIB_CONFIGURE_EXCLUDE_DIRS %PTLIB_CONFIGURE_OPTIONS% %PWLIB_CONFIGURE_OPTIONS%
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">$(ProjectDir)\..\..\..\configure.ac;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">%(RootDir)%(Directory)ptbuildopts.h;%(Outputs)</Outputs>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Configuring Build Options</Message>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd $(ProjectDir)\..\..\..
+configure --no-search --exclude-env=VSNET2010_PTLIB_CONFIGURE_EXCLUDE_DIRS %PTLIB_CONFIGURE_OPTIONS% %PWLIB_CONFIGURE_OPTIONS%
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)\..\..\..\configure.ac;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)ptbuildopts.h;%(Outputs)</Outputs>
+    </CustomBuild>
+    <None Include="..\..\..\include\ptlib\contain.inl" />
+    <None Include="..\..\..\include\ptlib\osutil.inl" />
+    <None Include="..\..\..\include\ptlib\msos\ptlib\ptlib.inl" />
+    <None Include="..\..\..\configure.ac" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\include\ptbuildopts.h">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='No Trace|Win32'">
+      </Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </Command>
+    </CustomBuild>
+    <ClInclude Include="..\..\..\Include\PtLib\Args.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Array.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Channel.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Config.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Contain.h" />
+    <ClInclude Include="..\..\..\include\ptlib\critsec.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Dict.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Dynalink.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Ethsock.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\File.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\filepath.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Icmpsock.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Indchan.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Ipdsock.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\ipsock.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\ipxsock.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Lists.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Mail.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\mutex.h" />
+    <ClInclude Include="..\..\..\include\ptlib\notifier.h" />
+    <ClInclude Include="..\..\..\include\ptlib\notifier_ext.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\object.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Pdirect.h" />
+    <ClInclude Include="..\..\..\include\ptlib\pfactory.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Pipechan.h" />
+    <ClInclude Include="..\..\..\include\ptlib\plugin.h" />
+    <ClInclude Include="..\..\..\include\ptlib\pluginmgr.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\pprocess.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Pstring.h" />
+    <ClInclude Include="..\..\..\include\ptlib\psync.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Ptime.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Remconn.h" />
+    <ClInclude Include="..\..\..\include\ptlib\safecoll.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\semaphor.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Serchan.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Sfile.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\socket.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\sockets.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Sound.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\spxsock.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Svcproc.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\syncpoint.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\syncthrd.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Tcpsock.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Textfile.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\thread.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Timeint.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Timer.h" />
+    <ClInclude Include="..\..\..\Include\PtLib\Udpsock.h" />
+    <ClInclude Include="..\..\..\include\ptlib\vconvert.h" />
+    <ClInclude Include="..\..\..\include\ptlib\videoio.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\channel.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\config.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\contain.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\critsec.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\debstrm.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\dynalink.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\epacket.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\ethsock.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\file.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\filepath.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\icmpsock.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\ipdsock.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\ipsock.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\ipxsock.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\mail.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\mutex.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\pdirect.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\pipechan.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\pprocess.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\ptime.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\remconn.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\semaphor.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\serchan.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\sfile.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\socket.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\sound_directsound.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\spxsock.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\svcproc.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\syncpoint.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\tcpsock.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\textfile.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\thread.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\timeint.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\timer.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\udpsock.h" />
+    <ClInclude Include="..\..\..\include\ptlib\msos\ptlib\videoio.h" />
+    <ClInclude Include="..\..\..\include\ptclib\asnber.h" />
+    <ClInclude Include="..\..\..\include\ptclib\asner.h" />
+    <ClInclude Include="..\..\..\include\ptclib\asnper.h" />
+    <ClInclude Include="..\..\..\include\ptclib\asnxer.h" />
+    <ClInclude Include="..\..\..\include\ptclib\cypher.h" />
+    <ClInclude Include="..\..\..\include\ptclib\delaychan.h" />
+    <ClInclude Include="..\..\..\include\ptclib\dtmf.h" />
+    <ClInclude Include="..\..\..\include\ptclib\enum.h" />
+    <ClInclude Include="..\..\..\include\ptclib\ftp.h" />
+    <ClInclude Include="..\..\..\include\ptclib\html.h" />
+    <ClInclude Include="..\..\..\include\ptclib\http.h" />
+    <ClInclude Include="..\..\..\include\ptclib\httpform.h" />
+    <ClInclude Include="..\..\..\include\ptclib\httpsvc.h" />
+    <ClInclude Include="..\..\..\include\ptclib\inetmail.h" />
+    <ClInclude Include="..\..\..\include\ptclib\inetprot.h" />
+    <ClInclude Include="..\..\..\include\ptclib\ipacl.h" />
+    <ClInclude Include="..\..\..\include\ptclib\memfile.h" />
+    <ClInclude Include="..\..\..\include\ptclib\mime.h" />
+    <ClInclude Include="..\..\..\include\ptclib\modem.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pasn.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pdns.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pils.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pldap.h" />
+    <ClInclude Include="..\..\..\include\ptclib\podbc.h" />
+    <ClInclude Include="..\..\..\include\ptclib\psasl.h" />
+    <ClInclude Include="..\..\..\include\ptclib\psnmp.h" />
+    <ClInclude Include="..\..\..\include\ptclib\psoap.h" />
+    <ClInclude Include="..\..\..\include\ptclib\psockbun.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pssl.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pstun.h" />
+    <ClInclude Include="..\..\..\include\ptclib\ptts.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pvfiledev.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pvidfile.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pwavfile.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pwavfiledev.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pxml.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pxmlrpc.h" />
+    <ClInclude Include="..\..\..\include\ptclib\pxmlrpcs.h" />
+    <ClInclude Include="..\..\..\include\ptclib\qchannel.h" />
+    <ClInclude Include="..\..\..\include\ptclib\random.h" />
+    <ClInclude Include="..\..\..\include\ptclib\rfc1155.h" />
+    <ClInclude Include="..\..\..\include\ptclib\shttpsvc.h" />
+    <ClInclude Include="..\..\..\include\ptclib\snmp.h" />
+    <ClInclude Include="..\..\..\include\ptclib\socks.h" />
+    <ClInclude Include="..\..\..\include\ptclib\telnet.h" />
+    <ClInclude Include="..\..\..\include\ptclib\url.h" />
+    <ClInclude Include="..\..\..\include\ptclib\vsdl.h" />
+    <ClInclude Include="..\..\..\include\ptclib\vxml.h" />
+    <ClInclude Include="..\..\..\include\ptclib\xmpp.h" />
+    <ClInclude Include="..\..\..\include\ptclib\xmpp_c2s.h" />
+    <ClInclude Include="..\..\..\include\ptclib\xmpp_muc.h" />
+    <ClInclude Include="..\..\..\include\ptclib\xmpp_roster.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

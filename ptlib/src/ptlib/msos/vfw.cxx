@@ -25,6 +25,10 @@
  *                 Walter H Whitlock (twohives@nc.rr.com)
  *
  * $Log: vfw.cxx,v $
+ *
+ * Revision 1.51  2013/01/25 zaozerskiy (zaozerskiy@mail.ru)
+ * Обход глюка ОС Windows при вызове capDriverConnect и проверка на formatTableEntry.colourFormat==NULL в PTRACE
+ *
  * Revision 1.50  2007/09/26 04:21:48  rjongbloed
  * Fixed incorrect position returned if never move the window.
  *
@@ -649,7 +653,7 @@ BOOL PVideoDeviceBitmap::ApplyFormat(HWND hWnd, const FormatTableEntry & formatT
   }
 
   PTRACE(1, "PVidInp\tcapSetVideoFormat failed: "
-          << formatTableEntry.colourFormat << ' '
+          << ((formatTableEntry.colourFormat) ? formatTableEntry.colourFormat : "NULL") << ' '
           << bmi.bmiHeader.biWidth << "x" << bmi.bmiHeader.biHeight
           << " sz=" << bmi.bmiHeader.biSizeImage << " time=" << (PTimer::Tick() - startTime)
           << " - lastError=" << ::GetLastError());
@@ -1137,9 +1141,10 @@ BOOL PVideoInputDevice_VideoForWindows::InitialiseCapture()
 
   // Use first driver available.
   if (!capDriverConnect(hCaptureWindow, devId)) {
+	  if(!capDriverConnect(hCaptureWindow, devId)){
     lastError = ::GetLastError();
     PTRACE(1, "PVidInp\tcapDriverConnect failed - " << lastError);
-    return FALSE;
+	return FALSE;}
   }
 
   CAPDRIVERCAPS driverCaps;

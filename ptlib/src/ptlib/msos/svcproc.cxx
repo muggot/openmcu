@@ -473,7 +473,7 @@ void PSystemLog::Output(Level level, const char * msg)
     if (process.systemLogFileName == WindowLogOutput || process.systemLogFileName == DebuggerLogOutput)
       out = new PStringStream;
     else
-      out = new ofstream(process.systemLogFileName, ios::app);
+      out = new ofstream((const char *)process.systemLogFileName, ios::app);
 
     PTime now;
     *out << now.AsString("yyyy/MM/dd hh:mm:ss.uuu\t");
