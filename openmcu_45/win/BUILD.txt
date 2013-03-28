@@ -26,8 +26,7 @@ and build them.
   - openmcu_45\conf\*.gif
   - openmcu_45\conf\*.conf
   - openmcu_45\conf\Russo_One.ttf
-  - openmcu_45\conf\video_recorder.cmd
-codecs from Myphone3:
+Codec plugins from Myphone3:
   - myphone\avcodec-52.dll
   - myphone\h263-1998_pwplugin.dll
   - myphone\libx264-88.dll
@@ -40,9 +39,12 @@ codecs from Myphone3:
   - myphone\G7222_pwplugin.dll
   - myphone\gsm0610_pwplugin.dll
   - myphone\ilbccodec_pwplugin.dll
-video recorder script:
+Video recorder and web broadcasting* scripts:
   - openmcu_45\conf\video_recorder.cmd
+  - openmcu_45\conf\web_stream_start.cmd*
   - ffmpeg.exe (eg. from http://ffmpeg.zeranoe.com/builds/ )
+
+* web_stream_start.cmd uses ffmpeg.exe and vlc.exe ( http://videolan.org/vlc/ )
 
 -----
 Run the process: "openmcu.exe Debug"
