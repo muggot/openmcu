@@ -185,11 +185,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath=".\conference.cxx"
+				RelativePath="..\conference.cxx"
 				>
 			</File>
 			<File
-				RelativePath=".\custom.cxx"
+				RelativePath="..\custom.cxx"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -209,27 +209,27 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\filemembers.cxx"
+				RelativePath="..\filemembers.cxx"
 				>
 			</File>
 			<File
-				RelativePath=".\h323.cxx"
+				RelativePath="..\h323.cxx"
 				>
 			</File>
 			<File
-				RelativePath=".\html.cxx"
+				RelativePath="..\html.cxx"
 				>
 			</File>
 			<File
-				RelativePath=".\main.cxx"
+				RelativePath="..\main.cxx"
 				>
 			</File>
 			<File
-				RelativePath=".\mcu.cxx"
+				RelativePath="..\mcu.cxx"
 				>
 			</File>
 			<File
-				RelativePath=".\precompile.cxx"
+				RelativePath="..\precompile.cxx"
 				>
 				<FileConfiguration
 					Name="Debug|Win32"
@@ -249,11 +249,11 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath=".\sip.cxx"
+				RelativePath="..\sip.cxx"
 				>
 			</File>
 			<File
-				RelativePath=".\video.cxx"
+				RelativePath="..\video.cxx"
 				>
 			</File>
 		</Filter>
@@ -263,27 +263,27 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath=".\conference.h"
+				RelativePath="..\conference.h"
 				>
 			</File>
 			<File
-				RelativePath=".\config.h"
+				RelativePath="..\config.h"
 				>
 			</File>
 			<File
-				RelativePath=".\filemembers.h"
+				RelativePath="..\filemembers.h"
 				>
 			</File>
 			<File
-				RelativePath=".\h323.h"
+				RelativePath="..\h323.h"
 				>
 			</File>
 			<File
-				RelativePath=".\mcu.h"
+				RelativePath="..\mcu.h"
 				>
 			</File>
 			<File
-				RelativePath=".\version.h"
+				RelativePath="..\version.h"
 				>
 			</File>
 		</Filter>

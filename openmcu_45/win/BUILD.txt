@@ -1,23 +1,22 @@
 * win32 building guide *
 it builds OK with MS VC++ 2010 Express.
 
-1. Get the source code:
-git clone git://github.com/muggot/openmcu.git
+1. Get the source code: git clone git://github.com/muggot/openmcu.git
 
-2. Add dependencies into the top-level folder (where ptlib, h323plus and openmcu_45 located):
+2. Copy the following libraries into top-level folder (where ptlib, h323plus, openmcu_* located):
   - sofia-sip from http://sofia-sip.sourceforge.net/ into 'sofia-sip' subfolder,
   - jpeg-turbo: svn checkout svn://svn.code.sf.net/p/libjpeg-turbo/code/trunk ibjpeg-turbo
   - libyuv: svn checkout http://libyuv.googlecode.com/svn/trunk/ yuvlib
 and build them.
 
-3. Install GnuWin32 from http://getgnuwin32.sourceforge.net/ (use defaults).
+3. Install GnuWin32 from http://getgnuwin32.sourceforge.net/ with default settings.
 
-4. Build ptlib\ptlib_2010.sln, h323plus\h323plus_2010.sln & openmcu_45\openmcu_2010.sln.
+4. Build ptlib\ptlib_2010.sln, h323plus\h323plus_2010.sln & openmcu_45\win\openmcu_2010.sln.
 
-5. Get latest Myphone3: http://openmcu.ru/public/myphone3/ (to use Myphone's audio and video codec plugins).
+5. Get latest Myphone3 package: http://openmcu.ru/public/myphone3/ to get audio and video plugins.
 
 6. Create new folder, eg. C:\OpenMCU.ru_2010 and copy there:
-  - openmcu_45\Release\openmcu.exe
+  - openmcu_45\win\Release\openmcu.exe
   - sofia-sip\win32\libsofia-sip-ua\Release\libsofia_sip_ua.dll
   - sofia-sip\win32\pthread\pthreadVC2.dll
   - %ProgramFiles%\GnuWin32\bin\zlib1.dll
@@ -41,6 +40,9 @@ codecs from Myphone3:
   - myphone\G7222_pwplugin.dll
   - myphone\gsm0610_pwplugin.dll
   - myphone\ilbccodec_pwplugin.dll
+video recorder script:
+  - openmcu_45\conf\video_recorder.cmd
+  - ffmpeg.exe (eg. from http://ffmpeg.zeranoe.com/builds/ )
 
 -----
 Run the process: "openmcu.exe Debug"
