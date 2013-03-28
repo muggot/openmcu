@@ -314,7 +314,16 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
 
 void ConferenceFileMember::WriteThreadV(PThread &, INT)
 {
-  int amount = CIF4_WIDTH*CIF4_HEIGHT*3/2;
+  int width=OpenMCU::Current().vr_framewidth;
+  int height=OpenMCU::Current().vr_frameheight;
+  int framerate=OpenMCU::Current().vr_framerate;
+
+  if(width<176 || width>1920) { width=704; PTRACE(1,"WriteThreadV\tWrong frame width value changed to 4CIF width"); }
+  if(height<144 || height>1152) { height=576; PTRACE(1,"WriteThreadV\tWrong frame height value changed to 4CIF height"); }
+  if(framerate<1 || framerate>30) { framerate=10; PTRACE(1,"WriteThreadV\tWrong frame rate value changed to 10 FPS"); }
+
+  int amount = width*height*3/2;
+  int delay = 1000/framerate;
 #ifdef _WIN32
   PString cstr="\\\\.\\pipe\\video_" + conference->GetNumber();
   LPCSTR cname = cstr;
@@ -349,8 +358,8 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
   while (running) {
 
     // read a block of data
-    if(videoMixer!=NULL) videoMixer->ReadFrame(*this,videoData.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT,amount);
-    else conference->ReadMemberVideo(this,videoData.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT,amount);
+    if(videoMixer!=NULL) videoMixer->ReadFrame(*this,videoData.GetPointer(),width,height,amount);
+    else conference->ReadMemberVideo(this,videoData.GetPointer(),width,height,amount);
 
     // write to the file
 #ifdef _WIN32
@@ -387,7 +396,7 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
 #endif
 
     // and delay
-    videoDelay.Delay(100);
+    videoDelay.Delay(delay);
   }
 
 #ifdef _WIN32

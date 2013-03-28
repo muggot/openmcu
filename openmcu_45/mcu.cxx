@@ -34,6 +34,9 @@ static const char DefaultCallLogFilename[] = "mcu_log.txt";
 static const char DefaultRoom[]            = "room101";
 static const char CreateEmptyRoomKey[]     = "Auto create empty room";
 static const char AllowLoopbackCallsKey[]  = "Allow loopback during bulk invite";
+static const char RecorderFrameWidthKey[]  = "Video Recorder frame width";
+static const char RecorderFrameHeightKey[] = "Video Recorder frame height";
+static const char RecorderFrameRateKey[]   = "Video Recorder frame rate";
 
 #if OPENMCU_VIDEO
 static const char ForceSplitVideoKey[]   = "Force split screen video and<br><b>enable Room Control feature</b>";
@@ -309,6 +312,14 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // allow/disallow self-invite:
   allowLoopbackCalls = cfg.GetBoolean(AllowLoopbackCallsKey, FALSE);
   rsrc->Add(new PHTTPBooleanField(AllowLoopbackCallsKey, allowLoopbackCalls));
+
+  // video recorder setup
+  vr_framewidth = cfg.GetInteger(RecorderFrameWidthKey, 704);
+  rsrc->Add(new PHTTPIntegerField(RecorderFrameWidthKey, 176, 1920, vr_framewidth));
+  vr_frameheight = cfg.GetInteger(RecorderFrameHeightKey, 576);
+  rsrc->Add(new PHTTPIntegerField(RecorderFrameHeightKey, 144, 1152, vr_frameheight));
+  vr_framerate = cfg.GetInteger(RecorderFrameRateKey, 10);
+  rsrc->Add(new PHTTPIntegerField(RecorderFrameRateKey, 1, 30, vr_framerate));
 
   // Finished the resource to add, generate HTML for it and add to name space
   PServiceHTML html("System Parameters");

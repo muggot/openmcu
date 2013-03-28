@@ -146,6 +146,8 @@ class OpenMCU : public OpenMCUProcessAncestor
 
 	static int defaultRoomCount;
 
+  int vr_framewidth, vr_frameheight, vr_framerate; // video recorder values
+
   protected:
     ConferenceManager * manager;
     OpenMCUH323EndPoint * endpoint;
