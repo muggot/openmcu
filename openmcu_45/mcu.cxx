@@ -138,6 +138,11 @@ VideoMixConfigurator OpenMCU::vmcfg;
 OpenMCU::OpenMCU()
   : OpenMCUProcessAncestor(ProductInfo)
 {
+  char ** argv=PXGetArgv();
+  executableFile = argv[0];
+  PDirectory exeDir = executableFile.GetDirectory();
+  chdir(exeDir);
+
   endpoint = NULL;
   sipendpoint = NULL;
 }
@@ -150,15 +155,14 @@ void OpenMCU::Main()
 BOOL OpenMCU::OnStart()
 {
   // change to the default directory to the one containing the executable
-  PDirectory exeDir = GetFile().GetDirectory();
-
+//  PDirectory exeDir = GetFile().GetDirectory();
 
 #if defined(_WIN32) && defined(_DEBUG)
   // Special check to aid in using DevStudio for debugging.
   if (exeDir.Find("\\Debug\\") != P_MAX_INDEX)
     exeDir = exeDir.GetParent();
 #endif
-  exeDir.Change();
+//  exeDir.Change();
 
 #ifdef SYS_CONFIG_DIR
 #ifdef _WIN32
@@ -167,8 +171,6 @@ BOOL OpenMCU::OnStart()
   SetConfigurationPath(SYS_CONFIG_DIR + std::string("/openmcu.ini"));
 #endif
 #endif
-
-  PTRACE(1,"OpenMCU\tOnStart exeDir=" << exeDir);
 
   httpNameSpace.AddResource(new PHTTPDirectory("data", "data"));
   httpNameSpace.AddResource(new PServiceHTTPDirectory("html", "html"));

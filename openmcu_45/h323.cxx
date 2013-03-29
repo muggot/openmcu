@@ -190,15 +190,21 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 
   FILE *capCfg;
   int capsNum=0;
+  PString capsConfFileName;
+
+#undef CAPS_CONF_FILE_NAME
 #ifdef SYS_CONFIG_DIR
-#ifdef _WIN32
-  capCfg = fopen(PString(SYS_CONFIG_DIR)+"\\capability.conf","rt");
+#  ifdef _WIN32
+#    define CAPS_CONF_FILE_NAME PString(SYS_CONFIG_DIR)+"\\capability.conf"
+#  else
+#    define CAPS_CONF_FILE_NAME PString(SYS_CONFIG_DIR)+"/capability.conf"
+#  endif
 #else
-  capCfg = fopen(PString(SYS_CONFIG_DIR)+"/capability.conf","rt");
+#  define CAPS_CONF_FILE_NAME "capability.conf"
 #endif
-#else
-  capCfg = fopen("capability.conf","rt");
-#endif
+
+  capCfg = fopen(CAPS_CONF_FILE_NAME,"rt");
+
   if(capCfg!=NULL)
   {
    while(fscanf(capCfg,"%*[^\n]")!=EOF)
@@ -213,7 +219,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
    tvCaps = (char **)calloc(capsNum,sizeof(char *));
    cvCaps = (char **)calloc(capsNum,sizeof(char *));
    listCaps = (char *)calloc(capsNum,64*sizeof(char));
-   capCfg = fopen("capability.conf","rt");
+   capCfg = fopen(CAPS_CONF_FILE_NAME,"rt");
    int capsType=0;
    char buf[64];
    capsNum=0;

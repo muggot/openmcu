@@ -149,6 +149,7 @@ class OpenMCU : public OpenMCUProcessAncestor
   int vr_framewidth, vr_frameheight, vr_framerate; // video recorder values
 
   protected:
+    PFilePath executableFile;
     ConferenceManager * manager;
     OpenMCUH323EndPoint * endpoint;
     OpenMCUSipEndPoint * sipendpoint;
