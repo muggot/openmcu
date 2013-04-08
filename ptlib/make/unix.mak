@@ -458,11 +458,11 @@ endif # P_SHAREDLIB
 
 
 STATIC_LIBS	:= libstdc++.a libg++.a libm.a libc.a
-#ifdef PREFIX
+ifdef PREFIX
 SYSLIBDIR	:= $(PREFIX)/lib
-#else
+else
 SYSLIBDIR	:= /usr/local/lib
-#endif
+endif
 #SYSLIBDIR	:= $(shell $(PTLIBDIR)/make/ptlib-config --libdir)
 
 endif # linux
