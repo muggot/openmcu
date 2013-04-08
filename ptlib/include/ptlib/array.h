@@ -644,7 +644,7 @@ template <class T> class PScalarArray : public PBaseArray<T>
       T t;
       stream >> t;
       if (!stream.fail())
-        SetAt(index, t);
+        this->SetAt(index, t);
     }
 };
 
