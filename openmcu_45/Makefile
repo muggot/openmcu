@@ -75,6 +75,7 @@
 #
 #
 
+PREFIX		=/usr/local
 PROG		= openmcu
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx
 HDRS		:= conference.h config.h filemembers.h h323.h mcu.h version.h sip.h
@@ -82,7 +83,7 @@ HDRS		:= conference.h config.h filemembers.h h323.h mcu.h version.h sip.h
 #LDLIBS		= -lfreetype -lswresample -ljpeg -lsofia-sip-ua
 LDLIBS		= -lfreetype -lswresample -ljpeg -lsofia-sip-ua -lyuv
 
-STDCCFLAGS	= -I/usr/local/include/freetype2 -I/usr/local/include/sofia-sip-1.12 -D__STDC_CONSTANT_MACROS
+STDCCFLAGS	= -I$(PREFIX)/include/freetype2 -I$(PREFIX)/include/sofia-sip-1.12 -D__STDC_CONSTANT_MACROS
 
 ifndef OPENH323DIR
 OPENH323DIR=$(HOME)/openmcu/h323plus

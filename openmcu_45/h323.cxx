@@ -32,8 +32,10 @@ static const char GatekeeperPasswordKey[] = "Gatekeeper Password";
 static const char GatekeeperPrefixesKey[] = "Gatekeeper Prefixes";
 static const char GatekeeperModeKey[]     = "Gatekeeper Mode";
 static const char GatekeeperKey[]         = "Gatekeeper";
-static const char DisableCodecsKey[]      = "Disable codecs";
+static const char DisableCodecsKey[]      = "Disable codecs - deprecated, use capability.conf instead!";
 static const char NATRouterIPKey[]        = "NAT Router IP";
+static const char DisableFastStartKey[]   = "Disable Fast-Start";
+static const char DisableH245TunnelingKey[]="Disable H.245 Tunneling";
 
 static const char * GKModeLabels[] = { 
    "No gatekeeper", 
@@ -119,6 +121,15 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
     behind_masq = TRUE;
     cout << "Masquerading as address " << *(masqAddressPtr) << endl;
   }
+
+///////////////////////////////////////////
+// Enable/Disable Fast Start & H.245 Tunneling
+  BOOL disableFastStart = cfg.GetBoolean(DisableFastStartKey, TRUE);
+  BOOL disableH245Tunneling = cfg.GetBoolean(DisableH245TunnelingKey, FALSE);
+  rsrc->Add(new PHTTPBooleanField(DisableFastStartKey, disableFastStart));
+  rsrc->Add(new PHTTPBooleanField(DisableH245TunnelingKey, disableH245Tunneling));
+  DisableFastStart(disableFastStart);
+  DisableH245Tunneling(disableH245Tunneling);
 
 //////////////////////////////////////////////////////
 // Gatekeeper mode

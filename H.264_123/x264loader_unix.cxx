@@ -50,7 +50,7 @@ bool X264Library::Load()
   if (_isLoaded)
     return true;
 
-  if (  !Open("/usr/local/lib/libx264.so." xstr(X264_BUILD)) )  {
+  if (  !Open("libx264.so." xstr(X264_BUILD)) )  {
     printf ("H264\tDYNA\tFailed to load x264 library - codec disabled");
     return false;
   }

@@ -13,7 +13,7 @@ CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
 STDCCFLAGS	=-fPIC
-LDFLAGS		=
+LDFLAGS		=-L${PREFIX}/lib
 
 SRCS	+= g7231codec.cxx
 
@@ -22,7 +22,7 @@ vpath	%.cxx $(SRCDIR)
 
 $(OBJDIR)/%.o : %.cxx
 	@mkdir -p $(OBJDIR) >/dev/null 2>&1
-	$(CXX) -I/usr/local/include $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
+	$(CXX) -I${PREFIX}/include $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
 
 PLUGIN	= ./g7231_audio_pwplugin.$(PLUGINEXT)
 
@@ -30,7 +30,7 @@ OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.cxx,%.o,$(notdir $(SRCS))))
 
 $(PLUGIN): $(OBJECTS)
 #	$(CXX) $(LDSO) $(DL_LIBS) $@ -o $@ $^ $(LDFLAGS)
-	$(CXX) $(LDSO) -o $@ $^ $(EXTRALIBS) -lavutil -lavcodec
+	$(CXX) $(LDSO) -o $@ $^ $(EXTRALIBS) $(LDFLAGS) -lavutil -lavcodec
 
 install:
 	mkdir -p $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/
