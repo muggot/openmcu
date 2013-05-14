@@ -894,7 +894,7 @@ void OpenMCUSipEndPoint::Main()
  root = su_root_create(NULL);
 
  if(root == NULL) return;
- agent = nta_agent_create(root, NULL, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, TAG_NULL());
+ agent = nta_agent_create(root, listenerUrl, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, TAG_NULL());
  if(agent != NULL)
  {
   MainLoop();

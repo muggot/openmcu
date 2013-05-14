@@ -54,6 +54,7 @@ class OpenMCUSipEndPoint : public PThread
      PThread(10000,NoAutoDeleteThread,NormalPriority,"SIP Listener:%0x"),
      ep(_ep)
     {
+     listenerUrl = NULL;
      terminating = 0;
      Resume();
     }
@@ -73,6 +74,7 @@ class OpenMCUSipEndPoint : public PThread
 
    int ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon);
    int terminating;
+   url_string_t* listenerUrl;
           
   protected:
    void MainLoop();

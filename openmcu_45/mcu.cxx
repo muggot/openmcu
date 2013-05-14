@@ -37,6 +37,7 @@ static const char AllowLoopbackCallsKey[]  = "Allow loopback during bulk invite"
 static const char RecorderFrameWidthKey[]  = "Video Recorder frame width";
 static const char RecorderFrameHeightKey[] = "Video Recorder frame height";
 static const char RecorderFrameRateKey[]   = "Video Recorder frame rate";
+static const char SipListenerKey[]         = "SIP Listener";
 
 #if OPENMCU_VIDEO
 static const char ForceSplitVideoKey[]   = "Force split screen video and<br><b>enable Room Control feature</b>";
@@ -138,8 +139,10 @@ VideoMixConfigurator OpenMCU::vmcfg;
 OpenMCU::OpenMCU()
   : OpenMCUProcessAncestor(ProductInfo)
 {
+#ifndef _WIN32
   char ** argv=PXGetArgv();
   executableFile = argv[0];
+#endif
   PDirectory exeDir = executableFile.GetDirectory();
   chdir(exeDir);
 
@@ -286,6 +289,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // HTTP Port number to use.
   WORD httpPort = (WORD)cfg.GetInteger(HttpPortKey, DefaultHTTPPort);
   rsrc->Add(new PHTTPIntegerField(HttpPortKey, 1, 32767, httpPort));
+
+  // SIP Listener setup
+  PString listenerUrl = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
+  if(listenerUrl=="")listenerUrl="0.0.0.0";
+  rsrc->Add(new PHTTPStringField(SipListenerKey, 32, listenerUrl));
+  if(listenerUrl!="0.0.0.0") if(sipendpoint!=NULL) sipendpoint->listenerUrl=URL_STRING_MAKE((const char*)("sip:"+listenerUrl));
 
   endpoint->Initialise(cfg, rsrc);
   if(endpoint->behind_masq){PStringStream msq; msq<<"Masquerading as "<<*(endpoint->masqAddressPtr); HttpWriteEvent(msq);}
