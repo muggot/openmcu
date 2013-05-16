@@ -44,7 +44,11 @@ static const char RecorderFfmpegDirKey[]   = "Video Recorder directory";
 static const char RecorderFrameWidthKey[]  = "Video Recorder frame width";
 static const char RecorderFrameHeightKey[] = "Video Recorder frame height";
 static const char RecorderFrameRateKey[]   = "Video Recorder frame rate";
+#ifdef _WIN32
+static const char DefaultFfmpegPath[]         = "ffmpeg.exe";
+#else
 static const char DefaultFfmpegPath[]         = "/usr/local/bin/ffmpeg";
+#endif
 static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac 1 -ar 16000 -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac 1 -vcodec msmpeg4v2 %O.asf";
 static const char DefaultRecordingDirectory[] = "records";
 static const int  DefaultRecorderFrameWidth   = 704;
@@ -346,7 +350,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     PString opts = vr_ffmpegOpts;
     PStringStream frameSize; frameSize << vr_framewidth << "x" << vr_frameheight;
     PStringStream frameRate; frameRate << vr_framerate;
+#ifdef _WIN32
+    PStringStream outFile; outFile << vr_ffmpegDir << "\\%o";
+#else
     PStringStream outFile; outFile << vr_ffmpegDir << "/%o";
+#endif
     opts.Replace("%F",frameSize,TRUE,0);
     opts.Replace("%R",frameRate,TRUE,0);
     opts.Replace("%O",outFile,TRUE,0);

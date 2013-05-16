@@ -218,7 +218,11 @@ class ExternalVideoRecorderThread : public PThread
 #endif
       t.Replace("%A",audio,TRUE,0);
       t.Replace("%V",video,TRUE,0);
+#ifdef _WIN32
+      recordState=_popen(t, "w");
+#else
       recordState=popen(t, "w");
+#endif
       PTRACE(1,"EVRT\tStarting new external recording thread, popen result: " << recordState << ", CL: " << t);
       if(recordState) {running=TRUE; Resume(); }
     }
@@ -227,7 +231,11 @@ class ExternalVideoRecorderThread : public PThread
       PTRACE(1,"EVRT\tStopping external recording thread, making pclose()" << flush);
       fputs("q\r\n",recordState);
       PThread::Sleep(200);
+#ifdef _WIN32
+      _pclose(recordState);
+#else
       pclose(recordState);
+#endif
       PThread::Terminate();
     }
 };
