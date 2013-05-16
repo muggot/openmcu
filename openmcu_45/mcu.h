@@ -146,6 +146,8 @@ class OpenMCU : public OpenMCUProcessAncestor
 
 	static int defaultRoomCount;
 
+  PString vr_ffmpegPath, vr_ffmpegOpts, vr_ffmpegDir;
+  PString ffmpegCall;
   int vr_framewidth, vr_frameheight, vr_framerate; // video recorder values
 
   protected:
@@ -187,6 +189,48 @@ PString ErrorPage( //maybe ptlib could provide pages like this? for future: dig 
   PString        description    // detailed: "blablablablablabla \n blablablablablabla"
 );
 
+class ExternalVideoRecorderThread : public PThread
+{ PCLASSINFO(ExternalVideoRecorderThread, PThread);
+  public:
+    PString roomName; // the only thing we need to identify the room
+    PString fileName; // to replace %o
+    FILE *recordState;
+    BOOL running;
+    ExternalVideoRecorderThread(PString _roomName)
+    : PThread(1000, AutoDeleteThread),
+      roomName(_roomName)
+    { running=FALSE;
+      PStringStream t; t << roomName << "__" // fileName format: room101__2013-0516-1058270__704x576x10
+        << PTime().AsString("yyyy-MMdd-hhmmssu", PTime::Local) << "__"
+        << OpenMCU::Current().vr_framewidth << "x"
+        << OpenMCU::Current().vr_frameheight << "x"
+        << OpenMCU::Current().vr_framerate;
+      fileName = t;
+      t = OpenMCU::Current().ffmpegCall;
+      t.Replace("%o",fileName,TRUE,0);
+      PString audio, video;
+#ifdef _WIN32
+      audio = "\\\\.\\pipe\\sound_" + roomName;
+      video = "\\\\.\\pipe\\video_" + roomName;
+#else
+      audio = "sound." + roomName;
+      video = "video." + roomName;
+#endif
+      t.Replace("%A",audio,TRUE,0);
+      t.Replace("%V",video,TRUE,0);
+      recordState=popen(t, "w");
+      PTRACE(1,"EVRT\tStarting new external recording thread, popen result: " << recordState << ", CL: " << t);
+      if(recordState) {running=TRUE; Resume(); }
+    }
+    void Main()
+    { while(running) PThread::Sleep(100);
+      PTRACE(1,"EVRT\tStopping external recording thread, making pclose()" << flush);
+      fputs("q\r\n",recordState);
+      PThread::Sleep(200);
+      pclose(recordState);
+      PThread::Terminate();
+    }
+};
 
 #endif // _OpenMCU_MCU_H
 

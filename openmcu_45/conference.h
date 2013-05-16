@@ -992,30 +992,12 @@ class MCUNumberMapType : public std::map<int, KeyType>
 ////////////////////////////////////////////////////
 
 class ConferenceMonitorInfo;
+class ExternalVideoRecorderThread; // used in Conference, defined in mcu.h
 
 /**
   * this class describes a conference or "room"
   */
-/*
-struct MyTemplateMemberList
-{
-  PString id,subtitles;
-  BOOL mute,disableVad,chosenVan;
-  unsigned videoMixer;
-};
-struct MyTemplateMixerList
-{
-  PString layoutId,vadPositions,vad2Positions;
-  PStringToString vmps;
-};
-struct MyTemplate
-{
-  PString templateName;
-  BOOL globalMute,isModerated,autoInvite;
-  unsigned mixerCount;
-  MyTemplateMixerList * mixerList;
-};
-*/
+
 class Conference : public PObject
 {
   PCLASSINFO(Conference, PObject);
@@ -1201,6 +1183,7 @@ class Conference : public PObject
       return NULL;
     }
 
+    ExternalVideoRecorderThread* externalRecorder;
 #endif
 
     void AddMonitorEvent(ConferenceMonitorInfo * info);

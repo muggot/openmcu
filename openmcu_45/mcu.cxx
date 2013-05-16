@@ -33,14 +33,25 @@ static const char DefaultRoomTimeLimitKey[] = "Room time limit";
 static const char DefaultCallLogFilename[] = "mcu_log.txt"; 
 static const char DefaultRoom[]            = "room101";
 static const char CreateEmptyRoomKey[]     = "Auto create empty room";
-static const char AllowLoopbackCallsKey[]  = "Allow loopback during bulk invite";
-static const char RecorderFrameWidthKey[]  = "Video Recorder frame width";
-static const char RecorderFrameHeightKey[] = "Video Recorder frame height";
-static const char RecorderFrameRateKey[]   = "Video Recorder frame rate";
+static const char AllowLoopbackCallsKey[]  = "Allow loopback calls";
+
 static const char SipListenerKey[]         = "SIP Listener";
 
 #if OPENMCU_VIDEO
-static const char ForceSplitVideoKey[]   = "Force split screen video and<br><b>enable Room Control feature</b>";
+static const char RecorderFfmpegPathKey[]  = "Path to ffmpeg";
+static const char RecorderFfmpegOptsKey[]  = "Ffmpeg options";
+static const char RecorderFfmpegDirKey[]   = "Video Recorder directory";
+static const char RecorderFrameWidthKey[]  = "Video Recorder frame width";
+static const char RecorderFrameHeightKey[] = "Video Recorder frame height";
+static const char RecorderFrameRateKey[]   = "Video Recorder frame rate";
+static const char DefaultFfmpegPath[]         = "/usr/local/bin/ffmpeg";
+static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac 1 -ar 16000 -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac 1 -vcodec msmpeg4v2 %O.asf";
+static const char DefaultRecordingDirectory[] = "records";
+static const int  DefaultRecorderFrameWidth   = 704;
+static const int  DefaultRecorderFrameHeight  = 576;
+static const int  DefaultRecorderFrameRate    = 10;
+
+static const char ForceSplitVideoKey[]   = "Force split screen video (enables Room Control page)";
 #endif
 
 #define new PNEW
@@ -252,7 +263,8 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   MyPConfigPage * rsrc = new MyPConfigPage(*this, "Parameters", "Parameters", authority);
 
   // HTTP authentication username/password
-  rsrc->Add(new PHTTPStringField(UserNameKey, 25, adminUserName));
+  rsrc->Add(new PHTTPStringField(UserNameKey, 25, adminUserName, "<td rowspan='2' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Security</b>"));
+
   rsrc->Add(new PHTTPPasswordField(PasswordKey, 25, adminPassword));
 
 //rsrc->Add(new PHTTPStringField("<h3>Other</h3><!--", 1, "","<td></td><td></td>"));
@@ -261,19 +273,19 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   rsrc->Add(new PHTTPIntegerField(LogLevelKey,
                                   PSystemLog::Fatal, PSystemLog::NumLogLevels-1,
                                   GetLogLevel(),
-                                  "1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug"));
+                                  "<td><td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Logging:</b><br><br>Log level: 1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug<br>Trace level: 0=No tracing ... 6=Very detailed<br>Event buffer size: 10...1000"));
 
   // default log file name
   logFilename = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
-  rsrc->Add(new PHTTPStringField(CallLogFilenameKey, 50, logFilename));
+  rsrc->Add(new PHTTPStringField(CallLogFilenameKey, 40, logFilename));
 
   // Trace level
-  rsrc->Add(new PHTTPIntegerField(TraceLevelKey, 0, 6, TraceLevel, "0...6"));
+  rsrc->Add(new PHTTPIntegerField(TraceLevelKey, 0, 6, TraceLevel));
 
   // Buffered events
   httpBuffer=cfg.GetInteger(HttpLinkEventBufferKey, 100);
   httpBufferedEvents.SetSize(httpBuffer);
-  rsrc->Add(new PHTTPIntegerField(HttpLinkEventBufferKey, 10, 1000, httpBuffer, "10...1000"));
+  rsrc->Add(new PHTTPIntegerField(HttpLinkEventBufferKey, 10, 1000, httpBuffer));
   httpBufferIndex=0; httpBufferComplete=0;
 
 #if P_SSL
@@ -288,7 +300,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // HTTP Port number to use.
   WORD httpPort = (WORD)cfg.GetInteger(HttpPortKey, DefaultHTTPPort);
-  rsrc->Add(new PHTTPIntegerField(HttpPortKey, 1, 32767, httpPort));
+  rsrc->Add(new PHTTPIntegerField(HttpPortKey, 1, 32767, httpPort, "<td><td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Network Setup</b><br><br>Leave blank &laquo;NAT Router IP&raquo; if your OpenMCU isn't behind NAT."));
 
   // SIP Listener setup
   PString listenerUrl = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
@@ -324,13 +336,62 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   allowLoopbackCalls = cfg.GetBoolean(AllowLoopbackCallsKey, FALSE);
   rsrc->Add(new PHTTPBooleanField(AllowLoopbackCallsKey, allowLoopbackCalls));
 
-  // video recorder setup
-  vr_framewidth = cfg.GetInteger(RecorderFrameWidthKey, 704);
-  rsrc->Add(new PHTTPIntegerField(RecorderFrameWidthKey, 176, 1920, vr_framewidth));
-  vr_frameheight = cfg.GetInteger(RecorderFrameHeightKey, 576);
-  rsrc->Add(new PHTTPIntegerField(RecorderFrameHeightKey, 144, 1152, vr_frameheight));
-  vr_framerate = cfg.GetInteger(RecorderFrameRateKey, 10);
-  rsrc->Add(new PHTTPIntegerField(RecorderFrameRateKey, 1, 30, vr_framerate));
+  { // video recorder setup
+    vr_ffmpegPath  = cfg.GetString( RecorderFfmpegPathKey,  DefaultFfmpegPath);
+    vr_ffmpegOpts  = cfg.GetString( RecorderFfmpegOptsKey,  DefaultFfmpegOptions);
+    vr_ffmpegDir   = cfg.GetString( RecorderFfmpegDirKey,   DefaultRecordingDirectory);
+    vr_framewidth  = cfg.GetInteger(RecorderFrameWidthKey,  DefaultRecorderFrameWidth);
+    vr_frameheight = cfg.GetInteger(RecorderFrameHeightKey, DefaultRecorderFrameHeight);
+    vr_framerate   = cfg.GetInteger(RecorderFrameRateKey,   DefaultRecorderFrameRate);
+    PString opts = vr_ffmpegOpts;
+    PStringStream frameSize; frameSize << vr_framewidth << "x" << vr_frameheight;
+    PStringStream frameRate; frameRate << vr_framerate;
+    PStringStream outFile; outFile << vr_ffmpegDir << "/%o";
+    opts.Replace("%F",frameSize,TRUE,0);
+    opts.Replace("%R",frameRate,TRUE,0);
+    opts.Replace("%O",outFile,TRUE,0);
+    PStringStream tmp;
+    tmp << vr_ffmpegPath << " " << opts;
+    ffmpegCall=tmp;
+    PStringStream recorderInfo;
+    recorderInfo
+      << "<td rowspan='6' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>"
+      << "<b>Video Recorder Setup:</b><br><br>"
+      << "Use the following definitions to set ffmpeg command-line options:<br>"
+      << "<b>%V</b> - input video stream,<br>"
+      << "<b>%A</b> - input audio stream,<br>"
+      << "<b>%F</b> - frame size, "
+      << "<b>%R</b> - frame rate,<br>"
+      << "<b>%O</b> - name without extension"
+      << "<br><br>";
+    if(!PFile::Exists(vr_ffmpegPath)) recorderInfo << "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
+    else
+    { PFileInfo info;
+      PFilePath path(vr_ffmpegPath);
+      PFile::GetInfo(path, info);
+      if(!(info.type & 3)) recorderInfo << "<b><font color=red>Warning: ffmpeg neither file, nor symlink!</font></b>";
+      else if(!(info.permissions & 0111)) recorderInfo << "<b><font color=red>ffmpeg permissions check failed</font></b>";
+      else
+      {
+        if(!PDirectory::Exists(vr_ffmpegDir)) if(!PFile::Exists(vr_ffmpegDir)) { PDirectory::Create(vr_ffmpegDir,0700); PThread::Sleep(50); }
+        if(!PDirectory::Exists(vr_ffmpegDir)) recorderInfo << "<b><font color=red>Directory does not exist: " << vr_ffmpegDir << "</font></b>";
+        else
+        { PFileInfo info;
+          PFilePath path(vr_ffmpegDir);
+          PFile::GetInfo(path, info);
+          if(!(info.type & 6)) recorderInfo << "<b><font color=red>Warning: output directory neither directory, nor symlink!</font></b>";
+          else if(!(info.permissions & 0222)) recorderInfo << "<b><font color=red>output directory permissions check failed</font></b>";
+          else recorderInfo << "<b><font color=green>Looks good.</font> Execution script preview:</b><br><tt>" << ffmpegCall << "</tt>";
+        }
+      }
+    }
+    rsrc->Add(new PHTTPStringField(RecorderFfmpegPathKey, 40, vr_ffmpegPath, recorderInfo));
+    rsrc->Add(new PHTTPStringField(RecorderFfmpegOptsKey, 40, vr_ffmpegOpts));
+    rsrc->Add(new PHTTPStringField(RecorderFfmpegDirKey, 40, vr_ffmpegDir));
+    rsrc->Add(new PHTTPIntegerField(RecorderFrameWidthKey, 176, 1920, vr_framewidth));
+    rsrc->Add(new PHTTPIntegerField(RecorderFrameHeightKey, 144, 1152, vr_frameheight));
+    rsrc->Add(new PHTTPIntegerField(RecorderFrameRateKey, 1, 30, vr_framerate));
+  }
 
   // Finished the resource to add, generate HTML for it and add to name space
   PServiceHTML html("System Parameters");
@@ -361,6 +422,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // Create room selection page
   httpNameSpace.AddResource(new SelectRoomPage(*this, authority), PHTTPSpace::Overwrite);
+
+  // Create video recording directory browser page:
+  httpNameSpace.AddResource(new PHTTPDirectory(PURL("Records"), PDirectory(vr_ffmpegDir), authority), PHTTPSpace::Overwrite);
 
 #if USE_LIBJPEG
   // Create JPEG frame via HTTP

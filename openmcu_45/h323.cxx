@@ -24,7 +24,7 @@ static const char VideoQualityKey[]      = "Video quality";
 
 #endif  // OPENMCU_VIDEO
 
-static const char InterfaceKey[]          = "Interface";
+static const char InterfaceKey[]          = "H.323 Listener";
 static const char LocalUserNameKey[]      = "Local User Name";
 static const char GatekeeperUserNameKey[] = "Gatekeeper Username";
 static const char GatekeeperAliasKey[]    = "Gatekeeper Room Names";
@@ -113,7 +113,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 ///////////////////////////////////////////
 // NAT Router IP
   PString nat_ip = cfg.GetString(NATRouterIPKey);
-  rsrc->Add(new PHTTPStringField(NATRouterIPKey, 25, nat_ip,"Type global IP address or leave blank if OpenMCU isn't behind NAT"));
+  rsrc->Add(new PHTTPStringField(NATRouterIPKey, 25, nat_ip));
   if (nat_ip.Trim().IsEmpty()) {
     behind_masq = FALSE;
   } else {
@@ -126,7 +126,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 // Enable/Disable Fast Start & H.245 Tunneling
   BOOL disableFastStart = cfg.GetBoolean(DisableFastStartKey, TRUE);
   BOOL disableH245Tunneling = cfg.GetBoolean(DisableH245TunnelingKey, FALSE);
-  rsrc->Add(new PHTTPBooleanField(DisableFastStartKey, disableFastStart));
+  rsrc->Add(new PHTTPBooleanField(DisableFastStartKey, disableFastStart,"<td rowspan='8' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>H.323 Setup</b>"));
   rsrc->Add(new PHTTPBooleanField(DisableH245TunnelingKey, disableH245Tunneling));
   DisableFastStart(disableFastStart);
   DisableH245Tunneling(disableH245Tunneling);
@@ -636,6 +636,8 @@ PString OpenMCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
     r << ",-1";
 #endif
 
+  if(c.externalRecorder != NULL) r << ",1"; else r << ",0";               // [0][11] = external video recording state (1=recording, 0=NO)
+
   r << ")"; //l2 close
 
   Conference::VideoMixerRecord * vmr = c.videoMixerList;
@@ -811,8 +813,34 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
 #define OTF_RET_OK { conferenceManager.UnlockConference(); return "OK"; }
 #define OTF_RET_FAIL { conferenceManager.UnlockConference(); return "FAIL"; }
 
-  Conference * conference = conferenceManager.MakeAndLockConference(room); // hope, it's already created: we'll just get it
+  Conference * conference = conferenceManager.MakeAndLockConference(room); // hope it already created: we'll just get it
 
+  if(action == OTFC_VIDEO_RECORDER_START)
+  { if(conference->externalRecorder == NULL)
+    { conference->externalRecorder = new ExternalVideoRecorderThread(room);
+      PThread::Sleep(500);
+      if(conference->externalRecorder->running)
+      { OpenMCU::Current().HttpWriteEventRoom("Video recording started",room);
+        OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
+        OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
+        OTF_RET_OK;
+      }
+      conference->externalRecorder = NULL;
+    }
+    OTF_RET_FAIL;
+  }
+  if(action == OTFC_VIDEO_RECORDER_STOP)
+  { if(conference->externalRecorder != NULL)
+    { conference->externalRecorder->running=FALSE;
+      PThread::Sleep(1000);
+      conference->externalRecorder = NULL;
+      OpenMCU::Current().HttpWriteEventRoom("Video recording stopped",room);
+      OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
+      OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
+      OTF_RET_OK;
+    }
+    OTF_RET_FAIL;
+  }
   if(action == OTFC_TEMPLATE_RECALL)
   {
     OpenMCU::Current().HttpWriteCmdRoom("alive()",room);

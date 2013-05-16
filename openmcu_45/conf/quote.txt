@@ -104,6 +104,8 @@ var OTFC_ADD_VIDEO_MIXER         = 71;
 var OTFC_DELETE_VIDEO_MIXER      = 72;
 var OTFC_SET_VIDEO_MIXER_LAYOUT  = 73;
 var OTFC_SET_MEMBER_VIDEO_MIXER  = 74;
+var OTFC_VIDEO_RECORDER_START    = 75;
+var OTFC_VIDEO_RECORDER_STOP     = 76;
 
 var libyuv_flt_desc = Array('None', 'Bilin.', 'Box');
 
@@ -945,6 +947,17 @@ function top_panel(){
       +  OTFC_YUV_FILTER_MODE + "," + ((yuvfltidx+1)%3)
       +  ");}' type='button' class='btn btn-large btn-info' value='Flt: " + yuvflt + "'>";
   }
+
+  try{ recState=conf[0][11]; } catch(e) { recState=0; }
+  c +="<input type='button' class='btn btn-large "
+    + (recState?"btn-inverse":"btn-danger")
+    + "' style='width:36px;height:36px;"
+    + (recState?"border-radius:0px":"border-radius:18px")
+    + "' value=' ' title='"
+    + (recState?"Stop recording":"Start recording")
+    + "' onclick='javascript:queue_otf_request(OTFC_VIDEO_RECORDER_"
+    + (recState?"STOP":"START")
+    + ",0)'>";
 
   c+="</td><td width='30%' align=right id='savetpl' name='savetpl'>";
 

@@ -881,6 +881,7 @@ Conference::Conference(        ConferenceManager & _manager,
   VAlevel = 100;
   echoLevel = 0;
   vidmembernum = 0;
+  externalRecorder=NULL;
 
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }

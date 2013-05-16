@@ -54,6 +54,8 @@ extern "C" {
 #define OTFC_DELETE_VIDEO_MIXER       72
 #define OTFC_SET_VIDEO_MIXER_LAYOUT   73
 #define OTFC_SET_MEMBER_VIDEO_MIXER   74
+#define OTFC_VIDEO_RECORDER_START     75
+#define OTFC_VIDEO_RECORDER_STOP      76
 
 class OpenMCUH323EndPoint : public H323EndPoint
 {
