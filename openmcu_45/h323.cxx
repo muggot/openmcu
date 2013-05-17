@@ -67,6 +67,11 @@ void SpliceMacro(PString & text, const PString & token, const PString & value)
 
 ///////////////////////////////////////////////////////////////
 
+#ifdef _WIN32
+PluginLoaderStartup2  OpenMCU::pluginLoader;
+H323PluginCodecManager * OpenMCU::plugmgr=NULL;
+#endif
+
 OpenMCUH323EndPoint::OpenMCUH323EndPoint(ConferenceManager & _conferenceManager)
   : conferenceManager(_conferenceManager)
 {
@@ -80,6 +85,21 @@ OpenMCUH323EndPoint::OpenMCUH323EndPoint(ConferenceManager & _conferenceManager)
 
    gkAlias = PString();
 
+#ifdef _WIN32
+  // MFC applications are not at all plugin friendly
+  // You need to manually add the plugins
+  OpenMCU::Current().LoadPluginMgr();
+  OpenMCU::Current().pluginLoader.OnStartup();
+#endif
+}
+
+OpenMCUH323EndPoint::~OpenMCUH323EndPoint()
+{
+#ifdef _WIN32
+  // You need to manually remove the plugins
+  OpenMCU::Current().RemovePluginMgr();
+  OpenMCU::Current().pluginLoader.OnShutdown();
+#endif
 }
 
 void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
@@ -372,9 +392,9 @@ void OpenMCUH323EndPoint::TranslateTCPAddress(PIPSocket::Address &localAddr, con
      ||((byte1==172)&&((byte2&240)==16)) // LAN class B
      ||((byte1==192)&&(byte2==168))      // LAN class C
      ||((byte1==169)&&(byte2==254))      // APIPA/IPAC/zeroconf (probably LAN)
-    ) PTRACE(3,"H323\tNAT remIP=" << remoteAddr << ", locIP=" << localAddr << ": n/a (dest. is LAN)");
-    else {
-      PTRACE(3,"H323\tNAT remIP=" << remoteAddr << ", locIP=" << localAddr << ": ***change to " << *(this->masqAddressPtr));
+    ) { PTRACE(3,"H323\tNAT remIP=" << remoteAddr << ", locIP=" << localAddr << ": n/a (dest. is LAN)"); }
+    else
+    { PTRACE(3,"H323\tNAT remIP=" << remoteAddr << ", locIP=" << localAddr << ": ***change to " << *(this->masqAddressPtr));
       localAddr=*(this->masqAddressPtr);
     }
   } else
@@ -1930,7 +1950,7 @@ void OpenMCUH323Connection::JoinConference(const PString & roomToJoin)
       conferenceMember = new H323Connection_ConferenceMember(conference, ep, GetCallToken(), this, isMCU);
 
       if (!conferenceMember->IsJoined())
-        PTRACE(1, "MCU\tMember connection refused");
+      { PTRACE(1, "MCU\tMember connection refused"); }
       else
         joinSuccess = TRUE;
 

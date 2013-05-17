@@ -134,6 +134,10 @@
   public:
     ~PProcess();
 
+    char ** PXGetArgv() const { return p_argv; }
+    int     PXGetArgc() const { return p_argc; }
+    char ** PXGetEnvp() const { return p_envp; }
+
     void SignalTimerChange();
     // Signal to the timer thread that a change was made.
 

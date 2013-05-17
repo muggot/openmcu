@@ -63,6 +63,7 @@ class OpenMCUH323EndPoint : public H323EndPoint
 
   public:
     OpenMCUH323EndPoint(ConferenceManager & conferenceManager);
+    ~OpenMCUH323EndPoint();
     
     PString IncomingConferenceRequest(H323Connection & connection, 
                                       const H323SignalPDU & setupPDU);

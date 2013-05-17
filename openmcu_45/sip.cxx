@@ -894,7 +894,12 @@ void OpenMCUSipEndPoint::Main()
  root = su_root_create(NULL);
 
  if(root == NULL) return;
- agent = nta_agent_create(root, listenerUrl, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, TAG_NULL());
+
+ if(OpenMCU::Current().sipListener!="0.0.0.0")
+   agent = nta_agent_create(root, URL_STRING_MAKE((const char*)("sip:"+OpenMCU::Current().sipListener)), ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, TAG_NULL());
+ else
+   agent = nta_agent_create(root, NULL, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, TAG_NULL());
+
  if(agent != NULL)
  {
   MainLoop();

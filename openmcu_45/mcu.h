@@ -9,6 +9,10 @@
 #include <ptlib.h>
 #include <ptclib/httpsvc.h>
 
+#ifdef _WIN32
+#include <h323pluginmgr.h>
+#endif
+
 #include "config.h"
 
 #include <map>
@@ -29,6 +33,53 @@ typedef PSecureHTTPServiceProcess OpenMCUProcessAncestor;
 #include <ptclib/httpsvc.h>
 typedef PHTTPServiceProcess OpenMCUProcessAncestor;
 #endif
+
+// All this silly stuff to get the plugins to load 
+// because windows is stoopid and the pluginloader never gets instanced.
+// This is required for ALL MFC based applications looking to load plugins!
+
+#ifdef _WIN32
+class PluginLoaderStartup2 : public PProcessStartup
+{
+  PCLASSINFO(PluginLoaderStartup2, PProcessStartup);
+  public:
+    void OnStartup()
+    { 
+      // load the actual DLLs, which will also load the system plugins
+      PStringArray dirs = PPluginManager::GetPluginDirs();
+      PPluginManager & mgr = PPluginManager::GetPluginManager();
+      PINDEX i;
+      for (i = 0; i < dirs.GetSize(); i++) 
+        mgr.LoadPluginDirectory(dirs[i]);
+
+      // now load the plugin module managers
+      PFactory<PPluginModuleManager>::KeyList_T keyList = PFactory<PPluginModuleManager>::GetKeyList();
+      PFactory<PPluginModuleManager>::KeyList_T::const_iterator r;
+      for (r = keyList.begin(); r != keyList.end(); ++r) {
+        PPluginModuleManager * mgr = PFactory<PPluginModuleManager>::CreateInstance(*r);
+        if (mgr == NULL) {
+          PTRACE(1, "PLUGIN\tCannot create manager for plugins of type " << *r);
+        } else {
+          PTRACE(3, "PLUGIN\tCreated manager for plugins of type " << *r);
+          managers.push_back(mgr);
+        }
+      }
+    }
+
+    void OnShutdown()
+    {
+      while (managers.begin() != managers.end()) {
+        std::vector<PPluginModuleManager *>::iterator r = managers.begin();
+        PPluginModuleManager * mgr = *r;
+        managers.erase(r);
+        mgr->OnShutdown();
+      }
+    }
+
+  protected:
+    std::vector<PPluginModuleManager *> managers;
+};
+#endif //_WIN32
 
 class OpenMCUH323EndPoint;
 class OpenMCUMonitor;
@@ -144,11 +195,21 @@ class OpenMCU : public OpenMCUProcessAncestor
 
 #endif
 
+#ifdef _WIN32
+    // This is to get the plugins to load in MFC applications
+    static void LoadPluginMgr() { plugmgr = new H323PluginCodecManager(); }
+    static void RemovePluginMgr() { delete plugmgr; }
+    static H323PluginCodecManager * plugmgr;
+    static PluginLoaderStartup2 pluginLoader;
+#endif
+
 	static int defaultRoomCount;
 
   PString vr_ffmpegPath, vr_ffmpegOpts, vr_ffmpegDir;
   PString ffmpegCall;
   int vr_framewidth, vr_frameheight, vr_framerate; // video recorder values
+
+  PString sipListener;
 
   protected:
     PFilePath executableFile;

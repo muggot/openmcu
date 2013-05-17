@@ -7,8 +7,6 @@
 #pragma warning(disable:4100)
 #endif
 
-#include "config.h"
-
 #include <ptlib/sound.h>
 #include <ptlib/video.h>
 #include <ptlib/vconvert.h>
@@ -16,6 +14,8 @@
 
 #include <set>
 #include <map>
+
+#include "config.h"
 
 #define CIF_WIDTH     352
 #define CIF_HEIGHT    288

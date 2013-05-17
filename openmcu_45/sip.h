@@ -54,9 +54,8 @@ class OpenMCUSipEndPoint : public PThread
      PThread(10000,NoAutoDeleteThread,NormalPriority,"SIP Listener:%0x"),
      ep(_ep)
     {
-     listenerUrl = NULL;
      terminating = 0;
-     Resume();
+//     Resume();
     }
    ~OpenMCUSipEndPoint()
    {

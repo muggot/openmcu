@@ -154,13 +154,6 @@ VideoMixConfigurator OpenMCU::vmcfg;
 OpenMCU::OpenMCU()
   : OpenMCUProcessAncestor(ProductInfo)
 {
-#ifndef _WIN32
-  char ** argv=PXGetArgv();
-  executableFile = argv[0];
-#endif
-  PDirectory exeDir = executableFile.GetDirectory();
-  chdir(exeDir);
-
   endpoint = NULL;
   sipendpoint = NULL;
 }
@@ -172,15 +165,10 @@ void OpenMCU::Main()
 
 BOOL OpenMCU::OnStart()
 {
-  // change to the default directory to the one containing the executable
-//  PDirectory exeDir = GetFile().GetDirectory();
-
-#if defined(_WIN32) && defined(_DEBUG)
-  // Special check to aid in using DevStudio for debugging.
-  if (exeDir.Find("\\Debug\\") != P_MAX_INDEX)
-    exeDir = exeDir.GetParent();
-#endif
-//  exeDir.Change();
+  char ** argv=PXGetArgv();
+  executableFile = argv[0];
+  PDirectory exeDir = executableFile.GetDirectory();
+  exeDir.Change();
 
 #ifdef SYS_CONFIG_DIR
 #ifdef _WIN32
@@ -237,6 +225,9 @@ void OpenMCU::OnControl()
 
 BOOL OpenMCU::Initialise(const char * initMsg)
 {
+  PDirectory exeDir = executableFile.GetDirectory();
+  exeDir.Change();
+
   PConfig cfg("Parameters");
 
   // Set log level as early as possible
@@ -256,6 +247,8 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   PTrace::ClearOptions(PTrace::Timestamp);
   PTrace::SetOptions(PTrace::DateAndTime); */
 #endif
+
+  vmcfg.go(vmcfg.bfw,vmcfg.bfh);
 
   // Get the HTTP basic authentication info
   PString adminUserName = cfg.GetString(UserNameKey);
@@ -307,10 +300,10 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   rsrc->Add(new PHTTPIntegerField(HttpPortKey, 1, 32767, httpPort, "<td><td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Network Setup</b><br><br>Leave blank &laquo;NAT Router IP&raquo; if your OpenMCU isn't behind NAT."));
 
   // SIP Listener setup
-  PString listenerUrl = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
-  if(listenerUrl=="")listenerUrl="0.0.0.0";
-  rsrc->Add(new PHTTPStringField(SipListenerKey, 32, listenerUrl));
-  if(listenerUrl!="0.0.0.0") if(sipendpoint!=NULL) sipendpoint->listenerUrl=URL_STRING_MAKE((const char*)("sip:"+listenerUrl));
+  sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
+  if(sipListener=="")sipListener="0.0.0.0";
+  rsrc->Add(new PHTTPStringField(SipListenerKey, 32, sipListener));
+  sipendpoint->Resume();
 
   endpoint->Initialise(cfg, rsrc);
   if(endpoint->behind_masq){PStringStream msq; msq<<"Masquerading as "<<*(endpoint->masqAddressPtr); HttpWriteEvent(msq);}

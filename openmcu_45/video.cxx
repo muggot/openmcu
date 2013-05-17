@@ -4749,7 +4749,7 @@ BOOL EchoVideoMixer::WriteFrame(ConferenceMemberId id, const void * buffer, int 
 
 VideoMixConfigurator::VideoMixConfigurator(long _w, long _h){
  bfw=_w; bfh=_h;
- go(_w,_h); // just go
+// go(_w,_h); // just go
 }
 
 VideoMixConfigurator::~VideoMixConfigurator(){

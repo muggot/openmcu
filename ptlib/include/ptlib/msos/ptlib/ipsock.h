@@ -67,6 +67,27 @@
  *
  */
 
+#ifdef EINPROGRESS
+# undef EINPROGRESS
+# undef ENOTSOCK     
+# undef EMSGSIZE     
+# undef EOPNOTSUPP   
+# undef EAFNOSUPPORT 
+# undef EADDRINUSE   
+# undef EADDRNOTAVAIL
+# undef ENETDOWN     
+# undef ENETUNREACH  
+# undef ENETRESET    
+# undef ECONNABORTED 
+# undef ECONNRESET   
+# undef ENOBUFS      
+# undef EISCONN      
+# undef ENOTCONN     
+# undef ETIMEDOUT    
+# undef ECONNREFUSED 
+# undef EHOSTUNREACH 
+#endif
+
 #define EINPROGRESS             (WSAEINPROGRESS|PWIN32ErrorFlag)
 #define ENOTSOCK                (WSAENOTSOCK|PWIN32ErrorFlag)
 #define EMSGSIZE                (WSAEMSGSIZE|PWIN32ErrorFlag)
