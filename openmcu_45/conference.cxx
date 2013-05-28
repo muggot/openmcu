@@ -147,7 +147,7 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
 { 
 #if OPENMCU_VIDEO
 #if ENABLE_ECHO_MIXER
-  if (_number *= "echo")
+  if (_number.Left(4) *= "echo")
     return new Conference(*this, _guid, "echo"+_guid.AsString(), _name, _mcuNumber, new EchoVideoMixer());
 #endif
 #if ENABLE_TEST_ROOMS
