@@ -4701,46 +4701,35 @@ EchoVideoMixer::EchoVideoMixer()
     else { PTRACE(1,"EchoVideoMixer\tError: could not find the suitable layout"); specialLayout=0; }
   }
   PTRACE(6,"EchoVideoMixer\tConstructed, layout id " << specialLayout);
-
 }
 
 BOOL EchoVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
-PTRACE(6,"EchoVideoMixer\tAddVideoSource+" << flush);
+  PTRACE(6,"EchoVideoMixer\tAddVideoSource" << flush);
+  if(specialLayout<0) return FALSE;
   PWaitAndSignal m(mutex);
-
   if(vmpList->next==NULL)
   {
     VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[0];
     VideoMixPosition * newPosition;
     newPosition = CreateVideoMixPosition(id, o.posx, o.posy, o.width, o.height);
-    newPosition->type=1;
-    newPosition->terminalName = "";
-    newPosition->label_init=FALSE;
     VMPListInsVMP(newPosition);
   }
-  else
-  {
-    vmpList->next->id=id;
-    vmpList->next->terminalName = "";
-    vmpList->next->label_init=FALSE;
-    vmpList->next->fc=0;
-  }
-PTRACE(6,"EchoVideoMixer\tAddVideoSource-" << flush);
-
+  vmpList->next->n=0;
+  vmpList->next->id=id;
+  vmpList->next->terminalName = "";
+  vmpList->next->label_init=FALSE;
+  vmpList->next->fc=0;
   return TRUE;
 }
 
 BOOL EchoVideoMixer::WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount)
 {
+  if(specialLayout<0) return FALSE;
   PWaitAndSignal m(mutex);
-
   if(vmpList->next == NULL) return FALSE;
-
   if(vmpList->next->id != id) return FALSE;
-
   WriteSubFrame(*(vmpList->next), buffer, width, height, amount);
-
   return TRUE;
 }
 
