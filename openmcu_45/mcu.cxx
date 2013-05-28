@@ -228,6 +228,15 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   PDirectory exeDir = executableFile.GetDirectory();
   exeDir.Change();
 
+#ifdef _WIN32
+  if(PXGetArgc()>1)
+  {
+    char ** argv=PXGetArgv();
+    PString arg1=argv[1];
+    if(arg1 *= "debug") cout.rdbuf(PError.rdbuf());
+  }
+#endif
+
   PConfig cfg("Parameters");
 
   // Set log level as early as possible
