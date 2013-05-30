@@ -1437,10 +1437,10 @@ class CodecReadAnalyser
       if (!rtpSession.WriteData(frame))
          break;
 
-//      if (!isAudio)
+      if (!isAudio)
 //      { 
 //       if(!frame.GetMarker()) PThread::Sleep(2);
-//       else rtpTimestamp = nextTimestamp;
+       /*else*/ rtpTimestamp = nextTimestamp;
 //      }
 
       // Reset flag for in talk burst
