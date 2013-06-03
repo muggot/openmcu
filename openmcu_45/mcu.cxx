@@ -327,8 +327,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
-  rsrc->Add(new PHTTPStringField(DefaultRoomKey, 25, defaultRoomName));
-
+  rsrc->Add(new PHTTPStringField(DefaultRoomKey, 25, defaultRoomName, "<td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Room Setup</b>"));
   // create/don't create empty room with default name at start:
   rsrc->Add(new PHTTPBooleanField(CreateEmptyRoomKey, FALSE));
 
@@ -411,16 +410,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   PString html1 = rsrc->GetString();
   PStringStream html2; EndPage(html2,GetCopyrightText());
   PStringStream htmlpage; htmlpage << html0 << html1 << html2;
-
-// Sections http://openmcu.ru/forum/index.php?topic=287.msg2375#msg2375
-// Looks like they cause problems with video decoding by MCU time to time
-
-//  htmlpage.Replace("right>Username<TD","left colspan=3><h3>Authentication</h3></tr><tr><td align=RIGHT>Username<TD");
-//  htmlpage.Replace("right>Enable video<TD","left colspan=3><h3>Video</h3></tr><tr><td align=RIGHT>Enable video<TD");
-////  htmlpage.Replace("right>Connecting WAV File<TD","left colspan=3><h3>Sound [DISABLED]</h3></tr><tr><td align=RIGHT>Connecting WAV File<TD");
-//  htmlpage.Replace("right>HTTP Port<TD","left colspan=3><h3>Network</h3></tr><tr><td align=RIGHT>HTTP Port<TD");
-//  htmlpage.Replace("right>Log Level<TD","left colspan=3><h3>Logs</h3></tr><tr><td align=RIGHT>Log Level<TD");
-//  htmlpage.Replace("right>Default room<TD","left colspan=3><h3>Other</h3></tr><tr><td align=RIGHT>Default room<TD");
 
   rsrc->SetString(htmlpage);
 

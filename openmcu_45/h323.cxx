@@ -207,10 +207,10 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 
 #if OPENMCU_VIDEO
   enableVideo = cfg.GetBoolean(EnableVideoKey, TRUE);
-  rsrc->Add(new PHTTPBooleanField(EnableVideoKey, enableVideo));
+  rsrc->Add(new PHTTPBooleanField(EnableVideoKey, enableVideo, "<td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1..30 (for outgoing video)"));
 
   videoRate = cfg.GetInteger(VideoFrameRateKey, DefaultVideoFrameRate);
-  rsrc->Add(new PHTTPIntegerField(VideoFrameRateKey, 1, 30, videoRate,"For outgoing video: 1..30"));
+  rsrc->Add(new PHTTPIntegerField(VideoFrameRateKey, 1, 30, videoRate));
 
   videoTxQuality = cfg.GetInteger(VideoQualityKey, DefaultVideoQuality);
   rsrc->Add(new PHTTPIntegerField(VideoQualityKey, 1, 30, videoTxQuality));
@@ -422,15 +422,13 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
                  "</th><th>"
                  "&nbsp;Duration&nbsp;"
                  "</th><th>"
-                 "&nbsp;Codec&nbsp;"
+                 "&nbsp;RTP Channel: Codec&nbsp;"
                  "</th><th>"
-                 "&nbsp;RTP Packets/Bytes tx&nbsp;"
-                 "</th><th>"
-                 "&nbsp;RTP Packets/Bytes rx&nbsp;"
+                 "&nbsp;RTP Packets/Bytes&nbsp;"
                  "</th>"
 #if OPENMCU_VIDEO
                  "<th>"
-                 "&nbsp;RX&nbsp;Video&nbsp;<br>&nbsp;frame&nbsp;rate&nbsp;"
+                 "&nbsp;Video frame rate&nbsp;"
                  "</th>"
 #endif
                  "</tr>";
@@ -439,69 +437,115 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
     size_t memberNameListSize = 0;
     {
       PWaitAndSignal m(conference.GetMutex());
-      Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
-      memberNameListSize = memberNameList.size();
-      Conference::MemberNameList::const_iterator s;
-      for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
-      {
-        ConferenceMember * member = s->second;
-#if OPENMCU_VIDEO
-        if(member == NULL) {members << "<tr><td>" << s->first << "</td><td colspan='5'>Offline</td></tr>"; continue; }
-#else
-        if(member == NULL) {members << "<tr><td>" << s->first << "</td><td colspan='4'>Offline</td></tr>"; continue; }
-#endif
-        H323Connection_ConferenceMember * connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
-        if (connMember != NULL) {
-          OpenMCUH323Connection * conn = (OpenMCUH323Connection *)FindConnectionWithLock(connMember->GetH323Token());
-          if (conn != NULL) {
-            PTime now;
-            PTime callStart = conn->GetConnectionStartTime();
-            RTP_Session * session = conn->GetSession(RTP_Session::DefaultAudioSessionID);
-            RTP_Session * v_session = conn->GetSession(RTP_Session::DefaultVideoSessionID);
-            if(session!=NULL && v_session!=NULL)
-            {
-members << "<tr>"
-                      "<td>"
-                    << s->first
-                    << (member->IsMCU() ? "<br />(MCU)" : "")
 
-                    << "</td><td>"   
-                    << (now -callStart)
-                    << "</td><td><nobr><b>Out: </b>"
-                    << conn->GetAudioTransmitCodecName()
+      Conference::MemberList & memberList = conference.GetMemberList();
+      for (Conference::MemberList::const_iterator t = memberList.begin(); t != memberList.end(); ++t) 
+      { ConferenceMember * member = t->second;
+        if(member==NULL) continue;
+        PString memberName=member->GetName();
+        BOOL visible=member->IsVisible();
+        BOOL cache=FALSE;
+        members << "<tr>"
+          << "<td>"
+            << (visible? "" : "<b>[Hidden]</b><br />")
+            << (member->IsMCU() ? "<b>[MCU]</b><br />" : "")
+            << memberName
+            << "</td>";
+        OpenMCUH323Connection * conn = NULL;
+        H323Connection_ConferenceMember * connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
+        if (connMember != NULL) conn = (OpenMCUH323Connection *)FindConnectionWithLock(connMember->GetH323Token());
+        PTime now;
+
+        if(conn!=NULL)
+        {
 #if OPENMCU_VIDEO
-                    << " / <br>" << conn->GetVideoTransmitCodecName()
+          int codecCacheMode;
+          PString formatString;
+          BOOL connCodecNotNull = (conn->GetVideoTransmitCodec()!=NULL);
+          if(connCodecNotNull) { codecCacheMode=conn->GetVideoTransmitCodec()->cacheMode; formatString=conn->GetVideoTransmitCodec()->formatString; }
+          else { codecCacheMode=-1; formatString="NO_CODEC"; }
 #endif
-                    << "<br /><b>In: </b>" << conn->GetAudioReceiveCodecName()
+// hangs with the following line :(
+//          ConferenceFileMember* cache = FindCacheByFormatString(conference, conn->GetVideoTransmitCodecName());
+
+          members
+            << "<td>" << (now - conn->GetConnectionStartTime()) << "</td>"
+            << "<td><nobr>"
+              << "<b>Audio In: </b>"  << conn->GetAudioReceiveCodecName()
+              << "<br /><b>Audio Out: </b>" << conn->GetAudioTransmitCodecName()
 #if OPENMCU_VIDEO
-                    << " / " << conn->GetVideoReceiveCodecName()
-                    << "@" << connMember->GetVideoRxFrameSize()
+              << "<br /><b>Video In: </b>"  << conn->GetVideoReceiveCodecName() << "@" << connMember->GetVideoRxFrameSize()
+              << "<br /><b>"
+                << ((codecCacheMode!=2)? "Video Out: ":"<font color=green>[Cache] </font>")
+                << "</b>" << conn->GetVideoTransmitCodecName()
 #endif
-                    << "</nobr></td><td>"
-                    << session->GetPacketsSent() << '/' << session->GetOctetsSent() 
+              << "</nobr></td>"
+            << "<td><nobr>";
+
+              RTP_Session * session = conn->GetSession(RTP_Session::DefaultAudioSessionID);
+              if(session!=NULL)
+                members << session->GetPacketsReceived() << '/' << session->GetOctetsReceived()
+                  << "<br />" << session->GetPacketsSent() << '/' << session->GetOctetsSent();
+              else members << "-<br />-";
 #if OPENMCU_VIDEO
-                    << "<BR>" << v_session->GetPacketsSent() << '/' << v_session->GetOctetsSent()
+              RTP_Session * v_session = conn->GetSession(RTP_Session::DefaultVideoSessionID);
+              if(v_session!=NULL)
+                members << "<br />" << v_session->GetPacketsReceived() << '/' << v_session->GetOctetsReceived()
+                  << "<br />" << v_session->GetPacketsSent() << '/' << v_session->GetOctetsSent();
+              else members << "<br />-<br />-";
 #endif
-                    << "</td><td>"   
-                    << session->GetPacketsReceived() << '/' << session->GetOctetsReceived()
-#if OPENMCU_VIDEO
-                    << "<BR>" << v_session->GetPacketsReceived() << '/' << v_session->GetOctetsReceived()
-#endif
-                    << "</td>";
-            }        
-            conn->Unlock();
-          }
+          members
+            << "</nobr></td>";
+
+          conn->Unlock();
         }
-        members 
+
+        if(conn==NULL)
+        { PString formatString="NO_CODEC";
+          if(memberName=="cache")
+          { ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
+            if(fileMember!=NULL)
+            if(fileMember->codec!=NULL)
+            if(fileMember->codec->cacheMode==1)
+            { cache=TRUE; formatString=fileMember->codec->formatString; }
+          }
+
+          members
+            << "<td>" << (now - member->GetStartTime()) << "</td>"
+            << "<td>" << (cache? ("<b>Video Out: </b><font color=green>"+formatString+"</font>") : "") << "</td>"
+            << "<td>-/-</td>";
+
+        }
+
 #if OPENMCU_VIDEO
-                << "<td>"   
-                << member->GetVideoRxFrameRate()
-                << "</td>"   
+        members << "<td>";
+        if(visible) members << "<br /><br />";
+        if(cache) members << "<nobr>" << member->GetVideoTxFrameRate() << "</nobr>";
+        else if(visible) members << "<nobr>" << member->GetVideoRxFrameRate() << "<br />" << member->GetVideoTxFrameRate() << "</nobr>";
+        else members << "-";
+        members << "</td>";
 #endif
-                << "</tr>";
+        members 
+          << "</tr>";
       }
     }
+
+          
+    Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
+    memberNameListSize = memberNameList.size();
+    Conference::MemberNameList::const_iterator s;
+    for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
+    {
+      ConferenceMember * member = s->second;
+#if OPENMCU_VIDEO
+      if(member == NULL) {members << "<tr><td colspan='5'><b>[Offline]</b><br><font color='gray'>" << s->first << "</font></td></tr>"; continue; }
+#else
+      if(member == NULL) {members << "<tr><td colspan='4'><b>[Offline]</b><br><font color='gray'>" << s->first << "</font></td></tr>"; continue; }
+#endif
+    }
+
     members << "</table>";
+
     SpliceMacro(insert, "RoomName",        conference.GetNumber());
     SpliceMacro(insert, "RoomMemberCount", PString(PString::Unsigned, memberNameListSize));
     SpliceMacro(insert, "RoomMembers",     members);
