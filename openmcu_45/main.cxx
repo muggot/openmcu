@@ -86,23 +86,26 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
    if(fs)
    {
     unsigned char *p_buffer;
-    int p_size, *val;
+    unsigned p_size;
+    int *val;
 //    PVideoFrameInfo src,dst;
     PColourConverter *converter;
     fseek(fs,0L,SEEK_END); p_size=ftell(fs); rewind(fs);
     p_buffer=new unsigned char[p_size];
-    fread(p_buffer,1,p_size,fs);
-    fclose(fs);
-    val=(int *)(p_buffer+10);
+    if(p_size == fread(p_buffer,1,p_size,fs))
+    {
+      val=(int *)(p_buffer+10);
 //    logo=p_buffer+*val;
 //    src.SetSize(CIF4_WIDTH,CIF4_HEIGHT); 
 //    dst.SetSize(CIF4_WIDTH,CIF4_HEIGHT);
-    converter = PColourConverter::Create("BGR24", "YUV420P", CIF4_WIDTH, CIF4_HEIGHT);
-    converter->SetDstFrameSize(CIF4_WIDTH, CIF4_HEIGHT);
-    converter->SetVFlipState(TRUE);
-    logo = new unsigned char[CIF4_SIZE];
-    converter->Convert(p_buffer+*val,logo);
-    delete converter;
+      converter = PColourConverter::Create("BGR24", "YUV420P", CIF4_WIDTH, CIF4_HEIGHT);
+      converter->SetDstFrameSize(CIF4_WIDTH, CIF4_HEIGHT);
+      converter->SetVFlipState(TRUE);
+      logo = new unsigned char[CIF4_SIZE];
+      converter->Convert(p_buffer+*val,logo);
+      delete converter;
+    }
+    fclose(fs);
     delete p_buffer;
    }
   }

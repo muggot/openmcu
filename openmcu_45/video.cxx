@@ -4754,7 +4754,7 @@ VideoMixConfigurator::~VideoMixConfigurator(){
 void VideoMixConfigurator::go(unsigned frame_width, unsigned frame_height)
 {
   bfw=frame_width; bfh=frame_height;
-  FILE *fs; long f_size; char * f_buff;
+  FILE *fs; unsigned long f_size; char * f_buff;
 #ifdef SYS_CONFIG_DIR
 #ifdef _WIN32
   PString lCfgName=SYS_CONFIG_DIR+std::string("\\")+std::string(VMPC_CONFIGURATION_NAME);
@@ -4767,7 +4767,9 @@ void VideoMixConfigurator::go(unsigned frame_width, unsigned frame_height)
 #endif
   if(!fs) { cout << "Video Mixer Configurator: ERROR! Can't read file \"" << VMPC_CONFIGURATION_NAME << "\"\n"; return; }
   fseek(fs,0L,SEEK_END); f_size=ftell(fs); rewind(fs);
-  f_buff=new char[f_size+1]; fread(f_buff,1,f_size,fs); f_buff[f_size]=0;
+  f_buff=new char[f_size+1]; 
+  if(f_size != fread(f_buff,1,f_size,fs)) { cout << "Video Mixer Configurator: ERROR! Can't read file \"" << VMPC_CONFIGURATION_NAME << "\"\n"; return; }
+  f_buff[f_size]=0;
   fclose(fs);
   strcpy(fontfile,VMPC_DEFAULT_FONTFILE);
   for(long i=0;i<2;i++){

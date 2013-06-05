@@ -11,9 +11,9 @@ PString Browser_Language(PHTTPRequest & request)
   return "EN";
 }
 
-static long html_template_size; // count on zero initialization
+static unsigned long html_template_size; // count on zero initialization
 char * html_template_buffer;
-static long html_quote_size; // count on zero initialization
+static unsigned long html_quote_size; // count on zero initialization
 char * html_quote_buffer;
 PMutex html_mutex;
 
@@ -39,8 +39,12 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
       html_template_size = ftell(fs);
       rewind(fs);
       html_template_buffer = new char[html_template_size + 1];
-      fread(html_template_buffer, 1, html_template_size, fs);
-      html_template_buffer[html_template_size] = 0;
+      if(html_template_size != fread(html_template_buffer, 1, html_template_size, fs))
+      { cout << "Can't load HTML template!\n";
+        PTRACE(1,"WebCtrl\tCan't read HTML template from file");
+        html_template_size = -1;
+      }
+      else html_template_buffer[html_template_size] = 0;
       fclose(fs);
     }
     else
@@ -67,8 +71,12 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
       html_quote_size = ftell(fs);
       rewind(fs);
       html_quote_buffer = new char[html_quote_size + 1];
-      fread(html_quote_buffer, 1, html_quote_size, fs);
-      html_quote_buffer[html_quote_size] = 0;
+      if(html_quote_size != fread(html_quote_buffer, 1, html_quote_size, fs))
+      { cout << "Can't load quote.txt!\n";
+        PTRACE(1,"WebCtrl\tCan't read quote.txt");
+        html_quote_size = -1;
+      }
+      else html_quote_buffer[html_quote_size] = 0;
       fclose(fs);
     }
     else

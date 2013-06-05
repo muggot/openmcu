@@ -241,7 +241,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
    while(fscanf(capCfg,"%*[^\n]")!=EOF)
    {
     capsNum++;
-    fscanf(capCfg,"%*[\n]");
+    if(fscanf(capCfg,"%*[\n]")==EOF) break;
    }
    fclose(capCfg);
    rsCaps = (char **)calloc(capsNum,sizeof(char *));
@@ -275,7 +275,8 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
      else if(capsType==5) { cvCaps[listNum]=&(listCaps[64*capsNum]); listNum++; }
      strcpy(&(listCaps[64*capsNum]),buf); capsNum++;
     }
-    fscanf(capCfg,"%*[^\n]"); fscanf(capCfg,"%*[\n]");
+    if(fscanf(capCfg,"%*[^\n]")==EOF) break;
+    if(fscanf(capCfg,"%*[\n]")==EOF) break;
    }
    fclose(capCfg);
 
@@ -478,9 +479,9 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
 #if OPENMCU_VIDEO
               << "<br /><b>Video In: </b>"  << conn->GetVideoReceiveCodecName() << "@" << connMember->GetVideoRxFrameSize()
               << "<br /><b>"
-                << ((codecCacheMode==2)? "<font color=green><s>":"")
+                << ((codecCacheMode==2)? "<font color=green>":"")
                 << "Video Out"
-                << ((codecCacheMode==2)? "</s></font>":"")
+                << ((codecCacheMode==2)? "</font>":"")
                 << ": </b>" << conn->GetVideoTransmitCodecName()
 #endif
               << "</nobr></td>"
@@ -502,20 +503,16 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
               }
               else members << "<br />-<br />-";
 #endif
-          members
-            << "</nobr></td><td><nobr>";
-              if(session!=NULL)
-              members             << floor(orx * 80.0 / duration.GetMilliSeconds() + 0.5) / 10
-                      << "<br />" << floor(otx * 80.0 / duration.GetMilliSeconds() + 0.5) / 10;
-              else members << "-<br />-";
+          members << "</nobr></td><td style='text-align:right'><nobr>";
+          if(session!=NULL) members << psprintf("%6.1f",floor(orx * 80.0 / duration.GetMilliSeconds() + 0.5) / 10)
+                        << "<br />" << psprintf("%6.1f",floor(otx * 80.0 / duration.GetMilliSeconds() + 0.5) / 10);
+          else members << "-<br />-";
 #if OPENMCU_VIDEO
-              if(v_session!=NULL)
-              members << "<br />" << floor(vorx * 80.0 / duration.GetMilliSeconds() + 0.5) / 10
-                      << "<br />" << floor(votx * 80.0 / duration.GetMilliSeconds() + 0.5) / 10;
-              else members << "<br />-<br />-";
+          if(v_session!=NULL) members << "<br />" << psprintf("%6.1f",floor(vorx * 80.0 / duration.GetMilliSeconds() + 0.5) / 10)
+                                      << "<br />" << psprintf("%6.1f",floor(votx * 80.0 / duration.GetMilliSeconds() + 0.5) / 10);
+          else members << "<br />-<br />-";
 #endif
-          members
-            << "</nobr></td>";
+          members << "</nobr></td>";
 
           conn->Unlock();
         }
@@ -539,24 +536,23 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
         }
 
 #if OPENMCU_VIDEO
-        members << "<td>";
+        members << "<td style='text-align:right'>";
         if(visible) members << "<br /><br />";
         if(cache)
         { PString target="%%[" + formatString +"]";
-          PStringStream subs; subs << member->GetVideoTxFrameRate();
+          PStringStream subs; subs << psprintf("%4.2f",floor(member->GetVideoTxFrameRate()*100+0.55)/100);
           targets.AppendString(target);
           subses.AppendString(subs);
           members << "<nobr>" << subs << "</nobr>";
         }
         else if(visible)
-        { members << "<nobr>" << member->GetVideoRxFrameRate() << "<br />";
+        { members << "<nobr>" << psprintf("%4.2f",floor(member->GetVideoRxFrameRate()*100+0.55)/100) << "<br />";
           if(codecCacheMode==2)
-          {
-            PString t = "%%[" + formatString + "]";
+          { PString t = "%%[" + formatString + "]";
             members << t;
             if(errors.GetStringsIndex(t)==P_MAX_INDEX) errors.AppendString(t);
           }
-          else members << member->GetVideoTxFrameRate();
+          else members << psprintf("%4.2f",floor(member->GetVideoTxFrameRate()*100+0.55)/100);
           members << "</nobr>";
         }
         else members << "-";
@@ -1169,7 +1165,9 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     OTF_RET_OK;
   }
   if(action == OTFC_SET_VAD_VALUES)
-  { conference->VAlevel=v; conference->VAdelay=data("o").AsInteger(); conference->VAtimeout=data("o2").AsInteger();
+  { conference->VAlevel   = (unsigned short int) v;
+    conference->VAdelay   = (unsigned short int) (data("o").AsInteger());
+    conference->VAtimeout = (unsigned short int) (data("o2").AsInteger());
     OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
@@ -1566,13 +1564,13 @@ PString OpenMCUH323EndPoint::SetRoomParams(const PStringToString & data)
   else conference.SetMuteUnvisible(FALSE);
 
   PString pstr = data("VAdelay");
-  conference.VAdelay = pstr.AsInteger(); 
+  conference.VAdelay = (unsigned short int) (pstr.AsInteger()); 
   pstr = data("VAtimeout");
-  conference.VAtimeout = pstr.AsInteger(); 
+  conference.VAtimeout = (unsigned short int) (pstr.AsInteger()); 
   pstr = data("VAlevel");
-  conference.VAlevel = pstr.AsInteger(); 
+  conference.VAlevel = (unsigned short int) (pstr.AsInteger()); 
   pstr = data("echoLevel");
-  conference.echoLevel = pstr.AsInteger(); 
+  conference.echoLevel = (unsigned short int) (pstr.AsInteger()); 
 
   Conference::VideoMixerRecord * vmr = conference.videoMixerList;
   while( vmr!=NULL ) 
@@ -2075,16 +2073,18 @@ BOOL OpenMCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* buffer
 {
   PWaitAndSignal m(connMutex);
 
+  unsigned codecSampleRate = codec.GetSampleRate();
   PString codecName = codec.GetMediaFormat();
+  if(codecSampleRate > 0) codecName += "@" + PString(codecSampleRate) + "Hz";
 
   codec.SetSilenceDetectionMode( H323AudioCodec::NoSilenceDetection );
 
   if (!isEncoding) {
-    audioReceiveCodecName = codecName + "@" + PString::PString(codec.GetSampleRate()) + "Hz";
-    codec.AttachChannel(new IncomingAudio(ep, *this, codec.GetSampleRate()), TRUE);
+    audioReceiveCodecName = codecName;
+    codec.AttachChannel(new IncomingAudio(ep, *this, codecSampleRate), TRUE);
   } else {
-    audioTransmitCodecName = codecName + "@" + PString::PString(codec.GetSampleRate()) + "Hz";
-    codec.AttachChannel(new OutgoingAudio(ep, *this, codec.GetSampleRate()), TRUE);
+    audioTransmitCodecName = codecName;
+    codec.AttachChannel(new OutgoingAudio(ep, *this, codecSampleRate), TRUE);
   }
 
   return TRUE;
