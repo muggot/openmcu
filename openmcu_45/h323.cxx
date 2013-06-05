@@ -425,13 +425,15 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
                  "</th><th>"
                  "&nbsp;RTP Channel: Codec&nbsp;"
                  "</th><th>"
-                 "&nbsp;Packets/Bytes&nbsp;"
+                 "&nbsp;Packets&nbsp;"
+                 "</th><th>"
+                 "&nbsp;Bytes&nbsp;"
                  "</th><th>"
                  "&nbsp;Kbit/s&nbsp;"
                  "</th>"
 #if OPENMCU_VIDEO
                  "<th>"
-                 "&nbsp;Video FPS&nbsp;"
+                 "&nbsp;FPS&nbsp;"
                  "</th>"
 #endif
                  "</tr>";
@@ -454,8 +456,8 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
         if(cache) members << "<nobr><b>[Hidden]</b> cache</nobr></td>";
         else
           members
-            << (visible? "" : "<b>[Hidden]</b><br />")
-            << (member->IsMCU() ? "<b>[MCU]</b><br />" : "")
+            << (visible? "" : "<b>[Hidden]</b> ")
+            << (member->IsMCU() ? "<b>[MCU]</b> " : "")
             << memberName << "</td>";
 
         OpenMCUH323Connection * conn = NULL;
@@ -471,8 +473,14 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
           else formatString="NO_CODEC";
 #endif
           PTimeInterval duration = now - conn->GetConnectionStartTime();
+          PStringStream d;
+          d << duration;
+          d=d.Left(d.Find('.'));
+          if(d.GetLength()==1) d="00:0"+d;
+          else if(d.GetLength()==2) d="00:"+d;
+          else if(d.GetLength()==4) d="0"+d;
           members
-            << "<td>" << duration << "</td>"
+            << "<td style='text-align:right'>" << d << "</td>"
             << "<td><nobr>"
               << "<b>Audio In: </b>"  << conn->GetAudioReceiveCodecName()
               << "<br /><b>Audio Out: </b>" << conn->GetAudioTransmitCodecName()
@@ -484,26 +492,28 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
                 << ((codecCacheMode==2)? "</font>":"")
                 << ": </b>" << conn->GetVideoTransmitCodecName()
 #endif
-              << "</nobr></td>"
-            << "<td><nobr>";
-              RTP_Session * session = conn->GetSession(RTP_Session::DefaultAudioSessionID);
-              DWORD orx=0, otx=0, vorx=0, votx=0;
-              if(session!=NULL)
-              { orx = session->GetOctetsReceived(); otx = session->GetOctetsSent();
-                members             << session->GetPacketsReceived() << '/' << orx
-                        << "<br />" << session->GetPacketsSent()     << '/' << otx;
-              }
-              else members << "-<br />-";
+              << "</nobr></td><td style='text-align:right'>";
+
+          DWORD orx=0, otx=0; RTP_Session * session = conn->GetSession(RTP_Session::DefaultAudioSessionID);
 #if OPENMCU_VIDEO
-              RTP_Session * v_session = conn->GetSession(RTP_Session::DefaultVideoSessionID);
-              if(v_session!=NULL)
-              { vorx = v_session->GetOctetsReceived(); votx = v_session->GetOctetsSent();
-                members << "<br />" << v_session->GetPacketsReceived() << '/' << vorx
-                        << "<br />" << v_session->GetPacketsSent()     << '/' << votx;
-              }
-              else members << "<br />-<br />-";
+          DWORD vorx=0, votx=0; RTP_Session * v_session = conn->GetSession(RTP_Session::DefaultVideoSessionID);
 #endif
-          members << "</nobr></td><td style='text-align:right'><nobr>";
+          if(session!=NULL)
+          { orx = session->GetOctetsReceived(); otx = session->GetOctetsSent();
+            members << session->GetPacketsReceived() << "<br />" << session->GetPacketsSent();
+          } else members << "-<br />-";
+#if OPENMCU_VIDEO
+          if(v_session!=NULL)
+          { vorx = v_session->GetOctetsReceived(); votx = v_session->GetOctetsSent();
+            members << "<br />" << v_session->GetPacketsReceived() << "<br />" << v_session->GetPacketsSent();
+          } else members << "<br />-<br />-";
+#endif
+          members << "</td><td style='text-align:right'>";
+          if(session!=NULL) members << orx << "<br />" << otx; else members << "-<br />-";
+#if OPENMCU_VIDEO
+          if(v_session!=NULL) members << "<br />" << vorx << "<br />" << votx; else members << "<br />-<br />-";
+#endif
+          members << "</td><td style='text-align:right'><nobr>";
           if(session!=NULL) members << psprintf("%6.1f",floor(orx * 80.0 / duration.GetMilliSeconds() + 0.5) / 10)
                         << "<br />" << psprintf("%6.1f",floor(otx * 80.0 / duration.GetMilliSeconds() + 0.5) / 10);
           else members << "-<br />-";
@@ -527,11 +537,16 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
             if(fileMember->codec->cacheMode==1)
             { cache=TRUE; formatString=fileMember->codec->formatString; }
           }
-
+          PStringStream d;
+          d << (now - member->GetStartTime());
+          d=d.Left(d.Find('.'));
+          if(d.GetLength()==1) d="00:0"+d;
+          else if(d.GetLength()==2) d="00:"+d;
+          else if(d.GetLength()==4) d="0"+d;
           members
-            << "<td>" << (now - member->GetStartTime()) << "</td>"
-            << "<td>" << (cache? ("<b>Video Out:  </b>"+formatString) : "-") << "</td>"
-            << "<td>-</td><td>-</td>";
+            << "<td style='text-align:right'>" << d << "</td>"
+            << "<td>" << (cache? ("<nobr><b>Video Out:  </b>"+formatString+"</nobr>") : "-") << "</td>"
+            << "<td>-</td><td>-</td><td>-</td>";
 
         }
 
@@ -570,9 +585,9 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
     {
       ConferenceMember * member = s->second;
 #if OPENMCU_VIDEO
-      if(member == NULL) {members << "<tr><td colspan='6'><b>[Offline]</b> <font color='gray'>" << s->first << "</font></td></tr>"; continue; }
+      if(member == NULL) {members << "<tr><td colspan='7'><b>[Offline]</b> <font color='gray'>" << s->first << "</font></td></tr>"; continue; }
 #else
-      if(member == NULL) {members << "<tr><td colspan='5'><b>[Offline]</b> <font color='gray'>" << s->first << "</font></td></tr>"; continue; }
+      if(member == NULL) {members << "<tr><td colspan='6'><b>[Offline]</b> <font color='gray'>" << s->first << "</font></td></tr>"; continue; }
 #endif
     }
 
