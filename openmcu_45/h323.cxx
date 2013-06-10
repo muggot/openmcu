@@ -150,7 +150,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   unsigned rtpPortMax = cfg.GetInteger(RTPPortMaxKey, 0);
   rsrc->Add(new PHTTPIntegerField(RTPPortBaseKey, 0, 65535, rtpPortBase,"<td><td rowspan='2' valign='top' style='background-color:#eec;padding:4px;border-left:1px solid #770;border-right:1px solid #770;border-top:1px dotted #eec'><b>RTP Port Setup</b><br>0 = auto<br>Example: base=5000, max=6000"));
   rsrc->Add(new PHTTPIntegerField(RTPPortMaxKey, 0, 65535, rtpPortMax));
-  SetRtpIpPorts(rtpPortBase, rtpPortMax);
+  if(rtpPortBase!=0 && rtpPortMax!=0) SetRtpIpPorts(rtpPortBase, rtpPortMax);
 
 ///////////////////////////////////////////
 // Enable/Disable Fast Start & H.245 Tunneling
