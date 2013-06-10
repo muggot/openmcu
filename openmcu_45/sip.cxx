@@ -30,7 +30,12 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    rtpSessions.AddSession(session);
    PIPSocket::Address lIP(localIP); 
    PIPSocket::Address rIP(remoteIP);
-   session->Open(lIP,5000,10000,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
+//   session->Open(lIP,5000,10000,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
+   unsigned portBase=endpoint.GetRtpIpPortBase(),
+            portMax =endpoint.GetRtpIpPortMax();
+   if((portBase>65532)||(portBase==0)) portBase=5000;
+   if(portMax<=portBase) portMax=portBase+5000;
+   session->Open(lIP,portBase,portMax,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
    session->SetRemoteSocketInfo(rIP,sc->port,TRUE);
    sc->lport = session->GetLocalDataPort();
    sc->sdp = PString("m=") + ((!sc->media)?"audio ":"video ")
