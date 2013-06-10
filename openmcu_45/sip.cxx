@@ -34,7 +34,7 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    unsigned portBase=endpoint.GetRtpIpPortBase(),
             portMax =endpoint.GetRtpIpPortMax();
    if((portBase>65532)||(portBase==0)) portBase=5000;
-   if(portMax<=portBase) portMax=portBase+5000;
+   if(portMax<=portBase) portMax=PMIN(portBase+5000,65535);
    session->Open(lIP,portBase,portMax,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
    session->SetRemoteSocketInfo(rIP,sc->port,TRUE);
    sc->lport = session->GetLocalDataPort();
