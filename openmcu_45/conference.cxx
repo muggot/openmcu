@@ -116,6 +116,7 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   PString name="members_"+conference->GetNumber()+".conf";
 #endif
 
+  // read members.conf into conference->membersConf
   membLst = fopen(name,"rt");
   PStringStream membersConf;
   if(membLst!=NULL)
@@ -125,13 +126,14 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   }
   conference->membersConf=membersConf;
   if(membersConf.Left(1)!="\n") membersConf="\n"+membersConf;
+
+  // recall last template
+  if(!OpenMCU::Current().recallRoomTemplate) return;
   PINDEX dp=membersConf.Find("\nLAST_USED ");
   if(dp!=P_MAX_INDEX)
-  {
-    PINDEX dp2=membersConf.Find('\n',dp+10);
+  { PINDEX dp2=membersConf.Find('\n',dp+10);
     if(dp2!=P_MAX_INDEX)
-    {
-      PString lastUsedTemplate=membersConf.Mid(dp+11,dp2-dp-11).Trim();
+    { PString lastUsedTemplate=membersConf.Mid(dp+11,dp2-dp-11).Trim();
       cout << "Extracting & loading last used template: " << lastUsedTemplate << "\n";
       conference->confTpl=conference->ExtractTemplate(lastUsedTemplate);
       conference->LoadTemplate(conference->confTpl);

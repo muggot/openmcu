@@ -1178,7 +1178,7 @@ class Conference : public PObject
     MCUVideoMixer * VMLFind(unsigned i) const {
       VideoMixerRecord *vmr = videoMixerList;
       while (vmr->next!=NULL && vmr->id!=i) vmr=vmr->next;
-      if(vmr->id==i && vmr!=NULL) {PTRACE(6,"MixerCtrl\t(inside) Mixer found with id " << i);}
+//      if(vmr->id==i && vmr!=NULL) {PTRACE(6,"MixerCtrl\t(inside) Mixer found with id " << i);}
       if(vmr->id==i && vmr!=NULL) return vmr->mixer;
       return NULL;
     }

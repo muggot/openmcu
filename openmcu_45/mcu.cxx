@@ -33,6 +33,7 @@ static const char DefaultRoomTimeLimitKey[] = "Room time limit";
 static const char DefaultCallLogFilename[] = "mcu_log.txt"; 
 static const char DefaultRoom[]            = "room101";
 static const char CreateEmptyRoomKey[]     = "Auto create empty room";
+static const char RecallLastTemplateKey[]  = "Auto recall last template";
 static const char AllowLoopbackCallsKey[]  = "Allow loopback calls";
 
 static const char SipListenerKey[]         = "SIP Listener";
@@ -327,9 +328,14 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
-  rsrc->Add(new PHTTPStringField(DefaultRoomKey, 25, defaultRoomName, "<td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Room Setup</b>"));
-  // create/don't create empty room with default name at start:
+  rsrc->Add(new PHTTPStringField(DefaultRoomKey, 25, defaultRoomName, "<td rowspan='5' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Room Setup</b>"));
+
+  // create/don't create empty room with default name at start
   rsrc->Add(new PHTTPBooleanField(CreateEmptyRoomKey, FALSE));
+
+  // recall last template after room created
+  recallRoomTemplate = cfg.GetBoolean(RecallLastTemplateKey, FALSE);
+  rsrc->Add(new PHTTPBooleanField(RecallLastTemplateKey, recallRoomTemplate));
 
   // get conference time limit 
   roomTimeLimit = cfg.GetInteger(DefaultRoomTimeLimitKey, 0);
@@ -399,7 +405,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     rsrc->Add(new PHTTPStringField(RecorderFfmpegDirKey, 40, vr_ffmpegDir));
     rsrc->Add(new PHTTPIntegerField(RecorderFrameWidthKey, 176, 1920, vr_framewidth));
     rsrc->Add(new PHTTPIntegerField(RecorderFrameHeightKey, 144, 1152, vr_frameheight));
-    rsrc->Add(new PHTTPIntegerField(RecorderFrameRateKey, 1, 30, vr_framerate));
+    rsrc->Add(new PHTTPIntegerField(RecorderFrameRateKey, 1, 100, vr_framerate));
   }
 
   // Finished the resource to add, generate HTML for it and add to name space
@@ -437,26 +443,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     httpNameSpace.AddResource(new PHTTPFile("logfile.txt", systemLogFileName, authority));
     httpNameSpace.AddResource(new PHTTPTailFile("tail_logfile", systemLogFileName, authority));
   }
-
-  //  create the home page
-  static const char welcomeHtml[] = "welcome.html";
-  if (PFile::Exists(welcomeHtml))
-    httpNameSpace.AddResource(new PServiceHTTPFile(welcomeHtml, TRUE), PHTTPSpace::Overwrite);
-  else {
-    PHTML html;
-    PStringStream shtml;
-         BeginPage(shtml,"OpenMCU Home","OpenMCU Home","$WELCOME$");
-/*
-    if (!systemLogFileName && systemLogFileName != "-")
-      html << PHTML::HotLink("logfile.txt") << "Full Log File" << PHTML::HotLink()
-           << PHTML::BreakLine()
-           << PHTML::HotLink("tail_logfile") << "Tail Log File" << PHTML::HotLink()
-           << PHTML::Paragraph();
-*/
-         EndPage(shtml,GetCopyrightText());
-    html = shtml;
-    httpNameSpace.AddResource(new PServiceHTTPString("welcome.html", html), PHTTPSpace::Overwrite);
-  }
+  
+  // create the home page
+  PStringStream shtml;
+  BeginPage(shtml,"OpenMCU Home","OpenMCU Home","$WELCOME$");
+  EndPage(shtml,GetCopyrightText());
+  httpNameSpace.AddResource(new PServiceHTTPString("welcome.html", shtml), PHTTPSpace::Overwrite);
 
   // create monitoring page
   PString monitorText = "<!--#equival monitorinfo-->"

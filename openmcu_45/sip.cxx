@@ -314,7 +314,8 @@ void OpenMCUSipConnection::SelectCapability_H264(SipCapability &c,PStringArray &
   } 
  }
  cout << "profile " << profile << " level " << level << "\n";
- if(profile == 0 || level == 0) return;
+// if(profile == 0 || level == 0) return;
+ if(level == 0) level = 9;
 
  int l = 0;
  while(h241_to_x264_levels[l].idc != 0)
@@ -531,7 +532,13 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
  else if(sip->sip_from && sip->sip_from->a_url)
     remotePartyAddress = PString("sip#") + sip->sip_from->a_url->url_host;
 
- remotePartyName = sip->sip_from->a_url->url_user;
+ if(sip->sip_from && sip->sip_from->a_display && strcmp(sip->sip_from->a_display, "") != 0)
+ { // xak, http://openmcu.ru/forum/index.php?topic=400.msg3993#msg3993
+   remotePartyName = sip->sip_from->a_display;
+   remotePartyName.Replace("\"","",TRUE,0);
+ }
+ else remotePartyName = sip->sip_from->a_url->url_user;
+// remotePartyName = sip->sip_from->a_url->url_user;
  PStringToString data; PURL::SplitQueryVars("partyName="+remotePartyName,data); remotePartyName=data("partyName");
  remoteName = remotePartyName;
  if(sip->sip_user_agent && sip->sip_user_agent->g_string)

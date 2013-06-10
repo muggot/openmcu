@@ -320,7 +320,7 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
 
   if(width<176 || width>1920) { width=704; PTRACE(1,"WriteThreadV\tWrong frame width value changed to 4CIF width"); }
   if(height<144 || height>1152) { height=576; PTRACE(1,"WriteThreadV\tWrong frame height value changed to 4CIF height"); }
-  if(framerate<1 || framerate>30) { framerate=10; PTRACE(1,"WriteThreadV\tWrong frame rate value changed to 10 FPS"); }
+  if(framerate<1 || framerate>100) { framerate=10; PTRACE(1,"WriteThreadV\tWrong frame rate value changed to 10 FPS"); }
 
   int amount = width*height*3/2;
   int delay = 1000/framerate;

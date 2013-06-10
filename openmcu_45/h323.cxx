@@ -36,6 +36,8 @@ static const char DisableCodecsKey[]      = "Disable codecs - deprecated, use ca
 static const char NATRouterIPKey[]        = "NAT Router IP";
 static const char DisableFastStartKey[]   = "Disable Fast-Start";
 static const char DisableH245TunnelingKey[]="Disable H.245 Tunneling";
+static const char RTPPortBaseKey[]        = "RTP Base Port";
+static const char RTPPortMaxKey[]         = "RTP Max Port";
 
 static const char * GKModeLabels[] = { 
    "No gatekeeper", 
@@ -143,6 +145,14 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   }
 
 ///////////////////////////////////////////
+// RTP Port Setup
+  unsigned rtpPortBase = cfg.GetInteger(RTPPortBaseKey, 0);
+  unsigned rtpPortMax = cfg.GetInteger(RTPPortMaxKey, 0);
+  rsrc->Add(new PHTTPIntegerField(RTPPortBaseKey, 0, 65535, rtpPortBase,"<td><td rowspan='2' valign='top' style='background-color:#eec;padding:4px;border-left:1px solid #770;border-right:1px solid #770;border-top:1px dotted #eec'><b>RTP Port Setup</b><br>0 = auto<br>Example: base=5000, max=6000"));
+  rsrc->Add(new PHTTPIntegerField(RTPPortMaxKey, 0, 65535, rtpPortMax));
+  SetRtpIpPorts(rtpPortBase, rtpPortMax);
+
+///////////////////////////////////////////
 // Enable/Disable Fast Start & H.245 Tunneling
   BOOL disableFastStart = cfg.GetBoolean(DisableFastStartKey, TRUE);
   BOOL disableH245Tunneling = cfg.GetBoolean(DisableH245TunnelingKey, FALSE);
@@ -210,7 +220,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   rsrc->Add(new PHTTPBooleanField(EnableVideoKey, enableVideo, "<td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1..30 (for outgoing video)"));
 
   videoRate = cfg.GetInteger(VideoFrameRateKey, DefaultVideoFrameRate);
-  rsrc->Add(new PHTTPIntegerField(VideoFrameRateKey, 1, 30, videoRate));
+  rsrc->Add(new PHTTPIntegerField(VideoFrameRateKey, 1, 100, videoRate));
 
   videoTxQuality = cfg.GetInteger(VideoQualityKey, DefaultVideoQuality);
   rsrc->Add(new PHTTPIntegerField(VideoQualityKey, 1, 30, videoTxQuality));
@@ -328,7 +338,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   int videoFPS = 10;
   if (args.HasOption("videotxfps")) 
     videoFPS = args.GetOptionString("videotxfps").AsInteger();
-  endpoint.videoFramesPS = PMAX(1,PMIN(30,videoFPS));
+  endpoint.videoFramesPS = PMAX(1,PMIN(100,videoFPS));
 
   int videoBitRate = 0; //disable setting videoBitRate.
   if (args.HasOption("videobitrate")) {

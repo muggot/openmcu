@@ -203,13 +203,16 @@ class OpenMCU : public OpenMCUProcessAncestor
     static PluginLoaderStartup2 pluginLoader;
 #endif
 
-	static int defaultRoomCount;
+    static int defaultRoomCount;
 
-  PString vr_ffmpegPath, vr_ffmpegOpts, vr_ffmpegDir;
-  PString ffmpegCall;
-  int vr_framewidth, vr_frameheight, vr_framerate; // video recorder values
+    // video recorder
+    PString    vr_ffmpegPath, vr_ffmpegOpts, vr_ffmpegDir;
+    PString    ffmpegCall;
+    int        vr_framewidth, vr_frameheight, vr_framerate;
 
-  PString sipListener;
+    PString    sipListener;
+
+    BOOL       recallRoomTemplate;
 
   protected:
     PFilePath executableFile;
