@@ -57,6 +57,8 @@ static const int  DefaultRecorderFrameHeight  = 576;
 static const int  DefaultRecorderFrameRate    = 10;
 
 static const char ForceSplitVideoKey[]   = "Force split screen video (enables Room Control page)";
+
+static const char H264LevelForSIPKey[]        = "H.264 Default Level for SIP";
 #endif
 
 #define new PNEW
@@ -321,6 +323,15 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #if OPENMCU_VIDEO
   forceScreenSplit = cfg.GetBoolean(ForceSplitVideoKey, TRUE);
   rsrc->Add(new PHTTPBooleanField(ForceSplitVideoKey, forceScreenSplit));
+
+  h264DefaultLevelForSip = cfg.GetString(H264LevelForSIPKey, "9").AsInteger();
+  if(h264DefaultLevelForSip < 9)h264DefaultLevelForSip=9;
+  else if(h264DefaultLevelForSip>13 && h264DefaultLevelForSip<20) h264DefaultLevelForSip=13;
+  else if(h264DefaultLevelForSip>22 && h264DefaultLevelForSip<30) h264DefaultLevelForSip=22;
+  else if(h264DefaultLevelForSip>32 && h264DefaultLevelForSip<40) h264DefaultLevelForSip=32;
+  else if(h264DefaultLevelForSip>42 && h264DefaultLevelForSip<50) h264DefaultLevelForSip=42;
+  else if(h264DefaultLevelForSip>51) h264DefaultLevelForSip=51;
+  rsrc->Add(new PHTTPStringField(H264LevelForSIPKey, 2, PString(h264DefaultLevelForSip)));
 #if USE_LIBYUV
   scaleFilter=libyuv::LIBYUV_FILTER;
 #endif

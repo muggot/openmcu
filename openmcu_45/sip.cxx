@@ -320,8 +320,11 @@ void OpenMCUSipConnection::SelectCapability_H264(SipCapability &c,PStringArray &
  }
  cout << "profile " << profile << " level " << level << "\n";
 // if(profile == 0 || level == 0) return;
- if(level == 0) level = 9;
-
+ if(level == 0)
+ {
+   PTRACE(1,"SIP_CONNECTION\tH.264 level will set to " << OpenMCU::Current().h264DefaultLevelForSip);
+   level = OpenMCU::Current().h264DefaultLevelForSip;
+ }
  int l = 0;
  while(h241_to_x264_levels[l].idc != 0)
  {

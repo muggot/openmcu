@@ -214,6 +214,8 @@ class OpenMCU : public OpenMCUProcessAncestor
 
     BOOL       recallRoomTemplate;
 
+    int        h264DefaultLevelForSip;
+
   protected:
     PFilePath executableFile;
     ConferenceManager * manager;

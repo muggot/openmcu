@@ -217,7 +217,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 
 #if OPENMCU_VIDEO
   enableVideo = cfg.GetBoolean(EnableVideoKey, TRUE);
-  rsrc->Add(new PHTTPBooleanField(EnableVideoKey, enableVideo, "<td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1..30 (for outgoing video)"));
+  rsrc->Add(new PHTTPBooleanField(EnableVideoKey, enableVideo, "<td rowspan='5' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1..30 (for outgoing video)<br />H.264 level value must be one of: 9, 10, 11, 12, 13, 20, 21, 22, 30, 31, 32, 40, 41, 42, 50, 51."));
 
   videoRate = cfg.GetInteger(VideoFrameRateKey, DefaultVideoFrameRate);
   rsrc->Add(new PHTTPIntegerField(VideoFrameRateKey, 1, 100, videoRate));
