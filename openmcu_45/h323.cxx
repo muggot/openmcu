@@ -34,6 +34,7 @@ static const char GatekeeperModeKey[]     = "Gatekeeper Mode";
 static const char GatekeeperKey[]         = "Gatekeeper";
 static const char DisableCodecsKey[]      = "Disable codecs - deprecated, use capability.conf instead!";
 static const char NATRouterIPKey[]        = "NAT Router IP";
+static const char NATTreatAsGlobalKey[]   = "Treat as global for NAT";
 static const char DisableFastStartKey[]   = "Disable Fast-Start";
 static const char DisableH245TunnelingKey[]="Disable H.245 Tunneling";
 static const char RTPPortBaseKey[]        = "RTP Base Port";
@@ -143,6 +144,15 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
     behind_masq = TRUE;
     cout << "Masquerading as address " << *(masqAddressPtr) << endl;
   }
+
+  nat_lag_ip = cfg.GetString(NATTreatAsGlobalKey);
+  rsrc->Add(new PHTTPStringField(NATTreatAsGlobalKey, 25, nat_lag_ip));
+  if(!nat_lag_ip.IsEmpty())
+  {
+    nat_lag_ip=","+nat_lag_ip+",";
+    nat_lag_ip.Replace(" ","", TRUE, 0);
+  }
+  
 
 ///////////////////////////////////////////
 // RTP Port Setup
@@ -397,6 +407,14 @@ void OpenMCUH323EndPoint::TranslateTCPAddress(PIPSocket::Address &localAddr, con
       PTRACE(3,"H323\tNAT remIP=" << remoteAddr << ", locIP=" << localAddr << ": n/a (src is global)");
       return;
     }
+
+    if(!nat_lag_ip.IsEmpty())
+    if(nat_lag_ip.Find(","+PString(remoteAddr)+",")!=P_MAX_INDEX)
+    { PTRACE(3,"H323\tNAT remIP=" << remoteAddr << ", locIP=" << localAddr << ": ***change to " << *(this->masqAddressPtr) << " (treating as global)");
+      localAddr=*(this->masqAddressPtr);
+      return;
+    }
+
     byte1=remoteAddr.Byte1();
     byte2=remoteAddr.Byte2();
     if((byte1==10)                       // LAN class A

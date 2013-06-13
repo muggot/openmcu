@@ -309,7 +309,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // HTTP Port number to use.
   WORD httpPort = (WORD)cfg.GetInteger(HttpPortKey, DefaultHTTPPort);
-  rsrc->Add(new PHTTPIntegerField(HttpPortKey, 1, 32767, httpPort, "<td><td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Network Setup</b><br><br>Leave blank &laquo;NAT Router IP&raquo; if your OpenMCU isn't behind NAT."));
+  rsrc->Add(new PHTTPIntegerField(HttpPortKey, 1, 32767, httpPort, "<td><td rowspan='5' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Network Setup</b><br /><br />Leave blank &laquo;NAT Router IP&raquo; if your OpenMCU isn't behind NAT.<br />\"Treat...\" - comma-separated LAN IPs (rarely used).\""));
 
   // SIP Listener setup
   sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();

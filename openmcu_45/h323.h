@@ -82,6 +82,7 @@ class OpenMCUH323EndPoint : public H323EndPoint
 
     BOOL behind_masq;
     PIPSocket::Address *masqAddressPtr;
+    PString nat_lag_ip;
 
     // new functions
     void Initialise(PConfig & cfg, PConfigPage * rsrc);
