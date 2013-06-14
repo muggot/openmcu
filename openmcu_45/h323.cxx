@@ -409,7 +409,7 @@ void OpenMCUH323EndPoint::TranslateTCPAddress(PIPSocket::Address &localAddr, con
     }
 
     if(!nat_lag_ip.IsEmpty())
-    if(nat_lag_ip.Find(","+PString(remoteAddr)+",")!=P_MAX_INDEX)
+    if(nat_lag_ip.Find(","+remoteAddr.AsString()+",")!=P_MAX_INDEX)
     { PTRACE(3,"H323\tNAT remIP=" << remoteAddr << ", locIP=" << localAddr << ": ***change to " << *(this->masqAddressPtr) << " (treating as global)");
       localAddr=*(this->masqAddressPtr);
       return;
