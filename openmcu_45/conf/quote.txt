@@ -72,6 +72,7 @@ var VAD_FIELD_STYLE="width:40px;background-color:#fce;border-radius:5px;color:bl
 
 var OTFC_UNMUTE                  =  0; // corresponds to h323.h
 var OTFC_MUTE                    =  1;
+var OTFC_MUTE_ALL                =  2;
 var OTFC_DROP_MEMBER             =  7;
 var OTFC_VAD_NORMAL              =  8;
 var OTFC_VAD_CHOSEN_VAN          =  9;
@@ -170,57 +171,6 @@ function update_or_reload(layout_changed){ if(layout_changed)return document.for
 
 function my_trim(s){ s+=""; return s.replace(/(^[\s\t\n\r]+)|([\s\t\n\r]+$)/g, ""); }
 
-function handle_tags(s){
-/// init. part:
-  var fontsize_min=10; var fontsize_max=16;
-  if(typeof tags_init=='undefined'){
-   var s0=getcookie('tag'); if(s0!==false) s=s0;
-   tags_map=Array(); tags_count=Array(); tags_fs=Array(); just_tags=Array(); max_tag=1;
-   for(var i=0;i<tags.length;i++){
-    var t=tags[i].split(',');
-    for(var j=0;j<t.length;j++){
-     tag=my_trim(t[j]);
-     if(tag!=""){
-       var sl=","+just_tags.join(",")+",";
-       if(sl.indexOf(","+tag+",")<0){ tags_map[tag]=i; tags_count[tag]=1; just_tags[just_tags.length]=tag; }
-       else { tags_map[tag]+=","+i; tags_count[tag]++; if(tags_count[tag]>max_tag)max_tag=tags_count[tag]; }
-     }
-    }
-   }
-   var font_mul=(fontsize_max-fontsize_min)/max_tag;
-   for(var i=0;i<just_tags.length;i++) tags_fs[just_tags[i]]=fontsize_min+Math.round(font_mul*tags_count[just_tags[i]]);
-   sort_tags=just_tags; sort_tags.sort(); selvmn=document.getElementById('vidmemnum'); backupvmp=Array();
-   for(var i=0;i<selvmn.length;i++) backupvmp[i]=selvmn.options[i].text; tags_init=1;
-  }
-///common part:
-  var selopt=selvmn.options[selvmn.selectedIndex].text;
-  tags_links="Tags: ";
-  for(var i=0;i<sort_tags.length;i++){
-   if(s!=sort_tags[i]){
-    tags_links+="<span class='btn btn-mini' style='font-weight:normal;font-size:"+tags_fs[sort_tags[i]]+"px' onclick='handle_tags(\""+sort_tags[i]+"\")'>"+sort_tags[i]+"</span>";
-   } else {
-    tags_links+="<span style='font-size:"+tags_fs[sort_tags[i]]+"px;color:red'>"+sort_tags[i]+"</span>";
-   }
-   if(i<sort_tags.length-1) tags_links+=' ';
-  }
-  document.getElementById('tags_here').innerHTML=tags_links;
-  for(var i=selvmn.length-1;i>=0;i--) selvmn.remove(i);
-  var modes=tags_map[s]+"";
-  modes=modes.split(',');
-  for(var i=0;i<modes.length;i++){
-   var option=document.createElement("option");
-   option.text=backupvmp[modes[i]];
-   option.value=modes[i];
-   try {
-    selvmn.add(option,selvmn.options[null]);
-   } catch (e) {
-    selvmn.add(option,null);
-   }
-   if(selopt==option.text) selvmn.selectedIndex=i;
-  }
-  document.cookie='tag='+s;
-}
-
 function checkcontrol(){
   if(isModerated)return true;
   my_alert("Please take the control first");
@@ -230,7 +180,6 @@ function checkcontrol(){
 function ddstart(e,o,substance,idx){
   if(!checkcontrol()) return false;
   if(prvnt) return false;
-//  if(prvnt){if(e.preventDefault)e.preventDefault(); else e.returnValue=false; return false;}
   if(e.preventDefault)e.preventDefault(); else e.returnValue=false;
 //something like mutex:
   if(dd_in_progress)return false; if(query_active)return false; dd_in_progress=true;
@@ -245,19 +194,14 @@ function ddstart(e,o,substance,idx){
   var s=somethingflying.style;
   s.width=o.style.width;
   s.height=o.style.height;
-//  s.border='1px dotted red';
   s.backgroundColor='transparent';
   s.border='2px solid '+DRAGANDDROP_BORDER_COLOR; if(s.width>10)s.width-=2; if(s.height>10)s.height-=2;
-//  s.border=o.style.border;
-// if(panel_marker)somethingflying.innerHTML=obj.innerHTML;
   somethingflying.innerHTML=o.innerHTML;
   s.backgroundColor=backupedbgcolor;
   s.position='absolute';
   s.cursor='move';
   s.opacity='0.5';
-//  try{ s.filter="progid:DXImageTransform.Microsoft.Alpha(opacity=50)"; } catch(e){}
   sfo_x=e.clientX; sfo_y=e.clientY;
-// alert(sfo_x+'x'+sfo_y);
   if((substance!=='panel')&&(substance!=='panel_top')){ // from mockup:
    base_offset_x=document.getElementById('pp'+substance+'_'+idx).offsetLeft-document.getElementById('pbase').offsetLeft;
    base_offset_y=document.getElementById('pp'+substance+'_'+idx).offsetTop-document.getElementById('pbase').offsetTop;
@@ -266,8 +210,6 @@ function ddstart(e,o,substance,idx){
    if(id.substr(0,1)=='-')id='_'+id.substr(1);
    base_offset_x=document.getElementById('rpan_'+id).offsetLeft+document.getElementById('pp_2').offsetLeft-document.getElementById('pbase').offsetLeft;
    base_offset_y=document.getElementById('rpan_'+id).offsetTop+document.getElementById('pp_2').offsetTop-document.getElementById('pbase').offsetTop;
-//   if(panel_marker==1)base_offset_x+=23;
-//   if(panel_marker==2)base_offset_x+=56;
    if(dd_flying_substance=='panel_top')
    {
      if(dd_flying_idx==-1)base_offset_x+=23;
@@ -286,8 +228,6 @@ function ddprogress(e){
  if(!appendedflying){
   appendedflying=true;
   document.getElementById('pbase').appendChild(somethingflying);
-//  somethingflying.style.backgroundColor='#9fc';
-//  somethingflying.style.border='1px solid red';
  }
  somethingflying.style.left=base_offset_x-sfo_x+e.clientX+'px';
  somethingflying.style.top=base_offset_y-sfo_y+e.clientY+'px';
@@ -296,27 +236,21 @@ function ddprogress(e){
 
 function ddstop(e){
  if(!dd_in_progress) return false;
-
  dd_final_idx=dd_over_idx;
  dd_final_substance=dd_over_substance;
-
-// var ddos=dd_over_idx;
  if(dd_over!==0)ddout(e,dd_over,dd_over_idx);
  if(appendedflying) document.getElementById('pbase').removeChild(somethingflying);
  appendedflying=false;
  draggingobject.style.backgroundColor=backupedbgcolor;
  dd_in_progress=false;
-// if(dd_final_idx!=-1)dd_do_it(dd_flying_substance,dd_flying_idx,dd_final_substance,dd_final_idx);
  dd_do_it(dd_flying_substance,dd_flying_idx,dd_final_substance,dd_final_idx);
  return false;
 }
 
 function ddover(e,o,substance,idx){
  if(!dd_in_progress) return true;
-// if(dd_over===o)return false; //flying the object itself: no action needed
  if(dd_over===o)return false; //already complete
  if((dd_flying_substance==0)&&(dd_flying_idx===idx)) {dd_over_idx=-1;return false;} //?????????????????????
-// if(dd_flying_substance&&(document.getElementById('members_pan')==o)) {dd_over_idx=-1;return false;}
  if(dd_over!==0)ddout(event,dd_over,idx);
  dd_over=o;
  dd_over_bgbkp=o.style.backgroundColor;
@@ -332,41 +266,31 @@ function ddout(e,o,substance,idx){
  if(dd_over===0) return true;
  dd_over.style.backgroundColor=dd_over_bgbkp;
  dd_over=0;
-// dd_over_idx=-1;
  return false;
 }
 
-function dd_do_it(s1, p1, s2, p2){
-
+function dd_do_it(s1, p1, s2, p2)
+{
   if((s1===s2)&&(p1===p2)) return true; // nothing to do
 
-  if(((s1==='panel')||(s1=='panel_top'))&&((s2==='panel')||(s2==='panel_top'))) return true; // panel->panel actions??? just ret, tip for a future
+  if(((s1==='panel')||(s1=='panel_top'))&&((s2==='panel')||(s2==='panel_top'))) return true; //panel->panel
 
   if(s1==='panel_top') // top panel -> ...
-  {
-    alert('Header -> somewhere: '+s1+'/'+p1+' -> '+s2+'/'+p2);
-    return;
-  }
+  { alert('Header -> somewhere: '+s1+'/'+p1+' -> '+s2+'/'+p2); return; }
 
   if(s1==='panel') // panel -> ...
-  {
-    queue_otf_request(OTFC_SET_VMP_STATIC,p1,s2,p2);
-//    alert('Someone from panel -> somewhere in mixer: '+s1+'/'+p1+' -> '+s2+'/'+p2);
-    return true;
-  }
+  { queue_otf_request(OTFC_SET_VMP_STATIC,p1,s2,p2); return true; }
 
-  if((s2==='panel')||(s2==='panel_top')) queue_otf_request(OTFC_REMOVE_VMP,s1,p1);
-//  if((s2==='panel')||(s2==='panel_top')) alert('remove '+s1+'/'+p1);
+  if((s2==='panel')||(s2==='panel_top'))
+  { queue_otf_request(OTFC_REMOVE_VMP,s1,p1); return true; }
 
-//alert(s1+'/'+p1+' -> '+s2+'/'+p2);
   queue_otf_request(OTFC_MOVE_VMP,s1,p1,s2,p2);
 }
 
 function form_gather_and_send(){
  if(query_gas) return false; query_gas=1; var d=document.forms[0];
  query_gas_result=1;
- var cmd=
-    'room='         + d.room.value;
+ var cmd='room=' + d.room.value;
  if(d.moderated.checked)cmd+='&moderated=%2B';
  if(d.muteUnvisible.checked)cmd+='&muteUnvisible=%2B';
  cmd
@@ -494,7 +418,7 @@ function start_otf_control(){
  if(3 in data) cmd+='&o2='+encodeURIComponent(data[3]);
  if(4 in data) cmd+='&o3='+encodeURIComponent(data[4]);
  dmsg('Sending <font color="green">'+cmd+'</font>');
- otf_timer=setTimeout(otf_fail,3000);
+ otf_timer=setTimeout(otf_fail,5555);
  cro_otf=createRequestObject();
  cro_otf.open('POST','Select',true);
  cro_otf.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
@@ -541,7 +465,6 @@ function member_modify_by_id(id,index,value){
 }
 
 function member_read_by_id(id,index){
-// alert(array_print(members) + '\r\n\r\n' + id + ' / ' + index);
  if(typeof members==='undefined') return false;
  for(var i=0;i<members.length;i++) if(members[i][0]) if(members[i][1]==id) return members[i][index];
  return false;
@@ -680,6 +603,7 @@ function additional_panel(){
   var cm="cursor:move;width:"; var cp="cursor:pointer;width:";
 //  var s="<div style='width:275px;height:17px;margin-bottom:5px'>"
   var s="<div style='width:"+panel_width+"px;height:"+PANEL_ITEM_HEIGHT+"px;margin-bottom:4px'>"
+   +dpre+"0"+dmain+cp+"80px' onmousedown='if(checkcontrol())queue_otf_request("+OTFC_MUTE_ALL+")'>Mute&nbsp;All</div></div>"
 //   +dpre+"0"+dmain+cm+"20px' id='rpan_0' name='rpan_0' onmousedown='ddstart(event,this,\"panel_top\",0)'>[ ]</div></div>"
 //   +dpre+"23"+dmain+cm+"30px' id='rpan__1' name='rpan__1' onmousedown='ddstart(event,this,\"panel_top\",-1)'>VAD</div></div>"
 //   +dpre+"56"+dmain+cm+"36px' id='rpan__2' name='rpan__2' onmousedown='ddstart(event,this,\"panel_top\",-2)'>VAD2</div></div>"
@@ -853,6 +777,15 @@ function imute(id){
     o.src='i15_mic_off.gif';
     return alive();
   }
+}
+
+function imute_all()
+{ for(var i=0;i<members.length;i++)
+  { members[i][3]=1;
+    if((o=object_return('mrpan_',members[i][1]))===false) continue;
+    o.src='i15_mic_off.gif';
+  }
+  return alive();
 }
 
 function iunmute(id){

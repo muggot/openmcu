@@ -22,6 +22,7 @@ extern "C" {
 // don't forget to add the same into quote.txt:
 #define OTFC_UNMUTE                    0
 #define OTFC_MUTE                      1
+#define OTFC_MUTE_ALL                  2
 #define OTFC_DROP_MEMBER               7
 #define OTFC_VAD_NORMAL                8
 #define OTFC_VAD_CHOSEN_VAN            9

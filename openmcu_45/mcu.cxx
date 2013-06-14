@@ -487,6 +487,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpNameSpace.AddResource(new PHTTPFile("i24_mix.gif"), PHTTPSpace::Overwrite);
   httpNameSpace.AddResource(new PHTTPFile("i24_clr.gif"), PHTTPSpace::Overwrite);
   httpNameSpace.AddResource(new PHTTPFile("i24_revert.gif"), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ico"), PHTTPSpace::Overwrite);
 
   // set up the HTTP port for listening & start the first HTTP thread
   if (ListenForHTTP(httpPort))
