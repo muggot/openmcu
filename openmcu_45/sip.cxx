@@ -495,6 +495,15 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
    else if(c.payload == 8 &&
       tsCaps.GetStringsIndex("G.711-ALaw-64k")!=P_MAX_INDEX) //PCMA
     { scap = 8; c.h323 = "G.711-ALaw-64k{sw}"; c.cap = H323Capability::Create("G.711-ALaw-64k{sw}"); }
+
+// by xak, http://openmcu.ru/forum/index.php?topic=410.0
+   else if(c.payload == 9 &&
+      tsCaps.GetStringsIndex("G.722-64k{sw}")!=P_MAX_INDEX) //G.722
+    { scap = 9; c.h323 = "G.722-64k{sw}"; c.cap = H323Capability::Create("G.722-64k{sw}"); }
+   else if(c.payload == 100 &&
+      tsCaps.GetStringsIndex("iLBC-13k3{sw}")!=P_MAX_INDEX) //iLBC
+    { scap = 100; c.h323 = "iLBC-13k3{sw}"; c.cap = H323Capability::Create("iLBC-13k3{sw}"); }
+
   }
   else if(c.media == 1)
   {

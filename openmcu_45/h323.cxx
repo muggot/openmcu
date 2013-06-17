@@ -989,6 +989,15 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
   if(action == OTFC_TEMPLATE_RECALL)
   {
     OpenMCU::Current().HttpWriteCmdRoom("alive()",room);
+
+    if(conference->IsModerated()=="-")
+    { conference->SetModerated(TRUE);
+      conference->videoMixerList->mixer->SetForceScreenSplit(TRUE);
+      conference->PutChosenVan();
+      OpenMCU::Current().HttpWriteEventRoom("<span style='background-color:#bfb'>Operator took the control</span>",room);
+      OpenMCU::Current().HttpWriteCmdRoom("r_moder()",room);
+    }
+
     conference->confTpl = conference->ExtractTemplate(value);
     conference->LoadTemplate(conference->confTpl);
     conference->SetLastUsedTemplate(value);

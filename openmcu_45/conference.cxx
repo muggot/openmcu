@@ -234,6 +234,7 @@ void ConferenceManager::AddMonitorEvent(ConferenceMonitorInfo * info)
 PString Conference::SaveTemplate(PString tplName)
 {
   PTRACE(6,"Conference\tSaveTemplate");
+  PStringArray previousTemplate = confTpl.Lines();
   PStringStream t;
   Conference::MemberNameList::const_iterator s;
   t << "TEMPLATE " << tplName << "\n"
@@ -248,18 +249,55 @@ PString Conference::SaveTemplate(PString tplName)
     MCUVideoMixer & m = *(vmr->mixer);
     unsigned n=m.GetPositionSet();
     VMPCfgSplitOptions & o = OpenMCU::vmcfg.vmconf[n].splitcfg;
-    t << "    LAYOUT " << n << ", " << o.Id << "\n";
+    PString newLayout=PString(n) + ", " + o.Id;
+    t << "    LAYOUT " << newLayout << "\n";
     unsigned skipCounter=0;
-    for(unsigned i=0; i<o.vidnum; i++)
+    for(unsigned i=0; i<o.vidnum; i++)             // video mix position will be set here:
     { PStringStream vmpText;
       ConferenceMemberId id=m.GetPositionId(i);
-      if((long)id==-1) vmpText << "VMP 2";
-      else if((long)id==-2) vmpText << "VMP 3";
+      if((long)id==-1) vmpText << "VMP 2";         // - it may be "VMP 2" (VAD type)
+      else if((long)id==-2) vmpText << "VMP 3";    // - or        "VMP 3" (VAD2 type)
       else
-      if(id!=NULL)
+      if(id!=NULL)                                 // - or        "VMP 1, memberName" (static type)
       { PWaitAndSignal m(memberListMutex);
         for(s = memberNameList.begin(); s != memberNameList.end(); ++s) if(s->second != NULL) if(s->second->GetID()==id)
         { vmpText << "VMP 1, " << s->first; break; }
+      }
+      else                                         // - nothing: trying get the value from current template:
+      { int previous_level=0;
+        unsigned previous_mixer=32767;
+        unsigned prev_vmpN=32767;
+        BOOL mixMatch=FALSE;
+        for(PINDEX previous_i=0; previous_i<previousTemplate.GetSize(); previous_i++)
+        { PString prev_l=previousTemplate[previous_i].Trim();
+          if     (prev_l=="{") previous_level++;
+          else if(prev_l=="}") previous_level--;
+          else
+          { PINDEX space=prev_l.Find(" ");
+            if(space!=P_MAX_INDEX)
+            { PString cmd=prev_l.Left(space);
+              PString value=prev_l.Mid(space+1,P_MAX_INDEX).LeftTrim();
+              if     (cmd=="MIXER")
+              { previous_mixer=value.AsInteger();
+                mixMatch=(previous_mixer==vmr->id);
+                prev_vmpN=0;
+              }
+              else if(cmd=="LAYOUT") if(mixMatch) mixMatch=(value==newLayout);
+              else if(cmd=="SKIP") prev_vmpN+=value.AsInteger();
+              else if(cmd=="VMP")
+              { if(mixMatch) if(prev_vmpN == i) if(value.Left(1)=="1")
+                { PWaitAndSignal m(memberListMutex);
+                  for(s = memberNameList.begin(); s != memberNameList.end(); ++s)
+                  if(s->second == NULL) if(("1, "+(s->first)) == value)
+                  { vmpText << "VMP " << value;
+                    break;
+                  }
+                }
+                prev_vmpN++;
+              }
+            } // if(space!=P_MAX_INDEX)
+          } // if "{" else "if" } else ...
+        } // for(i=0; i<lines.GetSize()
       }
       if(vmpText=="") skipCounter++;
       else if(skipCounter>0)
@@ -275,14 +313,41 @@ PString Conference::SaveTemplate(PString tplName)
     vmr=vmr->next;
   }
   PWaitAndSignal m(memberListMutex);
-  for(s = memberNameList.begin(); s != memberNameList.end(); ++s) if(s->second != NULL)
-  t << "  MEMBER "
-    << (s->second->autoDial?"1":"0") << ", "
-    << (s->second->muteIncoming?"1":"0") << ", "
-    << (s->second->disableVAD?"1":"0") << ", "
-    << (s->second->chosenVan?"1":"0") << ", "
-    << s->second->GetVideoMixerNumber() << ", "
-    << s->first << "\n";
+  for(s = memberNameList.begin(); s != memberNameList.end(); ++s)
+  {
+    if(s->second != NULL)
+    {
+      t << "  MEMBER "
+        << (s->second->autoDial?"1":"0") << ", "
+        << (s->second->muteIncoming?"1":"0") << ", "
+        << (s->second->disableVAD?"1":"0") << ", "
+        << (s->second->chosenVan?"1":"0") << ", "
+        << s->second->GetVideoMixerNumber() << ", "
+        << s->first << "\n";
+    }
+    else
+    {
+      BOOL memberFound = FALSE;
+      for(PINDEX previous_i=0; previous_i<previousTemplate.GetSize(); previous_i++)
+      { PString prev_l=previousTemplate[previous_i].Trim();
+        PINDEX space=prev_l.Find(" ");
+        if(space!=P_MAX_INDEX)
+        { PString cmd=prev_l.Left(space);
+          if(cmd=="MEMBER")
+          { PString value=prev_l.Mid(space+1,P_MAX_INDEX).LeftTrim();
+            PStringArray options=value.Tokenise(',',TRUE);
+            if(options.GetSize()==6)
+            if(options[5].LeftTrim()==PString(s->first).LeftTrim())
+            { t << "  MEMBER " << value << "\n";
+              memberFound = TRUE;
+              break;
+            }
+          }
+        }
+      }
+      if(!memberFound) t << "  MEMBER 0, 0, 0, 0, 0, " << s->first << "\n";
+    }
+  }
   t << "}\n\n";
 
   LoadTemplate(t); // temp fix
@@ -316,7 +381,7 @@ void Conference::LoadTemplate(PString tpl)
         PString value=l.Mid(space+1,P_MAX_INDEX).LeftTrim();
         if(cmd=="GLOBAL_MUTE") muteUnvisible=(value=="on");
         else if(cmd=="CONTROL_TYPE") moderated=(value=="manual");
-        else if(cmd=="VAD_VALUES") {PStringArray v=value.Tokenise(",");if(v.GetSize()==3){ VAdelay=v[0].Trim().AsInteger(); VAtimeout=v[1].Trim().AsInteger(); VAlevel=v[2].Trim().AsInteger();}}
+        else if(cmd=="VAD_VALUES") {PStringArray v=value.Tokenise(",");if(v.GetSize()==3){ VAdelay=(unsigned short int)(v[0].Trim().AsInteger()); VAtimeout=(unsigned short int)(v[1].Trim().AsInteger()); VAlevel=(unsigned short int)(v[2].Trim().AsInteger());}}
         else if(cmd=="MIXER")
         {
           mixerId=value.AsInteger();
@@ -383,7 +448,8 @@ void Conference::LoadTemplate(PString tpl)
           MemberNameList::const_iterator r = memberNameList.find(memberInternalName);
           BOOL offline = (r == memberNameList.end());
 
-          if(offline) memberNameList.insert(MemberNameList::value_type(memberInternalName, (ConferenceMember*)NULL)); else offline = (r->second == NULL);
+          if(offline) memberNameList.insert(MemberNameList::value_type(memberInternalName, (ConferenceMember*)NULL));
+          else offline = (r->second == NULL);
 
           if(offline && memberAutoDial) // finally: offline and have to be called
           {
