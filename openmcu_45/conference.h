@@ -584,7 +584,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     PBYTEArray imageStore1;        // temporary conversion store
     PBYTEArray imageStore2;        // temporary conversion store
     long imageStore_size, imageStore1_size, imageStore2_size;
-    PColourConverter * converter; // CIF to QCIF converter
+//    PColourConverter * converter; // CIF to QCIF converter
     int specialLayout;
 };
 
@@ -949,7 +949,7 @@ class ConferenceMember : public PObject
 
     VideoFrameStoreList memberFrameStores;
     PMutex memberFrameStoreMutex;
-    PColourConverter * fsConverter; 
+//    PColourConverter * fsConverter; 
 
     PTime firstFrameSendTime;
     PINDEX totalVideoFramesSent;

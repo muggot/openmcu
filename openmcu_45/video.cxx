@@ -2901,12 +2901,12 @@ MCUSimpleVideoMixer::MCUSimpleVideoMixer(BOOL _forceScreenSplit)
   PTRACE(1,"MixerCtrl\tNew MCUSimpleVideoMixer created");
   forceScreenSplit = _forceScreenSplit;
   VMPListInit();
-  frameStores.AddFrameStore(CIF4_WIDTH, CIF4_HEIGHT);
+//  frameStores.AddFrameStore(CIF4_WIDTH, CIF4_HEIGHT);
   imageStore_size=0;
   imageStore1_size=0;
   imageStore2_size=0;
 
-  converter = PColourConverter::Create("YUV420P", "YUV420P", CIF16_WIDTH, CIF16_HEIGHT);
+//  converter = PColourConverter::Create("YUV420P", "YUV420P", CIF16_WIDTH, CIF16_HEIGHT);
   specialLayout = 0;
 }
 
@@ -2940,7 +2940,7 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
   PWaitAndSignal m(mutex);
 
   VideoFrameStoreList::FrameStore & Fs = srcFrameStores.GetFrameStore(width, height);
-
+/*
   if (!Fs.valid) 
   {
    if(width*CIF_HEIGHT!=height*CIF_WIDTH || 
@@ -2997,7 +2997,7 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
     } 
    }
   }
-
+*/
   if (!Fs.valid) 
   {
    if (!OpenMCU::Current().GetPreMediaFrame(Fs.data.GetPointer(), width, height, amount))
@@ -3492,8 +3492,8 @@ void MCUSimpleVideoMixer::RemoveVideoSource(ConferenceMemberId id, ConferenceMem
 
     // clear the position where the frame was
     VideoMixPosition & vmp = *pVMP;
-    VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
-    VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
+//    VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
+//    VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
     if (vmpNum == 1)
     {
 /*     if(!OpenMCU::Current().GetPreMediaFrame(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), CIF4_WIDTH, CIF4_HEIGHT, retsz))
@@ -3505,9 +3505,9 @@ void MCUSimpleVideoMixer::RemoveVideoSource(ConferenceMemberId id, ConferenceMem
 */    NullAllFrameStores();
     }
     else NullRectangle(vmp.xpos,vmp.ypos,vmp.width,vmp.height);
-    frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT);
-    cifFs.valid = 1;
-    cif16Fs.valid = 1;
+//    frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT);
+//    cifFs.valid = 1;
+//    cif16Fs.valid = 1;
 
     // remove the source from the list
     VMPListDelVMP(pVMP);
@@ -3717,8 +3717,8 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMemberId id)
   oldVMP->id=maxId; oldVMP->status=0; oldVMP->chosenVan=cv;
   oldVMP->terminalName=""; oldVMP->label_init=FALSE; oldVMP->fc=0;
 
-  VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
-  VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
+//  VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
+//  VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
   if((long)maxId>=0 && (long)maxId<100)
   {
 /*   FillCIF4YUVRect(frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0, oldVMP->xpos, oldVMP->ypos, oldVMP->width, oldVMP->height);
@@ -3727,9 +3727,9 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMemberId id)
 */
     NullRectangle(oldVMP->xpos,oldVMP->ypos,oldVMP->width,oldVMP->height);
   }
-  frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT);
-  cifFs.valid = 1;
-  cif16Fs.valid = 1;
+//  frameStores.InvalidateExcept(CIF4_WIDTH, CIF4_HEIGHT);
+//  cifFs.valid = 1;
+//  cif16Fs.valid = 1;
  
   cout << "SetVAD2Position\n";
   return TRUE;

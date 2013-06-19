@@ -26,6 +26,7 @@ static const char VideoQualityKey[]      = "Video quality";
 
 static const char InterfaceKey[]          = "H.323 Listener";
 static const char LocalUserNameKey[]      = "Local User Name";
+static const char ServerIdKey[]           = "OpenMCU Server Id";
 static const char GatekeeperUserNameKey[] = "Gatekeeper Username";
 static const char GatekeeperAliasKey[]    = "Gatekeeper Room Names";
 static const char GatekeeperPasswordKey[] = "Gatekeeper Password";
@@ -166,7 +167,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 // Enable/Disable Fast Start & H.245 Tunneling
   BOOL disableFastStart = cfg.GetBoolean(DisableFastStartKey, TRUE);
   BOOL disableH245Tunneling = cfg.GetBoolean(DisableH245TunnelingKey, FALSE);
-  rsrc->Add(new PHTTPBooleanField(DisableFastStartKey, disableFastStart,"<td rowspan='8' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>H.323 Setup</b>"));
+  rsrc->Add(new PHTTPBooleanField(DisableFastStartKey, disableFastStart,"<td rowspan='9' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>H.323 Setup</b>"));
   rsrc->Add(new PHTTPBooleanField(DisableH245TunnelingKey, disableH245Tunneling));
   DisableFastStart(disableFastStart);
   DisableH245Tunneling(disableH245Tunneling);
@@ -184,11 +185,19 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 
   // Gatekeeper UserName
   PString gkUserName = cfg.GetString(GatekeeperUserNameKey,"MCU");
+
+  // OpenMCU Server Id
+  PString serverId = cfg.GetString(ServerIdKey,OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
+  rsrc->Add(new PHTTPStringField(ServerIdKey, 25, serverId));
+  if(serverId.IsEmpty()) serverId = gkUserName;
+
   if (gkMode == Gatekeeper_None ) {
     // Local alias name for H.323 endpoint
-    SetLocalUserName(cfg.GetString(LocalUserNameKey, OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion()));
+//    SetLocalUserName(cfg.GetString(LocalUserNameKey, OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion()));
+    SetLocalUserName(serverId);
   } else {
-    SetLocalUserName(gkUserName);
+//    SetLocalUserName(gkUserName);
+    SetLocalUserName(serverId); // testing
   }
   rsrc->Add(new PHTTPStringField(GatekeeperUserNameKey, 25, gkUserName));
   AliasList.AppendString(gkUserName);

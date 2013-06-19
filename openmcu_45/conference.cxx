@@ -1478,8 +1478,8 @@ ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId 
 
 #if OPENMCU_VIDEO
   videoMixer = NULL;
-  fsConverter = PColourConverter::Create("YUV420P", "YUV420P", CIF4_WIDTH, CIF4_HEIGHT);
-  MCUVideoMixer::FillCIF4YUVFrame(memberFrameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0);
+//  fsConverter = PColourConverter::Create("YUV420P", "YUV420P", CIF4_WIDTH, CIF4_HEIGHT);
+//  MCUVideoMixer::FillCIF4YUVFrame(memberFrameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0);
   totalVideoFramesReceived = 0;
   firstFrameReceiveTime = -1;
   totalVideoFramesSent = 0;
@@ -1674,20 +1674,24 @@ void * ConferenceMember::OnExternalReadVideo(ConferenceMemberId id, int width, i
   VideoFrameStoreList::FrameStore & nearestFs = memberFrameStores.GetNearestFrameStore(width, height, found);
 
   // if no valid framestores, nothing we can do
-  if (!found) {
+/*  if (!found) {
     memberFrameStoreMutex.Signal();
     lock.Signal();
     return NULL;
   }
-
+*/
   // if the valid framestore is a perfect match, return it
+  if(found)
   if ((nearestFs.width == width) && (nearestFs.height == height))
     return nearestFs.data.GetPointer();
 
   // create a new destinationf framestore
   VideoFrameStoreList::FrameStore & destFs = memberFrameStores.GetFrameStore(width, height);
 
+  if(found)
   MCUVideoMixer::ResizeYUV420P(nearestFs.data.GetPointer(), destFs.data.GetPointer(), nearestFs.width, nearestFs.height, width, height);
+  else
+  OpenMCU::Current().GetPreMediaFrame(destFs.data.GetPointer(), width, height, bytesReturned);
   destFs.valid = TRUE;
 
   return destFs.data.GetPointer();
