@@ -144,6 +144,16 @@ class SelectRoomPage : public PServiceHTTPString
     OpenMCU & app;
 };
 
+class WelcomePage : public PServiceHTTPString
+{
+  public:
+    WelcomePage(OpenMCU & app, PHTTPAuthority & auth);
+    BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
+  
+  private:
+    OpenMCU & app;
+};
+
 
 
 
@@ -456,10 +466,13 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   }
   
   // create the home page
+/*
   PStringStream shtml;
   BeginPage(shtml,"OpenMCU Home","OpenMCU Home","$WELCOME$");
   EndPage(shtml,GetCopyrightText());
   httpNameSpace.AddResource(new PServiceHTTPString("welcome.html", shtml), PHTTPSpace::Overwrite);
+*/
+  httpNameSpace.AddResource(new WelcomePage(*this, authority), PHTTPSpace::Overwrite);
 
   // create monitoring page
   PString monitorText = "<!--#equival monitorinfo-->"
@@ -619,7 +632,7 @@ boolean jpeg_empty_output_buffer(j_compress_ptr cinfo){
 
 void jpeg_term_destination(j_compress_ptr cinfo){
   jpegMixer->jpegSize=jpegMixer->myjpeg.GetSize() - cinfo->dest->free_in_buffer;
-  jpegMixer->jpegTime=time(0);
+  jpegMixer->jpegTime=(long)time(0);
 }
 
 JpegFrameHTTP::JpegFrameHTTP(OpenMCU & _app, PHTTPAuthority & auth)
@@ -650,7 +663,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   unsigned requestedMixer=0;
   if(data.Contains("mixer")) requestedMixer=(unsigned)data("mixer").AsInteger();
 
-  const unsigned long t1=time(0);
+  const unsigned long t1=(unsigned long)time(0);
 
 //  PWaitAndSignal m(mutex); // no more required: the following mutex will do the same:
   app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Wait();
@@ -929,6 +942,43 @@ BOOL SelectRoomPage::Post(PHTTPRequest & request,
   if(OpenMCU::Current().GetForceScreenSplit())
   msg << OpenMCU::Current().GetEndpoint().SetRoomParams(data);
   else msg << ErrorPage(request.localAddr.AsString(),request.localPort,423,"Locked","Room Control feature is locked","To unlock the page: click &laquo;<a href='/Parameters'>Parameters</a>&raquo;, check &laquo;Force split screen video and enable Room Control feature&raquo; and accept.<br/><br/>");
+  return TRUE;
+}
+
+WelcomePage::WelcomePage(OpenMCU & _app, PHTTPAuthority & auth)
+  : PServiceHTTPString("welcome.html", "", "text/html; charset=utf-8", auth),
+    app(_app)
+{}
+
+BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
+{
+  { PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
+    if(!CheckAuthority(server, *req, connectInfo)) {delete req; return FALSE;}
+    delete req;
+  }
+  PStringToString data;
+  { PString request=url.AsString(); PINDEX q;
+    if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
+  }
+  PStringStream shtml;
+  BeginPage(shtml,"OpenMCU Home","OpenMCU Home","$WELCOME$");
+  shtml << "<br><b>Monitor Text (<span style='cursor:pointer;text-decoration:underline' onclick='javascript:{if(document.selection){var range=document.body.createTextRange();range.moveToElementText(document.getElementById(\"monitorTextId\"));range.select();}else if(window.getSelection){var range=document.createRange();range.selectNode(document.getElementById(\"monitorTextId\"));window.getSelection().addRange(range);}}'>select all</span>)</b><div style='padding:5px;border:1px dotted #595;width:100%;height:auto;max-height:300px;overflow:auto'><pre id='monitorTextId'>" << app.GetEndpoint().GetMonitorText() << "</pre></div>";
+  EndPage(shtml,app.GetCopyrightText());
+  { PStringStream message; PTime now; message
+      << "HTTP/1.1 200 OK\r\n"
+      << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
+      << "Server: OpenMCU.ru\r\n"
+      << "MIME-Version: 1.0\r\n"
+      << "Cache-Control: no-cache, must-revalidate\r\n"
+      << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
+      << "Content-Type: text/html;charset=utf-8\r\n"
+      << "Content-Length: " << shtml.GetLength() << "\r\n"
+      << "Connection: Close\r\n"
+      << "\r\n";  //that's the last time we need to type \r\n instead of just \n
+    server.Write((const char*)message,message.GetLength());
+  }
+  server.Write((const char*)shtml,shtml.GetLength());
+  server.flush();
   return TRUE;
 }
 

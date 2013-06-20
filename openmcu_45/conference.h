@@ -506,7 +506,7 @@ class MCUVideoMixer
 #if USE_LIBJPEG
     PBYTEArray myjpeg;
     PINDEX jpegSize;
-    long jpegTime;
+    unsigned long jpegTime;
 #endif
     static void VideoSplitLines(void * dst,VideoMixPosition & vmp,unsigned int fw,unsigned int fh);
     virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
