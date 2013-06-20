@@ -476,7 +476,7 @@ void ConferenceFileMember::VideoEncoderCashThread(PThread &, INT)
      while(codec->GetCacheUsersNumber()==0) 
      {
       if(status == 1 )  
-       { status = 0; cout << "Down to sleep " << codec->formatString << "\n"; }
+       { status = 0; cout << "Down to sleep " << codec->formatString << "\n"; totalVideoFramesSent=0; }
       PThread::Sleep(1000); 
      }
      if(status == 0 )  
@@ -484,6 +484,7 @@ void ConferenceFileMember::VideoEncoderCashThread(PThread &, INT)
       status = 1; 
       cout << "Wake up " << codec->formatString << "\n"; 
       con->RestartGrabber();
+      firstFrameSendTime=PTime();
      }
      codec->Read(NULL,length,frame);
     }
