@@ -1760,10 +1760,13 @@ PString OpenMCUH323EndPoint::GetMonitorText()
     Conference::VideoMixerRecord * vmr = conference.videoMixerList;
     while (vmr!=NULL)
     { output << "[Mixer " << vmr->id << "]\n";
-      int n=vmr->mixer->GetPositionSet();
+      MCUSimpleVideoMixer * mixer = (MCUSimpleVideoMixer*) vmr->mixer;
+      int n=mixer->GetPositionSet();
       output << "  Layout ID: "       << OpenMCU::vmcfg.vmconf[n].splitcfg.Id << "\n"
-             << "  Layout capacity: " << OpenMCU::vmcfg.vmconf[n].splitcfg.vidnum << "\n";
-      MCUVideoMixer::VideoMixPosition *r=vmr->mixer->vmpList->next;
+             << "  Layout capacity: " << OpenMCU::vmcfg.vmconf[n].splitcfg.vidnum << "\n"
+             << mixer->GetFrameStoreMonitorList();
+      
+      MCUVideoMixer::VideoMixPosition *r=mixer->vmpList->next;
       while(r!=NULL)
       {
         output << "  [Position " << r->n << "]\n"

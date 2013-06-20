@@ -1691,7 +1691,8 @@ void * ConferenceMember::OnExternalReadVideo(ConferenceMemberId id, int width, i
   if(found)
   MCUVideoMixer::ResizeYUV420P(nearestFs.data.GetPointer(), destFs.data.GetPointer(), nearestFs.width, nearestFs.height, width, height);
   else
-  OpenMCU::Current().GetPreMediaFrame(destFs.data.GetPointer(), width, height, bytesReturned);
+//  OpenMCU::Current().GetPreMediaFrame(destFs.data.GetPointer(), width, height, bytesReturned);
+  MCUVideoMixer::FillYUVFrame(destFs.data.GetPointer(), 0, 0, 0, width, height);
   destFs.valid = TRUE;
 
   return destFs.data.GetPointer();

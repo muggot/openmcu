@@ -111,12 +111,12 @@ class VideoFrameStoreList {
       public:
         FrameStore(int _w, int _h)
           : valid(FALSE), width(_w), height(_h)
-        { valid = FALSE; used=300; PAssert(_w != 0 && _h != 0, "Cannot create zero size framestore"); data.SetSize(_w * _h * 3 / 2); }
+        { valid = FALSE; PAssert(_w != 0 && _h != 0, "Cannot create zero size framestore"); data.SetSize(_w * _h * 3 / 2); }
 
       BOOL valid;
       int width;
       int height;
-      int used;
+      PTime lastRead;
       PBYTEArray data;
     };
 
@@ -405,6 +405,7 @@ class MCUVideoMixer
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount) = 0;
 
     virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount) = 0;
+    virtual PString GetFrameStoreMonitorList() = 0;
 //    virtual void WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
 //    virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
 //    virtual void WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
@@ -570,6 +571,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
       if(mask&_IMGST2)if(s>imageStore2_size){imageStore2.SetSize(s);imageStore2_size=s;}
      }
     virtual BOOL ReadMixedFrame(void * buffer, int width, int height, PINDEX & amount);
+    virtual PString GetFrameStoreMonitorList();
   protected:
     virtual void CalcVideoSplitSize(unsigned int imageCount, int & subImageWidth, int & subImageHeight, int & cols, int & rows);
     virtual void MyCalcVideoSplitSize(unsigned int imageCount, int *subImageWidth, int *subImageHeight, int *cols, int *rows);

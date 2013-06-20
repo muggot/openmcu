@@ -2922,7 +2922,7 @@ BOOL MCUSimpleVideoMixer::ReadFrame(ConferenceMember &, void * buffer, int width
       if (!OpenMCU::Current().GetPreMediaFrame(fs.data.GetPointer(), width, height, amount))
         FillYUVFrame(fs.data.GetPointer(), 0, 0, 0, width, height);
       fs.valid = TRUE;
-      fs.used = 300;
+      fs.lastRead = PTime();
     }
     memcpy(buffer, fs.data.GetPointer(), amount);
   }
@@ -3000,12 +3000,12 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
 */
   if (!Fs.valid) 
   {
-   if (!OpenMCU::Current().GetPreMediaFrame(Fs.data.GetPointer(), width, height, amount))
-        MCUVideoMixer::FillYUVFrame(Fs.data.GetPointer(), 0, 0, 0, width, height);
+//   if (!OpenMCU::Current().GetPreMediaFrame(Fs.data.GetPointer(), width, height, amount))
+    MCUVideoMixer::FillYUVFrame(Fs.data.GetPointer(), 0, 0, 0, width, height);
     Fs.valid = TRUE;
   }
   memcpy(buffer, Fs.data.GetPointer(), amount);
-  Fs.used=300;
+  Fs.lastRead=PTime();
 
   return TRUE;
 }
@@ -3995,33 +3995,40 @@ void MCUSimpleVideoMixer::MyRemoveAllVideoSource()
 
 void MCUSimpleVideoMixer::NullAllFrameStores(){
   PWaitAndSignal m(mutex);
-  VideoFrameStoreList::VideoFrameStoreListMapType::iterator r; // trying write to all using frames
-  for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++){
-    VideoFrameStoreList::FrameStore & vf = *(r->second);
-//    if(vf.used<=0) continue;
+  VideoFrameStoreList::VideoFrameStoreListMapType::iterator r;
+  PTime inactiveSign; inactiveSign-=60000;
+  for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++)
+  { VideoFrameStoreList::FrameStore & vf = *(r->second);
+    if(vf.lastRead<inactiveSign)
+    { delete r->second; r->second=NULL;
+      frameStores.videoFrameStoreList.erase(frameStores.WidthHeightToKey(vf.width, vf.height));
+      continue;
+    }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
-    vf.used--; //PINDEX amount=vf.width*vf.height*3/2;
-//    if (!OpenMCU::Current().GetPreMediaFrame(vf.data.GetPointer(), vf.width, vf.height, amount))
-      FillYUVFrame(vf.data.GetPointer(), 0, 0, 0, vf.width, vf.height);
+    FillYUVFrame(vf.data.GetPointer(), 0, 0, 0, vf.width, vf.height);
     vf.valid=1;
   }
 }
 
 void MCUSimpleVideoMixer::NullRectangle(int x, int y, int w, int h){
   PWaitAndSignal m(mutex);
-  VideoFrameStoreList::VideoFrameStoreListMapType::iterator r; // trying write to all using frames
-  for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++){
-    VideoFrameStoreList::FrameStore & vf = *(r->second);
-//    if(vf.used<=0) continue;
+  VideoFrameStoreList::VideoFrameStoreListMapType::iterator r;
+  PTime inactiveSign; inactiveSign-=60000;
+  for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++)
+  { VideoFrameStoreList::FrameStore & vf = *(r->second);
+    if(vf.lastRead<inactiveSign)
+    { delete r->second; r->second=NULL;
+      frameStores.videoFrameStoreList.erase(frameStores.WidthHeightToKey(vf.width, vf.height));
+      continue;
+    }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
-    vf.used--;
     int pw=w*vf.width/CIF4_WIDTH; // pixel w&h of vmp-->fs
     int ph=h*vf.height/CIF4_HEIGHT;
     if(pw<2 || ph<2) continue; //PINDEX amount=pw*ph*3/2;
     imageStores_operational_size(pw,ph,_IMGST);
     const void *ist = imageStore.GetPointer();
 //    if (!OpenMCU::Current().GetPreMediaFrame(imageStore.GetPointer(), pw, ph, amount))
-      FillYUVFrame(imageStore.GetPointer(), 0, 0, 0, pw, ph);
+    FillYUVFrame(imageStore.GetPointer(), 0, 0, 0, pw, ph);
     int px=x*vf.width/CIF4_WIDTH; // pixel x&y of vmp-->fs
     int py=y*vf.height/CIF4_HEIGHT;
     CopyRectIntoFrame(ist,vf.data.GetPointer(),px,py,pw,ph,vf.width,vf.height);
@@ -4035,12 +4042,15 @@ void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const v
   VMPCfgOptions & vmpcfg=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
   PWaitAndSignal m(mutex);
   VideoFrameStoreList::VideoFrameStoreListMapType::iterator r; // trying write to all using frames
+  PTime inactiveSign; inactiveSign-=60000;
   for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++){
     VideoFrameStoreList::FrameStore & vf = *(r->second);
-    if(vf.used<=0) continue;
+    if(vf.lastRead<inactiveSign)
+    { delete r->second; r->second=NULL;
+      frameStores.videoFrameStoreList.erase(frameStores.WidthHeightToKey(vf.width, vf.height));
+      continue;
+    }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
-
-    vf.used--;
 
 #if USE_FREETYPE
     // printing subtitles in source frame buffer (fast):
@@ -4092,497 +4102,23 @@ void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const v
   }
 }
 
-/*
-void MCUSimpleVideoMixer::WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount)
-{
-  PWaitAndSignal m(mutex);
-
-  VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
-  VideoFrameStoreList::FrameStore & cif4Fs = frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT);
-  VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
-  
-  if(cif16Fs.used<=0 && cif4Fs.used<=0 && cifFs.used<=0) return;
-  if(cif16Fs.used>0) cif16Fs.used--;
-  if(cif4Fs.used>0) cif4Fs.used--;
-  if(cifFs.used>0) cifFs.used--;
-
-  if(!(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask&32)) Print_Subtitles(vmp,(void *)buffer,CIF16_WIDTH,CIF16_HEIGHT,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask);
-
-  const void *ist = imageStore.GetPointer();
-  if(vmp.width==CIF4_WIDTH && vmp.height==CIF4_HEIGHT) //1x1
-  {
-   ist = buffer;
-  }
-  else if(vmp.width==CIF_WIDTH && vmp.height==CIF4_HEIGHT) //2x1
-  {
-   CopyRectFromFrame((const BYTE *)buffer,imageStore.GetPointer(),CIF_WIDTH,0,CIF4_WIDTH,CIF16_HEIGHT,CIF16_WIDTH,CIF16_HEIGHT);
-  }
-  else if(vmp.width==CIF_WIDTH && vmp.height==CIF_HEIGHT) //2x2
-  {
-   ConvertCIF16ToCIF4((const BYTE *)buffer,imageStore.GetPointer());
-  }
-  else if(vmp.width==Q3CIF4_WIDTH && vmp.height==Q3CIF4_HEIGHT) //1+5
-  {
-   ConvertCIF16ToQ3CIF16((const BYTE *)buffer,imageStore.GetPointer());
-  }
-  else if(vmp.width==Q3CIF_WIDTH && vmp.height==Q3CIF_HEIGHT) //3x3
-  {
-   ConvertCIF16ToQ3CIF4((const BYTE *)buffer,imageStore.GetPointer());
-  }
-  else if(vmp.width==QCIF_WIDTH && vmp.height==QCIF_HEIGHT) //4x4
-  {
-   ConvertCIF16ToCIF((const BYTE *)buffer,imageStore.GetPointer());
-  }
-  else if(vmp.width==TQCIF_WIDTH && vmp.height==TQCIF_HEIGHT) //1+7
-  {
-   ConvertCIF16ToTCIF((const BYTE *)buffer,imageStore.GetPointer());
-  }
-  else// if(vmp.width!=CIF4_WIDTH || vmp.height!=CIF4_HEIGHT)
-  {
-    if(vmp.width*CIF16_HEIGHT<vmp.height*CIF16_WIDTH){
-      ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore1.GetPointer(),CIF16_WIDTH,CIF16_HEIGHT,(vmp.height<<1)*11/9,vmp.height<<1);
-      CopyRectFromFrame(imageStore1.GetPointer(),imageStore.GetPointer(),((vmp.height<<1)*11/9-(vmp.width<<1))/2,0,vmp.width<<1,vmp.height<<1,(vmp.height<<1)*11/9,vmp.height<<1);
-    }
-    else if(vmp.width*CIF16_HEIGHT>vmp.height*CIF16_WIDTH){
-      ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore1.GetPointer(),CIF16_WIDTH,CIF16_HEIGHT,vmp.width<<1,(vmp.width<<1)*9/11);
-      CopyRectFromFrame(imageStore1.GetPointer(),imageStore.GetPointer(),0,((vmp.width<<1)*9/11-(vmp.height<<1))/2,vmp.width<<1,vmp.height<<1,vmp.width<<1,(vmp.width<<1)*9/11);
-    }
-    else { // fit. scale
-      ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore.GetPointer(),CIF16_WIDTH,CIF16_HEIGHT,vmp.width<<1,vmp.height<<1);
-    }
-  }
-
-  if(cif16Fs.used>0)
-  {
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist,vmp,vmp.width*2,vmp.height*2);
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
-    {
-       CopyRFromRIntoR(ist,cif16Fs.data.GetPointer(),
-        vmp.xpos*2, vmp.ypos*2, vmp.width*2, vmp.height*2,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx << 1,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy << 1,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width << 1,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height << 1,
-        CIF16_WIDTH,
-        CIF16_HEIGHT,
-        vmp.width*2, vmp.height*2
-       );
-    }
-  }
-
-  if(cif4Fs.used>0 || cifFs.used>0) Convert2To1(ist,imageStore1.GetPointer(),vmp.width*2,vmp.height*2);
-  if(cif4Fs.used>0)
-  {
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) {
-      void *ist4=imageStore1.GetPointer();
-      VideoSplitLines((void *)ist4,vmp,vmp.width,vmp.height);
-    }
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
-    {
-       CopyRFromRIntoR(imageStore1.GetPointer(),cif4Fs.data.GetPointer(),
-        vmp.xpos, vmp.ypos, vmp.width, vmp.height,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height,
-        CIF4_WIDTH,
-        CIF4_HEIGHT,
-        vmp.width, vmp.height
-       );
-    }
-  }
-
-//  if(cifFs.used>0) Convert2To1(imageStore1.GetPointer(),imageStore.GetPointer(),vmp.width,vmp.height);
-  if(cifFs.used>0) {
-    if(!(vmp.width&3))Convert2To1(imageStore1.GetPointer(),imageStore.GetPointer(),vmp.width,vmp.height);
-    else ConvertFRAMEToCUSTOM_FRAME(imageStore1.GetPointer(),imageStore.GetPointer(),vmp.width,vmp.height,(vmp.width+1)/2,(vmp.height+1)/2);
-  }
-
-  if(cifFs.used>0)
-  {
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist,vmp,(vmp.width+1)/2,(vmp.height+1)/2);
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
-    {
-       CopyRFromRIntoR(imageStore.GetPointer(),cifFs.data.GetPointer(),
-        (vmp.xpos+1)/2, (vmp.ypos+1)/2, (vmp.width+1)/2, (vmp.height+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height+1)/2,
-        CIF_WIDTH,
-        CIF_HEIGHT,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx+OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy+OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height+1)/2
-       );
-    }
-  }
-
-  frameStores.InvalidateExcept(CIF16_WIDTH, CIF16_HEIGHT);
-  cif4Fs.valid=1; cifFs.valid=1;
-  
-  return;
-}
-
-void MCUSimpleVideoMixer::WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount)
-{
-  PWaitAndSignal m(mutex);
-
-  VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
-  VideoFrameStoreList::FrameStore & cif4Fs = frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT);
-  VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
-  
-  if(cif16Fs.used<=0 && cif4Fs.used<=0 && cifFs.used<=0) return;
-  if(cif16Fs.used>0) cif16Fs.used--;
-  if(cif4Fs.used>0) cif4Fs.used--;
-  if(cifFs.used>0) cifFs.used--;
-
-  const void *ist16 = imageStore1.GetPointer();
-  const void *ist4 = imageStore.GetPointer();
-  const void *ist = imageStore1.GetPointer();
-
-  if(!(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask&32)) Print_Subtitles(vmp,(void *)buffer,CIF4_WIDTH,CIF4_HEIGHT,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask);
-
-  if(vmp.width==CIF4_WIDTH && vmp.height==CIF4_HEIGHT) //1x1
-  {
-   ist16 = imageStore.GetPointer();
-   ist4 = buffer;
-   if(cif16Fs.used>0) Convert1To2((const BYTE *)buffer,imageStore.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT);
-  }
-  else if(vmp.width==CIF_WIDTH && vmp.height==CIF4_HEIGHT) //2x1
-  {
-   if(cif16Fs.used>0) Convert1To2((const BYTE *)buffer,imageStore.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT);
-   if(cif16Fs.used>0) CopyRectFromFrame(imageStore.GetPointer(),imageStore1.GetPointer(),CIF_WIDTH,0,CIF4_WIDTH,CIF16_HEIGHT,CIF16_WIDTH,CIF16_HEIGHT);
-   if(cif4Fs.used>0) CopyRectFromFrame((const BYTE *)buffer,imageStore.GetPointer(),QCIF_WIDTH,0,CIF_WIDTH,CIF4_HEIGHT,CIF4_WIDTH,CIF4_HEIGHT);
-  }
-  else if(vmp.width==CIF_WIDTH && vmp.height==CIF_HEIGHT) //2x2
-  {
-   ist16 = buffer;
-   ist4 = imageStore.GetPointer();
-   if(cif4Fs.used>0 || cifFs.used>0) Convert2To1((const BYTE *)buffer,imageStore.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT);
-  }
-  else if(vmp.width==Q3CIF4_WIDTH && vmp.height==Q3CIF4_HEIGHT) //1+5
-  {
-   if(cif16Fs.used>0) Convert1To2((const BYTE *)buffer,imageStore.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT);
-   if(cif16Fs.used>0) ConvertCIF16ToQ3CIF16(imageStore.GetPointer(),imageStore1.GetPointer());
-   if(cif4Fs.used>0 || cifFs.used>0) ConvertCIF4ToQ3CIF4((const BYTE *)buffer,imageStore.GetPointer());
-  }
-  else if(vmp.width==Q3CIF_WIDTH && vmp.height==Q3CIF_HEIGHT) //3x3
-  {
-   if(cif16Fs.used>0) ConvertCIF4ToQ3CIF4((const BYTE *)buffer,imageStore1.GetPointer());
-   if(cif4Fs.used>0 || cifFs.used>0) ConvertCIF4ToQ3CIF((const BYTE *)buffer,imageStore.GetPointer());
-  }
-  else if(vmp.width==QCIF_WIDTH && vmp.height==QCIF_HEIGHT) //4x4
-  {
-   if(cif16Fs.used>0) ConvertCIF4ToCIF((const BYTE *)buffer,imageStore1.GetPointer());
-   if(cif4Fs.used>0 || cifFs.used>0) ConvertCIF4ToQCIF((const BYTE *)buffer,imageStore.GetPointer());
-  }
-  else if(vmp.width==TQCIF_WIDTH && vmp.height==TQCIF_HEIGHT) //1+7
-  {
-   if(cif16Fs.used>0) ConvertCIF4ToTCIF((const BYTE *)buffer,imageStore1.GetPointer());
-   if(cif4Fs.used>0 || cifFs.used>0) ConvertCIF4ToTQCIF((const BYTE *)buffer,imageStore.GetPointer());
-  }
-  else// if(vmp.width!=CIF4_WIDTH || vmp.height!=CIF4_HEIGHT)
-  {
-    if(vmp.width*CIF4_HEIGHT<vmp.height*CIF4_WIDTH){
-      if(cif16Fs.used>0){
-        ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore2.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT,(vmp.height<<1)*11/9,vmp.height<<1);
-        CopyRectFromFrame(imageStore2.GetPointer(),imageStore1.GetPointer(),((vmp.height<<1)*11/9-(vmp.width<<1))/2,0,vmp.width<<1,vmp.height<<1,(vmp.height<<1)*11/9,vmp.height<<1);
-      }
-      if(cif4Fs.used || cifFs.used){
-        ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore2.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT,vmp.height*11/9,vmp.height);
-        CopyRectFromFrame(imageStore2.GetPointer(),imageStore.GetPointer(),(vmp.height*11/9-vmp.width)/2,0,vmp.width,vmp.height,vmp.height*11/9,vmp.height);
-      }
-    }
-    else if(vmp.width*CIF4_HEIGHT>vmp.height*CIF4_WIDTH){
-      if(cif16Fs.used>0){
-        ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore2.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT,vmp.width<<1,(vmp.width<<1)*9/11);
-        CopyRectFromFrame(imageStore2.GetPointer(),imageStore1.GetPointer(),0,((vmp.width<<1)*9/11-(vmp.height<<1))/2,vmp.width<<1,vmp.height<<1,vmp.width<<1,(vmp.width<<1)*9/11);
-      }
-      if(cif4Fs.used || cifFs.used){
-        ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore2.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT,vmp.width,vmp.width*9/11);
-        CopyRectFromFrame(imageStore2.GetPointer(),imageStore.GetPointer(),0,(vmp.width*9/11-vmp.height)/2,vmp.width,vmp.height,vmp.width,vmp.width*9/11);
-      }
-    }
-    else { // fit. scale
-      if(cif16Fs.used>0) ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore1.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT,vmp.width<<1,vmp.height<<1);
-      if(cif4Fs.used || cifFs.used) ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore.GetPointer(),CIF4_WIDTH,CIF4_HEIGHT,vmp.width,vmp.height);
-    }
-  }
-
-  if(cif16Fs.used>0)
-  {
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist16,vmp,vmp.width*2,vmp.height*2);
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
-    {
-       CopyRFromRIntoR(ist16,cif16Fs.data.GetPointer(),
-        vmp.xpos*2, vmp.ypos*2, vmp.width*2, vmp.height*2,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx << 1,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy << 1,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width << 1,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height << 1,
-        CIF16_WIDTH,
-        CIF16_HEIGHT,
-        vmp.width*2,vmp.height*2
-       );
-    }
-  }
-
-  if(cif4Fs.used>0)
-  {
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist4,vmp,vmp.width,vmp.height);
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
-    {
-       CopyRFromRIntoR(ist4,cif4Fs.data.GetPointer(),
-        vmp.xpos, vmp.ypos, vmp.width, vmp.height,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height,
-        CIF4_WIDTH,
-        CIF4_HEIGHT,
-        vmp.width*2,vmp.height*2
-       );
-    }
-  }
-
-  if(cifFs.used>0) {
-    if(!(vmp.width&3))Convert2To1(ist4,imageStore1.GetPointer(),vmp.width,vmp.height);
-    else ConvertFRAMEToCUSTOM_FRAME(ist4,imageStore1.GetPointer(),vmp.width,vmp.height,(vmp.width+1)/2,(vmp.height+1)/2);
-  }
-
-  if(cifFs.used>0)
-  {
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist,vmp,(vmp.width+1)/2,(vmp.height+1)/2);
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
-    {
-       CopyRFromRIntoR(ist,cifFs.data.GetPointer(),
-        (vmp.xpos+1)/2, (vmp.ypos+1)/2, (vmp.width+1)/2, (vmp.height+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height+1)/2,
-        CIF_WIDTH,
-        CIF_HEIGHT,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx+OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy+OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height+1)/2
-       );
-    }
-  }
-
-  frameStores.InvalidateExcept(CIF16_WIDTH, CIF16_HEIGHT);
-  cif4Fs.valid=1; cifFs.valid=1;
-  
-  return;
-}
-
-void MCUSimpleVideoMixer::WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount)
-{
-  PWaitAndSignal m(mutex);
-
-  VideoFrameStoreList::FrameStore & cif16Fs = frameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
-  VideoFrameStoreList::FrameStore & cif4Fs = frameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT);
-  VideoFrameStoreList::FrameStore & cifFs = frameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
-  
-  if(cif16Fs.used<=0 && cif4Fs.used<=0 && cifFs.used<=0) return;
-  if(cif16Fs.used>0) cif16Fs.used--;
-  if(cif4Fs.used>0) cif4Fs.used--;
-  if(cifFs.used>0) cifFs.used--;
-
-  const void *ist16 = imageStore1.GetPointer();
-  const void *ist4 = imageStore.GetPointer();
-  const void *ist = imageStore1.GetPointer();
-
-  if(!(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask&32)) Print_Subtitles(vmp,(void *)buffer,CIF_WIDTH,CIF_HEIGHT,OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].label_mask);
-
-  if(vmp.width==CIF4_WIDTH && vmp.height==CIF4_HEIGHT) //1x1
-  {
-   ist = buffer;
-   if(cif16Fs.used>0 || cif4Fs.used>0) Convert1To2((const BYTE *)buffer,imageStore.GetPointer(),CIF_WIDTH,CIF_HEIGHT);
-  }
-  else if(vmp.width==CIF_WIDTH && vmp.height==CIF4_HEIGHT) //2x1
-  {
-   if(cif16Fs.used>0 || cif4Fs.used>0) CopyRectFromFrame((const BYTE *)buffer,imageStore1.GetPointer(),SQCIF_WIDTH,0,QCIF_WIDTH,CIF_HEIGHT,CIF_WIDTH,CIF_HEIGHT);
-   if(cif16Fs.used>0 || cif4Fs.used>0) Convert1To2(imageStore1.GetPointer(),imageStore.GetPointer(),QCIF_WIDTH,CIF_HEIGHT);
-   CopyRectFromFrame((const BYTE *)buffer,imageStore1.GetPointer(),SQCIF_WIDTH,0,QCIF_WIDTH,CIF_HEIGHT,CIF_WIDTH,CIF_HEIGHT);
-  }
-  else if(vmp.width==CIF_WIDTH && vmp.height==CIF_HEIGHT) //2x2
-  {
-   ist4 = buffer;
-   ist = imageStore.GetPointer();
-   if(cifFs.used>0) Convert2To1((const BYTE *)buffer,imageStore.GetPointer(),CIF_WIDTH,CIF_HEIGHT);
-  }
-  else if(vmp.width==Q3CIF4_WIDTH && vmp.height==Q3CIF4_HEIGHT) //1+5
-  {
-   if(cif4Fs.used>0 || cif16Fs.used>0) Convert1To2((const BYTE *)buffer,imageStore1.GetPointer(),CIF_WIDTH,CIF_HEIGHT);
-   if(cif4Fs.used>0 || cif16Fs.used>0) ConvertCIF4ToQ3CIF4(imageStore1.GetPointer(),imageStore.GetPointer());
-   if(cifFs.used>0) ConvertCIFToQ3CIF((const BYTE *)buffer,imageStore1.GetPointer());
-  }
-  else if(vmp.width==Q3CIF_WIDTH && vmp.height==Q3CIF_HEIGHT) //3x3
-  {
-   if(cif4Fs.used>0 || cif16Fs.used>0) ConvertCIFToQ3CIF((const BYTE *)buffer,imageStore.GetPointer());
-   if(cifFs.used>0) ConvertCIFToSQ3CIF((const BYTE *)buffer,imageStore1.GetPointer());
-  }
-  else if(vmp.width==QCIF_WIDTH && vmp.height==QCIF_HEIGHT) //4x4
-  {
-   ist16 = buffer;
-   if(cif4Fs.used>0 || cif16Fs.used>0) ConvertCIFToQCIF((const BYTE *)buffer,imageStore.GetPointer());
-   if(cifFs.used>0) ConvertCIFToSQCIF((const BYTE *)buffer,imageStore1.GetPointer());
-  }
-  else if(vmp.width==SQ5CIF_WIDTH && vmp.height==SQ5CIF_HEIGHT) //5x5
-  {
-   if(cif4Fs.used>0 || cif16Fs.used>0) ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore.GetPointer(),CIF_WIDTH,CIF_HEIGHT,SQ5CIF_WIDTH,SQ5CIF_HEIGHT);
-   if(cifFs.used>0) ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore1.GetPointer(),CIF_WIDTH,CIF_HEIGHT,SQ5CIF_WIDTH/2,SQ5CIF_HEIGHT/2);
-  }
-  else if(vmp.width==SQ3CIF_WIDTH && vmp.height==SQ3CIF_HEIGHT) //6x6
-  {
-   if(cif4Fs.used>0 || cif16Fs.used>0) ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore.GetPointer(),CIF_WIDTH,CIF_HEIGHT,SQ3CIF_WIDTH,SQ3CIF_HEIGHT);
-   if(cifFs.used>0) ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore1.GetPointer(),CIF_WIDTH,CIF_HEIGHT,SQ3CIF_WIDTH/2,SQ3CIF_HEIGHT/2);
-  }
-  else if(vmp.width==TQCIF_WIDTH && vmp.height==TQCIF_HEIGHT) //1+7
-  {
-   if(cif4Fs.used>0 || cif16Fs.used>0) ConvertCIFToTQCIF((const BYTE *)buffer,imageStore.GetPointer());
-   if(cifFs.used>0) ConvertCIFToTSQCIF((const BYTE *)buffer,imageStore1.GetPointer());
-  }
-  else// if(vmp.width!=CIF_WIDTH || vmp.height!=CIF_HEIGHT)
-  {
-    if(vmp.width*CIF_HEIGHT<vmp.height*CIF_WIDTH){
-      if(cif16Fs.used || cif4Fs.used){
-        ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore2.GetPointer(),CIF_WIDTH,CIF_HEIGHT,vmp.height*11/9,vmp.height);
-        CopyRectFromFrame(imageStore2.GetPointer(),imageStore.GetPointer(),(vmp.height*11/9-vmp.width)/2,0,vmp.width,vmp.height,vmp.height*11/9,vmp.height);
-      }
-      if(cifFs.used){
-        ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore2.GetPointer(),CIF_WIDTH,CIF_HEIGHT,(vmp.height*11/9+1)/2,(vmp.height+1)/2);
-        CopyRectFromFrame(imageStore2.GetPointer(),imageStore1.GetPointer(),(vmp.height*11/9/2-vmp.width/2+1)/2,0,(vmp.width+1)/2,(vmp.height+1)/2,(vmp.height*11/9+1)/2,(vmp.height+1)/2);
-      }
-    }
-    else if(vmp.width*CIF_HEIGHT>vmp.height*CIF_WIDTH){
-      if(cif16Fs.used || cif4Fs.used){
-        ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore2.GetPointer(),CIF_WIDTH,CIF_HEIGHT,vmp.width,vmp.width*9/11);
-        CopyRectFromFrame(imageStore2.GetPointer(),imageStore.GetPointer(),0,(vmp.width*9/11-vmp.height)/2,vmp.width,vmp.height,vmp.width,vmp.width*9/11);
-      }
-      if(cifFs.used){
-        ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore2.GetPointer(),CIF_WIDTH,CIF_HEIGHT,vmp.width/2,vmp.width*9/11/2);
-        CopyRectFromFrame(imageStore2.GetPointer(),imageStore1.GetPointer(),0,(vmp.width*9/11/2-vmp.height/2)/2,vmp.width/2,vmp.height/2,vmp.width/2,vmp.width*9/11/2);
-      }
-    }
-    else { // fit. scale
-      if(cif16Fs.used || cif4Fs.used) ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore.GetPointer(),CIF_WIDTH,CIF_HEIGHT,vmp.width,vmp.height);
-      if(cifFs.used) ConvertFRAMEToCUSTOM_FRAME((const BYTE *)buffer,imageStore1.GetPointer(),CIF_WIDTH,CIF_HEIGHT,vmp.width/2,vmp.height/2);
-    }
-  }
-
-  if(cifFs.used>0)
-  {
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines((void *)ist,vmp,(vmp.width+1)/2,(vmp.height+1)/2);
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
-    {
-       CopyRFromRIntoR(ist,cifFs.data.GetPointer(),
-        (vmp.xpos+1)/2, (vmp.ypos+1)/2, (vmp.width+1)/2, (vmp.height+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height+1)/2,
-        CIF_WIDTH,
-        CIF_HEIGHT,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx+OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width+1)/2,
-        (OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy+OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height+1)/2
-       );
-    }
-  }
-
-  if(cif4Fs.used>0)
-  {
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines(imageStore.GetPointer(),vmp,vmp.width,vmp.height);
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
-    {
-       CopyRFromRIntoR(ist4,cif4Fs.data.GetPointer(),
-        vmp.xpos, vmp.ypos, vmp.width, vmp.height,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height,
-        CIF4_WIDTH,
-        CIF4_HEIGHT,
-        vmp.width,vmp.height
-       );
-    }
-  }
-
-  if(cif16Fs.used>0 && (vmp.width!=QCIF_WIDTH || vmp.height!=QCIF_HEIGHT)) 
-    Convert1To2(ist4,imageStore1.GetPointer(),vmp.width,vmp.height);
-
-  if(cif16Fs.used>0)
-  {
-    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].border) VideoSplitLines(imageStore1.GetPointer(),vmp,vmp.width*2,vmp.height*2);
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blks;i++)
-    {
-       CopyRFromRIntoR(ist16,cif16Fs.data.GetPointer(),
-        vmp.xpos << 1, vmp.ypos << 1, vmp.width << 1, vmp.height << 1,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posx << 1,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].posy << 1,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].width << 1,
-        OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n].blk[i].height << 1,
-        CIF16_WIDTH,
-        CIF16_HEIGHT,
-        vmp.width*2,vmp.height*2
-       );
-    }
-  }
-
-  frameStores.InvalidateExcept(CIF16_WIDTH, CIF16_HEIGHT);
-  cif4Fs.valid=1; cifFs.valid=1;
-  
-  return;
-}
-*/
-
 BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount)
 {
-WriteArbitrarySubFrame(vmp,buffer,width,height,amount); return TRUE; /*
- if(width==CIF_WIDTH && height==CIF_HEIGHT) 
-  { WriteCIFSubFrame(vmp,buffer,amount); return TRUE; }
- if(width==CIF4_WIDTH && height==CIF4_HEIGHT)
-  { WriteCIF4SubFrame(vmp,buffer,amount); return TRUE; }
- if(width==CIF16_WIDTH && height==CIF16_HEIGHT)
-  { WriteCIF16SubFrame(vmp,buffer,amount); return TRUE; }
+  WriteArbitrarySubFrame(vmp,buffer,width,height,amount);
+  return TRUE;
+}
 
- int nw,nh;
-  
- if(width*CIF_HEIGHT == height*CIF_WIDTH) { nw=width; nh=height; }
- else if(width*CIF_HEIGHT > height*CIF_WIDTH) // needs h cut
-  { nw=(height*CIF_WIDTH)/CIF_HEIGHT; nh=height; }
- else { nw=width; nh=(width*CIF_HEIGHT)/CIF_WIDTH; }
-
- PWaitAndSignal m(mutex);
-
-//added by kay27, testing needed:
- if(width*vmp.height<height*vmp.width)
- {
-  nw=width; nh=(width*CIF_HEIGHT)/CIF_WIDTH;
-  FillYUVRect(imageStore.GetPointer(),nw,nh,0x80,0x80,0x80,0,0,nw,(nh-height)>>1);
-  CopyRectIntoFrame((const BYTE *)buffer,imageStore.GetPointer(),0,(nh-height)>>1,width,height,nw,nh);
-  FillYUVRect(imageStore.GetPointer(),nw,nh,0x80,0x80,0x80,0,nh-((nh-height)>>1),nw,(nh-height)>>1);
- } else
-//end of addition by kay27//
- CopyRectFromFrame((const BYTE *)buffer,imageStore.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
-
- if(nw <= CIF_WIDTH*1.5)
- {
-  ConvertFRAMEToCUSTOM_FRAME(imageStore.GetPointer(), imageStore2.GetPointer(), nw, nh, CIF_WIDTH, CIF_HEIGHT);
-  WriteCIFSubFrame(vmp,imageStore2.GetPointer(),CIF_SIZE); return TRUE;
- }
- else if(nw <= CIF4_WIDTH+100)
- {
-  ConvertFRAMEToCUSTOM_FRAME(imageStore.GetPointer(), imageStore2.GetPointer(), nw, nh, CIF4_WIDTH, CIF4_HEIGHT);
-  WriteCIF4SubFrame(vmp,imageStore2.GetPointer(),CIF4_SIZE); return TRUE;
- }
- else
- {
-  ConvertFRAMEToCUSTOM_FRAME(imageStore.GetPointer(), imageStore2.GetPointer(), nw, nh, CIF16_WIDTH, CIF16_HEIGHT);
-  WriteCIF16SubFrame(vmp,imageStore2.GetPointer(),CIF16_SIZE); return TRUE;
- } 
-
-  return TRUE; */
+    
+PString MCUSimpleVideoMixer::GetFrameStoreMonitorList()
+{
+  PStringStream s;
+  for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r = frameStores.videoFrameStoreList.begin();
+    r != frameStores.videoFrameStoreList.end(); r++)
+  {
+    s << "  Frame store [" << r->second->width << "x" << r->second->height << "] "
+      << "last read time: " << r->second->lastRead << "\n";
+  }
+  return s;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
