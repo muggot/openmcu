@@ -1694,10 +1694,28 @@ PString PProcess::GetOSName()
             case 1 :
               return "XP";
           }
-          return "Server 2003";
+          if(info.wProductType!=VER_NT_WORKSTATION) return "Server 2003";
+          else return "XP Professional x64 Edition";
 
         case 6 :
-          return "Vista";
+          if(info.wProductType==VER_NT_WORKSTATION)
+          switch (info.dwMinorVersion) {
+            case 0 :
+              return "Vista";
+            case 1 :
+              return "7";
+            case 2 :
+              return "8";
+          }
+          else
+          switch (info.dwMinorVersion) {
+            case 0 :
+              return "Server 2008";
+            case 1 :
+              return "Server 2008 R2";
+            case 2 :
+              return "Server 2012";
+          }
       }
   }
   return "?";
