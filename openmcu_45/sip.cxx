@@ -497,12 +497,26 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
     { scap = 8; c.h323 = "G.711-ALaw-64k{sw}"; c.cap = H323Capability::Create("G.711-ALaw-64k{sw}"); }
 
 // by xak, http://openmcu.ru/forum/index.php?topic=410.0
+//       & http://openmcu.ru/forum/index.php?topic=410.msg4362#msg4362
    else if(c.payload == 9 &&
       tsCaps.GetStringsIndex("G.722-64k{sw}")!=P_MAX_INDEX) //G.722
     { scap = 9; c.h323 = "G.722-64k{sw}"; c.cap = H323Capability::Create("G.722-64k{sw}"); }
-   else if(c.payload == 100 &&
-      tsCaps.GetStringsIndex("iLBC-13k3{sw}")!=P_MAX_INDEX) //iLBC
-    { scap = 100; c.h323 = "iLBC-13k3{sw}"; c.cap = H323Capability::Create("iLBC-13k3{sw}"); }
+   else if(c.payload == 15 &&
+      tsCaps.GetStringsIndex("G.728-16k[e]")!=P_MAX_INDEX) //G.728
+    { scap = 15; c.h323 = "G.728-16k[e]"; c.cap = H323Capability::Create("G.728-16k[e]"); }
+   else if(c.payload == 18 &&
+      tsCaps.GetStringsIndex("G.729A-8k[e]{sw}")!=P_MAX_INDEX) //G.729A
+    { scap = 18; c.h323 = "G.729A-8k[e]{sw}"; c.cap = H323Capability::Create("G.729A-8k[e]{sw}"); }
+   else if(c.format.ToLower() == "ilbc" && c.parm == "mode=30;" &&
+      tsCaps.GetStringsIndex("iLBC-13k3{sw}")!=P_MAX_INDEX) //iLBC-13k3
+    { scap = c.payload; c.h323 = "iLBC-13k3{sw}"; c.cap = H323Capability::Create("iLBC-13k3{sw}"); }
+   else if(c.format.ToLower() == "ilbc" && c.parm == "mode=20;" &&
+      tsCaps.GetStringsIndex("iLBC-15k2{sw}")!=P_MAX_INDEX) //iLBC-15k2
+    { scap = c.payload; c.h323 = "iLBC-15k2{sw}"; c.cap = H323Capability::Create("iLBC-15k2{sw}"); }
+   else if(c.format.ToLower() == "silk" && c.clock == 16000 &&
+      tsCaps.GetStringsIndex("SILK_B40{sw}")!=P_MAX_INDEX) //SILK 16000
+    { scap = c.payload; c.h323 = "SILK_B40{sw}"; c.cap = H323Capability::Create("SILK_B40{sw}"); }
+//
 
   }
   else if(c.media == 1)
