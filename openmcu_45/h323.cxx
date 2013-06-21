@@ -498,7 +498,8 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
             << memberName << "</td>";
 
         OpenMCUH323Connection * conn = NULL;
-        H323Connection_ConferenceMember * connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
+        H323Connection_ConferenceMember * connMember = NULL;
+        if ((!cache)&&(memberName!="file recorder")) connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
         if (connMember != NULL) conn = (OpenMCUH323Connection *)FindConnectionWithLock(connMember->GetH323Token());
         PTime now;
 
@@ -1717,7 +1718,8 @@ PString OpenMCUH323EndPoint::GetMonitorText()
                << hdr << "Outgoing video mixer: " << member->GetVideoMixerNumber() << "\n"
                << hdr << "Duration: " << (PTime() - member->GetStartTime()) << "\n"
                << member->GetMonitorInfo(hdr);
-        H323Connection_ConferenceMember * connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
+        H323Connection_ConferenceMember * connMember = NULL;
+        if(!isFileMember) connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
         if(connMember!=NULL)
         { output << hdr << "H323 Token: " << connMember->GetH323Token() << "\n";
           OpenMCUH323Connection * conn = (OpenMCUH323Connection *)FindConnectionWithoutLock(connMember->GetH323Token());
@@ -1917,6 +1919,8 @@ NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, Conferen
   Conference::MemberList::const_iterator r;
   for (r = conference.GetMemberList().begin(); r != conference.GetMemberList().end(); r++) {
     ConferenceMember * mbr = r->second;
+    PString memberName=mbr->GetName();
+    if ((memberName!="cache")&&(memberName!="file recorder"))
     if (mbr != memberToIgnore) {
       H323Connection_ConferenceMember * h323Mbr = dynamic_cast<H323Connection_ConferenceMember *>(mbr);
       if (h323Mbr != NULL)

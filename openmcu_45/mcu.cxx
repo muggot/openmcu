@@ -571,11 +571,25 @@ void OpenMCU::LogMessage(const PString & str)
   logMutex.Wait();
 
   if (!logFile.IsOpen()) {
-    logFile.Open(logFilename, PFile::ReadWrite);
-    logFile.SetPosition(0, PFile::End);
+    if(!logFile.Open(logFilename, PFile::ReadWrite))
+    {
+      PTRACE(1,"OpenMCU\tCan not open log file: " << logFilename << "\n" << msg << flush);
+      logMutex.Signal();
+      return;
+    }
+    if(!logFile.SetPosition(0, PFile::End))
+    {
+      PTRACE(1,"OpenMCU\tCan not change log position, log file name: " << logFilename << "\n" << msg << flush);
+      logFile.Close();
+      logMutex.Signal();
+      return;
+    }
   }
 
-  logFile.WriteLine(msg);
+  if(!logFile.WriteLine(msg))
+  {
+    PTRACE(1,"OpenMCU\tCan not write to log file: " << logFilename << "\n" << msg << flush);
+  }
   logFile.Close();
   logMutex.Signal();
 }
