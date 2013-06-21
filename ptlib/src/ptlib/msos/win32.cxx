@@ -1664,9 +1664,9 @@ PString PProcess::GetOSClass()
 
 PString PProcess::GetOSName()
 {
-  OSVERSIONINFO info;
+  OSVERSIONINFOEX info;
   info.dwOSVersionInfoSize = sizeof(info);
-  GetVersionEx(&info);
+  GetVersionEx((OSVERSIONINFO*)&info);
   switch (info.dwPlatformId) {
     case VER_PLATFORM_WIN32s :
       return "32s";
