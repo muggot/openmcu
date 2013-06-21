@@ -497,7 +497,6 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
     { scap = 8; c.h323 = "G.711-ALaw-64k{sw}"; c.cap = H323Capability::Create("G.711-ALaw-64k{sw}"); }
 
 // by xak, http://openmcu.ru/forum/index.php?topic=410.0
-//       & http://openmcu.ru/forum/index.php?topic=410.msg4362#msg4362
    else if(c.payload == 9 &&
       tsCaps.GetStringsIndex("G.722-64k{sw}")!=P_MAX_INDEX) //G.722
     { scap = 9; c.h323 = "G.722-64k{sw}"; c.cap = H323Capability::Create("G.722-64k{sw}"); }
@@ -516,6 +515,9 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
    else if(c.format.ToLower() == "silk" && c.clock == 16000 &&
       tsCaps.GetStringsIndex("SILK_B40{sw}")!=P_MAX_INDEX) //SILK 16000
     { scap = c.payload; c.h323 = "SILK_B40{sw}"; c.cap = H323Capability::Create("SILK_B40{sw}"); }
+   else if(c.format.ToLower() == "silk" && c.clock == 24000 &&
+      tsCaps.GetStringsIndex("SILK_B40_24K{sw}")!=P_MAX_INDEX) //SILK 24000
+    { scap = c.payload; c.h323 = "SILK_B40_24K{sw}"; c.cap = H323Capability::Create("SILK_B40_24K{sw}"); }
 //
 
   }
