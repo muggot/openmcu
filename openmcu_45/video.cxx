@@ -386,7 +386,15 @@ void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer,
   }
   if (ft_error==FT_INITIAL_ERROR) { // Initialization
     PTRACE(3,"FreeType\tInitialization"); if ((ft_error = FT_Init_FreeType(&ft_library))) return;
+#ifdef TRUETYPE_FONT_DIR
+#  ifdef _WIN32
+    ft_error = FT_New_Face(ft_library,PString(TRUETYPE_FONT_DIR)+"\\"+OpenMCU::vmcfg.fontfile,0,&ft_face);
+#  else
+    ft_error = FT_New_Face(ft_library,PString(TRUETYPE_FONT_DIR)+"/"+OpenMCU::vmcfg.fontfile,0,&ft_face);
+#  endif
+#else
     ft_error = FT_New_Face(ft_library,OpenMCU::vmcfg.fontfile,0,&ft_face);
+#endif
     if (!ft_error){ ft_use_kerning=FT_HAS_KERNING(ft_face); PTRACE(3,"FreeType\tTruetype font " << OpenMCU::vmcfg.fontfile << " loaded with" << (ft_use_kerning?"":"out") << " kerning"); }
     else PTRACE(3,"FreeType\tCould not load truetype font: " << OpenMCU::vmcfg.fontfile);
   }

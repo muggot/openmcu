@@ -260,7 +260,15 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 //    PTrace::Initialise(6,"trace.txt");
     int TraceLevel=cfg.GetInteger(TraceLevelKey, 6);
     SetLogLevel((PSystemLog::Level)TraceLevel);
+#ifdef SERVER_LOGS
+#  ifdef _WIN32
+    PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"\\trace.txt");
+#  else
+    PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"/trace.txt");
+#  endif
+#else
     PTrace::Initialise(TraceLevel,"trace.txt");
+#endif
 
 /*  if (GetLogLevel() >= PSystemLog::Warning)
     PTrace::SetLevel(GetLogLevel()-PSystemLog::Warning);
@@ -295,7 +303,19 @@ BOOL OpenMCU::Initialise(const char * initMsg)
                                   "<td><td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Logging:</b><br><br>Log level: 1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug<br>Trace level: 0=No tracing ... 6=Very detailed<br>Event buffer size: 10...1000"));
 
   // default log file name
+#ifdef SERVER_LOGS
+#  ifdef _WIN32
+  { PString lfn = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
+    if(lfn.Find("\\")==P_MAX_INDEX) logFilename = PString(SERVER_LOGS)+"\\"+lfn; else logFilename = lfn;
+  }
+#  else
+  { PString lfn = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
+    if(lfn.Find("/")==P_MAX_INDEX) logFilename = PString(SERVER_LOGS)+"/"+lfn; else logFilename = lfn;
+  }
+#  endif
+#else
   logFilename = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
+#endif
   rsrc->Add(new PHTTPStringField(CallLogFilenameKey, 40, logFilename));
 
   // Trace level
@@ -460,11 +480,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpNameSpace.AddResource(new InteractiveHTTP(*this, authority), PHTTPSpace::Overwrite);
 
   // Add log file links
+/*
   if (!systemLogFileName && (systemLogFileName != "-")) {
     httpNameSpace.AddResource(new PHTTPFile("logfile.txt", systemLogFileName, authority));
     httpNameSpace.AddResource(new PHTTPTailFile("tail_logfile", systemLogFileName, authority));
   }
-  
+*/  
   // create the home page
 /*
   PStringStream shtml;
@@ -480,27 +501,36 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpNameSpace.AddResource(new PServiceHTTPString("monitor.txt", monitorText, "text/plain", authority), PHTTPSpace::Overwrite);
 
   // adding gif images for OTF Control:
-  httpNameSpace.AddResource(new PHTTPFile("i15_mic_on.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i15_mic_off.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_drop_Abdylas_Tynyshov.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_vad.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_disable.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_chosenvan.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i15_inv.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_launched_Ypf.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_remove.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i20_close.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i20_vad.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i20_vad2.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i20_static.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i20_plus.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_shuff.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_left.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_right.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_mix.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_clr.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_revert.gif"), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ico"), PHTTPSpace::Overwrite);
+#ifdef SYS_RESOURCE_DIR
+#  ifdef _WIN32
+#    define WEBSERVER_LINK(r) PString(SYS_RESOURCE_DIR) + "\\" + r
+#  else
+#    define WEBSERVER_LINK(r) PString(SYS_RESOURCE_DIR) + "/" + r
+#  endif
+#else
+#  define WEBSERVER_LINK(r) r
+#endif
+  httpNameSpace.AddResource(new PHTTPFile("i15_mic_on.gif",WEBSERVER_LINK("i15_mic_on.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i15_mic_off.gif",WEBSERVER_LINK("i15_mic_off.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_drop_Abdylas_Tynyshov.gif",WEBSERVER_LINK("openmcu.ru_drop_Abdylas_Tynyshov.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_vad.gif",WEBSERVER_LINK("openmcu.ru_vad_vad.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_disable.gif",WEBSERVER_LINK("openmcu.ru_vad_disable.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_chosenvan.gif",WEBSERVER_LINK("openmcu.ru_vad_chosenvan.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i15_inv.gif",WEBSERVER_LINK("i15_inv.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_launched_Ypf.gif",WEBSERVER_LINK("openmcu.ru_launched_Ypf.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_remove.gif",WEBSERVER_LINK("openmcu.ru_remove.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i20_close.gif",WEBSERVER_LINK("i20_close.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i20_vad.gif",WEBSERVER_LINK("i20_vad.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i20_vad2.gif",WEBSERVER_LINK("i20_vad2.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i20_static.gif",WEBSERVER_LINK("i20_static.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i20_plus.gif",WEBSERVER_LINK("i20_plus.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i24_shuff.gif",WEBSERVER_LINK("i24_shuff.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i24_left.gif",WEBSERVER_LINK("i24_left.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i24_right.gif",WEBSERVER_LINK("i24_right.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i24_mix.gif",WEBSERVER_LINK("i24_mix.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i24_clr.gif",WEBSERVER_LINK("i24_clr.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("i24_revert.gif",WEBSERVER_LINK("i24_revert.gif")), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PHTTPFile("openmcu.ico",WEBSERVER_LINK("openmcu.ico")), PHTTPSpace::Overwrite);
 
   // set up the HTTP port for listening & start the first HTTP thread
   if (ListenForHTTP(httpPort))

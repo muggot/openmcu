@@ -282,7 +282,7 @@ PString Conference::SaveTemplate(PString tplName)
                 mixMatch=(previous_mixer==vmr->id);
                 prev_vmpN=0;
               }
-              else if(cmd=="LAYOUT") if(mixMatch) mixMatch=(value==newLayout);
+              else if(cmd=="LAYOUT") { if(mixMatch) mixMatch=(value==newLayout); }
               else if(cmd=="SKIP") prev_vmpN+=value.AsInteger();
               else if(cmd=="VMP")
               { if(mixMatch) if(prev_vmpN == i) if(value.Left(1)=="1")

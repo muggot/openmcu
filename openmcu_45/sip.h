@@ -175,7 +175,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
        remoteApplication = "SIP terminal";
        requestedRoom = "room101";
        sdp_seq = 0;
-       sdp_id = time(NULL);
+       sdp_id = (unsigned int)time(NULL);
        noInpTimeout = 0;
        inpBytes = 0;
        bandwidth = 0;

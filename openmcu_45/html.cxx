@@ -24,11 +24,11 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
   if(html_template_size == 0) // count on zero initialization
   {
     FILE *fs;
-#ifdef SYS_CONFIG_DIR
+#ifdef SYS_RESOURCE_DIR
 #  ifdef _WIN32
-    fs=fopen(SYS_CONFIG_DIR+PString("\\template.html"), "r");
+    fs=fopen(SYS_RESOURCE_DIR+PString("\\template.html"), "r");
 #  else
-    fs=fopen(SYS_CONFIG_DIR+PString("/template.html"), "r");
+    fs=fopen(SYS_RESOURCE_DIR+PString("/template.html"), "r");
 #  endif
 #else
     fs=fopen("template.html", "r");
@@ -56,11 +56,11 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
   if(html_quote_size == 0) // count on zero initialization
   {
     FILE *fs;
-#ifdef SYS_CONFIG_DIR
+#ifdef SYS_RESOURCE_DIR
 #  ifdef _WIN32
-    fs=fopen(SYS_CONFIG_DIR+PString("\\quote.txt"), "r");
+    fs=fopen(SYS_RESOURCE_DIR+PString("\\quote.txt"), "r");
 #  else
-    fs=fopen(SYS_CONFIG_DIR+PString("/quote.txt"), "r");
+    fs=fopen(SYS_RESOURCE_DIR+PString("/quote.txt"), "r");
 #  endif
 #else
     fs=fopen("quote.txt", "r");

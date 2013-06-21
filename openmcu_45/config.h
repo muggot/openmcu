@@ -4,6 +4,18 @@
 // specify the path for .conf files
 //#define SYS_CONFIG_DIR "/etc/openmcu"
 #define SYS_CONFIG_DIR "."
+// specify the path for audio&video export via named pipes (linux, freebsd)
+//#define SYS_PIPE_DIR "/var/spool/openmcu"
+#define SYS_PIPE_DIR "."
+// specify the path for built-in web server resources
+//#define SYS_RESOURCE_DIR "/usr/share/openmcu"
+#define SYS_RESOURCE_DIR "."
+// specify server logs folder
+//#define SERVER_LOGS "/var/log"
+#define SERVER_LOGS "."
+// specify true font directory
+//#define TRUETYPE_FONT_DIR "/usr/share/fonts/truetype"
+#define TRUETYPE_FONT_DIR "."
 
 // enable test rooms for video mixer
 #define ENABLE_TEST_ROOMS   1

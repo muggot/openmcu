@@ -279,8 +279,13 @@ class ExternalVideoRecorderThread : public PThread
       audio = "\\\\.\\pipe\\sound_" + roomName;
       video = "\\\\.\\pipe\\video_" + roomName;
 #else
+#  ifdef SYS_PIPE_DIR
+      audio = PString(SYS_PIPE_DIR)+"/sound." + roomName;
+      video = PString(SYS_PIPE_DIR)+"/video." + roomName;
+#  else
       audio = "sound." + roomName;
       video = "video." + roomName;
+#  endif
 #endif
       t.Replace("%A",audio,TRUE,0);
       t.Replace("%V",video,TRUE,0);
