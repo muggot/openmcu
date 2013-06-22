@@ -258,17 +258,25 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
 //    SetLogLevel(PSystemLog::Debug6);
 //    PTrace::Initialise(6,"trace.txt");
-    int TraceLevel=cfg.GetInteger(TraceLevelKey, 6);
-    SetLogLevel((PSystemLog::Level)TraceLevel);
-#ifdef SERVER_LOGS
-#  ifdef _WIN32
-    PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"\\trace.txt");
+  int TraceLevel=cfg.GetInteger(TraceLevelKey, 6);
+  SetLogLevel((PSystemLog::Level)TraceLevel);
+#  ifdef SERVER_LOGS
+#    ifdef _WIN32
+  PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"\\trace.txt");
+#    else
+  PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"/trace.txt");
+#    endif
 #  else
-    PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"/trace.txt");
+  PTrace::Initialise(TraceLevel,"trace.txt");
 #  endif
-#else
-    PTrace::Initialise(TraceLevel,"trace.txt");
-#endif
+
+#  ifdef GIT_REVISION
+#    define _QUOTE_MACRO_VALUE1(x) #x
+#    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
+  PTRACE(1,"OpenMCU\tREVISION " << _QUOTE_MACRO_VALUE(GIT_REVISION));
+#    undef _QUOTE_MACRO_VALUE
+#    undef _QUOTE_MACRO_VALUE1
+#  endif
 
 /*  if (GetLogLevel() >= PSystemLog::Warning)
     PTrace::SetLevel(GetLogLevel()-PSystemLog::Warning);
@@ -276,7 +284,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     PTrace::SetLevel(0);
   PTrace::ClearOptions(PTrace::Timestamp);
   PTrace::SetOptions(PTrace::DateAndTime); */
-#endif
+#endif //if PTRACING
 
   vmcfg.go(vmcfg.bfw,vmcfg.bfh);
 
@@ -496,41 +504,49 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpNameSpace.AddResource(new WelcomePage(*this, authority), PHTTPSpace::Overwrite);
 
   // create monitoring page
-  PString monitorText = "<!--#equival monitorinfo-->"
+  PString monitorText =
+#  ifdef GIT_REVISION
+#    define _QUOTE_MACRO_VALUE1(x) #x
+#    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
+                        (PString("OpenMCU REVISION ") + _QUOTE_MACRO_VALUE(GIT_REVISION) +"\n\n") +
+#    undef _QUOTE_MACRO_VALUE
+#    undef _QUOTE_MACRO_VALUE1
+#  endif
+                        "<!--#equival monitorinfo-->"
                         "<!--#equival mcuinfo-->";
   httpNameSpace.AddResource(new PServiceHTTPString("monitor.txt", monitorText, "text/plain", authority), PHTTPSpace::Overwrite);
 
-  // adding gif images for OTF Control:
+  // adding web server links (eg. images):
 #ifdef SYS_RESOURCE_DIR
 #  ifdef _WIN32
-#    define WEBSERVER_LINK(r) PString(SYS_RESOURCE_DIR) + "\\" + r
+#    define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "\\" + r1), PHTTPSpace::Overwrite)
 #  else
-#    define WEBSERVER_LINK(r) PString(SYS_RESOURCE_DIR) + "/" + r
+#    define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "/" + r1), PHTTPSpace::Overwrite)
 #  endif
 #else
-#  define WEBSERVER_LINK(r) r
+#  define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1), PHTTPSpace::Overwrite)
 #endif
-  httpNameSpace.AddResource(new PHTTPFile("i15_mic_on.gif",WEBSERVER_LINK("i15_mic_on.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i15_mic_off.gif",WEBSERVER_LINK("i15_mic_off.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_drop_Abdylas_Tynyshov.gif",WEBSERVER_LINK("openmcu.ru_drop_Abdylas_Tynyshov.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_vad.gif",WEBSERVER_LINK("openmcu.ru_vad_vad.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_disable.gif",WEBSERVER_LINK("openmcu.ru_vad_disable.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_vad_chosenvan.gif",WEBSERVER_LINK("openmcu.ru_vad_chosenvan.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i15_inv.gif",WEBSERVER_LINK("i15_inv.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_launched_Ypf.gif",WEBSERVER_LINK("openmcu.ru_launched_Ypf.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ru_remove.gif",WEBSERVER_LINK("openmcu.ru_remove.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i20_close.gif",WEBSERVER_LINK("i20_close.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i20_vad.gif",WEBSERVER_LINK("i20_vad.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i20_vad2.gif",WEBSERVER_LINK("i20_vad2.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i20_static.gif",WEBSERVER_LINK("i20_static.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i20_plus.gif",WEBSERVER_LINK("i20_plus.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_shuff.gif",WEBSERVER_LINK("i24_shuff.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_left.gif",WEBSERVER_LINK("i24_left.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_right.gif",WEBSERVER_LINK("i24_right.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_mix.gif",WEBSERVER_LINK("i24_mix.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_clr.gif",WEBSERVER_LINK("i24_clr.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("i24_revert.gif",WEBSERVER_LINK("i24_revert.gif")), PHTTPSpace::Overwrite);
-  httpNameSpace.AddResource(new PHTTPFile("openmcu.ico",WEBSERVER_LINK("openmcu.ico")), PHTTPSpace::Overwrite);
+  WEBSERVER_LINK("i15_mic_on.gif");
+  WEBSERVER_LINK("i15_mic_off.gif");
+  WEBSERVER_LINK("openmcu.ru_drop_Abdylas_Tynyshov.gif");
+  WEBSERVER_LINK("openmcu.ru_vad_vad.gif");
+  WEBSERVER_LINK("openmcu.ru_vad_disable.gif");
+  WEBSERVER_LINK("openmcu.ru_vad_chosenvan.gif");
+  WEBSERVER_LINK("i15_inv.gif");
+  WEBSERVER_LINK("openmcu.ru_launched_Ypf.gif");
+  WEBSERVER_LINK("openmcu.ru_remove.gif");
+  WEBSERVER_LINK("i20_close.gif");
+  WEBSERVER_LINK("i20_vad.gif");
+  WEBSERVER_LINK("i20_vad2.gif");
+  WEBSERVER_LINK("i20_static.gif");
+  WEBSERVER_LINK("i20_plus.gif");
+  WEBSERVER_LINK("i24_shuff.gif");
+  WEBSERVER_LINK("i24_left.gif");
+  WEBSERVER_LINK("i24_right.gif");
+  WEBSERVER_LINK("i24_mix.gif");
+  WEBSERVER_LINK("i24_clr.gif");
+  WEBSERVER_LINK("i24_revert.gif");
+  WEBSERVER_LINK("openmcu.ico");
 
   // set up the HTTP port for listening & start the first HTTP thread
   if (ListenForHTTP(httpPort))
@@ -1006,7 +1022,15 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
   }
   PStringStream shtml;
   BeginPage(shtml,"OpenMCU Home","OpenMCU Home","$WELCOME$");
-  shtml << "<br><b>Monitor Text (<span style='cursor:pointer;text-decoration:underline' onclick='javascript:{if(document.selection){var range=document.body.createTextRange();range.moveToElementText(document.getElementById(\"monitorTextId\"));range.select();}else if(window.getSelection){var range=document.createRange();range.selectNode(document.getElementById(\"monitorTextId\"));window.getSelection().addRange(range);}}'>select all</span>)</b><div style='padding:5px;border:1px dotted #595;width:100%;height:auto;max-height:300px;overflow:auto'><pre id='monitorTextId'>" << app.GetEndpoint().GetMonitorText() << "</pre></div>";
+  shtml << "<br><b>Monitor Text (<span style='cursor:pointer;text-decoration:underline' onclick='javascript:{if(document.selection){var range=document.body.createTextRange();range.moveToElementText(document.getElementById(\"monitorTextId\"));range.select();}else if(window.getSelection){var range=document.createRange();range.selectNode(document.getElementById(\"monitorTextId\"));window.getSelection().addRange(range);}}'>select all</span>)</b><div style='padding:5px;border:1px dotted #595;width:100%;height:auto;max-height:300px;overflow:auto'><pre style='margin:0px;padding:0px' id='monitorTextId'>"
+#  ifdef GIT_REVISION
+#    define _QUOTE_MACRO_VALUE1(x) #x
+#    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
+        << "OpenMCU REVISION " << _QUOTE_MACRO_VALUE(GIT_REVISION) << "\n"
+#    undef _QUOTE_MACRO_VALUE
+#    undef _QUOTE_MACRO_VALUE1
+#  endif
+        << app.GetEndpoint().GetMonitorText() << "</pre></div>";
   EndPage(shtml,app.GetCopyrightText());
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
