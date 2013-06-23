@@ -1734,9 +1734,9 @@ PString OpenMCUH323EndPoint::GetMonitorText()
             if(name != "file recorder")output << hdr << "VFormat: " << fileMember->GetVFormat() << "\n";
             output << hdr << "IsVisible: " << fileMember->IsVisible() << "\n";
             output << hdr << "Status: " << (fileMember->status?"Awake":"Sleeping") << "\n";
-#ifndef _WIN32
-            if(fileMember->codec) output << hdr << "EncoderSeqN: " << dec << fileMember->codec->GetEncoderSeqN() << "\n";
-#endif
+//#ifndef _WIN32
+//            if(fileMember->codec) output << hdr << "EncoderSeqN: " << dec << fileMember->codec->GetEncoderSeqN() << "\n";
+//#endif
           }
         }
         if(member->videoMixer!=NULL)
