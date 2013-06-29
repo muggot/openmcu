@@ -3837,9 +3837,37 @@ H323Capability * H323Capabilities::FindCapability(const H245_VideoCapability & v
     }
    }
 
-   if(subType==5) //h.264
+   if(subType==5) //h.264 //vp8 only for openmcu.ru
    {
-    int profile=-1, level=0;
+     { PStringStream cap; cap << video; //vp8
+       PINDEX fake_vp8=cap.Find("capabilityIdentifier = standard 1.3.6.1.4.1.17091.1.9.");
+       if(fake_vp8 != P_MAX_INDEX)
+       { PINDEX resolutionId = cap.Mid(fake_vp8+54,2).AsInteger();
+         PString VP8DesiredCapability;
+         if(     resolutionId ==  0) VP8DesiredCapability = "VP8-QCIF";
+         else if(resolutionId ==  2) VP8DesiredCapability = "VP8-4CIF";
+         else if(resolutionId == 10) VP8DesiredCapability = "VP8-480P";
+         else if(resolutionId == 11) VP8DesiredCapability = "VP8-720P";
+         else if(resolutionId == 12) VP8DesiredCapability = "VP8-1080P";
+         else                        VP8DesiredCapability = "VP8-CIF";
+         for (PINDEX i = 0; i < table.GetSize(); i++)
+         { H323Capability & capability = table[i];
+           if (capability.GetMainType() == H323Capability::e_Video && capability.GetFormatName().Find(VP8DesiredCapability) == 0)
+           { PTRACE(3, "H323\tFound capability: " << capability);
+             return &capability;
+           }
+         }
+         for (PINDEX i = 0; i < table.GetSize(); i++)
+         { H323Capability & capability = table[i];
+           if (capability.GetMainType() == H323Capability::e_Video && capability.GetFormatName().Find("VP8") == 0)
+           { PTRACE(3, "H323\tFound capability: " << capability);
+             return &capability;
+           }
+         }
+         return NULL;
+       }
+     }
+    int profile=-1, level=0; //h.264
     for (PINDEX i = 0; i < table.GetSize(); i++) {
      H323Capability & capability = table[i];
      if (capability.GetMainType() == H323Capability::e_Video &&

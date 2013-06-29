@@ -366,6 +366,13 @@ void OpenMCUSipConnection::SelectCapability_H264(SipCapability &c,PStringArray &
  }
 }
 
+void OpenMCUSipConnection::SelectCapability_VP8(SipCapability &c,PStringArray &tvCaps)
+{
+ PString H323Name("VP8-4CIF{sw}");
+ c.cap = H323Capability::Create(H323Name);
+ vcap = c.payload; c.h323 = H323Name;
+}
+
 int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite)
 {
  int par_len = 0, par_mbeg = 0;
@@ -527,6 +534,7 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
    if(c.format.ToLower() == "h263") SelectCapability_H263(c,tvCaps);
    else if(c.format.ToLower() == "h263-1998") SelectCapability_H263p(c,tvCaps);
    else if(c.format.ToLower() == "h264") SelectCapability_H264(c,tvCaps);
+   else if(c.format.ToLower() == "vp8") SelectCapability_VP8(c,tvCaps);
   }
  }
 
