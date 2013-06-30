@@ -46,8 +46,8 @@ CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
 STDCCFLAGS	= -fPIC
-LDFLAGS		=-lvpx
-LIBAVCODEC_CFLAGS=-I/usr/local/include -I.
+LDFLAGS		=-L${prefix}/lib -lvpx
+LIBAVCODEC_CFLAGS=-I${prefix}/include -I.
 
 EXTRACCFLAGS    +=  $(LIBAVCODEC_CFLAGS) -I$(PLUGINDIR) -DLIB_DIR='"$(libdir)"' -DVC_PLUGIN_DIR='"$(VC_PLUGIN_DIR)"' -DLICENCE_MPL -D__STDC_CONSTANT_MACROS
 

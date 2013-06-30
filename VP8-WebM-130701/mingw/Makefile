@@ -31,8 +31,8 @@ libdir=${exec_prefix}/lib
 target_os=linux-gnu
 DL_LIBS =-L/usr/local/lib
 
-SHAREDDIR	= ./shared
-PLUGINDIR	= ./opal
+SHAREDDIR	= ../shared
+PLUGINDIR	= ../opal
 OBJDIR	= ./obj
 WIN32=yes
 # SUBDIRS		+= gpl
@@ -46,17 +46,17 @@ CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=dll
 STDCCFLAGS	= -fPIC
-LDFLAGS		=-lvpx
-LIBAVCODEC_CFLAGS=-I/usr/local/include -I.
+LDFLAGS		=-L${prefix}/lib -lvpx
+LIBAVCODEC_CFLAGS=-I${prefix}/include -I..
 
 EXTRACCFLAGS    +=  $(LIBAVCODEC_CFLAGS) -I$(PLUGINDIR) -DLIB_DIR='"$(libdir)"' -DVC_PLUGIN_DIR='"$(VC_PLUGIN_DIR)"' -DLICENCE_MPL -D__STDC_CONSTANT_MACROS
 
 vpath	%.cxx $(SHAREDDIR)
 vpath	%.o   $(OBJDIR)
 
-SRCS    += vp8_webm.cxx
+SRCS    += ../vp8_webm.cxx
 
-$(OBJDIR)/%.o : %.cxx
+$(OBJDIR)/%.o : $(SRCS)
 	@mkdir -p $(OBJDIR) >/dev/null 2>&1
 	$(CXX) $(EXTRACCFLAGS) $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
 

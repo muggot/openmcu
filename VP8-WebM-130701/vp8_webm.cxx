@@ -181,7 +181,7 @@ static struct PluginCodec_Option const PictureID =
   "Picture ID Size",                  // User visible name
   false,                              // User Read/Only flag
   PluginCodec_AlwaysMerge,            // Merge mode
-  "Word",                             // Initial value
+  "None",                             // Initial value
   NULL,                               // FMTP option name
   NULL,                               // FMTP default value
   0,                                  // H.245 generic capability code and bit mask
@@ -758,6 +758,7 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
         PluginCodec_RTP srcRTP(fromPtr, fromLen);
         if (!Unpacketise(srcRTP)) {
           flags |= PluginCodec_ReturnCoderRequestIFrame;
+          m_fullFrame.clear();
           return true;
         }
 
@@ -774,14 +775,17 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
           case VPX_CODEC_CORRUPT_FRAME :
             PTRACE(4, MY_CODEC_LOG, "Decoder reported non-fatal error: " << err);
             flags |= PluginCodec_ReturnCoderRequestIFrame;
+            m_fullFrame.clear();
             m_ignoreTillKeyFrame = true;
-//            return true;
-            break;
+            return true;
 
+          case VPX_CODEC_UNSUP_BITSTREAM :
           default :
             IsError(err, "vpx_codec_decode");
 //            return false;
-            break;
+            flags |= PluginCodec_ReturnCoderRequestIFrame;
+            m_fullFrame.clear();
+            return true;
         }
 
 #if 1
@@ -880,11 +884,13 @@ class VP8DecoderRFC : public VP8Decoder
           ++headerSize;         // Allow for T/K byte
       }
 
+/*
       if ((rtp[0]&0x10) != 0 && !m_fullFrame.empty()) {
         PTRACE(3, MY_CODEC_LOG, "Missing start to frame, ignoring till next key frame.");
         m_ignoreTillKeyFrame = true;
         return false;
       }
+*/
 
       Accumulate(rtp.GetPayloadPtr()+headerSize, rtp.GetPayloadSize()-headerSize);
       return true;

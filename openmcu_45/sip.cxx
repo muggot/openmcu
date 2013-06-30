@@ -368,9 +368,67 @@ void OpenMCUSipConnection::SelectCapability_H264(SipCapability &c,PStringArray &
 
 void OpenMCUSipConnection::SelectCapability_VP8(SipCapability &c,PStringArray &tvCaps)
 {
- PString H323Name("VP8-4CIF{sw}");
- c.cap = H323Capability::Create(H323Name);
- vcap = c.payload; c.h323 = H323Name;
+ int width = 0, height = 0;
+ PStringArray keys = c.parm.Tokenise(";");
+ for(int kn = 0; kn < keys.GetSize(); kn++)
+ {
+  if(keys[kn].Find("width=") == 0)
+  {
+   width = (keys[kn].Tokenise("=")[1]).AsInteger();
+  }
+  else if(keys[kn].Find("height=") == 0)
+  {
+   height = (keys[kn].Tokenise("=")[1]).AsInteger();
+  }
+ }
+
+ PString H323Name;
+ if (c.cap) c.cap=NULL;
+
+ if (width && height)
+ {
+  for(int cn = 0; cn < tvCaps.GetSize(); cn++)
+  {
+   if(tvCaps[cn].Find("VP8")==0)
+   {
+    H323Name = tvCaps[cn];
+    c.cap = H323Capability::Create(H323Name);
+    if(c.cap)
+    {
+     const OpalMediaFormat & mf = c.cap->GetMediaFormat();
+     if(width == mf.GetOptionInteger("Frame Width") && height == mf.GetOptionInteger("Frame Height"))
+      break;
+     else
+      c.cap=NULL;
+    }
+   }
+  }
+  if(!c.cap && tvCaps.GetStringsIndex("VP8-CIF{sw}") != P_MAX_INDEX)
+  {
+   H323Name = "VP8-CIF{sw}";
+   c.cap = H323Capability::Create(H323Name);
+   OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
+   wf.SetOptionInteger("Frame Width", width);
+   wf.SetOptionInteger("Frame Height", height);
+  }
+ }
+
+ if(!c.cap && tvCaps.GetStringsIndex("VP8-CIF{sw}") != P_MAX_INDEX)
+ {
+  H323Name = "VP8-CIF{sw}";
+  c.cap = H323Capability::Create(H323Name);
+ }
+
+ if(c.cap)
+ {
+  vcap = c.payload;
+  c.h323 = H323Name;
+
+  OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
+  if (remoteApplication.ToLower().Find("linphone") == 0) wf.SetOptionEnum("Picture ID Size", 0);
+  if(c.bandwidth) wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
+  else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
+ }
 }
 
 int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite)
