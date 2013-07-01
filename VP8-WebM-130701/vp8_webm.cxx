@@ -771,23 +771,22 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
             break;
 
           // Non fatal errors
-          case VPX_CODEC_UNSUP_FEATURE :
           case VPX_CODEC_CORRUPT_FRAME :
-            PTRACE(4, MY_CODEC_LOG, "Decoder reported non-fatal error: " << err);
             flags |= PluginCodec_ReturnCoderRequestIFrame;
-            m_fullFrame.clear();
             m_ignoreTillKeyFrame = true;
+            m_fullFrame.clear();
+          case VPX_CODEC_UNSUP_FEATURE :
+            PTRACE(4, MY_CODEC_LOG, "Decoder reported non-fatal error: " << err);
+            IsError(err, "vpx_codec_decode");
             return true;
 
           case VPX_CODEC_UNSUP_BITSTREAM :
-          default :
-            IsError(err, "vpx_codec_decode");
-//            return false;
             flags |= PluginCodec_ReturnCoderRequestIFrame;
             m_fullFrame.clear();
+          default :
+            IsError(err, "vpx_codec_decode");
             return true;
         }
-
 #if 1
         /* Prefer to use vpx_codec_get_stream_info() here, but it doesn't
            work, it always returns key frame! The vpx_codec_peek_stream_info()
@@ -1093,7 +1092,7 @@ class VP8DecoderOM : public VP8Decoder
 
 #define OpalPluginCodec_Identifer_VP8_480P  "1.3.6.1.4.1.17091.1.9.10"
 #define VP8_480P_MediaFmt                   "VP8-480P"
-#define VP8_480P_WIDTH                      "854"
+#define VP8_480P_WIDTH                      "852"
 #define VP8_480P_HEIGHT                     "480"
 #define VP8_480P_TARGETBITRATE              "512000"
 #define VP8_480P_MAXBITRATE                  768000
