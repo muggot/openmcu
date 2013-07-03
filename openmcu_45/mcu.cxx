@@ -154,6 +154,16 @@ class WelcomePage : public PServiceHTTPString
     OpenMCU & app;
 };
 
+class RecordsBrowserPage : public PServiceHTTPString
+{
+  public:
+    RecordsBrowserPage(OpenMCU & app, PHTTPAuthority & auth);
+    BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
+  
+  private:
+    OpenMCU & app;
+};
+
 
 
 
@@ -478,7 +488,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpNameSpace.AddResource(new SelectRoomPage(*this, authority), PHTTPSpace::Overwrite);
 
   // Create video recording directory browser page:
-  httpNameSpace.AddResource(new PHTTPDirectory(PURL("Records"), PDirectory(vr_ffmpegDir), authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new RecordsBrowserPage(*this, authority), PHTTPSpace::Overwrite);
 
 #if USE_LIBJPEG
   // Create JPEG frame via HTTP
@@ -1051,6 +1061,269 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
 }
 
 
+RecordsBrowserPage::RecordsBrowserPage(OpenMCU & _app, PHTTPAuthority & auth)
+  : PServiceHTTPString("Records", "", "text/html; charset=utf-8", auth),
+    app(_app)
+{}
+
+BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
+{
+  { PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
+    if(!CheckAuthority(server, *req, connectInfo)) {delete req; return FALSE;}
+    delete req;
+  }
+  PStringToString data;
+  { PString request=url.AsString(); PINDEX q;
+    if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
+  }
+  if(data.Contains("getfile")) // just download
+  {
+#ifdef _WIN32
+    PString filePathStr = OpenMCU::Current().vr_ffmpegDir + "\\" + data("getfile");
+#else
+    PString filePathStr = OpenMCU::Current().vr_ffmpegDir + "/" + data("getfile");
+#endif
+    if(!PFile::Exists(filePathStr))
+    { PHTTPRequest * request = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server);
+      request->entityBody = connectInfo.GetEntityBody();
+      PStringStream msg; msg << ErrorPage(request->localAddr.AsString(), request->localPort, 404, "Not Found", "The file cannot be found",
+        "The requested URL <a href=\"" + data("getfile") + "\">" + filePathStr + "</a> was not found on this server.<br/><br/>");
+      delete request;
+      PStringStream message; PTime now; message
+        << "HTTP/1.1 404 Not Found\r\n"
+        << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
+        << "Server: OpenMCU.ru\r\n"
+        << "MIME-Version: 1.0\r\n"
+        << "Cache-Control: no-cache, must-revalidate\r\n"
+        << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
+        << "Content-Type: text/html;charset=utf-8\r\n"
+        << "Content-Length: " << msg.GetLength() << "\r\n"
+        << "Connection: Close\r\n"
+        << "\r\n";  //that's the last time we need to type \r\n instead of just \n
+      message << msg; server.Write((const char*)message,message.GetLength()); server.flush();
+      return FALSE;
+    }
+    FILE *f=fopen(filePathStr,"rb"); if(f==NULL)
+    { PHTTPRequest * request = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server);
+      request->entityBody = connectInfo.GetEntityBody();
+      PStringStream msg; msg << ErrorPage(request->localAddr.AsString(), request->localPort, 403, "Forbidden", "The file cannot be downloaded",
+        "You don't have permission to access <a href=\"" + data("getfile") + "\">" + filePathStr + "</a> on this server.<br/><br/>");
+      delete request;
+      PStringStream message; PTime now; message
+        << "HTTP/1.1 403 Forbidden\r\n"
+        << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
+        << "Server: OpenMCU.ru\r\n"
+        << "MIME-Version: 1.0\r\n"
+        << "Cache-Control: no-cache, must-revalidate\r\n"
+        << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
+        << "Content-Type: text/html;charset=utf-8\r\n"
+        << "Content-Length: " << msg.GetLength() << "\r\n"
+        << "Connection: Close\r\n"
+        << "\r\n";  //that's the last time we need to type \r\n instead of just \n
+      message << msg; server.Write((const char*)message,message.GetLength()); server.flush();
+      return FALSE;
+    }
+    fseek(f, 0, SEEK_END); size_t fileSize = ftell(f); rewind(f);
+
+    PStringStream message; PTime now; message
+      << "HTTP/1.1 200 OK\r\n"
+      << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
+      << "Server: OpenMCU.ru\r\n"
+      << "MIME-Version: 1.0\r\n"
+      << "Cache-Control: no-cache, must-revalidate\r\n"
+      << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
+      << "Content-Type: application/octet-stream\r\n"
+      << "Content-Disposition: attachment; filename=\"" << PURL::TranslateString(data("getfile"),PURL::QueryTranslation) << "\"\r\n"
+      << "Content-Transfer-Encoding: binary\r\n"
+      << "Content-Length: " << fileSize << "\r\n"
+      << "Connection: Close\r\n"
+      << "\r\n";
+    PTimeInterval oldTimeout=server.GetWriteTimeout();
+    server.SetWriteTimeout(150000);
+    if(!server.Write((const char*)message, message.GetLength())) {fclose(f); return FALSE;}
+    server.flush();
+
+    char *buffer = (char*)malloc(PMIN(65536, fileSize));
+    size_t p=0, result;
+    while (p<fileSize)
+    { size_t blockSize = PMIN(65536, fileSize-p);
+      result=fread(buffer, 1, blockSize, f);
+      if(blockSize != result)
+      { PTRACE(1,"mcu.cxx\tFile read error: " << p << "/" << fileSize << ", filename: " << filePathStr);
+        fclose(f); free(buffer);
+        return FALSE;
+      }
+      if(!server.Write((const char*)buffer, result))
+      { PTRACE(1,"mcu.cxx\tServer write error: " << p << "/" << fileSize << ", filename: " << filePathStr);
+        fclose(f); free(buffer);
+        return FALSE;
+      }
+      server.flush();
+      p+=result;
+    }
+    fclose(f); free(buffer);
+    server.SetWriteTimeout(oldTimeout);
+    return TRUE;
+  }
+
+  PString dir=OpenMCU::Current().vr_ffmpegDir;
+  BOOL isDir=PFile::Exists(dir); if(isDir)
+  { PFileInfo info;
+    PFile::GetInfo(PFilePath(dir), info);
+    isDir=((info.type & 6) != 0);
+  }
+#ifdef _WIN32
+  PString dir0(dir);
+  if(dir0.Right(1)!="\\") dir0+='\\'; else dir=dir.Right(dir.GetLength()-1);
+  dir0+='*';
+  WIN32_FIND_DATA d;
+  HANDLE f = FindFirstFileA(dir0, &d); if (f==INVALID_HANDLE_VALUE)
+#else
+  if(dir.Right(1)=="/") dir=dir.Right(dir.GetLength()-1);
+  DIR *d; if(isDir) isDir=((d=opendir(dir)) != NULL); if(!isDir)
+#endif
+  { PHTTPRequest * request = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server);
+    request->entityBody = connectInfo.GetEntityBody();
+    PStringStream msg; msg << ErrorPage(request->localAddr.AsString(), request->localPort, 404, "Not Found", "The file cannot be found",
+      "The requested URL <a href=\"Records\">/Records</a> was not found on this server.<br/><br/>");
+    delete request;
+    PStringStream message; PTime now; message
+      << "HTTP/1.1 404 Not Found\r\n"
+      << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
+      << "Server: OpenMCU.ru\r\n"
+      << "MIME-Version: 1.0\r\n"
+      << "Cache-Control: no-cache, must-revalidate\r\n"
+      << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
+      << "Content-Type: text/html;charset=utf-8\r\n"
+      << "Content-Length: " << msg.GetLength() << "\r\n"
+      << "Connection: Close\r\n"
+      << "\r\n";  //that's the last time we need to type \r\n instead of just \n
+    message << msg; server.Write((const char*)message,message.GetLength()); server.flush();
+    return FALSE;
+  }
+
+// directory d is now opened
+  PStringArray fileList;
+
+#ifdef _WIN32
+  do if(strcmp(".", d.cFileName) && strcmp("..", d.cFileName))
+  {
+    FILE *f=fopen(dir + '\\' + d.cFileName,"rb");
+    if(f!=NULL)
+    {
+      fseek(f, 0, SEEK_END);
+      PStringStream r; r << d.cFileName << "," << ftell(f);
+      fileList.AppendString(r);
+      fclose(f);
+    }
+  }
+  while(FindNextFileA(f, &d) != 0 || GetLastError() != ERROR_NO_MORE_FILES);
+  FindClose(f);
+#else
+  struct dirent *e;
+  while((e = readdir(d))) if(strcmp(".", e->d_name) && strcmp("..", e->d_name))
+  {
+    FILE *f=fopen(dir + '/' + e->d_name,"rb");
+    if(f!=NULL)
+    {
+      fseek(f, 0, SEEK_END);
+      PStringStream r; r << e->d_name << "," << ftell(f);
+      fileList.AppendString(r);
+      fclose(f);
+    }
+  }
+  closedir(d);
+#endif
+
+  PINDEX sortMode=0;
+  if(data.Contains("sort")) {sortMode = data("sort").AsInteger(); if(sortMode<0 || sortMode>7) sortMode=0;}
+  PStringStream shtml;
+  BeginPage(shtml,"Records","Records","$RECORDS$");
+
+
+  shtml << "<h1>" << dir << "</h1>";
+  if(fileList.GetSize()==0) shtml << "The direcory does not contain records at the moment."; else
+  {
+    shtml << "<table style='border:2px solid #82b8e3'><tr><th style='border:2px solid #82b8e3;padding:2px;background-color:#144a59;color:#afc'>N</th>"
+      << "<th style='border:2px solid #82b8e3;padding:2px;background-color:#144a59'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=0)?'0':'1') << "'>Date/Time</a></th>"
+      << "<th style='border:2px solid #82b8e3;padding:2px;background-color:#144a59'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=2)?'2':'3') << "'>Room</a></th>"
+      << "<th style='border:2px solid #82b8e3;padding:2px;background-color:#144a59'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=4)?'4':'5') << "'>Resolution</th>"
+      << "<th style='border:2px solid #82b8e3;padding:2px;background-color:#144a59'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=6)?'6':'7') << "'>File Size</th></tr>";
+
+    for(PINDEX i=0;i<fileList.GetSize()-1; i++)
+    { PString s=fileList[i]; PINDEX pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
+      { PString roomName1 = s.Left(pos1); s=s.Mid(pos1+1,P_MAX_INDEX);
+        pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
+        { PString dateTime1 = s.Left(pos1); s=s.Mid(pos1+1,P_MAX_INDEX);
+          PString videoResolution1; pos1=s.Find('.'); PINDEX pos2=s.Find(',');
+          if(pos1!=P_MAX_INDEX) videoResolution1=s.Left(pos1); else videoResolution1=s.Left(pos2);
+          PINDEX fileSize1 = s.Mid(pos2+1,P_MAX_INDEX).AsInteger();
+          for(PINDEX j=i+1;j<fileList.GetSize(); j++)
+          { PString s=fileList[j]; PINDEX pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
+            { PString roomName2 = s.Left(pos1); s=s.Mid(pos1+1,P_MAX_INDEX);
+              pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
+              { PString dateTime2 = s.Left(pos1); s=s.Mid(pos1+1,P_MAX_INDEX);
+                PString videoResolution2; pos1=s.Find('.'); PINDEX pos2=s.Find(',');
+                if(pos1!=P_MAX_INDEX) videoResolution2=s.Left(pos1); else videoResolution2=s.Left(pos2);
+                PINDEX fileSize2 = s.Mid(pos2+1,P_MAX_INDEX).AsInteger();
+
+                if((sortMode==0) && (dateTime2 <= dateTime1)) {}
+                else if((sortMode==1) && (dateTime2 >= dateTime1)) {}
+                else if((sortMode==2) && (roomName2 >= roomName1)) {}
+                else if((sortMode==3) && (roomName2 <= roomName1)) {}
+                else if((sortMode==4) && (videoResolution2 <= videoResolution1)) {}
+                else if((sortMode==5) && (videoResolution2 >= videoResolution1)) {}
+                else if((sortMode==6) && (fileSize2 <= fileSize1)) {}
+                else if((sortMode==7) && (fileSize2 >= fileSize1)) {}
+                else { PString s=fileList[i]; fileList[i]=fileList[j]; fileList[j]=s; } // or just swap PString pointers?
+
+              }
+            }
+          }
+        }
+      }
+    }
+
+    for(PINDEX i=0;i<fileList.GetSize(); i++)
+    { PString s0=fileList[i]; PINDEX pos1=s0.Find("__"); if(pos1!=P_MAX_INDEX)
+      { PString roomName = s0.Left(pos1); PString s=s0.Mid(pos1+1,P_MAX_INDEX);
+        pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
+        { PString dateTime = s.Left(pos1); s=s.Mid(pos1+1,P_MAX_INDEX);
+          PString videoResolution; pos1=s.Find('.'); PINDEX pos2=s.Find(',');
+          if(pos1!=P_MAX_INDEX) videoResolution=s.Left(pos1); else videoResolution=s.Left(pos2);
+          PINDEX fileSize = s.Mid(pos2+1,P_MAX_INDEX).AsInteger();
+          shtml << "<tr>"
+            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'><a href='/Records?getfile=" << s0.Left(s0.Find(',')) << "' download>" << (i+1) << "</a></td>"
+            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << dateTime.Mid(8,2) << '.' << dateTime.Mid(6,2) << '.' << dateTime.Mid(1,4) << ' ' << dateTime.Mid(11,2) << ':' << dateTime.Mid(13,2) << "</td>"
+            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << roomName << "</td>"
+            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << videoResolution.Mid(1,P_MAX_INDEX) << "</td>"
+            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed;text-align:right'><a href='/Records?getfile=" << s0.Left(s0.Find(',')) << "' download>" << fileSize << "</a></td>"
+            << "</tr>";
+        }
+      }
+    }
+    shtml << "</table>";
+
+  } // if(fileList.GetSize()==0) ... else {
+
+  EndPage(shtml,app.GetCopyrightText());
+  { PStringStream message; PTime now; message
+      << "HTTP/1.1 200 OK\r\n"
+      << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
+      << "Server: OpenMCU.ru\r\n"
+      << "MIME-Version: 1.0\r\n"
+      << "Cache-Control: no-cache, must-revalidate\r\n"
+      << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
+      << "Content-Type: text/html;charset=utf-8\r\n"
+      << "Content-Length: " << shtml.GetLength() << "\r\n"
+      << "Connection: Close\r\n"
+      << "\r\n";  //that's the last time we need to type \r\n instead of just \n
+    server.Write((const char*)message,message.GetLength());
+  }
+  server.Write((const char*)shtml,shtml.GetLength());
+  server.flush();
+  return TRUE;
+}
 
 
 // End of File ///////////////////////////////////////////////////////////////
