@@ -1,10 +1,14 @@
 #!/bin/bash
 
-./ffserver -f ffserver.conf &
+DIR_BIN="."
+DIR_CONF="."
+DIR_PIPE="."
 
-./ffmpeg -y\
- -r 10 -s 4cif -f rawvideo -i video.$1\
- -ar 16000 -f s16le -i sound.$1\
+$DIR_BIN/ffserver -f $DIR_CONF/ffserver.conf &
+
+$DIR_BIN/ffmpeg -y\
+ -r 10 -s 4cif -f rawvideo -i $DIR_PIPE/video.$1\
+ -ar 16000 -f s16le -i $DIR_PIPE/sound.$1\
  http://127.0.0.1:8090/feed.ffm
 
 kill %1
