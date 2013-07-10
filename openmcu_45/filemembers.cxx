@@ -1,3 +1,4 @@
+
 #include <ptlib.h>
 
 #ifndef _WIN32
@@ -8,6 +9,7 @@
 #include "mcu.h"
 //#include "filemembers.h"
 
+#define AUDIO_EXPORT_PCM_BUFFER_SIZE_MS    30
 
 ConferenceSoundCardMember::ConferenceSoundCardMember(Conference * _conference)
 #ifdef _WIN32
@@ -61,7 +63,7 @@ void ConferenceSoundCardMember::Thread(PThread &, INT)
   while (running) {
 
     // read a block of data
-    ReadAudio(pcmData.GetPointer(), pcmData.GetSize());
+    ReadAudio(pcmData.GetPointer(), pcmData.GetSize(), 8000);
 
     // write the data to the sound card
     if (soundDevice.IsOpen())
@@ -220,13 +222,20 @@ const unsigned char wavHeader[44] =
 
 void ConferenceFileMember::WriteThread(PThread &, INT)
 {
+  unsigned sampleRate = OpenMCU::Current().vr_sampleRate;
+  if(sampleRate < 2000 || sampleRate > 1000000) sampleRate = 16000;
+  PINDEX amountBytes = 2 * sampleRate * AUDIO_EXPORT_PCM_BUFFER_SIZE_MS / 1000;
+  unsigned modulo = 0;
+  unsigned d0 = (1000 * (amountBytes >> 1));
+  unsigned d = d0 / sampleRate;
+  unsigned m0 = d0 % sampleRate;
 #ifdef _WIN32
   PString cstr="\\\\.\\pipe\\sound_"+conference->GetNumber();
   LPCSTR cname = cstr;
   HANDLE pipe = CreateNamedPipe(cname, PIPE_ACCESS_OUTBOUND,
     PIPE_TYPE_BYTE|PIPE_WAIT,
     1,   //DWORD nMaxInstances
-    3*960, //DWORD nOutBufferSize
+    amountBytes, //DWORD nOutBufferSize
     0,   //DWORD nInBufferSize
     0,   //DWORD nDefaultTimeOut
     NULL //LPSECURITY_ATTRIBUTES lpSecurityAttributes
@@ -255,7 +264,7 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
   mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
   int SS=open(cname,O_WRONLY);
 #endif
-  PBYTEArray pcmData(960);
+  PBYTEArray pcmData(amountBytes);
   PAdaptiveDelay audioDelay;
   int success=0;
 
@@ -263,13 +272,19 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
 
   while (running) {
 
+    modulo += m0;
+    if(audioDelay.Delay(d + (modulo / sampleRate)))
+    { PTRACE(6,"AudioExportThread_Delay\tPAdaptiveDelay.Delay() called Too late. Sample rate = " << sampleRate << " Hz, delay = " << AUDIO_EXPORT_PCM_BUFFER_SIZE_MS << " ms, amount = " << amountBytes << " bytes.");
+    }
+    modulo %= sampleRate;
+
     // read a block of data
-    ReadAudio(pcmData.GetPointer(), pcmData.GetSize());
+    ReadAudio(pcmData.GetPointer(), amountBytes, sampleRate);
 
     // write to the file
 #ifdef _WIN32
     DWORD lpNumberOfBytesWritten;
-    BOOL result=WriteFile(pipe, (const void *)pcmData.GetPointer(), pcmData.GetSize(), &lpNumberOfBytesWritten, NULL);
+    BOOL result=WriteFile(pipe, (const void *)pcmData.GetPointer(), amountBytes, &lpNumberOfBytesWritten, NULL);
     if(!result)result=(GetLastError()==ERROR_IO_PENDING);
     if(result) {
       if(success==0) { success++; audioDelay.Restart(); }
@@ -278,7 +293,7 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
       pipe = CreateNamedPipe(cname, PIPE_ACCESS_OUTBOUND,
         PIPE_TYPE_BYTE|PIPE_WAIT,
         1,   //DWORD nMaxInstances
-        3*960, //DWORD nOutBufferSize
+        amountBytes, //DWORD nOutBufferSize
         0,   //DWORD nInBufferSize
         0,   //DWORD nDefaultTimeOut
         NULL //LPSECURITY_ATTRIBUTES lpSecurityAttributes
@@ -299,13 +314,15 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
       success=0; audioDelay.Restart();
     }
 #else
-    if (write(SS,(const void *)pcmData.GetPointer(), pcmData.GetSize())<0) 
+    if (write(SS,(const void *)pcmData.GetPointer(), amountBytes)<0) 
      { close(SS); SS=open(cname,O_WRONLY); success=0; audioDelay.Restart(); }
     else if(success==0) { success++; audioDelay.Restart(); } 
 //    cout << "Write ";
 #endif
     // and delay
-    audioDelay.Delay(pcmData.GetSize() / 32);
+//    audioDelay.Delay(pcmData.GetSize() / 32);
+
+
   }
 
 #ifdef _WIN32
@@ -435,7 +452,7 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
     }
 
     // read a block of data
-    WriteAudio(pcmData.GetPointer(), pcmData.GetSize());
+    WriteAudio(pcmData.GetPointer(), pcmData.GetSize(), 8000);
 
     // and delay
     audioDelay.Delay(pcmData.GetSize() / 16);

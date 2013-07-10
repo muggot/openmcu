@@ -10,12 +10,14 @@
 #include <ptlib/videoio.h>
 #include <opalwavfile.h>
 
+/*
 #if USE_SWRESAMPLE
 extern "C" {
 #include <libswresample/swresample.h>
 #include <libavutil/audioconvert.h>
 };
 #endif //USE_SWRESAMPLE
+*/
 
 #include "config.h"
 
@@ -95,7 +97,6 @@ class OpenMCUH323EndPoint : public H323EndPoint
     PString GetConferenceOptsJavascript(Conference & c);
     PString GetMemberListOptsJavascript(Conference & conference);
     void SetMemberListOpts(Conference & conference, const PStringToString & data);
-    ConferenceFileMember * FindCacheByFormatString(Conference & conference, PString formatString);
     BOOL SetMemberVideoMixer(Conference & conference, ConferenceMember * victim, unsigned newVideoMixer);
     ConferenceMember * GetConferenceMemberById(Conference * conference, long id);
     PString OTFControl(const PString room, const PStringToString & data);
@@ -156,14 +157,16 @@ class OutgoingAudio : public PChannel
     OpenMCUH323Connection & conn;
 
     unsigned int sampleRate;
+/*
 #if USE_SWRESAMPLE
     struct SwrContext *swrc;
 #else
     BOOL swrc;
 #endif
     PShortArray swr_buf;
-
+*/
     PAdaptiveDelay delay;
+    unsigned modulo;
     PMutex audioChanMutex;
 };
 
@@ -179,20 +182,24 @@ class IncomingAudio : public PChannel
     BOOL Write(const void * buffer, PINDEX amount);
     BOOL Close();
 
+    unsigned int sampleRate;
+
   protected:
     H323EndPoint & ep;
     OpenMCUH323Connection & conn;
 
-    unsigned int sampleRate;
+//    unsigned int sampleRate;
+/*
 #if USE_SWRESAMPLE
     struct SwrContext *swrc;
 #else
     BOOL swrc;
 #endif
     PShortArray swr_buf;
-
+*/
     PMutex audioChanMutex;
     PAdaptiveDelay delay;
+    unsigned modulo;
 };
 
 ////////////////////////////////////////////////////
@@ -244,8 +251,8 @@ class OpenMCUH323Connection : public H323Connection
     virtual BOOL OnReceivedSignalSetup(const H323SignalPDU & setupPDU);
     virtual BOOL OnReceivedCallProceeding(const H323SignalPDU & proceedingPDU);
 
-    virtual BOOL OnIncomingAudio(const void * buffer, PINDEX amount);
-    virtual BOOL OnOutgoingAudio(void * buffer, PINDEX amount);
+    virtual BOOL OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate);
+    virtual BOOL OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate);
     virtual PString GetAudioTransmitCodecName() const { return audioTransmitCodecName; }
     virtual PString GetAudioReceiveCodecName() const  { return audioReceiveCodecName; }
     virtual PString GetRemoteName() const             { return remoteName; }
@@ -364,13 +371,14 @@ class OpenMCUH323Connection : public H323Connection
     unsigned int recordDuration;
     unsigned int recordLimit;
 
+/*
     void StartRecording(
       const PFilePath & filename, 
       unsigned int recordLimit = 5, 
       unsigned int recordSilenceThreshold = 1
     );
     virtual void OnFinishRecording();
-
+*/
     //PAdaptiveDelay playDelay;
 
     // True if the state has not changed since the wave file started.

@@ -342,8 +342,9 @@ static struct PluginCodec_ControlDefn SILKDecodeControls[] =
 };
 */
 #define OpalPluginCodec_Identifer_SILK       "1.3.6.1.4.1.17091.1.3"
+#define OpalPluginCodec_Identifer_SILK_24K   "1.3.6.1.4.1.17091.1.3.24"
 
-#define OpalPluginCodec_Identifer_SILK_24K   OpalPluginCodec_Identifer_SILK   
+#define OpalPluginCodec_Identifer_SILK_24K   OpalPluginCodec_Identifer_SILK_24K
 #define SILK_24K_Desc                        "SILK_B40_24K"
 #define SILK_24K_MediaFmt                    "SILK_B40_24K"
 #define SILK_24K_PayloadName                 "SILK"

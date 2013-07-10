@@ -431,6 +431,38 @@ void OpenMCUSipConnection::SelectCapability_VP8(SipCapability &c,PStringArray &t
  }
 }
 
+void OpenMCUSipConnection::SelectCapability_OPUS(SipCapability &c,PStringArray &tsCaps)
+{
+ int useinbandfec = -1;
+ int usedtx = -1;
+
+ PStringArray keys = c.parm.Tokenise(";");
+ for(int kn = 0; kn < keys.GetSize(); kn++)
+ {
+  if(keys[kn].Find("useinbandfec=") == 0)
+   useinbandfec = (keys[kn].Tokenise("=")[1]).AsInteger();
+  else if(keys[kn].Find("usedtx=") == 0)
+   usedtx = (keys[kn].Tokenise("=")[1]).AsInteger();
+ }
+
+ if(tsCaps.GetStringsIndex("OPUS_48K{sw}") != P_MAX_INDEX)
+ {
+  if(c.cap) c.cap = NULL;
+  PString H323Name = "OPUS_48K{sw}";
+  c.cap = H323Capability::Create(H323Name);
+  if(c.cap)
+  {
+   scap = c.payload;
+   c.h323 = H323Name;
+   OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
+   if (useinbandfec > -1)
+    wf.SetOptionInteger("useinbandfec", useinbandfec);
+   if (usedtx > -1)
+    wf.SetOptionInteger("usedtx", usedtx);
+  }
+ }
+}
+
 int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite)
 {
  int par_len = 0, par_mbeg = 0;
@@ -583,6 +615,8 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
    else if(c.format.ToLower() == "silk" && c.clock == 24000 &&
       tsCaps.GetStringsIndex("SILK_B40_24K{sw}")!=P_MAX_INDEX) //SILK 24000
     { scap = c.payload; c.h323 = "SILK_B40_24K{sw}"; c.cap = H323Capability::Create("SILK_B40_24K{sw}"); }
+   else if(c.format.ToLower() == "opus" && c.clock == 48000) //OPUS 48000
+   { SelectCapability_OPUS(c,tsCaps); }
 //
 
   }

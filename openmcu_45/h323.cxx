@@ -870,31 +870,6 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
  return members;
 }
 
-ConferenceFileMember* OpenMCUH323EndPoint::FindCacheByFormatString(Conference & conference, PString formatString)
-{
-  PTRACE(6,"MixerCtrl\tFindCacheByFormatString(conf," << formatString << ") entry point");
-  Conference::MemberList & memberList = conference.GetMemberList();
-  Conference::MemberList::const_iterator r;
-  for (r = memberList.begin(); r != memberList.end(); ++r)
-  {
-    ConferenceMember * conferenceMember = r->second;
-    if(conferenceMember!=NULL)
-    {
-      ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(conferenceMember);
-      if(fileMember!=NULL)
-      if(fileMember->codec!=NULL)
-      if(fileMember->codec->cacheMode==1)
-      if(fileMember->codec->formatString==formatString)
-      {
-        PTRACE(6,"MixerCtrl\tFindCacheByFormatString() fs=" << formatString << " successfull");
-        return fileMember;
-      }
-    }
-  }
-  PTRACE(6,"MixerCtrl\tFindCacheByFormatString() fs=" << formatString << " not found");
-  return NULL;
-}
-
 BOOL OpenMCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * victim, unsigned newMixerNumber)
 { // formatString: VIDEOCAP @ W x H : BITRATE x FRAMERATE _ ROOM / MIXER
   unsigned oldMixerNumber=victim->GetVideoMixerNumber();
@@ -2158,8 +2133,18 @@ BOOL OpenMCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* buffer
   PWaitAndSignal m(connMutex);
 
   unsigned codecSampleRate = codec.GetSampleRate();
-  PString codecName = codec.GetMediaFormat();
-  if(codecSampleRate > 0) codecName += "@" + PString(codecSampleRate) + "Hz";
+
+  if(codecSampleRate == 0) codecSampleRate = 8000; // built-in g711
+
+  if(codecSampleRate > 1000000) // calculated as: [audible 20KHz]*[perfect&unreachable 50 counts per sine period]
+  {
+    PTRACE(1,"OpenAudioChannel\tError: codec sample rate " << codecSampleRate << " Hz looks too big");
+    if (isEncoding) audioTransmitCodecName = "Error@" + PString(codecSampleRate) + "Hz";
+    else            audioReceiveCodecName  = "Error@" + PString(codecSampleRate) + "Hz";
+    return FALSE;
+  }
+
+  PString codecName = codec.GetMediaFormat() + "@" + PString(codecSampleRate) + "Hz";
 
   codec.SetSilenceDetectionMode( H323AudioCodec::NoSilenceDetection );
 
@@ -2373,10 +2358,10 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
 }
 
 
-BOOL OpenMCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount)
+BOOL OpenMCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate)
 {
   PWaitAndSignal m(connMutex);
-
+/*
   // If record file is open, write data to it
   if (recordFile.IsOpen()) {
     recordFile.Write(buffer, amount);
@@ -2407,12 +2392,13 @@ BOOL OpenMCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount)
     }
   }
 
-  else if (conferenceMember != NULL)
-    conferenceMember->WriteAudio(buffer, amount);
+  else */ if (conferenceMember != NULL)
+    conferenceMember->WriteAudio(buffer, amount, sampleRate);
 
   return TRUE;
 }
 
+/*
 void OpenMCUH323Connection::StartRecording(const PFilePath & filename, unsigned limit, unsigned threshold)
 {
   if (!recordFile.Open(filename, PFile::ReadWrite, PFile::Create | PFile::Truncate))
@@ -2428,8 +2414,9 @@ void OpenMCUH323Connection::StartRecording(const PFilePath & filename, unsigned 
 void OpenMCUH323Connection::OnFinishRecording()
 {
 }
+*/
 
-BOOL OpenMCUH323Connection::OnOutgoingAudio(void * buffer, PINDEX amount)
+BOOL OpenMCUH323Connection::OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate)
 {
   // When the prodedure begins, play the welcome file
   if (welcomeState == NotStartedYet) {
@@ -2476,7 +2463,7 @@ BOOL OpenMCUH323Connection::OnOutgoingAudio(void * buffer, PINDEX amount)
   // If a we are connected to a conference and no wave
   //  is playing, read data from the conference
   if (conferenceMember != NULL) {
-    conferenceMember->ReadAudio(buffer, amount);
+    conferenceMember->ReadAudio(buffer, amount, sampleRate);
     return TRUE;
   }
 
@@ -2851,9 +2838,11 @@ void OpenMCUH323Connection::LogCall(const BOOL accepted)
 ///////////////////////////////////////////////////////////////
 
 OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, unsigned int _sampleRate)
-  : ep(_ep), conn(_conn)
+  : ep(_ep), conn(_conn), sampleRate(_sampleRate)
 {
   os_handle = 0;
+  modulo=0;
+/*
 #if USE_SWRESAMPLE
   swrc = NULL;
 #else
@@ -2872,6 +2861,7 @@ OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, 
    swrc = 1;
 #endif //USE_SWRESAMPLE
   }
+*/
 }
 
 void OutgoingAudio::CreateSilence(void * buffer, PINDEX amount)
@@ -2882,16 +2872,26 @@ void OutgoingAudio::CreateSilence(void * buffer, PINDEX amount)
 
 BOOL OutgoingAudio::Read(void * buffer, PINDEX amount)
 {
+  PWaitAndSignal mutexR(audioChanMutex);
+  if (!IsOpen()) return FALSE;
+  if (!conn.OnOutgoingAudio(buffer, amount, sampleRate)) CreateSilence(buffer, amount);
+  unsigned d0=(1000 * (amount >> 1));
+  unsigned d=d0 / sampleRate;
+  modulo += d0 % sampleRate;
+  delay.Delay(d + (modulo / sampleRate));
+  modulo %= sampleRate;
+  lastReadCount = amount;
+  return TRUE;
+
+/*
   PINDEX amount16 = amount;
   void * buffer16 = buffer;
+*/
 
 //  cout << "SEND amount=" << amount << "\n";
   
-  PWaitAndSignal mutexR(audioChanMutex);
-  
-  if (!IsOpen())
-    return FALSE;
 
+/*
 #if USE_SWRESAMPLE
   if(swrc != NULL) //8000
 #else
@@ -2915,11 +2915,10 @@ BOOL OutgoingAudio::Read(void * buffer, PINDEX amount)
     for(PINDEX i=0;i<(amount>>1);i++) ((short*)buffer)[i] = ((short*)buffer16)[i*16000/sampleRate];
 #endif
 
-  delay.Delay(amount16 / 32);
 
-  lastReadCount = amount;
+//  delay.Delay(amount16 / 32);
+*/
 
-  return TRUE;
 }
 
 BOOL OutgoingAudio::Close()
@@ -2928,22 +2927,26 @@ BOOL OutgoingAudio::Close()
     return FALSE;
 
   PWaitAndSignal mutexC(audioChanMutex);
+  modulo=0;
   os_handle = -1;
+/*
 #if USE_SWRESAMPLE
   if(swrc != NULL) swr_free(&swrc);
 #else
   swrc = 0;
 #endif
-
+*/
   return TRUE;
 }
 
 ///////////////////////////////////////////////////////////////////////////
 
 IncomingAudio::IncomingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, unsigned int _sampleRate)
-  : ep(_ep), conn(_conn)
+  : sampleRate(_sampleRate), ep(_ep), conn(_conn)
 {
   os_handle = 0;
+  modulo=0;
+/*
 #if USE_SWRESAMPLE
   swrc = NULL;
 #else
@@ -2962,19 +2965,26 @@ IncomingAudio::IncomingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, 
 #else
   swrc = 1;
 #endif
+*/
 }
 
 BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
 {
-  PINDEX amount16 = amount;
+  PWaitAndSignal mutexW(audioChanMutex);
+  if (!IsOpen()) return FALSE;
+  conn.OnIncomingAudio(buffer, amount, sampleRate);
+  unsigned d0=(1000 * (amount >> 1));
+  unsigned d=d0 / sampleRate;
+  modulo += d0 % sampleRate;
+  delay.Delay(d + (modulo / sampleRate));
+  modulo %= sampleRate;
+  return TRUE;
+
+//  PINDEX amount16 = amount;
 
 //  cout << "RECV amount=" << amount << "\n";
 
-  PWaitAndSignal mutexW(audioChanMutex);
-  
-  if (!IsOpen())
-    return FALSE;
-
+/*
 #if USE_SWRESAMPLE
   if(swrc != NULL) //8000
 #else
@@ -2990,13 +3000,11 @@ BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
 #else
    for(PINDEX i=0;i<(amount16>>1);i++) ((short*)buffer16)[i] = ((short*)buffer)[i*sampleRate/16000];
 #endif
-   conn.OnIncomingAudio(buffer16, amount16);
+   conn.OnIncomingAudio(buffer16, amount16, sampleRate);
   }
-  else conn.OnIncomingAudio(buffer, amount);
+  else */ 
 
-  delay.Delay(amount16 / 32);
-
-  return TRUE;
+//  delay.Delay(amount16 / 32);
 }
 
 BOOL IncomingAudio::Close()
@@ -3005,13 +3013,15 @@ BOOL IncomingAudio::Close()
     return FALSE;
 
   PWaitAndSignal mutexA(audioChanMutex);
+  modulo=0;
   os_handle = -1;
+/*
 #if USE_SWRESAMPLE
   if(swrc != NULL) swr_free(&swrc);
 #else
   swrc = 0;
 #endif
-
+*/
   return TRUE;
 }
 

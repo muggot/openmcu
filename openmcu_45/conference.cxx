@@ -6,21 +6,35 @@
 #include "conference.h"
 #include "mcu.h"
 
+#if USE_SWRESAMPLE
+extern "C" {
+#include <libswresample/swresample.h>
+#include <libavutil/audioconvert.h>
+};
+#endif //USE_SWRESAMPLE
+
 #if OPENMCU_VIDEO
 #include <ptlib/vconvert.h>
 #endif
 
 // size of a PCM data packet, in samples
 //#define PCM_PACKET_LEN          480
-#define PCM_PACKET_LEN          1920
+//#define PCM_PACKET_LEN          1920
+#define PCM_BUFFER_LEN_MS /*ms */ 120
 
 // size of a PCM data buffer, in bytes
-#define PCM_BUFFER_LEN          (PCM_PACKET_LEN * 2)
+//#define PCM_BUFFER_LEN          (PCM_PACKET_LEN * 2)
 
 // number of PCM buffers to keep
 #define PCM_BUFFER_COUNT        2
 
-#define PCM_BUFFER_SIZE         (PCM_BUFFER_LEN * PCM_BUFFER_COUNT)
+#define PCM_BUFFER_SIZE_CALC(freq)\
+  bufferSize = (2/* bytes*/ * PCM_BUFFER_LEN_MS * PCM_BUFFER_COUNT * freq / 1000) & 0x7ffffffe;\
+  if(bufferSize < 4) bufferSize=200;\
+  buffer.SetSize(bufferSize + 16);
+
+
+//#define PCM_BUFFER_SIZE         (PCM_BUFFER_LEN * PCM_BUFFER_COUNT)
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -93,17 +107,15 @@ void ConferenceManager::OnCreateConference(Conference * conference)
 
   // add file recorder member    
 #if ENABLE_TEST_ROOMS
-  if(conference->GetNumber().Left(8)=="testroom")
-  { PTRACE(6,"Conference\tOnCreateConference: \"testroom\" doesn't need extra features"); return; }
+  if(conference->GetNumber().Left(8)=="testroom") return;
 #endif
 #if ENABLE_ECHO_MIXER
-  if(conference->GetNumber().Left(4)*="echo")
-  { PTRACE(6,"Conference\tOnCreateConference: \"ECHO\" room doesn't need extra features"); return; }
+  if(conference->GetNumber().Left(4)*="echo") return;
 #endif
   new ConferenceFileMember(conference, (const PString) "recorder" , PFile::WriteOnly); 
 
   if(!OpenMCU::Current().GetForceScreenSplit())
-  { PTRACE(6,"Conference\tOnCreateConference: \"Force split screen video\" unchecked, " << conference->GetNumber() << " skipping members.conf"); return; }
+  { PTRACE(1,"Conference\tOnCreateConference: \"Force split screen video\" unchecked, " << conference->GetNumber() << " skipping members.conf"); return; }
 
   FILE *membLst;
 #ifdef SYS_CONFIG_DIR
@@ -233,7 +245,7 @@ void ConferenceManager::AddMonitorEvent(ConferenceMonitorInfo * info)
 
 PString Conference::SaveTemplate(PString tplName)
 {
-  PTRACE(6,"Conference\tSaveTemplate");
+  PTRACE(4,"Conference\tSaving template \"" << tplName << "\"");
   PStringArray previousTemplate = confTpl.Lines();
   PStringStream t;
   Conference::MemberNameList::const_iterator s;
@@ -357,7 +369,7 @@ PString Conference::SaveTemplate(PString tplName)
 
 void Conference::LoadTemplate(PString tpl)
 {
-  PTRACE(6,"Conference\tLoadTemplate");
+  PTRACE(4,"Conference\tLoading template");
   confTpl=tpl;
   if(tpl=="") return;
   PStringArray lines=tpl.Lines();
@@ -486,7 +498,7 @@ void Conference::LoadTemplate(PString tpl)
   {
     if(!tracingFirst)
     {
-      PTRACE(6,"Template\tRemoving redundant mixers: " << (videoMixerCount-1) << " ... " << (maxMixerId+1) << flush);
+      PTRACE(6,"Conference\tLoading template - currently active video mixers from " << (videoMixerCount-1) << " up to " << (maxMixerId+1) << " will be removed" << flush);
       tracingFirst=TRUE;
     }
     VMLDel(i);
@@ -498,7 +510,7 @@ void Conference::LoadTemplate(PString tpl)
   {
     if(s!=memberNameList.end())
     {
-      PTRACE(6,"Template\t  removing from memberNameList" << flush);
+      PTRACE(6,"Conference\tLoading template - removing " << s->first << " from memberNameList" << flush);
       memberNameList.erase(s->first);
       s=memberNameList.end();
     }
@@ -506,7 +518,7 @@ void Conference::LoadTemplate(PString tpl)
     {
       if(r->second == NULL) // offline: simple
       {
-        PTRACE(6,"Template\tRemoving offline member " << r->first << " from list" << flush);
+        PTRACE(6,"Conference\tLoading template - removing offline member " << r->first << " from memberNameList" << flush);
         memberNameList.erase(r->first);
       }
       else // online :(
@@ -514,10 +526,9 @@ void Conference::LoadTemplate(PString tpl)
         PString memberName = r->first;
         ConferenceMember & member = *r->second;
         ConferenceMemberId id = member.GetID();
-        PTRACE(6,"Template\tRemoving online member " << r->first << " (id " << id << ") from list" << flush);
-        PTRACE(6,"Template\t  closing connection" << flush);
+        PTRACE(6,"Conference\tLoading template - closing connection with " << r->first << " (id " << id << ")" << flush);
         member.Close();
-        PTRACE(6,"Template\t  removing from memberList" << flush);
+        PTRACE(6,"Conference\tLoading template -  removing " << r->first << " from memberList" << flush);
         memberList.erase(id);
         s=r;
       }
@@ -525,14 +536,13 @@ void Conference::LoadTemplate(PString tpl)
   }
   if(s!=memberNameList.end())
   {
-    PTRACE(6,"Template\t  removing from memberNameList" << flush);
+    PTRACE(6,"Conference\tLoading template - removing " << s->first << " from memberNameList" << flush);
     memberNameList.erase(s->first);
   }
 }
 
 PString Conference::GetTemplateList()
 {
-  PTRACE(6,"Conference\tGetTemplateList");
   PStringArray lines=membersConf.Lines();
   PStringStream result;
   result << "(";
@@ -554,7 +564,6 @@ PString Conference::GetTemplateList()
 
 PString Conference::GetSelectedTemplateName()
 {
-  PTRACE(6,"Conference\tGetSelectedTemplateName");
   if(confTpl.Trim()=="") return "";
   PINDEX tp, lfp;
   tp = confTpl.Find("TEMPLATE ");
@@ -569,25 +578,20 @@ PString Conference::GetSelectedTemplateName()
 }
 
 PString Conference::ExtractTemplate(PString tplName) // returns single template extracted from membersConf
-{
-  PTRACE(6,"Conference\tExtractTemplate");
-  if(tplName=="") return "";
+{ if(tplName=="") return "";
   PStringArray lines=membersConf.Lines();
   PINDEX i;
   for(i=0;i<lines.GetSize();i++)
-  {
-    PString s=lines[i].LeftTrim();
+  { PString s=lines[i].LeftTrim();
     PINDEX sp=s.Find(" ");
     if(sp==P_MAX_INDEX) continue;
     if(s.Left(sp)=="TEMPLATE") if(s.Mid(sp+1,P_MAX_INDEX).Trim()==tplName)
-    {
-      PStringStream result;
+    { PStringStream result;
       result << s << "\n";
       PINDEX j;
       int level=-1;
       for(j=i+1; j<lines.GetSize(); j++)
-      {
-        result << lines[j] << "\n";
+      { result << lines[j] << "\n";
         PString s=lines[j].Trim();
         if(s=="{")
         { if(level==-1)level++; level++; }
@@ -596,7 +600,7 @@ PString Conference::ExtractTemplate(PString tplName) // returns single template 
       }
     }
   }
- return "";
+  return "";
 }
 
 void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PString tpl)
@@ -773,7 +777,7 @@ void Conference::SetLastUsedTemplate(PString tplName)
 
 void Conference::DeleteTemplate(PString tplName)
 {
-  PTRACE(6,"Conference\tDeleteTemplate");
+  PTRACE(6,"Conference\tDeleteTemplate: " << tplName);
   PStringArray lines=membersConf.Lines();
   PStringStream result;
   int inside=0;
@@ -1245,7 +1249,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 }
 
 
-void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount)
+void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount, unsigned sampleRate)
 {
   // get number of channels to mix
   ConferenceMember::ConnectionListType & connectionList = member->GetConnectionList();
@@ -1253,8 +1257,16 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDE
   for (r = connectionList.begin(); r != connectionList.end(); ++r) 
     if (r->second != NULL)
     {
-     if(moderated==FALSE || muteUnvisible==FALSE || videoMixerList->mixer->GetPositionStatus(r->first)>=0) // default behaviour
-      r->second->ReadAndMixAudio((BYTE *)buffer, amount, (PINDEX)connectionList.size(), 0);
+      BOOL skip=moderated&&muteUnvisible;
+      if(skip)
+      {
+        VideoMixerRecord * vmr = videoMixerList;
+        while(vmr != NULL) if(vmr->mixer->GetPositionStatus(r->first)>=0)
+        { skip=FALSE; break; }
+        else vmr=vmr->next;
+      }
+      if(!skip) // default behaviour
+        r->second->ReadAndMixAudio((BYTE *)buffer, amount, (PINDEX)connectionList.size(), 0, sampleRate);
     }
 }
 
@@ -1499,7 +1511,15 @@ ConferenceMember::~ConferenceMember()
 #if OPENMCU_VIDEO
   delete videoMixer;
 #endif
-}
+  PTRACE(6,"ConferenceMember\tRemoving resample buffers");
+  for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t)
+  {
+#if USE_SWRESAMPLE
+    if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
+#endif
+    delete t->second; t->second=NULL;
+  }
+}   
 
 
 BOOL ConferenceMember::AddToConference(Conference * _conference)
@@ -1554,7 +1574,7 @@ void ConferenceMember::RemoveAllConnections()
   }
 }
 
-void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount)
+void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate)
 {
   if(muteIncoming) return;
   // calculate average signal level for this member
@@ -1566,11 +1586,9 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount)
     const short * end = pcm + (amount / 2);
     while (pcm != end) {
 //    cout << *pcm << "\n";
-        integr +=*pcm;
-      if (*pcm < 0)
-        sum -= *pcm++;
-      else
-        sum += *pcm++;
+      integr +=*pcm;
+      if (*pcm < 0) sum -= *pcm++;
+      else          sum += *pcm++;
     }
 //  cout << "audioInegr = " << integr << "\n";
     signalLevel = sum/(amount/2);
@@ -1578,39 +1596,97 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount)
   audioLevel = ((signalLevel * 2) + audioLevel) / 3;
 //  cout << "audioLevel = " << audioLevel << "\n";
 
-  if (lock.Wait()) {
+  if (lock.Wait())
+  { if (conference != NULL) conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
 
-    if (conference != NULL)
-      conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
+    // reset buffer usage flag
+    for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t) if(t->second != NULL) t->second->used=FALSE;
 
     MemberListType::iterator r;
-    for (r = memberList.begin(); r != memberList.end(); ++r) {
-      if (r->second != NULL)
-        r->second->OnExternalSendAudio(id, (BYTE *)buffer, amount);
+    for (r = memberList.begin(); r != memberList.end(); ++r)
+    { if (r->second != NULL) // member in the list != NULL
+      { ConnectionListType::iterator s = r->second->connectionList.find(id);
+        { if(s->second->outgoingSampleRate == sampleRate) s->second->Write((BYTE *)buffer, amount, sampleRate); // equal rates
+          else // resampler needs here
+          { unsigned targetSampleRate = s->second->outgoingSampleRate;
+            PINDEX newAmount = (amount * targetSampleRate / sampleRate) & 0x7ffffffe;
+            BufferListType::iterator t = bufferList.find(targetSampleRate);
+            if(t==bufferList.end()) // no buffer found, create
+            { ResamplerBufferType * newResamplerBuffer = new ResamplerBufferType();
+              newResamplerBuffer->used = FALSE;
+#if USE_SWRESAMPLE
+              newResamplerBuffer->swrc = NULL;
+              newResamplerBuffer->swrc = swr_alloc_set_opts(NULL,
+                AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, targetSampleRate,
+                AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, sampleRate,       0, NULL);
+              swr_init(newResamplerBuffer->swrc);
+#endif
+              bufferList.insert(BufferListType::value_type(targetSampleRate, newResamplerBuffer));
+              t=bufferList.find(targetSampleRate);
+              if(t==bufferList.end()) { PTRACE(1,"Mixer\tBuffer creation error, s/r=" << targetSampleRate); continue; }
+            }
+            if(t->second==NULL) continue;
+            if(!(t->second->used))
+            { if(t->second->data.GetSize() < newAmount) t->second->data.SetSize(newAmount + 16);
+              DoResample((BYTE *)buffer, amount, sampleRate, t, newAmount, targetSampleRate);
+              t->second->used = TRUE;
+            }
+            s->second->Write((BYTE *)t->second->data.GetPointer(), newAmount, targetSampleRate);
+          }
+        }
+      }
     }
+
+    // delete unused buffers
+    for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t)
+      if(t!=bufferList.end()) if(!(t->second->used))
+      {
+#if USE_SWRESAMPLE
+        if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
+#endif
+        delete t->second;
+        bufferList.erase(t->first);
+      }
+
     lock.Signal();
   }
 }
 
-void ConferenceMember::OnExternalSendAudio(ConferenceMemberId source, const void * buffer, PINDEX amount)
+void ConferenceMember::DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, BufferListType::const_iterator t, PINDEX dstBytes, unsigned dstRate)
+{
+#if USE_SWRESAMPLE
+  void * to = t->second->data.GetPointer();
+  void * from = (void*)src;
+  swr_convert(t->second->swrc,
+    (uint8_t **)&to,
+       (((int)dstBytes)>>1),
+    (const uint8_t **)&from,
+       (((int)srcBytes)>>1)
+  );
+#else
+  for(PINDEX i=0;i<(dstBytes>>1);i++) ((short*)(t->second->data.GetPointer()))[i] = ((short*)src)[i*srcRate/dstRate];
+#endif
+}
+
+void ConferenceMember::OnExternalSendAudio(ConferenceMemberId source, const void * buffer, PINDEX amount, unsigned sampleRate)
 {
   if (lock.Wait()) {
     ConnectionListType::iterator r = connectionList.find(source);
     if (r != connectionList.end())
       if (r->second != NULL)
-        r->second->Write((BYTE *)buffer, amount);
+        r->second->Write((BYTE *)buffer, amount, sampleRate);
     lock.Signal();
   }
 }
 
-void ConferenceMember::ReadAudio(void * buffer, PINDEX amount)
+void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate)
 {
   // First, set the buffer to empty.
   memset(buffer, 0, amount);
 
   if (lock.Wait()) {
     if (conference != NULL)
-      conference->ReadMemberAudio(this, buffer, amount);
+      conference->ReadMemberAudio(this, buffer, amount, sampleRate);
     lock.Signal();
   }
 }
@@ -1736,21 +1812,22 @@ PString ConferenceMember::GetMonitorInfo(const PString & /*hdr*/)
 ///////////////////////////////////////////////////////////////////////////
 
 ConferenceConnection::ConferenceConnection(ConferenceMemberId _id)
-  : id(_id), bufferSize(PCM_BUFFER_SIZE)
+//  : id(_id), bufferSize(PCM_BUFFER_SIZE)
+  : id(_id)
 {
-  buffer = new BYTE[bufferSize];
+  outgoingSampleRate = 8000;
+  PCM_BUFFER_SIZE_CALC(outgoingSampleRate);
   bufferStart = bufferLen = 0;
 }
 
 ConferenceConnection::~ConferenceConnection()
 {
-  delete[] buffer;
+//  delete[] buffer;
 }
 
-void ConferenceConnection::Write(const BYTE * data, PINDEX amount)
+void ConferenceConnection::Write(const BYTE * data, PINDEX amount, unsigned sampleRate)
 {
-  if (amount == 0)
-    return;
+  if (amount == 0) return;
 
   PWaitAndSignal mutex(audioBufferMutex);
   
@@ -1766,7 +1843,7 @@ void ConferenceConnection::Write(const BYTE * data, PINDEX amount)
   PINDEX copyStart = (bufferStart + bufferLen) % bufferSize;
   if ((copyStart + amount) > bufferSize) {
     PINDEX toCopy = bufferSize - copyStart;
-    memcpy(buffer + copyStart, data, toCopy);
+    memcpy((BYTE *)((unsigned long)buffer.GetPointer() + copyStart), data, toCopy);
     copyStart = 0;
     data      += toCopy;
     amount    -= toCopy;
@@ -1775,7 +1852,7 @@ void ConferenceConnection::Write(const BYTE * data, PINDEX amount)
 
   // copy the rest of the data
   if (amount > 0) {
-    memcpy(buffer + copyStart, data, amount);
+    memcpy((BYTE *)((unsigned long)buffer.GetPointer() + copyStart), data, amount);
     bufferLen   += amount;
   }
 }
@@ -1783,8 +1860,7 @@ void ConferenceConnection::Write(const BYTE * data, PINDEX amount)
 
 void ConferenceConnection::ReadAudio(BYTE * data, PINDEX amount)
 {
-  if (amount == 0)
-    return;
+  if (amount == 0) return;
 
   PWaitAndSignal mutex(audioBufferMutex);
   
@@ -1805,7 +1881,7 @@ void ConferenceConnection::ReadAudio(BYTE * data, PINDEX amount)
   if ((bufferStart + copyLeft) > bufferSize) {
     PINDEX toCopy = bufferSize - bufferStart;
 
-    memcpy(data, buffer + bufferStart, toCopy);
+    memcpy(data, (BYTE *)((unsigned long)buffer.GetPointer() + bufferStart), toCopy);
 
     data        += toCopy;
     bufferLen   -= toCopy;
@@ -1816,22 +1892,31 @@ void ConferenceConnection::ReadAudio(BYTE * data, PINDEX amount)
   // get the remainder of the buffer
   if (copyLeft > 0) {
 
-    memcpy(data, buffer + bufferStart, copyLeft);
+    memcpy(data, (BYTE *)((unsigned long)buffer.GetPointer() + bufferStart), copyLeft);
 
     bufferLen -= copyLeft;
     bufferStart = (bufferStart + copyLeft) % bufferSize;
   }
 }
 
-void ConferenceConnection::ReadAndMixAudio(BYTE * data, PINDEX amount, PINDEX channels, unsigned short echoLevel)
-{
-  if (amount == 0) {
-    PTRACE(3, "Mixer\tNo data to read");
-    return;
-  }
-
+void ConferenceConnection::ReadAndMixAudio(BYTE * data, PINDEX amount, PINDEX channels, unsigned short echoLevel, unsigned sampleRate)
+{ if (amount == 0) { PTRACE(3, "Mixer\tNo data to read"); return;}
   PWaitAndSignal mutex(audioBufferMutex);
   
+  if(outgoingSampleRate != sampleRate)
+  { // sample rate changed
+    PTRACE(5,"Mixer\tSample rate changed: " << outgoingSampleRate << "->" << sampleRate);
+    unsigned oldBufferSize=bufferSize;
+    PCM_BUFFER_SIZE_CALC(outgoingSampleRate);
+    memset(buffer.GetPointer(),0,bufferSize);
+
+    bufferStart = (bufferStart * bufferSize / oldBufferSize) & 0x7ffffffe; // must be odd
+    bufferLen = (bufferLen * bufferSize / oldBufferSize) & 0x7ffffffe; // must be odd
+    if(bufferStart>bufferSize) bufferStart=0;
+    if(bufferLen>bufferSize) bufferLen=0;
+    outgoingSampleRate=sampleRate;
+  }
+
   if (bufferLen == 0) {
     // nothing in the buffer to mix.
     return;
@@ -1844,7 +1929,7 @@ void ConferenceConnection::ReadAndMixAudio(BYTE * data, PINDEX amount, PINDEX ch
   if ((bufferStart + copyLeft) > bufferSize) {
     PINDEX toCopy = bufferSize - bufferStart;
 
-    Mix(data, buffer + bufferStart, toCopy, channels, echoLevel);
+    Mix(data, (BYTE *)((unsigned long)buffer.GetPointer() + bufferStart), toCopy, channels, echoLevel, sampleRate);
 
     data        += toCopy;
     bufferLen   -= toCopy;
@@ -1855,14 +1940,14 @@ void ConferenceConnection::ReadAndMixAudio(BYTE * data, PINDEX amount, PINDEX ch
   // get the remainder of the buffer
   if (copyLeft > 0) {
 
-    Mix(data, buffer + bufferStart, copyLeft, channels, echoLevel);
+    Mix(data, (BYTE *)((unsigned long)buffer.GetPointer() + bufferStart), copyLeft, channels, echoLevel, sampleRate);
 
     bufferLen -= copyLeft;
     bufferStart = (bufferStart + copyLeft) % bufferSize;
   }
 }
 
-void ConferenceConnection::Mix(BYTE * dst, const BYTE * src, PINDEX count, PINDEX /*channels*/, unsigned short echoLevel)
+void ConferenceConnection::Mix(BYTE * dst, const BYTE * src, PINDEX count, PINDEX /*channels*/, unsigned short echoLevel, unsigned sampleRate)
 {
 #if 0
   memcpy(dst, src, count);

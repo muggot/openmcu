@@ -621,6 +621,17 @@ class EchoVideoMixer : public MCUSimpleVideoMixer
 
 ////////////////////////////////////////////////////
 
+struct ResamplerBufferType
+{
+  PBYTEArray data;
+  BOOL used;
+#if USE_SWRESAMPLE
+  struct SwrContext * swrc;
+#endif
+};
+typedef std::map<unsigned, ResamplerBufferType *> BufferListType;
+
+
 class Conference;
 
 /**
@@ -655,21 +666,25 @@ class ConferenceConnection : public PObject {
     { }
 
     void WriteAudio(ConferenceMemberId source, const void * buffer, PINDEX amount);
-    void Write(const BYTE * ptr, PINDEX amount);
+    void Write(const BYTE * ptr, PINDEX amount, unsigned sampleRate);
     void ReadAudio(BYTE * ptr, PINDEX amount);
-    void ReadAndMixAudio(BYTE * ptr, PINDEX amount, PINDEX channels, unsigned short echoLevel);
+    void ReadAndMixAudio(BYTE * ptr, PINDEX amount, PINDEX channels, unsigned short echoLevel, unsigned sampleRate);
+
+    unsigned outgoingSampleRate;
 
   protected:
     Conference * conference;
     ConferenceMemberId id;
 
-    void Mix(BYTE * dst, const BYTE * src, PINDEX count, PINDEX channels, unsigned short echoLevel);
+    void Mix(BYTE * dst, const BYTE * src, PINDEX count, PINDEX channels, unsigned short echoLevel, unsigned sampleRate);
 
-    BYTE * buffer;
+    PBYTEArray buffer;
     PINDEX bufferLen;     ///Number of bytes unread in the buffer.
     PINDEX bufferStart;   ///Current position in the buffer.
     PINDEX bufferSize;    ///Total number of bytes in buffer. Never gets changed.
     PMutex audioBufferMutex;
+
+//    BufferListType bufferList;
 };
 
 ////////////////////////////////////////////////////
@@ -784,20 +799,22 @@ class ConferenceMember : public PObject
     /**
       *  Called when the conference member want to send audio data to the cofnerence
       */
-    virtual void WriteAudio(const void * buffer, PINDEX amount);
+    virtual void WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate);
+
+    virtual void DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, BufferListType::const_iterator t, PINDEX dstBytes, unsigned dstRate);
 
     /**
       *  Called when the conference member wants to read a block of audio from the conference
       *  By default, this calls ReadMemberAudio on the conference
       */
-    virtual void ReadAudio(void * buffer, PINDEX amount);
+    virtual void ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate);
 
     /**
       * Called when another conference member wants to send audio to the endpoint
       * By default, the audio is added to the queue for the specified member
       * so it can be retreived by a later call to OnIncomingAudio
       */
-    virtual void OnExternalSendAudio(ConferenceMemberId id, const void * buffer, PINDEX amount);
+    virtual void OnExternalSendAudio(ConferenceMemberId id, const void * buffer, PINDEX amount, unsigned sampleRate);
 
 
 #if OPENMCU_VIDEO
@@ -945,6 +962,7 @@ class ConferenceMember : public PObject
     PString name;
 //    OpenMCUH323Connection *h323con;
 //    PMutex h323conMutex;
+    BufferListType bufferList;
 
 #if OPENMCU_VIDEO
     //PMutex videoMutex;
@@ -1108,7 +1126,7 @@ class Conference : public PObject
 
     virtual void OnMemberLeaving(ConferenceMember *);
 
-    virtual void ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount);
+    virtual void ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount, unsigned sampleRate);
 
     virtual void WriteMemberAudioLevel(ConferenceMember * member, unsigned audioLevel, int tint);
 

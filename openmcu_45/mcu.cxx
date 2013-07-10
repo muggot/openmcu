@@ -45,16 +45,18 @@ static const char RecorderFfmpegDirKey[]   = "Video Recorder directory";
 static const char RecorderFrameWidthKey[]  = "Video Recorder frame width";
 static const char RecorderFrameHeightKey[] = "Video Recorder frame height";
 static const char RecorderFrameRateKey[]   = "Video Recorder frame rate";
+static const char RecorderSampleRateKey[]  = "Video Recorder sound rate";
 #ifdef _WIN32
 static const char DefaultFfmpegPath[]         = "ffmpeg.exe";
 #else
 static const char DefaultFfmpegPath[]         = "/usr/local/bin/ffmpeg";
 #endif
-static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac 1 -ar 16000 -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac 1 -vcodec msmpeg4v2 %O.asf";
+static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac 1 -ar %S -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac 1 -vcodec msmpeg4v2 %O.asf";
 static const char DefaultRecordingDirectory[] = "records";
 static const int  DefaultRecorderFrameWidth   = 704;
 static const int  DefaultRecorderFrameHeight  = 576;
 static const int  DefaultRecorderFrameRate    = 10;
+static const int  DefaultRecorderSampleRate   = 16000;
 
 static const char ForceSplitVideoKey[]   = "Force split screen video (enables Room Control page)";
 
@@ -413,6 +415,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     vr_framewidth  = cfg.GetInteger(RecorderFrameWidthKey,  DefaultRecorderFrameWidth);
     vr_frameheight = cfg.GetInteger(RecorderFrameHeightKey, DefaultRecorderFrameHeight);
     vr_framerate   = cfg.GetInteger(RecorderFrameRateKey,   DefaultRecorderFrameRate);
+    vr_sampleRate  = cfg.GetInteger(RecorderSampleRateKey,  DefaultRecorderSampleRate);
     PString opts = vr_ffmpegOpts;
     PStringStream frameSize; frameSize << vr_framewidth << "x" << vr_frameheight;
     PStringStream frameRate; frameRate << vr_framerate;
@@ -423,19 +426,21 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #endif
     opts.Replace("%F",frameSize,TRUE,0);
     opts.Replace("%R",frameRate,TRUE,0);
+    opts.Replace("%S",PString(vr_sampleRate),TRUE,0);
     opts.Replace("%O",outFile,TRUE,0);
     PStringStream tmp;
     tmp << vr_ffmpegPath << " " << opts;
     ffmpegCall=tmp;
     PStringStream recorderInfo;
     recorderInfo
-      << "<td rowspan='6' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>"
+      << "<td rowspan='7' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>"
       << "<b>Video Recorder Setup:</b><br><br>"
       << "Use the following definitions to set ffmpeg command-line options:<br>"
       << "<b>%V</b> - input video stream,<br>"
       << "<b>%A</b> - input audio stream,<br>"
       << "<b>%F</b> - frame size, "
       << "<b>%R</b> - frame rate,<br>"
+      << "<b>%S</b> - sample rate for audio,<br>"
       << "<b>%O</b> - name without extension"
       << "<br><br>";
     if(!PFile::Exists(vr_ffmpegPath)) recorderInfo << "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
@@ -465,6 +470,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     rsrc->Add(new PHTTPIntegerField(RecorderFrameWidthKey, 176, 1920, vr_framewidth));
     rsrc->Add(new PHTTPIntegerField(RecorderFrameHeightKey, 144, 1152, vr_frameheight));
     rsrc->Add(new PHTTPIntegerField(RecorderFrameRateKey, 1, 100, vr_framerate));
+    rsrc->Add(new PHTTPIntegerField(RecorderSampleRateKey, 2000, 1000000, vr_sampleRate));
   }
 
   // Finished the resource to add, generate HTML for it and add to name space
@@ -1252,22 +1258,22 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
 
     for(PINDEX i=0;i<fileList.GetSize()-1; i++)
     { PString s=fileList[i]; PINDEX pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
-      { PString roomName1 = s.Left(pos1); s=s.Mid(pos1+1,P_MAX_INDEX);
+      { PString roomName1 = s.Left(pos1); s=s.Mid(pos1+2,P_MAX_INDEX);
         pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
-        { PString dateTime1 = s.Left(pos1); s=s.Mid(pos1+1,P_MAX_INDEX);
+        { PString dateTime1 = s.Left(pos1); s=s.Mid(pos1+2,P_MAX_INDEX);
           PString videoResolution1; pos1=s.Find('.'); PINDEX pos2=s.Find(',');
           if(pos1!=P_MAX_INDEX) videoResolution1=s.Left(pos1); else videoResolution1=s.Left(pos2);
           PINDEX fileSize1 = s.Mid(pos2+1,P_MAX_INDEX).AsInteger();
           for(PINDEX j=i+1;j<fileList.GetSize(); j++)
-          { PString s=fileList[j]; PINDEX pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
-            { PString roomName2 = s.Left(pos1); s=s.Mid(pos1+1,P_MAX_INDEX);
+          { PString s=fileList[j]; pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
+            { PString roomName2 = s.Left(pos1); s=s.Mid(pos1+2,P_MAX_INDEX);
               pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
-              { PString dateTime2 = s.Left(pos1); s=s.Mid(pos1+1,P_MAX_INDEX);
+              { PString dateTime2 = s.Left(pos1); s=s.Mid(pos1+2,P_MAX_INDEX);
                 PString videoResolution2; pos1=s.Find('.'); PINDEX pos2=s.Find(',');
                 if(pos1!=P_MAX_INDEX) videoResolution2=s.Left(pos1); else videoResolution2=s.Left(pos2);
                 PINDEX fileSize2 = s.Mid(pos2+1,P_MAX_INDEX).AsInteger();
 
-                if((sortMode==0) && (dateTime2 <= dateTime1)) {}
+                if((sortMode==0) && (dateTime2 < dateTime1)) {}
                 else if((sortMode==1) && (dateTime2 >= dateTime1)) {}
                 else if((sortMode==2) && (roomName2 >= roomName1)) {}
                 else if((sortMode==3) && (roomName2 <= roomName1)) {}
@@ -1286,17 +1292,17 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
 
     for(PINDEX i=0;i<fileList.GetSize(); i++)
     { PString s0=fileList[i]; PINDEX pos1=s0.Find("__"); if(pos1!=P_MAX_INDEX)
-      { PString roomName = s0.Left(pos1); PString s=s0.Mid(pos1+1,P_MAX_INDEX);
+      { PString roomName = s0.Left(pos1); PString s=s0.Mid(pos1+2,P_MAX_INDEX);
         pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
-        { PString dateTime = s.Left(pos1); s=s.Mid(pos1+1,P_MAX_INDEX);
+        { PString dateTime = s.Left(pos1); s=s.Mid(pos1+2,P_MAX_INDEX);
           PString videoResolution; pos1=s.Find('.'); PINDEX pos2=s.Find(',');
           if(pos1!=P_MAX_INDEX) videoResolution=s.Left(pos1); else videoResolution=s.Left(pos2);
           PINDEX fileSize = s.Mid(pos2+1,P_MAX_INDEX).AsInteger();
           shtml << "<tr>"
             << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'><a href='/Records?getfile=" << s0.Left(s0.Find(',')) << "' download>" << (i+1) << "</a></td>"
-            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << dateTime.Mid(8,2) << '.' << dateTime.Mid(6,2) << '.' << dateTime.Mid(1,4) << ' ' << dateTime.Mid(11,2) << ':' << dateTime.Mid(13,2) << "</td>"
+            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << dateTime.Mid(7,2) << '.' << dateTime.Mid(5,2) << '.' << dateTime.Mid(0,4) << ' ' << dateTime.Mid(10,2) << ':' << dateTime.Mid(12,2) << "</td>"
             << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << roomName << "</td>"
-            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << videoResolution.Mid(1,P_MAX_INDEX) << "</td>"
+            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << videoResolution << "</td>"
             << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed;text-align:right'><a href='/Records?getfile=" << s0.Left(s0.Find(',')) << "' download>" << fileSize << "</a></td>"
             << "</tr>";
         }
