@@ -439,10 +439,10 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
 
     virtual bool SetOption(const char * optionName, const char * optionValue)
     {
-      if (strcasecmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0) {
+      if (strcasecmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0)
         return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
 
-      if (strcasecmp(optionName, PLUGINCODEC_OPTION_TARGET_BIT_RATE) == 0) {
+      if (strcasecmp(optionName, PLUGINCODEC_OPTION_TARGET_BIT_RATE) == 0)
         if (m_maxBitRate < atoi(optionValue))
           return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
 
