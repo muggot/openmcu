@@ -2133,9 +2133,18 @@ BOOL OpenMCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* buffer
   PWaitAndSignal m(connMutex);
 
   unsigned codecChannels = 1;
-  { PString OptionValue;
-    if(codec.GetMediaFormat().GetOptionValue((const PString)"Channels", OptionValue))
-      codecChannels = atoi(OptionValue);
+  {
+    PString OptionValue;
+    if(isEncoding)
+    {
+      if(codec.GetMediaFormat().GetOptionValue((const PString)"Encoder Channels", OptionValue))
+        codecChannels = atoi(OptionValue);
+    }
+    else
+    {
+      if(codec.GetMediaFormat().GetOptionValue((const PString)"Decoder Channels", OptionValue))
+        codecChannels = atoi(OptionValue);
+    }
   }
 
   unsigned codecSampleRate = codec.GetSampleRate();

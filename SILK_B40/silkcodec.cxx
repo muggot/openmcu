@@ -341,10 +341,10 @@ static struct PluginCodec_ControlDefn SILKDecodeControls[] =
   { NULL }
 };
 */
-#define OpalPluginCodec_Identifer_SILK       "1.3.6.1.4.1.17091.1.3"
-#define OpalPluginCodec_Identifer_SILK_24K   "1.3.6.1.4.1.17091.1.3.24"
+#define OpalPluginCodec_Identifer_SILK_Id16K "1.3.6.1.4.1.17091.1.3"
+#define OpalPluginCodec_Identifer_SILK_Id24K "1.3.6.1.4.1.17091.1.3.24"
 
-#define OpalPluginCodec_Identifer_SILK_24K   OpalPluginCodec_Identifer_SILK_24K
+#define OpalPluginCodec_Identifer_SILK_24K   OpalPluginCodec_Identifer_SILK_Id24K
 #define SILK_24K_Desc                        "SILK_B40_24K"
 #define SILK_24K_MediaFmt                    "SILK_B40_24K"
 #define SILK_24K_PayloadName                 "SILK"
@@ -356,7 +356,7 @@ static unsigned int SILK_24K_PayloadCode     =100;
 static unsigned int SILK_24K_FRAMES          =1;
 static unsigned int SILK_24K_SUPPORTMODE     =240;  // 8/12/16/24 k
 
-#define OpalPluginCodec_Identifer_SILK_16K   OpalPluginCodec_Identifer_SILK   
+#define OpalPluginCodec_Identifer_SILK_16K   OpalPluginCodec_Identifer_SILK_Id16K
 #define SILK_16K_Desc                        "SILK_B40"
 #define SILK_16K_MediaFmt                    "SILK_B40"
 #define SILK_16K_PayloadName                 "SILK"
