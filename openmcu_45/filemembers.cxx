@@ -63,7 +63,7 @@ void ConferenceSoundCardMember::Thread(PThread &, INT)
   while (running) {
 
     // read a block of data
-    ReadAudio(pcmData.GetPointer(), pcmData.GetSize(), 8000);
+    ReadAudio(pcmData.GetPointer(), pcmData.GetSize(), 8000, 1);
 
     // write the data to the sound card
     if (soundDevice.IsOpen())
@@ -279,7 +279,7 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
     modulo %= sampleRate;
 
     // read a block of data
-    ReadAudio(pcmData.GetPointer(), amountBytes, sampleRate);
+    ReadAudio(pcmData.GetPointer(), amountBytes, sampleRate, 1);
 
     // write to the file
 #ifdef _WIN32
@@ -352,7 +352,7 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
   HANDLE pipe = CreateNamedPipe(cname, PIPE_ACCESS_OUTBOUND,
     PIPE_TYPE_BYTE|PIPE_WAIT,
     1,      //DWORD nMaxInstances
-    3*amount, //DWORD nOutBufferSize
+    amount, //DWORD nOutBufferSize
     0,      //DWORD nInBufferSize
     0,      //DWORD nDefaultTimeOut
     NULL    //LPSECURITY_ATTRIBUTES lpSecurityAttributes
@@ -399,7 +399,7 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
       pipe = CreateNamedPipe(cname, PIPE_ACCESS_OUTBOUND,
         PIPE_TYPE_BYTE|PIPE_WAIT,
         1,      //DWORD nMaxInstances
-        3*amount, //DWORD nOutBufferSize
+        amount, //DWORD nOutBufferSize
         0,      //DWORD nInBufferSize
         0,      //DWORD nDefaultTimeOut
         NULL    //LPSECURITY_ATTRIBUTES lpSecurityAttributes
@@ -452,7 +452,7 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
     }
 
     // read a block of data
-    WriteAudio(pcmData.GetPointer(), pcmData.GetSize(), 8000);
+    WriteAudio(pcmData.GetPointer(), pcmData.GetSize(), 8000, 1);
 
     // and delay
     audioDelay.Delay(pcmData.GetSize() / 16);

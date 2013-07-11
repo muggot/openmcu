@@ -28,8 +28,8 @@ extern "C" {
 // number of PCM buffers to keep
 #define PCM_BUFFER_COUNT        2
 
-#define PCM_BUFFER_SIZE_CALC(freq)\
-  bufferSize = (2/* bytes*/ * PCM_BUFFER_LEN_MS * PCM_BUFFER_COUNT * freq / 1000) & 0x7ffffffe;\
+#define PCM_BUFFER_SIZE_CALC(freq,chans)\
+  bufferSize = 2/* bytes*/ * chans * PCM_BUFFER_LEN_MS * PCM_BUFFER_COUNT * freq / 1000;\
   if(bufferSize < 4) bufferSize=200;\
   buffer.SetSize(bufferSize + 16);
 
@@ -1249,7 +1249,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 }
 
 
-void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount, unsigned sampleRate)
+void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   // get number of channels to mix
   ConferenceMember::ConnectionListType & connectionList = member->GetConnectionList();
@@ -1266,7 +1266,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDE
         else vmr=vmr->next;
       }
       if(!skip) // default behaviour
-        r->second->ReadAndMixAudio((BYTE *)buffer, amount, (PINDEX)connectionList.size(), 0, sampleRate);
+        r->second->ReadAndMixAudio((BYTE *)buffer, amount, (PINDEX)connectionList.size(), 0, sampleRate, channels);
     }
 }
 
@@ -1511,13 +1511,21 @@ ConferenceMember::~ConferenceMember()
 #if OPENMCU_VIDEO
   delete videoMixer;
 #endif
-  PTRACE(6,"ConferenceMember\tRemoving resample buffers");
-  for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t)
-  {
+  if (lock.Wait())
+  { PTRACE(6,"ConferenceMember\tRemoving resample buffers");
+    for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t)
+    {
 #if USE_SWRESAMPLE
-    if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
+      if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
 #endif
-    delete t->second; t->second=NULL;
+      delete t->second; t->second=NULL;
+    }
+    PTRACE(6,"ConferenceMember\tResample buffers removed OK");
+    lock.Signal();
+  }
+  else
+  {
+    PTRACE(2,"ConferenceMember\tCould not lock at Destructor - keep resample buffers undeleted (memory leak)");
   }
 }   
 
@@ -1574,7 +1582,7 @@ void ConferenceMember::RemoveAllConnections()
   }
 }
 
-void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate)
+void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   if(muteIncoming) return;
   // calculate average signal level for this member
@@ -1606,32 +1614,46 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
     for (r = memberList.begin(); r != memberList.end(); ++r)
     { if (r->second != NULL) // member in the list != NULL
       { ConnectionListType::iterator s = r->second->connectionList.find(id);
-        { if(s->second->outgoingSampleRate == sampleRate) s->second->Write((BYTE *)buffer, amount, sampleRate); // equal rates
+        { if(s->second->outgoingSampleRate == sampleRate && s->second->outgoingCodecChannels == channels)
+            s->second->Write((BYTE *)buffer, amount); // equal rates
           else // resampler needs here
           { unsigned targetSampleRate = s->second->outgoingSampleRate;
-            PINDEX newAmount = (amount * targetSampleRate / sampleRate) & 0x7ffffffe;
-            BufferListType::iterator t = bufferList.find(targetSampleRate);
+            unsigned targetCodecChannels = s->second->outgoingCodecChannels;
+            unsigned bufferKey = (targetCodecChannels<<24)|targetSampleRate;
+            PINDEX newAmount = amount * targetCodecChannels * targetSampleRate / sampleRate / channels;
+            newAmount-=(newAmount % (channels<<1));
+            BufferListType::iterator t = bufferList.find(bufferKey);
             if(t==bufferList.end()) // no buffer found, create
             { ResamplerBufferType * newResamplerBuffer = new ResamplerBufferType();
               newResamplerBuffer->used = FALSE;
 #if USE_SWRESAMPLE
+              const uint64_t MCU_AV_CH_Layout_Selector[] = {0
+                ,AV_CH_LAYOUT_MONO
+                ,AV_CH_LAYOUT_STEREO
+                ,AV_CH_LAYOUT_2_1
+                ,AV_CH_LAYOUT_3POINT1
+                ,AV_CH_LAYOUT_5POINT0
+                ,AV_CH_LAYOUT_5POINT1
+                ,AV_CH_LAYOUT_7POINT0
+                ,AV_CH_LAYOUT_7POINT1
+              };
               newResamplerBuffer->swrc = NULL;
               newResamplerBuffer->swrc = swr_alloc_set_opts(NULL,
-                AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, targetSampleRate,
-                AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, sampleRate,       0, NULL);
+                MCU_AV_CH_Layout_Selector[targetCodecChannels], AV_SAMPLE_FMT_S16, targetSampleRate,
+                MCU_AV_CH_Layout_Selector[channels           ], AV_SAMPLE_FMT_S16, sampleRate,       0, NULL);
               swr_init(newResamplerBuffer->swrc);
 #endif
-              bufferList.insert(BufferListType::value_type(targetSampleRate, newResamplerBuffer));
-              t=bufferList.find(targetSampleRate);
+              bufferList.insert(BufferListType::value_type(bufferKey, newResamplerBuffer));
+              t=bufferList.find(bufferKey);
               if(t==bufferList.end()) { PTRACE(1,"Mixer\tBuffer creation error, s/r=" << targetSampleRate); continue; }
             }
             if(t->second==NULL) continue;
             if(!(t->second->used))
             { if(t->second->data.GetSize() < newAmount) t->second->data.SetSize(newAmount + 16);
-              DoResample((BYTE *)buffer, amount, sampleRate, t, newAmount, targetSampleRate);
+              DoResample((BYTE *)buffer, amount, sampleRate, channels, t, newAmount, targetSampleRate, targetCodecChannels);
               t->second->used = TRUE;
             }
-            s->second->Write((BYTE *)t->second->data.GetPointer(), newAmount, targetSampleRate);
+            s->second->Write((BYTE *)t->second->data.GetPointer(), newAmount);
           }
         }
       }
@@ -1652,19 +1674,36 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
   }
 }
 
-void ConferenceMember::DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, BufferListType::const_iterator t, PINDEX dstBytes, unsigned dstRate)
+void ConferenceMember::DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, unsigned srcChannels, BufferListType::const_iterator t, PINDEX dstBytes, unsigned dstRate, unsigned dstChannels)
 {
 #if USE_SWRESAMPLE
   void * to = t->second->data.GetPointer();
   void * from = (void*)src;
   swr_convert(t->second->swrc,
     (uint8_t **)&to,
-       (((int)dstBytes)>>1),
+       (((int)dstBytes)>>1)/dstChannels,
     (const uint8_t **)&from,
-       (((int)srcBytes)>>1)
+       (((int)srcBytes)>>1)/srcChannels
   );
 #else
-  for(PINDEX i=0;i<(dstBytes>>1);i++) ((short*)(t->second->data.GetPointer()))[i] = ((short*)src)[i*srcRate/dstRate];
+  if(srcChannels == dstChannels && srcChannels == 1)
+  { for(PINDEX i=0;i<(dstBytes>>1);i++) ((short*)(t->second->data.GetPointer()))[i] = ((short*)src)[i*srcRate/dstRate];
+    return;
+  }
+  if(srcChannels == dstChannels)
+  { for(unsigned i=0;i<((dstBytes>>1)/dstChannels);i++)
+    { unsigned ofs=(i*srcRate/dstRate)*srcChannels;
+      for(unsigned j=0;j<srcChannels;j++) ((short*)(t->second->data.GetPointer()))[i*srcChannels+j] = ((short*)src)[ofs+j];
+    }
+    return;
+  }
+  for(unsigned i=0;i<(dstBytes>>1)/dstChannels;i++)
+  { unsigned ofs=(i*srcRate/dstRate)*srcChannels, srcChan=0;
+    for(unsigned j=0;j<dstChannels;j++)
+    { ((short*)(t->second->data.GetPointer()))[i*dstChannels+j] = ((short*)src)[ofs+srcChan];
+      srcChan++; if(srcChan>=srcChannels) srcChan=0;
+    }
+  }
 #endif
 }
 
@@ -1674,19 +1713,19 @@ void ConferenceMember::OnExternalSendAudio(ConferenceMemberId source, const void
     ConnectionListType::iterator r = connectionList.find(source);
     if (r != connectionList.end())
       if (r->second != NULL)
-        r->second->Write((BYTE *)buffer, amount, sampleRate);
+        r->second->Write((BYTE *)buffer, amount);
     lock.Signal();
   }
 }
 
-void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate)
+void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   // First, set the buffer to empty.
   memset(buffer, 0, amount);
 
   if (lock.Wait()) {
     if (conference != NULL)
-      conference->ReadMemberAudio(this, buffer, amount, sampleRate);
+      conference->ReadMemberAudio(this, buffer, amount, sampleRate, channels);
     lock.Signal();
   }
 }
@@ -1816,7 +1855,8 @@ ConferenceConnection::ConferenceConnection(ConferenceMemberId _id)
   : id(_id)
 {
   outgoingSampleRate = 8000;
-  PCM_BUFFER_SIZE_CALC(outgoingSampleRate);
+  outgoingCodecChannels = 1;
+  PCM_BUFFER_SIZE_CALC(outgoingSampleRate,outgoingCodecChannels);
   bufferStart = bufferLen = 0;
 }
 
@@ -1825,7 +1865,7 @@ ConferenceConnection::~ConferenceConnection()
 //  delete[] buffer;
 }
 
-void ConferenceConnection::Write(const BYTE * data, PINDEX amount, unsigned sampleRate)
+void ConferenceConnection::Write(const BYTE * data, PINDEX amount)
 {
   if (amount == 0) return;
 
@@ -1899,22 +1939,21 @@ void ConferenceConnection::ReadAudio(BYTE * data, PINDEX amount)
   }
 }
 
-void ConferenceConnection::ReadAndMixAudio(BYTE * data, PINDEX amount, PINDEX channels, unsigned short echoLevel, unsigned sampleRate)
+void ConferenceConnection::ReadAndMixAudio(BYTE * data, PINDEX amount, PINDEX channels, unsigned short echoLevel, unsigned sampleRate, unsigned codecChannels)
 { if (amount == 0) { PTRACE(3, "Mixer\tNo data to read"); return;}
   PWaitAndSignal mutex(audioBufferMutex);
   
-  if(outgoingSampleRate != sampleRate)
-  { // sample rate changed
-    PTRACE(5,"Mixer\tSample rate changed: " << outgoingSampleRate << "->" << sampleRate);
+  if(outgoingSampleRate != sampleRate || outgoingCodecChannels != codecChannels)
+  { // sample rate or stereo mode changed
+    PTRACE(5,"Mixer\tChanged outgoing sample rate: " << outgoingSampleRate << "->" << sampleRate << ", codec channels: " << outgoingCodecChannels << "->" << codecChannels);
     unsigned oldBufferSize=bufferSize;
-    PCM_BUFFER_SIZE_CALC(outgoingSampleRate);
+    PCM_BUFFER_SIZE_CALC(sampleRate,codecChannels);
     memset(buffer.GetPointer(),0,bufferSize);
-
-    bufferStart = (bufferStart * bufferSize / oldBufferSize) & 0x7ffffffe; // must be odd
-    bufferLen = (bufferLen * bufferSize / oldBufferSize) & 0x7ffffffe; // must be odd
-    if(bufferStart>bufferSize) bufferStart=0;
-    if(bufferLen>bufferSize) bufferLen=0;
+    bufferStart = bufferStart * bufferSize / oldBufferSize;
+    bufferStart -= (bufferStart % (codecChannels<<1));
+    bufferStart=0; bufferLen=0;
     outgoingSampleRate=sampleRate;
+    outgoingCodecChannels=codecChannels;
   }
 
   if (bufferLen == 0) {

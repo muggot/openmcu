@@ -666,11 +666,11 @@ class ConferenceConnection : public PObject {
     { }
 
     void WriteAudio(ConferenceMemberId source, const void * buffer, PINDEX amount);
-    void Write(const BYTE * ptr, PINDEX amount, unsigned sampleRate);
+    void Write(const BYTE * ptr, PINDEX amount);
     void ReadAudio(BYTE * ptr, PINDEX amount);
-    void ReadAndMixAudio(BYTE * ptr, PINDEX amount, PINDEX channels, unsigned short echoLevel, unsigned sampleRate);
+    void ReadAndMixAudio(BYTE * ptr, PINDEX amount, PINDEX channels, unsigned short echoLevel, unsigned sampleRate, unsigned codecChannels);
 
-    unsigned outgoingSampleRate;
+    unsigned outgoingSampleRate, outgoingCodecChannels;
 
   protected:
     Conference * conference;
@@ -799,15 +799,15 @@ class ConferenceMember : public PObject
     /**
       *  Called when the conference member want to send audio data to the cofnerence
       */
-    virtual void WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate);
+    virtual void WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
-    virtual void DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, BufferListType::const_iterator t, PINDEX dstBytes, unsigned dstRate);
+    virtual void DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, unsigned srcChannels, BufferListType::const_iterator t, PINDEX dstBytes, unsigned dstRate, unsigned dstChannels);
 
     /**
       *  Called when the conference member wants to read a block of audio from the conference
       *  By default, this calls ReadMemberAudio on the conference
       */
-    virtual void ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate);
+    virtual void ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
     /**
       * Called when another conference member wants to send audio to the endpoint
@@ -1126,7 +1126,7 @@ class Conference : public PObject
 
     virtual void OnMemberLeaving(ConferenceMember *);
 
-    virtual void ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount, unsigned sampleRate);
+    virtual void ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
     virtual void WriteMemberAudioLevel(ConferenceMember * member, unsigned audioLevel, int tint);
 

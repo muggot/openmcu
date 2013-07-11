@@ -145,7 +145,7 @@ class OutgoingAudio : public PChannel
   PCLASSINFO(OutgoingAudio, PChannel);
 
   public:
-    OutgoingAudio(H323EndPoint & ep, OpenMCUH323Connection & conn, unsigned int sr);
+    OutgoingAudio(H323EndPoint & ep, OpenMCUH323Connection & conn, unsigned int sr, unsigned _channels);
     
     BOOL Read(void * buffer, PINDEX amount);
     BOOL Close();
@@ -157,6 +157,7 @@ class OutgoingAudio : public PChannel
     OpenMCUH323Connection & conn;
 
     unsigned int sampleRate;
+    unsigned channels; //1=mono, 2=stereo
 /*
 #if USE_SWRESAMPLE
     struct SwrContext *swrc;
@@ -177,12 +178,13 @@ class IncomingAudio : public PChannel
   PCLASSINFO(IncomingAudio, PChannel);
 
   public:
-    IncomingAudio(H323EndPoint & ep, OpenMCUH323Connection & conn, unsigned int sr);
+    IncomingAudio(H323EndPoint & ep, OpenMCUH323Connection & conn, unsigned int _sampleRate, unsigned _channels);
 
     BOOL Write(const void * buffer, PINDEX amount);
     BOOL Close();
 
     unsigned int sampleRate;
+    unsigned channels; //1=mono, 2=stereo
 
   protected:
     H323EndPoint & ep;
@@ -251,8 +253,8 @@ class OpenMCUH323Connection : public H323Connection
     virtual BOOL OnReceivedSignalSetup(const H323SignalPDU & setupPDU);
     virtual BOOL OnReceivedCallProceeding(const H323SignalPDU & proceedingPDU);
 
-    virtual BOOL OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate);
-    virtual BOOL OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate);
+    virtual BOOL OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
+    virtual BOOL OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
     virtual PString GetAudioTransmitCodecName() const { return audioTransmitCodecName; }
     virtual PString GetAudioReceiveCodecName() const  { return audioReceiveCodecName; }
     virtual PString GetRemoteName() const             { return remoteName; }

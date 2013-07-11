@@ -365,6 +365,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
   if(sipListener=="")sipListener="0.0.0.0";
   rsrc->Add(new PHTTPStringField(SipListenerKey, 32, sipListener));
+  if(sipListener=="0.0.0.0")sipListener="0.0.0.0 :5060";
   sipendpoint->Resume();
 
   endpoint->Initialise(cfg, rsrc);

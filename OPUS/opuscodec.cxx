@@ -98,6 +98,7 @@ class Encoder : public PluginCodec<CODEC>
     unsigned m_bytesPerFrame;
     unsigned m_sampleRate;
     unsigned m_signalSampleSize;
+    unsigned m_encoderMode;
     unsigned m_channels;
     int error;
     int data_len;
@@ -109,6 +110,7 @@ class Encoder : public PluginCodec<CODEC>
       , m_bytesPerFrame(m_definition->parm.audio.bytesPerFrame)
       , m_sampleRate(m_definition->sampleRate)
       , m_signalSampleSize(2)
+      , m_encoderMode(OPUS_APPLICATION_VOIP)
       , m_channels(1)
     {
     }
@@ -120,13 +122,14 @@ class Encoder : public PluginCodec<CODEC>
 
     virtual bool Construct()
     {
+      GetInitOptions();
       int size = opus_encoder_get_size(m_channels);
       m_state = (OpusEncoder*)malloc(size);
       if (m_state == NULL)
         return false;
 
-      error = opus_encoder_init(m_state, m_sampleRate, m_channels, OPUS_APPLICATION_VOIP);
-      //m_state = opus_encoder_create(m_sampleRate, 1, OPUS_APPLICATION_VOIP, &error);
+      error = opus_encoder_init(m_state, m_sampleRate, m_channels, m_encoderMode);
+      //m_state = opus_encoder_create(m_sampleRate, 1, m_encoderMode, &error);
       if (error != OPUS_OK || m_state == NULL) {
         PTRACE(1, CODEC_LOG, "Error opus_encoder_init: " << opus_strerror(error));
         return false;
@@ -136,13 +139,26 @@ class Encoder : public PluginCodec<CODEC>
     }
 
 
+    virtual void GetInitOptions()
+    {
+      for (PluginCodec_Option ** options = (PluginCodec_Option **)((MediaFormat *)m_definition->userData)->GetOptionsTable(); *options != NULL; ++options) {
+        if (strcmp((*options)->m_name, "Channels") == 0)
+          m_channels = atoi((*options)->m_value);
+        if (strcmp((*options)->m_name, "Encoder Mode") == 0)
+          if (strcmp((*options)->m_value, "VOIP") == 0)
+            m_encoderMode = OPUS_APPLICATION_VOIP;
+          else if (strcmp((*options)->m_value, "AUDIO") == 0)
+            m_encoderMode = OPUS_APPLICATION_AUDIO;
+      }
+    }
+
     virtual bool SetOption(const char * optionName, const char * optionValue)
     {
-      if (strcasecmp(optionName, UseInBandFEC.m_name) == 0) {
+      if (strcasecmp(optionName, "useinbandfec") == 0) {
         error = opus_encoder_ctl(m_state, OPUS_SET_INBAND_FEC(atoi(optionValue)));
         return true;
       }
-      if (strcasecmp(optionName, UseDTX.m_name) == 0) {
+      if (strcasecmp(optionName, "usedtx") == 0) {
         error = opus_encoder_ctl(m_state, OPUS_SET_DTX(atoi(optionValue)));
         return true;
       }
@@ -204,6 +220,7 @@ class Decoder : public PluginCodec<CODEC>
 
     virtual bool Construct()
     {
+      GetInitOptions();
       int size = opus_decoder_get_size(m_channels);
       m_state = (OpusDecoder*)malloc(size);
       if (m_state == NULL)
@@ -216,6 +233,14 @@ class Decoder : public PluginCodec<CODEC>
         return false;
       }
       return true;
+    }
+
+    virtual void GetInitOptions()
+    {
+      for (PluginCodec_Option ** options = (PluginCodec_Option **)((MediaFormat *)m_definition->userData)->GetOptionsTable(); *options != NULL; ++options) {
+        if (strcmp((*options)->m_name, "Channels") == 0)
+          m_channels = atoi((*options)->m_value);
+      }
     }
 
     virtual bool Transcode(const void * fromPtr,
@@ -244,6 +269,8 @@ class Decoder : public PluginCodec<CODEC>
 
 #define OpalPluginCodec_Identifer_OPUS_8K          "1.3.6.1.4.1.17091.1.10.8"
 #define OPUS_8K_MediaFmt                           "OPUS_8K"
+#define OPUS_8K_EncMode                            "VOIP"
+#define OPUS_8K_ChannelsNum                        "1"
 static unsigned int OPUS_8K_ClockRate              =8000;
 static unsigned int OPUS_8K_MaxBitRate             =12000;
 static unsigned int OPUS_8K_DataPerFrame           =20000;
@@ -254,6 +281,8 @@ static unsigned int OPUS_8K_MaxFramesPerPacket     =1;
 
 #define OpalPluginCodec_Identifer_OPUS_16K         "1.3.6.1.4.1.17091.1.10.16"
 #define OPUS_16K_MediaFmt                          "OPUS_16K"
+#define OPUS_16K_EncMode                           "VOIP"
+#define OPUS_16K_ChannelsNum                       "1"
 static unsigned int OPUS_16K_ClockRate             =16000;
 static unsigned int OPUS_16K_MaxBitRate            =20000;
 static unsigned int OPUS_16K_DataPerFrame          =20000;
@@ -264,6 +293,8 @@ static unsigned int OPUS_16K_MaxFramesPerPacket    =1;
 
 #define OpalPluginCodec_Identifer_OPUS_48K         "1.3.6.1.4.1.17091.1.10.48"
 #define OPUS_48K_MediaFmt                          "OPUS_48K"
+#define OPUS_48K_EncMode                           "VOIP"
+#define OPUS_48K_ChannelsNum                       "1"
 static unsigned int OPUS_48K_ClockRate             =48000;
 static unsigned int OPUS_48K_MaxBitRate            =64000;
 static unsigned int OPUS_48K_DataPerFrame          =20000;
@@ -272,9 +303,47 @@ static unsigned int OPUS_48K_MaxBytesPerFrame      =4000;
 static unsigned int OPUS_48K_FramesPerPacket       =1;
 static unsigned int OPUS_48K_MaxFramesPerPacket    =1;
 
+#define OpalPluginCodec_Identifer_OPUS_48K2        "1.3.6.1.4.1.17091.1.10.482"
+#define OPUS_48K2_MediaFmt                         "OPUS_48K2"
+#define OPUS_48K2_EncMode                          "AUDIO"
+#define OPUS_48K2_ChannelsNum                      "2"
+static unsigned int OPUS_48K2_ClockRate            =48000;
+static unsigned int OPUS_48K2_MaxBitRate           =128000;
+static unsigned int OPUS_48K2_DataPerFrame         =20000;
+static unsigned int OPUS_48K2_Samples              =960;
+static unsigned int OPUS_48K2_MaxBytesPerFrame     =4000;
+static unsigned int OPUS_48K2_FramesPerPacket      =1;
+static unsigned int OPUS_48K2_MaxFramesPerPacket   =1;
+
 #define PLUGIN_CODEC(prefix) \
+static struct PluginCodec_Option const prefix##_Channels = \
+{ \
+  PluginCodec_IntegerOption,          /* Option type */ \
+  "Channels",                         /* User visible name */ \
+  false,                              /* User Read/Only flag */ \
+  PluginCodec_NoMerge,                /* Merge mode */ \
+  prefix##_ChannelsNum,               /* Initial value */ \
+  NULL,                               /* FMTP option name */ \
+  NULL,                               /* FMTP default value */ \
+  0,                                  /* H.245 generic capability code and bit mask */ \
+  "1",                                /* Minimum value */ \
+  "2"                                 /* Maximum value */ \
+}; \
+static struct PluginCodec_Option const prefix##_EncoderMode = \
+{ \
+  PluginCodec_EnumOption,             /* Option type */ \
+  "Encoder Mode",                     /* User visible name */ \
+  false,                              /* User Read/Only flag */ \
+  PluginCodec_NoMerge,                /* Merge mode */ \
+  prefix##_EncMode,                   /* Initial value */ \
+  NULL,                               /* FMTP option name */ \
+  NULL,                               /* FMTP default value */ \
+  0,                                  /* H.245 generic capability code and bit mask */ \
+  "VOIP:AUDIO"                        /* Enumeration */ \
+}; \
 static struct PluginCodec_Option const * prefix##_OptionTable[] = \
 { \
+  &prefix##_Channels, \
   &UseInBandFEC, \
   &UseDTX, \
   NULL \
@@ -313,15 +382,19 @@ static prefix##_AudioFormat prefix##_AudioFormatInfo;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+PLUGIN_CODEC(OPUS_8K);
 PLUGIN_CODEC(OPUS_16K);
 PLUGIN_CODEC(OPUS_48K);
+PLUGIN_CODEC(OPUS_48K2);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static struct PluginCodec_Definition CodecDefinition[] =
 {
-  PLUGINCODEC_AUDIO_CODEC_CXX(OPUS_16K_AudioFormatInfo, Encoder, Decoder)
+  PLUGINCODEC_AUDIO_CODEC_CXX(OPUS_8K_AudioFormatInfo, Encoder, Decoder)
+  ,PLUGINCODEC_AUDIO_CODEC_CXX(OPUS_16K_AudioFormatInfo, Encoder, Decoder)
   ,PLUGINCODEC_AUDIO_CODEC_CXX(OPUS_48K_AudioFormatInfo, Encoder, Decoder)
+  ,PLUGINCODEC_AUDIO_CODEC_CXX(OPUS_48K2_AudioFormatInfo, Encoder, Decoder)
 };
 
 PLUGIN_CODEC_IMPLEMENT_CXX(CODEC, CodecDefinition);

@@ -2132,6 +2132,12 @@ BOOL OpenMCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* buffer
 {
   PWaitAndSignal m(connMutex);
 
+  unsigned codecChannels = 1;
+  { PString OptionValue;
+    if(codec.GetMediaFormat().GetOptionValue((const PString)"Channels", OptionValue))
+      codecChannels = atoi(OptionValue);
+  }
+
   unsigned codecSampleRate = codec.GetSampleRate();
 
   if(codecSampleRate == 0) codecSampleRate = 8000; // built-in g711
@@ -2139,21 +2145,31 @@ BOOL OpenMCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* buffer
   if(codecSampleRate > 1000000) // calculated as: [audible 20KHz]*[perfect&unreachable 50 counts per sine period]
   {
     PTRACE(1,"OpenAudioChannel\tError: codec sample rate " << codecSampleRate << " Hz looks too big");
-    if (isEncoding) audioTransmitCodecName = "Error@" + PString(codecSampleRate) + "Hz";
-    else            audioReceiveCodecName  = "Error@" + PString(codecSampleRate) + "Hz";
+    if (isEncoding) audioTransmitCodecName = "Error@" + PString(codecSampleRate) + "Hz/" + PString(codecChannels);
+    else            audioReceiveCodecName  = "Error@" + PString(codecSampleRate) + "Hz/" + PString(codecChannels);
+    return FALSE;
+  }
+
+  if(codecChannels < 1 || codecChannels > 8) // supported layouts from mono up to 7+1 (ffmpeg limitations)
+  {
+    PTRACE(1,"OpenAudioChannel\tError: codec channels " << codecChannels << " out of range 1-8");
+    if (isEncoding) audioTransmitCodecName = "Error@" + PString(codecSampleRate) + "Hz/" + PString(codecChannels);
+    else            audioReceiveCodecName  = "Error@" + PString(codecSampleRate) + "Hz/" + PString(codecChannels);
     return FALSE;
   }
 
   PString codecName = codec.GetMediaFormat() + "@" + PString(codecSampleRate) + "Hz";
+  if(codecChannels==2) codecName+="/stereo";
+  else if(codecChannels>2) codecName+="/"+PString(codecChannels)+"channels";
 
   codec.SetSilenceDetectionMode( H323AudioCodec::NoSilenceDetection );
 
   if (!isEncoding) {
     audioReceiveCodecName = codecName;
-    codec.AttachChannel(new IncomingAudio(ep, *this, codecSampleRate), TRUE);
+    codec.AttachChannel(new IncomingAudio(ep, *this, codecSampleRate, codecChannels), TRUE);
   } else {
     audioTransmitCodecName = codecName;
-    codec.AttachChannel(new OutgoingAudio(ep, *this, codecSampleRate), TRUE);
+    codec.AttachChannel(new OutgoingAudio(ep, *this, codecSampleRate, codecChannels), TRUE);
   }
 
   return TRUE;
@@ -2358,7 +2374,7 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
 }
 
 
-BOOL OpenMCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate)
+BOOL OpenMCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   PWaitAndSignal m(connMutex);
 /*
@@ -2393,7 +2409,7 @@ BOOL OpenMCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount, 
   }
 
   else */ if (conferenceMember != NULL)
-    conferenceMember->WriteAudio(buffer, amount, sampleRate);
+    conferenceMember->WriteAudio(buffer, amount, sampleRate, channels);
 
   return TRUE;
 }
@@ -2416,7 +2432,7 @@ void OpenMCUH323Connection::OnFinishRecording()
 }
 */
 
-BOOL OpenMCUH323Connection::OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate)
+BOOL OpenMCUH323Connection::OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   // When the prodedure begins, play the welcome file
   if (welcomeState == NotStartedYet) {
@@ -2463,7 +2479,7 @@ BOOL OpenMCUH323Connection::OnOutgoingAudio(void * buffer, PINDEX amount, unsign
   // If a we are connected to a conference and no wave
   //  is playing, read data from the conference
   if (conferenceMember != NULL) {
-    conferenceMember->ReadAudio(buffer, amount, sampleRate);
+    conferenceMember->ReadAudio(buffer, amount, sampleRate, channels);
     return TRUE;
   }
 
@@ -2837,8 +2853,8 @@ void OpenMCUH323Connection::LogCall(const BOOL accepted)
 
 ///////////////////////////////////////////////////////////////
 
-OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, unsigned int _sampleRate)
-  : ep(_ep), conn(_conn), sampleRate(_sampleRate)
+OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, unsigned int _sampleRate, unsigned _channels)
+  : ep(_ep), conn(_conn), sampleRate(_sampleRate), channels(_channels)
 {
   os_handle = 0;
   modulo=0;
@@ -2874,7 +2890,7 @@ BOOL OutgoingAudio::Read(void * buffer, PINDEX amount)
 {
   PWaitAndSignal mutexR(audioChanMutex);
   if (!IsOpen()) return FALSE;
-  if (!conn.OnOutgoingAudio(buffer, amount, sampleRate)) CreateSilence(buffer, amount);
+  if (!conn.OnOutgoingAudio(buffer, amount, sampleRate, channels)) CreateSilence(buffer, amount);
   unsigned d0=(1000 * (amount >> 1));
   unsigned d=d0 / sampleRate;
   modulo += d0 % sampleRate;
@@ -2941,8 +2957,8 @@ BOOL OutgoingAudio::Close()
 
 ///////////////////////////////////////////////////////////////////////////
 
-IncomingAudio::IncomingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, unsigned int _sampleRate)
-  : sampleRate(_sampleRate), ep(_ep), conn(_conn)
+IncomingAudio::IncomingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, unsigned int _sampleRate, unsigned _channels)
+  : sampleRate(_sampleRate), channels(_channels), ep(_ep), conn(_conn)
 {
   os_handle = 0;
   modulo=0;
@@ -2972,7 +2988,7 @@ BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
 {
   PWaitAndSignal mutexW(audioChanMutex);
   if (!IsOpen()) return FALSE;
-  conn.OnIncomingAudio(buffer, amount, sampleRate);
+  conn.OnIncomingAudio(buffer, amount, sampleRate, channels);
   unsigned d0=(1000 * (amount >> 1));
   unsigned d=d0 / sampleRate;
   modulo += d0 % sampleRate;
