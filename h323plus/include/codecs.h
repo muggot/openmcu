@@ -718,6 +718,8 @@ class H323AudioCodec : public H323Codec
   protected:
     unsigned samplesPerFrame;
 
+    unsigned codecChannels;
+
     SilenceDetectionMode silenceDetectMode;
 
     unsigned signalDeadbandFrames;  // Frames of signal before talk burst starts

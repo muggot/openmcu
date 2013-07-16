@@ -776,20 +776,15 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
         switch (err) {
           case VPX_CODEC_OK :
             break;
-
           // Non fatal errors
-          case VPX_CODEC_CORRUPT_FRAME :
-            flags |= PluginCodec_ReturnCoderRequestIFrame;
-            m_ignoreTillKeyFrame = true;
-            m_fullFrame.clear();
-          case VPX_CODEC_UNSUP_FEATURE :
-            PTRACE(4, MY_CODEC_LOG, "Decoder reported non-fatal error: " << err);
-            IsError(err, "vpx_codec_decode");
-            return true;
-
           case VPX_CODEC_UNSUP_BITSTREAM :
+          case VPX_CODEC_CORRUPT_FRAME :
+            IsError(err, "vpx_codec_decode");
             flags |= PluginCodec_ReturnCoderRequestIFrame;
             m_fullFrame.clear();
+            m_ignoreTillKeyFrame = true;
+            return true;
+          case VPX_CODEC_UNSUP_FEATURE :
           default :
             IsError(err, "vpx_codec_decode");
             return true;
@@ -1080,43 +1075,37 @@ class VP8DecoderOM : public VP8Decoder
 #define VP8_QCIF_MediaFmt                   "VP8-QCIF"
 #define VP8_QCIF_WIDTH                      "176"
 #define VP8_QCIF_HEIGHT                     "144"
-#define VP8_QCIF_TARGETBITRATE              "128000"
-#define VP8_QCIF_MAXBITRATE                  256000
+#define VP8_QCIF_TARGETBITRATE              "64000"
 
 #define OpalPluginCodec_Identifer_VP8_CIF   "1.3.6.1.4.1.17091.1.9.1"
 #define VP8_CIF_MediaFmt                    "VP8-CIF"
 #define VP8_CIF_WIDTH                       "352"
 #define VP8_CIF_HEIGHT                      "288"
-#define VP8_CIF_TARGETBITRATE               "256000"
-#define VP8_CIF_MAXBITRATE                   384000
+#define VP8_CIF_TARGETBITRATE               "64000"
 
 #define OpalPluginCodec_Identifer_VP8_4CIF  "1.3.6.1.4.1.17091.1.9.2"
 #define VP8_4CIF_MediaFmt                   "VP8-4CIF"
 #define VP8_4CIF_WIDTH                      "704"
 #define VP8_4CIF_HEIGHT                     "576"
-#define VP8_4CIF_TARGETBITRATE              "384000"
-#define VP8_4CIF_MAXBITRATE                  512000
+#define VP8_4CIF_TARGETBITRATE              "128000"
 
 #define OpalPluginCodec_Identifer_VP8_480P  "1.3.6.1.4.1.17091.1.9.10"
 #define VP8_480P_MediaFmt                   "VP8-480P"
 #define VP8_480P_WIDTH                      "852"
 #define VP8_480P_HEIGHT                     "480"
-#define VP8_480P_TARGETBITRATE              "512000"
-#define VP8_480P_MAXBITRATE                  768000
+#define VP8_480P_TARGETBITRATE              "128000"
 
 #define OpalPluginCodec_Identifer_VP8_720P  "1.3.6.1.4.1.17091.1.9.11"
 #define VP8_720P_MediaFmt                   "VP8-720P"
 #define VP8_720P_WIDTH                      "1280"
 #define VP8_720P_HEIGHT                     "720"
-#define VP8_720P_TARGETBITRATE              "768000"
-#define VP8_720P_MAXBITRATE                  1024000
+#define VP8_720P_TARGETBITRATE              "256000"
 
 #define OpalPluginCodec_Identifer_VP8_1080P "1.3.6.1.4.1.17091.1.9.12"
 #define VP8_1080P_MediaFmt                  "VP8-1080P"
 #define VP8_1080P_WIDTH                     "1920"
 #define VP8_1080P_HEIGHT                    "1080"
-#define VP8_1080P_TARGETBITRATE             "1024000"
-#define VP8_1080P_MAXBITRATE                 2048000
+#define VP8_1080P_TARGETBITRATE             "512000"
 
 #define VP8PLUGIN_CODEC(prefix) \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \
@@ -1126,7 +1115,7 @@ static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323para
 static struct PluginCodec_H323GenericCodecData prefix##_Cap = \
 { \
     OpalPluginCodec_Identifer_##prefix, \
-    prefix##_MAXBITRATE, \
+    0, \
     0, \
     prefix##_h323params \
 }; \

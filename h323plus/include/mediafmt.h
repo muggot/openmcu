@@ -544,6 +544,20 @@ class OpalMediaFormat : public PCaselessString
 	  */
 	void SetFrameTime(unsigned ft) { frameTime = ft; }
 
+    // Multi channels support
+    unsigned GetEncoderChannels() const
+    {
+      PString OptionValue;
+      return (GetOptionValue((const PString)"Encoder Channels", OptionValue)) ? atoi(OptionValue) : 1;
+    }
+
+    // Multi channels support
+    unsigned GetDecoderChannels() const
+    {
+      PString OptionValue;
+      return (GetOptionValue((const PString)"Decoder Channels", OptionValue)) ? atoi(OptionValue) : 1;
+    }
+
     /**Get the number of RTP timestamp units per millisecond.
       */
     virtual unsigned GetTimeUnits() const { return timeUnits; }

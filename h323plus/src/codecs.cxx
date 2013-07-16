@@ -795,6 +795,11 @@ H323AudioCodec::H323AudioCodec(const OpalMediaFormat & fmt, Direction dir)
   if (samplesPerFrame == 0)
     samplesPerFrame = 8; // Default for non-frame based codecs.
 
+  if (direction == Encoder)
+    codecChannels = mediaFormat.GetEncoderChannels();
+  else
+    codecChannels = mediaFormat.GetDecoderChannels();
+
   // Start off in silent mode
   inTalkBurst = FALSE;
 
@@ -815,7 +820,7 @@ H323AudioCodec::~H323AudioCodec()
 
 BOOL H323AudioCodec::Open(H323Connection & connection)
 {
-  return connection.OpenAudioChannel(direction == Encoder, samplesPerFrame*2, *this);
+  return connection.OpenAudioChannel(direction == Encoder, samplesPerFrame*2*codecChannels, *this);
 }
 
 
@@ -1014,7 +1019,7 @@ BOOL H323AudioCodec::SetRawDataHeld(BOOL hold) {
 
 H323FramedAudioCodec::H323FramedAudioCodec(const OpalMediaFormat & fmt, Direction dir)
   : H323AudioCodec(fmt, dir),
-    sampleBuffer(samplesPerFrame)
+    sampleBuffer(samplesPerFrame*codecChannels)
 {
   bytesPerFrame = mediaFormat.GetFrameSize();
 }
@@ -1035,9 +1040,9 @@ BOOL H323FramedAudioCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
     return TRUE;
   }
 
-  PINDEX numBytes = samplesPerFrame*2;
+  PINDEX numBytes = samplesPerFrame*2*codecChannels;
   PINDEX count;
-  if (!ReadRaw(sampleBuffer.GetPointer(samplesPerFrame), numBytes, count))
+  if (!ReadRaw(sampleBuffer.GetPointer(samplesPerFrame*codecChannels), numBytes, count))
     return FALSE;
 
 //  PTRACE(6,"Audio\tReadRaw " << numBytes);
@@ -1045,7 +1050,7 @@ BOOL H323FramedAudioCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
 #ifdef H323_AEC
     if (aec != NULL) {
        PTRACE(6,"AEC\tSend " << numBytes);
-       aec->Send((BYTE*)sampleBuffer.GetPointer(samplesPerFrame),(unsigned &)numBytes);
+       aec->Send((BYTE*)sampleBuffer.GetPointer(samplesPerFrame*codecChannels),(unsigned &)numBytes);
     }
 #endif
 
@@ -1085,7 +1090,7 @@ BOOL H323FramedAudioCodec::Write(const BYTE * buffer,
   // If length is zero then it indicates silence, do nothing.
   written = 0;
 
-  unsigned bytesDecoded = samplesPerFrame*2;
+  unsigned bytesDecoded = samplesPerFrame*2*codecChannels;
 
   if (length != 0) {
     if (length > bytesPerFrame)

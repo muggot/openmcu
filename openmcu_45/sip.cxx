@@ -425,9 +425,8 @@ void OpenMCUSipConnection::SelectCapability_VP8(SipCapability &c,PStringArray &t
   c.h323 = H323Name;
 
   OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
-  if (remoteApplication.ToLower().Find("linphone") == 0) wf.SetOptionEnum("Picture ID Size", 0);
+  if(remoteApplication.ToLower().Find("linphone") == 0) wf.SetOptionEnum("Picture ID Size", 0);
   if(c.bandwidth) wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
-  else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
  }
 }
 

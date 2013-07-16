@@ -1349,7 +1349,7 @@ class H323PluginFramedAudioCodec : public H323FramedAudioCodec
     {
       if (codec == NULL || direction != Encoder)
         return FALSE;
-      unsigned int fromLen = codec->parm.audio.samplesPerFrame*2;
+      unsigned int fromLen = codec->parm.audio.samplesPerFrame*2*codecChannels;
       toLen                = codec->parm.audio.bytesPerFrame;
       unsigned flags = 0;
       return (codec->codecFunction)(codec, context, 
