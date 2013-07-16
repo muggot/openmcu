@@ -284,7 +284,7 @@ static unsigned int OPUS_16K_MaxFramesPerPacket    =1;
 #define OpalPluginCodec_Identifer_OPUS_48K         "1.3.6.1.4.1.17091.1.10.48"
 #define OPUS_48K_MediaFmt                          "OPUS_48K"
 #define OPUS_48K_EncMode                           "VOIP"
-#define OPUS_48K_EncoderChannelsNum                "2"
+#define OPUS_48K_EncoderChannelsNum                "1"
 #define OPUS_48K_DecoderChannelsNum                "1"
 #define OPUS_48K_ForceChannelsNum                  "0"
 static unsigned int OPUS_48K_ClockRate             =48000;
