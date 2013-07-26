@@ -32,6 +32,9 @@
 // enable/disable swresample usage (resample 8<>16 KHz)
 #define USE_SWRESAMPLE  1
 
+// enable/disable avresample usage
+#define USE_AVRESAMPLE  0
+
 // enable/disable freetype2 (rendering names)
 #define USE_FREETYPE	1
 

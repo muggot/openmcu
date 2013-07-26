@@ -6,12 +6,17 @@
 #include "conference.h"
 #include "mcu.h"
 
-#if USE_SWRESAMPLE
 extern "C" {
+#if USE_SWRESAMPLE
 #include <libswresample/swresample.h>
 #include <libavutil/audioconvert.h>
+#elif USE_AVRESAMPLE
+#include <libavresample/avresample.h>
+#include <libavutil/audioconvert.h>
+#include <libavutil/samplefmt.h>
+#include <libavutil/opt.h>
+#endif
 };
-#endif //USE_SWRESAMPLE
 
 #if OPENMCU_VIDEO
 #include <ptlib/vconvert.h>
