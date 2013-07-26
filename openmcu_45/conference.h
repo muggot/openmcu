@@ -627,6 +627,8 @@ struct ResamplerBufferType
   BOOL used;
 #if USE_SWRESAMPLE
   struct SwrContext * swrc;
+#elif USE_AVRESAMPLE
+  struct AVAudioResampleContext * swrc;
 #endif
 };
 typedef std::map<unsigned, ResamplerBufferType *> BufferListType;

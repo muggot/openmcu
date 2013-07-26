@@ -15,6 +15,7 @@ extern "C" {
 #include <libavutil/audioconvert.h>
 #include <libavutil/samplefmt.h>
 #include <libavutil/opt.h>
+#include <libavutil/mem.h>
 #endif
 };
 
@@ -1522,6 +1523,8 @@ ConferenceMember::~ConferenceMember()
     {
 #if USE_SWRESAMPLE
       if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
+#elif USE_AVRESAMPLE
+      if(t->second->swrc != NULL) avresample_free(&(t->second->swrc));
 #endif
       delete t->second; t->second=NULL;
     }
@@ -1647,6 +1650,26 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
                 MCU_AV_CH_Layout_Selector[targetCodecChannels], AV_SAMPLE_FMT_S16, targetSampleRate,
                 MCU_AV_CH_Layout_Selector[channels           ], AV_SAMPLE_FMT_S16, sampleRate,       0, NULL);
               swr_init(newResamplerBuffer->swrc);
+#elif USE_AVRESAMPLE
+              const uint64_t MCU_AV_CH_Layout_Selector[] = {0
+                ,AV_CH_LAYOUT_MONO
+                ,AV_CH_LAYOUT_STEREO
+                ,AV_CH_LAYOUT_2_1
+                ,AV_CH_LAYOUT_3POINT1
+                ,AV_CH_LAYOUT_5POINT0
+                ,AV_CH_LAYOUT_5POINT1
+                ,AV_CH_LAYOUT_7POINT0
+                ,AV_CH_LAYOUT_7POINT1
+              };
+              newResamplerBuffer->swrc = NULL;
+              newResamplerBuffer->swrc = avresample_alloc_context();
+              av_opt_set_int(newResamplerBuffer->swrc, "out_channel_layout", MCU_AV_CH_Layout_Selector[targetCodecChannels], 0);
+              av_opt_set_int(newResamplerBuffer->swrc, "out_sample_fmt",     AV_SAMPLE_FMT_S16, 0);
+              av_opt_set_int(newResamplerBuffer->swrc, "out_sample_rate",    targetSampleRate, 0);
+              av_opt_set_int(newResamplerBuffer->swrc, "in_channel_layout",  MCU_AV_CH_Layout_Selector[channels], 0);
+              av_opt_set_int(newResamplerBuffer->swrc, "in_sample_fmt",      AV_SAMPLE_FMT_S16,0);
+              av_opt_set_int(newResamplerBuffer->swrc, "in_sample_rate",     sampleRate, 0);
+              avresample_open(newResamplerBuffer->swrc);
 #endif
               bufferList.insert(BufferListType::value_type(bufferKey, newResamplerBuffer));
               t=bufferList.find(bufferKey);
@@ -1670,6 +1693,8 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
       {
 #if USE_SWRESAMPLE
         if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
+#elif USE_AVRESAMPLE
+        if(t->second->swrc != NULL) avresample_free(&(t->second->swrc));
 #endif
         delete t->second;
         bufferList.erase(t->first);
@@ -1690,6 +1715,19 @@ void ConferenceMember::DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate,
     (const uint8_t **)&from,
        (((int)srcBytes)>>1)/srcChannels
   );
+#elif USE_AVRESAMPLE
+  void * to = t->second->data.GetPointer();
+  void * from = (void*)src;
+
+  int out_samples = (((int)dstBytes)>>1)/dstChannels;
+  int out_linesize = out_samples*2;
+  int in_samples = (((int)srcBytes)>>1)/srcChannels;
+  int in_linesize = (int)srcBytes;
+
+  //PTRACE(1, "avresample: " << in_linesize << " " << in_samples << " " << out_linesize << " " << out_samples);
+  // avresample: 1920 960 640 320
+  avresample_convert(t->second->swrc, (uint8_t **)&to, out_linesize, out_samples,
+                                      (uint8_t **)&from, in_linesize, in_samples);
 #else
   if(srcChannels == dstChannels && srcChannels == 1)
   { for(PINDEX i=0;i<(dstBytes>>1);i++) ((short*)(t->second->data.GetPointer()))[i] = ((short*)src)[i*srcRate/dstRate];
