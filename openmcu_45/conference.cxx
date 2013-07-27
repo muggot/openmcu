@@ -16,6 +16,8 @@ extern "C" {
 #include <libavutil/samplefmt.h>
 #include <libavutil/opt.h>
 #include <libavutil/mem.h>
+#elif USE_LIBSAMPLERATE
+#include <samplerate.h>
 #endif
 };
 
@@ -1525,6 +1527,9 @@ ConferenceMember::~ConferenceMember()
       if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
 #elif USE_AVRESAMPLE
       if(t->second->swrc != NULL) avresample_free(&(t->second->swrc));
+#elif USE_LIBSAMPLERATE
+      if(t->second->swrc != NULL) src_delete(t->second->swrc);
+      t->second->swrc = NULL;
 #endif
       delete t->second; t->second=NULL;
     }
@@ -1670,6 +1675,9 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
               av_opt_set_int(newResamplerBuffer->swrc, "in_sample_fmt",      AV_SAMPLE_FMT_S16,0);
               av_opt_set_int(newResamplerBuffer->swrc, "in_sample_rate",     sampleRate, 0);
               avresample_open(newResamplerBuffer->swrc);
+#elif USE_LIBSAMPLERATE
+              newResamplerBuffer->swrc = NULL;
+              newResamplerBuffer->swrc = src_new(SRC_LINEAR, 1, NULL);
 #endif
               bufferList.insert(BufferListType::value_type(bufferKey, newResamplerBuffer));
               t=bufferList.find(bufferKey);
@@ -1695,6 +1703,9 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
         if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
 #elif USE_AVRESAMPLE
         if(t->second->swrc != NULL) avresample_free(&(t->second->swrc));
+#elif USE_LIBSAMPLERATE
+        if(t->second->swrc != NULL) src_delete(t->second->swrc);
+        t->second->swrc = NULL;
 #endif
         delete t->second;
         bufferList.erase(t->first);
@@ -1720,14 +1731,34 @@ void ConferenceMember::DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate,
   void * from = (void*)src;
 
   int out_samples = (((int)dstBytes)>>1)/dstChannels;
-  int out_linesize = out_samples*2;
+  int out_linesize = (int)dstBytes;
   int in_samples = (((int)srcBytes)>>1)/srcChannels;
   int in_linesize = (int)srcBytes;
 
-  //PTRACE(1, "avresample: " << in_linesize << " " << in_samples << " " << out_linesize << " " << out_samples);
-  // avresample: 1920 960 640 320
   avresample_convert(t->second->swrc, (uint8_t **)&to, out_linesize, out_samples,
                                       (uint8_t **)&from, in_linesize, in_samples);
+#elif USE_LIBSAMPLERATE
+  SRC_DATA src_data;
+  long out_samples = (int)dstBytes/(dstChannels*sizeof(short));
+  long in_samples = (int)srcBytes/(srcChannels*sizeof(short));
+  float data_out[out_samples*sizeof(float)];
+  float data_in[in_samples*sizeof(float)];
+  src_short_to_float_array((const short *)src, data_in, in_samples);
+
+  src_data.data_in = data_in;
+  src_data.input_frames = in_samples;
+  src_data.data_out = data_out;
+  src_data.output_frames = out_samples;
+  src_data.src_ratio = (double)out_samples/(double)in_samples;
+
+  int err = src_process(t->second->swrc, &src_data);
+  if (err)
+  {
+    PTRACE(1, "libsamplerate error: " << src_strerror(err));
+    return;
+  }
+  src_float_to_short_array(data_out, (short *)t->second->data.GetPointer(), src_data.output_frames_gen);
+  //PTRACE(1, "libsamplerate: " << src_data.input_frames << " " << src_data.output_frames << " " << src_data.input_frames_used << " " << src_data.output_frames_gen);
 #else
   if(srcChannels == dstChannels && srcChannels == 1)
   { for(PINDEX i=0;i<(dstBytes>>1);i++) ((short*)(t->second->data.GetPointer()))[i] = ((short*)src)[i*srcRate/dstRate];

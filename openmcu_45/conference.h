@@ -629,6 +629,8 @@ struct ResamplerBufferType
   struct SwrContext * swrc;
 #elif USE_AVRESAMPLE
   struct AVAudioResampleContext * swrc;
+#elif USE_LIBSAMPLERATE
+  struct SRC_STATE_tag * swrc;
 #endif
 };
 typedef std::map<unsigned, ResamplerBufferType *> BufferListType;

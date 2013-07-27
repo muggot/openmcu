@@ -29,11 +29,12 @@
 #define OPENMCU_VIDEO   1
 #endif
 
-// enable/disable swresample usage (resample 8<>16 KHz)
+// enable/disable swresample usage
 #define USE_SWRESAMPLE  1
-
 // enable/disable avresample usage
 #define USE_AVRESAMPLE  0
+// enable/disable libsamplerate usage
+#define USE_LIBSAMPLERATE  0
 
 // enable/disable freetype2 (rendering names)
 #define USE_FREETYPE	1
