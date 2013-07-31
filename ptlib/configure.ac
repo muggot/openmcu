@@ -517,7 +517,8 @@ AC_ARG_ENABLE(opal,
 dnl these are the default configure settings
 default_resolver=yes
 default_openldap=yes
-default_openssl=yes
+default_openssl=no
+default_odbc=no
 default_expat=yes
 default_sdl=yes
 default_sasl=yes
@@ -555,7 +556,8 @@ default_vxml=yes
 if test "${enable_openh323}x" = "yesx" -o "${enable_opal}x" = "yesx" ; then
   default_resolver=yes
   default_openldap=no
-  default_openssl=yes
+  default_openssl=no
+  default_odbc=no
   default_expat=no
   default_sdl=yes
   default_sasl=no
@@ -593,6 +595,7 @@ elif test "${enable_minsize}x" = "yesx" ; then
   default_resolver=no
   default_openldap=no
   default_openssl=no
+  default_odbc=no
   default_expat=no
   default_sdl=no
   default_sasl=no
