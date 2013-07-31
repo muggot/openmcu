@@ -400,4 +400,5 @@ uninstall:
 	       $(PREFIX)/share/openh323
 	rm -f $(DESTDIR)$(LIBDIR)/$(OH323_FILE) \
 	      $(DESTDIR)$(LIBDIR)/libopenh323.so
+	rm -f $(DESTDIR)$(LIBDIR)/libh323_*_r.so*
 

@@ -1,0 +1,64 @@
+Notes for OpenMCU-ru
+-----------------
+http://www.openmcu.ru
+
+OpenMCU-ru
+    Andrey Varnavskiy, muggot
+    Konstantin Yeliseyev, kay27
+    Andrey Burbovskiy, xak-mcu
+
+OpenMCU
+    Roger Hardiman, 20 June 2001
+    Updated by Craig Southeren, 6 March 2006
+
+
+1. Introduction
+---------------
+
+OpenMCU is a simple Mutli Conference Unit using the H.323 and SIP protocol.
+It is known to run on Linux, FreeBSD and Windows.
+
+Requires the H323Plus library - see http://www.h323plus.org for more information.
+Requires the PTLib library - see http://www.opalvoip.org for more information.
+Requires the Sofia-SIP library - see http://www.sofia-sip.sourceforge.net for more information.
+Requires the FFmpeg library - see http://www.ffmpeg.org for more information.
+Requires the FreeType library - see http://www.freetype.org for more information.
+Requires the libyuv library - see http://www.code.google.com/p/libyuv for more information.
+
+
+2. Features
+-----------
+
+The code contains the following features:
+
+- configured by a web interface on port 1420 (use http://host:1420 access)
+- requires no codec hardware to operate
+- supports H.263, H.264, VP8 video codecs
+- supports G.711, G.722, G723.1, iLBC, SILK, OPUS audio codecs
+- can accept multiple connections simultaneously
+- several different conferences can be talking place at the same time
+  using the 'rooms' feature
+- display statistics on calls in progress
+- initiate calls from the MCU to remote endpoints
+- audio loopback mode echoes back your audio in a specific room. Ideal for
+  setup of audio hardware and testing network performance.
+
+
+3. Operation
+------------
+
+OpenMCU works by setting up a H.323 and SIP listener process, and then waiting for
+incoming connections.
+You call the MCU using the format "room_name@server_name".
+
+New rooms are created automatically and there is a default room for
+people who do not specify a room or cannot specify a room (eg NetMeeting).
+The default room is called room101.
+
+4. Installation Instructions
+-----------------------
+
+./autogen.sh
+./configure --prefix=/opt/openmcu-ru
+make all
+make install

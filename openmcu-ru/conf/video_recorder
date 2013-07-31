@@ -1,0 +1,9 @@
+#!/bin/bash
+
+rname=$(date +"%F")
+
+./ffmpeg -y\
+ -f s16le -ac 1 -ar 16000 -i sound.$1\
+ -f rawvideo -r 10 -s 4cif -i video.$1\
+ -f asf -acodec flac -ac 1 -vcodec msmpeg4v2\
+ "$rname-$1.asf"

@@ -1,0 +1,9 @@
+#!/bin/bash
+
+NAME_SELF=$(readlink -f "$0")
+DIR_SELF=$(dirname "$NAME_SELF")
+cd "$DIR_SELF"
+
+export LD_LIBRARY_PATH="$DIR_SELF/lib"
+
+"$DIR_SELF/openmcu-ru" "$@"
