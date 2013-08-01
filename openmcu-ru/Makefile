@@ -4,7 +4,7 @@
 # Make file for OpenMCU-ru
 #
 
-PREFIX          = /opt/openmcu-ru
+PREFIX          = /usr/local
 MACHTYPE	= ${x86:-x86}
 PROG		= openmcu-ru
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx
@@ -46,56 +46,49 @@ i20_vad.gif \
 i24_shuff.gif \
 openmcu.ru_remove.gif \
 template.html \
-quote.txt \
-Russo_One.ttf
+quote.txt
 
 install:
-	mkdir -p /opt/openmcu-ru/bin
-	mkdir -p /opt/openmcu-ru/config
-	mkdir -p /opt/openmcu-ru/pipe
-	mkdir -p /opt/openmcu-ru/log
-	mkdir -p /opt/openmcu-ru/records
-	mkdir -p /opt/openmcu-ru/share/openmcu-ru
-	mkdir -p /opt/openmcu-ru/share/openmcu-ru
+	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/bin
+	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/config
+	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/font
+	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/log
+	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/pipe
+	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/records
+	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/resource
 	( for file in ${CONFIG_FILES}; \
-	    do $(INSTALL) -m 644 conf/$$file /opt/openmcu-ru/config; \
+	    do $(INSTALL) -m 644 conf/$$file $(DESTDIR)/usr/local/share/openmcu-ru/config; \
 	done )
 	( for file in ${RESOURCE_FILES}; \
-	    do $(INSTALL) -m 644 conf/$$file /opt/openmcu-ru/share/openmcu-ru; \
+	    do $(INSTALL) -m 644 conf/$$file $(DESTDIR)/usr/local/share/openmcu-ru/resource; \
 	done )
-	$(INSTALL) -m 755 obj_linux_$(MACHTYPE)_r/$(PROG) /opt/openmcu-ru/bin
-	rm -f /opt/openmcu-ru/openmcu
-	rm -f /opt/openmcu-ru/openmcu-ru
-	ln -s /opt/openmcu-ru/bin/$(PROG) /opt/openmcu-ru/openmcu
-	ln -s /opt/openmcu-ru/bin/$(PROG) /opt/openmcu-ru/openmcu-ru
-	$(INSTALL) -m 755 conf/web_stream_start /opt/openmcu-ru/bin
-	$(INSTALL) -m 755 conf/ffmpeg /opt/openmcu-ru/bin
-	$(INSTALL) -m 755 conf/ffserver /opt/openmcu-ru/bin
-	$(INSTALL) -m 755 conf/web_stream_start /opt/openmcu-ru/bin
-	$(INSTALL) -m 755 custom/openmcu-wrapper /opt/openmcu-ru
-	$(INSTALL) -m 644 custom/openmcu.ini /opt/openmcu-ru/config
+	$(INSTALL) -m 755 obj_linux_$(MACHTYPE)_r/$(PROG) $(DESTDIR)/usr/local/share/openmcu-ru/bin
+	$(INSTALL) -m 755 conf/web_stream_start $(DESTDIR)/usr/local/share/openmcu-ru/bin
+	$(INSTALL) -m 755 conf/ffmpeg $(DESTDIR)/usr/local/share/openmcu-ru/bin
+	$(INSTALL) -m 755 conf/ffserver $(DESTDIR)/usr/local/share/openmcu-ru/bin
+	$(INSTALL) -m 755 conf/web_stream_start $(DESTDIR)/usr/local/share/openmcu-ru/bin
+	$(INSTALL) -m 755 custom/openmcu-wrapper $(DESTDIR)/usr/local/share/openmcu-ru/bin
+	rm -f $(DESTDIR)/usr/local/bin/openmcu-ru
+	ln -s /usr/local/share/openmcu-ru/bin/openmcu-wrapper $(DESTDIR)/usr/local/bin/openmcu-ru
+	$(INSTALL) -m 644 custom/openmcu.ini $(DESTDIR)/usr/local/share/openmcu-ru/config
+	$(INSTALL) -m 644 conf/Russo_One.ttf $(DESTDIR)/usr/local/share/openmcu-ru/font
+	$(INSTALL) -m 644 ../AUTHORS $(DESTDIR)/usr/local/share/openmcu-ru
+	$(INSTALL) -m 644 ../COPYING $(DESTDIR)/usr/local/share/openmcu-ru
+	$(INSTALL) -m 644 ../NEWS $(DESTDIR)/usr/local/share/openmcu-ru
+	$(INSTALL) -m 644 ../README $(DESTDIR)/usr/local/share/openmcu-ru
 
 uninstall:
-	( for file in ${RESOURCE_FILES}; \
-	    do rm -f /opt/openmcu-ru/share/openmcu-ru/$$file; \
-	done )
-	( for file in ${CONFIG_FILES}; \
-	    do rm -f /opt/openmcu-ru/config/$$file; \
-	done )
-	rm -f /opt/openmcu-ru/bin/$(PROG)
-	rm -f /opt/openmcu-ru/bin/ptlib-config
-	rm -f /opt/openmcu-ru/openmcu
-	rm -f /opt/openmcu-ru/openmcu-ru
-	rm -f /opt/openmcu-ru/bin/ffmpeg
-	rm -f /opt/openmcu-ru/bin/ffserver
-	rm -f /opt/openmcu-ru/bin/web_stream_start
-	rm -f /opt/openmcu-ru/openmcu-wrapper
-	rm -f /opt/openmcu-ru/config/openmcu.ini
-#	rm -rf /opt/openmcu-ru/config
-#	rm -rf /opt/openmcu-ru/pipe
-#	rm -rf /opt/openmcu-ru/log
-#	rm -rf /opt/openmcu-ru/records
-#	rm -rf /opt/openmcu-ru/share/openmcu-ru
-#	rm -rf /opt/openmcu-ru/share/openmcu-ru
-#	rm -rf /opt/openmcu-ru/lib
-#	rm -rf /opt/openmcu-ru/bin
+	rm -f $(DESTDIR)/usr/local/bin/openmcu-ru
+	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/bin
+	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/config
+	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/font
+	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/log
+	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/pipe
+	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/records
+	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/resource
+	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/AUTHORS
+	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/COPYING
+	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/NEWS
+	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/README
+	rm -f $(DESTDIR)/usr/local/bin/ptlib-config
+	rm -rf $(DESTDIR)/usr/local/lib/ptlib

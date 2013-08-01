@@ -55,10 +55,11 @@ New rooms are created automatically and there is a default room for
 people who do not specify a room or cannot specify a room (eg NetMeeting).
 The default room is called room101.
 
+
 4. Installation Instructions
 -----------------------
 
 ./autogen.sh
-./configure --prefix=/opt/openmcu-ru
+./configure
 make all
 make install

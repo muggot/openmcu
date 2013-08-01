@@ -1,0 +1,3 @@
+#!/bin/bash
+
+export LD_LIBRARY_PATH=@INSTALLPREFIX@/lib && @MCU_BIN_DIR@/openmcu-ru $@

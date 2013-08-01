@@ -46,56 +46,49 @@ i20_vad.gif \
 i24_shuff.gif \
 openmcu.ru_remove.gif \
 template.html \
-quote.txt \
-Russo_One.ttf
+quote.txt
 
 install:
-	mkdir -p @MCU_BIN_DIR@
-	mkdir -p @MCU_CONFIG_DIR@
-	mkdir -p @MCU_PIPE_DIR@
-	mkdir -p @MCU_LOG_DIR@
-	mkdir -p @MCU_RECORDS_DIR@
-	mkdir -p @MCU_FONT_DIR@
-	mkdir -p @MCU_RESOURCE_DIR@
+	mkdir -p $(DESTDIR)@MCU_BIN_DIR@
+	mkdir -p $(DESTDIR)@MCU_CONFIG_DIR@
+	mkdir -p $(DESTDIR)@MCU_FONT_DIR@
+	mkdir -p $(DESTDIR)@MCU_LOG_DIR@
+	mkdir -p $(DESTDIR)@MCU_PIPE_DIR@
+	mkdir -p $(DESTDIR)@MCU_RECORDS_DIR@
+	mkdir -p $(DESTDIR)@MCU_RESOURCE_DIR@
 	( for file in ${CONFIG_FILES}; \
-	    do $(INSTALL) -m 644 conf/$$file @MCU_CONFIG_DIR@; \
+	    do $(INSTALL) -m 644 conf/$$file $(DESTDIR)@MCU_CONFIG_DIR@; \
 	done )
 	( for file in ${RESOURCE_FILES}; \
-	    do $(INSTALL) -m 644 conf/$$file @MCU_RESOURCE_DIR@; \
+	    do $(INSTALL) -m 644 conf/$$file $(DESTDIR)@MCU_RESOURCE_DIR@; \
 	done )
-	$(INSTALL) -m 755 obj_linux_$(MACHTYPE)_r/$(PROG) @MCU_BIN_DIR@
-	rm -f @INSTALLPREFIX@/openmcu
-	rm -f @INSTALLPREFIX@/openmcu-ru
-	ln -s @MCU_BIN_DIR@/$(PROG) @INSTALLPREFIX@/openmcu
-	ln -s @MCU_BIN_DIR@/$(PROG) @INSTALLPREFIX@/openmcu-ru
-	$(INSTALL) -m 755 conf/web_stream_start @MCU_BIN_DIR@
-	$(INSTALL) -m 755 conf/ffmpeg @MCU_BIN_DIR@
-	$(INSTALL) -m 755 conf/ffserver @MCU_BIN_DIR@
-	$(INSTALL) -m 755 conf/web_stream_start @MCU_BIN_DIR@
-	$(INSTALL) -m 755 custom/openmcu-wrapper @INSTALLPREFIX@
-	$(INSTALL) -m 644 custom/openmcu.ini @MCU_CONFIG_DIR@
+	$(INSTALL) -m 755 obj_linux_$(MACHTYPE)_r/$(PROG) $(DESTDIR)@MCU_BIN_DIR@
+	$(INSTALL) -m 755 conf/web_stream_start $(DESTDIR)@MCU_BIN_DIR@
+	$(INSTALL) -m 755 conf/ffmpeg $(DESTDIR)@MCU_BIN_DIR@
+	$(INSTALL) -m 755 conf/ffserver $(DESTDIR)@MCU_BIN_DIR@
+	$(INSTALL) -m 755 conf/web_stream_start $(DESTDIR)@MCU_BIN_DIR@
+	$(INSTALL) -m 755 custom/openmcu-wrapper $(DESTDIR)@MCU_BIN_DIR@
+	rm -f $(DESTDIR)@MCU_LINK_DIR@/openmcu-ru
+	ln -s @MCU_BIN_DIR@/openmcu-wrapper $(DESTDIR)@MCU_LINK_DIR@/openmcu-ru
+	$(INSTALL) -m 644 custom/openmcu.ini $(DESTDIR)@MCU_CONFIG_DIR@
+	$(INSTALL) -m 644 conf/Russo_One.ttf $(DESTDIR)@MCU_FONT_DIR@
+	$(INSTALL) -m 644 ../AUTHORS $(DESTDIR)@MCU_INSTALLPREFIX@
+	$(INSTALL) -m 644 ../COPYING $(DESTDIR)@MCU_INSTALLPREFIX@
+	$(INSTALL) -m 644 ../NEWS $(DESTDIR)@MCU_INSTALLPREFIX@
+	$(INSTALL) -m 644 ../README $(DESTDIR)@MCU_INSTALLPREFIX@
 
 uninstall:
-	( for file in ${RESOURCE_FILES}; \
-	    do rm -f @MCU_RESOURCE_DIR@/$$file; \
-	done )
-	( for file in ${CONFIG_FILES}; \
-	    do rm -f @MCU_CONFIG_DIR@/$$file; \
-	done )
-	rm -f @MCU_BIN_DIR@/$(PROG)
-	rm -f @MCU_BIN_DIR@/ptlib-config
-	rm -f @INSTALLPREFIX@/openmcu
-	rm -f @INSTALLPREFIX@/openmcu-ru
-	rm -f @MCU_BIN_DIR@/ffmpeg
-	rm -f @MCU_BIN_DIR@/ffserver
-	rm -f @MCU_BIN_DIR@/web_stream_start
-	rm -f @INSTALLPREFIX@/openmcu-wrapper
-	rm -f @MCU_CONFIG_DIR@/openmcu.ini
-#	rm -rf @MCU_CONFIG_DIR@
-#	rm -rf @MCU_PIPE_DIR@
-#	rm -rf @MCU_LOG_DIR@
-#	rm -rf @MCU_RECORDS_DIR@
-#	rm -rf @MCU_FONT_DIR@
-#	rm -rf @MCU_RESOURCE_DIR@
-#	rm -rf @MCU_LIB_DIR@
-#	rm -rf @MCU_BIN_DIR@
+	rm -f $(DESTDIR)@MCU_LINK_DIR@/openmcu-ru
+	rm -rf $(DESTDIR)@MCU_BIN_DIR@
+	rm -rf $(DESTDIR)@MCU_CONFIG_DIR@
+	rm -rf $(DESTDIR)@MCU_FONT_DIR@
+	rm -rf $(DESTDIR)@MCU_LOG_DIR@
+	rm -rf $(DESTDIR)@MCU_PIPE_DIR@
+	rm -rf $(DESTDIR)@MCU_RECORDS_DIR@
+	rm -rf $(DESTDIR)@MCU_RESOURCE_DIR@
+	rm -f $(DESTDIR)@MCU_INSTALLPREFIX@/AUTHORS
+	rm -f $(DESTDIR)@MCU_INSTALLPREFIX@/COPYING
+	rm -f $(DESTDIR)@MCU_INSTALLPREFIX@/NEWS
+	rm -f $(DESTDIR)@MCU_INSTALLPREFIX@/README
+	rm -f $(DESTDIR)@PTLIB_INSTALLPREFIX@/bin/ptlib-config
+	rm -rf $(DESTDIR)@PTLIB_INSTALLPREFIX@/lib/ptlib

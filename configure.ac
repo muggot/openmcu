@@ -296,36 +296,37 @@ fi
 
 
 dnl ########################################################################
-dnl final declarations
-
-CPPFLAGS="$CPPFLAGS -I${INSTALLPREFIX}/include"
-LDFLAGS="$LDFLAGS -I${INSTALLPREFIX}/lib"
-
-AC_SUBST(STDCCFLAGS)
-AC_SUBST(STDCXXFLAGS)
-AC_SUBST(OPTSTDCCFLAGS)
-AC_SUBST(CPPFLAGS)
-AC_SUBST(LDFLAGS)
-AC_SUBST(LDLIBS)
-AC_SUBST(DEBUG_FLAG)
-AC_PROG_INSTALL
-
-dnl ########################################################################
 dnl configuration openmcu-ru
 
-#INSTALLPREFIX = ${INSTALLPREFIX}/share/openmcu-ru
-#AC_SUBST(INSTALLPREFIX)
-
 MCUDIR=openmcu-ru
-MCU_BIN_DIR=${INSTALLPREFIX}/bin
-MCU_LIB_DIR=${INSTALLPREFIX}/lib
-MCU_CONFIG_DIR=${INSTALLPREFIX}/config
-MCU_PIPE_DIR=${INSTALLPREFIX}/pipe
-MCU_RECORDS_DIR=${INSTALLPREFIX}/records
-MCU_RESOURCE_DIR=${INSTALLPREFIX}/share/openmcu-ru
-MCU_FONT_DIR=${INSTALLPREFIX}/share/openmcu-ru
-MCU_LOG_DIR=${INSTALLPREFIX}/log
+
+if test ${INSTALLPREFIX} = /usr || test ${INSTALLPREFIX} = /usr/local ; then
+    PTLIB_INSTALLPREFIX=${INSTALLPREFIX}
+    H323PLUS_INSTALLPREFIX=${INSTALLPREFIX}
+    MCU_INSTALLPREFIX=${INSTALLPREFIX}/share/${MCUDIR}
+    MCU_LINK_DIR=${INSTALLPREFIX}/bin
+else
+    PTLIB_INSTALLPREFIX=${INSTALLPREFIX}
+    H323PLUS_INSTALLPREFIX=${INSTALLPREFIX}
+    MCU_INSTALLPREFIX=${INSTALLPREFIX}
+    MCU_LINK_DIR=${INSTALLPREFIX}
+fi
+
+MCU_BIN_DIR=${MCU_INSTALLPREFIX}/bin
+MCU_LIB_DIR=${MCU_INSTALLPREFIX}/lib
+MCU_CONFIG_DIR=${MCU_INSTALLPREFIX}/config
+MCU_PIPE_DIR=${MCU_INSTALLPREFIX}/pipe
+MCU_RECORDS_DIR=${MCU_INSTALLPREFIX}/records
+MCU_FONT_DIR=${MCU_INSTALLPREFIX}/font
+MCU_RESOURCE_DIR=${MCU_INSTALLPREFIX}/resource
+MCU_LOG_DIR=${MCU_INSTALLPREFIX}/log
+
+AC_SUBST(MCU_INSTALLPREFIX)
+AC_SUBST(PTLIB_INSTALLPREFIX)
+AC_SUBST(H323PLUS_INSTALLPREFIX)
+
 AC_SUBST(MCUDIR)
+AC_SUBST(MCU_LINK_DIR)
 AC_SUBST(MCU_BIN_DIR)
 AC_SUBST(MCU_LIB_DIR)
 AC_SUBST(MCU_CONFIG_DIR)
@@ -334,9 +335,10 @@ AC_SUBST(MCU_RESOURCE_DIR)
 AC_SUBST(MCU_RECORDS_DIR)
 AC_SUBST(MCU_FONT_DIR)
 AC_SUBST(MCU_LOG_DIR)
+
 AC_CONFIG_FILES(openmcu-ru/Makefile)
 AC_CONFIG_FILES(openmcu-ru/config.h)
-
+AC_CONFIG_FILES(openmcu-ru/custom/openmcu-wrapper)
 
 dnl ########################################################################
 dnl configuration ptlib
@@ -423,6 +425,21 @@ fi
 AC_SUBST(PLUGIN_DIRS)
 
 
+dnl ########################################################################
+dnl final declarations
+
+CPPFLAGS="$CPPFLAGS -I${PTLIB_INSTALLPREFIX}/include"
+LDFLAGS="$LDFLAGS -I${PTLIB_INSTALLPREFIX}/lib"
+
+AC_SUBST(STDCCFLAGS)
+AC_SUBST(STDCXXFLAGS)
+AC_SUBST(OPTSTDCCFLAGS)
+AC_SUBST(CPPFLAGS)
+AC_SUBST(LDFLAGS)
+AC_SUBST(LDLIBS)
+AC_SUBST(DEBUG_FLAG)
+AC_PROG_INSTALL
+
 AC_OUTPUT(Makefile)
 
 
@@ -431,4 +448,15 @@ dnl replace default targets
 
 sed -i 's/all: all-recursive/all: all/g' Makefile
 
+
+dnl ########################################################################
+dnl replace default install path
+
+#if test ${INSTALLPREFIX} = /usr || test ${INSTALLPREFIX} = /usr/local ; then
+#    sed -i "s#${INSTALLPREFIX}#${INSTALLPREFIX}\/share\/${MCUDIR}#g" ${PTLIBDIR}/Makefile
+#    sed -i "s#${INSTALLPREFIX}#${INSTALLPREFIX}\/share\/${MCUDIR}#g" ${H323PLUSDIR}/Makefile
+#    for dir in ${PLUGIN_DIRS}; \
+#	do sed -i "s#${INSTALLPREFIX}#${INSTALLPREFIX}\/share\/${MCUDIR}#g" ${dir}/Makefile;
+#    done
+#fi
 

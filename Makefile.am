@@ -15,7 +15,7 @@ install:
 	($(MAKE) install -C @H323PLUSDIR@) || exit $$?
 	($(MAKE) install -C @MCUDIR@)      || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
-		do ($(MAKE) $(MAKEFLAGS) install -C $$dir) || exit $$?; \
+		do ($(MAKE) install -C $$dir) || exit $$?; \
 	done )
 
 uninstall:
@@ -23,7 +23,7 @@ uninstall:
 	($(MAKE) uninstall -C @H323PLUSDIR@) || exit $$?
 	($(MAKE) uninstall -C @MCUDIR@)      || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
-		do ($(MAKE) $(MAKEFLAGS) uninstall -C $$dir) || exit $$?; \
+		do ($(MAKE) uninstall -C $$dir) || exit $$?; \
 	done )
 
 clean:
@@ -31,7 +31,7 @@ clean:
 	($(MAKE) clean -C @H323PLUSDIR@) || exit $$?
 	($(MAKE) clean -C @MCUDIR@)      || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
-		do ($(MAKE) $(MAKEFLAGS) clean -C $$dir) || exit $$?; \
+		do ($(MAKE) clean -C $$dir) || exit $$?; \
 	done )
 
 @PTLIBDIR@:

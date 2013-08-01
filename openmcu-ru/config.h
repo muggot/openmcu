@@ -3,19 +3,19 @@
 
 // specify the path for .conf files
 //#define SYS_CONFIG_DIR "/opt/openmcu-ru/config"
-#define SYS_CONFIG_DIR "/opt/openmcu-ru/config"
+#define SYS_CONFIG_DIR "/usr/local/share/openmcu-ru/config"
 // specify the path for audio&video export via named pipes (linux, freebsd)
 //#define SYS_PIPE_DIR "/opt/openmcu-ru/pipe"
-#define SYS_PIPE_DIR "/opt/openmcu-ru/pipe"
+#define SYS_PIPE_DIR "/usr/local/share/openmcu-ru/pipe"
 // specify the path for built-in web server resources
 //#define SYS_RESOURCE_DIR "/opt/openmcu-ru/share/openmcu-ru"
-#define SYS_RESOURCE_DIR "/opt/openmcu-ru/share/openmcu-ru"
+#define SYS_RESOURCE_DIR "/usr/local/share/openmcu-ru/resource"
 // specify server logs folder
 //#define SERVER_LOGS "/opt/openmcu-ru/log"
-#define SERVER_LOGS "/opt/openmcu-ru/log"
+#define SERVER_LOGS "/usr/local/share/openmcu-ru/log"
 // specify true font directory
 //#define TRUETYPE_FONT_DIR "/opt/openmcu-ru/share/openmcu-ru"
-#define TRUETYPE_FONT_DIR "/opt/openmcu-ru/share/openmcu-ru"
+#define TRUETYPE_FONT_DIR "/usr/local/share/openmcu-ru/font"
 
 // enable test rooms for video mixer
 #define ENABLE_TEST_ROOMS   1
