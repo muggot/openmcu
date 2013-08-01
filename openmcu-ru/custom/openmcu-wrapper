@@ -1,3 +1,0 @@
-#!/bin/bash
-
-export LD_LIBRARY_PATH=/usr/local/lib && /usr/local/share/openmcu-ru/bin/openmcu-ru $@
