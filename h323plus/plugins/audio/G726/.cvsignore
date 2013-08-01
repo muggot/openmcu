@@ -1,3 +1,0 @@
-obj Debug Release NoTrace
-*.plg *.ncb *.opt *.Tags.WW *.vcproj.*.user
-Makefile

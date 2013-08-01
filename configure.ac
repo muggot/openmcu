@@ -361,20 +361,24 @@ h264=yes
 vp8=yes
 g722=yes
 g7231=yes
+g726=yes
+ilbc=yes
+speex=yes
 silk=yes
 opus=yes
-#ilbc=no
 
 AC_ARG_ENABLE(h263, [  --enable-h263   		Enable/Disable H.263 support (default enable)], [h263="$enableval"])
 AC_ARG_ENABLE(h264, [  --enable-h264   		Enable/Disable H.264 support (default enable)], [h264="$enableval"])
 AC_ARG_ENABLE(vp8, [  --enable-vp8    		Enable/Disable VP8 support (default enable)], [vp8="$enableval"])
 AC_ARG_ENABLE(g722, [  --enable-g722   		Enable/Disable G.722 support (default enable)], [g722="$enableval"])
 AC_ARG_ENABLE(g7231, [  --enable-g7231 		Enable/Disable G.723.1 support (default enable)], [g7231="$enableval"])
+AC_ARG_ENABLE(g726, [  --enable-g726   		Enable/Disable G.726 support (default enable)], [g726="$enableval"])
+AC_ARG_ENABLE(ilbc, [  --enable-ilbc   		Enable/Disable iLBC support (default enable)], [ilbc="$enableval"])
+AC_ARG_ENABLE(speex, [  --enable-speex 		Enable/Disable Speex support (default enable)], [speex="$enableval"])
 AC_ARG_ENABLE(silk, [  --enable-silk   		Enable/Disable SILK support (default enable)], [silk="$enableval"])
 AC_ARG_ENABLE(opus, [  --enable-opus   		Enable/Disable OPUS support (default enable)], [opus="$enableval"])
-#AC_ARG_ENABLE(ilbc, [  --enable-ilbc   	Enable/Disable iLBC support (default enable)], [ilbc="$enableval"]
 
-PLUGINS="h263 h264 vp8 g722 g7231 silk opus"
+PLUGINS="h263 h264 vp8 g722 g7231 g726 ilbc silk opus"
 AC_SUBST(PLUGINS)
 
 PLUGIN_H263_DIR=${top_srcdir}/plugins/H.263-1998.3
@@ -416,6 +420,27 @@ AC_SUBST(PLUGIN_G7231_DIR)
 if test "${g7231}" = "yes"; then
     AC_CONFIG_FILES(plugins/G7231/Makefile)
     PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_G7231_DIR} "
+fi
+
+PLUGIN_G726_DIR=${top_srcdir}/plugins/G726
+AC_SUBST(PLUGIN_G726_DIR)
+if test "${g726}" = "yes"; then
+    AC_CONFIG_FILES(plugins/G726/Makefile)
+    PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_G726_DIR} "
+fi
+
+PLUGIN_ILBC_DIR=${top_srcdir}/plugins/iLBC
+AC_SUBST(PLUGIN_ILBC_DIR)
+if test "${ilbc}" = "yes"; then
+    AC_CONFIG_FILES(plugins/iLBC/Makefile)
+    PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_ILBC_DIR} "
+fi
+
+PLUGIN_SPEEX_DIR=${top_srcdir}/plugins/Speex
+AC_SUBST(PLUGIN_SPEEX_DIR)
+if test "${speex}" = "yes"; then
+    AC_CONFIG_FILES(plugins/Speex/Makefile)
+    PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_SPEEX_DIR} "
 fi
 
 PLUGIN_SILK_DIR=${top_srcdir}/plugins/SILK_B40

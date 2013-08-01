@@ -614,6 +614,12 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
    else if(c.format.ToLower() == "silk" && c.clock == 24000 &&
       tsCaps.GetStringsIndex("SILK_B40_24K{sw}")!=P_MAX_INDEX) //SILK 24000
     { scap = c.payload; c.h323 = "SILK_B40_24K{sw}"; c.cap = H323Capability::Create("SILK_B40_24K{sw}"); }
+   else if(c.format.ToLower() == "speex" && c.clock == 8000 &&
+      tsCaps.GetStringsIndex("SpeexWNarrow-8k{sw}")!=P_MAX_INDEX) //SPEEX 8000
+    { scap = c.payload; c.h323 = "SpeexWNarrow-8k{sw}"; c.cap = H323Capability::Create("SpeexWNarrow-8k{sw}"); }
+   else if(c.format.ToLower() == "speex" && c.clock == 16000 &&
+      tsCaps.GetStringsIndex("SpeexWide-20.6k{sw}")!=P_MAX_INDEX) //SPEEX 16000
+    { scap = c.payload; c.h323 = "SpeexWide-20.6k{sw}"; c.cap = H323Capability::Create("SpeexWide-20.6k{sw}"); }
    else if(c.format.ToLower() == "opus" && c.clock == 48000) //OPUS 48000
    { SelectCapability_OPUS(c,tsCaps); }
 //

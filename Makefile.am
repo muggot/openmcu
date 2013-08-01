@@ -58,6 +58,15 @@ g722:
 g7231:
 	cd @PLUGIN_G7231_DIR@ && $(MAKE) $(MAKEFLAGS)
 
+g726:
+	cd @PLUGIN_G726_DIR@ && $(MAKE) $(MAKEFLAGS)
+
+ilbc:
+	cd @PLUGIN_ILBC_DIR@ && $(MAKE) $(MAKEFLAGS)
+
+speex:
+	cd @PLUGIN_SPEEX_DIR@ && $(MAKE) $(MAKEFLAGS)
+
 silk:
 	cd @PLUGIN_SILK_DIR@ && $(MAKE) $(MAKEFLAGS)
 

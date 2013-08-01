@@ -1,6 +1,6 @@
 /*
     Opus codec plugin for Opal
-    Author: Xak
+    Author: Andrey Burbovskiy, Xak
     OpenMCU-ru
 */
 
