@@ -1,5 +1,9 @@
-PREFIX=/usr/local
-exec_prefix = ${PREFIX}
+AC_PLUGIN_DIR=ptlib/codecs/audio
+prefix=/usr/local
+ifndef prefix
+prefix=/usr/local
+endif
+exec_prefix = ${prefix}
 LIBDIR=${exec_prefix}/lib
 
 SONAME	= g7231
@@ -13,7 +17,7 @@ CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
 STDCCFLAGS	=-fPIC
-LDFLAGS		=-L${PREFIX}/lib
+LDFLAGS		=-L${prefix}/lib -lavutil -lavcodec
 
 SRCS	+= g7231codec.cxx
 
@@ -22,7 +26,7 @@ vpath	%.cxx $(SRCDIR)
 
 $(OBJDIR)/%.o : %.cxx
 	@mkdir -p $(OBJDIR) >/dev/null 2>&1
-	$(CXX) -I${PREFIX}/include $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
+	$(CXX) -I${prefix}/include $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
 
 PLUGIN	= ./g7231_audio_pwplugin.$(PLUGINEXT)
 
@@ -30,14 +34,14 @@ OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.cxx,%.o,$(notdir $(SRCS))))
 
 $(PLUGIN): $(OBJECTS)
 #	$(CXX) $(LDSO) $(DL_LIBS) $@ -o $@ $^ $(LDFLAGS)
-	$(CXX) $(LDSO) -o $@ $^ $(EXTRALIBS) $(LDFLAGS) -lavutil -lavcodec
+	$(CXX) $(LDSO) -o $@ $^ $(EXTRALIBS) $(LDFLAGS)
 
 install:
-	mkdir -p $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/
-	cp $(PLUGIN) $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/
+	mkdir -p $(DESTDIR)$(LIBDIR)/$(AC_PLUGIN_DIR)
+	cp $(PLUGIN) $(DESTDIR)$(LIBDIR)/$(AC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/$(PLUGIN)
+	rm -f $(DESTDIR)$(LIBDIR)/$(AC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -f $(OBJECTS) $(PLUGIN)

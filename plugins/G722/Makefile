@@ -1,5 +1,8 @@
-AC_PLUGIN_DIR=opal-1.24.0/codecs/audio
+AC_PLUGIN_DIR=ptlib/codecs/audio
 prefix=/usr/local
+ifndef prefix
+prefix=/usr/local
+endif
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 target_os=linux-gnu

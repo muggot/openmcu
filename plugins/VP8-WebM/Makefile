@@ -26,19 +26,27 @@
 
 VC_PLUGIN_DIR=ptlib/codecs/video
 prefix=/usr/local
+ifndef prefix
+prefix=/usr/local
+endif
 exec_prefix=${prefix}
-libdir=${exec_prefix}/lib
+libdir=${prefix}/lib
+
+CODEC_DIR=/usr
+ifndef CODEC_DIR
+CODEC_DIR=/usr
+endif
+
 target_os=linux-gnu
 DL_LIBS =-ldl
 
-SHAREDDIR	= ./shared
-PLUGINDIR	= ./opal
-OBJDIR	= ./obj
-WIN32=no
-# SUBDIRS		+= gpl
+SHAREDDIR	= shared
+PLUGINDIR	= opal
+OBJDIR		= obj
+WIN32		= no
 
-BASENAME=vp8_webm
-SONAME	=$(BASENAME)
+BASENAME	= vp8_webm
+SONAME		= $(BASENAME)
 
 CC	 	=gcc
 CFLAGS	 	= -Os
@@ -46,15 +54,15 @@ CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
 STDCCFLAGS	= -fPIC
-LDFLAGS		=-L${prefix}/lib -lvpx
-LIBAVCODEC_CFLAGS=-I${prefix}/include -I.
+LDFLAGS		=-L${CODEC_DIR}/lib -lvpx
+LIBAVCODEC_CFLAGS=-I${CODEC_DIR}/include -I.
 
-EXTRACCFLAGS    +=  $(LIBAVCODEC_CFLAGS) -I$(PLUGINDIR) -DLIB_DIR='"$(libdir)"' -DVC_PLUGIN_DIR='"$(VC_PLUGIN_DIR)"' -DLICENCE_MPL -D__STDC_CONSTANT_MACROS
+EXTRACCFLAGS    =  $(LIBAVCODEC_CFLAGS) -I$(PLUGINDIR) -DLIB_DIR='"$(libdir)"' -DVC_PLUGIN_DIR='"$(VC_PLUGIN_DIR)"' -DLICENCE_MPL -D__STDC_CONSTANT_MACROS
 
 vpath	%.cxx $(SHAREDDIR)
 vpath	%.o   $(OBJDIR)
 
-SRCS    += vp8_webm.cxx
+SRCS    = vp8_webm.cxx
 
 $(OBJDIR)/%.o : %.cxx
 	@mkdir -p $(OBJDIR) >/dev/null 2>&1

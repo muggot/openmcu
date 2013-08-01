@@ -1,5 +1,8 @@
-AC_PLUGIN_DIR=/codecs/audio
-prefix=/usr
+AC_PLUGIN_DIR=ptlib/codecs/audio
+prefix=/usr/local
+ifndef prefix
+prefix=/usr/local
+endif
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 target_os=linux-gnu

@@ -26,11 +26,13 @@ AC_SUBST(MCU_VERSION)
 
 
 dnl #######################################################################
+
 top_srcdir=`pwd`
 
 
 dnl ########################################################################
 dnl install PREFIX
+
 if test "x$prefix" = "xNONE"; then
    INSTALLPREFIX="/usr/local"
 else
@@ -162,8 +164,6 @@ dnl #####################################################################
 dnl get the gcc version
 
 USE_GCC=
-USE_PCH=
-
 if test x$GXX = xyes ; then
   USE_GCC=yes
   gcc_version=`$CXX -dumpversion`
@@ -188,27 +188,6 @@ if test x$GXX = xyes ; then
 else
   USE_GCC=no
 fi
-
-dnl ########################################################################
-dnl configure settings
-
-h263=yes
-h264=yes
-vp8=yes
-g722=yes
-g7231=yes
-silk=yes
-opus=yes
-#ilbc=no
-
-AC_ARG_ENABLE(h263, [  --enable-h263   		Enable/Disable H.263 support (default enable)], [h263="$enableval"])
-AC_ARG_ENABLE(h264, [  --enable-h264   		Enable/Disable H.264 support (default enable)], [h264="$enableval"])
-AC_ARG_ENABLE(vp8, [  --enable-vp8    		Enable/Disable VP8 support (default enable)], [vp8="$enableval"])
-AC_ARG_ENABLE(g722, [  --enable-g722   		Enable/Disable G.722 support (default enable)], [g722="$enableval"])
-AC_ARG_ENABLE(g7231, [  --enable-g7231 		Enable/Disable G.723.1 support (default enable)], [g7231="$enableval"])
-AC_ARG_ENABLE(silk, [  --enable-silk   		Enable/Disable SILK support (default enable)], [silk="$enableval"])
-AC_ARG_ENABLE(opus, [  --enable-opus   		Enable/Disable OPUS support (default enable)], [opus="$enableval"])
-#AC_ARG_ENABLE(ilbc, [  --enable-ilbc   	Enable/Disable iLBC support (default enable)], [ilbc="$enableval"]
 
 
 dnl ########################################################################
@@ -300,17 +279,34 @@ dnl configuration openmcu-ru
 
 MCUDIR=openmcu-ru
 
+AC_ARG_WITH(ptlib_prefix, [  --with-ptlib-prefix        	PTLib installation prefix (default =prefix)], [ptlib_prefix=$withval], [ptlib_prefix=""])
+AC_ARG_WITH(h323plus_prefix, [  --with-h323plus-prefix  	H323Plus installation prefix (default =prefix)], [h323plus_prefix=$withval], [h323plus_prefix=""])
+
+if test "x$ptlib_prefix" = "x"; then
+   PTLIB_INSTALLPREFIX=${INSTALLPREFIX}
+else
+   PTLIB_INSTALLPREFIX=${ptlib_prefix}
+fi
+
+if test "x$h323plus_prefix" = "x"; then
+   H323PLUS_INSTALLPREFIX=${INSTALLPREFIX}
+else
+   H323PLUS_INSTALLPREFIX=${h323plus_prefix}
+fi
+
 if test ${INSTALLPREFIX} = /usr || test ${INSTALLPREFIX} = /usr/local ; then
-    PTLIB_INSTALLPREFIX=${INSTALLPREFIX}
-    H323PLUS_INSTALLPREFIX=${INSTALLPREFIX}
+    #PTLIB_INSTALLPREFIX=${INSTALLPREFIX}/share/${MCUDIR}
+    #H323PLUS_INSTALLPREFIX=${INSTALLPREFIX}/share/${MCUDIR}
     MCU_INSTALLPREFIX=${INSTALLPREFIX}/share/${MCUDIR}
     MCU_LINK_DIR=${INSTALLPREFIX}/bin
 else
-    PTLIB_INSTALLPREFIX=${INSTALLPREFIX}
-    H323PLUS_INSTALLPREFIX=${INSTALLPREFIX}
     MCU_INSTALLPREFIX=${INSTALLPREFIX}
     MCU_LINK_DIR=${INSTALLPREFIX}
 fi
+
+AC_SUBST(MCU_INSTALLPREFIX)
+AC_SUBST(PTLIB_INSTALLPREFIX)
+AC_SUBST(H323PLUS_INSTALLPREFIX)
 
 MCU_BIN_DIR=${MCU_INSTALLPREFIX}/bin
 MCU_LIB_DIR=${MCU_INSTALLPREFIX}/lib
@@ -320,10 +316,6 @@ MCU_RECORDS_DIR=${MCU_INSTALLPREFIX}/records
 MCU_FONT_DIR=${MCU_INSTALLPREFIX}/font
 MCU_RESOURCE_DIR=${MCU_INSTALLPREFIX}/resource
 MCU_LOG_DIR=${MCU_INSTALLPREFIX}/log
-
-AC_SUBST(MCU_INSTALLPREFIX)
-AC_SUBST(PTLIB_INSTALLPREFIX)
-AC_SUBST(H323PLUS_INSTALLPREFIX)
 
 AC_SUBST(MCUDIR)
 AC_SUBST(MCU_LINK_DIR)
@@ -363,6 +355,24 @@ AC_CONFIG_FILES(h323plus/Makefile)
 
 dnl ########################################################################
 dnl configuration plugins
+
+h263=yes
+h264=yes
+vp8=yes
+g722=yes
+g7231=yes
+silk=yes
+opus=yes
+#ilbc=no
+
+AC_ARG_ENABLE(h263, [  --enable-h263   		Enable/Disable H.263 support (default enable)], [h263="$enableval"])
+AC_ARG_ENABLE(h264, [  --enable-h264   		Enable/Disable H.264 support (default enable)], [h264="$enableval"])
+AC_ARG_ENABLE(vp8, [  --enable-vp8    		Enable/Disable VP8 support (default enable)], [vp8="$enableval"])
+AC_ARG_ENABLE(g722, [  --enable-g722   		Enable/Disable G.722 support (default enable)], [g722="$enableval"])
+AC_ARG_ENABLE(g7231, [  --enable-g7231 		Enable/Disable G.723.1 support (default enable)], [g7231="$enableval"])
+AC_ARG_ENABLE(silk, [  --enable-silk   		Enable/Disable SILK support (default enable)], [silk="$enableval"])
+AC_ARG_ENABLE(opus, [  --enable-opus   		Enable/Disable OPUS support (default enable)], [opus="$enableval"])
+#AC_ARG_ENABLE(ilbc, [  --enable-ilbc   	Enable/Disable iLBC support (default enable)], [ilbc="$enableval"]
 
 PLUGINS="h263 h264 vp8 g722 g7231 silk opus"
 AC_SUBST(PLUGINS)
@@ -452,11 +462,16 @@ sed -i 's/all: all-recursive/all: all/g' Makefile
 dnl ########################################################################
 dnl replace default install path
 
-#if test ${INSTALLPREFIX} = /usr || test ${INSTALLPREFIX} = /usr/local ; then
-#    sed -i "s#${INSTALLPREFIX}#${INSTALLPREFIX}\/share\/${MCUDIR}#g" ${PTLIBDIR}/Makefile
-#    sed -i "s#${INSTALLPREFIX}#${INSTALLPREFIX}\/share\/${MCUDIR}#g" ${H323PLUSDIR}/Makefile
-#    for dir in ${PLUGIN_DIRS}; \
-#	do sed -i "s#${INSTALLPREFIX}#${INSTALLPREFIX}\/share\/${MCUDIR}#g" ${dir}/Makefile;
-#    done
-#fi
+if test ${PTLIB_INSTALLPREFIX} != ${INSTALLPREFIX} ; then
+    sed -i "s#${INSTALLPREFIX}#${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/Makefile
+    sed -i "s#${INSTALLPREFIX}#${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/make/ptlib-config
+    sed -i "s#${INSTALLPREFIX}#${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/include/ptbuildopts.h
+    for dir in ${PLUGIN_DIRS}; \
+	do sed -i "s#${INSTALLPREFIX}#${PTLIB_INSTALLPREFIX}#g" ${dir}/Makefile;
+    done
+fi
+
+if test ${H323PLUS_INSTALLPREFIX} != ${INSTALLPREFIX} ; then
+    sed -i "s#${INSTALLPREFIX}#${H323PLUS_INSTALLPREFIX}#g" ${H323PLUSDIR}/Makefile
+fi
 

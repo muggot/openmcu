@@ -70,6 +70,9 @@
 
 VC_PLUGIN_DIR=ptlib/codecs/video
 prefix=/usr/local
+ifndef prefix
+prefix=/usr/local
+endif
 exec_prefix=${prefix}
 libdir=${exec_prefix}/lib
 target_os=linux-gnu
