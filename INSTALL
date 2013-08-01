@@ -1,7 +1,0 @@
-Installation Instructions
-*************************
-
-./autogen.sh
-./configure --prefix=/opt/openmcu-ru --enable-shared --disable-openssl --disable-odbc
-make all
-make install

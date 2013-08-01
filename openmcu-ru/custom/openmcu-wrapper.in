@@ -1,3 +1,0 @@
-#!/bin/bash
-
-export LD_LIBRARY_PATH="@PTLIB_INSTALLPREFIX@/lib:@H323PLUS_INSTALLPREFIX@/lib" && @MCU_BIN_DIR@/openmcu-ru $@
