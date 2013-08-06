@@ -1,5 +1,94 @@
 #include <ptlib.h>
 #include "mcu.h"
+#include <sys/types.h>
+#include <sys/socket.h>
+
+int GetFromIp(char* buffer, char *toAddr) 
+{
+    int sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if(sock == -1) return -1;
+
+    uint16_t kDnsPort = 53;
+    struct sockaddr_in serv;
+    memset((void *)&serv, 0, sizeof(serv));
+    serv.sin_family = AF_INET;
+    serv.sin_addr.s_addr = inet_addr(toAddr);
+    serv.sin_port = htons(kDnsPort);
+
+    int err = connect(sock, (const sockaddr*)&serv, sizeof(serv));
+    if(err == -1) return -1;
+
+    sockaddr_in name;
+    socklen_t namelen = sizeof(name);
+    err = getsockname(sock, (sockaddr*) &name, &namelen);
+    if(err == -1) return -1;
+
+    inet_ntop(AF_INET, (const void *)&name.sin_addr, buffer, 16);
+
+    close(sock);
+    return 0;
+}
+
+//  Usage
+//  OpenMCUSipConnection *sCon = new OpenMCUSipConnection(this, ep);
+//  sCon->SendSipInvite(agent,SIP_METHOD_INVITE);
+int OpenMCUSipConnection::SendSipInvite(nta_agent_t *agent, sip_method_t method, const char * name)
+{
+  msg_t *amsg = nta_msg_create(agent, 0);
+  sip_t *asip = sip_object(amsg);
+  msg_t *bmsg = NULL;
+  sip_t *bsip;
+  url_string_t const *ruri;
+  nta_outgoing_t *bye = NULL;
+  sip_cseq_t *cseq;
+  sip_request_t *rq;
+  sip_route_t *route = NULL, *r, r0[1];
+  su_home_t *home = msg_home(amsg);
+
+//  char ip_buf[16];
+//  GetFromIp(ip_buf,"127.0.0.1");
+//  PTRACE(1, "MCUSIP\tSIP CONTACT " << ip_buf);
+  
+
+  if (asip == NULL)
+    return -1;
+  sip_add_tl(amsg, asip,
+	     SIPTAG_TO(sip_to_create(home,(url_string_t *)"sip:toto@192.168.0.2:5061")),
+	     SIPTAG_FROM(sip_from_create(home,(url_string_t *)"sip:openmcu@192.168.0.3:5060")),
+	     SIPTAG_CALL_ID(sip_call_id_create(home,"test")),
+	     TAG_END());
+
+  ruri = (url_string_t *)"sip:toto@192.168.0.2:5061";
+
+//  msg_header_insert(amsg, (msg_pub_t *)asip, (msg_header_t *)route);
+
+  bmsg = msg_copy(amsg); bsip = sip_object(bmsg);
+
+  home = msg_home(bmsg);
+
+  if (!(cseq = sip_cseq_create(home, 0x7fffffff, method, "invite")))
+    goto err;
+  else
+    msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)cseq);
+
+  if (!(rq = sip_request_create(home, method, "invite", ruri, NULL)))
+    goto err;
+  else
+    msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)rq);
+
+  if (!(bye = nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
+				   NTATAG_STATELESS(1),
+				   TAG_END())))
+    goto err;
+
+//  msg_destroy(msg);
+  return 0;
+
+ err:
+  msg_destroy(amsg);
+  msg_destroy(bmsg);
+  return -1;
+}
 
 void OpenMCUSipConnection::LeaveConference()
 {
