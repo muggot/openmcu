@@ -744,28 +744,23 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
 
 int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
 {
-// PString request = sip->sip_request->rq_method_name;
  sdp_s = sip->sip_payload->pl_data;
  PStringArray sdp_sa = sdp_s.Lines();
- 
- localIP = sip->sip_to->a_url->url_host;
- if(sip->sip_to->a_url->url_user && sip->sip_to->a_url->url_user[0]!=0)
-  requestedRoom = sip->sip_to->a_url->url_user;
 
- if(sip->sip_contact && sip->sip_contact->m_url && sip->sip_contact->m_url->url_host)
-    remotePartyAddress = PString("sip#") + sip->sip_contact->m_url->url_host;
- else if(sip->sip_via && sip->sip_via->v_host) 
-    remotePartyAddress = PString("sip#") + sip->sip_via->v_host;
- else if(sip->sip_from && sip->sip_from->a_url)
-    remotePartyAddress = PString("sip#") + sip->sip_from->a_url->url_host;
+ localIP = local_addr_t->a_url->url_host;
+ if(local_addr_t && local_addr_t->a_url->url_user && local_addr_t->a_url->url_user[0]!=0)
+   requestedRoom = local_addr_t->a_url->url_user;
 
- if(sip->sip_from && sip->sip_from->a_display && strcmp(sip->sip_from->a_display, "") != 0)
+ if(remote_addr_t && remote_addr_t->a_url && remote_addr_t->a_url->url_host)
+   remotePartyAddress = PString("sip#") + remote_addr_t->a_url->url_host;
+
+ if(remote_addr_t && remote_addr_t->a_display && strcmp(remote_addr_t->a_display, "") != 0)
  { // xak, http://openmcu.ru/forum/index.php?topic=400.msg3993#msg3993
-   remotePartyName = sip->sip_from->a_display;
+   remotePartyName = remote_addr_t->a_display;
    remotePartyName.Replace("\"","",TRUE,0);
  }
- else remotePartyName = sip->sip_from->a_url->url_user;
-// remotePartyName = sip->sip_from->a_url->url_user;
+ else remotePartyName = remote_addr_t->a_url->url_user;
+
  PStringToString data; PURL::SplitQueryVars("partyName="+remotePartyName,data); remotePartyName=data("partyName");
  remoteName = remotePartyName;
  if(sip->sip_user_agent && sip->sip_user_agent->g_string)
@@ -868,7 +863,7 @@ void OpenMCUSipConnection::SipReply200(nta_agent_t *agent, msg_t *msg)
   if(sip_msg) msg_destroy(sip_msg);
   sip_msg = msg_dup(msg);
   
-  PString contact = "<sip:" + requestedRoom + "@" + localIP + ":5060>";
+  PString contact = "<sip:" + requestedRoom + "@" + localIP + ":" + localPort + ">";
 
   PTRACE(1, "MCUSIP\tSending SIP 200 OK to " << contact << " msg " << sdp_msg);
 
@@ -896,7 +891,7 @@ void OpenMCUSipConnection::SipReply200(nta_agent_t *agent, msg_t *msg)
 
 int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
 {
-  PString contact = "<sip:" + requestedRoom + "@" + localIP + ":5060>";
+  PString contact = "<sip:" + requestedRoom + "@" + localIP + ":" + localPort + ">";
   PTRACE(1, "MCUSIP\tSending BYE to " << contact);
 
   sip_t *sip = sip_object(sip_msg);
@@ -915,16 +910,12 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
     return -1;
 
   sip_add_tl(amsg, asip,
-	     SIPTAG_TO(sip->sip_from),
-	     SIPTAG_FROM(sip->sip_to),
+	     SIPTAG_TO(remote_addr_t),
+	     SIPTAG_FROM(local_addr_t),
 	     SIPTAG_CALL_ID(sip->sip_call_id),
 	     TAG_END());
 
-  if (sip->sip_contact) {
-    ruri = (url_string_t const *)sip->sip_contact->m_url;
-  } else {
-    ruri = (url_string_t const *)sip->sip_to->a_url;
-  }
+  ruri = (url_string_t const *)remote_addr_t->a_url;
 
   /* Reverse (and fix) record route */
   route = sip_route_reverse(home, sip->sip_record_route);
@@ -1000,22 +991,115 @@ int OpenMCUSipEndPoint::ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConne
  return 0;
 }
 
+void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
+{
+    if(agent == NULL)
+      return;
+
+    if((PString)OpenMCU::Current().sipListener.Find("0.0.0.0")=="0") {
+      char ip_buf[16];
+      GetFromIp(ip_buf,(char *)(const char *)to.Mid(4,P_MAX_INDEX).Tokenise("@")[1]);
+      localIP = ip_buf;
+      if(localIP == "" || localIP == "127.0.0.1")
+        return;
+    } else {
+      localIP = (PString)OpenMCU::Current().sipListener.Tokenise(":")[0].Trim();
+    }
+
+    PString from = "sip:"+room+"@"+localIP;
+    sip_addr_t *from_addr = sip_from_create(&home, (url_string_t *)(const char *)from);
+    sip_addr_t *to_addr = sip_to_create(&home, (url_string_t *)(const char *)to);
+
+    PString sdp_txt =
+        "v=0\n"
+        "o="+room+" 1806 3221 IN IP4 "+localIP+"\n"
+        "s=Talk\n"
+        "c=IN IP4 "+localIP+"\n"
+        "t=0 0\n"
+        "m=audio 7078 RTP/AVP 124 120 0 8 100 101\n"
+        "a=rtpmap:124 OPUS/48000\n"
+        "a=rtpmap:120 silk/16000\n"
+        "a=rtpmap:0 PCMU/8000\n"
+        "a=rtpmap:8 PCMA/8000\n"
+        "a=rtpmap:100 iLBC/8000\n"
+        "a=fmtp:100 mode=30\n"
+        "a=rtpmap:101 telephone-event/8000\n"
+        "a=fmtp:101 0-11\n"
+        "m=video 9078 RTP/AVP 103 102 98\n"
+        "a=rtpmap:103 vp8/90000\n"
+        "a=rtpmap:102 H264/90000\n"
+        "a=rtpmap:98 H263-1998/90000\n";
+
+    // Send INVITE
+    msg_t *sip_msg = nta_msg_create(agent, 0);
+    sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)(const char *)to, NULL);
+    sip_via_t* sip_via = sip_via_create(&home, localIP, localPort, "SIP/2.0/UDP", NULL);
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, 0x7fffffff, SIP_METHOD_INVITE);
+    sip_call_id_t* sip_call_id = sip_call_id_create(&home, localIP);
+    sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)from, NULL);
+    sip_payload_t *sip_payload = sip_payload_format(&home, sdp_txt);
+    nta_outgoing_t *orq = nta_outgoing_mcreate(agent, ProcessSipEventWrap_ntaout, NULL,
+				(url_string_t *)(const char *)to,
+				sip_msg,
+				SIPTAG_REQUEST(sip_rq),
+				SIPTAG_VIA(sip_via),
+				SIPTAG_FROM(from_addr),
+				SIPTAG_TO(to_addr),
+				SIPTAG_CSEQ(sip_cseq),
+				SIPTAG_CALL_ID(sip_call_id),
+				SIPTAG_CONTACT(sip_contact),
+				SIPTAG_PAYLOAD(sip_payload),
+				SIPTAG_CONTENT_TYPE_STR("application/sdp"),
+				TAG_END());
+    if(orq == NULL)
+      return;
+}
+
+int OpenMCUSipEndPoint::ProcessSipEvent_ntaleg(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip)
+{
+  return 0;
+}
+
+int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip)
+{
+  nta_outgoing_destroy(orq);
+  return 0;
+}
+
 int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
                        msg_t *msg,
                        sip_t *sip)
 {
- SipKey sik;
- sik.addr = inet_addr(sip->sip_via->v_host);
- if(sip->sip_via->v_port) sik.port = atoi(sip->sip_via->v_port);
- sik.sid = sip->sip_call_id->i_id;
-
- PString request;
- if(sip->sip_request && sip->sip_request->rq_method_name) 
-   request = sip->sip_request->rq_method_name;
- 
  size_t sip_msg_len = 0;
- char * sip_msg = msg_as_string(&home, msg, NULL, 0, &sip_msg_len);
- 
+ PString sip_msg = (PString)msg_as_string(&home, msg, NULL, 0, &sip_msg_len);
+
+ SipKey sik;
+ PString request;
+ PString status;
+ if(sip->sip_request && sip->sip_request->rq_method_name)
+ {
+   request = sip->sip_request->rq_method_name;
+   sik.addr = inet_addr(sip->sip_via->v_host);
+   if(sip->sip_via->v_port) sik.port = atoi(sip->sip_via->v_port);
+   sik.sid = sip->sip_call_id->i_id;
+ } else {
+   if(sip->sip_status && sip->sip_status->st_phrase)
+     status = sip->sip_status->st_phrase;
+   if(sip->sip_to->a_url->url_host) sik.addr = inet_addr(sip->sip_to->a_url->url_host);
+   if(sip->sip_to->a_url->url_port) sik.port = atoi(sip->sip_to->a_url->url_port); else sik.port=5060;
+   PStringArray sip_msg_a = sip_msg.Lines();
+   int cn = 0;
+   while(sip_msg_a[cn]!=NULL)
+   {
+     if(sip_msg_a[cn].Find("Call-ID")==0)
+     {
+       sik.sid=sip_msg_a[cn].Mid(9,P_MAX_INDEX);
+       break;
+     }
+     cn++;
+   }
+ }
+
  PTRACE(1, "MCUSIP\tReceived SIP message: \n" << sip_msg);
  cout << request << "\n";
 
@@ -1041,6 +1125,11 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   PTRACE(1, "MCUSIP\tNew SIP INVITE");
 
   OpenMCUSipConnection *sCon = new OpenMCUSipConnection(this, ep);
+  sCon->local_addr_t = sip->sip_to;
+  sCon->remote_addr_t = sip->sip_from;
+  //sCon->localIP = localIP;
+  sCon->localPort = localPort;
+
   if(!sCon->ProcessInviteEvent(sip)) 
   {
    delete sCon;
@@ -1075,12 +1164,63 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
  }
  if(request == "OPTIONS")
  {
-  PString contact = "<sip:openmcu@" + PString(sip->sip_to->a_url[0].url_host) + ":5060>";
+  PString contact = "<sip:openmcu@" + PString(sip->sip_to->a_url[0].url_host) + ":" + localPort + ">";
 #ifdef _WIN32
   nta_msg_treply(agent,msg, SIP_200_OK, SIPTAG_CONTACT_STR((const char*)contact),TAG_END());
 #else
   nta_msg_treply(agent,msg, SIP_200_OK, SIPTAG_CONTACT_STR(contact),TAG_END());
 #endif
+  return 0;
+ }
+
+ if(status == "OK")
+ {
+  if(sip->sip_payload==NULL) return 0;
+  if(sip->sip_payload->pl_data==NULL) return 0;
+
+  PTRACE(1, "MCUSIP\tReceived SIP SDP\n" << sip->sip_payload->pl_data);
+  PTRACE(6, "MCUSIP\tSend ACK\n");
+
+  // Send ACK
+  msg_t *sip_msg = nta_msg_create(agent, 0);
+  sip_request_t *rq = sip_request_create(&home, SIP_METHOD_ACK, (url_string_t *)sip->sip_to->a_url, NULL);
+  sip_via_t* sip_via = sip_via_create(&home, localIP, localPort, "SIP/2.0/UDP", NULL);
+  nta_outgoing_t *orq = nta_outgoing_mcreate(agent, NULL, NULL,
+				(url_string_t *)sip->sip_to->a_url,
+				sip_msg,
+				SIPTAG_REQUEST(rq),
+				SIPTAG_VIA(sip_via),
+				SIPTAG_FROM(sip->sip_from),
+				SIPTAG_TO(sip->sip_to),
+				SIPTAG_CSEQ(sip->sip_cseq),
+				SIPTAG_CALL_ID_STR(sik.sid),
+				TAG_END());
+
+  if(orq == NULL)
+    return 0;
+
+  SipConnectionMapType::iterator scr = sipConnMap.find(sik);
+  if(scr != sipConnMap.end())  // connection already exist
+    return 0;
+
+  OpenMCUSipConnection *sCon = new OpenMCUSipConnection(this, ep);
+  sCon->local_addr_t = sip->sip_from;
+  sCon->remote_addr_t = sip->sip_to;
+  sCon->localIP = localIP;
+  sCon->localPort = localPort;
+
+  if(!sCon->ProcessInviteEvent(sip)) 
+  {
+   delete sCon;
+   return 0;
+  }
+  sCon->StartReceiveChannels();
+  sipConnMap.insert(SipConnectionMapType::value_type(sik,sCon));
+  sCon->StartTransmitChannels();
+  return 0;
+ }
+ if(status == "Busy Here" || status == "Decline")
+ {
   return 0;
  }
  return 0;
@@ -1129,6 +1269,10 @@ void OpenMCUSipEndPoint::Main()
 
  if(root == NULL) return;
 
+ localPort = (PString)OpenMCU::Current().sipListener.Tokenise(":")[1].Trim();
+ if(localPort == "")
+   localPort = "5060";
+
  if(OpenMCU::Current().sipListener!="0.0.0.0")
    agent = nta_agent_create(root, URL_STRING_MAKE((const char*)("sip:"+OpenMCU::Current().sipListener)), ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, TAG_NULL());
  else
@@ -1139,7 +1283,7 @@ void OpenMCUSipEndPoint::Main()
   MainLoop();
   nta_agent_destroy(agent);
  }
- 
+
  su_root_destroy(root);
  root = NULL;
  su_home_deinit(&home);

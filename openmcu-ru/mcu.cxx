@@ -925,7 +925,7 @@ InvitePage::InvitePage(OpenMCU & _app, PHTTPAuthority & auth)
   html << "<p>"
     << "<form method=\"POST\" class=\"well form-inline\">"
     << "<input type=\"text\" class=\"input-small\" placeholder=\"" << app.GetDefaultRoomName() << "\" name=\"room\" value=\"" << app.GetDefaultRoomName() << "\"> "
-    << "<input type=\"text\" class=\"input-small\" placeholder=\"Address\" name=\"address\"><script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
+    << "<input type=\"text\" class=\"input-large\" placeholder=\"Address\" name=\"address\"><script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
     << "&nbsp;&nbsp;<input type=\"submit\" class=\"btn\" value=\"Invite\">"
     << "</form>";
 
@@ -961,18 +961,24 @@ BOOL InvitePage::Post(PHTTPRequest & request,
     return TRUE;
   }
 
-  PString h323Token;
-  PString * userData = new PString(room);
-  if (ep.MakeCall(address, h323Token, userData) == NULL) {
-    BeginPage(html,"Invite Failed","Invite Failed","$INVITE_F$");
-    html << "<div class=\"alert\"><b>Cannot create make call to</b> " << address;
-    html << "</div>";
-    EndPage(html,OpenMCU::Current().GetCopyrightText()); msg = html;
-    ep.GetConferenceManager().RemoveConference(room);
-    return TRUE;
-  } else {
+  if(address.Find("sip:") == 0) {
+    OpenMCU::Current().sipendpoint->SipMakeCall(room, address);
     PStringStream msg; msg << "Inviting " << address;
     OpenMCU::Current().HttpWriteEventRoom(msg,room);
+  } else {
+    PString h323Token;
+    PString * userData = new PString(room);
+    if (ep.MakeCall(address, h323Token, userData) == NULL) {
+      BeginPage(html,"Invite Failed","Invite Failed","$INVITE_F$");
+      html << "<div class=\"alert\"><b>Cannot create make call to</b> " << address;
+      html << "</div>";
+      EndPage(html,OpenMCU::Current().GetCopyrightText()); msg = html;
+      ep.GetConferenceManager().RemoveConference(room);
+      return TRUE;
+    } else {
+      PStringStream msg; msg << "Inviting " << address;
+      OpenMCU::Current().HttpWriteEventRoom(msg,room);
+    }
   }
 
   BeginPage(html,"Invite Succeeded","Invite Succeeded","$INVITE_S$");
@@ -982,7 +988,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
   html << "<p><h3>Invite another:</h3>"
     << "<form method=\"POST\" class=\"well form-inline\">"
     << "<input type=\"text\" class=\"input-small\" name=\"room\" placeholder=\"" << room << "\" value=\"" << room << "\"> "
-    << "<input type=\"text\" class=\"input-small\" name=\"address\" placeholder=\"address\"><script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
+    << "<input type=\"text\" class=\"input-large\" name=\"address\" placeholder=\"address\"><script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
     << "&nbsp;&nbsp;&nbsp;<input type=\"submit\" class=\"btn\" value=\"Invite\">"
     << "</form>";
 

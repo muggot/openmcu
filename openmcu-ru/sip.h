@@ -74,6 +74,7 @@ class OpenMCUSipEndPoint : public PThread
    int ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon);
    int terminating;
    url_string_t* listenerUrl;
+   void SipMakeCall(PString room, PString to);
           
   protected:
    void MainLoop();
@@ -85,6 +86,18 @@ class OpenMCUSipEndPoint : public PThread
    su_root_t *root;
    nta_agent_t *agent;
    SipConnectionMapType sipConnMap; // map of sip connections
+   static int ProcessSipEventWrap_ntaleg(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip)
+   {
+    return ((OpenMCUSipEndPoint *)context)->ProcessSipEvent_ntaleg(context, leg, irq, sip);
+   }
+   static int ProcessSipEventWrap_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip)
+   {
+    return ((OpenMCUSipEndPoint *)context)->ProcessSipEvent_ntaout(context, orq, sip);
+   }
+   int ProcessSipEvent_ntaleg(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip);
+   int ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip);
+   PString localIP;
+   PString localPort;
 };
 
 class SipCapability
@@ -225,7 +238,12 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int SendSipInvite(nta_agent_t *agent, sip_method_t method, const char * name);
   int noInpTimeout;
   int inpBytes;
- H323toSipQueue cmdQueue;
+  H323toSipQueue cmdQueue;
+  sip_addr_t *local_addr_t, *remote_addr_t;
+  PString localIP; // from sip invite message
+  PString localPort;
+  PString remoteIP; // from sip invite message
+  PString remotePort;
 
  protected:
  OpenMCUSipEndPoint *sep;
@@ -236,8 +254,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
 // PString sCapH323Name; // H323 audio capability format name
  int vcap; // selected video capability payload type
 // PString vCapH323Name; // H323 video capability format name
- PString localIP; // from sip invite message
- PString remoteIP; // from sip invite message
  unsigned int sdp_seq;
  unsigned int sdp_id;
  int bandwidth;

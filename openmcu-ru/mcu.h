@@ -217,11 +217,12 @@ class OpenMCU : public OpenMCUProcessAncestor
 
     int        h264DefaultLevelForSip;
 
+    OpenMCUSipEndPoint * sipendpoint;
+
   protected:
     PFilePath executableFile;
     ConferenceManager * manager;
     OpenMCUH323EndPoint * endpoint;
-    OpenMCUSipEndPoint * sipendpoint;
     long GetCodec(const PString & codecname);
 
     PString    defaultRoomName;
