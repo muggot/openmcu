@@ -189,18 +189,32 @@ else
   USE_GCC=no
 fi
 
+dnl ########################################################################
+dnl arg
+
+resample=yes
+rendering_names=yes
+live_video=yes
+optimized_frame_resize=yes
+
+AC_ARG_ENABLE(resample, [  --enable-resample   			Enable/Disable, requires one of the libswresample,libavresample,libsamplerate (default enable)], [resample="$enableval"])
+AC_ARG_ENABLE(rendering-names, [  --enable-rendering-names   		Enable/Disable, requires libfreetype (default enable)], [rendering_names="$enableval"])
+AC_ARG_ENABLE(live-video, [  --enable-live-video   		Enable/Disable, requires libjpeg (default enable)], [live_video="$enableval"])
+AC_ARG_ENABLE(optimized-frame-resize, [  --enable-optimized-frame-resize	Enable/Disable, requires libyuv (default enable)], [optimized_frame_resize="$enableval"])
+
 
 dnl ########################################################################
 dnl check for freetype library
 
 AC_SUBST(USE_FREETYPE, 0)
-AC_CHECK_LIB(freetype, FT_Init_FreeType, USE_FREETYPE=1, USE_FREETYPE=0)
-if test ${USE_FREETYPE} = 1 ; then
-  LDLIBS="$LDLIBS -lfreetype"
-else
-  AC_MSG_ERROR(Must have freetype library!)
+if test "${rendering_names}" = "yes"; then
+  AC_CHECK_LIB(freetype, FT_Init_FreeType, USE_FREETYPE=1, USE_FREETYPE=0)
+  if test ${USE_FREETYPE} = 1 ; then
+    LDLIBS="$LDLIBS -lfreetype"
+  else
+    AC_MSG_ERROR(Must have freetype library!)
+  fi
 fi
-
 
 dnl ########################################################################
 dnl check for video library
@@ -223,44 +237,50 @@ AC_SUBST(USE_SWRESAMPLE, 0)
 AC_SUBST(USE_AVRESAMPLE, 0)
 AC_SUBST(USE_LIBSAMPLERATE, 0)
 
-AC_CHECK_LIB(swresample, swr_convert, USE_SWRESAMPLE=1, USE_SWRESAMPLE=0)
-AC_CHECK_LIB(avresample, avresample_convert, USE_AVRESAMPLE=1, USE_AVRESAMPLE=0)
-AC_CHECK_LIB(samplerate, src_process, USE_LIBSAMPLERATE=1, USE_LIBSAMPLERATE=0)
+if test "${resample}" = "yes"; then
+  AC_CHECK_LIB(swresample, swr_convert, SWRESAMPLE=1, SWRESAMPLE=0)
+  AC_CHECK_LIB(avresample, avresample_convert, AVRESAMPLE=1, AVRESAMPLE=0)
+  AC_CHECK_LIB(samplerate, src_process, LIBSAMPLERATE=1, LIBSAMPLERATE=0)
 
-if test ${USE_SWRESAMPLE} = 1; then
-  LDLIBS="$LDLIBS -lswresample"
-elif test ${USE_AVRESAMPLE} = 1; then
-  LDLIBS="$LDLIBS -lavresample"
-elif test ${USE_LIBSAMPLERATE} = 1; then
-  LDLIBS="$LDLIBS -lsamplerate"
-else
-  AC_MSG_ERROR(Must have one of the libswresample,libavresample,libsamplerate!)
+  if test ${SWRESAMPLE} = 1; then
+    USE_SWRESAMPLE=1
+    LDLIBS="$LDLIBS -lswresample"
+  elif test ${AVRESAMPLE} = 1; then
+    USE_AVRESAMPLE=1
+    LDLIBS="$LDLIBS -lavresample"
+  elif test ${LIBSAMPLERATE} = 1; then
+    USE_LIBSAMPLERATE=1
+    LDLIBS="$LDLIBS -lsamplerate"
+  else
+    AC_MSG_ERROR(Must have one of the libswresample,libavresample,libsamplerate!)
+  fi
 fi
-
 
 dnl ########################################################################
 dnl check for jpeg library
 
 AC_SUBST(USE_LIBJPEG, 0)
-AC_CHECK_LIB(jpeg, jpeg_destroy_decompress, USE_LIBJPEG=1, USE_LIBJPEG=0)
-if test ${USE_LIBJPEG} = 1 ; then
-  LDLIBS="$LDLIBS -ljpeg"
-else
-  AC_MSG_ERROR(libjpeg not found!)
+if test "${live_video}" = "yes"; then
+  AC_CHECK_LIB(jpeg, jpeg_destroy_decompress, USE_LIBJPEG=1, USE_LIBJPEG=0)
+  if test ${USE_LIBJPEG} = 1 ; then
+    LDLIBS="$LDLIBS -ljpeg"
+  else
+    AC_MSG_ERROR(libjpeg not found!)
+  fi
 fi
-
 
 dnl ########################################################################
 dnl check for yuv library
 
 AC_SUBST(USE_LIBYUV, 0)
-AC_CHECK_LIB(yuv, I420Scale, USE_LIBYUV=1, USE_LIBYUV=0)
-if test ${USE_LIBYUV} = 1 ; then
-  LDLIBS="$LDLIBS -lyuv"
-else
-  AC_MSG_ERROR(libyuv not found!)
+if test "${optimized_frame_resize}" = "yes"; then
+  AC_CHECK_LIB(yuv, I420Scale, USE_LIBYUV=1, USE_LIBYUV=0)
+  if test ${USE_LIBYUV} = 1 ; then
+    LDLIBS="$LDLIBS -lyuv"
+  else
+    AC_MSG_ERROR(libyuv not found!)
+  fi
 fi
-
 
 dnl ########################################################################
 dnl check for yuv library
