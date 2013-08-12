@@ -11,6 +11,10 @@
 #include <sofia-sip/sip_header.h>
 #include <sofia-sip/sip_util.h>
 #include <sofia-sip/su_log.h>
+#include <sofia-sip/auth_digest.h>
+#include <sofia-sip/sofia_features.h>
+
+#define MCUSIP_USER_AGENT_STR OpenMCU::Current().GetName()+"/"+OpenMCU::Current().GetVersion()+" ("+SOFIA_SIP_NAME_VERSION+")"
 
 class OpenMCUSipConnection;
 
@@ -47,6 +51,24 @@ class CmpSipKey
 
 typedef std::map<SipKey, OpenMCUSipConnection *, CmpSipKey> SipConnectionMapType;
 
+class ProxyServer
+{
+ public:
+ ProxyServer() { sipAuthStr=NULL; }
+ PString localIP;
+ PString localPort;
+ PString proxyIP;
+ PString proxyPort;
+ PString userName;
+ PString roomName;
+ PString password;
+ PString expires;
+ PString sipAuthStr;
+ int enable, timeout;
+};
+
+typedef std::map<PString, ProxyServer *> ProxyServerMapType;
+
 class OpenMCUSipEndPoint : public PThread
 {
   public:
@@ -75,7 +97,7 @@ class OpenMCUSipEndPoint : public PThread
    int terminating;
    url_string_t* listenerUrl;
    void SipMakeCall(PString room, PString to);
-          
+
   protected:
    void MainLoop();
    int ProcessSipEvent_cb(nta_agent_t *agent,
@@ -86,18 +108,16 @@ class OpenMCUSipEndPoint : public PThread
    su_root_t *root;
    nta_agent_t *agent;
    SipConnectionMapType sipConnMap; // map of sip connections
-   static int ProcessSipEventWrap_ntaleg(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip)
-   {
-    return ((OpenMCUSipEndPoint *)context)->ProcessSipEvent_ntaleg(context, leg, irq, sip);
-   }
    static int ProcessSipEventWrap_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip)
    {
     return ((OpenMCUSipEndPoint *)context)->ProcessSipEvent_ntaout(context, orq, sip);
    }
-   int ProcessSipEvent_ntaleg(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip);
    int ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip);
-   PString localIP;
+   void SipRegister(ProxyServer *);
+   PString MakeAuthStr(ProxyServer *proxy, const sip_t *sip);
+   ProxyServerMapType ProxyServerMap;
    PString localPort;
+   PString sdp_template;
 };
 
 class SipCapability
@@ -240,10 +260,8 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int inpBytes;
   H323toSipQueue cmdQueue;
   sip_addr_t *local_addr_t, *remote_addr_t;
-  PString localIP; // from sip invite message
-  PString localPort;
-  PString remoteIP; // from sip invite message
-  PString remotePort;
+  sip_contact_t *contact_t;
+  PString localIP, remoteIP, roomName;
 
  protected:
  OpenMCUSipEndPoint *sep;
@@ -262,5 +280,3 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
  PString sess_ver;
  PString sess_username;
 };
-
- 

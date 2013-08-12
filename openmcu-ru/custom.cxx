@@ -15,7 +15,7 @@
 //
 ////////////////////////////////////////////////////
 
-#define	PRODUCT_NAME_TEXT	"OpenMCU.ru"
+#define	PRODUCT_NAME_TEXT	"OpenMCU-ru"
 
 #define	EXE_NAME_TEXT	    "openmcu"
 
