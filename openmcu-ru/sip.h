@@ -115,6 +115,7 @@ class OpenMCUSipEndPoint : public PThread
    int ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip);
    void SipRegister(ProxyServer *);
    PString MakeAuthStr(ProxyServer *proxy, const sip_t *sip);
+   PString GetRoomAccess(const sip_t *sip);
    ProxyServerMapType ProxyServerMap;
    PString localPort;
    PString sdp_template;

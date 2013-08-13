@@ -1005,12 +1005,71 @@ int OpenMCUSipEndPoint::ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConne
  return 0;
 }
 
+PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
+{
+    BOOL inRoom = false;
+    PString via = sip->sip_via->v_host;
+    PString userName = sip->sip_from->a_url->url_user;
+    PString hostName = sip->sip_from->a_url->url_host;
+    PString roomName;
+    PString userName_, hostName_, via_;
+
+    if(sip->sip_record_route)
+    {
+      ProxyServerMapType::iterator it =
+        ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
+      if(it == ProxyServerMap.end())
+        return 0;
+      roomName = it->second->roomName;
+    }
+    else
+      roomName = sip->sip_to->a_url->url_user;
+
+    PStringToString data = PConfig("RoomAccess").GetAllKeyValues();
+    PString access = data(roomName).Tokenise(" ")[0].ToUpper();
+    PStringArray accessList = data(roomName).Tokenise(" ")[1].Tokenise(",");
+    for(int i=0; accessList[i] != NULL; i++)
+    {
+      userName_ = accessList[i].Tokenise("@")[0];
+      hostName_ = accessList[i].Tokenise("@")[1];
+      via_ = accessList[i].Tokenise("@")[2];
+      if((userName_ == "" && hostName_ == "" && via_ == via) ||
+         (userName_ == "" && hostName_ == hostName && via_ == "") ||
+         (userName_ == "" && hostName_ == hostName && via_ == via) ||
+         (userName_ == userName && hostName_ == "" && via_ == "") ||
+         (userName_ == userName && hostName_ == "" && via_ == via) ||
+         (userName_ == userName && hostName_ == hostName && via_ == "") ||
+         (userName_ == userName && hostName_ == hostName && via_ == via)
+        )
+      {
+        inRoom = true;
+        break;
+      }
+    }
+
+    if(inRoom == true && access == "ALLOW")
+      access = "ALLOW";
+    else if(inRoom == true && access == "DENY")
+      access = "DENY";
+    else if(inRoom == false && access == "ALLOW")
+      access = "DENY";
+    else if(inRoom == false && access == "DENY")
+      access = "ALLOW";
+    else
+      access = "ALLOW";
+
+    PTRACE(1, "MCUSIP\t"<< access << " access to room \"" << roomName << "\", from=" << userName+"@"+hostName << ", via=" << via);
+    return access;
+}
+
 void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 {
     if(agent == NULL)
       return;
 
-    PString localIP, remoteIP, remotePort, proxyIP, userName, roomName, needProxy;
+    PString localIP, remoteIP, remotePort, proxyIP, userName, roomName;
+    BOOL needProxy = false;
+
     remoteIP = to.Tokenise(":")[1].Tokenise("@")[1];
     if(remoteIP == "")
       return;
@@ -1023,7 +1082,7 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     {
       ProxyServer *proxy = it->second;
       if(proxy->proxyIP == remoteIP)
-        needProxy = "true";
+        needProxy = true;
       if(proxy->proxyIP == remoteIP && proxy->roomName == room && proxy->enable == 1)
       {
         localIP = proxy->localIP;
@@ -1033,7 +1092,7 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
         break;
       }
     }
-    if(roomName == NULL && needProxy == "true")
+    if(roomName == NULL && needProxy == true)
       return;
     if(roomName == NULL)
     {
@@ -1282,6 +1341,12 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
 
  if(request == "INVITE")
  {
+  if(GetRoomAccess(sip) == "DENY")
+  {
+    nta_msg_treply(agent, msg, SIP_403_FORBIDDEN, TAG_END());
+    return 0;
+  }
+
   if(sip->sip_payload==NULL) return 0;
   if(sip->sip_payload->pl_data==NULL) return 0;
 
