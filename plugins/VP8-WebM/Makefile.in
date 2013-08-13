@@ -26,11 +26,8 @@
 
 VC_PLUGIN_DIR=ptlib/codecs/video
 prefix=@INSTALLPREFIX@
-ifndef prefix
-prefix=/usr/local
-endif
 exec_prefix=${prefix}
-libdir=${prefix}/lib
+libdir=@PLUGINLIBDIR@
 
 CODEC_DIR=@CODEC_VP8_DIR@
 ifndef CODEC_DIR

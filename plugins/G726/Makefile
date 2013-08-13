@@ -56,14 +56,8 @@
 
 AC_PLUGIN_DIR=ptlib/codecs/audio
 prefix=/usr/local
-ifndef prefix
-prefix=/usr/local
-endif
-LIBDIR=${exec_prefix}/lib
-ifndef LIBDIR
-LIBDIR=${prefix}/lib
-endif
 exec_prefix = ${prefix}
+LIBDIR=/usr/local/lib
 
 SONAME	= g726
 

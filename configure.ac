@@ -9,7 +9,6 @@ AM_INIT_AUTOMAKE()
 AC_PROG_CXX
 AC_LANG(C++)
 
-
 dnl ########################################################################
 dnl OpenMCU-ru version
 
@@ -197,10 +196,10 @@ rendering_names=yes
 live_video=yes
 optimized_frame_resize=yes
 
-AC_ARG_ENABLE(resample, [  --enable-resample   			Enable/Disable, requires one of the libswresample,libavresample,libsamplerate (default enable)], [resample="$enableval"])
-AC_ARG_ENABLE(rendering-names, [  --enable-rendering-names   		Enable/Disable, requires libfreetype (default enable)], [rendering_names="$enableval"])
-AC_ARG_ENABLE(live-video, [  --enable-live-video   		Enable/Disable, requires libjpeg (default enable)], [live_video="$enableval"])
-AC_ARG_ENABLE(optimized-frame-resize, [  --enable-optimized-frame-resize	Enable/Disable, requires libyuv (default enable)], [optimized_frame_resize="$enableval"])
+AC_ARG_ENABLE(resample, [  --enable-resample   			Enable/Disable, requires one of the libswresample,libavresample,libsamplerate (default enabled)], [resample="$enableval"])
+AC_ARG_ENABLE(rendering-names, [  --enable-rendering-names   		Enable/Disable, requires libfreetype (default enabled)], [rendering_names="$enableval"])
+AC_ARG_ENABLE(live-video, [  --enable-live-video   		Enable/Disable, requires libjpeg (default enabled)], [live_video="$enableval"])
+AC_ARG_ENABLE(optimized-frame-resize, [  --enable-optimized-frame-resize	Enable/Disable, requires libyuv (default enabled)], [optimized_frame_resize="$enableval"])
 
 
 dnl ########################################################################
@@ -283,7 +282,7 @@ if test "${optimized_frame_resize}" = "yes"; then
 fi
 
 dnl ########################################################################
-dnl check for yuv library
+dnl check for sofia-sip library
 
 AC_SUBST(USE_LIBSOFIA, 0)
 AC_CHECK_LIB(sofia-sip-ua, nta_agent_create, USE_LIBSOFIA=1, USE_LIBSOFIA=0)
@@ -361,7 +360,6 @@ AC_SUBST(PWLIBDIR)
 AC_SUBST(PTLIBDIR)
 AC_CONFIG_SUBDIRS(ptlib)
 AC_CONFIG_FILES(ptlib/Makefile)
-export PWLIBDIR=`pwd`/ptlib
 
 
 dnl ########################################################################
@@ -387,16 +385,16 @@ speex=yes
 silk=yes
 opus=yes
 
-AC_ARG_ENABLE(h263, [  --enable-h263   		Enable/Disable H.263 support (default enable)], [h263="$enableval"])
-AC_ARG_ENABLE(h264, [  --enable-h264   		Enable/Disable H.264 support (default enable)], [h264="$enableval"])
-AC_ARG_ENABLE(vp8, [  --enable-vp8    		Enable/Disable VP8 support (default enable)], [vp8="$enableval"])
-AC_ARG_ENABLE(g722, [  --enable-g722   		Enable/Disable G.722 support (default enable)], [g722="$enableval"])
-AC_ARG_ENABLE(g7231, [  --enable-g7231 		Enable/Disable G.723.1 support (default enable)], [g7231="$enableval"])
-AC_ARG_ENABLE(g726, [  --enable-g726   		Enable/Disable G.726 support (default enable)], [g726="$enableval"])
-AC_ARG_ENABLE(ilbc, [  --enable-ilbc   		Enable/Disable iLBC support (default enable)], [ilbc="$enableval"])
-AC_ARG_ENABLE(speex, [  --enable-speex 		Enable/Disable Speex support (default enable)], [speex="$enableval"])
-AC_ARG_ENABLE(silk, [  --enable-silk   		Enable/Disable SILK support (default enable)], [silk="$enableval"])
-AC_ARG_ENABLE(opus, [  --enable-opus   		Enable/Disable OPUS support (default enable)], [opus="$enableval"])
+AC_ARG_ENABLE(h263, [  --enable-h263   		Enable/Disable H.263 support (default enabled)], [h263="$enableval"])
+AC_ARG_ENABLE(h264, [  --enable-h264   		Enable/Disable H.264 support (default enabled)], [h264="$enableval"])
+AC_ARG_ENABLE(vp8, [  --enable-vp8    		Enable/Disable VP8 support (default enabled)], [vp8="$enableval"])
+AC_ARG_ENABLE(g722, [  --enable-g722   		Enable/Disable G.722 support (default enabled)], [g722="$enableval"])
+AC_ARG_ENABLE(g7231, [  --enable-g7231 		Enable/Disable G.723.1 support (default enabled)], [g7231="$enableval"])
+AC_ARG_ENABLE(g726, [  --enable-g726   		Enable/Disable G.726 support (default enabled)], [g726="$enableval"])
+AC_ARG_ENABLE(ilbc, [  --enable-ilbc   		Enable/Disable iLBC support (default enabled)], [ilbc="$enableval"])
+AC_ARG_ENABLE(speex, [  --enable-speex 		Enable/Disable Speex support (default enabled)], [speex="$enableval"])
+AC_ARG_ENABLE(silk, [  --enable-silk   		Enable/Disable SILK support (default enabled)], [silk="$enableval"])
+AC_ARG_ENABLE(opus, [  --enable-opus   		Enable/Disable OPUS support (default enabled)], [opus="$enableval"])
 
 PLUGINS="h263 h264 vp8 g722 g7231 g726 ilbc silk opus"
 AC_SUBST(PLUGINS)
@@ -479,9 +477,23 @@ fi
 
 AC_SUBST(PLUGIN_DIRS)
 
+if test "x$LIB64" != "x" ; then
+  AC_SUBST(PLUGINLIBDIR, ${PTLIB_INSTALLPREFIX}/lib64)
+else
+  AC_SUBST(PLUGINLIBDIR, ${PTLIB_INSTALLPREFIX}/lib)
+fi
+
 
 dnl ########################################################################
 dnl final declarations
+
+export PWLIBDIR=`pwd`/ptlib
+export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
+
+STDCCFLAGS="$STDCCFLAGS `pkg-config --cflags-only-I sofia-sip-ua`";
+if test ${USE_FREETYPE} = 1 ; then
+  STDCCFLAGS="$STDCCFLAGS `pkg-config --cflags-only-I freetype2`";
+fi
 
 CPPFLAGS="$CPPFLAGS -I${PTLIB_INSTALLPREFIX}/include"
 LDFLAGS="$LDFLAGS -I${PTLIB_INSTALLPREFIX}/lib"

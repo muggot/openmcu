@@ -64,14 +64,8 @@
 #
 AC_PLUGIN_DIR=ptlib/codecs/audio
 prefix=@INSTALLPREFIX@
-ifndef prefix
-prefix=/usr/local
-endif
-LIBDIR=@LIBDIR@
-ifndef LIBDIR
-LIBDIR=${prefix}/lib
-endif
 exec_prefix = ${prefix}
+LIBDIR=@PLUGINLIBDIR@
 
 SONAME	= ilbccodec
 

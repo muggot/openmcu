@@ -26,11 +26,8 @@
 
 AC_PLUGIN_DIR=ptlib/codecs/audio
 prefix=@INSTALLPREFIX@
-ifndef prefix
-prefix=/usr/local
-endif
 exec_prefix=${prefix}
-libdir=${exec_prefix}/lib
+libdir=@PLUGINLIBDIR@
 target_os=linux-gnu
 
 SONAME    = speex
