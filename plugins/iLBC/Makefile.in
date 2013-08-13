@@ -76,7 +76,7 @@ CFLAGS	 	=-g -O2
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=-fPIC
+STDCCFLAGS	=@STDCCFLAGS@ -fPIC
 LDFLAGS		=@LDFLAGS@
 
 SRCS	= ilbccodec.c $(SRCDIR)/anaFilter.c $(SRCDIR)/constants.c $(SRCDIR)/createCB.c $(SRCDIR)/doCPLC.c \

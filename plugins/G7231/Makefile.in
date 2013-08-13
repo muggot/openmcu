@@ -14,7 +14,7 @@ CFLAGS	 	=-Os -D__STDC_CONSTANT_MACROS
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=-fPIC
+STDCCFLAGS	=@STDCCFLAGS@ -fPIC
 LDFLAGS		=-L${prefix}/lib -lavutil -lavcodec
 
 SRCS	+= g7231codec.cxx

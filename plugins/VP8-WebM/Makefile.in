@@ -50,7 +50,7 @@ CFLAGS	 	= -Os
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	= -fPIC
+STDCCFLAGS	=@STDCCFLAGS@ -fPIC
 LDFLAGS		=-L${CODEC_DIR}/lib -lvpx
 LIBAVCODEC_CFLAGS=-I${CODEC_DIR}/include -I.
 

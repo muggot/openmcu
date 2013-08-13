@@ -40,7 +40,7 @@ CC		=gcc
 CXX		=g++
 LDSO		=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	= -fPIC
+STDCCFLAGS	=@STDCCFLAGS@ -fPIC
 LDFLAGS		=
 EXTRACFLAGS     =-I$(PLUGINDIR)
 
