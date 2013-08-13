@@ -424,7 +424,6 @@ if test "${vp8}" = "yes"; then
     AC_CHECK_LIB(vpx, vpx_codec_encode, USE_VP8=1, USE_VP8=0)
     if test ${USE_VP8} = 1 ; then
 	AC_CONFIG_FILES(plugins/VP8-WebM/Makefile)
-	AC_SUBST(CODEC_VP8_DIR, /usr)
 	PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_VP8_DIR} "
     else
 	AC_MSG_ERROR(VP8 codec not found!)
