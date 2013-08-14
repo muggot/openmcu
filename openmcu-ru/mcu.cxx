@@ -52,7 +52,11 @@ static const char DefaultFfmpegPath[]         = "ffmpeg.exe";
 static const char DefaultFfmpegPath[]         = "/usr/local/bin/ffmpeg";
 #endif
 static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac 1 -ar %S -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac 1 -vcodec msmpeg4v2 %O.asf";
+#ifdef RECORDS_DIR
+static const char DefaultRecordingDirectory[] = RECORDS_DIR;
+#else
 static const char DefaultRecordingDirectory[] = "records";
+#endif
 static const int  DefaultRecorderFrameWidth   = 704;
 static const int  DefaultRecorderFrameHeight  = 576;
 static const int  DefaultRecorderFrameRate    = 10;

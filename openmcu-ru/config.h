@@ -1,6 +1,9 @@
 #ifndef _OpenMCU_CONFIG_H
 #define _OpenMCU_CONFIG_H
 
+// specify the path executable files
+//#define SYS_BIN_DIR "/opt/openmcu-ru/bin"
+#define SYS_BIN_DIR "/usr/local/share/openmcu-ru/bin"
 // specify the path for .conf files
 //#define SYS_CONFIG_DIR "/opt/openmcu-ru/config"
 #define SYS_CONFIG_DIR "/usr/local/share/openmcu-ru/config"
@@ -8,14 +11,17 @@
 //#define SYS_PIPE_DIR "/opt/openmcu-ru/pipe"
 #define SYS_PIPE_DIR "/usr/local/share/openmcu-ru/pipe"
 // specify the path for built-in web server resources
-//#define SYS_RESOURCE_DIR "/opt/openmcu-ru/share/openmcu-ru"
+//#define SYS_RESOURCE_DIR "/opt/openmcu-ru/resource"
 #define SYS_RESOURCE_DIR "/usr/local/share/openmcu-ru/resource"
 // specify server logs folder
 //#define SERVER_LOGS "/opt/openmcu-ru/log"
 #define SERVER_LOGS "/usr/local/share/openmcu-ru/log"
 // specify true font directory
-//#define TRUETYPE_FONT_DIR "/opt/openmcu-ru/share/openmcu-ru"
+//#define TRUETYPE_FONT_DIR "/opt/openmcu-ru/font"
 #define TRUETYPE_FONT_DIR "/usr/local/share/openmcu-ru/font"
+// specify records directory
+//#define TRUETYPE_FONT_DIR "/opt/openmcu-ru/records"
+#define RECORDS_DIR "/usr/local/share/openmcu-ru/records"
 
 // enable test rooms for video mixer
 #define ENABLE_TEST_ROOMS   1
