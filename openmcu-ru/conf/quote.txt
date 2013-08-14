@@ -62,7 +62,7 @@ var PANEL_ICON_HEIGHT=PANEL_ITEM_HEIGHT-2;
 var PANEL_ICON_WIDTH=PANEL_ICON_HEIGHT;
 var PANEL_LEVEL_WIDTH=2; // audio level block width
 var SCROLLER_WIDTH=22; // browser specific, maybe calculated, but not yet
-var PANEL_IP_WIDTH=75; // width of IP address bar in panel
+var PANEL_IP_WIDTH=120; // width of IP address bar in panel
 var PANEL_MIXERID_WIDTH=10; // width of mixer id bar in panel
 var MIXER_LAYOUT_SCROLL_LEFT_STYLE="line-height:10px;font-weight:bold;color:#fff;cursor:pointer";
 var MIXER_LAYOUT_SCROLL_RIGHT_STYLE=MIXER_LAYOUT_SCROLL_LEFT_STYLE;
@@ -578,9 +578,9 @@ function format_mmbr_button(m,st){
  var posx_vad=PANEL_ICON_WIDTH;
  var posx_level=posx_vad+PANEL_ICON_WIDTH;
  var posx_name=posx_level+PANEL_LEVEL_WIDTH+2;
- var posx_kick=panel_width-SCROLLER_WIDTH-PANEL_ICON_WIDTH;
+ var posx_kick=panel_width-SCROLLER_WIDTH; //-PANEL_ICON_WIDTH;
  var posx_ip=posx_kick-PANEL_IP_WIDTH;
- var posx_mixer=posx_ip-PANEL_MIXERID_WIDTH-2;
+ var posx_mixer=posx_ip-PANEL_MIXERID_WIDTH-5;
  var name_width=posx_mixer-posx_name;
  if(name_width<10){my_alert('Exception: maybe screen resolution too low?'); if(name_width<1)name_width=1;}
  ip="<span style='color:"+((st==0)?"#576":"blue")+";font-size:10px'>"+ip+"</span>";
@@ -622,7 +622,7 @@ function members_refresh(){
  }
  var p_height=200;
  if(typeof total_height!='undefined') p_height=total_height-2;
- if(!document.getElementById('right_scroller')) document.getElementById('members_pan').innerHTML='<div id="right_scroller" style="width:277px;height:'+p_height+'px;overflow:hidden;overflow-y:auto">Initializing panel...</div>';
+ if(!document.getElementById('right_scroller')) document.getElementById('members_pan').innerHTML='<div id="right_scroller" style="width:'+panel_width+';height:'+p_height+'px;overflow:hidden;overflow-y:auto">Initializing panel...</div>';
 // var formids=',';
  offliners=false;
 // for(var i=0;i<max_subframes;i++) eval('if(document.forms[0].usr'+i+'){formids+=document.forms[0].usr'+i+'.value+",";}');

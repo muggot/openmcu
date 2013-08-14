@@ -14,7 +14,9 @@
 #include <sofia-sip/auth_digest.h>
 #include <sofia-sip/sofia_features.h>
 
-#define MCUSIP_USER_AGENT_STR OpenMCU::Current().GetName()+"/"+OpenMCU::Current().GetVersion()+" ("+SOFIA_SIP_NAME_VERSION+")"
+#define MCUSIP_USER_AGENT_STR  OpenMCU::Current().GetName()+"/"+OpenMCU::Current().GetVersion()+" ("+SOFIA_SIP_NAME_VERSION+")"
+#define MCUSIP_RTP_AUDIO_PORT  PConfig("Parameters").GetInteger("SIP Audio RTP Port", 7078)
+#define MCUSIP_RTP_VIDEO_PORT  PConfig("Parameters").GetInteger("SIP Video RTP Port", 9078)
 
 class OpenMCUSipConnection;
 
@@ -262,7 +264,8 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   H323toSipQueue cmdQueue;
   sip_addr_t *local_addr_t, *remote_addr_t;
   sip_contact_t *contact_t;
-  PString localIP, remoteIP, roomName;
+  PString localIP, remoteIP, roomName, sip_call_id;
+  msg_t *sip_msg;
 
  protected:
  OpenMCUSipEndPoint *sep;
@@ -276,7 +279,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
  unsigned int sdp_seq;
  unsigned int sdp_id;
  int bandwidth;
- msg_t *sip_msg;
  PString sess_id;
  PString sess_ver;
  PString sess_username;

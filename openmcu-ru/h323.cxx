@@ -2729,8 +2729,11 @@ void H323Connection_ConferenceMember::SetName()
    // outgoing call
    PString sname = conn->GetRemotePartyAddress();
    nam = sname; nam = strstr(nam,"$"); if(nam==NULL) nam = sname; else nam++;
-   char buf[128]; sscanf(nam,"%127[^:@]",buf);
-   sname = buf;
+   if(PString(nam).Find("sip:") != 0)
+   {
+     char buf[128]; sscanf(nam,"%127[^:@]",buf);
+     sname = buf;
+   }
    name += " ["+sname+"]";
   }
   else PTRACE(1, "MCU\tWrong connection in SetName for " << h323Token);

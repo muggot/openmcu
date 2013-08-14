@@ -127,20 +127,11 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
 //   if((portBase>65532)||(portBase==0)) portBase=5000;
 //   if(portMax<=portBase) portMax=PMIN(portBase+5000,65535);
 //   session->Open(lIP,portBase,portMax,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
-   PConfig cfg("Parameters");
    unsigned port;
    if(!sc->media)
-   {
-     port = cfg.GetInteger("SIP Audio RTP Port");
-     if(port == 0 || port > 65532)
-       port = 7078;
-   }
+       port = MCUSIP_RTP_AUDIO_PORT;
    else
-   {
-     port = cfg.GetInteger("SIP Video RTP Port");
-     if(port == 0 || port > 65532)
-       port = 9078;
-   }
+       port = MCUSIP_RTP_VIDEO_PORT;
    session->Open(lIP,port,port,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
    session->SetRemoteSocketInfo(rIP,sc->port,TRUE);
    sc->lport = session->GetLocalDataPort();
@@ -771,22 +762,22 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
  PStringArray sdp_sa = sdp_s.Lines();
 
  requestedRoom = roomName;
- remotePartyAddress = PString("sip#") + remote_addr_t->a_url->url_host;
 
  if(remote_addr_t && remote_addr_t->a_display && strcmp(remote_addr_t->a_display, "") != 0)
- { // xak, http://openmcu.ru/forum/index.php?topic=400.msg3993#msg3993
+ {
    remotePartyName = remote_addr_t->a_display;
    remotePartyName.Replace("\"","",TRUE,0);
  }
  else
    remotePartyName = remote_addr_t->a_url->url_user;
 
- PStringToString data; PURL::SplitQueryVars("partyName="+remotePartyName,data); remotePartyName=data("partyName");
- remoteName = remotePartyName;
+ remoteName = remote_addr_t->a_url->url_user;
+ remotePartyAddress = PString("sip:")+remoteName+"@"+remote_addr_t->a_url->url_host;
+
  if(sip->sip_user_agent && sip->sip_user_agent->g_string)
   remoteApplication = sip->sip_user_agent->g_string;
- callToken = remotePartyName + "@" + remotePartyAddress + ":" + PString(sip->sip_call_id->i_id);
 
+ callToken = remotePartyName + "@" + remotePartyAddress + ":" + PString(sip->sip_call_id->i_id);
  cout << "Name: " << remotePartyName << " Addr: " << remotePartyAddress << "\n";
 
  ProcessSDP(sdp_sa, sipCapsId, sipCaps, 0);
@@ -923,11 +914,22 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
   if (asip == NULL)
     return -1;
 
-  sip_add_tl(amsg, asip,
+  if(local_addr_t->a_tag == NULL)
+  {
+    sip_add_tl(amsg, asip,
+	     SIPTAG_TO(sip->sip_from),
+	     SIPTAG_FROM(sip->sip_to),
+	     SIPTAG_CALL_ID_STR(sip_call_id),
+	     TAG_END());
+  }
+  else
+  {
+    sip_add_tl(amsg, asip,
 	     SIPTAG_TO(remote_addr_t),
 	     SIPTAG_FROM(local_addr_t),
-	     SIPTAG_CALL_ID(sip->sip_call_id),
+	     SIPTAG_CALL_ID_STR(sip_call_id),
 	     TAG_END());
+  }
 
   ruri = (url_string_t const *)remote_addr_t->a_url;
 
@@ -965,6 +967,8 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
 
   if (!(bye = nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
 				   NTATAG_STATELESS(1),
+				   SIPTAG_CONTACT(contact_t),
+			           SIPTAG_USER_AGENT_STR(MCUSIP_USER_AGENT_STR),
 				   TAG_END())))
     goto err;
 
@@ -985,7 +989,7 @@ void OpenMCUSipConnection::SipProcessACK(nta_agent_t *agent, msg_t *msg)
 
 int OpenMCUSipEndPoint::ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon)
 {
- PString *cmd = sCon->cmdQueue.Pop() ;
+ PString *cmd = sCon->cmdQueue.Pop();
  while(cmd != NULL)
  {
   if(*cmd == "BYE")
@@ -1000,7 +1004,7 @@ int OpenMCUSipEndPoint::ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConne
    PTRACE(1, "MCUSIP\tSIP BYE sent\n");
    return 1;
   }
-  cmd = sCon->cmdQueue.Pop() ;
+  cmd = sCon->cmdQueue.Pop();
  }
  return 0;
 }
@@ -1107,7 +1111,7 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
 	("sip:"+userName+"@"+proxyIP));
     sip_from->a_display = roomName;
-    sip_from_tag(&home, sip_from, (const char *)(PString)(rand()%1000000000));
+    sip_from_tag(&home, sip_from, nta_agent_newtag(&home, "tag=%s", agent));
 
     sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)(const char *)to);
 
@@ -1116,7 +1120,7 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sip_contact->m_display = roomName;
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)sip_to->a_url, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, 0x7fffffff, SIP_METHOD_INVITE);
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, (rand()%1000000), SIP_METHOD_INVITE);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, localPort);
 
     PString sdp = sdp_template;
@@ -1152,7 +1156,7 @@ void OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
 
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
 	("sip:"+proxy->userName+"@"+proxy->proxyIP));
-    sip_from_tag(&home, sip_from, (const char *)(PString)(rand()%1000000000));
+    sip_from_tag(&home, sip_from, nta_agent_newtag(&home, "tag=%s", agent));
     sip_from->a_display = proxy->roomName;
 
     sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)(const char *)
@@ -1163,7 +1167,7 @@ void OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
     sip_contact->m_display = proxy->roomName;
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_REGISTER, (url_string_t *)sip_to->a_url, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, 0x7fffffff, SIP_METHOD_REGISTER);
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, (rand()%1000000), SIP_METHOD_REGISTER);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, proxy->localPort);
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
@@ -1247,7 +1251,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
 	("sip:"+proxy->userName+"@"+proxy->proxyIP));
     sip_from->a_display = proxy->roomName;
-    sip_from_tag(&home, sip_from, (const char *)(PString)(rand()%1000000000));
+    sip_from_tag(&home, sip_from, nta_agent_newtag(&home, "tag=%s", agent));
 
     sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)sip->sip_to->a_url);
 
@@ -1257,7 +1261,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
 
     sip_request_t *sip_rq = sip_request_create(&home, sip->sip_cseq->cs_method,
 			sip->sip_cseq->cs_method_name, (url_string_t *)sip_to->a_url, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, 0x7fffffff,
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, (rand()%1000000),
 			 sip->sip_cseq->cs_method, sip->sip_cseq->cs_method_name);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, proxy->localPort);
 
@@ -1363,7 +1367,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   }
 
   PTRACE(1, "MCUSIP\tNew SIP INVITE");
-
   OpenMCUSipConnection *sCon = new OpenMCUSipConnection(this, ep);
   if(sip->sip_record_route)
   {
@@ -1372,30 +1375,21 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
     if(it == ProxyServerMap.end())
       return 0;
     ProxyServer *proxy = it->second;
-    sCon->local_addr_t = sip_to_create(&home, (url_string_t *)(const char *)
-        ("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort));
-    sCon->remote_addr_t = sip_from_create(&home, (url_string_t *)(const char *)
-	("sip:"+(PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host));
     sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
 	("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
     sCon->localIP = proxy->localIP;
     sCon->roomName = proxy->roomName;
   } else {
-    sCon->local_addr_t = sip_to_create(&home, (url_string_t *)(const char *)
-	("sip:"+(PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host+":"+localPort));
-    sCon->remote_addr_t = sip_from_create(&home, (url_string_t *)(const char *)
-	("sip:"+(PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host));
     sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
 	("sip:"+(PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host+":"+localPort), NULL);
     sCon->localIP = sip->sip_to->a_url->url_host;
     sCon->roomName = sip->sip_to->a_url->url_user;
   }
-  if(sip->sip_from->a_display && strcmp(sip->sip_from->a_display, "") != 0)
-    sCon->remote_addr_t->a_display = sip->sip_from->a_display;
-  else if(sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") != 0)
+  sCon->local_addr_t = sip_to_dup(&home, sip->sip_to);
+  sCon->remote_addr_t = sip_from_dup(&home, sip->sip_from);
+  sCon->sip_call_id = sik.sid;
+  if(sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") == 0)
     sCon->remote_addr_t->a_display = sip->sip_contact->m_display;
-  if(sip->sip_from->a_url->url_port)
-    sCon->remote_addr_t->a_url->url_port = sip->sip_from->a_url->url_port;
 
   if(!sCon->ProcessInviteEvent(sip)) 
   {
@@ -1493,30 +1487,22 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
     if(it == ProxyServerMap.end())
       return 0;
     ProxyServer *proxy = it->second;
-    sCon->local_addr_t = sip_from_create(&home, (url_string_t *)(const char *)
-	("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort));
-    sCon->remote_addr_t = sip_to_create(&home, (url_string_t *)(const char *)
-	("sip:"+(PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host));
     sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
 	("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
     sCon->localIP = proxy->localIP;
     sCon->roomName = proxy->roomName;
   } else {
-    sCon->local_addr_t = sip_from_create(&home, (url_string_t *)(const char *)
-	("sip:"+(PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host+":"+localPort));
-    sCon->remote_addr_t = sip_to_create(&home, (url_string_t *)(const char *)
-	("sip:"+(PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host));
     sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
 	("sip:"+(PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host+":"+localPort), NULL);
-    sCon->localIP = sCon->local_addr_t->a_url->url_host;
+    sCon->localIP = sip->sip_from->a_url->url_user;
     sCon->roomName = sip->sip_from->a_url->url_user;
   }
-  if(sip->sip_to->a_display && strcmp(sip->sip_to->a_display, "") != 0)
-    sCon->remote_addr_t->a_display = sip->sip_to->a_display;
-  else if(sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") != 0)
+  sCon->sip_msg = msg_dup(msg);
+  sCon->local_addr_t = sip_from_dup(&home, sip->sip_from);
+  sCon->remote_addr_t = sip_to_dup(&home, sip->sip_to);
+  sCon->sip_call_id = sik.sid;
+  if(sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") == 0)
     sCon->remote_addr_t->a_display = sip->sip_contact->m_display;
-  if(sip->sip_to->a_url->url_port)
-    sCon->remote_addr_t->a_url->url_port = sip->sip_to->a_url->url_port;
 
   if(!sCon->ProcessInviteEvent(sip))
   {
@@ -1600,20 +1586,13 @@ void OpenMCUSipEndPoint::Main()
  else
    agent = nta_agent_create(root, NULL, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, TAG_NULL());
 
- PConfig cfg("Parameters");
- unsigned a_port = cfg.GetInteger("SIP Audio RTP Port");
- if(a_port == 0 || a_port > 65532)
-   a_port = 7078;
- unsigned v_port = cfg.GetInteger("SIP Video RTP Port");
- if(v_port == 0 || v_port > 65532)
-   v_port = 9078;
  sdp_template =
         "v=0\n"
         "o=USERNAME 1806 3221 IN IP4 LOCALIP\n"
         "s=Talk\n"
         "c=IN IP4 LOCALIP\n"
         "t=0 0\n"
-        "m=audio "+(PString)a_port+" RTP/AVP 124 120 0 8 100 101\n"
+        "m=audio "+(PString)MCUSIP_RTP_AUDIO_PORT+" RTP/AVP 124 120 0 8 100 101\n"
         "a=rtpmap:124 OPUS/48000\n"
         "a=rtpmap:120 silk/16000\n"
         "a=rtpmap:0 PCMU/8000\n"
@@ -1622,12 +1601,13 @@ void OpenMCUSipEndPoint::Main()
         "a=fmtp:100 mode=30\n"
         "a=rtpmap:101 telephone-event/8000\n"
         "a=fmtp:101 0-11\n"
-        "m=video "+(PString)v_port+" RTP/AVP 103 102 98\n"
+        "m=video "+(PString)MCUSIP_RTP_VIDEO_PORT+" RTP/AVP 103 102 98\n"
         "a=rtpmap:103 vp8/90000\n"
         "a=rtpmap:102 H264/90000\n"
         "a=rtpmap:98 H263-1998/90000\n";
 
  // proxy servers
+ PConfig cfg("Parameters");
  int proxyServerNum = cfg.GetInteger("SIP Proxy Array Size");
  for(int i = 0; i < proxyServerNum; i++)
  {
