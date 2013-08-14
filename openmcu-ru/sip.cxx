@@ -1016,7 +1016,8 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
     PString userName = sip->sip_from->a_url->url_user;
     PString hostName = sip->sip_from->a_url->url_host;
     PString roomName;
-    PString userName_, hostName_, via_;
+    PString userName_, hostName_, via_, access;
+    PString defaultAccess = PConfig("RoomAccess").GetString("*", "ALLOW").ToUpper();
 
     if(sip->sip_record_route)
     {
@@ -1030,7 +1031,10 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
       roomName = sip->sip_to->a_url->url_user;
 
     PStringToString data = PConfig("RoomAccess").GetAllKeyValues();
-    PString access = data(roomName).Tokenise(" ")[0].ToUpper();
+
+    if(roomName != "*")
+      access = data(roomName).Tokenise(" ")[0].ToUpper();
+
     PStringArray accessList = data(roomName).Tokenise(" ")[1].Tokenise(",");
     for(int i=0; accessList[i] != NULL; i++)
     {
@@ -1060,7 +1064,7 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
     else if(inRoom == false && access == "DENY")
       access = "ALLOW";
     else
-      access = "ALLOW";
+      access = defaultAccess;
 
     PTRACE(1, "MCUSIP\t"<< access << " access to room \"" << roomName << "\", from=" << userName+"@"+hostName << ", via=" << via);
     return access;
@@ -1169,7 +1173,6 @@ void OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_REGISTER, (url_string_t *)sip_to->a_url, NULL);
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, (rand()%1000000), SIP_METHOD_REGISTER);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, proxy->localPort);
-
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *orq = nta_outgoing_mcreate(agent, ProcessSipEventWrap_ntaout, (nta_outgoing_magic_t *)this,
       			(url_string_t *)sip_to->a_url,
@@ -1607,30 +1610,29 @@ void OpenMCUSipEndPoint::Main()
         "a=rtpmap:98 H263-1998/90000\n";
 
  // proxy servers
- PConfig cfg("Parameters");
- int proxyServerNum = cfg.GetInteger("SIP Proxy Array Size");
- for(int i = 0; i < proxyServerNum; i++)
+ PStringList keys = PConfig("ProxyServers").GetKeys();
+ for(PINDEX i = 0; i < keys.GetSize(); i++)
  {
-  PString tmp = cfg.GetString("SIP Proxy "+(PString)(i+1));
   ProxyServer *proxy = new ProxyServer();
+  PString tmp = PConfig("ProxyServers").GetString(keys[i]);
+  proxy->roomName = keys[i];
   proxy->proxyIP = tmp.Tokenise(",")[0].Tokenise(":")[0];
   proxy->proxyPort = tmp.Tokenise(",")[0].Tokenise(":")[1];
   if(proxy->proxyPort == "")
-    proxy->proxyPort = "5060";
+   proxy->proxyPort = "5060";
   proxy->userName = tmp.Tokenise(",")[1];
-  proxy->roomName = tmp.Tokenise(",")[2];
-  proxy->password = tmp.Tokenise(",")[3];
-  proxy->enable = atoi(tmp.Tokenise(",")[4]);
-  proxy->expires = tmp.Tokenise(",")[5];
+  proxy->password = tmp.Tokenise(",")[2];
+  proxy->enable = atoi(tmp.Tokenise(",")[3]);
+  proxy->expires = tmp.Tokenise(",")[4];
   if(atoi(proxy->expires) < 60)
-    proxy->expires = "60";
+   proxy->expires = "60";
   if(atoi(proxy->expires) > 3600)
-    proxy->expires = "3600";
+   proxy->expires = "3600";
   proxy->timeout = atoi(proxy->expires)*2;
-  proxy->localIP = GetFromIp((const char *)proxy->proxyIP, (const char *)proxy->proxyPort);
   proxy->localPort = localPort;
-  if(proxy->localIP == "0" )
-    continue;
+  proxy->localIP = GetFromIp((const char *)proxy->proxyIP, (const char *)proxy->proxyPort);
+  if(proxy->localIP == "0")
+   continue;
   ProxyServerMap.insert(ProxyServerMapType::value_type(proxy->userName+"@"+proxy->proxyIP, proxy));
  }
 
