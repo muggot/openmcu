@@ -82,6 +82,26 @@ class MyPConfigPage : public PConfigPage
  private:
 };
 
+class SectionPConfigPage : public PConfigPage
+{
+  public:
+    SectionPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(
+      PHTTPRequest & request,
+      const PStringToString & data,
+      PHTML & replyMessage
+    );
+    BOOL OnPOST(
+      PHTTPServer & server,
+      const PURL & url,
+      const PMIMEInfo & info,
+      const PStringToString & data,
+      const PHTTPConnectionInfo & connectInfo
+    );
+  protected:
+    PConfig cfg;
+};
+
 #if USE_LIBJPEG
 class JpegFrameHTTP : public PServiceHTTPString
 {
@@ -479,8 +499,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   }
 
   // Finished the resource to add, generate HTML for it and add to name space
-  PServiceHTML html("System Parameters");
-  rsrc->BuildHTML(html);
+  rsrc->BuildHTML("System Parameters");
+  //PServiceHTML html("System Parameters");
+  //rsrc->BuildHTML(html);
   httpNameSpace.AddResource(rsrc, PHTTPSpace::Overwrite);
   PStringStream html0; BeginPage(html0,"Parameters","Parameters","$PARAMETERS$");
   PString html1 = rsrc->GetString();
@@ -488,6 +509,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   PStringStream htmlpage; htmlpage << html0 << html1 << html2;
 
   rsrc->SetString(htmlpage);
+
+  // Create the config room acccess page
+  httpNameSpace.AddResource(new SectionPConfigPage(*this, "RoomAccess", "RoomAccess", authority), PHTTPSpace::Overwrite);
+
+  // Create the config proxy servers page
+  httpNameSpace.AddResource(new SectionPConfigPage(*this, "ProxyServers", "ProxyServers", authority), PHTTPSpace::Overwrite);
 
   // Create the status page
   httpNameSpace.AddResource(new MainStatusPage(*this, authority), PHTTPSpace::Overwrite);
@@ -648,13 +675,68 @@ PCREATE_SERVICE_MACRO_BLOCK(RoomStatus,P_EMPTY,P_EMPTY,block)
   return OpenMCU::Current().GetEndpoint().GetRoomStatus(block);
 }
 
+SectionPConfigPage::SectionPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : PConfigPage(app,title,NULL,auth)
+{
+  cfg = PConfig(section);
+  PStringList keys = cfg.GetKeys();
+  PString data;
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+    data += keys[i]+"="+cfg.GetString(keys[i])+"\n";
+
+  if(section == "RoomAccess")
+    Add(new PHTTPStringField(" ", 1000, data, "<td><td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'> *=ALLOW<br> room101=allow user1@domain,user2@,@domain,@@via<br> room102=allow user3@domain@via"));
+  else if(section == "ProxyServers")
+    Add(new PHTTPStringField(" ", 1000, data, "<td><td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'>room_name=proxy_server,username,password,0,3600"));
+  else
+    Add(new PHTTPStringField(" ", 1000, data, NULL));
+  BuildHTML("");
+
+  PStringStream html_begin;
+  BeginPage(html_begin, section, section, "$PARAMETERS$");
+
+  PStringStream html_page; html_page << html_begin << string;
+  string = html_page;
+}
+
+BOOL SectionPConfigPage::Post(PHTTPRequest & request,
+                       const PStringToString & data,
+                       PHTML & reply)
+{
+
+  PHTTPForm::Post(request, data, reply);
+
+  cfg.DeleteSection();
+  PString input_data = fields[0].GetValue();
+
+  PStringArray list = input_data.Tokenise("\n");
+  for(int i = 0; i < list.GetSize(); i++)
+  {
+    PString key = list[i].Tokenise("=")[0];
+    PString value = list[i].Tokenise("=")[1];
+    if(key != "" && value != "")
+      cfg.SetString(key, value);
+  }
+  process.OnContinue();
+  return TRUE;
+}
+
+BOOL SectionPConfigPage::OnPOST(PHTTPServer & server,
+                         const PURL & url,
+                         const PMIMEInfo & info,
+                         const PStringToString & data,
+                         const PHTTPConnectionInfo & connectInfo)
+{
+  PHTTPConfig::OnPOST(server, url, info, data, connectInfo);
+  return TRUE;
+}
+
 MainStatusPage::MainStatusPage(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Status", "", "text/html; charset=utf-8", auth),
     app(_app)
 {
   PStringStream html;
   
-
   html << "<meta http-equiv=\"Refresh\" content=\"30\">\n";
   BeginPage(html,"Status Page","Status Page","$STATUS$");
   html << "<p>"

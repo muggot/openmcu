@@ -20,17 +20,48 @@
  .tborder {border:1px solid #e2e2e2;padding:0;}
  .post,.personalmessage {width:100%;overflow:auto;line-height:1.3em;}
  .wrapper {min-width:1000px;width:100%;margin:0 auto;padding:0;}
- #topnav {float:left;height:61px;padding-left:5px;z-index:100;margin:0;}
- #topnav ul {margin:0;padding:0;}
- #topnav li {float:left;position:relative;line-height:16px;list-style-type:none;margin:0;padding:0 1px 0 0;}
- #topnav li a {display:block;float:left;color:#666;text-decoration:none;font-size:11px;padding:16px 23px 13px;}
- #topnav li strong {color:#ccc;font-size:14px;font-family:Arial Narrow, Arial, sans-serif;}
- #topnav li a:hover,#topnav .chosen a:hover,#topnav li:hover a,#topnav li.sfhover a {color:#EC0002;}
+
+ #topnav {
+   position: fixed;
+   float: left;
+   width: 100%;
+   height: 50px;
+   margin: 0px;
+   text-align: center;
+   text-decoration: none;
+   z-index: 5000;
+     background: #242424;
+ }
+ #topnav ul {margin:0;padding:0;padding-top:10px;}
+ #topnav li {float:left;position:relative;line-height:16px;list-style-type:none;margin:0px;padding:0px 1px 0px 0px;}
+ #topnav strong {
+   position: relative;
+   left: 0px;
+   top: 0px;
+   text-align: center;
+   padding:0px 0px 0px 0px;
+   color:#ccc;
+   font-size:14px;
+   font-family:Arial Narrow, Arial, sans-serif;
+   font-weight:bold;
+ }
+
+ #topnav panel a {
+   display:block;
+   float:left;
+   color:#666;
+   font-size:12px;
+   padding:10px 0px 10px 0px;
+   width:140px;
+   border:1px solid #242424;
+ }
+ #topnav panel a:hover {background-color: #242424;border:1px solid #778899;}
+
  #body-shad-l {background: 0 0 repeat-y;padding-left:20px;}
  #body-shad-r {background: 100% 0 repeat-y;padding-right:20px;}
  #mainbody {background:#fff;margin:0;padding:0;}
  .clr {clear:both;}
- .pathway-wrap {margin:0;padding:8px 10px 0;}
+ .pathway-wrap {margin:0;padding:70px 10px 0;}
  span.ds-pathway {color:#555;font-size:12px;margin:0 3px 0 0;}
  .catbg,tr.catbg td,.catbg3,tr.catbg3 td,.catbg2,tr.catbg2 td {color:#fff;padding-left:10px;padding-right:10px;background:#990000;}
 .lri,.llri{background-color:#fdd}
@@ -90,7 +121,6 @@ dd{margin-left:9px;}
 .dl-horizontal dt{float:left;width:120px;clear:left;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .dl-horizontal dd{margin-left:130px;}
 hr{margin:18px 0;border:0;border-top:1px solid #eeeeee;border-bottom:1px solid #ffffff;}
-strong{font-weight:bold;}
 em{font-style:italic;}
 .muted{color:#999999;}
 abbr[title]{cursor:help;border-bottom:1px dotted #ddd;}
@@ -270,6 +300,46 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .fade{opacity:0;filter:alpha(opacity=0);-webkit-transition:opacity 0.15s linear;-moz-transition:opacity 0.15s linear;-ms-transition:opacity 0.15s linear;-o-transition:opacity 0.15s linear;transition:opacity 0.15s linear;}.fade.in{opacity:1;filter:alpha(opacity=100);}
 .collapse{position:relative;height:0;overflow:hidden;-webkit-transition:height 0.35s ease;-moz-transition:height 0.35s ease;-ms-transition:height 0.35s ease;-o-transition:height 0.35s ease;transition:height 0.35s ease;}.collapse.in{height:auto;}
 
+ menu {
+   position: absolute;
+   width: 140px;
+   left: 0px;
+   top: 38px;
+   margin: 0;
+   padding: 0;
+   display: none;
+   list-style: none;
+   background-color: #000000;
+   border: 1px solid #242424;
+ }
+ li:hover menu {
+   display: block;
+   background-color: #242424;
+ }
+
+ #topnav header_text {
+   position: relative;
+   width: 180px;
+   left: 0px;
+   top: 10px;
+   text-align: center;
+   padding: 0px 0px 0px;
+   float: left;
+   color: #ccc;
+   font-size: 18px;
+   font-family: Helvetica, sans-serif;
+   border: 0px;
+ }
+ #topnav header_text:hover {color: #FFFAFA;}
+
+ #topnav header_image {
+   position: relative;
+   left: 20px;
+   top: 0px;
+   padding: 0px 0px 0px;
+   float: left;
+ }
+
 </style>
 
 </HEAD>
@@ -278,17 +348,44 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
  <div id="toolbar">
  <div class="wrapper">
  <div id="topnav">
- <ul id="topnav"><li><a href="welcome.html"><strong>General</strong><br>Главная</a></li><li>
- <li><a href="Parameters"><strong>Parameters</strong><br>Настройки</a></li><li>
- <li><a href="Status"><strong>MCU Status</strong><br>Состояние MCU</a></li><li>
- <li><a href="Invite"><strong>Invite user</strong><br>Пригласить...</a></li><li>
- <li><a href="Select"><strong>Room Control</strong><br>Управление</a></li><li>
- <li><a href="Records"><strong>Records</strong><br>Видеозаписи</a></li><li>
- <li><a href="http://openmcu.ru/public/user_guide.pdf"><strong>Manual</strong><br>Документация</a></li><li>
- </ul></li><li><a href="http://openmcu.ru/index.php"><strong>Forum</strong><br>Есть вопросы?</a></li></ul>
+ <ul id="topnav">
+
+ <li><header_image class="icon-cogs"><img class="topimg" src="openmcu.gif" width="40" height="40"></header_image></li>
+ <li><a href="welcome.html"><header_text>OpenMCU-ru</header_text></a><li>
+
+ <li><panel><a href="Status"><strong>Состояние</strong></a>
+  <menu>
+   <li><a href='Status'>Подключения</a></li>
+   <li><a href='Records'>Видеозаписи</a></li>
+  </menu>
+ </panel></li>
+
+ <li><panel><a href="Select"><strong>Управление</strong></a>
+  <menu>
+   <li><a href='Select'>Комнаты</a></li>
+   <li><a href='Invite'>Пригласить</a></li>
+  </menu>
+ </panel></li>
+
+ <li><panel><a href="Parameters"><strong>Настройки</strong></a>
+  <menu>
+   <li><a href='Parameters'>Основные</a></li>
+   <li><a href='RoomAccess'>Правила доступа</a></li>
+   <li><a href='ProxyServers'>Прокси-серверы SIP</a></li>
+  </menu>
+ </panel></li>
+
+ <li><panel><a href="http://openmcu.ru/index.php"><strong>Помощь</strong></a>
+  <menu>
+   <li><a href="http://openmcu.ru/index.php">Форум</a></li>
+   <li><a href="http://openmcu.ru/public/user_guide.pdf">Документация</a></li>
+  </menu>
+ </panel></li>
+
  </div>
  </div>
  </div>
+
  <div class="clr"></div>
  <div id="body-bg">
  <div class="wrapper">
