@@ -1,9 +1,10 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html lang="ru" xmlns="http://www.w3.org/1999/xhtml">
 <HEAD>
 <TITLE>$PTITLE$</TITLE>
  <link rel="icon" type="image/vnd.microsoft.icon" href="openmcu.ico" />
  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+ <link rel="stylesheet" type="text/css" href="locale.css">
  <style type="text/css">
  html {height:100%;margin-bottom:1px;}
  a:link,a:visited {color:#990000;text-decoration:none;}
@@ -20,42 +21,6 @@
  .tborder {border:1px solid #e2e2e2;padding:0;}
  .post,.personalmessage {width:100%;overflow:auto;line-height:1.3em;}
  .wrapper {min-width:1000px;width:100%;margin:0 auto;padding:0;}
-
- #topnav {
-   position: fixed;
-   float: left;
-   width: 100%;
-   height: 50px;
-   margin: 0px;
-   text-align: center;
-   text-decoration: none;
-   z-index: 5000;
-     background: #242424;
- }
- #topnav ul {margin:0;padding:0;padding-top:10px;}
- #topnav li {float:left;position:relative;line-height:16px;list-style-type:none;margin:0px;padding:0px 1px 0px 0px;}
- #topnav strong {
-   position: relative;
-   left: 0px;
-   top: 0px;
-   text-align: center;
-   padding:0px 0px 0px 0px;
-   color:#ccc;
-   font-size:14px;
-   font-family:Arial Narrow, Arial, sans-serif;
-   font-weight:bold;
- }
-
- #topnav panel a {
-   display:block;
-   float:left;
-   color:#666;
-   font-size:12px;
-   padding:10px 0px 10px 0px;
-   width:140px;
-   border:1px solid #242424;
- }
- #topnav panel a:hover {background-color: #242424;border:1px solid #778899;}
 
  #body-shad-l {background: 0 0 repeat-y;padding-left:20px;}
  #body-shad-r {background: 100% 0 repeat-y;padding-right:20px;}
@@ -300,6 +265,42 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .fade{opacity:0;filter:alpha(opacity=0);-webkit-transition:opacity 0.15s linear;-moz-transition:opacity 0.15s linear;-ms-transition:opacity 0.15s linear;-o-transition:opacity 0.15s linear;transition:opacity 0.15s linear;}.fade.in{opacity:1;filter:alpha(opacity=100);}
 .collapse{position:relative;height:0;overflow:hidden;-webkit-transition:height 0.35s ease;-moz-transition:height 0.35s ease;-ms-transition:height 0.35s ease;-o-transition:height 0.35s ease;transition:height 0.35s ease;}.collapse.in{height:auto;}
 
+ #topnav {
+   position: fixed;
+   float: left;
+   width: 100%;
+   height: 50px;
+   margin: 0px;
+   text-align: center;
+   text-decoration: none;
+   z-index: 5000;
+     background: #242424;
+ }
+ #topnav ul {margin:0;padding:0;padding-top:10px;}
+ #topnav li {float:right;position:relative;line-height:16px;list-style-type:none;margin:0px;padding:0px 0px 0px 0px;}
+
+ #topnav strong {
+   position: relative;
+   left: 0px;
+   top: 0px;
+   padding:0px 0px 0px 0px;
+   color:#ccc;
+   font-size:14px;
+   font-family:Arial Narrow, Arial, sans-serif;
+   font-weight:bold;
+ }
+
+ #topnav panel a {
+   display:block;
+   float:left;
+   color:#666;
+   font-size:12px;
+   padding:10px 0px 10px 0px;
+   width:140px;
+   border:1px solid #242424;
+ }
+ #topnav panel a:hover {background-color: #242424;border:1px solid #778899;}
+
  menu {
    position: absolute;
    width: 140px;
@@ -312,33 +313,10 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
    background-color: #000000;
    border: 1px solid #242424;
  }
- li:hover menu {
-   display: block;
-   background-color: #242424;
- }
+ li:hover menu {display: block;background-color: #242424;}
 
- #topnav header_text {
-   position: relative;
-   width: 180px;
-   left: 0px;
-   top: 10px;
-   text-align: center;
-   padding: 0px 0px 0px;
-   float: left;
-   color: #ccc;
-   font-size: 18px;
-   font-family: Helvetica, sans-serif;
-   border: 0px;
- }
- #topnav header_text:hover {color: #FFFAFA;}
-
- #topnav header_image {
-   position: relative;
-   left: 20px;
-   top: 0px;
-   padding: 0px 0px 0px;
-   float: left;
- }
+ #topnav panel_i_logo_text {position:relative;left:0px;top:6px;float:left;padding:0px 0px 0px 30px;}
+ #topnav panel_i_logo_text:hover {}
 
 </style>
 
@@ -350,37 +328,39 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
  <div id="topnav">
  <ul id="topnav">
 
- <li><header_image class="icon-cogs"><img class="topimg" src="openmcu.gif" width="40" height="40"></header_image></li>
- <li><a href="welcome.html"><header_text>OpenMCU-ru</header_text></a><li>
+ <a href="welcome.html"><panel_i_logo_text class="icon-cogs"><img class="topimg" src="openmcu.ru_logo_text.bmp"></panel_i_logo_text></a>
 
- <li><panel><a href="Status"><strong>Состояние</strong></a>
+ <li><span style="padding:0px 15px;"></span></li>
+
+ <li class="l_help"><panel><a href="http://openmcu.ru/index.php"><strong></strong></a>
   <menu>
-   <li><a href='Status'>Подключения</a></li>
-   <li><a href='Records'>Видеозаписи</a></li>
+   <li class="l_forum"><a href='http://openmcu.ru/index.php'></a></li>
+   <li class="l_manual"><a href='http://openmcu.ru/public/user_guide.pdf'></a></li>
   </menu>
  </panel></li>
 
- <li><panel><a href="Select"><strong>Управление</strong></a>
+ <li class="l_settings"><panel><a href="Parameters"><strong></strong></a>
   <menu>
-   <li><a href='Select'>Комнаты</a></li>
-   <li><a href='Invite'>Пригласить</a></li>
+   <li class="l_general"><a href='Parameters'></a></li>
+   <li class="l_access_rules"><a href='RoomAccess'></a></li>
+   <li class="l_sip_proxy"><a href='ProxyServers'></a></li>
   </menu>
  </panel></li>
 
- <li><panel><a href="Parameters"><strong>Настройки</strong></a>
+ <li class="l_control"><panel><a href="Select"><strong></strong></a>
   <menu>
-   <li><a href='Parameters'>Основные</a></li>
-   <li><a href='RoomAccess'>Правила доступа</a></li>
-   <li><a href='ProxyServers'>Прокси-серверы SIP</a></li>
+   <li class="l_rooms"><a href='Select'></a></li>
+   <li class="l_invite"><a href='Invite'></a></li>
   </menu>
  </panel></li>
 
- <li><panel><a href="http://openmcu.ru/index.php"><strong>Помощь</strong></a>
+ <li class="l_status"><panel><a href="Status"><strong></strong></a>
   <menu>
-   <li><a href="http://openmcu.ru/index.php">Форум</a></li>
-   <li><a href="http://openmcu.ru/public/user_guide.pdf">Документация</a></li>
+   <li class="l_connections"><a href='Status'></a></li>
+   <li class="l_records"><a href='Records'></a></li>
   </menu>
  </panel></li>
+
 
  </div>
  </div>

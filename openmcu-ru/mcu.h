@@ -173,6 +173,15 @@ class OpenMCU : public OpenMCUProcessAncestor
       }
       return result;
     }
+    PString GetHtmlCopyright()
+    {
+      PHTML html(PHTML::InBody);
+      html << "Copyright &copy;"
+       << compilationDate.AsString("yyyy") << " by "
+       << PHTML::HotLink(copyrightHomePage)
+       << copyrightHolder;
+      return html;
+    }
 
 #if OPENMCU_VIDEO
     static VideoMixConfigurator vmcfg;

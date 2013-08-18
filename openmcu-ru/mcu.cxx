@@ -69,7 +69,6 @@ static const char H264LevelForSIPKey[]        = "H.264 Default Level for SIP";
 
 #define new PNEW
 
-
 ///////////////////////////////////////////////////////////////
 
 class MyPConfigPage : public PConfigPage
@@ -505,7 +504,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpNameSpace.AddResource(rsrc, PHTTPSpace::Overwrite);
   PStringStream html0; BeginPage(html0,"Parameters","Parameters","$PARAMETERS$");
   PString html1 = rsrc->GetString();
-  PStringStream html2; EndPage(html2,GetCopyrightText());
+  PStringStream html2; EndPage(html2,OpenMCU::Current().GetHtmlCopyright());
   PStringStream htmlpage; htmlpage << html0 << html1 << html2;
 
   rsrc->SetString(htmlpage);
@@ -546,7 +545,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 /*
   PStringStream shtml;
   BeginPage(shtml,"OpenMCU Home","OpenMCU Home","$WELCOME$");
-  EndPage(shtml,GetCopyrightText());
+  EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());
   httpNameSpace.AddResource(new PServiceHTTPString("welcome.html", shtml), PHTTPSpace::Overwrite);
 */
   httpNameSpace.AddResource(new WelcomePage(*this, authority), PHTTPSpace::Overwrite);
@@ -595,6 +594,17 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK("i24_clr.gif");
   WEBSERVER_LINK("i24_revert.gif");
   WEBSERVER_LINK("openmcu.ico");
+  WEBSERVER_LINK("openmcu.ru_logo_text.bmp");
+#ifdef SYS_RESOURCE_DIR
+#  ifdef _WIN32
+#    define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "\\" + r1, "text/css"), PHTTPSpace::Overwrite)
+#  else
+#    define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "/" + r1, "text/css"), PHTTPSpace::Overwrite)
+#  endif
+#else
+#  define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, "text/css"), PHTTPSpace::Overwrite)
+#endif
+  WEBSERVER_CSS_LINK("locale.css");
 
   // set up the HTTP port for listening & start the first HTTP thread
   if (ListenForHTTP(httpPort))
@@ -692,10 +702,11 @@ SectionPConfigPage::SectionPConfigPage(PHTTPServiceProcess & app,const PString &
     Add(new PHTTPStringField(" ", 1000, data, NULL));
   BuildHTML("");
 
-  PStringStream html_begin;
+  PStringStream html_begin, html_end;
   BeginPage(html_begin, section, section, "$PARAMETERS$");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
 
-  PStringStream html_page; html_page << html_begin << string;
+  PStringStream html_page; html_page << html_begin << string << html_end;
   string = html_page;
 }
 
@@ -759,7 +770,7 @@ MainStatusPage::MainStatusPage(OpenMCU & _app, PHTTPAuthority & auth)
 
        << "<p>";
        
-         EndPage(html,app.GetCopyrightText());
+         EndPage(html,OpenMCU::Current().GetHtmlCopyright());
   string = html;
 }
 
@@ -1011,7 +1022,7 @@ InvitePage::InvitePage(OpenMCU & _app, PHTTPAuthority & auth)
     << "&nbsp;&nbsp;<input type=\"submit\" class=\"btn\" value=\"Invite\">"
     << "</form>";
 
-  EndPage(html,app.GetCopyrightText());
+  EndPage(html,OpenMCU::Current().GetHtmlCopyright());
 
   string = html;
 }
@@ -1039,7 +1050,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
     BeginPage(html,"Invite Failed","Invite Failed","$INVITE_F$");
     html << "<div class=\"alert\"><b>Cannot create</b> room " << room;
     html << "</div>";
-    EndPage(html,OpenMCU::Current().GetCopyrightText()); msg = html;
+    EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
     return TRUE;
   }
 
@@ -1054,7 +1065,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
       BeginPage(html,"Invite Failed","Invite Failed","$INVITE_F$");
       html << "<div class=\"alert\"><b>Cannot create make call to</b> " << address;
       html << "</div>";
-      EndPage(html,OpenMCU::Current().GetCopyrightText()); msg = html;
+      EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
       ep.GetConferenceManager().RemoveConference(room);
       return TRUE;
     } else {
@@ -1074,7 +1085,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
     << "&nbsp;&nbsp;&nbsp;<input type=\"submit\" class=\"btn\" value=\"Invite\">"
     << "</form>";
 
-  EndPage(html,OpenMCU::Current().GetCopyrightText()); msg = html;
+  EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
 
   return TRUE;
 }
@@ -1099,7 +1110,7 @@ SelectRoomPage::SelectRoomPage(OpenMCU & _app, PHTTPAuthority & auth)
        << "<!--#macroend RoomList-->"
        << "&nbsp;";
 
-  EndPage(html,app.GetCopyrightText());
+  EndPage(html,OpenMCU::Current().GetHtmlCopyright());
 
   string = html;
 }
@@ -1140,7 +1151,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
 #    undef _QUOTE_MACRO_VALUE1
 #  endif
         << app.GetEndpoint().GetMonitorText() << "</pre></div>";
-  EndPage(shtml,app.GetCopyrightText());
+  EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
@@ -1405,7 +1416,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
 
   } // if(fileList.GetSize()==0) ... else {
 
-  EndPage(shtml,app.GetCopyrightText());
+  EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"

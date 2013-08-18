@@ -11,7 +11,7 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
 HDRS		:= conference.h config.h filemembers.h h323.h mcu.h version.h sip.h
 
 LDLIBS		=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua
-STDCCFLAGS	= -I../h323plus/include -I/usr/include/freetype2 -I/usr/include/sofia-sip-1.12 -D__STDC_CONSTANT_MACROS
+STDCCFLAGS	=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -I../h323plus/include -D__STDC_CONSTANT_MACROS
 
 ifndef OPENH323DIR
 OPENH323DIR=../h323plus
@@ -46,7 +46,9 @@ i20_vad.gif \
 i24_shuff.gif \
 openmcu.ru_remove.gif \
 template.html \
-quote.txt
+quote.txt \
+locale.css \
+openmcu.ru_logo_text.bmp
 
 install:
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/bin

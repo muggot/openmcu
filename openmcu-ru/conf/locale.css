@@ -1,0 +1,27 @@
+.l_status:lang(ru) strong:after {content: 'Состояние';}
+.l_connections:lang(ru) a:after {content: 'Подключения';}
+.l_records:lang(ru) a:after {content: 'Видеозаписи';}
+.l_control:lang(ru) strong:after {content: 'Управление';}
+.l_rooms:lang(ru) a:after {content: 'Комнаты';}
+.l_invite:lang(ru) a:after {content: 'Позвонить';}
+.l_settings:lang(ru) strong:after {content: 'Настройки';}
+.l_general:lang(ru) a:after {content: 'Основные';}
+.l_access_rules:lang(ru) a:after {content: 'Правила доступа';}
+.l_sip_proxy:lang(ru) a:after {content: 'SIP прокси-серверы';}
+.l_help:lang(ru) strong:after {content: 'Помощь';}
+.l_forum:lang(ru) a:after {content: 'Форум';}
+.l_manual:lang(ru) a:after {content: 'Документация';}
+
+.l_status:lang(en) strong:after {content: 'Status';}
+.l_connections:lang(en) a:after {content: 'Connections';}
+.l_records:lang(en) a:after {content: 'Records';}
+.l_control:lang(en) strong:after {content: 'Control';}
+.l_rooms:lang(en) a:after {content: 'Rooms';}
+.l_invite:lang(en) a:after {content: 'Invite';}
+.l_settings:lang(en) strong:after {content: 'Settings';}
+.l_general:lang(en) a:after {content: 'General';}
+.l_access_rules:lang(en) a:after {content: 'Access rules';}
+.l_sip_proxy:lang(en) a:after {content: 'SIP proxy-servers';}
+.l_help:lang(en) strong:after {content: 'Help';}
+.l_forum:lang(en) a:after {content: 'Forum';}
+.l_manual:lang(en) a:after {content: 'Manual';}

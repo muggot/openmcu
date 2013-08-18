@@ -46,7 +46,9 @@ i20_vad.gif \
 i24_shuff.gif \
 openmcu.ru_remove.gif \
 template.html \
-quote.txt
+quote.txt \
+locale.css \
+openmcu.ru_logo_text.bmp
 
 install:
 	mkdir -p $(DESTDIR)@MCU_BIN_DIR@

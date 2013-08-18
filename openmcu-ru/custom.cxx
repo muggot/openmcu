@@ -19,7 +19,7 @@
 
 #define	EXE_NAME_TEXT	    "openmcu"
 
-#define	MANUFACTURER_TEXT	"Post Increment (modified by Varnavskiy Andrey Ivanovich)"
+#define	MANUFACTURER_TEXT	"OpenMCU-ru Team"
 
 #define	COPYRIGHT_HOLDER	MANUFACTURER_TEXT
 
@@ -29,9 +29,9 @@
 #define GIF_HEIGHT 144
 #endif
 
-#define	EMAIL "info@postincrement.com, muggot@mail.ru (openmcu.ru)"
+#define	EMAIL "muggot@mail.ru"
 
-#define	HOME_PAGE "http://www.postincrement.com, http:/www.openmcu.ru"
+#define	HOME_PAGE "http://www.openmcu.ru"
 
 #define	PRODUCT_NAME_HTML PRODUCT_NAME_TEXT
 
