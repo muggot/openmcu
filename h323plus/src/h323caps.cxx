@@ -3527,25 +3527,29 @@ H323Capability * H323Capabilities::FindCapability(const H245_Capability & cap) c
     case H245_Capability::e_receiveAndTransmitAudioCapability :
     {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-      BOOL opus_48k=FALSE, opus_16k=FALSE, opus_8k=FALSE, silk_b40=FALSE, silk_24k=FALSE; PStringStream c; c << cap;
-      if(!((opus_48k = (c.Find("capabilityIdentifier = standard 1.3.6.1.4.1.17091.1.10.48") != P_MAX_INDEX))))
-      if(!((opus_16k = (c.Find("capabilityIdentifier = standard 1.3.6.1.4.1.17091.1.10.16") != P_MAX_INDEX))))
-      if(!((opus_8k  = (c.Find("capabilityIdentifier = standard 1.3.6.1.4.1.17091.1.10.8")  != P_MAX_INDEX))))
-      if(!((silk_24k = (c.Find("capabilityIdentifier = standard 1.3.6.1.4.1.17091.1.3.24")  != P_MAX_INDEX))))
-      if(!((silk_b40 = (c.Find("capabilityIdentifier = standard 1.3.6.1.4.1.17091.1.3")     != P_MAX_INDEX))))
-      {}
-      if(opus_48k || opus_16k || opus_8k || silk_b40 || silk_24k)
-      { for (PINDEX i = 0; i < table.GetSize(); i++) {
-          H323Capability & capability = table[i];
-          if(  (opus_48k && (capability.GetFormatName().Find("OPUS_48K")     == 0))
-            || (opus_16k && (capability.GetFormatName().Find("OPUS_16K")     == 0))
-            || (opus_8k  && (capability.GetFormatName().Find("OPUS_8K")      == 0))
-            || (silk_b40 && (capability.GetFormatName().Find("SILK_B40")     == 0))
-            || (silk_24k && (capability.GetFormatName().Find("SILK_B40_24K") == 0))
-          ){ PTRACE(3, "H323\tFound capability*: " << capability);
-             return &capability;
-           }
+      PStringStream c; c << cap;
+      if(c.Find("capabilityIdentifier = standard ") != P_MAX_INDEX)
+      { // check for something like: "capabilityIdentifier = standard 1.3.6.1.4.1.17091.1.3"
+#       define _MY_CAP_SEARCHER(myid,mycap) \
+        if (c.Find(myid) != P_MAX_INDEX) \
+        { \
+          for(PINDEX i=0; i<table.GetSize(); i++) \
+          { \
+            H323Capability & capability = table[i]; \
+            if(capability.GetFormatName().Find(mycap) == 0) \
+            { \
+              PTRACE(3, "H323\tFound capability*: " << table[i]); \
+              return &capability; \
+            } \
+          } \
         }
+        _MY_CAP_SEARCHER("1.3.6.1.4.1.17091.1.10.482", "OPUS_48K2");
+        _MY_CAP_SEARCHER("1.3.6.1.4.1.17091.1.10.48" , "OPUS_48K");
+        _MY_CAP_SEARCHER("1.3.6.1.4.1.17091.1.10.16" , "OPUS_16K");
+        _MY_CAP_SEARCHER("1.3.6.1.4.1.17091.1.10.8"  , "OPUS_8K");
+        _MY_CAP_SEARCHER("1.3.6.1.4.1.17091.1.3.24"  , "SILK_B40_24K");
+        _MY_CAP_SEARCHER("1.3.6.1.4.1.17091.1.3"     , "SILK_B40");
+#       undef _MY_CAP_SEARCHER
       }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       const H245_AudioCapability & audio = cap;

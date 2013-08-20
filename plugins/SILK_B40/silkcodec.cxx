@@ -366,7 +366,7 @@ static unsigned int SILK_16K_Samples         =SILK_FRAME_SAMPLES_16K;
 static unsigned int SILK_16K_BytesPerFrame   =SILK_24K_MAX_BIT_RATE/200;
 static unsigned int SILK_16K_PayloadCode     =101;
 static unsigned int SILK_16K_FRAMES          =1;
-static unsigned int SILK_16K_SUPPORTMODE     =12;  // 8/12/16/24 k
+static unsigned int SILK_16K_SUPPORTMODE     =120;  // 8/12/16/24 k
 
 #define SILKPLUGIN_CODEC(prefix) \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \

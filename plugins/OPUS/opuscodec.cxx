@@ -242,7 +242,7 @@ class Decoder : public PluginCodec<CODEC>
 
       frame_size = opus_decode(m_state, (const unsigned char *)fromPtr, fromLen, (opus_int16 *)toPtr, m_bytesPerFrame, 0);
       if (frame_size < 0) {
-        PTRACE(1, CODEC_LOG, "opus_decode error: " << data_len << " " << opus_strerror(data_len));
+        PTRACE(1, CODEC_LOG, "opus_decode error: " << frame_size << " " << opus_strerror(frame_size));
         return false;
       }
 
