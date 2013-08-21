@@ -47,8 +47,9 @@ i24_shuff.gif \
 openmcu.ru_remove.gif \
 template.html \
 quote.txt \
-locale.css \
-openmcu.ru_logo_text.bmp
+openmcu.ru_logo_text.bmp \
+locale_ru.js \
+locale_en.js
 
 install:
 	mkdir -p $(DESTDIR)@MCU_BIN_DIR@

@@ -337,6 +337,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   rsrc->Add(new PHTTPPasswordField(PasswordKey, 25, adminPassword));
 
+  // Language
+  rsrc->Add(new PHTTPStringField("Language", 2, cfg.GetString("Language"), "<td rowspan='1' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>ru, en"));
+
 //rsrc->Add(new PHTTPStringField("<h3>Other</h3><!--", 1, "","<td></td><td></td>"));
 
   // Log level for messages
@@ -502,7 +505,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   //PServiceHTML html("System Parameters");
   //rsrc->BuildHTML(html);
   httpNameSpace.AddResource(rsrc, PHTTPSpace::Overwrite);
-  PStringStream html0; BeginPage(html0,"Parameters","Parameters","$PARAMETERS$");
+  PStringStream html0; BeginPage(html0,"General parameters","window.l_param_general","window.l_info_param_general");
   PString html1 = rsrc->GetString();
   PStringStream html2; EndPage(html2,OpenMCU::Current().GetHtmlCopyright());
   PStringStream htmlpage; htmlpage << html0 << html1 << html2;
@@ -541,13 +544,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     httpNameSpace.AddResource(new PHTTPTailFile("tail_logfile", systemLogFileName, authority));
   }
 */  
-  // create the home page
-/*
-  PStringStream shtml;
-  BeginPage(shtml,"OpenMCU Home","OpenMCU Home","$WELCOME$");
-  EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());
-  httpNameSpace.AddResource(new PServiceHTTPString("welcome.html", shtml), PHTTPSpace::Overwrite);
-*/
   httpNameSpace.AddResource(new WelcomePage(*this, authority), PHTTPSpace::Overwrite);
 
   // create monitoring page
@@ -567,11 +563,14 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #ifdef SYS_RESOURCE_DIR
 #  ifdef _WIN32
 #    define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "\\" + r1), PHTTPSpace::Overwrite)
+#    define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "\\" + r1, "text/css"), PHTTPSpace::Overwrite)
 #  else
 #    define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "/" + r1), PHTTPSpace::Overwrite)
+#    define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "/" + r1, "text/css"), PHTTPSpace::Overwrite)
 #  endif
 #else
 #  define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1), PHTTPSpace::Overwrite)
+#  define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, "text/css"), PHTTPSpace::Overwrite)
 #endif
   WEBSERVER_LINK("i15_mic_on.gif");
   WEBSERVER_LINK("i15_mic_off.gif");
@@ -595,16 +594,8 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK("i24_revert.gif");
   WEBSERVER_LINK("openmcu.ico");
   WEBSERVER_LINK("openmcu.ru_logo_text.bmp");
-#ifdef SYS_RESOURCE_DIR
-#  ifdef _WIN32
-#    define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "\\" + r1, "text/css"), PHTTPSpace::Overwrite)
-#  else
-#    define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "/" + r1, "text/css"), PHTTPSpace::Overwrite)
-#  endif
-#else
-#  define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, "text/css"), PHTTPSpace::Overwrite)
-#endif
-  WEBSERVER_CSS_LINK("locale.css");
+  WEBSERVER_LINK("locale_ru.js");
+  WEBSERVER_LINK("locale_en.js");
 
   // set up the HTTP port for listening & start the first HTTP thread
   if (ListenForHTTP(httpPort))
@@ -703,7 +694,12 @@ SectionPConfigPage::SectionPConfigPage(PHTTPServiceProcess & app,const PString &
   BuildHTML("");
 
   PStringStream html_begin, html_end;
-  BeginPage(html_begin, section, section, "$PARAMETERS$");
+  if(section == "RoomAccess")
+    BeginPage(html_begin, "Access Rules", "window.l_param_access_rules", "window.l_info_param_access_rules");
+  else if(section == "ProxyServers")
+    BeginPage(html_begin, "SIP proxy-servers", "window.l_param_sip_proxy", "window.l_info_param_sip_proxy");
+  else
+    BeginPage(html_begin, section, "window.l_param_general", "window.l_info_param_general");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
 
   PStringStream html_page; html_page << html_begin << string << html_end;
@@ -749,7 +745,7 @@ MainStatusPage::MainStatusPage(OpenMCU & _app, PHTTPAuthority & auth)
   PStringStream html;
   
   html << "<meta http-equiv=\"Refresh\" content=\"30\">\n";
-  BeginPage(html,"Status Page","Status Page","$STATUS$");
+  BeginPage(html,"Connections","window.l_connections","window.l_info_connections");
   html << "<p>"
        << "<table class=\"table table-striped table-bordered table-condensed\">"
        << "<tr>"
@@ -1013,7 +1009,7 @@ InvitePage::InvitePage(OpenMCU & _app, PHTTPAuthority & auth)
 {
   PStringStream html;
 
-  BeginPage(html,"Invite User","Invite User","$INVITE$");
+  BeginPage(html,"Invite","window.l_invite","window.l_info_invite");
 
   html << "<p>"
     << "<form method=\"POST\" class=\"well form-inline\">"
@@ -1037,7 +1033,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
   PStringStream html;
 
   if (room.IsEmpty() || address.IsEmpty()) {
-    BeginPage(html,"Invite Failed","Invite Failed","$INVITE_F$");
+    BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
     html << "<div class=\"alert alert-error\"><b>Insufficient information to perform INVITE</b></div>";
     EndPage(html,OpenMCU::Current().GetCopyrightText()); msg = html;
     return TRUE;
@@ -1047,7 +1043,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
   BOOL created = ep.OutgoingConferenceRequest(room);
 
   if (!created) {
-    BeginPage(html,"Invite Failed","Invite Failed","$INVITE_F$");
+    BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_s");
     html << "<div class=\"alert\"><b>Cannot create</b> room " << room;
     html << "</div>";
     EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
@@ -1062,7 +1058,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
     PString h323Token;
     PString * userData = new PString(room);
     if (ep.MakeCall(address, h323Token, userData) == NULL) {
-      BeginPage(html,"Invite Failed","Invite Failed","$INVITE_F$");
+      BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
       html << "<div class=\"alert\"><b>Cannot create make call to</b> " << address;
       html << "</div>";
       EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
@@ -1074,7 +1070,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
     }
   }
 
-  BeginPage(html,"Invite Succeeded","Invite Succeeded","$INVITE_S$");
+  BeginPage(html,"Invite succeeded","window.l_invite_s","window.l_info_invite_s");
   html << "<div class=\"alert alert-success\">Inviting " << address << " to room " << room;
   html << "</div>";
 
@@ -1101,7 +1097,7 @@ SelectRoomPage::SelectRoomPage(OpenMCU & _app, PHTTPAuthority & auth)
 {
   PStringStream html;
 
-  BeginPage(html,"Select Room","Select Room","$SELECT$");
+  BeginPage(html,"Rooms","window.l_rooms","window.l_info_rooms");
 
   html << "<p>"
        << "<form method=\"POST\" class=\"well form-inline\">"
@@ -1141,7 +1137,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
     if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
   }
   PStringStream shtml;
-  BeginPage(shtml,"OpenMCU Home","OpenMCU Home","$WELCOME$");
+  BeginPage(shtml,"OpenMCU-ru","window.l_welcome","window.l_info_welcome");
   shtml << "<br><b>Monitor Text (<span style='cursor:pointer;text-decoration:underline' onclick='javascript:{if(document.selection){var range=document.body.createTextRange();range.moveToElementText(document.getElementById(\"monitorTextId\"));range.select();}else if(window.getSelection){var range=document.createRange();range.selectNode(document.getElementById(\"monitorTextId\"));window.getSelection().addRange(range);}}'>select all</span>)</b><div style='padding:5px;border:1px dotted #595;width:100%;height:auto;max-height:300px;overflow:auto'><pre style='margin:0px;padding:0px' id='monitorTextId'>"
 #  ifdef GIT_REVISION
 #    define _QUOTE_MACRO_VALUE1(x) #x
@@ -1348,7 +1344,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   PINDEX sortMode=0;
   if(data.Contains("sort")) {sortMode = data("sort").AsInteger(); if(sortMode<0 || sortMode>7) sortMode=0;}
   PStringStream shtml;
-  BeginPage(shtml,"Records","Records","$RECORDS$");
+  BeginPage(shtml,"Records","window.l_records","window.l_info_records");
 
 
   shtml << "<h1>" << dir << "</h1>";

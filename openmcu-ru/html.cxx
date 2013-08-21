@@ -17,7 +17,7 @@ static unsigned long html_quote_size; // count on zero initialization
 char * html_quote_buffer;
 PMutex html_mutex;
 
-void BeginPage (PStringStream &html, const char *ptitle, const char *title, const char *quotekey) 
+void BeginPage (PStringStream &html, const char *ptitle, const char *title, const char *quotekey)
 {
   PWaitAndSignal m(html_mutex);
 
@@ -87,15 +87,26 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
 
   if ((html_template_size > 0) && (html_quote_size > 0))
   {
-    char *ptt = strstr(html_template_buffer, "$PTITLE$");
+    PString lang = PConfig("Parameters").GetString("Language").ToLower();
+    char *lng = strstr(html_template_buffer, "$LANG$");
+    if(lng && lang != "")
+    {
+      *lng=0;
+      html << html_template_buffer << lang;
+      *lng='$';
+      lng+=6;
+    }
+    else lng = html_template_buffer;
+
+    char *ptt = strstr(lng, "$PTITLE$");
     if(ptt)
     {
       *ptt=0;
-      html << html_template_buffer << ptitle;
+      html << lng << ptitle;
       *ptt='$';
       ptt+=8;
     }
-    else ptt = html_template_buffer;
+    else ptt = lng;
 
     char *tt=strstr(ptt, "$TITLE$");
     if(tt)
@@ -110,7 +121,6 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
     char *quote_beg = strstr(html_quote_buffer, quotekey); // searching key here
     char *quote_end = NULL;
     BOOL needs_restore = FALSE;
-
     if(quote_beg)
     {
       quote_beg += strlen(quotekey);
@@ -127,23 +137,32 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
     if(qt)
     {
       *qt=0;
-      html << tt << quote_beg;
+      html << tt << quotekey;
       *qt='$';
       qt+=7;
     }
     else qt=tt;
     if(needs_restore) *quote_end='$';
 
-    char *bt = strstr(qt,"$BODY$");
+    char *qt2 = strstr(qt, "$QUOTE2$");
+    if(qt2)
+    {
+      *qt2=0;
+      html << qt << quote_beg;
+      *qt2='$';
+      qt2+=8;
+    }
+    else qt2=qt;
+    if(needs_restore) *quote_end='$';
+
+    char *bt = strstr(qt2,"$BODY$");
     if(bt)
     {
       *bt=0;
-      html << qt;
+      html << qt2;
       *bt='$';
     }
-
   } //  if ((html_template_size > 0) && (html_quote_size > 0))
-
 }
 
 void EndPage (PStringStream &html, PString copyr) 

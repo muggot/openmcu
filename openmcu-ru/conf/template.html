@@ -1,10 +1,27 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html lang="ru" xmlns="http://www.w3.org/1999/xhtml">
+<script type="text/javascript">
+  window.lang_code = "$LANG$"
+  if( window.lang_code == "$LANG$")
+  {
+    var language = navigator.language || navigator.userLanguage || "ru-RU";
+    window.lang_code = language.substring(0,2);
+    /*alert (window.lang_code);*/
+  }
+  if(window.lang_code != "ru" && window.lang_code != "en")
+    window.lang_code = "en";
+  <!-- файлы локализаций -->
+  if(window.lang_code == "ru")
+    document.write("<script src='locale_ru.js'><\/script>");
+  else
+    document.write("<script src='locale_en.js'><\/script>");
+  document.write('<html lang="'+window.lang_code+'" xmlns="http://www.w3.org/1999/xhtml">');
+</script>
+
 <HEAD>
 <TITLE>$PTITLE$</TITLE>
+
  <link rel="icon" type="image/vnd.microsoft.icon" href="openmcu.ico" />
  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
- <link rel="stylesheet" type="text/css" href="locale.css">
  <style type="text/css">
  html {height:100%;margin-bottom:1px;}
  a:link,a:visited {color:#990000;text-decoration:none;}
@@ -299,7 +316,7 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
    width:140px;
    border:1px solid #242424;
  }
- #topnav panel a:hover {background-color: #242424;border:1px solid #778899;}
+ #topnav panel a:hover {background-color:#242424;color:#ccc;border:1px solid #778899;}
 
  menu {
    position: absolute;
@@ -332,35 +349,34 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 
  <li><span style="padding:0px 15px;"></span></li>
 
- <li class="l_help"><panel><a href="http://openmcu.ru/index.php"><strong></strong></a>
+ <li><panel><a href="http://openmcu.ru/index.php"><strong id="l_help"></strong></a>
   <menu>
-   <li class="l_forum"><a href='http://openmcu.ru/index.php'></a></li>
-   <li class="l_manual"><a href='http://openmcu.ru/public/user_guide.pdf'></a></li>
+   <li><a href='http://openmcu.ru/index.php' id="l_forum"></a></li>
+   <li><a href='http://openmcu.ru/public/user_guide.pdf' id="l_manual"></a></li>
   </menu>
  </panel></li>
 
- <li class="l_settings"><panel><a href="Parameters"><strong></strong></a>
+ <li><panel><a href="Parameters"><strong id="l_settings"></strong></a>
   <menu>
-   <li class="l_general"><a href='Parameters'></a></li>
-   <li class="l_access_rules"><a href='RoomAccess'></a></li>
-   <li class="l_sip_proxy"><a href='ProxyServers'></a></li>
+   <li><a href='Parameters' id="l_param_general"></a></li>
+   <li><a href='RoomAccess' id="l_param_access_rules"></a></li>
+   <li><a href='ProxyServers' id="l_param_sip_proxy"></a></li>
   </menu>
  </panel></li>
 
- <li class="l_control"><panel><a href="Select"><strong></strong></a>
+ <li><panel><a href="Select"><strong id="l_control"></strong></a>
   <menu>
-   <li class="l_rooms"><a href='Select'></a></li>
-   <li class="l_invite"><a href='Invite'></a></li>
+   <li><a href='Select' id="l_rooms"></a></li>
+   <li><a href='Invite' id="l_invite"></a></li>
   </menu>
  </panel></li>
 
- <li class="l_status"><panel><a href="Status"><strong></strong></a>
+ <li><panel><a href="Status"><strong id="l_status"></strong></a>
   <menu>
-   <li class="l_connections"><a href='Status'></a></li>
-   <li class="l_records"><a href='Records'></a></li>
+   <li><a href='Status' id="l_connections"></a></li>
+   <li><a href='Records' id="l_records"></a></li>
   </menu>
  </panel></li>
-
 
  </div>
  </div>
@@ -377,15 +393,25 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
  <table class="tborder" style="border-bottom: 0pt none;" border="0" cellpadding="3" cellspacing="0" width="100%">
  <tbody><tr class="catbg3">
  <!-- тут задается версия программы и ОС -->
- <td style="padding-left: 6px;" id="top_subject" valign="middle" width="96%">$TITLE$</td>
+ <td style="padding-left: 6px;" id="top_subject" valign="middle" width="96%">
+   <script type="text/javascript">
+     document.write($TITLE$);
+   </script>
+ </td>
  </tr></tbody></table>
  <table class="bordercolor" border="0" cellpadding="0" cellspacing="0" width="100%">
  <tbody><tr>
  <td style="padding: 1px 1px 0pt;"><table border="0" cellpadding="3" cellspacing="0" width="100%">
  <tbody><tr>
  <td valign="top" class="windowbg2"><div class="post">
- <div class="quote">$QUOTE$</div><!--br />
- <br /-->
+
+ <div class="quote">
+   <script type="text/javascript">
+     document.write($QUOTE$);
+   </script>
+   $QUOTE2$
+ </div>
+
  </div>
    <div class="mybody" id="mybody" name="mybody">
 $BODY$
@@ -399,8 +425,23 @@ $BODY$
  </div></div><br>
  <div class="clr"></div>
 
-
-
+ <!-- локализация -->
+ <script type="text/javascript">
+   <!-- локализация панели -->
+   document.getElementById("l_help").innerHTML = window.l_help;
+   document.getElementById("l_forum").innerHTML = window.l_forum;
+   document.getElementById("l_manual").innerHTML = window.l_manual;
+   document.getElementById("l_settings").innerHTML = window.l_settings;
+   document.getElementById("l_param_general").innerHTML = window.l_param_general;
+   document.getElementById("l_param_access_rules").innerHTML = window.l_param_access_rules;
+   document.getElementById("l_param_sip_proxy").innerHTML = window.l_param_sip_proxy;
+   document.getElementById("l_control").innerHTML = window.l_control;
+   document.getElementById("l_rooms").innerHTML = window.l_rooms;
+   document.getElementById("l_invite").innerHTML = window.l_invite;
+   document.getElementById("l_status").innerHTML = window.l_status;
+   document.getElementById("l_connections").innerHTML = window.l_connections;
+   document.getElementById("l_records").innerHTML = window.l_records;
+ </script>
 
 <!-- Design by SchmeL  bizpnz.ru -->
 </BODY>
