@@ -1,7 +1,9 @@
 #include <ptlib.h>
 #include "mcu.h"
 #include <sys/types.h>
-#include <sys/socket.h>
+#ifndef _WIN32
+#  include <sys/socket.h>
+#endif
 
 PString GetFromIp(const char *toAddr, const char *toPort)
 {
@@ -25,10 +27,15 @@ PString GetFromIp(const char *toAddr, const char *toPort)
     err = getsockname(sock, (sockaddr*) &name, &namelen);
     if(err == -1) return NULL;
 
+#ifndef _WIN32
     inet_ntop(AF_INET, (const void *)&name.sin_addr, buffer, 16);
-
     close(sock);
     return (PString)buffer;
+#else
+    PString buffer0 = PIPSocket::Address(name.sin_addr);
+    close(sock);
+    return buffer0;
+#endif
 }
 
 //  Usage
@@ -919,7 +926,7 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
     sip_add_tl(amsg, asip,
 	     SIPTAG_TO(sip->sip_from),
 	     SIPTAG_FROM(sip->sip_to),
-	     SIPTAG_CALL_ID_STR(sip_call_id),
+	     SIPTAG_CALL_ID_STR((const char*)sip_call_id),
 	     TAG_END());
   }
   else
@@ -927,7 +934,7 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
     sip_add_tl(amsg, asip,
 	     SIPTAG_TO(remote_addr_t),
 	     SIPTAG_FROM(local_addr_t),
-	     SIPTAG_CALL_ID_STR(sip_call_id),
+	     SIPTAG_CALL_ID_STR((const char *)sip_call_id),
 	     TAG_END());
   }
 
@@ -968,7 +975,11 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
   if (!(bye = nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
 				   NTATAG_STATELESS(1),
 				   SIPTAG_CONTACT(contact_t),
-			           SIPTAG_USER_AGENT_STR(MCUSIP_USER_AGENT_STR),
+#ifdef _WIN32
+			           SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
+#else
+			           SIPTAG_USER_AGENT_STR(MCUSIP_USER_AGENT_STR)),
+#endif
 				   TAG_END())))
     goto err;
 
@@ -1055,13 +1066,13 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
       }
     }
 
-    if(inRoom == true && access == "ALLOW")
+    if(inRoom && access == "ALLOW")
       access = "ALLOW";
-    else if(inRoom == true && access == "DENY")
+    else if(inRoom && access == "DENY")
       access = "DENY";
-    else if(inRoom == false && access == "ALLOW")
+    else if(inRoom == FALSE && access == "ALLOW")
       access = "DENY";
-    else if(inRoom == false && access == "DENY")
+    else if(inRoom == FALSE && access == "DENY")
       access = "ALLOW";
     else
       access = defaultAccess;
@@ -1100,7 +1111,7 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
         break;
       }
     }
-    if(roomName == NULL && needProxy == true)
+    if(roomName == NULL && needProxy)
       return;
     if(roomName == NULL)
     {
@@ -1144,7 +1155,7 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 			SIPTAG_CONTACT(sip_contact),
 			SIPTAG_PAYLOAD(sip_payload),
 			SIPTAG_CONTENT_TYPE_STR("application/sdp"),
-			SIPTAG_USER_AGENT_STR(MCUSIP_USER_AGENT_STR),
+			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
     // su_epoll_port.c:206: su_epoll_port_register: Assertion `su_port_own_thread(self)' failed.
     // without registration only send invite to IP address, do not use domain name
@@ -1183,9 +1194,9 @@ void OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip_call_id),
 			SIPTAG_CONTACT(sip_contact),
-			SIPTAG_EXPIRES_STR(proxy->expires),
+			SIPTAG_EXPIRES_STR((const char*)proxy->expires),
 			SIPTAG_ALLOW_EVENTS_STR("INVITE, ACK, BYE"),
-			SIPTAG_USER_AGENT_STR(MCUSIP_USER_AGENT_STR),
+			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
     if(orq == NULL)
       return;
@@ -1299,7 +1310,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
 			SIPTAG_PAYLOAD(sip_payload),
 			SIPTAG_CONTENT_TYPE_STR("application/sdp"),
 			SIPTAG_ALLOW_EVENTS_STR("INVITE, ACK, BYE"),
-			SIPTAG_USER_AGENT_STR(MCUSIP_USER_AGENT_STR),
+			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
     if(a_orq == NULL)
       return 0;
@@ -1469,8 +1480,8 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
 			SIPTAG_FROM(sip->sip_from),
 			SIPTAG_TO(sip->sip_to),
 			SIPTAG_CSEQ(sip_cseq),
-			SIPTAG_CALL_ID_STR(sik.sid),
-			SIPTAG_USER_AGENT_STR(MCUSIP_USER_AGENT_STR),
+			SIPTAG_CALL_ID_STR((const char*)sik.sid),
+			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
   if(orq == NULL)
     return 0;
@@ -1610,6 +1621,7 @@ void OpenMCUSipEndPoint::Main()
         "a=rtpmap:98 H263-1998/90000\n";
 
  // proxy servers
+/*
  PStringList keys = PConfig("ProxyServers").GetKeys();
  for(PINDEX i = 0; i < keys.GetSize(); i++)
  {
@@ -1635,6 +1647,7 @@ void OpenMCUSipEndPoint::Main()
    continue;
   ProxyServerMap.insert(ProxyServerMapType::value_type(proxy->userName+"@"+proxy->proxyIP, proxy));
  }
+*/
 
  if(agent != NULL)
  {
