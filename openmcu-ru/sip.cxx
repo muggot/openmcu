@@ -973,14 +973,10 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
     msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)rq);
 
   if (!(bye = nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
-				   NTATAG_STATELESS(1),
-				   SIPTAG_CONTACT(contact_t),
-#ifdef _WIN32
-			           SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
-#else
-			           SIPTAG_USER_AGENT_STR(MCUSIP_USER_AGENT_STR)),
-#endif
-				   TAG_END())))
+                                   NTATAG_STATELESS(1),
+                                   SIPTAG_CONTACT(contact_t),
+                                   SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
+                                   TAG_END())));
     goto err;
 
 //  msg_destroy(msg);
@@ -1621,7 +1617,7 @@ void OpenMCUSipEndPoint::Main()
         "a=rtpmap:98 H263-1998/90000\n";
 
  // proxy servers
-/*
+
  PStringList keys = PConfig("ProxyServers").GetKeys();
  for(PINDEX i = 0; i < keys.GetSize(); i++)
  {
@@ -1647,7 +1643,7 @@ void OpenMCUSipEndPoint::Main()
    continue;
   ProxyServerMap.insert(ProxyServerMapType::value_type(proxy->userName+"@"+proxy->proxyIP, proxy));
  }
-*/
+
 
  if(agent != NULL)
  {
