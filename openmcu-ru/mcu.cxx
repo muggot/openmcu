@@ -1034,8 +1034,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
 
   if (room.IsEmpty() || address.IsEmpty()) {
     BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
-    html << "<div class=\"alert alert-error\"><b>Insufficient information to perform INVITE</b></div>";
-    EndPage(html,OpenMCU::Current().GetCopyrightText()); msg = html;
+    EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
     return TRUE;
   }
 
@@ -1043,44 +1042,25 @@ BOOL InvitePage::Post(PHTTPRequest & request,
   BOOL created = ep.OutgoingConferenceRequest(room);
 
   if (!created) {
-    BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_s");
-    html << "<div class=\"alert\"><b>Cannot create</b> room " << room;
-    html << "</div>";
+    BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
     EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
     return TRUE;
   }
 
   if(address.Find("sip:") == 0) {
     OpenMCU::Current().sipendpoint->SipMakeCall(room, address);
-    PStringStream msg; msg << "Inviting " << address;
-    OpenMCU::Current().HttpWriteEventRoom(msg,room);
   } else {
     PString h323Token;
     PString * userData = new PString(room);
     if (ep.MakeCall(address, h323Token, userData) == NULL) {
       BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
-      html << "<div class=\"alert\"><b>Cannot create make call to</b> " << address;
-      html << "</div>";
       EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
       ep.GetConferenceManager().RemoveConference(room);
       return TRUE;
-    } else {
-      PStringStream msg; msg << "Inviting " << address;
-      OpenMCU::Current().HttpWriteEventRoom(msg,room);
     }
   }
 
   BeginPage(html,"Invite succeeded","window.l_invite_s","window.l_info_invite_s");
-  html << "<div class=\"alert alert-success\">Inviting " << address << " to room " << room;
-  html << "</div>";
-
-  html << "<p><h3>Invite another:</h3>"
-    << "<form method=\"POST\" class=\"well form-inline\">"
-    << "<input type=\"text\" class=\"input-small\" name=\"room\" placeholder=\"" << room << "\" value=\"" << room << "\"> "
-    << "<input type=\"text\" class=\"input-large\" name=\"address\" placeholder=\"address\"><script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
-    << "&nbsp;&nbsp;&nbsp;<input type=\"submit\" class=\"btn\" value=\"Invite\">"
-    << "</form>";
-
   EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
 
   return TRUE;
