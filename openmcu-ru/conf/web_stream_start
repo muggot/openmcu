@@ -1,8 +1,8 @@
 #!/bin/bash
 
-DIR_BIN="."
-DIR_CONF="."
-DIR_PIPE="."
+DIR_BIN="/usr/bin"
+DIR_CONF="../config"
+DIR_PIPE="../pipe"
 
 $DIR_BIN/ffserver -f $DIR_CONF/ffserver.conf &
 
