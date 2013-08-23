@@ -67,9 +67,6 @@ install:
 	done )
 	$(INSTALL) -m 755 obj_linux_$(MACHTYPE)_r/$(PROG) $(DESTDIR)/usr/local/share/openmcu-ru/bin
 	$(INSTALL) -m 755 conf/web_stream_start $(DESTDIR)/usr/local/share/openmcu-ru/bin
-	$(INSTALL) -m 755 conf/ffmpeg $(DESTDIR)/usr/local/share/openmcu-ru/bin
-	$(INSTALL) -m 755 conf/ffserver $(DESTDIR)/usr/local/share/openmcu-ru/bin
-	$(INSTALL) -m 755 conf/web_stream_start $(DESTDIR)/usr/local/share/openmcu-ru/bin
 	$(INSTALL) -m 755 custom/openmcu-wrapper $(DESTDIR)/usr/local/share/openmcu-ru/bin
 	rm -f $(DESTDIR)/usr/local/bin/openmcu-ru
 	ln -s /usr/local/share/openmcu-ru/bin/openmcu-wrapper $(DESTDIR)/usr/local/bin/openmcu-ru

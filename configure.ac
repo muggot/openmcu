@@ -1,7 +1,7 @@
 dnl #######################################################################
 dnl INIT
 
-AC_INIT([OpenMCU-ru],[3.0.45],[openmcu-ru])
+AC_INIT([OpenMCU-ru],[3.1.0],[openmcu-ru])
 AC_CANONICAL_TARGET()
 AM_INIT_AUTOMAKE()
 #AM_EXTRA_RECURSIVE_TARGETS(opt)
@@ -193,15 +193,23 @@ dnl ########################################################################
 dnl arg
 
 resample=yes
+resampler_ffmpeg=yes
+resampler_libav=yes
+resampler_libsamplerate=yes
 rendering_names=yes
 live_video=yes
 optimized_frame_resize=yes
 
-AC_ARG_ENABLE(resample, [  --enable-resample   			Enable/Disable, requires one of the libswresample,libavresample,libsamplerate (default enabled)], [resample="$enableval"])
-AC_ARG_ENABLE(rendering-names, [  --enable-rendering-names   		Enable/Disable, requires libfreetype (default enabled)], [rendering_names="$enableval"])
-AC_ARG_ENABLE(live-video, [  --enable-live-video   		Enable/Disable, requires libjpeg (default enabled)], [live_video="$enableval"])
-AC_ARG_ENABLE(optimized-frame-resize, [  --enable-optimized-frame-resize	Enable/Disable, requires libyuv (default enabled)], [optimized_frame_resize="$enableval"])
-
+AC_ARG_ENABLE(separator, [ ])
+AC_ARG_ENABLE(resample, [AS_HELP_STRING([--enable-resample],[Enable/Disable resampling (default enabled)],[40],[100])], [resample="$enableval"])
+AC_ARG_ENABLE(resampler-ffmpeg, [AS_HELP_STRING([--enable-resampler-ffmpeg],[Enable check only libswresample resampler(default auto)],[40],[100])], [resampler_ffmpeg="yes" resampler_libav="no" resampler_libsamplerate="no"])
+AC_ARG_ENABLE(resampler-libav, [AS_HELP_STRING([--enable-resampler-libav],[Enable check only libavresample resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="yes" resampler_libsamplerate="no"])
+AC_ARG_ENABLE(resampler-libsamplerate, [AS_HELP_STRING([--enable-resampler-libsamplerate],[Enable check only libsamplerate resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="no" resampler_libsamplerate="yes"])
+AC_ARG_ENABLE(separator, [  ])
+AC_ARG_ENABLE(rendering-names, [AS_HELP_STRING([--enable-rendering-names],[Enable/Disable, requires libfreetype (default enabled)],[40],[100])], [rendering_names="$enableval"])
+AC_ARG_ENABLE(live-video, [AS_HELP_STRING([--enable-live-video],[Enable/Disable, requires libjpeg (default enabled)],[40],[100])], [live_video="$enableval"])
+AC_ARG_ENABLE(optimized-frame-resize, [AS_HELP_STRING([--enable-optimized-frame-resize],[Enable/Disable, requires libyuv (default enabled)],[40],[100])], [optimized_frame_resize="$enableval"])
+AC_ARG_ENABLE(separator, [   ])
 
 dnl ########################################################################
 dnl check for freetype library
@@ -241,21 +249,27 @@ AC_SUBST(USE_AVRESAMPLE, 0)
 AC_SUBST(USE_LIBSAMPLERATE, 0)
 
 if test "${resample}" = "yes"; then
-  AC_CHECK_LIB(swresample, swr_convert, SWRESAMPLE=1, SWRESAMPLE=0)
-  AC_CHECK_LIB(avresample, avresample_convert, AVRESAMPLE=1, AVRESAMPLE=0)
-  AC_CHECK_LIB(samplerate, src_process, LIBSAMPLERATE=1, LIBSAMPLERATE=0)
+  if test "${resampler_ffmpeg}" = "yes"; then
+    AC_CHECK_LIB(swresample, swr_convert, SWRESAMPLE=1, SWRESAMPLE=0)
+  fi
+  if test "${resampler_libav}" = "yes"; then
+    AC_CHECK_LIB(avresample, avresample_convert, AVRESAMPLE=1, AVRESAMPLE=0)
+  fi
+  if test "${resampler_libsamplerate}" = "yes"; then
+    AC_CHECK_LIB(samplerate, src_process, LIBSAMPLERATE=1, LIBSAMPLERATE=0)
+  fi
 
-  if test ${SWRESAMPLE} = 1; then
+  if test "${SWRESAMPLE}" = "1"; then
     USE_SWRESAMPLE=1
     LDLIBS="$LDLIBS -lswresample"
-  elif test ${AVRESAMPLE} = 1; then
+  elif test "${AVRESAMPLE}" = "1"; then
     USE_AVRESAMPLE=1
     LDLIBS="$LDLIBS -lavresample"
-  elif test ${LIBSAMPLERATE} = 1; then
+  elif test "${LIBSAMPLERATE}" = "1"; then
     USE_LIBSAMPLERATE=1
     LDLIBS="$LDLIBS -lsamplerate"
   else
-    AC_MSG_ERROR(Must have one of the libswresample,libavresample,libsamplerate!)
+    AC_MSG_ERROR(Need one of the libraries: libswresample libavresample libsamplerate.)
   fi
 fi
 
@@ -303,8 +317,9 @@ dnl configuration openmcu-ru
 
 MCUDIR=openmcu-ru
 
-AC_ARG_WITH(ptlib_prefix, [  --with-ptlib-prefix        	PTLib installation prefix (default =prefix)], [ptlib_prefix=$withval], [ptlib_prefix=""])
-AC_ARG_WITH(h323plus_prefix, [  --with-h323plus-prefix  	H323Plus installation prefix (default =prefix)], [h323plus_prefix=$withval], [h323plus_prefix=""])
+AC_ARG_WITH(separator,[ ])
+AC_ARG_WITH(ptlib_prefix, [AS_HELP_STRING([--with-ptlib-prefix],[PTLib installation prefix (default =prefix)],[40],[100])], [ptlib_prefix=$withval], [ptlib_prefix=""])
+AC_ARG_WITH(h323plus_prefix, [AS_HELP_STRING([--with-h323plus-prefix],[H323Plus installation prefix (default =prefix)],[40],[100])], [h323plus_prefix=$withval], [h323plus_prefix=""])
 
 if test "x$ptlib_prefix" = "x"; then
    PTLIB_INSTALLPREFIX=${INSTALLPREFIX}
@@ -390,16 +405,16 @@ speex=yes
 silk=yes
 opus=yes
 
-AC_ARG_ENABLE(h263, [  --enable-h263   		Enable/Disable H.263 support (default enabled)], [h263="$enableval"])
-AC_ARG_ENABLE(h264, [  --enable-h264   		Enable/Disable H.264 support (default enabled)], [h264="$enableval"])
-AC_ARG_ENABLE(vp8, [  --enable-vp8    		Enable/Disable VP8 support (default enabled)], [vp8="$enableval"])
-AC_ARG_ENABLE(g722, [  --enable-g722   		Enable/Disable G.722 support (default enabled)], [g722="$enableval"])
-AC_ARG_ENABLE(g7231, [  --enable-g7231 		Enable/Disable G.723.1 support (default enabled)], [g7231="$enableval"])
-AC_ARG_ENABLE(g726, [  --enable-g726   		Enable/Disable G.726 support (default enabled)], [g726="$enableval"])
-AC_ARG_ENABLE(ilbc, [  --enable-ilbc   		Enable/Disable iLBC support (default enabled)], [ilbc="$enableval"])
-AC_ARG_ENABLE(speex, [  --enable-speex 		Enable/Disable Speex support (default enabled)], [speex="$enableval"])
-AC_ARG_ENABLE(silk, [  --enable-silk   		Enable/Disable SILK support (default enabled)], [silk="$enableval"])
-AC_ARG_ENABLE(opus, [  --enable-opus   		Enable/Disable OPUS support (default enabled)], [opus="$enableval"])
+AC_ARG_ENABLE(h263, [AS_HELP_STRING([--enable-h263],[Enable/Disable H.263 support (default enabled)],[40],[100])], [h263="$enableval"])
+AC_ARG_ENABLE(h264, [AS_HELP_STRING([--enable-h264],[Enable/Disable H.264 support (default enabled)],[40],[100])], [h264="$enableval"])
+AC_ARG_ENABLE(vp8, [AS_HELP_STRING([--enable-vp8],[Enable/Disable VP8 support (default enabled)],[40],[100])], [vp8="$enableval"])
+AC_ARG_ENABLE(g722, [AS_HELP_STRING([--enable-g722],[Enable/Disable G.722 support (default enabled)],[40],[100])], [g722="$enableval"])
+AC_ARG_ENABLE(g7231, [AS_HELP_STRING([--enable-g7231],[Enable/Disable G.723.1 support (default enabled)],[40],[100])], [g7231="$enableval"])
+AC_ARG_ENABLE(g726, [AS_HELP_STRING([--enable-g726],[Enable/Disable G.726 support (default enabled)],[40],[100])], [g726="$enableval"])
+AC_ARG_ENABLE(ilbc, [AS_HELP_STRING([--enable-ilbc],[Enable/Disable iLBC support (default enabled)],[40],[100])], [ilbc="$enableval"])
+AC_ARG_ENABLE(speex, [AS_HELP_STRING([--enable-speex],[Enable/Disable Speex support (default enabled)],[40],[100])], [speex="$enableval"])
+AC_ARG_ENABLE(silk, [AS_HELP_STRING([--enable-silk],[Enable/Disable SILK support (default enabled)],[40],[100])], [silk="$enableval"])
+AC_ARG_ENABLE(opus, [AS_HELP_STRING([--enable-opus],[Enable/Disable OPUS support (default enabled)],[40],[100])], [opus="$enableval"])
 
 PLUGINS="h263 h264 vp8 g722 g7231 g726 ilbc silk opus"
 AC_SUBST(PLUGINS)
