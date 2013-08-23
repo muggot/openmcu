@@ -49,7 +49,7 @@ static const char RecorderSampleRateKey[]  = "Video Recorder sound rate";
 #ifdef _WIN32
 static const char DefaultFfmpegPath[]         = "ffmpeg.exe";
 #else
-static const char DefaultFfmpegPath[]         = "/usr/local/bin/ffmpeg";
+static const char DefaultFfmpegPath[]         = "/usr/bin/ffmpeg";
 #endif
 static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac 1 -ar %S -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac 1 -vcodec msmpeg4v2 %O.asf";
 #ifdef RECORDS_DIR

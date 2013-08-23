@@ -2869,7 +2869,6 @@ OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, 
   : ep(_ep), conn(_conn), sampleRate(_sampleRate), channels(_channels)
 {
   os_handle = 0;
-  modulo=0;
 /*
 #if USE_SWRESAMPLE
   swrc = NULL;
@@ -2903,11 +2902,10 @@ BOOL OutgoingAudio::Read(void * buffer, PINDEX amount)
   PWaitAndSignal mutexR(audioChanMutex);
   if (!IsOpen()) return FALSE;
   if (!conn.OnOutgoingAudio(buffer, amount, sampleRate, channels)) CreateSilence(buffer, amount);
-  unsigned d0=(1000 * (amount >> 1));
-  unsigned d=d0 / sampleRate;
-  modulo += d0 % sampleRate;
-  delay.Delay(d + (modulo / sampleRate));
-  modulo %= sampleRate;
+
+  unsigned msPerFrame = (amount*1000)/(sampleRate*channels*sizeof(short));
+  delay.Delay(msPerFrame);
+
   lastReadCount = amount;
   return TRUE;
 
@@ -2955,7 +2953,6 @@ BOOL OutgoingAudio::Close()
     return FALSE;
 
   PWaitAndSignal mutexC(audioChanMutex);
-  modulo=0;
   os_handle = -1;
 /*
 #if USE_SWRESAMPLE
@@ -2973,7 +2970,6 @@ IncomingAudio::IncomingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, 
   : sampleRate(_sampleRate), channels(_channels), ep(_ep), conn(_conn)
 {
   os_handle = 0;
-  modulo=0;
 /*
 #if USE_SWRESAMPLE
   swrc = NULL;
@@ -3001,11 +2997,10 @@ BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
   PWaitAndSignal mutexW(audioChanMutex);
   if (!IsOpen()) return FALSE;
   conn.OnIncomingAudio(buffer, amount, sampleRate, channels);
-  unsigned d0=(1000 * (amount >> 1));
-  unsigned d=d0 / sampleRate;
-  modulo += d0 % sampleRate;
-  delay.Delay(d + (modulo / sampleRate));
-  modulo %= sampleRate;
+
+  unsigned msPerFrame = (amount*1000)/(sampleRate*channels*sizeof(short));
+  delay.Delay(msPerFrame);
+
   return TRUE;
 
 //  PINDEX amount16 = amount;
@@ -3041,7 +3036,6 @@ BOOL IncomingAudio::Close()
     return FALSE;
 
   PWaitAndSignal mutexA(audioChanMutex);
-  modulo=0;
   os_handle = -1;
 /*
 #if USE_SWRESAMPLE

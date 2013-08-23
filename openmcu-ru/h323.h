@@ -167,7 +167,6 @@ class OutgoingAudio : public PChannel
     PShortArray swr_buf;
 */
     PAdaptiveDelay delay;
-    unsigned modulo;
     PMutex audioChanMutex;
 };
 
