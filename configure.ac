@@ -369,7 +369,7 @@ AC_SUBST(MCU_LOG_DIR)
 
 AC_CONFIG_FILES(openmcu-ru/Makefile)
 AC_CONFIG_FILES(openmcu-ru/config.h)
-AC_CONFIG_FILES(openmcu-ru/custom/openmcu-wrapper)
+AC_CONFIG_FILES(openmcu-ru/conf/openmcu-wrapper)
 
 dnl ########################################################################
 dnl configuration ptlib

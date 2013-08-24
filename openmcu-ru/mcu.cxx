@@ -67,6 +67,14 @@ static const char ForceSplitVideoKey[]   = "Force split screen video (enables Ro
 static const char H264LevelForSIPKey[]        = "H.264 Default Level for SIP";
 #endif
 
+PString DefaultConnectingWAVFile = PString(SYS_RESOURCE_DIR)+"/connecting.wav";
+PString DefaultEnteringWAVFile   = PString(SYS_RESOURCE_DIR)+"/entering.wav";
+PString DefaultLeavingWAVFile    = PString(SYS_RESOURCE_DIR)+"/leaving.wav";
+
+static const char ConnectingWAVFileKey[]  = "Connecting WAV File";
+static const char EnteringWAVFileKey[]    = "Entering WAV File";
+static const char LeavingWAVFileKey[]     = "Leaving WAV File";
+
 #define new PNEW
 
 ///////////////////////////////////////////////////////////////
@@ -429,8 +437,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   roomTimeLimit = cfg.GetInteger(DefaultRoomTimeLimitKey, 0);
   rsrc->Add(new PHTTPIntegerField(DefaultRoomTimeLimitKey, 0, 10800, roomTimeLimit));
 
-  OnCreateConfigPage(cfg, *rsrc);
-
   // allow/disallow self-invite:
   allowLoopbackCalls = cfg.GetBoolean(AllowLoopbackCallsKey, FALSE);
   rsrc->Add(new PHTTPBooleanField(AllowLoopbackCallsKey, allowLoopbackCalls));
@@ -500,10 +506,22 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     rsrc->Add(new PHTTPIntegerField(RecorderSampleRateKey, 2000, 1000000, vr_sampleRate));
   }
 
+  // get WAV file played to a user when they enter a conference
+  connectingWAVFile = cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile);
+  //rsrc->Add(new PHTTPStringField(ConnectingWAVFileKey, 50, connectingWAVFile));
+
+  // get WAV file played to a conference when a new user enters
+  enteringWAVFile = cfg.GetString(EnteringWAVFileKey, DefaultEnteringWAVFile);
+  //rsrc->Add(new PHTTPStringField(EnteringWAVFileKey, 50, enteringWAVFile));
+
+  // get WAV file played to a conference when a new user enters
+  leavingWAVFile = cfg.GetString(LeavingWAVFileKey, DefaultLeavingWAVFile);
+  //rsrc->Add(new PHTTPStringField(LeavingWAVFileKey, 50, leavingWAVFile));
+
+  OnCreateConfigPage(cfg, *rsrc);
+
   // Finished the resource to add, generate HTML for it and add to name space
-  rsrc->BuildHTML("System Parameters");
-  //PServiceHTML html("System Parameters");
-  //rsrc->BuildHTML(html);
+  rsrc->BuildHTML("");
   httpNameSpace.AddResource(rsrc, PHTTPSpace::Overwrite);
   PStringStream html0; BeginPage(html0,"General parameters","window.l_param_general","window.l_info_param_general");
   PString html1 = rsrc->GetString();

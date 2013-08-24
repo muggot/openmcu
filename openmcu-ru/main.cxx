@@ -2,14 +2,6 @@
 #include <ptlib.h>
 #include "mcu.h"
 
-static const char DefaultConnectingWAVFile[] = "connecting.wav";
-static const char DefaultEnteringWAVFile[]   = "entering.wav";
-static const char DefaultLeavingWAVFile[]    = "leaving.wav";
-
-static const char ConnectingWAVFileKey[]  = "Connecting WAV File";
-static const char EnteringWAVFileKey[]    = "Entering WAV File";
-static const char LeavingWAVFileKey[]     = "Leaving WAV File";
-
 extern unsigned char ImageData[];
 unsigned char *logo = NULL;
 
@@ -27,23 +19,11 @@ class MyMCU : public OpenMCU
 
     void OnCreateConfigPage(PConfig & cfg, PConfigPage & page);
 
-    PFilePath GetLeavingWAVFile() const
-    { return leavingWAVFile; }
-
-    PFilePath GetEnteringWAVFile() const
-    { return enteringWAVFile; }
-
-    BOOL GetConnectingWAVFile(PFilePath & fn) const
-    { fn = connectingWAVFile; return TRUE; }
-
 #if OPENMCU_VIDEO
     BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount);
 #endif // OPENMCU_VIDEO
 
   protected:
-    PFilePath connectingWAVFile;
-    PFilePath enteringWAVFile;
-    PFilePath leavingWAVFile;
 };
 
 class MyConferenceManager : public ConferenceManager
@@ -62,17 +42,6 @@ ConferenceManager * MyMCU::CreateConferenceManager()
 
 void MyMCU::OnCreateConfigPage(PConfig & cfg, PConfigPage & rsrc)
 {
-  // get WAV file played to a user when they enter a conference
-  connectingWAVFile = cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile);
-//  rsrc.Add(new PHTTPStringField(ConnectingWAVFileKey, 50, connectingWAVFile));
-
-  // get WAV file played to a conference when a new user enters
-  enteringWAVFile = cfg.GetString(EnteringWAVFileKey, DefaultEnteringWAVFile);
-//  rsrc.Add(new PHTTPStringField(EnteringWAVFileKey, 50, enteringWAVFile));
-
-  // get WAV file played to a conference when a new user enters
-  leavingWAVFile = cfg.GetString(LeavingWAVFileKey, DefaultLeavingWAVFile);
-//  rsrc.Add(new PHTTPStringField(LeavingWAVFileKey, 50, leavingWAVFile));
 }
 
 #if OPENMCU_VIDEO

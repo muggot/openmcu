@@ -2525,7 +2525,7 @@ void OpenMCUH323Connection::PlayWelcomeFile(BOOL useTheFile, PFilePath & fileToP
     }
     else
       PTRACE(3, "MCU\tFailed to play welcome procedure file " << fileToPlay);
-  }
+   }
 
   // File not played, call the wave end callback anyway
   OnWelcomeWaveEnded();
@@ -2533,9 +2533,7 @@ void OpenMCUH323Connection::PlayWelcomeFile(BOOL useTheFile, PFilePath & fileToP
 
 void OpenMCUH323Connection::OnWelcomeStateChanged()
 {
-  PFilePath fn;
-
-//  OpenMCU & mcu = OpenMCU::Current();
+  PFilePath fn = OpenMCU::Current().connectingWAVFile;
 
   switch(welcomeState) {
 
@@ -2546,7 +2544,7 @@ void OpenMCUH323Connection::OnWelcomeStateChanged()
 
     case PlayingConnecting:
       PlayWelcomeFile(FALSE, fn);
-//      PlayWelcomeFile(mcu.GetConnectingWAVFile(fn), fn);
+      //PlayWelcomeFile(OpenMCU::Current().GetConnectingWAVFile(fn), fn);
       break;
 
     case CompleteConnection:

@@ -105,9 +105,6 @@ class OpenMCU : public OpenMCUProcessAncestor
     virtual void OnCreateConfigPage(PConfig & /*cfg*/, PConfigPage & /*page*/)
     { }
 
-    virtual BOOL GetConnectingWAVFile(PFilePath & fn) const
-    { return FALSE; }
-
     PString GetDefaultRoomName() const { return defaultRoomName; }
     BOOL IsLoopbackCallsAllowed() const { return allowLoopbackCalls; }
     PString GetNewRoomNumber();
@@ -227,6 +224,19 @@ class OpenMCU : public OpenMCUProcessAncestor
     int        h264DefaultLevelForSip;
 
     OpenMCUSipEndPoint * sipendpoint;
+
+    PFilePath GetLeavingWAVFile() const
+    { return leavingWAVFile; }
+
+    PFilePath GetEnteringWAVFile() const
+    { return enteringWAVFile; }
+
+    BOOL GetConnectingWAVFile(PFilePath & fn) const
+    { fn = connectingWAVFile; return TRUE; }
+
+    PFilePath connectingWAVFile;
+    PFilePath enteringWAVFile;
+    PFilePath leavingWAVFile;
 
   protected:
     PFilePath executableFile;

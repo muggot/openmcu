@@ -22,7 +22,8 @@ include $(OPENH323DIR)/openh323u.mak
 CONFIG_FILES=capability.conf \
 layouts.conf \
 members.conf \
-ffserver.conf
+ffserver.conf \
+openmcu.ini
 
 RESOURCE_FILES=i15_mic_on.gif \
 i24_clr.gif \
@@ -48,6 +49,9 @@ openmcu.ru_remove.gif \
 template.html \
 quote.txt \
 openmcu.ru_logo_text.bmp \
+connecting.wav \
+entering.wav \
+leaving.wav \
 locale_ru.js \
 locale_en.js
 
@@ -63,15 +67,14 @@ install:
 	    do $(INSTALL) -m 644 conf/$$file $(DESTDIR)/usr/local/share/openmcu-ru/config; \
 	done )
 	( for file in ${RESOURCE_FILES}; \
-	    do $(INSTALL) -m 644 conf/$$file $(DESTDIR)/usr/local/share/openmcu-ru/resource; \
+	    do $(INSTALL) -m 644 resource/$$file $(DESTDIR)/usr/local/share/openmcu-ru/resource; \
 	done )
 	$(INSTALL) -m 755 obj_linux_$(MACHTYPE)_r/$(PROG) $(DESTDIR)/usr/local/share/openmcu-ru/bin
 	$(INSTALL) -m 755 conf/web_stream_start $(DESTDIR)/usr/local/share/openmcu-ru/bin
-	$(INSTALL) -m 755 custom/openmcu-wrapper $(DESTDIR)/usr/local/share/openmcu-ru/bin
+	$(INSTALL) -m 755 conf/openmcu-wrapper $(DESTDIR)/usr/local/share/openmcu-ru/bin
 	rm -f $(DESTDIR)/usr/local/bin/openmcu-ru
 	ln -s /usr/local/share/openmcu-ru/bin/openmcu-wrapper $(DESTDIR)/usr/local/bin/openmcu-ru
-	$(INSTALL) -m 644 custom/openmcu.ini $(DESTDIR)/usr/local/share/openmcu-ru/config
-	$(INSTALL) -m 644 conf/Russo_One.ttf $(DESTDIR)/usr/local/share/openmcu-ru/font
+	$(INSTALL) -m 644 resource/Russo_One.ttf $(DESTDIR)/usr/local/share/openmcu-ru/font
 	$(INSTALL) -m 644 ../AUTHORS $(DESTDIR)/usr/local/share/openmcu-ru
 	$(INSTALL) -m 644 ../COPYING $(DESTDIR)/usr/local/share/openmcu-ru
 	$(INSTALL) -m 644 ../NEWS $(DESTDIR)/usr/local/share/openmcu-ru
