@@ -9,6 +9,8 @@ window.l_invite_s = 'Вызов успешно выполнен';
 window.l_invite_f = 'Вызов не выполнен';
 window.l_settings = 'Настройки';
 window.l_param_general = 'Основные';
+window.l_param_h323 = 'H323 параметры';
+window.l_param_sip = 'SIP параметры';
 window.l_param_access_rules = 'Правила доступа';
 window.l_param_sip_proxy = 'SIP прокси-серверы';
 window.l_help = 'Помощь';
@@ -57,5 +59,7 @@ window.l_info_records ='\
 
 window.l_info_connections ='';
 window.l_info_param_general ='';
+window.l_info_param_h323 ='';
+window.l_info_param_sip ='';
 window.l_info_param_access_rules ='';
 window.l_info_param_sip_proxy ='';

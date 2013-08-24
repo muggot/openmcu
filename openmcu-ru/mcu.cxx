@@ -39,6 +39,9 @@ static const char AllowLoopbackCallsKey[]  = "Allow loopback calls";
 static const char SipListenerKey[]         = "SIP Listener";
 
 #if OPENMCU_VIDEO
+const unsigned int DefaultVideoFrameRate = 10;
+const unsigned int DefaultVideoQuality   = 10;
+
 static const char RecorderFfmpegPathKey[]  = "Path to ffmpeg";
 static const char RecorderFfmpegOptsKey[]  = "Ffmpeg options";
 static const char RecorderFfmpegDirKey[]   = "Video Recorder directory";
@@ -79,14 +82,26 @@ static const char LeavingWAVFileKey[]     = "Leaving WAV File";
 
 ///////////////////////////////////////////////////////////////
 
-class MyPConfigPage : public PConfigPage
+class GeneralPConfigPage : public PConfigPage
 {
  public:
-   MyPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+   GeneralPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : PConfigPage(app,title,section,auth){};
    void SetString(PString str){string=str;};
    PString GetString(){return string;};
  private:
+};
+
+class H323PConfigPage : public PConfigPage
+{
+ public:
+   H323PConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+};
+
+class SIPPConfigPage : public PConfigPage
+{
+ public:
+   SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
 };
 
 class SectionPConfigPage : public PConfigPage
@@ -295,12 +310,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   PConfig cfg("Parameters");
 
-  // Set log level as early as possible
-//  SetLogLevel((PSystemLog::Level)cfg.GetInteger(LogLevelKey, GetLogLevel()));
 #if PTRACING
-
-//    SetLogLevel(PSystemLog::Debug6);
-//    PTrace::Initialise(6,"trace.txt");
   int TraceLevel=cfg.GetInteger(TraceLevelKey, 6);
   SetLogLevel((PSystemLog::Level)TraceLevel);
 #  ifdef SERVER_LOGS
@@ -320,13 +330,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #    undef _QUOTE_MACRO_VALUE
 #    undef _QUOTE_MACRO_VALUE1
 #  endif
-
-/*  if (GetLogLevel() >= PSystemLog::Warning)
-    PTrace::SetLevel(GetLogLevel()-PSystemLog::Warning);
-  else
-    PTrace::SetLevel(0);
-  PTrace::ClearOptions(PTrace::Timestamp);
-  PTrace::SetOptions(PTrace::DateAndTime); */
 #endif //if PTRACING
 
   vmcfg.go(vmcfg.bfw,vmcfg.bfh);
@@ -338,17 +341,23 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   PHTTPSimpleAuth authority(GetName(), adminUserName, adminPassword);
 
   // Create the parameters URL page, and start adding fields to it
-  MyPConfigPage * rsrc = new MyPConfigPage(*this, "Parameters", "Parameters", authority);
+  GeneralPConfigPage * rsrc = new GeneralPConfigPage(*this, "Parameters", "Parameters", authority);
+
+  // Language
+  rsrc->Add(new PHTTPStringField("Language", 2, cfg.GetString("Language"), "<td rowspan='1' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'>RU, EN"));
 
   // HTTP authentication username/password
-  rsrc->Add(new PHTTPStringField(UserNameKey, 25, adminUserName, "<td rowspan='2' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Security</b>"));
+  rsrc->Add(new PHTTPStringField(UserNameKey, 25, adminUserName, "<td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Security</b>"));
 
   rsrc->Add(new PHTTPPasswordField(PasswordKey, 25, adminPassword));
 
-  // Language
-  rsrc->Add(new PHTTPStringField("Language", 2, cfg.GetString("Language"), "<td rowspan='1' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>ru, en"));
+  // OpenMCU Server Id
+  PString serverId = cfg.GetString("OpenMCU Server Id",OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
+  rsrc->Add(new PHTTPStringField("OpenMCU Server Id", 25, serverId));
 
-//rsrc->Add(new PHTTPStringField("<h3>Other</h3><!--", 1, "","<td></td><td></td>"));
+  // HTTP Port number to use.
+  WORD httpPort = (WORD)cfg.GetInteger(HttpPortKey, DefaultHTTPPort);
+  rsrc->Add(new PHTTPIntegerField(HttpPortKey, 1, 32767, httpPort));
 
   // Log level for messages
   rsrc->Add(new PHTTPIntegerField(LogLevelKey,
@@ -391,32 +400,18 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   }
 #endif
 
-  // HTTP Port number to use.
-  WORD httpPort = (WORD)cfg.GetInteger(HttpPortKey, DefaultHTTPPort);
-  rsrc->Add(new PHTTPIntegerField(HttpPortKey, 1, 32767, httpPort, "<td><td rowspan='5' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Network Setup</b><br /><br />Leave blank &laquo;NAT Router IP&raquo; if your OpenMCU isn't behind NAT.<br />\"Treat...\" - comma-separated LAN IPs (rarely used).\""));
-
-  // SIP Listener setup
-  sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
-  if(sipListener=="")sipListener="0.0.0.0";
-  rsrc->Add(new PHTTPStringField(SipListenerKey, 32, sipListener));
-  if(sipListener=="0.0.0.0")sipListener="0.0.0.0 :5060";
-  sipendpoint->Resume();
-
-  endpoint->Initialise(cfg, rsrc);
-  if(endpoint->behind_masq){PStringStream msq; msq<<"Masquerading as "<<*(endpoint->masqAddressPtr); HttpWriteEvent(msq);}
-
 #if OPENMCU_VIDEO
+  endpoint->enableVideo = cfg.GetBoolean("Enable video", TRUE);
+  rsrc->Add(new PHTTPBooleanField("Enable video", endpoint->enableVideo, "<td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1..30 (for outgoing video)<br />H.264 level value must be one of: 9, 10, 11, 12, 13, 20, 21, 22, 30, 31, 32, 40, 41, 42, 50, 51."));
+
+  endpoint->videoRate = cfg.GetInteger("Video frame rate", DefaultVideoFrameRate);
+  rsrc->Add(new PHTTPIntegerField("Video frame rate", 1, 100, endpoint->videoRate));
+
+  endpoint->videoTxQuality = cfg.GetInteger("Video quality", DefaultVideoQuality);
+  rsrc->Add(new PHTTPIntegerField("Video quality", 1, 30, endpoint->videoTxQuality));
+
   forceScreenSplit = cfg.GetBoolean(ForceSplitVideoKey, TRUE);
   rsrc->Add(new PHTTPBooleanField(ForceSplitVideoKey, forceScreenSplit));
-
-  h264DefaultLevelForSip = cfg.GetString(H264LevelForSIPKey, "9").AsInteger();
-  if(h264DefaultLevelForSip < 9)h264DefaultLevelForSip=9;
-  else if(h264DefaultLevelForSip>13 && h264DefaultLevelForSip<20) h264DefaultLevelForSip=13;
-  else if(h264DefaultLevelForSip>22 && h264DefaultLevelForSip<30) h264DefaultLevelForSip=22;
-  else if(h264DefaultLevelForSip>32 && h264DefaultLevelForSip<40) h264DefaultLevelForSip=32;
-  else if(h264DefaultLevelForSip>42 && h264DefaultLevelForSip<50) h264DefaultLevelForSip=42;
-  else if(h264DefaultLevelForSip>51) h264DefaultLevelForSip=51;
-  rsrc->Add(new PHTTPStringField(H264LevelForSIPKey, 2, PString(h264DefaultLevelForSip)));
 #if USE_LIBYUV
   scaleFilter=libyuv::LIBYUV_FILTER;
 #endif
@@ -529,6 +524,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   PStringStream htmlpage; htmlpage << html0 << html1 << html2;
 
   rsrc->SetString(htmlpage);
+
+  // Create the config room acccess page
+  httpNameSpace.AddResource(new H323PConfigPage(*this, "H323Parameters", "Parameters", authority), PHTTPSpace::Overwrite);
+
+  // Create the config room acccess page
+  httpNameSpace.AddResource(new SIPPConfigPage(*this, "SIPParameters", "Parameters", authority), PHTTPSpace::Overwrite);
 
   // Create the config room acccess page
   httpNameSpace.AddResource(new SectionPConfigPage(*this, "RoomAccess", "RoomAccess", authority), PHTTPSpace::Overwrite);
@@ -692,6 +693,61 @@ OpenMCUH323EndPoint * OpenMCU::CreateEndPoint(ConferenceManager & manager)
 PCREATE_SERVICE_MACRO_BLOCK(RoomStatus,P_EMPTY,P_EMPTY,block)
 {
   return OpenMCU::Current().GetEndpoint().GetRoomStatus(block);
+}
+
+H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : PConfigPage(app,title,section,auth)
+{
+  PConfig cfg(section);
+  OpenMCU & mcu = OpenMCU::Current();
+
+  mcu.GetEndpoint().Initialise(cfg, this);
+  if(mcu.GetEndpoint().behind_masq){PStringStream msq; msq<<"Masquerading as "<<*(mcu.GetEndpoint().masqAddressPtr); mcu.HttpWriteEvent(msq);}
+
+  BuildHTML("");
+  PStringStream html_begin, html_end;
+  BeginPage(html_begin, section, "window.l_param_h323", "window.l_info_param_h323");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  PStringStream html_page; html_page << html_begin << string << html_end;
+  string = html_page;
+}
+
+SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : PConfigPage(app,title,section,auth)
+{
+  PConfig cfg(section);
+  OpenMCU & mcu = OpenMCU::Current();
+
+  // SIP Listener setup
+  mcu.sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
+  if(mcu.sipListener=="") mcu.sipListener="0.0.0.0";
+  Add(new PHTTPStringField(SipListenerKey, 32, mcu.sipListener,"<td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>SIP Setup</b>"));
+  if(mcu.sipListener=="0.0.0.0") mcu.sipListener="0.0.0.0 :5060";
+  mcu.sipendpoint->Resume();
+
+  PString sipAudioPort = cfg.GetString("SIP Audio RTP Port", "7078");
+  Add(new PHTTPStringField("SIP Audio RTP Port", 5, sipAudioPort));
+
+  PString sipVideoPort = cfg.GetString("SIP Video RTP Port", "9078");
+  Add(new PHTTPStringField("SIP Video RTP Port", 5, sipVideoPort));
+
+#if OPENMCU_VIDEO
+  mcu.h264DefaultLevelForSip = cfg.GetString(H264LevelForSIPKey, "9").AsInteger();
+  if(mcu.h264DefaultLevelForSip < 9) mcu.h264DefaultLevelForSip=9;
+  else if(mcu.h264DefaultLevelForSip>13 && mcu.h264DefaultLevelForSip<20) mcu.h264DefaultLevelForSip=13;
+  else if(mcu.h264DefaultLevelForSip>22 && mcu.h264DefaultLevelForSip<30) mcu.h264DefaultLevelForSip=22;
+  else if(mcu.h264DefaultLevelForSip>32 && mcu.h264DefaultLevelForSip<40) mcu.h264DefaultLevelForSip=32;
+  else if(mcu.h264DefaultLevelForSip>42 && mcu.h264DefaultLevelForSip<50) mcu.h264DefaultLevelForSip=42;
+  else if(mcu.h264DefaultLevelForSip>51) mcu.h264DefaultLevelForSip=51;
+  Add(new PHTTPStringField(H264LevelForSIPKey, 2, PString(mcu.h264DefaultLevelForSip)));
+#endif
+
+  BuildHTML("");
+  PStringStream html_begin, html_end;
+  BeginPage(html_begin, section, "window.l_param_sip", "window.l_info_param_sip");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  PStringStream html_page; html_page << html_begin << string << html_end;
+  string = html_page;
 }
 
 SectionPConfigPage::SectionPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)

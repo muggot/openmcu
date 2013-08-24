@@ -16,17 +16,10 @@
 #include <libyuv/scale.h>
 #endif
 
-const unsigned int DefaultVideoFrameRate = 10;
-const unsigned int DefaultVideoQuality   = 10;
-static const char EnableVideoKey[]       = "Enable video";
-static const char VideoFrameRateKey[]    = "Video frame rate";
-static const char VideoQualityKey[]      = "Video quality";
-
 #endif  // OPENMCU_VIDEO
 
 static const char InterfaceKey[]          = "H.323 Listener";
 static const char LocalUserNameKey[]      = "Local User Name";
-static const char ServerIdKey[]           = "OpenMCU Server Id";
 static const char GatekeeperUserNameKey[] = "Gatekeeper Username";
 static const char GatekeeperAliasKey[]    = "Gatekeeper Room Names";
 static const char GatekeeperPasswordKey[] = "Gatekeeper Password";
@@ -82,7 +75,7 @@ OpenMCUH323EndPoint::OpenMCUH323EndPoint(ConferenceManager & _conferenceManager)
 #if OPENMCU_VIDEO
 	terminalType = e_MCUWithAVMP;
   enableVideo  = TRUE;
-  videoRate    = DefaultVideoFrameRate;
+  videoRate    = 10;
 #else
 	terminalType = e_MCUWithAudioMP;
 #endif
@@ -125,7 +118,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
       interfaces.Append(new H323TransportAddress(cfg.GetString(psprintf("%s %u", InterfaceKey, i+1), "")));
     StartListeners(interfaces);
   }
-  rsrc->Add(new PHTTPFieldArray(new PHTTPStringField(cfg.GetDefaultSection() + "\\" + InterfaceKey, InterfaceKey, 20, defaultInterface), FALSE));
+  rsrc->Add(new PHTTPFieldArray(new PHTTPStringField(cfg.GetDefaultSection() + "\\" + InterfaceKey, InterfaceKey, 20, defaultInterface,"<td rowspan='3' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Network Setup</b><br /><br />Leave blank &laquo;NAT Router IP&raquo; if your OpenMCU isn't behind NAT.<br />\"Treat...\" - comma-separated LAN IPs (rarely used).\""), FALSE));
 
   if (listeners.IsEmpty()) {
     PSYSTEMLOG(Fatal, "Main\tCould not open H.323 Listener");
@@ -153,7 +146,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
     nat_lag_ip=","+nat_lag_ip+",";
     nat_lag_ip.Replace(" ","", TRUE, 0);
   }
-  
+
 
 ///////////////////////////////////////////
 // RTP Port Setup
@@ -187,8 +180,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   PString gkUserName = cfg.GetString(GatekeeperUserNameKey,"MCU");
 
   // OpenMCU Server Id
-  PString serverId = cfg.GetString(ServerIdKey,OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
-  rsrc->Add(new PHTTPStringField(ServerIdKey, 25, serverId));
+  PString serverId = cfg.GetString("OpenMCU Server Id",OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
   if(serverId.IsEmpty()) serverId = gkUserName;
 
   if (gkMode == Gatekeeper_None ) {
@@ -233,17 +225,6 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   }
   rsrc->Add(new PHTTPFieldArray(new PHTTPStringField(cfg.GetDefaultSection() + "\\" + GatekeeperPrefixesKey, 
 	                                                                    GatekeeperPrefixesKey, 20, ""), FALSE));
-
-#if OPENMCU_VIDEO
-  enableVideo = cfg.GetBoolean(EnableVideoKey, TRUE);
-  rsrc->Add(new PHTTPBooleanField(EnableVideoKey, enableVideo, "<td rowspan='5' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1..30 (for outgoing video)<br />H.264 level value must be one of: 9, 10, 11, 12, 13, 20, 21, 22, 30, 31, 32, 40, 41, 42, 50, 51."));
-
-  videoRate = cfg.GetInteger(VideoFrameRateKey, DefaultVideoFrameRate);
-  rsrc->Add(new PHTTPIntegerField(VideoFrameRateKey, 1, 100, videoRate));
-
-  videoTxQuality = cfg.GetInteger(VideoQualityKey, DefaultVideoQuality);
-  rsrc->Add(new PHTTPIntegerField(VideoQualityKey, 1, 30, videoTxQuality));
-#endif
 
 
   capabilities.RemoveAll();

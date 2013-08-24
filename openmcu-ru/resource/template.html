@@ -359,8 +359,10 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
  <li><panel><a href="Parameters"><strong id="l_settings"></strong></a>
   <menu>
    <li><a href='Parameters' id="l_param_general"></a></li>
-   <li><a href='RoomAccess' id="l_param_access_rules"></a></li>
+   <li><a href='H323Parameters' id="l_param_h323"></a></li>
+   <li><a href='SIPParameters' id="l_param_sip"></a></li>
    <li><a href='ProxyServers' id="l_param_sip_proxy"></a></li>
+   <li><a href='RoomAccess' id="l_param_access_rules"></a></li>
   </menu>
  </panel></li>
 
@@ -433,8 +435,10 @@ $BODY$
    document.getElementById("l_manual").innerHTML = window.l_manual;
    document.getElementById("l_settings").innerHTML = window.l_settings;
    document.getElementById("l_param_general").innerHTML = window.l_param_general;
-   document.getElementById("l_param_access_rules").innerHTML = window.l_param_access_rules;
+   document.getElementById("l_param_h323").innerHTML = window.l_param_h323;
+   document.getElementById("l_param_sip").innerHTML = window.l_param_sip;
    document.getElementById("l_param_sip_proxy").innerHTML = window.l_param_sip_proxy;
+   document.getElementById("l_param_access_rules").innerHTML = window.l_param_access_rules;
    document.getElementById("l_control").innerHTML = window.l_control;
    document.getElementById("l_rooms").innerHTML = window.l_rooms;
    document.getElementById("l_invite").innerHTML = window.l_invite;

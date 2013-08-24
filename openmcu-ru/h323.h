@@ -118,18 +118,16 @@ class OpenMCUH323EndPoint : public H323EndPoint
 
     unsigned GetVideoFrameRate() const
     { return videoRate; }
-#endif
 
-  protected:
-#if OPENMCU_VIDEO
     BOOL enableVideo;
     unsigned videoRate;
     unsigned videoTxQuality;
 #endif
-	
-	PString gkAlias;
-	PStringList PrefixList;
-	PStringList AliasList;
+
+  protected:
+    PString gkAlias;
+    PStringList PrefixList;
+    PStringList AliasList;
 
 
   protected:
