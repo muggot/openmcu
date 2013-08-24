@@ -321,7 +321,7 @@ class ExternalVideoRecorderThread : public PThread
     void Main()
     { while(running) PThread::Sleep(100);
       PTRACE(1,"EVRT\tStopping external recording thread, making pclose()" << flush);
-      fputs("q\r\n",recordState);
+      fputs("q\r\n\x3",recordState);
       PThread::Sleep(200);
 #ifdef _WIN32
       _pclose(recordState);
