@@ -76,6 +76,7 @@ extern "C" {
 #endif
 
 #include LIBAVCODEC_HEADER
+#include "libavutil/mem.h"
 
 #ifdef _WIN32
 #pragma warning(pop)

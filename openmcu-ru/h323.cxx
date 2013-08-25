@@ -1487,7 +1487,7 @@ PString OpenMCUH323EndPoint::RoomCtrlPage(const PString room, BOOL ctrl, int n, 
      << "</div>"
    << "</div>"
  ;
- EndPage(page,OpenMCU::Current().GetCopyrightText());
+ EndPage(page,OpenMCU::Current().GetHtmlCopyright());
  return page;
 }
 

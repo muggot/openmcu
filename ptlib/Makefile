@@ -310,5 +310,7 @@ uninstall:
 	       $(DESTDIR)$(LIBDIR)/ptlib/devices \
 	rm -f $(DESTDIR)${exec_prefix}/lib/$(PTLIB_FILE)* \
               ${exec_prefix}/lib/libpt.so 
+	rm -f $(DESTDIR)$(PREFIX)/bin/ptlib-config
+	rm -f $(DESTDIR)$(PREFIX)/lib/ptlib
 
 # End of Makefile.in

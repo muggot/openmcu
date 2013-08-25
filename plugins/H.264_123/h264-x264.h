@@ -63,6 +63,7 @@ extern "C" {
 #else
   #include LIBAVCODEC_HEADER
 #endif
+#include "libavutil/mem.h"
 };
 
 #define FHD_WIDTH 1600

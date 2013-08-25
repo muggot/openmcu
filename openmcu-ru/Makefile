@@ -93,5 +93,3 @@ uninstall:
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/COPYING
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/NEWS
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/README
-	rm -f $(DESTDIR)/usr/local/bin/ptlib-config
-	rm -rf $(DESTDIR)/usr/local/lib/ptlib

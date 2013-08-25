@@ -79,9 +79,15 @@ DECLARE_TRACER
 
 extern "C" {
 #include LIBAVCODEC_HEADER
+#include "libavutil/mem.h"
 };
 
 #define	SQN_CHECK_INTERVAL	31 
+
+#ifndef CODEC_ID_H263
+#define CODEC_ID_H263  AV_CODEC_ID_H263
+#define CODEC_ID_H263P AV_CODEC_ID_H263P
+#endif
 
 static const char * h263_Prefix = "H.263";
 static const char * h263P_Prefix = "H.263+";
@@ -739,7 +745,7 @@ int H263_RFC2190_EncoderContext::EncodeFrames(const BYTE * src, unsigned & srcLe
 
   //CODEC_TRACER(tracer, "Encoder called with " << frameSize << " bytes and frame type " << _inputFrame->pict_type << " at " << header->width << "x" << header->height);
 
-  int encodedLen = avcodec_encode_video(_context, packetizer.m_buffer, packetizer.m_bufferSize, _inputFrame);  
+  int encodedLen = avcodec_encode_video(_context, packetizer.m_buffer, packetizer.m_bufferSize, _inputFrame);
 
   if (encodedLen < 0) {
     TRACE_AND_LOG(tracer, 1, "Encoder failed");

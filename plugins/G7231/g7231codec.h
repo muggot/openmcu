@@ -3,9 +3,12 @@ typedef unsigned char BYTE;
 using namespace std;
 
 #include "opal/opalplugin.h"
-//#include "libavcodec/avcodec.h"
 #include "opal/ffmpeg.h"
 #include "opal/critsect.h"
+
+#ifndef CODEC_ID_G723_1
+#define CODEC_ID_G723_1 AV_CODEC_ID_G723_1
+#endif
 
 static const char		G7231_Desc[] = { "G7231-6.3" };	// text decription  
 static const char		G7231_L16Desc[]= { "L16" };			// source format 

@@ -60,7 +60,9 @@
 #endif
 #include <string.h>
 
-
+#ifndef CODEC_ID_H264
+#define CODEC_ID_H264 AV_CODEC_ID_H264
+#endif
 
 #ifndef X264_LINK_STATIC
 extern X264Library X264Lib;
