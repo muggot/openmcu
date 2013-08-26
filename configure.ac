@@ -507,11 +507,11 @@ fi
 
 AC_SUBST(PLUGIN_DIRS)
 
-if test "x$LIB64" != "x" ; then
-  AC_SUBST(PLUGINLIBDIR, ${PTLIB_INSTALLPREFIX}/lib64)
-else
+#if test "x$LIB64" != "x" ; then
+#  AC_SUBST(PLUGINLIBDIR, ${PTLIB_INSTALLPREFIX}/lib64)
+#else
   AC_SUBST(PLUGINLIBDIR, ${PTLIB_INSTALLPREFIX}/lib)
-fi
+#fi
 
 
 dnl ########################################################################

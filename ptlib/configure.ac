@@ -933,11 +933,11 @@ fi
 
 AC_SUBST(HAS_PLUGINS)
 
-if test "x$LIB64" != "x" ; then
-  AC_DEFINE_UNQUOTED([P_DEFAULT_PLUGIN_DIR], ["${INSTALLPREFIX}/lib64/ptlib"], [Default plugin directory])
-else
+#if test "x$LIB64" != "x" ; then
+#  AC_DEFINE_UNQUOTED([P_DEFAULT_PLUGIN_DIR], ["${INSTALLPREFIX}/lib64/ptlib"], [Default plugin directory])
+#else
   AC_DEFINE_UNQUOTED([P_DEFAULT_PLUGIN_DIR], ["${INSTALLPREFIX}/lib/ptlib"], [Default plugin directory])
-fi
+#fi
 
 dnl ########################################################################
 dnl look for DNS resolver code (must be done before OpenLDAP)

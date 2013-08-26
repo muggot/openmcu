@@ -6659,19 +6659,15 @@ fi
 
 
 
-if test "x$LIB64" != "x" ; then
-
-cat >>confdefs.h <<_ACEOF
-#define P_DEFAULT_PLUGIN_DIR "${INSTALLPREFIX}/lib64/ptlib"
-_ACEOF
-
-else
+#if test "x$LIB64" != "x" ; then
+#  AC_DEFINE_UNQUOTED([P_DEFAULT_PLUGIN_DIR], ["${INSTALLPREFIX}/lib64/ptlib"], [Default plugin directory])
+#else
 
 cat >>confdefs.h <<_ACEOF
 #define P_DEFAULT_PLUGIN_DIR "${INSTALLPREFIX}/lib/ptlib"
 _ACEOF
 
-fi
+#fi
 
 
 
