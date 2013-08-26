@@ -49,12 +49,13 @@ static const char RecorderFrameWidthKey[]  = "Video Recorder frame width";
 static const char RecorderFrameHeightKey[] = "Video Recorder frame height";
 static const char RecorderFrameRateKey[]   = "Video Recorder frame rate";
 static const char RecorderSampleRateKey[]  = "Video Recorder sound rate";
+static const char RecorderAudioChansKey[]  = "Video Recorder sound channels";
 #ifdef _WIN32
 static const char DefaultFfmpegPath[]         = "ffmpeg.exe";
 #else
 static const char DefaultFfmpegPath[]         = "/usr/bin/ffmpeg";
 #endif
-static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac 1 -ar %S -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac 1 -vcodec msmpeg4v2 %O.asf";
+static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac %C -ar %S -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac %C -vcodec msmpeg4v2 %O.asf";
 #ifdef RECORDS_DIR
 static const char DefaultRecordingDirectory[] = RECORDS_DIR;
 #else
@@ -64,6 +65,7 @@ static const int  DefaultRecorderFrameWidth   = 704;
 static const int  DefaultRecorderFrameHeight  = 576;
 static const int  DefaultRecorderFrameRate    = 10;
 static const int  DefaultRecorderSampleRate   = 16000;
+static const int  DefaultRecorderAudioChans   = 1;
 
 static const char ForceSplitVideoKey[]   = "Force split screen video (enables Room Control page)";
 
@@ -444,6 +446,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     vr_frameheight = cfg.GetInteger(RecorderFrameHeightKey, DefaultRecorderFrameHeight);
     vr_framerate   = cfg.GetInteger(RecorderFrameRateKey,   DefaultRecorderFrameRate);
     vr_sampleRate  = cfg.GetInteger(RecorderSampleRateKey,  DefaultRecorderSampleRate);
+    vr_audioChans  = cfg.GetInteger(RecorderAudioChansKey,  DefaultRecorderAudioChans);
     PString opts = vr_ffmpegOpts;
     PStringStream frameSize; frameSize << vr_framewidth << "x" << vr_frameheight;
     PStringStream frameRate; frameRate << vr_framerate;
@@ -455,20 +458,21 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     opts.Replace("%F",frameSize,TRUE,0);
     opts.Replace("%R",frameRate,TRUE,0);
     opts.Replace("%S",PString(vr_sampleRate),TRUE,0);
+    opts.Replace("%C",PString(vr_audioChans),TRUE,0);
     opts.Replace("%O",outFile,TRUE,0);
     PStringStream tmp;
     tmp << vr_ffmpegPath << " " << opts;
     ffmpegCall=tmp;
     PStringStream recorderInfo;
     recorderInfo
-      << "<td rowspan='7' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>"
+      << "<td rowspan='8' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>"
       << "<b>Video Recorder Setup:</b><br><br>"
       << "Use the following definitions to set ffmpeg command-line options:<br>"
       << "<b>%V</b> - input video stream,<br>"
       << "<b>%A</b> - input audio stream,<br>"
       << "<b>%F</b> - frame size, "
       << "<b>%R</b> - frame rate,<br>"
-      << "<b>%S</b> - sample rate for audio,<br>"
+      << "<b>%S</b> - sample rate, <b>%C</b> - number of channels for audio,<br>"
       << "<b>%O</b> - name without extension"
       << "<br><br>";
     if(!PFile::Exists(vr_ffmpegPath)) recorderInfo << "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
@@ -499,6 +503,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     rsrc->Add(new PHTTPIntegerField(RecorderFrameHeightKey, 144, 1152, vr_frameheight));
     rsrc->Add(new PHTTPIntegerField(RecorderFrameRateKey, 1, 100, vr_framerate));
     rsrc->Add(new PHTTPIntegerField(RecorderSampleRateKey, 2000, 1000000, vr_sampleRate));
+    rsrc->Add(new PHTTPIntegerField(RecorderAudioChansKey, 1, 8, vr_audioChans));
   }
 
   // get WAV file played to a user when they enter a conference

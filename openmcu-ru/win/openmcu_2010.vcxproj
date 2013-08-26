@@ -120,7 +120,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="dbpe.ico" />
-    <CustomBuild Include="..\messages.mc">
+    <CustomBuild Include=".\messages.mc">
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Building event log resources.</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">mc -h "$(IntDir)" -r "$(IntDir)" "%(FullPath)"
 echo 1 ICON %(RootDir)%(Directory)$(TargetName).ico &gt;&gt; "$(IntDir)%(Filename).rc"

@@ -224,11 +224,15 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
 {
   unsigned sampleRate = OpenMCU::Current().vr_sampleRate;
   if(sampleRate < 2000 || sampleRate > 1000000) sampleRate = 16000;
-  PINDEX amountBytes = 2 * sampleRate * AUDIO_EXPORT_PCM_BUFFER_SIZE_MS / 1000;
+
+  unsigned channels = OpenMCU::Current().vr_audioChans;
+  if(channels < 1 || channels > 8) channels = 1;
+
+  PINDEX amountBytes = channels * 2 * sampleRate * AUDIO_EXPORT_PCM_BUFFER_SIZE_MS / 1000;
   unsigned modulo = 0;
   unsigned d0 = (1000 * (amountBytes >> 1));
-  unsigned d = d0 / sampleRate;
-  unsigned m0 = d0 % sampleRate;
+  unsigned d = d0 / (sampleRate * channels);
+  unsigned m0 = d0 % (sampleRate * channels);
 #ifdef _WIN32
   PString cstr="\\\\.\\pipe\\sound_"+conference->GetNumber();
   LPCSTR cname = cstr;
@@ -273,13 +277,13 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
   while (running) {
 
     modulo += m0;
-    if(audioDelay.Delay(d + (modulo / sampleRate)))
+    if(audioDelay.Delay(d + (modulo / (channels * sampleRate))))
     { PTRACE(6,"AudioExportThread_Delay\tPAdaptiveDelay.Delay() called Too late. Sample rate = " << sampleRate << " Hz, delay = " << AUDIO_EXPORT_PCM_BUFFER_SIZE_MS << " ms, amount = " << amountBytes << " bytes.");
     }
-    modulo %= sampleRate;
+    modulo %= (channels * sampleRate);
 
     // read a block of data
-    ReadAudio(pcmData.GetPointer(), amountBytes, sampleRate, 1);
+    ReadAudio(pcmData.GetPointer(), amountBytes, sampleRate, channels);
 
     // write to the file
 #ifdef _WIN32

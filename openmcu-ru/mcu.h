@@ -215,7 +215,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     PString    vr_ffmpegPath, vr_ffmpegOpts, vr_ffmpegDir;
     PString    ffmpegCall;
     int        vr_framewidth, vr_frameheight, vr_framerate;
-    unsigned   vr_sampleRate;
+    unsigned   vr_sampleRate, vr_audioChans;
 
     PString    sipListener;
 

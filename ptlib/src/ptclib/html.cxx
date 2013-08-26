@@ -1051,7 +1051,7 @@ PHTML::InputRange::InputRange(const char * fname,
                               int min, int max, int value,
                               DisableCodes disabled,
                               const char * attr)
-  : InputField("range", fname, disabled, attr)
+  : InputField("number", fname, disabled, attr)
 {
   PAssert(min <= max, PInvalidParameter);
   minValue = min;
@@ -1076,8 +1076,6 @@ void PHTML::InputRange::AddAttr(PHTML & html) const
   html << " SIZE=" << width
        << " MIN=" << minValue
        << " MAX=" << maxValue
-       << " TITLE=\"" << initValue << "\""
-       << " onchange=\"javascript:{try{this.title=this.value;if(typeof ptlib_slider_value_changed=='function')ptlib_slider_value_changed(this);} catch(e){};}\""
        << " VALUE=\"" << initValue << "\"";
 }
 

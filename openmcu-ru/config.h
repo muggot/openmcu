@@ -77,7 +77,7 @@
 #  undef  TRUETYPE_FONT_DIR
 #  define TRUETYPE_FONT_DIR "."
 #  undef  RECORDS_DIR
-#  define RECORDS_DIR       "./records"
+#  define RECORDS_DIR       "records"
 #endif
 
 #endif // _OpenMCU-ru_CONFIG_H
