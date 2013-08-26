@@ -60,10 +60,6 @@
 #endif
 #include <string.h>
 
-#ifndef CODEC_ID_H264
-#define CODEC_ID_H264 AV_CODEC_ID_H264
-#endif
-
 #ifndef X264_LINK_STATIC
 extern X264Library X264Lib;
 #endif
@@ -190,7 +186,7 @@ H264DecoderContext::H264DecoderContext()
   _skippedFrameCounter = 0;
   _rxH264Frame = new H264Frame();
 
-  if ((_codec = avcodec_find_decoder(CODEC_ID_H264)) == NULL) {
+  if ((_codec = avcodec_find_decoder_by_name("h264")) == NULL) {
     cout << "H264\tDecoder\tCodec not found for decoder\n";
     return;
   }

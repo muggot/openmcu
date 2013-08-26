@@ -84,11 +84,6 @@ extern "C" {
 
 #define	SQN_CHECK_INTERVAL	31 
 
-#ifndef CODEC_ID_H263
-#define CODEC_ID_H263  AV_CODEC_ID_H263
-#define CODEC_ID_H263P AV_CODEC_ID_H263P
-#endif
-
 static const char * h263_Prefix = "H.263";
 static const char * h263P_Prefix = "H.263+";
 
@@ -244,17 +239,17 @@ H263_Base_EncoderContext::~H263_Base_EncoderContext()
   free(_inputFrameBuffer);
 }
 
-#if LIBAVCODEC_VERSION_MAJOR >= 54
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54,59,0)
 bool H263_Base_EncoderContext::Open(AVCodecID codecId)
 #else
-bool H263_Base_EncoderContext::Open(CodecID codecId)
+bool H263_Base_EncoderContext::Open(const char *codec_name)
 #endif
 {
   TRACE_AND_LOG(tracer, 1, "Opening encoder");
 
-  _codec = avcodec_find_encoder(codecId);
+  _codec = avcodec_find_encoder_by_name(codec_name);
   if (_codec == NULL) {
-    TRACE_AND_LOG(tracer, 1, "Codec not found for encoder " << codecId);
+    TRACE_AND_LOG(tracer, 1, "Codec not found for encoder " << codec_name);
     return false;
   }
 
@@ -297,7 +292,7 @@ bool H263_Base_EncoderContext::Open(CodecID codecId)
   _context->flags |= CODEC_FLAG_PASS1;
 
   _context->error_concealment = 3;
-#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(54,25,0)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54,23,0)
   _context->err_recognition = 5;
 #else
   _context->error_recognition = 5;
@@ -587,7 +582,7 @@ void H263_RFC2190_EncoderContext::RTPCallBack(struct AVCodecContext * /*avctx*/,
 
 bool H263_RFC2190_EncoderContext::Open()
 {
-  if (!H263_Base_EncoderContext::Open(CODEC_ID_H263))
+  if (!H263_Base_EncoderContext::Open("h263"))
     return false;
 
 #if LIBAVCODEC_RTP_MODE
@@ -814,7 +809,7 @@ H263_RFC2429_EncoderContext::~H263_RFC2429_EncoderContext()
 
 bool H263_RFC2429_EncoderContext::Open()
 {
-  if (!H263_Base_EncoderContext::Open(CODEC_ID_H263P))
+  if (!H263_Base_EncoderContext::Open("h263p"))
     return false;
 
   SetMaxKeyFramePeriod(H263P_KEY_FRAME_INTERVAL);
@@ -949,7 +944,7 @@ H263_Base_DecoderContext::H263_Base_DecoderContext(const char * _prefix)
   , tracer(_prefix, false)
 #endif
 {
-  if ((_codec = avcodec_find_decoder(CODEC_ID_H263)) == NULL) {
+  if ((_codec = avcodec_find_decoder_by_name("h263")) == NULL) {
     TRACE_AND_LOG(tracer, 1, "Codec not found for decoder");
     return;
   }

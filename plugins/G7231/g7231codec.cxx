@@ -4,7 +4,7 @@
 
 G7231_DecoderContext::G7231_DecoderContext()
 {
-  if ((_codec = avcodec_find_decoder(CODEC_ID_G723_1)) == NULL) 
+  if ((_codec = avcodec_find_decoder_by_name("g723_1")) == NULL) 
    { cout << "Codec g7231 not found for decoder\n"; return; }
 
   _context = avcodec_alloc_context3(NULL);
