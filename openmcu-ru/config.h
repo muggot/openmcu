@@ -40,7 +40,7 @@
 // enable/disable avresample usage
 #define USE_AVRESAMPLE  0
 // enable/disable libsamplerate usage
-#define USE_LIBSAMPLERATE  1
+#define USE_LIBSAMPLERATE  0
 
 // enable/disable freetype2 (rendering names)
 #define USE_FREETYPE	1

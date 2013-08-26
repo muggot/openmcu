@@ -58,8 +58,26 @@
 #undef P_SSL
 
 #ifdef _WIN32
-#undef USE_SWRESAMPLE
-#define USE_SWRESAMPLE 0
+#  undef  USE_SWRESAMPLE
+#  define USE_SWRESAMPLE     0
+#  undef  USE_LIBSAMPLERATE
+#  define USE_LIBSAMPLERATE  0
+#  undef  USE_AVRESAMPLE
+#  define USE_AVRESAMPLE     0
+#  undef  SYS_BIN_DIR
+#  define SYS_BIN_DIR       "."
+#  undef  SYS_CONFIG_DIR
+#  define SYS_CONFIG_DIR    "."
+#  undef  SYS_PIPE_DIR
+#  define SYS_PIPE_DIR      "."
+#  undef  SYS_RESOURCE_DIR
+#  define SYS_RESOURCE_DIR  "."
+#  undef  SERVER_LOGS
+#  define SERVER_LOGS       "."
+#  undef  TRUETYPE_FONT_DIR
+#  define TRUETYPE_FONT_DIR "."
+#  undef  RECORDS_DIR
+#  define RECORDS_DIR       "records"
 #endif
 
 #endif // _OpenMCU-ru_CONFIG_H

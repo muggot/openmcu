@@ -276,17 +276,63 @@ PString ErrorPage( //maybe ptlib could provide pages like this? for future: dig 
   PString        description    // detailed: "blablablablablabla \n blablablablablabla"
 );
 
+#ifndef _WIN32
+static pid_t popen2(const char *command, int *infp = NULL, int *outfp = NULL)
+{
+    int read = 0, write = 1;
+    int p_stdin[2], p_stdout[2];
+    pid_t pid;
+
+    if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0)
+      return -1;
+
+    pid = fork();
+
+    if (pid < 0)
+      return pid;
+    else if (pid == 0)
+    {
+      close(p_stdin[write]);
+      dup2(p_stdin[read], read);
+      close(p_stdout[read]);
+      dup2(p_stdout[write], write);
+
+      std::string cmd = command;
+      execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), "", NULL);
+      perror("execl");
+      exit(1);
+    }
+
+    if (infp == NULL)
+      close(p_stdin[write]);
+    else
+      *infp = p_stdin[write];
+
+    if (outfp == NULL)
+      close(p_stdout[read]);
+    else
+      *outfp = p_stdout[read];
+
+    return pid;
+};
+#endif
+
 class ExternalVideoRecorderThread : public PThread
 { PCLASSINFO(ExternalVideoRecorderThread, PThread);
   public:
     PString roomName; // the only thing we need to identify the room
     PString fileName; // to replace %o
+#ifdef _WIN32
     FILE *recordState;
+#else
+    pid_t recordPid;
+#endif
     BOOL running;
     ExternalVideoRecorderThread(PString _roomName)
     : PThread(1000, AutoDeleteThread),
       roomName(_roomName)
-    { running=FALSE;
+    {
+      running=FALSE;
       PStringStream t; t << roomName << "__" // fileName format: room101__2013-0516-1058270__704x576x10
         << PTime().AsString("yyyy-MMdd-hhmmssu", PTime::Local) << "__"
         << OpenMCU::Current().vr_framewidth << "x"
@@ -312,21 +358,29 @@ class ExternalVideoRecorderThread : public PThread
       t.Replace("%V",video,TRUE,0);
 #ifdef _WIN32
       recordState=_popen(t, "w");
-#else
-      recordState=popen(t, "w");
-#endif
       PTRACE(1,"EVRT\tStarting new external recording thread, popen result: " << recordState << ", CL: " << t);
+#else
+      recordPid = popen2(t);
+      PTRACE(1,"EVRT\tStarting new external recording thread, pid: " << recordPid << ", CL: " << t);
+#endif
+#ifdef _WIN32
       if(recordState) {running=TRUE; Resume(); }
+#else
+      if(recordPid > 0) {running=TRUE; Resume(); }
+#endif
     }
     void Main()
-    { while(running) PThread::Sleep(100);
-      PTRACE(1,"EVRT\tStopping external recording thread, making pclose()" << flush);
-      fputs("q\r\n\x3",recordState);
+    {
+      while(running) PThread::Sleep(100);
+      PTRACE(1,"EVRT\tStopping external recording thread" << flush);
+#ifdef _WIN32
+      fputs("q\r\n",recordState);
+#else
+      kill(recordPid, SIGINT);
+#endif
       PThread::Sleep(200);
 #ifdef _WIN32
       _pclose(recordState);
-#else
-      pclose(recordState);
 #endif
       PThread::Terminate();
     }
