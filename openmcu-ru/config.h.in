@@ -23,6 +23,10 @@
 //#define TRUETYPE_FONT_DIR "/opt/openmcu-ru/records"
 #define RECORDS_DIR "@MCU_RECORDS_DIR@"
 
+// specify ffmpeg path
+//#define FFMPEG_PATH	"/usr/bin/ffmpeg"
+#define FFMPEG_PATH	"@FFMPEG_PATH@"
+
 // enable test rooms for video mixer
 #define ENABLE_TEST_ROOMS   1
 

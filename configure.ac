@@ -242,6 +242,17 @@ fi
 
 
 dnl ########################################################################
+dnl check for ffmpeg path
+
+AC_SUBST(FFMPEG_PATH, "/usr/bin/ffmpeg")
+AC_CHECK_FILE("/usr/bin/avconv", [USE_AVCONV_PATH=1], [USE_AVCONV_PATH=0])
+
+if test "${USE_AVCONV_PATH}" = "1"; then
+  FFMPEG_PATH="/usr/bin/avconv"
+fi
+
+
+dnl ########################################################################
 dnl check for resampling library
 
 AC_SUBST(USE_SWRESAMPLE, 0)

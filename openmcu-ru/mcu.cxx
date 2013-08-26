@@ -53,7 +53,7 @@ static const char RecorderAudioChansKey[]  = "Video Recorder sound channels";
 #ifdef _WIN32
 static const char DefaultFfmpegPath[]         = "ffmpeg.exe";
 #else
-static const char DefaultFfmpegPath[]         = "/usr/bin/ffmpeg";
+static const char DefaultFfmpegPath[]         = FFMPEG_PATH;
 #endif
 static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac %C -ar %S -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac %C -vcodec msmpeg4v2 %O.asf";
 #ifdef RECORDS_DIR
