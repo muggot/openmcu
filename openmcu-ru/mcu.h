@@ -286,6 +286,7 @@ static pid_t popen2(const char *command, int *infp = NULL, int *outfp = NULL)
     if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0)
       return -1;
 
+    signal(SIGCHLD, SIG_IGN);
     pid = fork();
 
     if (pid < 0)
@@ -297,9 +298,15 @@ static pid_t popen2(const char *command, int *infp = NULL, int *outfp = NULL)
       close(p_stdout[read]);
       dup2(p_stdout[write], write);
 
-      std::string cmd = command;
-      execl("/bin/sh", "/bin/sh", "-c", cmd.c_str(), "", NULL);
-      perror("execl");
+      char *argv[NULL];
+      PStringArray pargv = PString(command).Tokenise(" ");
+      for(int i = 0; pargv[i] != NULL; i++)
+      {
+	argv[i] = new char[pargv[i].GetLength()];
+        strcpy(argv[i], pargv[i]);
+      }
+      execv(OpenMCU::Current().vr_ffmpegPath, argv);
+      perror("execv");
       exit(1);
     }
 
