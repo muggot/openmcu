@@ -346,10 +346,10 @@ fi
 
 if test ${INSTALLPREFIX} = /usr || test ${INSTALLPREFIX} = /usr/local ; then
     MCU_INSTALLPREFIX=${INSTALLPREFIX}/share/${MCUDIR}
-    MCU_LINK_DIR=${INSTALLPREFIX}/bin
+    MCU_BIN_DIR=${INSTALLPREFIX}/bin
 else
     MCU_INSTALLPREFIX=${INSTALLPREFIX}
-    MCU_LINK_DIR=${INSTALLPREFIX}
+    MCU_BIN_DIR=${INSTALLPREFIX}
 fi
 
 AC_SUBST(MCU_INSTALLPREFIX)
@@ -362,7 +362,6 @@ AC_ARG_WITH(log_prefix, [AS_HELP_STRING([--with-log-prefix],[log directory],[40]
 AC_ARG_WITH(pipe_prefix, [AS_HELP_STRING([--with-pipe-prefix],[pipe directory],[40],[100])], [pipe_prefix=$withval])
 AC_ARG_WITH(records_prefix, [AS_HELP_STRING([--with-records-prefix],[records directory],[40],[100])], [records_prefix=$withval])
 
-MCU_BIN_DIR=${MCU_INSTALLPREFIX}/bin
 MCU_RESOURCE_DIR=${MCU_INSTALLPREFIX}/resource
 MCU_FONT_DIR=${MCU_INSTALLPREFIX}/font
 
@@ -392,7 +391,6 @@ fi
 
 
 AC_SUBST(MCUDIR)
-AC_SUBST(MCU_LINK_DIR)
 AC_SUBST(MCU_BIN_DIR)
 AC_SUBST(MCU_CONFIG_DIR)
 AC_SUBST(MCU_PIPE_DIR)
@@ -403,7 +401,6 @@ AC_SUBST(MCU_LOG_DIR)
 
 AC_CONFIG_FILES(openmcu-ru/Makefile)
 AC_CONFIG_FILES(openmcu-ru/config.h)
-AC_CONFIG_FILES(openmcu-ru/conf/openmcu-wrapper)
 
 dnl ########################################################################
 dnl configuration ptlib

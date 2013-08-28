@@ -10,6 +10,7 @@ PROG		= openmcu-ru
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx
 HDRS		:= conference.h config.h filemembers.h h323.h mcu.h version.h sip.h
 
+LDFLAGS        += -L/usr/local/lib -L/usr/local/lib -Wl,-R/usr/local/lib,-R/usr/local/lib
 LDLIBS		=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua
 STDCCFLAGS	=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -I../h323plus/include -D__STDC_CONSTANT_MACROS
 
@@ -56,8 +57,8 @@ locale_ru.js \
 locale_en.js
 
 install:
+	mkdir -p $(DESTDIR)/usr/local/bin
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru
-	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/bin
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/config
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/font
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/log
@@ -70,11 +71,8 @@ install:
 	( for file in ${RESOURCE_FILES}; \
 	    do $(INSTALL) -m 644 resource/$$file $(DESTDIR)/usr/local/share/openmcu-ru/resource; \
 	done )
-	$(INSTALL) -m 755 obj_linux_$(MACHTYPE)_r/$(PROG) $(DESTDIR)/usr/local/share/openmcu-ru/bin
-	$(INSTALL) -m 755 conf/web_stream_start $(DESTDIR)/usr/local/share/openmcu-ru/bin
-	$(INSTALL) -m 755 conf/openmcu-wrapper $(DESTDIR)/usr/local/share/openmcu-ru/bin
-	rm -f $(DESTDIR)/usr/local/bin/openmcu-ru
-	ln -s /usr/local/share/openmcu-ru/bin/openmcu-wrapper $(DESTDIR)/usr/local/bin/openmcu-ru
+	$(INSTALL) -m 755 conf/web_stream_start $(DESTDIR)/usr/local/share/openmcu-ru/config
+	$(INSTALL) -m 755 obj_linux_$(MACHTYPE)_r/$(PROG) $(DESTDIR)/usr/local/bin
 	$(INSTALL) -m 644 resource/Russo_One.ttf $(DESTDIR)/usr/local/share/openmcu-ru/font
 	$(INSTALL) -m 644 ../AUTHORS $(DESTDIR)/usr/local/share/openmcu-ru
 	$(INSTALL) -m 644 ../COPYING $(DESTDIR)/usr/local/share/openmcu-ru
@@ -83,12 +81,9 @@ install:
 
 uninstall:
 	rm -f $(DESTDIR)/usr/local/bin/openmcu-ru
-	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/bin
-	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/config
 	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/font
 	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/log
 	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/pipe
-	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/records
 	rm -rf $(DESTDIR)/usr/local/share/openmcu-ru/resource
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/AUTHORS
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/COPYING
