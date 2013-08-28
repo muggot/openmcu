@@ -56,6 +56,7 @@ locale_ru.js \
 locale_en.js
 
 install:
+	mkdir -p $(DESTDIR)@MCU_INSTALLPREFIX@
 	mkdir -p $(DESTDIR)@MCU_BIN_DIR@
 	mkdir -p $(DESTDIR)@MCU_CONFIG_DIR@
 	mkdir -p $(DESTDIR)@MCU_FONT_DIR@

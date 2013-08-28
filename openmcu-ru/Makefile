@@ -56,6 +56,7 @@ locale_ru.js \
 locale_en.js
 
 install:
+	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/bin
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/config
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/font

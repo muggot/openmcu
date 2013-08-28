@@ -345,8 +345,6 @@ else
 fi
 
 if test ${INSTALLPREFIX} = /usr || test ${INSTALLPREFIX} = /usr/local ; then
-    #PTLIB_INSTALLPREFIX=${INSTALLPREFIX}/share/${MCUDIR}
-    #H323PLUS_INSTALLPREFIX=${INSTALLPREFIX}/share/${MCUDIR}
     MCU_INSTALLPREFIX=${INSTALLPREFIX}/share/${MCUDIR}
     MCU_LINK_DIR=${INSTALLPREFIX}/bin
 else
@@ -358,19 +356,44 @@ AC_SUBST(MCU_INSTALLPREFIX)
 AC_SUBST(PTLIB_INSTALLPREFIX)
 AC_SUBST(H323PLUS_INSTALLPREFIX)
 
+AC_ARG_WITH(separator,[  ])
+AC_ARG_WITH(config_prefix, [AS_HELP_STRING([--with-config-prefix],[config directory],[40],[100])], [config_prefix=$withval])
+AC_ARG_WITH(log_prefix, [AS_HELP_STRING([--with-log-prefix],[log directory],[40],[100])], [log_prefix=$withval])
+AC_ARG_WITH(pipe_prefix, [AS_HELP_STRING([--with-pipe-prefix],[pipe directory],[40],[100])], [pipe_prefix=$withval])
+AC_ARG_WITH(records_prefix, [AS_HELP_STRING([--with-records-prefix],[records directory],[40],[100])], [records_prefix=$withval])
+
 MCU_BIN_DIR=${MCU_INSTALLPREFIX}/bin
-MCU_LIB_DIR=${MCU_INSTALLPREFIX}/lib
-MCU_CONFIG_DIR=${MCU_INSTALLPREFIX}/config
-MCU_PIPE_DIR=${MCU_INSTALLPREFIX}/pipe
-MCU_RECORDS_DIR=${MCU_INSTALLPREFIX}/records
-MCU_FONT_DIR=${MCU_INSTALLPREFIX}/font
 MCU_RESOURCE_DIR=${MCU_INSTALLPREFIX}/resource
-MCU_LOG_DIR=${MCU_INSTALLPREFIX}/log
+MCU_FONT_DIR=${MCU_INSTALLPREFIX}/font
+
+if test "x$config_prefix" = "x"; then
+  MCU_CONFIG_DIR=${MCU_INSTALLPREFIX}/config
+else
+  MCU_CONFIG_DIR=${config_prefix}/${MCUDIR}
+fi
+
+if test "x$log_prefix" = "x"; then
+  MCU_LOG_DIR=${MCU_INSTALLPREFIX}/log
+else
+  MCU_LOG_DIR=${log_prefix}/${MCUDIR}
+fi
+
+if test "x$pipe_prefix" = "x"; then
+  MCU_PIPE_DIR=${MCU_INSTALLPREFIX}/pipe
+else
+  MCU_PIPE_DIR=${pipe_prefix}/${MCUDIR}
+fi
+
+if test "x$records_prefix" = "x"; then
+  MCU_RECORDS_DIR=${MCU_INSTALLPREFIX}/records
+else
+  MCU_RECORDS_DIR=${records_prefix}/${MCUDIR}
+fi
+
 
 AC_SUBST(MCUDIR)
 AC_SUBST(MCU_LINK_DIR)
 AC_SUBST(MCU_BIN_DIR)
-AC_SUBST(MCU_LIB_DIR)
 AC_SUBST(MCU_CONFIG_DIR)
 AC_SUBST(MCU_PIPE_DIR)
 AC_SUBST(MCU_RESOURCE_DIR)
