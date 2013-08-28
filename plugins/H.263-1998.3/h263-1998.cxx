@@ -239,11 +239,7 @@ H263_Base_EncoderContext::~H263_Base_EncoderContext()
   free(_inputFrameBuffer);
 }
 
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54,59,0)
-bool H263_Base_EncoderContext::Open(AVCodecID codecId)
-#else
 bool H263_Base_EncoderContext::Open(const char *codec_name)
-#endif
 {
   TRACE_AND_LOG(tracer, 1, "Opening encoder");
 
