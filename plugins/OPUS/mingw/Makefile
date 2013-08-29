@@ -15,8 +15,8 @@ PLUGINEXT	=dll
 STDCCFLAGS	+=-fPIC -g
 EXTRACFLAGS     =-I/usr/local/include
 #WARNINGS	=-Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -Wshadow
-CFLAGS		=-O2 -g $(WARNINGS) -DOPUS_BUILD -DVAR_ARRAYS
-LDFLAGS  	=-L/usr/local/lib -static -lopus
+CFLAGS		=-O2 -g $(WARNINGS) -DOPUS_BUILD -DVAR_ARRAYS -DLINK_OPUS_FLAG
+LDFLAGS  	=-L/local/lib -lopus
 
 SRCS	= ../opuscodec.cxx
 

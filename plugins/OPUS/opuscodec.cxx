@@ -14,7 +14,11 @@
 #include "codec/opalplugin.hpp"
 #include "codec/plugin-config.h"
 
-#include "src/include/opus.h"
+#ifdef LINK_OPUS_FLAG
+#  include <opus/opus.h>
+#else
+#  include "src/include/opus.h"
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
