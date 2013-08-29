@@ -976,7 +976,7 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
                                    NTATAG_STATELESS(1),
                                    SIPTAG_CONTACT(contact_t),
                                    SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
-                                   TAG_END())));
+                                   TAG_END())))
     goto err;
 
 //  msg_destroy(msg);
