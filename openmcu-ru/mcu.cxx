@@ -1187,8 +1187,14 @@ WelcomePage::WelcomePage(OpenMCU & _app, PHTTPAuthority & auth)
 
 BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
 {
+  PString peerAddr  = "N/A",
+          localAddr = "127.0.0.1";
+  WORD    localPort = 80;
   { PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
     if(!CheckAuthority(server, *req, connectInfo)) {delete req; return FALSE;}
+    if(req->origin != 0) peerAddr=req->origin.AsString();
+    if(req->localAddr != 0) localAddr=req->localAddr.AsString();
+    if(req->localPort != 0) localPort=req->localPort;
     delete req;
   }
   PStringToString data;
@@ -1197,6 +1203,11 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
   }
   PStringStream shtml;
   BeginPage(shtml,"OpenMCU-ru","window.l_welcome","window.l_info_welcome");
+
+  PString timeFormat = "yyyyMMdd hhmmss z";
+  PTime now;
+  PTimeInterval upTime = now - OpenMCU::Current().GetStartTime();
+
   shtml << "<br><b>Monitor Text (<span style='cursor:pointer;text-decoration:underline' onclick='javascript:{if(document.selection){var range=document.body.createTextRange();range.moveToElementText(document.getElementById(\"monitorTextId\"));range.select();}else if(window.getSelection){var range=document.createRange();range.selectNode(document.getElementById(\"monitorTextId\"));window.getSelection().addRange(range);}}'>select all</span>)</b><div style='padding:5px;border:1px dotted #595;width:100%;height:auto;max-height:300px;overflow:auto'><pre style='margin:0px;padding:0px' id='monitorTextId'>"
 #  ifdef GIT_REVISION
 #    define _QUOTE_MACRO_VALUE1(x) #x
@@ -1205,6 +1216,23 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
 #    undef _QUOTE_MACRO_VALUE
 #    undef _QUOTE_MACRO_VALUE1
 #  endif
+
+              << "Program: "          << OpenMCU::Current().GetProductName() << "\n"
+              << "Version: "          << OpenMCU::Current().GetVersion(TRUE) << "\n"
+              << "Manufacturer: "     << OpenMCU::Current().GetManufacturer() << "\n"
+              << "OS: "               << OpenMCU::Current().GetOSClass() << " " << OpenMCU::Current().GetOSName() << "\n"
+              << "OS Version: "       << OpenMCU::Current().GetOSVersion() << "\n"
+              << "Hardware: "         << OpenMCU::Current().GetOSHardware() << "\n"
+              << "Compilation date: " << OpenMCU::Current().GetCompilationDate().AsString(timeFormat, PTime::GMT) << "\n"
+              << "Start Date: "       << OpenMCU::Current().GetStartTime().AsString(timeFormat, PTime::GMT) << "\n"
+              << "Current Date: "     << now.AsString(timeFormat, PTime::GMT) << "\n"
+              << "Up time: "          << upTime << "\n"
+              << "Peer Addr: "        << peerAddr << "\n"
+              << "Local Host: "       << PIPSocket::GetHostName() << "\n"
+              << "Local Addr: "       << localAddr << "\n"
+              << "Local Port: "       << localPort << "\n"
+
+
         << app.GetEndpoint().GetMonitorText() << "</pre></div>";
   EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());
   { PStringStream message; PTime now; message
