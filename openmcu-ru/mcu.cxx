@@ -325,6 +325,8 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   PTrace::Initialise(TraceLevel,"trace.txt");
 #  endif
 
+  PTrace::SetOptions(PTrace::FileAndLine);
+
 #  ifdef GIT_REVISION
 #    define _QUOTE_MACRO_VALUE1(x) #x
 #    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)

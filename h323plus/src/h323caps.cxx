@@ -3536,7 +3536,10 @@ H323Capability * H323Capabilities::FindCapability(const H245_Capability & cap) c
           for(PINDEX i=0; i<table.GetSize(); i++) \
           { \
             H323Capability & capability = table[i]; \
-            if(capability.GetFormatName().Find(mycap) == 0) \
+            PString tCap=capability.GetFormatName(); \
+            tCap=tCap.RightTrim(); \
+            if(tCap.Right(4)=="{sw}") tCap=tCap.Left(tCap.GetLength()-4); \
+            if(tCap == mycap) \
             { \
               PTRACE(3, "H323\tFound capability*: " << table[i]); \
               return &capability; \
