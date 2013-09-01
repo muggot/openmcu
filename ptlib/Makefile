@@ -213,9 +213,9 @@
 PREFIX=/usr/local
 exec_prefix = ${PREFIX}
 LIBDIR=${exec_prefix}/lib
-export PTLIBDIR=/root/openmcu/ptlib
+export PTLIBDIR=/opt/git/test/ptlib
 
-INSTALL=/usr/bin/ginstall -c
+INSTALL=/usr/bin/install -c
 
 default :: optshared
 
@@ -275,6 +275,7 @@ install:
 		ln -sf $(PTLIB_FILE) libpt.so \
 	)
 ifeq (1, $(HAS_PLUGINS))
+	if test -e plugins/ptlib/device/; then \
 	cd plugins/ptlib/device/ ; \
 	( for dir in ./* ;\
 		do mkdir -p $(DESTDIR)$(LIBDIR)/ptlib/devices/$$dir ; \
@@ -282,7 +283,8 @@ ifeq (1, $(HAS_PLUGINS))
 		(for fn in ./$$dir/*.so ; \
 			do $(INSTALL) -m 444 $$fn $(DESTDIR)$(LIBDIR)/ptlib/devices/$$dir; \
 		done ); \
-	done )
+	done ); \
+	fi
 endif
 	$(INSTALL) -m 444 include/ptlib.h                $(DESTDIR)$(PREFIX)/include
 	$(INSTALL) -m 444 include/ptbuildopts.h          $(DESTDIR)$(PREFIX)/include
