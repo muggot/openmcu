@@ -311,6 +311,5 @@ uninstall:
 	rm -f $(DESTDIR)${exec_prefix}/lib/$(PTLIB_FILE)* \
               ${exec_prefix}/lib/libpt.so 
 	rm -f $(DESTDIR)$(PREFIX)/bin/ptlib-config
-	rm -rf $(DESTDIR)$(PREFIX)/lib/ptlib
 
 # End of Makefile.in
