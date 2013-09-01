@@ -533,6 +533,17 @@ AC_SUBST(PLUGIN_DIRS)
   AC_SUBST(PLUGINLIBDIR, ${PTLIB_INSTALLPREFIX}/lib)
 #fi
 
+dnl ########################################################################
+dnl configure rpath
+
+rpath=yes
+AC_ARG_ENABLE(separator, [    ])
+AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths],[40],[100])], [rpath="no"],[rpath="yes"])
+
+AC_SUBST(RPATH)
+if test "${rpath}" = "yes"; then
+  RPATH="-L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib -Wl,-R${PTLIB_INSTALLPREFIX}/lib,-R${H323PLUS_INSTALLPREFIX}/lib"
+fi
 
 dnl ########################################################################
 dnl final declarations

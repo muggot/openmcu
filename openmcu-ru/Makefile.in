@@ -10,7 +10,7 @@ PROG		= openmcu-ru
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx
 HDRS		:= conference.h config.h filemembers.h h323.h mcu.h version.h sip.h
 
-LDFLAGS        += -L@PTLIB_INSTALLPREFIX@/lib -L@H323PLUS_INSTALLPREFIX@/lib -Wl,-R@PTLIB_INSTALLPREFIX@/lib,-R@H323PLUS_INSTALLPREFIX@/lib
+LDFLAGS        += @RPATH@
 LDLIBS		= @LDLIBS@
 STDCCFLAGS	= @STDCCFLAGS@ -I../h323plus/include -D__STDC_CONSTANT_MACROS
 
