@@ -1526,30 +1526,10 @@ ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId 
 
 ConferenceMember::~ConferenceMember()
 {
+  muteIncoming = TRUE;
 #if OPENMCU_VIDEO
   delete videoMixer;
 #endif
-  if (lock.Wait())
-  { PTRACE(6,"ConferenceMember\tRemoving resample buffers");
-    for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t)
-    {
-#if USE_SWRESAMPLE
-      if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
-#elif USE_AVRESAMPLE
-      if(t->second->swrc != NULL) avresample_free(&(t->second->swrc));
-#elif USE_LIBSAMPLERATE
-      if(t->second->swrc != NULL) src_delete(t->second->swrc);
-      t->second->swrc = NULL;
-#endif
-      delete t->second; t->second=NULL;
-    }
-    PTRACE(6,"ConferenceMember\tResample buffers removed OK");
-    lock.Signal();
-  }
-  else
-  {
-    PTRACE(2,"ConferenceMember\tCould not lock at Destructor - keep resample buffers undeleted (memory leak)");
-  }
 }   
 
 
@@ -1601,7 +1581,27 @@ void ConferenceMember::RemoveAllConnections()
   if (lock.Wait(TRUE)) {
     memberList.clear();
     connectionList.clear();
+    PTRACE(6,"ConferenceMember\tRemoving resampling buffers from connection " << id);
+    for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t)
+    if(t->second != NULL) {
+#if USE_SWRESAMPLE
+      if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
+      t->second->swrc = NULL;
+#elif USE_AVRESAMPLE
+      if(t->second->swrc != NULL) avresample_free(&(t->second->swrc));
+      t->second->swrc = NULL;
+#elif USE_LIBSAMPLERATE
+      if(t->second->swrc != NULL) src_delete(t->second->swrc);
+      t->second->swrc = NULL;
+#endif
+      delete t->second; t->second=NULL;
+    }
+    PTRACE(6,"ConferenceMember\tResampling buffers removed");
     lock.Signal(TRUE);
+  }
+  else
+  {
+    PTRACE(2,"ConferenceMember\tCould not lock at Destructor - keep resample buffers undeleted (memory leak)");
   }
 }
 
@@ -1711,13 +1711,15 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
       {
 #if USE_SWRESAMPLE
         if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
+        t->second->swrc = NULL;
 #elif USE_AVRESAMPLE
         if(t->second->swrc != NULL) avresample_free(&(t->second->swrc));
+        t->second->swrc = NULL;
 #elif USE_LIBSAMPLERATE
         if(t->second->swrc != NULL) src_delete(t->second->swrc);
         t->second->swrc = NULL;
 #endif
-        delete t->second;
+        delete t->second; t->second=NULL;
         bufferList.erase(t->first);
       }
 
