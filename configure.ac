@@ -540,8 +540,20 @@ rpath=yes
 AC_ARG_ENABLE(separator, [    ])
 AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths],[40],[100])], [rpath="no"],[rpath="yes"])
 
+LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
+rpath_ptlib=yes
+rpath_h323plus=yes
+for path in ${LD_PATH} ; do
+  if test "$path" = "${PTLIB_INSTALLPREFIX}/lib"; then
+    rpath_ptlib=no
+  fi
+  if test "$path" = "${H323PLUS_INSTALLPREFIX}/lib"; then
+    rpath_h323plus=no
+  fi
+done
+
 AC_SUBST(RPATH)
-if test "${rpath}" = "yes"; then
+if test "${rpath}" = "yes" && test "${rpath_ptlib}" = "yes" && test "${rpath_h323plus}" = "yes"; then
   RPATH="-L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib -Wl,-R${PTLIB_INSTALLPREFIX}/lib,-R${H323PLUS_INSTALLPREFIX}/lib"
 fi
 
