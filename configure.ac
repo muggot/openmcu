@@ -558,6 +558,22 @@ if test "${rpath}" = "yes" && test "${rpath_ptlib}" = "yes" && test "${rpath_h32
 fi
 
 dnl ########################################################################
+dnl configure static linking
+
+static=no
+AC_ARG_ENABLE(static, [AS_HELP_STRING([--enable-static],[build static libraries (default disabled)],[40],[100])], [static="yes"],[static="no"])
+
+AM_CONDITIONAL(DISABLE_STATIC, [test "${static}" = no])
+
+AC_SUBST(MCULIBS)
+if test "${static}" = "yes"; then
+  RPATH=
+  MCULIBS="-Wl,--start-group ../ptlib/lib/libpt_${OSTYPE}_${MACHTYPE}_r_s.a ../h323plus/lib/libh323_${OSTYPE}_${MACHTYPE}_r_s.a -Wl,--end-group"
+else
+  MCULIBS="-L../ptlib/lib -L../h323plus/lib -lh323_${OSTYPE}_${MACHTYPE}_r -lpt_${OSTYPE}_${MACHTYPE}_r"
+fi
+
+dnl ########################################################################
 dnl final declarations
 
 export PWLIBDIR=`pwd`/ptlib

@@ -5,20 +5,15 @@
 #
 
 PREFIX          = /usr/local
-MACHTYPE	= ${x86:-x86}
+OSTYPE          = linux
+MACHTYPE	= x86
 PROG		= openmcu-ru
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx
-HDRS		:= conference.h config.h filemembers.h h323.h mcu.h version.h sip.h
 
+CXX		= g++
 LDFLAGS        += -L/usr/local/lib -L/usr/local/lib -Wl,-R/usr/local/lib,-R/usr/local/lib
-LDLIBS		=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua
-STDCCFLAGS	=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -I../h323plus/include -D__STDC_CONSTANT_MACROS
-
-ifndef OPENH323DIR
-OPENH323DIR=../h323plus
-endif
-
-include $(OPENH323DIR)/openh323u.mak
+LDLIBS		=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua -lpthread -lresolv -ldl -L../ptlib/lib -L../h323plus/lib -lh323_linux_x86_r -lpt_linux_x86_r
+STDCCFLAGS	=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS
 
 CONFIG_FILES=capability.conf \
 layouts.conf \
@@ -56,6 +51,18 @@ leaving.wav \
 locale_ru.js \
 locale_en.js
 
+OBJDIR	= ./obj
+OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdir $(SOURCES)))))
+
+$(OBJDIR)/%.o : %.cxx
+	@mkdir -p $(OBJDIR) >/dev/null 2>&1
+	$(CXX) $(EXTRACCFLAGS) $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
+
+all: $(OBJDIR)/$(PROG)
+
+$(OBJDIR)/$(PROG): $(OBJECTS)
+	$(CXX) $(LDSO) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LDLIBS) $(ENDLDLIBS) $(ENDLDFLAGS)
+
 install:
 	mkdir -p $(DESTDIR)/usr/local/bin
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru
@@ -66,18 +73,18 @@ install:
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/records
 	mkdir -p $(DESTDIR)/usr/local/share/openmcu-ru/resource
 	( for file in ${CONFIG_FILES}; \
-	    do $(INSTALL) -m 644 conf/$$file $(DESTDIR)/usr/local/share/openmcu-ru/config; \
+	    do install -m 644 conf/$$file $(DESTDIR)/usr/local/share/openmcu-ru/config; \
 	done )
 	( for file in ${RESOURCE_FILES}; \
-	    do $(INSTALL) -m 644 resource/$$file $(DESTDIR)/usr/local/share/openmcu-ru/resource; \
+	    do install -m 644 resource/$$file $(DESTDIR)/usr/local/share/openmcu-ru/resource; \
 	done )
-	$(INSTALL) -m 755 conf/web_stream_start $(DESTDIR)/usr/local/share/openmcu-ru/config
-	$(INSTALL) -m 755 obj_linux_$(MACHTYPE)_r/$(PROG) $(DESTDIR)/usr/local/bin
-	$(INSTALL) -m 644 resource/Russo_One.ttf $(DESTDIR)/usr/local/share/openmcu-ru/font
-	$(INSTALL) -m 644 ../AUTHORS $(DESTDIR)/usr/local/share/openmcu-ru
-	$(INSTALL) -m 644 ../COPYING $(DESTDIR)/usr/local/share/openmcu-ru
-	$(INSTALL) -m 644 ../NEWS $(DESTDIR)/usr/local/share/openmcu-ru
-	$(INSTALL) -m 644 ../README $(DESTDIR)/usr/local/share/openmcu-ru
+	install -m 755 conf/web_stream_start $(DESTDIR)/usr/local/share/openmcu-ru/config
+	install -m 755 $(OBJDIR)/$(PROG) $(DESTDIR)/usr/local/bin
+	install -m 644 resource/Russo_One.ttf $(DESTDIR)/usr/local/share/openmcu-ru/font
+	install -m 644 ../AUTHORS $(DESTDIR)/usr/local/share/openmcu-ru
+	install -m 644 ../COPYING $(DESTDIR)/usr/local/share/openmcu-ru
+	install -m 644 ../NEWS $(DESTDIR)/usr/local/share/openmcu-ru
+	install -m 644 ../README $(DESTDIR)/usr/local/share/openmcu-ru
 
 uninstall:
 	rm -f $(DESTDIR)/usr/local/bin/openmcu-ru
@@ -89,3 +96,6 @@ uninstall:
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/COPYING
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/NEWS
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/README
+
+clean:
+	rm -rf $(OBJDIR)

@@ -5,22 +5,26 @@ SUBDIRS 	= @PTLIBDIR@ @H323PLUSDIR@ @MCUDIR@
 all:
 	($(MAKE) $(MAKEFLAGS) opt -C @PTLIBDIR@)    || exit $$?
 	($(MAKE) $(MAKEFLAGS)     -C @H323PLUSDIR@) || exit $$?
-	($(MAKE) $(MAKEFLAGS) opt -C @MCUDIR@)      || exit $$?
+	($(MAKE) $(MAKEFLAGS)     -C @MCUDIR@)      || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) $(MAKEFLAGS) -C $$dir) || exit $$?; \
 	done )
 
 install:
+if DISABLE_STATIC
 	($(MAKE) install -C @PTLIBDIR@)    || exit $$?
 	($(MAKE) install -C @H323PLUSDIR@) || exit $$?
+endif
 	($(MAKE) install -C @MCUDIR@)      || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) install -C $$dir) || exit $$?; \
 	done )
 
 uninstall:
+if DISABLE_STATIC
 	($(MAKE) uninstall -C @PTLIBDIR@)    || exit $$?
 	($(MAKE) uninstall -C @H323PLUSDIR@) || exit $$?
+endif
 	($(MAKE) uninstall -C @MCUDIR@)      || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) uninstall -C $$dir) || exit $$?; \
@@ -41,7 +45,7 @@ clean:
 	cd @H323PLUSDIR@ && $(MAKE) $(MAKEFLAGS)
 
 @MCUDIR@:
-	cd @MCUDIR@ && $(MAKE) $(MAKEFLAGS) opt
+	cd @MCUDIR@ && $(MAKE) $(MAKEFLAGS)
 
 h263:
 	cd @PLUGIN_H263_DIR@ && $(MAKE) $(MAKEFLAGS)
