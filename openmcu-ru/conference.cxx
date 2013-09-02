@@ -1037,6 +1037,23 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   if (!BeforeMemberJoining(memberToAdd))
     return FALSE;
 
+  memberToAdd->SetName();
+
+  { // check for duplicate name or very fast reconnect:
+    Conference::MemberNameList::const_iterator s = memberNameList.find(memberToAdd->GetName());
+    if(s != memberNameList.end())
+    {
+      if(s->second != NULL)
+      {
+        PString username=memberToAdd->GetName(); username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
+        PStringStream msg;
+        msg << "Incoming call from " << username << " REJECTED - DUPLICATE NAME";
+        OpenMCU::Current().HttpWriteEventRoom(msg, number);
+        return FALSE;
+      }
+    }
+  }
+
   // add the member to the conference
   if (!memberToAdd->AddToConference(this))
     return FALSE;
@@ -1123,7 +1140,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     mcuMonitorRunning = TRUE;
   }
 
-  memberToAdd->SetName();
+//  memberToAdd->SetName();
 
   PStringStream msg;
 
