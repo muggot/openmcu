@@ -62,10 +62,9 @@
 # Updated Makefiles and fixed Linux problems
 #
 #
-AC_PLUGIN_DIR=ptlib/codecs/audio
-prefix=/usr/local
+AC_PLUGIN_DIR=codecs/audio
+prefix=/usr/local/lib/ptlib
 exec_prefix = ${prefix}
-LIBDIR=/usr/local/lib
 
 SONAME	= ilbccodec
 
@@ -76,7 +75,7 @@ CFLAGS	 	=-g -O2
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=-fPIC
+STDCCFLAGS	= -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -fPIC
 LDFLAGS		= -I/usr/local/lib
 
 SRCS	= ilbccodec.c $(SRCDIR)/anaFilter.c $(SRCDIR)/constants.c $(SRCDIR)/createCB.c $(SRCDIR)/doCPLC.c \
@@ -103,11 +102,11 @@ $(PLUGIN): $(OBJECTS)
 	$(CC) $(LDSO) -o $@ $^
 
 install:
-	mkdir -p $(DESTDIR)$(LIBDIR)/$(AC_PLUGIN_DIR)
-	cp $(PLUGIN) $(DESTDIR)$(LIBDIR)/$(AC_PLUGIN_DIR)
+	mkdir -p $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)
+	cp $(PLUGIN) $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(DESTDIR)$(LIBDIR)/$(AC_PLUGIN_DIR)/$(PLUGIN)
+	rm -f $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -f $(OBJECTS) $(PLUGIN)

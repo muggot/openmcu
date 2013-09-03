@@ -62,10 +62,9 @@
 # Updated Makefiles and fixed Linux problems
 #
 #
-AC_PLUGIN_DIR=ptlib/codecs/audio
-prefix=@INSTALLPREFIX@
+AC_PLUGIN_DIR=@AC_PLUGIN_DIR@
+prefix=@PLUGIN_INSTALLPREFIX@
 exec_prefix = ${prefix}
-LIBDIR=@PLUGINLIBDIR@
 
 SONAME	= ilbccodec
 
@@ -103,11 +102,11 @@ $(PLUGIN): $(OBJECTS)
 	$(CC) $(LDSO) -o $@ $^
 
 install:
-	mkdir -p $(DESTDIR)$(LIBDIR)/$(AC_PLUGIN_DIR)
-	cp $(PLUGIN) $(DESTDIR)$(LIBDIR)/$(AC_PLUGIN_DIR)
+	mkdir -p $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)
+	cp $(PLUGIN) $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(DESTDIR)$(LIBDIR)/$(AC_PLUGIN_DIR)/$(PLUGIN)
+	rm -f $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -f $(OBJECTS) $(PLUGIN)

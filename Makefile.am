@@ -11,7 +11,7 @@ all:
 	done )
 
 install:
-if DISABLE_STATIC
+if ENABLE_DEVEL
 	($(MAKE) install -C @PTLIBDIR@)    || exit $$?
 	($(MAKE) install -C @H323PLUSDIR@) || exit $$?
 endif
@@ -21,7 +21,7 @@ endif
 	done )
 
 uninstall:
-if DISABLE_STATIC
+if ENABLE_DEVEL
 	($(MAKE) uninstall -C @PTLIBDIR@)    || exit $$?
 	($(MAKE) uninstall -C @H323PLUSDIR@) || exit $$?
 endif

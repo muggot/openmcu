@@ -20,10 +20,9 @@
 # Contributor(s): Matthias Schneider.
 #
 
-VC_PLUGIN_DIR=ptlib/codecs/video
-prefix=/usr/local
+VC_PLUGIN_DIR=codecs/video
+prefix=/usr/local/lib/ptlib
 exec_prefix=${prefix}
-libdir=/usr/local/lib
 target_os=linux-gnu
 
 DL_LIBS =-ldl
@@ -39,7 +38,7 @@ CFLAGS	 	= -Os
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	= -fPIC
+STDCCFLAGS	=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -fPIC
 LIBAVCODEC_CFLAGS=-I${prefix}/include  
 LDFLAGS		+=-L${prefix}/lib -lavcodec -lavutil
 EXTRACFLAGS	= -I$(PLUGINDIR) -D__STDC_CONSTANT_MACROS
@@ -85,11 +84,11 @@ else
 endif
     
 install: $(PLUGIN)
-	mkdir -p $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)
-	install $(PLUGIN) $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)
+	mkdir -p $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)
+	install $(PLUGIN) $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)/$(PLUGIN)
+	rm -f $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -f $(OBJECTS) $(PLUGIN)

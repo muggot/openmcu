@@ -20,10 +20,9 @@
 # Contributor(s): Matthias Schneider.
 #
 
-VC_PLUGIN_DIR=ptlib/codecs/video
-prefix=@INSTALLPREFIX@
+VC_PLUGIN_DIR=@VC_PLUGIN_DIR@
+prefix=@PLUGIN_INSTALLPREFIX@
 exec_prefix=${prefix}
-libdir=@PLUGINLIBDIR@
 target_os=linux-gnu
 
 DL_LIBS =-ldl
@@ -85,11 +84,11 @@ else
 endif
     
 install: $(PLUGIN)
-	mkdir -p $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)
-	install $(PLUGIN) $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)
+	mkdir -p $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)
+	install $(PLUGIN) $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)/$(PLUGIN)
+	rm -f $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -f $(OBJECTS) $(PLUGIN)

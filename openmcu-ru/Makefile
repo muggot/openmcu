@@ -12,8 +12,9 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
 
 CXX		= g++
 LDFLAGS        += -L/usr/local/lib -L/usr/local/lib -Wl,-R/usr/local/lib,-R/usr/local/lib
-LDLIBS		=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua -lpthread -lresolv -ldl -L../ptlib/lib -L../h323plus/lib -lh323_linux_x86_r -lpt_linux_x86_r
-STDCCFLAGS	=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS
+LDLIBS	       +=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua -lpthread -lresolv -ldl -L../ptlib/lib -L../h323plus/lib -lh323_linux_x86_r -lpt_linux_x86_r
+STDCCFLAGS     +=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12    -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS
+STDCXXFLAGS    +=  
 
 CONFIG_FILES=capability.conf \
 layouts.conf \
@@ -56,7 +57,7 @@ OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdi
 
 $(OBJDIR)/%.o : %.cxx
 	@mkdir -p $(OBJDIR) >/dev/null 2>&1
-	$(CXX) $(EXTRACCFLAGS) $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
+	$(CXX) $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) $(STDCXXFLAGS) -c $< -o $@
 
 all: $(OBJDIR)/$(PROG)
 
@@ -85,6 +86,13 @@ install:
 	install -m 644 ../COPYING $(DESTDIR)/usr/local/share/openmcu-ru
 	install -m 644 ../NEWS $(DESTDIR)/usr/local/share/openmcu-ru
 	install -m 644 ../README $(DESTDIR)/usr/local/share/openmcu-ru
+ifeq (1, 0)
+ifeq (0, 0)
+	mkdir -p $(DESTDIR)/usr/local/lib
+	install -m 644 ../ptlib/lib/libpt_${OSTYPE}_${MACHTYPE}_r.so.2.0.1 $(DESTDIR)/usr/local/lib
+	install -m 644 ../h323plus/lib/libh323_${OSTYPE}_${MACHTYPE}_r.so.1.20.2 $(DESTDIR)/usr/local/lib
+endif
+endif
 
 uninstall:
 	rm -f $(DESTDIR)/usr/local/bin/openmcu-ru
@@ -96,6 +104,12 @@ uninstall:
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/COPYING
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/NEWS
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/README
+ifeq (1, 0)
+ifeq (0, 0)
+	rm -f $(DESTDIR)/usr/local/lib/libpt_${OSTYPE}_${MACHTYPE}_r.so.2.0.1
+	rm -f $(DESTDIR)/usr/local/lib/libh323_${OSTYPE}_${MACHTYPE}_r.so.1.20.2
+endif
+endif
 
 clean:
 	rm -rf $(OBJDIR)

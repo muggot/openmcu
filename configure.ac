@@ -4,7 +4,6 @@ dnl INIT
 AC_INIT([OpenMCU-ru],[3.1.0],[openmcu-ru])
 AC_CANONICAL_TARGET()
 AM_INIT_AUTOMAKE()
-#AM_EXTRA_RECURSIVE_TARGETS(opt)
 
 AC_PROG_CXX
 AC_LANG(C++)
@@ -38,7 +37,7 @@ else
    INSTALLPREFIX="${prefix}"
 fi
 AC_SUBST(INSTALLPREFIX)
-export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:$INSTALLPREFIX/lib/pkgconfig
+export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:$INSTALLPREFIX/lib/pkgconfig
 
 
 dnl ########################################################################
@@ -322,15 +321,13 @@ else
   AC_MSG_ERROR(libsofia-sip-ua not found!)
 fi
 
-
 dnl ########################################################################
-dnl configuration openmcu-ru
-
-MCUDIR=openmcu-ru
+dnl configuration ptlib/h323plus
 
 AC_ARG_WITH(separator,[ ])
 AC_ARG_WITH(ptlib_prefix, [AS_HELP_STRING([--with-ptlib-prefix],[PTLib installation prefix (default =prefix)],[40],[100])], [ptlib_prefix=$withval], [ptlib_prefix=""])
 AC_ARG_WITH(h323plus_prefix, [AS_HELP_STRING([--with-h323plus-prefix],[H323Plus installation prefix (default =prefix)],[40],[100])], [h323plus_prefix=$withval], [h323plus_prefix=""])
+AC_ARG_WITH(plugins_prefix, [AS_HELP_STRING([--with-plugins-prefix],[plugins installation prefix (default =prefix)],[40],[100])], [plugins_prefix=$withval], [plugins_prefix=""])
 
 if test "x$ptlib_prefix" = "x"; then
    PTLIB_INSTALLPREFIX=${INSTALLPREFIX}
@@ -344,53 +341,73 @@ else
    H323PLUS_INSTALLPREFIX=${h323plus_prefix}
 fi
 
-if test ${INSTALLPREFIX} = /usr || test ${INSTALLPREFIX} = /usr/local ; then
-    MCU_INSTALLPREFIX=${INSTALLPREFIX}/share/${MCUDIR}
-    MCU_BIN_DIR=${INSTALLPREFIX}/bin
+PTLIB_INSTALLPREFIX=`echo ${PTLIB_INSTALLPREFIX} | sed "s/\/\//\//g"`
+H323PLUS_INSTALLPREFIX=`echo ${H323PLUS_INSTALLPREFIX} | sed "s/\/\//\//g"`
+
+if test "x$plugins_prefix" = "x"; then
+  P_DEFAULT_PLUGIN_DIR=${PTLIB_INSTALLPREFIX}/lib/ptlib
+  PLUGIN_INSTALLPREFIX=${P_DEFAULT_PLUGIN_DIR}
+  AC_PLUGIN_DIR=codecs/audio
+  VC_PLUGIN_DIR=codecs/video
 else
-    MCU_INSTALLPREFIX=${INSTALLPREFIX}
-    MCU_BIN_DIR=${INSTALLPREFIX}
+  P_DEFAULT_PLUGIN_DIR=${plugins_prefix}
+  PLUGIN_INSTALLPREFIX=${P_DEFAULT_PLUGIN_DIR}
+  AC_PLUGIN_DIR=codecs/audio
+  VC_PLUGIN_DIR=codecs/video
 fi
 
-AC_SUBST(MCU_INSTALLPREFIX)
+#if test "x$LIB64" != "x" ; then
+#  PLUGIN_INSTALLPREFIX="${PLUGIN_INSTALLPREFIX}64"
+#fi
+
 AC_SUBST(PTLIB_INSTALLPREFIX)
 AC_SUBST(H323PLUS_INSTALLPREFIX)
+AC_SUBST(P_DEFAULT_PLUGIN_DIR)
+AC_SUBST(PLUGIN_INSTALLPREFIX)
+AC_SUBST(AC_PLUGIN_DIR)
+AC_SUBST(VC_PLUGIN_DIR)
 
+dnl ########################################################################
+dnl configuration openmcu-ru
+
+MCUDIR=openmcu-ru
 AC_ARG_WITH(separator,[  ])
-AC_ARG_WITH(config_prefix, [AS_HELP_STRING([--with-config-prefix],[config directory],[40],[100])], [config_prefix=$withval])
-AC_ARG_WITH(log_prefix, [AS_HELP_STRING([--with-log-prefix],[log directory],[40],[100])], [log_prefix=$withval])
-AC_ARG_WITH(pipe_prefix, [AS_HELP_STRING([--with-pipe-prefix],[pipe directory],[40],[100])], [pipe_prefix=$withval])
-AC_ARG_WITH(records_prefix, [AS_HELP_STRING([--with-records-prefix],[records directory],[40],[100])], [records_prefix=$withval])
+AC_ARG_WITH(config_prefix, [AS_HELP_STRING([--with-config-prefix],[config directory prefix],[40],[100])], [config_prefix=$withval])
+AC_ARG_WITH(log_prefix, [AS_HELP_STRING([--with-log-prefix],[log directory prefix],[40],[100])], [log_prefix=$withval])
+AC_ARG_WITH(pipe_prefix, [AS_HELP_STRING([--with-pipe-prefix],[pipe directory prefix],[40],[100])], [pipe_prefix=$withval])
+AC_ARG_WITH(records_prefix, [AS_HELP_STRING([--with-records-prefix],[records directory prefix],[40],[100])], [records_prefix=$withval])
 
-MCU_RESOURCE_DIR=${MCU_INSTALLPREFIX}/resource
-MCU_FONT_DIR=${MCU_INSTALLPREFIX}/font
+MCU_BIN_DIR=${INSTALLPREFIX}/bin
+MCU_SHARE_DIR=${INSTALLPREFIX}/share/${MCUDIR}
+MCU_RESOURCE_DIR=${MCU_SHARE_DIR}/resource
+MCU_FONT_DIR=${MCU_SHARE_DIR}/font
 
 if test "x$config_prefix" = "x"; then
-  MCU_CONFIG_DIR=${MCU_INSTALLPREFIX}/config
+  MCU_CONFIG_DIR=${MCU_SHARE_DIR}/config
 else
   MCU_CONFIG_DIR=${config_prefix}/${MCUDIR}
 fi
 
 if test "x$log_prefix" = "x"; then
-  MCU_LOG_DIR=${MCU_INSTALLPREFIX}/log
+  MCU_LOG_DIR=${MCU_SHARE_DIR}/log
 else
   MCU_LOG_DIR=${log_prefix}/${MCUDIR}
 fi
 
 if test "x$pipe_prefix" = "x"; then
-  MCU_PIPE_DIR=${MCU_INSTALLPREFIX}/pipe
+  MCU_PIPE_DIR=${MCU_SHARE_DIR}/pipe
 else
   MCU_PIPE_DIR=${pipe_prefix}/${MCUDIR}
 fi
 
 if test "x$records_prefix" = "x"; then
-  MCU_RECORDS_DIR=${MCU_INSTALLPREFIX}/records
+  MCU_RECORDS_DIR=${MCU_SHARE_DIR}/records
 else
   MCU_RECORDS_DIR=${records_prefix}/${MCUDIR}
 fi
 
-
 AC_SUBST(MCUDIR)
+AC_SUBST(MCU_SHARE_DIR)
 AC_SUBST(MCU_BIN_DIR)
 AC_SUBST(MCU_CONFIG_DIR)
 AC_SUBST(MCU_PIPE_DIR)
@@ -527,18 +544,26 @@ fi
 
 AC_SUBST(PLUGIN_DIRS)
 
-#if test "x$LIB64" != "x" ; then
-#  AC_SUBST(PLUGINLIBDIR, ${PTLIB_INSTALLPREFIX}/lib64)
-#else
-  AC_SUBST(PLUGINLIBDIR, ${PTLIB_INSTALLPREFIX}/lib)
-#fi
+
+dnl ########################################################################
+dnl configure development files
+
+devel=yes
+AC_ARG_ENABLE(separator, [    ])
+AC_ARG_ENABLE(devel, [AS_HELP_STRING([--enable-devel],[install development files (default enabled)],[40],[100])], [devel="$enableval"])
+if test "${devel}" = yes; then
+  ENABLE_DEVEL=1
+else
+  ENABLE_DEVEL=0
+fi
+
+AC_SUBST(ENABLE_DEVEL)
 
 dnl ########################################################################
 dnl configure rpath
 
 rpath=yes
-AC_ARG_ENABLE(separator, [    ])
-AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths],[40],[100])], [rpath="no"],[rpath="yes"])
+AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="no"],[rpath="yes"])
 
 LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
 rpath_ptlib=yes
@@ -561,25 +586,26 @@ dnl ########################################################################
 dnl configure static linking
 
 static=no
-AC_ARG_ENABLE(static, [AS_HELP_STRING([--enable-static],[build static libraries (default disabled)],[40],[100])], [static="yes"],[static="no"])
+AC_ARG_ENABLE(static, [AS_HELP_STRING([--enable-static],[build static linking (default disabled)],[40],[100])], [static="$enableval"])
 
-AM_CONDITIONAL(DISABLE_STATIC, [test "${static}" = no])
-
-AC_SUBST(MCULIBS)
 if test "${static}" = "yes"; then
+  ENABLE_STATIC=1
+  ENABLE_DEVEL=0
   RPATH=
   MCULIBS="-Wl,--start-group ../ptlib/lib/libpt_${OSTYPE}_${MACHTYPE}_r_s.a ../h323plus/lib/libh323_${OSTYPE}_${MACHTYPE}_r_s.a -Wl,--end-group"
 else
+  ENABLE_STATIC=0
   MCULIBS="-L../ptlib/lib -L../h323plus/lib -lh323_${OSTYPE}_${MACHTYPE}_r -lpt_${OSTYPE}_${MACHTYPE}_r"
 fi
+
+AC_SUBST(MCULIBS)
+AC_SUBST(ENABLE_STATIC)
+AM_CONDITIONAL(ENABLE_DEVEL, [test ${ENABLE_DEVEL} = 1])
 
 dnl ########################################################################
 dnl final declarations
 
 export PWLIBDIR=`pwd`/ptlib
-
-CPPFLAGS="$CPPFLAGS -I${PTLIB_INSTALLPREFIX}/include"
-LDFLAGS="$LDFLAGS -I${PTLIB_INSTALLPREFIX}/lib"
 
 AC_SUBST(STDCCFLAGS)
 AC_SUBST(STDCXXFLAGS)
@@ -592,7 +618,6 @@ AC_PROG_INSTALL
 
 AC_OUTPUT(Makefile)
 
-
 dnl ########################################################################
 dnl replace default targets
 
@@ -602,16 +627,8 @@ sed -i 's/all: all-recursive/all: all/g' Makefile
 dnl ########################################################################
 dnl replace default install path
 
-if test ${PTLIB_INSTALLPREFIX} != ${INSTALLPREFIX} ; then
-    sed -i "s#${INSTALLPREFIX}#${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/Makefile
-    sed -i "s#${INSTALLPREFIX}#${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/make/ptlib-config
-    sed -i "s#${INSTALLPREFIX}#${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/include/ptbuildopts.h
-    for dir in ${PLUGIN_DIRS}; \
-	do sed -i "s#${INSTALLPREFIX}#${PTLIB_INSTALLPREFIX}#g" ${dir}/Makefile;
-    done
-fi
-
-if test ${H323PLUS_INSTALLPREFIX} != ${INSTALLPREFIX} ; then
-    sed -i "s#${INSTALLPREFIX}#${H323PLUS_INSTALLPREFIX}#g" ${H323PLUSDIR}/Makefile
-fi
-
+sed -i "s#^PREFIX=.*#PREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/Makefile
+sed -i "s#^PTINSTDIR=.*#PTINSTDIR=${PTLIB_INSTALLPREFIX}/share/ptlib#g" ${PTLIBDIR}/make/ptlib-config
+sed -i "s#^INSTALLPREFIX=.*#INSTALLPREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/make/ptlib-config
+sed -i "s#^\#define P_DEFAULT_PLUGIN_DIR.*#\#define P_DEFAULT_PLUGIN_DIR \"${P_DEFAULT_PLUGIN_DIR}\"#g" ${PTLIBDIR}/include/ptbuildopts.h
+sed -i "s#^PREFIX=.*#PREFIX=${H323PLUS_INSTALLPREFIX}#g" ${H323PLUSDIR}/Makefile

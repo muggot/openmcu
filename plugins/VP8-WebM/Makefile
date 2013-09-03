@@ -24,10 +24,9 @@
 # $Date$
 #
 
-VC_PLUGIN_DIR=ptlib/codecs/video
-prefix=/usr/local
+VC_PLUGIN_DIR=codecs/video
+prefix=/usr/local/lib/ptlib
 exec_prefix=${prefix}
-libdir=/usr/local/lib
 target_os=linux-gnu
 
 DL_LIBS =-ldl
@@ -45,11 +44,11 @@ CFLAGS	 	= -Os
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	= -fPIC
+STDCCFLAGS	= -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -fPIC
 LDFLAGS		=-L${prefix}/lib -lvpx
 LIBAVCODEC_CFLAGS=-I${prefix}/include -I.
 
-EXTRACCFLAGS    =  $(LIBAVCODEC_CFLAGS) -I$(PLUGINDIR) -DLIB_DIR='"$(libdir)"' -DVC_PLUGIN_DIR='"$(VC_PLUGIN_DIR)"' -DLICENCE_MPL -D__STDC_CONSTANT_MACROS
+EXTRACCFLAGS    =  $(LIBAVCODEC_CFLAGS) -I$(PLUGINDIR) -DLIB_DIR='"$(prefix)"' -DVC_PLUGIN_DIR='"$(VC_PLUGIN_DIR)"' -DLICENCE_MPL -D__STDC_CONSTANT_MACROS
 
 vpath	%.cxx $(SHAREDDIR)
 vpath	%.o   $(OBJDIR)
@@ -76,12 +75,12 @@ endif
 
 install:
 	@set -e; $(foreach dir,$(SUBDIRS),if test -d ${dir} ; then $(MAKE) -C $(dir) install; fi ; )
-	mkdir -p $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)
-	install $(PLUGIN) $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)
+	mkdir -p $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)
+	install $(PLUGIN) $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)
 
 uninstall:
 	@set -e; $(foreach dir,$(SUBDIRS),if test -d ${dir} ; then $(MAKE) -C $(dir) uninstall; fi ; )
-	rm -f $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)/$(PLUGIN)
+	rm -f $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -f $(OBJECTS) $(PLUGIN)

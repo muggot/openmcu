@@ -12,8 +12,9 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
 
 CXX		= g++
 LDFLAGS        += @RPATH@
-LDLIBS		= @LDLIBS@ -lpthread -lresolv -ldl @MCULIBS@
-STDCCFLAGS	= @STDCCFLAGS@ -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS
+LDLIBS	       += @LDLIBS@ -lpthread -lresolv -ldl @MCULIBS@
+STDCCFLAGS     += @STDCCFLAGS@ @CPPFLAGS@ -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS
+STDCXXFLAGS    += @STDCXXFLAGS@ @CPPFLAGS@
 
 CONFIG_FILES=capability.conf \
 layouts.conf \
@@ -56,7 +57,7 @@ OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdi
 
 $(OBJDIR)/%.o : %.cxx
 	@mkdir -p $(OBJDIR) >/dev/null 2>&1
-	$(CXX) $(EXTRACCFLAGS) $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
+	$(CXX) $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) $(STDCXXFLAGS) -c $< -o $@
 
 all: $(OBJDIR)/$(PROG)
 
@@ -65,7 +66,7 @@ $(OBJDIR)/$(PROG): $(OBJECTS)
 
 install:
 	mkdir -p $(DESTDIR)@MCU_BIN_DIR@
-	mkdir -p $(DESTDIR)@MCU_INSTALLPREFIX@
+	mkdir -p $(DESTDIR)@MCU_SHARE_DIR@
 	mkdir -p $(DESTDIR)@MCU_CONFIG_DIR@
 	mkdir -p $(DESTDIR)@MCU_FONT_DIR@
 	mkdir -p $(DESTDIR)@MCU_LOG_DIR@
@@ -81,10 +82,17 @@ install:
 	install -m 755 conf/web_stream_start $(DESTDIR)@MCU_CONFIG_DIR@
 	install -m 755 $(OBJDIR)/$(PROG) $(DESTDIR)@MCU_BIN_DIR@
 	install -m 644 resource/Russo_One.ttf $(DESTDIR)@MCU_FONT_DIR@
-	install -m 644 ../AUTHORS $(DESTDIR)@MCU_INSTALLPREFIX@
-	install -m 644 ../COPYING $(DESTDIR)@MCU_INSTALLPREFIX@
-	install -m 644 ../NEWS $(DESTDIR)@MCU_INSTALLPREFIX@
-	install -m 644 ../README $(DESTDIR)@MCU_INSTALLPREFIX@
+	install -m 644 ../AUTHORS $(DESTDIR)@MCU_SHARE_DIR@
+	install -m 644 ../COPYING $(DESTDIR)@MCU_SHARE_DIR@
+	install -m 644 ../NEWS $(DESTDIR)@MCU_SHARE_DIR@
+	install -m 644 ../README $(DESTDIR)@MCU_SHARE_DIR@
+ifeq (@ENABLE_DEVEL@, 0)
+ifeq (@ENABLE_STATIC@, 0)
+	mkdir -p $(DESTDIR)@PTLIB_INSTALLPREFIX@/lib
+	install -m 644 ../ptlib/lib/libpt_${OSTYPE}_${MACHTYPE}_r.so.2.0.1 $(DESTDIR)@PTLIB_INSTALLPREFIX@/lib
+	install -m 644 ../h323plus/lib/libh323_${OSTYPE}_${MACHTYPE}_r.so.1.20.2 $(DESTDIR)@H323PLUS_INSTALLPREFIX@/lib
+endif
+endif
 
 uninstall:
 	rm -f $(DESTDIR)@MCU_BIN_DIR@/openmcu-ru
@@ -92,10 +100,16 @@ uninstall:
 	rm -rf $(DESTDIR)@MCU_LOG_DIR@
 	rm -rf $(DESTDIR)@MCU_PIPE_DIR@
 	rm -rf $(DESTDIR)@MCU_RESOURCE_DIR@
-	rm -f $(DESTDIR)@MCU_INSTALLPREFIX@/AUTHORS
-	rm -f $(DESTDIR)@MCU_INSTALLPREFIX@/COPYING
-	rm -f $(DESTDIR)@MCU_INSTALLPREFIX@/NEWS
-	rm -f $(DESTDIR)@MCU_INSTALLPREFIX@/README
+	rm -f $(DESTDIR)@MCU_SHARE_DIR@/AUTHORS
+	rm -f $(DESTDIR)@MCU_SHARE_DIR@/COPYING
+	rm -f $(DESTDIR)@MCU_SHARE_DIR@/NEWS
+	rm -f $(DESTDIR)@MCU_SHARE_DIR@/README
+ifeq (@ENABLE_DEVEL@, 0)
+ifeq (@ENABLE_STATIC@, 0)
+	rm -f $(DESTDIR)@PTLIB_INSTALLPREFIX@/lib/libpt_${OSTYPE}_${MACHTYPE}_r.so.2.0.1
+	rm -f $(DESTDIR)@H323PLUS_INSTALLPREFIX@/lib/libh323_${OSTYPE}_${MACHTYPE}_r.so.1.20.2
+endif
+endif
 
 clean:
 	rm -rf $(OBJDIR)

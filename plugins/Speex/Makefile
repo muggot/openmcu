@@ -24,10 +24,9 @@
 # $Date$
 #
 
-AC_PLUGIN_DIR=ptlib/codecs/audio
-prefix=/usr/local
+AC_PLUGIN_DIR=codecs/audio
+prefix=/usr/local/lib/ptlib
 exec_prefix=${prefix}
-libdir=/usr/local/lib
 target_os=linux-gnu
 
 SONAME    = speex
@@ -40,7 +39,7 @@ CC		=gcc
 CXX		=g++
 LDSO		=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	= -fPIC
+STDCCFLAGS	= -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -fPIC
 LDFLAGS		=
 EXTRACFLAGS     =-I$(PLUGINDIR)
 
@@ -123,11 +122,11 @@ else
 endif	
 
 install:
-	mkdir -p $(DESTDIR)$(libdir)/$(AC_PLUGIN_DIR)
-	install $(PLUGIN) $(DESTDIR)$(libdir)/$(AC_PLUGIN_DIR)
+	mkdir -p $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)
+	install $(PLUGIN) $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(DESTDIR)$(libdir)/$(AC_PLUGIN_DIR)/$(PLUGIN)
+	rm -f $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -f $(OBJECTS) $(PLUGIN)

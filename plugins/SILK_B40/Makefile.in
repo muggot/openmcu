@@ -1,8 +1,7 @@
-AC_PLUGIN_DIR=ptlib/codecs/audio
+AC_PLUGIN_DIR=@AC_PLUGIN_DIR@
 
-prefix=@INSTALLPREFIX@
+prefix=@PLUGIN_INSTALLPREFIX@
 exec_prefix=${prefix}
-libdir=@PLUGINLIBDIR@
 target_os=linux-gnu
 
 SONAME	= silk_b40
@@ -165,11 +164,11 @@ else
 endif	
 
 install:
-	mkdir -p $(DESTDIR)$(libdir)/$(AC_PLUGIN_DIR)
-	install $(PLUGIN) $(DESTDIR)$(libdir)/$(AC_PLUGIN_DIR)
+	mkdir -p $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)
+	install $(PLUGIN) $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(DESTDIR)$(libdir)/$(AC_PLUGIN_DIR)/$(PLUGIN)
+	rm -f $(DESTDIR)$(prefix)/$(AC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -f $(OBJECTS) $(PLUGIN)

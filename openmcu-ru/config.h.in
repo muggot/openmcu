@@ -2,29 +2,21 @@
 #define _OpenMCU_CONFIG_H
 
 // specify the path executable files
-//#define SYS_BIN_DIR "/opt/openmcu-ru/bin"
 #define SYS_BIN_DIR "@MCU_BIN_DIR@"
 // specify the path for .conf files
-//#define SYS_CONFIG_DIR "/opt/openmcu-ru/config"
 #define SYS_CONFIG_DIR "@MCU_CONFIG_DIR@"
 // specify the path for audio&video export via named pipes (linux, freebsd)
-//#define SYS_PIPE_DIR "/opt/openmcu-ru/pipe"
 #define SYS_PIPE_DIR "@MCU_PIPE_DIR@"
 // specify the path for built-in web server resources
-//#define SYS_RESOURCE_DIR "/opt/openmcu-ru/resource"
 #define SYS_RESOURCE_DIR "@MCU_RESOURCE_DIR@"
 // specify server logs folder
-//#define SERVER_LOGS "/opt/openmcu-ru/log"
 #define SERVER_LOGS "@MCU_LOG_DIR@"
 // specify true font directory
-//#define TRUETYPE_FONT_DIR "/opt/openmcu-ru/font"
 #define TRUETYPE_FONT_DIR "@MCU_FONT_DIR@"
 // specify records directory
-//#define TRUETYPE_FONT_DIR "/opt/openmcu-ru/records"
 #define RECORDS_DIR "@MCU_RECORDS_DIR@"
 
 // specify ffmpeg path
-//#define FFMPEG_PATH	"/usr/bin/ffmpeg"
 #define FFMPEG_PATH	"@FFMPEG_PATH@"
 
 // enable test rooms for video mixer
