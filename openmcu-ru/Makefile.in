@@ -12,9 +12,13 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
 
 CXX		= g++
 LDFLAGS        += @RPATH@
-LDLIBS	       += @LDLIBS@ -lpthread -lresolv -ldl @MCULIBS@
+LDLIBS	       += @LDLIBS@ @MCULIBS@
 STDCCFLAGS     += @STDCCFLAGS@ @CPPFLAGS@ -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS
 STDCXXFLAGS    += @STDCXXFLAGS@ @CPPFLAGS@
+
+PTLIBDIR        = ../ptlib
+include ../ptlib/make/ptbuildopts.mak
+
 
 CONFIG_FILES=capability.conf \
 layouts.conf \

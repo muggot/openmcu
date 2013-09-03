@@ -423,11 +423,13 @@ dnl ########################################################################
 dnl configuration ptlib
 
 PWLIBDIR=ptlib
-PTLIBDIR=ptlib
+PTLIBDIR=${PWLIBDIR}
 AC_SUBST(PWLIBDIR)
 AC_SUBST(PTLIBDIR)
 AC_CONFIG_SUBDIRS(ptlib)
 AC_CONFIG_FILES(ptlib/Makefile)
+
+export PWLIBDIR=`pwd`/${PWLIBDIR}
 
 
 dnl ########################################################################
@@ -604,8 +606,6 @@ AM_CONDITIONAL(ENABLE_DEVEL, [test ${ENABLE_DEVEL} = 1])
 
 dnl ########################################################################
 dnl final declarations
-
-export PWLIBDIR=`pwd`/ptlib
 
 AC_SUBST(STDCCFLAGS)
 AC_SUBST(STDCXXFLAGS)

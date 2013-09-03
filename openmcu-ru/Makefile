@@ -12,9 +12,13 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
 
 CXX		= g++
 LDFLAGS        += -L/usr/local/lib -L/usr/local/lib -Wl,-R/usr/local/lib,-R/usr/local/lib
-LDLIBS	       +=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua -lpthread -lresolv -ldl -L../ptlib/lib -L../h323plus/lib -lh323_linux_x86_r -lpt_linux_x86_r
+LDLIBS	       +=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua -L../ptlib/lib -L../h323plus/lib -lh323_linux_x86_r -lpt_linux_x86_r
 STDCCFLAGS     +=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12    -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS
 STDCXXFLAGS    +=  
+
+PTLIBDIR        = ../ptlib
+include ../ptlib/make/ptbuildopts.mak
+
 
 CONFIG_FILES=capability.conf \
 layouts.conf \
