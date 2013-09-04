@@ -4009,7 +4009,7 @@ void MCUSimpleVideoMixer::NullAllFrameStores(){
   { VideoFrameStoreList::FrameStore & vf = *(r->second);
     if(vf.lastRead<inactiveSign)
     { delete r->second; r->second=NULL;
-      frameStores.videoFrameStoreList.erase(frameStores.WidthHeightToKey(vf.width, vf.height));
+      frameStores.videoFrameStoreList.erase(r);
       continue;
     }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
@@ -4026,7 +4026,7 @@ void MCUSimpleVideoMixer::NullRectangle(int x, int y, int w, int h){
   { VideoFrameStoreList::FrameStore & vf = *(r->second);
     if(vf.lastRead<inactiveSign)
     { delete r->second; r->second=NULL;
-      frameStores.videoFrameStoreList.erase(frameStores.WidthHeightToKey(vf.width, vf.height));
+      frameStores.videoFrameStoreList.erase(r);
       continue;
     }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
@@ -4055,7 +4055,7 @@ void MCUSimpleVideoMixer::WriteArbitrarySubFrame(VideoMixPosition & vmp, const v
     VideoFrameStoreList::FrameStore & vf = *(r->second);
     if(vf.lastRead<inactiveSign)
     { delete r->second; r->second=NULL;
-      frameStores.videoFrameStoreList.erase(frameStores.WidthHeightToKey(vf.width, vf.height));
+      frameStores.videoFrameStoreList.erase(r);
       continue;
     }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
