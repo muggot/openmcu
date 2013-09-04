@@ -1,7 +1,6 @@
 
 AC_PLUGIN_DIR=codecs/audio
 prefix=/usr/local/lib/ptlib
-exec_prefix=${prefix}
 target_os=linux-gnu
 
 SONAME	= g722
@@ -15,8 +14,8 @@ CC		=gcc
 CXX		=g++
 LDSO		=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	= -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -fPIC -ggdb
-LDFLAGS		=
+STDCCFLAGS	=-fPIC -ggdb
+LDFLAGS	       +=
 EXTRACFLAGS     =-I$(PLUGINDIR)
 
 SRCS	+= g722codec.cpp \

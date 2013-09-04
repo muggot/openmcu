@@ -1,7 +1,6 @@
 
-AC_PLUGIN_DIR=@AC_PLUGIN_DIR@
+AC_PLUGIN_DIR=@AUDIO_PLUGIN_DIR@
 prefix=@PLUGIN_INSTALLPREFIX@
-exec_prefix=${prefix}
 target_os=linux-gnu
 
 SONAME	= g722
@@ -15,8 +14,8 @@ CC		=gcc
 CXX		=g++
 LDSO		=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=@STDCCFLAGS@ -fPIC -ggdb
-LDFLAGS		=
+STDCCFLAGS	=-fPIC -ggdb
+LDFLAGS	       +=
 EXTRACFLAGS     =-I$(PLUGINDIR)
 
 SRCS	+= g722codec.cpp \

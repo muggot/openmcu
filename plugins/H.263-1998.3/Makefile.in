@@ -20,7 +20,7 @@
 # Contributor(s): Matthias Schneider.
 #
 
-VC_PLUGIN_DIR=@VC_PLUGIN_DIR@
+VC_PLUGIN_DIR=@VIDEO_PLUGIN_DIR@
 prefix=@PLUGIN_INSTALLPREFIX@
 exec_prefix=${prefix}
 target_os=linux-gnu
@@ -38,9 +38,9 @@ CFLAGS	 	= -Os
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	= @STDCCFLAGS@ -fPIC
+STDCCFLAGS	=@LIBAV_CFLAGS@ -fPIC
 LIBAVCODEC_CFLAGS=-I${prefix}/include  
-LDFLAGS		+=-L${prefix}/lib -lavcodec -lavutil
+LDFLAGS	       +=@LIBAV_LDFLAGS@ -lavcodec -lavutil
 EXTRACFLAGS	= -I$(PLUGINDIR) -D__STDC_CONSTANT_MACROS
 
 # HAVE_LIBAVCODEC_RTP_MODE=1

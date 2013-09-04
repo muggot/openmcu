@@ -44,8 +44,8 @@ CFLAGS	 	= -Os
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	= -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -fPIC
-LDFLAGS		=-L${prefix}/lib -lvpx
+STDCCFLAGS	= -I/usr/include/vpx/   -fPIC
+LDFLAGS	       +=   -lvpx
 LIBAVCODEC_CFLAGS=-I${prefix}/include -I.
 
 EXTRACCFLAGS    =  $(LIBAVCODEC_CFLAGS) -I$(PLUGINDIR) -DLIB_DIR='"$(prefix)"' -DVC_PLUGIN_DIR='"$(VC_PLUGIN_DIR)"' -DLICENCE_MPL -D__STDC_CONSTANT_MACROS

@@ -229,7 +229,8 @@ dnl check for video library
 
 AC_CHECK_LIB(avcodec, avcodec_version, USE_AVCODEC=1, USE_AVCODEC=0)
 if test ${USE_AVCODEC} = 1; then
-  STDCCFLAGS="$STDCCFLAGS `pkg-config --cflags-only-I libavcodec`";
+  LIBAV_CFLAGS="$LIBAV_CFLAGS `pkg-config --cflags-only-I libavcodec`";
+  LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --libs-only-L libavcodec`";
 else
   AC_MSG_ERROR(libavcodec not found!)
 fi
@@ -347,13 +348,13 @@ H323PLUS_INSTALLPREFIX=`echo ${H323PLUS_INSTALLPREFIX} | sed "s/\/\//\//g"`
 if test "x$plugins_prefix" = "x"; then
   P_DEFAULT_PLUGIN_DIR=${PTLIB_INSTALLPREFIX}/lib/ptlib
   PLUGIN_INSTALLPREFIX=${P_DEFAULT_PLUGIN_DIR}
-  AC_PLUGIN_DIR=codecs/audio
-  VC_PLUGIN_DIR=codecs/video
+  AUDIO_PLUGIN_DIR=codecs/audio
+  VIDEO_PLUGIN_DIR=codecs/video
 else
   P_DEFAULT_PLUGIN_DIR=${plugins_prefix}
   PLUGIN_INSTALLPREFIX=${P_DEFAULT_PLUGIN_DIR}
-  AC_PLUGIN_DIR=codecs/audio
-  VC_PLUGIN_DIR=codecs/video
+  AUDIO_PLUGIN_DIR=codecs/audio
+  VIDEO_PLUGIN_DIR=codecs/video
 fi
 
 #if test "x$LIB64" != "x" ; then
@@ -364,8 +365,8 @@ AC_SUBST(PTLIB_INSTALLPREFIX)
 AC_SUBST(H323PLUS_INSTALLPREFIX)
 AC_SUBST(P_DEFAULT_PLUGIN_DIR)
 AC_SUBST(PLUGIN_INSTALLPREFIX)
-AC_SUBST(AC_PLUGIN_DIR)
-AC_SUBST(VC_PLUGIN_DIR)
+AC_SUBST(AUDIO_PLUGIN_DIR)
+AC_SUBST(VIDEO_PLUGIN_DIR)
 
 dnl ########################################################################
 dnl configuration openmcu-ru
@@ -488,6 +489,8 @@ AC_SUBST(PLUGIN_VP8_DIR)
 if test "${vp8}" = "yes"; then
     AC_CHECK_LIB(vpx, vpx_codec_encode, USE_VP8=1, USE_VP8=0)
     if test ${USE_VP8} = 1 ; then
+        LIBVPX_CFLAGS="$LIBVPX_CFLAGS `pkg-config --cflags-only-I libvpx`";
+        LIBVPX_LDFLAGS="$LIBVPX_LDFLAGS `pkg-config --libs-only-L libvpx`";
 	AC_CONFIG_FILES(plugins/VP8-WebM/Makefile)
 	PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_VP8_DIR} "
     else
@@ -606,6 +609,11 @@ AM_CONDITIONAL(ENABLE_DEVEL, [test ${ENABLE_DEVEL} = 1])
 
 dnl ########################################################################
 dnl final declarations
+
+AC_SUBST(LIBAV_CFLAGS)
+AC_SUBST(LIBAV_LDFLAGS)
+AC_SUBST(LIBVPX_CFLAGS)
+AC_SUBST(LIBVPX_LDFLAGS)
 
 AC_SUBST(STDCCFLAGS)
 AC_SUBST(STDCXXFLAGS)

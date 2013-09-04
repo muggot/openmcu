@@ -56,7 +56,6 @@
 
 AC_PLUGIN_DIR=codecs/audio
 prefix=/usr/local/lib/ptlib
-exec_prefix = ${prefix}
 
 SONAME	= g726
 
@@ -68,8 +67,8 @@ CFLAGS	 	=-g -O2
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	= -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -fPIC
-LDFLAGS		= -I/usr/local/lib
+STDCCFLAGS	=-fPIC
+LDFLAGS	       +=
 
 SRCS	+= g726codec.c \
 	   g711.c \

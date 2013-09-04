@@ -38,9 +38,9 @@ CFLAGS	 	= -Os
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12   -fPIC
+STDCCFLAGS	=   -fPIC
 LIBAVCODEC_CFLAGS=-I${prefix}/include  
-LDFLAGS		+=-L${prefix}/lib -lavcodec -lavutil
+LDFLAGS	       +=   -lavcodec -lavutil
 EXTRACFLAGS	= -I$(PLUGINDIR) -D__STDC_CONSTANT_MACROS
 
 # HAVE_LIBAVCODEC_RTP_MODE=1

@@ -62,7 +62,7 @@
 # Updated Makefiles and fixed Linux problems
 #
 #
-AC_PLUGIN_DIR=@AC_PLUGIN_DIR@
+AC_PLUGIN_DIR=@AUDIO_PLUGIN_DIR@
 prefix=@PLUGIN_INSTALLPREFIX@
 exec_prefix = ${prefix}
 
@@ -75,8 +75,8 @@ CFLAGS	 	=-g -O2
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=@STDCCFLAGS@ -fPIC
-LDFLAGS		=@LDFLAGS@
+STDCCFLAGS	=-fPIC
+LDFLAGS	       +=
 
 SRCS	= ilbccodec.c $(SRCDIR)/anaFilter.c $(SRCDIR)/constants.c $(SRCDIR)/createCB.c $(SRCDIR)/doCPLC.c \
 	  $(SRCDIR)/enhancer.c $(SRCDIR)/filter.c $(SRCDIR)/FrameClassify.c $(SRCDIR)/gainquant.c \

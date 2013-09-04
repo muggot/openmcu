@@ -1,6 +1,5 @@
-AC_PLUGIN_DIR=@AC_PLUGIN_DIR@
+AC_PLUGIN_DIR=@AUDIO_PLUGIN_DIR@
 prefix=@PLUGIN_INSTALLPREFIX@
-exec_prefix=${prefix}
 target_os=linux-gnu
 
 SONAME	= opus
@@ -12,11 +11,11 @@ CC		=gcc -std=gnu99
 CXX		=g++
 LDSO		=-shared
 PLUGINEXT	=so
-STDCCFLAGS	+=@STDCCFLAGS@ -fPIC -g
+STDCCFLAGS	=-fPIC -g
 EXTRACFLAGS     =-Isrc/include -Iscr/opus -Isrc/celt -Isrc/silk -Isrc/silk/float
 #WARNINGS	=-Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -Wshadow
 CFLAGS		=-O2 -g $(WARNINGS) -DOPUS_BUILD -DVAR_ARRAYS
-LDFLAGS  	=
+LDFLAGS        +=
 
 SRCS	= \
 \

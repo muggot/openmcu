@@ -54,9 +54,8 @@
 #
 #
 
-AC_PLUGIN_DIR=@AC_PLUGIN_DIR@
+AC_PLUGIN_DIR=@AUDIO_PLUGIN_DIR@
 prefix=@PLUGIN_INSTALLPREFIX@
-exec_prefix = ${prefix}
 
 SONAME	= g726
 
@@ -68,8 +67,8 @@ CFLAGS	 	=-g -O2
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=@STDCCFLAGS@ -fPIC
-LDFLAGS		=@LDFLAGS@
+STDCCFLAGS	=-fPIC
+LDFLAGS	       +=
 
 SRCS	+= g726codec.c \
 	   g711.c \
