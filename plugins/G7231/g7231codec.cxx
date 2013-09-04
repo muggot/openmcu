@@ -81,7 +81,7 @@ void G7231_DecoderContext::CloseCodec()
 
 G7231_EncoderContext::G7231_EncoderContext()
 {
-  if ((_codec = avcodec_find_decoder_by_name("g723_1")) == NULL)
+  if ((_codec = avcodec_find_encoder_by_name("g723_1")) == NULL)
    { cout << "Codec g7231 not found for encoder\n"; return; }
 
   _context = avcodec_alloc_context3(NULL);
