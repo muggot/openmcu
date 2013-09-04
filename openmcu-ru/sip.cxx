@@ -511,9 +511,12 @@ void OpenMCUSipConnection::SelectCapability_VP8(SipCapability &c,PStringArray &t
   {
    H323Name = "VP8-CIF{sw}";
    c.cap = H323Capability::Create(H323Name);
-   OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
-   wf.SetOptionInteger("Frame Width", width);
-   wf.SetOptionInteger("Frame Height", height);
+   if(c.cap)
+   {
+    OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
+    wf.SetOptionInteger("Frame Width", width);
+    wf.SetOptionInteger("Frame Height", height);
+   }
   }
  }
 
