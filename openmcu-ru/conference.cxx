@@ -518,7 +518,7 @@ void Conference::LoadTemplate(PString tpl)
     if(s!=memberNameList.end())
     {
       PTRACE(6,"Conference\tLoading template - removing " << s->first << " from memberNameList" << flush);
-      memberNameList.erase(s);
+      memberNameList.erase(s->first);
       s=memberNameList.end();
     }
     if(validatedMembers.GetStringsIndex(r->first) == P_MAX_INDEX) // remove unwanted members
@@ -526,7 +526,7 @@ void Conference::LoadTemplate(PString tpl)
       if(r->second == NULL) // offline: simple
       {
         PTRACE(6,"Conference\tLoading template - removing offline member " << r->first << " from memberNameList" << flush);
-        memberNameList.erase(r);
+        memberNameList.erase(r->first);
       }
       else // online :(
       {
@@ -544,7 +544,7 @@ void Conference::LoadTemplate(PString tpl)
   if(s!=memberNameList.end())
   {
     PTRACE(6,"Conference\tLoading template - removing " << s->first << " from memberNameList" << flush);
-    memberNameList.erase(s);
+    memberNameList.erase(s->first);
   }
 }
 
