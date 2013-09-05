@@ -1792,7 +1792,8 @@ BOOL OpenMCUH323EndPoint::OutgoingConferenceRequest(const PString & room)
 }
 
 PString OpenMCUH323EndPoint::IncomingConferenceRequest(H323Connection & connection, 
-                                                  const H323SignalPDU & setupPDU)
+                                                  const H323SignalPDU & setupPDU,
+                                                  unsigned & videoMixerNumber)
 {
   const H225_Setup_UUIE & setup = setupPDU.m_h323_uu_pdu.m_h323_message_body;
 
@@ -1819,6 +1820,7 @@ PString OpenMCUH323EndPoint::IncomingConferenceRequest(H323Connection & connecti
   // check the conference ID
   if (conferenceManager.HasConference(conferenceID, roomToJoin)) {
     PTRACE(3, "MCU\tUsing conference ID to join existing room " << roomToJoin);
+    videoMixerNumber = 0;
     return roomToJoin;
   }
 
@@ -1826,6 +1828,17 @@ PString OpenMCUH323EndPoint::IncomingConferenceRequest(H323Connection & connecti
   PINDEX i;
   for (i = 0; (i < setup.m_destinationAddress.GetSize()); i++) {
     roomToJoin = H323GetAliasAddressString(setup.m_destinationAddress[i]);
+    // allow calls to room/VIDEOMIXER@openmcu
+    { PINDEX slashPos = roomToJoin.Find('/');
+      if(slashPos != P_MAX_INDEX)
+      { PString mixerStr = roomToJoin.Right(roomToJoin.GetLength()-slashPos-1);
+        PINDEX mixerStrLen = mixerStr.GetLength();
+        if(mixerStrLen > 0 && mixerStrLen < 3)
+        { PINDEX mixer = mixerStr.AsInteger();
+          if(mixer > 0 && mixer < 100)
+          { roomToJoin=roomToJoin.Left(slashPos);
+            videoMixerNumber = mixer;
+    } } } }
     if (conferenceManager.HasConference(roomToJoin)) {
       PTRACE(3, "MCU\tJoining room specified by destination address " << roomToJoin);
       return roomToJoin;
@@ -1833,7 +1846,22 @@ PString OpenMCUH323EndPoint::IncomingConferenceRequest(H323Connection & connecti
   }
 
   // look at Q931 called party number
-  if (roomToJoin.IsEmpty() && !setupPDU.GetQ931().GetCalledPartyNumber(roomToJoin) && roomToJoin.IsEmpty()) {
+//  if (roomToJoin.IsEmpty() && !setupPDU.GetQ931().GetCalledPartyNumber(roomToJoin) && roomToJoin.IsEmpty()) {
+  if (roomToJoin.IsEmpty())
+  if (setupPDU.GetQ931().GetCalledPartyNumber(roomToJoin))
+  if (!roomToJoin.IsEmpty())
+  {
+    // allow calls to room/VIDEOMIXER@openmcu
+    { PINDEX slashPos = roomToJoin.Find('/');
+      if(slashPos != P_MAX_INDEX)
+      { PString mixerStr = roomToJoin.Right(roomToJoin.GetLength()-slashPos-1);
+        PINDEX mixerStrLen = mixerStr.GetLength();
+        if(mixerStrLen > 0 && mixerStrLen < 3)
+        { PINDEX mixer = mixerStr.AsInteger();
+          if(mixer > 0 && mixer < 100)
+          { roomToJoin=roomToJoin.Left(slashPos);
+            videoMixerNumber = mixer;
+    } } } }
     if (conferenceManager.HasConference(roomToJoin)) {
       PTRACE(3, "MCU\tJoining room specified by Q.931 called party " << roomToJoin);
       return roomToJoin;
@@ -1846,6 +1874,7 @@ PString OpenMCUH323EndPoint::IncomingConferenceRequest(H323Connection & connecti
 
   if (!roomToJoin.IsEmpty()) {
     PTRACE(3, "MCU\tJoining default room " << roomToJoin);
+    videoMixerNumber = 0;
     return roomToJoin;
   }
 
@@ -2013,7 +2042,7 @@ H323Connection::AnswerCallResponse OpenMCUH323Connection::OnAnswerCall(const PSt
                                                                   const H323SignalPDU & setupPDU,
                                                                   H323SignalPDU & /*connectPDU*/)
 {
-  requestedRoom = ep.IncomingConferenceRequest(*this, setupPDU);
+  requestedRoom = ep.IncomingConferenceRequest(*this, setupPDU, videoMixerNumber);
 
   if (requestedRoom.IsEmpty())
     return AnswerCallDenied;
@@ -2063,7 +2092,7 @@ void OpenMCUH323Connection::JoinConference(const PString & roomToJoin)
   if (!roomToJoin.IsEmpty()) {
     // create or join the conference
     ConferenceManager & manager = ((OpenMCUH323EndPoint &)ep).GetConferenceManager();
-    Conference * newConf = manager.MakeAndLockConference(roomToJoin);
+    Conference * newConf = manager.MakeAndLockConference(realRoomToJoin);
     if (newConf != NULL) {
       conference = newConf;
       conferenceIdentifier = conference->GetID();

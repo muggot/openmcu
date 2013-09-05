@@ -69,7 +69,8 @@ class OpenMCUH323EndPoint : public H323EndPoint
     ~OpenMCUH323EndPoint();
     
     PString IncomingConferenceRequest(H323Connection & connection, 
-                                      const H323SignalPDU & setupPDU);
+                                      const H323SignalPDU & setupPDU,
+                                      unsigned & videoMixerNumber);
 
     BOOL OutgoingConferenceRequest(const PString & room);
 

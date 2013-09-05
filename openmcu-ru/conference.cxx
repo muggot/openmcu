@@ -63,7 +63,6 @@ ConferenceManager::~ConferenceManager()
 Conference * ConferenceManager::MakeAndLockConference(const PString & roomToCreate, const PString & name)
 {
   PWaitAndSignal m(conferenceListMutex);
-
   OpalGloballyUniqueID conferenceID;
   ConferenceListType::const_iterator r;
   for (r = conferenceList.begin(); r != conferenceList.end(); ++r) {
@@ -1372,11 +1371,21 @@ void Conference::ReadMemberVideo(ConferenceMember * member, void * buffer, int w
 // PTRACE(3, "Conference\tReadMemberVideo call 1" << width << "x" << height);
   unsigned mixerNumber; if(member==NULL) mixerNumber=0; else mixerNumber=member->GetVideoMixerNumber();
   MCUVideoMixer * mixer = VMLFind(mixerNumber);
-  if (mixer!=NULL) {
-    mixer->ReadFrame(*member, buffer, width, height, amount);
-    return;
+
+  if(mixer==NULL)
+  { if(mixerNumber != 0) mixer = VMLFind(0);
+    if(mixer==NULL)
+    { PTRACE(3,"Conference\tCould not get video");
+      return;
+    } else { PTRACE(6,"Conference\tCould not get video mixer " << mixerNumber << ", reading 0 instead"); }
   }
 
+//  if (mixer!=NULL) {
+    mixer->ReadFrame(*member, buffer, width, height, amount);
+//    return;
+//  }
+
+/* commented by kay27 not really understanding what he is doing, 04.09.2013
   // find the other member and copy it's video
   PWaitAndSignal m(memberListMutex);
   MemberList::iterator r;
@@ -1389,6 +1398,7 @@ void Conference::ReadMemberVideo(ConferenceMember * member, void * buffer, int w
       }
     }
   }
+*/
   
 }
 
