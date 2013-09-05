@@ -551,23 +551,10 @@ AC_SUBST(PLUGIN_DIRS)
 
 
 dnl ########################################################################
-dnl configure development files
-
-devel=yes
-AC_ARG_ENABLE(separator, [    ])
-AC_ARG_ENABLE(devel, [AS_HELP_STRING([--enable-devel],[install development files (default enabled)],[40],[100])], [devel="$enableval"])
-if test "${devel}" = yes; then
-  ENABLE_DEVEL=1
-else
-  ENABLE_DEVEL=0
-fi
-
-AC_SUBST(ENABLE_DEVEL)
-
-dnl ########################################################################
 dnl configure rpath
 
 rpath=yes
+AC_ARG_ENABLE(separator, [    ])
 AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="no"],[rpath="yes"])
 
 LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
@@ -582,16 +569,30 @@ for path in ${LD_PATH} ; do
   fi
 done
 
-AC_SUBST(RPATH)
 if test "${rpath}" = "yes" && test "${rpath_ptlib}" = "yes" && test "${rpath_h323plus}" = "yes"; then
   RPATH="-L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib -Wl,-R${PTLIB_INSTALLPREFIX}/lib,-R${H323PLUS_INSTALLPREFIX}/lib"
 fi
 
+AC_SUBST(RPATH)
+
+dnl ########################################################################
+dnl configure development files
+
+devel=no
+AC_ARG_ENABLE(devel, [AS_HELP_STRING([--enable-devel],[install development files (default disabled, always disabled if static linking)],[40],[90])], [devel="$enableval"])
+if test "${devel}" = yes; then
+  ENABLE_DEVEL=1
+else
+  ENABLE_DEVEL=0
+fi
+
+AC_SUBST(ENABLE_DEVEL)
+
 dnl ########################################################################
 dnl configure static linking
 
-static=no
-AC_ARG_ENABLE(static, [AS_HELP_STRING([--enable-static],[build static linking (default disabled)],[40],[100])], [static="$enableval"])
+static=yes
+AC_ARG_ENABLE(static, [AS_HELP_STRING([--disable-static],[build static linking with ptlib,h323plus (default enabled)],[40],[100])], [static="no"],[static="yes"])
 
 if test "${static}" = "yes"; then
   ENABLE_STATIC=1
@@ -605,6 +606,7 @@ fi
 
 AC_SUBST(MCULIBS)
 AC_SUBST(ENABLE_STATIC)
+
 AM_CONDITIONAL(ENABLE_DEVEL, [test ${ENABLE_DEVEL} = 1])
 
 dnl ########################################################################
