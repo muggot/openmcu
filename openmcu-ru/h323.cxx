@@ -2092,7 +2092,7 @@ void OpenMCUH323Connection::JoinConference(const PString & roomToJoin)
   if (!roomToJoin.IsEmpty()) {
     // create or join the conference
     ConferenceManager & manager = ((OpenMCUH323EndPoint &)ep).GetConferenceManager();
-    Conference * newConf = manager.MakeAndLockConference(realRoomToJoin);
+    Conference * newConf = manager.MakeAndLockConference(roomToJoin);
     if (newConf != NULL) {
       conference = newConf;
       conferenceIdentifier = conference->GetID();

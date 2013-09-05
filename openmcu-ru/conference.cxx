@@ -518,7 +518,7 @@ void Conference::LoadTemplate(PString tpl)
     if(s!=memberNameList.end())
     {
       PTRACE(6,"Conference\tLoading template - removing " << s->first << " from memberNameList" << flush);
-      memberNameList.erase(s->first);
+      memberNameList.erase(s);
       s=memberNameList.end();
     }
     if(validatedMembers.GetStringsIndex(r->first) == P_MAX_INDEX) // remove unwanted members
@@ -526,7 +526,7 @@ void Conference::LoadTemplate(PString tpl)
       if(r->second == NULL) // offline: simple
       {
         PTRACE(6,"Conference\tLoading template - removing offline member " << r->first << " from memberNameList" << flush);
-        memberNameList.erase(r->first);
+        memberNameList.erase(r);
       }
       else // online :(
       {
@@ -544,7 +544,7 @@ void Conference::LoadTemplate(PString tpl)
   if(s!=memberNameList.end())
   {
     PTRACE(6,"Conference\tLoading template - removing " << s->first << " from memberNameList" << flush);
-    memberNameList.erase(s->first);
+    memberNameList.erase(s);
   }
 }
 
@@ -1733,8 +1733,10 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
     }
 
     // delete unused buffers
-    for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t)
-      if(t!=bufferList.end()) if(!(t->second->used))
+    BufferListType::iterator t = bufferList.begin();
+    while(t != bufferList.end())
+    {
+      if(t->second != NULL) if(!((t->second)->used))
       {
 #if USE_SWRESAMPLE
         if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
@@ -1747,8 +1749,11 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
         t->second->swrc = NULL;
 #endif
         delete t->second; t->second=NULL;
-        bufferList.erase(t->first);
+        bufferList.erase(t);
+        continue;
       }
+      t++;
+    }
 
     lock.Signal();
   }
