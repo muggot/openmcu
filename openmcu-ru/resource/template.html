@@ -24,7 +24,7 @@
  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
  <style type="text/css">
  html {height:100%;margin-bottom:1px;}
- a:link,a:visited {color:#990000;text-decoration:none;}
+ a:link,a:visited {color:#242424;text-decoration:none;}
  body,td,th {line-height:140%;font-family:Tahoma, Arial, Helvetica, sans-serif;color:#404040;font-size:12px;}
  body {background:#242424;margin:0;padding:0;}
  input,textarea,button {color:#000;font-family:verdana, sans-serif;}
@@ -288,7 +288,6 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
    width: 100%;
    height: 50px;
    margin: 0px;
-   text-align: center;
    text-decoration: none;
    z-index: 5000;
      background: #242424;
@@ -307,16 +306,17 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
    font-weight:bold;
  }
 
- #topnav panel a {
+ #topnav li a {
    display:block;
    float:left;
    color:#666;
    font-size:12px;
    padding:10px 0px 10px 0px;
+   text-align: center;
    width:140px;
    border:1px solid #242424;
  }
- #topnav panel a:hover {background-color:#242424;color:#ccc;border:1px solid #778899;}
+ #topnav li a:hover {background-color:#242424;color:#ccc;border:1px solid #778899;}
 
  menu {
    position: absolute;
@@ -332,31 +332,29 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
  }
  li:hover menu {display: block;background-color: #242424;}
 
- #topnav panel_i_logo_text {position:relative;left:0px;top:6px;float:left;padding:0px 0px 0px 30px;}
- #topnav panel_i_logo_text:hover {}
+ .panel_i_logo_text {position:relative;left:30px;top:6px;float:left;padding:0px 0px 0px 0px;}
 
 </style>
 
 </HEAD>
 
 <BODY onload="if(typeof window.maybe_making_autorecall=='function')maybe_making_autorecall();window.scroll(0,123)" onmousemove='if(typeof window.ddprogress=="function")ddprogress(event)' onmouseup='if(typeof window.ddstop=="function")ddstop(event)'>
- <div id="toolbar">
  <div class="wrapper">
  <div id="topnav">
  <ul id="topnav">
 
- <a href="welcome.html"><panel_i_logo_text class="icon-cogs"><img class="topimg" src="openmcu.ru_logo_text.bmp"></panel_i_logo_text></a>
+ <a href="welcome.html"><img class="panel_i_logo_text" src="openmcu.ru_logo_text.bmp" border="0"></a>
 
  <li><span style="padding:0px 15px;"></span></li>
 
- <li><panel><a href="http://openmcu.ru/index.php"><strong id="l_help"></strong></a>
+ <li><a href="http://openmcu.ru/index.php"><strong id="l_help"></strong></a>
   <menu>
    <li><a href='http://openmcu.ru/index.php' id="l_forum"></a></li>
    <li><a href='http://openmcu.ru/public/user_guide.pdf' id="l_manual"></a></li>
   </menu>
- </panel></li>
+ </li>
 
- <li><panel><a href="Parameters"><strong id="l_settings"></strong></a>
+ <li><a href="Parameters"><strong id="l_settings"></strong></a>
   <menu>
    <li><a href='Parameters' id="l_param_general"></a></li>
    <li><a href='H323Parameters' id="l_param_h323"></a></li>
@@ -364,23 +362,22 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
    <li><a href='ProxyServers' id="l_param_sip_proxy"></a></li>
    <li><a href='RoomAccess' id="l_param_access_rules"></a></li>
   </menu>
- </panel></li>
+ </li>
 
- <li><panel><a href="Select"><strong id="l_control"></strong></a>
+ <li><a href="Select"><strong id="l_control"></strong></a>
   <menu>
    <li><a href='Select' id="l_rooms"></a></li>
    <li><a href='Invite' id="l_invite"></a></li>
   </menu>
- </panel></li>
+ </li>
 
- <li><panel><a href="Status"><strong id="l_status"></strong></a>
+ <li><a href="Status"><strong id="l_status"></strong></a>
   <menu>
    <li><a href='Status' id="l_connections"></a></li>
    <li><a href='Records' id="l_records"></a></li>
   </menu>
- </panel></li>
+ </li>
 
- </div>
  </div>
  </div>
 
