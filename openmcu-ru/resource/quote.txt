@@ -669,9 +669,10 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr){
   if((members[i][1]==id)||(members[i][2]==name))
   if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
   members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr);
-  alive();
-  members_refresh();
+//  alive();
+//  members_refresh();
 //  top_panel();
+  build_page();
 }
 
 function chmix(id,mx){
@@ -692,9 +693,10 @@ function remmmbr(st,id,name,mute,dvad,cvan,al,clear){
   if((members[i][2]==name)||(members[i][1]==id))
   if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
   if(!clear)members[j]=Array(st,0,name,mute,dvad,cvan,al);
-  alive();
-  members_refresh();
+//  alive();
+//  members_refresh();
 //  top_panel();
+  build_page();
 }
 
 function remove_all(){

@@ -52,7 +52,9 @@
 
 #define _CRT_SECURE_NO_DEPRECATE
 #define _XOPEN_SOURCE 600
-#define HAVE_POSIX_MEMALIGN 1
+#ifndef HAVE_POSIX_MEMALIGN
+#  define HAVE_POSIX_MEMALIGN 1
+#endif
 #include <stdlib.h>
 
 
