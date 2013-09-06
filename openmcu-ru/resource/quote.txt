@@ -530,7 +530,7 @@ function format_mmbr_button(m,st){
  var posx_vad=PANEL_ICON_WIDTH;
  var posx_level=posx_vad+PANEL_ICON_WIDTH;
  var posx_name=posx_level+PANEL_LEVEL_WIDTH+2;
- var posx_kick=panel_width-SCROLLER_WIDTH; //-PANEL_ICON_WIDTH;
+ var posx_kick=panel_width-PANEL_ICON_WIDTH-5;
  var posx_ip=posx_kick-PANEL_IP_WIDTH;
  var posx_mixer=posx_ip-PANEL_MIXERID_WIDTH-5;
  var name_width=posx_mixer-posx_name;
@@ -669,10 +669,9 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr){
   if((members[i][1]==id)||(members[i][2]==name))
   if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
   members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr);
-//  alive();
-//  members_refresh();
+  alive();
+  members_refresh();
 //  top_panel();
-  build_page();
 }
 
 function chmix(id,mx){
@@ -693,10 +692,9 @@ function remmmbr(st,id,name,mute,dvad,cvan,al,clear){
   if((members[i][2]==name)||(members[i][1]==id))
   if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
   if(!clear)members[j]=Array(st,0,name,mute,dvad,cvan,al);
-//  alive();
-//  members_refresh();
+  alive();
+  members_refresh();
 //  top_panel();
-  build_page();
 }
 
 function remove_all(){
@@ -1017,13 +1015,14 @@ function build_page(){
     workplace_content+="&nbsp;";
   workplace_content+="</div>";
 
+  var panel_scroller_width = panel_width+SCROLLER_WIDTH;
   panel_content="<div id='pp_2' style='position:relative;top:0px;left:"+mmw+"px;width:0px;height:0px'>"; // pointing block for panel
     panel_content+="<div"+ // rectangle for panel
       " onmouseover='ddover(event,this,\"panel\",-1)'"+
       " onmouseout='ddout(event,this,\"panel\",-1)'"+
       " id='members_pan'"+
       " name='members_pan'"+
-      " style='position:absolute;width:"+panel_width+"px;height:"+total_height+"px'>";
+      " style='position:absolute;width:"+panel_scroller_width+"px;height:"+total_height+"px'>";
       panel_content+="...";
     panel_content+="</div>";
   panel_content+="</div>";
