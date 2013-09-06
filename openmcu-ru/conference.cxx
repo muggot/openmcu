@@ -1608,27 +1608,22 @@ void ConferenceMember::RemoveAllConnections()
   if (lock.Wait(TRUE)) {
     memberList.clear();
     connectionList.clear();
-    PTRACE(6,"ConferenceMember\tRemoving resampling buffers from connection " << id);
-    for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t)
-    if(t->second != NULL) {
+    for(BufferListType::iterator t0=bufferList.begin(); t0!=bufferList.end(); ++t0)
+    if(t0->second != NULL) {
 #if USE_SWRESAMPLE
-      if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
-      t->second->swrc = NULL;
+      if(t0->second->swrc != NULL) swr_free(&(t0->second->swrc));
+      t0->second->swrc = NULL;
 #elif USE_AVRESAMPLE
-      if(t->second->swrc != NULL) avresample_free(&(t->second->swrc));
-      t->second->swrc = NULL;
+      if(t0->second->swrc != NULL) avresample_free(&(t0->second->swrc));
+      t0->second->swrc = NULL;
 #elif USE_LIBSAMPLERATE
-      if(t->second->swrc != NULL) src_delete(t->second->swrc);
-      t->second->swrc = NULL;
+      if(t0->second->swrc != NULL) src_delete(t0->second->swrc);
+      t0->second->swrc = NULL;
 #endif
-      delete t->second; t->second=NULL;
+      delete t0->second; t0->second=NULL;
     }
-    PTRACE(6,"ConferenceMember\tResampling buffers removed");
+    PTRACE(3,"Conference\tResampling buffers removed from connection " << id);
     lock.Signal(TRUE);
-  }
-  else
-  {
-    PTRACE(2,"ConferenceMember\tCould not lock at Destructor - keep resample buffers undeleted (memory leak)");
   }
 }
 
@@ -1726,33 +1721,36 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
               DoResample((BYTE *)buffer, amount, sampleRate, channels, t, newAmount, targetSampleRate, targetCodecChannels);
               t->second->used = TRUE;
             }
-            s->second->Write((BYTE *)t->second->data.GetPointer(), newAmount);
+            s->second->Write((BYTE *)(t->second->data.GetPointer()), newAmount);
           }
         }
       }
     }
 
     // delete unused buffers
-    BufferListType::iterator t = bufferList.begin();
-    while(t != bufferList.end())
+    BufferListType::iterator t0 = bufferList.begin();
+    while(t0 != bufferList.end())
     {
-      if(t->second != NULL) if(!((t->second)->used))
+      if(t0->second != NULL) if(!(t0->second->used))
       {
 #if USE_SWRESAMPLE
-        if(t->second->swrc != NULL) swr_free(&(t->second->swrc));
-        t->second->swrc = NULL;
+        if(t0->second->swrc != NULL) swr_free(&(t0->second->swrc));
+        t0->second->swrc = NULL;
 #elif USE_AVRESAMPLE
-        if(t->second->swrc != NULL) avresample_free(&(t->second->swrc));
-        t->second->swrc = NULL;
+        if(t0->second->swrc != NULL) avresample_free(&(t0->second->swrc));
+        t0->second->swrc = NULL;
 #elif USE_LIBSAMPLERATE
-        if(t->second->swrc != NULL) src_delete(t->second->swrc);
-        t->second->swrc = NULL;
+        if(t0->second->swrc != NULL) src_delete(t0->second->swrc);
+        t0->second->swrc = NULL;
 #endif
-        delete t->second; t->second=NULL;
-        bufferList.erase(t);
+        delete t0->second;
+        t0->second=NULL;
+        bufferList.erase(t0);
+        t0=bufferList.begin(); // needed at least for msvc++ 2010
+                               // (it fixes access violation when thread after last iteration strangely failed still here)
         continue;
       }
-      t++;
+      t0++;
     }
 
     lock.Signal();
