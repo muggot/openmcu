@@ -1,9 +1,9 @@
 <script language="javascript"><!--
 
-var max_subframes=100; /////////////////////////////////////////////////////////////
-var default_page_width=942; CHANGE IT IF YOU WISH, IT'LL BE AUTO-INCREASED IF NEEDED /
-var page_border_width=70;   for detect panel width
-var debug=0;         /////////////////////////////////////////////////////////////
+var max_subframes=100;
+var default_page_width=942; //CHANGE IT IF YOU WISH, IT'LL BE AUTO-INCREASED IF NEEDED
+var page_border_width=70;   //for detect panel width
+var debug=0;
 var MIXER_PANEL_BGCOLOR='#575';
 var MIXER_PANEL_BGCOLOR2='#242';
 var MIXER_PANEL_MIXER_STYLE='font-weight:bold;background-color:'+MIXER_PANEL_BGCOLOR2+';padding-left:3px;padding-right:3px;border-radius:2px;border:2px solid #484;color:#fc5';
@@ -994,7 +994,7 @@ function build_page(){
     page_width=mmw+444;
   log_width=free_x/2;
   panel_width=page_width-log_width-mmw-SCROLLER_WIDTH-5;
-  PANEL_IP_WIDTH = panel_width/2;
+  PANEL_IP_WIDTH = (panel_width/2)-PANEL_ICON_WIDTH;
   if(panel_width<275){ log_width-=(275-panel_width); panel_width=275; }
 
   try {
