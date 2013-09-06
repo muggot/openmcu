@@ -1,7 +1,8 @@
 <script language="javascript"><!--
 
 var max_subframes=100; /////////////////////////////////////////////////////////////
-var page_width=942 ;  // CHANGE IT IF YOU WISH, IT'LL BE AUTO-INCREASED IF NEEDED /
+var default_page_width=942; CHANGE IT IF YOU WISH, IT'LL BE AUTO-INCREASED IF NEEDED /
+var page_border_width=70;   for detect panel width
 var debug=0;         /////////////////////////////////////////////////////////////
 var MIXER_PANEL_BGCOLOR='#575';
 var MIXER_PANEL_BGCOLOR2='#242';
@@ -975,6 +976,11 @@ function build_page(){
 
   mix_color='#5ce';
 
+  var page_width = document.body.clientWidth || default_page_width;
+  if(page_width != default_page_width) {
+    page_width = page_width-page_border_width;
+  }
+
   var i; mmw=0; total_height=0;
   for(i=0;i<mixers;i++){
     var mw=conf[i+1][0][0]; var mh=conf[i+1][0][1];
@@ -984,9 +990,11 @@ function build_page(){
   }
   if(mmw<200)mmw=200; //minimal mixer width
   var free_x=page_width-mmw;
-  if(free_x<444)page_width=mmw+444;
-  log_width=free_x>>1;
-  panel_width=page_width-log_width-mmw;
+  if(free_x<444)
+    page_width=mmw+444;
+  log_width=free_x/2;
+  panel_width=page_width-log_width-mmw-SCROLLER_WIDTH-5;
+  PANEL_IP_WIDTH = panel_width/2;
   if(panel_width<275){ log_width-=(275-panel_width); panel_width=275; }
 
   try {
