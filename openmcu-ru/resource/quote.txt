@@ -726,8 +726,8 @@ function object_return(o,id){
 }
 
 function imute(id){
-  for(var i=0;i<members.length;i++) if(members[i][1]==id){
-    members[i][3]=1;
+  for(var i=0;i<members.length;i++) if(members[i][1]==id)
+  { members[i][3]=1;
     if((o=object_return('mrpan_',id))===false) return alive();
     o.src='i15_mic_off.gif';
     return alive();
@@ -735,7 +735,7 @@ function imute(id){
 }
 
 function imute_all()
-{ for(var i=0;i<members.length;i++)
+{ for(var i=0;i<members.length;i++) if(members[i][0])
   { members[i][3]=1;
     if((o=object_return('mrpan_',members[i][1]))===false) continue;
     o.src='i15_mic_off.gif';
