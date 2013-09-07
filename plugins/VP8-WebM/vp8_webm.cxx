@@ -394,6 +394,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
     vpx_codec_iter_t           m_iterator;
     const vpx_codec_cx_pkt_t * m_packet;
     size_t                     m_offset;
+    unsigned                   m_rejectNextFrame;
 
   public:
     VP8Encoder(const PluginCodec_Definition * defn)
@@ -402,6 +403,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
       , m_iterator(NULL)
       , m_packet(NULL)
       , m_offset(0)
+      , m_rejectNextFrame(true)
     {
       memset(&m_codec, 0, sizeof(m_codec));
     }
@@ -507,6 +509,12 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
                              unsigned & toLen,
                              unsigned & flags)
     {
+      if(m_rejectNextFrame == true)
+      {
+        m_rejectNextFrame = false;
+        return false;
+      }
+
       while (NeedEncode()) {
         PluginCodec_RTP srcRTP(fromPtr, fromLen);
         PluginCodec_Video_FrameHeader * video = srcRTP.GetVideoHeader();
