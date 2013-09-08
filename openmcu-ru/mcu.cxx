@@ -1113,8 +1113,17 @@ BOOL InvitePage::Post(PHTTPRequest & request,
   PString address = data("address");
   PStringStream html;
 
+  PStringStream html_invite;
+  html_invite << "<p>"
+    << "<form method=\"POST\" class=\"well form-inline\">"
+    << "<input type=\"text\" class=\"input-small\" placeholder=\"" << room << "\" name=\"room\" value=\"" << room << "\"> "
+    << "<input type=\"text\" class=\"input-large\" placeholder=\"Address\" name=\"address\"><script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
+    << "&nbsp;&nbsp;<input type=\"submit\" class=\"btn\" value=\"Invite\">"
+    << "</form>";
+
   if (room.IsEmpty() || address.IsEmpty()) {
     BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
+    html << html_invite;
     EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
     return TRUE;
   }
@@ -1124,6 +1133,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
 
   if (!created) {
     BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
+    html << html_invite;
     EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
     return TRUE;
   }
@@ -1142,6 +1152,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
   }
 
   BeginPage(html,"Invite succeeded","window.l_invite_s","window.l_info_invite_s");
+  html << html_invite;
   EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
 
   return TRUE;
