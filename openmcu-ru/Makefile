@@ -11,9 +11,10 @@ PROG		= openmcu-ru
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx
 
 CXX		= g++
+CFLAGS         += -Os
 LDFLAGS        += -L/usr/local/lib -L/usr/local/lib -Wl,-R/usr/local/lib,-R/usr/local/lib
 LDLIBS	       +=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua -L../ptlib/lib -L../h323plus/lib -lh323_linux_x86_r -lpt_linux_x86_r
-STDCCFLAGS     +=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12    -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS
+STDCCFLAGS     +=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12    -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS -Wall
 STDCXXFLAGS    +=  
 
 PTLIBDIR        = ../ptlib
