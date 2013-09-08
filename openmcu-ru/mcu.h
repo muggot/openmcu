@@ -175,7 +175,7 @@ class OpenMCU : public OpenMCUProcessAncestor
       PHTML html(PHTML::InBody);
       html << "Copyright &copy;"
        << compilationDate.AsString("yyyy") << " by "
-       << PHTML::HotLink(copyrightHomePage)
+       << PHTML::HotLink(copyrightHomePage + "\" target=\"_blank\"")
        << copyrightHolder;
       return html;
     }
