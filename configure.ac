@@ -555,7 +555,7 @@ dnl configure rpath
 
 rpath=yes
 AC_ARG_ENABLE(separator, [    ])
-AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="no"],[rpath="yes"])
+AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="$enableval"])
 
 LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
 rpath_ptlib=yes
@@ -592,7 +592,7 @@ dnl ########################################################################
 dnl configure static linking
 
 static=yes
-AC_ARG_ENABLE(static, [AS_HELP_STRING([--disable-static],[build static linking with ptlib,h323plus (default enabled)],[40],[100])], [static="no"],[static="yes"])
+AC_ARG_ENABLE(static, [AS_HELP_STRING([--disable-static],[build static linking with ptlib,h323plus (default enabled)],[40],[100])], [static="$enableval"])
 
 if test "${static}" = "yes"; then
   ENABLE_STATIC=1
