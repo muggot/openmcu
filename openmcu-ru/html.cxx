@@ -18,12 +18,9 @@ char * html_quote_buffer;
 PMutex html_mutex;
 
 void BeginPage (PStringStream &html, const char *ptitle, const char *title, const char *quotekey)
-{
-  PWaitAndSignal m(html_mutex);
-
-  if(html_template_size == 0) // count on zero initialization
-  {
-    FILE *fs;
+{ PWaitAndSignal m(html_mutex);
+  if(html_template_size <= 0) // count on zero initialization
+  { FILE *fs;
 #ifdef SYS_RESOURCE_DIR
 #  ifdef _WIN32
     fs=fopen(SYS_RESOURCE_DIR+PString("\\template.html"), "r");
@@ -34,158 +31,34 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
     fs=fopen("template.html", "r");
 #endif
     if(fs)
-    {
-      fseek(fs, 0L, SEEK_END);
-      html_template_size = ftell(fs);
-      rewind(fs);
+    { fseek(fs, 0L, SEEK_END); html_template_size = ftell(fs); rewind(fs);
       html_template_buffer = new char[html_template_size + 1];
-      if(html_template_size != fread(html_template_buffer, 1, html_template_size, fs))
-      { cout << "Can't load HTML template!\n";
-        PTRACE(1,"WebCtrl\tCan't read HTML template from file");
-        html_template_size = -1;
-      }
+      if(html_template_size != fread(html_template_buffer, 1, html_template_size, fs)) html_template_size = -1;
       else html_template_buffer[html_template_size] = 0;
       fclose(fs);
     }
-    else
-    {
-      html_template_size = -1; // read error indicator
-    }
+    else html_template_size = -1; // read error indicator
   }
+  if(html_template_size <= 0) { cout << "Can't load HTML template!\n"; PTRACE(1,"WebCtrl\tCan't read HTML template from file"); return; }
 
-  if(html_quote_size == 0) // count on zero initialization
-  {
-    FILE *fs;
-#ifdef SYS_RESOURCE_DIR
-#  ifdef _WIN32
-    fs=fopen(SYS_RESOURCE_DIR+PString("\\quote.txt"), "r");
-#  else
-    fs=fopen(SYS_RESOURCE_DIR+PString("/quote.txt"), "r");
-#  endif
-#else
-    fs=fopen("quote.txt", "r");
-#endif
-    if(fs)
-    {
-      fseek(fs, 0L, SEEK_END);
-      html_quote_size = ftell(fs);
-      rewind(fs);
-      html_quote_buffer = new char[html_quote_size + 1];
-      if(html_quote_size != fread(html_quote_buffer, 1, html_quote_size, fs))
-      { cout << "Can't load quote.txt!\n";
-        PTRACE(1,"WebCtrl\tCan't read quote.txt");
-        html_quote_size = -1;
-      }
-      else html_quote_buffer[html_quote_size] = 0;
-      fclose(fs);
-    }
-    else
-    {
-      html_quote_size = -1; // read error indicator
-    }
-  }
+  PString lang = PConfig("Parameters").GetString("Language").ToLower();
 
-  if ((html_template_size > 0) && (html_quote_size > 0))
-  {
-    PString lang = PConfig("Parameters").GetString("Language").ToLower();
-    char *lng = strstr(html_template_buffer, "$LANG$");
-    if(lng && lang != "")
-    {
-      *lng=0;
-      html << html_template_buffer << lang;
-      *lng='$';
-      lng+=6;
-    }
-    else lng = html_template_buffer;
+  PString html0(html_template_buffer); html0 = html0.Left(html0.Find("$BODY$"));
+  html0.Replace("$LANG$",     lang,     TRUE, 0);
+  html0.Replace("$PTITLE$",   ptitle,   TRUE, 0);
+  html0.Replace("$TITLE$",    title,    TRUE, 0);
+  html0.Replace("$QUOTE$",    quotekey, TRUE, 0);
 
-    char *ptt = strstr(lng, "$PTITLE$");
-    if(ptt)
-    {
-      *ptt=0;
-      html << lng << ptitle;
-      *ptt='$';
-      ptt+=8;
-    }
-    else ptt = lng;
-
-    char *tt=strstr(ptt, "$TITLE$");
-    if(tt)
-    {
-      *tt=0;
-      html << ptt << title;
-      *tt='$';
-      tt+=7;
-    }
-    else tt=ptt;
-
-    char *quote_beg = strstr(html_quote_buffer, quotekey); // searching key here
-    char *quote_end = NULL;
-    BOOL needs_restore = FALSE;
-    if(quote_beg)
-    {
-      quote_beg += strlen(quotekey);
-      quote_end = strstr(quote_beg, "$$");
-      if(quote_end)
-      {
-        *quote_end=0;
-        needs_restore = TRUE;
-      }
-    }
-    else quote_beg = html_quote_buffer;
-
-    char *qt = strstr(tt, "$QUOTE$");
-    if(qt)
-    {
-      *qt=0;
-      html << tt << quotekey;
-      *qt='$';
-      qt+=7;
-    }
-    else qt=tt;
-    if(needs_restore) *quote_end='$';
-
-    char *qt2 = strstr(qt, "$QUOTE2$");
-    if(qt2)
-    {
-      *qt2=0;
-      html << qt << quote_beg;
-      *qt2='$';
-      qt2+=8;
-    }
-    else qt2=qt;
-    if(needs_restore) *quote_end='$';
-
-    char *bt = strstr(qt2,"$BODY$");
-    if(bt)
-    {
-      *bt=0;
-      html << qt2;
-      *bt='$';
-    }
-  } //  if ((html_template_size > 0) && (html_quote_size > 0))
+  html << html0;
 }
 
 void EndPage (PStringStream &html, PString copyr) 
 {
   PWaitAndSignal m(html_mutex);
-
-  if ((html_template_size > 0) && (html_quote_size > 0))
-  {
-    char *bt = strstr(html_template_buffer,"$BODY$");
-    if(bt)
-    {
-      bt+=6;
-      char *ct=strstr(bt,"$COPYRIGHT$");
-      if(ct)
-      {
-        *ct=0;
-        html << bt << copyr;
-        *ct='$';
-        ct+=11;
-        html << ct;
-      }
-    }
-  }
+  if (html_template_size <= 0) return;
+  PString html0(html_template_buffer); html0 = html0.Mid(html0.Find("$BODY$")+6,P_MAX_INDEX);
+  html0.Replace("$COPYRIGHT$", copyr,   TRUE, 0);
+  html << html0;
 }
 
 PString ErrorPage( //maybe ptlib could already create pages like this? for future: dig into http server part

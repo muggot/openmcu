@@ -1471,6 +1471,8 @@ PString OpenMCUH323EndPoint::RoomCtrlPage(const PString room, BOOL ctrl, int n, 
 
  BeginPage(page,"Room Control","window.l_control","window.l_info_control");
 
+ page << "<script src=\"control.js\"></script>";
+
  page << "<div id='cb1' name='cb1' class='input-append'>&nbsp;</div>"
    << "<div style='text-align:center'>"
      << "<div id='cb2' name='cb2' style='margin-left:auto;margin-right:auto;width:100px;height:100px;background-color:#ddd'>"

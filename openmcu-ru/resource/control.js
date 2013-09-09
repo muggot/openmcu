@@ -1,5 +1,3 @@
-<script language="javascript"><!--
-
 var max_subframes=100;
 var default_page_width=942; //CHANGE IT IF YOU WISH, IT'LL BE AUTO-INCREASED IF NEEDED
 var page_border_width=70;   //for detect panel width
@@ -1362,5 +1360,3 @@ function getLeftPos(el) {
   for (var leftPos=0; el!=null; leftPos+=el.offsetLeft, el=el.offsetParent);
   return leftPos;
 }
-
-//--></script>

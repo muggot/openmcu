@@ -184,6 +184,13 @@ class SelectRoomPage : public PServiceHTTPString
   public:
     SelectRoomPage(OpenMCU & app, PHTTPAuthority & auth);
     
+    BOOL OnGET(
+      PHTTPServer & server,
+      const PURL &url,
+      const PMIMEInfo & info,
+      const PHTTPConnectionInfo & connectInfo
+    );
+
     virtual BOOL Post(
       PHTTPRequest & request,
       const PStringToString &,
@@ -589,39 +596,40 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #ifdef SYS_RESOURCE_DIR
 #  ifdef _WIN32
 #    define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "\\" + r1), PHTTPSpace::Overwrite)
-#    define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "\\" + r1, "text/css"), PHTTPSpace::Overwrite)
+#    define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "\\" + r1, mt1), PHTTPSpace::Overwrite)
 #  else
 #    define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "/" + r1), PHTTPSpace::Overwrite)
-#    define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "/" + r1, "text/css"), PHTTPSpace::Overwrite)
+#    define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "/" + r1, mt1), PHTTPSpace::Overwrite)
 #  endif
 #else
 #  define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1), PHTTPSpace::Overwrite)
-#  define WEBSERVER_CSS_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, "text/css"), PHTTPSpace::Overwrite)
+#  define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, mt1), PHTTPSpace::Overwrite)
 #endif
-  WEBSERVER_LINK("i15_mic_on.gif");
-  WEBSERVER_LINK("i15_mic_off.gif");
-  WEBSERVER_LINK("openmcu.ru_drop_Abdylas_Tynyshov.gif");
-  WEBSERVER_LINK("openmcu.ru_vad_vad.gif");
-  WEBSERVER_LINK("openmcu.ru_vad_disable.gif");
-  WEBSERVER_LINK("openmcu.ru_vad_chosenvan.gif");
-  WEBSERVER_LINK("i15_inv.gif");
-  WEBSERVER_LINK("openmcu.ru_launched_Ypf.gif");
-  WEBSERVER_LINK("openmcu.ru_remove.gif");
-  WEBSERVER_LINK("i20_close.gif");
-  WEBSERVER_LINK("i20_vad.gif");
-  WEBSERVER_LINK("i20_vad2.gif");
-  WEBSERVER_LINK("i20_static.gif");
-  WEBSERVER_LINK("i20_plus.gif");
-  WEBSERVER_LINK("i24_shuff.gif");
-  WEBSERVER_LINK("i24_left.gif");
-  WEBSERVER_LINK("i24_right.gif");
-  WEBSERVER_LINK("i24_mix.gif");
-  WEBSERVER_LINK("i24_clr.gif");
-  WEBSERVER_LINK("i24_revert.gif");
-  WEBSERVER_LINK("openmcu.ico");
-  WEBSERVER_LINK("openmcu.ru_logo_text.bmp");
-  WEBSERVER_LINK("locale_ru.js");
-  WEBSERVER_LINK("locale_en.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "control.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "locale_ru.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "locale_en.js");
+  WEBSERVER_LINK_MIME("image/gif"                , "i15_mic_on.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i15_mic_off.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_drop_Abdylas_Tynyshov.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_vad_vad.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_vad_disable.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_vad_chosenvan.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i15_inv.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_launched_Ypf.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_remove.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i20_close.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i20_vad.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i20_vad2.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i20_static.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i20_plus.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i24_shuff.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i24_left.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i24_right.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i24_mix.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i24_clr.gif");
+  WEBSERVER_LINK_MIME("image/gif"                , "i24_revert.gif");
+  WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "openmcu.ico");
+  WEBSERVER_LINK_MIME("image/x-windows-bmp"      , "openmcu.ru_logo_text.bmp");
 
   // set up the HTTP port for listening & start the first HTTP thread
   if (ListenForHTTP(httpPort))
@@ -1167,20 +1175,127 @@ SelectRoomPage::SelectRoomPage(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Select", "", "text/html; charset=utf-8", auth),
     app(_app)
 {
+}
+
+BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
+{
+  { PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
+    if(!CheckAuthority(server, *req, connectInfo)) {delete req; return FALSE;}
+    delete req;
+  }
+
+  PStringToString data;
+  { PString request=url.AsString(); PINDEX q;
+    if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
+  }
+
+  PString cmdResult; // will empty if no action performed
+  if(data.Contains("action"))
+  {
+    PString action=data("action");
+    PString room=data("room");
+    if(action == "create" && (!room.IsEmpty()))
+    {
+      ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+      cm.MakeAndLockConference(room);
+      cm.UnlockConference();
+    }
+    else if(action == "delete" && (!room.IsEmpty()))
+    {
+      ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+      if(cm.HasConference(room))
+      {
+        Conference * conference = cm.MakeAndLockConference(room);
+        cm.RemoveConference(conference->GetID());
+        cm.UnlockConference();
+      }
+    }
+  }
+
+  OpenMCUH323EndPoint & ep=app.GetEndpoint();
+
   PStringStream html;
-
   BeginPage(html,"Rooms","window.l_rooms","window.l_info_rooms");
+  if(!cmdResult.IsEmpty()) html << cmdResult;
 
-  html << "<p>"
-       << "<form method=\"POST\" class=\"well form-inline\">"
-       << "<!--#macrostart RoomList-->"
-         << "<!--#status List-->"
-       << "<!--#macroend RoomList-->"
-       << "&nbsp;";
+  html
+    << "<form method=\"post\"><input name='room' id='room' type=hidden>"
+    << "<table class=\"table table-striped table-bordered table-condensed\">"
+
+    << "<tr>"
+    << "<td colspan='6'><input class='btn btn-large' name='newroom' id='newroom' value='room102' /><input type='button' class='btn btn-large btn-info' value='Создать конференцию' onclick=\"location.href='?action=create&room='+encodeURIComponent(document.getElementById('newroom').value);\"></td>"
+    << "</tr>"
+
+    << "<tr>"
+    << "<th>Enter&nbsp;room:<br>Управлять&nbsp;комнатой</th>"
+    << "<th>Moderated<br>Управляемый&nbsp;режим</th>"
+    << "<th>Visible&nbsp;members<br>Видимых&nbsp;участников</th>"
+    << "<th>Unvisible&nbsp;members<br>Невидимых&nbsp;участников</th>"
+    << "<th>Duration<br>Время&nbsp;работы</th>"
+    << "<th>Delete&nbsp;room<br>Удалить&nbsp;конференцию</th>"
+    << "</tr>"
+  ;
+  
+  { PWaitAndSignal m(ep.GetConferenceManager().GetConferenceListMutex());
+    ConferenceListType & conferenceList = ep.GetConferenceManager().GetConferenceList();
+
+    ConferenceListType::iterator r;
+    for (r = conferenceList.begin(); r != conferenceList.end(); ++r)
+    {
+      BOOL controlled = TRUE;
+      Conference & conference = *(r->second);
+      PString roomNumber = conference.GetNumber();
+#if ENABLE_TEST_ROOMS
+      controlled &= (!(roomNumber.Left(8)=="testroom")) ;
+#endif
+#if ENABLE_ECHO_MIXER
+      controlled &= (!(roomNumber.Left(4)*="echo"));
+#endif
+      BOOL moderated=FALSE; PString charModerated = "-";
+      if(controlled) { charModerated = conference.IsModerated(); moderated=(charModerated=="+"); }
+      PINDEX   visibleMemberCount = conference.GetVisibleMemberCount();
+      PINDEX unvisibleMemberCount = conference.GetMemberCount() - visibleMemberCount;
+
+      PString roomButton = "<span class=\"btn btn-large btn-";
+      if(moderated) roomButton+="success";
+      else if(controlled) roomButton+="primary";
+      else roomButton+="inverse";
+      roomButton += "\" onclick='document.getElementById(\"room\").value=\""
+        + roomNumber
+        + "\";document.forms[0].submit();'>"
+        + roomNumber
+        + "</span>";
+
+      html << "<tr>"
+        << "<td>" << roomButton                            << "</td>"
+        << "<td>" << moderated                             << "</td>"
+        << "<td>" << visibleMemberCount                    << "</td>"
+        << "<td>" << unvisibleMemberCount                  << "</td>"
+        << "<td>" << (PTime() - conference.GetStartTime()) << "</td>"
+        << "<td><span class=\"btn btn-large btn-danger\" onclick=\"if(confirm('Вы уверены? Are you sure?')){location.href='?action=delete&room=" << PURL::TranslateString(roomNumber,PURL::QueryTranslation) << "';}\">X</span></td>"
+        << "</tr>";
+    }
+  }
+
+  html << "</table></form>";
 
   EndPage(html,OpenMCU::Current().GetHtmlCopyright());
-
-  string = html;
+  { PStringStream message; PTime now; message
+      << "HTTP/1.1 200 OK\r\n"
+      << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
+      << "Server: OpenMCU.ru\r\n"
+      << "MIME-Version: 1.0\r\n"
+      << "Cache-Control: no-cache, must-revalidate\r\n"
+      << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
+      << "Content-Type: text/html;charset=utf-8\r\n"
+      << "Content-Length: " << html.GetLength() << "\r\n"
+      << "Connection: Close\r\n"
+      << "\r\n";  //that's the last time we need to type \r\n instead of just \n
+    server.Write((const char*)message,message.GetLength());
+  }
+  server.Write((const char*)html,html.GetLength());
+  server.flush();
+  return TRUE;
 }
 
 BOOL SelectRoomPage::Post(PHTTPRequest & request,
@@ -1188,7 +1303,9 @@ BOOL SelectRoomPage::Post(PHTTPRequest & request,
                           PHTML & msg)
 {
   if(OpenMCU::Current().GetForceScreenSplit())
-  msg << OpenMCU::Current().GetEndpoint().SetRoomParams(data);
+  {
+    msg << OpenMCU::Current().GetEndpoint().SetRoomParams(data);
+  }
   else msg << ErrorPage(request.localAddr.AsString(),request.localPort,423,"Locked","Room Control feature is locked","To unlock the page: click &laquo;<a href='/Parameters'>Parameters</a>&raquo;, check &laquo;Force split screen video and enable Room Control feature&raquo; and accept.<br/><br/>");
   return TRUE;
 }
