@@ -63,3 +63,11 @@ window.l_info_param_h323 ='';
 window.l_info_param_sip ='';
 window.l_info_param_access_rules ='';
 window.l_info_param_sip_proxy ='';
+
+window.l_select_create =       'Создать комнату'
+window.l_select_enter =        'Управлять комнатой'
+window.l_select_moderated =    'Управляемый режим'
+window.l_select_visible =      'Видимых участников'
+window.l_select_unvisible =    'Невидимых участников'
+window.l_select_duration =     'Время работы'
+window.l_select_delete =       'Удалить комнату'

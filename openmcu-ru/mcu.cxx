@@ -1223,16 +1223,16 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     << "<table class=\"table table-striped table-bordered table-condensed\">"
 
     << "<tr>"
-    << "<td colspan='6'><input class='btn btn-large' name='newroom' id='newroom' value='room102' /><input type='button' class='btn btn-large btn-info' value='Создать конференцию' onclick=\"location.href='?action=create&room='+encodeURIComponent(document.getElementById('newroom').value);\"></td>"
+    << "<td colspan='6'><input class='btn btn-large' name='newroom' id='newroom' value='room102' /><input type='button' class='btn btn-large btn-info' id='l_select_create' onclick=\"location.href='?action=create&room='+encodeURIComponent(document.getElementById('newroom').value);\"></td>"
     << "</tr>"
 
     << "<tr>"
-    << "<th>Enter&nbsp;room:<br>Управлять&nbsp;комнатой</th>"
-    << "<th>Moderated<br>Управляемый&nbsp;режим</th>"
-    << "<th>Visible&nbsp;members<br>Видимых&nbsp;участников</th>"
-    << "<th>Unvisible&nbsp;members<br>Невидимых&nbsp;участников</th>"
-    << "<th>Duration<br>Время&nbsp;работы</th>"
-    << "<th>Delete&nbsp;room<br>Удалить&nbsp;конференцию</th>"
+    << "<th><script type=\"text/javascript\">document.write(window.l_select_enter);</script><br></th>"
+    << "<th><script type=\"text/javascript\">document.write(window.l_select_moderated);</script><br></th>"
+    << "<th><script type=\"text/javascript\">document.write(window.l_select_visible);</script><br></th>"
+    << "<th><script type=\"text/javascript\">document.write(window.l_select_unvisible);</script><br></th>"
+    << "<th><script type=\"text/javascript\">document.write(window.l_select_duration);</script><br></th>"
+    << "<th><script type=\"text/javascript\">document.write(window.l_select_delete);</script><br></th>"
     << "</tr>"
   ;
   

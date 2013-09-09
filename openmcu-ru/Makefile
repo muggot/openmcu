@@ -48,12 +48,12 @@ i15_mic_off.gif \
 i20_vad.gif \
 i24_shuff.gif \
 openmcu.ru_remove.gif \
-template.html \
-quote.txt \
 openmcu.ru_logo_text.bmp \
 connecting.wav \
 entering.wav \
 leaving.wav \
+template.html \
+control.js \
 locale_ru.js \
 locale_en.js
 

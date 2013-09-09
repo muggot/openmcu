@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <script type="text/javascript">
   window.lang_code = "$LANG$"
-  if( window.lang_code == "$LANG$")
+  if( window.lang_code == "")
   {
     var language = navigator.language || navigator.userLanguage || "ru-RU";
     window.lang_code = language.substring(0,2);
@@ -441,6 +441,8 @@ $BODY$
    document.getElementById("l_status").innerHTML = window.l_status;
    document.getElementById("l_connections").innerHTML = window.l_connections;
    document.getElementById("l_records").innerHTML = window.l_records;
+   <!-- управление -->
+   document.getElementById("l_select_create").value = window.l_select_create;
  </script>
 
 <!-- Design by SchmeL  bizpnz.ru -->
