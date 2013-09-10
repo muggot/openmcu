@@ -738,7 +738,20 @@ int H263_RFC2190_EncoderContext::EncodeFrames(const BYTE * src, unsigned & srcLe
 
   //CODEC_TRACER(tracer, "Encoder called with " << frameSize << " bytes and frame type " << _inputFrame->pict_type << " at " << header->width << "x" << header->height);
 
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55,0,0)
+  int got_packet_ptr = 0;
+  AVPacket _pkt;
+  av_init_packet(&_pkt);
+  _pkt.data = NULL;
+  _pkt.size = 0;
+  int ret = avcodec_encode_video2(_context, &_pkt, _inputFrame, &got_packet_ptr);
+  if(ret == 0 && got_packet_ptr)
+    memcpy(packetizer.m_buffer, _pkt.data, _pkt.size);
+  int encodedLen = _pkt.size;
+  av_free_packet(&_pkt);
+#else
   int encodedLen = avcodec_encode_video(_context, packetizer.m_buffer, packetizer.m_bufferSize, _inputFrame);
+#endif
 
   if (encodedLen < 0) {
     TRACE_AND_LOG(tracer, 1, "Encoder failed");
@@ -914,7 +927,22 @@ int H263_RFC2429_EncoderContext::EncodeFrames(const BYTE * src, unsigned & srcLe
  
   _txH263PFrame->BeginNewFrame();
   _txH263PFrame->SetTimestamp(srcRTP.GetTimestamp());
-  _txH263PFrame->SetFrameSize (avcodec_encode_video(_context, _txH263PFrame->GetFramePtr(), frameSize, _inputFrame));  
+
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55,0,0)
+  int got_packet_ptr = 0;
+  AVPacket _pkt;
+  av_init_packet(&_pkt);
+  _pkt.data = NULL;
+  _pkt.size = 0;
+  int ret = avcodec_encode_video2(_context, &_pkt, _inputFrame, &got_packet_ptr);
+  if(ret == 0 && got_packet_ptr)
+    memcpy(_txH263PFrame->GetFramePtr(), _pkt.data, _pkt.size);
+  _txH263PFrame->SetFrameSize(_pkt.size);
+  av_free_packet(&_pkt);
+#else
+  _txH263PFrame->SetFrameSize (avcodec_encode_video(_context, _txH263PFrame->GetFramePtr(), frameSize, _inputFrame));
+#endif
+
   _frameCount++; 
 
   if (_txH263PFrame->GetFrameSize() == 0) {
