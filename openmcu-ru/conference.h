@@ -139,6 +139,7 @@ class VideoFrameStoreList {
 ////////////////////////////////////////////////////
 
 class ConferenceMember;
+class ConferenceFileMember;
 
 /// Video Mixer Configurator - Begin ///
 #define VMPC_CONFIGURATION_NAME               "layouts.conf"
@@ -908,6 +909,9 @@ class ConferenceMember : public PObject
     ConnectionListType & GetConnectionList()
     { return connectionList; }
 
+    MemberListType & GetMemberList()
+    { return memberList; }
+
     virtual int GetTerminalNumber() const             { return terminalNumber; }
     virtual void SetTerminalNumber(int n)             { terminalNumber = n; }
 
@@ -1242,6 +1246,8 @@ class Conference : public PObject
     virtual void DeleteTemplate(PString tplName);
     virtual BOOL RewriteMembersConf();
 
+    ConferenceFileMember * fileRecorder;
+
   protected:
     ConferenceManager & manager;
     PMutex memberListMutex;
@@ -1413,8 +1419,7 @@ class ConferenceManager : public PObject
 
     virtual void OnCreateConference(Conference *);
 
-    virtual void OnDestroyConference(Conference *)
-    { }
+    virtual void OnDestroyConference(Conference *);
 
     virtual BOOL BeforeMemberJoining(Conference *, ConferenceMember *)
     { return TRUE; }

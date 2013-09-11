@@ -2071,7 +2071,7 @@ class MemberDeleteThread : public PThread
       cm->WaitForClose();
       PThread::Sleep(1000);
       if (conf->RemoveMember(cm))
-        ep->GetConferenceManager().RemoveConference(conf->GetID());
+{}//        ep->GetConferenceManager().RemoveConference(conf->GetID());
       PThread::Sleep(1000);
       delete cm;
     }

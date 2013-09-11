@@ -44,8 +44,9 @@ ConferenceSoundCardMember::~ConferenceSoundCardMember()
 
 void ConferenceSoundCardMember::Unlisten()
 {
-  if (conference->RemoveMember(this))
-    conference->GetManager().RemoveConference(conference->GetID());
+//  if (conference->RemoveMember(this))
+//    conference->GetManager().RemoveConference(conference->GetID());
+  conference->RemoveMember(this);
 
   if ((thread != NULL) && running) {
     running = FALSE;
@@ -202,8 +203,9 @@ BOOL ConferenceFileMember::QueueNext()
 
 void ConferenceFileMember::Unlisten()
 {
-  if (conference->RemoveMember(this))
-    conference->GetManager().RemoveConference(conference->GetID());
+//  if (conference->RemoveMember(this))
+//    conference->GetManager().RemoveConference(conference->GetID());
+  conference->RemoveMember(this);
 
   if ((thread != NULL) && running) {
     running = FALSE;
@@ -293,6 +295,7 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
     if(result) {
       if(success==0) { success++; audioDelay.Restart(); }
     } else {
+      DisconnectNamedPipe(pipe);
       CloseHandle(pipe);
       pipe = CreateNamedPipe(cname, PIPE_ACCESS_OUTBOUND,
         PIPE_TYPE_BYTE|PIPE_WAIT,
@@ -330,6 +333,7 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
   }
 
 #ifdef _WIN32
+  DisconnectNamedPipe(pipe);
   CloseHandle(pipe);
 #else
   close(SS);
@@ -399,6 +403,7 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
     if(result) {
       if(success==0) { success++; videoDelay.Restart(); }
     } else {
+      DisconnectNamedPipe(pipe);
       CloseHandle(pipe);
       pipe = CreateNamedPipe(cname, PIPE_ACCESS_OUTBOUND,
         PIPE_TYPE_BYTE|PIPE_WAIT,
@@ -430,6 +435,7 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
   }
 
 #ifdef _WIN32
+  DisconnectNamedPipe(pipe);
   CloseHandle(pipe);
   PTRACE(3,"WriteThreadV\tVideo pipe closed: " << cstr);
 #else

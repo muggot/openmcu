@@ -1189,7 +1189,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
   }
 
-  PString cmdResult; // will empty if no action performed
+  PStringStream cmdResult; // will empty if no action performed
   if(data.Contains("action"))
   {
     PString action=data("action");
@@ -1197,7 +1197,8 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     if(action == "create" && (!room.IsEmpty()))
     {
       ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
-      cm.MakeAndLockConference(room);
+      cmdResult << "Creating &laquo;" << room << "&raquo;: ";
+      if(cm.MakeAndLockConference(room) != NULL) cmdResult << "created"; else cmdResult << "failed";
       cm.UnlockConference();
     }
     else if(action == "delete" && (!room.IsEmpty()))
@@ -1205,9 +1206,52 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
       if(cm.HasConference(room))
       {
-        Conference * conference = cm.MakeAndLockConference(room);
-        cm.RemoveConference(conference->GetID());
-        cm.UnlockConference();
+        Conference * conference = cm.MakeAndLockConference(room); // find & get locked
+        if(conference != NULL)
+        { cmdResult << "Closing &laquo;" << room << "&raquo;: ";
+
+//          conference->GetMutex().Wait();
+//          conference->GetMemberNameList().clear();
+/*          Conference::MemberList & memberList = conference->GetMemberList();
+          Conference::MemberList::iterator r;
+          for(r=memberList.begin();r!=memberList.end();++r) if(r->second->GetName() == "file recorder")
+          { delete dynamic_cast<ConferenceFileMember *>(r->second); break; }
+*/
+/*
+
+          while (r != memberList.end())
+          {
+            ConferenceMember * member = r->second;
+            if(member != NULL)
+            { PString memberName=member->GetName();
+              BOOL cache = (memberName=="cache"),
+                recorder = (memberName=="file recorder");
+              BOOL peer = !(cache || recorder);
+              cmdResult << "-" << memberName << "; "; PTRACE(5,"MCU\tClosing " << memberName << flush);
+  //            if(peer) (dynamic_cast<H323Connection_ConferenceMember *>(r->second))->Close();
+              if(recorder)
+              { ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(r->second);
+//                memberList.erase(r);
+PTRACE(1,"1" << flush);
+                delete fileMember;
+PTRACE(1,"2" << flush);
+                if(memberList.size() == 0) break;
+PTRACE(1,"3" << flush);
+                r = memberList.begin();
+PTRACE(1,"4" << flush);
+                continue;
+              }
+            }
+            r++;
+          }
+//          conference->GetMemberList().clear();
+
+          conference->GetMutex().Signal();
+*/
+          cm.RemoveConference(conference->GetID());
+          cmdResult << "done";
+          cm.UnlockConference();
+        }
       }
     }
   }
@@ -1260,11 +1304,10 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       if(moderated) roomButton+="success";
       else if(controlled) roomButton+="primary";
       else roomButton+="inverse";
-      roomButton += "\" onclick='document.getElementById(\"room\").value=\""
-        + roomNumber
-        + "\";document.forms[0].submit();'>"
-        + roomNumber
-        + "</span>";
+      roomButton += "\"";
+      if(controlled) roomButton+=" onclick='document.getElementById(\"room\").value=\""
+        + roomNumber + "\";document.forms[0].submit();'";
+      roomButton += ">" + roomNumber + "</span>";
 
       html << "<tr>"
         << "<td>" << roomButton                            << "</td>"
