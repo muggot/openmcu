@@ -199,6 +199,10 @@ static int codec_decoder(const struct PluginCodec_Definition * codec,
   }
 
   speex_bits_destroy(&context->speexBits);  
+  if (*toLen == 0) {
+    *toLen = codec->parm.audio.samplesPerFrame*2;
+    return 0;
+  }
   return 1;
 }
 
