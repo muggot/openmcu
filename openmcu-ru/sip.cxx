@@ -538,11 +538,55 @@ void OpenMCUSipConnection::SelectCapability_VP8(SipCapability &c,PStringArray &t
  }
 }
 
+void OpenMCUSipConnection::SelectCapability_SPEEX(SipCapability &c,PStringArray &tsCaps)
+{
+  int vbr = -1;
+  int mode = -1;
+
+  c.parm.Replace(" ","",TRUE,0);
+  PStringArray keys = c.parm.Tokenise(";");
+  for(int kn = 0; kn < keys.GetSize(); kn++)
+  {
+    if(keys[kn].Find("vbr=") == 0)
+    {
+      if(strcmp(keys[kn].Tokenise("=")[1], "on") == 0)
+        vbr = 1;
+      else if(strcmp(keys[kn].Tokenise("=")[1], "off") == 0)
+        vbr = 0;
+    }
+    else if(keys[kn].Find("mode=") == 0)
+      mode = (keys[kn].Tokenise("=")[1]).AsInteger();
+  }
+
+  PString H323Name;
+  if(c.cap) c.cap = NULL;
+
+  if(c.clock == 8000 && tsCaps.GetStringsIndex("Speex_8K{sw}") != P_MAX_INDEX)
+    H323Name = "Speex_8K{sw}";
+  else if(c.clock == 16000 && tsCaps.GetStringsIndex("Speex_16K{sw}") != P_MAX_INDEX)
+    H323Name = "Speex_16K{sw}";
+  else if(c.clock == 32000 && tsCaps.GetStringsIndex("Speex_32K{sw}") != P_MAX_INDEX)
+    H323Name = "Speex_32K{sw}";
+
+  c.cap = H323Capability::Create(H323Name);
+  if(c.cap)
+  {
+    scap = c.payload;
+    c.h323 = H323Name;
+    OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
+    if (vbr > -1)
+      wf.SetOptionInteger("vbr", vbr);
+    if (mode > -1)
+      wf.SetOptionInteger("mode", mode);
+  }
+}
+
 void OpenMCUSipConnection::SelectCapability_OPUS(SipCapability &c,PStringArray &tsCaps)
 {
  int useinbandfec = -1;
  int usedtx = -1;
 
+ c.parm.Replace(" ","",TRUE,0);
  PStringArray keys = c.parm.Tokenise(";");
  for(int kn = 0; kn < keys.GetSize(); kn++)
  {
@@ -727,12 +771,8 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
    else if(c.format.ToLower() == "silk" && c.clock == 24000 &&
       tsCaps.GetStringsIndex("SILK_B40_24K{sw}")!=P_MAX_INDEX) //SILK 24000
     { scap = c.payload; c.h323 = "SILK_B40_24K{sw}"; c.cap = H323Capability::Create("SILK_B40_24K{sw}"); }
-   else if(c.format.ToLower() == "speex" && c.clock == 8000 &&
-      tsCaps.GetStringsIndex("SpeexWNarrow-8k{sw}")!=P_MAX_INDEX) //SPEEX 8000
-    { scap = c.payload; c.h323 = "SpeexWNarrow-8k{sw}"; c.cap = H323Capability::Create("SpeexWNarrow-8k{sw}"); }
-   else if(c.format.ToLower() == "speex" && c.clock == 16000 &&
-      tsCaps.GetStringsIndex("SpeexWide-20.6k{sw}")!=P_MAX_INDEX) //SPEEX 16000
-    { scap = c.payload; c.h323 = "SpeexWide-20.6k{sw}"; c.cap = H323Capability::Create("SpeexWide-20.6k{sw}"); }
+   else if(c.format.ToLower() == "speex")
+   { SelectCapability_SPEEX(c,tsCaps); }
    else if(c.format.ToLower() == "opus" && c.clock == 48000) //OPUS 48000
    { SelectCapability_OPUS(c,tsCaps); }
 //

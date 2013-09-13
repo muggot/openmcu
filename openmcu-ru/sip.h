@@ -239,6 +239,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   void SelectCapability_H263p(SipCapability &c,PStringArray &tvCaps);
   void SelectCapability_H264(SipCapability &c,PStringArray &tvCaps);
   void SelectCapability_VP8(SipCapability &c,PStringArray &tvCaps);
+  void SelectCapability_SPEEX(SipCapability &c,PStringArray &tsCaps);
   void SelectCapability_OPUS(SipCapability &c,PStringArray &tsCaps);
   void SipReply200(nta_agent_t *agent, msg_t *msg);
   void SipProcessACK(nta_agent_t *agent, msg_t *msg);
