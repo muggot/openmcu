@@ -31,7 +31,7 @@
 
 #define	EMAIL "muggot@mail.ru"
 
-#define	HOME_PAGE "http://www.openmcu.ru"
+#define	HOME_PAGE "http://openmcu.ru"
 
 #define	PRODUCT_NAME_HTML PRODUCT_NAME_TEXT
 

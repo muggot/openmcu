@@ -1547,7 +1547,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   } else {
     sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
 	("sip:"+(PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host+":"+localPort), NULL);
-    sCon->localIP = sip->sip_from->a_url->url_user;
+    sCon->localIP = sip->sip_from->a_url->url_host;
     sCon->roomName = sip->sip_from->a_url->url_user;
   }
   sCon->sip_msg = msg_dup(msg);
@@ -1645,9 +1645,15 @@ void OpenMCUSipEndPoint::Main()
         "s=Talk\n"
         "c=IN IP4 LOCALIP\n"
         "t=0 0\n"
-        "m=audio "+(PString)MCUSIP_RTP_AUDIO_PORT+" RTP/AVP 124 120 0 8 100 101\n"
+        "m=audio "+(PString)MCUSIP_RTP_AUDIO_PORT+" RTP/AVP 124 120 112 111 110 0 8 100 101\n"
         "a=rtpmap:124 OPUS/48000\n"
         "a=rtpmap:120 silk/16000\n"
+        "a=rtpmap:112 speex/32000\n"
+        "a=fmtp:112 vbr=off;mode=6\n"
+        "a=rtpmap:111 speex/16000\n"
+        "a=fmtp:111 vbr=off;mode=6\n"
+        "a=rtpmap:110 speex/8000\n"
+        "a=fmtp:110 vbr=off;mode=3\n"
         "a=rtpmap:0 PCMU/8000\n"
         "a=rtpmap:8 PCMA/8000\n"
         "a=rtpmap:100 iLBC/8000\n"

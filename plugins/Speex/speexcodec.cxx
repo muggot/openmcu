@@ -72,7 +72,7 @@ class Encoder : public PluginCodec<CODEC>
     unsigned m_signalSampleSize;
     unsigned m_vbr;
     unsigned m_mode;
-    int error;
+    int      ret;
 
   public:
     Encoder(const PluginCodec_Definition * defn)
@@ -122,13 +122,13 @@ class Encoder : public PluginCodec<CODEC>
       if (strcasecmp(optionName, "vbr") == 0)
       {
         int tmp = atoi(optionValue);
-        error = speex_encoder_ctl(m_state, SPEEX_SET_VBR, &tmp);
+        ret = speex_encoder_ctl(m_state, SPEEX_SET_VBR, &tmp);
         return true;
       }
       if (strcasecmp(optionName, "mode") == 0)
       {
         int tmp = atoi(optionValue);
-        error = speex_encoder_ctl(m_state, SPEEX_SET_MODE, &tmp);
+        ret = speex_encoder_ctl(m_state, SPEEX_SET_MODE, &tmp);
         return true;
       }
       return PluginCodec<CODEC>::SetOption(optionName, optionValue);
@@ -167,7 +167,7 @@ class Decoder : public PluginCodec<CODEC>
     unsigned m_sampleRate;
     unsigned m_signalSampleSize;
     unsigned m_decoderChannels;
-    int error;
+    int ret;
 
   public:
     Decoder(const PluginCodec_Definition * defn)
@@ -207,15 +207,15 @@ class Decoder : public PluginCodec<CODEC>
       speex_bits_init(&speexBits);
 
       if (flags&PluginCodec_CoderSilenceFrame) {
-        int error = speex_decode_int(m_state, NULL, (spx_int16_t *)toPtr);
+        ret = speex_decode_int(m_state, NULL, (spx_int16_t *)toPtr);
       } else {
         speex_bits_read_from(&speexBits, (char *)fromPtr, fromLen);
-        int error = speex_decode_int(m_state, &speexBits, (spx_int16_t *)toPtr);
+        ret = speex_decode_int(m_state, &speexBits, (spx_int16_t *)toPtr);
       }
 
       speex_bits_destroy(&speexBits);
 
-      if(error < 0)
+      if(ret != 0)
         return false;
 
       return true;
