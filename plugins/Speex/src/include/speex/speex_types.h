@@ -119,7 +119,7 @@
 
 #else
 
-#  include <speex/speex_config_types.h>
+#  include "speex_config_types.h"
 
 #endif
 

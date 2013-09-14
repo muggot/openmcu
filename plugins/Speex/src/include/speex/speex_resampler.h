@@ -84,7 +84,7 @@
       
 #else /* OUTSIDE_SPEEX */
 
-#include "speex/speex_types.h"
+#include "speex_types.h"
 
 #endif /* OUTSIDE_SPEEX */
 
