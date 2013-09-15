@@ -38,65 +38,59 @@ PString GetFromIp(const char *toAddr, const char *toPort)
 #endif
 }
 
-//  Usage
-//  OpenMCUSipConnection *sCon = new OpenMCUSipConnection(this, ep);
-//  sCon->SendSipInvite(agent,SIP_METHOD_INVITE);
-int OpenMCUSipConnection::SendSipInvite(nta_agent_t *agent, sip_method_t method, const char * name)
+PString CreateSdpInvite()
 {
-  msg_t *amsg = nta_msg_create(agent, 0);
-  sip_t *asip = sip_object(amsg);
-  msg_t *bmsg = NULL;
-  sip_t *bsip;
-  url_string_t const *ruri;
-  nta_outgoing_t *bye = NULL;
-  sip_cseq_t *cseq;
-  sip_request_t *rq;
-  sip_route_t *route = NULL, *r, r0[1];
-  su_home_t *home = msg_home(amsg);
+ PString types, map, type, name, fmtp;
+ PStringArray caps;
+ PINDEX tsNum = 0; while(OpenMCU::Current().GetEndpoint().tsCaps[tsNum]!=NULL) { caps.AppendString(OpenMCU::Current().GetEndpoint().tsCaps[tsNum]); tsNum++; }
+ PINDEX tvNum = 0; while(OpenMCU::Current().GetEndpoint().tvCaps[tvNum]!=NULL) { caps.AppendString(OpenMCU::Current().GetEndpoint().tvCaps[tvNum]); tvNum++; }
+ tsNum--; tvNum--;
 
-//  char ip_buf[16];
-//  GetFromIp(ip_buf,"127.0.0.1");
-//  PTRACE(1, "MCUSIP\tSIP CONTACT " << ip_buf);
-  
+ PString sdp =
+        "v=0\n"
+        "o=USERNAME 1806 3221 IN IP4 LOCALIP\n"
+        "s=Talk\n"
+        "c=IN IP4 LOCALIP\n"
+        "t=0 0\n";
 
-  if (asip == NULL)
-    return -1;
-  sip_add_tl(amsg, asip,
-	     SIPTAG_TO(sip_to_create(home,(url_string_t *)"sip:toto@192.168.0.2:5061")),
-	     SIPTAG_FROM(sip_from_create(home,(url_string_t *)"sip:openmcu@192.168.0.3:5060")),
-	     SIPTAG_CALL_ID(sip_call_id_create(home,"test")),
-	     TAG_END());
+ for (PINDEX i = 0; caps[i] != NULL; i++)
+ {
+   if(caps[i].Find("{sw}") == P_MAX_INDEX) caps[i] += "{sw}";
+   H323Capability *cap = H323Capability::Create(caps[i]);
+   if(cap)
+   {
+     const OpalMediaFormat & mf = cap->GetMediaFormat();
+     if(i <= tsNum) type = i+100; else type = i+100-tsNum-1;
+     name = PString(cap->GetFormatName()).ToLower();
+     if(name.Find("ulaw") != P_MAX_INDEX) name = "pcmu";
+     if(name.Find("alaw") != P_MAX_INDEX) name = "pcma";
+     name = name.Left(PString(cap->GetFormatName()).Find("-"))
+            .Left(name.Find("_"))+"/"+PString(mf.GetTimeUnits()*1000);
+     name.Replace(".","",TRUE,0);
+     if(name.Find("h263p") != P_MAX_INDEX) name.Replace("h263p","h263-1998",TRUE,0);
+     if(mf.GetOptionInteger("Encoder Channels") == 2 || mf.GetOptionInteger("Decoder Channels") == 2) goto end;
 
-  ruri = (url_string_t *)"sip:toto@192.168.0.2:5061";
+     fmtp = "\n";
+     for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
+       if(mf.GetOption(j).GetFMTPName() != "")
+         fmtp = mf.GetOption(j).GetName()+"="+mf.GetOption(j).AsString()+";"+fmtp;
+     if(name.Find("ilbc") != P_MAX_INDEX) fmtp = "mode=30;\n";
 
-//  msg_header_insert(amsg, (msg_pub_t *)asip, (msg_header_t *)route);
+     if(map.Find(name) != P_MAX_INDEX && map.Find(fmtp) != P_MAX_INDEX) goto end;
+     if(map.Find(name) != P_MAX_INDEX && i > tsNum) goto end;
 
-  bmsg = msg_copy(amsg); bsip = sip_object(bmsg);
+     types += type+" ";
+     map += "a=rtpmap:"+type+" "+name+"\n";
+     if(fmtp != "\n" && i <= tsNum) map += "a=fmtp:"+type+" "+fmtp;
+   }
 
-  home = msg_home(bmsg);
-
-  if (!(cseq = sip_cseq_create(home, 0x7fffffff, method, "invite")))
-    goto err;
-  else
-    msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)cseq);
-
-  if (!(rq = sip_request_create(home, method, "invite", ruri, NULL)))
-    goto err;
-  else
-    msg_header_insert(bmsg, (msg_pub_t *)bsip, (msg_header_t *)rq);
-
-  if (!(bye = nta_outgoing_mcreate(agent, NULL, NULL, NULL, bmsg,
-				   NTATAG_STATELESS(1),
-				   TAG_END())))
-    goto err;
-
-//  msg_destroy(msg);
-  return 0;
-
- err:
-  msg_destroy(amsg);
-  msg_destroy(bmsg);
-  return -1;
+   end:
+   if(i == tsNum)
+     { sdp += "m=audio "+(PString)MCUSIP_RTP_AUDIO_PORT+" RTP/AVP "+types+"\n"+map; map=""; types=""; }
+ }
+ sdp += "m=video "+(PString)MCUSIP_RTP_VIDEO_PORT+" RTP/AVP "+types+"\n"+map;
+ //cout << sdp;
+ return sdp;
 }
 
 void OpenMCUSipConnection::LeaveConference()
@@ -477,13 +471,9 @@ void OpenMCUSipConnection::SelectCapability_VP8(SipCapability &c,PStringArray &t
  for(int kn = 0; kn < keys.GetSize(); kn++)
  {
   if(keys[kn].Find("width=") == 0)
-  {
    width = (keys[kn].Tokenise("=")[1]).AsInteger();
-  }
   else if(keys[kn].Find("height=") == 0)
-  {
    height = (keys[kn].Tokenise("=")[1]).AsInteger();
-  }
  }
 
  PString H323Name;
@@ -559,59 +549,52 @@ void OpenMCUSipConnection::SelectCapability_SPEEX(SipCapability &c,PStringArray 
   }
 
   PString H323Name;
+  if(c.clock == 8000) H323Name = "Speex_8K{sw}";
+  else if(c.clock == 16000) H323Name = "Speex_16K{sw}";
+  else if(c.clock == 32000) H323Name = "Speex_32K{sw}";
+
   if(c.cap) c.cap = NULL;
-
-  if(c.clock == 8000 && tsCaps.GetStringsIndex("Speex_8K{sw}") != P_MAX_INDEX)
-    H323Name = "Speex_8K{sw}";
-  else if(c.clock == 16000 && tsCaps.GetStringsIndex("Speex_16K{sw}") != P_MAX_INDEX)
-    H323Name = "Speex_16K{sw}";
-  else if(c.clock == 32000 && tsCaps.GetStringsIndex("Speex_32K{sw}") != P_MAX_INDEX)
-    H323Name = "Speex_32K{sw}";
-
   c.cap = H323Capability::Create(H323Name);
   if(c.cap)
   {
     scap = c.payload;
     c.h323 = H323Name;
     OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
-    if (vbr > -1)
-      wf.SetOptionInteger("vbr", vbr);
-    if (mode > -1)
-      wf.SetOptionInteger("mode", mode);
+    if (vbr > -1) wf.SetOptionInteger("vbr", vbr);
+    if (mode > -1) wf.SetOptionInteger("mode", mode);
   }
 }
 
 void OpenMCUSipConnection::SelectCapability_OPUS(SipCapability &c,PStringArray &tsCaps)
 {
- int useinbandfec = -1;
- int usedtx = -1;
+  int useinbandfec = -1;
+  int usedtx = -1;
 
- c.parm.Replace(" ","",TRUE,0);
- PStringArray keys = c.parm.Tokenise(";");
- for(int kn = 0; kn < keys.GetSize(); kn++)
- {
-  if(keys[kn].Find("useinbandfec=") == 0)
-   useinbandfec = (keys[kn].Tokenise("=")[1]).AsInteger();
-  else if(keys[kn].Find("usedtx=") == 0)
-   usedtx = (keys[kn].Tokenise("=")[1]).AsInteger();
- }
+  c.parm.Replace(" ","",TRUE,0);
+  PStringArray keys = c.parm.Tokenise(";");
+  for(int kn = 0; kn < keys.GetSize(); kn++)
+  {
+    if(keys[kn].Find("useinbandfec=") == 0)
+      useinbandfec = (keys[kn].Tokenise("=")[1]).AsInteger();
+    else if(keys[kn].Find("usedtx=") == 0)
+      usedtx = (keys[kn].Tokenise("=")[1]).AsInteger();
+  }
 
- if(tsCaps.GetStringsIndex("OPUS_48K{sw}") != P_MAX_INDEX)
- {
+  PString H323Name;
+  if(c.clock == 8000) H323Name = "OPUS_8K{sw}";
+  else if(c.clock == 16000) H323Name = "OPUS_16K{sw}";
+  else if(c.clock == 48000) H323Name = "OPUS_48K{sw}";
+
   if(c.cap) c.cap = NULL;
-  PString H323Name = "OPUS_48K{sw}";
   c.cap = H323Capability::Create(H323Name);
   if(c.cap)
   {
    scap = c.payload;
    c.h323 = H323Name;
    OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
-   if (useinbandfec > -1)
-    wf.SetOptionInteger("useinbandfec", useinbandfec);
-   if (usedtx > -1)
-    wf.SetOptionInteger("usedtx", usedtx);
+   if (useinbandfec > -1) wf.SetOptionInteger("useinbandfec", useinbandfec);
+   if (usedtx > -1) wf.SetOptionInteger("usedtx", usedtx);
   }
- }
 }
 
 int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite)
@@ -742,23 +725,23 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
   if(c.media == 0)
   {
    if(scap >= 0) continue;
-   if(c.payload == 0 &&
+   if(c.format.ToLower() == "pcmu" &&
       tsCaps.GetStringsIndex("G.711-uLaw-64k")!=P_MAX_INDEX) //PCMU
-    { scap = 0; c.h323 = "G.711-uLaw-64k{sw}"; c.cap = H323Capability::Create("G.711-uLaw-64k{sw}"); }
-   else if(c.payload == 8 &&
+    { scap = c.payload; c.h323 = "G.711-uLaw-64k{sw}"; c.cap = H323Capability::Create("G.711-uLaw-64k{sw}"); }
+   else if(c.format.ToLower() == "pcma" &&
       tsCaps.GetStringsIndex("G.711-ALaw-64k")!=P_MAX_INDEX) //PCMA
-    { scap = 8; c.h323 = "G.711-ALaw-64k{sw}"; c.cap = H323Capability::Create("G.711-ALaw-64k{sw}"); }
+    { scap = c.payload; c.h323 = "G.711-ALaw-64k{sw}"; c.cap = H323Capability::Create("G.711-ALaw-64k{sw}"); }
 
 // by xak, http://openmcu.ru/forum/index.php?topic=410.0
-   else if(c.payload == 9 &&
+   else if(c.format.ToLower() == "g722" &&
       tsCaps.GetStringsIndex("G.722-64k{sw}")!=P_MAX_INDEX) //G.722
-    { scap = 9; c.h323 = "G.722-64k{sw}"; c.cap = H323Capability::Create("G.722-64k{sw}"); }
-   else if(c.payload == 15 &&
+    { scap = c.payload; c.h323 = "G.722-64k{sw}"; c.cap = H323Capability::Create("G.722-64k{sw}"); }
+   else if(c.format.ToLower() == "g728" &&
       tsCaps.GetStringsIndex("G.728-16k[e]")!=P_MAX_INDEX) //G.728
-    { scap = 15; c.h323 = "G.728-16k[e]"; c.cap = H323Capability::Create("G.728-16k[e]"); }
-   else if(c.payload == 18 &&
+    { scap = c.payload; c.h323 = "G.728-16k[e]"; c.cap = H323Capability::Create("G.728-16k[e]"); }
+   else if(c.format.ToLower() == "g729" &&
       tsCaps.GetStringsIndex("G.729A-8k[e]{sw}")!=P_MAX_INDEX) //G.729A
-    { scap = 18; c.h323 = "G.729A-8k[e]{sw}"; c.cap = H323Capability::Create("G.729A-8k[e]{sw}"); }
+    { scap = c.payload; c.h323 = "G.729A-8k[e]{sw}"; c.cap = H323Capability::Create("G.729A-8k[e]{sw}"); }
    else if(c.format.ToLower() == "ilbc" && c.parm == "mode=30;" &&
       tsCaps.GetStringsIndex("iLBC-13k3{sw}")!=P_MAX_INDEX) //iLBC-13k3
     { scap = c.payload; c.h323 = "iLBC-13k3{sw}"; c.cap = H323Capability::Create("iLBC-13k3{sw}"); }
@@ -771,10 +754,8 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
    else if(c.format.ToLower() == "silk" && c.clock == 24000 &&
       tsCaps.GetStringsIndex("SILK_B40_24K{sw}")!=P_MAX_INDEX) //SILK 24000
     { scap = c.payload; c.h323 = "SILK_B40_24K{sw}"; c.cap = H323Capability::Create("SILK_B40_24K{sw}"); }
-   else if(c.format.ToLower() == "speex")
-   { SelectCapability_SPEEX(c,tsCaps); }
-   else if(c.format.ToLower() == "opus" && c.clock == 48000) //OPUS 48000
-   { SelectCapability_OPUS(c,tsCaps); }
+   else if(c.format.ToLower() == "speex") SelectCapability_SPEEX(c,tsCaps); // SPEEX
+   else if(c.format.ToLower() == "opus") SelectCapability_OPUS(c,tsCaps); //OPUS
 //
 
   }
@@ -1177,7 +1158,7 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, (rand()%1000000), SIP_METHOD_INVITE);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, localPort);
 
-    PString sdp = sdp_template;
+    PString sdp = sdpInvite;
     sdp.Replace("USERNAME", room, TRUE, 0);
     sdp.Replace("LOCALIP", localIP, TRUE, 0);
     sip_payload_t *sip_payload = sip_payload_format(&home, sdp);
@@ -1321,7 +1302,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     sip_payload_t *sip_payload=NULL;
     if(sip->sip_cseq->cs_method == sip_method_invite)
     {
-      PString sdp = sdp_template;
+      PString sdp = sdpInvite;
       sdp.Replace("USERNAME",proxy->userName,TRUE,0);
       sdp.Replace("LOCALIP",proxy->localIP,TRUE,0);
       sip_payload = sip_payload_format(&home, sdp);
@@ -1639,34 +1620,10 @@ void OpenMCUSipEndPoint::Main()
  else
    agent = nta_agent_create(root, NULL, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, TAG_NULL());
 
- sdp_template =
-        "v=0\n"
-        "o=USERNAME 1806 3221 IN IP4 LOCALIP\n"
-        "s=Talk\n"
-        "c=IN IP4 LOCALIP\n"
-        "t=0 0\n"
-        "m=audio "+(PString)MCUSIP_RTP_AUDIO_PORT+" RTP/AVP 124 120 112 111 110 0 8 100 101\n"
-        "a=rtpmap:124 OPUS/48000\n"
-        "a=rtpmap:120 silk/16000\n"
-        "a=rtpmap:112 speex/32000\n"
-        "a=fmtp:112 vbr=off;mode=6\n"
-        "a=rtpmap:111 speex/16000\n"
-        "a=fmtp:111 vbr=off;mode=6\n"
-        "a=rtpmap:110 speex/8000\n"
-        "a=fmtp:110 vbr=off;mode=3\n"
-        "a=rtpmap:0 PCMU/8000\n"
-        "a=rtpmap:8 PCMA/8000\n"
-        "a=rtpmap:100 iLBC/8000\n"
-        "a=fmtp:100 mode=30\n"
-        "a=rtpmap:101 telephone-event/8000\n"
-        "a=fmtp:101 0-11\n"
-        "m=video "+(PString)MCUSIP_RTP_VIDEO_PORT+" RTP/AVP 103 102 98\n"
-        "a=rtpmap:103 vp8/90000\n"
-        "a=rtpmap:102 H264/90000\n"
-        "a=rtpmap:98 H263-1998/90000\n";
+ // create sdp for outgoing request
+ sdpInvite = CreateSdpInvite();
 
  // proxy servers
-
  PStringList keys = PConfig("ProxyServers").GetKeys();
  for(PINDEX i = 0; i < keys.GetSize(); i++)
  {
@@ -1675,24 +1632,19 @@ void OpenMCUSipEndPoint::Main()
   proxy->roomName = keys[i];
   proxy->proxyIP = tmp.Tokenise(",")[0].Tokenise(":")[0];
   proxy->proxyPort = tmp.Tokenise(",")[0].Tokenise(":")[1];
-  if(proxy->proxyPort == "")
-   proxy->proxyPort = "5060";
   proxy->userName = tmp.Tokenise(",")[1];
   proxy->password = tmp.Tokenise(",")[2];
   proxy->enable = atoi(tmp.Tokenise(",")[3]);
   proxy->expires = tmp.Tokenise(",")[4];
-  if(atoi(proxy->expires) < 60)
-   proxy->expires = "60";
-  if(atoi(proxy->expires) > 3600)
-   proxy->expires = "3600";
   proxy->timeout = atoi(proxy->expires)*2;
   proxy->localPort = localPort;
   proxy->localIP = GetFromIp((const char *)proxy->proxyIP, (const char *)proxy->proxyPort);
-  if(proxy->localIP == "0")
-   continue;
+  if(proxy->proxyPort == "") proxy->proxyPort = "5060";
+  if(atoi(proxy->expires) < 60) proxy->expires = "60";
+  if(atoi(proxy->expires) > 3600) proxy->expires = "3600";
+  if(proxy->localIP == "0") continue;
   ProxyServerMap.insert(ProxyServerMapType::value_type(proxy->userName+"@"+proxy->proxyIP, proxy));
  }
-
 
  if(agent != NULL)
  {

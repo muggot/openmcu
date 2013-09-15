@@ -120,7 +120,7 @@ class OpenMCUSipEndPoint : public PThread
    PString GetRoomAccess(const sip_t *sip);
    ProxyServerMapType ProxyServerMap;
    PString localPort;
-   PString sdp_template;
+   PString sdpInvite;
 };
 
 class SipCapability
@@ -259,7 +259,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
       H323SignalPDU & pdu       ///< PDU to write.
     ) { return TRUE; }
   int SendBYE(nta_agent_t *agent);
-  int SendSipInvite(nta_agent_t *agent, sip_method_t method, const char * name);
   int noInpTimeout;
   int inpBytes;
   H323toSipQueue cmdQueue;
