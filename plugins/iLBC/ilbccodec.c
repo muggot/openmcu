@@ -203,11 +203,17 @@ static int valid_for_sip_or_h323(
           STRCMPI((const char *)parm, "h323") == 0) ? 1 : 0;
 }
 
-static struct PluginCodec_Option const PreferredMode =
+static struct PluginCodec_Option const ilbc13k3_mode =
   { PluginCodec_IntegerOption, "Preferred Mode", 0, PluginCodec_NoMerge,  "30", "mode", NULL, 0, "0", "30" };
+static struct PluginCodec_Option const ilbc15k2_mode =
+  { PluginCodec_IntegerOption, "Preferred Mode", 0, PluginCodec_NoMerge,  "20", "mode", NULL, 0, "0", "20" };
 
-static struct PluginCodec_Option const * const OptionTable[] = {
-  &PreferredMode,
+static struct PluginCodec_Option const * const ilbc13k3_OptionTable[] = {
+  &ilbc13k3_mode,
+  NULL
+};
+static struct PluginCodec_Option const * const ilbc15k2_OptionTable[] = {
+  &ilbc15k2_mode,
   NULL
 };
 
@@ -220,7 +226,8 @@ static int get_codec_options(const struct PluginCodec_Definition * defn,
   if (parm == NULL || parmLen == NULL || *parmLen != sizeof(struct PluginCodec_Option **))
     return 0;
 
-  *(struct PluginCodec_Option const * const * *)parm = OptionTable;
+  if (defn->usPerFrame == 30000)  *(struct PluginCodec_Option const * const * *)parm = ilbc13k3_OptionTable;
+  else if (defn->usPerFrame == 20000)  *(struct PluginCodec_Option const * const * *)parm = ilbc15k2_OptionTable;
   return 1;
 }
 
@@ -239,10 +246,10 @@ static int set_codec_options(const struct PluginCodec_Definition * defn,
 
   encoder = (struct iLBC_Enc_Inst_t_ *)context;
 
-  for (option = (const char * const *)parm; *option != NULL; option += 2) {
-    if (STRCMPI(option[0], "Preferred Mode") == 0)
-      initEncode(context, atoi(option[1]) == SPEED_30MS ? 30 : 20); 
-  }
+//  for (option = (const char * const *)parm; *option != NULL; option += 2) {
+//    if (STRCMPI(option[0], "Preferred Mode") == 0)
+//      initEncode(context, atoi(option[1]) == SPEED_30MS ? 30 : 20); 
+//  }
 
   return 1;
 }

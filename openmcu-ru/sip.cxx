@@ -73,8 +73,7 @@ PString CreateSdpInvite()
      fmtp = "\n";
      for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
        if(mf.GetOption(j).GetFMTPName() != "")
-         fmtp = mf.GetOption(j).GetName()+"="+mf.GetOption(j).AsString()+";"+fmtp;
-     if(name.Find("ilbc") != P_MAX_INDEX) fmtp = "mode=30;\n";
+         fmtp = mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";"+fmtp;
 
      if(map.Find(name) != P_MAX_INDEX && map.Find(fmtp) != P_MAX_INDEX) goto end;
      if(map.Find(name) != P_MAX_INDEX && i > tsNum) goto end;

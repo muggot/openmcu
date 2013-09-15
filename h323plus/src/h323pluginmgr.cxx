@@ -3453,6 +3453,9 @@ H323CodecPluginNonStandardAudioCapability::H323CodecPluginNonStandardAudioCapabi
                                   data, dataLen), 
    H323PluginCapabilityInfo(_encoderCodec, _decoderCodec)
 {
+  // patch by Xak. PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS function for audio plugin
+  PopulateMediaFormatOptions(encoderCodec,GetWritableMediaFormat());
+  //
   PluginCodec_H323NonStandardCodecData * nonStdData = (PluginCodec_H323NonStandardCodecData *)_encoderCodec->h323CapabilityData;
   if (nonStdData->objectId != NULL) {
     oid = PString(nonStdData->objectId);
@@ -3472,6 +3475,9 @@ H323CodecPluginNonStandardAudioCapability::H323CodecPluginNonStandardAudioCapabi
                                   data, dataLen), 
    H323PluginCapabilityInfo(_encoderCodec, _decoderCodec)
 {
+  // patch by Xak. PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS function for audio plugin
+  PopulateMediaFormatOptions(encoderCodec,GetWritableMediaFormat());
+  //
   PluginCodec_H323NonStandardCodecData * nonStdData = (PluginCodec_H323NonStandardCodecData *)_encoderCodec->h323CapabilityData;
   if (nonStdData->objectId != NULL) {
     oid = PString(nonStdData->objectId);
@@ -3494,8 +3500,9 @@ H323CodecPluginGenericAudioCapability::H323CodecPluginGenericAudioCapability(
       H323PluginCapabilityInfo((PluginCodec_Definition *)_encoderCodec,
                    (PluginCodec_Definition *) _decoderCodec)
 {
-  // Xak +1
+  // patch by Xak. PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS function for audio plugin
   PopulateMediaFormatOptions(encoderCodec,GetWritableMediaFormat());
+  //
   PopulateMediaFormatFromGenericData(GetWritableMediaFormat(), data);
   rtpPayloadType = (RTP_DataFrame::PayloadTypes)(((_encoderCodec->flags & PluginCodec_RTPTypeMask) == PluginCodec_RTPTypeDynamic) ? RTP_DataFrame::DynamicBase : _encoderCodec->rtpPayload);
 }
