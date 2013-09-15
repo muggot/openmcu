@@ -259,6 +259,8 @@ class Decoder : public PluginCodec<CODEC>
 
 #define OpalPluginCodec_Identifer_OPUS_8K          "1.3.6.1.4.1.17091.1.10.8"
 #define OPUS_8K_MediaFmt                           "OPUS_8K"
+#define OPUS_8K_PayloadName                        "opus"
+#define OPUS_8K_PayloadType                         0
 #define OPUS_8K_EncMode                            "VOIP"
 #define OPUS_8K_EncoderChannelsNum                 "1"
 #define OPUS_8K_DecoderChannelsNum                 "1"
@@ -273,6 +275,8 @@ static unsigned int OPUS_8K_MaxFramesPerPacket     =1;
 
 #define OpalPluginCodec_Identifer_OPUS_16K         "1.3.6.1.4.1.17091.1.10.16"
 #define OPUS_16K_MediaFmt                          "OPUS_16K"
+#define OPUS_16K_PayloadName                       "opus"
+#define OPUS_16K_PayloadType                        0
 #define OPUS_16K_EncMode                           "VOIP"
 #define OPUS_16K_EncoderChannelsNum                "1"
 #define OPUS_16K_DecoderChannelsNum                "1"
@@ -287,6 +291,8 @@ static unsigned int OPUS_16K_MaxFramesPerPacket    =1;
 
 #define OpalPluginCodec_Identifer_OPUS_48K         "1.3.6.1.4.1.17091.1.10.48"
 #define OPUS_48K_MediaFmt                          "OPUS_48K"
+#define OPUS_48K_PayloadName                       "opus"
+#define OPUS_48K_PayloadType                        0
 #define OPUS_48K_EncMode                           "VOIP"
 #define OPUS_48K_EncoderChannelsNum                "1"
 #define OPUS_48K_DecoderChannelsNum                "1"
@@ -301,6 +307,8 @@ static unsigned int OPUS_48K_MaxFramesPerPacket    =1;
 
 #define OpalPluginCodec_Identifer_OPUS_48K2        "1.3.6.1.4.1.17091.1.10.482"
 #define OPUS_48K2_MediaFmt                         "OPUS_48K2"
+#define OPUS_48K2_PayloadName                      "opus"
+#define OPUS_48K2_PayloadType                       0
 #define OPUS_48K2_EncMode                          "VOIP"
 #define OPUS_48K2_EncoderChannelsNum               "2"
 #define OPUS_48K2_DecoderChannelsNum               "2"
@@ -418,13 +426,14 @@ class prefix##_AudioFormat : public AudioFormat \
     prefix##_AudioFormat() \
       : AudioFormat( \
         prefix##_MediaFmt, \
-        prefix##_MediaFmt, \
+        prefix##_PayloadName, \
         prefix##_MediaFmt, \
         prefix##_Samples, \
         prefix##_MaxBytesPerFrame, \
         prefix##_ClockRate, \
         prefix##_OptionTable) \
     { \
+      m_payloadType = prefix##_PayloadType; \
       m_recommendedFramesPerPacket = prefix##_FramesPerPacket; \
       m_maxFramesPerPacket = prefix##_MaxFramesPerPacket; \
       m_h323CapabilityType = PluginCodec_H323Codec_generic; \

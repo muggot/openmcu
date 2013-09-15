@@ -226,6 +226,8 @@ class Decoder : public PluginCodec<CODEC>
 
 #define OpalPluginCodec_Identifer_SPEEX_8K          "1.3.6.1.4.1.17091.1.11.8"
 #define SPEEX_8K_MediaFmt                           "Speex_8K"
+#define SPEEX_8K_PayloadName                        "speex"
+#define SPEEX_8K_PayloadType                         0
 #define SPEEX_8K_Vbr                                "0"
 #define SPEEX_8K_Mode                               "3"
 static unsigned int SPEEX_8K_SampleRate             =8000;
@@ -235,6 +237,8 @@ static unsigned int SPEEX_8K_FramesPerPacket        =1;
 
 #define OpalPluginCodec_Identifer_SPEEX_16K         "1.3.6.1.4.1.17091.1.11.16"
 #define SPEEX_16K_MediaFmt                          "Speex_16K"
+#define SPEEX_16K_PayloadName                       "speex"
+#define SPEEX_16K_PayloadType                        0
 #define SPEEX_16K_Vbr                               "0"
 #define SPEEX_16K_Mode                              "6"
 static unsigned int SPEEX_16K_SampleRate            =16000;
@@ -244,6 +248,8 @@ static unsigned int SPEEX_16K_FramesPerPacket       =1;
 
 #define OpalPluginCodec_Identifer_SPEEX_32K         "1.3.6.1.4.1.17091.1.11.32"
 #define SPEEX_32K_MediaFmt                          "Speex_32K"
+#define SPEEX_32K_PayloadName                       "speex"
+#define SPEEX_32K_PayloadType                        0
 #define SPEEX_32K_Vbr                               "0"
 #define SPEEX_32K_Mode                              "6"
 static unsigned int SPEEX_32K_SampleRate            =32000;
@@ -301,13 +307,14 @@ class prefix##_AudioFormat : public AudioFormat \
     prefix##_AudioFormat() \
       : AudioFormat( \
         prefix##_MediaFmt, \
-        prefix##_MediaFmt, \
+        prefix##_PayloadName, \
         prefix##_MediaFmt, \
         prefix##_Samples, \
         prefix##_MaxBytesPerFrame, \
         prefix##_SampleRate, \
         prefix##_OptionTable) \
     { \
+      m_payloadType = prefix##_PayloadType; \
       m_recommendedFramesPerPacket = prefix##_FramesPerPacket; \
       m_maxFramesPerPacket = prefix##_FramesPerPacket; \
       m_h323CapabilityType = PluginCodec_H323Codec_generic; \
