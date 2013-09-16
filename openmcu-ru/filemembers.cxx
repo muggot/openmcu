@@ -199,16 +199,36 @@ void ConferenceFileMember::Unlisten()
   if(!running) return;
   running = FALSE;
 
-#ifdef _WIN32
   if (mode == PFile::WriteOnly) if(format=="recorder")
   {
+#ifdef _WIN32
     DeleteFile(PString("\\\\.\\pipe\\sound_") + roomName);
     DeleteFile(PString("\\\\.\\pipe\\video_") + roomName);
-  }
+#else
+    if((!audioPipeName.IsEmpty())&&(!a_ended))
+    {
+      int SS = open(audioPipeName,O_RDONLY | O_NONBLOCK);
+      PBYTEArray buffer;
+      buffer.SetSize(100);
+      while(!a_ended) read(SS, buffer.GetPointer(), buffer.GetSize());
+      close(SS);
+    }
+    if((!videoPipeName.IsEmpty())&&(!v_ended))
+    {
+      int SS = open(videoPipeName,O_RDONLY | O_NONBLOCK);
+      PBYTEArray buffer;
+      buffer.SetSize(100);
+      while(!v_ended) read(SS, buffer.GetPointer(), buffer.GetSize());
+      close(SS);
+    }
 #endif
+  }
 
   PTRACE(5,"ConferenceFileMember\tWaiting for termination");
-  while(!(a_ended && v_ended)) { PThread::Sleep(10); PTRACE(1,"a_ended=" << a_ended << " v_ended=" << v_ended << " " << GetName()); }
+  while(!(a_ended && v_ended))
+  { PThread::Sleep(10);
+    PTRACE(5,"ConferenceFileMember still waiting when audio & video threads will stopped: audio=" << a_ended << " video=" << v_ended);
+  }
   PTRACE(5,"ConferenceFileMember\tTerminated");
 
 }
@@ -287,6 +307,7 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
   PString cstr = PString(SYS_PIPE_DIR) + "/sound." + conference->GetNumber();
 #  else
   PString cstr = "sound." + conference->GetNumber();
+  audioPipeName = cstr;
 #  endif
   const char *cname = cstr;
   cout << "cname= " << cname << "\n";
@@ -319,7 +340,7 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
     }
 #else
     if (write(SS,(const void *)pcmData.GetPointer(), amountBytes)<0) 
-     { close(SS); SS=open(cname,O_WRONLY); success=0; audioDelay.Restart(); }
+     { if(!running) break; close(SS); SS=open(cname,O_WRONLY); success=0; audioDelay.Restart(); }
     else if(success==0) { success++; audioDelay.Restart(); } 
 //    cout << "Write ";
 #endif
@@ -361,6 +382,7 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
   PString cstr = PString(SYS_PIPE_DIR) + "/video." + conference->GetNumber();
 #else
   PString cstr = "video." + conference->GetNumber();
+  videoPipeName = cstr;
 #endif
   const char *cname = cstr;
   cout << "cname= " << cname << "\n";
@@ -373,17 +395,16 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
   
   v_ended=FALSE;
   while (running) {
-PTRACE(1,"[video]");
 
     // read a block of data
     if(videoMixer!=NULL) videoMixer->ReadFrame(*this,videoData.GetPointer(),width,height,amount);
     else conference->ReadMemberVideo(this,videoData.GetPointer(),width,height,amount);
 
-cout << "[video]" << flush;
     // write to the file
 #ifdef _WIN32
     DWORD lpNumberOfBytesWritten=0;
     BOOL result=WriteFile(pipe, (const void *)videoData.GetPointer(), amount, &lpNumberOfBytesWritten, NULL);
+    if(!running) break;
     if(!result)result=(GetLastError()==ERROR_IO_PENDING);
     if(result) {
       if(success==0) { success++; videoDelay.Restart(); }
@@ -394,7 +415,7 @@ cout << "[video]" << flush;
     }
 #else
     if (write(SV,(const void *)videoData.GetPointer(), amount)<0) 
-     { close(SV); SV=open(cname,O_WRONLY); success=0; videoDelay.Restart();}
+     { if(!running) break; close(SV); SV=open(cname,O_WRONLY); success=0; videoDelay.Restart();}
     else if(success==0) { success++; videoDelay.Restart(); }
 #endif
 

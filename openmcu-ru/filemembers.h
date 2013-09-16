@@ -104,6 +104,9 @@ class ConferenceFileMember : public ConferenceMember
          a_ended, v_ended;
 
     PString roomName;
+#ifndef _WIN32
+    PString audioPipeName, videoPipeName;
+#endif
 };
 
 class ConferenceFilePlayer : public ConferenceFileMember
