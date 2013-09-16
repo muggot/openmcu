@@ -3893,6 +3893,9 @@ H323Capability * H323Capabilities::FindCapability(const H245_VideoCapability & v
          else if(resolutionId == 10) VP8DesiredCapability = "VP8-480P";
          else if(resolutionId == 11) VP8DesiredCapability = "VP8-720P";
          else if(resolutionId == 12) VP8DesiredCapability = "VP8-1080P";
+         else if(resolutionId == 21) VP8DesiredCapability = "VP8-240P";
+         else if(resolutionId == 22) VP8DesiredCapability = "VP8-360P";
+         else if(resolutionId == 23) VP8DesiredCapability = "VP8-768P";
          else                        VP8DesiredCapability = "VP8-CIF";
          for (PINDEX i = 0; i < table.GetSize(); i++)
          { H323Capability & capability = table[i];
@@ -3901,15 +3904,6 @@ H323Capability * H323Capabilities::FindCapability(const H245_VideoCapability & v
              return &capability;
            }
          }
-/*
-         for (PINDEX i = 0; i < table.GetSize(); i++)
-         { H323Capability & capability = table[i];
-           if (capability.GetMainType() == H323Capability::e_Video && capability.GetFormatName().Find("VP8") == 0)
-           { PTRACE(3, "H323\tFound capability**: " << capability);
-             return &capability;
-           }
-         }
-*/
          return NULL;
        }
      }
