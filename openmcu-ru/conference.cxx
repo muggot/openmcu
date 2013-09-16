@@ -120,7 +120,6 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   if(conference->GetNumber().Left(4)*="echo") return;
 #endif
   conference->fileRecorder = new ConferenceFileMember(conference, (const PString) "recorder" , PFile::WriteOnly);
-  conference->fileRecorder->SetJoined(TRUE);
 
   if(!OpenMCU::Current().GetForceScreenSplit())
   { PTRACE(1,"Conference\tOnCreateConference: \"Force split screen video\" unchecked, " << conference->GetNumber() << " skipping members.conf"); return; }
@@ -164,7 +163,9 @@ void ConferenceManager::OnCreateConference(Conference * conference)
 
 void ConferenceManager::OnDestroyConference(Conference * conference)
 {
-  PTRACE(2,"MCU\tOnDestroyConference");
+  PTRACE(2,"MCU\tOnDestroyConference() Cleaning out conference " << conference->GetNumber());
+
+// step 1: stop external video recorder:
 
   if(conference->externalRecorder != NULL)
   { PTRACE(4,"EVRT\tVideo Recorder is active - stopping now");
@@ -173,64 +174,71 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
     conference->externalRecorder = NULL;
   }
 
-  PTRACE(6,"MCU\tOnDestroyConference debug: step 1" << flush);
+// step 2: get the copy of memberList (because we will destroy the original):
 
-  Conference::VideoMixerRecord * vmr=conference->videoMixerList; while(vmr!=NULL)
+  conference->GetMutex().Wait();
+  Conference::MemberList theCopy(conference->GetMemberList());
+  conference->GetMutex().Signal();
+
+// step 3: disconnect remote endpoints:
+
+  if(theCopy.size() > 0)
+  for(Conference::MemberList::iterator r=theCopy.begin(); r!=theCopy.end(); ++r)
   {
-    vmr->mixer->MyRemoveAllVideoSource();
-    vmr=vmr->next;
-  }
-
-  PTRACE(6,"MCU\tOnDestroyConference debug: step 2" << flush);
-
-  if(conference->GetMemberList().size() > 0)
-  { for(Conference::MemberList::iterator r = conference->GetMemberList().begin(); r != conference->GetMemberList().end(); ++r)
-    if(r->second!=NULL)
-    { if(r->second->videoMixer != NULL) ((MCUSimpleVideoMixer*)r->second->videoMixer)->MyRemoveAllVideoSource();
-      r->second->GetMemberList().clear(); r->second->GetConnectionList().clear();
-    }
-  }
-
-  PTRACE(6,"MCU\tOnDestroyConference debug: step 3" << flush);
-
-  if(conference->GetMemberList().size() > 0)
-  { Conference::MemberList::iterator r;
-//    PWaitAndSignal(conference->GetMutex()); <--- CAUSE MANY CONFLICTS :(
-    r = conference->GetMemberList().begin();
-    while ( (conference->GetMemberList().size() != 0) && (r != conference->GetMemberList().end()) )
+    Conference::MemberList::iterator s; ConferenceMember * member;
+    conference->GetMutex().Wait();
+    if((s=conference->GetMemberList().find(r->first)) != conference->GetMemberList().end()) member=s->second;
+    else member=NULL; // NULL may be set here or (!) inerator may point to NULL so please keep in mind...
+    if(member!=NULL)
     {
-      ConferenceMember * member = r->second;
-      if(member==NULL)
+      PString name=member->GetName();
+      BOOL needsClose = !((name == "cache") || (name=="file recorder"));
+      conference->GetMutex().Signal();
+      member->SetConference(NULL); // prevent further attempts to read audio/video data from conference
+
+      if(needsClose)
       {
-        if(r!=conference->GetMemberList().end()) r++;
-        continue;
+        member->Close();
+        r->second = NULL; // don't touch when will find caches
       }
-      if((member->GetName()=="file recorder") || (member->GetName()=="cache"))
+    }
+    else conference->GetMutex().Signal();
+  }
+
+// step 4: delete caches and file recorder:
+
+  if(theCopy.size() > 0)
+  for(Conference::MemberList::iterator r=theCopy.begin(); r!=theCopy.end(); ++r)
+  if(r->second != NULL)
+  {
+    if(r->second->GetName() == "cache")
+    {
+      delete (ConferenceFileMember *)r->second; r->second=NULL;
+      conference->GetMemberList().erase(r->first);
+    }
+    else 
+    if(r->second->GetName() == "file recorder")
+    {
+      if(conference->fileRecorder != NULL)
       {
-        if(r!=conference->GetMemberList().end()) r++;
-        continue;
+        delete conference->fileRecorder;
+        conference->fileRecorder=NULL;
       }
-      member->Close();
-      r = conference->GetMemberList().begin();
+      else
+      {
+        delete (ConferenceFileMember *)r->second;
+        r->second=NULL;
+      }
+      conference->GetMemberList().erase(r->first);
     }
   }
 
-  PTRACE(6,"MCU\tOnDestroyConference debug: step 4" << flush);
+// step 5: all done. wait for empty member list (but not as long):
 
-  if(conference->fileRecorder != NULL)
-  { delete conference->fileRecorder; conference->fileRecorder = NULL; }
+  PTRACE(3,"MCU\tOnDestroyConference() Removal in progress. Waiting up to 10 s");
 
-  PTRACE(6,"MCU\tOnDestroyConference debug: step 5" << flush);
-
-  if(conference->GetMemberList().size() > 0) // caches, if exists
-  {
-    for(Conference::MemberList::iterator r=conference->GetMemberList().begin(); r!=conference->GetMemberList().begin(); ++r)
-    { delete r->second; r->second=NULL; }
-  }
-  conference->GetMemberNameList().clear();
-  conference->GetMemberList().clear();
-
-  PTRACE(6,"MCU\tOnDestroyConference passed" << flush);
+  for(PINDEX i=0;i<100;i++) if(conference->GetMemberList().size()==0) break; else PThread::Sleep(100);
+  PTRACE(3,"MCU\tOnDestroyConference() Removal done");
 }
 
 
@@ -1042,7 +1050,7 @@ Conference::Conference(        ConferenceManager & _manager,
 Conference::~Conference()
 {
 #if OPENMCU_VIDEO
-//  VMLClear();
+  VMLClear();
 #endif
 }
 
@@ -1102,9 +1110,8 @@ void Conference::InviteMember(const char *membName)
 
 BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 {
-  PTRACE(3, "Conference\tAbout to add member " << " to conference " << guid);
- 
-//  PTRACE(3, "Conference\tAbout to add member " << memberToAdd->GetTitle() << " to conference " << guid);
+
+  PTRACE(3, "Conference\tAbout to add member " << memberToAdd->GetTitle() << " to conference " << guid);
 
   // see if the callback refuses the new member (always true)
   if (!BeforeMemberJoining(memberToAdd))
@@ -1132,8 +1139,8 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     return FALSE;
 
   {
-    PTRACE(3, "Conference\tAdding member " << memberToAdd->GetTitle() << " to conference " << guid);
-    cout << "Adding member " << memberToAdd->GetTitle() << " to conference " << guid << endl;
+    PTRACE(3, "Conference\tAdding member " << memberToAdd->GetName() << " " << memberToAdd->GetTitle() << " to conference " << guid);
+    cout << "Adding member " << memberToAdd->GetName() << " " << memberToAdd->GetTitle() << " to conference " << guid << endl;
 
     // lock the member list
     PWaitAndSignal m(memberListMutex);
@@ -1259,13 +1266,14 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
   PWaitAndSignal m(memberListMutex);
 
   PString username = memberToRemove->GetName();
-  ConferenceMemberId userid = memberToRemove->GetID();
 
   if(!memberToRemove->IsJoined())
   {
     PTRACE(4, "Conference\tNo need to remove call " << username << " from conference " << guid);
     return (memberList.size() == 0);
   }
+
+  ConferenceMemberId userid = memberToRemove->GetID();
 
   // add this member to the conference member name list with zero id
 
@@ -1306,8 +1314,6 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
     // remove this member from the connection lists for all other members
     for (r = memberList.begin(); r != memberList.end(); r++) {
       ConferenceMember * conn = r->second;
-
-if(conn!=NULL) PTRACE(1,"***\tCONN name=" << conn->GetName() << " id=" << conn->GetID() << " (handling " << username << ")" << flush);
       if(conn != NULL)
       if (conn != memberToRemove) {
         conn->RemoveConnection(userid);
@@ -1323,10 +1329,9 @@ if(conn!=NULL) PTRACE(1,"***\tCONN name=" << conn->GetName() << " id=" << conn->
     }
 
 #if OPENMCU_VIDEO
-    if (moderated==FALSE){
-//      if (UseSameVideoForAllMembers() && memberToRemove->IsVisible())
-      if (UseSameVideoForAllMembers())
-      if(memberToRemove->IsVisible())
+    if (moderated==FALSE)
+    { if (UseSameVideoForAllMembers())
+      if (memberToRemove->IsVisible())
         videoMixerList->mixer->RemoveVideoSource(userid, *memberToRemove);
     }
     else
@@ -1356,13 +1361,6 @@ if(conn!=NULL) PTRACE(1,"***\tCONN name=" << conn->GetName() << " id=" << conn->
   // call the callback function
   if (!closeConference)
     OnMemberLeaving(memberToRemove);
-  else if(moderated==TRUE) {
-    VideoMixerRecord * vmr=videoMixerList; while(vmr!=NULL)
-    {
-      vmr->mixer->MyRemoveAllVideoSource();
-      vmr=vmr->next;
-    }
-  }
 
   return closeConference;
 }

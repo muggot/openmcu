@@ -1564,6 +1564,14 @@ cache *CreateCacheRTP(PString key)
  return &(newCacheArray->c[newCacheArray->n-1]);
 }
 
+void DeleteCacheRTP(PString key)
+{
+ CacheMap::iterator r = caches.find(key);
+ if (r == caches.end()) return;
+ delete r->second;
+ caches.erase(r);
+}
+
 void GetFastUpdate(PString *key, unsigned int &flags, cache *(&srcCache))
 {
  if(srcCache) srcCache->GetFastUpdate(flags);
@@ -1589,8 +1597,8 @@ unsigned int cache::GetLastFrameNum()
 void PutCacheRTP(PString *key, RTP_DataFrame &frame, unsigned int len, unsigned int flags, cache *(&dstCache))
 {
  if(dstCache) { dstCache->PutFrame(frame,len,flags); return; }
- dstCache = CreateCacheRTP(*key);
- if (dstCache) dstCache->PutFrame(frame,len,flags);
+// dstCache = CreateCacheRTP(*key);
+// if (dstCache) dstCache->PutFrame(frame,len,flags);
 }
 
 void cache::PutFrame(RTP_DataFrame &frame, unsigned int len, unsigned int flags)
@@ -1763,12 +1771,12 @@ class H323PluginVideoCodec : public H323VideoCodec
     
     virtual int CheckCacheRTP()
      { 
-     cout << "CheckCacheRTP\n";
+     cout << "CheckCacheRTP " << formatString << "\n";
      if(FindCacheRTP(&formatString)==NULL) return 0; else return 1; }
     
     virtual void AttachCacheRTP()
      { 
-      cout << "AttachCacheRTP\n";
+      cout << "AttachCacheRTP " << formatString << "\n";
       codecCache = FindCacheRTP(&formatString); 
       encoderSeqN = codecCache->GetLastFrameNum();
       cout << "SeqN=" << encoderSeqN << "\n";
@@ -1780,17 +1788,20 @@ class H323PluginVideoCodec : public H323VideoCodec
 
     virtual unsigned int GetEncoderSeqN(){ return codecCache->GetLastFrameNum(); }
 
+    virtual void CodecDeleteCacheRTP()
+    { /* delete codecCache; */ cout << "DeleteCacheRTP " << formatString << "\n"; codecCache=NULL; DeleteCacheRTP(formatString); }
+
     virtual void DetachCacheRTP() 
     { 
-    cout << "DetachCacheRTP\n";
+    cout << "DetachCacheRTP " << formatString << "\n";
     cacheMode=0; codecCache->uN--; codecCache = NULL; }
     
     virtual void NewCacheRTP() 
     { 
-    cout << "NewCacheRTP\n";
+    cout << "NewCacheRTP " << formatString << "\n";
     codecCache = CreateCacheRTP(formatString); }
     
-    virtual int GetCacheUsersNumber() { return codecCache->uN; }
+    virtual int GetCacheUsersNumber() { if(codecCache==NULL) return 0; return codecCache->uN; }
 
   protected:
     void *       context;

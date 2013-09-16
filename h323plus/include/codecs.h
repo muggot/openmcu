@@ -1147,6 +1147,7 @@ class H323VideoCodec : public H323Codec
    virtual int CheckCacheRTP() { return 0; }
    virtual void AttachCacheRTP() { return; } 
    virtual void DetachCacheRTP() { return; } 
+   virtual void CodecDeleteCacheRTP() { return; } 
    virtual void NewCacheRTP() { return; } 
    virtual int GetCacheUsersNumber() { return 0; }
    virtual unsigned int GetEncoderSeqN() { return 0; }

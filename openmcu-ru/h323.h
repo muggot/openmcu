@@ -125,6 +125,8 @@ class OpenMCUH323EndPoint : public H323EndPoint
     unsigned videoTxQuality;
 #endif
 
+//    void CleanUpConnections(){ H323Endpoint::CleanUpConnections(); };
+
   protected:
     PString gkAlias;
     PStringList PrefixList;
@@ -278,31 +280,8 @@ class OpenMCUH323Connection : public H323Connection
     Conference * conference;
 
     PMutex connMutex;
-  protected:
-    virtual void LogCall(const BOOL accepted = TRUE);
-    virtual void JoinConference(const PString & room);
 
-#if OPENMCU_VIDEO
-    virtual BOOL InitGrabber(PVideoInputDevice  * grabber, int frameWidth, int frameHeight, int frameRate);
-#endif
-
-//    PMutex connMutex;
-    OpenMCUH323EndPoint & ep;
-
-    // Name of the room to join when the welcome procedure ends.
-    //  This is usually initialized when the call is answered,
-    //  before the welcome procedure begins.
-    PString requestedRoom;
-
-    // Room the connection is joined to. It is NULL before the
-    //  welcome procedure ends, or after the member is disconnected
-    //  from the conference.
-//    Conference * conference;
-
-    // Object used to treat the connection as a conference member.
-    //  It is NULL before the connection is joined to the conference,
-    //  or after the member is disconnected from the conference.
-    H323Connection_ConferenceMember * conferenceMember;
+    PMutex & GetMutex() { return connMutex; }
 
     // Valid states for the welcome procedure. Note that new states may
     //  be added because the procedure can be customized by subclassing.
@@ -329,14 +308,42 @@ class OpenMCUH323Connection : public H323Connection
       CustomWelcome_FirstUsableValue
     };
 
-    // This is the current state of the welcome procedure. It is not
-    //  declared using type WelcomeStates to allow the use of custom
-    //  enumerated values.
-    int welcomeState;
+    virtual void LogCall(const BOOL accepted = TRUE);
 
     // Use this function to change the current state. This call fires
     //  the OnWelcomeStateChanged callback immediately.
     void ChangeWelcomeState(int newState);
+
+  protected:
+
+    virtual void JoinConference(const PString & room);
+
+#if OPENMCU_VIDEO
+    virtual BOOL InitGrabber(PVideoInputDevice  * grabber, int frameWidth, int frameHeight, int frameRate);
+#endif
+
+//    PMutex connMutex;
+    OpenMCUH323EndPoint & ep;
+
+    // Name of the room to join when the welcome procedure ends.
+    //  This is usually initialized when the call is answered,
+    //  before the welcome procedure begins.
+    PString requestedRoom;
+
+    // Room the connection is joined to. It is NULL before the
+    //  welcome procedure ends, or after the member is disconnected
+    //  from the conference.
+//    Conference * conference;
+
+    // Object used to treat the connection as a conference member.
+    //  It is NULL before the connection is joined to the conference,
+    //  or after the member is disconnected from the conference.
+    H323Connection_ConferenceMember * conferenceMember;
+
+    // This is the current state of the welcome procedure. It is not
+    //  declared using type WelcomeStates to allow the use of custom
+    //  enumerated values.
+    int welcomeState;
 
     // Call this function during the OnWelcomeStateChanged callback
     //  to play a new wave file during the welcome procedure. If

@@ -467,7 +467,7 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
         if(member==NULL) continue;
         PString memberName=member->GetName();
         PString formatString;
-        int codecCacheMode=-1;
+        int codecCacheMode=-1, cacheUsersNumber=0;
         BOOL visible=member->IsVisible();
         BOOL cache=(memberName=="cache");
         members << "<tr><td>";
@@ -554,7 +554,7 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
             if(fileMember!=NULL)
             if(fileMember->codec!=NULL)
             if(fileMember->codec->cacheMode==1)
-            { cache=TRUE; formatString=fileMember->codec->formatString; }
+            { cache=TRUE; formatString=fileMember->codec->formatString; cacheUsersNumber=fileMember->codec->GetCacheUsersNumber(); }
           }
           PStringStream d;
           d << (now - member->GetStartTime());
@@ -577,7 +577,7 @@ PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
           PStringStream subs; subs << psprintf("%4.2f",floor(member->GetVideoTxFrameRate()*100+0.55)/100);
           targets.AppendString(target);
           subses.AppendString(subs);
-          members << "<nobr>" << subs << "</nobr>";
+          members << "<nobr><b><font color=green>" << cacheUsersNumber << " x </font></b>" << subs << "</nobr>";
         }
         else if(visible)
         { members << "<nobr>" << psprintf("%4.2f",floor(member->GetVideoRxFrameRate()*100+0.55)/100) << "<br />";
@@ -2069,10 +2069,10 @@ class MemberDeleteThread : public PThread
     void Main()
     {
       cm->WaitForClose();
-      PThread::Sleep(1000);
+//      PThread::Sleep(1000);
       if (conf->RemoveMember(cm))
 {}//        ep->GetConferenceManager().RemoveConference(conf->GetID());
-      PThread::Sleep(1000);
+//      PThread::Sleep(1000);
       delete cm;
     }
 
@@ -2670,18 +2670,7 @@ void H323Connection_ConferenceMember::Close()
     conn->Unlock();
   }
 }
-/*
-PString H323Connection_ConferenceMember::GetTitle() const
-{
-  PString output;
-  OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
-  if (conn != NULL) {
-    output = conn->GetRemoteName();
-    conn->Unlock();
-  }
-  return output;
-}
-*/
+
 PString H323Connection_ConferenceMember::GetTitle() const
 {
   PString output;

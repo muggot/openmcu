@@ -39,7 +39,6 @@ class ConferenceSoundCardMember : public ConferenceMember
   protected:
     BOOL running;
     PSoundChannel soundDevice;
-    PThread * thread;
 };
 
 class ConferenceFileMember : public ConferenceMember
@@ -101,9 +100,10 @@ class ConferenceFileMember : public ConferenceMember
     PFile::OpenMode mode;
 
     OpalWAVFile file;
-    BOOL running;
-    PThread * thread;
-    PThread * vthread;
+    BOOL running,
+         a_ended, v_ended;
+
+    PString roomName;
 };
 
 class ConferenceFilePlayer : public ConferenceFileMember

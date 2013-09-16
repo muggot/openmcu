@@ -265,7 +265,7 @@ class MCUVideoMixer
     };
 
     virtual ~MCUVideoMixer()
-    { }
+    { VMPListClear(); }
 
     VideoMixPosition *vmpList;
     unsigned vmpNum;
@@ -776,6 +776,9 @@ class ConferenceMember : public PObject
       */
     Conference * GetConference()
     { return conference; }
+
+    void SetConference(Conference * c)
+    { conference=c; }
 
     /**
       * add a new connection for the specified member to this member to the internal list of connections
