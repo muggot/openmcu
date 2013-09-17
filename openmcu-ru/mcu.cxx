@@ -108,8 +108,23 @@ class SIPPConfigPage : public PConfigPage
 
 class CodecsPConfigPage : public PConfigPage
 {
- public:
-   CodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  public:
+    CodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(
+      PHTTPRequest & request,
+      const PStringToString & data,
+      PHTML & replyMessage
+    );
+    BOOL OnPOST(
+      PHTTPServer & server,
+      const PURL & url,
+      const PMIMEInfo & info,
+      const PStringToString & data,
+      const PHTTPConnectionInfo & connectInfo
+    );
+  protected:
+    PConfig cfg;
+    PStringArray dataArray;
 };
 
 class SectionPConfigPage : public PConfigPage
@@ -848,7 +863,7 @@ BOOL SectionPConfigPage::OnPOST(PHTTPServer & server,
 CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : PConfigPage(app,title,section,auth)
 {
-  PConfig cfg(section);
+  cfg = PConfig(section);
 
   PString info, infoStyle = "<td rowspan='1' style='background-color:#efe;padding:15px;border-bottom:2px solid white;'>";
   PStringList keys = cfg.GetKeys();
@@ -907,6 +922,40 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
   "</script>\n";
 
   string = html_page;
+}
+
+BOOL CodecsPConfigPage::Post(PHTTPRequest & request,
+                       const PStringToString & data,
+                       PHTML & reply)
+{
+  PHTTPForm::Post(request, data, reply);
+
+  cfg.DeleteSection();
+  for(PINDEX i = 0; i < dataArray.GetSize(); i++)
+  {
+    if(dataArray[i].Find("submit") != P_MAX_INDEX) continue;
+    PString key = dataArray[i].Tokenise("=")[0];
+    if(dataArray.GetStringsIndex(key+"=TRUE") != P_MAX_INDEX)
+      cfg.SetBoolean(key, 1);
+    else
+      cfg.SetBoolean(key, 0);
+  }
+  process.OnContinue();
+  return TRUE;
+}
+
+BOOL CodecsPConfigPage::OnPOST(PHTTPServer & server,
+                         const PURL & url,
+                         const PMIMEInfo & info,
+                         const PStringToString & data,
+                         const PHTTPConnectionInfo & connectInfo)
+{
+  dataArray = connectInfo.GetEntityBody().Tokenise("&");
+  for(PINDEX i = 0; i < dataArray.GetSize(); i++)
+    { PStringToString d; PURL::SplitQueryVars("data="+dataArray[i], d); dataArray[i]=d("data"); }
+
+  PHTTPConfig::OnPOST(server, url, info, data, connectInfo);
+  return TRUE;
 }
 
 MainStatusPage::MainStatusPage(OpenMCU & _app, PHTTPAuthority & auth)
