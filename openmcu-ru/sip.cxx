@@ -55,8 +55,9 @@ PString CreateSdpInvite()
 
  for (PINDEX i = 0; caps[i] != NULL; i++)
  {
-   if(caps[i].Find("{sw}") == P_MAX_INDEX) caps[i] += "{sw}";
    H323Capability *cap = H323Capability::Create(caps[i]);
+   if(cap == NULL && caps[i].Find("{sw}") == P_MAX_INDEX)
+     cap = H323Capability::Create(caps[i]+"{sw}");
    if(cap)
    {
      const OpalMediaFormat & mf = cap->GetMediaFormat();

@@ -870,8 +870,9 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     info = "<input type=button value='↑' onClick='rowUp(this)' style='margin-top:10px;margin-left:10px;margin-right:1px;'><input type=button value='↓' onClick='rowDown(this)' style='margin-top:10px;margin-left:1px;margin-right:10px;'>";
-    if(keys[i].Find("{sw}") == P_MAX_INDEX) keys[i] += "{sw}";
     H323Capability *cap = H323Capability::Create(keys[i]);
+    if(cap == NULL && keys[i].Find("{sw}") == P_MAX_INDEX)
+      cap = H323Capability::Create(keys[i]+"{sw}");
     if(cap)
     {
       const OpalMediaFormat & mf = cap->GetMediaFormat();
@@ -940,6 +941,7 @@ BOOL CodecsPConfigPage::Post(PHTTPRequest & request,
     else
       cfg.SetBoolean(key, 0);
   }
+
   process.OnContinue();
   return TRUE;
 }
