@@ -560,8 +560,14 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // Create the config page - receive sound codecs
   httpNameSpace.AddResource(new CodecsPConfigPage(*this, "ReceiveSoundCodecs", "RECEIVE_SOUND", authority), PHTTPSpace::Overwrite);
 
+  // Create the config page - transmit sound codecs
+  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "TransmitSoundCodecs", "TRANSMIT_SOUND", authority), PHTTPSpace::Overwrite);
+
   // Create the config page - receive video codecs
   httpNameSpace.AddResource(new CodecsPConfigPage(*this, "ReceiveVideoCodecs", "RECEIVE_VIDEO", authority), PHTTPSpace::Overwrite);
+
+  // Create the config page - transmit video codecs
+  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "TransmitVideoCodecs", "TRANSMIT_VIDEO", authority), PHTTPSpace::Overwrite);
 
   // Create the status page
   httpNameSpace.AddResource(new MainStatusPage(*this, authority), PHTTPSpace::Overwrite);
@@ -872,9 +878,13 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
   BuildHTML("");
   PStringStream html_begin, html_end;
   if(section == "RECEIVE_SOUND")
-    BeginPage(html_begin, "Audio codecs", "window.l_param_receive_sound", "window.l_info_param_receive_sound");
+    BeginPage(html_begin, "Audio codecs(receive)", "window.l_param_receive_sound", "window.l_info_param_receive_sound");
+  else if(section == "TRANSMIT_SOUND")
+    BeginPage(html_begin, "Audio codecs(transmit)", "window.l_param_transmit_sound", "window.l_info_param_transmit_sound");
   else if(section == "RECEIVE_VIDEO")
-    BeginPage(html_begin, "Video cadecs", "window.l_param_receive_video", "window.l_info_param_receive_video");
+    BeginPage(html_begin, "Video cadecs(receive)", "window.l_param_receive_video", "window.l_info_param_receive_video");
+  else if(section == "TRANSMIT_VIDEO")
+    BeginPage(html_begin, "Video cadecs(transmit)", "window.l_param_transmit_video", "window.l_info_param_transmit_video");
   else
     BeginPage(html_begin, section, "", "");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());

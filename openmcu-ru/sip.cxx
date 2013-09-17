@@ -802,6 +802,8 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
    remotePartyName = remote_addr_t->a_url->url_user;
 
  remoteName = remote_addr_t->a_url->url_user;
+ PStringToString data; PURL::SplitQueryVars("partyName="+remotePartyName,data); remotePartyName=data("partyName");
+ data.RemoveAll(); PURL::SplitQueryVars("partyName="+remoteName,data); remoteName=data("partyName");
  remotePartyAddress = PString("sip:")+remoteName+"@"+remote_addr_t->a_url->url_host;
 
  if(sip->sip_user_agent && sip->sip_user_agent->g_string)
