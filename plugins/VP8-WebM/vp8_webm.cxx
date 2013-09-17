@@ -443,8 +443,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
         return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
 
       if (strcasecmp(optionName, PLUGINCODEC_OPTION_TARGET_BIT_RATE) == 0)
-        if (m_maxBitRate < atoi(optionValue))
-          return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
+        return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
 
       if (strcasecmp(optionName, SpatialResampling.m_name) == 0)
         return SetOptionBoolean(m_config.rc_resize_allowed, optionValue);
@@ -1115,7 +1114,7 @@ class VP8DecoderOM : public VP8Decoder
 
 #define OpalPluginCodec_Identifer_VP8_768P  "1.3.6.1.4.1.17091.1.9.23"
 #define VP8_768P_MediaFmt                   "VP8-768P"
-#define VP8_768P_WIDTH                      "1366"
+#define VP8_768P_WIDTH                      "1364"
 #define VP8_768P_HEIGHT                     "768"
 #define VP8_768P_TARGETBITRATE              "200000"
 
