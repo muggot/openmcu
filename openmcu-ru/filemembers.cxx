@@ -307,8 +307,8 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
   PString cstr = PString(SYS_PIPE_DIR) + "/sound." + conference->GetNumber();
 #  else
   PString cstr = "sound." + conference->GetNumber();
-  audioPipeName = cstr;
 #  endif
+  audioPipeName = cstr;
   const char *cname = cstr;
   cout << "cname= " << cname << "\n";
   mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
@@ -382,8 +382,8 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
   PString cstr = PString(SYS_PIPE_DIR) + "/video." + conference->GetNumber();
 #else
   PString cstr = "video." + conference->GetNumber();
-  videoPipeName = cstr;
 #endif
+  videoPipeName = cstr;
   const char *cname = cstr;
   cout << "cname= " << cname << "\n";
   mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
