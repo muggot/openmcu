@@ -106,6 +106,12 @@ class SIPPConfigPage : public PConfigPage
    SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
 };
 
+class CodecsPConfigPage : public PConfigPage
+{
+ public:
+   CodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+};
+
 class SectionPConfigPage : public PConfigPage
 {
   public:
@@ -539,17 +545,23 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   rsrc->SetString(htmlpage);
 
-  // Create the config room acccess page
+  // Create the config page - h323
   httpNameSpace.AddResource(new H323PConfigPage(*this, "H323Parameters", "Parameters", authority), PHTTPSpace::Overwrite);
 
-  // Create the config room acccess page
+  // Create the config page - sip
   httpNameSpace.AddResource(new SIPPConfigPage(*this, "SIPParameters", "Parameters", authority), PHTTPSpace::Overwrite);
 
-  // Create the config room acccess page
+  // Create the config page - sip room acccess
   httpNameSpace.AddResource(new SectionPConfigPage(*this, "RoomAccess", "RoomAccess", authority), PHTTPSpace::Overwrite);
 
-  // Create the config proxy servers page
+  // Create the config page - sip proxy servers
   httpNameSpace.AddResource(new SectionPConfigPage(*this, "ProxyServers", "ProxyServers", authority), PHTTPSpace::Overwrite);
+
+  // Create the config page - receive sound codecs
+  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "ReceiveSoundCodecs", "RECEIVE_SOUND", authority), PHTTPSpace::Overwrite);
+
+  // Create the config page - receive video codecs
+  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "ReceiveVideoCodecs", "RECEIVE_VIDEO", authority), PHTTPSpace::Overwrite);
 
   // Create the status page
   httpNameSpace.AddResource(new MainStatusPage(*this, authority), PHTTPSpace::Overwrite);
@@ -825,6 +837,66 @@ BOOL SectionPConfigPage::OnPOST(PHTTPServer & server,
 {
   PHTTPConfig::OnPOST(server, url, info, data, connectInfo);
   return TRUE;
+}
+
+CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : PConfigPage(app,title,section,auth)
+{
+  PConfig cfg(section);
+
+  PString info, infoStyle = "<td rowspan='1' style='background-color:#efe;padding:15px;border-bottom:2px solid white;'>";
+  PStringList keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    info = "<input type=button value='↑' onClick='rowUp(this)' style='margin-top:10px;margin-left:10px;margin-right:1px;'><input type=button value='↓' onClick='rowDown(this)' style='margin-top:10px;margin-left:1px;margin-right:10px;'>";
+    if(keys[i].Find("{sw}") == P_MAX_INDEX) keys[i] += "{sw}";
+    H323Capability *cap = H323Capability::Create(keys[i]);
+    if(cap)
+    {
+      const OpalMediaFormat & mf = cap->GetMediaFormat();
+      if(mf.GetTimeUnits() == 90)
+        info += infoStyle+PString(mf.GetOptionInteger("Frame Width"))+"x"+PString(mf.GetOptionInteger("Frame Height"));
+      else
+        info += infoStyle+PString(mf.GetTimeUnits()*1000)+"Hz";
+      //info += infoStyle+PString(mf.GetBandwidth())+"bit/s";
+      info += infoStyle+"default fmtp: ";
+      for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
+       if(mf.GetOption(j).GetFMTPName() != "")
+         info += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+    } else {
+      info += infoStyle+"<script type='text/javascript'>document.write(window.l_not_found);</script>";
+    }
+    Add(new PHTTPBooleanField(keys[i], cfg.GetBoolean(keys[i]), info));
+  }
+
+  BuildHTML("");
+  PStringStream html_begin, html_end;
+  if(section == "RECEIVE_SOUND")
+    BeginPage(html_begin, "Audio codecs", "window.l_param_receive_sound", "window.l_info_param_receive_sound");
+  else if(section == "RECEIVE_VIDEO")
+    BeginPage(html_begin, "Video cadecs", "window.l_param_receive_video", "window.l_info_param_receive_video");
+  else
+    BeginPage(html_begin, section, "", "");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  PStringStream html_page; html_page << html_begin << string << html_end;
+
+  html_page << "<script type='text/javascript'>\n"
+  "function rowUp(obj)\n"
+  "{\n"
+  "  var table = obj.parentNode.parentNode.parentNode;\n"
+  "  var rowNum=obj.parentNode.parentNode.sectionRowIndex;\n"
+  "  if(rowNum!=0) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum],table.rows[rowNum-1]);\n"
+  "}\n"
+  "function rowDown(obj)\n"
+  "{\n"
+  "  var table = obj.parentNode.parentNode.parentNode;\n"
+  "  var rowNum=obj.parentNode.parentNode.sectionRowIndex;\n"
+  "  var rows=obj.parentNode.parentNode.parentNode.childNodes.length;\n"
+  "  if(rowNum!=rows-1) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum+1],table.rows[rowNum]);\n"
+  "}\n"
+  "</script>\n";
+
+  string = html_page;
 }
 
 MainStatusPage::MainStatusPage(OpenMCU & _app, PHTTPAuthority & auth)

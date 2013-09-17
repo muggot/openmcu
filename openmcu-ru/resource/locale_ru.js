@@ -13,6 +13,8 @@ window.l_param_h323 = 'H323 параметры';
 window.l_param_sip = 'SIP параметры';
 window.l_param_access_rules = 'SIP правила доступа';
 window.l_param_sip_proxy = 'SIP прокси-серверы';
+window.l_param_receive_sound = 'Аудио кодеки';
+window.l_param_receive_video = 'Видео кодеки';
 window.l_help = 'Помощь';
 window.l_forum = 'Форум'
 window.l_manual = 'Документация';
@@ -63,6 +65,8 @@ window.l_info_param_h323 ='';
 window.l_info_param_sip ='';
 window.l_info_param_access_rules ='';
 window.l_info_param_sip_proxy ='';
+window.l_info_param_receive_sound = '';
+window.l_info_param_receive_video = '';
 
 window.l_select_create =       'Создать комнату'
 window.l_select_enter =        'Управлять комнатой'
@@ -71,3 +75,5 @@ window.l_select_visible =      'Видимых участников'
 window.l_select_unvisible =    'Невидимых участников'
 window.l_select_duration =     'Время работы'
 window.l_select_delete =       'Удалить комнату'
+
+window.l_not_found = 'не найден';

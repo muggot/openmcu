@@ -324,6 +324,74 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
    AddAllUserInputCapabilities(0, 3);
   }
 
+/*
+   PStringList keys;
+   keys = PConfig("RECEIVE_SOUND").GetKeys();
+   rsCaps = (char **)calloc(keys.GetSize()+1, sizeof(char *));
+   for(PINDEX i = 0; i < keys.GetSize(); i++)
+   {
+     if(PConfig("RECEIVE_SOUND").GetBoolean(keys[i]) != true) continue;
+     rsCaps[i] = (char *)calloc(keys.GetSize(), sizeof(char));
+     strcpy(rsCaps[i], keys[i]);
+   }
+
+   keys = PConfig("TRANSMIT_SOUND").GetKeys();
+   tsCaps = (char **)calloc(keys.GetSize()+1, sizeof(char *));
+   for(PINDEX i = 0; i < keys.GetSize(); i++)
+   {
+     if(PConfig("TRANSMIT_SOUND").GetBoolean(keys[i]) != true) continue;
+     tsCaps[i] = (char *)calloc(keys.GetSize(), sizeof(char));
+     strcpy(tsCaps[i], keys[i]);
+   }
+
+   keys = PConfig("RECEIVE_VIDEO").GetKeys();
+   rvCaps = (char **)calloc(keys.GetSize()+1, sizeof(char *));
+   for(PINDEX i = 0; i < keys.GetSize(); i++)
+   {
+     if(PConfig("RECEIVE_VIDEO").GetBoolean(keys[i]) != true) continue;
+     rvCaps[i] = (char *)calloc(keys.GetSize(), sizeof(char));
+     strcpy(rvCaps[i], keys[i]);
+   }
+
+   keys = PConfig("TRANSMIT_VIDEO").GetKeys();
+   tvCaps = (char **)calloc(keys.GetSize()+1, sizeof(char *));
+   for(PINDEX i = 0; i < keys.GetSize(); i++)
+   {
+     if(PConfig("TRANSMIT_VIDEO").GetBoolean(keys[i]) != true) continue;
+     tvCaps[i] = (char *)calloc(keys.GetSize(), sizeof(char));
+     strcpy(tvCaps[i], keys[i]);
+   }
+
+   keys = PConfig("TRANSMIT_VIDEOCACHE").GetKeys();
+   cvCaps = (char **)calloc(keys.GetSize(), sizeof(char *));
+   for(PINDEX i = 0; i < keys.GetSize(); i++)
+   {
+     if(PConfig("TRANSMIT_VIDEOCACHE").GetBoolean(keys[i]) != true) continue;
+     cvCaps[i] = (char *)calloc(keys.GetSize(), sizeof(char));
+     strcpy(cvCaps[i], keys[i]);
+   }
+
+   int listNum = 0;
+   cout << "[RECEIVE_SOUND]= "; listNum=0; 
+   while(rsCaps[listNum]!=NULL) { cout << rsCaps[listNum] << ", "; listNum++; }
+   cout << "\n";
+   cout << "[TRANSMIT_SOUND]= "; listNum=0; 
+   while(tsCaps[listNum]!=NULL) { cout << tsCaps[listNum] << ", "; listNum++; }
+   cout << "\n";
+   cout << "[RECEIVE_VIDEO]= "; listNum=0; 
+   while(rvCaps[listNum]!=NULL) { cout << rvCaps[listNum] << ", "; listNum++; }
+   cout << "\n";
+   cout << "[TRANSMIT_VIDEO]= "; listNum=0; 
+   while(tvCaps[listNum]!=NULL) { cout << tvCaps[listNum] << ", "; listNum++; }
+   cout << "\n";
+   cout << "[TRANSMIT_VIDEOCACHE]= "; listNum=0; 
+   while(cvCaps[listNum]!=NULL) { cout << cvCaps[listNum] << ", "; listNum++; }
+   cout << "\n";
+   AddCapabilities(0,0,(const char **)rsCaps);
+   AddCapabilities(0,1,(const char **)rvCaps);
+   cout << capabilities;
+*/
+
 #if 0 //  old MCU options
   int videoTxQual = 10;
   if (args.HasOption("videotxquality")) 

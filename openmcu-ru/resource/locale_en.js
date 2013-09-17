@@ -13,6 +13,8 @@ window.l_param_h323 = 'H323 parameters';
 window.l_param_sip = 'SIP parameters';
 window.l_param_access_rules = 'SIP access rules';
 window.l_param_sip_proxy = 'SIP proxy-servers';
+window.l_param_receive_sound = 'Audio codecs';
+window.l_param_receive_video = 'Video codecs';
 window.l_help = 'Help';
 window.l_forum = 'Forum';
 window.l_manual = 'Manual';
@@ -30,6 +32,8 @@ window.l_info_param_h323 ='';
 window.l_info_param_sip ='';
 window.l_info_param_access_rules ='';
 window.l_info_param_sip_proxy ='';
+window.l_info_param_receive_sound = '';
+window.l_info_param_receive_video = '';
 
 window.l_select_create =       'Create room'
 window.l_select_enter =        'Enter room'
@@ -38,3 +42,5 @@ window.l_select_visible =      'Visible members'
 window.l_select_unvisible =    'Unvisible members'
 window.l_select_duration =     'Duration'
 window.l_select_delete =       'Delete room'
+
+window.l_not_found = 'not found';
