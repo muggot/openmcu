@@ -212,6 +212,7 @@ void ConferenceFileMember::Unlisten()
       buffer.SetSize(100);
       while(!a_ended) read(SS, buffer.GetPointer(), buffer.GetSize());
       close(SS);
+      unlink(audioPipeName);
     }
     if((!videoPipeName.IsEmpty())&&(!v_ended))
     {
@@ -220,6 +221,7 @@ void ConferenceFileMember::Unlisten()
       buffer.SetSize(100);
       while(!v_ended) read(SS, buffer.GetPointer(), buffer.GetSize());
       close(SS);
+      unlink(videoPipeName);
     }
 #endif
   }

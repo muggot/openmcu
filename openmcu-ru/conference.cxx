@@ -205,6 +205,10 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
     else conference->GetMutex().Signal();
   }
 
+// step 3.5: additinal check (linphone fails without it)
+  PTRACE(3,"MCU\tOnDestroyConference() waiting for visibleMembersCount==0, up to 10 s");
+  for(PINDEX i=0;i<100;i++) if(conference->GetVisibleMemberCount()==0) break; else PThread::Sleep(100);
+
 // step 4: delete caches and file recorder:
 
   if(theCopy.size() > 0)
@@ -320,7 +324,7 @@ void ConferenceManager::RemoveMember(const OpalGloballyUniqueID & confId, Confer
 
   OpalGloballyUniqueID id = conf->GetID();  // make a copy of the ID because it may be about to disappear
 
-  BOOL removeConf = conf->RemoveMember(toRemove);
+//  BOOL removeConf = conf->RemoveMember(toRemove);
   delete toRemove;
 //  if (removeConf)
 //    RemoveConference(id);
