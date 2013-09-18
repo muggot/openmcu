@@ -491,6 +491,7 @@ void ConferenceFileMember::VideoEncoderCashThread(PThread &, INT)
      delete(con); con=NULL;
      delete(codec); codec=NULL;
      caps.RemoveAll();
+     v_ended=TRUE;
      ConferenceManager & mgr = conference->GetManager();
      mgr.RemoveMember(conference->GetID(), this);
      return;

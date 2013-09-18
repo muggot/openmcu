@@ -672,7 +672,10 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     return FALSE;
   }
 
-  if(cfg.GetBoolean(CreateEmptyRoomKey, FALSE)) GetEndpoint().OutgoingConferenceRequest(defaultRoomName);
+  if(cfg.GetBoolean(CreateEmptyRoomKey, FALSE))
+  { GetEndpoint().GetConferenceManager().MakeAndLockConference(defaultRoomName);
+    GetEndpoint().GetConferenceManager().UnlockConference();
+  }
 
   PSYSTEMLOG(Info, "Service " << GetName() << ' ' << initMsg);
   return TRUE;
