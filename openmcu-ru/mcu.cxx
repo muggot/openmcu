@@ -901,9 +901,9 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
   else if(section == "TRANSMIT_SOUND")
     BeginPage(html_begin, "Audio codecs(transmit)", "window.l_param_transmit_sound", "window.l_info_param_transmit_sound");
   else if(section == "RECEIVE_VIDEO")
-    BeginPage(html_begin, "Video cadecs(receive)", "window.l_param_receive_video", "window.l_info_param_receive_video");
+    BeginPage(html_begin, "Video codecs(receive)", "window.l_param_receive_video", "window.l_info_param_receive_video");
   else if(section == "TRANSMIT_VIDEO")
-    BeginPage(html_begin, "Video cadecs(transmit)", "window.l_param_transmit_video", "window.l_info_param_transmit_video");
+    BeginPage(html_begin, "Video codecs(transmit)", "window.l_param_transmit_video", "window.l_info_param_transmit_video");
   else
     BeginPage(html_begin, section, "", "");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
