@@ -330,13 +330,11 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
    capsNum += PConfig("RECEIVE_SOUND").GetKeys().GetSize()+
              PConfig("TRANSMIT_SOUND").GetKeys().GetSize()+
              PConfig("RECEIVE_VIDEO").GetKeys().GetSize()+
-             PConfig("TRANSMIT_VIDEO").GetKeys().GetSize()+
-             PConfig("TRANSMIT_VIDEOCACHE").GetKeys().GetSize();
+             PConfig("TRANSMIT_VIDEO").GetKeys().GetSize();
    rsCaps = (char **)calloc(capsNum,sizeof(char *));
    tsCaps = (char **)calloc(capsNum,sizeof(char *));
    rvCaps = (char **)calloc(capsNum,sizeof(char *));
    tvCaps = (char **)calloc(capsNum,sizeof(char *));
-   cvCaps = (char **)calloc(capsNum,sizeof(char *));
    listCaps = (char *)calloc(capsNum,64*sizeof(char));
 
    char buf[64];
@@ -382,16 +380,6 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
      j++; capsNum++;
    }
 
-   keys = PConfig("TRANSMIT_VIDEOCACHE").GetKeys();
-   for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
-   {
-     if(PConfig("TRANSMIT_VIDEOCACHE").GetBoolean(keys[i]) != 1) continue;
-     strcpy(buf, keys[i]);
-     strcpy(&(listCaps[64*capsNum]),buf);
-     cvCaps[j]=&(listCaps[64*capsNum]);
-     j++; capsNum++;
-   }
-
    int listNum = 0;
    cout << "[RECEIVE_SOUND]= "; listNum=0; 
    while(rsCaps[listNum]!=NULL) { cout << rsCaps[listNum] << ", "; listNum++; }
@@ -404,9 +392,6 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
    cout << "\n";
    cout << "[TRANSMIT_VIDEO]= "; listNum=0; 
    while(tvCaps[listNum]!=NULL) { cout << tvCaps[listNum] << ", "; listNum++; }
-   cout << "\n";
-   cout << "[TRANSMIT_VIDEOCACHE]= "; listNum=0; 
-   while(cvCaps[listNum]!=NULL) { cout << cvCaps[listNum] << ", "; listNum++; }
    cout << "\n";
    AddCapabilities(0,0,(const char **)rsCaps);
    AddCapabilities(0,1,(const char **)rvCaps);
