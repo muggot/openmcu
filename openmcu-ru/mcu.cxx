@@ -391,6 +391,10 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WORD httpPort = (WORD)cfg.GetInteger(HttpPortKey, DefaultHTTPPort);
   rsrc->Add(new PHTTPIntegerField(HttpPortKey, 1, 32767, httpPort));
 
+  // RTP Port Setup
+  rsrc->Add(new PHTTPIntegerField("RTP Base Port", 0, 65535, cfg.GetInteger("RTP Base Port", 0),"<td><td rowspan='2' valign='top' style='background-color:#eec;padding:4px;border-left:1px solid #770;border-right:1px solid #770;border-top:1px dotted #eec'><b>RTP Port Setup</b><br>0 = auto<br>Example: base=5000, max=6000"));
+  rsrc->Add(new PHTTPIntegerField("RTP Max Port", 0, 65535, cfg.GetInteger("RTP Max Port", 0)));
+
   // Log level for messages
   rsrc->Add(new PHTTPIntegerField(LogLevelKey,
                                   PSystemLog::Fatal, PSystemLog::NumLogLevels-1,
@@ -772,15 +776,9 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   // SIP Listener setup
   mcu.sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
   if(mcu.sipListener=="") mcu.sipListener="0.0.0.0";
-  Add(new PHTTPStringField(SipListenerKey, 32, mcu.sipListener,"<td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>SIP Setup</b>"));
+  Add(new PHTTPStringField(SipListenerKey, 32, mcu.sipListener,"<td rowspan='2' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>SIP Setup</b>"));
   if(mcu.sipListener=="0.0.0.0") mcu.sipListener="0.0.0.0 :5060";
   mcu.sipendpoint->Resume();
-
-  PString sipAudioPort = cfg.GetString("SIP Audio RTP Port", "7078");
-  Add(new PHTTPStringField("SIP Audio RTP Port", 5, sipAudioPort));
-
-  PString sipVideoPort = cfg.GetString("SIP Video RTP Port", "9078");
-  Add(new PHTTPStringField("SIP Video RTP Port", 5, sipVideoPort));
 
 #if OPENMCU_VIDEO
   mcu.h264DefaultLevelForSip = cfg.GetString(H264LevelForSIPKey, "9").AsInteger();
