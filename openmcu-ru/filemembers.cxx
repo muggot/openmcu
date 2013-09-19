@@ -164,7 +164,7 @@ void ConferenceFileMember::Construct()
     }
     else // cache
     {
-      PThread::Create(PCREATE_NOTIFIER(VideoEncoderCashThread), 0, PThread::AutoDeleteThread);
+      PThread::Create(PCREATE_NOTIFIER(VideoEncoderCacheThread), 0, PThread::AutoDeleteThread);
     }
   }    
   else
@@ -464,7 +464,7 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
   a_ended=TRUE;
 }
 
-void ConferenceFileMember::VideoEncoderCashThread(PThread &, INT)
+void ConferenceFileMember::VideoEncoderCacheThread(PThread &, INT)
 {
   OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 //  const H323Capabilities &caps = ep.GetCapabilities();
@@ -477,8 +477,9 @@ void ConferenceFileMember::VideoEncoderCashThread(PThread &, INT)
   a_ended=TRUE; v_ended=FALSE;
   if(cap!=NULL)
   {
-   status = 1;
-   cout << "Starting cache thread\n";
+    status = 1;
+    cout << "Starting cache thread\n";
+    PTRACE(3,"Cache\tStarting cache thread " << vformat);
     codec = (H323VideoCodec *) cap->CreateCodec(H323Codec::Encoder);
     codec->cacheMode = 1; // caching codec
     con = new OpenMCUH323Connection(ep,0,NULL);
@@ -488,13 +489,15 @@ void ConferenceFileMember::VideoEncoderCashThread(PThread &, INT)
     
     if(codec->CheckCacheRTP())
     {
-     delete(con); con=NULL;
-     delete(codec); codec=NULL;
-     caps.RemoveAll();
-     v_ended=TRUE;
-     ConferenceManager & mgr = conference->GetManager();
-     mgr.RemoveMember(conference->GetID(), this);
-     return;
+      PTRACE(3,"Cache\t" << vformat << " already exists, nothing to do, stopping thread");
+      delete(con); con=NULL;
+      delete(codec); codec=NULL;
+      caps.RemoveAll();
+      v_ended=TRUE;
+      ConferenceManager & mgr = conference->GetManager();
+      mgr.RemoveMember(conference->GetID(), this);
+      PTRACE(6,"Cache\tthis thread will stop now");
+      return;
     }
 
     codec->NewCacheRTP();

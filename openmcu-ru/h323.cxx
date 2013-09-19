@@ -2272,20 +2272,22 @@ BOOL OpenMCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* buffer
 
 void OpenMCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
 {
- Conference *conf = conference;
+  Conference *conf = conference;
      //  const H323Capabilities &caps = ep.GetCapabilities();
- if(conf == NULL) 
- { // creating conference if needed
-  OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-  ConferenceManager & manager = ((OpenMCUH323EndPoint &)ep).GetConferenceManager();
-  conf = manager.MakeAndLockConference(requestedRoom);
-  manager.UnlockConference();
- }
+  if(conf == NULL) 
+  { // creating conference if needed
+    OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+    ConferenceManager & manager = ((OpenMCUH323EndPoint &)ep).GetConferenceManager();
+    conf = manager.MakeAndLockConference(requestedRoom);
+    manager.UnlockConference();
+  }
 // starting new cache thread
 
   unsigned videoMixerNumber=0;
   PINDEX slashPos=srcCodec.formatString.Find("/");
   if(slashPos!=P_MAX_INDEX) videoMixerNumber=atoi(srcCodec.formatString.Mid(slashPos+1,P_MAX_INDEX));
+
+  PTRACE(2,"MCU\tOpenVideoCache(" << srcCodec.formatString << ")");
 
   new ConferenceFileMember(conf, srcCodec.GetMediaFormat(), PFile::WriteOnly, videoMixerNumber); 
 }

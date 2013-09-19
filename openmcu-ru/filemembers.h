@@ -80,7 +80,7 @@ class ConferenceFileMember : public ConferenceMember
     PDECLARE_NOTIFIER(PThread, ConferenceFileMember, ReadThread);
     PDECLARE_NOTIFIER(PThread, ConferenceFileMember, WriteThread);
     PDECLARE_NOTIFIER(PThread, ConferenceFileMember, WriteThreadV);
-    PDECLARE_NOTIFIER(PThread, ConferenceFileMember, VideoEncoderCashThread);
+    PDECLARE_NOTIFIER(PThread, ConferenceFileMember, VideoEncoderCacheThread);
 
     virtual PString GetFormat(){ return format; }
     virtual PString GetVFormat(){ return vformat; }
