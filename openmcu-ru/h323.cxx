@@ -224,105 +224,48 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   rsrc->Add(new PHTTPFieldArray(new PHTTPStringField(cfg.GetDefaultSection() + "\\" + GatekeeperPrefixesKey, 
 	                                                                    GatekeeperPrefixesKey, 20, ""), FALSE));
 
+   // Setup capabilities
+   unsigned rsConfig=1, tsConfig=1, rvConfig=1, tvConfig=1;
+   if(capabilities.GetSize() == 0)
+     AddAllCapabilities(0, 0, "*");
 
-  capabilities.RemoveAll();
-
-/*
-  FILE *capCfg;
-  int capsNum=0;
-  PString capsConfFileName;
-
-#undef CAPS_CONF_FILE_NAME
-#ifdef SYS_CONFIG_DIR
-#  ifdef _WIN32
-#    define CAPS_CONF_FILE_NAME PString(SYS_CONFIG_DIR)+"\\capability.conf"
-#  else
-#    define CAPS_CONF_FILE_NAME PString(SYS_CONFIG_DIR)+"/capability.conf"
-#  endif
-#else
-#  define CAPS_CONF_FILE_NAME "capability.conf"
-#endif
-
-  capCfg = fopen(CAPS_CONF_FILE_NAME,"rt");
-
-  if(capCfg!=NULL)
-  {
-   while(fscanf(capCfg,"%*[^\n]")!=EOF)
+   if(PConfig("RECEIVE_SOUND").GetKeys().GetSize() == 0) rsConfig = 0;
+   if(PConfig("TRANSMIT_SOUND").GetKeys().GetSize() == 0) tsConfig = 0;
+   if(PConfig("RECEIVE_VIDEO").GetKeys().GetSize() == 0) rvConfig = 0;
+   if(PConfig("TRANSMIT_VIDEO").GetKeys().GetSize() == 0) tvConfig = 0;
+   if(rsConfig == 0)
    {
-    capsNum++;
-    if(fscanf(capCfg,"%*[\n]")==EOF) break;
+     PConfig("RECEIVE_SOUND").SetBoolean("G.711-uLaw-64k{sw}", 1);
+     PConfig("RECEIVE_SOUND").SetBoolean("G.711-ALaw-64k{sw}", 1);
    }
-   fclose(capCfg);
-   rsCaps = (char **)calloc(capsNum,sizeof(char *));
-   tsCaps = (char **)calloc(capsNum,sizeof(char *));
-   rvCaps = (char **)calloc(capsNum,sizeof(char *));
-   tvCaps = (char **)calloc(capsNum,sizeof(char *));
-   cvCaps = (char **)calloc(capsNum,sizeof(char *));
-   listCaps = (char *)calloc(capsNum,64*sizeof(char));
-   capCfg = fopen(CAPS_CONF_FILE_NAME,"rt");
-   int capsType=0;
-   char buf[64];
-   capsNum=0;
-   int listNum=0;
-   while(fscanf(capCfg,"%64[^ #\t\n]",buf)!=EOF)
+   if(tsConfig == 0)
    {
-    if(strcmp(buf,"[RECEIVE_SOUND]")==0) { capsType=1; listNum=0; }
-    else
-    if(strcmp(buf,"[TRANSMIT_SOUND]")==0) { capsType=2; listNum=0; }
-    else
-    if(strcmp(buf,"[RECEIVE_VIDEO]")==0) { capsType=3; listNum=0; }
-    else
-    if(strcmp(buf,"[TRANSMIT_VIDEO]")==0) { capsType=4; listNum=0; }
-    else
-    if(strcmp(buf,"[TRANSMIT_VIDEOCACHE]")==0) { capsType=5; listNum=0; }
-    else if(capsType!=0 && *buf!=0)
-    {
-     if(capsType==1) { rsCaps[listNum]=&(listCaps[64*capsNum]); listNum++; }
-     else if(capsType==2) { tsCaps[listNum]=&(listCaps[64*capsNum]); listNum++; }
-     else if(capsType==3) { rvCaps[listNum]=&(listCaps[64*capsNum]); listNum++; }
-     else if(capsType==4) { tvCaps[listNum]=&(listCaps[64*capsNum]); listNum++; }
-     else if(capsType==5) { cvCaps[listNum]=&(listCaps[64*capsNum]); listNum++; }
-     strcpy(&(listCaps[64*capsNum]),buf); capsNum++;
-    }
-    if(fscanf(capCfg,"%*[^\n]")==EOF) break;
-    if(fscanf(capCfg,"%*[\n]")==EOF) break;
+     PConfig("TRANSMIT_SOUND").SetBoolean("G.711-uLaw-64k{sw}", 1);
+     PConfig("TRANSMIT_SOUND").SetBoolean("G.711-ALaw-64k{sw}", 1);
    }
-   fclose(capCfg);
+   for(unsigned i = 1; capabilities.FindCapability(i) != NULL; i++)
+   {
+     H323Capability *cap = capabilities.FindCapability(i);
+     if(rsConfig == 0 && cap->GetMainType() == 0)
+       PConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName(), 1);
+     if(tsConfig == 0 && cap->GetMainType() == 0)
+       PConfig("TRANSMIT_SOUND").SetBoolean(cap->GetFormatName(), 1);
+     if(rvConfig == 0 && cap->GetMainType() == 1)
+       PConfig("RECEIVE_VIDEO").SetBoolean(cap->GetFormatName(), 1);
+     if(tvConfig == 0 && cap->GetMainType() == 1)
+       PConfig("TRANSMIT_VIDEO").SetBoolean(cap->GetFormatName(), 1);
 
-   cout << "[RECEIVE_SOUND]= "; listNum=0; 
-   while(rsCaps[listNum]!=NULL) { cout << rsCaps[listNum] << ", "; listNum++; }
-   cout << "\n";
-   cout << "[TRANSMIT_SOUND]= "; listNum=0; 
-   while(tsCaps[listNum]!=NULL) { cout << tsCaps[listNum] << ", "; listNum++; }
-   cout << "\n";
-   cout << "[RECEIVE_VIDEO]= "; listNum=0; 
-   while(rvCaps[listNum]!=NULL) { cout << rvCaps[listNum] << ", "; listNum++; }
-   cout << "\n";
-   cout << "[TRANSMIT_VIDEO]= "; listNum=0; 
-   while(tvCaps[listNum]!=NULL) { cout << tvCaps[listNum] << ", "; listNum++; }
-   cout << "\n";
-   cout << "[TRANSMIT_VIDEOCACHE]= "; listNum=0; 
-   while(cvCaps[listNum]!=NULL) { cout << cvCaps[listNum] << ", "; listNum++; }
-   cout << "\n";
-   AddCapabilities(0,0,(const char **)rsCaps);
-   AddCapabilities(0,1,(const char **)rvCaps);
-   cout << capabilities;
-  }
-  else
-  {
-   AddAllCapabilities(0, 0, "*");
-   AddAllExtendedVideoCapabilities(0, 2);
-  
-   // disable codecs as required
-   PString disableCodecs = cfg.GetString(DisableCodecsKey);
-   rsrc->Add(new PHTTPStringField(DisableCodecsKey, 50, disableCodecs));
-   if (!disableCodecs.IsEmpty()) {
-     PStringArray toRemove = disableCodecs.Tokenise(',', FALSE);
-     capabilities.Remove(toRemove);
+     if(rsConfig == 1 && cap->GetMainType() == 0 && PConfig("RECEIVE_SOUND").HasKey(cap->GetFormatName()) == 0)
+       PConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName(), 1);
+     if(tsConfig == 1 && cap->GetMainType() == 0 && PConfig("TRANSMIT_SOUND").HasKey(cap->GetFormatName()) == 0)
+       PConfig("TRANSMIT_SOUND").SetBoolean(cap->GetFormatName(), 1);
+     if(rvConfig == 1 && cap->GetMainType() == 1 && PConfig("RECEIVE_VIDEO").HasKey(cap->GetFormatName()) == 0)
+       PConfig("RECEIVE_VIDEO").SetBoolean(cap->GetFormatName(), 1);
+     if(tvConfig == 1 && cap->GetMainType() == 1 && PConfig("TRANSMIT_SOUND").HasKey(cap->GetFormatName()) == 0)
+       PConfig("TRANSMIT_VIDEO").SetBoolean(cap->GetFormatName(), 1);
    }
-   AddAllUserInputCapabilities(0, 3);
-  }
-*/
+
+   capabilities.RemoveAll();
 
    int capsNum = 5;
    capsNum += PConfig("RECEIVE_SOUND").GetKeys().GetSize()+
@@ -394,7 +337,6 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
    AddCapabilities(0,0,(const char **)rsCaps);
    AddCapabilities(0,1,(const char **)rvCaps);
    cout << capabilities;
-
 
 #if 0 //  old MCU options
   int videoTxQual = 10;
