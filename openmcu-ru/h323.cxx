@@ -153,7 +153,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   unsigned rtpPortBase = cfg.GetInteger(RTPPortBaseKey, 0);
   unsigned rtpPortMax = cfg.GetInteger(RTPPortMaxKey, 0);
   if((rtpPortBase>65532)||(rtpPortBase==0)) rtpPortBase=5000;
-  if(rtpPortMax<=rtpPortBase) rtpPortMax=PMIN(rtpPortBase+5000,65535);
+  if(rtpPortMax<=rtpPortBase) rtpPortMax=PMIN(rtpPortBase+5000,65532);
   SetRtpIpPorts(rtpPortBase, rtpPortMax);
 
 ///////////////////////////////////////////

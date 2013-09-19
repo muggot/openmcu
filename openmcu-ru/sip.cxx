@@ -42,15 +42,19 @@ unsigned GetLocalDataPort(PString localIP, unsigned portBase, unsigned portMax)
 {
   unsigned localDataPort = portBase;
   PQoS * dataQos = NULL;
+  PQoS * ctrlQos = NULL;
   PUDPSocket * dataSocket = new PUDPSocket(dataQos);
-  while(!dataSocket->Listen(localIP, 1, localDataPort))
+  PUDPSocket * controlSocket = new PUDPSocket(ctrlQos);
+  while(!dataSocket->Listen(localIP, 1, localDataPort) || !controlSocket->Listen(localIP, 1, localDataPort+1))
   {
     dataSocket->Close();
+    controlSocket->Close();
     if ((localDataPort > portMax) || (localDataPort > 0xfffd))
       return 0;
     localDataPort += 2;
   }
   delete dataSocket;
+  delete controlSocket;
   return localDataPort;
 }
 
