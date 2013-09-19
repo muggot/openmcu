@@ -123,17 +123,19 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    PIPSocket::Address lIP(localIP); 
    PIPSocket::Address rIP(remoteIP);
 //   session->Open(lIP,5000,10000,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
-//   unsigned portBase=endpoint.GetRtpIpPortBase(),
-//            portMax =endpoint.GetRtpIpPortMax();
-//   if((portBase>65532)||(portBase==0)) portBase=5000;
-//   if(portMax<=portBase) portMax=PMIN(portBase+5000,65535);
-//   session->Open(lIP,portBase,portMax,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
+   unsigned portBase=endpoint.GetRtpIpPortBase(),
+            portMax =endpoint.GetRtpIpPortMax();
+   if((portBase>65532)||(portBase==0)) portBase=5000;
+   if(portMax<=portBase) portMax=PMIN(portBase+5000,65535);
+   session->Open(lIP,portBase,portMax,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
+/*
    unsigned port;
    if(!sc->media)
        port = MCUSIP_RTP_AUDIO_PORT;
    else
        port = MCUSIP_RTP_VIDEO_PORT;
    session->Open(lIP,port,port,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
+*/
    session->SetRemoteSocketInfo(rIP,sc->port,TRUE);
    sc->lport = session->GetLocalDataPort();
    sc->sdp = PString("m=") + ((!sc->media)?"audio ":"video ")
