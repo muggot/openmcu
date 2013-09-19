@@ -38,6 +38,22 @@ PString GetFromIp(const char *toAddr, const char *toPort)
 #endif
 }
 
+unsigned GetLocalDataPort(PString localIP, unsigned portBase, unsigned portMax)
+{
+  unsigned localDataPort = portBase;
+  PQoS * dataQos = NULL;
+  PUDPSocket * dataSocket = new PUDPSocket(dataQos);
+  while(!dataSocket->Listen(localIP, 1, localDataPort))
+  {
+    dataSocket->Close();
+    if ((localDataPort > portMax) || (localDataPort > 0xfffd))
+      return 0;
+    localDataPort += 2;
+  }
+  delete dataSocket;
+  return localDataPort;
+}
+
 PString CreateSdpInvite()
 {
  PString types, map, type, name, fmtp;
@@ -136,8 +152,6 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    } else {
      portBase = endpoint.GetRtpIpPortBase();
      portMax = endpoint.GetRtpIpPortMax();
-     if((portBase>65532)||(portBase==0)) portBase=5000;
-     if(portMax<=portBase) portMax=PMIN(portBase+5000,65535);
    }
    session->Open(lIP,portBase,portMax,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
    session->SetRemoteSocketInfo(rIP,sc->port,TRUE);
@@ -160,23 +174,6 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    sdp_msg += sc->sdp;
   }
   return session;
-}
-
-RTP_UDP *OpenMCUSipConnection::CreateFakeRTPSession(int media)
-{
-   int id = (media)?RTP_Session::DefaultAudioSessionID:RTP_Session::DefaultVideoSessionID;
-   RTP_UDP * session = new RTP_UDP(
-#ifdef H323_RTP_AGGREGATE
-                useRTPAggregation ? endpoint.GetRTPAggregator() : NULL,
-#endif
-                id, remoteIsNAT);
-   PIPSocket::Address lIP(localIP); 
-   unsigned portBase=endpoint.GetRtpIpPortBase(),
-            portMax =endpoint.GetRtpIpPortMax();
-   if((portBase>65532)||(portBase==0)) portBase=5000;
-   if(portMax<=portBase) portMax=PMIN(portBase+5000,65535);
-   session->Open(lIP,portBase,portMax,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
-   return session;
 }
 
 int OpenMCUSipConnection::CreateAudioChannel(int pt, int dir)
@@ -1179,18 +1176,11 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 	("sip:"+userName+"@"+localIP+":"+localPort), NULL);
     sip_contact->m_display = roomName;
 
-    // Create fake RTP session to obtain ports
+    // finding the RTP ports
     unsigned aPort, vPort;
-    OpenMCUSipConnection *sCon = new OpenMCUSipConnection(this, ep);
-    RTP_UDP * audio_session = sCon->CreateFakeRTPSession(0);
-    aPort = audio_session->GetLocalDataPort();
-    RTP_UDP * video_session = sCon->CreateFakeRTPSession(1);
-    vPort = video_session->GetLocalDataPort();
-    audio_session->Close(TRUE);
-    delete audio_session;
-    video_session->Close(TRUE);
-    delete video_session;
-    delete sCon;
+    aPort = GetLocalDataPort(localIP, ep->GetRtpIpPortBase(), ep->GetRtpIpPortMax());
+    vPort = GetLocalDataPort(localIP, aPort+2, ep->GetRtpIpPortMax());
+    if(aPort == 0 || vPort == 0) return;
     // add ports to call_id string
     PString call_id_str = PString(aPort)+"@"+PString(vPort);
 

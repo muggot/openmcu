@@ -232,7 +232,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int CreateVideoChannel(int pt, int dir);
   int CreateAudioChannel(int pt, int dir);
   RTP_UDP *CreateRTPSession(int pt, SipCapability *sc);
-  RTP_UDP *CreateFakeRTPSession(int media);
   void FindCapability_H263(SipCapability &c,PStringArray &keys, const char * _H323Name, const char * _SIPName);
   void SelectCapability_H263(SipCapability &c,PStringArray &tvCaps);
   void SelectCapability_H263p(SipCapability &c,PStringArray &tvCaps);

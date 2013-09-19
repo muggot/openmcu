@@ -152,7 +152,9 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 // RTP Port Setup
   unsigned rtpPortBase = cfg.GetInteger(RTPPortBaseKey, 0);
   unsigned rtpPortMax = cfg.GetInteger(RTPPortMaxKey, 0);
-  if(rtpPortBase!=0 && rtpPortMax!=0) SetRtpIpPorts(rtpPortBase, rtpPortMax);
+  if((rtpPortBase>65532)||(rtpPortBase==0)) rtpPortBase=5000;
+  if(rtpPortMax<=rtpPortBase) rtpPortMax=PMIN(rtpPortBase+5000,65535);
+  SetRtpIpPorts(rtpPortBase, rtpPortMax);
 
 ///////////////////////////////////////////
 // Enable/Disable Fast Start & H.245 Tunneling
