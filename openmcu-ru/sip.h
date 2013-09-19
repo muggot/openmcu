@@ -15,8 +15,6 @@
 #include <sofia-sip/sofia_features.h>
 
 #define MCUSIP_USER_AGENT_STR  OpenMCU::Current().GetName()+"/"+OpenMCU::Current().GetVersion()+" ("+SOFIA_SIP_NAME_VERSION+")"
-#define MCUSIP_RTP_AUDIO_PORT  PConfig("Parameters").GetInteger("SIP Audio RTP Port", 7078)
-#define MCUSIP_RTP_VIDEO_PORT  PConfig("Parameters").GetInteger("SIP Video RTP Port", 9078)
 
 class OpenMCUSipConnection;
 
@@ -234,6 +232,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int CreateVideoChannel(int pt, int dir);
   int CreateAudioChannel(int pt, int dir);
   RTP_UDP *CreateRTPSession(int pt, SipCapability *sc);
+  RTP_UDP *CreateFakeRTPSession(int media);
   void FindCapability_H263(SipCapability &c,PStringArray &keys, const char * _H323Name, const char * _SIPName);
   void SelectCapability_H263(SipCapability &c,PStringArray &tvCaps);
   void SelectCapability_H263p(SipCapability &c,PStringArray &tvCaps);
@@ -266,6 +265,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   sip_contact_t *contact_t;
   PString localIP, remoteIP, roomName, sip_call_id;
   msg_t *sip_msg;
+  unsigned audioRtpPort, videoRtpPort;
 
  protected:
  OpenMCUSipEndPoint *sep;

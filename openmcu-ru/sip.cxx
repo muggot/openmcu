@@ -86,9 +86,9 @@ PString CreateSdpInvite()
 
    end:
    if(i == tsNum)
-     { sdp += "m=audio "+(PString)MCUSIP_RTP_AUDIO_PORT+" RTP/AVP "+types+"\n"+map; map=""; types=""; }
+     { sdp += "m=audio RTP_AUDIO_PORT RTP/AVP "+types+"\n"+map; map=""; types=""; }
  }
- sdp += "m=video "+(PString)MCUSIP_RTP_VIDEO_PORT+" RTP/AVP "+types+"\n"+map;
+ sdp += "m=video RTP_VIDEO_PORT RTP/AVP "+types+"\n"+map;
  //cout << sdp;
  return sdp;
 }
@@ -122,20 +122,24 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    rtpSessions.AddSession(session);
    PIPSocket::Address lIP(localIP); 
    PIPSocket::Address rIP(remoteIP);
-//   session->Open(lIP,5000,10000,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
-   unsigned portBase=endpoint.GetRtpIpPortBase(),
-            portMax =endpoint.GetRtpIpPortMax();
-   if((portBase>65532)||(portBase==0)) portBase=5000;
-   if(portMax<=portBase) portMax=PMIN(portBase+5000,65535);
+   unsigned portBase, portMax;
+   if(audioRtpPort && videoRtpPort)
+   {
+     if(!sc->media)
+     {
+       portBase = audioRtpPort;
+       portMax = audioRtpPort;
+     } else {
+       portBase = videoRtpPort;
+       portMax = videoRtpPort;
+     }
+   } else {
+     portBase = endpoint.GetRtpIpPortBase();
+     portMax = endpoint.GetRtpIpPortMax();
+     if((portBase>65532)||(portBase==0)) portBase=5000;
+     if(portMax<=portBase) portMax=PMIN(portBase+5000,65535);
+   }
    session->Open(lIP,portBase,portMax,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
-/*
-   unsigned port;
-   if(!sc->media)
-       port = MCUSIP_RTP_AUDIO_PORT;
-   else
-       port = MCUSIP_RTP_VIDEO_PORT;
-   session->Open(lIP,port,port,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
-*/
    session->SetRemoteSocketInfo(rIP,sc->port,TRUE);
    sc->lport = session->GetLocalDataPort();
    sc->sdp = PString("m=") + ((!sc->media)?"audio ":"video ")
@@ -156,6 +160,23 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    sdp_msg += sc->sdp;
   }
   return session;
+}
+
+RTP_UDP *OpenMCUSipConnection::CreateFakeRTPSession(int media)
+{
+   int id = (media)?RTP_Session::DefaultAudioSessionID:RTP_Session::DefaultVideoSessionID;
+   RTP_UDP * session = new RTP_UDP(
+#ifdef H323_RTP_AGGREGATE
+                useRTPAggregation ? endpoint.GetRTPAggregator() : NULL,
+#endif
+                id, remoteIsNAT);
+   PIPSocket::Address lIP(localIP); 
+   unsigned portBase=endpoint.GetRtpIpPortBase(),
+            portMax =endpoint.GetRtpIpPortMax();
+   if((portBase>65532)||(portBase==0)) portBase=5000;
+   if(portMax<=portBase) portMax=PMIN(portBase+5000,65535);
+   session->Open(lIP,portBase,portMax,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
+   return session;
 }
 
 int OpenMCUSipConnection::CreateAudioChannel(int pt, int dir)
@@ -1158,14 +1179,31 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 	("sip:"+userName+"@"+localIP+":"+localPort), NULL);
     sip_contact->m_display = roomName;
 
-    sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)sip_to->a_url, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, (rand()%1000000), SIP_METHOD_INVITE);
-    sip_call_id_t* sip_call_id = sip_call_id_create(&home, localPort);
+    // Create fake RTP session to obtain ports
+    unsigned aPort, vPort;
+    OpenMCUSipConnection *sCon = new OpenMCUSipConnection(this, ep);
+    RTP_UDP * audio_session = sCon->CreateFakeRTPSession(0);
+    aPort = audio_session->GetLocalDataPort();
+    RTP_UDP * video_session = sCon->CreateFakeRTPSession(1);
+    vPort = video_session->GetLocalDataPort();
+    audio_session->Close(TRUE);
+    delete audio_session;
+    video_session->Close(TRUE);
+    delete video_session;
+    delete sCon;
+    // add ports to call_id string
+    PString call_id_str = PString(aPort)+"@"+PString(vPort);
 
     PString sdp = sdpInvite;
     sdp.Replace("USERNAME", room, TRUE, 0);
     sdp.Replace("LOCALIP", localIP, TRUE, 0);
+    sdp.Replace("RTP_AUDIO_PORT", aPort, TRUE, 0);
+    sdp.Replace("RTP_VIDEO_PORT", vPort, TRUE, 0);
     sip_payload_t *sip_payload = sip_payload_format(&home, sdp);
+
+    sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)sip_to->a_url, NULL);
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, (rand()%1000000), SIP_METHOD_INVITE);
+    sip_call_id_t* sip_call_id = sip_call_id_create(&home, call_id_str);
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *orq = nta_outgoing_mcreate(agent, ProcessSipEventWrap_ntaout, (nta_outgoing_magic_t *)this,
@@ -1429,6 +1467,9 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   if(sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") == 0)
     sCon->remote_addr_t->a_display = sip->sip_contact->m_display;
 
+  sCon->audioRtpPort = 0;
+  sCon->videoRtpPort = 0;
+
   if(!sCon->ProcessInviteEvent(sip)) 
   {
    delete sCon;
@@ -1541,6 +1582,14 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   sCon->sip_call_id = sik.sid;
   if(sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") == 0)
     sCon->remote_addr_t->a_display = sip->sip_contact->m_display;
+
+  sCon->audioRtpPort = atoi(PString(sip->sip_call_id->i_id).Tokenise("@")[1]);
+  sCon->videoRtpPort = atoi(PString(sip->sip_call_id->i_id).Tokenise("@")[2]);
+  if(sCon->audioRtpPort == 0 || sCon->videoRtpPort == 0)
+  {
+   delete sCon;
+   return 0;
+  }
 
   if(!sCon->ProcessInviteEvent(sip))
   {
