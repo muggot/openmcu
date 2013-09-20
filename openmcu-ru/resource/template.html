@@ -478,7 +478,7 @@ $BODY$
    document.getElementById("l_connections").innerHTML = window.l_connections;
    document.getElementById("l_records").innerHTML = window.l_records;
    <!-- управление -->
-   document.getElementById("l_select_create").value = window.l_select_create;
+   if(document.getElementById("l_select_create")) document.getElementById("l_select_create").value = window.l_select_create;
  </script>
 
  <script type="text/javascript">
