@@ -533,8 +533,12 @@ BOOL RegistryKey::SetValue(const PString & value, DWORD num)
 
 static BOOL IsRegistryPath(const PString & path)
 {
-  return (path.Find(LocalMachineStr) == 0 && path != LocalMachineStr) ||
-         (path.Find(CurrentUserStr) == 0 && path != CurrentUserStr);
+  BOOL isRP=(!path.IsEmpty());
+  if(isRP) isRP = ((path.Find(LocalMachineStr) == 0) && (path != LocalMachineStr))
+               || ((path.Find(CurrentUserStr)  == 0) && (path != CurrentUserStr ));
+
+  PTRACE(4,"WinCfg\tIsRegistryPath(" << path << ") = " << isRP);
+  return isRP;
 }
 
 
@@ -542,28 +546,30 @@ static BOOL IsRegistryPath(const PString & path)
 
 PString PProcess::GetConfigurationFile()
 {
+  PString getCF;
+
   // No paths set, use defaults
   if (configurationPaths.IsEmpty()) {
     configurationPaths.AppendString(executableFile.GetVolume() + executableFile.GetPath());
     configurationPaths.AppendString(CurrentUserStr);
+    PTRACE(3,"WinCfg\tGetConfigurationFile() warning: paths were empty and now filled by default: " << configurationPaths);
   }
 
   // See if explicit filename
-  if (configurationPaths.GetSize() == 1 && !PDirectory::Exists(configurationPaths[0]))
-    return configurationPaths[0];
-
-  PString iniFilename = executableFile.GetTitle() + ".INI";
-
-  for (PINDEX i = 0; i < configurationPaths.GetSize(); i++) {
-    PString path = configurationPaths[i];
-    if (IsRegistryPath(path))
-      return path;
-    PFilePath cfgFile = PDirectory(path) + iniFilename;
-    if (PFile::Exists(cfgFile))
-      return cfgFile;
+  if (configurationPaths.GetSize() == 1 && !PDirectory::Exists(configurationPaths[0])) getCF = configurationPaths[0];
+  else
+  {
+    PString iniFilename = executableFile.GetTitle() + ".ini";
+    for (PINDEX i = 0; i < configurationPaths.GetSize(); i++) {
+      PString path = configurationPaths[i];
+      if (IsRegistryPath(path)) { getCF=path; break; }
+      PFilePath cfgFile = PDirectory(path) + iniFilename;
+      if (PFile::Exists(cfgFile)) { getCF=cfgFile; break; }
+    }
   }
 
-  return PString();
+  PTRACE(4,"WinCfg\tGetConfigurationFile() = " << getCF);
+  return getCF;
 }
 
 
