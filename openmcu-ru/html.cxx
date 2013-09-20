@@ -41,7 +41,7 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
   }
   if(html_template_size <= 0) { cout << "Can't load HTML template!\n"; PTRACE(1,"WebCtrl\tCan't read HTML template from file"); return; }
 
-  PString lang = PConfig("Parameters").GetString("Language").ToLower();
+  PString lang = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("Parameters")).GetString("Language").ToLower();
 
   PString html0(html_template_buffer); html0 = html0.Left(html0.Find("$BODY$"));
   html0.Replace("$LANG$",     lang,     TRUE, 0);

@@ -53,6 +53,13 @@
 
 #undef P_SSL
 
+#ifdef SYS_CONFIG_DIR
+#  define OPENMCU_PCONFIG_CONSTRUCTOR(_sect) PString(SYS_CONFIG_DIR)+"/openmcu.ini",_sect
+#else
+#  define OPENMCU_PCONFIG_CONSTRUCTOR(_sect) "./openmcu.ini",_sect
+#endif
+
+
 #ifdef _WIN32
 #  undef  USE_SWRESAMPLE
 #  define USE_SWRESAMPLE     0
@@ -74,6 +81,8 @@
 #  define TRUETYPE_FONT_DIR "."
 #  undef  RECORDS_DIR
 #  define RECORDS_DIR       "records"
+#  undef  OPENMCU_PCONFIG_CONSTRUCTOR
+#  define OPENMCU_PCONFIG_CONSTRUCTOR(_sect) ".\\openmcu.ini",_sect
 #endif
 
 #endif // _OpenMCU-ru_CONFIG_H
