@@ -21,9 +21,8 @@ PTLIBDIR        = ../ptlib
 include ../ptlib/make/ptbuildopts.mak
 
 
-CONFIG_FILES=capability.conf \
+CONFIG_FILES= \
 layouts.conf \
-members.conf \
 ffserver.conf \
 openmcu.ini
 

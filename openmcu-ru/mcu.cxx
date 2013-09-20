@@ -935,7 +935,6 @@ BOOL CodecsPConfigPage::Post(PHTTPRequest & request,
   cfg.DeleteSection();
   for(PINDEX i = 0; i < dataArray.GetSize(); i++)
   {
-    if(dataArray[i].Find("submit") != P_MAX_INDEX) continue;
     PString key = dataArray[i].Tokenise("=")[0];
     if(dataArray.GetStringsIndex(key+"=TRUE") != P_MAX_INDEX)
       cfg.SetBoolean(key, 1);
@@ -953,9 +952,28 @@ BOOL CodecsPConfigPage::OnPOST(PHTTPServer & server,
                          const PStringToString & data,
                          const PHTTPConnectionInfo & connectInfo)
 {
-  dataArray = connectInfo.GetEntityBody().Tokenise("&");
-  for(PINDEX i = 0; i < dataArray.GetSize(); i++)
-    { PStringToString d; PURL::SplitQueryVars("data="+dataArray[i], d); dataArray[i]=d("data"); }
+  dataArray = PURL::UntranslateString(connectInfo.GetEntityBody(), PURL::QueryTranslation).Tokenise("&");
+  for(PINDEX i = 0; dataArray[i] != NULL; i++)
+  {
+    if(dataArray[i].Tokenise("=")[0] == "submit" ||
+       dataArray[i].Tokenise("=")[0] == "" ||
+       dataArray[i].Tokenise("=")[1] == "")
+    {
+      dataArray.RemoveAt(i); i--; continue;
+    }
+    if(dataArray[i].Tokenise("=")[1] == "TRUE") continue;
+    if(dataArray[i].Tokenise("=")[1] == "FALSE")
+    {
+      for(PINDEX j = i+1; dataArray[j] != NULL; j++)
+      {
+        if(dataArray[j].Tokenise("=")[0] == dataArray[i].Tokenise("=")[0] && dataArray[j].Tokenise("=")[1] == "TRUE")
+        {
+          dataArray[i] = dataArray[j]; dataArray.RemoveAt(j); j--; continue;
+        }
+      }
+    }
+  }
+  if(dataArray[dataArray.GetSize()-1].Tokenise("=")[0] == "") dataArray.RemoveAt(dataArray.GetSize()-1);
 
   PHTTPConfig::OnPOST(server, url, info, data, connectInfo);
   return TRUE;
