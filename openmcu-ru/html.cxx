@@ -225,10 +225,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   Add(new PHTTPStringField("Language", 2, cfg.GetString("Language"), "<td rowspan='1' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'>RU, EN"));
 
   // HTTP authentication username/password
-  PString adminUserName = cfg.GetString(UserNameKey);
-  PString adminPassword = PHTTPPasswordField::Decrypt(cfg.GetString(PasswordKey));
-  Add(new PHTTPStringField(UserNameKey, 25, adminUserName, "<td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Security</b>"));
-  Add(new PHTTPPasswordField(PasswordKey, 25, adminPassword));
+  Add(new PHTTPStringField(UserNameKey, 25, cfg.GetString(UserNameKey), "<td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Security</b>"));
+  Add(new PHTTPPasswordField(PasswordKey, 25, PHTTPPasswordField::Decrypt(cfg.GetString(PasswordKey))));
 
   // OpenMCU Server Id
   Add(new PHTTPStringField("OpenMCU Server Id", 25, cfg.GetString("OpenMCU Server Id", mcu.GetName()+" v"+mcu.GetVersion())));
@@ -277,7 +275,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   Add(new PHTTPStringField(DefaultRoomKey, 25, cfg.GetString(DefaultRoomKey, DefaultRoom), "<td rowspan='5' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Room Setup</b>"));
 
   // create/don't create empty room with default name at start
-  Add(new PHTTPBooleanField(CreateEmptyRoomKey, FALSE));
+  Add(new PHTTPBooleanField(CreateEmptyRoomKey, cfg.GetBoolean(CreateEmptyRoomKey, FALSE)));
 
   // recall last template after room created
   Add(new PHTTPBooleanField(RecallLastTemplateKey, cfg.GetBoolean(RecallLastTemplateKey, FALSE)));
