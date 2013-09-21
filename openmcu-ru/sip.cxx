@@ -1075,7 +1075,7 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
     PString hostName = sip->sip_from->a_url->url_host;
     PString roomName;
     PString userName_, hostName_, via_, access;
-    PString defaultAccess = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RoomAccess")).GetString("*", "ALLOW").ToUpper();
+    PString defaultAccess = MCUConfig("RoomAccess").GetString("*", "ALLOW").ToUpper();
 
     if(sip->sip_record_route)
     {
@@ -1088,7 +1088,7 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
     else
       roomName = sip->sip_to->a_url->url_user;
 
-    PStringToString data = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RoomAccess")).GetAllKeyValues();
+    PStringToString data = MCUConfig("RoomAccess").GetAllKeyValues();
 
     if(roomName != "*")
       access = data(roomName).Tokenise(" ")[0].ToUpper();
@@ -1672,11 +1672,11 @@ void OpenMCUSipEndPoint::Main()
  sdpInvite = CreateSdpInvite();
 
  // proxy servers
- PStringList keys = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("ProxyServers")).GetKeys();
+ PStringList keys = MCUConfig("ProxyServers").GetKeys();
  for(PINDEX i = 0; i < keys.GetSize(); i++)
  {
   ProxyServer *proxy = new ProxyServer();
-  PString tmp = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("ProxyServers")).GetString(keys[i]);
+  PString tmp = MCUConfig("ProxyServers").GetString(keys[i]);
   proxy->roomName = keys[i];
   proxy->proxyIP = tmp.Tokenise(",")[0].Tokenise(":")[0];
   proxy->proxyPort = tmp.Tokenise(",")[0].Tokenise(":")[1];

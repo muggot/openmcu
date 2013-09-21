@@ -25,6 +25,10 @@
 // enable echo room for video mixer
 #define ENABLE_ECHO_MIXER   1
 
+// default log/trace level
+#define DEFAULT_LOG_LEVEL   0
+#define DEFAULT_TRACE_LEVEL 0
+
 // enable video if OpenH323 has been compiled with video support
 #include <h323.h>
 #ifndef NO_H323_VIDEO
@@ -50,15 +54,22 @@
 // libyuv filtering type: kFilterNone|kFilterBilinear|kFilterBox
 #define LIBYUV_FILTER	kFilterBilinear
 
-
-#undef P_SSL
-
-#ifdef SYS_CONFIG_DIR
-#  define OPENMCU_PCONFIG_CONSTRUCTOR(_sect) PString(SYS_CONFIG_DIR)+"/openmcu.ini",_sect
+#ifdef _WIN32
+#  ifdef SYS_CONFIG_DIR
+#    define CONFIG_PATH PString(SYS_CONFIG_DIR)+"\\openmcu.ini"
+#  else
+#    define CONFIG_PATH ".\\openmcu.ini"
+#  endif
 #else
-#  define OPENMCU_PCONFIG_CONSTRUCTOR(_sect) "./openmcu.ini",_sect
+#  ifdef SYS_CONFIG_DIR
+#    define CONFIG_PATH PString(SYS_CONFIG_DIR)+"/openmcu.ini"
+#  else
+#    define CONFIG_PATH "./openmcu.ini"
+#  endif
 #endif
 
+
+#undef P_SSL
 
 #ifdef _WIN32
 #  undef  USE_SWRESAMPLE
@@ -81,8 +92,6 @@
 #  define TRUETYPE_FONT_DIR "."
 #  undef  RECORDS_DIR
 #  define RECORDS_DIR       "records"
-#  undef  OPENMCU_PCONFIG_CONSTRUCTOR
-#  define OPENMCU_PCONFIG_CONSTRUCTOR(_sect) ".\\openmcu.ini",_sect
 #endif
 
 #endif // _OpenMCU-ru_CONFIG_H

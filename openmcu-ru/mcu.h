@@ -34,6 +34,13 @@ typedef PSecureHTTPServiceProcess OpenMCUProcessAncestor;
 typedef PHTTPServiceProcess OpenMCUProcessAncestor;
 #endif
 
+class MCUConfig: public PConfig
+{
+ public:
+   MCUConfig(const PString & section)
+    : PConfig(CONFIG_PATH, section){};
+};
+
 // All this silly stuff to get the plugins to load 
 // because windows is stoopid and the pluginloader never gets instanced.
 // This is required for ALL MFC based applications looking to load plugins!

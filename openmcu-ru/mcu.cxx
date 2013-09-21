@@ -338,11 +338,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   }
 #endif
 
-  PConfig cfg(OPENMCU_PCONFIG_CONSTRUCTOR("Parameters"));
+  MCUConfig cfg("Parameters");
 
 #if PTRACING
-  int TraceLevel=cfg.GetInteger(TraceLevelKey, 6);
-  SetLogLevel((PSystemLog::Level)TraceLevel);
+  int TraceLevel=cfg.GetInteger(TraceLevelKey, DEFAULT_TRACE_LEVEL);
+  int LogLevel=cfg.GetInteger(LogLevelKey, DEFAULT_LOG_LEVEL);
+  SetLogLevel((PSystemLog::Level)LogLevel);
 #  ifdef SERVER_LOGS
 #    ifdef _WIN32
   PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"\\trace.txt");
@@ -753,7 +754,7 @@ PCREATE_SERVICE_MACRO_BLOCK(RoomStatus,P_EMPTY,P_EMPTY,block)
 H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : PConfigPage(app,title,section,auth)
 {
-  PConfig cfg(OPENMCU_PCONFIG_CONSTRUCTOR(section));
+  MCUConfig cfg(section);
   OpenMCU & mcu = OpenMCU::Current();
 
   mcu.GetEndpoint().Initialise(cfg, this);
@@ -770,7 +771,7 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
 SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : PConfigPage(app,title,section,auth)
 {
-  PConfig cfg(OPENMCU_PCONFIG_CONSTRUCTOR(section));
+  MCUConfig cfg(section);
   OpenMCU & mcu = OpenMCU::Current();
 
   // SIP Listener setup
@@ -802,7 +803,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
 SectionPConfigPage::SectionPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : PConfigPage(app,title,NULL,auth)
 {
-  cfg = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR(section));
+  cfg = MCUConfig(section);
   PStringList keys = cfg.GetKeys();
   PString data;
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -864,7 +865,7 @@ BOOL SectionPConfigPage::OnPOST(PHTTPServer & server,
 CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : PConfigPage(app,title,section,auth)
 {
-  cfg = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR(section));
+  cfg = MCUConfig(section);
 
   PString info, infoStyle = "<td rowspan='1' style='background-color:#efe;padding:15px;border-bottom:2px solid white;'>";
   PStringList keys = cfg.GetKeys();

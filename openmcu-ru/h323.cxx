@@ -231,49 +231,49 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
    if(capabilities.GetSize() == 0)
      AddAllCapabilities(0, 0, "*");
 
-   if(PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_SOUND")).GetKeys().GetSize() == 0) rsConfig = 0;
-   if(PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_SOUND")).GetKeys().GetSize() == 0) tsConfig = 0;
-   if(PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_VIDEO")).GetKeys().GetSize() == 0) rvConfig = 0;
-   if(PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_VIDEO")).GetKeys().GetSize() == 0) tvConfig = 0;
+   if(MCUConfig("RECEIVE_SOUND").GetKeys().GetSize() == 0) rsConfig = 0;
+   if(MCUConfig("TRANSMIT_SOUND").GetKeys().GetSize() == 0) tsConfig = 0;
+   if(MCUConfig("RECEIVE_VIDEO").GetKeys().GetSize() == 0) rvConfig = 0;
+   if(MCUConfig("TRANSMIT_VIDEO").GetKeys().GetSize() == 0) tvConfig = 0;
    if(rsConfig == 0)
    {
-     PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_SOUND")).SetBoolean("G.711-uLaw-64k{sw}", 1);
-     PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_SOUND")).SetBoolean("G.711-ALaw-64k{sw}", 1);
+     MCUConfig("RECEIVE_SOUND").SetBoolean("G.711-uLaw-64k{sw}", 1);
+     MCUConfig("RECEIVE_SOUND").SetBoolean("G.711-ALaw-64k{sw}", 1);
    }
    if(tsConfig == 0)
    {
-     PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_SOUND")).SetBoolean("G.711-uLaw-64k{sw}", 1);
-     PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_SOUND")).SetBoolean("G.711-ALaw-64k{sw}", 1);
+     MCUConfig("TRANSMIT_SOUND").SetBoolean("G.711-uLaw-64k{sw}", 1);
+     MCUConfig("TRANSMIT_SOUND").SetBoolean("G.711-ALaw-64k{sw}", 1);
    }
    for(unsigned i = 1; capabilities.FindCapability(i) != NULL; i++)
    {
      H323Capability *cap = capabilities.FindCapability(i);
      if(rsConfig == 0 && cap->GetMainType() == 0)
-       PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_SOUND")).SetBoolean(cap->GetFormatName(), 1);
+       MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName(), 1);
      if(tsConfig == 0 && cap->GetMainType() == 0)
-       PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_SOUND")).SetBoolean(cap->GetFormatName(), 1);
+       MCUConfig("TRANSMIT_SOUND").SetBoolean(cap->GetFormatName(), 1);
      if(rvConfig == 0 && cap->GetMainType() == 1)
-       PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_VIDEO")).SetBoolean(cap->GetFormatName(), 1);
+       MCUConfig("RECEIVE_VIDEO").SetBoolean(cap->GetFormatName(), 1);
      if(tvConfig == 0 && cap->GetMainType() == 1)
-       PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_VIDEO")).SetBoolean(cap->GetFormatName(), 1);
+       MCUConfig("TRANSMIT_VIDEO").SetBoolean(cap->GetFormatName(), 1);
 
-     if(rsConfig == 1 && cap->GetMainType() == 0 && PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_SOUND")).HasKey(cap->GetFormatName()) == 0)
-       PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_SOUND")).SetBoolean(cap->GetFormatName(), 1);
-     if(tsConfig == 1 && cap->GetMainType() == 0 && PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_SOUND")).HasKey(cap->GetFormatName()) == 0)
-       PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_SOUND")).SetBoolean(cap->GetFormatName(), 1);
-     if(rvConfig == 1 && cap->GetMainType() == 1 && PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_VIDEO")).HasKey(cap->GetFormatName()) == 0)
-       PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_VIDEO")).SetBoolean(cap->GetFormatName(), 1);
-     if(tvConfig == 1 && cap->GetMainType() == 1 && PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_SOUND")).HasKey(cap->GetFormatName()) == 0)
-       PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_VIDEO")).SetBoolean(cap->GetFormatName(), 1);
+     if(rsConfig == 1 && cap->GetMainType() == 0 && MCUConfig("RECEIVE_SOUND").HasKey(cap->GetFormatName()) == 0)
+       MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName(), 1);
+     if(tsConfig == 1 && cap->GetMainType() == 0 && MCUConfig("TRANSMIT_SOUND").HasKey(cap->GetFormatName()) == 0)
+       MCUConfig("TRANSMIT_SOUND").SetBoolean(cap->GetFormatName(), 1);
+     if(rvConfig == 1 && cap->GetMainType() == 1 && MCUConfig("RECEIVE_VIDEO").HasKey(cap->GetFormatName()) == 0)
+       MCUConfig("RECEIVE_VIDEO").SetBoolean(cap->GetFormatName(), 1);
+     if(tvConfig == 1 && cap->GetMainType() == 1 && MCUConfig("TRANSMIT_SOUND").HasKey(cap->GetFormatName()) == 0)
+       MCUConfig("TRANSMIT_VIDEO").SetBoolean(cap->GetFormatName(), 1);
    }
 
    capabilities.RemoveAll();
 
    int capsNum = 5;
-   capsNum += PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_SOUND")).GetKeys().GetSize()+
-             PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_SOUND")).GetKeys().GetSize()+
-             PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_VIDEO")).GetKeys().GetSize()+
-             PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_VIDEO")).GetKeys().GetSize();
+   capsNum += MCUConfig("RECEIVE_SOUND").GetKeys().GetSize()+
+             MCUConfig("TRANSMIT_SOUND").GetKeys().GetSize()+
+             MCUConfig("RECEIVE_VIDEO").GetKeys().GetSize()+
+             MCUConfig("TRANSMIT_VIDEO").GetKeys().GetSize();
    rsCaps = (char **)calloc(capsNum,sizeof(char *));
    tsCaps = (char **)calloc(capsNum,sizeof(char *));
    rvCaps = (char **)calloc(capsNum,sizeof(char *));
@@ -283,40 +283,40 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
    char buf[64];
    capsNum = 0;
    PStringList keys;
-   keys = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_SOUND")).GetKeys();
+   keys = MCUConfig("RECEIVE_SOUND").GetKeys();
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
-     if(PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_SOUND")).GetBoolean(keys[i]) != 1) continue;
+     if(MCUConfig("RECEIVE_SOUND").GetBoolean(keys[i]) != 1) continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      rsCaps[j]=&(listCaps[64*capsNum]);
      j++; capsNum++;
    }
 
-   keys = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_SOUND")).GetKeys();
+   keys = MCUConfig("TRANSMIT_SOUND").GetKeys();
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
-     if(PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_SOUND")).GetBoolean(keys[i]) != 1) continue;
+     if(MCUConfig("TRANSMIT_SOUND").GetBoolean(keys[i]) != 1) continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      tsCaps[j]=&(listCaps[64*capsNum]);
      j++; capsNum++;
    }
 
-   keys = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_VIDEO")).GetKeys();
+   keys = MCUConfig("RECEIVE_VIDEO").GetKeys();
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
-     if(PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("RECEIVE_VIDEO")).GetBoolean(keys[i]) != 1) continue;
+     if(MCUConfig("RECEIVE_VIDEO").GetBoolean(keys[i]) != 1) continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      rvCaps[j]=&(listCaps[64*capsNum]);
      j++; capsNum++;
    }
 
-   keys = PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_VIDEO")).GetKeys();
+   keys = MCUConfig("TRANSMIT_VIDEO").GetKeys();
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
-     if(PConfig(OPENMCU_PCONFIG_CONSTRUCTOR("TRANSMIT_VIDEO")).GetBoolean(keys[i]) != 1) continue;
+     if(MCUConfig("TRANSMIT_VIDEO").GetBoolean(keys[i]) != 1) continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      tvCaps[j]=&(listCaps[64*capsNum]);
