@@ -271,13 +271,7 @@ BOOL OpenMCU::OnStart()
   PDirectory exeDir = executableFile.GetDirectory();
   exeDir.Change();
 
-#ifdef SYS_CONFIG_DIR
-#ifdef _WIN32
-  SetConfigurationPath(SYS_CONFIG_DIR + std::string("\\openmcu.ini"));
-#else
-  SetConfigurationPath(SYS_CONFIG_DIR + std::string("/openmcu.ini"));
-#endif
-#endif
+  SetConfigurationPath(CONFIG_PATH);
 
   httpNameSpace.AddResource(new PHTTPDirectory("data", "data"));
   httpNameSpace.AddResource(new PServiceHTTPDirectory("html", "html"));
