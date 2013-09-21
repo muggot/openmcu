@@ -18,22 +18,6 @@
 
 #endif  // OPENMCU_VIDEO
 
-static const char InterfaceKey[]          = "H.323 Listener";
-static const char LocalUserNameKey[]      = "Local User Name";
-static const char GatekeeperUserNameKey[] = "Gatekeeper Username";
-static const char GatekeeperAliasKey[]    = "Gatekeeper Room Names";
-static const char GatekeeperPasswordKey[] = "Gatekeeper Password";
-static const char GatekeeperPrefixesKey[] = "Gatekeeper Prefixes";
-static const char GatekeeperModeKey[]     = "Gatekeeper Mode";
-static const char GatekeeperKey[]         = "Gatekeeper";
-static const char DisableCodecsKey[]      = "Disable codecs - deprecated, use capability.conf instead!";
-static const char NATRouterIPKey[]        = "NAT Router IP";
-static const char NATTreatAsGlobalKey[]   = "Treat as global for NAT";
-static const char DisableFastStartKey[]   = "Disable Fast-Start";
-static const char DisableH245TunnelingKey[]="Disable H.245 Tunneling";
-static const char RTPPortBaseKey[]        = "RTP Base Port";
-static const char RTPPortMaxKey[]         = "RTP Max Port";
-
 static const char * GKModeLabels[] = { 
    "No gatekeeper", 
    "Find gatekeeper", 

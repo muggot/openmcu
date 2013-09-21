@@ -34,12 +34,103 @@ typedef PSecureHTTPServiceProcess OpenMCUProcessAncestor;
 typedef PHTTPServiceProcess OpenMCUProcessAncestor;
 #endif
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const WORD DefaultHTTPPort = 1420;
+
+extern PHTTPServiceProcess::Info ProductInfo;
+
+static const char LogLevelKey[]           = "Log Level";
+static const char TraceLevelKey[]         = "Trace level";
+static const char UserNameKey[]           = "Username";
+static const char PasswordKey[]           = "Password";
+static const char HttpPortKey[]           = "HTTP Port";
+static const char HttpLinkEventBufferKey[]= "Room control event buffer size";
+
+static const char CallLogFilenameKey[]    = "Call log filename";
+
+#if P_SSL
+static const char HTTPCertificateFileKey[]  = "HTTP Certificate";
+#endif
+static const char DefaultRoomKey[]          = "Default room";
+static const char DefaultRoomTimeLimitKey[] = "Room time limit";
+
+static const char DefaultCallLogFilename[] = "mcu_log.txt"; 
+static const char DefaultRoom[]            = "room101";
+static const char CreateEmptyRoomKey[]     = "Auto create empty room";
+static const char RecallLastTemplateKey[]  = "Auto recall last template";
+static const char AllowLoopbackCallsKey[]  = "Allow loopback calls";
+
+static const char SipListenerKey[]         = "SIP Listener";
+
+#if OPENMCU_VIDEO
+const unsigned int DefaultVideoFrameRate = 10;
+const unsigned int DefaultVideoQuality   = 10;
+
+static const char RecorderFfmpegPathKey[]  = "Path to ffmpeg";
+static const char RecorderFfmpegOptsKey[]  = "Ffmpeg options";
+static const char RecorderFfmpegDirKey[]   = "Video Recorder directory";
+static const char RecorderFrameWidthKey[]  = "Video Recorder frame width";
+static const char RecorderFrameHeightKey[] = "Video Recorder frame height";
+static const char RecorderFrameRateKey[]   = "Video Recorder frame rate";
+static const char RecorderSampleRateKey[]  = "Video Recorder sound rate";
+static const char RecorderAudioChansKey[]  = "Video Recorder sound channels";
+#ifdef _WIN32
+static const char DefaultFfmpegPath[]         = "ffmpeg.exe";
+#else
+static const char DefaultFfmpegPath[]         = FFMPEG_PATH;
+#endif
+static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac %C -ar %S -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac %C -vcodec msmpeg4v2 %O.asf";
+#ifdef RECORDS_DIR
+static const char DefaultRecordingDirectory[] = RECORDS_DIR;
+#else
+static const char DefaultRecordingDirectory[] = "records";
+#endif
+static const int  DefaultRecorderFrameWidth   = 704;
+static const int  DefaultRecorderFrameHeight  = 576;
+static const int  DefaultRecorderFrameRate    = 10;
+static const int  DefaultRecorderSampleRate   = 16000;
+static const int  DefaultRecorderAudioChans   = 1;
+
+static const char ForceSplitVideoKey[]   = "Force split screen video (enables Room Control page)";
+
+static const char H264LevelForSIPKey[]        = "H.264 Default Level for SIP";
+#endif
+
+static PString DefaultConnectingWAVFile = PString(SYS_RESOURCE_DIR)+"/connecting.wav";
+static PString DefaultEnteringWAVFile   = PString(SYS_RESOURCE_DIR)+"/entering.wav";
+static PString DefaultLeavingWAVFile    = PString(SYS_RESOURCE_DIR)+"/leaving.wav";
+
+static const char ConnectingWAVFileKey[]  = "Connecting WAV File";
+static const char EnteringWAVFileKey[]    = "Entering WAV File";
+static const char LeavingWAVFileKey[]     = "Leaving WAV File";
+
+static const char InterfaceKey[]          = "H.323 Listener";
+static const char LocalUserNameKey[]      = "Local User Name";
+static const char GatekeeperUserNameKey[] = "Gatekeeper Username";
+static const char GatekeeperAliasKey[]    = "Gatekeeper Room Names";
+static const char GatekeeperPasswordKey[] = "Gatekeeper Password";
+static const char GatekeeperPrefixesKey[] = "Gatekeeper Prefixes";
+static const char GatekeeperModeKey[]     = "Gatekeeper Mode";
+static const char GatekeeperKey[]         = "Gatekeeper";
+static const char DisableCodecsKey[]      = "Disable codecs - deprecated, use capability.conf instead!";
+static const char NATRouterIPKey[]        = "NAT Router IP";
+static const char NATTreatAsGlobalKey[]   = "Treat as global for NAT";
+static const char DisableFastStartKey[]   = "Disable Fast-Start";
+static const char DisableH245TunnelingKey[]="Disable H.245 Tunneling";
+static const char RTPPortBaseKey[]        = "RTP Base Port";
+static const char RTPPortMaxKey[]         = "RTP Max Port";
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class MCUConfig: public PConfig
 {
  public:
    MCUConfig(const PString & section)
     : PConfig(CONFIG_PATH, section){};
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // All this silly stuff to get the plugins to load 
 // because windows is stoopid and the pluginloader never gets instanced.
@@ -245,6 +336,8 @@ class OpenMCU : public OpenMCUProcessAncestor
     PFilePath enteringWAVFile;
     PFilePath leavingWAVFile;
 
+    PFilePath  logFilename;
+
   protected:
     PFilePath executableFile;
     ConferenceManager * manager;
@@ -259,7 +352,6 @@ class OpenMCU : public OpenMCUProcessAncestor
     PMutex     httpBufferMutex;
     BOOL       httpBufferComplete;
 
-    PFilePath  logFilename;
     int        roomTimeLimit;
 
 #if OPENMCU_VIDEO
