@@ -34,11 +34,11 @@ typedef PSecureHTTPServiceProcess OpenMCUProcessAncestor;
 typedef PHTTPServiceProcess OpenMCUProcessAncestor;
 #endif
 
+extern PHTTPServiceProcess::Info ProductInfo;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 const WORD DefaultHTTPPort = 1420;
-
-extern PHTTPServiceProcess::Info ProductInfo;
 
 static const char LogLevelKey[]           = "Log Level";
 static const char TraceLevelKey[]         = "Trace level";
@@ -361,19 +361,6 @@ class OpenMCU : public OpenMCUProcessAncestor
 #endif
 #endif
 };
-
-
-void BeginPage (PStringStream &html, const char *ptitle, const char *title, const char *quotekey);
-void EndPage (PStringStream &html, PString copyr);
-
-PString ErrorPage( //maybe ptlib could provide pages like this? for future: dig http server part
-  PString        ip,            // "192.168.1.1"
-  unsigned short port,          // 1420
-  unsigned       errorCode,     // 403
-  PString        errorText,     // "Forbidden"
-  PString        title,         // "Page you tried to access is forbidden, lol"
-  PString        description    // detailed: "blablablablablabla \n blablablablablabla"
-);
 
 #ifndef _WIN32
 static pid_t popen2(const char *command, int *infp = NULL, int *outfp = NULL)
