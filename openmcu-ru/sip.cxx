@@ -827,9 +827,11 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
  else
    remotePartyName = remote_addr_t->a_url->url_user;
 
+ remotePartyName = PURL::UntranslateString(remotePartyName, PURL::QueryTranslation);
+
  remoteName = remote_addr_t->a_url->url_user;
- PStringToString data; PURL::SplitQueryVars("partyName="+remotePartyName,data); remotePartyName=data("partyName");
- data.RemoveAll(); PURL::SplitQueryVars("partyName="+remoteName,data); remoteName=data("partyName");
+ remoteName = PURL::UntranslateString(remoteName, PURL::QueryTranslation);
+
  remotePartyAddress = PString("sip:")+remoteName+"@"+remote_addr_t->a_url->url_host;
 
  if(sip->sip_user_agent && sip->sip_user_agent->g_string)
@@ -1389,6 +1391,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
  if(sip->sip_request && sip->sip_request->rq_method_name)
  {
    request = sip->sip_request->rq_method_name;
+   cout << "Received SIP request: " << request << "\n";
    if(sip->sip_from->a_url->url_host) sik.addr = inet_addr(sip->sip_from->a_url->url_host); else return 0;
    if(sip->sip_from->a_url->url_port) sik.port = atoi(sip->sip_from->a_url->url_port); else sik.port=5060;
    sik.sid = sip->sip_call_id->i_id;
@@ -1396,6 +1399,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
  else if(sip->sip_status && sip->sip_status->st_phrase) 
  {
    status = sip->sip_status->st_phrase;
+   cout << "Received SIP status: " << status << "\n";
    if(sip->sip_to->a_url->url_host) sik.addr = inet_addr(sip->sip_to->a_url->url_host); else return 0;
    if(sip->sip_to->a_url->url_port) sik.port = atoi(sip->sip_to->a_url->url_port); else sik.port=5060;
    PStringArray sip_msg_a = sip_msg_str.Lines();
@@ -1412,7 +1416,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
  }
 
  PTRACE(1, "MCUSIP\tReceived SIP message: \n" << sip_msg_str);
- cout << request << "\n";
 
  if(request == "INVITE")
  {
@@ -1487,14 +1490,18 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
  if(request == "BYE")
  {
   SipConnectionMapType::iterator scr = sipConnMap.find(sik);
-  if(scr == sipConnMap.end()) return 0;
-
-  PTRACE(1, "MCUSIP\tNew SIP BYE");
-  OpenMCUSipConnection *sCon = scr->second;
-  sipConnMap.erase(sik);
-  sCon->sdp_msg.MakeEmpty();
-  sCon->SipReply200(agent, msg);
-  sCon->LeaveConference(TRUE); // leave conference and delete connection
+  if(scr != sipConnMap.end())
+  {
+    PTRACE(1, "MCUSIP\tNew SIP BYE");
+    OpenMCUSipConnection *sCon = scr->second;
+    sipConnMap.erase(sik);
+    sCon->sdp_msg.MakeEmpty();
+    sCon->SipReply200(agent, msg);
+    sCon->LeaveConference(TRUE); // leave conference and delete connection
+  } else {
+    PTRACE(1, "MCUSIP\tSend 200 OK for BYE (connection not found)");
+    nta_msg_treply(agent, msg, SIP_200_OK, TAG_END());
+  }
   return 0;
  }
  if(request == "OPTIONS" || request == "SUBSCRIBE" || request == "INFO" )
@@ -1510,11 +1517,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   } else {
     contact = "<sip:"+(PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host+":"+localPort+">";
   }
-#ifdef _WIN32
   nta_msg_treply(agent,msg, SIP_200_OK, SIPTAG_CONTACT_STR((const char*)contact),TAG_END());
-#else
-  nta_msg_treply(agent,msg, SIP_200_OK, SIPTAG_CONTACT_STR(contact),TAG_END());
-#endif
   return 0;
  }
 
@@ -1594,10 +1597,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent,
   sCon->StartReceiveChannels();
   sipConnMap.insert(SipConnectionMapType::value_type(sik,sCon));
   sCon->StartTransmitChannels();
-  return 0;
- }
- if(status == "Busy Here" || status == "Decline")
- {
   return 0;
  }
 
