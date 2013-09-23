@@ -578,7 +578,9 @@ BOOL CodecsPConfigPage::OnPOST(PHTTPServer & server,
                          const PStringToString & data,
                          const PHTTPConnectionInfo & connectInfo)
 {
-  dataArray = PURL::UntranslateString(connectInfo.GetEntityBody(), PURL::QueryTranslation).Tokenise("&");
+  dataArray = connectInfo.GetEntityBody().Tokenise("&");
+  for(PINDEX i = 0; dataArray[i] != NULL; i++)
+    dataArray[i] = PURL::UntranslateString(dataArray[i], PURL::QueryTranslation);
   for(PINDEX i = 0; dataArray[i] != NULL; i++)
   {
     if(dataArray[i].Tokenise("=")[0] == "submit" ||
