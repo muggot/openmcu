@@ -248,7 +248,7 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
        MCUConfig("TRANSMIT_SOUND").SetBoolean(cap->GetFormatName(), 1);
      if(rvConfig == 1 && cap->GetMainType() == 1 && MCUConfig("RECEIVE_VIDEO").HasKey(cap->GetFormatName()) == 0)
        MCUConfig("RECEIVE_VIDEO").SetBoolean(cap->GetFormatName(), 1);
-     if(tvConfig == 1 && cap->GetMainType() == 1 && MCUConfig("TRANSMIT_SOUND").HasKey(cap->GetFormatName()) == 0)
+     if(tvConfig == 1 && cap->GetMainType() == 1 && MCUConfig("TRANSMIT_VIDEO").HasKey(cap->GetFormatName()) == 0)
        MCUConfig("TRANSMIT_VIDEO").SetBoolean(cap->GetFormatName(), 1);
    }
 
