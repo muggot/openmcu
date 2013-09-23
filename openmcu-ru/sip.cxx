@@ -814,6 +814,7 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
 
 int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
 {
+ PTRACE(1, "MCUSIP\tProcessInviteEvent");
  sdp_s = sip->sip_payload->pl_data;
  PStringArray sdp_sa = sdp_s.Lines();
 
@@ -842,8 +843,10 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
 
  ProcessSDP(sdp_sa, sipCapsId, sipCaps, 0);
 
+ PTRACE(1, "MCUSIP\tCreateLogicalChannels");
  CreateLogicalChannels();
  ep.OnIncomingSipConnection(callToken,*this);
+ PTRACE(1, "MCUSIP\tJoinConference");
  JoinConference(requestedRoom);
  if(conferenceMember == NULL || conference == NULL) return 0;
  return 1;
@@ -851,6 +854,7 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
 
 int OpenMCUSipConnection::ProcessReInviteEvent(sip_t *sip)
 {
+ PTRACE(1, "MCUSIP\tProcessReInviteEvent");
  PString sdp = sip->sip_payload->pl_data;
  PStringArray sdp_sa = sdp.Lines();
  PIntArray new_par;
@@ -931,6 +935,7 @@ int OpenMCUSipConnection::ProcessReInviteEvent(sip_t *sip)
 
 void OpenMCUSipConnection::SipReply200(nta_agent_t *agent, msg_t *msg)
 {
+  PTRACE(1, "MCUSIP\tCreate SIP 200 OK");
   if(sip_msg) msg_destroy(sip_msg);
   sip_msg = msg_dup(msg);
 
@@ -1043,6 +1048,7 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
 
 void OpenMCUSipConnection::SipProcessACK(nta_agent_t *agent, msg_t *msg)
 {
+  PTRACE(1, "MCUSIP\tSipProcessACK");
   if(sip_msg) msg_destroy(sip_msg);
   sip_msg = msg_dup(msg);
 }
@@ -1071,6 +1077,7 @@ int OpenMCUSipEndPoint::ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConne
 
 PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
 {
+    PTRACE(1, "MCUSIP\tGetRoomAccess");
     BOOL inRoom = false;
     PString via = sip->sip_via->v_host;
     PString userName = sip->sip_from->a_url->url_user;
@@ -1132,6 +1139,7 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
 
 void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 {
+    PTRACE(1, "MCUSIP\tSipMakeCall");
     if(agent == NULL)
       return;
 
@@ -1225,6 +1233,7 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 
 void OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
 {
+    PTRACE(1, "MCUSIP\tSipRegister");
     if(agent == NULL)
       return;
 
