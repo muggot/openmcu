@@ -737,8 +737,8 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
  int cn = 0; while(endpoint.tsCaps[cn]!=NULL) { tsCaps.AppendString(endpoint.tsCaps[cn]); cn++; }
  cn = 0; while(endpoint.tvCaps[cn]!=NULL) { tvCaps.AppendString(endpoint.tvCaps[cn]); cn++; }
 
- cout << tsCaps << "\n";
- cout << tvCaps << "\n";
+ //cout << tsCaps << "\n";
+ //cout << tvCaps << "\n";
 
  scap = -1; vcap = -1;
  for(int cn=0; cn<par.GetSize() && (scap < 0 || vcap < 0); cn++)
@@ -941,21 +941,19 @@ void OpenMCUSipConnection::SipReply200(nta_agent_t *agent, msg_t *msg)
 
   if(sdp_msg.IsEmpty())
   {
-    nta_msg_treply(agent,msg, SIP_200_OK, SIPTAG_CONTACT(contact_t),TAG_END());
+    nta_msg_treply(agent, msg, SIP_200_OK, SIPTAG_CONTACT(contact_t), TAG_END());
     return;
   }
-  char *sdp_txt = strdup(sdp_msg);
-  msg_common_t ms = {0, 0, sip_payload_class, sdp_txt, strlen(sdp_txt)};
-  sip_payload_t sdp = {{ms}, NULL, sdp_txt, strlen(sdp_txt)};
-  nta_msg_treply(agent,msg, SIP_200_OK,
+
+  sip_payload_t *sip_payload = sip_payload_format(msg_home(msg), sdp_msg);
+  nta_msg_treply(agent, msg, SIP_200_OK,
 		 SIPTAG_CONTACT(contact_t),
                  SIPTAG_CONTENT_TYPE_STR("application/sdp"),
-                 SIPTAG_PAYLOAD(&sdp),
+                 SIPTAG_PAYLOAD(sip_payload),
                  TAG_END());
-  PTRACE(1, "MCUSIP\tSending SIP 200 OK to " <<
-	remote_addr_t->a_url->url_user << "@" << remote_addr_t->a_url->url_host << ", SDP\n" << sdp_txt);
 
-  free(sdp_txt);
+  PTRACE(1, "MCUSIP\tSending SIP 200 OK to " <<
+	remote_addr_t->a_url->url_user << "@" << remote_addr_t->a_url->url_host << ", SDP\n" << sdp_msg);
   StartReceiveChannels();
 }
 
@@ -1331,7 +1329,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
   PString sip_msg_str = (PString)msg_as_string(&home, msg, NULL, 0, NULL);
 
   PTRACE(1, "MCUSIP\tReceived SIP message: \n" << sip_msg_str);
-  cout << "Received SIP status: " << status << " " << sip->sip_status->st_phrase << "\n";
 
   if((status == 401 || status == 407) && sip->sip_cseq &&
     (sip->sip_cseq->cs_method == sip_method_register || sip->sip_cseq->cs_method == sip_method_invite))
@@ -1527,7 +1524,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
  PString sip_msg_str = (PString)msg_as_string(&home, msg, NULL, 0, NULL);
 
  PTRACE(1, "MCUSIP\tReceived SIP message: \n" << sip_msg_str);
- cout << "Received SIP request: " << sip->sip_request->rq_method << " " << request << "\n";
 
  if(request == "INVITE")
  {
