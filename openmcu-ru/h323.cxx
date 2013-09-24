@@ -2071,10 +2071,10 @@ class MemberDeleteThread : public PThread
     void Main()
     {
       cm->WaitForClose();
-//      PThread::Sleep(1000);
+      PThread::Sleep(1000);
       if (conf->RemoveMember(cm))
 {}//        ep->GetConferenceManager().RemoveConference(conf->GetID());
-//      PThread::Sleep(1000);
+      PThread::Sleep(1000);
       delete cm;
     }
 
