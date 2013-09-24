@@ -18,8 +18,10 @@ VideoMixConfigurator OpenMCU::vmcfg;
 OpenMCU::OpenMCU()
   : OpenMCUProcessAncestor(ProductInfo)
 {
-  endpoint = NULL;
-  sipendpoint = NULL;
+  endpoint          = NULL;
+  sipendpoint       = NULL;
+  currentLogLevel   = -1;
+  currentTraceLevel = -1;
 }
 
 void OpenMCU::Main()
@@ -102,18 +104,25 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #if PTRACING
   int TraceLevel=cfg.GetInteger(TraceLevelKey, DEFAULT_TRACE_LEVEL);
   int LogLevel=cfg.GetInteger(LogLevelKey, DEFAULT_LOG_LEVEL);
-  SetLogLevel((PSystemLog::Level)LogLevel);
+  if(currentLogLevel != LogLevel)
+  {
+    SetLogLevel((PSystemLog::Level)LogLevel);
+    currentLogLevel = LogLevel;
+  }
+  if(currentTraceLevel != TraceLevel)
+  {
 #  ifdef SERVER_LOGS
 #    ifdef _WIN32
-  PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"\\trace.txt");
+    PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"\\trace.txt");
 #    else
-  PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"/trace.txt");
+    PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"/trace.txt");
 #    endif
 #  else
-  PTrace::Initialise(TraceLevel,"trace.txt");
+    PTrace::Initialise(TraceLevel,"trace.txt");
 #  endif
-
-  PTrace::SetOptions(PTrace::FileAndLine);
+    PTrace::SetOptions(PTrace::FileAndLine);
+    currentTraceLevel = TraceLevel;
+  }
 
 #  ifdef GIT_REVISION
 #    define _QUOTE_MACRO_VALUE1(x) #x

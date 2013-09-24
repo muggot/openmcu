@@ -339,6 +339,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     PFilePath  logFilename;
 
   protected:
+    int        currentLogLevel, currentTraceLevel;
     PFilePath executableFile;
     ConferenceManager * manager;
     OpenMCUH323EndPoint * endpoint;
