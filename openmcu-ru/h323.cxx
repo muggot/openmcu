@@ -220,21 +220,17 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
    if(MCUConfig("TRANSMIT_SOUND").GetKeys().GetSize() == 0) tsConfig = 0;
    if(MCUConfig("RECEIVE_VIDEO").GetKeys().GetSize() == 0) rvConfig = 0;
    if(MCUConfig("TRANSMIT_VIDEO").GetKeys().GetSize() == 0) tvConfig = 0;
-   if(rsConfig == 0)
-   {
-     MCUConfig("RECEIVE_SOUND").SetBoolean("G.711-uLaw-64k{sw}", 1);
-     MCUConfig("RECEIVE_SOUND").SetBoolean("G.711-ALaw-64k{sw}", 1);
-   }
-   if(tsConfig == 0)
-   {
-     MCUConfig("TRANSMIT_SOUND").SetBoolean("G.711-uLaw-64k{sw}", 1);
-     MCUConfig("TRANSMIT_SOUND").SetBoolean("G.711-ALaw-64k{sw}", 1);
-   }
+
    for(unsigned i = 1; capabilities.FindCapability(i) != NULL; i++)
    {
      H323Capability *cap = capabilities.FindCapability(i);
      if(rsConfig == 0 && cap->GetMainType() == 0)
-       MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName(), 1);
+     {
+       if(cap->GetFormatName().Right(4) == "{sw}")
+         MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName(), 1);
+       else
+         MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName()+"{sw}", 1);
+     }
      if(tsConfig == 0 && cap->GetMainType() == 0)
        MCUConfig("TRANSMIT_SOUND").SetBoolean(cap->GetFormatName(), 1);
      if(rvConfig == 0 && cap->GetMainType() == 1)
@@ -242,8 +238,13 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
      if(tvConfig == 0 && cap->GetMainType() == 1)
        MCUConfig("TRANSMIT_VIDEO").SetBoolean(cap->GetFormatName(), 1);
 
-     if(rsConfig == 1 && cap->GetMainType() == 0 && MCUConfig("RECEIVE_SOUND").HasKey(cap->GetFormatName()) == 0)
-       MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName(), 1);
+     if(rsConfig == 1 && cap->GetMainType() == 0)
+     {
+       if(cap->GetFormatName().Right(4) == "{sw}" && MCUConfig("RECEIVE_SOUND").HasKey(cap->GetFormatName()) == 0)
+         MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName(), 1);
+       if(cap->GetFormatName().Right(4) != "{sw}" && MCUConfig("RECEIVE_SOUND").HasKey(cap->GetFormatName()+"{sw}") == 0)
+         MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName()+"{sw}", 1);
+     }
      if(tsConfig == 1 && cap->GetMainType() == 0 && MCUConfig("TRANSMIT_SOUND").HasKey(cap->GetFormatName()) == 0)
        MCUConfig("TRANSMIT_SOUND").SetBoolean(cap->GetFormatName(), 1);
      if(rvConfig == 1 && cap->GetMainType() == 1 && MCUConfig("RECEIVE_VIDEO").HasKey(cap->GetFormatName()) == 0)
