@@ -91,24 +91,29 @@ PString CreateSdpInvite()
      if(name.Find("h263p") != P_MAX_INDEX) name.Replace("h263p","h263-1998",TRUE,0);
      if(mf.GetOptionInteger("Encoder Channels") == 2 || mf.GetOptionInteger("Decoder Channels") == 2) goto end;
 
-     fmtp = "\n";
-     for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
-       if(mf.GetOption(j).GetFMTPName() != "")
-         fmtp = mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";"+fmtp;
-
+     PString fmtp = "";
+     if(MCUConfig("CODEC_OPTIONS").HasKey(cap->GetFormatName()))
+     {
+       fmtp = MCUConfig("CODEC_OPTIONS").GetString(cap->GetFormatName());
+     } else {
+       for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
+         if(mf.GetOption(j).GetFMTPName() != "")
+           fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+     }
+     fmtp += "\r\n";
      if(map.Find(name) != P_MAX_INDEX && map.Find(fmtp) != P_MAX_INDEX) goto end;
-     if(map.Find(name) != P_MAX_INDEX && i > tsNum) goto end;
+     if(map.Find(name) != P_MAX_INDEX && cap->GetMainType() == 1) goto end;
 
      types += type+" ";
-     map += "a=rtpmap:"+type+" "+name+"\n";
-     if(fmtp != "\n" && i <= tsNum) map += "a=fmtp:"+type+" "+fmtp;
+     map += "a=rtpmap:"+type+" "+name+"\r\n";
+     if(fmtp != "\r\n" && i <= tsNum) map += "a=fmtp:"+type+" "+fmtp;
    }
 
    end:
    if(i == tsNum)
-     { sdp += "m=audio RTP_AUDIO_PORT RTP/AVP "+types+"\n"+map; map=""; types=""; }
+     { sdp += "m=audio RTP_AUDIO_PORT RTP/AVP "+types+"\r\n"+map; map=""; types=""; }
  }
- sdp += "m=video RTP_VIDEO_PORT RTP/AVP "+types+"\n"+map;
+ sdp += "m=video RTP_VIDEO_PORT RTP/AVP "+types+"\r\n"+map;
  //cout << sdp;
  return sdp;
 }
@@ -172,8 +177,24 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
     sc->sdp = sc->sdp + "a=rtpmap:" + PString(pt) + " " + sc->format + "/" + PString(sc->clock);
     if(sc->cnum) sc->sdp = sc->sdp + "/" + PString(sc->cnum);
     sc->sdp = sc->sdp + "\r\n";
-    if(!sc->parm.IsEmpty())
-     sc->sdp = sc->sdp + "a=fmtp:" + PString(pt) + " " + sc->parm + "\r\n";
+    if(sc->cap && sc->cap->GetMainType() == 0)
+    {
+      PString fmtp = "";
+      if(MCUConfig("CODEC_OPTIONS").HasKey(sc->cap->GetFormatName()))
+      {
+        fmtp = MCUConfig("CODEC_OPTIONS").GetString(sc->cap->GetFormatName());
+      } else {
+        const OpalMediaFormat & mf = sc->cap->GetMediaFormat();
+        for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
+          if(mf.GetOption(j).GetFMTPName() != "")
+            fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+      }
+      if(fmtp != "")
+        sc->sdp = sc->sdp + "a=fmtp:" + PString(pt) + " " + fmtp + "\r\n";
+    } else {
+      if(!sc->parm.IsEmpty())
+        sc->sdp = sc->sdp + "a=fmtp:" + PString(pt) + " " + sc->parm + "\r\n";
+    }
    }
    sdp_msg += sc->sdp;
   }
@@ -935,13 +956,15 @@ int OpenMCUSipConnection::ProcessReInviteEvent(sip_t *sip)
 
 void OpenMCUSipConnection::SipReply200(nta_agent_t *agent, msg_t *msg)
 {
-  PTRACE(1, "MCUSIP\tCreate SIP 200 OK");
+  PTRACE(1, "MCUSIP\tSipReply200");
   if(sip_msg) msg_destroy(sip_msg);
   sip_msg = msg_dup(msg);
 
   if(sdp_msg.IsEmpty())
   {
     nta_msg_treply(agent, msg, SIP_200_OK, SIPTAG_CONTACT(contact_t), TAG_END());
+    PTRACE(1, "MCUSIP\tSending SIP 200 OK to " <<
+        remote_addr_t->a_url->url_user << "@" << remote_addr_t->a_url->url_host);
     return;
   }
 
@@ -953,7 +976,7 @@ void OpenMCUSipConnection::SipReply200(nta_agent_t *agent, msg_t *msg)
                  TAG_END());
 
   PTRACE(1, "MCUSIP\tSending SIP 200 OK to " <<
-	remote_addr_t->a_url->url_user << "@" << remote_addr_t->a_url->url_host << ", SDP\n" << sdp_msg);
+	remote_addr_t->a_url->url_user << "@" << remote_addr_t->a_url->url_host << ", sdp\n" << sdp_msg);
   StartReceiveChannels();
 }
 
@@ -1197,6 +1220,8 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     // add ports to call_id string
     PString call_id_suffix = "0@"+PString(aPort)+"@"+PString(vPort);
 
+    // create sdp for outgoing request
+    sdpInvite = CreateSdpInvite();
     PString sdp = sdpInvite;
     sdp.Replace("USERNAME", room, TRUE, 0);
     sdp.Replace("LOCALIP", localIP, TRUE, 0);
@@ -1605,7 +1630,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
     sCon->SipReply200(agent, msg);
     sCon->LeaveConference(TRUE); // leave conference and delete connection
   } else {
-    PTRACE(1, "MCUSIP\tSend 200 OK for BYE (connection not found)");
+    PTRACE(1, "MCUSIP\tSend 200 OK for BYE, connection not found");
     nta_msg_treply(agent, msg, SIP_200_OK, TAG_END());
   }
   return 0;
@@ -1693,9 +1718,6 @@ void OpenMCUSipEndPoint::Main()
  localPort = (PString)OpenMCU::Current().sipListener.Tokenise(":")[1].Trim();
  if(localPort == "")
    localPort = "5060";
-
- // create sdp for outgoing request
- sdpInvite = CreateSdpInvite();
 
  // proxy servers
  PStringList keys = MCUConfig("ProxyServers").GetKeys();

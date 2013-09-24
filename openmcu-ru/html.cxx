@@ -504,10 +504,12 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
       else
         info += infoStyle+PString(mf.GetTimeUnits()*1000)+"Hz";
       //info += infoStyle+PString(mf.GetBandwidth())+"bit/s";
-      info += infoStyle+"default fmtp: ";
+      info += infoStyle;
       for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
        if(mf.GetOption(j).GetFMTPName() != "")
          info += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+      if(title == "SipSoundCodecs" || title == "SipVideoCodecs")
+        info += "<td align='left' style='background-color:#efe;border-bottom:2px solid white;'><input name='fmtp:"+keys[i]+"' size='25' value='"+MCUConfig("CODEC_OPTIONS").GetString(keys[i])+"' type='text' style='margin-top:10px;margin-right:10px;'></td>";
     } else {
       info += infoStyle+"<script type='text/javascript'>document.write(window.l_not_found);</script>";
     }
@@ -564,6 +566,12 @@ BOOL CodecsPConfigPage::Post(PHTTPRequest & request,
     else
       cfg.SetBoolean(dataArray[i].Tokenise("=")[0], 0);
   }
+  for(PINDEX i = 0; fmtpArray[i] != NULL; i++)
+  {
+    PINDEX fmtpPos = fmtpArray[i].Find("=");
+    if(fmtpPos != P_MAX_INDEX && fmtpArray[i].GetSize() > fmtpPos)
+      MCUConfig("CODEC_OPTIONS").SetString(fmtpArray[i].Tokenise("=")[0], fmtpArray[i].Right(fmtpArray[i].GetSize()-fmtpPos-2));
+  }
 
   process.OnContinue();
   return TRUE;
@@ -587,7 +595,6 @@ BOOL CodecsPConfigPage::OnPOST(PHTTPServer & server,
     {
       dataArray.RemoveAt(i); i--; continue;
     }
-    if(value == "TRUE") continue;
     if(value == "FALSE")
     {
       for(PINDEX j = i+1; dataArray[j] != NULL; j++)
@@ -600,6 +607,11 @@ BOOL CodecsPConfigPage::OnPOST(PHTTPServer & server,
           dataArray.RemoveAt(j); j--; continue;
         }
       }
+    }
+    if(key.Left(5) == "fmtp:" && key.GetSize() > 5)
+    {
+      fmtpArray.AppendString(key.Right(key.GetSize()-6)+"="+value);
+      dataArray.RemoveAt(i); i--; continue;
     }
   }
 

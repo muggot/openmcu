@@ -83,6 +83,7 @@ class CodecsPConfigPage : public PConfigPage
   private:
     PConfig cfg;
     PStringArray dataArray;
+    PStringArray fmtpArray;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
