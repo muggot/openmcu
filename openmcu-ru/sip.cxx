@@ -177,22 +177,13 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
     sc->sdp = sc->sdp + "a=rtpmap:" + PString(pt) + " " + sc->format + "/" + PString(sc->clock);
     if(sc->cnum) sc->sdp = sc->sdp + "/" + PString(sc->cnum);
     sc->sdp = sc->sdp + "\r\n";
-    if(sc->cap && sc->cap->GetMainType() == 0)
+    if(sc->cap)
     {
       PString fmtp = "";
-      if(MCUConfig("CODEC_OPTIONS").HasKey(sc->cap->GetFormatName()))
-      {
-        fmtp = MCUConfig("CODEC_OPTIONS").GetString(sc->cap->GetFormatName());
-      //} else {
-      //  H323Capability *_cap = H323Capability::Create(sc->cap->GetFormatName());
-      //  if(_cap)
-      //  {
-      //    const OpalMediaFormat & mf = _cap->GetMediaFormat();
-      //    for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
-      //      if(mf.GetOption(j).GetFMTPName() != "" && mf.GetOption(j).GetFMTPDefault() != mf.GetOption(j).AsString())
-      //        fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
-      //  }
-      }
+      if(MCUConfig("CODEC_OPTIONS").HasKey(sc->h323))
+        fmtp = MCUConfig("CODEC_OPTIONS").GetString(sc->h323);
+      else // send incoming(from the client) ftmp
+        fmtp = sc->parm;
       if(fmtp != "")
         sc->sdp = sc->sdp + "a=fmtp:" + PString(pt) + " " + fmtp + "\r\n";
     }

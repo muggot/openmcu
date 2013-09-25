@@ -2023,19 +2023,19 @@ static struct PluginCodec_Option const annexD =
   */
   
 static struct PluginCodec_Option const plusOpt =
-  { PluginCodec_IntegerOption, "plusOpt", false, PluginCodec_NoMerge, "1", "plusOpt", "0", 0, "0", "4" };
+  { PluginCodec_IntegerOption, "plusOpt", false, PluginCodec_NoMerge, "1", NULL, NULL, 0, "0", "4" };
 // "Annex F"
 static struct PluginCodec_Option const annexF =
-  { PluginCodec_BoolOption,    "advancedPrediction",   false,  PluginCodec_MinMerge, "FALSE", "advancedPrediction", "FALSE" };
+  { PluginCodec_BoolOption,    "advancedPrediction",   false,  PluginCodec_MinMerge, "FALSE", NULL, NULL };
 // "Annex D"
 static struct PluginCodec_Option const annexD =
   { PluginCodec_BoolOption,    "h323_unrestrictedVector",   false,  PluginCodec_MinMerge, "FALSE"};
 // "Annex E"
 static struct PluginCodec_Option const annexE =
-  { PluginCodec_BoolOption,    "arithmeticCoding",   false,  PluginCodec_MinMerge, "FALSE", "arithmeticCoding", "FALSE" };
+  { PluginCodec_BoolOption,    "arithmeticCoding",   false,  PluginCodec_MinMerge, "FALSE", NULL, NULL };
 // "Annex G"
 static struct PluginCodec_Option const annexG =
-  { PluginCodec_BoolOption,    "pbFrames",   false,  PluginCodec_MinMerge, "FALSE", "pbFrames", "FALSE" };
+  { PluginCodec_BoolOption,    "pbFrames",   false,  PluginCodec_MinMerge, "FALSE", NULL, NULL };
 
   
 /*
