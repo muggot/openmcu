@@ -111,7 +111,12 @@ class Encoder : public PluginCodec<CODEC>
       for (PluginCodec_Option ** options = (PluginCodec_Option **)((MediaFormat *)m_definition->userData)->GetOptionsTable(); *options != NULL; ++options)
       {
         if (strcmp((*options)->m_name, "vbr") == 0)
-          m_vbr = atoi((*options)->m_value);
+        {
+          if(strcmp((*options)->m_value, "on") == 0)
+            m_vbr = 1;
+          else
+            m_vbr = 0;
+        }
         if (strcmp((*options)->m_name, "mode") == 0)
           m_mode = atoi((*options)->m_value);
       }
@@ -121,7 +126,9 @@ class Encoder : public PluginCodec<CODEC>
     {
       if (strcasecmp(optionName, "vbr") == 0)
       {
-        int tmp = atoi(optionValue);
+        int tmp = 0;
+        if(strcmp(optionValue, "on") == 0)
+          tmp = 1;
         ret = speex_encoder_ctl(m_state, SPEEX_SET_VBR, &tmp);
         return true;
       }
@@ -228,7 +235,7 @@ class Decoder : public PluginCodec<CODEC>
 #define SPEEX_8K_MediaFmt                           "Speex_8K"
 #define SPEEX_8K_PayloadName                        "speex"
 #define SPEEX_8K_PayloadType                         0
-#define SPEEX_8K_Vbr                                "0"
+#define SPEEX_8K_Vbr                                "off"
 #define SPEEX_8K_Mode                               "3"
 static unsigned int SPEEX_8K_SampleRate             =8000;
 static unsigned int SPEEX_8K_Samples                =160;
@@ -239,7 +246,7 @@ static unsigned int SPEEX_8K_FramesPerPacket        =1;
 #define SPEEX_16K_MediaFmt                          "Speex_16K"
 #define SPEEX_16K_PayloadName                       "speex"
 #define SPEEX_16K_PayloadType                        0
-#define SPEEX_16K_Vbr                               "0"
+#define SPEEX_16K_Vbr                               "off"
 #define SPEEX_16K_Mode                              "6"
 static unsigned int SPEEX_16K_SampleRate            =16000;
 static unsigned int SPEEX_16K_Samples               =320;
@@ -250,7 +257,7 @@ static unsigned int SPEEX_16K_FramesPerPacket       =1;
 #define SPEEX_32K_MediaFmt                          "Speex_32K"
 #define SPEEX_32K_PayloadName                       "speex"
 #define SPEEX_32K_PayloadType                        0
-#define SPEEX_32K_Vbr                               "0"
+#define SPEEX_32K_Vbr                               "off"
 #define SPEEX_32K_Mode                              "6"
 static unsigned int SPEEX_32K_SampleRate            =32000;
 static unsigned int SPEEX_32K_Samples               =640;
@@ -260,16 +267,15 @@ static unsigned int SPEEX_32K_FramesPerPacket       =1;
 #define PLUGIN_CODEC(prefix) \
 static struct PluginCodec_Option const prefix##_vbr = \
 { \
-  PluginCodec_IntegerOption,          /* Option type */ \
+  PluginCodec_EnumOption,             /* Option type */ \
   "vbr",                              /* User visible name */ \
   false,                              /* User Read/Only flag */ \
   PluginCodec_NoMerge,                /* Merge mode */ \
   prefix##_Vbr,                       /* Initial value */ \
   "vbr",                              /* FMTP option name */ \
-  "1",                                /* FMTP default value */ \
+  "off",                              /* FMTP default value */ \
   0,                                  /* H.245 generic capability code and bit mask */ \
-  "0",                                /* Minimum value */ \
-  "1"                                 /* Maximum value */ \
+  "off:on"                            /* Enumeration */ \
 }; \
 static struct PluginCodec_Option const prefix##_mode = \
 { \

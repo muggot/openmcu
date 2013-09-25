@@ -76,6 +76,7 @@ class Encoder : public PluginCodec<CODEC>
     unsigned m_encoderMode;
     unsigned m_encoderChannels;
     unsigned m_forceChannels;
+    unsigned m_cbr;
     int error;
     int data_len;
 
@@ -106,7 +107,6 @@ class Encoder : public PluginCodec<CODEC>
         return false;
 
       error = opus_encoder_init(m_state, m_sampleRate, m_encoderChannels, m_encoderMode);
-      //m_state = opus_encoder_create(m_sampleRate, m_encoderChannels, m_encoderMode, &error);
       if (error != OPUS_OK || m_state == NULL) {
         PTRACE(1, CODEC_LOG, "opus_encoder_init error: " << error << " " << opus_strerror(error));
         return false;
@@ -117,6 +117,8 @@ class Encoder : public PluginCodec<CODEC>
         if (error != OPUS_OK)
           PTRACE(1, CODEC_LOG, "Error force: " << opus_strerror(error));
       }
+
+      opus_encoder_ctl(m_state, OPUS_SET_VBR(m_cbr==0?1:0));
 
       return true;
     }
@@ -137,6 +139,9 @@ class Encoder : public PluginCodec<CODEC>
           else if (strcmp((*options)->m_value, "AUDIO") == 0)
             m_encoderMode = OPUS_APPLICATION_AUDIO;
         }
+        if (strcmp((*options)->m_name, "cbr") == 0) {
+          m_cbr = atoi((*options)->m_value);
+        }
       }
     }
 
@@ -148,6 +153,15 @@ class Encoder : public PluginCodec<CODEC>
       }
       if (strcasecmp(optionName, "usedtx") == 0) {
         error = opus_encoder_ctl(m_state, OPUS_SET_DTX(atoi(optionValue)));
+        return true;
+      }
+      if (strcasecmp(optionName, "cbr") == 0) {
+        error = opus_encoder_ctl(m_state, OPUS_SET_VBR(atoi(optionValue)==0?1:0));
+        return true;
+      }
+      if (strcasecmp(optionName, "maxaveragebitrate") == 0) {
+        if(atoi(optionValue) >= 500 && atoi(optionValue) <= 512000)
+          error = opus_encoder_ctl(m_state, OPUS_SET_BITRATE(atoi(optionValue)));
         return true;
       }
       return PluginCodec<CODEC>::SetOption(optionName, optionValue);
@@ -215,7 +229,6 @@ class Decoder : public PluginCodec<CODEC>
         return false;
 
       error = opus_decoder_init(m_state, m_sampleRate, m_decoderChannels);
-      //m_state = opus_decoder_create(m_sampleRate, m_decoderChannels, &error);
       if (error != OPUS_OK || m_state == NULL) {
         PTRACE(1, CODEC_LOG, "opus_decoder_init error: " << error << " " << opus_strerror(error));
         return false;
@@ -399,6 +412,32 @@ static struct PluginCodec_Option const prefix##_UseDTX = \
   "0",                                /* Minimum value */ \
   "1"                                 /* Maximum value */ \
 }; \
+static struct PluginCodec_Option const prefix##_EncoderCBR = \
+{ \
+  PluginCodec_IntegerOption,          /* Option type */ \
+  "cbr",                              /* User visible name */ \
+  false,                              /* User Read/Only flag */ \
+  PluginCodec_NoMerge,                /* Merge mode */ \
+  "0",                                /* Initial value */ \
+  "cbr",                              /* FMTP option name */ \
+  "0",                                /* FMTP default value */ \
+  0,                                  /* H.245 generic capability code and bit mask */ \
+  "0",                                /* Minimum value */ \
+  "1"                                 /* Maximum value */ \
+}; \
+static struct PluginCodec_Option const prefix##_MaxAverageBitrate = \
+{ \
+  PluginCodec_IntegerOption,          /* Option type */ \
+  "maxaveragebitrate",                /* User visible name */ \
+  false,                              /* User Read/Only flag */ \
+  PluginCodec_NoMerge,                /* Merge mode */ \
+  "0",                                /* Initial value */ \
+  "maxaveragebitrate",                /* FMTP option name */ \
+  "0",                                /* FMTP default value */ \
+  0,                                  /* H.245 generic capability code and bit mask */ \
+  "500",                              /* Minimum value */ \
+  "512000"                            /* Maximum value */ \
+}; \
 static struct PluginCodec_Option const * prefix##_OptionTable[] = \
 { \
   &prefix##_EncoderChannels, \
@@ -407,6 +446,8 @@ static struct PluginCodec_Option const * prefix##_OptionTable[] = \
   &prefix##_EncoderMode, \
   &prefix##_UseInBandFEC, \
   &prefix##_UseDTX, \
+  &prefix##_EncoderCBR, \
+  &prefix##_MaxAverageBitrate, \
   NULL \
 }; \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \

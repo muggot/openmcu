@@ -95,14 +95,14 @@ PString CreateSdpInvite()
      if(MCUConfig("CODEC_OPTIONS").HasKey(cap->GetFormatName()))
      {
        fmtp = MCUConfig("CODEC_OPTIONS").GetString(cap->GetFormatName());
-     } else {
-       for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
-         if(mf.GetOption(j).GetFMTPName() != "")
-           fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+     //} else {
+     //  for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
+     //    if(mf.GetOption(j).GetFMTPName() != "" && mf.GetOption(j).GetFMTPDefault() != mf.GetOption(j).AsString())
+     //      fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
      }
      fmtp += "\r\n";
      if(map.Find(name) != P_MAX_INDEX && map.Find(fmtp) != P_MAX_INDEX) goto end;
-     if(map.Find(name) != P_MAX_INDEX && cap->GetMainType() == 1) goto end;
+     if(map.Find(name) != P_MAX_INDEX && cap->GetMainType() != 0) goto end;
 
      types += type+" ";
      map += "a=rtpmap:"+type+" "+name+"\r\n";
@@ -114,7 +114,7 @@ PString CreateSdpInvite()
      { sdp += "m=audio RTP_AUDIO_PORT RTP/AVP "+types+"\r\n"+map; map=""; types=""; }
  }
  sdp += "m=video RTP_VIDEO_PORT RTP/AVP "+types+"\r\n"+map;
- //cout << sdp;
+ cout << sdp;
  return sdp;
 }
 
@@ -183,17 +183,18 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
       if(MCUConfig("CODEC_OPTIONS").HasKey(sc->cap->GetFormatName()))
       {
         fmtp = MCUConfig("CODEC_OPTIONS").GetString(sc->cap->GetFormatName());
-      } else {
-        const OpalMediaFormat & mf = sc->cap->GetMediaFormat();
-        for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
-          if(mf.GetOption(j).GetFMTPName() != "")
-            fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+      //} else {
+      //  H323Capability *_cap = H323Capability::Create(sc->cap->GetFormatName());
+      //  if(_cap)
+      //  {
+      //    const OpalMediaFormat & mf = _cap->GetMediaFormat();
+      //    for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
+      //      if(mf.GetOption(j).GetFMTPName() != "" && mf.GetOption(j).GetFMTPDefault() != mf.GetOption(j).AsString())
+      //        fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+      //  }
       }
       if(fmtp != "")
         sc->sdp = sc->sdp + "a=fmtp:" + PString(pt) + " " + fmtp + "\r\n";
-    } else {
-      if(!sc->parm.IsEmpty())
-        sc->sdp = sc->sdp + "a=fmtp:" + PString(pt) + " " + sc->parm + "\r\n";
     }
    }
    sdp_msg += sc->sdp;
@@ -605,13 +606,15 @@ void OpenMCUSipConnection::SelectCapability_SPEEX(SipCapability &c,PStringArray 
     scap = c.payload;
     c.h323 = H323Name;
     OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
-    if (vbr > -1) wf.SetOptionInteger("vbr", vbr);
+    if (vbr > -1) wf.SetOptionEnum("vbr", vbr);
     if (mode > -1) wf.SetOptionInteger("mode", mode);
   }
 }
 
 void OpenMCUSipConnection::SelectCapability_OPUS(SipCapability &c,PStringArray &tsCaps)
 {
+  int cbr = -1;
+  int maxaveragebitrate = -1;
   int useinbandfec = -1;
   int usedtx = -1;
 
@@ -619,7 +622,11 @@ void OpenMCUSipConnection::SelectCapability_OPUS(SipCapability &c,PStringArray &
   PStringArray keys = c.parm.Tokenise(";");
   for(int kn = 0; kn < keys.GetSize(); kn++)
   {
-    if(keys[kn].Find("useinbandfec=") == 0)
+    if(keys[kn].Find("cbr=") == 0)
+      cbr = (keys[kn].Tokenise("=")[1]).AsInteger();
+    else if(keys[kn].Find("maxaveragebitrate=") == 0)
+      maxaveragebitrate = (keys[kn].Tokenise("=")[1]).AsInteger();
+    else if(keys[kn].Find("useinbandfec=") == 0)
       useinbandfec = (keys[kn].Tokenise("=")[1]).AsInteger();
     else if(keys[kn].Find("usedtx=") == 0)
       usedtx = (keys[kn].Tokenise("=")[1]).AsInteger();
@@ -637,6 +644,8 @@ void OpenMCUSipConnection::SelectCapability_OPUS(SipCapability &c,PStringArray &
    scap = c.payload;
    c.h323 = H323Name;
    OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
+   if (cbr > -1) wf.SetOptionInteger("cbr", cbr);
+   if (maxaveragebitrate > -1) wf.SetOptionInteger("maxaveragebitrate", maxaveragebitrate);
    if (useinbandfec > -1) wf.SetOptionInteger("useinbandfec", useinbandfec);
    if (usedtx > -1) wf.SetOptionInteger("usedtx", usedtx);
   }
@@ -1167,10 +1176,11 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     PString localIP, remoteIP, remotePort, proxyIP, userName, roomName;
     BOOL needProxy = false;
 
-    remoteIP = to.Tokenise(":")[1].Tokenise("@")[1];
+    PString addr = to.Tokenise(";")[0];
+    remoteIP = addr.Tokenise(":")[1].Tokenise("@")[1];
     if(remoteIP == "")
       return;
-    remotePort = to.Tokenise(":")[2];
+    remotePort = addr.Tokenise(":")[2];
     if(remotePort == "")
       remotePort = "5060";
 
@@ -1711,9 +1721,9 @@ void OpenMCUSipEndPoint::Main()
  if(root == NULL) return;
 
  if(OpenMCU::Current().sipListener!="0.0.0.0")
-   agent = nta_agent_create(root, URL_STRING_MAKE((const char*)("sip:"+OpenMCU::Current().sipListener)), ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, TAG_NULL());
+   agent = nta_agent_create(root, URL_STRING_MAKE((const char*)("sip:"+OpenMCU::Current().sipListener)), ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, NTATAG_UDP_MTU(64000), TAG_NULL());
  else
-   agent = nta_agent_create(root, NULL, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, TAG_NULL());
+   agent = nta_agent_create(root, NULL, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, NTATAG_UDP_MTU(64000), TAG_NULL());
 
  localPort = (PString)OpenMCU::Current().sipListener.Tokenise(":")[1].Trim();
  if(localPort == "")
