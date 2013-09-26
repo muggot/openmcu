@@ -1202,6 +1202,21 @@ ostream & PTrace::Begin(unsigned level, const char * fileName, int lineNum)
       stream << setprecision(3) << setw(10) << (PTimer::Tick()-info.startTick) << '\t';
 
     if ((info.options&Thread) != 0) {
+// always show ThreadID
+      stream << "ThreadID=0x"
+             << setfill('0') << hex << setw(8)
+             << PThread::GetCurrentThreadId()
+             << setfill(' ') << dec;
+      if(thread != NULL)
+      {
+        stream << " ";
+        PString name = thread->GetThreadName();
+        if (name.GetLength() <= 12)
+          stream << setw(12) << name;
+        else
+          stream << name.Left(10) << "..." << name.Right(10);
+      }
+/*
       if (thread == NULL)
         stream << "ThreadID=0x"
                << setfill('0') << hex << setw(8)
@@ -1214,6 +1229,7 @@ ostream & PTrace::Begin(unsigned level, const char * fileName, int lineNum)
         else
           stream << name.Left(10) << "..." << name.Right(10);
       }
+*/
       stream << '\t';
     }
 
