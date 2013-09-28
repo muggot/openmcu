@@ -927,9 +927,8 @@ class ConferenceMember : public PObject
     BOOL IsMCU() const
     { return isMCU; }
     
-    virtual void SetName()
-    {
-    }
+    virtual void SetName() {}
+    virtual void SetName(PString newName) {}
 
     virtual PString GetName() const
     {

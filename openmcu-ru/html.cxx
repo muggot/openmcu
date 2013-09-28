@@ -303,6 +303,9 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // recall last template after room created
   Add(new PHTTPBooleanField(RecallLastTemplateKey, cfg.GetBoolean(RecallLastTemplateKey, FALSE)));
 
+  // reject duplicate name
+  Add(new PHTTPBooleanField("Reject duplicate name", cfg.GetBoolean("Reject duplicate name", TRUE)));
+
   // get conference time limit 
   Add(new PHTTPIntegerField(DefaultRoomTimeLimitKey, 0, 10800, cfg.GetInteger(DefaultRoomTimeLimitKey, 0)));
 
@@ -397,9 +400,12 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   // SIP Listener setup
   mcu.sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
   if(mcu.sipListener=="") mcu.sipListener="0.0.0.0";
-  Add(new PHTTPStringField(SipListenerKey, 32, mcu.sipListener,"<td rowspan='2' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>SIP Setup</b>"));
+  Add(new PHTTPStringField(SipListenerKey, 32, mcu.sipListener,"<td rowspan='3' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>SIP Setup</b>"));
   if(mcu.sipListener=="0.0.0.0") mcu.sipListener="0.0.0.0 :5060";
   mcu.sipendpoint->Resume();
+
+  // ReInvite
+  Add(new PHTTPBooleanField("SIP ReInvite (pause)", cfg.GetBoolean("SIP ReInvite (pause)", TRUE)));
 
 #if OPENMCU_VIDEO
   Add(new PHTTPStringField(H264LevelForSIPKey, 2, PString(mcu.h264DefaultLevelForSip)));

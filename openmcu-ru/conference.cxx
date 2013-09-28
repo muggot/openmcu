@@ -1126,15 +1126,37 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // check for duplicate name or very fast reconnect
   {
     Conference::MemberNameList::const_iterator s = memberNameList.find(memberToAdd->GetName());
-    if(s != memberNameList.end())
+    if(MCUConfig("Parameters").GetBoolean("Reject duplicate name", TRUE))
     {
-      if(s->second != NULL)
+      if(s != memberNameList.end())
       {
-        PString username=memberToAdd->GetName(); username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
-        PStringStream msg;
-        msg << "Incoming call from " << username << " REJECTED - DUPLICATE NAME";
-        OpenMCU::Current().HttpWriteEventRoom(msg, number);
-        return FALSE;
+        if(s->second != NULL)
+        {
+          PString username=memberToAdd->GetName(); username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
+          PStringStream msg;
+          msg << username << " REJECTED - DUPLICATE NAME";
+          OpenMCU::Current().HttpWriteEventRoom(msg, number);
+          return FALSE;
+        }
+      }
+    } else {
+      while (s != memberNameList.end())
+      {
+        if(s->second == NULL) break;
+        {
+          PString username=memberToAdd->GetName();
+          PString newName=username;
+          PINDEX hashPos = newName.Find(" ##");
+          if(hashPos == P_MAX_INDEX) newName += " ##2";
+          else newName = newName.Left(hashPos+3) + PString(newName.Mid(hashPos+3).AsInteger() + 1);
+          memberToAdd->SetName(newName);
+          s = memberNameList.find(memberToAdd->GetName());
+
+          username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
+          PStringStream msg;
+          msg << username << " DUPLICATE NAME, renamed to " << newName;
+          OpenMCU::Current().HttpWriteEventRoom(msg, number);
+        }
       }
     }
   }

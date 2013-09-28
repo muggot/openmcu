@@ -452,6 +452,7 @@ class H323Connection_ConferenceMember : public ConferenceMember
     virtual PString GetTitle() const;
 
     virtual void SetName();
+    virtual void SetName(PString newName) { name = newName; }
 
     virtual void SetFreezeVideo(BOOL) const;
 

@@ -869,7 +869,11 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
  ep.OnIncomingSipConnection(callToken,*this);
  PTRACE(1, "MCUSIP\tJoinConference");
  JoinConference(requestedRoom);
- if(conferenceMember == NULL || conference == NULL) return 0;
+ if(conferenceMember == NULL || conference == NULL)
+ {
+   DeleteChannels();
+   return 0;
+ }
  return 1;
 }
 
@@ -1508,15 +1512,10 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     sCon->audioRtpPort = atoi(PString(sip->sip_call_id->i_id).Tokenise("@")[2]);
     sCon->videoRtpPort = atoi(PString(sip->sip_call_id->i_id).Tokenise("@")[3]);
     if(sCon->audioRtpPort == 0 || sCon->videoRtpPort == 0)
-    {
       return 0;
-    }
 
     if(!sCon->ProcessInviteEvent((sip_t *)sip))
-    {
-      sCon->DeleteChannels();
       return 0;
-    }
     sCon->StartReceiveChannels();
     sipConnMap.insert(SipConnectionMapType::value_type(sik,sCon));
     sCon->StartTransmitChannels();
@@ -1567,11 +1566,19 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
   SipConnectionMapType::iterator scr = sipConnMap.find(sik);
   if(scr != sipConnMap.end())  // connection already exist, process reinvite
   {
-   OpenMCUSipConnection *sCon = scr->second;
-   if(!sCon->ProcessReInviteEvent(sip))
-     return 0;
-   sCon->SipReply200(agent, msg); // send ok and start logical channels
-   return 0;
+    OpenMCUSipConnection *sCon = scr->second;
+    if(MCUConfig("Parameters").GetBoolean("SIP ReInvite (pause)", TRUE))
+    {
+      if(!sCon->ProcessReInviteEvent(sip))
+        return 0;
+      sCon->SipReply200(agent, msg); // send ok and start logical channels
+    } else {
+      sipConnMap.erase(sik);
+      sCon->sdp_msg.MakeEmpty();
+      nta_msg_treply(agent, msg, SIP_405_METHOD_NOT_ALLOWED, TAG_END());
+      sCon->LeaveConference(TRUE);
+    }
+    return 0;
   }
 
   PTRACE(1, "MCUSIP\tNew SIP INVITE");
@@ -1605,7 +1612,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
   if(!sCon->ProcessInviteEvent(sip)) 
   {
     nta_msg_treply(agent, msg, SIP_600_BUSY_EVERYWHERE, TAG_END());
-    sCon->DeleteChannels();
     return 0; // here we can see nothing or 486
   }
   sCon->SipReply200(agent, msg); // send ok and start receive logical channels
