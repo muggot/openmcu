@@ -1123,8 +1123,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 
   memberToAdd->SetName();
 
-  // only H.323, check for duplicate name or very fast reconnect
-  if(memberToAdd->GetName().Find("sip:") == P_MAX_INDEX)
+  // check for duplicate name or very fast reconnect
   {
     Conference::MemberNameList::const_iterator s = memberNameList.find(memberToAdd->GetName());
     if(s != memberNameList.end())

@@ -1509,13 +1509,12 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     sCon->videoRtpPort = atoi(PString(sip->sip_call_id->i_id).Tokenise("@")[3]);
     if(sCon->audioRtpPort == 0 || sCon->videoRtpPort == 0)
     {
-      delete sCon;
       return 0;
     }
 
     if(!sCon->ProcessInviteEvent((sip_t *)sip))
     {
-      delete sCon;
+      sCon->DeleteChannels();
       return 0;
     }
     sCon->StartReceiveChannels();
@@ -1559,8 +1558,11 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
     return 0;
   }
 
-  if(sip->sip_payload==NULL) return 0;
-  if(sip->sip_payload->pl_data==NULL) return 0;
+  if(sip->sip_payload==NULL || (sip->sip_payload!=NULL && sip->sip_payload->pl_data==NULL))
+  {
+    nta_msg_treply(agent, msg, SIP_415_UNSUPPORTED_MEDIA, TAG_END());
+    return 0;
+  }
 
   SipConnectionMapType::iterator scr = sipConnMap.find(sik);
   if(scr != sipConnMap.end())  // connection already exist, process reinvite
@@ -1602,7 +1604,8 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
 
   if(!sCon->ProcessInviteEvent(sip)) 
   {
-    delete sCon;
+    nta_msg_treply(agent, msg, SIP_600_BUSY_EVERYWHERE, TAG_END());
+    sCon->DeleteChannels();
     return 0; // here we can see nothing or 486
   }
   sCon->SipReply200(agent, msg); // send ok and start receive logical channels
