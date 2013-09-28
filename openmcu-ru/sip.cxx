@@ -1567,7 +1567,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
   if(scr != sipConnMap.end())  // connection already exist, process reinvite
   {
     OpenMCUSipConnection *sCon = scr->second;
-    if(MCUConfig("Parameters").GetBoolean("SIP ReInvite (pause)", TRUE))
+    if(MCUConfig("Parameters").GetBoolean(SIPReInviteKey, TRUE))
     {
       if(!sCon->ProcessReInviteEvent(sip))
         return 0;

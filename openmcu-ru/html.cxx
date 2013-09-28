@@ -304,7 +304,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   Add(new PHTTPBooleanField(RecallLastTemplateKey, cfg.GetBoolean(RecallLastTemplateKey, FALSE)));
 
   // reject duplicate name
-  Add(new PHTTPBooleanField("Reject duplicate name", cfg.GetBoolean("Reject duplicate name", TRUE)));
+  Add(new PHTTPBooleanField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, TRUE)));
 
   // get conference time limit 
   Add(new PHTTPIntegerField(DefaultRoomTimeLimitKey, 0, 10800, cfg.GetInteger(DefaultRoomTimeLimitKey, 0)));
@@ -405,7 +405,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   mcu.sipendpoint->Resume();
 
   // ReInvite
-  Add(new PHTTPBooleanField("SIP ReInvite (pause)", cfg.GetBoolean("SIP ReInvite (pause)", TRUE)));
+  Add(new PHTTPBooleanField(SIPReInviteKey, cfg.GetBoolean(SIPReInviteKey, TRUE)));
 
 #if OPENMCU_VIDEO
   Add(new PHTTPStringField(H264LevelForSIPKey, 2, PString(mcu.h264DefaultLevelForSip)));

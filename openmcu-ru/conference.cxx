@@ -1126,7 +1126,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // check for duplicate name or very fast reconnect
   {
     Conference::MemberNameList::const_iterator s = memberNameList.find(memberToAdd->GetName());
-    if(MCUConfig("Parameters").GetBoolean("Reject duplicate name", TRUE))
+    if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, TRUE))
     {
       if(s != memberNameList.end())
       {

@@ -121,6 +121,9 @@ static const char DisableH245TunnelingKey[]="Disable H.245 Tunneling";
 static const char RTPPortBaseKey[]        = "RTP Base Port";
 static const char RTPPortMaxKey[]         = "RTP Max Port";
 
+static const char RejectDuplicateNameKey[] = "Reject duplicate name";
+static const char SIPReInviteKey[]         = "SIP ReInvite (pause)";
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUConfig: public PConfig
