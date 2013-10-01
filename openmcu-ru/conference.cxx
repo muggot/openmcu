@@ -597,40 +597,25 @@ void Conference::LoadTemplate(PString tpl)
   }
 
   PWaitAndSignal m(memberListMutex);
-  MemberNameList::const_iterator s = memberNameList.end();
-  for (MemberNameList::const_iterator r = memberNameList.begin(); r != memberNameList.end(); ++r)
-  {
-    if(s!=memberNameList.end())
-    {
-      PTRACE(6,"Conference\tLoading template - removing " << s->first << " from memberNameList" << flush);
-      memberNameList.erase(s->first);
-      s=memberNameList.end();
-    }
-    if(validatedMembers.GetStringsIndex(r->first) == P_MAX_INDEX) // remove unwanted members
-    {
-      if(r->second == NULL) // offline: simple
-      {
-        PTRACE(6,"Conference\tLoading template - removing offline member " << r->first << " from memberNameList" << flush);
+  MemberNameList theCopy(memberNameList);
+  for(MemberNameList::iterator r = theCopy.begin(); r != theCopy.end(); ++r)
+  { if(validatedMembers.GetStringsIndex(r->first) == P_MAX_INDEX) // remove unwanted members
+    { if(r->second == NULL) // offline: simple
+      { PTRACE(6,"Conference\tLoading template - removing offline member " << r->first << " from memberNameList" << flush);
         memberNameList.erase(r->first);
       }
       else // online :(
-      {
-        PString memberName = r->first;
-        ConferenceMember & member = *r->second;
+      { ConferenceMember & member = *r->second;
         ConferenceMemberId id = member.GetID();
         PTRACE(6,"Conference\tLoading template - closing connection with " << r->first << " (id " << id << ")" << flush);
         member.Close();
-        PTRACE(6,"Conference\tLoading template -  removing " << r->first << " from memberList" << flush);
+        PTRACE(6,"Conference\tLoading template - removing " << r->first << " from memberList" << flush);
         memberList.erase(id);
-        s=r;
+        memberNameList.erase(r->first);
       }
     }
   }
-  if(s!=memberNameList.end())
-  {
-    PTRACE(6,"Conference\tLoading template - removing " << s->first << " from memberNameList" << flush);
-    memberNameList.erase(s->first);
-  }
+
 }
 
 PString Conference::GetTemplateList()
