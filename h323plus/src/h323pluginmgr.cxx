@@ -1495,7 +1495,11 @@ class cache
 {
     public:
 	cache() { seqN = FRAME_BUF_SIZE; lastN = 0; iframeN = 0; uN = 0; fastUpdate = 0; }
-	~cache() { rtpCaches.clear(); } //needs destroy units too, fix it
+//	~cache() { rtpCaches.clear(); } //needs destroy units too, fix it
+	~cache()
+        { for(RTPCacheMap::iterator r=rtpCaches.begin(); r!=rtpCaches.end(); ++r) delete r->second;
+          rtpCaches.clear();
+        }
 
 	void PutFrame(RTP_DataFrame &frame, unsigned int len, unsigned int flags);
 	void GetFrame(RTP_DataFrame &frame, unsigned int &toLen, unsigned int &num, unsigned int &flags);
@@ -1597,8 +1601,8 @@ unsigned int cache::GetLastFrameNum()
 void PutCacheRTP(PString *key, RTP_DataFrame &frame, unsigned int len, unsigned int flags, cache *(&dstCache))
 {
  if(dstCache) { dstCache->PutFrame(frame,len,flags); return; }
-// dstCache = CreateCacheRTP(*key);
-// if (dstCache) dstCache->PutFrame(frame,len,flags);
+ dstCache = CreateCacheRTP(*key); // needs for modes without patently creation of caches
+ if (dstCache) dstCache->PutFrame(frame,len,flags);
 }
 
 void cache::PutFrame(RTP_DataFrame &frame, unsigned int len, unsigned int flags)
@@ -2127,9 +2131,14 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
      }
 
     if(cacheMode==1 || cacheMode==3)// || encoderSeqN==0xFFFFFFFF) 
-      if(codecCache->GetLastFrameNum()==0) // skip first frame for Linphone, "warning: first frame is no keyframe"
-        retval = 0;
-      else
+//
+// it fails when no RTP cache used (cacheMode==1 at the moment), fails by GetLastFrameNum()
+// ---> cache::GetLastFrameNum() ---> HERE>>> rtpCaches.rbegin() <<<HERE  //02.10.2013 kay27
+//
+//      if(codecCache->GetLastFrameNum()==0) // skip first frame for Linphone, "warning: first frame is no keyframe"
+//        retval = 0;
+//      else
+//
         retval = (codec->codecFunction)(codec, context,
                                         bufferRTP.GetPointer(), &fromLen,
                                         dst.GetPointer(), &toLen,
