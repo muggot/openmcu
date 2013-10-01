@@ -109,6 +109,7 @@
     </ClCompile>
     <ClCompile Include="..\sip.cxx" />
     <ClCompile Include="..\video.cxx" />
+    <ClCompile Include="..\template.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\conference.h" />

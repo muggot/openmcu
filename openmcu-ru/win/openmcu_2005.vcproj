@@ -256,6 +256,10 @@
 				RelativePath="..\video.cxx"
 				>
 			</File>
+			<File
+				RelativePath="..\template.cxx"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"

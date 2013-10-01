@@ -8,7 +8,7 @@ PREFIX          = /usr/local
 OSTYPE          = linux
 MACHTYPE	= x86
 PROG		= openmcu-ru
-SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx
+SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx
 
 CXX		= g++
 CFLAGS         += -Os
