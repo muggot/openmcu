@@ -1765,21 +1765,26 @@ void H323Connection::SetRemoteApplication(const H225_EndpointType & pdu)
     remoteApplication = H323GetApplicationInfo(pdu.m_vendor);
     PTRACE(2, "H225\tSet remote application name: \"" << remoteApplication << '"');
 
-    if(remoteApplication.Find("MyPhone")!=P_MAX_INDEX)
-    { // MyPhone loves to add " (alias)" even if no aliases defined. Trying to remove them (kay27):
-      PINDEX last_bracket_opened=remotePartyName.FindLast(" (",P_MAX_INDEX);
-      if ((last_bracket_opened!=P_MAX_INDEX) && (last_bracket_opened > 0)){
-        PINDEX last_bracket_closed=remotePartyName.FindLast(")",P_MAX_INDEX);
-        if (last_bracket_closed!=P_MAX_INDEX) {
-          PTRACE(6,"H225\tFound redundant MyPhone's alias in remote party name: " << remotePartyName);
-          remotePartyName=remotePartyName.Left(last_bracket_opened)+remotePartyName(last_bracket_closed+1,remotePartyName.GetLength()-1);
-          PTRACE(6,"H225\tRedundant alias removed, remote party name is now: " << remotePartyName);
+    BOOL isMyPhone    = (P_MAX_INDEX != remoteApplication.Find("MyPhone"));
+    BOOL isPolycomPVX = (P_MAX_INDEX != remoteApplication.Find("Polycom ViaVideo\tRelease 8.0"));
+
+    if(isMyPhone || isPolycomPVX)
+    { // Fast bad fix of presence of redundant aliases in remote party name on incoming direction
+      PINDEX brPos = remotePartyName.Find(" (");
+      if(brPos != P_MAX_INDEX)
+      {
+        PINDEX br2Pos = remotePartyName.FindLast(")", P_MAX_INDEX);
+        if((br2Pos != P_MAX_INDEX) && (br2Pos > brPos))
+        {
+          PString newName = remotePartyName.Left(brPos) + remotePartyName.Mid(br2Pos+1,P_MAX_INDEX);
+          PTRACE(5,"H225\t(Aliases) removed from remote party name: " << remotePartyName << " -> " << newName);
+          remotePartyName = newName;
         }
       }
     }
 
-    if(remoteApplication.Find("MyPhone")!=P_MAX_INDEX || remoteApplication.Find("Polycom ViaVideo\tRelease 8.0")!=P_MAX_INDEX)
-    { // as they called project "russian fork" - they definitely suggested themselves (kay27)
+    if(isMyPhone || isPolycomPVX)
+    { // good appliances supports UTF-8 by default :)
       static const int table[128] = { // cp1251 -> utf8 translation based on http://www.linux.org.ru/forum/development/3968525
         0x82D0,0x83D0,  0x9A80E2,0x93D1,  0x9E80E2,0xA680E2,0xA080E2,0xA180E2,0xAC82E2,0xB080E2,0x89D0,0xB980E2,0x8AD0,0x8CD0,0x8BD0,0x8FD0,
         0x92D1,0x9880E2,0x9980E2,0x9C80E2,0x9D80E2,0xA280E2,0x9380E2,0x9480E2,0,       0xA284E2,0x99D1,0xBA80E2,0x9AD1,0x9CD1,0x9BD1,0x9FD1,
@@ -1802,7 +1807,7 @@ void H323Connection::SetRemoteApplication(const H225_EndpointType & pdu)
       }
       if(utfname!=remotePartyName){
        remotePartyName = utfname;
-       PTRACE(2, "H225\tRemote party name converted from cp1251 to Unicode: \"" << remotePartyName << "\"");
+       PTRACE(5, "H225\tRemote party name converted (cp1251->utf8): " << remotePartyName);
       }
     }
 

@@ -1672,7 +1672,7 @@ PString OpenMCUH323EndPoint::GetMonitorText()
         PStringStream hdr; hdr << "  ";
         PString name = member->GetName();
         BOOL isFileMember = (name=="cache" || name == "file recorder");
-        output << hdr << "Title: " << hex << member->GetTitle();
+        output << hdr << "Title: " << hex << member->GetTitle() << "\n";
         if (isFileMember) output << " (file object)" << "\n";
         output << hdr << "Name: " << name << "\n"
                << hdr << "Outgoing video mixer: " << member->GetVideoMixerNumber() << "\n"
