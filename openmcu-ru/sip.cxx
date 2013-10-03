@@ -864,16 +864,13 @@ int OpenMCUSipConnection::ProcessInviteEvent(sip_t *sip)
 
  ProcessSDP(sdp_sa, sipCapsId, sipCaps, 0);
 
- PTRACE(1, "MCUSIP\tCreateLogicalChannels");
- CreateLogicalChannels();
  ep.OnIncomingSipConnection(callToken,*this);
  PTRACE(1, "MCUSIP\tJoinConference");
  JoinConference(requestedRoom);
  if(conferenceMember == NULL || conference == NULL)
- {
-   DeleteChannels();
    return 0;
- }
+ PTRACE(1, "MCUSIP\tCreateLogicalChannels");
+ CreateLogicalChannels();
  return 1;
 }
 

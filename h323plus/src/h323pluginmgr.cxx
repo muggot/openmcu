@@ -2131,14 +2131,9 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
      }
 
     if(cacheMode==1 || cacheMode==3)// || encoderSeqN==0xFFFFFFFF) 
-//
-// it fails when no RTP cache used (cacheMode==1 at the moment), fails by GetLastFrameNum()
-// ---> cache::GetLastFrameNum() ---> HERE>>> rtpCaches.rbegin() <<<HERE  //02.10.2013 kay27
-//
-//      if(codecCache->GetLastFrameNum()==0) // skip first frame for Linphone, "warning: first frame is no keyframe"
-//        retval = 0;
-//      else
-//
+      if(codecCache && codecCache->GetLastFrameNum()==0) // skip first frame for Linphone, "warning: first frame is no keyframe"
+        retval = 0;
+      else
         retval = (codec->codecFunction)(codec, context,
                                         bufferRTP.GetPointer(), &fromLen,
                                         dst.GetPointer(), &toLen,
