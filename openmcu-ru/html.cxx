@@ -1069,67 +1069,21 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
   }
 
-  PStringStream cmdResult; // will empty if no action performed
   if(data.Contains("action"))
   {
     PString action=data("action");
     PString room=data("room");
     if(action == "create" && (!room.IsEmpty()))
-    {
-      ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
-      cmdResult << "Creating &laquo;" << room << "&raquo;: ";
-      if(cm.MakeAndLockConference(room) != NULL) cmdResult << "created"; else cmdResult << "failed";
+    { ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+      cm.MakeAndLockConference(room);
       cm.UnlockConference();
     }
     else if(action == "delete" && (!room.IsEmpty()))
-    {
-      ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+    { ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
       if(cm.HasConference(room))
-      {
-        Conference * conference = cm.MakeAndLockConference(room); // find & get locked
+      { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
         if(conference != NULL)
-        { cmdResult << "Closing &laquo;" << room << "&raquo;: ";
-
-//          conference->GetMutex().Wait();
-//          conference->GetMemberNameList().clear();
-/*          Conference::MemberList & memberList = conference->GetMemberList();
-          Conference::MemberList::iterator r;
-          for(r=memberList.begin();r!=memberList.end();++r) if(r->second->GetName() == "file recorder")
-          { delete dynamic_cast<ConferenceFileMember *>(r->second); break; }
-*/
-/*
-
-          while (r != memberList.end())
-          {
-            ConferenceMember * member = r->second;
-            if(member != NULL)
-            { PString memberName=member->GetName();
-              BOOL cache = (memberName=="cache"),
-                recorder = (memberName=="file recorder");
-              BOOL peer = !(cache || recorder);
-              cmdResult << "-" << memberName << "; "; PTRACE(5,"MCU\tClosing " << memberName << flush);
-  //            if(peer) (dynamic_cast<H323Connection_ConferenceMember *>(r->second))->Close();
-              if(recorder)
-              { ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(r->second);
-//                memberList.erase(r);
-PTRACE(1,"1" << flush);
-                delete fileMember;
-PTRACE(1,"2" << flush);
-                if(memberList.size() == 0) break;
-PTRACE(1,"3" << flush);
-                r = memberList.begin();
-PTRACE(1,"4" << flush);
-                continue;
-              }
-            }
-            r++;
-          }
-//          conference->GetMemberList().clear();
-
-          conference->GetMutex().Signal();
-*/
-          cm.RemoveConference(conference->GetID());
-          cmdResult << "done";
+        { cm.RemoveConference(conference->GetID());
           cm.UnlockConference();
         }
       }
@@ -1140,14 +1094,48 @@ PTRACE(1,"4" << flush);
 
   PStringStream html;
   BeginPage(html,"Rooms","window.l_rooms","window.l_info_rooms");
-  if(!cmdResult.IsEmpty()) html << cmdResult;
+
+  if(data.Contains("action")) html << "<script language='javascript'>location.href='Select';</script>";
+
+  PString nextRoom;
+  {
+    ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+    PWaitAndSignal m(cm.GetConferenceListMutex());
+    ConferenceListType::const_iterator r = cm.GetConferenceList().begin();
+    if(r!=cm.GetConferenceList().end())
+    {
+      PString room0 = r->second->GetNumber().Trim();
+      if(!room0.IsEmpty())
+      {
+        PINDEX i, d1=-1, d2=-1;
+        for (i=room0.GetLength()-1;i>=0;i--)
+        { char c=room0[i];
+          BOOL isDigit=(c>='0' && c<='9');
+          if (isDigit) { if (d2==-1) d2=i; }
+          else { if (d2!=-1) { if (d1==-1) { d1=i+1; break; } } }
+        }
+        if(d1!=-1 && d2!=-1)
+        {
+          PINDEX roomStart=room0.Mid(d1,d2).AsInteger();
+          PString roomText=room0.Left(d1);
+          while(1)
+          { roomStart++;
+            PString testName=roomText+PString(roomStart);
+            for (r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r) if(r->second->GetNumber()==testName) break;
+            if(r == cm.GetConferenceList().end()) { nextRoom = testName; break; }
+          }
+        }
+      }
+    }
+    if(nextRoom.IsEmpty()) nextRoom = OpenMCU::Current().GetDefaultRoomName();
+  }
 
   html
     << "<form method=\"post\"><input name='room' id='room' type=hidden>"
     << "<table class=\"table table-striped table-bordered table-condensed\">"
 
     << "<tr>"
-    << "<td colspan='6'><input class='btn btn-large' name='newroom' id='newroom' value='room102' /><input type='button' class='btn btn-large btn-info' id='l_select_create' onclick=\"location.href='?action=create&room='+encodeURIComponent(document.getElementById('newroom').value);\"></td>"
+    << "<td colspan='6'><input class='btn btn-large' name='newroom' id='newroom' value='" << nextRoom << "' /><input type='button' class='btn btn-large btn-info' id='l_select_create' onclick=\"location.href='?action=create&room='+encodeURIComponent(document.getElementById('newroom').value);\"></td>"
     << "</tr>"
 
     << "<tr>"
