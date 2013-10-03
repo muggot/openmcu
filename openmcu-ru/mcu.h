@@ -210,6 +210,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     BOOL IsLoopbackCallsAllowed() const { return allowLoopbackCalls; }
     PString GetNewRoomNumber();
     void LogMessage(const PString & str);
+    void LogMessageHTML(PString str);
 
     OpenMCUH323EndPoint & GetEndpoint()
     { return *endpoint; }
@@ -226,13 +227,15 @@ class OpenMCU : public OpenMCUProcessAncestor
     }
     virtual void HttpWriteEvent(PString evt) {
       PStringStream evt0; PTime now;
-      evt0 << now.AsString("h:mm:ss. ", PTime::Local) << evt << "<br>\n";
-      HttpWrite_(evt0);
+      evt0 << now.AsString("h:mm:ss. ", PTime::Local) << evt;
+      HttpWrite_(evt0+"<br>\n");
+      if(copyWebLogToLog) LogMessageHTML(evt0);
     }
     virtual void HttpWriteEventRoom(PString evt, PString room){
       PStringStream evt0; PTime now;
-      evt0 << room << "\t" << now.AsString("h:mm:ss. ", PTime::Local) << evt << "<br>\n";
-      HttpWrite_(evt0);
+      evt0 << room << "\t" << now.AsString("h:mm:ss. ", PTime::Local) << evt;
+      HttpWrite_(evt0+"<br>\n");
+      if(copyWebLogToLog) LogMessageHTML(evt0);
     }
     virtual void HttpWriteCmdRoom(PString evt, PString room){
       PStringStream evt0;
@@ -340,6 +343,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     PFilePath leavingWAVFile;
 
     PFilePath  logFilename;
+    BOOL       copyWebLogToLog;
 
   protected:
     int        currentLogLevel, currentTraceLevel;

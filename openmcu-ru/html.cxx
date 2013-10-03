@@ -263,7 +263,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
 
 #if PTRACING
   // Trace level
-  Add(new PHTTPIntegerField(TraceLevelKey, 0, 6, cfg.GetInteger(TraceLevelKey, DEFAULT_TRACE_LEVEL), "<td><td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Logging:</b><br><br>Log level: 1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug<br>Trace level: 0=No tracing ... 6=Very detailed<br>Event buffer size: 10...1000"));
+  Add(new PHTTPIntegerField(TraceLevelKey, 0, 6, cfg.GetInteger(TraceLevelKey, DEFAULT_TRACE_LEVEL), "<td><td rowspan='5' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Logging:</b><br><br>Log level: 1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug<br>Trace level: 0=No tracing ... 6=Very detailed<br>Event buffer size: 10...1000<br><br>Copy web log to log: check if you want to store event log from Room Control Page"));
 #endif
 
 #ifdef SERVER_LOGS
@@ -272,10 +272,14 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
 
   // Log filename
   Add(new PHTTPStringField(CallLogFilenameKey, 40, mcu.logFilename));
+
 #endif
 
   // Buffered events
   Add(new PHTTPIntegerField(HttpLinkEventBufferKey, 10, 1000, cfg.GetInteger(HttpLinkEventBufferKey, 100)));
+
+  // Copy web log from Room Control Page to call log
+  Add(new PHTTPBooleanField("Copy web log to call log", mcu.copyWebLogToLog));
 
 #if P_SSL
   // SSL certificate file.

@@ -147,7 +147,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #else
   logFilename = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
 #endif
-
+  copyWebLogToLog = cfg.GetBoolean("Copy web log to call log", FALSE);
   // Buffered events
   httpBuffer=cfg.GetInteger(HttpLinkEventBufferKey, 100);
   httpBufferedEvents.SetSize(httpBuffer);
@@ -399,6 +399,28 @@ void OpenMCU::LogMessage(const PString & str)
   }
   logFile.Close();
   logMutex.Signal();
+}
+
+void OpenMCU::LogMessageHTML(PString str)
+{ // de-html :) special for palexa, http://openmcu.ru/forum/index.php/topic,351.msg6240.html#msg6240
+  PString str2, roomName;
+  PINDEX tabPos=str.Find("\t");
+  if(tabPos!=P_MAX_INDEX)
+  {
+    roomName=str.Left(tabPos);
+    str=str.Mid(tabPos+1,P_MAX_INDEX);
+  }
+  if(str.GetLength()>8)
+  {
+    if(str[1]==':') str=PString("0")+str;
+    if(!roomName.IsEmpty()) str=str.Left(8)+" "+roomName+str.Mid(9,P_MAX_INDEX);
+  }
+  BOOL tag=FALSE;
+  for (PINDEX i=0; i< str.GetLength(); i++)
+  if(str[i]=='<') tag=TRUE;
+  else if(str[i]=='>') tag=FALSE;
+  else if(!tag) str2+=str[i];
+  LogMessage(str2);
 }
 
 ConferenceManager * OpenMCU::CreateConferenceManager()
