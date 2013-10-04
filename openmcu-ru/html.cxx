@@ -1121,6 +1121,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
         }
         if(d1!=-1 && d2!=-1)
         {
+          if(d2-d1>6)d1=d2-6;
           PINDEX roomStart=room0.Mid(d1,d2).AsInteger();
           PString roomText=room0.Left(d1);
           while(1)
