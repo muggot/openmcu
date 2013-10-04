@@ -654,7 +654,7 @@ static PString PGetPrivateProfileString(const char * lpAppName,
   PString buffer;
 
   DWORD numNulls = lpAppName != NULL && lpKeyName != NULL ? 1 : 2;
-  DWORD size = 100;
+  DWORD size = 1000;
   while (size <= 100000 &&
                 ::GetPrivateProfileString(lpAppName, lpKeyName, lpDefault,
                                           buffer.GetPointer(size+numNulls), size+numNulls,
