@@ -601,6 +601,12 @@ BOOL CodecsPConfigPage::OnPOST(PHTTPServer & server,
     PString key = PURL::UntranslateString(dataArray[i].Tokenise("=")[0], PURL::QueryTranslation);
     PString value = PURL::UntranslateString(dataArray[i].Tokenise("=")[1], PURL::QueryTranslation);
     dataArray[i] = key+"="+value;
+    if(key.Left(5) == "fmtp:")
+    {
+      if(key.GetSize() > 5)
+        fmtpArray.AppendString(key.Right(key.GetSize()-6)+"="+value);
+      dataArray.RemoveAt(i); i--; continue;
+    }
     if(key == "submit" || key == "" || value == "")
     {
       dataArray.RemoveAt(i); i--; continue;
@@ -617,11 +623,6 @@ BOOL CodecsPConfigPage::OnPOST(PHTTPServer & server,
           dataArray.RemoveAt(j); j--; continue;
         }
       }
-    }
-    if(key.Left(5) == "fmtp:" && key.GetSize() > 5)
-    {
-      fmtpArray.AppendString(key.Right(key.GetSize()-6)+"="+value);
-      dataArray.RemoveAt(i); i--; continue;
     }
   }
 
