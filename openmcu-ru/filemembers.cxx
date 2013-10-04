@@ -490,13 +490,13 @@ void ConferenceFileMember::VideoEncoderCacheThread(PThread &, INT)
     if(codec->CheckCacheRTP())
     {
       PTRACE(3,"Cache\t" << vformat << " already exists, nothing to do, stopping thread");
+      if(conference!=NULL) conference->RemoveMember(this);
       delete(con); con=NULL;
       delete(codec); codec=NULL;
       caps.RemoveAll();
       v_ended=TRUE;
-      ConferenceManager & mgr = conference->GetManager();
-      mgr.RemoveMember(conference->GetID(), this);
-      PTRACE(6,"Cache\tthis thread will stop now");
+//      ConferenceManager & mgr = conference->GetManager();
+//      mgr.RemoveMember(conference->GetID(), this);
       return;
     }
 
