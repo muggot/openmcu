@@ -82,6 +82,8 @@
 #  define SYS_BIN_DIR       "."
 #  undef  SYS_CONFIG_DIR
 #  define SYS_CONFIG_DIR    "."
+#  undef  CONFIG_PATH
+#  define CONFIG_PATH       "openmcu.ini"
 #  undef  SYS_PIPE_DIR
 #  define SYS_PIPE_DIR      "."
 #  undef  SYS_RESOURCE_DIR

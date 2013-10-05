@@ -1093,6 +1093,41 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
         }
       }
     }
+    else if(action == "startRecorder" && (!room.IsEmpty()))
+    { ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+      if(cm.HasConference(room))
+      { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
+        if(conference != NULL)
+        { if(conference->externalRecorder == NULL)
+          { conference->externalRecorder = new ExternalVideoRecorderThread(room);
+            PThread::Sleep(500);
+            if(conference->externalRecorder->running)
+            { OpenMCU::Current().HttpWriteEventRoom("Video recording started",room);
+              OpenMCU::Current().HttpWriteCmdRoom(app.GetEndpoint().GetConferenceOptsJavascript(*conference),room);
+              OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
+            } else conference->externalRecorder = NULL;
+          }
+          cm.UnlockConference();
+        }
+      }
+    }
+    else if(action == "stopRecorder" && (!room.IsEmpty()))
+    { ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+      if(cm.HasConference(room))
+      { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
+        if(conference != NULL)
+        { if(conference->externalRecorder != NULL)
+          { conference->externalRecorder->running=FALSE;
+            PThread::Sleep(1000);
+            conference->externalRecorder = NULL;
+            OpenMCU::Current().HttpWriteEventRoom("Video recording stopped",room);
+            OpenMCU::Current().HttpWriteCmdRoom(app.GetEndpoint().GetConferenceOptsJavascript(*conference),room);
+            OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
+          }
+          cm.UnlockConference();
+        }
+      }
+    }
   }
 
   OpenMCUH323EndPoint & ep=app.GetEndpoint();
@@ -1103,35 +1138,36 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   if(data.Contains("action")) html << "<script language='javascript'>location.href='Select';</script>";
 
   PString nextRoom;
-  {
-    ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+  { ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+    ConferenceListType::const_iterator r;
     PWaitAndSignal m(cm.GetConferenceListMutex());
-    ConferenceListType::const_iterator r = cm.GetConferenceList().begin();
-    if(r!=cm.GetConferenceList().end())
-    {
-      PString room0 = r->second->GetNumber().Trim();
-      if(!room0.IsEmpty())
-      {
-        PINDEX i, d1=-1, d2=-1;
-        for (i=room0.GetLength()-1;i>=0;i--)
-        { char c=room0[i];
-          BOOL isDigit=(c>='0' && c<='9');
-          if (isDigit) { if (d2==-1) d2=i; }
-          else { if (d2!=-1) { if (d1==-1) { d1=i+1; break; } } }
-        }
-        if(d1!=-1 && d2!=-1)
-        {
-          if(d2-d1>6)d1=d2-6;
-          PINDEX roomStart=room0.Mid(d1,d2).AsInteger();
-          PString roomText=room0.Left(d1);
-          while(1)
-          { roomStart++;
-            PString testName=roomText+PString(roomStart);
-            for (r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r) if(r->second->GetNumber()==testName) break;
-            if(r == cm.GetConferenceList().end()) { nextRoom = testName; break; }
-          }
-        }
+    for(r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r)
+    { PString room0 = r->second->GetNumber().Trim(); PINDEX lastCharPos=room0.GetLength()-1;
+      if(room0.IsEmpty()) continue;
+#     if ENABLE_ECHO_MIXER
+        if(room0.Left(4) *= "echo") continue;
+#     endif
+#     if ENABLE_TEST_ROOMS
+        if(room0.Left(8) == "testroom") continue;
+#     endif
+      PINDEX i, d1=-1, d2=-1;
+      for (i=lastCharPos; i>=0; i--)
+      { char c=room0[i];
+        BOOL isDigit = (c>='0' && c<='9');
+        if (isDigit) { if (d2==-1) d2=i; }
+        else { if (d2!=-1) { if (d1==-1) { d1 = i+1; break; } } }
       }
+      if(d1==-1 || d2==-1) continue;
+      if(d2-d1>6)d1=d2-6;
+      PINDEX roomStart=room0.Mid(d1,d2).AsInteger(); PString roomText=room0.Left(d1);
+      PString roomText2; if(d2<lastCharPos) roomText2=room0.Mid(d2+1,lastCharPos);
+      while(1)
+      { roomStart++;
+        PString testName = roomText + PString(roomStart) + roomText2;
+        for (r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r) if(r->second->GetNumber()==testName) break;
+        if(r == cm.GetConferenceList().end()) { nextRoom = testName; break; }
+      }
+      break;
     }
     if(nextRoom.IsEmpty()) nextRoom = OpenMCU::Current().GetDefaultRoomName();
   }
@@ -1183,8 +1219,23 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
         + roomNumber + "\";document.forms[0].submit();'";
       roomButton += ">" + roomNumber + "</span>";
 
+      PStringStream recordButton; if(controlled)
+      { BOOL recState = conference.externalRecorder!=NULL; recordButton
+        << "<input type='button' class='btn btn-large "
+        << (recState ? "btn-inverse" : "btn-danger")
+        << "' style='width:36px;height:36px;"
+        << (recState ? "border-radius:0px" : "border-radius:18px")
+        << "' value=' ' title='"
+        << (recState ? "Stop recording" : "Start recording")
+        << "' onclick=\"location.href='?action="
+        << (recState ? "stop" : "start")
+        << "Recorder&room="
+        << PURL::TranslateString(roomNumber,PURL::QueryTranslation)
+        << "'\">";
+      }
+
       html << "<tr>"
-        << "<td>" << roomButton                            << "</td>"
+        << "<td>" << roomButton << "&nbsp" << recordButton << "</td>"
         << "<td>" << moderated                             << "</td>"
         << "<td>" << visibleMemberCount                    << "</td>"
         << "<td>" << unvisibleMemberCount                  << "</td>"
