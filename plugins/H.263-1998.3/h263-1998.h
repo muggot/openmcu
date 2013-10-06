@@ -134,6 +134,7 @@ class H263_Base_EncoderContext
     virtual bool InitContext() = 0;
 
     unsigned char * _inputFrameBuffer;
+    unsigned char * _memInputFrameBuffer;
     AVCodec        *_codec;
     AVCodecContext *_context;
     AVFrame        *_inputFrame;

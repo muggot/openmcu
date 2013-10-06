@@ -234,11 +234,12 @@ H263_Base_EncoderContext::H263_Base_EncoderContext(const char * _prefix)
   , _context(NULL)
 { 
   _inputFrameBuffer = NULL;
+  _memInputFrameBuffer = NULL;
 }
 
 H263_Base_EncoderContext::~H263_Base_EncoderContext()
 {
-  free(_inputFrameBuffer);
+  free(_memInputFrameBuffer);
 }
 
 bool H263_Base_EncoderContext::Open(const char *codec_name)
@@ -679,17 +680,18 @@ int H263_RFC2190_EncoderContext::EncodeFrames(const BYTE * src, unsigned & srcLe
       return 0;
     }
 
-    if (_inputFrameBuffer != NULL)
-      free(_inputFrameBuffer);
+    if (_memInputFrameBuffer != NULL)
+      free(_memInputFrameBuffer);
 #if HAVE_POSIX_MEMALIGN
-    if (posix_memalign((void **)&_inputFrameBuffer, 64, header->width*header->height*3/2 + (FF_INPUT_BUFFER_PADDING_SIZE*2)) != 0) 
+    if (posix_memalign((void **)&_memInputFrameBuffer, 64, header->width*header->height*3/2 + (FF_INPUT_BUFFER_PADDING_SIZE*2) + 15) != 0) 
 #else
-    if ((_inputFrameBuffer = (BYTE *)malloc(header->width*header->height*3/2 + (FF_INPUT_BUFFER_PADDING_SIZE*2))) == NULL) 
+    if ((_memInputFrameBuffer = (BYTE *)malloc(header->width*header->height*3/2 + (FF_INPUT_BUFFER_PADDING_SIZE*2) + 15)) == NULL) 
 #endif
     {
       TRACE_AND_LOG(tracer, 1, "Unable to allocate memory for frame buffer");
       return 0;
     }
+    _inputFrameBuffer = (unsigned char *) ( ((size_t)_memInputFrameBuffer+15) & ~ (size_t) 15);
   }
 
   CODEC_TRACER(tracer, "Input:seq=" << _frameCount
@@ -708,7 +710,8 @@ int H263_RFC2190_EncoderContext::EncodeFrames(const BYTE * src, unsigned & srcLe
 
   _inputFrame->data[1] = _inputFrame->data[0] + size;
   _inputFrame->data[2] = _inputFrame->data[1] + (size / 4);
-  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : (AVPictureType)0;
+//  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : (AVPictureType)0;
+  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
   currentMb = 0;
   currentBytes = 0;
@@ -738,7 +741,7 @@ int H263_RFC2190_EncoderContext::EncodeFrames(const BYTE * src, unsigned & srcLe
 
   //CODEC_TRACER(tracer, "Encoder called with " << frameSize << " bytes and frame type " << _inputFrame->pict_type << " at " << header->width << "x" << header->height);
 
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(55,0,0)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54,0,0)
   int got_packet_ptr = 0;
   AVPacket _pkt;
   av_init_packet(&_pkt);
@@ -895,17 +898,18 @@ int H263_RFC2429_EncoderContext::EncodeFrames(const BYTE * src, unsigned & srcLe
       TRACE_AND_LOG(tracer, 1, "Reopening codec failed");
       return 0;
     }
-    if (_inputFrameBuffer != NULL)
-      free(_inputFrameBuffer);
+    if (_memInputFrameBuffer != NULL)
+      free(_memInputFrameBuffer);
 
 #if HAVE_POSIX_MEMALIGN
-    if (posix_memalign((void **)&_inputFrameBuffer, 64, header->width*header->height*3/2 + (FF_INPUT_BUFFER_PADDING_SIZE*2)) != 0) {
+    if (posix_memalign((void **)&_memInputFrameBuffer, 64, header->width*header->height*3/2 + (FF_INPUT_BUFFER_PADDING_SIZE*2) + 15) != 0) {
 #else
-    if ((_inputFrameBuffer = (BYTE *)malloc(header->width*header->height*3/2 + (FF_INPUT_BUFFER_PADDING_SIZE*2))) == NULL) {
+    if ((_memInputFrameBuffer = (BYTE *)malloc(header->width*header->height*3/2 + (FF_INPUT_BUFFER_PADDING_SIZE*2) + 15)) == NULL) {
 #endif
       TRACE_AND_LOG(tracer, 1, "Unable to allocate memory for frame buffer");
       return 0;
     }
+    _inputFrameBuffer = (unsigned char *) ( ((size_t)_memInputFrameBuffer+15) & ~ (size_t) 15);
   }
 
   CODEC_TRACER(tracer, "Input:seq=" << _frameCount
@@ -916,14 +920,18 @@ int H263_RFC2429_EncoderContext::EncodeFrames(const BYTE * src, unsigned & srcLe
   int frameSize = (size * 3) >> 1;
  
   // we need FF_INPUT_BUFFER_PADDING_SIZE allocated bytes after the YVU420P image for the encoder
-  memset (_inputFrameBuffer, 0 , FF_INPUT_BUFFER_PADDING_SIZE);
-  memcpy (_inputFrameBuffer + FF_INPUT_BUFFER_PADDING_SIZE, OPAL_VIDEO_FRAME_DATA_PTR(header), frameSize);
-  memset (_inputFrameBuffer + FF_INPUT_BUFFER_PADDING_SIZE + frameSize, 0 , FF_INPUT_BUFFER_PADDING_SIZE);
+//  memset (_inputFrameBuffer, 0 , FF_INPUT_BUFFER_PADDING_SIZE);
+//  memcpy (_inputFrameBuffer + FF_INPUT_BUFFER_PADDING_SIZE, OPAL_VIDEO_FRAME_DATA_PTR(header), frameSize);
+//  memset (_inputFrameBuffer + FF_INPUT_BUFFER_PADDING_SIZE + frameSize, 0 , FF_INPUT_BUFFER_PADDING_SIZE);
+  memcpy (_inputFrameBuffer, OPAL_VIDEO_FRAME_DATA_PTR(header), frameSize);
+  memset (_inputFrameBuffer + frameSize, 0 , FF_INPUT_BUFFER_PADDING_SIZE);
 
-  _inputFrame->data[0] = _inputFrameBuffer + FF_INPUT_BUFFER_PADDING_SIZE;
+//  _inputFrame->data[0] = _inputFrameBuffer + FF_INPUT_BUFFER_PADDING_SIZE;
+  _inputFrame->data[0] = _inputFrameBuffer;
   _inputFrame->data[1] = _inputFrame->data[0] + size;
   _inputFrame->data[2] = _inputFrame->data[1] + (size / 4);
-  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : (AVPictureType)0;
+//  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : (AVPictureType)0;
+  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
  
   _txH263PFrame->BeginNewFrame();
   _txH263PFrame->SetTimestamp(srcRTP.GetTimestamp());
