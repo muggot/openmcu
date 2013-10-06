@@ -1079,12 +1079,12 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PString action=data("action");
     PString room=data("room");
     if(action == "create" && (!room.IsEmpty()))
-    { ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+    { ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
       cm.MakeAndLockConference(room);
       cm.UnlockConference();
     }
     else if(action == "delete" && (!room.IsEmpty()))
-    { ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+    { ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
       if(cm.HasConference(room))
       { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
         if(conference != NULL)
@@ -1094,7 +1094,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       }
     }
     else if(action == "startRecorder" && (!room.IsEmpty()))
-    { ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+    { ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
       if(cm.HasConference(room))
       { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
         if(conference != NULL)
@@ -1103,7 +1103,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
             PThread::Sleep(500);
             if(conference->externalRecorder->running)
             { OpenMCU::Current().HttpWriteEventRoom("Video recording started",room);
-              OpenMCU::Current().HttpWriteCmdRoom(app.GetEndpoint().GetConferenceOptsJavascript(*conference),room);
+              OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*conference),room);
               OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
             } else conference->externalRecorder = NULL;
           }
@@ -1112,7 +1112,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       }
     }
     else if(action == "stopRecorder" && (!room.IsEmpty()))
-    { ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+    { ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
       if(cm.HasConference(room))
       { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
         if(conference != NULL)
@@ -1121,7 +1121,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
             PThread::Sleep(1000);
             conference->externalRecorder = NULL;
             OpenMCU::Current().HttpWriteEventRoom("Video recording stopped",room);
-            OpenMCU::Current().HttpWriteCmdRoom(app.GetEndpoint().GetConferenceOptsJavascript(*conference),room);
+            OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*conference),room);
             OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
           }
           cm.UnlockConference();
@@ -1130,7 +1130,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     }
   }
 
-  OpenMCUH323EndPoint & ep=app.GetEndpoint();
+  OpenMCUH323EndPoint & ep=OpenMCU::Current().GetEndpoint();
 
   PStringStream html;
   BeginPage(html,"Rooms","window.l_rooms","window.l_info_rooms");
@@ -1138,7 +1138,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   if(data.Contains("action")) html << "<script language='javascript'>location.href='Select';</script>";
 
   PString nextRoom;
-  { ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+  { ConferenceManager & cm = ep.GetConferenceManager();
     ConferenceListType::const_iterator r;
     PWaitAndSignal m(cm.GetConferenceListMutex());
     for(r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r)
