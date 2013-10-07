@@ -116,6 +116,8 @@ class OpenMCUSipEndPoint : public PThread
    void SipRegister(ProxyServer *);
    PString MakeAuthStr(ProxyServer *proxy, const sip_t *sip);
    PString GetRoomAccess(const sip_t *sip);
+   int CreateConData(OpenMCUSipConnection *sCon);
+   int ReqReply(msg_t *msg, unsigned method, const char *method_name, OpenMCUSipConnection *sCon);
    ProxyServerMapType ProxyServerMap;
    PString localPort;
    PString sdpInvite;
@@ -214,16 +216,16 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
        inpBytes = 0;
        bandwidth = 0;
        connectedTime = PTime();
-       sip_msg = NULL;
+       c_sip_msg = NULL;
       }
   ~OpenMCUSipConnection()
   {
    PTRACE(1, "OpenMCUHSipConnection\tDestructor called");
-   if(sip_msg) msg_destroy(sip_msg);
+   if(c_sip_msg) msg_destroy(c_sip_msg);
   }
       
-  int ProcessInviteEvent(sip_t *sip);
-  int ProcessReInviteEvent(sip_t *sip);
+  int ProcessInviteEvent();
+  int ProcessReInviteEvent();
   int ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite);
   void StartTransmitChannels();
   void StartReceiveChannels();
@@ -239,8 +241,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   void SelectCapability_VP8(SipCapability &c,PStringArray &tvCaps);
   void SelectCapability_SPEEX(SipCapability &c,PStringArray &tsCaps);
   void SelectCapability_OPUS(SipCapability &c,PStringArray &tsCaps);
-  void SipReply200(nta_agent_t *agent, msg_t *msg);
-  void SipProcessACK(nta_agent_t *agent, msg_t *msg);
   void StopChannel(int pt, int dir);
   void StopTransmitChannels();
   void StopReceiveChannels();
@@ -260,11 +260,11 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int noInpTimeout;
   int inpBytes;
   H323toSipQueue cmdQueue;
-  sip_addr_t *local_addr_t, *remote_addr_t;
   sip_contact_t *contact_t;
-  PString localIP, remoteIP, roomName, sip_call_id;
-  msg_t *sip_msg;
+  PString localIP, remoteIP, roomName;
+  msg_t *c_sip_msg;
   unsigned audioRtpPort, videoRtpPort;
+  int direction; // 0=incoming, 1=outgoing
 
  protected:
  OpenMCUSipEndPoint *sep;
