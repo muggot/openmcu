@@ -118,6 +118,31 @@ PString CreateSdpInvite()
  return sdp;
 }
 
+PString CreateRuriStr(msg_t *msg, int direction)
+{
+  // 0=incoming, 1=outgoing
+  PTRACE(1, "MCUSIP\tCreateRuriStr");
+  sip_t *sip = sip_object(msg);
+  su_home_t *home = msg_home(msg);
+
+  sip_addr_t *sip_to;
+  if(direction == 0)
+    sip_to = sip_from_dup(home, sip->sip_from);
+  else
+    sip_to = sip_to_dup(home, sip->sip_to);
+
+  PString ruri = "sip:"+PString(sip_to->a_url->url_user);
+  if(strcmp(sip->sip_via->v_host, "0.0.0.0") != 0)
+    ruri = ruri+"@"+PString(sip->sip_via->v_host);
+  else
+    ruri = ruri+"@"+PString(sip_to->a_url->url_host);
+  if(sip->sip_via->v_port)
+    ruri = ruri+":"+sip->sip_via->v_port;
+  else if(sip_to->a_url->url_port)
+    ruri = ruri+":"+sip_to->a_url->url_port;
+  return ruri;
+}
+
 void OpenMCUSipConnection::LeaveConference()
 {
  PString *bye = new PString("BYE");
@@ -978,13 +1003,16 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
     sip_from = sip_from_dup(home, sip->sip_from);
     sip_to = sip_to_dup(home, sip->sip_to);
   }
+  PString ruri_str = CreateRuriStr(c_sip_msg, direction);
+  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
-  sip_request_t *sip_rq = sip_request_create(home, SIP_METHOD_BYE, (url_string_t *)sip_to->a_url, NULL);
-  sip_cseq_t *sip_cseq = sip_cseq_create(home, sip->sip_cseq->cs_seq, SIP_METHOD_BYE);
+  sip_request_t *sip_rq = sip_request_create(home, SIP_METHOD_BYE, ruri, NULL);
+  sip_cseq_t *sip_cseq = sip_cseq_create(home, 0x7fffffff, SIP_METHOD_BYE);
   sip_route_t* sip_route = sip_route_reverse(home, sip->sip_record_route);
+
   msg_t *sip_msg = nta_msg_create(agent, 0);
   nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, NULL, NULL,
-			(url_string_t *)sip_to->a_url,
+			ruri,
 			sip_msg,
  			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_ROUTE(sip_route),
@@ -1036,14 +1064,10 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
     PString userName_, hostName_, via_, access;
     PString defaultAccess = MCUConfig("RoomAccess").GetString("*", "ALLOW").ToUpper();
 
-    if(sip->sip_record_route)
-    {
-      ProxyServerMapType::iterator it =
+    ProxyServerMapType::iterator it =
         ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
-      if(it == ProxyServerMap.end())
-        return 0;
+    if(it != ProxyServerMap.end())
       roomName = it->second->roomName;
-    }
     else
       roomName = sip->sip_to->a_url->url_user;
 
@@ -1378,23 +1402,22 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     if(sip->sip_payload->pl_data==NULL) return 0;
 
     // Send ACK
-    sip_request_t *sip_rq;
-    if(sip->sip_contact && sip->sip_contact->m_url)
-      sip_rq = sip_request_create(&home, SIP_METHOD_ACK, (url_string_t *)sip->sip_contact->m_url, NULL);
-    else
-      sip_rq = sip_request_create(&home, SIP_METHOD_ACK, (url_string_t *)sip->sip_to->a_url, NULL);
+    PString ruri_str = CreateRuriStr(msg, 1);
+    url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
+
+    sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_ACK, ruri, NULL);
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, sip->sip_cseq->cs_seq, SIP_METHOD_ACK);
     sip_route_t* sip_route = sip_route_reverse(&home, sip->sip_record_route);
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, NULL, NULL,
-			(url_string_t *)sip->sip_to->a_url,
+			ruri,
 			sip_msg,
 			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_ROUTE(sip_route),
 			SIPTAG_FROM(sip->sip_from),
 			SIPTAG_TO(sip->sip_to),
 			SIPTAG_CSEQ(sip_cseq),
-			SIPTAG_CALL_ID_STR((const char*)sik.sid),
+			SIPTAG_CALL_ID(sip->sip_call_id),
 			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
     if(a_orq == NULL)
@@ -1438,12 +1461,10 @@ int OpenMCUSipEndPoint::CreateConData(OpenMCUSipConnection *sCon)
 
   if(sCon->direction == 0) //incoming
   {
-    if(sip->sip_record_route)
+    ProxyServerMapType::iterator it =
+        ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
+    if(it != ProxyServerMap.end())
     {
-      ProxyServerMapType::iterator it =
-          ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
-      if(it == ProxyServerMap.end())
-        return 0;
       ProxyServer *proxy = it->second;
       sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
 	  ("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
@@ -1458,12 +1479,10 @@ int OpenMCUSipEndPoint::CreateConData(OpenMCUSipConnection *sCon)
     sCon->audioRtpPort = 0;
     sCon->videoRtpPort = 0;
   } else { // outgoing
-    if(sip->sip_record_route)
+    ProxyServerMapType::iterator it =
+        ProxyServerMap.find((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
+    if(it != ProxyServerMap.end())
     {
-      ProxyServerMapType::iterator it =
-          ProxyServerMap.find((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
-      if(it == ProxyServerMap.end())
-        return 0;
       ProxyServer *proxy = it->second;
       sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
 	  ("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
@@ -1523,7 +1542,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
 {
   if(msg==NULL || sip->sip_request==NULL || sip->sip_request->rq_method_name==NULL ||
      sip->sip_from->a_url->url_host==NULL || sip->sip_call_id==NULL)
-    return ReqReply(msg, SIP_400_BAD_REQUEST);
+    return 0;
 
   PString sip_msg_str = (PString)msg_as_string(&home, msg, NULL, 0, NULL);
   PTRACE(1, "MCUSIP\tReceived SIP message: \n" << sip_msg_str);
