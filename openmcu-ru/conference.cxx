@@ -1417,10 +1417,10 @@ void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PI
 
 void ConferenceMember::OnExternalSendVideo(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount)
 {
-  if (lock.Wait()) {
+//  if (lock.Wait()) {
     videoMixer->WriteFrame(id, buffer, width, height, amount);
-    lock.Signal();
-  }
+//    lock.Signal();
+//  }
 }
 
 void * ConferenceMember::OnExternalReadVideo(ConferenceMemberId id, int width, int height, PINDEX & bytesReturned)
