@@ -660,7 +660,7 @@ function remmmbr(st,id,name,mute,dvad,cvan,al,clear){
   alive();
   members_refresh();
   top_panel();
-d}
+}
 
 function remove_all(){
   if(typeof members==='undefined') return alive();
