@@ -1,7 +1,9 @@
 #include <ptlib.h>
 #include "mcu.h"
 #include <sys/types.h>
-#ifndef _WIN32
+#ifdef _WIN32
+#  define setenv(n,v,f) _putenv(n "=" v)
+#else
 #  include <sys/socket.h>
 #endif
 
@@ -149,17 +151,12 @@ void MCUSipLoggerFunc(void *logarg, char const *fmt, char *ap)
   if(fmt == NULL)
     return;
 
-  char *data = NULL;
-  int ret = vasprintf(&data, fmt, ap);
-  if(ret == -1 || data == NULL)
-    return;
+  PString trace = pvsprintf(fmt, ap);
+  if(trace.IsEmpty()) return;
+  cout << trace;
+  trace.Replace("   ","",TRUE,0); //  these 2 lines - not
+  if(trace.IsEmpty()) return;       //    sure (kay27)
 
-  cout << data;
-  PString trace = (const char *)data;
-  trace.Replace("   ","",TRUE,0);
-
-  if(trace == "")
-    return;
   if(trace.Find("CSeq") != P_MAX_INDEX &&
       (trace.Find("OPTIONS") != P_MAX_INDEX || trace.Find("INFO") != P_MAX_INDEX || trace.Find("SUBSCRIBE") != P_MAX_INDEX))
   {

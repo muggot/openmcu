@@ -246,22 +246,17 @@ class MCUVideoMixer
         VideoMixPosition *prev;
         ConferenceMemberId id;
 	int n;
-        int xpos;
-        int ypos;
-        int width;
-        int height;
+        int xpos, ypos, width, height;
         int status; // static | vad visibility
         volatile int type; // static, vad, vad2, vad3
         int chosenVan; // always visible vad members (can switched between vad and vad2)
-	int label_x;
-	int label_y;
-	int label_w;
-	int label_h;
+	int label_x, label_y, label_w, label_h;
 	BOOL label_init;
 	unsigned int fc;
 	PBYTEArray label_buffer;
 	unsigned label_buffer_fw, label_buffer_fh;
 	PString terminalName;
+        BOOL border;
     };
 
     virtual ~MCUVideoMixer()
@@ -410,8 +405,7 @@ class MCUVideoMixer
 //    virtual void WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
 //    virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
 //    virtual void WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
-    virtual void WriteArbitrarySubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount) = 0;
-    virtual void NullRectangle(int x,int y,int w,int h) = 0;
+    virtual void NullRectangle(int x, int y, int w, int h, BOOL border) = 0;
     virtual void NullAllFrameStores() = 0;
 
     virtual void Shuffle() = 0;
@@ -509,7 +503,7 @@ class MCUVideoMixer
     PINDEX jpegSize;
     unsigned long jpegTime;
 #endif
-    static void VideoSplitLines(void * dst,VideoMixPosition & vmp,unsigned int fw,unsigned int fh);
+    static void VideoSplitLines(void * dst, unsigned fw, unsigned fh);
     virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
     BOOL forceScreenSplit;
 
@@ -535,8 +529,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
     virtual void WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
 */
-    virtual void WriteArbitrarySubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount);
-    virtual void NullRectangle(int x,int y,int w,int h);
+    virtual void NullRectangle(int x, int y, int w, int h, BOOL border);
     virtual void NullAllFrameStores();
 
     virtual void Shuffle();
@@ -575,7 +568,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual PString GetFrameStoreMonitorList();
   protected:
     virtual void CalcVideoSplitSize(unsigned int imageCount, int & subImageWidth, int & subImageHeight, int & cols, int & rows);
-    virtual void MyCalcVideoSplitSize(unsigned int imageCount, int *subImageWidth, int *subImageHeight, int *cols, int *rows);
     virtual void ReallocatePositions();
     BOOL ReadSrcFrame(VideoFrameStoreList & srcFrameStores, void * buffer, int width, int height, PINDEX & amount);
 
