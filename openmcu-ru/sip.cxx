@@ -808,7 +808,7 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
    if(tokens[0] == "b=TIAS") bw = tokens[1].AsInteger()/1000;
    if(media == -1) { bandwidth = bw; bw = 0; } // connection level value
   }
-  cout << "line: " + sdp_sa[line] + "\r\n";
+  //cout << "line: " + sdp_sa[line] + "\r\n";
  } 
 
  for(int cn=par_mbeg; cn<par.GetSize(); cn++)
