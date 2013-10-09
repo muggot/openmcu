@@ -143,6 +143,54 @@ PString CreateRuriStr(msg_t *msg, int direction)
   return ruri;
 }
 
+PString logMsgBuf;
+void MCUSipLoggerFunc(void *logarg, char const *fmt, char *ap)
+{
+  if(fmt == NULL)
+    return;
+
+  char *data = NULL;
+  int ret = vasprintf(&data, fmt, ap);
+  if(ret == -1 || data == NULL)
+    return;
+
+  cout << data;
+  PString trace = (const char *)data;
+  trace.Replace("   ","",TRUE,0);
+
+  if(trace == "")
+    return;
+  if(trace.Find("CSeq") != P_MAX_INDEX &&
+      (trace.Find("OPTIONS") != P_MAX_INDEX || trace.Find("INFO") != P_MAX_INDEX || trace.Find("SUBSCRIBE") != P_MAX_INDEX))
+  {
+    logMsgBuf = "";
+    return;
+  }
+  if(trace.Left(4) == "send")
+  {
+    logMsgBuf = "MCUSIP\tSend SIP message:\n";
+    logMsgBuf = logMsgBuf+trace;
+    return;
+  }
+  if(trace.Left(4) == "recv")
+  {
+    logMsgBuf = "MCUSIP\tReceived SIP message:\n";
+    logMsgBuf = logMsgBuf+trace;
+    return;
+  }
+  if(trace.Find("---") != P_MAX_INDEX)
+  {
+    if(logMsgBuf.IsEmpty())
+      return;
+    logMsgBuf = logMsgBuf+trace;
+    PTRACE(1, logMsgBuf);
+    logMsgBuf = "";
+    return;
+  }
+  if(trace.Find("\n") == P_MAX_INDEX && !logMsgBuf.IsEmpty())
+    logMsgBuf = logMsgBuf+trace+"\n";
+}
+
 void OpenMCUSipConnection::LeaveConference()
 {
  PString *bye = new PString("BYE");
@@ -992,6 +1040,8 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
   PTRACE(1, "MCUSIP\tSendBYE");
   sip_t *sip = sip_object(c_sip_msg);
   su_home_t *home = msg_home(c_sip_msg);
+  if(c_sip_msg == NULL || sip == NULL || home == NULL)
+    return 0;
 
   // Send BYE
   sip_addr_t *sip_from, *sip_to;
@@ -1014,6 +1064,7 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
   nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, NULL, NULL,
 			ruri,
 			sip_msg,
+			NTATAG_STATELESS(1),
  			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_ROUTE(sip_route),
                         SIPTAG_CONTACT(contact_t),
@@ -1026,8 +1077,6 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
   if(a_orq == NULL)
     return 0;
   nta_outgoing_destroy(a_orq);
-
-  PTRACE(1, "MCUSIP\tSend SIP message: \n" << msg_as_string(home, sip_msg, NULL, 0, NULL));
   return 1;
 }
 
@@ -1111,11 +1160,11 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
     return access;
 }
 
-void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
+int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 {
     PTRACE(1, "MCUSIP\tSipMakeCall");
     if(agent == NULL)
-      return;
+      return 0;
 
     PString localIP, remoteIP, remotePort, proxyIP, userName, roomName;
     BOOL needProxy = false;
@@ -1123,7 +1172,7 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     PString addr = to.Tokenise(";")[0];
     remoteIP = addr.Tokenise(":")[1].Tokenise("@")[1];
     if(remoteIP == "")
-      return;
+      return 0;
     remotePort = addr.Tokenise(":")[2];
     if(remotePort == "")
       remotePort = "5060";
@@ -1144,12 +1193,12 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
       }
     }
     if(roomName == NULL && needProxy)
-      return;
+      return 0;
     if(roomName == NULL)
     {
       localIP = GetFromIp(remoteIP, remotePort);
       if(localIP == "0")
-        return;
+        return 0;
       proxyIP=localIP;
       userName = room;
       roomName = room;
@@ -1170,7 +1219,7 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     unsigned aPort, vPort;
     aPort = GetLocalDataPort(localIP, ep->GetRtpIpPortBase(), ep->GetRtpIpPortMax());
     vPort = GetLocalDataPort(localIP, aPort+2, ep->GetRtpIpPortMax());
-    if(aPort == 0 || vPort == 0) return;
+    if(aPort == 0 || vPort == 0) return 0;
     // add ports to call_id string
     PString call_id_suffix = "0@"+PString(aPort)+"@"+PString(vPort);
 
@@ -1204,15 +1253,15 @@ void OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     // su_epoll_port.c:206: su_epoll_port_register: Assertion `su_port_own_thread(self)' failed.
     // without registration only send invite to IP address, do not use domain name
     if(orq == NULL)
-      return;
-    PTRACE(1, "MCUSIP\tSend SIP message: \n" << msg_as_string(&home, sip_msg, NULL, 0, NULL));
+      return 0;
+    return 1;
 }
 
-void OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
+int OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
 {
     PTRACE(1, "MCUSIP\tSipRegister");
     if(agent == NULL)
-      return;
+      return 0;
 
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
 	("sip:"+proxy->userName+"@"+proxy->proxyIP));
@@ -1244,8 +1293,8 @@ void OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
 			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
     if(orq == NULL)
-      return;
-    PTRACE(1, "MCUSIP\tSend SIP message: \n" << msg_as_string(&home, sip_msg, NULL, 0, NULL));
+      return 0;
+    return 1;
 }
 
 PString OpenMCUSipEndPoint::MakeAuthStr(ProxyServer *proxy, const sip_t *sip)
@@ -1292,13 +1341,12 @@ PString OpenMCUSipEndPoint::MakeAuthStr(ProxyServer *proxy, const sip_t *sip)
 
 int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip)
 {
-  msg_t *msg = nta_outgoing_getresponse(orq);
-  if(msg == NULL || sip->sip_status == NULL ||
-     sip->sip_call_id == NULL || sip->sip_to->a_url->url_host == NULL)
+  if(sip->sip_status == NULL)
     return 0;
 
-  PString sip_msg_str = (PString)msg_as_string(&home, msg, NULL, 0, NULL);
-  PTRACE(1, "MCUSIP\tReceived SIP message: \n" << sip_msg_str);
+  msg_t *msg = nta_outgoing_getresponse(orq);
+  if(msg == NULL)
+    return 0;
 
   SipKey sik;
   sik.addr = inet_addr(sip->sip_to->a_url->url_host);
@@ -1390,8 +1438,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
 			TAG_END());
     if(a_orq == NULL)
       return 0;
-    PTRACE(1, "MCUSIP\tSend SIP message: \n" << msg_as_string(&home, sip_msg, NULL, 0, NULL));
-
     nta_outgoing_destroy(orq);
     return 0;
   }
@@ -1412,6 +1458,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, NULL, NULL,
 			ruri,
 			sip_msg,
+			NTATAG_STATELESS(1),
 			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_ROUTE(sip_route),
 			SIPTAG_FROM(sip->sip_from),
@@ -1423,8 +1470,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     if(a_orq == NULL)
       return 0;
     nta_outgoing_destroy(a_orq);
-
-    PTRACE(1, "MCUSIP\tSend SIP message: \n" << msg_as_string(&home, sip_msg, NULL, 0, NULL));
 
     SipConnectionMapType::iterator scr = sipConnMap.find(sik);
     if(scr != sipConnMap.end())  // connection already exist
@@ -1458,6 +1503,8 @@ int OpenMCUSipEndPoint::CreateConData(OpenMCUSipConnection *sCon)
 {
   PTRACE(1, "MCUSIP\tCreateConData");
   sip_t *sip = sip_object(sCon->c_sip_msg);
+  if(sip == NULL)
+    return 0;
 
   if(sCon->direction == 0) //incoming
   {
@@ -1514,15 +1561,9 @@ int OpenMCUSipEndPoint::ReqReply(msg_t *msg, unsigned method, const char *method
   if(status_phrase == NULL)
     return 0;
 
-  PTRACE(1, "MCUSIP\tSending " << method_name << " to " <<
-    sip->sip_from->a_url->url_user << "@" << sip->sip_from->a_url->url_host);
-
   sip_payload_t *sip_payload = NULL;
   if(sCon != NULL)
-  {
     sip_payload = sip_payload_format(&home, (const char *)sCon->sdp_msg);
-    PTRACE(1, "MCUSIP\tsdp_msg\n" << sCon->sdp_msg);
-  }
 
   if(method == 200 && sip_payload != NULL)
     nta_msg_treply(agent, msg, method, status_phrase,
@@ -1540,12 +1581,8 @@ int OpenMCUSipEndPoint::ReqReply(msg_t *msg, unsigned method, const char *method
 
 int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *sip)
 {
-  if(msg==NULL || sip->sip_request==NULL || sip->sip_request->rq_method_name==NULL ||
-     sip->sip_from->a_url->url_host==NULL || sip->sip_call_id==NULL)
+  if(sip->sip_request==NULL)
     return 0;
-
-  PString sip_msg_str = (PString)msg_as_string(&home, msg, NULL, 0, NULL);
-  PTRACE(1, "MCUSIP\tReceived SIP message: \n" << sip_msg_str);
 
   SipKey sik;
   sik.addr = inet_addr(sip->sip_from->a_url->url_host);
@@ -1685,10 +1722,12 @@ void OpenMCUSipEndPoint::Main()
 {
   su_init();
   su_home_init(&home);
-  su_log_set_level(NULL, 9);
   root = su_root_create(NULL);
-
   if(root == NULL) return;
+
+  su_log_set_level(NULL, 9);
+  setenv("TPORT_LOG", "1", 1);
+  su_log_redirect(NULL, MCUSipLoggerFunc, NULL);
 
   if(OpenMCU::Current().sipListener!="0.0.0.0")
     agent = nta_agent_create(root, URL_STRING_MAKE((const char*)("sip:"+OpenMCU::Current().sipListener)), ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, NTATAG_UDP_MTU(64000), TAG_NULL());

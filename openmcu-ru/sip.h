@@ -96,7 +96,7 @@ class OpenMCUSipEndPoint : public PThread
    int ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon);
    int terminating;
    url_string_t* listenerUrl;
-   void SipMakeCall(PString room, PString to);
+   int SipMakeCall(PString room, PString to);
 
   protected:
    void MainLoop();
@@ -113,7 +113,7 @@ class OpenMCUSipEndPoint : public PThread
     return ((OpenMCUSipEndPoint *)context)->ProcessSipEvent_ntaout(context, orq, sip);
    }
    int ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip);
-   void SipRegister(ProxyServer *);
+   int SipRegister(ProxyServer *);
    PString MakeAuthStr(ProxyServer *proxy, const sip_t *sip);
    PString GetRoomAccess(const sip_t *sip);
    int CreateConData(OpenMCUSipConnection *sCon);

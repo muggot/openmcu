@@ -808,12 +808,19 @@ BOOL InvitePage::Post(PHTTPRequest & request,
   }
 
   if(address.Find("sip:") == 0) {
-    OpenMCU::Current().sipendpoint->SipMakeCall(room, address);
+    if(OpenMCU::Current().sipendpoint->SipMakeCall(room, address) == 0) {
+      BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
+      html << html_invite;
+      EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
+      ep.GetConferenceManager().RemoveConference(room);
+      return TRUE;
+    }
   } else {
     PString h323Token;
     PString * userData = new PString(room);
     if (ep.MakeCall(address, h323Token, userData) == NULL) {
       BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
+      html << html_invite;
       EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
       ep.GetConferenceManager().RemoveConference(room);
       return TRUE;
