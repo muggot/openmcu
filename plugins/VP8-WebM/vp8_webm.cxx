@@ -442,8 +442,8 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
       if (strcasecmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0)
         return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
 
-      if (strcasecmp(optionName, PLUGINCODEC_OPTION_TARGET_BIT_RATE) == 0)
-        return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
+      //if (strcasecmp(optionName, PLUGINCODEC_OPTION_TARGET_BIT_RATE) == 0)
+      //  return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
 
       if (strcasecmp(optionName, SpatialResampling.m_name) == 0)
         return SetOptionBoolean(m_config.rc_resize_allowed, optionValue);
