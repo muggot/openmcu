@@ -2264,6 +2264,7 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
       // SetTxQualityLevel not send the value in encoder
       mf.SetOptionInteger("Encoding Quality", ep.GetVideoTxQuality());
     }
+    //codec.SetTxQualityLevel(ep.GetVideoTxQuality());
 
     if(
       OpenMCU::Current().GetForceScreenSplit()
@@ -2306,8 +2307,6 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
       videoGrabber = NULL;
       return FALSE;
     }
-
-    codec.SetTxQualityLevel(ep.GetVideoTxQuality());
 
     videoGrabber->Start();
     channel->AttachVideoReader(videoGrabber);

@@ -378,7 +378,6 @@ enum Orientation {
   OrientationExtHdrShift = 4,
   OrientationPktHdrShift = 5
 };
-#include <iostream>
 
 
 ///////////////////////////////////////////////////////////////////////////////
