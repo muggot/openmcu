@@ -146,16 +146,24 @@ PString CreateRuriStr(msg_t *msg, int direction)
 }
 
 PString logMsgBuf;
-void MCUSipLoggerFunc(void *logarg, char const *fmt, char *ap)
+void MCUSipLoggerFunc(void *logarg, char const *fmt, va_list ap)
 {
   if(fmt == NULL)
     return;
 
+#ifdef _WIN32
   PString trace = pvsprintf(fmt, ap);
   if(trace.IsEmpty()) return;
+#else
+  char *data = NULL;
+  int ret = vasprintf(&data, fmt, ap);
+  if(ret == -1 || data == NULL)
+    return;
+  PString trace = (const char *)data;
+#endif
   cout << trace;
-  trace.Replace("   ","",TRUE,0); //  these 2 lines - not
-  if(trace.IsEmpty()) return;       //    sure (kay27)
+  trace.Replace("   ","",TRUE,0);
+  if(trace.IsEmpty()) return;
 
   if(trace.Find("CSeq") != P_MAX_INDEX &&
       (trace.Find("OPTIONS") != P_MAX_INDEX || trace.Find("INFO") != P_MAX_INDEX || trace.Find("SUBSCRIBE") != P_MAX_INDEX))
