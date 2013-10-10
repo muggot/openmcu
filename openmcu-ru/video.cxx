@@ -3665,7 +3665,7 @@ void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
   {
     VideoMixPosition * vmp = r;
     if(vmp->n < newCount){
-      if(vmp->width != OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].width || vmp->height != OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].height)
+      if((unsigned)vmp->width != OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].width || (unsigned)vmp->height != OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].height)
       { vmp->label_init=FALSE; vmp->fc=0; }
       vmp->xpos=OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].posx;
       vmp->ypos=OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].posy;
