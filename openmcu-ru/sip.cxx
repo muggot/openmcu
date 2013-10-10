@@ -384,6 +384,17 @@ void OpenMCUSipConnection::CleanUpOnCallEnd()
   videoTransmitCodec = NULL;
 }
 
+void OpenMCUSipConnection::FastUpdatePicture()
+{
+  SipCapMapType::iterator cir = sipCaps.find(vcap);
+  if(cir != sipCaps.end())
+  {
+    H323VideoCodec *vcodec =  (H323VideoCodec*)cir->second->outChan->GetCodec();
+    if(vcodec != NULL)
+      vcodec->OnFastUpdatePicture();
+  }
+}
+
 void SipCapability::Print()
 {
  cout << "Payload: " << payload << " Media: " << media << " Direction: " << dir << " Port: " << port << "\r\n";
@@ -1670,7 +1681,28 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
     sCon->LeaveConference(TRUE); // leave conference and delete connection
     return 0;
   }
-  if(request == "OPTIONS" || request == "SUBSCRIBE" || request == "INFO" )
+  if(request == "INFO" )
+  {
+    SipConnectionMapType::iterator scr = sipConnMap.find(sik);
+    if(scr != sipConnMap.end())
+    {
+      if(sip->sip_payload && sip->sip_payload->pl_data &&
+         sip->sip_content_type && sip->sip_content_type->c_type)
+      {
+        PString type = PString(sip->sip_content_type->c_type);
+        PString data = PString(sip->sip_payload->pl_data);
+        if(type.Find("application/media_control") != P_MAX_INDEX &&
+           data.Find("to_encoder") != P_MAX_INDEX &&
+           data.Find("picture_fast_update") != P_MAX_INDEX)
+        {
+          OpenMCUSipConnection *sCon = scr->second;
+          sCon->FastUpdatePicture();
+        }
+      }
+    }
+    return ReqReply(msg, SIP_200_OK);
+  }
+  if(request == "OPTIONS" || request == "SUBSCRIBE")
   {
     return ReqReply(msg, SIP_200_OK);
   }

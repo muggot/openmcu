@@ -250,6 +250,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   void CleanUpOnCallEnd();
   void LeaveConference();
   void LeaveConference(BOOL remove);
+  void FastUpdatePicture();
 //  virtual BOOL ClearCall(
 //      CallEndReason reason = EndedByLocalUser  ///< Reason for call clearing
 //    ) { return TRUE; }

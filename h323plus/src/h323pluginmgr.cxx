@@ -2131,10 +2131,7 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
      }
 
     if(cacheMode==1 || cacheMode==3)// || encoderSeqN==0xFFFFFFFF) 
-      if(codecCache && codecCache->GetLastFrameNum()==0) // skip first frame for Linphone, "warning: first frame is no keyframe"
-        retval = 0;
-      else
-        retval = (codec->codecFunction)(codec, context,
+      retval = (codec->codecFunction)(codec, context,
                                         bufferRTP.GetPointer(), &fromLen,
                                         dst.GetPointer(), &toLen,
                                         &flags);
