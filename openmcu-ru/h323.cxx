@@ -2258,6 +2258,13 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
     if(fr > codec.GetTargetFrameRate()) fr=codec.GetTargetFrameRate();
     else codec.SetTargetFrameTimeMs(1000/fr);
 
+    OpalMediaFormat & mf = codec.GetWritableMediaFormat();
+    if(videoTransmitCodecName.Left(3) == "VP8")
+    {
+      // SetTxQualityLevel not send the value in encoder
+      mf.SetOptionInteger("Encoding Quality", ep.GetVideoTxQuality());
+    }
+
     if(
       OpenMCU::Current().GetForceScreenSplit()
 #if ENABLE_TEST_ROOMS

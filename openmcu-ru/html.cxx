@@ -292,7 +292,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
 #endif
 
 #if OPENMCU_VIDEO
-  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE), "<td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1..30 (for outgoing video)<br />H.264 level value must be one of: 9, 10, 11, 12, 13, 20, 21, 22, 30, 31, 32, 40, 41, 42, 50, 51."));
+  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE), "<td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1..30 (for outgoing video)<br>Video quality range: 1..30 (for outgoing video)"));
   Add(new PHTTPIntegerField("Video frame rate", 1, 100, cfg.GetInteger("Video frame rate", DefaultVideoFrameRate)));
   Add(new PHTTPIntegerField("Video quality", 1, 30, cfg.GetInteger("Video quality", DefaultVideoQuality)));
   Add(new PHTTPBooleanField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE)));
@@ -404,7 +404,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   // SIP Listener setup
   mcu.sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
   if(mcu.sipListener=="") mcu.sipListener="0.0.0.0";
-  Add(new PHTTPStringField(SipListenerKey, 32, mcu.sipListener,"<td rowspan='3' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>SIP Setup</b>"));
+  Add(new PHTTPStringField(SipListenerKey, 32, mcu.sipListener,"<td rowspan='3' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>SIP Setup</b><br><br><br><br>H.264 level value must be one of: 9, 10, 11, 12, 13, 20, 21, 22, 30, 31, 32, 40, 41, 42, 50, 51."));
   if(mcu.sipListener=="0.0.0.0") mcu.sipListener="0.0.0.0 :5060";
   mcu.sipendpoint->Resume();
 

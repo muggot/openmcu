@@ -378,6 +378,7 @@ enum Orientation {
   OrientationExtHdrShift = 4,
   OrientationPktHdrShift = 5
 };
+#include <iostream>
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -394,6 +395,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
     vpx_codec_iter_t           m_iterator;
     const vpx_codec_cx_pkt_t * m_packet;
     size_t                     m_offset;
+    unsigned                   m_encodingQuality;
 
   public:
     VP8Encoder(const PluginCodec_Definition * defn)
@@ -402,6 +404,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
       , m_iterator(NULL)
       , m_packet(NULL)
       , m_offset(0)
+      , m_encodingQuality(30)
     {
       memset(&m_codec, 0, sizeof(m_codec));
     }
@@ -439,6 +442,9 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
 
     virtual bool SetOption(const char * optionName, const char * optionValue)
     {
+      if (strcasecmp(optionName, "Encoding Quality") == 0)
+        return SetOptionUnsigned(m_encodingQuality, optionValue, 1, 30);
+
       if (strcasecmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0)
         return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
 
@@ -520,6 +526,9 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
 
         vpx_image_t image;
         vpx_img_wrap(&image, VPX_IMG_FMT_I420, video->width, video->height, 4, srcRTP.GetVideoFrameData());
+
+        if(m_encodingQuality != 0)
+          vpx_codec_control(&m_codec, VP8E_SET_CPUUSED, 15-(m_encodingQuality/2));
 
         if (IS_ERROR(vpx_codec_encode, (&m_codec, &image,
                                         srcRTP.GetTimestamp(), m_frameTime,
