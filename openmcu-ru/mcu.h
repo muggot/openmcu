@@ -393,13 +393,11 @@ static pid_t popen2(const char *command, int *infp = NULL, int *outfp = NULL)
       close(p_stdout[read]);
       dup2(p_stdout[write], write);
 
-      char *argv[NULL];
       PStringArray pargv = PString(command).Tokenise(" ");
-      for(int i = 0; pargv[i] != NULL; i++)
-      {
-	argv[i] = new char[pargv[i].GetLength()];
-        strcpy(argv[i], pargv[i]);
-      }
+      PINDEX argc=pargv.GetSize();
+      char *argv[argc+1];
+      for(int i = 0; i< argc; i++) argv[i] = (char*)(const char*)pargv[i];
+      argv[argc]=NULL;
       execv(OpenMCU::Current().vr_ffmpegPath, argv);
       perror("execv");
       exit(1);

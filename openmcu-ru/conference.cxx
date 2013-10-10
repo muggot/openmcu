@@ -601,7 +601,11 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 #if OPENMCU_VIDEO
 //    if(!UseSameVideoForAllMembers()) memberToAdd->videoStatus = 1;
 
-    if (moderated==FALSE)
+    if (moderated==FALSE
+#  if ENABLE_TEST_ROOMS
+      || number=="testroom"
+#  endif
+    )
     {
      if (UseSameVideoForAllMembers() && memberToAdd->IsVisible()) {
       if (!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd)) 
@@ -630,7 +634,11 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         conn->AddConnection(memberToAdd);
         memberToAdd->AddConnection(conn);
 #if OPENMCU_VIDEO
-        if (moderated==FALSE)
+        if (moderated==FALSE
+#  if ENABLE_TEST_ROOMS
+         || number == "testroom"
+#  endif
+        )
         if (!UseSameVideoForAllMembers()) {
           if (conn->IsVisible())
           {
@@ -776,7 +784,11 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
     }
 
 #if OPENMCU_VIDEO
-    if (moderated==FALSE)
+    if (moderated==FALSE
+#  if ENABLE_TEST_ROOMS
+    || number == "testroom"
+#  endif
+    )
     { if (UseSameVideoForAllMembers())
       if (memberToRemove->IsVisible())
         videoMixerList->mixer->RemoveVideoSource(userid, *memberToRemove);

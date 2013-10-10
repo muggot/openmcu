@@ -4049,7 +4049,7 @@ TestVideoMixer::TestVideoMixer(unsigned _frames)
 BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
   PWaitAndSignal m(mutex);
-  if (allocated) return FALSE;
+  if (allocated) return TRUE;
 
   allocated=TRUE;
   VMPListClear();
