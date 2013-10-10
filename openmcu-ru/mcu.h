@@ -221,19 +221,20 @@ class OpenMCU : public OpenMCUProcessAncestor
     int GetHttpBuffer() const { return httpBuffer; }
 
     virtual void HttpWrite_(PString evt) {
-      PWaitAndSignal m(httpBufferMutex);
+      httpBufferMutex.Wait();
       httpBufferedEvents[httpBufferIndex]=evt; httpBufferIndex++;
       if(httpBufferIndex>=httpBuffer){ httpBufferIndex=0; httpBufferComplete=1; }
+      httpBufferMutex.Signal();
     }
     virtual void HttpWriteEvent(PString evt) {
-      PStringStream evt0; PTime now;
-      evt0 << now.AsString("h:mm:ss. ", PTime::Local) << evt;
+      PString evt0; PTime now;
+      evt0 += now.AsString("h:mm:ss. ", PTime::Local) + evt;
       HttpWrite_(evt0+"<br>\n");
       if(copyWebLogToLog) LogMessageHTML(evt0);
     }
     virtual void HttpWriteEventRoom(PString evt, PString room){
-      PStringStream evt0; PTime now;
-      evt0 << room << "\t" << now.AsString("h:mm:ss. ", PTime::Local) << evt;
+      PString evt0; PTime now;
+      evt0 += room + "\t" + now.AsString("h:mm:ss. ", PTime::Local) + evt;
       HttpWrite_(evt0+"<br>\n");
       if(copyWebLogToLog) LogMessageHTML(evt0);
     }
