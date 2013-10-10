@@ -591,6 +591,22 @@ class TestVideoMixer : public MCUSimpleVideoMixer
     BOOL AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
     BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount);
     void RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
+    virtual void MyChangeLayout(unsigned newLayout);
+    virtual void Shuffle() {};
+    virtual void Scroll(BOOL reverse) {};
+    virtual void Revert() {};
+    virtual BOOL AddVideoSourceToLayout(ConferenceMemberId id, ConferenceMember & mbr) { return FALSE; };
+    virtual void PositionSetup(int pos, int type, ConferenceMemberId memberId) {};
+    virtual BOOL MyAddVideoSource(int num, ConferenceMemberId *idp) { return FALSE; };
+    virtual void MyRemoveVideoSource(int pos, BOOL flag) {};
+    virtual void MyRemoveVideoSourceById(ConferenceMemberId id, BOOL flag) {};
+    virtual void MyRemoveAllVideoSource() {};
+    virtual void SetPositionType(int pos, int type) {};
+    virtual void InsertVideoSource(ConferenceMemberId id, int pos) {};
+    virtual void SetPositionStatus(ConferenceMemberId id,int newStatus) {};
+    virtual void Exchange(int pos1, int pos2) {};
+    virtual ConferenceMemberId SetVADPosition(ConferenceMemberId id, int chosenVan, unsigned short timeout) { return NULL; };
+    virtual BOOL SetVAD2Position(ConferenceMemberId id) { return FALSE; };
 
   protected:
     unsigned frames;

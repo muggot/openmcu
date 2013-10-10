@@ -890,7 +890,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   const unsigned long t1=(unsigned long)time(0);
 
 //  PWaitAndSignal m(mutex); // no more required: the following mutex will do the same:
-  app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Wait();
+  app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Wait(); // fix it - browse read cause access_v on serv. stop
 
   ConferenceListType & conferenceList = app.GetEndpoint().GetConferenceManager().GetConferenceList();
   for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
@@ -1207,7 +1207,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       Conference & conference = *(r->second);
       PString roomNumber = conference.GetNumber();
 #if ENABLE_TEST_ROOMS
-      controlled &= (!(roomNumber.Left(8)=="testroom")) ;
+      controlled &= (!((roomNumber.Left(8)=="testroom") && (roomNumber.GetLength()>8))) ;
 #endif
 #if ENABLE_ECHO_MIXER
       controlled &= (!(roomNumber.Left(4)*="echo"));

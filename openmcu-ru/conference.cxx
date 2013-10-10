@@ -114,12 +114,13 @@ void ConferenceManager::OnCreateConference(Conference * conference)
 
   // add file recorder member    
 #if ENABLE_TEST_ROOMS
-  if(conference->GetNumber().Left(8)=="testroom") return;
+  if((conference->GetNumber().Left(8) == "testroom") && (conference->GetNumber().GetLength() > 8)) return;
 #endif
 #if ENABLE_ECHO_MIXER
   if(conference->GetNumber().Left(4)*="echo") return;
 #endif
   conference->fileRecorder = new ConferenceFileMember(conference, (const PString) "recorder" , PFile::WriteOnly);
+  if(conference->GetNumber() == "testroom") return;
 
   if(!OpenMCU::Current().GetForceScreenSplit())
   { PTRACE(1,"Conference\tOnCreateConference: \"Force split screen video\" unchecked, " << conference->GetNumber() << " skipping members.conf"); return; }
@@ -252,17 +253,17 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
                                                                           int _mcuNumber)
 { 
 #if OPENMCU_VIDEO
-#if ENABLE_ECHO_MIXER
-  if (_number.Left(4) *= "echo")
-    return new Conference(*this, _guid, "echo"+_guid.AsString(), _name, _mcuNumber, new EchoVideoMixer());
-#endif
-#if ENABLE_TEST_ROOMS
-  if (_number.Left(8) == "testroom") {
-    int count = _number.Mid(8).AsInteger();
-    if (count > 0)
-      return new Conference(*this, _guid, _number, _name, _mcuNumber, new TestVideoMixer(count));
-  }
-#endif
+#  if ENABLE_ECHO_MIXER
+     if (_number.Left(4) *= "echo") return new Conference(*this, _guid, "echo"+_guid.AsString(), _name, _mcuNumber, new EchoVideoMixer());
+#  endif
+#  if ENABLE_TEST_ROOMS
+     if (_number.Left(8) == "testroom")
+     { PString number = _number; int count = 0;
+       if (_number.GetLength() > 8)
+       { count = _number.Mid(8).AsInteger(); if (count <= 0) { count = 0; number = "testroom"; } }
+       if (count >= 0) return new Conference(*this, _guid, number, _name, _mcuNumber, new TestVideoMixer(count));
+     }
+#  endif
 #endif
 
   if(!OpenMCU::Current().GetForceScreenSplit()) return new Conference(*this, _guid, _number, _name, _mcuNumber, NULL);

@@ -4043,7 +4043,7 @@ TestVideoMixer::TestVideoMixer(unsigned _frames)
     else if(specialLayoutMaxFrames!=-1) specialLayout=specialLayoutMaxFrames;
     else { PTRACE(1,"TestVideoMixer\tError: could not find the suitable layout"); specialLayout=0; }
   }
-  PTRACE(6,"TestVideoMixer\tConstructed, layout id " << specialLayout);
+  PTRACE(2,"TestVideoMixer\tConstructed, layout id " << specialLayout << ", frames " << frames);
 }
 
 BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
@@ -4055,7 +4055,10 @@ BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
   VMPListClear();
 
   VMPCfgOptions * o;
-  for (unsigned i = 0; i < frames; ++i) {
+
+  unsigned _f = frames; if (_f==0) _f=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
+
+  for (unsigned i = 0; i < _f; ++i) {
     o = &(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i]);
 
     VideoMixPosition * newPosition;
@@ -4075,6 +4078,39 @@ BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
   }
 
   return TRUE;
+}
+
+void TestVideoMixer::MyChangeLayout(unsigned newLayout)
+{
+  PWaitAndSignal m(mutex); specialLayout=newLayout; NullAllFrameStores();
+
+  ConferenceMemberId id = NULL; if ((vmpList->next) != NULL) id=vmpList->next->id;
+
+  VMPListClear();
+
+  VMPCfgOptions * o;
+
+  unsigned _f = frames; if (_f==0) _f=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
+
+  for (unsigned i = 0; i < _f; ++i)
+  {
+    o = &(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i]);
+
+    VideoMixPosition * newPosition;
+    if(i==0)
+    { newPosition = CreateVideoMixPosition(id, o->posx, o->posy, o->width, o->height);
+      newPosition->type=1;
+    }
+    else
+    { newPosition = CreateVideoMixPosition((void *)i, o->posx, o->posy, o->width, o->height);
+      newPosition->type=2;
+    }
+    PStringStream s; s << "Mix Position " << i; newPosition->terminalName=s;
+    newPosition->label_init=FALSE;
+    newPosition->n=i; 
+    newPosition->border=o->border;
+    VMPListAddVMP(newPosition);
+  }
 }
 
 void TestVideoMixer::RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr)

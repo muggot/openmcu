@@ -1102,7 +1102,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     OTF_RET_OK;
   }
   if(action == OTFC_ADD_VIDEO_MIXER)
-  { if(conference->IsModerated()=="+")
+  { if(conference->IsModerated()=="+" && conference->GetNumber() != "testroom")
     { unsigned n = conference->VMLAdd();
       PStringStream msg; msg << "Video mixer " << n << " added";
       OpenMCU::Current().HttpWriteEventRoom(msg,room);
@@ -1113,7 +1113,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     OTF_RET_FAIL;
   }
   if(action == OTFC_DELETE_VIDEO_MIXER)
-  { if(conference->IsModerated()=="+")
+  { if(conference->IsModerated()=="+" && conference->GetNumber() != "testroom")
     {
       unsigned n_old=conference->videoMixerCount;
       unsigned n = conference->VMLDel(v);
@@ -1447,7 +1447,7 @@ PString OpenMCUH323EndPoint::GetRoomList(const PString & block)
     Conference & conference = *(r->second);
     PString roomNumber = conference.GetNumber();
 #if ENABLE_TEST_ROOMS
-    if(roomNumber.Left(8)=="testroom") continue;
+    if((roomNumber.Left(8)=="testroom") && (roomNumber.GetLength() > 8)) continue;
 #endif
 #if ENABLE_ECHO_MIXER
     if(roomNumber.Left(4)*="echo") continue;
