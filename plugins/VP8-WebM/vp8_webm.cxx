@@ -403,7 +403,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
       , m_iterator(NULL)
       , m_packet(NULL)
       , m_offset(0)
-      , m_encodingQuality(30)
+      , m_encodingQuality(1)
     {
       memset(&m_codec, 0, sizeof(m_codec));
     }
@@ -442,7 +442,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
     virtual bool SetOption(const char * optionName, const char * optionValue)
     {
       if (strcasecmp(optionName, "Encoding Quality") == 0)
-        return SetOptionUnsigned(m_encodingQuality, optionValue, 1, 30);
+        return SetOptionUnsigned(m_encodingQuality, optionValue, 1, 31);
 
       if (strcasecmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0)
         return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
@@ -527,7 +527,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
         vpx_img_wrap(&image, VPX_IMG_FMT_I420, video->width, video->height, 4, srcRTP.GetVideoFrameData());
 
         if(m_encodingQuality != 0)
-          vpx_codec_control(&m_codec, VP8E_SET_CPUUSED, 15-(m_encodingQuality/2));
+          vpx_codec_control(&m_codec, VP8E_SET_CPUUSED, (m_encodingQuality/2));
 
         if (IS_ERROR(vpx_codec_encode, (&m_codec, &image,
                                         srcRTP.GetTimestamp(), m_frameTime,
