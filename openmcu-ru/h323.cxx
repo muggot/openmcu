@@ -2256,15 +2256,12 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
     unsigned fr=ep.GetVideoFrameRate();
     //if(fr > codec.GetTargetFrameRate()) fr=codec.GetTargetFrameRate();
     //else codec.SetTargetFrameTimeMs(1000/fr);
-    if(fr < 1 || fr > 100) fr = DefaultVideoFrameRate;
+    if(fr < 1 || fr > 250) fr = DefaultVideoFrameRate;
     codec.SetTargetFrameTimeMs(1000/fr);
 
     OpalMediaFormat & mf = codec.GetWritableMediaFormat();
-    if(videoTransmitCodecName.Left(3) == "VP8")
-    {
-      // SetTxQualityLevel not send the value in encoder
-      mf.SetOptionInteger("Encoding Quality", ep.GetVideoTxQuality());
-    }
+    mf.SetOptionInteger("Encoding Quality", ep.GetVideoTxQuality());
+    // SetTxQualityLevel not send the value in encoder
     //codec.SetTxQualityLevel(ep.GetVideoTxQuality());
 
     if(
