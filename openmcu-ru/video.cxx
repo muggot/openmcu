@@ -355,6 +355,9 @@ MCUVideoMixer::VideoMixPosition::VideoMixPosition(ConferenceMemberId _id,  int _
   next = NULL;
   label_init = FALSE;
   fc = 0;
+#if USE_FREETYPE
+  minWidthForLabel = 0;
+#endif
   border = TRUE;
 }
 
@@ -374,6 +377,18 @@ unsigned MCUSimpleVideoMixer::printsubs_calc(unsigned v, char s[10])
 void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer, unsigned int fw, unsigned int fh, unsigned int ft_properties){
   vmp.fc++; if(vmp.fc<FT_SKIPFRAMES) return; // Frame counter
   VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
+
+  if((vmp.minWidthForLabel==0) || (!vmp.label_init))
+  {
+    if(fw==0) vmp.minWidthForLabel = 2;
+    else
+    { unsigned mw = printsubs_calc(fw * OpenMCU::vmcfg.bfw / vmp.width, OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.minimum_width_for_label);
+      if(fw >= mw) vmp.minWidthForLabel = 1;
+      else vmp.minWidthForLabel = 2;
+    }
+  }
+  if(vmp.minWidthForLabel != 1) return;
+
   if(!(ft_properties & FT_P_REALTIME)) if(vmp.label_init) { // Pasting from buffer
     if(vmp.label_buffer_fw!=fw || vmp.label_buffer_fh!=fh) vmp.label_init=false; // Checking for changed frame size
     else {
@@ -4249,15 +4264,15 @@ void VideoMixConfigurator::go(unsigned frame_width, unsigned frame_height)
    sopts[i].reallocate_on_disconnect=VMPC_DEFAULT_REALLOCATE_ON_DISCONNECT;
    sopts[i].mockup_width=VMPC_DEFAULT_MOCKUP_WIDTH;
    sopts[i].mockup_height=VMPC_DEFAULT_MOCKUP_HEIGHT;
-   strcpy(sopts[i].tags,VMPC_DEFAULT_TAGS);
    opts[i].posx=VMPC_DEFAULT_POSX;
    opts[i].posy=VMPC_DEFAULT_POSY;
    opts[i].width=VMPC_DEFAULT_WIDTH;
    opts[i].height=VMPC_DEFAULT_HEIGHT;
    opts[i].border=VMPC_DEFAULT_BORDER;
 #if USE_FREETYPE
+   strcpy(sopts[i].minimum_width_for_label,VMPC_DEFAULT_MINIMUM_WIDTH_FOR_LABEL);
    opts[i].label_mask=VMPC_DEFAULT_LABEL_MASK;
-   strcpy(opts[i].label_text,VMPC_DEFAULT_LABEL_TEXT);
+//   strcpy(opts[i].label_text,VMPC_DEFAULT_LABEL_TEXT);
    opts[i].label_color=VMPC_DEFAULT_LABEL_COLOR;
    opts[i].label_bgcolor=VMPC_DEFAULT_LABEL_BGCOLOR;
    strcpy(opts[i].fontsize,VMPC_DEFAULT_FONTSIZE);
@@ -4598,10 +4613,10 @@ void VideoMixConfigurator::option_set(const char* p, const char* v, char* &f_buf
    else if(option_cmp((const char *)p,(const char *)"frame_height")){fh[ldm]=atoi(v);if(fh[ldm]<1)fh[ldm]=1;}
    else if(option_cmp((const char *)p,(const char *)"border"))opts[ldm].border=atoi(v);
    else if(option_cmp((const char *)p,(const char *)"mode_mask"))sopts[ldm].mode_mask=atoi(v);
-   else if(option_cmp((const char *)p,(const char *)"tags")){
-     if(strlen(v)<=128)strcpy(sopts[ldm].tags,v); else 
-     warning(f_buff,line,lo,"tags value too long (max 128 chars allowed)",pos,pos1);
-   }
+//   else if(option_cmp((const char *)p,(const char *)"tags")){
+//     if(strlen(v)<=128)strcpy(sopts[ldm].tags,v); else 
+//     warning(f_buff,line,lo,"tags value too long (max 128 chars allowed)",pos,pos1);
+//   }
    else if(option_cmp((const char *)p,(const char *)"position_width")) opts[ldm].width=(atoi(v)*bfw)/fw[ldm];
 //   else if(option_cmp((const char *)p,(const char *)"position_width")) opts[ldm].width=((atoi(v)*bfw)/fw[ldm]+1)&0xFFFFFE;
    else if(option_cmp((const char *)p,(const char *)"position_height")) opts[ldm].height=(atoi(v)*bfh)/fh[ldm];
@@ -4650,6 +4665,10 @@ void VideoMixConfigurator::option_set(const char* p, const char* v, char* &f_buf
    else if(option_cmp((const char *)p,(const char *)"new_members_first")) sopts[ldm].new_from_begin=atoi(v);
    else if(option_cmp((const char *)p,(const char *)"mockup_width")) sopts[ldm].mockup_width=atoi(v);
    else if(option_cmp((const char *)p,(const char *)"mockup_height")) sopts[ldm].mockup_height=atoi(v);
+   else if(option_cmp((const char *)p,(const char *)"minimum_width_for_label"))
+   { if(strlen(v)<11) strcpy(sopts[ldm].minimum_width_for_label,v);
+     else warning(f_buff,line,lo,"minimum_width_for_label value too long (max 10 chars allowed)",pos,pos1);
+   }
    else warning(f_buff,line,lo,"unknown parameter",pos,pos1);
   }
 
