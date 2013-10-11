@@ -387,12 +387,18 @@ void OpenMCUSipConnection::CleanUpOnCallEnd()
 void OpenMCUSipConnection::FastUpdatePicture()
 {
   SipCapMapType::iterator cir = sipCaps.find(vcap);
-  if(cir != sipCaps.end())
+  if(cir != sipCaps.end() && cir->second->outChan != NULL)
   {
-    H323VideoCodec *vcodec =  (H323VideoCodec*)cir->second->outChan->GetCodec();
+    H323VideoCodec *vcodec = (H323VideoCodec*)cir->second->outChan->GetCodec();
     if(vcodec != NULL)
       vcodec->OnFastUpdatePicture();
   }
+}
+
+void OpenMCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsigned commandIdentifier)
+{
+  if(commandIdentifier == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
+    SendFastUpdatePicture();
 }
 
 void SipCapability::Print()
@@ -1049,6 +1055,56 @@ int OpenMCUSipConnection::ProcessReInviteEvent()
   CreateVideoChannel(vcap,1);
  }
  return 1;
+}
+
+int OpenMCUSipConnection::SendFastUpdatePicture()
+{
+  PTRACE(1, "MCUSIP\tSendFastUpdatePicture");
+  sip_t *sip = sip_object(c_sip_msg);
+  su_home_t *home = msg_home(c_sip_msg);
+  if(c_sip_msg == NULL || sip == NULL || home == NULL)
+    return 0;
+
+  // Send INFO
+  sip_addr_t *sip_from, *sip_to;
+  if(direction == 0)
+  {
+    sip_from = sip_to_dup(home, sip->sip_to);
+    sip_to = sip_from_dup(home, sip->sip_from);
+  } else {
+    sip_from = sip_from_dup(home, sip->sip_from);
+    sip_to = sip_to_dup(home, sip->sip_to);
+  }
+  PString ruri_str = CreateRuriStr(c_sip_msg, direction);
+  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
+
+  sip_request_t *sip_rq = sip_request_create(home, SIP_METHOD_INFO, ruri, NULL);
+  sip_cseq_t *sip_cseq = sip_cseq_create(home, (rand()%1000000), SIP_METHOD_INFO);
+  sip_route_t* sip_route = sip_route_reverse(home, sip->sip_record_route);
+
+  const char *sdp = "<media_control><vc_primitive><to_encoder><picture_fast_update/></to_encoder></vc_primitive></media_control>";
+  sip_payload_t *sip_payload = sip_payload_format(home, sdp);
+
+  msg_t *sip_msg = nta_msg_create(sep->GetAgent(), 0);
+  nta_outgoing_t *a_orq = nta_outgoing_mcreate(sep->GetAgent(), NULL, NULL,
+			ruri,
+			sip_msg,
+			NTATAG_STATELESS(1),
+ 			SIPTAG_REQUEST(sip_rq),
+			SIPTAG_ROUTE(sip_route),
+                        SIPTAG_CONTACT(contact_t),
+			SIPTAG_FROM(sip_from),
+			SIPTAG_TO(sip_to),
+			SIPTAG_CSEQ(sip_cseq),
+			SIPTAG_CALL_ID(sip->sip_call_id),
+			SIPTAG_CONTENT_TYPE_STR("application/media_control+xml"),
+			SIPTAG_PAYLOAD(sip_payload),
+			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
+			TAG_END());
+  if(a_orq == NULL)
+    return 0;
+  nta_outgoing_destroy(a_orq);
+  return 1;
 }
 
 int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)

@@ -97,6 +97,7 @@ class OpenMCUSipEndPoint : public PThread
    int terminating;
    url_string_t* listenerUrl;
    int SipMakeCall(PString room, PString to);
+   nta_agent_t *GetAgent() { return agent; };
 
   protected:
    void MainLoop();
@@ -251,6 +252,9 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   void LeaveConference();
   void LeaveConference(BOOL remove);
   void FastUpdatePicture();
+  virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
+  int SendFastUpdatePicture();
+
 //  virtual BOOL ClearCall(
 //      CallEndReason reason = EndedByLocalUser  ///< Reason for call clearing
 //    ) { return TRUE; }
