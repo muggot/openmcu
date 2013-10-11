@@ -54,7 +54,7 @@ typedef std::map<SipKey, OpenMCUSipConnection *, CmpSipKey> SipConnectionMapType
 class ProxyServer
 {
  public:
- ProxyServer() { sipAuthStr=NULL; }
+ ProxyServer() { }
  PString localIP;
  PString localPort;
  PString proxyIP;

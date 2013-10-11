@@ -11,7 +11,7 @@ PString GetFromIp(const char *toAddr, const char *toPort)
 {
     char buffer[16];
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if(sock == -1) return NULL;
+    if(sock == -1) return "";
 
     struct addrinfo serv;
     struct addrinfo *res=NULL;
@@ -19,15 +19,15 @@ PString GetFromIp(const char *toAddr, const char *toPort)
     serv.ai_family = AF_INET;
     serv.ai_socktype=SOCK_DGRAM;
     int err=getaddrinfo(toAddr, toPort, &serv, &res);
-    if (err != 0 || res == NULL) return NULL;
+    if (err != 0 || res == NULL) return "";
 
     err = connect(sock, res->ai_addr, res->ai_addrlen);
-    if(err == -1) return NULL;
+    if(err == -1) return "";
 
     sockaddr_in name;
     socklen_t namelen = sizeof(name);
     err = getsockname(sock, (sockaddr*) &name, &namelen);
-    if(err == -1) return NULL;
+    if(err == -1) return "";
 
 #ifndef _WIN32
     inet_ntop(AF_INET, (const void *)&name.sin_addr, buffer, 16);
@@ -1239,7 +1239,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     if(roomName == NULL)
     {
       localIP = GetFromIp(remoteIP, remotePort);
-      if(localIP == "0")
+      if(localIP == "")
         return 0;
       proxyIP=localIP;
       userName = room;
@@ -1272,7 +1272,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sdp.Replace("LOCALIP", localIP, TRUE, 0);
     sdp.Replace("RTP_AUDIO_PORT", aPort, TRUE, 0);
     sdp.Replace("RTP_VIDEO_PORT", vPort, TRUE, 0);
-    sip_payload_t *sip_payload = sip_payload_format(&home, sdp);
+    sip_payload_t *sip_payload = sip_payload_format(&home, (const char *)sdp);
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)sip_to->a_url, NULL);
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_INVITE);
@@ -1356,7 +1356,7 @@ PString OpenMCUSipEndPoint::MakeAuthStr(ProxyServer *proxy, const sip_t *sip)
       scheme = sip->sip_proxy_authenticate->au_scheme;
     }
     else
-      return NULL;
+      return "";
 
     method = sip->sip_cseq->cs_method_name;
 
@@ -1441,7 +1441,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
       sdp.Replace("LOCALIP", proxy->localIP, TRUE, 0);
       sdp.Replace("RTP_AUDIO_PORT", aPort, TRUE, 0);
       sdp.Replace("RTP_VIDEO_PORT", vPort, TRUE, 0);
-      sip_payload = sip_payload_format(&home, sdp);
+      sip_payload = sip_payload_format(&home, (const char *)sdp);
     }
 
     sip_request_t *sip_rq = sip_request_create(&home, sip->sip_cseq->cs_method,
@@ -1821,7 +1821,7 @@ void OpenMCUSipEndPoint::Main()
     if(proxy->proxyPort == "") proxy->proxyPort = "5060";
     if(atoi(proxy->expires) < 60) proxy->expires = "60";
     if(atoi(proxy->expires) > 3600) proxy->expires = "3600";
-    if(proxy->localIP == "0") continue;
+    if(proxy->localIP == "") continue;
     ProxyServerMap.insert(ProxyServerMapType::value_type(proxy->userName+"@"+proxy->proxyIP, proxy));
   }
 
