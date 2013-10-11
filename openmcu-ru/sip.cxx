@@ -1272,7 +1272,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sdp.Replace("LOCALIP", localIP, TRUE, 0);
     sdp.Replace("RTP_AUDIO_PORT", aPort, TRUE, 0);
     sdp.Replace("RTP_VIDEO_PORT", vPort, TRUE, 0);
-    sip_payload_t *sip_payload = sip_payload_format(&home, (const char *)sdp);
+    sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sdp);
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)sip_to->a_url, NULL);
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_INVITE);
@@ -1441,7 +1441,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
       sdp.Replace("LOCALIP", proxy->localIP, TRUE, 0);
       sdp.Replace("RTP_AUDIO_PORT", aPort, TRUE, 0);
       sdp.Replace("RTP_VIDEO_PORT", vPort, TRUE, 0);
-      sip_payload = sip_payload_format(&home, (const char *)sdp);
+      sip_payload = sip_payload_make(&home, (const char *)sdp);
     }
 
     sip_request_t *sip_rq = sip_request_create(&home, sip->sip_cseq->cs_method,
@@ -1606,7 +1606,7 @@ int OpenMCUSipEndPoint::ReqReply(msg_t *msg, unsigned method, const char *method
 
   sip_payload_t *sip_payload = NULL;
   if(sCon != NULL)
-    sip_payload = sip_payload_format(&home, (const char *)sCon->sdp_msg);
+    sip_payload = sip_payload_make(&home, (const char *)sCon->sdp_msg);
 
   if(method == 200 && sip_payload != NULL)
     nta_msg_treply(agent, msg, method, status_phrase,

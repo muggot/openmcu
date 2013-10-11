@@ -1616,7 +1616,7 @@ void ConferenceConnection::ReadAndMixAudio(BYTE * data, PINDEX amount, PINDEX ch
 
   if(bufferLen < amount)
   {
-    if(!hasUnderflow)PTRACE(6,"Mixer\tConn " << id << " audio buffer underflow: needs " << amount << ", has " << bufferLen << " bytes - silenced");
+    if(!hasUnderflow) { PTRACE(6,"Mixer\tConn " << id << " audio buffer underflow: needs " << amount << ", has " << bufferLen << " bytes - silenced"); }
     hasUnderflow = TRUE;
     return;
   }

@@ -31,7 +31,6 @@ PCREATE_SERVICE_MACRO_BLOCK(RoomList,P_EMPTY,P_EMPTY,block)
 
 static unsigned long html_template_size; // count on zero initialization
 char * html_template_buffer;
-static unsigned long html_quote_size; // count on zero initialization
 char * html_quote_buffer;
 PMutex html_mutex;
 
@@ -426,7 +425,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SectionPConfigPage::SectionPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : PConfigPage(app,title,NULL,auth)
+    : PConfigPage(app,title,"",auth)
 {
   cfg = MCUConfig(section);
   PStringList keys = cfg.GetKeys();

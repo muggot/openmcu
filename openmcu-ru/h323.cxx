@@ -1251,7 +1251,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
       }
       if(r==memberList.end()) mixer->PositionSetup(pos,1,NULL);
     }
-    else if((id>=0)&&(id<100)) mixer->PositionSetup(pos,type,(void*)pos);
+    else if((id>=0)&&(id<100)) mixer->PositionSetup(pos,type,(void*)(long)pos);
     else mixer->SetPositionType(pos,type);
     conference->FreezeVideo(NULL);
     OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
