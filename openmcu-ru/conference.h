@@ -696,6 +696,7 @@ class ConferenceConnection : public PObject {
     PINDEX bufferStart;   ///Current position in the buffer.
     PINDEX bufferSize;    ///Total number of bytes in buffer. Never gets changed.
     PMutex audioBufferMutex;
+    BOOL hasUnderflow;
 
 //    BufferListType bufferList;
 };

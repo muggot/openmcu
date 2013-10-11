@@ -1516,6 +1516,7 @@ ConferenceConnection::ConferenceConnection(ConferenceMemberId _id)
   outgoingCodecChannels = 1;
   PCM_BUFFER_SIZE_CALC(outgoingSampleRate,outgoingCodecChannels);
   bufferStart = bufferLen = 0;
+  hasUnderflow = TRUE; // we would like to accumulate some data before we'll hear it :)
 }
 
 ConferenceConnection::~ConferenceConnection()
@@ -1598,25 +1599,36 @@ void ConferenceConnection::ReadAudio(BYTE * data, PINDEX amount)
 }
 
 void ConferenceConnection::ReadAndMixAudio(BYTE * data, PINDEX amount, PINDEX channels, unsigned short echoLevel, unsigned sampleRate, unsigned codecChannels)
-{ if (amount == 0) { PTRACE(3, "Mixer\tNo data to read"); return;}
+{ 
   PWaitAndSignal mutex(audioBufferMutex);
   
   if(outgoingSampleRate != sampleRate || outgoingCodecChannels != codecChannels)
   { // sample rate or stereo mode changed
     PTRACE(5,"Mixer\tChanged outgoing sample rate: " << outgoingSampleRate << "->" << sampleRate << ", codec channels: " << outgoingCodecChannels << "->" << codecChannels);
-    unsigned oldBufferSize=bufferSize;
     PCM_BUFFER_SIZE_CALC(sampleRate,codecChannels);
     memset(buffer.GetPointer(),0,bufferSize);
-    bufferStart = bufferStart * bufferSize / oldBufferSize;
-    bufferStart -= (bufferStart % (codecChannels<<1));
     bufferStart=0; bufferLen=0;
     outgoingSampleRate=sampleRate;
     outgoingCodecChannels=codecChannels;
   }
 
-  if (bufferLen == 0) {
-    // nothing in the buffer to mix.
+  if (amount <= 0) { PTRACE(6, "Mixer\tConn " << id << " requested 0 bytes"); return;}
+
+  if(bufferLen < amount)
+  {
+    if(!hasUnderflow)PTRACE(6,"Mixer\tConn " << id << " audio buffer underflow: needs " << amount << ", has " << bufferLen << " bytes - silenced");
+    hasUnderflow = TRUE;
     return;
+  }
+
+  if(hasUnderflow)
+  {
+    if (bufferSize/bufferLen > 2) // waiting at least one half of buffer to continue mixing
+    {
+      PTRACE(6,"Mixer\tConn " << id << " accumulating audio buffer after underflow, " << (bufferLen*100/bufferSize) << "%, still silencing");
+      return;
+    }
+    else hasUnderflow = FALSE;
   }
 
   // only mix up to the amount of data remaining
@@ -1646,46 +1658,19 @@ void ConferenceConnection::ReadAndMixAudio(BYTE * data, PINDEX amount, PINDEX ch
 
 void ConferenceConnection::Mix(BYTE * dst, const BYTE * src, PINDEX count, PINDEX /*channels*/, unsigned short echoLevel, unsigned sampleRate)
 {
-#if 0
-  memcpy(dst, src, count);
-#else
-  PINDEX i;
-  for (i = 0; i < count; i += 2) {
-
-    int srcVal = *(short *)src;
-    int dstVal = *(short *)dst;
-    
-//    cout << srcVal << "\t";
-    
-//    if(*(short *)src >= echoLevel) srcVal-=echoLevel;
-//    else if(*(short *)src < -echoLevel) srcVal+=echoLevel;
-//    else srcVal=0;
-    
-//    cout << srcVal << "\t";
-
-    int newVal = dstVal;
-
-#if 0     //The loudest person gains the channel.
-#define mix_abs(x) ((x) >= 0 ? (x) : -(x))
-    if (mix_abs(newVal) > mix_abs(srcVal))
-      dstVal = newVal;
-    else
-      dstVal = srcVal; 
-#else   //Just add up all the channels.
-    if ((newVal + srcVal) > 0x7fff)
-      dstVal = 0x7fff;
-    else
-    if ((newVal + srcVal) < -0x8000) dstVal = -0x8000;
-    else
-      dstVal += srcVal;
-#endif
-    *(short *)dst = (short)dstVal;
-
-    dst += 2;
+  PINDEX i = count >> 1;
+  do
+  {
+    short dstVal = *(short *)dst;
+    short srcVal = *(short *)src;
+    int newVal = dstVal;                                     // 16-bit to 32-bit, signed
+    newVal += srcVal;                                        // mix
+    if     (newVal >  0x7fff) *(short *)dst =  0x7fff;       // 16-bit limiter "+"
+    else if(newVal < -0x8000) *(short *)dst = -0x8000;       // 16-bit limiter "-"
+    else                      *(short *)dst = (short)newVal;
     src += 2;
-  }
-#endif
-// cout << "\n";
+    dst += 2;
+  } while (--i);
 }
 
 ///////////////////////////////////////////////////////////////

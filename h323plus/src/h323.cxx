@@ -1799,7 +1799,7 @@ void H323Connection::SetRemoteApplication(const H225_EndpointType & pdu)
       for(PINDEX i=0;i<remotePartyName.GetLength();i++){
        unsigned int charcode=(BYTE)remotePartyName[i];
        if(charcode&128){
-        if(charcode=table[charcode&127]){
+        if((charcode=table[charcode&127])){
          utfname << (char)charcode << (char)(charcode >> 8);
          if(charcode >>= 16) utfname << (char)charcode;
         }
