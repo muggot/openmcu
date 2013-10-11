@@ -259,9 +259,6 @@ class OpenMCUH323Connection : public H323Connection
     virtual PString GetAudioReceiveCodecName() const  { return audioReceiveCodecName; }
     virtual PString GetRemoteName() const             { return remoteName; }
 
-    virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command)
-    { H323Connection::SendLogicalChannelMiscCommand(channel, command); };
-
     virtual void SetupCacheConnection(PString & format,Conference * conf, ConferenceMember * memb);
     
 #if OPENMCU_VIDEO
