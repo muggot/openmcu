@@ -1057,15 +1057,15 @@ int OpenMCUSipConnection::ProcessReInviteEvent()
  return 1;
 }
 
-int OpenMCUSipConnection::SendFastUpdatePicture()
+int OpenMCUSipConnection::SendRequest(sip_method_t method, const char *method_name, msg_t *req_msg=NULL)
 {
-  PTRACE(1, "MCUSIP\tSendFastUpdatePicture");
+  PTRACE(1, "MCUSIP\tSendRequest");
   sip_t *sip = sip_object(c_sip_msg);
   su_home_t *home = msg_home(c_sip_msg);
   if(c_sip_msg == NULL || sip == NULL || home == NULL)
     return 0;
 
-  // Send INFO
+  // Send request
   sip_addr_t *sip_from, *sip_to;
   if(direction == 0)
   {
@@ -1078,17 +1078,15 @@ int OpenMCUSipConnection::SendFastUpdatePicture()
   PString ruri_str = CreateRuriStr(c_sip_msg, direction);
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
-  sip_request_t *sip_rq = sip_request_create(home, SIP_METHOD_INFO, ruri, NULL);
-  sip_cseq_t *sip_cseq = sip_cseq_create(home, cseqNum++, SIP_METHOD_INFO);
+  sip_request_t *sip_rq = sip_request_create(home, method, method_name, ruri, NULL);
+  sip_cseq_t *sip_cseq = sip_cseq_create(home, cseqNum++, method, method_name);
   sip_route_t* sip_route = sip_route_reverse(home, sip->sip_record_route);
 
-  const char *sdp = "<media_control><vc_primitive><to_encoder><picture_fast_update/></to_encoder></vc_primitive></media_control>";
-  sip_payload_t *sip_payload = sip_payload_format(home, sdp);
-
-  msg_t *sip_msg = nta_msg_create(sep->GetAgent(), 0);
+  if(req_msg == NULL)
+    req_msg = nta_msg_create(sep->GetAgent(), 0);
   nta_outgoing_t *a_orq = nta_outgoing_mcreate(sep->GetAgent(), NULL, NULL,
 			ruri,
-			sip_msg,
+			req_msg,
 			NTATAG_STATELESS(1),
  			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_ROUTE(sip_route),
@@ -1097,8 +1095,6 @@ int OpenMCUSipConnection::SendFastUpdatePicture()
 			SIPTAG_TO(sip_to),
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip->sip_call_id),
-			SIPTAG_CONTENT_TYPE_STR("application/media_control+xml"),
-			SIPTAG_PAYLOAD(sip_payload),
 			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
   if(a_orq == NULL)
@@ -1107,49 +1103,23 @@ int OpenMCUSipConnection::SendFastUpdatePicture()
   return 1;
 }
 
-int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
+int OpenMCUSipConnection::SendBYE()
 {
   PTRACE(1, "MCUSIP\tSendBYE");
-  sip_t *sip = sip_object(c_sip_msg);
-  su_home_t *home = msg_home(c_sip_msg);
-  if(c_sip_msg == NULL || sip == NULL || home == NULL)
-    return 0;
+  return SendRequest(SIP_METHOD_BYE);
+}
 
-  // Send BYE
-  sip_addr_t *sip_from, *sip_to;
-  if(direction == 0)
-  {
-    sip_from = sip_to_dup(home, sip->sip_to);
-    sip_to = sip_from_dup(home, sip->sip_from);
-  } else {
-    sip_from = sip_from_dup(home, sip->sip_from);
-    sip_to = sip_to_dup(home, sip->sip_to);
-  }
-  PString ruri_str = CreateRuriStr(c_sip_msg, direction);
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
-
-  sip_request_t *sip_rq = sip_request_create(home, SIP_METHOD_BYE, ruri, NULL);
-  sip_cseq_t *sip_cseq = sip_cseq_create(home, cseqNum++, SIP_METHOD_BYE);
-  sip_route_t* sip_route = sip_route_reverse(home, sip->sip_record_route);
-
-  msg_t *sip_msg = nta_msg_create(agent, 0);
-  nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, NULL, NULL,
-			ruri,
-			sip_msg,
-			NTATAG_STATELESS(1),
- 			SIPTAG_REQUEST(sip_rq),
-			SIPTAG_ROUTE(sip_route),
-                        SIPTAG_CONTACT(contact_t),
-			SIPTAG_FROM(sip_from),
-			SIPTAG_TO(sip_to),
-			SIPTAG_CSEQ(sip_cseq),
-			SIPTAG_CALL_ID(sip->sip_call_id),
-			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
-			TAG_END());
-  if(a_orq == NULL)
-    return 0;
-  nta_outgoing_destroy(a_orq);
-  return 1;
+int OpenMCUSipConnection::SendFastUpdatePicture()
+{
+  PTRACE(1, "MCUSIP\tSendFastUpdatePicture");
+  msg_t *req_msg = nta_msg_create(sep->GetAgent(), 0);
+  sip_payload_t *sip_payload = sip_payload_format(msg_home(req_msg),
+      "<media_control><vc_primitive><to_encoder><picture_fast_update/></to_encoder></vc_primitive></media_control>");
+  sip_add_tl(req_msg, NULL,
+                        SIPTAG_CONTENT_TYPE_STR("application/media_control+xml"),
+                        SIPTAG_PAYLOAD(sip_payload),
+                        TAG_END());
+  return SendRequest(SIP_METHOD_INFO, req_msg);
 }
 
 int OpenMCUSipEndPoint::ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon)
@@ -1160,7 +1130,7 @@ int OpenMCUSipEndPoint::ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConne
   if(*cmd == "BYE")
   {
    delete cmd;
-   sCon->SendBYE(agent);
+   sCon->SendBYE();
    sCon->StopTransmitChannels();
    sCon->StopReceiveChannels();
    sCon->DeleteChannels();
