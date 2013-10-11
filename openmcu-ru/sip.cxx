@@ -1079,7 +1079,7 @@ int OpenMCUSipConnection::SendFastUpdatePicture()
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
   sip_request_t *sip_rq = sip_request_create(home, SIP_METHOD_INFO, ruri, NULL);
-  sip_cseq_t *sip_cseq = sip_cseq_create(home, (rand()%1000000), SIP_METHOD_INFO);
+  sip_cseq_t *sip_cseq = sip_cseq_create(home, cseqNum++, SIP_METHOD_INFO);
   sip_route_t* sip_route = sip_route_reverse(home, sip->sip_record_route);
 
   const char *sdp = "<media_control><vc_primitive><to_encoder><picture_fast_update/></to_encoder></vc_primitive></media_control>";
@@ -1129,7 +1129,7 @@ int OpenMCUSipConnection::SendBYE(nta_agent_t *agent)
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
   sip_request_t *sip_rq = sip_request_create(home, SIP_METHOD_BYE, ruri, NULL);
-  sip_cseq_t *sip_cseq = sip_cseq_create(home, 0x7fffffff, SIP_METHOD_BYE);
+  sip_cseq_t *sip_cseq = sip_cseq_create(home, cseqNum++, SIP_METHOD_BYE);
   sip_route_t* sip_route = sip_route_reverse(home, sip->sip_record_route);
 
   msg_t *sip_msg = nta_msg_create(agent, 0);
@@ -1305,7 +1305,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sip_payload_t *sip_payload = sip_payload_format(&home, sdp);
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)sip_to->a_url, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, (rand()%1000000), SIP_METHOD_INVITE);
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_INVITE);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, (const char*)call_id_suffix);
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
@@ -1348,7 +1348,7 @@ int OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
     sip_contact->m_display = proxy->roomName;
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_REGISTER, (url_string_t *)sip_to->a_url, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, (rand()%1000000), SIP_METHOD_REGISTER);
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_REGISTER);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, "0");
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *orq = nta_outgoing_mcreate(agent, ProcessSipEventWrap_ntaout, (nta_outgoing_magic_t *)this,
@@ -1476,7 +1476,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
 
     sip_request_t *sip_rq = sip_request_create(&home, sip->sip_cseq->cs_method,
 			sip->sip_cseq->cs_method_name, (url_string_t *)sip_to->a_url, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, (rand()%1000000),
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, sip->sip_cseq->cs_seq,
 			sip->sip_cseq->cs_method, sip->sip_cseq->cs_method_name);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, (const char *)call_id_suffix);
 
@@ -1618,6 +1618,7 @@ int OpenMCUSipEndPoint::CreateConData(OpenMCUSipConnection *sCon)
     if(sCon->audioRtpPort == 0 || sCon->videoRtpPort == 0)
       return 0;
   }
+  sCon->cseqNum = sip->sip_cseq->cs_seq+1;
   return 1;
 }
 

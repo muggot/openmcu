@@ -270,6 +270,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   msg_t *c_sip_msg;
   unsigned audioRtpPort, videoRtpPort;
   int direction; // 0=incoming, 1=outgoing
+  int cseqNum;
 
  protected:
  OpenMCUSipEndPoint *sep;
