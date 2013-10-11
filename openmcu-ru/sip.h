@@ -253,7 +253,9 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   void LeaveConference(BOOL remove);
   void FastUpdatePicture();
   virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
+  int SendBYE();
   int SendFastUpdatePicture();
+  int SendRequest(sip_method_t method, const char *method_name, msg_t *sip_msg);
 
 //  virtual BOOL ClearCall(
 //      CallEndReason reason = EndedByLocalUser  ///< Reason for call clearing
@@ -261,7 +263,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   virtual BOOL WriteSignalPDU(
       H323SignalPDU & pdu       ///< PDU to write.
     ) { return TRUE; }
-  int SendBYE(nta_agent_t *agent);
   int noInpTimeout;
   int inpBytes;
   H323toSipQueue cmdQueue;
