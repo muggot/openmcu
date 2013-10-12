@@ -2256,7 +2256,7 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
     unsigned fr=ep.GetVideoFrameRate();
     //if(fr > codec.GetTargetFrameRate()) fr=codec.GetTargetFrameRate();
     //else codec.SetTargetFrameTimeMs(1000/fr);
-    if(fr < 1 || fr > 250) fr = DefaultVideoFrameRate;
+    if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
     codec.SetTargetFrameTimeMs(1000/fr);
 
     OpalMediaFormat & mf = codec.GetWritableMediaFormat();

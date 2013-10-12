@@ -35,6 +35,11 @@
 #define OPENMCU_VIDEO   1
 #endif
 
+// maximum Video frame rate (for outgoing video)
+#ifndef MAX_FRAME_RATE
+#define MAX_FRAME_RATE  999
+#endif
+
 // enable/disable swresample usage
 #define USE_SWRESAMPLE  1
 // enable/disable avresample usage
