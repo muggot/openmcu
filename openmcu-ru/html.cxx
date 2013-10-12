@@ -1496,7 +1496,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
                 if(pos1!=P_MAX_INDEX) videoResolution2=s.Left(pos1); else videoResolution2=s.Left(pos2);
                 PINDEX fileSize2 = s.Mid(pos2+1,P_MAX_INDEX).AsInteger();
 
-                if((sortMode==0) && (dateTime2 < dateTime1)) {}
+                if     ((!sortMode) && (!(dateTime2 >= dateTime1))){}
                 else if((sortMode==1) && (dateTime2 >= dateTime1)) {}
                 else if((sortMode==2) && (roomName2 >= roomName1)) {}
                 else if((sortMode==3) && (roomName2 <= roomName1)) {}
