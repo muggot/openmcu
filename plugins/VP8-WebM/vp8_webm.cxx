@@ -44,6 +44,7 @@
 #include <vpx/vpx_decoder.h>
 #include <vpx/vp8dx.h>
 
+unsigned THREAD_COUNT = 1;
 
 //#define INCLUDE_OM_CUSTOM_PACKETIZATION 1
 
@@ -424,6 +425,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
 
       m_config.g_w = 0; // Forces OnChangedOptions to initialise encoder
       m_config.g_h = 0;
+      m_config.g_threads = THREAD_COUNT;
       m_config.g_error_resilient = 1;
       m_config.g_pass = VPX_RC_ONE_PASS;
       m_config.g_lag_in_frames = 0;
