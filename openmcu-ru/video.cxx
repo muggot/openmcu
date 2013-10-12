@@ -142,8 +142,8 @@ BOOL PVideoInputDevice_OpenMCU::SetFrameRate(unsigned rate)
 {
   if (rate < 1)
     rate = 1;
-  else if (rate > 50)
-    rate = 50;
+  else if (rate > 999)
+    rate = 999;
 
   return PVideoDevice::SetFrameRate(rate);
 }
