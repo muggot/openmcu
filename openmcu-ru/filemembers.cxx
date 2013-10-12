@@ -210,7 +210,7 @@ void ConferenceFileMember::Unlisten()
       int SS = open(audioPipeName,O_RDONLY | O_NONBLOCK);
       PBYTEArray buffer;
       buffer.SetSize(100);
-      while(!a_ended) read(SS, buffer.GetPointer(), buffer.GetSize());
+      while(!a_ended) (void)read(SS, buffer.GetPointer(), buffer.GetSize());
       close(SS);
       unlink(audioPipeName);
     }
@@ -219,7 +219,7 @@ void ConferenceFileMember::Unlisten()
       int SS = open(videoPipeName,O_RDONLY | O_NONBLOCK);
       PBYTEArray buffer;
       buffer.SetSize(100);
-      while(!v_ended) read(SS, buffer.GetPointer(), buffer.GetSize());
+      while(!v_ended) (void)read(SS, buffer.GetPointer(), buffer.GetSize());
       close(SS);
       unlink(videoPipeName);
     }
