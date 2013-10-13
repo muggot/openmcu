@@ -65,7 +65,7 @@ static const char SipListenerKey[]         = "SIP Listener";
 
 #if OPENMCU_VIDEO
 const unsigned int DefaultVideoFrameRate = 10;
-const unsigned int DefaultVideoQuality   = 20;
+const unsigned int DefaultVideoQuality   = 31;
 
 static const char RecorderFfmpegPathKey[]  = "Path to ffmpeg";
 static const char RecorderFfmpegOptsKey[]  = "Ffmpeg options";

@@ -1,8 +1,28 @@
 /*
-    Opus codec plugin for Opal
-    Author: Andrey Burbovskiy, Xak
-    OpenMCU-ru
-*/
+ * OPUS audio codec Plugin codec for OPAL
+ *
+ * Copyright (C) 2013 by Andrey Burbovskiy, OpenMCU-ru Team, All Rights Reserved
+ *
+ * The contents of this file are subject to the Mozilla Public License
+ * Version 1.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+ * the License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * The Original Code is OPAL Library.
+ *
+ * The Initial Developer of the Original Code is Vox Lucida Pty Ltd
+ *
+ * Added with funding from Requestec, Inc.
+ *
+ * Contributor(s):  Andrey Burbovskiy (andrewb@yandex.ru)
+ *
+ */
+
 
 #define PTRACE(level,category,text)
 #define CODEC_LOG "OPUS"
@@ -25,11 +45,11 @@
 PLUGINCODEC_LICENSE(
     "Andrey Burbovskiy",                                         // source code author
     "0.3",                                                       // source code version
-    "xak-altsp@yandex.ru",                                       // source code email
+    "andrewb@yandex.ru",                                         // source code email
     "http://openmcu.ru/",                                        // source code URL
     "Copyright (C) 2013 by Andrey Burbovskiy for OpenMCU-ru",    // source code copyright
-    "BSD license",                                               // source code license
-    PluginCodec_License_BSD,                                     // source code license
+    "MPL 1.0",                                                   // source code license
+    PluginCodec_License_MPL,                                     // source code license
 
     "OPUS (ultra-low delay audio codec)",                        // codec description
     "Jean-Marc Valin, Xiph Foundation.",                         // codec author

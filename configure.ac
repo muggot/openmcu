@@ -467,6 +467,10 @@ AC_ARG_ENABLE(speex, [AS_HELP_STRING([--enable-speex],[Enable/Disable Speex supp
 AC_ARG_ENABLE(silk, [AS_HELP_STRING([--enable-silk],[Enable/Disable SILK support (default enabled)],[40],[100])], [silk="$enableval"])
 AC_ARG_ENABLE(opus, [AS_HELP_STRING([--enable-opus],[Enable/Disable OPUS support (default enabled)],[40],[100])], [opus="$enableval"])
 
+vp8_ffmpeg=yes
+AC_ARG_ENABLE(separator, [    ])
+AC_ARG_ENABLE(vp8_ffmpeg, [AS_HELP_STRING([--disable-vp8-ffmpeg],[Disable VP8 ffmpeg decoding (default enabled)],[40],[100])], [vp8_ffmpeg="$enableval"])
+
 PLUGINS="h263 h264 vp8 g722 g7231 g726 ilbc silk opus"
 AC_SUBST(PLUGINS)
 
@@ -491,6 +495,10 @@ if test "${vp8}" = "yes"; then
     if test ${USE_VP8} = 1 ; then
         LIBVPX_CFLAGS="$LIBVPX_CFLAGS `pkg-config --cflags-only-I libvpx`";
         LIBVPX_LDFLAGS="$LIBVPX_LDFLAGS `pkg-config --libs-only-L libvpx`";
+        if test "${vp8_ffmpeg}" = "yes"; then
+          LIBVPX_CFLAGS="$LIBAV_CFLAGS $LIBVPX_CFLAGS -DFFMPEG_DECODER=1";
+          LIBVPX_LDFLAGS="$LIBAV_LDFLAGS -lavcodec -lavutil $LIBVPX_LDFLAGS";
+        fi
 	AC_CONFIG_FILES(plugins/VP8-WebM/Makefile)
 	PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_VP8_DIR} "
     else
@@ -554,7 +562,7 @@ dnl ########################################################################
 dnl configure rpath
 
 rpath=yes
-AC_ARG_ENABLE(separator, [    ])
+AC_ARG_ENABLE(separator, [     ])
 AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="$enableval"])
 
 LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`

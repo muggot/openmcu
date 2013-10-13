@@ -1,6 +1,7 @@
 /*
  * VP8 (WebM) video codec Plugin codec for OPAL
  *
+ * Copyright (C) 2013 OpenMCU-ru Team, All Rights Reserved
  * Copyright (C) 2012 Vox Lucida Pty Ltd, All Rights Reserved
  *
  * The contents of this file are subject to the Mozilla Public License
@@ -19,11 +20,10 @@
  *
  * Added with funding from Requestec, Inc.
  *
- * Contributor(s): Robert Jongbloed (robertj@voxlucida.com.au)
+ * Contributor(s):  Andrey Burbovskiy (andrewb@yandex.ru)
+ *                  Konstantin Yeliseyev (kay27@bk.ru)
+ #                  Robert Jongbloed (robertj@voxlucida.com.au)
  *
- * $Revision: 29380 $
- * $Author: rjongbloed $
- * $Date: 2013-03-29 04:58:30 +0400 (Пт, 29 мар 2013) $
  */
 
 #ifndef PLUGIN_CODEC_DLL_EXPORTS
@@ -44,7 +44,16 @@
 #include <vpx/vpx_decoder.h>
 #include <vpx/vp8dx.h>
 
-//#define INCLUDE_OM_CUSTOM_PACKETIZATION 1
+#ifndef FFMPEG_DECODER
+#define FFMPEG_DECODER 0
+#endif
+
+#if FFMPEG_DECODER
+extern "C" {
+#include "libavcodec/avcodec.h"
+}
+# include "libavutil/mem.h"
+#endif
 
 #define MY_CODEC_LOG "VP8"
 class VP8_CODEC { };
@@ -53,14 +62,20 @@ PLUGINCODEC_CONTROL_LOG_FUNCTION_DEF
 
 
 PLUGINCODEC_LICENSE(
+  "Andrey Burbovskiy, "                                         // source code author
+  "Konstantin Yeliseyev, "                                      // source code author
   "Robert Jongbloed, Vox Lucida Pty.Ltd.",                      // source code author
-  "1.0",                                                        // source code version
+  "1.3",                                                        // source code version
+  "andrewb@yandex.ru, "                                         // source code email
+  "kay27@bk.ru, "                                               // source code email
   "robertj@voxlucida.com.au",                                   // source code email
+  "http://www.openmcu.ru, "                                     // source code URL
   "http://www.voxlucida.com.au",                                // source code URL
+  "Copyright (C) 2013 by OpenMCU-ru Team, "                     // source code copyright
   "Copyright (C) 2011 by Vox Lucida Pt.Ltd., All Rights Reserved", // source code copyright
   "MPL 1.0",                                                    // source code license
   PluginCodec_License_MPL,                                      // source code license
-  
+
   "VP8 Video Codec",                                            // codec description
   "James Bankoski, John Koleszar, Lou Quillio, Janne Salonen, "
   "Paul Wilkins, Yaowu Xu, all from Google Inc.",               // codec author
@@ -106,19 +121,6 @@ static struct PluginCodec_Option const MaxFS =
   "48",                               // Minimum value
   "65535"                             // Maximum value
 };
-
-#if INCLUDE_OM_CUSTOM_PACKETIZATION
-static struct PluginCodec_Option const MaxFrameSizeOM =
-{
-  PluginCodec_StringOption,           // Option type
-  "SIP/SDP Max Frame Size",           // User visible name
-  true,                               // User Read/Only flag
-  PluginCodec_NoMerge,                // Merge mode
-  "",                                 // Initial value
-  "x-mx-max-size",                    // FMTP option name
-  ""                                  // FMTP default value (as per RFC)
-};
-#endif
 
 static struct PluginCodec_Option const TemporalSpatialTradeOff =
 {
@@ -211,19 +213,6 @@ static struct PluginCodec_Option const * OptionTableRFC[] = {
   NULL
 };
 
-
-#if INCLUDE_OM_CUSTOM_PACKETIZATION
-static struct PluginCodec_Option const * OptionTableOM[] = {
-  &MaxFrameSizeOM,
-  &TemporalSpatialTradeOff,
-  &SpatialResampling,
-  &SpatialResamplingUp,
-  &SpatialResamplingDown,
-  NULL
-};
-#endif
-
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class VP8Format : public PluginCodec_VideoFormat<VP8_CODEC>
@@ -301,57 +290,6 @@ class VP8FormatRFC : public VP8Format
 };
 
 static VP8FormatRFC VP8MediaFormatInfoRFC;
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-#if INCLUDE_OM_CUSTOM_PACKETIZATION
-
-class VP8FormatOM : public VP8Format
-{
-  public:
-    VP8FormatOM()
-      : VP8Format("VP8-OM", "X-MX-VP8", "VP8 Video Codec (Open Market)", OptionTableOM)
-    {
-    }
-
-
-    virtual bool ToNormalised(OptionMap & original, OptionMap & changed)
-    {
-      OptionMap::iterator it = original.find(MaxFrameSizeOM.m_name);
-      if (it != original.end() && !it->second.empty()) {
-        std::stringstream strm(it->second);
-        unsigned maxWidth, maxHeight;
-        char x;
-        strm >> maxWidth >> x >> maxHeight;
-        if (maxWidth < 32 || maxHeight < 32) {
-          PTRACE(1, MY_CODEC_LOG, "Invalid " << MaxFrameSizeOM.m_name << ", was \"" << it->second << '"');
-          return false;
-        }
-        ClampMax(maxWidth,  original, changed, PLUGINCODEC_OPTION_MAX_RX_FRAME_WIDTH);
-        ClampMax(maxHeight, original, changed, PLUGINCODEC_OPTION_MAX_RX_FRAME_HEIGHT);
-        ClampMax(maxWidth,  original, changed, PLUGINCODEC_OPTION_MIN_RX_FRAME_WIDTH);
-        ClampMax(maxHeight, original, changed, PLUGINCODEC_OPTION_MIN_RX_FRAME_HEIGHT);
-      }
-      return true;
-    }
-
-
-    virtual bool ToCustomised(OptionMap & original, OptionMap & changed)
-    {
-      unsigned maxWidth = original.GetUnsigned(PLUGINCODEC_OPTION_MAX_RX_FRAME_WIDTH);
-      unsigned maxHeight = original.GetUnsigned(PLUGINCODEC_OPTION_MAX_RX_FRAME_HEIGHT);
-      std::stringstream strm;
-      strm << maxWidth << 'x' << maxHeight;
-      Change(strm.str().c_str(), original, changed, MaxFrameSizeOM.m_name);
-      return true;
-    }
-};
-
-static VP8FormatOM VP8MediaFormatInfoOM;
-
-#endif // INCLUDE_OM_CUSTOM_PACKETIZATION
-
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -660,57 +598,6 @@ class VP8EncoderRFC : public VP8Encoder
     }
 };
 
-
-#if INCLUDE_OM_CUSTOM_PACKETIZATION
-
-class VP8EncoderOM : public VP8Encoder
-{
-  protected:
-    unsigned m_currentGID;
-
-  public:
-    VP8EncoderOM(const PluginCodec_Definition * defn)
-      : VP8Encoder(defn)
-      , m_currentGID(0)
-    {
-    }
-
-
-    virtual void Packetise(PluginCodec_RTP & rtp)
-    {
-      size_t headerSize;
-      if (m_offset != 0) {
-        headerSize = 1;
-        rtp[0] = (uint8_t)m_currentGID; // No start bit or header extension bit
-      }
-      else {
-        headerSize = 2;
-
-        rtp[0] = 0x40; // Start bit
-
-        unsigned type = UINT_MAX;
-        size_t len;
-        unsigned char * ext = rtp.GetExtendedHeader(type, len);
-        Orientation orientation = type == 0x10001 ? (Orientation)(*ext >> OrientationExtHdrShift) : LandscapeUp;
-        rtp[1] = (unsigned char)(orientation << OrientationPktHdrShift);
-
-        if ((m_packet->data.frame.flags&VPX_FRAME_IS_KEY) != 0) {
-          rtp[1] |= 0x80; // Indicate is golden frame
-          m_currentGID = (m_currentGID+1)&0x3f;
-        }
-
-        rtp[0] |= m_currentGID;
-      }
-
-      size_t fragmentSize = GetPacketSpace(rtp, m_packet->data.frame.sz - m_offset + headerSize) - headerSize;
-      rtp.CopyPayload((char *)m_packet->data.frame.buf+m_offset, fragmentSize, headerSize);
-      m_offset += fragmentSize;
-    }
-};
-
-#endif //INCLUDE_OM_CUSTOM_PACKETIZATION
-
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
@@ -725,7 +612,6 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
     vpx_codec_iter_t     m_iterator;
     std::vector<uint8_t> m_fullFrame;
     bool                 m_intraFrame;
-    bool                 m_ignoreTillKeyFrame;
 
   public:
     VP8Decoder(const PluginCodec_Definition * defn)
@@ -734,7 +620,6 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
       , m_flags(0)
       , m_iterator(NULL)
       , m_intraFrame(false)
-      , m_ignoreTillKeyFrame(false)
     {
       memset(&m_codec, 0, sizeof(m_codec));
       m_fullFrame.reserve(10000);
@@ -794,7 +679,6 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
             IsError(err, "vpx_codec_decode");
             flags |= PluginCodec_ReturnCoderRequestIFrame;
             m_fullFrame.clear();
-            m_ignoreTillKeyFrame = true;
             return true;
           case VPX_CODEC_UNSUP_FEATURE :
           default :
@@ -862,12 +746,190 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
     virtual bool Unpacketise(const PluginCodec_RTP & rtp) = 0;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#if FFMPEG_DECODER
+class VP8DecoderFFmpeg : public PluginVideoDecoder<VP8_CODEC>
+{
+  private:
+    typedef PluginVideoDecoder<VP8_CODEC> BaseClass;
+
+  protected:
+    AVCodec             *m_codec;
+    AVCodecContext      *m_context;
+    AVFrame             *m_outputFrame;
+    AVPacket             m_pkt;
+    std::vector<uint8_t> m_fullFrame;
+    bool                 m_intraFrame;
+
+  public:
+    VP8DecoderFFmpeg(const PluginCodec_Definition * defn)
+      : BaseClass(defn)
+      , m_intraFrame(false)
+    {
+      memset(&m_codec, 0, sizeof(m_codec));
+      m_fullFrame.reserve(10000);
+    }
+
+    ~VP8DecoderFFmpeg()
+    {
+      if (m_context != NULL)
+        if (m_context->codec != NULL)
+          avcodec_close(m_context);
+      if (m_context != NULL) av_free(m_context);
+      if (m_outputFrame != NULL) av_free(m_outputFrame);
+    }
+
+
+    virtual bool Construct()
+    {
+      m_codec = avcodec_find_decoder_by_name("vp8");
+      if (m_codec == NULL)
+      {
+        return false;
+      }
+
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
+      m_context = avcodec_alloc_context3(m_codec);
+#else
+      m_context = avcodec_alloc_context();
+#endif
+      if (m_context == NULL)
+      {
+        return false;
+      }
+
+      m_outputFrame = avcodec_alloc_frame();
+      if (m_outputFrame == NULL)
+      {
+        return false;
+      }
+
+      av_init_packet(&m_pkt);
+
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
+      if (avcodec_open2(m_context, m_codec, NULL) < 0)
+#else
+      if (avcodec_open(m_context, m_codec) < 0)
+#endif
+      {
+        return false;
+      }
+
+      return true;
+    }
+
+
+    virtual bool Transcode(const void * fromPtr,
+                             unsigned & fromLen,
+                                 void * toPtr,
+                             unsigned & toLen,
+                             unsigned & flags)
+    {
+      flags = m_intraFrame ? PluginCodec_ReturnCoderIFrame : 0;
+
+      PluginCodec_RTP srcRTP(fromPtr, fromLen);
+      if (!Unpacketise(srcRTP)) {
+        flags |= PluginCodec_ReturnCoderRequestIFrame;
+        m_fullFrame.clear();
+        return true;
+      }
+
+      if (!srcRTP.GetMarker() || m_fullFrame.empty())
+        return true;
+
+      int got_picture_ptr = 0;
+      m_pkt.data = &m_fullFrame[0];
+      m_pkt.size = m_fullFrame.size();
+      int bytesDecoded = avcodec_decode_video2(m_context, m_outputFrame, &got_picture_ptr, &m_pkt);
+      if(bytesDecoded < 0 && got_picture_ptr == 0)
+      {
+        flags |= PluginCodec_ReturnCoderRequestIFrame;
+        m_fullFrame.clear();
+        av_free_packet(&m_pkt);
+        return true;
+      }
+      m_fullFrame.clear();
+
+      PluginCodec_RTP dstRTP(toPtr, toLen);
+      toLen = 0;
+
+      int frameBytes = (m_context->width * m_context->height * 3) / 2;
+      PluginCodec_Video_FrameHeader * header = (PluginCodec_Video_FrameHeader *)dstRTP.GetPayloadPtr();
+      header->x = header->y = 0;
+      header->width = m_context->width;
+      header->height = m_context->height;
+
+      int size = m_context->width * m_context->height;
+      if (m_outputFrame->data[1] == m_outputFrame->data[0] + size
+        && m_outputFrame->data[2] == m_outputFrame->data[1] + (size >> 2))
+      {
+         memcpy(OPAL_VIDEO_FRAME_DATA_PTR(header), m_outputFrame->data[0], frameBytes);
+      } else {
+        unsigned char *dstData = OPAL_VIDEO_FRAME_DATA_PTR(header);
+        for (int i=0; i<3; i ++)
+        {
+          unsigned char *srcData = m_outputFrame->data[i];
+          int dst_stride = i ? m_context->width >> 1 : m_context->width;
+          int src_stride = m_outputFrame->linesize[i];
+          int h = i ? m_context->height >> 1 : m_context->height;
+
+          if (src_stride==dst_stride)
+          {
+            memcpy(dstData, srcData, dst_stride*h);
+            dstData += dst_stride*h;
+          } else {
+            while (h--)
+            {
+              memcpy(dstData, srcData, dst_stride);
+              dstData += dst_stride;
+              srcData += src_stride;
+            }
+          }
+        }
+      }
+
+      dstRTP.SetPayloadSize(sizeof(PluginCodec_Video_FrameHeader) + frameBytes);
+      dstRTP.SetTimestamp(srcRTP.GetTimestamp());
+      dstRTP.SetMarker(1);
+      toLen = dstRTP.GetPacketSize();
+
+      flags |= PluginCodec_ReturnCoderLastFrame;
+
+      return true;
+    }
+
+
+    void Accumulate(const unsigned char * fragmentPtr, size_t fragmentLen)
+    {
+      if (fragmentLen == 0)
+        return;
+
+      size_t size = m_fullFrame.size();
+      m_fullFrame.reserve(size+fragmentLen*2);
+      m_fullFrame.resize(size+fragmentLen);
+      memcpy(&m_fullFrame[size], fragmentPtr, fragmentLen);
+    }
+
+    virtual bool Unpacketise(const PluginCodec_RTP & rtp) = 0;
+};
+#endif // FFMPEG_DECODER
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if FFMPEG_DECODER
+class VP8DecoderRFC : public VP8DecoderFFmpeg
+{
+  public:
+    VP8DecoderRFC(const PluginCodec_Definition * defn)
+      : VP8DecoderFFmpeg(defn)
+#else
 class VP8DecoderRFC : public VP8Decoder
 {
   public:
     VP8DecoderRFC(const PluginCodec_Definition * defn)
       : VP8Decoder(defn)
+#endif
     {
     }
 
@@ -897,186 +959,10 @@ class VP8DecoderRFC : public VP8Decoder
           ++headerSize;         // Allow for T/K byte
       }
 
-/*
-      if ((rtp[0]&0x10) != 0 && !m_fullFrame.empty()) {
-        PTRACE(3, MY_CODEC_LOG, "Missing start to frame, ignoring till next key frame.");
-        m_ignoreTillKeyFrame = true;
-        return false;
-      }
-*/
-
       Accumulate(rtp.GetPayloadPtr()+headerSize, rtp.GetPayloadSize()-headerSize);
       return true;
     }
 };
-
-
-#if INCLUDE_OM_CUSTOM_PACKETIZATION
-
-class VP8DecoderOM : public VP8Decoder
-{
-  protected:
-    unsigned m_expectedGID;
-    Orientation m_orientation;
-
-  public:
-    VP8DecoderOM(const PluginCodec_Definition * defn)
-      : VP8Decoder(defn)
-      , m_expectedGID(UINT_MAX)
-      , m_orientation(LandscapeUp)
-    {
-    }
-
-
-    struct RotatePlaneInfo : public OutputImagePlaneInfo
-    {
-      RotatePlaneInfo(unsigned width, unsigned height, int raster, unsigned char * src, unsigned char * dst)
-      {
-        m_width = width;
-        m_height = height;
-        m_raster = raster;
-        m_source = src;
-        m_destination = dst;
-      }
-
-      void CopyPortraitLeft()
-      {
-        for (int y = m_height-1; y >= 0; --y) {
-          unsigned char * src = m_source;
-          unsigned char * dst = m_destination + y;
-          for (int x = m_width; x > 0; --x) {
-            *dst = *src++;
-            dst += m_height;
-          }
-          m_source += m_raster;
-        }
-      }
-
-      void CopyPortraitRight()
-      {
-        m_destination += m_width*m_height;
-        for (int y = m_height; y > 0; --y) {
-          unsigned char * src = m_source;
-          unsigned char * dst = m_destination - y;
-          for (int x = m_width; x > 0; --x) {
-            *dst = *src++;
-            dst -= m_height;
-          }
-          m_source += m_raster;
-        }
-      }
-
-      void CopyLandscapeDown()
-      {
-        m_destination += m_width*(m_height-1);
-        for (int y = m_height; y > 0; --y) {
-          memcpy(m_destination, m_source, m_width);
-          m_source += m_raster;
-          m_destination -= m_width;
-        }
-      }
-    };
-
-    virtual unsigned OutputImage(unsigned char * planes[3], int raster[3],
-                                 unsigned width, unsigned height, PluginCodec_RTP & rtp, unsigned & flags)
-    {
-      unsigned type;
-      size_t len;
-      unsigned char * ext = rtp.GetExtendedHeader(type, len);
-      if (ext != NULL && type == 0x10001) {
-        *ext = (unsigned char)(m_orientation << OrientationExtHdrShift);
-        return VP8Decoder::OutputImage(planes, raster, width, height, rtp, flags);
-      }
-
-      switch (m_orientation) {
-        case PortraitLeft :
-        case PortraitRight :
-          if (CanOutputImage(height, width, rtp, flags))
-            break;
-          return 0;
-
-        case LandscapeUp :
-        case LandscapeDown :
-          if (CanOutputImage(width, height, rtp, flags))
-            break;
-          return 0;
-
-        default :
-          return 0;
-      }
-
-      RotatePlaneInfo planeInfo[3] = {
-        RotatePlaneInfo(width,   height,   raster[0], planes[0], rtp.GetVideoFrameData()),
-        RotatePlaneInfo(width/2, height/2, raster[1], planes[1], planeInfo[0].m_destination + width*height),
-        RotatePlaneInfo(width/2, height/2, raster[2], planes[2], planeInfo[1].m_destination + width*height/4)
-      };
-
-      for (unsigned p = 0; p < 3; ++p) {
-        switch (m_orientation) {
-          case PortraitLeft :
-            planeInfo[p].CopyPortraitLeft();
-            break;
-
-          case LandscapeUp :
-            planeInfo[p].Copy();
-            break;
-
-          case PortraitRight :
-            planeInfo[p].CopyPortraitRight();
-            break;
-
-          case LandscapeDown :
-            planeInfo[p].CopyLandscapeDown();
-            break;
-        }
-      }
-
-      return rtp.GetPacketSize();
-    }
-
-
-    virtual bool Unpacketise(const PluginCodec_RTP & rtp)
-    {
-      size_t paylaodSize = rtp.GetPayloadSize();
-      if (paylaodSize < 2)
-        return paylaodSize == 0;
-
-      bool first = (rtp[0]&0x40) != 0;
-      if (first)
-        m_orientation = (Orientation)((rtp[1] >> OrientationPktHdrShift) & OrientationMask);
-
-      size_t headerSize = first ? 2 : 1;
-      if ((rtp[0]&0x80) != 0) {
-        while ((rtp[headerSize]&0x80) != 0)
-          ++headerSize;
-        ++headerSize;
-      }
-
-      if (m_ignoreTillKeyFrame) {
-        if (!first || (rtp[headerSize]&1) != 0)
-          return false;
-        m_ignoreTillKeyFrame =  false;
-        PTRACE(3, MY_CODEC_LOG, "Found next start of key frame.");
-      }
-      else {
-        if (!first && m_fullFrame.empty()) {
-          PTRACE(3, MY_CODEC_LOG, "Missing start to frame, ignoring till next key frame.");
-          m_ignoreTillKeyFrame = true;
-          return false;
-        }
-      }
-
-      Accumulate(rtp.GetPayloadPtr()+headerSize, paylaodSize-headerSize);
-
-      unsigned gid = rtp[0]&0x3f;
-      bool expected = m_expectedGID == UINT_MAX || m_expectedGID == gid;
-      m_expectedGID = gid;
-      return expected || first;
-    }
-};
-
-#endif //INCLUDE_OM_CUSTOM_PACKETIZATION
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Xak
@@ -1277,11 +1163,6 @@ VP8PLUGIN_CODEC(VP8_720P);
 VP8PLUGIN_CODEC(VP8_768P);
 VP8PLUGIN_CODEC(VP8_1080P);
 
-//#include <iostream>
-//#include <sstream>
-//#include <stdio.h>
-//#define PTRACE(level,category,text) {std::stringstream t;t<<time(0)<<"\t"__FILE__<<":"<<__LINE__<<"\t"<<"\t"<<category<<"\t"<<text<<"\n";FILE *f;f=fopen("/opt/openmcu-ru/vp8_trace.txt","a");fputs(t.str().c_str(),f);fclose(f);}
-
 ///////////////////////////////////////////////////////////////////////////////
 //
 ///////////////////////////////////////////////////////////////////////////////
@@ -1303,9 +1184,6 @@ static struct PluginCodec_Definition VP8CodecDefinition[] =
   PLUGINCODEC_VIDEO_CODEC_CXX(VP8_1080P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
   //
 //  PLUGINCODEC_VIDEO_CODEC_CXX(VP8MediaFormatInfoRFC, VP8EncoderRFC, VP8DecoderRFC),
-#if INCLUDE_OM_CUSTOM_PACKETIZATION
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8MediaFormatInfoOM,  VP8EncoderOM,  VP8DecoderOM)
-#endif
 };
 
 PLUGIN_CODEC_IMPLEMENT_CXX(VP8_CODEC, VP8CodecDefinition);
