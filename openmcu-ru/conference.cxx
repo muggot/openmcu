@@ -1201,6 +1201,8 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
     for (r = memberList.begin(); r != memberList.end(); ++r)
     { if (r->second != NULL) // member in the list != NULL
       { ConnectionListType::iterator s = r->second->connectionList.find(id);
+        if(s == r->second->connectionList.end()) continue; // seems this is really needs for same-time connections
+        if(s->second == NULL) continue;                    // one more paranoidal check just in case
         { if(s->second->outgoingSampleRate == sampleRate && s->second->outgoingCodecChannels == channels)
             s->second->Write((BYTE *)buffer, amount); // equal rates
           else // resampler needs here
