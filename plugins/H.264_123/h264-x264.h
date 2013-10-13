@@ -242,7 +242,7 @@ static struct PluginCodec_Option const mediaPacketization =
   { PluginCodec_StringOption,  "Media Packetization",  0, PluginCodec_EqualMerge, "0.0.8.241.0.0.0.0" };
 
 static struct PluginCodec_Option const encodingThreads =
-  { PluginCodec_IntegerOption,  "Encoding Threads", 0, PluginCodec_AlwaysMerge, "1" };
+  { PluginCodec_IntegerOption,  "Encoding Threads", 0, PluginCodec_AlwaysMerge, "0" };
 
 // MEGA MACRO to set options
 #define DECLARE_GENERIC_OPTIONS(prefix) \

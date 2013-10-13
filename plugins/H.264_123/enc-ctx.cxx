@@ -229,10 +229,7 @@ void X264EncoderContext::SetQuality(unsigned quality)
 
 void X264EncoderContext::SetThreads(unsigned threads)
 {
-  if(threads == 0)
-    _context.i_threads = av_cpu_count();
-  else
-    _context.i_threads = threads;
+  _context.i_threads = threads;
 }
 
 void X264EncoderContext::ApplyOptions()

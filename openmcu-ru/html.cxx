@@ -291,10 +291,10 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
 #endif
 
 #if OPENMCU_VIDEO
-  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE), "<td rowspan='5' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)<br><br>Video quality range: 1..31 (for outgoing video)<br><br>Encoding Threads (for outgoing video, \"0\" auto)"));
+  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE), "<td rowspan='5' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)<br><br>Video quality range: 1..31 (for outgoing video)<br><br>Encoding Threads (for outgoing video, \"0\" default)"));
   Add(new PHTTPIntegerField("Video frame rate", 1, MAX_FRAME_RATE, cfg.GetInteger("Video frame rate", DefaultVideoFrameRate)));
   Add(new PHTTPIntegerField("Video quality", 1, 31, cfg.GetInteger("Video quality", DefaultVideoQuality)));
-  Add(new PHTTPIntegerField("Encoding Threads", 1, 64, cfg.GetInteger("Encoding Threads", 1)));
+  Add(new PHTTPIntegerField("Encoding Threads", 0, 64, cfg.GetInteger("Encoding Threads", 0)));
   Add(new PHTTPBooleanField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE)));
 #endif
 

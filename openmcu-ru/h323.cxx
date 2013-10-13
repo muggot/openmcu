@@ -2263,7 +2263,7 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
     mf.SetOptionInteger("Encoding Quality", ep.GetVideoTxQuality());
     // SetTxQualityLevel not send the value in encoder
     //codec.SetTxQualityLevel(ep.GetVideoTxQuality());
-    mf.SetOptionInteger("Encoding Threads", MCUConfig("Parameters").GetInteger("Encoding Threads", 1));
+    mf.SetOptionInteger("Encoding Threads", MCUConfig("Parameters").GetInteger("Encoding Threads", 0));
 
     if(
       OpenMCU::Current().GetForceScreenSplit()

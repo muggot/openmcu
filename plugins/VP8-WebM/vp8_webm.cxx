@@ -403,7 +403,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
       , m_packet(NULL)
       , m_offset(0)
       , m_encodingQuality(31)
-      , m_encodingThreads(1)
+      , m_encodingThreads(0)
     {
       memset(&m_codec, 0, sizeof(m_codec));
     }
@@ -1194,7 +1194,7 @@ static struct PluginCodec_Option const prefix##_EncodingThreads = \
   "Encoding Threads",                 /* User visible name */ \
   false,                              /* User Read/Only flag */ \
   PluginCodec_AlwaysMerge,            /* Merge mode */ \
-  "1",                                /* Initial value */ \
+  "0",                                /* Initial value */ \
   NULL,                               /* FMTP option name */ \
   NULL,                               /* FMTP default value */ \
   0,                                  /* H.245 generic capability code and bit mask */ \

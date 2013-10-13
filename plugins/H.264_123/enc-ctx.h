@@ -36,7 +36,6 @@ extern "C" {
 #else
   #include <x264.h>
 #endif
-#include "libavutil/cpu.h"
 };
 
 #ifdef _WIN32
