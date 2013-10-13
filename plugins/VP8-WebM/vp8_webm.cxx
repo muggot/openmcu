@@ -842,11 +842,10 @@ class VP8DecoderFFmpeg : public PluginVideoDecoder<VP8_CODEC>
       m_pkt.data = &m_fullFrame[0];
       m_pkt.size = m_fullFrame.size();
       int bytesDecoded = avcodec_decode_video2(m_context, m_outputFrame, &got_picture_ptr, &m_pkt);
-      if(bytesDecoded < 0 && got_picture_ptr == 0)
+      if(bytesDecoded < 0 || got_picture_ptr == 0)
       {
         flags |= PluginCodec_ReturnCoderRequestIFrame;
         m_fullFrame.clear();
-        av_free_packet(&m_pkt);
         return true;
       }
       m_fullFrame.clear();
