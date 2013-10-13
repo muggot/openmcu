@@ -222,6 +222,19 @@ void X264EncoderContext::SetProfileLevel (unsigned profileLevel)
   _context.i_level_idc = level;
 }
 
+void X264EncoderContext::SetQuality(unsigned quality)
+{
+  return;
+}
+
+void X264EncoderContext::SetThreads(unsigned threads)
+{
+  if(threads == 0)
+    _context.i_threads = av_cpu_count();
+  else
+    _context.i_threads = threads;
+}
+
 void X264EncoderContext::ApplyOptions()
 {
   X264_ENCODER_CLOSE(_codec);

@@ -146,6 +146,16 @@ void H264EncoderContext::SetProfileLevel (unsigned profile, unsigned constraints
   x264->SetProfileLevel (profileLevel);
 }
 
+void H264EncoderContext::SetQuality (unsigned quality)
+{
+  x264->SetQuality (quality);
+}
+
+void H264EncoderContext::SetThreads(unsigned threads)
+{
+  x264->SetThreads (threads);
+}
+
 int H264EncoderContext::EncodeFrames(const u_char * src, unsigned & srcLen, u_char * dst, unsigned & dstLen, unsigned int & flags)
 {
   WaitAndSignal m(_mutex);
@@ -679,6 +689,10 @@ static int encoder_set_options(
     int i;
     for (i = 0; options[i] != NULL; i += 2) {
     printf("%s %s\n",options[i],options[i+1]);
+      if (STRCMPI(options[i], "Encoding Quality") == 0)
+         context->SetQuality (atoi(options[i+1]));
+      if (STRCMPI(options[i], "Encoding Threads") == 0)
+         context->SetThreads (atoi(options[i+1]));
       if (STRCMPI(options[i], PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0)
          targetBitrate = atoi(options[i+1]);
       if (STRCMPI(options[i], PLUGINCODEC_OPTION_FRAME_TIME) == 0)

@@ -36,6 +36,7 @@ extern "C" {
 #else
   #include <x264.h>
 #endif
+#include "libavutil/cpu.h"
 };
 
 #ifdef _WIN32
@@ -105,6 +106,8 @@ class X264EncoderContext
     void SetFrameRate (unsigned rate);
     void SetTSTO (unsigned tsto);
     void SetProfileLevel (unsigned profileLevel);
+    void SetQuality (unsigned quality);
+    void SetThreads (unsigned threads);
     void ApplyOptions ();
 
 

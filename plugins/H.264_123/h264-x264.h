@@ -108,6 +108,8 @@ class H264EncoderContext
     void SetFrameRate (unsigned rate);
     void SetTSTO (unsigned tsto);
     void SetProfileLevel (unsigned profile, unsigned constraints, unsigned level);
+    void SetQuality (unsigned quality);
+    void SetThreads (unsigned threads);
     void ApplyOptions ();
     void Lock ();
     void Unlock ();
@@ -239,10 +241,14 @@ static const char sdpH264[]       = { "h264" };
 static struct PluginCodec_Option const mediaPacketization =
   { PluginCodec_StringOption,  "Media Packetization",  0, PluginCodec_EqualMerge, "0.0.8.241.0.0.0.0" };
 
+static struct PluginCodec_Option const encodingThreads =
+  { PluginCodec_IntegerOption,  "Encoding Threads", 0, PluginCodec_AlwaysMerge, "1" };
+
 // MEGA MACRO to set options
 #define DECLARE_GENERIC_OPTIONS(prefix) \
 static struct PluginCodec_Option const * const prefix##_OptionTable[] = { \
   &mediaPacketization, \
+  &encodingThreads, \
   NULL \
 }; \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \

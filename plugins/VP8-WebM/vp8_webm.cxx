@@ -44,8 +44,6 @@
 #include <vpx/vpx_decoder.h>
 #include <vpx/vp8dx.h>
 
-unsigned THREAD_COUNT = 1;
-
 //#define INCLUDE_OM_CUSTOM_PACKETIZATION 1
 
 #define MY_CODEC_LOG "VP8"
@@ -380,7 +378,6 @@ enum Orientation {
   OrientationPktHdrShift = 5
 };
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
 class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
@@ -396,6 +393,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
     const vpx_codec_cx_pkt_t * m_packet;
     size_t                     m_offset;
     unsigned                   m_encodingQuality;
+    unsigned                   m_encodingThreads;
 
   public:
     VP8Encoder(const PluginCodec_Definition * defn)
@@ -405,6 +403,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
       , m_packet(NULL)
       , m_offset(0)
       , m_encodingQuality(31)
+      , m_encodingThreads(1)
     {
       memset(&m_codec, 0, sizeof(m_codec));
     }
@@ -425,7 +424,6 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
 
       m_config.g_w = 0; // Forces OnChangedOptions to initialise encoder
       m_config.g_h = 0;
-      m_config.g_threads = THREAD_COUNT;
       m_config.g_error_resilient = 1;
       m_config.g_pass = VPX_RC_ONE_PASS;
       m_config.g_lag_in_frames = 0;
@@ -445,6 +443,9 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
     {
       if (strcasecmp(optionName, "Encoding Quality") == 0)
         return SetOptionUnsigned(m_encodingQuality, optionValue, 1, 31);
+
+      if (strcasecmp(optionName, "Encoding Threads") == 0)
+        return SetOptionUnsigned(m_encodingThreads, optionValue, 0, 64);
 
       if (strcasecmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0)
         return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
@@ -487,6 +488,8 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
 
       m_config.g_w = m_width;
       m_config.g_h = m_height;
+      m_config.g_threads = m_encodingThreads;
+
       vpx_codec_destroy(&m_codec);
       return !IS_ERROR(vpx_codec_enc_init, (&m_codec, vpx_codec_vp8_cx(), &m_config, m_initFlags));
     }
@@ -1185,11 +1188,25 @@ static struct PluginCodec_Option const prefix##_TargetBitRate = \
   prefix##_TARGETBITRATE,             /* Minimum value */ \
   prefix##_TARGETBITRATE              /* Maximum value */ \
 }; \
+static struct PluginCodec_Option const prefix##_EncodingThreads = \
+{ \
+  PluginCodec_IntegerOption,          /* Option type */ \
+  "Encoding Threads",                 /* User visible name */ \
+  false,                              /* User Read/Only flag */ \
+  PluginCodec_AlwaysMerge,            /* Merge mode */ \
+  "1",                                /* Initial value */ \
+  NULL,                               /* FMTP option name */ \
+  NULL,                               /* FMTP default value */ \
+  0,                                  /* H.245 generic capability code and bit mask */ \
+  "0",                                /* Minimum value */ \
+  "64"                                /* Maximum value */ \
+}; \
 static struct PluginCodec_Option const * prefix##_OptionTable[] = \
 { \
   &prefix##_FrameWidth, \
   &prefix##_FrameHeight, \
   &prefix##_TargetBitRate, \
+  &prefix##_EncodingThreads, \
   &MaxFR, \
   &MaxFS, \
   &PictureID, \
