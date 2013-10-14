@@ -2041,7 +2041,7 @@ H323Connection * H323EndPoint::InternalMakeCall(const PString & trasferFromToken
     connectionsToBeCleaned += adjustedToken;
     PTRACE(3, "H323\tOverwriting call " << newToken << ", renamed to " << adjustedToken);
   }
-  connectionsMutex.Signal();
+//  connectionsMutex.Signal(); // [1]
 
   connection = CreateConnection(lastReference, userData, transport, NULL);
   if (connection == NULL) {
@@ -2052,7 +2052,12 @@ H323Connection * H323EndPoint::InternalMakeCall(const PString & trasferFromToken
 
   connection->Lock();
 
-  connectionsMutex.Wait();
+//  connectionsMutex.Wait();   // [2]
+
+// 1 & 2 commented 14.10.13 by kay27 due to having assertion fails time to time:
+// "Invalid array index, file ../common/collect.cxx, line 1572, class PDictionary"
+// when one connects & other disconnects at the same time.
+
   connectionsActive.SetAt(newToken, connection);
 
   connectionsMutex.Signal();
