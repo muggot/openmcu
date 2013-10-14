@@ -18,6 +18,9 @@ VideoMixConfigurator OpenMCU::vmcfg;
 OpenMCU::OpenMCU()
   : OpenMCUProcessAncestor(ProductInfo)
 {
+#ifndef _WIN32
+  signal(SIGPIPE, SIG_IGN); // PTCPSocket caused SIGPIPE on browser disconnect time to time
+#endif
   endpoint          = NULL;
   sipendpoint       = NULL;
   currentLogLevel   = -1;
