@@ -97,7 +97,7 @@ X264EncoderContext::X264EncoderContext()
   _context.p_log_private = NULL;
 
   // Auto detect number of CPUs
-  //_context.i_threads = 1;
+  _context.i_threads = 0;
   int f_size;
   char *preset,*tune;
   FILE *fs;
@@ -130,7 +130,7 @@ X264EncoderContext::X264EncoderContext()
 //  SetFrameRate        (H264_FRAME_RATE);
   SetTargetBitrate    ((unsigned)(H264_BITRATE / 1000),(unsigned)(H264_BITRATE / 1000),80);
   SetProfileLevel     (H264_PROFILE_LEVEL);
-//  SetTSTO             (H264_TSTO);
+  SetTSTO             (H264_TSTO);
 
   _codec = X264_ENCODER_OPEN(&_context);
   
@@ -188,10 +188,9 @@ void X264EncoderContext::SetFrameRate(unsigned rate)
 
 void X264EncoderContext::SetTSTO (unsigned tsto)
 {
- return; //disabled, using default 10-51 instead
     _context.rc.i_qp_min = H264_MIN_QUANT;
     _context.rc.i_qp_max = round ( (double)(51 - H264_MIN_QUANT) / 31 * tsto + H264_MIN_QUANT);
-    _context.rc.i_qp_step = 4;	    
+    _context.rc.i_qp_step = 4;
 }
 
 void X264EncoderContext::SetProfileLevel (unsigned profileLevel)

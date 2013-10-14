@@ -290,16 +290,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   }
 #endif
 
-#if OPENMCU_VIDEO
-  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE), "<td rowspan='5' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Video Setup</b><br><br>Video frame rate range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)<br><br>Video quality range: 1..31 (for outgoing video)<br><br>Encoding Threads (for outgoing video, \"0\" default)"));
-  Add(new PHTTPIntegerField("Video frame rate", 1, MAX_FRAME_RATE, cfg.GetInteger("Video frame rate", DefaultVideoFrameRate)));
-  Add(new PHTTPIntegerField("Video quality", 1, 31, cfg.GetInteger("Video quality", DefaultVideoQuality)));
-  Add(new PHTTPIntegerField("Encoding Threads", 0, 64, cfg.GetInteger("Encoding Threads", 0)));
-  Add(new PHTTPBooleanField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE)));
-#endif
-
   // Default room
-  Add(new PHTTPStringField(DefaultRoomKey, 25, cfg.GetString(DefaultRoomKey, DefaultRoom), "<td rowspan='6' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Room Setup</b>"));
+  Add(new PHTTPStringField(DefaultRoomKey, 25, cfg.GetString(DefaultRoomKey, DefaultRoom), "<td rowspan='6' valign='top' style='background-color:#eec;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Room Setup</b>"));
 
   // create/don't create empty room with default name at start
   Add(new PHTTPBooleanField(CreateEmptyRoomKey, cfg.GetBoolean(CreateEmptyRoomKey, FALSE)));
@@ -371,6 +363,51 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   BuildHTML("");
   PStringStream html_begin, html_end;
   BeginPage(html_begin, section, "window.l_param_general","window.l_info_param_general");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  PStringStream html_page; html_page << html_begin << string << html_end;
+  string = html_page;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : DefaultPConfigPage(app,title,section,auth)
+{
+  PConfig cfg = MCUConfig(section);
+
+  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE),
+      "<td rowspan='3' valign='top' style='background-color:#fee;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
+      "<b>Video Setup</b><br><br><br>Video frame, rate range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)"));
+  Add(new PHTTPBooleanField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE)));
+  Add(new PHTTPIntegerField("Video frame rate", 1, MAX_FRAME_RATE, cfg.GetInteger("Video frame rate", DefaultVideoFrameRate)));
+
+  Add(new PHTTPIntegerField("H.263 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.263 Temporal Spatial Trade Off", 31),
+      "<td rowspan='3' valign='top' style='background-color:#d9e5e3;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
+      "<b>H.263</b><br>Temporal Spatial Trade Off, range: 1..31  (for outgoing video)<br>Encoding Quality, range: 1..31<br>Tx Key Frame Period, range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)"));
+  Add(new PHTTPIntegerField("H.263 Encoding Quality", 1, 31, cfg.GetInteger("H.263 Encoding Quality", DefaultVideoQuality)));
+  Add(new PHTTPIntegerField("H.263 Tx Key Frame Period", 0, 600, cfg.GetInteger("H.263 Tx Key Frame Period", 125)));
+
+  Add(new PHTTPIntegerField("H.263p Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.263p Temporal Spatial Trade Off", 31),
+      "<td rowspan='3' valign='top' style='background-color:#efe;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
+      "<b>H.263p</b><br>Temporal Spatial Trade Off, range: 1..31  (for outgoing video)<br>Encoding Quality, range: 1..31<br>Tx Key Frame Period, range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)"));
+  Add(new PHTTPIntegerField("H.263p Encoding Quality", 1, 31, cfg.GetInteger("H.263p Encoding Quality", DefaultVideoQuality)));
+  Add(new PHTTPIntegerField("H.263p Tx Key Frame Period", 0, 600, cfg.GetInteger("H.263p Tx Key Frame Period", 125)));
+
+  Add(new PHTTPIntegerField("H.264 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.264 Temporal Spatial Trade Off", 31),
+      "<td rowspan='2' valign='top' style='background-color:#eec;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
+      "<b>H.264</b><br>Temporal Spatial Trade Off, range: 1..31  (for outgoing video)<br>Encoding Threads (\"0\" auto)"));
+  //Add(new PHTTPIntegerField("H.264 Encoding Quality", 1, 31, cfg.GetInteger("H.264 Encoding Quality", DefaultVideoQuality)));
+  Add(new PHTTPIntegerField("H.264 Encoding Threads", 0, 64, cfg.GetInteger("H.264 Encoding Threads", 0)));
+
+  Add(new PHTTPIntegerField("VP8 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("VP8 Temporal Spatial Trade Off", 31),
+      "<td rowspan='3' valign='top' style='background-color:#f7f4d8;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
+      "<b>VP8</b><br>Temporal Spatial Trade Off, range: 1..31  (for outgoing video)<br>Encoding Quality, range: 1..31<br>Encoding Threads (\"0\" default)"));
+  Add(new PHTTPIntegerField("VP8 Encoding Quality", 1, 31, cfg.GetInteger("VP8 Encoding Quality", DefaultVideoQuality)));
+  Add(new PHTTPIntegerField("VP8 Encoding Threads", 0, 64, cfg.GetInteger("VP8 Encoding Threads", 0)));
+
+  BuildHTML("");
+  PStringStream html_begin, html_end;
+  BeginPage(html_begin, "Video settings", "window.l_param_video", "window.l_info_param_video");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   PStringStream html_page; html_page << html_begin << string << html_end;
   string = html_page;

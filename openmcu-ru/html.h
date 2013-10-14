@@ -48,6 +48,14 @@ class GeneralPConfigPage : public DefaultPConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class VideoPConfigPage : public DefaultPConfigPage
+{
+ public:
+   VideoPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class H323PConfigPage : public DefaultPConfigPage
 {
  public:

@@ -241,14 +241,22 @@ static const char sdpH264[]       = { "h264" };
 static struct PluginCodec_Option const mediaPacketization =
   { PluginCodec_StringOption,  "Media Packetization",  0, PluginCodec_EqualMerge, "0.0.8.241.0.0.0.0" };
 
+static struct PluginCodec_Option const tsto =
+  { PluginCodec_IntegerOption,  PLUGINCODEC_OPTION_TEMPORAL_SPATIAL_TRADE_OFF,  0, PluginCodec_AlwaysMerge, "31" };
+
 static struct PluginCodec_Option const encodingThreads =
   { PluginCodec_IntegerOption,  "Encoding Threads", 0, PluginCodec_AlwaysMerge, "0" };
+
+static struct PluginCodec_Option const encodingQuality =
+  { PluginCodec_IntegerOption,  "Encoding Quaility",  0, PluginCodec_AlwaysMerge, "31" };
 
 // MEGA MACRO to set options
 #define DECLARE_GENERIC_OPTIONS(prefix) \
 static struct PluginCodec_Option const * const prefix##_OptionTable[] = { \
   &mediaPacketization, \
+  &tsto, \
   &encodingThreads, \
+  &encodingQuality, \
   NULL \
 }; \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \

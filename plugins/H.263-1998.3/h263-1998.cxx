@@ -309,7 +309,7 @@ bool H263_Base_EncoderContext::Open(const char *codec_name)
   SetFrameWidth(_height);
   SetFrameHeight(_width);
   SetTargetBitrate(256000);
-  SetTSTO(30);
+  SetTSTO(31);
   DisableAnnex(D);
   DisableAnnex(F);
   DisableAnnex(I);
@@ -374,7 +374,6 @@ void H263_Base_EncoderContext::SetFrameHeight (unsigned height)
 
 void H263_Base_EncoderContext::SetTSTO (unsigned tsto)
 {
-  _inputFrame->quality = H263P_MIN_QUANT;
 // default libavcodec settings
   _context->max_qdiff = 4;        // max q difference between frames
   _context->qcompress = 0.5;               // qscale factor between easy & hard scenes (0.0-1.0)
@@ -391,6 +390,11 @@ void H263_Base_EncoderContext::SetTSTO (unsigned tsto)
   _context->lmax = _context->qmax * FF_QP2LAMBDA; 
 
   CODEC_TRACER(tracer, "TSTO set to " << tsto);
+}
+
+void H263_Base_EncoderContext::SetQuality (unsigned quality)
+{
+  _inputFrame->quality = quality;
 }
 
 void H263_Base_EncoderContext::EnableAnnex (Annex annex)
@@ -710,8 +714,7 @@ int H263_RFC2190_EncoderContext::EncodeFrames(const BYTE * src, unsigned & srcLe
 
   _inputFrame->data[1] = _inputFrame->data[0] + size;
   _inputFrame->data[2] = _inputFrame->data[1] + (size / 4);
-//  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : (AVPictureType)0;
-  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : (AVPictureType)0;
 
   currentMb = 0;
   currentBytes = 0;
@@ -930,8 +933,7 @@ int H263_RFC2429_EncoderContext::EncodeFrames(const BYTE * src, unsigned & srcLe
   _inputFrame->data[0] = _inputFrameBuffer;
   _inputFrame->data[1] = _inputFrame->data[0] + size;
   _inputFrame->data[2] = _inputFrame->data[1] + (size / 4);
-//  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : (AVPictureType)0;
-  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+  _inputFrame->pict_type = (flags && forceIFrame) ? AV_PICTURE_TYPE_I : (AVPictureType)0;
  
   _txH263PFrame->BeginNewFrame();
   _txH263PFrame->SetTimestamp(srcRTP.GetTimestamp());
@@ -1750,9 +1752,10 @@ static int encoder_set_options(const PluginCodec_Definition *,
 //       context->SetTargetBitrate(atoi(option[1]));
     if (STRCMPI(option[0], PLUGINCODEC_OPTION_TX_KEY_FRAME_PERIOD) == 0)
       context->SetMaxKeyFramePeriod (atoi(option[1]));
-//    if (STRCMPI(option[0], PLUGINCODEC_OPTION_TEMPORAL_SPATIAL_TRADE_OFF) == 0)
-//       context->SetTSTO (atoi(option[1]));
-    context->SetTSTO (30);
+    if (STRCMPI(option[0], PLUGINCODEC_OPTION_TEMPORAL_SPATIAL_TRADE_OFF) == 0)
+       context->SetTSTO (atoi(option[1]));
+    if (STRCMPI(option[0], "Encoding Quality") == 0)
+       context->SetQuality (atoi(option[1]));
 
     if (STRCMPI(option[0], "Annex D") == 0)
       if (atoi(option[1]) == 1)
@@ -1992,6 +1995,17 @@ static struct PluginCodec_Option const mediaPacketization =
 };
 */
 
+///
+static struct PluginCodec_Option const txkeyFramePeriod =
+  { PluginCodec_IntegerOption,  PLUGINCODEC_OPTION_TX_KEY_FRAME_PERIOD,  0, PluginCodec_AlwaysMerge, "125" };
+
+static struct PluginCodec_Option const tsto =
+  { PluginCodec_IntegerOption,  PLUGINCODEC_OPTION_TEMPORAL_SPATIAL_TRADE_OFF,  0, PluginCodec_AlwaysMerge, "31" };
+
+static struct PluginCodec_Option const encodingQuality =
+  { PluginCodec_IntegerOption,  "Encoding Quaility",  0, PluginCodec_AlwaysMerge, "31" };
+///
+
 static struct PluginCodec_Option const mediaPacketization =
   { PluginCodec_StringOption,  "Media Packetization",  0, PluginCodec_EqualMerge, "RFC2190" };
 
@@ -2074,6 +2088,9 @@ static struct PluginCodec_Option const * const optionTableCIF16[] = {
   &annexD,
   &annexE,
   &annexG,
+  &tsto,
+  &txkeyFramePeriod,
+  &encodingQuality,
   NULL
 };
 
@@ -2085,6 +2102,9 @@ static struct PluginCodec_Option const * const optionTableCIF4[] = {
   &annexD,
   &annexE,
   &annexG,
+  &tsto,
+  &txkeyFramePeriod,
+  &encodingQuality,
   NULL
 };
 
@@ -2096,6 +2116,9 @@ static struct PluginCodec_Option const * const optionTableCIF[] = {
   &annexD,
   &annexE,
   &annexG,
+  &tsto,
+  &txkeyFramePeriod,
+  &encodingQuality,
   NULL
 };
 
@@ -2107,6 +2130,9 @@ static struct PluginCodec_Option const * const optionTableQCIF[] = {
   &annexD,
   &annexE,
   &annexG,
+  &tsto,
+  &txkeyFramePeriod,
+  &encodingQuality,
   NULL
 };
 
@@ -2118,6 +2144,9 @@ static struct PluginCodec_Option const * const optionTableSQCIF[] = {
   &annexD,
   &annexE,
   &annexG,
+  &tsto,
+  &txkeyFramePeriod,
+  &encodingQuality,
   NULL
 };
 /*
@@ -2138,26 +2167,41 @@ static struct PluginCodec_Option const * const h263OptionTable[] = {
 */
 static struct PluginCodec_Option const * const cif16OptionTable[] = {
   &cif16MPI,
+  &tsto,
+  &txkeyFramePeriod,
+  &encodingQuality,
   NULL
 };
 
 static struct PluginCodec_Option const * const cif4OptionTable[] = {
   &cif4MPI,
+  &tsto,
+  &txkeyFramePeriod,
+  &encodingQuality,
   NULL
 };
 
 static struct PluginCodec_Option const * const cifOptionTable[] = {
   &cifMPI,
+  &tsto,
+  &txkeyFramePeriod,
+  &encodingQuality,
   NULL
 };
 
 static struct PluginCodec_Option const * const qcifOptionTable[] = {
   &qcifMPI,
+  &tsto,
+  &txkeyFramePeriod,
+  &encodingQuality,
   NULL
 };
 
 static struct PluginCodec_Option const * const sqcifOptionTable[] = {
   &sqcifMPI,
+  &tsto,
+  &txkeyFramePeriod,
+  &encodingQuality,
   NULL
 };
 

@@ -118,6 +118,7 @@ class H263_Base_EncoderContext
     void SetFrameWidth (unsigned width);
     void SetFrameHeight (unsigned height);
     void SetTSTO (unsigned tsto);
+    void SetQuality (unsigned quality);
     void EnableAnnex (Annex annex);
     void DisableAnnex (Annex annex);
     bool OpenCodec();

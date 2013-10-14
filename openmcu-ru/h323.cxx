@@ -2254,16 +2254,27 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
     }
 
     unsigned fr=ep.GetVideoFrameRate();
-    //if(fr > codec.GetTargetFrameRate()) fr=codec.GetTargetFrameRate();
-    //else codec.SetTargetFrameTimeMs(1000/fr);
     if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
     codec.SetTargetFrameTimeMs(1000/fr);
 
     OpalMediaFormat & mf = codec.GetWritableMediaFormat();
-    mf.SetOptionInteger("Encoding Quality", ep.GetVideoTxQuality());
+    mf.SetOptionInteger("Encoding Quality", DefaultVideoQuality);
+
+    PStringList keys = MCUConfig("Video").GetKeys();
+    for(PINDEX i = 0; i < keys.GetSize(); i++)
+    {
+      if(keys[i].Tokenise(" ")[0] == videoTransmitCodecName.Tokenise("-")[0])
+      {
+       PINDEX pos = keys[i].Find(" ");
+       if(pos == P_MAX_INDEX)
+         continue;
+       PString option = keys[i].Right(keys[i].GetSize()-pos-2);
+       int value = MCUConfig("Video").GetInteger(keys[i], 0);
+       mf.SetOptionInteger(option, value);
+      }
+    }
     // SetTxQualityLevel not send the value in encoder
     //codec.SetTxQualityLevel(ep.GetVideoTxQuality());
-    mf.SetOptionInteger("Encoding Threads", MCUConfig("Parameters").GetInteger("Encoding Threads", 0));
 
     if(
       OpenMCU::Current().GetForceScreenSplit()
