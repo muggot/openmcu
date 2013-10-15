@@ -375,11 +375,11 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 {
   PConfig cfg = MCUConfig(section);
 
-  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE),
+  Add(new PHTTPIntegerField("Video frame rate", 1, MAX_FRAME_RATE, cfg.GetInteger("Video frame rate", DefaultVideoFrameRate),
       "<td rowspan='3' valign='top' style='background-color:#fee;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
-      "<b>Video Setup</b><br><br><br>Video frame, rate range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)"));
+      "<b>Video Setup</b><br>Video frame, rate range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)"));
+  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE)));
   Add(new PHTTPBooleanField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE)));
-  Add(new PHTTPIntegerField("Video frame rate", 1, MAX_FRAME_RATE, cfg.GetInteger("Video frame rate", DefaultVideoFrameRate)));
 
   Add(new PHTTPIntegerField("H.263 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.263 Temporal Spatial Trade Off", 31),
       "<td rowspan='3' valign='top' style='background-color:#d9e5e3;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
