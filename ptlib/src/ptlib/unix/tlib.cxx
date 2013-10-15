@@ -722,7 +722,7 @@ void SetSignals(void (*handler)(int))
   signal(SIGUSR2, handler);
 #endif
 #ifdef SIGPIPE
-  signal(SIGPIPE, handler);
+  signal(SIGPIPE, SIG_IGN);
 #endif
 #ifdef SIGTERM
   signal(SIGTERM, handler);

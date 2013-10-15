@@ -1407,7 +1407,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       << "\r\n";
     PTimeInterval oldTimeout=server.GetWriteTimeout();
     server.SetWriteTimeout(150000);
-    if(!server.Write((const char*)message, message.GetLength())) {fclose(f); return FALSE;}
+    if(!server.Write((const char*)message, message.GetLength())) {fclose(f); server.SetWriteTimeout(oldTimeout); return FALSE;}
     server.flush();
 
     char *buffer = (char*)malloc(PMIN(65536, fileSize));
@@ -1417,13 +1417,11 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       result=fread(buffer, 1, blockSize, f);
       if(blockSize != result)
       { PTRACE(1,"mcu.cxx\tFile read error: " << p << "/" << fileSize << ", filename: " << filePathStr);
-        fclose(f); free(buffer);
-        return FALSE;
+        break;
       }
       if(!server.Write((const char*)buffer, result))
       { PTRACE(1,"mcu.cxx\tServer write error: " << p << "/" << fileSize << ", filename: " << filePathStr);
-        fclose(f); free(buffer);
-        return FALSE;
+        break;
       }
       server.flush();
       p+=result;
@@ -1469,6 +1467,35 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     return FALSE;
   }
 
+  PStringStream shtml;
+  BeginPage(shtml,"Records","window.l_records","window.l_info_records");
+  shtml << "<h1>" << dir << "</h1>";
+
+  BOOL dr, drc; PString wtd;
+  if(dr = data.Contains("deleteRecord")) wtd=data("deleteRecord");
+  else if(drc = data.Contains("deleteRecordConfirmed")) wtd=data("deleteRecordConfirmed");
+  if(dr)
+  {
+    shtml << "<div style='border:2px solid red;padding:8px;margin:4px;background-color:#fff'>"
+      << wtd << " will deleted"
+      << "<center><a style='color:red' href='/Records?deleteRecordConfirmed=" << wtd << "'>[OK]</a> :: <a href='/Records'>Cancel</a></center>"
+      << "</div>";
+  }
+  else if(drc)
+  {
+    if(wtd.Find('/')==P_MAX_INDEX) if(wtd.Find('\\')==P_MAX_INDEX)
+    {
+#     ifdef _WIN32
+        unlink(OpenMCU::Current().vr_ffmpegDir + "\\" + wtd);
+#     else
+        unlink(OpenMCU::Current().vr_ffmpegDir + "/" + wtd);
+#     endif
+      shtml << "<div style='border:1px solid green'>"
+      << wtd << " deleted"
+      << "</div>";
+    }
+  }
+
 // directory d is now opened
   PStringArray fileList;
 
@@ -1504,18 +1531,17 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
 
   PINDEX sortMode=0;
   if(data.Contains("sort")) {sortMode = data("sort").AsInteger(); if(sortMode<0 || sortMode>7) sortMode=0;}
-  PStringStream shtml;
-  BeginPage(shtml,"Records","window.l_records","window.l_info_records");
 
-
-  shtml << "<h1>" << dir << "</h1>";
   if(fileList.GetSize()==0) shtml << "The direcory does not contain records at the moment."; else
   {
-    shtml << "<table style='border:2px solid #82b8e3'><tr><th style='border:2px solid #82b8e3;padding:2px;background-color:#144a59;color:#afc'>N</th>"
-      << "<th style='border:2px solid #82b8e3;padding:2px;background-color:#144a59'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=0)?'0':'1') << "'>Date/Time</a></th>"
-      << "<th style='border:2px solid #82b8e3;padding:2px;background-color:#144a59'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=2)?'2':'3') << "'>Room</a></th>"
-      << "<th style='border:2px solid #82b8e3;padding:2px;background-color:#144a59'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=4)?'4':'5') << "'>Resolution</th>"
-      << "<th style='border:2px solid #82b8e3;padding:2px;background-color:#144a59'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=6)?'6':'7') << "'>File Size</th></tr>";
+    shtml << "<table style='border:2px solid #82b8e3'><tr>"
+      << "<th class='h1' style='color:#afc'>N</th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=0)?'0':'1') << "'>Date/Time</a></th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=2)?'2':'3') << "'>Room</a></th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=4)?'4':'5') << "'>Resolution</th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=6)?'6':'7') << "'>File Size</th>"
+      << "<th class='h1' style='color:#afc'>Delete</th>"
+      << "</tr>";
 
     for(PINDEX i=0;i<fileList.GetSize()-1; i++)
     { PString s=fileList[i]; PINDEX pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
@@ -1558,13 +1584,17 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
         { PString dateTime = s.Left(pos1); s=s.Mid(pos1+2,P_MAX_INDEX);
           PString videoResolution; pos1=s.Find('.'); PINDEX pos2=s.Find(',');
           if(pos1!=P_MAX_INDEX) videoResolution=s.Left(pos1); else videoResolution=s.Left(pos2);
-          PINDEX fileSize = s.Mid(pos2+1,P_MAX_INDEX).AsInteger();
+          PString fileSize, fileSize0(s.Mid(pos2+1,P_MAX_INDEX).AsInteger());
+          PINDEX l=fileSize0.GetLength();
+          for(PINDEX j=l-1; j>=0; j--) { fileSize+=fileSize0[l-j-1]; if(!(j%3)) if(j!=0) fileSize+=' '; }
+          PString fileName = s0.Left(s0.Find(','));
           shtml << "<tr>"
-            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'><a href='/Records?getfile=" << s0.Left(s0.Find(',')) << "' download>" << (i+1) << "</a></td>"
-            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << dateTime.Mid(7,2) << '.' << dateTime.Mid(5,2) << '.' << dateTime.Mid(0,4) << ' ' << dateTime.Mid(10,2) << ':' << dateTime.Mid(12,2) << "</td>"
-            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << roomName << "</td>"
-            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed'>" << videoResolution << "</td>"
-            << "<td style='border:2px solid #82b8e3;padding:2px;background-color:#add0ed;text-align:right'><a href='/Records?getfile=" << s0.Left(s0.Find(',')) << "' download>" << fileSize << "</a></td>"
+            << "<td class='h0'><a href='/Records?getfile=" << fileName << "' download>" << (i+1) << "</a></td>"
+            << "<td class='h0'>" << dateTime.Mid(7,2) << '.' << dateTime.Mid(5,2) << '.' << dateTime.Mid(0,4) << ' ' << dateTime.Mid(10,2) << ':' << dateTime.Mid(12,2) << "</td>"
+            << "<td class='h0'>" << roomName << "</td>"
+            << "<td class='h0'>" << videoResolution << "</td>"
+            << "<td class='h0' style='text-align:right'><a href='/Records?getfile=" << fileName << "' download>" << fileSize << "</a></td>"
+            << "<td class='h0'><a href='/Records?deleteRecord=" << fileName << "' style='color:red;text-decoration:none'>x</a></td>"
             << "</tr>";
         }
       }
