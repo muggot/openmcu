@@ -1261,6 +1261,8 @@ class Conference : public PObject
 
     ConferenceFileMember * fileRecorder;
 
+    BOOL autoDelete, autoRecord;
+
   protected:
     ConferenceManager & manager;
     PMutex memberListMutex;

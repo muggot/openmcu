@@ -120,6 +120,13 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   if(conference->GetNumber().Left(4)*="echo") return;
 #endif
   conference->fileRecorder = new ConferenceFileMember(conference, (const PString) "recorder" , PFile::WriteOnly);
+
+  if(conference->autoRecord)
+  {
+    conference->externalRecorder = new ExternalVideoRecorderThread(conference->GetNumber());
+    OpenMCU::Current().HttpWriteEventRoom("Video recording started",conference->GetNumber());
+  }
+
   if(conference->GetNumber() == "testroom") return;
 
   if(!OpenMCU::Current().GetForceScreenSplit())
@@ -325,10 +332,14 @@ void ConferenceManager::RemoveMember(const OpalGloballyUniqueID & confId, Confer
 
   OpalGloballyUniqueID id = conf->GetID();  // make a copy of the ID because it may be about to disappear
 
-//  BOOL removeConf = conf->RemoveMember(toRemove);
   delete toRemove;
-//  if (removeConf)
-//    RemoveConference(id);
+#if ENABLE_TEST_ROOMS
+  if(conf->GetNumber().Left(8) == "testroom") if(!conf->GetVisibleMemberCount()) RemoveConference(id);
+#endif
+#if ENABLE_ECHO_MIXER
+  if(conf->GetNumber().Left(4) *= "echo") RemoveConference(id);
+#endif
+  if(conf->autoDelete) if(!conf->GetVisibleMemberCount()) RemoveConference(id);
 }
 
 void ConferenceManager::AddMonitorEvent(ConferenceMonitorInfo * info)
@@ -467,7 +478,8 @@ Conference::Conference(        ConferenceManager & _manager,
   vidmembernum = 0;
   fileRecorder = NULL;
   externalRecorder=NULL;
-
+  autoDelete=FALSE;
+  autoRecord=FALSE;
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 
@@ -811,14 +823,15 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
 
     // return TRUE if conference is empty 
-    closeConference = memberList.size() == 0;
+//    closeConference = memberList.size() == 0;
+    closeConference = GetVisibleMemberCount() == 0;
   }
 
   // notify that member is not joined anymore
   memberToRemove->SetJoined(FALSE);
 
   // call the callback function
-  if (!closeConference)
+//  if (!closeConference)
     OnMemberLeaving(memberToRemove);
 
   return closeConference;
@@ -1118,7 +1131,17 @@ void ConferenceMember::RemoveFromConference()
 {
   if (conference != NULL) {
     if (conference->RemoveMember(this))
-{}//      conference->GetManager().RemoveConference(conference->GetID());
+    {
+      if(conference->autoDelete
+#     if ENABLE_TEST_ROOMS
+        || (conference->GetNumber().Left(8) == "testroom")
+#     endif
+#     if ENABLE_ECHO_MIXER
+        || (conference->GetNumber().Left(4) *= "echo")
+#     endif
+      )
+      conference->GetManager().RemoveConference(conference->GetID());
+    }
   }
 }
 

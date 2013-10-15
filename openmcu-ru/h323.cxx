@@ -2071,10 +2071,25 @@ class MemberDeleteThread : public PThread
     void Main()
     {
       cm->WaitForClose();
+/*
       PThread::Sleep(1000);
       if (conf->RemoveMember(cm))
-{}//        ep->GetConferenceManager().RemoveConference(conf->GetID());
-      PThread::Sleep(1000);
+        ep->GetConferenceManager().RemoveConference(conf->GetID());
+*/
+
+      if (conf->RemoveMember(cm))
+        if (conf->autoDelete
+#       if ENABLE_TEST_ROOMS
+          || (conf->GetNumber().Left(8) == "testroom")
+#       endif
+#       if ENABLE_ECHO_MIXER
+          || (conf->GetNumber().Left(4) *= "echo")
+#       endif
+        )
+      ep->GetConferenceManager().RemoveConference(conf->GetID());
+
+//      PThread::Sleep(1000);
+
       delete cm;
     }
 
