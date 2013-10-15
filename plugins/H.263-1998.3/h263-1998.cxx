@@ -397,6 +397,12 @@ void H263_Base_EncoderContext::SetQuality (unsigned quality)
   _inputFrame->quality = quality;
 }
 
+void H263_Base_EncoderContext::SetFrameTime (unsigned frameTime)
+{
+  _context->time_base.den = 2997;
+  _context->time_base.num = (frameTime/90)*_context->time_base.den/90;
+}
+
 void H263_Base_EncoderContext::EnableAnnex (Annex annex)
 {
   switch (annex) {
@@ -1740,6 +1746,8 @@ static int encoder_set_options(const PluginCodec_Definition *,
 
   // get the "frame width" media format parameter to use as a hint for the encoder to start off
   for (const char * const * option = (const char * const *)parm; *option != NULL; option += 2) {
+    if (STRCMPI(option[0], PLUGINCODEC_OPTION_FRAME_TIME) == 0)
+      context->SetFrameTime (atoi(option[1]));
     if (STRCMPI(option[0], PLUGINCODEC_OPTION_FRAME_WIDTH) == 0)
       context->SetFrameWidth (atoi(option[1]));
     if (STRCMPI(option[0], PLUGINCODEC_OPTION_FRAME_HEIGHT) == 0)
