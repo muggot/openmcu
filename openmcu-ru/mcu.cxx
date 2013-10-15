@@ -157,10 +157,10 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpBufferIndex=0; httpBufferComplete=0;
 
 #if OPENMCU_VIDEO
-  endpoint->enableVideo = cfg.GetBoolean("Enable video", TRUE);
-  endpoint->videoRate = cfg.GetInteger("Video frame rate", DefaultVideoFrameRate);
-  endpoint->videoTxQuality = cfg.GetInteger("Video quality", DefaultVideoQuality);
-  forceScreenSplit = cfg.GetBoolean(ForceSplitVideoKey, TRUE);
+  endpoint->enableVideo = MCUConfig("Video").GetBoolean("Enable video", TRUE);
+  endpoint->videoRate = MCUConfig("Video").GetInteger("Video frame rate", DefaultVideoFrameRate);
+  endpoint->videoTxQuality = MCUConfig("Video").GetInteger("Video quality", DefaultVideoQuality);
+  forceScreenSplit = MCUConfig("Video").GetBoolean(ForceSplitVideoKey, TRUE);
 
   h264DefaultLevelForSip = cfg.GetString(H264LevelForSIPKey, "9").AsInteger();
   if(h264DefaultLevelForSip < 9) h264DefaultLevelForSip=9;
