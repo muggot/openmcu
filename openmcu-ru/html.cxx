@@ -374,36 +374,45 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
     : DefaultPConfigPage(app,title,section,auth)
 {
   PConfig cfg = MCUConfig(section);
+  PString style;
 
   Add(new PHTTPIntegerField("Video frame rate", 1, MAX_FRAME_RATE, cfg.GetInteger("Video frame rate", DefaultVideoFrameRate),
       "<td rowspan='3' valign='top' style='background-color:#fee;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
-      "<b>Video Setup</b><br>Video frame, rate range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)"));
+      "<b>Video Setup</b><br>Video frame rate, range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)"));
   Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE)));
   Add(new PHTTPBooleanField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE)));
 
-  Add(new PHTTPIntegerField("H.263 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.263 Temporal Spatial Trade Off", 31),
-      "<td rowspan='3' valign='top' style='background-color:#d9e5e3;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
-      "<b>H.263</b><br>Temporal Spatial Trade Off, range: 1..31  (for outgoing video)<br>Encoding Quality, range: 1..31<br>Tx Key Frame Period, range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)"));
-  Add(new PHTTPIntegerField("H.263 Encoding Quality", 1, 31, cfg.GetInteger("H.263 Encoding Quality", DefaultVideoQuality)));
-  Add(new PHTTPIntegerField("H.263 Tx Key Frame Period", 0, 600, cfg.GetInteger("H.263 Tx Key Frame Period", 125)));
+  style = "<td rowspan='1' valign='top' style='background-color:#d9e5e3;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
+//  Add(new PHTTPIntegerField("H.263 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.263 Temporal Spatial Trade Off", 31),
+//      style+"<b>H.263</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
+  Add(new PHTTPIntegerField("H.263 Encoding Quality", 1, 31, cfg.GetInteger("H.263 Encoding Quality", DefaultVideoQuality),
+      style+"<b>H.263</b> Encoding Quality, range: 1..31"));
+  Add(new PHTTPIntegerField("H.263 Tx Key Frame Period", 0, 600, cfg.GetInteger("H.263 Tx Key Frame Period", 125),
+      style+"<b>H.263</b> Tx Key Frame Period, range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)"));
 
-  Add(new PHTTPIntegerField("H.263p Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.263p Temporal Spatial Trade Off", 31),
-      "<td rowspan='3' valign='top' style='background-color:#efe;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
-      "<b>H.263p</b><br>Temporal Spatial Trade Off, range: 1..31  (for outgoing video)<br>Encoding Quality, range: 1..31<br>Tx Key Frame Period, range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)"));
-  Add(new PHTTPIntegerField("H.263p Encoding Quality", 1, 31, cfg.GetInteger("H.263p Encoding Quality", DefaultVideoQuality)));
-  Add(new PHTTPIntegerField("H.263p Tx Key Frame Period", 0, 600, cfg.GetInteger("H.263p Tx Key Frame Period", 125)));
+  style = "<td rowspan='1' valign='top' style='background-color:#efe;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
+//  Add(new PHTTPIntegerField("H.263p Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.263p Temporal Spatial Trade Off", 31),
+//      style+"<b>H.263p</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
+  Add(new PHTTPIntegerField("H.263p Encoding Quality", 1, 31, cfg.GetInteger("H.263p Encoding Quality", DefaultVideoQuality),
+      style+"<b>H.263p</b> Encoding Quality, range: 1..31"));
+  Add(new PHTTPIntegerField("H.263p Tx Key Frame Period", 0, 600, cfg.GetInteger("H.263p Tx Key Frame Period", 125),
+      style+"<b>H.263p</b> Tx Key Frame Period, range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)"));
 
-  Add(new PHTTPIntegerField("H.264 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.264 Temporal Spatial Trade Off", 31),
-      "<td rowspan='2' valign='top' style='background-color:#eec;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
-      "<b>H.264</b><br>Temporal Spatial Trade Off, range: 1..31  (for outgoing video)<br>Encoding Threads (\"0\" auto)"));
-  //Add(new PHTTPIntegerField("H.264 Encoding Quality", 1, 31, cfg.GetInteger("H.264 Encoding Quality", DefaultVideoQuality)));
-  Add(new PHTTPIntegerField("H.264 Encoding Threads", 0, 64, cfg.GetInteger("H.264 Encoding Threads", 0)));
+  style = "<td rowspan='1' valign='top' style='background-color:#eec;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
+//  Add(new PHTTPIntegerField("H.264 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.264 Temporal Spatial Trade Off", 31),
+//      style+"<b>H.264</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
+//  Add(new PHTTPIntegerField("H.264 Encoding Quality", 1, 31, cfg.GetInteger("H.264 Encoding Quality", DefaultVideoQuality),
+//      style+"<b>H.264</b> Encoding Quality, range: 1..31"));
+  Add(new PHTTPIntegerField("H.264 Encoding Threads", 0, 64, cfg.GetInteger("H.264 Encoding Threads", 0),
+      style+"<b>H.264</b> Encoding Threads (\"0\" auto)"));
 
-  Add(new PHTTPIntegerField("VP8 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("VP8 Temporal Spatial Trade Off", 31),
-      "<td rowspan='3' valign='top' style='background-color:#f7f4d8;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
-      "<b>VP8</b><br>Temporal Spatial Trade Off, range: 1..31  (for outgoing video)<br>Encoding Quality, range: 1..31<br>Encoding Threads (\"0\" default)"));
-  Add(new PHTTPIntegerField("VP8 Encoding Quality", 1, 31, cfg.GetInteger("VP8 Encoding Quality", DefaultVideoQuality)));
-  Add(new PHTTPIntegerField("VP8 Encoding Threads", 0, 64, cfg.GetInteger("VP8 Encoding Threads", 0)));
+  style = "<td rowspan='1' valign='top' style='background-color:#f7f4d8;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
+//  Add(new PHTTPIntegerField("VP8 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("VP8 Temporal Spatial Trade Off", 31),
+//      style+"<b>VP8</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
+  Add(new PHTTPIntegerField("VP8 Encoding Quality", 1, 31, cfg.GetInteger("VP8 Encoding Quality", DefaultVideoQuality),
+      style+"<b>VP8</b> Encoding Quality, range: 1..31"));
+  Add(new PHTTPIntegerField("VP8 Encoding Threads", 0, 64, cfg.GetInteger("VP8 Encoding Threads", 0),
+      style+"<b>VP8</b> Encoding Threads (\"0\" default)"));
 
   BuildHTML("");
   PStringStream html_begin, html_end;

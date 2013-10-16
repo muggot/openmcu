@@ -2280,12 +2280,18 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
     {
       if(keys[i].Tokenise(" ")[0] == videoTransmitCodecName.Tokenise("-")[0])
       {
-       PINDEX pos = keys[i].Find(" ");
-       if(pos == P_MAX_INDEX)
-         continue;
-       PString option = keys[i].Right(keys[i].GetSize()-pos-2);
-       int value = MCUConfig("Video").GetInteger(keys[i], 0);
-       mf.SetOptionInteger(option, value);
+        PINDEX pos = keys[i].Find(" ");
+        if(pos == P_MAX_INDEX)
+          continue;
+        PString option = keys[i].Right(keys[i].GetSize()-pos-2);
+        int value = MCUConfig("Video").GetInteger(keys[i], 0);
+        if(videoTransmitCodecName.Find("H.263") != P_MAX_INDEX && option == "Encoding Quality")
+        {
+          mf.SetOptionInteger(option, value);
+          mf.SetOptionInteger("Temporal Spatial Trade Off", 32-value);
+        } else {
+          mf.SetOptionInteger(option, value);
+        }
       }
     }
     // SetTxQualityLevel not send the value in encoder

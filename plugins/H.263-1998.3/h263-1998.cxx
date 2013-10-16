@@ -332,25 +332,24 @@ void H263_Base_EncoderContext::SetMaxKeyFramePeriod (unsigned period)
 void H263_Base_EncoderContext::SetTargetBitrate (unsigned rate)
 {
   m_targetBitRate = rate;
-  if(_width==SQCIF_WIDTH) m_targetBitRate = 96*1024;
-  else if(_width==QCIF_WIDTH) m_targetBitRate = 128*1024;
-  else if(_width==CIF_WIDTH) m_targetBitRate = 256*1024;
-  else if(_width==CIF4_WIDTH) m_targetBitRate = 512*1024;
-  else if(_width==CIF16_WIDTH) m_targetBitRate = 1024*1024;
-  if(rate < m_targetBitRate) m_targetBitRate = rate;
-
+  //if(_width==SQCIF_WIDTH) m_targetBitRate = 96*1024;
+  //else if(_width==QCIF_WIDTH) m_targetBitRate = 128*1024;
+  //else if(_width==CIF_WIDTH) m_targetBitRate = 256*1024;
+  //else if(_width==CIF4_WIDTH) m_targetBitRate = 512*1024;
+  //else if(_width==CIF16_WIDTH) m_targetBitRate = 1024*1024;
+  //if(rate < m_targetBitRate) m_targetBitRate = rate;
   _context->bit_rate = (m_targetBitRate * 3) >> 2;        // average bit rate
   _context->bit_rate_tolerance = m_targetBitRate << 2;
-  _context->rc_min_rate = 0;                   // minimum bitrate
-  _context->rc_max_rate = m_targetBitRate;                // maximum bitrate
+  //_context->rc_min_rate = 0;                   // minimum bitrate
+  //_context->rc_max_rate = m_targetBitRate;                // maximum bitrate
+  //_context->rc_buffer_size = rate * 2;
 
   /* ratecontrol qmin qmax limiting method
      0-> clipping, 1-> use a nice continous function to limit qscale wthin qmin/qmax.
   */
-  
   _context->rc_qsquish = 0;            // limit q by clipping 
 //  _context->rc_eq = (char*) "1";       // rate control equation
-  _context->rc_buffer_size = rate * 2;
+
 }
 
 void H263_Base_EncoderContext::SetFrameWidth (unsigned width)
@@ -400,7 +399,7 @@ void H263_Base_EncoderContext::SetQuality (unsigned quality)
 void H263_Base_EncoderContext::SetFrameTime (unsigned frameTime)
 {
   _context->time_base.den = 2997;
-  _context->time_base.num = (frameTime/90)*_context->time_base.den/90;
+  _context->time_base.num = frameTime*_context->time_base.den/90000;
 }
 
 void H263_Base_EncoderContext::EnableAnnex (Annex annex)
@@ -2011,7 +2010,7 @@ static struct PluginCodec_Option const tsto =
   { PluginCodec_IntegerOption,  PLUGINCODEC_OPTION_TEMPORAL_SPATIAL_TRADE_OFF,  0, PluginCodec_AlwaysMerge, "31" };
 
 static struct PluginCodec_Option const encodingQuality =
-  { PluginCodec_IntegerOption,  "Encoding Quaility",  0, PluginCodec_AlwaysMerge, "31" };
+  { PluginCodec_IntegerOption,  "Encoding Quality",  0, PluginCodec_AlwaysMerge, "31" };
 ///
 
 static struct PluginCodec_Option const mediaPacketization =
