@@ -2285,13 +2285,7 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
           continue;
         PString option = keys[i].Right(keys[i].GetSize()-pos-2);
         int value = MCUConfig("Video").GetInteger(keys[i], 0);
-        if(videoTransmitCodecName.Find("H.263") != P_MAX_INDEX && option == "Encoding Quality")
-        {
-          mf.SetOptionInteger(option, value);
-          mf.SetOptionInteger("Temporal Spatial Trade Off", value);
-        } else {
-          mf.SetOptionInteger(option, value);
-        }
+        mf.SetOptionInteger(option, value);
       }
     }
     // SetTxQualityLevel not send the value in encoder

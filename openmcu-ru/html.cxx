@@ -219,6 +219,9 @@ BOOL DefaultPConfigPage::Post(PHTTPRequest & request, const PStringToString & da
 
   section = sectionName;
 
+  if(cfg.GetBoolean("RESET", FALSE))
+    cfg.DeleteSection();
+
   process.OnContinue();
   return TRUE;
 }
@@ -235,13 +238,15 @@ BOOL DefaultPConfigPage::OnPOST(PHTTPServer & server,
   return TRUE;
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : DefaultPConfigPage(app,title,section,auth)
 {
   OpenMCU & mcu = OpenMCU::Current();
+
+  // Reset section
+  Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
 
   // Language
   Add(new PHTTPStringField("Language", 2, cfg.GetString("Language"), "<td rowspan='1' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'>RU, EN"));
@@ -376,6 +381,9 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
   PConfig cfg = MCUConfig(section);
   PString style;
 
+  // Reset section
+  Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
+
   Add(new PHTTPIntegerField("Video frame rate", 1, MAX_FRAME_RATE, cfg.GetInteger("Video frame rate", DefaultVideoFrameRate),
       "<td rowspan='3' valign='top' style='background-color:#fee;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
       "<b>Video Setup</b><br>Video frame rate, range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)"));
@@ -429,6 +437,9 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
 {
   OpenMCU & mcu = OpenMCU::Current();
 
+  // Reset section
+  Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
+
   mcu.GetEndpoint().Initialise(cfg, this);
   if(mcu.GetEndpoint().behind_masq){PStringStream msq; msq<<"Masquerading as "<<*(mcu.GetEndpoint().masqAddressPtr); mcu.HttpWriteEvent(msq);}
 
@@ -446,6 +457,9 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
     : DefaultPConfigPage(app,title,section,auth)
 {
   OpenMCU & mcu = OpenMCU::Current();
+
+  // Reset section
+  Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
 
   // SIP Listener setup
   mcu.sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
