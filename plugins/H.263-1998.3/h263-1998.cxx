@@ -274,7 +274,8 @@ bool H263_Base_EncoderContext::Open(const char *codec_name)
   _context->opaque = this;
 
   _context->codec = NULL;
-  _context->mb_decision = FF_MB_DECISION_SIMPLE; // choose only one MB type at a time
+  // use rd instead simple as default mb_decision, as it's default in libav/ffmpeg
+  _context->mb_decision = FF_MB_DECISION_RD;
   _context->me_method = ME_EPZS;
 
   _context->max_b_frames = 0;
