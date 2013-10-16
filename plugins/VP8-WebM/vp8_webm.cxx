@@ -332,6 +332,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
     size_t                     m_offset;
     unsigned                   m_encodingQuality;
     unsigned                   m_encodingThreads;
+    unsigned                   m_encodingCPUUsed;
 
   public:
     VP8Encoder(const PluginCodec_Definition * defn)
@@ -342,6 +343,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
       , m_offset(0)
       , m_encodingQuality(31)
       , m_encodingThreads(0)
+      , m_encodingCPUUsed(0)
     {
       memset(&m_codec, 0, sizeof(m_codec));
     }
@@ -379,6 +381,9 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
 
     virtual bool SetOption(const char * optionName, const char * optionValue)
     {
+      if (strcasecmp(optionName, "Encoding CPU Used") == 0)
+        return SetOptionUnsigned(m_encodingCPUUsed, optionValue, 0, 16);
+
       if (strcasecmp(optionName, "Encoding Quality") == 0)
         return SetOptionUnsigned(m_encodingQuality, optionValue, 1, 31);
 
@@ -469,8 +474,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
         vpx_image_t image;
         vpx_img_wrap(&image, VPX_IMG_FMT_I420, video->width, video->height, 4, srcRTP.GetVideoFrameData());
 
-        if(m_encodingQuality != 0)
-          vpx_codec_control(&m_codec, VP8E_SET_CPUUSED, 15-(m_encodingQuality/2));
+        vpx_codec_control(&m_codec, VP8E_SET_CPUUSED, m_encodingCPUUsed);
 
         if (IS_ERROR(vpx_codec_encode, (&m_codec, &image,
                                         srcRTP.GetTimestamp(), m_frameTime,
@@ -1086,11 +1090,25 @@ static struct PluginCodec_Option const prefix##_EncodingThreads = \
   "0",                                /* Minimum value */ \
   "64"                                /* Maximum value */ \
 }; \
+static struct PluginCodec_Option const prefix##_EncodingCPUUsed = \
+{ \
+  PluginCodec_IntegerOption,          /* Option type */ \
+  "Encoding CPU Used",                /* User visible name */ \
+  false,                              /* User Read/Only flag */ \
+  PluginCodec_AlwaysMerge,            /* Merge mode */ \
+  "0",                                /* Initial value */ \
+  NULL,                               /* FMTP option name */ \
+  NULL,                               /* FMTP default value */ \
+  0,                                  /* H.245 generic capability code and bit mask */ \
+  "0",                                /* Minimum value */ \
+  "16"                                /* Maximum value */ \
+}; \
 static struct PluginCodec_Option const * prefix##_OptionTable[] = \
 { \
   &prefix##_FrameWidth, \
   &prefix##_FrameHeight, \
   &prefix##_TargetBitRate, \
+  &prefix##_EncodingCPUUsed, \
   &prefix##_EncodingThreads, \
   &MaxFR, \
   &MaxFS, \

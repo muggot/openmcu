@@ -417,8 +417,8 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
   style = "<td rowspan='1' valign='top' style='background-color:#f7f4d8;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
 //  Add(new PHTTPIntegerField("VP8 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("VP8 Temporal Spatial Trade Off", 31),
 //      style+"<b>VP8</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
-  Add(new PHTTPIntegerField("VP8 Encoding Quality", 1, 31, cfg.GetInteger("VP8 Encoding Quality", DefaultVideoQuality),
-      style+"<b>VP8</b> Encoding Quality, range: 1..31"));
+  Add(new PHTTPIntegerField("VP8 Encoding CPU Used", 0, 16, cfg.GetInteger("VP8 Encoding CPU Used", 0),
+      style+"<b>VP8</b> Encoding CPU Used, range: 0..16 (Values greater than 0 will increase encoder speed at the expense of quality)"));
   Add(new PHTTPIntegerField("VP8 Encoding Threads", 0, 64, cfg.GetInteger("VP8 Encoding Threads", 0),
       style+"<b>VP8</b> Encoding Threads, range 0..64 (0 default)"));
 
