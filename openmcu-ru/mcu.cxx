@@ -237,6 +237,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpNameSpace.AddResource(new VideoPConfigPage(*this, "VideoParameters", "Video", authority), PHTTPSpace::Overwrite);
 #endif
 
+  // Create the config page - record
+  httpNameSpace.AddResource(new RecordPConfigPage(*this, "RecordParameters", "Parameters", authority), PHTTPSpace::Overwrite);
+
   // Create the config page - h323
   httpNameSpace.AddResource(new H323PConfigPage(*this, "H323Parameters", "Parameters", authority), PHTTPSpace::Overwrite);
 

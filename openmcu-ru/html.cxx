@@ -320,49 +320,6 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // allow/disallow self-invite:
   Add(new PHTTPBooleanField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE)));
 
-  // video recorder setup
-  PStringStream recorderInfo;
-  recorderInfo
-    << "<td rowspan='8' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>"
-    << "<b>Video Recorder Setup:</b><br><br>"
-    << "Use the following definitions to set ffmpeg command-line options:<br>"
-    << "<b>%V</b> - input video stream,<br>"
-    << "<b>%A</b> - input audio stream,<br>"
-    << "<b>%F</b> - frame size, "
-    << "<b>%R</b> - frame rate,<br>"
-    << "<b>%S</b> - sample rate, <b>%C</b> - number of channels for audio,<br>"
-    << "<b>%O</b> - name without extension"
-    << "<br><br>";
-  if(!PFile::Exists(mcu.vr_ffmpegPath)) recorderInfo << "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
-  else
-  { PFileInfo info;
-    PFilePath path(mcu.vr_ffmpegPath);
-    PFile::GetInfo(path, info);
-    if(!(info.type & 3)) recorderInfo << "<b><font color=red>Warning: ffmpeg neither file, nor symlink!</font></b>";
-    else if(!(info.permissions & 0111)) recorderInfo << "<b><font color=red>ffmpeg permissions check failed</font></b>";
-    else
-    {
-      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) if(!PFile::Exists(mcu.vr_ffmpegDir)) { PDirectory::Create(mcu.vr_ffmpegDir,0700); PThread::Sleep(50); }
-      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) recorderInfo << "<b><font color=red>Directory does not exist: " << mcu.vr_ffmpegDir << "</font></b>";
-      else
-      { PFileInfo info;
-        PFilePath path(mcu.vr_ffmpegDir);
-        PFile::GetInfo(path, info);
-        if(!(info.type & 6)) recorderInfo << "<b><font color=red>Warning: output directory neither directory, nor symlink!</font></b>";
-        else if(!(info.permissions & 0222)) recorderInfo << "<b><font color=red>output directory permissions check failed</font></b>";
-        else recorderInfo << "<b><font color=green>Looks good.</font> Execution script preview:</b><br><tt>" << mcu.ffmpegCall << "</tt>";
-      }
-    }
-  }
-  Add(new PHTTPStringField(RecorderFfmpegPathKey, 40, mcu.vr_ffmpegPath, recorderInfo));
-  Add(new PHTTPStringField(RecorderFfmpegOptsKey, 40, mcu.vr_ffmpegOpts));
-  Add(new PHTTPStringField(RecorderFfmpegDirKey, 40, mcu.vr_ffmpegDir));
-  Add(new PHTTPIntegerField(RecorderFrameWidthKey, 176, 1920, mcu.vr_framewidth));
-  Add(new PHTTPIntegerField(RecorderFrameHeightKey, 144, 1152, mcu.vr_frameheight));
-  Add(new PHTTPIntegerField(RecorderFrameRateKey, 1, 100, mcu.vr_framerate));
-  Add(new PHTTPIntegerField(RecorderSampleRateKey, 2000, 1000000, mcu.vr_sampleRate));
-  Add(new PHTTPIntegerField(RecorderAudioChansKey, 1, 8, mcu.vr_audioChans));
-
   // get WAV file played to a user when they enter a conference
   //rsrc->Add(new PHTTPStringField(ConnectingWAVFileKey, 50, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile)));
 
@@ -430,6 +387,67 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
   BuildHTML("");
   PStringStream html_begin, html_end;
   BeginPage(html_begin, "Video settings", "window.l_param_video", "window.l_info_param_video");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  PStringStream html_page; html_page << html_begin << string << html_end;
+  string = html_page;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : DefaultPConfigPage(app,title,section,auth)
+{
+  OpenMCU & mcu = OpenMCU::Current();
+
+  // Reset section
+  Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
+
+  // video recorder setup
+  PStringStream recorderInfo;
+  recorderInfo
+    << "<td rowspan='8' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>"
+    << "<b>Video Recorder Setup:</b><br><br>"
+    << "Use the following definitions to set ffmpeg command-line options:<br>"
+    << "<b>%V</b> - input video stream,<br>"
+    << "<b>%A</b> - input audio stream,<br>"
+    << "<b>%F</b> - frame size, "
+    << "<b>%R</b> - frame rate,<br>"
+    << "<b>%S</b> - sample rate, <b>%C</b> - number of channels for audio,<br>"
+    << "<b>%O</b> - name without extension"
+    << "<br><br>";
+  if(!PFile::Exists(mcu.vr_ffmpegPath)) recorderInfo << "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
+  else
+  { PFileInfo info;
+    PFilePath path(mcu.vr_ffmpegPath);
+    PFile::GetInfo(path, info);
+    if(!(info.type & 3)) recorderInfo << "<b><font color=red>Warning: ffmpeg neither file, nor symlink!</font></b>";
+    else if(!(info.permissions & 0111)) recorderInfo << "<b><font color=red>ffmpeg permissions check failed</font></b>";
+    else
+    {
+      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) if(!PFile::Exists(mcu.vr_ffmpegDir)) { PDirectory::Create(mcu.vr_ffmpegDir,0700); PThread::Sleep(50); }
+      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) recorderInfo << "<b><font color=red>Directory does not exist: " << mcu.vr_ffmpegDir << "</font></b>";
+      else
+      { PFileInfo info;
+        PFilePath path(mcu.vr_ffmpegDir);
+        PFile::GetInfo(path, info);
+        if(!(info.type & 6)) recorderInfo << "<b><font color=red>Warning: output directory neither directory, nor symlink!</font></b>";
+        else if(!(info.permissions & 0222)) recorderInfo << "<b><font color=red>output directory permissions check failed</font></b>";
+        else recorderInfo << "<b><font color=green>Looks good.</font> Execution script preview:</b><br><tt>" << mcu.ffmpegCall << "</tt>";
+      }
+    }
+  }
+  Add(new PHTTPStringField(RecorderFfmpegPathKey, 40, mcu.vr_ffmpegPath, recorderInfo));
+  Add(new PHTTPStringField(RecorderFfmpegOptsKey, 40, mcu.vr_ffmpegOpts));
+  Add(new PHTTPStringField(RecorderFfmpegDirKey, 40, mcu.vr_ffmpegDir));
+  Add(new PHTTPIntegerField(RecorderFrameWidthKey, 176, 1920, mcu.vr_framewidth));
+  Add(new PHTTPIntegerField(RecorderFrameHeightKey, 144, 1152, mcu.vr_frameheight));
+  Add(new PHTTPIntegerField(RecorderFrameRateKey, 1, 100, mcu.vr_framerate));
+  Add(new PHTTPIntegerField(RecorderSampleRateKey, 2000, 1000000, mcu.vr_sampleRate));
+  Add(new PHTTPIntegerField(RecorderAudioChansKey, 1, 8, mcu.vr_audioChans));
+
+  BuildHTML("");
+  PStringStream html_begin, html_end;
+  BeginPage(html_begin, section, "window.l_param_general","window.l_info_param_general");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   PStringStream html_page; html_page << html_begin << string << html_end;
   string = html_page;
