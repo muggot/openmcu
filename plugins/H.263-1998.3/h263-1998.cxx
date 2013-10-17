@@ -333,17 +333,17 @@ void H263_Base_EncoderContext::SetMaxKeyFramePeriod (unsigned period)
 void H263_Base_EncoderContext::SetTargetBitrate (unsigned rate)
 {
   m_targetBitRate = rate;
-  //if(_width==SQCIF_WIDTH) m_targetBitRate = 96*1024;
-  //else if(_width==QCIF_WIDTH) m_targetBitRate = 128*1024;
-  //else if(_width==CIF_WIDTH) m_targetBitRate = 256*1024;
-  //else if(_width==CIF4_WIDTH) m_targetBitRate = 512*1024;
-  //else if(_width==CIF16_WIDTH) m_targetBitRate = 1024*1024;
-  //if(rate < m_targetBitRate) m_targetBitRate = rate;
+  if(_width==SQCIF_WIDTH) m_targetBitRate = 96*1024;
+  else if(_width==QCIF_WIDTH) m_targetBitRate = 128*1024;
+  else if(_width==CIF_WIDTH) m_targetBitRate = 256*1024;
+  else if(_width==CIF4_WIDTH) m_targetBitRate = 512*1024;
+  else if(_width==CIF16_WIDTH) m_targetBitRate = 1024*1024;
+  if(rate < m_targetBitRate) m_targetBitRate = rate;
   _context->bit_rate = (m_targetBitRate * 3) >> 2;        // average bit rate
   _context->bit_rate_tolerance = m_targetBitRate << 2;
-  //_context->rc_min_rate = 0;                   // minimum bitrate
-  //_context->rc_max_rate = m_targetBitRate;                // maximum bitrate
-  //_context->rc_buffer_size = rate * 2;
+  _context->rc_min_rate = 0;                              // minimum bitrate
+  _context->rc_max_rate = m_targetBitRate;                // maximum bitrate
+  _context->rc_buffer_size = rate * 2;
 
   /* ratecontrol qmin qmax limiting method
      0-> clipping, 1-> use a nice continous function to limit qscale wthin qmin/qmax.
@@ -374,8 +374,8 @@ void H263_Base_EncoderContext::SetFrameHeight (unsigned height)
 
 void H263_Base_EncoderContext::SetTSTO (unsigned tsto)
 {
-// default libavcodec settings
-  _context->max_qdiff = 4;        // max q difference between frames
+  // default libavcodec settings
+  _context->max_qdiff = 3;        // max q difference between frames
   _context->qcompress = 0.5;               // qscale factor between easy & hard scenes (0.0-1.0)
   _context->i_quant_factor = (float)-0.8;  // qscale factor between p and i frames
   _context->i_quant_offset = (float)0.0;   // qscale offset between p and i frames
@@ -1760,10 +1760,13 @@ static int encoder_set_options(const PluginCodec_Definition *,
 //       context->SetTargetBitrate(atoi(option[1]));
     if (STRCMPI(option[0], PLUGINCODEC_OPTION_TX_KEY_FRAME_PERIOD) == 0)
       context->SetMaxKeyFramePeriod (atoi(option[1]));
-    if (STRCMPI(option[0], PLUGINCODEC_OPTION_TEMPORAL_SPATIAL_TRADE_OFF) == 0)
-       context->SetTSTO (atoi(option[1]));
-    if (STRCMPI(option[0], "Encoding Quality") == 0)
-       context->SetQuality (atoi(option[1]));
+    //if (STRCMPI(option[0], PLUGINCODEC_OPTION_TEMPORAL_SPATIAL_TRADE_OFF) == 0)
+    //   context->SetTSTO (atoi(option[1]));
+    //if (STRCMPI(option[0], "Encoding Quality") == 0)
+    //   context->SetQuality (atoi(option[1]));
+
+    context->SetTSTO(30);
+    context->SetQuality(H263P_MIN_QUANT);
 
     if (STRCMPI(option[0], "Annex D") == 0)
       if (atoi(option[1]) == 1)

@@ -295,6 +295,13 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   }
 #endif
 
+#if OPENMCU_VIDEO
+  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE),
+      "<td rowspan='2' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>"
+      "<b>Video Setup</b>"));
+  Add(new PHTTPBooleanField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE)));
+#endif
+
   // Default room
   Add(new PHTTPStringField(DefaultRoomKey, 25, cfg.GetString(DefaultRoomKey, DefaultRoom), "<td rowspan='6' valign='top' style='background-color:#eec;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Room Setup</b>"));
 
@@ -385,10 +392,8 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
   Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
 
   Add(new PHTTPIntegerField("Video frame rate", 1, MAX_FRAME_RATE, cfg.GetInteger("Video frame rate", DefaultVideoFrameRate),
-      "<td rowspan='3' valign='top' style='background-color:#fee;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
-      "<b>Video Setup</b><br>Video frame rate, range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)"));
-  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE)));
-  Add(new PHTTPBooleanField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE)));
+      "<td rowspan='1' valign='top' style='background-color:#fee;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
+      "Video frame rate, range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)"));
 
   style = "<td rowspan='1' valign='top' style='background-color:#d9e5e3;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
 //  Add(new PHTTPIntegerField("H.263 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.263 Temporal Spatial Trade Off", 31),
