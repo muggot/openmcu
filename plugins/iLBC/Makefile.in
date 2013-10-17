@@ -71,11 +71,11 @@ SONAME	= ilbccodec
 SRCDIR	= ./iLBC
 
 CC	 	=gcc
-CFLAGS	 	=-g -O2
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=-fPIC
+CFLAGS	       +=@CFLAGS@ -O2
+STDCCFLAGS	=-fPIC -D__STDC_CONSTANT_MACROS
 LDFLAGS	       +=
 
 SRCS	= ilbccodec.c $(SRCDIR)/anaFilter.c $(SRCDIR)/constants.c $(SRCDIR)/createCB.c $(SRCDIR)/doCPLC.c \
@@ -92,7 +92,7 @@ vpath	%.c $(SRCDIR)
 
 $(OBJDIR)/%.o : %.c
 	@mkdir -p $(OBJDIR) >/dev/null 2>&1
-	$(CC) -g -c -I../../../include $(STDCCFLAGS) $(CCFLAGS) -o $@ $<
+	$(CC) -c -I../../../include $(STDCCFLAGS) $(CFLAGS) -o $@ $<
 
 PLUGIN	= ./ilbc_audio_pwplugin.$(PLUGINEXT)
 

@@ -8,12 +8,12 @@ SRCDIR	= ./src
 OBJDIR	= ./obj
 
 CC	 	=gcc
-CFLAGS	 	=-Os -D__STDC_CONSTANT_MACROS
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=   -fPIC
-LDFLAGS	       +=   -lavutil -lavcodec
+CFLAGS	       +=-g  -Os
+STDCCFLAGS     += -I/usr/local/include   -fPIC -D__STDC_CONSTANT_MACROS
+LDFLAGS	       += -L/usr/local/lib   -lavutil -lavcodec
 
 SRCS	+= g7231codec.cxx
 

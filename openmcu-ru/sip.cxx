@@ -739,6 +739,7 @@ void OpenMCUSipConnection::SelectCapability_OPUS(SipCapability &c,PStringArray &
 
 int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite)
 {
+ PTRACE(1, "MCUSIP\tProcessSDP");
  int par_len = 0, par_mbeg = 0;
  int port = -1, media = -1, def_dir = 3, dir = 3, bw = 0;
  for(int line=0; line<sdp_sa.GetSize(); line++)
@@ -934,6 +935,8 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  PTRACE(1, "MCUSIP\tProcessInviteEvent");
  su_home_t *home = msg_home(c_sip_msg);
  sip_t *sip = sip_object(c_sip_msg);
+ if(sip == NULL || sip->sip_payload == NULL || sip->sip_payload->pl_data == NULL)
+   return 415; // SIP_415_UNSUPPORTED_MEDIA
 
  sdp_s = sip->sip_payload->pl_data;
  PStringArray sdp_sa = sdp_s.Lines();
@@ -966,7 +969,7 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  cout << "Name: " << remotePartyName << " Addr: " << remotePartyAddress << "\n";
 
  if(!ProcessSDP(sdp_sa, sipCapsId, sipCaps, 0))
-   return 415;
+   return 415; // SIP_415_UNSUPPORTED_MEDIA
 
  ep.OnIncomingSipConnection(callToken,*this);
  PTRACE(1, "MCUSIP\tJoinConference");
@@ -982,6 +985,8 @@ int OpenMCUSipConnection::ProcessReInviteEvent()
 {
  PTRACE(1, "MCUSIP\tProcessReInviteEvent");
  sip_t *sip = sip_object(c_sip_msg);
+ if(sip == NULL || sip->sip_payload == NULL || sip->sip_payload->pl_data == NULL)
+   return 415; // SIP_415_UNSUPPORTED_MEDIA
 
  PString sdp = sip->sip_payload->pl_data;
  PStringArray sdp_sa = sdp.Lines();
@@ -993,7 +998,7 @@ int OpenMCUSipConnection::ProcessReInviteEvent()
  PString cur_sdp_msg = sdp_msg;
 
  if(!ProcessSDP(sdp_sa, new_par, new_caps, 1))
-   return 415;
+   return 415; // SIP_415_UNSUPPORTED_MEDIA
  
  int sflag = 1; // 0 - no changes
  cout << "Scap: " << scap << " Cur_Scap: " << cur_scap << "\n";

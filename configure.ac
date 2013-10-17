@@ -618,6 +618,16 @@ AC_SUBST(ENABLE_STATIC)
 AM_CONDITIONAL(ENABLE_DEVEL, [test ${ENABLE_DEVEL} = 1])
 
 dnl ########################################################################
+dnl configure debugging
+
+debug=yes
+AC_ARG_ENABLE(debug, [AS_HELP_STRING([--disable-debug],[Disable debugging information (default enabled)],[40],[100])], [debug="$enableval"])
+
+if test "${debug}" = "yes"; then
+  CFLAGS="-g $CFLAGS"
+fi
+
+dnl ########################################################################
 dnl final declarations
 
 AC_SUBST(LIBAV_CFLAGS)
@@ -628,6 +638,7 @@ AC_SUBST(LIBVPX_LDFLAGS)
 AC_SUBST(STDCCFLAGS)
 AC_SUBST(STDCXXFLAGS)
 AC_SUBST(OPTSTDCCFLAGS)
+AC_SUBST(CFLAGS)
 AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(LDLIBS)

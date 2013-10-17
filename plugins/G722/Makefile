@@ -4,7 +4,6 @@ prefix=/usr/local/lib/ptlib
 target_os=linux-gnu
 
 SONAME	= g722
-STDCCFLAGS +=  -fPIC
 
 SRCDIR	= ./VoIPCodecs
 OBJDIR	= ./obj
@@ -14,7 +13,8 @@ CC		=gcc
 CXX		=g++
 LDSO		=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=-fPIC -ggdb
+CFLAGS	       +=-g 
+STDCCFLAGS     +=-fPIC -D__STDC_CONSTANT_MACROS
 LDFLAGS	       +=
 EXTRACFLAGS     =-I$(PLUGINDIR)
 

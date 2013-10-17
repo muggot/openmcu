@@ -11,10 +11,10 @@ PROG		= openmcu-ru
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx
 
 CXX		= g++
-CFLAGS         += -Os
-LDFLAGS        += -L/usr/local/lib -L/usr/local/lib -Wl,-R/usr/local/lib,-R/usr/local/lib
-LDLIBS	       +=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua -L../ptlib/lib -L../h323plus/lib -lh323_linux_x86_r -lpt_linux_x86_r
-STDCCFLAGS     +=  -I/usr/include/freetype2     -I/usr/include/sofia-sip-1.12    -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS -Wall
+CFLAGS         += -g  -Os
+LDFLAGS        += 
+LDLIBS	       +=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua -Wl,--start-group ../ptlib/lib/libpt_linux_x86_r_s.a ../h323plus/lib/libh323_linux_x86_r_s.a -Wl,--end-group
+STDCCFLAGS     +=  -I/usr/include/freetype2   -I/usr/include/sofia-sip-1.12    -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS -Wall
 STDCXXFLAGS    +=  
 
 PTLIBDIR        = ../ptlib
@@ -90,8 +90,8 @@ install:
 	install -m 644 ../COPYING $(DESTDIR)/usr/local/share/openmcu-ru
 	install -m 644 ../NEWS $(DESTDIR)/usr/local/share/openmcu-ru
 	install -m 644 ../README $(DESTDIR)/usr/local/share/openmcu-ru
-ifeq (1, 0)
 ifeq (0, 0)
+ifeq (1, 0)
 	mkdir -p $(DESTDIR)/usr/local/lib
 	install -m 644 ../ptlib/lib/libpt_${OSTYPE}_${MACHTYPE}_r.so.2.0.1 $(DESTDIR)/usr/local/lib
 	install -m 644 ../h323plus/lib/libh323_${OSTYPE}_${MACHTYPE}_r.so.1.20.2 $(DESTDIR)/usr/local/lib
@@ -108,8 +108,8 @@ uninstall:
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/COPYING
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/NEWS
 	rm -f $(DESTDIR)/usr/local/share/openmcu-ru/README
-ifeq (1, 0)
 ifeq (0, 0)
+ifeq (1, 0)
 	rm -f $(DESTDIR)/usr/local/lib/libpt_${OSTYPE}_${MACHTYPE}_r.so.2.0.1
 	rm -f $(DESTDIR)/usr/local/lib/libh323_${OSTYPE}_${MACHTYPE}_r.so.1.20.2
 endif

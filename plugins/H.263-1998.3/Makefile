@@ -34,14 +34,14 @@ PLUGINDIR	=./opal
 OBJDIR 		=./obj
 
 CC	 	=gcc
-CFLAGS	 	= -Os  
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=   -fPIC
+CFLAGS	       +=-g  -Os
+STDCCFLAGS	= -I/usr/local/include   -fPIC -D__STDC_CONSTANT_MACROS
 LIBAVCODEC_CFLAGS=-I${prefix}/include  
-LDFLAGS	       +=   -lavcodec -lavutil
-EXTRACFLAGS	= -I$(PLUGINDIR) -D__STDC_CONSTANT_MACROS
+LDFLAGS	       += -L/usr/local/lib   -lavcodec -lavutil
+EXTRACFLAGS	= -I$(PLUGINDIR)
 
 # HAVE_LIBAVCODEC_RTP_MODE=1
 

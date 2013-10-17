@@ -12,8 +12,8 @@ CC		=gcc
 CXX		=g++
 LDSO		=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-CFLAGS	        =-D USE_KISS_FFT=1 -D EXPORT= -D FIXED_POINT=1
-STDCCFLAGS	=-fPIC
+CFLAGS	       +=@CFLAGS@ -Os
+STDCCFLAGS	=-fPIC -D__STDC_CONSTANT_MACROS -D USE_KISS_FFT=1 -D EXPORT= -D FIXED_POINT=1
 LDFLAGS	       +=
 EXTRACFLAGS     =-Isrc/include -Isrc/include/speex
 

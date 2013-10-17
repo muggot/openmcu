@@ -63,11 +63,11 @@ SRCDIR	= ./g726
 OBJDIR	= ./obj
 
 CC	 	=gcc
-CFLAGS	 	=-g -O2
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=-fPIC
+CFLAGS	       +=-g  -O2
+STDCCFLAGS     +=-fPIC -D__STDC_CONSTANT_MACROS
 LDFLAGS	       +=
 
 SRCS	+= g726codec.c \

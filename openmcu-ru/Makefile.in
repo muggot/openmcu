@@ -11,7 +11,7 @@ PROG		= openmcu-ru
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx
 
 CXX		= g++
-CFLAGS         += -Os
+CFLAGS         += @CFLAGS@ -Os
 LDFLAGS        += @RPATH@
 LDLIBS	       += @LDLIBS@ @MCULIBS@
 STDCCFLAGS     += @STDCCFLAGS@ @CPPFLAGS@ -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS -Wall

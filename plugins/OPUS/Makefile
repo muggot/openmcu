@@ -11,10 +11,9 @@ CC		=gcc -std=gnu99
 CXX		=g++
 LDSO		=-shared
 PLUGINEXT	=so
-STDCCFLAGS	=-fPIC -g
+CFLAGS	       +=-g  -O2
+STDCCFLAGS	=-fPIC -D__STDC_CONSTANT_MACROS -DOPUS_BUILD -DVAR_ARRAYS
 EXTRACFLAGS     =-Isrc/include -Iscr/opus -Isrc/celt -Isrc/silk -Isrc/silk/float
-#WARNINGS	=-Wall -W -Wstrict-prototypes -Wextra -Wcast-align -Wnested-externs -Wshadow
-CFLAGS		=-O2 -g $(WARNINGS) -DOPUS_BUILD -DVAR_ARRAYS
 LDFLAGS        +=
 
 SRCS	= \

@@ -3,7 +3,6 @@ prefix=/usr/local/lib/ptlib
 target_os=linux-gnu
 
 SONAME	= silk_b40
-STDCCFLAGS +=  -fPIC
 
 SRCDIR	= ./silkSrc
 OBJDIR	= ./obj
@@ -13,7 +12,8 @@ CC		=gcc
 CXX		=g++
 LDSO		=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=-fPIC -ggdb
+CFLAGS	       +=-g  -Os
+STDCCFLAGS	=-fPIC -D__STDC_CONSTANT_MACROS
 LDFLAGS	       +=
 EXTRACFLAGS     =-I$(PLUGINDIR)
 
