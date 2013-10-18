@@ -26,6 +26,21 @@
  *
  */
 
+#ifdef _WIN32
+#  define _WITH_ALIGNED_STACK(what)                            \
+   {                                                           \
+     (void)__builtin_alloca(16);                               \
+      __asm__ __volatile__ ("andl $-16, %esp");                \
+							       \
+     what						       \
+   }
+#else
+#  define _WITH_ALIGNED_STACK(what)                            \
+   {                                                           \
+     what                                                      \
+   }
+#endif
+
 #ifndef PLUGIN_CODEC_DLL_EXPORTS
 #include "plugin-config.h"
 #endif
@@ -476,11 +491,13 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
 
         vpx_codec_control(&m_codec, VP8E_SET_CPUUSED, m_encodingCPUUsed);
 
-        if (IS_ERROR(vpx_codec_encode, (&m_codec, &image,
-                                        srcRTP.GetTimestamp(), m_frameTime,
-                                        (flags&PluginCodec_CoderForceIFrame) != 0 ? VPX_EFLAG_FORCE_KF : 0,
-                                        VPX_DL_REALTIME)))
-          return false;
+        _WITH_ALIGNED_STACK( \
+        if (IS_ERROR(vpx_codec_encode, (&m_codec, &image, \
+                                        srcRTP.GetTimestamp(), m_frameTime, \
+                                        (flags&PluginCodec_CoderForceIFrame) != 0 ? VPX_EFLAG_FORCE_KF : 0, \
+                                        VPX_DL_REALTIME))) \
+          return false; \
+        );
       }
 
       flags = 0;
