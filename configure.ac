@@ -37,8 +37,11 @@ else
    INSTALLPREFIX="${prefix}"
 fi
 AC_SUBST(INSTALLPREFIX)
-export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:$INSTALLPREFIX/lib/pkgconfig
 
+CPPFLAGS="$CPPFLAGS -I$INSTALLPREFIX"
+LDFLAGS="$LDFLAGS -L$INSTALLPREFIX"
+
+export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:$INSTALLPREFIX/lib/pkgconfig
 
 dnl ########################################################################
 dnl LIBDIR accordingly
