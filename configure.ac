@@ -40,6 +40,10 @@ AC_SUBST(INSTALLPREFIX)
 
 CPPFLAGS="$CPPFLAGS -I$INSTALLPREFIX/include -I/usr/local/include"
 LDFLAGS="$LDFLAGS -L$INSTALLPREFIX/lib -L/usr/local/lib"
+LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS $CPPFLAGS";
+LIBAV_LDFLAGS="$LIBAV_LDFLAGS $LDFLAGS";
+LIBVPX_CPPFLAGS="$LIBVPX_CPPFLAGS $CPPFLAGS";
+LIBVPX_LDFLAGS="$LIBVPX_LDFLAGS $LDFLAGS";
 
 export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:$INSTALLPREFIX/lib/pkgconfig
 
@@ -220,7 +224,7 @@ AC_SUBST(USE_FREETYPE, 0)
 if test "${rendering_names}" = "yes"; then
   AC_CHECK_LIB(freetype, FT_Init_FreeType, USE_FREETYPE=1, USE_FREETYPE=0)
   if test ${USE_FREETYPE} = 1 ; then
-    STDCCFLAGS="$STDCCFLAGS `pkg-config --cflags-only-I freetype2`";
+    CPPFLAGS="$CPPFLAGS `pkg-config --cflags-only-I freetype2`";
     LDLIBS="$LDLIBS -lfreetype"
   else
     AC_MSG_ERROR(Must have freetype library!)
@@ -232,7 +236,7 @@ dnl check for video library
 
 AC_CHECK_LIB(avcodec, avcodec_version, USE_AVCODEC=1, USE_AVCODEC=0)
 if test ${USE_AVCODEC} = 1; then
-  LIBAV_CFLAGS="$LIBAV_CFLAGS `pkg-config --cflags-only-I libavcodec`";
+  LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --cflags-only-I libavcodec`";
   LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --libs-only-L libavcodec`";
 else
   AC_MSG_ERROR(libavcodec not found!)
@@ -319,7 +323,7 @@ dnl check for sofia-sip library
 AC_SUBST(USE_LIBSOFIA, 0)
 AC_CHECK_LIB(sofia-sip-ua, nta_agent_create, USE_LIBSOFIA=1, USE_LIBSOFIA=0)
 if test ${USE_LIBSOFIA} = 1 ; then
-  STDCCFLAGS="$STDCCFLAGS `pkg-config --cflags-only-I sofia-sip-ua`";
+  CPPFLAGS="$CPPFLAGS `pkg-config --cflags-only-I sofia-sip-ua`";
   LDLIBS="$LDLIBS -lsofia-sip-ua"
 else
   AC_MSG_ERROR(libsofia-sip-ua not found!)
@@ -496,11 +500,11 @@ AC_SUBST(PLUGIN_VP8_DIR)
 if test "${vp8}" = "yes"; then
     AC_CHECK_LIB(vpx, vpx_codec_encode, USE_VP8=1, USE_VP8=0)
     if test ${USE_VP8} = 1 ; then
-        LIBVPX_CFLAGS="$LIBVPX_CFLAGS `pkg-config --cflags-only-I libvpx`";
+        LIBVPX_CPPFLAGS="$LIBVPX_CPPFLAGS `pkg-config --cflags-only-I libvpx`";
         LIBVPX_LDFLAGS="$LIBVPX_LDFLAGS `pkg-config --libs-only-L libvpx`";
         if test "${vp8_ffmpeg}" = "yes"; then
-          LIBVPX_CFLAGS="$LIBAV_CFLAGS $LIBVPX_CFLAGS -DFFMPEG_DECODER=1";
-          LIBVPX_LDFLAGS="$LIBAV_LDFLAGS -lavcodec -lavutil $LIBVPX_LDFLAGS";
+          LIBVPX_CPPFLAGS="$LIBAV_CPPFLAGS $LIBVPX_CPPFLAGS -DFFMPEG_DECODER=1";
+          LIBVPX_LDFLAGS="$LIBAV_LDFLAGS $LIBVPX_LDFLAGS -lavcodec -lavutil";
         fi
 	AC_CONFIG_FILES(plugins/VP8-WebM/Makefile)
 	PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_VP8_DIR} "
@@ -631,11 +635,23 @@ if test "${debug}" = "yes"; then
 fi
 
 dnl ########################################################################
+dnl removing duplicate paths
+
+CPPFLAGS=$(echo $(printf '%s\n' $CPPFLAGS | sort -u))
+LDFLAGS=$(echo $(printf '%s\n' $LDFLAGS | sort -u))
+RPATH=$(echo $(printf '%s\n' $RPATH | sort -u))
+
+LIBAV_CPPFLAGS=$(echo $(printf '%s\n' $LIBAV_CPPFLAGS | sort -u))
+LIBAV_LDFLAGS=$(echo $(printf '%s\n' $LIBAV_LDFLAGS | sort -u))
+LIBVPX_CPPFLAGS=$(echo $(printf '%s\n' $LIBVPX_CPPFLAGS | sort -u))
+LIBVPX_LDFLAGS=$(echo $(printf '%s\n' $LIBVPX_LDFLAGS | sort -u))
+
+dnl ########################################################################
 dnl final declarations
 
-AC_SUBST(LIBAV_CFLAGS)
+AC_SUBST(LIBAV_CPPFLAGS)
 AC_SUBST(LIBAV_LDFLAGS)
-AC_SUBST(LIBVPX_CFLAGS)
+AC_SUBST(LIBVPX_CPPFLAGS)
 AC_SUBST(LIBVPX_LDFLAGS)
 
 AC_SUBST(STDCCFLAGS)

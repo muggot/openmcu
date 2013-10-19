@@ -14,10 +14,10 @@ CXX		= g++
 CFLAGS         += @CFLAGS@ -Os
 LDFLAGS        += @LDFLAGS@ @RPATH@
 LDLIBS	       += @LDLIBS@ @MCULIBS@
-STDCCFLAGS     += @STDCCFLAGS@ @CPPFLAGS@ -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS -Wall
+STDCCFLAGS     += @STDCCFLAGS@ -D__STDC_CONSTANT_MACROS -Wall
 STDCXXFLAGS    += @STDCXXFLAGS@
-CPPFLAGS       +=
-OPTCCFLAGS      =$(CPPFLAGS) @CPPFLAGS@
+CPPFLAGS       += @CPPFLAGS@ -I../ptlib/include -I../h323plus/include
+OPTCCFLAGS      =$(CPPFLAGS)
 
 git_revision        = $(shell git rev-list master --max-count=1 HEAD)
 #git_revision_number = $(shell git rev-list master | wc -l)
