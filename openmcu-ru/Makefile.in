@@ -12,10 +12,12 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
 
 CXX		= g++
 CFLAGS         += @CFLAGS@ -Os
-LDFLAGS        += @RPATH@
+LDFLAGS        += @LDFLAGS@ @RPATH@
 LDLIBS	       += @LDLIBS@ @MCULIBS@
 STDCCFLAGS     += @STDCCFLAGS@ @CPPFLAGS@ -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS -Wall
-STDCXXFLAGS    += @STDCXXFLAGS@ @CPPFLAGS@
+STDCXXFLAGS    += @STDCXXFLAGS@
+CPPFLAGS       +=
+OPTCCFLAGS      =$(CPPFLAGS) @CPPFLAGS@
 
 git_revision        = $(shell git rev-list master --max-count=1 HEAD)
 #git_revision_number = $(shell git rev-list master | wc -l)

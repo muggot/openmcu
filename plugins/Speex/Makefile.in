@@ -15,6 +15,8 @@ PLUGINEXT	=so
 CFLAGS	       +=@CFLAGS@ -Os
 STDCCFLAGS	=-fPIC -D__STDC_CONSTANT_MACROS -D USE_KISS_FFT=1 -D EXPORT= -D FIXED_POINT=1
 LDFLAGS	       +=
+CPPFLAGS       +=
+OPTCCFLAGS      =$(CPPFLAGS)
 EXTRACFLAGS     =-Isrc/include -Isrc/include/speex
 
 SRCS 		=speexcodec.cxx \
@@ -48,9 +50,9 @@ all: $(PLUGIN)
 $(PLUGIN): $(OBJECTS)
 ifeq (solaris,$(findstring solaris,$(target_os)))
 
-	$(Q_LD)$(CXX) $(LDSO) $@ -o $@ $^ $(EXTRALIBS)
+	$(Q_LD)$(CXX) $(LDSO) $@ -o $@ $^ $(EXTRALIBS) $(LDFLAGS)
 else
-	$(Q_LD)$(CXX) $(LDSO) -o $@ $^ $(EXTRALIBS)
+	$(Q_LD)$(CXX) $(LDSO) -o $@ $^ $(EXTRALIBS) $(LDFLAGS)
 
 endif	
 
