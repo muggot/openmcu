@@ -38,8 +38,8 @@ else
 fi
 AC_SUBST(INSTALLPREFIX)
 
-CPPFLAGS="$CPPFLAGS -I$INSTALLPREFIX -I/usr/local/include"
-LDFLAGS="$LDFLAGS -L$INSTALLPREFIX -L/usr/local/lib"
+CPPFLAGS="$CPPFLAGS -I$INSTALLPREFIX/include -I/usr/local/include"
+LDFLAGS="$LDFLAGS -L$INSTALLPREFIX/lib -L/usr/local/lib"
 
 export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:$INSTALLPREFIX/lib/pkgconfig
 
