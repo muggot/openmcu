@@ -17,6 +17,10 @@ LDLIBS	       +=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua -Wl,--star
 STDCCFLAGS     +=  -I/usr/include/freetype2   -I/usr/include/sofia-sip-1.12    -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS -Wall
 STDCXXFLAGS    +=  
 
+git_revision        = $(shell git rev-list master --max-count=1 HEAD)
+#git_revision_number = $(shell git rev-list master | wc -l)
+STDCCFLAGS     +=-D GIT_REVISION=$(git_revision)
+
 PTLIBDIR        = ../ptlib
 include ../ptlib/make/ptbuildopts.mak
 

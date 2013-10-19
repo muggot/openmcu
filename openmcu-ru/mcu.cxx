@@ -130,11 +130,15 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #  ifdef GIT_REVISION
 #    define _QUOTE_MACRO_VALUE1(x) #x
 #    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
-  PTRACE(1,"OpenMCU\tREVISION " << _QUOTE_MACRO_VALUE(GIT_REVISION));
+  PTRACE(1,"OpenMCU-ru git revision " << _QUOTE_MACRO_VALUE(GIT_REVISION));
 #    undef _QUOTE_MACRO_VALUE
 #    undef _QUOTE_MACRO_VALUE1
 #  endif
 #endif //if PTRACING
+
+#ifdef __VERSION__
+  PTRACE(1,"OpenMCU-ru GCC version " <<__VERSION__);
+#endif
 
 // default log file name
 #ifdef SERVER_LOGS
