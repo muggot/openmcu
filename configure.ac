@@ -38,14 +38,15 @@ else
 fi
 AC_SUBST(INSTALLPREFIX)
 
-CPPFLAGS="$CPPFLAGS -I$INSTALLPREFIX/include -I/usr/local/include"
-LDFLAGS="$LDFLAGS -L$INSTALLPREFIX/lib -L/usr/local/lib"
+CPPFLAGS="$CPPFLAGS -I$INSTALLPREFIX/include -I/usr/include -I/usr/local/include "
+LDFLAGS="$LDFLAGS -L$INSTALLPREFIX/lib -L/usr/lib -L/usr/local/lib "
 LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS $CPPFLAGS";
 LIBAV_LDFLAGS="$LIBAV_LDFLAGS $LDFLAGS";
 LIBVPX_CPPFLAGS="$LIBVPX_CPPFLAGS $CPPFLAGS";
 LIBVPX_LDFLAGS="$LIBVPX_LDFLAGS $LDFLAGS";
 
 export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:$INSTALLPREFIX/lib/pkgconfig
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/lib:/usr/local/lib:$INSTALLPREFIX/lib
 
 dnl ########################################################################
 dnl LIBDIR accordingly
@@ -224,7 +225,7 @@ AC_SUBST(USE_FREETYPE, 0)
 if test "${rendering_names}" = "yes"; then
   AC_CHECK_LIB(freetype, FT_Init_FreeType, USE_FREETYPE=1, USE_FREETYPE=0)
   if test ${USE_FREETYPE} = 1 ; then
-    CPPFLAGS="$CPPFLAGS `pkg-config --cflags-only-I freetype2`";
+    CPPFLAGS="$CPPFLAGS `pkg-config --silence-errors --cflags-only-I freetype2`";
     LDLIBS="$LDLIBS -lfreetype"
   else
     AC_MSG_ERROR(Must have freetype library!)
@@ -236,8 +237,8 @@ dnl check for video library
 
 AC_CHECK_LIB(avcodec, avcodec_version, USE_AVCODEC=1, USE_AVCODEC=0)
 if test ${USE_AVCODEC} = 1; then
-  LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --cflags-only-I libavcodec`";
-  LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --libs-only-L libavcodec`";
+  LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
+  LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
 else
   AC_MSG_ERROR(libavcodec not found!)
 fi
@@ -323,7 +324,7 @@ dnl check for sofia-sip library
 AC_SUBST(USE_LIBSOFIA, 0)
 AC_CHECK_LIB(sofia-sip-ua, nta_agent_create, USE_LIBSOFIA=1, USE_LIBSOFIA=0)
 if test ${USE_LIBSOFIA} = 1 ; then
-  CPPFLAGS="$CPPFLAGS `pkg-config --cflags-only-I sofia-sip-ua`";
+  CPPFLAGS="$CPPFLAGS `pkg-config --silence-errors --cflags-only-I sofia-sip-ua`";
   LDLIBS="$LDLIBS -lsofia-sip-ua"
 else
   AC_MSG_ERROR(libsofia-sip-ua not found!)
@@ -351,6 +352,7 @@ fi
 
 PTLIB_INSTALLPREFIX=`echo ${PTLIB_INSTALLPREFIX} | sed "s/\/\//\//g"`
 H323PLUS_INSTALLPREFIX=`echo ${H323PLUS_INSTALLPREFIX} | sed "s/\/\//\//g"`
+LDFLAGS="${LDFLAGS} -L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib "
 
 if test "x$plugins_prefix" = "x"; then
   P_DEFAULT_PLUGIN_DIR=${PTLIB_INSTALLPREFIX}/lib/ptlib
@@ -500,8 +502,8 @@ AC_SUBST(PLUGIN_VP8_DIR)
 if test "${vp8}" = "yes"; then
     AC_CHECK_LIB(vpx, vpx_codec_encode, USE_VP8=1, USE_VP8=0)
     if test ${USE_VP8} = 1 ; then
-        LIBVPX_CPPFLAGS="$LIBVPX_CPPFLAGS `pkg-config --cflags-only-I libvpx`";
-        LIBVPX_LDFLAGS="$LIBVPX_LDFLAGS `pkg-config --libs-only-L libvpx`";
+        LIBVPX_CPPFLAGS="$LIBVPX_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libvpx`";
+        LIBVPX_LDFLAGS="$LIBVPX_LDFLAGS `pkg-config --silence-errors --libs-only-L libvpx`";
         if test "${vp8_ffmpeg}" = "yes"; then
           LIBVPX_CPPFLAGS="$LIBAV_CPPFLAGS $LIBVPX_CPPFLAGS -DFFMPEG_DECODER=1";
           LIBVPX_LDFLAGS="$LIBAV_LDFLAGS $LIBVPX_LDFLAGS -lavcodec -lavutil";
@@ -566,29 +568,12 @@ AC_SUBST(PLUGIN_DIRS)
 
 
 dnl ########################################################################
-dnl configure rpath
+dnl configure rpath stage1
 
 rpath=yes
 AC_ARG_ENABLE(separator, [     ])
 AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="$enableval"])
 
-LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
-rpath_ptlib=yes
-rpath_h323plus=yes
-for path in ${LD_PATH} ; do
-  if test "$path" = "${PTLIB_INSTALLPREFIX}/lib"; then
-    rpath_ptlib=no
-  fi
-  if test "$path" = "${H323PLUS_INSTALLPREFIX}/lib"; then
-    rpath_h323plus=no
-  fi
-done
-
-if test "${rpath}" = "yes" && test "${rpath_ptlib}" = "yes" && test "${rpath_h323plus}" = "yes"; then
-  RPATH="-L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib -Wl,-R${PTLIB_INSTALLPREFIX}/lib,-R${H323PLUS_INSTALLPREFIX}/lib"
-fi
-
-AC_SUBST(RPATH)
 
 dnl ########################################################################
 dnl configure development files
@@ -612,7 +597,6 @@ AC_ARG_ENABLE(static, [AS_HELP_STRING([--disable-static],[build static linking w
 if test "${static}" = "yes"; then
   ENABLE_STATIC=1
   ENABLE_DEVEL=0
-  RPATH=
   MCULIBS="-Wl,--start-group ../ptlib/lib/libpt_${OSTYPE}_${MACHTYPE}_r_s.a ../h323plus/lib/libh323_${OSTYPE}_${MACHTYPE}_r_s.a -Wl,--end-group"
 else
   ENABLE_STATIC=0
@@ -639,12 +623,25 @@ dnl removing duplicate paths
 
 CPPFLAGS=$(echo $(printf '%s\n' $CPPFLAGS | sort -u))
 LDFLAGS=$(echo $(printf '%s\n' $LDFLAGS | sort -u))
-RPATH=$(echo $(printf '%s\n' $RPATH | sort -u))
 
 LIBAV_CPPFLAGS=$(echo $(printf '%s\n' $LIBAV_CPPFLAGS | sort -u))
 LIBAV_LDFLAGS=$(echo $(printf '%s\n' $LIBAV_LDFLAGS | sort -u))
 LIBVPX_CPPFLAGS=$(echo $(printf '%s\n' $LIBVPX_CPPFLAGS | sort -u))
 LIBVPX_LDFLAGS=$(echo $(printf '%s\n' $LIBVPX_LDFLAGS | sort -u))
+
+dnl ########################################################################
+dnl configure rpath stage2
+
+if test "${rpath}" = "yes"; then
+  RPATH="-Wl"
+  for ldpath in ${LDFLAGS}; do
+    path=`echo ${ldpath} | sed -e 's/-L//'`
+    RPATH="${RPATH},-R${path}"
+  done
+  if test "${RPATH}" = "-Wl"; then
+    RPATH=
+  fi
+fi
 
 dnl ########################################################################
 dnl final declarations
@@ -653,6 +650,8 @@ AC_SUBST(LIBAV_CPPFLAGS)
 AC_SUBST(LIBAV_LDFLAGS)
 AC_SUBST(LIBVPX_CPPFLAGS)
 AC_SUBST(LIBVPX_LDFLAGS)
+
+AC_SUBST(RPATH)
 
 AC_SUBST(STDCCFLAGS)
 AC_SUBST(STDCXXFLAGS)
