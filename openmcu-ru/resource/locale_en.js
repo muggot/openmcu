@@ -25,17 +25,41 @@ window.l_help = 'Help';
 window.l_forum = 'Forum';
 window.l_manual = 'Manual';
 
-window.l_info_welcome ='';
+window.l_info_welcome ='\
+<p>\
+Service OpenMCU-ru is running and accepting connections.\
+</p>\
+<p>\
+Conference started by connection from some terminal will work in unmanaged mode. All members will see the same pictire. In unmanaged mode OpenMCU-ru automatically change layout depending on number of conference members, in order  from file "layouts.conf". After connecting 100 members other connecting members will not be visible, but will see others.<br />\
+Audio streams in unmanaged mode are transmitting and receiving from all connected members.<br />\
+</p>\
+<p>\
+To test the server make call to room "echo". Or to room "testroomN", where N is number from 1 to 100.<br />\
+</p>\
+<p>\
+Server management is performed from main menu at the top of the page.<br />\
+Page <b>Status</b> shows current connections and terminal parameters.<br />\
+At page <b>Control</b> rooms can be set to managed mode.<br />\
+At page <b>Settings</b> can be set global server parameters.<br />\
+More info can be found in <b>Help</b> (link leads to official Internet site).<br />\
+</p>\
+<p>Below shows a summary of the server.</p>\
+';
 window.l_info_invite ='';
 window.l_info_invite_f ='';
 window.l_info_invite_s ='';
-window.l_info_rooms ='';
+window.l_info_rooms ='To view room and set it in managed mode - click its name.';
 window.l_info_control ='';
-window.l_info_records ='';
-window.l_info_connections ='';
-window.l_info_param_general ='';
-window.l_info_param_video ='';
-window.l_info_param_record ='';
+window.l_info_records ='\
+Page shows video records directory (on the server), \
+and allows to download them.';
+
+window.l_info_connections ='\
+Page shows current connections and terminal parameters.\
+';
+window.l_info_param_general ='Global server parameters. To reset all settings to defaults - check "RESET" checkbox and click Accept.';
+window.l_info_param_video ='Outgoing video quality.';
+window.l_info_param_record ='Recording quality.';
 window.l_info_param_h323 ='';
 window.l_info_param_sip ='';
 window.l_info_param_access_rules ='';

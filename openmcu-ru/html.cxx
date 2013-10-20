@@ -447,7 +447,7 @@ RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & t
 
   BuildHTML("");
   PStringStream html_begin, html_end;
-  BeginPage(html_begin, section, "window.l_param_general","window.l_info_param_general");
+  BeginPage(html_begin, section, "window.l_param_record","window.l_info_param_record");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   PStringStream html_page; html_page << html_begin << string << html_end;
   string = html_page;
