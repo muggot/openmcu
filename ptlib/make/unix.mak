@@ -446,6 +446,10 @@ STDCCFLAGS     += -DP_64BIT
 LDLIBS		+= -lresolv
 endif
 
+ifeq ($(MACHTYPE),amd64)
+STDCCFLAGS     += -DP_64BIT
+endif
+
 ifeq ($(MACHTYPE),ppc64)
 STDCCFLAGS     += -DP_64BIT
 endif

@@ -156,11 +156,11 @@ typedef unsigned int  UINT;
 
 #if defined (__FreeBSD__) && defined (P_64BIT)
   typedef long PINDEX;
+# define P_MAX_INDEX LONG_MAX
 #else
   typedef int PINDEX;
+# define P_MAX_INDEX INT_MAX
 #endif
-
-#define P_MAX_INDEX LONG_MAX
 
 inline PINDEX PABSINDEX(PINDEX idx) { return (idx < 0 ? -idx : idx)&P_MAX_INDEX; }
 #define PASSERTINDEX(idx) PAssert((idx) >= 0, PInvalidArrayIndex)

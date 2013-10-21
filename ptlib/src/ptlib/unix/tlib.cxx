@@ -642,7 +642,11 @@ PString PX_GetThreadName(pthread_t id)
 {
   if (PProcessInstance != NULL) {
     PWaitAndSignal m(PProcessInstance->threadMutex);
+#   if defined (__FreeBSD__) && defined (P_64BIT) 
     PThread & thread = PProcessInstance->activeThreads[(unsigned long)id];
+#   else
+    PThread & thread = PProcessInstance->activeThreads[(unsigned)id];
+#   endif
     return thread.GetThreadName();
   }
   return psprintf("%08x", id);

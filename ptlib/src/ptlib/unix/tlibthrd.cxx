@@ -773,8 +773,11 @@ BOOL PProcess::PThreadKill(pthread_t id, unsigned sig)
 {
   PWaitAndSignal m(threadMutex);
 
-  if (!activeThreads.Contains((unsigned long)id)) 
-    return FALSE;
+# if defined (__FreeBSD__) && defined (P_64BIT) 
+    if (!activeThreads.Contains((unsigned long)id)) return FALSE;
+# else
+    if (!activeThreads.Contains((unsigned)id)) return FALSE;
+# endif
 
   return pthread_kill(id, sig) == 0;
 }
@@ -811,7 +814,11 @@ void PThread::InitialiseProcessThread()
 #endif
 
   ((PProcess *)this)->activeThreads.DisallowDeleteObjects();
+# if defined (__FreeBSD__) && defined (P_64BIT) 
   ((PProcess *)this)->activeThreads.SetAt((unsigned long)PX_threadId, this);
+# else
+  ((PProcess *)this)->activeThreads.SetAt((unsigned)PX_threadId, this);
+# endif
 
   PX_firstTimeStart = FALSE;
 
@@ -927,7 +934,11 @@ void PThread::Restart()
   PAssertPTHREAD(pthread_create, (&PX_threadId, &threadAttr, PX_ThreadStart, this));
 
   // put the thread into the thread list
+# if defined (__FreeBSD__) && defined (P_64BIT) 
   process.activeThreads.SetAt((unsigned long)PX_threadId, this);
+# else
+  process.activeThreads.SetAt((unsigned)PX_threadId, this);
+# endif
   if (process.activeThreads.GetSize() > highWaterMark)
     newHighWaterMark = highWaterMark = process.activeThreads.GetSize();
 
@@ -1250,7 +1261,11 @@ PThread * PThread::Current()
 {
   PProcess & process = PProcess::Current();
   process.threadMutex.Wait();
+# if defined (__FreeBSD__) && defined (P_64BIT) 
   PThread * thread = process.activeThreads.GetAt((unsigned long)pthread_self());
+# else
+  PThread * thread = process.activeThreads.GetAt((unsigned)pthread_self());
+# endif
   process.threadMutex.Signal();
   return thread;
 }
@@ -1383,7 +1398,11 @@ void PThread::PX_ThreadEnd(void * arg)
   }  
 
  // remove this thread from the active thread list
+# if defined (__FreeBSD__) && defined (P_64BIT) 
   process.activeThreads.SetAt((unsigned long)id, NULL);
+# else
+  process.activeThreads.SetAt((unsigned)id, NULL);
+# endif
 
   // delete the thread if required, note this is done this way to avoid
   // a race condition, the thread ID cannot be zeroed before the if!

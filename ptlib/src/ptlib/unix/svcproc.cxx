@@ -391,8 +391,10 @@ void PSystemLog::Output(Level level, const char * cmsg)
       unsigned tid = ::taskIdSelf();
 #elif defined(BE_THREADS)
       thread_id tid = ::find_thread(NULL);
-#else
+#elif defined (__FreeBSD__) && defined (P_64BIT)
       unsigned long tid = (unsigned long) pthread_self();
+#else
+      unsigned tid = (unsigned) pthread_self();
 #endif
       *out << "ThreadID=0x"
            << setfill('0') << ::hex
@@ -941,8 +943,10 @@ void PServiceProcess::PXOnAsyncSignal(int sig)
   unsigned tid = ::taskIdSelf();
 #elif defined(BE_THREADS)
   thread_id tid = ::find_thread(NULL);
-#else
+#elif defined (__FreeBSD__) && defined (P_64BIT)
   unsigned long tid = (unsigned long) pthread_self();
+#else
+  unsigned tid = (unsigned) pthread_self();
 #endif
   PThread * thread_ptr = activeThreads.GetAt(tid);
 
