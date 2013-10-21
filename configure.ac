@@ -38,6 +38,7 @@ else
 fi
 AC_SUBST(INSTALLPREFIX)
 
+RPATH_LDFLAGS=${LDFLAGS}
 CPPFLAGS="$CPPFLAGS -I$INSTALLPREFIX/include -I/usr/include -I/usr/local/include "
 LDFLAGS="$LDFLAGS -L$INSTALLPREFIX/lib -L/usr/lib -L/usr/local/lib "
 LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS $CPPFLAGS";
@@ -357,7 +358,6 @@ fi
 
 PTLIB_INSTALLPREFIX=`echo ${PTLIB_INSTALLPREFIX} | sed "s/\/\//\//g"`
 H323PLUS_INSTALLPREFIX=`echo ${H323PLUS_INSTALLPREFIX} | sed "s/\/\//\//g"`
-LDFLAGS="${LDFLAGS} -L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib "
 
 if test "x$plugins_prefix" = "x"; then
   P_DEFAULT_PLUGIN_DIR=${PTLIB_INSTALLPREFIX}/lib/ptlib
@@ -637,12 +637,25 @@ LIBVPX_LDFLAGS=$(echo $(printf '%s\n' $LIBVPX_LDFLAGS | sort -u))
 dnl ########################################################################
 dnl configure rpath stage2
 
+RPATH=
 if test "${rpath}" = "yes"; then
+  if test "${static}" != "yes"; then
+    RPATH_LDFLAGS="${RPATH_LDLFAGS} -L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib "
+  fi
+  RPATH_LDFLAGS=$(echo $(printf '%s\n' $RPATH_LDFLAGS | sort -u))
+  LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
+
   RPATH="-Wl"
-  for ldpath in ${LDFLAGS}; do
-    if test `echo ${ldpath} | grep \\\-L` != ""; then
-      path=`echo ${ldpath} | sed -e 's/-L//'`
-      if test "${path}" != "/usr/lib" && test "${path}" != "/usr/local/lib"; then
+  for r_path in ${RPATH_LDFLAGS}; do
+    if test `echo ${r_path} | grep \\\-L` != ""; then
+      path=`echo ${r_path} | sed -e 's/-L//'`
+      use_rpath=yes
+      for ld_path in ${LD_PATH} ; do
+        if test "${ld_path}" = "${path}"; then
+          use_rpath=no
+        fi
+      done
+      if test "${use_rpath}" = "yes"; then
         RPATH="${RPATH},-R${path}"
       fi
     fi
