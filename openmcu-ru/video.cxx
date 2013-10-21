@@ -3346,7 +3346,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSourceToLayout(ConferenceMemberId id, Conferen
 
   if (newPosition != NULL) {
     PBYTEArray fs(CIF4_SIZE);
-    int amount = newPosition->width*newPosition->height*3/2;
+    PINDEX amount = newPosition->width*newPosition->height*3/2;
     if (!OpenMCU::Current().GetPreMediaFrame(fs.GetPointer(), newPosition->width, newPosition->height, amount))
       FillYUVFrame(fs.GetPointer(), 0, 0, 0, newPosition->width, newPosition->height);
     WriteSubFrame(*newPosition, fs.GetPointer(), newPosition->width, newPosition->height, amount);
@@ -3421,7 +3421,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
 
   if (newPosition != NULL) {
     PBYTEArray fs(CIF4_SIZE);
-    int amount = newPosition->width*newPosition->height*3/2;
+    PINDEX amount = newPosition->width*newPosition->height*3/2;
     if (!OpenMCU::Current().GetPreMediaFrame(fs.GetPointer(), newPosition->width, newPosition->height, amount))
       FillYUVFrame(fs.GetPointer(), 0, 0, 0, newPosition->width, newPosition->height);
     WriteSubFrame(*newPosition, fs.GetPointer(), newPosition->width, newPosition->height, amount);
@@ -3853,7 +3853,7 @@ BOOL MCUSimpleVideoMixer::MyAddVideoSource(int num, ConferenceMemberId *idp)
 /// was commented since at least p35. let's uncomment and test:
    if (newPosition != NULL) {
      PBYTEArray fs(CIF4_SIZE);
-     int amount = newPosition->width*newPosition->height*3/2;
+     PINDEX amount = newPosition->width*newPosition->height*3/2;
      if (!OpenMCU::Current().GetPreMediaFrame(fs.GetPointer(), newPosition->width, newPosition->height, amount))
        FillYUVFrame(fs.GetPointer(), 0, 0, 0, newPosition->width, newPosition->height);
      WriteSubFrame(*newPosition, fs.GetPointer(), newPosition->width, newPosition->height, amount);

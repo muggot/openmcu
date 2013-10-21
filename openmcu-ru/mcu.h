@@ -13,6 +13,10 @@
 #include <h323pluginmgr.h>
 #endif
 
+#ifdef __FreeBSD__
+#  include <signal.h>
+#endif
+
 #include "config.h"
 
 #include <map>

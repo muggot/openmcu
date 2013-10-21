@@ -375,7 +375,7 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
   if(height<144 || height>1152) { height=576; PTRACE(1,"WriteThreadV\tWrong frame height value changed to 4CIF height"); }
   if(framerate<1 || framerate>100) { framerate=10; PTRACE(1,"WriteThreadV\tWrong frame rate value changed to 10 FPS"); }
 
-  int amount = width*height*3/2;
+  PINDEX amount = width*height*3/2;
   int delay = 1000/framerate;
 #ifdef _WIN32
   MY_NAMED_PIPE_OPEN("video",amount,0);
