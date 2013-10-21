@@ -635,8 +635,12 @@ dnl configure rpath stage2
 if test "${rpath}" = "yes"; then
   RPATH="-Wl"
   for ldpath in ${LDFLAGS}; do
-    path=`echo ${ldpath} | sed -e 's/-L//'`
-    RPATH="${RPATH},-R${path}"
+    if test `echo ${ldpath} | grep \\\-L` != ""; then
+      path=`echo ${ldpath} | sed -e 's/-L//'`
+      if test "${path}" != "/usr/lib" && test "${path}" != "/usr/local/lib"; then
+        RPATH="${RPATH},-R${path}"
+      fi
+    fi
   done
   if test "${RPATH}" = "-Wl"; then
     RPATH=
