@@ -416,6 +416,15 @@ endif
 
 ####################################################
 
+ifeq ($(OSTYPE),FreeBSD)
+ifeq ($(MACHTYPE),x86_64)
+STDCCFLAGS     += -DP_64BIT
+endif
+ifeq ($(MACHTYPE),amd64)
+STDCCFLAGS     += -DP_64BIT
+endif
+endif
+
 ifeq ($(OSTYPE),linux)
 
 ifeq ($(MACHTYPE),x86)
