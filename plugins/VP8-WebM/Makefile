@@ -29,7 +29,7 @@ prefix=/usr/local/lib/ptlib
 exec_prefix=${prefix}
 target_os=linux-gnu
 
-DL_LIBS =-ldl
+DL_LIBS =
 
 SHAREDDIR	= shared
 PLUGINDIR	= opal

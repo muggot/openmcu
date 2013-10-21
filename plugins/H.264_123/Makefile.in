@@ -72,7 +72,7 @@ VC_PLUGIN_DIR=@VIDEO_PLUGIN_DIR@
 prefix=@PLUGIN_INSTALLPREFIX@
 exec_prefix=${prefix}
 target_os=linux-gnu
-DL_LIBS =-ldl
+DL_LIBS =
 
 SHAREDDIR	= ./shared
 PLUGINDIR	= ./opal

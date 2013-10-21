@@ -431,6 +431,13 @@ STDCCFLAGS	+= -fPIC -DPIC
 endif # PROG
 endif # P_SHAREDLIB
 
+STATIC_LIBS	:= libstdc++.a libg++.a libm.a libc.a
+ifdef PREFIX
+SYSLIBDIR	:= $(PREFIX)/lib
+else
+SYSLIBDIR	:= /usr/local/lib
+endif
+
 endif
 
 ####################################################
