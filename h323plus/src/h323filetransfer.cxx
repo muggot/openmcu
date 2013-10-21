@@ -1017,7 +1017,7 @@ void H323FileTransferHandler::Transmit(PThread &, INT)
                         if (lastBlockNo > 99) lastBlockNo = 0;
 						readBlock.SetSize(blockSize);
 						int readsize = readBlock.GetSize();
-						curFile->Read(readBlock.GetPointer(),readsize);
+						curFile->Read(readBlock.GetPointer(),(PINDEX&)readsize);
 						lastBlock.BuildData(lastBlockNo,readBlock);
 					}
 			   }
