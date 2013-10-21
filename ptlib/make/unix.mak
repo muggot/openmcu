@@ -417,13 +417,23 @@ endif
 ####################################################
 
 ifeq ($(OSTYPE),FreeBSD)
+
 ifeq ($(MACHTYPE),x86_64)
 STDCCFLAGS     += -DP_64BIT
 endif
 ifeq ($(MACHTYPE),amd64)
 STDCCFLAGS     += -DP_64BIT
 endif
+
+ifeq ($(P_SHAREDLIB),1)
+ifndef PROG
+STDCCFLAGS	+= -fPIC -DPIC
+endif # PROG
+endif # P_SHAREDLIB
+
 endif
+
+####################################################
 
 ifeq ($(OSTYPE),linux)
 
