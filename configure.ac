@@ -38,16 +38,18 @@ else
 fi
 AC_SUBST(INSTALLPREFIX)
 
-RPATH_LDFLAGS=${LDFLAGS}
+RPATH_LDFLAGS="${LDFLAGS}"
+
+LIBAV_CPPFLAGS="${LIBAV_CPPFLAGS} ${CPPFLAGS}";
+LIBAV_LDFLAGS="${LIBAV_LDFLAGS} ${LDFLAGS}";
+LIBVPX_CPPFLAGS="${LIBVPX_CPPFLAGS} ${CPPFLAGS}";
+LIBVPX_LDFLAGS="${LIBVPX_LDFLAGS} ${LDFLAGS}";
+
 CPPFLAGS="$CPPFLAGS -I$INSTALLPREFIX/include -I/usr/include -I/usr/local/include "
 LDFLAGS="$LDFLAGS -L$INSTALLPREFIX/lib -L/usr/lib -L/usr/local/lib "
-LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS $CPPFLAGS";
-LIBAV_LDFLAGS="$LIBAV_LDFLAGS $LDFLAGS";
-LIBVPX_CPPFLAGS="$LIBVPX_CPPFLAGS $CPPFLAGS";
-LIBVPX_LDFLAGS="$LIBVPX_LDFLAGS $LDFLAGS";
 
-export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:$INSTALLPREFIX/lib/pkgconfig
-export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/usr/lib:/usr/local/lib:$INSTALLPREFIX/lib
+export PKG_CONFIG_PATH=$INSTALLPREFIX/lib/pkgconfig:${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
+export LD_LIBRARY_PATH=$INSTALLPREFIX/lib:${LD_LIBRARY_PATH}:/usr/lib:/usr/local/lib
 
 dnl ########################################################################
 dnl LIBDIR accordingly
@@ -231,9 +233,9 @@ AC_SUBST(USE_FREETYPE, 0)
 if test "${rendering_names}" = "yes"; then
   AC_CHECK_LIB(freetype, FT_Init_FreeType, USE_FREETYPE=1, USE_FREETYPE=0)
   if test ${USE_FREETYPE} = 1 ; then
-    CPPFLAGS="$CPPFLAGS `pkg-config --silence-errors --cflags-only-I freetype2`";
-    LDLIBS="$LDLIBS -lfreetype"
+    FREETYPE_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I freetype2`";
     FREETYPE_LDFLAGS="`pkg-config --silence-errors --libs-only-L freetype2`";
+    LDLIBS="$LDLIBS -lfreetype"
   else
     AC_MSG_ERROR(Must have freetype library!)
   fi
@@ -287,16 +289,19 @@ if test "${resample}" = "yes"; then
 
   if test "${SWRESAMPLE}" = "1"; then
     USE_SWRESAMPLE=1
-    LDLIBS="$LDLIBS -lswresample"
+    RESAMPLE_CPPFLAGS="${LIBAV_CPPFLAGS}";
     RESAMPLE_LDFLAGS="${LIBAV_LDFLAGS}";
+    LDLIBS="$LDLIBS -lswresample"
   elif test "${AVRESAMPLE}" = "1"; then
     USE_AVRESAMPLE=1
-    LDLIBS="$LDLIBS -lavresample"
+    RESAMPLE_CPPFLAGS="${LIBAV_CPPFLAGS}";
     RESAMPLE_LDFLAGS="${LIBAV_LDFLAGS}";
+    LDLIBS="$LDLIBS -lavresample"
   elif test "${LIBSAMPLERATE}" = "1"; then
     USE_LIBSAMPLERATE=1
-    LDLIBS="$LDLIBS -lsamplerate"
+    RESAMPLE_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I samplerate`";
     RESAMPLE_LDFLAGS="`pkg-config --silence-errors --libs-only-L samplerate`";
+    LDLIBS="$LDLIBS -lsamplerate"
   else
     AC_MSG_ERROR(Need one of the libraries: libswresample libavresample libsamplerate.)
   fi
@@ -309,8 +314,9 @@ AC_SUBST(USE_LIBJPEG, 0)
 if test "${live_video}" = "yes"; then
   AC_CHECK_LIB(jpeg, jpeg_destroy_decompress, USE_LIBJPEG=1, USE_LIBJPEG=0)
   if test ${USE_LIBJPEG} = 1 ; then
-    LDLIBS="$LDLIBS -ljpeg"
+    JPEG_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I libjpeg`";
     JPEG_LDFLAGS="`pkg-config --silence-errors --libs-only-L libjpeg`";
+    LDLIBS="$LDLIBS -ljpeg"
   else
     AC_MSG_ERROR(libjpeg not found!)
   fi
@@ -323,8 +329,9 @@ AC_SUBST(USE_LIBYUV, 0)
 if test "${optimized_frame_resize}" = "yes"; then
   AC_CHECK_LIB(yuv, I420Scale, USE_LIBYUV=1, USE_LIBYUV=0)
   if test ${USE_LIBYUV} = 1 ; then
-    LDLIBS="$LDLIBS -lyuv"
+    YUV_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I libyuv`";
     YUV_LDFLAGS="`pkg-config --silence-errors --libs-only-L libyuv`";
+    LDLIBS="$LDLIBS -lyuv"
   else
     AC_MSG_ERROR(libyuv not found!)
   fi
@@ -336,9 +343,9 @@ dnl check for sofia-sip library
 AC_SUBST(USE_LIBSOFIA, 0)
 AC_CHECK_LIB(sofia-sip-ua, nta_agent_create, USE_LIBSOFIA=1, USE_LIBSOFIA=0)
 if test ${USE_LIBSOFIA} = 1 ; then
-  CPPFLAGS="$CPPFLAGS `pkg-config --silence-errors --cflags-only-I sofia-sip-ua`";
-  LDLIBS="$LDLIBS -lsofia-sip-ua"
+  SOFIA_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I sofia-sip-ua`";
   SOFIA_LDFLAGS="`pkg-config --silence-errors --libs-only-L sofia-sip-ua`";
+  LDLIBS="$LDLIBS -lsofia-sip-ua"
 else
   AC_MSG_ERROR(libsofia-sip-ua not found!)
 fi
@@ -632,23 +639,12 @@ if test "${debug}" = "yes"; then
 fi
 
 dnl ########################################################################
-dnl removing duplicate paths
-
-CPPFLAGS=$(echo $(printf '%s\n' $CPPFLAGS | sort -u))
-LDFLAGS=$(echo $(printf '%s\n' $LDFLAGS | sort -u))
-
-LIBAV_CPPFLAGS=$(echo $(printf '%s\n' $LIBAV_CPPFLAGS | sort -u))
-LIBAV_LDFLAGS=$(echo $(printf '%s\n' $LIBAV_LDFLAGS | sort -u))
-LIBVPX_CPPFLAGS=$(echo $(printf '%s\n' $LIBVPX_CPPFLAGS | sort -u))
-LIBVPX_LDFLAGS=$(echo $(printf '%s\n' $LIBVPX_LDFLAGS | sort -u))
-
-dnl ########################################################################
 dnl configure rpath stage2
 
 RPATH=
 if test "${rpath}" = "yes"; then
   if test "${static}" != "yes"; then
-    RPATH_LDFLAGS="${RPATH_LDLFAGS} -L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib "
+    RPATH_LDFLAGS="${RPATH_LDFLAGS} -L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib "
   fi
   RPATH_LDFLAGS="${RPATH_LDFLAGS} ${FREETYPE_LDFLAGS} ${JPEG_LDFLAGS} ${YUV_LDFLAGS} ${SOFIA_LDFLAGS} \
                  ${RESAMPLE_LDFLAGS} ${LIBAV_LDFLAGS} ${LIBVPX_LDFLAGS}"
@@ -657,7 +653,7 @@ if test "${rpath}" = "yes"; then
   LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
   RPATH="-Wl"
   for r_path in ${RPATH_LDFLAGS}; do
-    if test `echo ${r_path} | grep \\\-L` != ""; then
+    if test `echo ${r_path} | grep \\\-L`; then
       path=`echo ${r_path} | sed -e 's/-L//'`
       use_rpath=yes
       for ld_path in ${LD_PATH} ; do
@@ -674,6 +670,22 @@ if test "${rpath}" = "yes"; then
     RPATH=
   fi
 fi
+
+dnl ########################################################################
+dnl removing duplicate paths
+
+CPPFLAGS="${CPPFLAGS} ${FREETYPE_CPPFLAGS} ${JPEG_CPPFLAGS} ${YUV_CPPFLAGS} ${SOFIA_CPPFLAGS} \
+         ${RESAMPLE_CPPFLAGS}"
+CPPFLAGS=$(echo $(printf '%s\n' $CPPFLAGS | sort -u))
+
+LDFLAGS="${LDFLAGS} ${FREETYPE_LDFLAGS} ${JPEG_LDFLAGS} ${YUV_LDFLAGS} ${SOFIA_LDFLAGS} \
+         ${RESAMPLE_LDFLAGS}"
+LDFLAGS=$(echo $(printf '%s\n' $LDFLAGS | sort -u))
+
+LIBAV_CPPFLAGS=$(echo $(printf '%s\n' $LIBAV_CPPFLAGS | sort -u))
+LIBAV_LDFLAGS=$(echo $(printf '%s\n' $LIBAV_LDFLAGS | sort -u))
+LIBVPX_CPPFLAGS=$(echo $(printf '%s\n' $LIBVPX_CPPFLAGS | sort -u))
+LIBVPX_LDFLAGS=$(echo $(printf '%s\n' $LIBVPX_LDFLAGS | sort -u))
 
 dnl ########################################################################
 dnl final declarations
