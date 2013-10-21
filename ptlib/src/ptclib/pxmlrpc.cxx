@@ -837,7 +837,7 @@ BOOL PXMLRPCBlock::GetParams(PXMLRPCStructBase & data)
   // Special case to allow for server implementations that always return
   // values as a struct rather than multiple parameters.
   if (GetParamCount() == 1 &&
-          (data.GetNumVariables() > 1 || data.GetVariable(0).GetStruct(0) == NULL)) {
+          (data.GetNumVariables() > 1 || data.GetVariable((PINDEX)0).GetStruct(0) == NULL)) {
     PString type, value;
     if (ParseScalar(GetParam(0), type, value) && type == "struct")
       return GetParam(0, data);
