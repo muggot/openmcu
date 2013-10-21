@@ -2895,6 +2895,11 @@ case "$target_cpu" in
                    LIB64=1 ;
 		   ;;
 
+   amd64)	   MACHTYPE=amd64 ;
+		   P_64BIT=1 ;
+                   LIB64=1 ;
+		   ;;
+
    alpha | alphaev56 | alphaev6 | alphaev67 | alphaev7) MACHTYPE=alpha ;
 		   P_64BIT=1 ;
 		   ;;

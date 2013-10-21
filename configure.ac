@@ -102,6 +102,11 @@ case "$target_cpu" in
                    LIB64=1 ;
 		   ;;
 
+   amd64)	   MACHTYPE=amd64 ;
+		   P_64BIT=1 ;
+                   LIB64=1 ;
+		   ;;
+
    alpha | alphaev56 | alphaev6 | alphaev67 | alphaev7) MACHTYPE=alpha ;
 		   P_64BIT=1 ;
 		   ;;
@@ -672,14 +677,14 @@ AC_OUTPUT(Makefile)
 dnl ########################################################################
 dnl replace default targets
 
-sed -i 's/all: all-recursive/all: all/g' Makefile
+sed -i -r 's/all: all-recursive/all: all/g' Makefile
 
 
 dnl ########################################################################
 dnl replace default install path
 
-sed -i "s#^PREFIX=.*#PREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/Makefile
-sed -i "s#^PTINSTDIR=.*#PTINSTDIR=${PTLIB_INSTALLPREFIX}/share/ptlib#g" ${PTLIBDIR}/make/ptlib-config
-sed -i "s#^INSTALLPREFIX=.*#INSTALLPREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/make/ptlib-config
-sed -i "s#^\#define P_DEFAULT_PLUGIN_DIR.*#\#define P_DEFAULT_PLUGIN_DIR \"${P_DEFAULT_PLUGIN_DIR}\"#g" ${PTLIBDIR}/include/ptbuildopts.h
-sed -i "s#^PREFIX=.*#PREFIX=${H323PLUS_INSTALLPREFIX}#g" ${H323PLUSDIR}/Makefile
+sed -i -r "s#^PREFIX=.*#PREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/Makefile
+sed -i -r "s#^PTINSTDIR=.*#PTINSTDIR=${PTLIB_INSTALLPREFIX}/share/ptlib#g" ${PTLIBDIR}/make/ptlib-config
+sed -i -r "s#^INSTALLPREFIX=.*#INSTALLPREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/make/ptlib-config
+sed -i -r "s#^\#define P_DEFAULT_PLUGIN_DIR.*#\#define P_DEFAULT_PLUGIN_DIR \"${P_DEFAULT_PLUGIN_DIR}\"#g" ${PTLIBDIR}/include/ptbuildopts.h
+sed -i -r "s#^PREFIX=.*#PREFIX=${H323PLUS_INSTALLPREFIX}#g" ${H323PLUSDIR}/Makefile
