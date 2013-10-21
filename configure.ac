@@ -233,6 +233,7 @@ if test "${rendering_names}" = "yes"; then
   if test ${USE_FREETYPE} = 1 ; then
     CPPFLAGS="$CPPFLAGS `pkg-config --silence-errors --cflags-only-I freetype2`";
     LDLIBS="$LDLIBS -lfreetype"
+    FREETYPE_LDFLAGS="`pkg-config --silence-errors --libs-only-L freetype2`";
   else
     AC_MSG_ERROR(Must have freetype library!)
   fi
@@ -287,12 +288,15 @@ if test "${resample}" = "yes"; then
   if test "${SWRESAMPLE}" = "1"; then
     USE_SWRESAMPLE=1
     LDLIBS="$LDLIBS -lswresample"
+    RESAMPLE_LDFLAGS="${LIBAV_LDFLAGS}";
   elif test "${AVRESAMPLE}" = "1"; then
     USE_AVRESAMPLE=1
     LDLIBS="$LDLIBS -lavresample"
+    RESAMPLE_LDFLAGS="${LIBAV_LDFLAGS}";
   elif test "${LIBSAMPLERATE}" = "1"; then
     USE_LIBSAMPLERATE=1
     LDLIBS="$LDLIBS -lsamplerate"
+    RESAMPLE_LDFLAGS="`pkg-config --silence-errors --libs-only-L samplerate`";
   else
     AC_MSG_ERROR(Need one of the libraries: libswresample libavresample libsamplerate.)
   fi
@@ -306,6 +310,7 @@ if test "${live_video}" = "yes"; then
   AC_CHECK_LIB(jpeg, jpeg_destroy_decompress, USE_LIBJPEG=1, USE_LIBJPEG=0)
   if test ${USE_LIBJPEG} = 1 ; then
     LDLIBS="$LDLIBS -ljpeg"
+    JPEG_LDFLAGS="`pkg-config --silence-errors --libs-only-L libjpeg`";
   else
     AC_MSG_ERROR(libjpeg not found!)
   fi
@@ -319,6 +324,7 @@ if test "${optimized_frame_resize}" = "yes"; then
   AC_CHECK_LIB(yuv, I420Scale, USE_LIBYUV=1, USE_LIBYUV=0)
   if test ${USE_LIBYUV} = 1 ; then
     LDLIBS="$LDLIBS -lyuv"
+    YUV_LDFLAGS="`pkg-config --silence-errors --libs-only-L libyuv`";
   else
     AC_MSG_ERROR(libyuv not found!)
   fi
@@ -332,6 +338,7 @@ AC_CHECK_LIB(sofia-sip-ua, nta_agent_create, USE_LIBSOFIA=1, USE_LIBSOFIA=0)
 if test ${USE_LIBSOFIA} = 1 ; then
   CPPFLAGS="$CPPFLAGS `pkg-config --silence-errors --cflags-only-I sofia-sip-ua`";
   LDLIBS="$LDLIBS -lsofia-sip-ua"
+  SOFIA_LDFLAGS="`pkg-config --silence-errors --libs-only-L sofia-sip-ua`";
 else
   AC_MSG_ERROR(libsofia-sip-ua not found!)
 fi
@@ -643,9 +650,11 @@ if test "${rpath}" = "yes"; then
   if test "${static}" != "yes"; then
     RPATH_LDFLAGS="${RPATH_LDLFAGS} -L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib "
   fi
+  RPATH_LDFLAGS="${RPATH_LDFLAGS} ${FREETYPE_LDFLAGS} ${JPEG_LDFLAGS} ${YUV_LDFLAGS} ${SOFIA_LDFLAGS} \
+                 ${RESAMPLE_LDFLAGS} ${LIBAV_LDFLAGS} ${LIBVPX_LDFLAGS}"
   RPATH_LDFLAGS=$(echo $(printf '%s\n' $RPATH_LDFLAGS | sort -u))
-  LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
 
+  LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
   RPATH="-Wl"
   for r_path in ${RPATH_LDFLAGS}; do
     if test `echo ${r_path} | grep \\\-L` != ""; then
