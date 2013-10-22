@@ -76,6 +76,7 @@ case "$target_os" in
                      OSRELEASE="`sysctl -n kern.osreldate`" ;
                    fi
                    need_pragma=yes ;
+		   LDLIBS="$LDLIBS -lstdc++ -lm" ;
 		   ;;
 
   mingw*)	   OSTYPE=mingw ;
