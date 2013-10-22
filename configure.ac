@@ -651,18 +651,11 @@ if test "${rpath}" = "yes"; then
                  ${RESAMPLE_LDFLAGS} ${LIBAV_LDFLAGS} ${LIBVPX_LDFLAGS}"
   RPATH_LDFLAGS=$(echo $(printf '%s\n' $RPATH_LDFLAGS | sort -u))
 
-  LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
   RPATH="-Wl"
   for r_path in ${RPATH_LDFLAGS}; do
     if test `echo ${r_path} | grep \\\-L`; then
       path=`echo ${r_path} | sed -e 's/-L//'`
-      use_rpath=yes
-      for ld_path in ${LD_PATH} ; do
-        if test "${ld_path}" = "${path}"; then
-          use_rpath=no
-        fi
-      done
-      if test "${use_rpath}" = "yes"; then
+      if test "${path}" != "/lib" && test "${path}" != "/usr/lib"; then
         RPATH="${RPATH},-R${path}"
       fi
     fi
