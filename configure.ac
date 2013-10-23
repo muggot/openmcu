@@ -643,6 +643,10 @@ dnl ########################################################################
 dnl configure rpath stage2
 
 RPATH=
+if test "${OSTYPE}" != "linux" && test "${OSTYPE}" != "FreeBSD"; then
+  rpath=no
+fi
+
 if test "${rpath}" = "yes"; then
   if test "${static}" != "yes"; then
     RPATH_LDFLAGS="${RPATH_LDFLAGS} -L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib "
@@ -651,11 +655,31 @@ if test "${rpath}" = "yes"; then
                  ${RESAMPLE_LDFLAGS} ${LIBAV_LDFLAGS} ${LIBVPX_LDFLAGS}"
   RPATH_LDFLAGS=$(echo $(printf '%s\n' $RPATH_LDFLAGS | sort -u))
 
+  # ldconfig search directories
+  if test "${OSTYPE}" = "FreeBSD"; then
+    IN=`ldconfig -r | grep "directories:" | awk -F'directories:' '{print $2}'`
+    OIFS=$IFS
+    IFS=':'
+    for path in ${IN}; do
+      LD_PATH="${LD_PATH} -L${path}"
+    done
+    IFS=$OIFS
+  else
+    LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
+  fi
+
+  # RPATH keep only directories, which are not in ldconfig
   RPATH="-Wl"
   for r_path in ${RPATH_LDFLAGS}; do
     if test `echo ${r_path} | grep \\\-L`; then
       path=`echo ${r_path} | sed -e 's/-L//'`
-      if test "${path}" != "/lib" && test "${path}" != "/usr/lib"; then
+      use_rpath=yes
+      for ld_path in ${LD_PATH} ; do
+        if test "${ld_path}" = "${path}"; then
+          use_rpath=no
+        fi
+      done
+      if test "${use_rpath}" = "yes"; then
         RPATH="${RPATH},-R${path}"
       fi
     fi
