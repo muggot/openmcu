@@ -717,3 +717,112 @@ sed -i -r "s#^PTINSTDIR=.*#PTINSTDIR=${PTLIB_INSTALLPREFIX}/share/ptlib#g" ${PTL
 sed -i -r "s#^INSTALLPREFIX=.*#INSTALLPREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/make/ptlib-config
 sed -i -r "s#^\#define P_DEFAULT_PLUGIN_DIR.*#\#define P_DEFAULT_PLUGIN_DIR \"${P_DEFAULT_PLUGIN_DIR}\"#g" ${PTLIBDIR}/include/ptbuildopts.h
 sed -i -r "s#^PREFIX=.*#PREFIX=${H323PLUS_INSTALLPREFIX}#g" ${H323PLUSDIR}/Makefile
+
+dnl ########################################################################
+dnl Summary
+dnl ########################################################################
+echo ""
+echo "============== OpenMCU-ru Build Configuration ================="
+echo "          Installing into prefix  :  $INSTALLPREFIX"
+
+echo ""
+if test "x${rendering_names}" = "xyes" ; then
+echo "                       Subtitles  :  enabled"
+else
+echo "                       Subtitles  :  disabled"
+fi
+if test "x${live_video}" = "xyes" ; then
+echo " JPEG Frame Encoder (for browser) :  enabled"
+else
+echo " JPEG Frame Encoder (for browser) :  disabled"
+fi
+
+if test "x${resample}" = "xyes" ; then
+if test "x${resampler_ffmpeg}" = "xyes" ; then
+echo "        External Audio Resampler  :  enabled - ffmpeg"
+else
+if test "x${resampler_libav}" = "xyes" ; then
+echo "        External Audio Resampler  :  enabled - libav"
+else
+if test "x${resampler_libsamplerate}" = "xyes" ; then
+echo "        External Audio Resampler  :  enabled - libsamplerate"
+else
+echo "        External Audio Resampler  :  disabled (built-in will used)"
+fi
+fi
+fi
+else
+echo "        External Audio Resampler  :  disabled (built-in will used)"
+fi
+
+if test "x${optimized_frame_resize}" = "xyes" ; then
+echo "       Use libyuv to resize video :  enabled"
+else
+echo "       Use libyuv to resize video :  disabled"
+fi
+
+echo ""
+if test "x${vp8}" = "xyes" ; then
+echo "                VP8 Video Plugin  :  enabled"
+else
+echo "                VP8 Video Plugin  :  disabled"
+fi
+if test "x${h264}" = "xyes" ; then
+echo "              H.264 Video Plugin  :  enabled"
+else
+echo "              H.264 Video Plugin  :  disabled"
+fi
+if test "x${h263}" = "xyes" ; then
+echo "       H.263/H.263P Video Plugin  :  enabled"
+else
+echo "       H.263/H.263P Video Plugin  :  disabled"
+fi
+if test "x${h261}" = "xyes" ; then
+echo "              H.261 Video Plugin  :  enabled"
+else
+echo "              H.261 Video Plugin  :  disabled"
+fi
+
+echo ""
+if test "x${opus}" = "xyes" ; then
+echo "               OPUS Audio Plugin  :  enabled"
+else
+echo "               OPUS Audio Plugin  :  disabled"
+fi
+if test "x${silk}" = "xyes" ; then
+echo "               SILK Audio Plugin  :  enabled"
+else
+echo "               SILK Audio Plugin  :  disabled"
+fi
+if test "x${g722}" = "xyes" ; then
+echo "              G.722 Audio Plugin  :  enabled"
+else
+echo "              G.722 Audio Plugin  :  disabled"
+fi
+if test "x${speex}" = "xyes" ; then
+echo "              SPEEX Audio Plugin  :  enabled"
+else
+echo "              SPEEX Audio Plugin  :  disabled"
+fi
+if test "x${g7231}" = "xyes" ; then
+echo "            G.723.1 Audio Plugin  :  enabled"
+else
+echo "            G.723.1 Audio Plugin  :  disabled"
+fi
+if test "x${ilbc}" = "xyes" ; then
+echo "               iLBC Audio Plugin  :  enabled"
+else
+echo "               iLBC Audio Plugin  :  disabled"
+fi
+if test "x${g726}" = "xyes" ; then
+echo "              G.726 Audio Plugin  :  enabled"
+else
+echo "              G.726 Audio Plugin  :  disabled"
+fi
+
+echo ""
+echo "                         OS Type  :  $target_os"
+echo "                    Machine Type  :  $target_cpu"
+echo ""
+echo " If all settings are OK, type make and make install "
+echo "========================================================"
