@@ -4023,7 +4023,7 @@ test -z "$INSTALL_DATA" && INSTALL_DATA='${INSTALL} -m 644'
 
 
 
-subdirs="$subdirs plugins"
+#subdirs="$subdirs plugins"
 
 
 cat >confcache <<\_ACEOF

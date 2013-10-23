@@ -1,6 +1,6 @@
 AC_INIT(include/ptlib.h)
 
-AC_CONFIG_SUBDIRS(plugins)
+#AC_CONFIG_SUBDIRS(plugins)
 
 AC_PROG_CXX
 

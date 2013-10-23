@@ -453,15 +453,20 @@ AC_CONFIG_FILES(openmcu-ru/config.h)
 dnl ########################################################################
 dnl configuration ptlib
 
-PWLIBDIR=ptlib
+PWLIBDIR=`pwd`/ptlib
 PTLIBDIR=${PWLIBDIR}
+PTLIB_CONFIG=${PWLIBDIR}/make/ptlib-config
+
+export PWLIBDIR=${PWLIBDIR}
+export PTLIBDIR=${PTLIBDIR}
+export PTLIB_CONFIG=${PTLIB_CONFIG}
+
 AC_SUBST(PWLIBDIR)
 AC_SUBST(PTLIBDIR)
+AC_SUBST(PTLIB_CONFIG)
+
 AC_CONFIG_SUBDIRS(ptlib)
 AC_CONFIG_FILES(ptlib/Makefile)
-
-export PWLIBDIR=`pwd`/${PWLIBDIR}
-
 
 dnl ########################################################################
 dnl configuration h323plus
