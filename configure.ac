@@ -661,7 +661,7 @@ if test "${rpath}" = "yes"; then
     OIFS=$IFS
     IFS=':'
     for path in ${IN}; do
-      LD_PATH="${LD_PATH} -L${path}"
+      LD_PATH="${LD_PATH} ${path}"
     done
     IFS=$OIFS
   else
