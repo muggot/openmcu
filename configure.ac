@@ -238,7 +238,7 @@ if test "${rendering_names}" = "yes"; then
     FREETYPE_LDFLAGS="`pkg-config --silence-errors --libs-only-L freetype2`";
     LDLIBS="$LDLIBS -lfreetype"
   else
-    AC_MSG_ERROR(Must have freetype library!)
+    AC_MSG_WARN(libfreetype not found!)
   fi
 fi
 
@@ -304,7 +304,7 @@ if test "${resample}" = "yes"; then
     RESAMPLE_LDFLAGS="`pkg-config --silence-errors --libs-only-L samplerate`";
     LDLIBS="$LDLIBS -lsamplerate"
   else
-    AC_MSG_ERROR(Need one of the libraries: libswresample libavresample libsamplerate.)
+    AC_MSG_WARN(libswresample/libavresample/libsamplerate not found!)
   fi
 fi
 
@@ -319,7 +319,7 @@ if test "${live_video}" = "yes"; then
     JPEG_LDFLAGS="`pkg-config --silence-errors --libs-only-L libjpeg`";
     LDLIBS="$LDLIBS -ljpeg"
   else
-    AC_MSG_ERROR(libjpeg not found!)
+    AC_MSG_WARN(libjpeg not found!)
   fi
 fi
 
@@ -334,7 +334,7 @@ if test "${optimized_frame_resize}" = "yes"; then
     YUV_LDFLAGS="`pkg-config --silence-errors --libs-only-L libyuv`";
     LDLIBS="$LDLIBS -lyuv"
   else
-    AC_MSG_ERROR(libyuv not found!)
+    AC_MSG_WARN(libyuv not found!)
   fi
 fi
 
