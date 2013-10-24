@@ -423,8 +423,139 @@ void OpenMCUH323EndPoint::TranslateTCPAddress(PIPSocket::Address &localAddr, con
   return;
 }
 
-PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
+PString JsQuoteScreen(PString s)
 {
+  PString r="\"";
+  for(PINDEX i=0; i<s.GetLength(); i++)
+  { BYTE c=(BYTE)s[i];
+    if(c>31)
+    { if     (c==0x22) r+="\\x22"; // "
+      else if(c==0x5c) r+="\\x5c"; // backslash
+      else r+=(CHAR)c;
+    }
+  }
+  r+="\"";
+  return r;
+}
+
+PString OpenMCUH323EndPoint::GetRoomStatusJS()
+{
+  PString str = "Array(";
+  PTime now;
+  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
+  ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
+  BOOL notFirstConference = FALSE;
+  for (ConferenceListType::iterator r=conferenceList.begin(), re=conferenceList.end(); r!=re; ++r)
+  { Conference & conference = *(r->second);
+    PStringStream c;
+    { PWaitAndSignal m(conference.GetMutex());
+      Conference::MemberList & memberList = conference.GetMemberList();
+      Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
+      c << "Array("
+        << JsQuoteScreen(conference.GetNumber())                               // c[r][0]: room name
+        << "," << memberList.size()                                            // c[r][1]: memberList size
+        << "," << memberNameList.size()                                        // c[r][2]: memberNameList size
+        << "," << PString((now - conference.GetStartTime()).GetMilliSeconds()) // c[r][3]: duration
+        << ",Array("                                                           // c[r][4]: member descriptors
+      ;
+      BOOL notFirstMember = FALSE;
+      for (Conference::MemberList::const_iterator t=memberList.begin(), te=memberList.end(); t!=te; ++t) 
+      { ConferenceMember * member = t->second; if(member==NULL) continue;
+        PString name=member->GetName();
+        ConferenceMemberId id = member->GetID();
+        if(notFirstMember) c << ",";
+        c << "Array("                                                          // c[r][5][m]: member m descriptor
+          << (long)id                                                          // c[r][5][m][0]: member id
+          << "," << JsQuoteScreen(name)                                        // c[r][5][m][1]: member name
+          << "," << (member->IsVisible() ? "1" : "0")                          // c[r][5][m][2]: is member visible: 1/0
+          << "," << (member->IsMCU() ? "1" : "0")                              // c[r][5][m][3]: is member visible: 1/0
+        ;
+
+        PTimeInterval duration;
+        PString formatString, audioCodecR, audioCodecT, videoCodecR, videoCodecT;
+        int codecCacheMode=-1, cacheUsersNumber=-1;
+        OpenMCUH323Connection * conn = NULL;
+        H323Connection_ConferenceMember * connMember = NULL;
+        DWORD orx=0, otx=0, vorx=0, votx=0;
+
+        if(name=="file recorder")
+        {
+          duration = now - member->GetStartTime();
+        }
+        else if(name=="cache")
+        { ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
+          if(fileMember!=NULL)
+          if(fileMember->codec!=NULL)
+          if(fileMember->codec->cacheMode==1)
+          { formatString=fileMember->codec->formatString;
+            cacheUsersNumber=fileMember->codec->GetCacheUsersNumber();
+          }
+          duration = now - member->GetStartTime();
+        }
+        else // real (visible, external) endpoint
+        { connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
+          if (connMember != NULL)
+          { conn = (OpenMCUH323Connection *)FindConnectionWithLock(connMember->GetH323Token());
+            if(conn!=NULL)
+            { duration = now - conn->GetConnectionStartTime();
+              audioCodecR = conn->GetAudioReceiveCodecName();
+              audioCodecT = conn->GetAudioTransmitCodecName();
+              RTP_Session *sess=conn->GetSession(RTP_Session::DefaultAudioSessionID);
+              if(sess != NULL)
+              { orx = sess->GetOctetsReceived(); otx = sess->GetOctetsSent();
+              }
+#             if OPENMCU_VIDEO
+                videoCodecR = conn->GetVideoReceiveCodecName() + "@" + connMember->GetVideoRxFrameSize();
+                videoCodecT = conn->GetVideoTransmitCodecName();
+                RTP_Session* vSess=conn->GetSession(RTP_Session::DefaultVideoSessionID);
+                if(vSess != NULL)
+                { vorx=vSess->GetOctetsReceived(); votx=vSess->GetOctetsSent(); }
+                if(conn->GetVideoTransmitCodec()!=NULL)
+                { codecCacheMode=conn->GetVideoTransmitCodec()->cacheMode;
+                  formatString=conn->GetVideoTransmitCodec()->formatString;
+                }
+#             endif
+              conn->Unlock();
+            }
+          }
+        }
+
+        c << "," << duration.GetMilliSeconds()                                 // c[r][5][m][4]: member duration
+          << "," << orx << "," << otx << "," << vorx << "," << votx            // c[r][5][m][5-8]: orx, otx, vorx, votx
+          << "," << JsQuoteScreen(audioCodecR)                                 // c[r][5][m][9]: audio receive codec name
+          << "," << JsQuoteScreen(audioCodecT)                                 // c[r][5][m][10]: audio transmit codec name
+          << "," << JsQuoteScreen(videoCodecR)                                 // c[r][5][m][11]: video receive codec name
+          << "," << JsQuoteScreen(videoCodecT)                                 // c[r][5][m][12]: video transmit codec name
+          << "," << codecCacheMode << "," << JsQuoteScreen(formatString)       // c[r][5][m][13,14]: codecCacheMode, formatString
+          << "," << member->GetVideoRxFrameRate()                              // c[r][5][m][15]: video rx frame rate
+          << "," << member->GetVideoTxFrameRate()                              // c[r][5][m][16]: video tx frame rate
+          << ")";
+        notFirstMember = TRUE;
+      }
+          
+      for(Conference::MemberNameList::const_iterator s=memberNameList.begin(), se=memberNameList.end(); s!=se; ++s)
+      { if(s->second != NULL) continue;
+        c << (notFirstMember ? "," : "") << "Array("                           // c[r][5][m]: member m descriptor
+          << "0"                                                               // c[r][5][m][0]: member id: 0 (offline)
+          << "," << JsQuoteScreen(s->first)                                    // c[r][5][m][1]: member name
+          << ")";
+        notFirstMember = TRUE;
+      }
+      c << "))";
+    }
+
+    if(notFirstConference) str += ",";
+    notFirstConference = TRUE;
+    str += c;
+  }
+
+  str += ")";
+  PTRACE(1,"statusJs=" << str);
+  return str;
+}
+
+PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
+{ 
   PString substitution;
   PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();

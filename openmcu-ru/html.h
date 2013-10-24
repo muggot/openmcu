@@ -157,12 +157,8 @@ class MainStatusPage : public PServiceHTTPString
 
   public:
     MainStatusPage(OpenMCU & app, PHTTPAuthority & auth);
-
-    virtual BOOL Post(
-      PHTTPRequest & request,
-      const PStringToString &,
-      PHTML & msg
-    );
+    virtual BOOL Post(PHTTPRequest & request, const PStringToString &, PHTML & msg);
+    BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
 
   private:
     OpenMCU & app;

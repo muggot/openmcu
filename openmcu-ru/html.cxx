@@ -775,7 +775,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU.ru\r\n"
+      << "Server: OpenMCU-ru\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -824,12 +824,38 @@ MainStatusPage::MainStatusPage(OpenMCU & _app, PHTTPAuthority & auth)
   string = html;
 }
 
-///////////////////////////////////////////////////////////////
 
-BOOL MainStatusPage::Post(PHTTPRequest & request,
-                          const PStringToString & data,
-                          PHTML & msg)
+BOOL MainStatusPage::Post(PHTTPRequest & request, const PStringToString & data, PHTML & msg)
+{ return TRUE; }
+
+BOOL MainStatusPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
 {
+  PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
+  if(!CheckAuthority(server, *req, connectInfo)) { delete req; return PServiceHTTPString::OnGET(server, url, info, connectInfo); }
+  delete req;
+  PStringToString data;
+  PString request=url.AsString(); PINDEX q;
+  if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
+  if(!data.Contains("js")) return PServiceHTTPString::OnGET(server, url, info, connectInfo);
+
+  PString body = OpenMCU::Current().GetEndpoint().GetRoomStatusJS();
+  PINDEX length = body.GetLength();
+
+  PStringStream message;
+  message << "HTTP/1.1 200 OK\r\n"
+          << "Date: " << PTime().AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
+          << "Server: OpenMCU-ru\r\n"
+          << "MIME-Version: 1.0\r\n"
+          << "Cache-Control: no-cache, must-revalidate\r\n"
+          << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
+          << "Content-Type: text/html;charset=utf-8\r\n"
+          << "Content-Length: " << length << "\r\n"
+          << "Connection: Close\r\n"
+          << "\r\n";  //that's the last time we need to type \r\n instead of just \n
+
+  server.Write((const char*)message,message.GetLength());
+  server.Write((const char*)body, length);
+  server.flush();
   return TRUE;
 }
 
@@ -1032,7 +1058,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
       PStringStream message;
       message << "HTTP/1.1 200 OK\r\n"
               << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-              << "Server: OpenMCU.ru\r\n"
+              << "Server: OpenMCU-ru\r\n"
               << "MIME-Version: 1.0\r\n"
               << "Cache-Control: no-cache, must-revalidate\r\n"
               << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1086,7 +1112,7 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
 
   message << "HTTP/1.1 200 OK\r\n"
           << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-          << "Server: OpenMCU.ru\r\n"
+          << "Server: OpenMCU-ru\r\n"
           << "MIME-Version: 1.0\r\n"
           << "Cache-Control: no-cache, must-revalidate\r\n"
           << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1341,7 +1367,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU.ru\r\n"
+      << "Server: OpenMCU-ru\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1405,7 +1431,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       PStringStream message; PTime now; message
         << "HTTP/1.1 404 Not Found\r\n"
         << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-        << "Server: OpenMCU.ru\r\n"
+        << "Server: OpenMCU-ru\r\n"
         << "MIME-Version: 1.0\r\n"
         << "Cache-Control: no-cache, must-revalidate\r\n"
         << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1425,7 +1451,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       PStringStream message; PTime now; message
         << "HTTP/1.1 403 Forbidden\r\n"
         << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-        << "Server: OpenMCU.ru\r\n"
+        << "Server: OpenMCU-ru\r\n"
         << "MIME-Version: 1.0\r\n"
         << "Cache-Control: no-cache, must-revalidate\r\n"
         << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1441,7 +1467,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU.ru\r\n"
+      << "Server: OpenMCU-ru\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1501,7 +1527,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     PStringStream message; PTime now; message
       << "HTTP/1.1 404 Not Found\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU.ru\r\n"
+      << "Server: OpenMCU-ru\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1517,18 +1543,18 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   BeginPage(shtml,"Records","window.l_records","window.l_info_records");
   shtml << "<h1>" << dir << "</h1>";
 
-  BOOL dr, drc; PString wtd;
-  if(dr = data.Contains("deleteRecord")) wtd=data("deleteRecord");
-  else if(drc = data.Contains("deleteRecordConfirmed")) wtd=data("deleteRecordConfirmed");
-  if(dr)
+  PString wtd;
+  if(data.Contains("deleteRecord"))
   {
+    wtd=data("deleteRecord");
     shtml << "<div style='border:2px solid red;padding:8px;margin:4px;background-color:#fff'>"
       << wtd << " will deleted"
       << "<center><a style='color:red' href='/Records?deleteRecordConfirmed=" << wtd << "'>[OK]</a> :: <a href='/Records'>Cancel</a></center>"
       << "</div>";
   }
-  else if(drc)
+  else if(data.Contains("deleteRecordConfirmed"))
   {
+    wtd=data("deleteRecordConfirmed");
     if(wtd.Find('/')==P_MAX_INDEX) if(wtd.Find('\\')==P_MAX_INDEX)
     {
 #     ifdef _WIN32
@@ -1653,7 +1679,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU.ru\r\n"
+      << "Server: OpenMCU-ru\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
