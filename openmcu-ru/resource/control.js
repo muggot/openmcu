@@ -24,6 +24,7 @@ var VAD_FIELD_STYLE="width:40px;background-color:#fce;border-radius:5px;color:bl
 var OTFC_UNMUTE                  =  0; // corresponds to h323.h
 var OTFC_MUTE                    =  1;
 var OTFC_MUTE_ALL                =  2;
+var OTFC_REMOVE_FROM_VIDEOMIXERS =  3;
 var OTFC_DROP_MEMBER             =  7;
 var OTFC_VAD_NORMAL              =  8;
 var OTFC_VAD_CHOSEN_VAN          =  9;
@@ -490,6 +491,8 @@ function format_mmbr_button(m,st){
 
  if(st>0) var kick="<img onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='openmcu.ru_drop_Abdylas_Tynyshov.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" alt='Drop'>";
  else var kick="<img onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='openmcu.ru_remove.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" alt='Remove'>";
+
+ if(st>0) uname="<span style='cursor:pointer' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>&nbsp;&otimes;</span>&nbsp;"+uname;
 
  var posx_mute=0;
  var posx_vad=PANEL_ICON_WIDTH;
@@ -962,6 +965,8 @@ function build_page()
     PANEL_IP_WIDTH = (panel_width/2)-PANEL_ICON_WIDTH;
     if(panel_width<275){ log_width-=(275-panel_width); panel_width=275; }
   }
+
+  if(total_height < 460) total_height = 460;
 
   try {
     var l0=document.getElementById('logging0');

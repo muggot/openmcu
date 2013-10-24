@@ -25,6 +25,7 @@ extern "C" {
 #define OTFC_UNMUTE                    0
 #define OTFC_MUTE                      1
 #define OTFC_MUTE_ALL                  2
+#define OTFC_REMOVE_FROM_VIDEOMIXERS   3
 #define OTFC_DROP_MEMBER               7
 #define OTFC_VAD_NORMAL                8
 #define OTFC_VAD_CHOSEN_VAN            9

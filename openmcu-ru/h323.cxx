@@ -1407,6 +1407,23 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
   { member->muteIncoming=FALSE; cmd << "iunmute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
   if( action == OTFC_MUTE)
   { member->muteIncoming=TRUE; cmd << "imute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
+  if( action == OTFC_REMOVE_FROM_VIDEOMIXERS)
+  { if(conference->IsModerated()=="+" && conference->GetNumber() != "testroom")
+    {
+      Conference::VideoMixerRecord * vmr = conference->videoMixerList;
+      while( vmr!=NULL ) 
+      { MCUVideoMixer * mixer = vmr->mixer;
+        int oldPos = mixer->GetPositionNum(member->GetID());
+        if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, TRUE);
+        vmr=vmr->next;
+      }
+      H323Connection_ConferenceMember *connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
+      if(connMember!=NULL) connMember->SetFreezeVideo(TRUE);
+      OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
+      OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
+      OTF_RET_OK;
+    }
+  }
   if( action == OTFC_DROP_MEMBER )
   {
     // MAY CAUSE DEADLOCK PWaitAndSignal m(conference->GetMutex();
