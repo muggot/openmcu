@@ -238,7 +238,7 @@ if test "${rendering_names}" = "yes"; then
     FREETYPE_LDFLAGS="`pkg-config --silence-errors --libs-only-L freetype2`";
     LDLIBS="$LDLIBS -lfreetype"
   else
-    AC_MSG_ERROR(Must have freetype library!)
+    AC_MSG_WARN(libfreetype not found!)
   fi
 fi
 
@@ -304,7 +304,7 @@ if test "${resample}" = "yes"; then
     RESAMPLE_LDFLAGS="`pkg-config --silence-errors --libs-only-L samplerate`";
     LDLIBS="$LDLIBS -lsamplerate"
   else
-    AC_MSG_ERROR(Need one of the libraries: libswresample libavresample libsamplerate.)
+    AC_MSG_WARN(libswresample/libavresample/libsamplerate not found!)
   fi
 fi
 
@@ -319,7 +319,7 @@ if test "${live_video}" = "yes"; then
     JPEG_LDFLAGS="`pkg-config --silence-errors --libs-only-L libjpeg`";
     LDLIBS="$LDLIBS -ljpeg"
   else
-    AC_MSG_ERROR(libjpeg not found!)
+    AC_MSG_WARN(libjpeg not found!)
   fi
 fi
 
@@ -334,7 +334,7 @@ if test "${optimized_frame_resize}" = "yes"; then
     YUV_LDFLAGS="`pkg-config --silence-errors --libs-only-L libyuv`";
     LDLIBS="$LDLIBS -lyuv"
   else
-    AC_MSG_ERROR(libyuv not found!)
+    AC_MSG_WARN(libyuv not found!)
   fi
 fi
 
@@ -453,15 +453,20 @@ AC_CONFIG_FILES(openmcu-ru/config.h)
 dnl ########################################################################
 dnl configuration ptlib
 
-PWLIBDIR=ptlib
+PWLIBDIR=`pwd`/ptlib
 PTLIBDIR=${PWLIBDIR}
+PTLIB_CONFIG=${PWLIBDIR}/make/ptlib-config
+
+export PWLIBDIR=${PWLIBDIR}
+export PTLIBDIR=${PTLIBDIR}
+export PTLIB_CONFIG=${PTLIB_CONFIG}
+
 AC_SUBST(PWLIBDIR)
 AC_SUBST(PTLIBDIR)
+AC_SUBST(PTLIB_CONFIG)
+
 AC_CONFIG_SUBDIRS(ptlib)
 AC_CONFIG_FILES(ptlib/Makefile)
-
-export PWLIBDIR=`pwd`/${PWLIBDIR}
-
 
 dnl ########################################################################
 dnl configuration h323plus
@@ -643,6 +648,10 @@ dnl ########################################################################
 dnl configure rpath stage2
 
 RPATH=
+if test "${OSTYPE}" != "linux" && test "${OSTYPE}" != "FreeBSD"; then
+  rpath=no
+fi
+
 if test "${rpath}" = "yes"; then
   if test "${static}" != "yes"; then
     RPATH_LDFLAGS="${RPATH_LDFLAGS} -L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib "
@@ -651,11 +660,31 @@ if test "${rpath}" = "yes"; then
                  ${RESAMPLE_LDFLAGS} ${LIBAV_LDFLAGS} ${LIBVPX_LDFLAGS}"
   RPATH_LDFLAGS=$(echo $(printf '%s\n' $RPATH_LDFLAGS | sort -u))
 
+  # ldconfig search directories
+  if test "${OSTYPE}" = "FreeBSD"; then
+    IN=`ldconfig -r | grep "directories:" | awk -F'directories:' '{print $2}'`
+    OIFS=$IFS
+    IFS=':'
+    for path in ${IN}; do
+      LD_PATH="${LD_PATH} ${path}"
+    done
+    IFS=$OIFS
+  else
+    LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
+  fi
+
+  # RPATH keep only directories, which are not in ldconfig
   RPATH="-Wl"
   for r_path in ${RPATH_LDFLAGS}; do
     if test `echo ${r_path} | grep \\\-L`; then
       path=`echo ${r_path} | sed -e 's/-L//'`
-      if test "${path}" != "/lib" && test "${path}" != "/usr/lib"; then
+      use_rpath=yes
+      for ld_path in ${LD_PATH} ; do
+        if test "${ld_path}" = "${path}"; then
+          use_rpath=no
+        fi
+      done
+      if test "${use_rpath}" = "yes"; then
         RPATH="${RPATH},-R${path}"
       fi
     fi
