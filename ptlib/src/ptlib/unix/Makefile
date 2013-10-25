@@ -551,10 +551,10 @@ endif
 
 ifndef HAS_PLUGINS
 
-ifeq ($(OSTYPE),linux)
-VPATH_CXX	+= $(PLUGIN_DIR)/vidinput_v4l
-SOURCES		+= $(PLUGIN_DIR)/vidinput_v4l/vidinput_v4l.cxx
-endif
+##ifeq ($(OSTYPE),linux)
+##VPATH_CXX	+= $(PLUGIN_DIR)/vidinput_v4l
+##SOURCES		+= $(PLUGIN_DIR)/vidinput_v4l/vidinput_v4l.cxx
+##endif
 
 endif  # HAS_PLUGINS
 
@@ -569,19 +569,19 @@ SOURCES += $(COMMON_SRC_DIR)/sound.cxx
 
 ifndef HAS_PLUGINS
 
-ifeq ($(OSTYPE),linux)
-VPATH_CXX	+= $(PLUGIN_DIR)/sound_oss
-SOURCES		+= $(PLUGIN_DIR)/sound_oss/sound_oss.cxx
-endif # linux
+##ifeq ($(OSTYPE),linux)
+##VPATH_CXX	+= $(PLUGIN_DIR)/sound_oss
+##SOURCES		+= $(PLUGIN_DIR)/sound_oss/sound_oss.cxx
+##endif # linux
 
-ifdef HAS_ALSA
-VPATH_CXX	+= $(PLUGIN_DIR)/sound_alsa
-SOURCES		+= $(PLUGIN_DIR)/sound_alsa/sound_alsa.cxx
-endif  # HAS_ALSA
+##ifdef HAS_ALSA
+##VPATH_CXX	+= $(PLUGIN_DIR)/sound_alsa
+##SOURCES		+= $(PLUGIN_DIR)/sound_alsa/sound_alsa.cxx
+##endif  # HAS_ALSA
 
-ifeq ($(OSTYPE),beos)
-SOURCES	 += beaudio.cxx
-endif  # beos
+##ifeq ($(OSTYPE),beos)
+##SOURCES	 += beaudio.cxx
+##endif  # beos
 
 #ifeq ($(OSTYPE),Darwin)
 #SOURCES	+= maccoreaudio.cxx
