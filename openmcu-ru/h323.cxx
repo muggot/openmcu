@@ -431,7 +431,7 @@ PString JsQuoteScreen(PString s)
     if(c>31)
     { if     (c==0x22) r+="\\x22"; // "
       else if(c==0x5c) r+="\\x5c"; // backslash
-      else r+=(CHAR)c;
+      else r+=(char)c;
     }
   }
   r+="\"";

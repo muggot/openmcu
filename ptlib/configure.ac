@@ -521,13 +521,13 @@ AC_ARG_ENABLE(opal,
 
 dnl these are the default configure settings
 default_resolver=yes
-default_openldap=yes
+default_openldap=no
 default_openssl=no
 default_odbc=no
-default_expat=yes
+default_expat=no
 default_sdl=yes
 default_sasl=yes
-default_plugins=yes
+default_plugins=no
 default_tts=yes
 default_asn=yes
 default_stun=yes
@@ -566,7 +566,7 @@ if test "${enable_openh323}x" = "yesx" -o "${enable_opal}x" = "yesx" ; then
   default_expat=no
   default_sdl=yes
   default_sasl=no
-  default_plugins=yes
+  default_plugins=no
   default_tts=yes
   default_asn=yes
   default_stun=yes
@@ -604,7 +604,7 @@ elif test "${enable_minsize}x" = "yesx" ; then
   default_expat=no
   default_sdl=no
   default_sasl=no
-  default_plugins=yes
+  default_plugins=no
   default_tts=no
   default_asn=yes
   default_stun=yes
@@ -922,7 +922,7 @@ AC_MSG_CHECKING(if plugins support needs to be compiled)
 AC_ARG_ENABLE(plugins,
        [  --enable-plugins        enable plugin support])
 if test "${enable_plugins}z" = "z" ; then
-  enable_plugins=default_plugins
+  enable_plugins=$default_plugins
 fi
 
 HAS_PLUGINS=
