@@ -15,6 +15,7 @@ var PANEL_LEVEL_WIDTH=2; // audio level block width
 var SCROLLER_WIDTH=22; // browser specific, maybe calculated, but not yet
 var PANEL_IP_WIDTH=120; // width of IP address bar in panel
 var PANEL_MIXERID_WIDTH=10; // width of mixer id bar in panel
+var PANEL_HIDEBUTTON_WIDTH=15;
 var MIXER_LAYOUT_SCROLL_LEFT_STYLE="line-height:10px;font-weight:bold;color:#fff;cursor:pointer";
 var MIXER_LAYOUT_SCROLL_RIGHT_STYLE=MIXER_LAYOUT_SCROLL_LEFT_STYLE;
 var MIXER_LAYOUT_SCROLL_LEFT_BUTTON="&#9668;";
@@ -468,7 +469,7 @@ function format_mmbr_button(m,st){
  if(id.substr(0,1)=='-')id='_'+id.substr(1);
  s+='" id="rpan_'+id+'"';
 // if(st==1) s+=';cursor:move" id="rpan_'+id+'" onmousedown="ddstart(event,this,'+m[1]+',100)"';
- if(st==1) s+=';cursor:move" id="rpan_'+id+'" onmousedown="ddstart(event,this,\'panel\','+m[1]+')"';
+ if(st!=0) s+=';cursor:move" id="rpan_'+id+'" onmousedown="ddstart(event,this,\'panel\','+m[1]+')"';
  else s+='" id="rpan_'+id+'"';
  var uname=m[2]+"";
  var bpos=uname.lastIndexOf('[');
@@ -478,7 +479,7 @@ function format_mmbr_button(m,st){
   bpos=uname.lastIndexOf('('); b2pos=uname.lastIndexOf(')'); if(bpos!=-1)if(b2pos>bpos) uname=uname.substr(0,bpos);
  }
 
- var mute=''; var vad=''; var kick='';
+ var mute=''; var vad=''; var kick=''; var hide='';
 
  var mixer=m[7]; if(mixer==-1) mixer='va';
 // mixer='<
@@ -486,13 +487,13 @@ function format_mmbr_button(m,st){
  if(st>0) mute="<img onclick='muteunmute(this,"+m[1]+")' style='cursor:pointer' src='i15_mic_"+(m[3]?"off":"on")+".gif' alt='"+(m[3]?"Unmute":"Mute")+"' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" id='mrpan_"+id+"'>";
  else mute="<img onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='i15_inv.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" alt='Invite'>";
 
- if(!(m[4]|m[5]))var cmd=8; else if(m[5]) var cmd=9; else var cmd=10;
+ var cmd=10; if(!(m[4]|m[5]))var cmd=8; else if(m[5]) var cmd=9;
  if(st>0) vad="<img onclick='vadoptions(this,"+m[1]+")' style='cursor:pointer' src='openmcu.ru_vad_"+((cmd==8)?"vad":"")+((cmd==9)?"chosenvan":"")+((cmd==10)?"disable":"")+".gif' alt='"+((cmd==8)?"Normal":"")+((cmd==9)?"Van":"")+((cmd==10)?"AD disabled":"")+"' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" id='vrpan_"+id+"'>";
 
- if(st>0) var kick="<img onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='openmcu.ru_drop_Abdylas_Tynyshov.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" alt='Drop'>";
- else var kick="<img onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='openmcu.ru_remove.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" alt='Remove'>";
+ if(st>0) kick="<img onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='openmcu.ru_drop_Abdylas_Tynyshov.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" alt='Drop'>";
+ else kick="<img onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='openmcu.ru_remove.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" alt='Remove'>";
 
- if(st>0) uname="<span style='cursor:pointer' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>&nbsp;&otimes;</span>&nbsp;"+uname;
+ if(st>0) hide="<img style='cursor:pointer' src='i15_getNoVideo.gif' width=15 height=15 title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>";
 
  var posx_mute=0;
  var posx_vad=PANEL_ICON_WIDTH;
@@ -500,7 +501,8 @@ function format_mmbr_button(m,st){
  var posx_name=posx_level+PANEL_LEVEL_WIDTH+2;
  var posx_kick=panel_width-PANEL_ICON_WIDTH-5;
  var posx_ip=posx_kick-PANEL_IP_WIDTH;
- var posx_mixer=posx_ip-PANEL_MIXERID_WIDTH-5;
+ var posx_mixer=posx_ip-PANEL_MIXERID_WIDTH-5-PANEL_HIDEBUTTON_WIDTH-2;
+ var posx_hide=posx_mixer+PANEL_MIXERID_WIDTH+4;
  var name_width=posx_mixer-posx_name;
  if(name_width<10){my_alert('Exception: maybe screen resolution too low?'); if(name_width<1)name_width=1;}
  ip="<span style='color:"+((st==0)?"#576":"blue")+";font-size:10px'>"+ip+"</span>";
@@ -510,6 +512,7 @@ function format_mmbr_button(m,st){
  if(st>0)s+=dpre+posx_level+"px'><div style='padding-bottom:2px;margin-left:2px;vertical-align:-1px;overflow:hidden;width:"+PANEL_LEVEL_WIDTH+"px;height:"+(PANEL_ITEM_HEIGHT-2)+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px' id='srpan_"+id+"'>&nbsp;</div></div>";
  s+=dpre+posx_name+"px'><div style='vertical-align:-1px;overflow:hidden;padding-left:2px;width:"+name_width+"px;height:"+(PANEL_ITEM_HEIGHT-2)+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px'>"+uname+"</div></div>";
  if(st>0)s+=dpre+posx_mixer+"px'><div onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' style='cursor:pointer;font-size:9px;background-color:#aaf;color:#505;vertical-align:-1px;overflow:hidden;padding-left:1px;padding-right:1px;width:"+PANEL_MIXERID_WIDTH+"px;height:"+(PANEL_ITEM_HEIGHT-2)+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px'>"+mixer+"</div></div>";
+ if(st>0)s+=dpre+posx_hide+"px'>"+hide+"</div>";
  s+=dpre+posx_ip+"px'><div style='vertical-align:-1px;overflow:hidden;width:"+PANEL_IP_WIDTH+"px;height:"+(PANEL_ITEM_HEIGHT-2)+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px'>"+ip+"</div></div>";
  s+=dpre+posx_kick+"px'><div style='vertical-align:-1px;overflow:hidden;width:"+PANEL_ICON_WIDTH+"px;height:"+PANEL_ICON_HEIGHT+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px'>"+kick+"</div></div>";
  s+='</div>';
