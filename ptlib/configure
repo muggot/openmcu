@@ -6647,15 +6647,14 @@ elif test "${P_DYNALINK:-unset}" = "unset" ; then
   { $as_echo "$as_me:$LINENO: result: plugins disabled as dlopen not available" >&5
 $as_echo "plugins disabled as dlopen not available" >&6; }
 else
-  { $as_echo "$as_me:$LINENO: result: plugins enabled" >&5
-$as_echo "plugins enabled" >&6; }
+  $as_echo "$as_me:$LINENO: result: plugins enabled" >&5
   HAS_PLUGINS=1
+fi
 
+$as_echo "plugin loader enabled" >&6
 cat >>confdefs.h <<\_ACEOF
 #define P_HAS_PLUGINS 1
 _ACEOF
-
-fi
 
 
 

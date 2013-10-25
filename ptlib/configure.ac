@@ -933,8 +933,9 @@ elif test "${P_DYNALINK:-unset}" = "unset" ; then
 else
   AC_MSG_RESULT(plugins enabled)
   HAS_PLUGINS=1
-  AC_DEFINE(P_HAS_PLUGINS, 1, "plugins enabled")
 fi
+
+AC_DEFINE(P_HAS_PLUGINS, 1, "plugin loader enabled")
 
 AC_SUBST(HAS_PLUGINS)
 

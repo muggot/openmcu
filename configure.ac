@@ -752,6 +752,8 @@ dnl Summary
 dnl ########################################################################
 echo ""
 echo "============== OpenMCU-ru Build Configuration ================="
+echo "                         OS Type  :  $target_os"
+echo "                    Machine Type  :  $target_cpu"
 echo "          Installing into prefix  :  $INSTALLPREFIX"
 
 echo ""
@@ -763,7 +765,7 @@ fi
 if test "x${live_video}" = "xyes" ; then
 echo " JPEG Frame Encoder (for browser) :  enabled"
 else
-echo " JPEG Frame Encoder (for browser) :  disabled"
+echo "JPEG Frame Encoder (for browser)  :  disabled"
 fi
 
 if test "x${resample}" = "xyes" ; then
@@ -785,9 +787,9 @@ echo "        External Audio Resampler  :  disabled (built-in will used)"
 fi
 
 if test "x${optimized_frame_resize}" = "xyes" ; then
-echo "       Use libyuv to resize video :  enabled"
+echo "      Use libyuv to resize video  :  enabled"
 else
-echo "       Use libyuv to resize video :  disabled"
+echo "      Use libyuv to resize video  :  disabled"
 fi
 
 echo ""
@@ -812,7 +814,6 @@ else
 echo "              H.261 Video Plugin  :  disabled"
 fi
 
-echo ""
 if test "x${opus}" = "xyes" ; then
 echo "               OPUS Audio Plugin  :  enabled"
 else
@@ -849,9 +850,6 @@ else
 echo "              G.726 Audio Plugin  :  disabled"
 fi
 
-echo ""
-echo "                         OS Type  :  $target_os"
-echo "                    Machine Type  :  $target_cpu"
 echo ""
 echo " If all settings are OK, type make and make install "
 echo "========================================================"

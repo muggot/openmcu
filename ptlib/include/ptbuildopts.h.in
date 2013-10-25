@@ -656,7 +656,7 @@
 //
 
 #undef P_DYNALINK
-#undef P_HAS_PLUGINS
+#define P_HAS_PLUGINS 1
 #undef P_DEFAULT_PLUGIN_DIR
 
 /////////////////////////////////////////////////

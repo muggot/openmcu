@@ -151,10 +151,10 @@ COMMON_SOURCES	+= $(OH323_SRCDIR)/q922.cxx
 endif
 
 
-ifdef HAS_PLUGINS
+## ifdef HAS_PLUGINS
 HEADER_FILES	+= $(OH323_INCDIR)/h323pluginmgr.h
 COMMON_SOURCES	+= $(OH323_SRCDIR)/h323pluginmgr.cxx
-endif
+## endif
 
 ifdef HAS_WAVFILE
 HEADER_FILES	+= $(OH323_INCDIR)/opalwavfile.h
