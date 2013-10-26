@@ -52,6 +52,7 @@ openmcu.ru_launched_Ypf.gif \
 i15_mic_off.gif \
 i20_vad.gif \
 i24_shuff.gif \
+i15_getNoVideo.gif \
 openmcu.ru_remove.gif \
 openmcu.ru_logo_text.bmp \
 connecting.wav \

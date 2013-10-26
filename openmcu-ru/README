@@ -32,6 +32,7 @@ Requires the libyuv library - see http://www.code.google.com/p/libyuv for more i
 The code contains the following features:
 
 - configured by a web interface on port 1420 (use http://host:1420 access)
+- supported interface languages: English, Russian
 - requires no codec hardware to operate
 - supports H.263, H.264, VP8 video codecs
 - supports G.711, G.722, G723.1, G.726, iLBC, Speex, SILK, OPUS audio codecs
