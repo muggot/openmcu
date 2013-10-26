@@ -623,15 +623,15 @@ AC_ARG_ENABLE(static, [AS_HELP_STRING([--disable-static],[build static linking w
 if test "${static}" = "yes"; then
   ENABLE_STATIC=1
   ENABLE_DEVEL=0
-  MCULIBS="-Wl,--start-group ../ptlib/lib/libpt_${OSTYPE}_${MACHTYPE}_r_s.a ../h323plus/lib/libh323_${OSTYPE}_${MACHTYPE}_r_s.a -Wl,--end-group"
+  MCU_LDFLAGS="${MCU_LDFLAGS} -Wl,--start-group ../ptlib/lib/libpt_${OSTYPE}_${MACHTYPE}_r_s.a ../h323plus/lib/libh323_${OSTYPE}_${MACHTYPE}_r_s.a -Wl,--end-group"
+  MCU_LDLIBS="$MCU_LDLIBS"
 else
   ENABLE_STATIC=0
-  MCULIBS="-L../ptlib/lib -L../h323plus/lib -lh323_${OSTYPE}_${MACHTYPE}_r -lpt_${OSTYPE}_${MACHTYPE}_r"
+  MCU_LDFLAGS="${MCU_LDFLAGS} -L../ptlib/lib -L../h323plus/lib"
+  MCU_LDLIBS="${MCU_LDLIBS} -lh323_${OSTYPE}_${MACHTYPE}_r -lpt_${OSTYPE}_${MACHTYPE}_r"
 fi
 
-AC_SUBST(MCULIBS)
 AC_SUBST(ENABLE_STATIC)
-
 AM_CONDITIONAL(ENABLE_DEVEL, [test ${ENABLE_DEVEL} = 1])
 
 dnl ########################################################################
@@ -719,6 +719,8 @@ AC_SUBST(LIBVPX_CPPFLAGS)
 AC_SUBST(LIBVPX_LDFLAGS)
 
 AC_SUBST(RPATH)
+AC_SUBST(MCU_LDFLAGS)
+AC_SUBST(MCU_LDLIBS)
 
 AC_SUBST(STDCCFLAGS)
 AC_SUBST(STDCXXFLAGS)
