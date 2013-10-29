@@ -26,7 +26,6 @@ class SipKey
  int port; // remote port
  PString sid; // sdp session-id
 };
-
 class CmpSipKey
 {
  public:
@@ -48,7 +47,6 @@ class CmpSipKey
   return false;
  }
 };
-
 typedef std::map<SipKey, OpenMCUSipConnection *, CmpSipKey> SipConnectionMapType;
 
 class ProxyServer
@@ -66,8 +64,42 @@ class ProxyServer
  PString sipAuthStr;
  int enable, timeout;
 };
-
 typedef std::map<PString, ProxyServer *> ProxyServerMapType;
+
+class InviteDataTemp
+{
+ public:
+   InviteDataTemp() { aDataSocket = aControlSocket = vDataSocket = vControlSocket = NULL; aPort = vPort = 0; }
+   ~InviteDataTemp() { DeleteSockets(); }
+   void DeleteSockets()
+   {
+     if(aDataSocket)
+     {
+       aDataSocket->Close();
+       delete aDataSocket;
+     }
+     if(aControlSocket)
+     {
+       aControlSocket->Close();
+       delete aControlSocket;
+     }
+     if(vDataSocket)
+     {
+       vDataSocket->Close();
+       delete vDataSocket;
+     }
+     if(vControlSocket)
+     {
+       vControlSocket->Close();
+       delete vControlSocket;
+     }
+   }
+   PUDPSocket *aDataSocket, *aControlSocket;
+   PUDPSocket *vDataSocket, *vControlSocket;
+   unsigned aPort, vPort;
+};
+typedef std::map<SipKey, InviteDataTemp *, CmpSipKey> InviteDataTempMapType;
+
 
 class OpenMCUSipEndPoint : public PThread
 {
@@ -108,18 +140,22 @@ class OpenMCUSipEndPoint : public PThread
    su_home_t home;
    su_root_t *root;
    nta_agent_t *agent;
+
    SipConnectionMapType sipConnMap; // map of sip connections
+   OpenMCUSipConnection *SipConnMapFind(SipKey sik);
+   void SipConnMapInsert(SipKey sik, OpenMCUSipConnection *sCon);
+   void SipConnMapDelete(SipKey sik);
+
    static int ProcessSipEventWrap_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip)
    {
     return ((OpenMCUSipEndPoint *)context)->ProcessSipEvent_ntaout(context, orq, sip);
    }
    int ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip);
+
    int SipRegister(ProxyServer *);
    PString MakeAuthStr(ProxyServer *proxy, const sip_t *sip);
    PString GetRoomAccess(const sip_t *sip);
-   int CreateConData(OpenMCUSipConnection *sCon);
    int ReqReply(msg_t *msg, unsigned method, const char *method_name, OpenMCUSipConnection *sCon);
-   ProxyServerMapType ProxyServerMap;
    PString localPort;
    PString sdpInvite;
 };
@@ -218,13 +254,18 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
        bandwidth = 0;
        connectedTime = PTime();
        c_sip_msg = NULL;
+       contact_t = NULL;
+       cseqNum = 100;
+       direction = 0;
+       audioRtpPort = videoRtpPort = 0;
       }
   ~OpenMCUSipConnection()
   {
    PTRACE(1, "OpenMCUHSipConnection\tDestructor called");
+   cout << "OpenMCUHSipConnection\tDestructor called\n";
    if(c_sip_msg) msg_destroy(c_sip_msg);
   }
-      
+
   int ProcessInviteEvent();
   int ProcessReInviteEvent();
   int ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite);
@@ -247,7 +288,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   void StopReceiveChannels();
   void DeleteMediaChannels(int pt);
   void DeleteChannels();
-  PString sdp_msg;
   void CleanUpOnCallEnd();
   void LeaveConference();
   void LeaveConference(BOOL remove);
@@ -256,6 +296,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int SendBYE();
   int SendFastUpdatePicture();
   int SendRequest(sip_method_t method, const char *method_name, msg_t *sip_msg);
+  int CreateSipData();
 
 //  virtual BOOL ClearCall(
 //      CallEndReason reason = EndedByLocalUser  ///< Reason for call clearing
@@ -266,12 +307,14 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int noInpTimeout;
   int inpBytes;
   H323toSipQueue cmdQueue;
+
   sip_contact_t *contact_t;
   PString localIP, remoteIP, roomName;
   msg_t *c_sip_msg;
-  unsigned audioRtpPort, videoRtpPort;
+  PString sdp_msg;
   int direction; // 0=incoming, 1=outgoing
   int cseqNum;
+  unsigned audioRtpPort, videoRtpPort;
 
  protected:
  OpenMCUSipEndPoint *sep;
