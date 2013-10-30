@@ -464,11 +464,11 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
         PString name=member->GetName();
         ConferenceMemberId id = member->GetID();
         if(notFirstMember) c << ",";
-        c << "Array("                                                          // c[r][5][m]: member m descriptor
-          << (long)id                                                          // c[r][5][m][0]: member id
-          << "," << JsQuoteScreen(name)                                        // c[r][5][m][1]: member name
-          << "," << (member->IsVisible() ? "1" : "0")                          // c[r][5][m][2]: is member visible: 1/0
-          << "," << (member->IsMCU() ? "1" : "0")                              // c[r][5][m][3]: is member visible: 1/0
+        c << "Array("                                                          // c[r][4][m]: member m descriptor
+          << (long)id                                                          // c[r][4][m][0]: member id
+          << "," << JsQuoteScreen(name)                                        // c[r][4][m][1]: member name
+          << "," << (member->IsVisible() ? "1" : "0")                          // c[r][4][m][2]: is member visible: 1/0
+          << "," << (member->IsMCU() ? "1" : "0")                              // c[r][4][m][3]: is member visible: 1/0
         ;
 
         PTimeInterval duration;
@@ -520,24 +520,24 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
           }
         }
 
-        c << "," << duration.GetMilliSeconds()                                 // c[r][5][m][4]: member duration
-          << "," << orx << "," << otx << "," << vorx << "," << votx            // c[r][5][m][5-8]: orx, otx, vorx, votx
-          << "," << JsQuoteScreen(audioCodecR)                                 // c[r][5][m][9]: audio receive codec name
-          << "," << JsQuoteScreen(audioCodecT)                                 // c[r][5][m][10]: audio transmit codec name
-          << "," << JsQuoteScreen(videoCodecR)                                 // c[r][5][m][11]: video receive codec name
-          << "," << JsQuoteScreen(videoCodecT)                                 // c[r][5][m][12]: video transmit codec name
-          << "," << codecCacheMode << "," << JsQuoteScreen(formatString)       // c[r][5][m][13,14]: codecCacheMode, formatString
-          << "," << member->GetVideoRxFrameRate()                              // c[r][5][m][15]: video rx frame rate
-          << "," << member->GetVideoTxFrameRate()                              // c[r][5][m][16]: video tx frame rate
+        c << "," << duration.GetMilliSeconds()                                 // c[r][4][m][4]: member duration
+          << "," << orx << "," << otx << "," << vorx << "," << votx            // c[r][4][m][5-8]: orx, otx, vorx, votx
+          << "," << JsQuoteScreen(audioCodecR)                                 // c[r][4][m][9]: audio receive codec name
+          << "," << JsQuoteScreen(audioCodecT)                                 // c[r][4][m][10]: audio transmit codec name
+          << "," << JsQuoteScreen(videoCodecR)                                 // c[r][4][m][11]: video receive codec name
+          << "," << JsQuoteScreen(videoCodecT)                                 // c[r][4][m][12]: video transmit codec name
+          << "," << codecCacheMode << "," << JsQuoteScreen(formatString)       // c[r][4][m][13,14]: codecCacheMode, formatString
+          << "," << member->GetVideoRxFrameRate()                              // c[r][4][m][15]: video rx frame rate
+          << "," << member->GetVideoTxFrameRate()                              // c[r][4][m][16]: video tx frame rate
           << ")";
         notFirstMember = TRUE;
       }
           
       for(Conference::MemberNameList::const_iterator s=memberNameList.begin(), se=memberNameList.end(); s!=se; ++s)
       { if(s->second != NULL) continue;
-        c << (notFirstMember ? "," : "") << "Array("                           // c[r][5][m]: member m descriptor
-          << "0"                                                               // c[r][5][m][0]: member id: 0 (offline)
-          << "," << JsQuoteScreen(s->first)                                    // c[r][5][m][1]: member name
+        c << (notFirstMember ? "," : "") << "Array("                           // c[r][4][m]: member m descriptor
+          << "0"                                                               // c[r][4][m][0]: member id: 0 (offline)
+          << "," << JsQuoteScreen(s->first)                                    // c[r][4][m][1]: member name
           << ")";
         notFirstMember = TRUE;
       }

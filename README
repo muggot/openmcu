@@ -15,15 +15,22 @@ OpenMCU
 1. Introduction
 ---------------
 
-OpenMCU is a simple Mutli Conference Unit using the H.323 and SIP protocol.
+OpenMCU-ru is a simple Mutli Conference Unit using the H.323 and SIP protocols.
 It is known to run on Linux, FreeBSD and Windows.
 
-Requires the H323Plus library - see http://www.h323plus.org for more information.
-Requires the PTLib library - see http://www.opalvoip.org for more information.
-Requires the Sofia-SIP library - see http://www.sofia-sip.sourceforge.net for more information.
-Requires the FFmpeg library - see http://www.ffmpeg.org for more information.
-Requires the FreeType library - see http://www.freetype.org for more information.
-Requires the libyuv library - see http://www.code.google.com/p/libyuv for more information.
+OpenMCU-ru requires the following libraries:
+- Sofia-SIP, http://sofia-sip.sourceforge.net/
+- FFmpeg, http://ffmpeg.org/ or Libav, http://libav.org/
+
+OpenMCU-ru will use the following libraries if they are available:
+- FreeType, http://freetype.org/
+- libyuv, http://code.google.com/p/libyuv/
+- libjpeg-turbo, http://libjpeg-turbo.virtualgl.org/ or libjpeg,
+  http://ijg.org/
+
+OpenMCU-ru contains PTLib and H323Plus libraries forked from:
+- PTLib, http://opalvoip.org/
+- H323Plus, http://h323plus.org/
 
 
 2. Features
@@ -31,7 +38,8 @@ Requires the libyuv library - see http://www.code.google.com/p/libyuv for more i
 
 The code contains the following features:
 
-- configured by a web interface on port 1420 (use http://host:1420 access)
+- configured by a web interface on port 1420 (use http://host:1420 to access)
+- supported interface languages: English, Russian
 - requires no codec hardware to operate
 - supports H.263, H.264, VP8 video codecs
 - supports G.711, G.722, G723.1, G.726, iLBC, Speex, SILK, OPUS audio codecs
@@ -47,8 +55,8 @@ The code contains the following features:
 3. Operation
 ------------
 
-OpenMCU works by setting up a H.323 and SIP listener process, and then waiting for
-incoming connections.
+OpenMCU works by setting up a H.323 and SIP listener processes, and then
+waiting for incoming connections.
 You call the MCU using the format "room_name@server_name".
 
 New rooms are created automatically and there is a default room for
