@@ -357,6 +357,8 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 //      style+"<b>H.263</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
 //  Add(new PHTTPIntegerField("H.263 Encoding Quality", 1, 31, cfg.GetInteger("H.263 Encoding Quality", DefaultVideoQuality),
 //      style+"<b>H.263</b> Encoding Quality, range: 1..31"));
+  Add(new PHTTPIntegerField("H.263 Max Bit Rate", 0, 4000, cfg.GetInteger("H.263 Max Bit Rate", 0),
+      style+"<b>H.263</b> Max Bit Rate, range 64..4000 kbit (for outgoing video, 0 disable)"));
   Add(new PHTTPIntegerField("H.263 Tx Key Frame Period", 0, 600, cfg.GetInteger("H.263 Tx Key Frame Period", 125),
       style+"<b>H.263</b> Tx Key Frame Period, range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)"));
 
@@ -365,6 +367,8 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 //      style+"<b>H.263p</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
 //  Add(new PHTTPIntegerField("H.263p Encoding Quality", 1, 31, cfg.GetInteger("H.263p Encoding Quality", DefaultVideoQuality),
 //      style+"<b>H.263p</b> Encoding Quality, range: 1..31"));
+  Add(new PHTTPIntegerField("H.263p Max Bit Rate", 0, 4000, cfg.GetInteger("H.263p Max Bit Rate", 0),
+      style+"<b>H.263p</b> Max Bit Rate, range 64..4000 kbit (for outgoing video, 0 disable)"));
   Add(new PHTTPIntegerField("H.263p Tx Key Frame Period", 0, 600, cfg.GetInteger("H.263p Tx Key Frame Period", 125),
       style+"<b>H.263p</b> Tx Key Frame Period, range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)"));
 
@@ -373,12 +377,16 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 //      style+"<b>H.264</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
 //  Add(new PHTTPIntegerField("H.264 Encoding Quality", 1, 31, cfg.GetInteger("H.264 Encoding Quality", DefaultVideoQuality),
 //      style+"<b>H.264</b> Encoding Quality, range: 1..31"));
+  Add(new PHTTPIntegerField("H.264 Max Bit Rate", 0, 4000, cfg.GetInteger("H.264 Max Bit Rate", 0),
+      style+"<b>H.264</b> Max Bit Rate, range 64..4000 kbit (for outgoing video, 0 disable)"));
   Add(new PHTTPIntegerField("H.264 Encoding Threads", 0, 64, cfg.GetInteger("H.264 Encoding Threads", 0),
       style+"<b>H.264</b> Encoding Threads, range 0..64 (0 auto)"));
 
   style = "<td rowspan='1' valign='top' style='background-color:#f7f4d8;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
 //  Add(new PHTTPIntegerField("VP8 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("VP8 Temporal Spatial Trade Off", 31),
 //      style+"<b>VP8</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
+  Add(new PHTTPIntegerField("VP8 Max Bit Rate", 0, 4000, cfg.GetInteger("VP8 Max Bit Rate", 0),
+      style+"<b>VP8</b> Max Bit Rate, range 64..4000 kbit (for outgoing video, 0 disable)"));
   Add(new PHTTPIntegerField("VP8 Encoding CPU Used", 0, 16, cfg.GetInteger("VP8 Encoding CPU Used", 0),
       style+"<b>VP8</b> Encoding CPU Used, range: 0..16 (Values greater than 0 will increase encoder speed at the expense of quality)"));
   Add(new PHTTPIntegerField("VP8 Encoding Threads", 0, 64, cfg.GetInteger("VP8 Encoding Threads", 0),

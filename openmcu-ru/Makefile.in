@@ -12,11 +12,11 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
 
 CXX		= g++
 CFLAGS         += @CFLAGS@ -Os
-LDFLAGS        += @LDFLAGS@ @RPATH@
-LDLIBS	       += @LDLIBS@ @MCULIBS@
+LDFLAGS        += @MCU_LDFLAGS@ @LDFLAGS@ @RPATH@
+LDLIBS	       += @MCU_LDLIBS@ @LDLIBS@
 STDCCFLAGS     += @STDCCFLAGS@ -D__STDC_CONSTANT_MACROS -Wall
 STDCXXFLAGS    += @STDCXXFLAGS@
-CPPFLAGS       += @CPPFLAGS@ -I../ptlib/include -I../h323plus/include
+CPPFLAGS       += -I../ptlib/include -I../h323plus/include @CPPFLAGS@
 OPTCCFLAGS      =$(CPPFLAGS)
 
 git_revision        = $(shell git rev-list master --max-count=1 HEAD)
@@ -52,6 +52,7 @@ openmcu.ru_launched_Ypf.gif \
 i15_mic_off.gif \
 i20_vad.gif \
 i24_shuff.gif \
+i15_getNoVideo.gif \
 openmcu.ru_remove.gif \
 openmcu.ru_logo_text.bmp \
 connecting.wav \

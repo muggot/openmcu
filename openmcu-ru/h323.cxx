@@ -2433,9 +2433,20 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
           continue;
         PString option = keys[i].Right(keys[i].GetSize()-pos-2);
         int value = MCUConfig("Video").GetInteger(keys[i], 0);
+        if(option == "Max Bit Rate")
+        {
+          value = value*1000;
+          if(value == 0 || value > mf.GetOptionInteger(option))
+            continue;
+          if(value < 64000)
+            value = 64000;
+        }
         mf.SetOptionInteger(option, value);
       }
     }
+    codec.formatString = mf+"@"+PString(mf.GetOptionInteger(OpalVideoFormat::FrameWidthOption))+"x"+
+                                PString(mf.GetOptionInteger(OpalVideoFormat::FrameHeightOption))+":"+
+                                PString(mf.GetOptionInteger(OpalVideoFormat::MaxBitRateOption))+"x";
     // SetTxQualityLevel not send the value in encoder
     //codec.SetTxQualityLevel(ep.GetVideoTxQuality());
 

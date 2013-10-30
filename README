@@ -38,7 +38,11 @@ OpenMCU-ru contains PTLib and H323Plus libraries forked from:
 
 The code contains the following features:
 
+<<<<<<< HEAD
 - configured by a web interface on port 1420 (use http://host:1420 to access)
+=======
+- configured by a web interface on port 1420 (use http://host:1420 access)
+>>>>>>> 0d96bf1b871c45ca8ab28acbaec1e799a1e7db50
 - supported interface languages: English, Russian
 - requires no codec hardware to operate
 - supports H.263, H.264, VP8 video codecs

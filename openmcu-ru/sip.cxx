@@ -7,8 +7,12 @@
 #  include <sys/socket.h>
 #endif
 
+ProxyServerMapType ProxyServerMap;
+InviteDataTempMapType InviteDataTempMap;
+
 PString GetFromIp(const char *toAddr, const char *toPort)
 {
+    PTRACE(1, "MCUSIP\tGetFromIp");
     char buffer[16];
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if(sock == -1) return "";
@@ -40,29 +44,10 @@ PString GetFromIp(const char *toAddr, const char *toPort)
 #endif
 }
 
-unsigned GetLocalDataPort(PString localIP, unsigned portBase, unsigned portMax)
-{
-  unsigned localDataPort = portBase;
-  PQoS * dataQos = NULL;
-  PQoS * ctrlQos = NULL;
-  PUDPSocket * dataSocket = new PUDPSocket(dataQos);
-  PUDPSocket * controlSocket = new PUDPSocket(ctrlQos);
-  while(!dataSocket->Listen(localIP, 1, localDataPort) || !controlSocket->Listen(localIP, 1, localDataPort+1))
-  {
-    dataSocket->Close();
-    controlSocket->Close();
-    if ((localDataPort > portMax) || (localDataPort > 0xfffd))
-      return 0;
-    localDataPort += 2;
-  }
-  delete dataSocket;
-  delete controlSocket;
-  return localDataPort;
-}
-
 PString CreateSdpInvite()
 {
- PString types, map, type, name, fmtp;
+ PTRACE(1, "MCUSIP\tCreateSDPInvite");
+ PString types, type, map, name, fmtp;
  PStringArray caps;
  PINDEX tsNum = 0; while(OpenMCU::Current().GetEndpoint().tsCaps[tsNum]!=NULL) { caps.AppendString(OpenMCU::Current().GetEndpoint().tsCaps[tsNum]); tsNum++; }
  PINDEX tvNum = 0; while(OpenMCU::Current().GetEndpoint().tvCaps[tvNum]!=NULL) { caps.AppendString(OpenMCU::Current().GetEndpoint().tvCaps[tvNum]); tvNum++; }
@@ -83,7 +68,7 @@ PString CreateSdpInvite()
    if(cap)
    {
      const OpalMediaFormat & mf = cap->GetMediaFormat();
-     if(i <= tsNum) type = i+100; else type = i+100-tsNum-1;
+     if(i <= tsNum) type = PString(96+i); else type = PString(96+i-tsNum-1);
      name = PString(cap->GetFormatName()).ToLower();
      if(name.Find("ulaw") != P_MAX_INDEX) name = "pcmu";
      if(name.Find("alaw") != P_MAX_INDEX) name = "pcma";
@@ -116,7 +101,7 @@ PString CreateSdpInvite()
      { sdp += "m=audio RTP_AUDIO_PORT RTP/AVP "+types+"\r\n"+map; map=""; types=""; }
  }
  sdp += "m=video RTP_VIDEO_PORT RTP/AVP "+types+"\r\n"+map;
- cout << sdp;
+ //cout << sdp;
  return sdp;
 }
 
@@ -134,11 +119,11 @@ PString CreateRuriStr(msg_t *msg, int direction)
     sip_to = sip_to_dup(home, sip->sip_to);
 
   PString ruri = "sip:"+PString(sip_to->a_url->url_user);
-  if(strcmp(sip->sip_via->v_host, "0.0.0.0") != 0)
+  if(strcmp(sip->sip_via->v_host, "0.0.0.0") != 0 && sip->sip_request)
     ruri = ruri+"@"+PString(sip->sip_via->v_host);
   else
     ruri = ruri+"@"+PString(sip_to->a_url->url_host);
-  if(sip->sip_via->v_port)
+  if(sip->sip_via->v_port && sip->sip_request)
     ruri = ruri+":"+sip->sip_via->v_port;
   else if(sip_to->a_url->url_port)
     ruri = ruri+":"+sip_to->a_url->url_port;
@@ -196,19 +181,52 @@ void MCUSipLoggerFunc(void *logarg, char const *fmt, va_list ap)
     logMsgBuf = logMsgBuf+trace+"\n";
 }
 
-void OpenMCUSipConnection::LeaveConference()
+void InviteDataTempDelete(const SipKey &sik)
 {
- PString *bye = new PString("BYE");
- cmdQueue.Push(bye); // Queue is not thread safe for multiple writers, so connection must be locked before call this
- LeaveConference(FALSE);
+  PTRACE(1, "MCUSIP\tInviteDataTempDelete");
+  InviteDataTempMapType::iterator it = InviteDataTempMap.find(sik);
+  if(it != InviteDataTempMap.end())
+  {
+    delete it->second;
+    InviteDataTempMap.erase(sik);
+  }
 }
 
-void OpenMCUSipConnection::LeaveConference(BOOL remove)
+int InviteDataTempCreate(PString localIP, const SipKey &sik)
 {
-//  PWaitAndSignal m(connMutex);
- PTRACE(1, "MCUSIP\tLeaveConference " << remove);
- if(remove == FALSE) return;
- OpenMCUH323Connection::LeaveConference();
+  PTRACE(1, "MCUSIP\tInviteDataTempCreate");
+  InviteDataTempMapType::iterator it = InviteDataTempMap.find(sik);
+  if(it != InviteDataTempMap.end())
+  {
+    InviteDataTemp *data = it->second;
+    InviteDataTempMap.erase(sik);
+    delete data;
+  }
+  unsigned localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
+  PQoS * dataQos = NULL;
+  PQoS * ctrlQos = NULL;
+  InviteDataTemp *iData = new InviteDataTemp();
+  iData->aDataSocket = new PUDPSocket(dataQos);
+  iData->aControlSocket = new PUDPSocket(ctrlQos);
+  iData->vDataSocket = new PUDPSocket(dataQos);
+  iData->vControlSocket = new PUDPSocket(ctrlQos);
+  while(!iData->aDataSocket->Listen(localIP, 1, localDataPort) || !iData->aControlSocket->Listen(localIP, 1, localDataPort+1))
+  {
+    iData->aDataSocket->Close();
+    iData->aControlSocket->Close();
+    localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
+  }
+  iData->aPort = localDataPort;
+  localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
+  while(!iData->vDataSocket->Listen(localIP, 1, localDataPort) || !iData->vControlSocket->Listen(localIP, 1, localDataPort+1))
+  {
+    iData->vDataSocket->Close();
+    iData->vControlSocket->Close();
+    localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
+  }
+  iData->vPort = localDataPort;
+  InviteDataTempMap.insert(InviteDataTempMapType::value_type(sik, iData));
+  return 1;
 }
 
 RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
@@ -220,22 +238,19 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    session = new RTP_UDP(
 #ifdef H323_RTP_AGGREGATE
                 useRTPAggregation ? endpoint.GetRTPAggregator() : NULL,
-#endif    
+#endif
                 id, remoteIsNAT);
    rtpSessions.AddSession(session);
    PIPSocket::Address lIP(localIP); 
    PIPSocket::Address rIP(remoteIP);
    unsigned portBase, portMax;
-   if(audioRtpPort && videoRtpPort)
+   if(direction = 1 && !sc->media && audioRtpPort)
    {
-     if(!sc->media)
-     {
-       portBase = audioRtpPort;
-       portMax = audioRtpPort;
-     } else {
-       portBase = videoRtpPort;
-       portMax = videoRtpPort;
-     }
+     portBase = portMax = audioRtpPort;
+     audioRtpPort = 0;
+   } else if(direction = 1 && sc->media && videoRtpPort) {
+     portBase = portMax = videoRtpPort;
+     videoRtpPort = 0;
    } else {
      portBase = endpoint.GetRtpIpPortBase();
      portMax = endpoint.GetRtpIpPortMax();
@@ -269,6 +284,21 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    sdp_msg += sc->sdp;
   }
   return session;
+}
+
+void OpenMCUSipConnection::LeaveConference()
+{
+ PString *bye = new PString("BYE");
+ cmdQueue.Push(bye); // Queue is not thread safe for multiple writers, so connection must be locked before call this
+ LeaveConference(FALSE);
+}
+
+void OpenMCUSipConnection::LeaveConference(BOOL remove)
+{
+//  PWaitAndSignal m(connMutex);
+ PTRACE(1, "MCUSIP\tLeaveConference " << remove);
+ if(remove == FALSE) return;
+ OpenMCUH323Connection::LeaveConference();
 }
 
 int OpenMCUSipConnection::CreateAudioChannel(int pt, int dir)
@@ -930,6 +960,56 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
  return 1;
 }
 
+int OpenMCUSipConnection::CreateSipData()
+{
+  PTRACE(1, "MCUSIP\tCreateSipData");
+  su_home_t *home = msg_home(c_sip_msg);
+  sip_t *sip = sip_object(c_sip_msg);
+  if(sip == NULL)
+    return 0;
+
+  if(direction == 0) //incoming
+  {
+    ProxyServerMapType::iterator it =
+        ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
+    if(it != ProxyServerMap.end())
+    {
+      ProxyServer *proxy = it->second;
+      contact_t = sip_contact_create(home, (url_string_t *)(const char *)
+	  ("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
+      localIP = proxy->localIP;
+      roomName = proxy->roomName;
+    } else {
+      PString localPort = "5060";
+      if(sip->sip_to->a_url->url_port) localPort = sip->sip_to->a_url->url_port;
+      contact_t = sip_contact_create(home, (url_string_t *)(const char *)
+	  ("sip:"+(PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host+":"+localPort), NULL);
+      localIP = sip->sip_to->a_url->url_host;
+      roomName = sip->sip_to->a_url->url_user;
+    }
+  } else { // outgoing
+    ProxyServerMapType::iterator it =
+        ProxyServerMap.find((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
+    if(it != ProxyServerMap.end())
+    {
+      ProxyServer *proxy = it->second;
+      contact_t = sip_contact_create(home, (url_string_t *)(const char *)
+	  ("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
+      localIP = proxy->localIP;
+      roomName = proxy->roomName;
+    } else {
+      PString localPort = "5060";
+      if(sip->sip_from->a_url->url_port) localPort = sip->sip_from->a_url->url_port;
+      contact_t = sip_contact_create(home, (url_string_t *)(const char *)
+	  ("sip:"+(PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host+":"+localPort), NULL);
+      localIP = sip->sip_from->a_url->url_host;
+      roomName = sip->sip_from->a_url->url_user;
+    }
+  }
+  cseqNum = sip->sip_cseq->cs_seq+1;
+  return 1;
+}
+
 int OpenMCUSipConnection::ProcessInviteEvent()
 {
  PTRACE(1, "MCUSIP\tProcessInviteEvent");
@@ -937,6 +1017,9 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  sip_t *sip = sip_object(c_sip_msg);
  if(sip == NULL || sip->sip_payload == NULL || sip->sip_payload->pl_data == NULL)
    return 415; // SIP_415_UNSUPPORTED_MEDIA
+
+ if(CreateSipData() != 1)
+   return 500; // SIP_500_INTERNAL_SERVER_ERROR
 
  sdp_s = sip->sip_payload->pl_data;
  PStringArray sdp_sa = sdp_s.Lines();
@@ -1262,26 +1345,29 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 	("sip:"+userName+"@"+localIP+":"+localPort), NULL);
     sip_contact->m_display = roomName;
 
-    // finding the RTP ports
-    unsigned aPort, vPort;
-    aPort = GetLocalDataPort(localIP, ep->GetRtpIpPortBase(), ep->GetRtpIpPortMax());
-    vPort = GetLocalDataPort(localIP, aPort+2, ep->GetRtpIpPortMax());
-    if(aPort == 0 || vPort == 0) return 0;
-    // add ports to call_id string
-    PString call_id_suffix = "0@"+PString(aPort)+"@"+PString(vPort);
+    sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)sip_to->a_url, NULL);
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_INVITE);
+    sip_call_id_t* sip_call_id = sip_call_id_create(&home, "0");
+
+    // temporarily save rtp ports
+    SipKey sik;
+    sik.addr = inet_addr(sip_to->a_url->url_host);
+    if(sip_to->a_url->url_port) sik.port = atoi(sip_to->a_url->url_port); else sik.port=5060;
+    sik.sid = sip_call_id->i_id;
+
+    InviteDataTempCreate(localIP, sik);
+    InviteDataTempMapType::iterator invit = InviteDataTempMap.find(sik);
+    if(invit == InviteDataTempMap.end())
+      return 0;
 
     // create sdp for outgoing request
     sdpInvite = CreateSdpInvite();
     PString sdp = sdpInvite;
     sdp.Replace("USERNAME", room, TRUE, 0);
     sdp.Replace("LOCALIP", localIP, TRUE, 0);
-    sdp.Replace("RTP_AUDIO_PORT", aPort, TRUE, 0);
-    sdp.Replace("RTP_VIDEO_PORT", vPort, TRUE, 0);
+    sdp.Replace("RTP_AUDIO_PORT", invit->second->aPort, TRUE, 0);
+    sdp.Replace("RTP_VIDEO_PORT", invit->second->vPort, TRUE, 0);
     sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sdp);
-
-    sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)sip_to->a_url, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_INVITE);
-    sip_call_id_t* sip_call_id = sip_call_id_create(&home, (const char*)call_id_suffix);
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *orq = nta_outgoing_mcreate(agent, ProcessSipEventWrap_ntaout, (nta_outgoing_magic_t *)this,
@@ -1300,9 +1386,13 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     // su_epoll_port.c:206: su_epoll_port_register: Assertion `su_port_own_thread(self)' failed.
     // without registration only send invite to IP address, do not use domain name
     if(orq == NULL)
+    {
+      InviteDataTempDelete(sik);
       return 0;
+    }
     return 1;
 }
+
 
 int OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
 {
@@ -1326,7 +1416,7 @@ int OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_REGISTER);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, "0");
     msg_t *sip_msg = nta_msg_create(agent, 0);
-    nta_outgoing_t *orq = nta_outgoing_mcreate(agent, ProcessSipEventWrap_ntaout, (nta_outgoing_magic_t *)this,
+    nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, ProcessSipEventWrap_ntaout, (nta_outgoing_magic_t *)this,
       			(url_string_t *)sip_to->a_url,
 			sip_msg,
 			SIPTAG_REQUEST(sip_rq),
@@ -1339,7 +1429,7 @@ int OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
 			SIPTAG_ALLOW_EVENTS_STR("INVITE, ACK, BYE"),
 			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
-    if(orq == NULL)
+    if(a_orq == NULL)
       return 0;
     return 1;
 }
@@ -1407,17 +1497,17 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
   {
     // the number of unauthorized requests for register/invite
     unsigned reqNum= atoi(PString(sip->sip_call_id->i_id).Tokenise("@")[1]);
-    if(reqNum > 2)
+
+    ProxyServerMapType::iterator it = ProxyServerMap.find((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
+    if(it == ProxyServerMap.end() || reqNum > 2)
     {
+      if(sip->sip_cseq->cs_method == sip_method_invite)
+        InviteDataTempDelete(sik);
       nta_outgoing_destroy(orq);
       return 0;
     }
-    PString call_id_suffix = PString(reqNum+1);
-
-    ProxyServerMapType::iterator it = ProxyServerMap.find((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
-    if(it == ProxyServerMap.end())
-      return 0;
     ProxyServer *proxy = it->second;
+    PString call_id_suffix = PString(reqNum+1);
 
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
 	("sip:"+proxy->userName+"@"+proxy->proxyIP));
@@ -1429,25 +1519,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)
 	("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
     sip_contact->m_display = proxy->roomName;
-
-    sip_payload_t *sip_payload=NULL;
-    if(sip->sip_cseq->cs_method == sip_method_invite)
-    {
-      // finding the RTP ports
-      unsigned aPort, vPort;
-      aPort = GetLocalDataPort(proxy->localIP, ep->GetRtpIpPortBase(), ep->GetRtpIpPortMax());
-      vPort = GetLocalDataPort(proxy->localIP, aPort+2, ep->GetRtpIpPortMax());
-      if(aPort == 0 || vPort == 0) return 0;
-      // add ports to call_id string
-      call_id_suffix += "@"+PString(aPort)+"@"+PString(vPort);
-
-      PString sdp = sdpInvite;
-      sdp.Replace("USERNAME", proxy->userName, TRUE, 0);
-      sdp.Replace("LOCALIP", proxy->localIP, TRUE, 0);
-      sdp.Replace("RTP_AUDIO_PORT", aPort, TRUE, 0);
-      sdp.Replace("RTP_VIDEO_PORT", vPort, TRUE, 0);
-      sip_payload = sip_payload_make(&home, (const char *)sdp);
-    }
 
     sip_request_t *sip_rq = sip_request_create(&home, sip->sip_cseq->cs_method,
 			sip->sip_cseq->cs_method_name, (url_string_t *)sip_to->a_url, NULL);
@@ -1465,6 +1536,27 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     nta_response_f *callback = NULL;
     if(sip->sip_cseq->cs_method == sip_method_invite)
        callback = ProcessSipEventWrap_ntaout;
+
+    sip_payload_t *sip_payload=NULL;
+    if(sip->sip_cseq->cs_method == sip_method_invite)
+    {
+      InviteDataTempMapType::iterator invit = InviteDataTempMap.find(sik);
+      if(invit == InviteDataTempMap.end())
+        return 0;
+
+      // temporarily save invite data
+      InviteDataTemp *iData = invit->second;
+      InviteDataTempMap.erase(sik);
+      sik.sid = sip_call_id->i_id;
+      InviteDataTempMap.insert(InviteDataTempMapType::value_type(sik, iData));
+
+      PString sdp = sdpInvite;
+      sdp.Replace("USERNAME", proxy->userName, TRUE, 0);
+      sdp.Replace("LOCALIP", proxy->localIP, TRUE, 0);
+      sdp.Replace("RTP_AUDIO_PORT", iData->aPort, TRUE, 0);
+      sdp.Replace("RTP_VIDEO_PORT", iData->vPort, TRUE, 0);
+      sip_payload = sip_payload_make(&home, (const char *)sdp);
+    }
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, callback, (nta_outgoing_magic_t *)this,
@@ -1484,7 +1576,11 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
 			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
     if(a_orq == NULL)
+    {
+      if(sip->sip_cseq->cs_method == sip_method_invite)
+        InviteDataTempDelete(sik);
       return 0;
+    }
     nta_outgoing_destroy(orq);
     return 0;
   }
@@ -1518,22 +1614,30 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
       return 0;
     nta_outgoing_destroy(a_orq);
 
-    SipConnectionMapType::iterator scr = sipConnMap.find(sik);
-    if(scr != sipConnMap.end())  // connection already exist
+    // check invite data
+    InviteDataTempMapType::iterator invit = InviteDataTempMap.find(sik);
+    if(invit == InviteDataTempMap.end())
       return 0;
 
-    OpenMCUSipConnection *sCon = new OpenMCUSipConnection(this, ep);
+    OpenMCUSipConnection *sCon = SipConnMapFind(sik);
+    if(sCon) // connection found
+    {
+      InviteDataTempDelete(sik);
+      return 0;
+    }
+
+    sCon = new OpenMCUSipConnection(this, ep);
     sCon->direction = 1;
     sCon->c_sip_msg = msg_dup(msg);
-
-    if(CreateConData(sCon) != 1)
-      return 0;
+    sCon->audioRtpPort = invit->second->aPort;
+    sCon->videoRtpPort = invit->second->vPort;
+    InviteDataTempDelete(sik);
 
     if(sCon->ProcessInviteEvent() != 1)
       return 0;
 
     sCon->StartReceiveChannels();
-    sipConnMap.insert(SipConnectionMapType::value_type(sik,sCon));
+    SipConnMapInsert(sik, sCon);
     sCon->StartTransmitChannels();
 
     nta_outgoing_destroy(orq);
@@ -1541,60 +1645,36 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
   }
 
   if(status > 200)
+  {
+    InviteDataTempDelete(sik);
     nta_outgoing_destroy(orq);
+  }
 
   return 0;
 }
 
-int OpenMCUSipEndPoint::CreateConData(OpenMCUSipConnection *sCon)
+void OpenMCUSipEndPoint::SipConnMapInsert(SipKey sik, OpenMCUSipConnection *sCon)
 {
-  PTRACE(1, "MCUSIP\tCreateConData");
-  sip_t *sip = sip_object(sCon->c_sip_msg);
-  if(sip == NULL)
-    return 0;
+  sipConnMap.insert(SipConnectionMapType::value_type(sik, sCon));
+}
 
-  if(sCon->direction == 0) //incoming
+void OpenMCUSipEndPoint::SipConnMapDelete(SipKey sik)
+{
+  SipConnectionMapType::iterator scr = sipConnMap.find(sik);
+  if(scr != sipConnMap.end())  // connection found
   {
-    ProxyServerMapType::iterator it =
-        ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
-    if(it != ProxyServerMap.end())
-    {
-      ProxyServer *proxy = it->second;
-      sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
-	  ("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
-      sCon->localIP = proxy->localIP;
-      sCon->roomName = proxy->roomName;
-    } else {
-      sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
-	  ("sip:"+(PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host+":"+localPort), NULL);
-      sCon->localIP = sip->sip_to->a_url->url_host;
-      sCon->roomName = sip->sip_to->a_url->url_user;
-    }
-    sCon->audioRtpPort = 0;
-    sCon->videoRtpPort = 0;
-  } else { // outgoing
-    ProxyServerMapType::iterator it =
-        ProxyServerMap.find((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
-    if(it != ProxyServerMap.end())
-    {
-      ProxyServer *proxy = it->second;
-      sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
-	  ("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
-      sCon->localIP = proxy->localIP;
-      sCon->roomName = proxy->roomName;
-    } else {
-      sCon->contact_t = sip_contact_create(&home, (url_string_t *)(const char *)
-	  ("sip:"+(PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host+":"+localPort), NULL);
-      sCon->localIP = sip->sip_from->a_url->url_host;
-      sCon->roomName = sip->sip_from->a_url->url_user;
-    }
-    sCon->audioRtpPort = atoi(PString(sip->sip_call_id->i_id).Tokenise("@")[2]);
-    sCon->videoRtpPort = atoi(PString(sip->sip_call_id->i_id).Tokenise("@")[3]);
-    if(sCon->audioRtpPort == 0 || sCon->videoRtpPort == 0)
-      return 0;
+    OpenMCUSipConnection *sCon = scr->second;
+    sipConnMap.erase(sik);
+    delete sCon;
   }
-  sCon->cseqNum = sip->sip_cseq->cs_seq+1;
-  return 1;
+}
+
+OpenMCUSipConnection *OpenMCUSipEndPoint::SipConnMapFind(SipKey sik)
+{
+  SipConnectionMapType::iterator scr = sipConnMap.find(sik);
+  if(scr != sipConnMap.end())  // connection found
+    return scr->second;
+  return NULL;
 }
 
 int OpenMCUSipEndPoint::ReqReply(msg_t *msg, unsigned method, const char *method_name=NULL, OpenMCUSipConnection *sCon=NULL)
@@ -1647,10 +1727,9 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
     if(sip->sip_payload==NULL || (sip->sip_payload!=NULL && sip->sip_payload->pl_data==NULL))
       return ReqReply(msg, SIP_415_UNSUPPORTED_MEDIA);
 
-   SipConnectionMapType::iterator scr = sipConnMap.find(sik);
-   if(scr != sipConnMap.end())  // connection already exist, process reinvite
+   OpenMCUSipConnection *sCon = SipConnMapFind(sik);
+   if(sCon)  // connection already exist, process reinvite
    {
-     OpenMCUSipConnection *sCon = scr->second;
      sCon->direction = 0;
      sCon->c_sip_msg = msg_dup(msg);
      if(MCUConfig("Parameters").GetBoolean(SIPReInviteKey, TRUE))
@@ -1669,12 +1748,9 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
    }
 
    PTRACE(1, "MCUSIP\tNew SIP INVITE");
-   OpenMCUSipConnection *sCon = new OpenMCUSipConnection(this, ep);
+   sCon = new OpenMCUSipConnection(this, ep);
    sCon->direction = 0;
    sCon->c_sip_msg = msg_dup(msg);
-
-   if(CreateConData(sCon) != 1)
-     return ReqReply(msg, SIP_500_INTERNAL_SERVER_ERROR);
 
    int ret = sCon->ProcessInviteEvent();
    if(ret != 1)
@@ -1682,17 +1758,16 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
 
    ReqReply(msg, SIP_200_OK, sCon);
    sCon->StartReceiveChannels(); // start receive logical channels
-   sipConnMap.insert(SipConnectionMapType::value_type(sik,sCon));
+   SipConnMapInsert(sik, sCon);
    return 0;
   }
   if(request == "ACK")
   {
-    SipConnectionMapType::iterator scr = sipConnMap.find(sik);
-    if(scr == sipConnMap.end())
+    OpenMCUSipConnection *sCon = SipConnMapFind(sik);
+    if(sCon == NULL)
       return 0;
 
     PTRACE(1, "MCUSIP\tNew SIP ACK accepted");
-    OpenMCUSipConnection *sCon = scr->second;
     sip_t *c_sip = sip_object(sCon->c_sip_msg); // replace to_tag
     msg_header_insert(sCon->c_sip_msg, (msg_pub_t *)c_sip, (msg_header_t *)sip->sip_to);
     sCon->StartTransmitChannels(); // start transmit logical channels
@@ -1700,14 +1775,13 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
   }
   if(request == "BYE")
   {
-    SipConnectionMapType::iterator scr = sipConnMap.find(sik);
-    if(scr == sipConnMap.end())
+    OpenMCUSipConnection *sCon = SipConnMapFind(sik);
+    if(!sCon)
     {
       PTRACE(1, "MCUSIP\tSend 200 OK for BYE, connection not found");
       return ReqReply(msg, SIP_200_OK);
     }
     PTRACE(1, "MCUSIP\tNew SIP BYE");
-    OpenMCUSipConnection *sCon = scr->second;
     sipConnMap.erase(sik);
     ReqReply(msg, SIP_200_OK);
     sCon->LeaveConference(TRUE); // leave conference and delete connection
@@ -1715,8 +1789,8 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
   }
   if(request == "INFO" )
   {
-    SipConnectionMapType::iterator scr = sipConnMap.find(sik);
-    if(scr != sipConnMap.end())
+    OpenMCUSipConnection *sCon = SipConnMapFind(sik);
+    if(sCon)
     {
       if(sip->sip_payload && sip->sip_payload->pl_data &&
          sip->sip_content_type && sip->sip_content_type->c_type)
@@ -1727,7 +1801,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
            data.Find("to_encoder") != P_MAX_INDEX &&
            data.Find("picture_fast_update") != P_MAX_INDEX)
         {
-          OpenMCUSipConnection *sCon = scr->second;
           sCon->FastUpdatePicture();
         }
       }
@@ -1762,6 +1835,7 @@ void OpenMCUSipEndPoint::MainLoop()
       {
         PTRACE(1, "MCUSIP\t15 sec timeout waiting incoming stream data");
         sipConnMap.erase(scr->first);
+        sCon->SendBYE();
         sCon->StopTransmitChannels();
         sCon->StopReceiveChannels();
         sCon->DeleteChannels();

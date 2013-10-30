@@ -12,10 +12,12 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
 
 CXX		= g++
 CFLAGS         += -g  -Os
-LDFLAGS        += 
-LDLIBS	       +=  -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua -Wl,--start-group ../ptlib/lib/libpt_linux_x86_r_s.a ../h323plus/lib/libh323_linux_x86_r_s.a -Wl,--end-group
-STDCCFLAGS     +=  -I/usr/include/freetype2   -I/usr/include/sofia-sip-1.12    -I../ptlib/include -I../h323plus/include -D__STDC_CONSTANT_MACROS -Wall
-STDCXXFLAGS    +=  
+LDFLAGS        +=  -Wl,--start-group ../ptlib/lib/libpt_linux_x86_r_s.a ../h323plus/lib/libh323_linux_x86_r_s.a -Wl,--end-group -L/usr/lib -L/usr/local/lib -Wl,-R/usr/local/lib
+LDLIBS	       +=   -lfreetype -lswresample -ljpeg -lyuv -lsofia-sip-ua
+STDCCFLAGS     +=  -D__STDC_CONSTANT_MACROS -Wall
+STDCXXFLAGS    += 
+CPPFLAGS       += -I../ptlib/include -I../h323plus/include -I/usr/include -I/usr/include/freetype2 -I/usr/local/include -I/usr/local/include/sofia-sip-1.12
+OPTCCFLAGS      =$(CPPFLAGS)
 
 git_revision        = $(shell git rev-list master --max-count=1 HEAD)
 #git_revision_number = $(shell git rev-list master | wc -l)
@@ -50,6 +52,7 @@ openmcu.ru_launched_Ypf.gif \
 i15_mic_off.gif \
 i20_vad.gif \
 i24_shuff.gif \
+i15_getNoVideo.gif \
 openmcu.ru_remove.gif \
 openmcu.ru_logo_text.bmp \
 connecting.wav \
