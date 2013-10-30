@@ -1,7 +1,7 @@
-VC_PLUGIN_DIR=@VC_PLUGIN_DIR@
-prefix=@prefix@
-libdir=@libdir@
-target_os=@target_os@
+VC_PLUGIN_DIR=@VIDEO_PLUGIN_DIR@
+prefix=@PLUGIN_INSTALLPREFIX@
+exec_prefix=${prefix}
+target_os=linux-gnu
 
 SRCDIR	= ./vic
 OBJDIR	= ./obj
@@ -11,13 +11,13 @@ SONAME	=$(BASENAME)
 COMMONDIR       =opal
 PLUGINDIR       =.
 
-CC	 	=@CC@
-CFLAGS	 	=@CFLAGS@
-CXX	 	=@CXX@
-LDSO	 	=@LDSO@
-PLUGINEXT	=@PLUGINEXT@
-STDCCFLAGS	=@STDCCFLAGS@
-LDFLAGS		=@LDFLAGS@
+CC	 	=gcc
+CXX	 	=g++
+LDSO	 	=-shared -Wl,-soname,$(SONAME)
+PLUGINEXT	=so
+CFLAGS	       +=@CFLAGS@ -Os
+STDCCFLAGS     +=-fPIC -D__STDC_CONSTANT_MACROS
+LDFLAGS		=
 
 EXTRACCFLAGS    += -I$(COMMONDIR) -I$(PLUGINDIR)
 
@@ -59,11 +59,11 @@ else
 endif
 
 install:
-	mkdir -p $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)
-	install $(PLUGIN) $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)
+	mkdir -p $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)
+	install $(PLUGIN) $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)/$(PLUGIN)
+	rm -f $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -f $(OBJECTS) $(PLUGIN)

@@ -47,6 +47,9 @@ clean:
 @MCUDIR@:
 	cd @MCUDIR@ && $(MAKE) $(MAKEFLAGS)
 
+h261:
+	cd @PLUGIN_H261_DIR@ && $(MAKE) $(MAKEFLAGS)
+
 h263:
 	cd @PLUGIN_H263_DIR@ && $(MAKE) $(MAKEFLAGS)
 

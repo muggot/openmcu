@@ -480,6 +480,7 @@ AC_CONFIG_FILES(h323plus/Makefile)
 dnl ########################################################################
 dnl configuration plugins
 
+h261=yes
 h263=yes
 h264=yes
 vp8=yes
@@ -491,6 +492,7 @@ speex=yes
 silk=yes
 opus=yes
 
+AC_ARG_ENABLE(h261, [AS_HELP_STRING([--enable-h261],[Enable/Disable H.261 support (default enabled)],[40],[100])], [h261="$enableval"])
 AC_ARG_ENABLE(h263, [AS_HELP_STRING([--enable-h263],[Enable/Disable H.263 support (default enabled)],[40],[100])], [h263="$enableval"])
 AC_ARG_ENABLE(h264, [AS_HELP_STRING([--enable-h264],[Enable/Disable H.264 support (default enabled)],[40],[100])], [h264="$enableval"])
 AC_ARG_ENABLE(vp8, [AS_HELP_STRING([--enable-vp8],[Enable/Disable VP8 support (default enabled)],[40],[100])], [vp8="$enableval"])
@@ -506,8 +508,15 @@ vp8_ffmpeg=yes
 AC_ARG_ENABLE(separator, [    ])
 AC_ARG_ENABLE(vp8_ffmpeg, [AS_HELP_STRING([--disable-vp8-ffmpeg],[Disable VP8 ffmpeg decoding (default enabled)],[40],[100])], [vp8_ffmpeg="$enableval"])
 
-PLUGINS="h263 h264 vp8 g722 g7231 g726 ilbc silk opus"
+PLUGINS="h261 h263 h264 vp8 g722 g7231 g726 ilbc silk opus"
 AC_SUBST(PLUGINS)
+
+PLUGIN_H261_DIR=${top_srcdir}/plugins/H.261-vic
+AC_SUBST(PLUGIN_H261_DIR)
+if test "${h261}" = "yes"; then
+    AC_CONFIG_FILES(plugins/H.261-vic/Makefile)
+    PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_H261_DIR}"
+fi
 
 PLUGIN_H263_DIR=${top_srcdir}/plugins/H.263-1998.3
 AC_SUBST(PLUGIN_H263_DIR)

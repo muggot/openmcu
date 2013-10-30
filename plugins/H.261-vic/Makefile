@@ -1,7 +1,7 @@
 VC_PLUGIN_DIR=codecs/video
 prefix=/usr/local/lib/ptlib
-libdir=$prefix
-target_os=linux
+exec_prefix=${prefix}
+target_os=linux-gnu
 
 SRCDIR	= ./vic
 OBJDIR	= ./obj
@@ -12,11 +12,11 @@ COMMONDIR       =opal
 PLUGINDIR       =.
 
 CC	 	=gcc
-CFLAGS	 	=-g
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-STDCCFLAGS	=-fPIC -D__STDC_CONSTANT_MACROS
+CFLAGS	       +=-g  -Os
+STDCCFLAGS     +=-fPIC -D__STDC_CONSTANT_MACROS
 LDFLAGS		=
 
 EXTRACCFLAGS    += -I$(COMMONDIR) -I$(PLUGINDIR)
@@ -59,11 +59,11 @@ else
 endif
 
 install:
-	mkdir -p $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)
-	install $(PLUGIN) $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)
+	mkdir -p $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)
+	install $(PLUGIN) $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(DESTDIR)$(libdir)/$(VC_PLUGIN_DIR)/$(PLUGIN)
+	rm -f $(DESTDIR)$(prefix)/$(VC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -f $(OBJECTS) $(PLUGIN)

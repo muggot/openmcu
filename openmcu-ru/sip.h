@@ -277,6 +277,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int CreateAudioChannel(int pt, int dir);
   RTP_UDP *CreateRTPSession(int pt, SipCapability *sc);
   void FindCapability_H263(SipCapability &c,PStringArray &keys, const char * _H323Name, const char * _SIPName);
+  void SelectCapability_H261(SipCapability &c,PStringArray &tvCaps);
   void SelectCapability_H263(SipCapability &c,PStringArray &tvCaps);
   void SelectCapability_H263p(SipCapability &c,PStringArray &tvCaps);
   void SelectCapability_H264(SipCapability &c,PStringArray &tvCaps);

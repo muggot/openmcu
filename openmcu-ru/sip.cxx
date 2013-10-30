@@ -460,6 +460,28 @@ void OpenMCUSipConnection::FindCapability_H263(SipCapability &c,PStringArray &ke
   }
 }
 
+void OpenMCUSipConnection::SelectCapability_H261(SipCapability &c,PStringArray &tvCaps)
+{
+ //int f=0; // annex f
+ PStringArray keys = c.parm.Tokenise(";");
+ c.parm = "";
+ //for(int kn=0; kn<keys.GetSize(); kn++) 
+ // { if(keys[kn] == "F=1") { c.parm = "F=1;"; f=1; break; } }
+
+ if(tvCaps.GetStringsIndex("H.261-CIF{sw}")!=P_MAX_INDEX && c.cap == NULL)
+  FindCapability_H263(c,keys,"H.261-CIF{sw}","CIF");
+ if(tvCaps.GetStringsIndex("H.263-CIF{sw}")!=P_MAX_INDEX && c.cap == NULL)
+  FindCapability_H263(c,keys,"H.261-QCIF{sw}","QCIF");
+
+ if(c.cap)
+ {
+  OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
+  //wf.SetOptionBoolean("_advancedPrediction",f);
+  if(c.bandwidth) wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
+  else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
+ }
+}
+
 void OpenMCUSipConnection::SelectCapability_H263(SipCapability &c,PStringArray &tvCaps)
 {
  int f=0; // annex f
@@ -487,7 +509,6 @@ void OpenMCUSipConnection::SelectCapability_H263(SipCapability &c,PStringArray &
   else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
  }
 }
-
 
 void OpenMCUSipConnection::SelectCapability_H263p(SipCapability &c,PStringArray &tvCaps)
 {
@@ -934,7 +955,8 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
   else if(c.media == 1)
   {
    if(vcap >= 0) continue;
-   if(c.format.ToLower() == "h263") SelectCapability_H263(c,tvCaps);
+   if(c.format.ToLower() == "h261") SelectCapability_H261(c,tvCaps);
+   else if(c.format.ToLower() == "h263") SelectCapability_H263(c,tvCaps);
    else if(c.format.ToLower() == "h263-1998") SelectCapability_H263p(c,tvCaps);
    else if(c.format.ToLower() == "h264") SelectCapability_H264(c,tvCaps);
    else if(c.format.ToLower() == "vp8") SelectCapability_VP8(c,tvCaps);
