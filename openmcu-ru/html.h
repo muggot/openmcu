@@ -48,6 +48,30 @@ class GeneralPConfigPage : public DefaultPConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class EndpointsPConfigPage : public PConfigPage
+{
+ public:
+   EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(
+      PHTTPRequest & request,
+      const PStringToString & data,
+      PHTML & replyMessage
+    );
+    BOOL OnPOST(
+      PHTTPServer & server,
+      const PURL & url,
+      const PMIMEInfo & info,
+      const PStringToString & data,
+      const PHTTPConnectionInfo & connectInfo
+    );
+  private:
+    PConfig cfg;
+    PStringArray dataArray;
+    PINDEX numParams;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class VideoPConfigPage : public DefaultPConfigPage
 {
  public:

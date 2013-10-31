@@ -461,6 +461,140 @@ RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & t
   string = html_page;
 }
 
+///////////////////////////////////////////////////////////////
+
+EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : PConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+  numParams = 4;
+
+  PStringStream html_begin, html_end, html_page, s;
+  s << "<form method='POST'><table cellspacing='8'><tbody>";
+
+  PString headStyle = "<td align='middle' style='background-color:#d9e5e3;padding:4px;border-bottom:2px solid white;border-right:2px solid white;width:120px'>";
+  PString nameStyle = "<td align='right' style='background-color:#d9e5e3;padding:4px;border-bottom:2px solid white;border-right:2px solid white;width:240px'>";
+  PString style = "<td align='middle' style='background-color:#efe;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+  PString inputStyle = "style='margin-top:5px;margin-bottom:5px;'";
+  PString buttonStyle = "style='margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;'";
+  PString buttons = "<input type=button value='↑' onClick='rowUp(this)' "+buttonStyle+">"
+                    "<input type=button value='↓' onClick='rowDown(this)' "+buttonStyle+">"
+                    "<input type=button value='+' onClick='rowAdd(this)' "+buttonStyle+">"
+                    "<input type=button value='-' onClick='rowDelete(this)' "+buttonStyle+">";
+
+
+  s << "<p>"+headStyle+"Address"+"</p>";
+  s << "<p>"+headStyle+EndpointsNameOverride+"</p>";
+  s << "<p>"+headStyle+EndpointsFrameRateFrom+"</p>";
+  s << "<p>"+headStyle+EndpointsBwFrom+"</p>";
+  s << "<p>"+headStyle+EndpointsBwTo+"</p>";
+
+  PStringList keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    PString name = keys[i];
+    PString params = cfg.GetString(keys[i]);
+    s << "<tr>"+nameStyle+"<input type=text name='"+name+"' size=15 value='"+name+"' "+inputStyle+">"+buttons+"</td>";
+    for(PINDEX j = 0; j < numParams; j++)
+      s << style+"<input type=text name='"+name+"' size=10 value='"+params.Tokenise(",")[j]+"' "+inputStyle+"></td>";
+    s << "</tr>";
+  }
+  if(keys.GetSize() == 0)
+  {
+    s << "<tr>"+nameStyle+"<input type=text name='emptyRow' size=15 value='' "+inputStyle+">"+buttons+"</td>";
+    for(PINDEX j = 0; j < numParams; j++)
+      s << style+"<input type=text name='emptyRow' size=10 value='' "+inputStyle+"></td>";
+    s << "</tr>";
+  }
+  s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
+
+  BuildHTML("");
+  BeginPage(html_begin, section, "window.l_param_endpoints", "window.l_info_param_endpoints");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+
+  html_page << "<script type='text/javascript'>\n"
+  "function rowUp(obj)\n"
+  "{\n"
+  "  var table = obj.parentNode.parentNode.parentNode;\n"
+  "  var rowNum=obj.parentNode.parentNode.sectionRowIndex;\n"
+  "  if(rowNum>1) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum],table.rows[rowNum-1]);\n"
+  "}\n"
+  "function rowDown(obj)\n"
+  "{\n"
+  "  var table = obj.parentNode.parentNode.parentNode;\n"
+  "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
+  "  var rows = obj.parentNode.parentNode.parentNode.childNodes.length;\n"
+  "  if(rowNum!=rows-1) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum+1],table.rows[rowNum]);\n"
+  "}\n"
+  "function rowAdd(obj)\n"
+  "{\n"
+  "  var table = obj.parentNode.parentNode.parentNode;\n"
+  "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
+  "  var node = table.rows[rowNum].cloneNode(true);\n"
+  "  table.appendChild(node);\n"
+  "}\n"
+  "function rowDelete(obj)\n"
+  "{\n"
+  "  var table = obj.parentNode.parentNode.parentNode;\n"
+  "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
+  "  table.deleteRow(rowNum);\n"
+  "}\n"
+  "</script>\n";
+
+  string = html_page;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL EndpointsPConfigPage::Post(PHTTPRequest & request,
+                       const PStringToString & data,
+                       PHTML & reply)
+{
+  PHTTPForm::Post(request, data, reply);
+
+  cfg.DeleteSection();
+  for(PINDEX i = 0; dataArray[i] != NULL; i++)
+    cfg.SetString(dataArray[i].Tokenise("=")[0], dataArray[i].Tokenise("=")[1]);
+
+  process.OnContinue();
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL EndpointsPConfigPage::OnPOST(PHTTPServer & server,
+                         const PURL & url,
+                         const PMIMEInfo & info,
+                         const PStringToString & data,
+                         const PHTTPConnectionInfo & connectInfo)
+{
+  PStringArray entityData = connectInfo.GetEntityBody().Tokenise("&");
+  PStringArray renameArray;
+  PINDEX num = 0;
+
+  for(PINDEX i = 0; i < entityData.GetSize(); i++)
+  {
+    PString key = PURL::UntranslateString(entityData[i].Tokenise("=")[0], PURL::QueryTranslation);
+    PString value = PURL::UntranslateString(entityData[i].Tokenise("=")[1], PURL::QueryTranslation);
+    if(key == "submit")
+      continue;
+
+    PINDEX asize = dataArray.GetSize();
+    if(num == 0)
+      dataArray.AppendString(value+"=");
+    else
+      dataArray[asize-1] += value+",";
+    if(num == numParams)
+      num = 0;
+    else
+      num++;
+  }
+
+  PHTTPConfig::OnPOST(server, url, info, data, connectInfo);
+  return TRUE;
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
