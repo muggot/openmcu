@@ -467,7 +467,7 @@ EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PStri
     : PConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  numParams = 4;
+  numParams = endpointsOptions.GetSize();
 
   PStringStream html_begin, html_end, html_page, s;
   s << "<form method='POST'><table cellspacing='8'><tbody>";
@@ -484,10 +484,8 @@ EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PStri
 
 
   s << "<p>"+headStyle+"Address"+"</p>";
-  s << "<p>"+headStyle+EndpointsNameOverride+"</p>";
-  s << "<p>"+headStyle+EndpointsFrameRateFrom+"</p>";
-  s << "<p>"+headStyle+EndpointsBwFrom+"</p>";
-  s << "<p>"+headStyle+EndpointsBwTo+"</p>";
+  for(PINDEX i = 0; i < endpointsOptions.GetSize(); i++)
+    s << "<p>"+headStyle+endpointsOptions[i]+"</p>";
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -577,6 +575,8 @@ BOOL EndpointsPConfigPage::OnPOST(PHTTPServer & server,
   {
     PString key = PURL::UntranslateString(entityData[i].Tokenise("=")[0], PURL::QueryTranslation);
     PString value = PURL::UntranslateString(entityData[i].Tokenise("=")[1], PURL::QueryTranslation);
+    key.Replace(","," ",TRUE);
+    value.Replace(","," ",TRUE);
     if(key == "submit")
       continue;
 

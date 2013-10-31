@@ -2416,37 +2416,88 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
       return FALSE;
     }
 
-    unsigned fr=ep.GetVideoFrameRate();
-    if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
-    codec.SetTargetFrameTimeMs(1000/fr);
-
     OpalMediaFormat & mf = codec.GetWritableMediaFormat();
-    mf.SetOptionInteger("Encoding Quality", DefaultVideoQuality);
-
-    PStringList keys = MCUConfig("Video").GetKeys();
-    for(PINDEX i = 0; i < keys.GetSize(); i++)
+    unsigned fr;
+    if(GetCallToken() != "") // only first call OpenVideoChannel calltoken is set
     {
-      if(keys[i].Tokenise(" ")[0] == videoTransmitCodecName.Tokenise("-")[0])
+      // default & video parameters
+      fr = ep.GetVideoFrameRate();
+      if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
+      codec.SetTargetFrameTimeMs(1000/fr);
+
+      mf.SetOptionInteger("Encoding Quality", DefaultVideoQuality);
+
+      PStringList keys = MCUConfig("Video").GetKeys();
+      for(PINDEX i = 0; i < keys.GetSize(); i++)
       {
-        PINDEX pos = keys[i].Find(" ");
-        if(pos == P_MAX_INDEX)
-          continue;
-        PString option = keys[i].Right(keys[i].GetSize()-pos-2);
-        int value = MCUConfig("Video").GetInteger(keys[i], 0);
-        if(option == "Max Bit Rate")
+        if(keys[i].Tokenise(" ")[0] == videoTransmitCodecName.Tokenise("-")[0])
         {
-          value = value*1000;
-          if(value == 0 || value > mf.GetOptionInteger(option))
+          PINDEX pos = keys[i].Find(" ");
+          if(pos == P_MAX_INDEX)
             continue;
-          if(value < 64000)
-            value = 64000;
+          PString option = keys[i].Right(keys[i].GetSize()-pos-2);
+          int value = MCUConfig("Video").GetInteger(keys[i], 0);
+          if(option == "Max Bit Rate")
+          {
+            value = value*1000;
+            if(value == 0 || value > mf.GetOptionInteger(option))
+              continue;
+            if(value < 64000)
+              value = 64000;
+          }
+          mf.SetOptionInteger(option, value);
         }
-        mf.SetOptionInteger(option, value);
+      }
+
+      // endpoints preffered parameters
+      PString domain, address;
+      if(GetCallToken().Find("sip:") != P_MAX_INDEX)
+      {
+        PString name = GetCallToken().Tokenise("@")[1].Tokenise(":")[1];
+        domain = GetCallToken().Tokenise("@")[2].Tokenise(":")[0];
+        address = name+"@"+domain;
+      } else {
+        domain = GetCallToken().Tokenise("$")[1].Tokenise(":")[0];
+        address = remoteName+"@"+domain;
+      }
+      MCUConfig epsCfg = MCUConfig("Endpoints");
+      PStringList epsKeys = epsCfg.GetKeys();
+      PINDEX epsDomainIndex = epsKeys.GetStringsIndex("@"+domain);
+      PINDEX epsIndex = epsKeys.GetStringsIndex(address);
+      if(epsDomainIndex != P_MAX_INDEX) epsIndex = epsDomainIndex;
+
+      if(epsIndex != P_MAX_INDEX)
+      {
+        PString overrideName = epsCfg.GetString(epsKeys[epsIndex]).Tokenise(",")[0];
+        unsigned frameRateFrom = atoi(epsCfg.GetString(epsKeys[epsIndex]).Tokenise(",")[1]);
+        unsigned bwFrom = atoi(epsCfg.GetString(epsKeys[epsIndex]).Tokenise(",")[2]);
+        //unsigned bwTo = atoi(epsCfg.GetString(epsKeys[epsIndex]).Tokenise(",")[3]);
+
+        // set display name
+        if(overrideName != "") remoteName = remotePartyName = overrideName;
+
+        // set frame rate from MCU
+        if(frameRateFrom < 1 || frameRateFrom > MAX_FRAME_RATE) frameRateFrom =0;
+        if(frameRateFrom != 0) codec.SetTargetFrameTimeMs(1000/frameRateFrom);
+
+        // set bandwidth from MCU
+        bwFrom = bwFrom*1000;
+        if(bwFrom < 64000) bwFrom = 0;
+        if(bwFrom != 0) mf.SetOptionInteger("Max Bit Rate", bwFrom);
       }
     }
+
+    // get frame time from codec
+    if(mf.GetOptionInteger("Frame Time") != 0)
+      fr = 90000/mf.GetOptionInteger("Frame Time");
+    else
+      fr = ep.GetVideoFrameRate();
+
+    // update format string
     codec.formatString = mf+"@"+PString(mf.GetOptionInteger(OpalVideoFormat::FrameWidthOption))+"x"+
                                 PString(mf.GetOptionInteger(OpalVideoFormat::FrameHeightOption))+":"+
                                 PString(mf.GetOptionInteger(OpalVideoFormat::MaxBitRateOption))+"x";
+
     // SetTxQualityLevel not send the value in encoder
     //codec.SetTxQualityLevel(ep.GetVideoTxQuality());
 

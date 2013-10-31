@@ -129,10 +129,11 @@ static const char RejectDuplicateNameKey[] = "Reject duplicate name";
 static const char SIPReInviteKey[]         = "SIP ReInvite (pause)";
 
 // endpoints options
-static const char EndpointsNameOverride[] = "Display name override";
-static const char EndpointsFrameRateFrom[] = "Preferred frame rate from MCU";
-static const char EndpointsBwFrom[] = "Preferred bandwidth from MCU";
-static const char EndpointsBwTo[] = "Preferred bandwidth to MCU";
+static PStringArray endpointsOptions = PString(
+                                        "Display name override,"
+                                        "Preferred frame rate from MCU,"
+                                        "Preferred bandwidth from MCU,"
+                                        "Preferred bandwidth to MCU").Tokenise(",");
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
