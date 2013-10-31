@@ -2462,7 +2462,7 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
       }
       MCUConfig epsCfg = MCUConfig("Endpoints");
       PStringList epsKeys = epsCfg.GetKeys();
-      PINDEX epsDomainIndex = epsKeys.GetStringsIndex("@"+domain);
+      PINDEX epsDomainIndex = epsKeys.GetStringsIndex(domain);
       PINDEX epsIndex = epsKeys.GetStringsIndex(address);
       if(epsDomainIndex != P_MAX_INDEX) epsIndex = epsDomainIndex;
 
