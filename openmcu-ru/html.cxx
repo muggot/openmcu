@@ -29,43 +29,6 @@ PCREATE_SERVICE_MACRO_BLOCK(RoomList,P_EMPTY,P_EMPTY,block)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString jsRowUp = "<script type='text/javascript'>\n"
-                     "function rowUp(obj,topRow)\n"
-                     "{\n"
-                     "  var table = obj.parentNode.parentNode.parentNode;\n"
-                     "  var rowNum=obj.parentNode.parentNode.sectionRowIndex;\n"
-                     "  if(rowNum>topRow) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum],table.rows[rowNum-1]);\n"
-                     "}\n"
-                     "</script>\n";
-PString jsRowDown = "<script type='text/javascript'>\n"
-                     "function rowDown(obj)\n"
-                     "{\n"
-                     "  var table = obj.parentNode.parentNode.parentNode;\n"
-                     "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
-                     "  var rows = obj.parentNode.parentNode.parentNode.childNodes.length;\n"
-                     "  if(rowNum!=rows-1) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum+1],table.rows[rowNum]);\n"
-                     "}\n"
-                     "</script>\n";
-PString jsRowClone = "<script type='text/javascript'>\n"
-                     "function rowClone(obj)\n"
-                     "{\n"
-                     "  var table = obj.parentNode.parentNode.parentNode;\n"
-                     "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
-                     "  var node = table.rows[rowNum].cloneNode(true);\n"
-                     "  table.insertBefore(node, table.rows[rowNum+1]);\n"
-                     "}\n"
-                     "</script>\n";
-PString jsRowDelete = "<script type='text/javascript'>\n"
-                     "function rowDelete(obj)\n"
-                     "{\n"
-                     "  var table = obj.parentNode.parentNode.parentNode;\n"
-                     "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
-                     "  table.deleteRow(rowNum);\n"
-                     "}\n"
-                     "</script>\n";
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static unsigned long html_template_size; // count on zero initialization
 char * html_template_buffer;
 char * html_quote_buffer;
@@ -501,45 +464,32 @@ RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & t
 ///////////////////////////////////////////////////////////////
 
 EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : PConfigPage(app,title,section,auth)
+    : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  numParams = endpointsOptions.GetSize();
+  numCol = endpointsOptions.GetSize();
 
   PStringStream html_begin, html_end, html_page, s;
   s << "<form method='POST'><table cellspacing='8'><tbody>";
 
-  PString headStyle = "<td align='middle' style='background-color:#d9e5e3;padding:4px;border-bottom:2px solid white;border-right:2px solid white;width:120px'>";
-  PString nameStyle = "<td align='right' style='background-color:#d9e5e3;padding:4px;border-bottom:2px solid white;border-right:2px solid white;width:240px'>";
-  PString style = "<td align='middle' style='background-color:#efe;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-  PString inputStyle = "style='margin-top:5px;margin-bottom:5px;'";
-  PString buttonStyle = "style='margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;'";
-  PString buttons = "<input type=button value='↑' onClick='rowUp(this,1)' "+buttonStyle+">"
-                    "<input type=button value='↓' onClick='rowDown(this)' "+buttonStyle+">"
-                    "<input type=button value='+' onClick='rowClone(this)' "+buttonStyle+">"
-                    "<input type=button value='-' onClick='rowDelete(this)' "+buttonStyle+">";
-
-
-  s << "<p>"+headStyle+"Address"+"</p>";
+  s << column("Address", 240);
   for(PINDEX i = 0; i < endpointsOptions.GetSize(); i++)
-    s << "<p>"+headStyle+endpointsOptions[i]+"</p>";
+    s << column(endpointsOptions[i], 120);
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << "<tr>"+nameStyle+"<input type=text name='"+name+"' size=15 value='"+name+"' "+inputStyle+">"+buttons+"</td>";
-    for(PINDEX j = 0; j < numParams; j++)
-      s << style+"<input type=text name='"+name+"' size=10 value='"+params.Tokenise(",")[j]+"' "+inputStyle+"></td>";
-    s << "</tr>";
+    s << rowInput(name, 15);
+    for(PINDEX j = 0; j < numCol; j++)
+      s << inputItem(name, params.Tokenise(",")[j], 10);
   }
   if(keys.GetSize() == 0)
   {
-    s << "<tr>"+nameStyle+"<input type=text name='emptyRow' size=15 value='' "+inputStyle+">"+buttons+"</td>";
-    for(PINDEX j = 0; j < numParams; j++)
-      s << style+"<input type=text name='emptyRow' size=10 value='' "+inputStyle+"></td>";
-    s << "</tr>";
+    s << rowInput("test", 15);
+    for(PINDEX j = 0; j < numCol; j++)
+      s << inputItem("test", "", 10);
   }
   s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
 
@@ -547,61 +497,55 @@ EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PStri
   BeginPage(html_begin, section, "window.l_param_endpoints", "window.l_info_param_endpoints");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
-  html_page << jsRowUp << jsRowDown << jsRowClone << jsRowDelete;
+  html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();
 
   string = html_page;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
 
-BOOL EndpointsPConfigPage::Post(PHTTPRequest & request,
-                       const PStringToString & data,
-                       PHTML & reply)
+ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
 {
-  PHTTPForm::Post(request, data, reply);
+  cfg = MCUConfig(section);
+  numCol = 5;
 
-  cfg.DeleteSection();
-  for(PINDEX i = 0; dataArray[i] != NULL; i++)
-    cfg.SetString(dataArray[i].Tokenise("=")[0], dataArray[i].Tokenise("=")[1]);
+  PStringStream html_begin, html_end, html_page, s;
+  s << "<form method='POST'><table cellspacing='8'><tbody>";
 
-  process.OnContinue();
-  return TRUE;
-}
+  s << column("Room name", 240);
+  s << column("Registrar usage", 120);
+  s << column("Registrar domain", 120);
+  s << column("Username", 120);
+  s << column("Password", 120);
+  s << column("Expires", 120);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BOOL EndpointsPConfigPage::OnPOST(PHTTPServer & server,
-                         const PURL & url,
-                         const PMIMEInfo & info,
-                         const PStringToString & data,
-                         const PHTTPConnectionInfo & connectInfo)
-{
-  PStringArray entityData = connectInfo.GetEntityBody().Tokenise("&");
-  PStringArray renameArray;
-  PINDEX num = 0;
-
-  for(PINDEX i = 0; i < entityData.GetSize(); i++)
+  PStringList keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    PString key = PURL::UntranslateString(entityData[i].Tokenise("=")[0], PURL::QueryTranslation);
-    PString value = PURL::UntranslateString(entityData[i].Tokenise("=")[1], PURL::QueryTranslation);
-    key.Replace(","," ",TRUE);
-    value.Replace(","," ",TRUE);
-    if(key == "submit")
-      continue;
-
-    PINDEX asize = dataArray.GetSize();
-    if(num == 0)
-      dataArray.AppendString(value+"=");
-    else
-      dataArray[asize-1] += value+",";
-    if(num == numParams)
-      num = 0;
-    else
-      num++;
+    PString name = keys[i];
+    PString params = cfg.GetString(keys[i]);
+    s << rowInput(name, 15);
+    s << checkBoxItem("room101", params.Tokenise(",")[0]);
+    for(PINDEX j = 1; j < numCol; j++)
+      s << inputItem(name, params.Tokenise(",")[j], 10);
   }
+  if(keys.GetSize() == 0)
+  {
+    s << rowInput("room101", 15);
+    s << checkBoxItem("room101", "TRUE");
+    for(PINDEX j = 1; j < numCol; j++)
+      s << inputItem("room101", "", 10);
+  }
+  s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
 
-  PHTTPConfig::OnPOST(server, url, info, data, connectInfo);
-  return TRUE;
+  BuildHTML("");
+  BeginPage(html_begin, "SIP proxy-servers", "window.l_param_sip_proxy", "window.l_info_param_sip_proxy");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();
+
+  string = html_page;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -660,7 +604,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SectionPConfigPage::SectionPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : PConfigPage(app,title,"",auth)
+    : DefaultPConfigPage(app,title,"",auth)
 {
   cfg = MCUConfig(section);
   PStringList keys = cfg.GetKeys();
@@ -670,8 +614,6 @@ SectionPConfigPage::SectionPConfigPage(PHTTPServiceProcess & app,const PString &
 
   if(section == "RoomAccess")
     Add(new PHTTPStringField(" ", 1000, data, "<td><td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'> *=ALLOW<br> room101=allow user1@domain,user2@,@domain,@@via<br> room102=allow user3@domain@via"));
-  else if(section == "ProxyServers")
-    Add(new PHTTPStringField(" ", 1000, data, "<td><td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'>room_name=proxy_server,username,password,0,3600"));
   else
     Add(new PHTTPStringField(" ", 1000, data, NULL));
   BuildHTML("");
@@ -679,8 +621,6 @@ SectionPConfigPage::SectionPConfigPage(PHTTPServiceProcess & app,const PString &
   PStringStream html_begin, html_end;
   if(section == "RoomAccess")
     BeginPage(html_begin, "Access Rules", "window.l_param_access_rules", "window.l_info_param_access_rules");
-  else if(section == "ProxyServers")
-    BeginPage(html_begin, "SIP proxy-servers", "window.l_param_sip_proxy", "window.l_info_param_sip_proxy");
   else
     BeginPage(html_begin, section, "window.l_param_general", "window.l_info_param_general");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
@@ -728,7 +668,7 @@ BOOL SectionPConfigPage::OnPOST(PHTTPServer & server,
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : PConfigPage(app,title,section,auth)
+    : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
 
@@ -774,7 +714,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
     BeginPage(html_begin, section, "", "");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   PStringStream html_page; html_page << html_begin << string << html_end;
-  html_page << jsRowUp << jsRowDown;
+  html_page << jsRowUp() << jsRowDown();
 
   string = html_page;
 }

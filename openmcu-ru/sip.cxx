@@ -2012,19 +2012,21 @@ void OpenMCUSipEndPoint::Main()
     ProxyServer *proxy = new ProxyServer();
     PString tmp = MCUConfig("ProxyServers").GetString(keys[i]);
     proxy->roomName = keys[i];
-    proxy->proxyIP = tmp.Tokenise(",")[0].Tokenise(":")[0];
-    proxy->proxyPort = tmp.Tokenise(",")[0].Tokenise(":")[1];
-    proxy->userName = tmp.Tokenise(",")[1];
-    proxy->password = tmp.Tokenise(",")[2];
-    proxy->enable = atoi(tmp.Tokenise(",")[3]);
+    if(tmp.Tokenise(",")[0] == "TRUE") proxy->enable = 1;
+    else proxy->enable = 0;
+    proxy->proxyIP = tmp.Tokenise(",")[1].Tokenise(":")[0];
+    proxy->proxyPort = tmp.Tokenise(",")[1].Tokenise(":")[1];
+    proxy->userName = tmp.Tokenise(",")[2];
+    if(proxy->enable == 0 || proxy->proxyIP == "" || proxy->userName == "") continue;
+    proxy->password = tmp.Tokenise(",")[3];
     proxy->expires = tmp.Tokenise(",")[4];
     proxy->timeout = atoi(proxy->expires)*2;
     proxy->localPort = localPort;
     proxy->localIP = GetFromIp((const char *)proxy->proxyIP, (const char *)proxy->proxyPort);
+    if(proxy->localIP == "") continue;
     if(proxy->proxyPort == "") proxy->proxyPort = "5060";
     if(atoi(proxy->expires) < 60) proxy->expires = "60";
     if(atoi(proxy->expires) > 3600) proxy->expires = "3600";
-    if(proxy->localIP == "") continue;
     ProxyServerMap.insert(ProxyServerMapType::value_type(proxy->userName+"@"+proxy->proxyIP, proxy));
   }
 
