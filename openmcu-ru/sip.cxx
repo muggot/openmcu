@@ -244,11 +244,11 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
    PIPSocket::Address lIP(localIP); 
    PIPSocket::Address rIP(remoteIP);
    unsigned portBase, portMax;
-   if(direction = 1 && !sc->media && audioRtpPort)
+   if(direction == 1 && !sc->media && audioRtpPort)
    {
      portBase = portMax = audioRtpPort;
      audioRtpPort = 0;
-   } else if(direction = 1 && sc->media && videoRtpPort) {
+   } else if(direction == 1 && sc->media && videoRtpPort) {
      portBase = portMax = videoRtpPort;
      videoRtpPort = 0;
    } else {
@@ -966,7 +966,11 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
  cout << scap << " " << vcap << "\r\n";
  if(scap < 0 && vcap < 0)
    return 0;
+ return 1;
+}
 
+int OpenMCUSipConnection::ProcessSDP200()
+{
  sdp_msg = "v=0\r\no=";
  sdp_msg = sdp_msg + requestedRoom + " ";
  sdp_seq++;
@@ -977,7 +981,8 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
  sdp_msg = sdp_msg + "s=openmcu\r\n";
  sdp_msg = sdp_msg + "c=IN IP4 ";
  sdp_msg = sdp_msg + localIP + "\r\n";
- if(bandwidth) sdp_msg = sdp_msg + "b=AS:" + PString(bandwidth) + "\r\n";
+ if(sipEpBandwidthTo) sdp_msg = sdp_msg + "b=AS:" + PString(sipEpBandwidthTo) + "\r\n";
+ else if(bandwidth) sdp_msg = sdp_msg + "b=AS:" + PString(bandwidth) + "\r\n";
  sdp_msg = sdp_msg + "t=0 0\r\n";
  return 1;
 }
@@ -1032,6 +1037,96 @@ int OpenMCUSipConnection::CreateSipData()
   return 1;
 }
 
+int OpenMCUSipConnection::SetSipEndpointParam()
+{
+  su_home_t *home = msg_home(c_sip_msg);
+  sip_t *sip = sip_object(c_sip_msg);
+  if(sip == NULL)
+    return 0;
+
+  sip_addr_t *remote_addr_t;
+  if(direction == 0) remote_addr_t = sip_from_dup(home, sip->sip_from);
+  else remote_addr_t = sip_to_dup(home, sip->sip_to);
+
+  sipEpOverrideName = "";
+  sipEpBandwidthTo = 0;
+
+  if(vcap < 0) return 1;
+  SipCapMapType::iterator cir = sipCaps.find(vcap);
+  H323Capability *cap = cir->second->cap;
+  if(!cap) return 1;
+  OpalMediaFormat & mf = cap->GetWritableMediaFormat();
+
+  // default & video parameters
+  unsigned fr = ep.GetVideoFrameRate();
+  if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
+  mf.SetOptionInteger("Frame Time", 90000/fr);
+
+  PStringList keys = MCUConfig("Video").GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    if(keys[i].Tokenise(" ")[0] == cap->GetFormatName().Tokenise("-")[0])
+    {
+      PINDEX pos = keys[i].Find(" ");
+      if(pos == P_MAX_INDEX)
+        continue;
+      PString option = keys[i].Right(keys[i].GetSize()-pos-2);
+      int value = MCUConfig("Video").GetInteger(keys[i], 0);
+      if(option == "Max Bit Rate")
+      {
+        value = value*1000;
+        if(value == 0 || value > mf.GetOptionInteger(option))
+          continue;
+        if(value < 64000)
+          value = 64000;
+      }
+      mf.SetOptionInteger(option, value);
+    }
+  }
+
+  // endpoints preffered parameters
+  MCUConfig epCfg = MCUConfig("Endpoints");
+  PStringList epKeys = epCfg.GetKeys();
+
+  PINDEX epIndex;
+  PINDEX epUriIndex = epKeys.GetStringsIndex(PString(remote_addr_t->a_url->url_user)+"@"+
+                                                  PString(remote_addr_t->a_url->url_host));
+  PINDEX epIpIndex = epKeys.GetStringsIndex(remote_addr_t->a_url->url_host);
+  if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
+  else epIndex = epIpIndex;
+
+  if(epIndex != P_MAX_INDEX)
+  {
+    PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
+    for(PINDEX i = 0; i < endpointsOptions.GetSize(); i++)
+    {
+      if(endpointsOptions[i] == "Display name override")
+      {
+        if(epParams[i] != "") sipEpOverrideName = epParams[i];
+      }
+      if(endpointsOptions[i] == "Preferred frame rate from MCU")
+      {
+        unsigned fr = atoi(epParams[i]);
+        if(fr < 1 || fr > MAX_FRAME_RATE) fr = 0;
+        if(fr != 0) mf.SetOptionInteger("Frame Time", 90000/fr);
+      }
+      if(endpointsOptions[i] == "Preferred bandwidth from MCU")
+      {
+        unsigned bwFrom = atoi(epParams[i]);
+        if(bwFrom < 64) bwFrom = 0;
+        if(bwFrom != 0) mf.SetOptionInteger("Max Bit Rate", bwFrom*1000);
+      }
+      if(endpointsOptions[i] == "Preferred bandwidth to MCU")
+      {
+        unsigned bwTo = atoi(epParams[i]);
+        if(bwTo < 64) bwTo = 0;
+        if(bwTo != 0) sipEpBandwidthTo = bwTo;
+      }
+    }
+  }
+  return 1;
+}
+
 int OpenMCUSipConnection::ProcessInviteEvent()
 {
  PTRACE(1, "MCUSIP\tProcessInviteEvent");
@@ -1040,11 +1135,17 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  if(sip == NULL || sip->sip_payload == NULL || sip->sip_payload->pl_data == NULL)
    return 415; // SIP_415_UNSUPPORTED_MEDIA
 
- if(CreateSipData() != 1)
-   return 500; // SIP_500_INTERNAL_SERVER_ERROR
-
  sdp_s = sip->sip_payload->pl_data;
  PStringArray sdp_sa = sdp_s.Lines();
+
+ if(CreateSipData() != 1)
+   return 500; // SIP_500_INTERNAL_SERVER_ERROR
+ if(!ProcessSDP(sdp_sa, sipCapsId, sipCaps, 0))
+   return 415; // SIP_415_UNSUPPORTED_MEDIA
+ if(SetSipEndpointParam() != 1)
+   return 500; // SIP_500_INTERNAL_SERVER_ERROR
+ if(!ProcessSDP200())
+   return 415; // SIP_415_UNSUPPORTED_MEDIA
 
  requestedRoom = roomName;
 
@@ -1052,7 +1153,9 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  if(direction == 0) remote_addr_t = sip_from_dup(home, sip->sip_from);
  else remote_addr_t = sip_to_dup(home, sip->sip_to);
 
- if(sip->sip_contact && sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") != 0)
+ if(sipEpOverrideName != "")
+   remotePartyName = sipEpOverrideName;
+ else if(sip->sip_contact && sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") != 0)
    remotePartyName = sip->sip_contact->m_display;
  else if(remote_addr_t->a_display && strcmp(remote_addr_t->a_display, "") != 0)
    remotePartyName = remote_addr_t->a_display;
@@ -1072,9 +1175,6 @@ int OpenMCUSipConnection::ProcessInviteEvent()
 
  callToken = remotePartyName + "@" + remotePartyAddress + ":" + PString(sip->sip_call_id->i_id);
  cout << "Name: " << remotePartyName << " Addr: " << remotePartyAddress << "\n";
-
- if(!ProcessSDP(sdp_sa, sipCapsId, sipCaps, 0))
-   return 415; // SIP_415_UNSUPPORTED_MEDIA
 
  ep.OnIncomingSipConnection(callToken,*this);
  PTRACE(1, "MCUSIP\tJoinConference");
@@ -1103,6 +1203,8 @@ int OpenMCUSipConnection::ProcessReInviteEvent()
  PString cur_sdp_msg = sdp_msg;
 
  if(!ProcessSDP(sdp_sa, new_par, new_caps, 1))
+   return 415; // SIP_415_UNSUPPORTED_MEDIA
+ if(!ProcessSDP200())
    return 415; // SIP_415_UNSUPPORTED_MEDIA
  
  int sflag = 1; // 0 - no changes

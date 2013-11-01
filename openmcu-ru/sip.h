@@ -269,6 +269,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int ProcessInviteEvent();
   int ProcessReInviteEvent();
   int ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite);
+  int ProcessSDP200();
   void StartTransmitChannels();
   void StartReceiveChannels();
   void StartChannel(int pt, int dir);
@@ -298,6 +299,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int SendFastUpdatePicture();
   int SendRequest(sip_method_t method, const char *method_name, msg_t *sip_msg);
   int CreateSipData();
+  int SetSipEndpointParam();
 
 //  virtual BOOL ClearCall(
 //      CallEndReason reason = EndedByLocalUser  ///< Reason for call clearing
@@ -316,6 +318,10 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int direction; // 0=incoming, 1=outgoing
   int cseqNum;
   unsigned audioRtpPort, videoRtpPort;
+
+  // preffered endpoints parameters
+  PString sipEpOverrideName;
+  unsigned sipEpBandwidthTo;
 
  protected:
  OpenMCUSipEndPoint *sep;
