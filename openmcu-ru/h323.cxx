@@ -2418,7 +2418,7 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
 
     OpalMediaFormat & mf = codec.GetWritableMediaFormat();
     unsigned fr;
-    if(GetCallToken() != "" && GetCallToken().Find("sip:") == P_MAX_INDEX) // only first call OpenVideoChannel calltoken is set
+    if(GetRemotePartyAddress() != "" && GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX) // only first call OpenVideoChannel callToken is set
     {
       // default & video parameters
       fr = ep.GetVideoFrameRate();
@@ -2450,8 +2450,8 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
       }
 
       // endpoints preffered parameters
-      PString domain = GetCallToken().Tokenise("$")[1].Tokenise(":")[0];
-      PString address = remoteName+"@"+domain;
+      PString domain = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
+      PString address = GetRemotePartyName()+"@"+domain;
       MCUConfig epsCfg = MCUConfig("Endpoints");
       PStringList epsKeys = epsCfg.GetKeys();
       PINDEX epsDomainIndex = epsKeys.GetStringsIndex(domain);
