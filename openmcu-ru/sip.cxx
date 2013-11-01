@@ -58,6 +58,7 @@ PString CreateSdpInvite()
         "o=USERNAME 1806 3221 IN IP4 LOCALIP\n"
         "s=Talk\n"
         "c=IN IP4 LOCALIP\n"
+        "b=AS:BANDWIDTH\n"
         "t=0 0\n";
 
  for (PINDEX i = 0; caps[i] != NULL; i++)
@@ -1037,8 +1038,38 @@ int OpenMCUSipConnection::CreateSipData()
   return 1;
 }
 
+int GetSipEndpointBandwidthTo(sip_addr_t *remote_addr_t)
+{
+  PTRACE(1, "MCUSIP\tGetSipEndpointBandwidthTo");
+  // endpoints preffered parameters
+  int sipEpBandwidthTo = 0;
+  MCUConfig epCfg = MCUConfig("Endpoints");
+  PStringList epKeys = epCfg.GetKeys();
+  PINDEX epIndex;
+  PINDEX epUriIndex = epKeys.GetStringsIndex(PString(remote_addr_t->a_url->url_user)+"@"+
+                                                  PString(remote_addr_t->a_url->url_host));
+  PINDEX epIpIndex = epKeys.GetStringsIndex(remote_addr_t->a_url->url_host);
+  if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
+  else epIndex = epIpIndex;
+  if(epIndex != P_MAX_INDEX)
+  {
+    PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
+    for(PINDEX i = 0; i < endpointsOptions.GetSize(); i++)
+    {
+      if(endpointsOptions[i] == "Preferred bandwidth to MCU")
+      {
+        unsigned bwTo = atoi(epParams[i]);
+        if(bwTo < 64) bwTo = 0;
+        if(bwTo != 0) sipEpBandwidthTo = bwTo;
+      }
+    }
+  }
+  return sipEpBandwidthTo;
+}
+
 int OpenMCUSipConnection::SetSipEndpointParam()
 {
+  PTRACE(1, "MCUSIP\tSetSipEndpointParam");
   su_home_t *home = msg_home(c_sip_msg);
   sip_t *sip = sip_object(c_sip_msg);
   if(sip == NULL)
@@ -1489,6 +1520,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sdp.Replace("LOCALIP", localIP, TRUE, 0);
     sdp.Replace("RTP_AUDIO_PORT", invit->second->aPort, TRUE, 0);
     sdp.Replace("RTP_VIDEO_PORT", invit->second->vPort, TRUE, 0);
+    sdp.Replace("BANDWIDTH", GetSipEndpointBandwidthTo(sip_to), TRUE, 0);
     sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sdp);
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
