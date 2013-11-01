@@ -498,7 +498,6 @@ EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PStri
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();
-
   string = html_page;
 }
 
@@ -526,7 +525,7 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
     s << rowInput(name, 15);
-    s << checkBoxItem("room101", params.Tokenise(",")[0]);
+    s << checkBoxItem(name, params.Tokenise(",")[0]);
     for(PINDEX j = 1; j < numCol; j++)
       s << inputItem(name, params.Tokenise(",")[j], 10);
   }
@@ -544,7 +543,56 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();
+  string = html_page;
+}
 
+///////////////////////////////////////////////////////////////
+
+RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+  numCol = 2;
+  firstEditRow = 2;
+
+  PStringStream html_begin, html_end, html_page, s;
+  s << "<form method='POST'><table cellspacing='8'><tbody>";
+
+  s << column("Room name<br>'*' for all rooms", 240);
+  s << column("Access", 120);
+  s << column("<br>'user1@domain user2@ @domain @@via'", 120);
+
+  PStringList keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    PString name = keys[i];
+    PString access = cfg.GetString(keys[i]).Tokenise(",")[0].ToLower();
+    PString params = cfg.GetString(keys[i]).Tokenise(",")[1];
+    if(name == "*") s << rowInput(name, 15, TRUE, FALSE);
+    else s << rowInput(name, 15);
+    s << selectItem(name, access, "allow,deny");
+    if(name == "*") s << inputItem(name, params, 50, TRUE);
+    else s << inputItem(name, params, 50);
+  }
+  if(keys.GetStringsIndex("*") == P_MAX_INDEX)
+  {
+    s << rowInput("*", 15, TRUE, FALSE);
+    s << selectItem("*", "allow", "allow,deny");
+    s << inputItem("*", "", 50, TRUE);
+  }
+  if(keys.GetSize() < 2)
+  {
+    s << rowInput("room101", 15);
+    s << selectItem("room101", "allow", "allow,deny");
+    s << inputItem("room101", "", 50);
+  }
+  s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
+
+  BuildHTML("");
+  BeginPage(html_begin, "Access Rules", "window.l_param_access_rules", "window.l_info_param_access_rules");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();
   string = html_page;
 }
 
@@ -612,17 +660,11 @@ SectionPConfigPage::SectionPConfigPage(PHTTPServiceProcess & app,const PString &
   for(PINDEX i = 0; i < keys.GetSize(); i++)
     data += keys[i]+"="+cfg.GetString(keys[i])+"\n";
 
-  if(section == "RoomAccess")
-    Add(new PHTTPStringField(" ", 1000, data, "<td><td rowspan='4' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'> *=ALLOW<br> room101=allow user1@domain,user2@,@domain,@@via<br> room102=allow user3@domain@via"));
-  else
-    Add(new PHTTPStringField(" ", 1000, data, NULL));
+  Add(new PHTTPStringField(" ", 1000, data, NULL));
   BuildHTML("");
 
   PStringStream html_begin, html_end;
-  if(section == "RoomAccess")
-    BeginPage(html_begin, "Access Rules", "window.l_param_access_rules", "window.l_info_param_access_rules");
-  else
-    BeginPage(html_begin, section, "window.l_param_general", "window.l_info_param_general");
+  BeginPage(html_begin, section, "window.l_param_general", "window.l_info_param_general");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
 
   PStringStream html_page; html_page << html_begin << string << html_end;

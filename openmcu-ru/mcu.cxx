@@ -254,7 +254,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpNameSpace.AddResource(new SIPPConfigPage(*this, "SIPParameters", "Parameters", authority), PHTTPSpace::Overwrite);
 
   // Create the config page - sip room acccess
-  httpNameSpace.AddResource(new SectionPConfigPage(*this, "RoomAccess", "RoomAccess", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new RoomAccessSIPPConfigPage(*this, "RoomAccess", "RoomAccess", authority), PHTTPSpace::Overwrite);
 
   // Create the config page - sip proxy servers
   httpNameSpace.AddResource(new ProxySIPPConfigPage(*this, "ProxyServers", "ProxyServers", authority), PHTTPSpace::Overwrite);

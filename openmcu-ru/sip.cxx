@@ -1359,13 +1359,13 @@ int OpenMCUSipEndPoint::ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConne
 PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
 {
     PTRACE(1, "MCUSIP\tGetRoomAccess");
-    BOOL inRoom = false;
+    BOOL inRoom = FALSE;
     PString via = sip->sip_via->v_host;
     PString userName = sip->sip_from->a_url->url_user;
     PString hostName = sip->sip_from->a_url->url_host;
     PString roomName;
     PString userName_, hostName_, via_, access;
-    PString defaultAccess = MCUConfig("RoomAccess").GetString("*", "ALLOW").ToUpper();
+    PString defaultAccess = MCUConfig("RoomAccess").GetString("*", "ALLOW").Tokenise(",")[0].ToUpper();
 
     ProxyServerMapType::iterator it =
         ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
@@ -1375,11 +1375,9 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
       roomName = sip->sip_to->a_url->url_user;
 
     PStringToString data = MCUConfig("RoomAccess").GetAllKeyValues();
-
     if(roomName != "*")
-      access = data(roomName).Tokenise(" ")[0].ToUpper();
-
-    PStringArray accessList = data(roomName).Tokenise(" ")[1].Tokenise(",");
+      access = data(roomName).Tokenise(",")[0].ToUpper();
+    PStringArray accessList = data(roomName).Tokenise(",")[1].Tokenise(" ");
     for(int i=0; accessList[i] != NULL; i++)
     {
       userName_ = accessList[i].Tokenise("@")[0];
@@ -1394,7 +1392,7 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
          (userName_ == userName && hostName_ == hostName && via_ == via)
         )
       {
-        inRoom = true;
+        inRoom = TRUE;
         break;
       }
     }

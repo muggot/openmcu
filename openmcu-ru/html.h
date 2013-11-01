@@ -46,29 +46,49 @@ class TablePConfigPage : public PConfigPage
    {
      cfg = MCUConfig(section);
      numCol = 0;
+     firstEditRow = 1;
      columnStyle = "<td align='middle' style='background-color:#d9e5e3;padding:4px;border-bottom:2px solid white;border-right:2px solid white;";
-     rowStyle = "<td align='right' style='background-color:#d9e5e3;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     rowStyle = "<td align='left' style='background-color:#d9e5e3;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
      itemStyle = "<td align='middle' style='background-color:#efe;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     checkBoxStyle = "<td align='middle' style='background-color:#efe;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
      inputStyle = "style='margin-top:5px;margin-bottom:5px;'";
      buttonStyle = "style='margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;'";
-     buttons = "<input type=button value='↑' onClick='rowUp(this,1)' "+buttonStyle+">"
-                    "<input type=button value='↓' onClick='rowDown(this)' "+buttonStyle+">"
-                    "<input type=button value='+' onClick='rowClone(this)' "+buttonStyle+">"
-                    "<input type=button value='-' onClick='rowDelete(this)' "+buttonStyle+">";
    }
 
    PString column(PString name, int width)
    { return "<p>"+columnStyle+"width:"+PString(width)+"px'>"+name+"</p>"; }
-   PString rowInput(PString name, int size)
-   { return "<tr>"+rowStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+name+"' "+inputStyle+">"+buttons+"</td>"; }
-   PString inputItem(PString name, PString value, int size)
-   { return itemStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+value+"' "+inputStyle+"></td>"; }
+   PString rowInput(PString name, int size, int readonly = FALSE, int editable = TRUE)
+   {
+     PString s = "<tr>"+rowStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+name+"' "+inputStyle;
+     if(!readonly) s += ">"; else s += "readonly>";
+     if(editable) s += buttons();
+     s += "</td>";
+     return s;
+   }
+   PString inputItem(PString name, PString value, int size, int readonly = FALSE)
+   {
+     PString s = itemStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+value+"' "+inputStyle;
+     if(!readonly) s += "></td>"; else s += "readonly></td>";
+     return s;
+   }
    PString checkBoxItem(PString name, PString value)
    {
-     PString s = checkBoxStyle+"<input name='"+name+"' value='FALSE' type='hidden'><input name='"+name+"' value='TRUE' type='checkbox'";
+     PString s = itemStyle+"<input name='"+name+"' value='FALSE' type='hidden'><input name='"+name+"' value='TRUE' type='checkbox'";
      if(value == "TRUE") s +=" checked='yes'></td>";
      else s +="></td>";
+     return s;
+   }
+   PString selectItem(PString name, PString value, PString values)
+   {
+     PStringArray data = values.Tokenise(",");
+     PString s = itemStyle+"<select name='"+name+"' "+inputStyle+">";
+     for(PINDEX i = 0; i < data.GetSize(); i++)
+     {
+       if(data[i] == value)
+         s += "<option selected value='"+data[i]+"'>"+data[i]+"</option>";
+       else
+         s += "<option value='"+data[i]+"'>"+data[i]+"</option>";
+     }
+     s +="</select>";
      return s;
    }
 
@@ -106,6 +126,10 @@ class TablePConfigPage : public PConfigPage
      PHTTPConfig::OnPOST(server, url, info, data, connectInfo);
      return TRUE;
    }
+   PString buttons() { return "<input type=button value='↑' onClick='rowUp(this,"+PString(firstEditRow)+")' "+buttonStyle+">"
+                    "<input type=button value='↓' onClick='rowDown(this)' "+buttonStyle+">"
+                    "<input type=button value='+' onClick='rowClone(this)' "+buttonStyle+">"
+                    "<input type=button value='-' onClick='rowDelete(this)' "+buttonStyle+">"; }
    PString jsRowUp() { return "<script type='text/javascript'>\n"
                      "function rowUp(obj,topRow)\n"
                      "{\n"
@@ -143,10 +167,10 @@ class TablePConfigPage : public PConfigPage
 
  protected:
    PConfig cfg;
-   PString columnStyle, rowStyle, itemStyle, checkBoxStyle, inputStyle, buttonStyle;
-   PString buttons;
+   PString columnStyle, rowStyle, itemStyle, inputStyle, buttonStyle;
    PStringArray dataArray;
    int numCol;
+   int firstEditRow;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -175,6 +199,16 @@ class ProxySIPPConfigPage : public TablePConfigPage
 {
  public:
    ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  private:
+    PConfig cfg;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class RoomAccessSIPPConfigPage : public TablePConfigPage
+{
+ public:
+   RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
   private:
     PConfig cfg;
 };
