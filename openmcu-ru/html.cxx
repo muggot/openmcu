@@ -29,6 +29,43 @@ PCREATE_SERVICE_MACRO_BLOCK(RoomList,P_EMPTY,P_EMPTY,block)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+PString jsRowUp = "<script type='text/javascript'>\n"
+                     "function rowUp(obj,topRow)\n"
+                     "{\n"
+                     "  var table = obj.parentNode.parentNode.parentNode;\n"
+                     "  var rowNum=obj.parentNode.parentNode.sectionRowIndex;\n"
+                     "  if(rowNum>topRow) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum],table.rows[rowNum-1]);\n"
+                     "}\n"
+                     "</script>\n";
+PString jsRowDown = "<script type='text/javascript'>\n"
+                     "function rowDown(obj)\n"
+                     "{\n"
+                     "  var table = obj.parentNode.parentNode.parentNode;\n"
+                     "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
+                     "  var rows = obj.parentNode.parentNode.parentNode.childNodes.length;\n"
+                     "  if(rowNum!=rows-1) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum+1],table.rows[rowNum]);\n"
+                     "}\n"
+                     "</script>\n";
+PString jsRowClone = "<script type='text/javascript'>\n"
+                     "function rowClone(obj)\n"
+                     "{\n"
+                     "  var table = obj.parentNode.parentNode.parentNode;\n"
+                     "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
+                     "  var node = table.rows[rowNum].cloneNode(true);\n"
+                     "  table.insertBefore(node, table.rows[rowNum+1]);\n"
+                     "}\n"
+                     "</script>\n";
+PString jsRowDelete = "<script type='text/javascript'>\n"
+                     "function rowDelete(obj)\n"
+                     "{\n"
+                     "  var table = obj.parentNode.parentNode.parentNode;\n"
+                     "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
+                     "  table.deleteRow(rowNum);\n"
+                     "}\n"
+                     "</script>\n";
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 static unsigned long html_template_size; // count on zero initialization
 char * html_template_buffer;
 char * html_quote_buffer;
@@ -477,9 +514,9 @@ EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PStri
   PString style = "<td align='middle' style='background-color:#efe;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
   PString inputStyle = "style='margin-top:5px;margin-bottom:5px;'";
   PString buttonStyle = "style='margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;'";
-  PString buttons = "<input type=button value='↑' onClick='rowUp(this)' "+buttonStyle+">"
+  PString buttons = "<input type=button value='↑' onClick='rowUp(this,1)' "+buttonStyle+">"
                     "<input type=button value='↓' onClick='rowDown(this)' "+buttonStyle+">"
-                    "<input type=button value='+' onClick='rowAdd(this)' "+buttonStyle+">"
+                    "<input type=button value='+' onClick='rowClone(this)' "+buttonStyle+">"
                     "<input type=button value='-' onClick='rowDelete(this)' "+buttonStyle+">";
 
 
@@ -510,35 +547,7 @@ EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PStri
   BeginPage(html_begin, section, "window.l_param_endpoints", "window.l_info_param_endpoints");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
-
-  html_page << "<script type='text/javascript'>\n"
-  "function rowUp(obj)\n"
-  "{\n"
-  "  var table = obj.parentNode.parentNode.parentNode;\n"
-  "  var rowNum=obj.parentNode.parentNode.sectionRowIndex;\n"
-  "  if(rowNum>1) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum],table.rows[rowNum-1]);\n"
-  "}\n"
-  "function rowDown(obj)\n"
-  "{\n"
-  "  var table = obj.parentNode.parentNode.parentNode;\n"
-  "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
-  "  var rows = obj.parentNode.parentNode.parentNode.childNodes.length;\n"
-  "  if(rowNum!=rows-1) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum+1],table.rows[rowNum]);\n"
-  "}\n"
-  "function rowAdd(obj)\n"
-  "{\n"
-  "  var table = obj.parentNode.parentNode.parentNode;\n"
-  "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
-  "  var node = table.rows[rowNum].cloneNode(true);\n"
-  "  table.appendChild(node);\n"
-  "}\n"
-  "function rowDelete(obj)\n"
-  "{\n"
-  "  var table = obj.parentNode.parentNode.parentNode;\n"
-  "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
-  "  table.deleteRow(rowNum);\n"
-  "}\n"
-  "</script>\n";
+  html_page << jsRowUp << jsRowDown << jsRowClone << jsRowDelete;
 
   string = html_page;
 }
@@ -727,7 +736,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    info = "<input type=button value='↑' onClick='rowUp(this)' style='margin-top:10px;margin-left:10px;margin-right:1px;'><input type=button value='↓' onClick='rowDown(this)' style='margin-top:10px;margin-left:1px;margin-right:10px;'>";
+    info = "<input type=button value='↑' onClick='rowUp(this,0)' style='margin-top:10px;margin-left:10px;margin-right:1px;'><input type=button value='↓' onClick='rowDown(this)' style='margin-top:10px;margin-left:1px;margin-right:10px;'>";
     H323Capability *cap = H323Capability::Create(keys[i]);
     if(cap == NULL && keys[i].Find("{sw}") == P_MAX_INDEX)
       cap = H323Capability::Create(keys[i]+"{sw}");
@@ -765,22 +774,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
     BeginPage(html_begin, section, "", "");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   PStringStream html_page; html_page << html_begin << string << html_end;
-
-  html_page << "<script type='text/javascript'>\n"
-  "function rowUp(obj)\n"
-  "{\n"
-  "  var table = obj.parentNode.parentNode.parentNode;\n"
-  "  var rowNum=obj.parentNode.parentNode.sectionRowIndex;\n"
-  "  if(rowNum!=0) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum],table.rows[rowNum-1]);\n"
-  "}\n"
-  "function rowDown(obj)\n"
-  "{\n"
-  "  var table = obj.parentNode.parentNode.parentNode;\n"
-  "  var rowNum=obj.parentNode.parentNode.sectionRowIndex;\n"
-  "  var rows=obj.parentNode.parentNode.parentNode.childNodes.length;\n"
-  "  if(rowNum!=rows-1) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum+1],table.rows[rowNum]);\n"
-  "}\n"
-  "</script>\n";
+  html_page << jsRowUp << jsRowDown;
 
   string = html_page;
 }
