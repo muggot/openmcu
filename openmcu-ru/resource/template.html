@@ -348,6 +348,10 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
  #topnav li menu menu a {width:180px;}
  menu > li:hover menu {display: block;background-color: #242424;}
 
+<-- #topnav a#menu_param{ background:url(menu_param.png) no-repeat scroll 5% 50% transparent; } -->
+ menu a#menu_h323 { background:url(menu_left.png) no-repeat scroll 0% 50% transparent; }
+ menu a#menu_sip { background:url(menu_left.png) no-repeat scroll 0% 50% transparent; }
+
  .panel_i_logo_text {position:relative;left:30px;top:6px;float:left;padding:0px 0px 0px 0px;}
 
  th.h1, td.h0 {padding:2px;padding-left:4px;padding-right:4px; }
@@ -374,13 +378,13 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
   </menu>
  </li>
 
- <li><a href="Parameters"><strong id="l_settings"></strong></a>
+ <li><a href="Parameters" id="menu_param"><strong id="l_settings"></strong></a>
   <menu>
    <li><a href='Parameters' id="l_param_general"></a></li>
    <li><a href='EndpointsParameters' id="l_param_endpoints"></a></li>
    <li><a href='VideoParameters' id="l_param_video"></a></li>
    <li><a href='RecordParameters' id="l_param_record"></a></li>
-   <li><a href='#' onmouseover="javascript:displayElement('submenu1',true);" onmouseout="javascript:displayElement('submenu1',false);">H.323</a>
+   <li><a href='#' id="menu_h323" onmouseover="javascript:displayElement('submenu1',true);" onmouseout="javascript:displayElement('submenu1',false);">H.323</a>
     <menu id="submenu1" style="display:none" onmouseover="javascript:displayElement('submenu1',true);" onmouseout="javascript:displayElement('submenu1',false);">
      <li><a href='H323Parameters' id="l_param_h323"></a></li>
      <li><a href='ReceiveSoundCodecs' id="l_param_receive_sound"></a></li>
@@ -389,7 +393,7 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
      <li><a href='TransmitVideoCodecs' id="l_param_transmit_video"></a></li>
     </menu>
    </li>
-   <li><a href='#' onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">SIP</a>
+   <li><a href='#' id="menu_sip" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">SIP</a>
     <menu id="submenu2" style="display:none" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">
      <li><a href='SIPParameters' id="l_param_sip"></a></li>
      <li><a href='SipSoundCodecs' id="l_param_sip_sound"></a></li>

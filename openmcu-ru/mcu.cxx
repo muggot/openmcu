@@ -358,6 +358,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/gif"                , "i24_revert.gif");
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "openmcu.ico");
   WEBSERVER_LINK_MIME("image/x-windows-bmp"      , "openmcu.ru_logo_text.bmp");
+  WEBSERVER_LINK_MIME("image/png"                , "menu_left.png");
 
   // set up the HTTP port for listening & start the first HTTP thread
   if (ListenForHTTP((WORD)cfg.GetInteger(HttpPortKey, DefaultHTTPPort)))

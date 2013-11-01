@@ -55,6 +55,7 @@ i24_shuff.gif \
 i15_getNoVideo.gif \
 openmcu.ru_remove.gif \
 openmcu.ru_logo_text.bmp \
+menu_left.png \
 connecting.wav \
 entering.wav \
 leaving.wav \
