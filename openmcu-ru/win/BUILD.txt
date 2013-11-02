@@ -10,6 +10,8 @@ it builds OK with MS VC++ 2010 Express.
 and build them.
 
 3. Install GnuWin32 from http://getgnuwin32.sourceforge.net/ with default settings.
+Also you'll need flex & bison in C:\Tools directory, they could be obtained here:
+http://sourceforge.net/projects/winflexbison/files/latest/download
 
 4. Build ptlib\ptlib_2010.sln, h323plus\h323plus_2010.sln & openmcu_45\win\openmcu_2010.sln.
 
