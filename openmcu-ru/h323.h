@@ -262,7 +262,11 @@ class OpenMCUH323Connection : public H323Connection
     virtual PString GetRemoteName() const             { return remoteName; }
 
     virtual void SetupCacheConnection(PString & format,Conference * conf, ConferenceMember * memb);
-    
+
+    void SetEndpointDefaultVideoParams(OpalMediaFormat & mf);
+    void SetEndpointPrefVideoParams(OpalMediaFormat & mf, PString uri, PString section);
+    PString GetEndpointParam(PString param, PString uri, PString section);
+
 #if OPENMCU_VIDEO
     virtual BOOL OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount);
     virtual BOOL OnOutgoingVideo(void * buffer, int width, int height, PINDEX & amount);

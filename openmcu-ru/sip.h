@@ -258,6 +258,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
        cseqNum = 100;
        direction = 0;
        audioRtpPort = videoRtpPort = 0;
+       epBandwidthTo = 0;
       }
   ~OpenMCUSipConnection()
   {
@@ -269,7 +270,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int ProcessInviteEvent();
   int ProcessReInviteEvent();
   int ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCapMapType &caps, int reinvite);
-  int ProcessSDP200();
   void StartTransmitChannels();
   void StartReceiveChannels();
   void StartChannel(int pt, int dir);
@@ -299,7 +299,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int SendFastUpdatePicture();
   int SendRequest(sip_method_t method, const char *method_name, msg_t *sip_msg);
   int CreateSipData();
-  int SetSipEndpointParam();
 
 //  virtual BOOL ClearCall(
 //      CallEndReason reason = EndedByLocalUser  ///< Reason for call clearing
@@ -320,8 +319,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   unsigned audioRtpPort, videoRtpPort;
 
   // preffered endpoints parameters
-  PString sipEpOverrideName;
-  unsigned sipEpBandwidthTo;
+  unsigned epBandwidthTo;
 
  protected:
  OpenMCUSipEndPoint *sep;

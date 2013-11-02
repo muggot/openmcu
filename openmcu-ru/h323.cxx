@@ -2383,6 +2383,95 @@ void OpenMCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
   new ConferenceFileMember(conf, srcCodec.GetMediaFormat(), PFile::WriteOnly, videoMixerNumber); 
 }
 
+
+void OpenMCUH323Connection::SetEndpointDefaultVideoParams(OpalMediaFormat & mf)
+{
+  // default & video parameters
+  unsigned fr = ep.GetVideoFrameRate();
+  if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
+  mf.SetOptionInteger("Frame Time", 1000/fr);
+  mf.SetOptionInteger("Encoding Quality", DefaultVideoQuality);
+
+  PStringList keys = MCUConfig("Video").GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    if(keys[i].Tokenise(" ")[0] == videoTransmitCodecName.Tokenise("-")[0])
+    {
+      PINDEX pos = keys[i].Find(" ");
+      if(pos == P_MAX_INDEX)
+        continue;
+      PString option = keys[i].Right(keys[i].GetSize()-pos-2);
+      int value = MCUConfig("Video").GetInteger(keys[i], 0);
+      if(option == "Max Bit Rate")
+      {
+        value = value*1000;
+        if(value == 0 || value > mf.GetOptionInteger(option))
+          continue;
+        if(value < 64000)
+          value = 64000;
+      }
+      mf.SetOptionInteger(option, value);
+    }
+  }
+}
+
+void OpenMCUH323Connection::SetEndpointPrefVideoParams(OpalMediaFormat & mf, PString uri, PString section)
+{
+  // endpoints preffered parameters
+  MCUConfig epCfg = MCUConfig(section);
+  PStringList epKeys = epCfg.GetKeys();
+
+  PINDEX epIndex, epIpIndex;
+  if(uri.Find("@") != P_MAX_INDEX) epIpIndex = epKeys.GetStringsIndex(uri.Tokenise("@")[1]);
+  else epIpIndex = epKeys.GetStringsIndex(uri);
+  PINDEX epUriIndex = epKeys.GetStringsIndex(uri);
+  if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
+  else epIndex = epIpIndex;
+
+  if(epIndex != P_MAX_INDEX)
+  {
+    PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
+    for(PINDEX i = 0; i < endpointsOptions.GetSize(); i++)
+    {
+      if(endpointsOptions[i] == "Preferred frame rate from MCU")
+      {
+        unsigned fr = atoi(epParams[i]);
+        if(fr < 1 || fr > MAX_FRAME_RATE) fr = 0;
+        if(fr != 0) mf.SetOptionInteger("Frame Time", 90000/fr);
+      }
+      if(endpointsOptions[i] == "Preferred bandwidth from MCU")
+      {
+        unsigned bwFrom = atoi(epParams[i]);
+        if(bwFrom < 64) bwFrom = 0;
+        if(bwFrom != 0) mf.SetOptionInteger("Max Bit Rate", bwFrom*1000);
+      }
+    }
+  }
+}
+
+PString OpenMCUH323Connection::GetEndpointParam(PString param, PString uri, PString section)
+{
+  // endpoints preffered parameters
+  PString newParam;
+  MCUConfig epCfg = MCUConfig(section);
+  PStringList epKeys = epCfg.GetKeys();
+
+  PINDEX epIndex, epIpIndex;
+  if(uri.Find("@") != P_MAX_INDEX) epIpIndex = epKeys.GetStringsIndex(uri.Tokenise("@")[1]);
+  else epIpIndex = epKeys.GetStringsIndex(uri);
+  PINDEX epUriIndex = epKeys.GetStringsIndex(uri);
+  if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
+  else epIndex = epIpIndex;
+
+  if(epIndex != P_MAX_INDEX)
+  {
+    PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
+    if(endpointsOptions.GetStringsIndex(param) != P_MAX_INDEX)
+      newParam = epParams[endpointsOptions.GetStringsIndex(param)];
+  }
+  return newParam;
+}
+
 #if OPENMCU_VIDEO
 BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec)
 {
@@ -2418,64 +2507,23 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
 
     OpalMediaFormat & mf = codec.GetWritableMediaFormat();
     unsigned fr;
-    if(GetRemotePartyAddress() != "" && GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX) // only first call OpenVideoChannel callToken is set
+    if(GetRemotePartyAddress() != "")
     {
-      // default & video parameters
-      fr = ep.GetVideoFrameRate();
-      if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
-      codec.SetTargetFrameTimeMs(1000/fr);
-
-      mf.SetOptionInteger("Encoding Quality", DefaultVideoQuality);
-
-      PStringList keys = MCUConfig("Video").GetKeys();
-      for(PINDEX i = 0; i < keys.GetSize(); i++)
+      SetEndpointDefaultVideoParams(mf);
+      if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
       {
-        if(keys[i].Tokenise(" ")[0] == videoTransmitCodecName.Tokenise("-")[0])
-        {
-          PINDEX pos = keys[i].Find(" ");
-          if(pos == P_MAX_INDEX)
-            continue;
-          PString option = keys[i].Right(keys[i].GetSize()-pos-2);
-          int value = MCUConfig("Video").GetInteger(keys[i], 0);
-          if(option == "Max Bit Rate")
-          {
-            value = value*1000;
-            if(value == 0 || value > mf.GetOptionInteger(option))
-              continue;
-            if(value < 64000)
-              value = 64000;
-          }
-          mf.SetOptionInteger(option, value);
-        }
-      }
-
-      // endpoints preffered parameters
-      PString domain = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
-      PString address = GetRemotePartyName()+"@"+domain;
-      MCUConfig epsCfg = MCUConfig("Endpoints");
-      PStringList epsKeys = epsCfg.GetKeys();
-      PINDEX epsDomainIndex = epsKeys.GetStringsIndex(domain);
-      PINDEX epsIndex = epsKeys.GetStringsIndex(address);
-      if(epsDomainIndex != P_MAX_INDEX) epsIndex = epsDomainIndex;
-
-      if(epsIndex != P_MAX_INDEX)
-      {
-        PString overrideName = epsCfg.GetString(epsKeys[epsIndex]).Tokenise(",")[0];
-        unsigned frameRateFrom = atoi(epsCfg.GetString(epsKeys[epsIndex]).Tokenise(",")[1]);
-        unsigned bwFrom = atoi(epsCfg.GetString(epsKeys[epsIndex]).Tokenise(",")[2]);
-        //unsigned bwTo = atoi(epsCfg.GetString(epsKeys[epsIndex]).Tokenise(",")[3]);
-
-        // set display name
-        if(overrideName != "") remoteName = remotePartyName = overrideName;
-
-        // set frame rate from MCU
-        if(frameRateFrom < 1 || frameRateFrom > MAX_FRAME_RATE) frameRateFrom =0;
-        if(frameRateFrom != 0) codec.SetTargetFrameTimeMs(1000/frameRateFrom);
-
-        // set bandwidth from MCU
-        bwFrom = bwFrom*1000;
-        if(bwFrom < 64000) bwFrom = 0;
-        if(bwFrom != 0) mf.SetOptionInteger("Max Bit Rate", bwFrom);
+        PString domain = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
+        PString address = GetRemotePartyName()+"@"+domain;
+        SetEndpointPrefVideoParams(mf, address, "Endpoints");
+        PString overrideName = GetEndpointParam("Display name override", address, "Endpoints");
+        if(overrideName != "") remotePartyName = overrideName;
+      } else {
+        PString name = GetRemotePartyAddress().Tokenise("@")[0].Tokenise(":")[1];
+        PString domain = GetRemotePartyAddress().Tokenise("@")[1];
+        PString address = name+"@"+domain;
+        SetEndpointPrefVideoParams(mf, address, "Endpoints");
+        PString overrideName = GetEndpointParam("Display name override", address, "Endpoints");
+        if(overrideName != "") remotePartyName = overrideName;
       }
     }
 
