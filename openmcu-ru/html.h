@@ -115,8 +115,7 @@ class TablePConfigPage : public PConfigPage
        if(value == "FALSE" && valueNext == "TRUE") continue;
        if(key == "submit") continue;
 
-       key.Replace(","," ",TRUE);
-       value.Replace(","," ",TRUE);
+       if(num != 0) value.Replace(","," ",TRUE);
        PINDEX asize = dataArray.GetSize();
        if(num == 0) dataArray.AppendString(value+"=");
        else dataArray[asize-1] += value+",";
