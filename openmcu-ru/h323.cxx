@@ -2797,7 +2797,8 @@ void OpenMCUH323Connection::OnWelcomeStateChanged()
       break;
 
     case CompleteConnection:
-      JoinConference(requestedRoom);
+      if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
+        JoinConference(requestedRoom);
       break;
 
     case JoinFailed:

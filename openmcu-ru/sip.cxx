@@ -1208,12 +1208,14 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  cout << "Name: " << remotePartyName << " Addr: " << remotePartyAddress << "\n";
 
  ep.OnIncomingSipConnection(callToken,*this);
+ PTRACE(1, "MCUSIP\tCreateLogicalChannels");
+ CreateLogicalChannels();
+ StartReceiveChannels(); // start receive logical channels
+ StartTransmitChannels(); // start transmit logical channels
  PTRACE(1, "MCUSIP\tJoinConference");
  JoinConference(requestedRoom);
  if(conferenceMember == NULL || conference == NULL)
    return 600;
- PTRACE(1, "MCUSIP\tCreateLogicalChannels");
- CreateLogicalChannels();
  return 1;
 }
 
@@ -1787,12 +1789,17 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     sCon->videoRtpPort = invit->second->vPort;
     InviteDataTempDelete(sik);
 
-    if(sCon->ProcessInviteEvent() != 1)
+    int ret = sCon->ProcessInviteEvent();
+    if(ret != 1)
+    {
+      if(ret == 600)
+      {
+        sCon->CleanUpOnCallEnd();
+        delete sCon;
+      }
       return 0;
-
-    sCon->StartReceiveChannels();
+    }
     SipConnMapInsert(sik, sCon);
-    sCon->StartTransmitChannels();
 
     nta_outgoing_destroy(orq);
     return 0;
@@ -1908,10 +1915,16 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
 
    int ret = sCon->ProcessInviteEvent();
    if(ret != 1)
-     return ReqReply(msg, ret);
-
+   {
+     ReqReply(msg, ret);
+     if(ret == 600)
+     {
+       sCon->CleanUpOnCallEnd();
+       delete sCon;
+     }
+     return 0;
+   }
    ReqReply(msg, SIP_200_OK, sCon);
-   sCon->StartReceiveChannels(); // start receive logical channels
    SipConnMapInsert(sik, sCon);
    return 0;
   }
@@ -1924,7 +1937,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
     PTRACE(1, "MCUSIP\tNew SIP ACK accepted");
     sip_t *c_sip = sip_object(sCon->c_sip_msg); // replace to_tag
     msg_header_insert(sCon->c_sip_msg, (msg_pub_t *)c_sip, (msg_header_t *)sip->sip_to);
-    sCon->StartTransmitChannels(); // start transmit logical channels
     return 0;
   }
   if(request == "BYE")
