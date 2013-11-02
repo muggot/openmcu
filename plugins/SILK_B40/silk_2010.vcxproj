@@ -1,0 +1,248 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>SILK Audio Codec</ProjectName>
+    <ProjectGuid>{B68CA250-5801-4F0C-87CD-BB9A73FA934A}</ProjectGuid>
+    <RootNamespace>G.722.2 Audio Codec</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">..\..\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(OutDir)SILK\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(OutDir)SILK\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>D:\h323\h323plus\include;..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;PLUGIN_CODEC_DLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>false</StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)SILK_pwplugin.dll</OutputFile>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <SubSystem>NotSet</SubSystem>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+    <PostBuildEvent>
+      <Message>Copying codec and debug information to plug in directory</Message>
+      <Command>if not exist c:\ptlib_plugins exit
+copy $(TargetPath) c:\ptlib_plugins
+copy $(TargetDir)\$(TargetName).pdb c:\ptlib_plugins
+</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>OnlyExplicitInline</InlineFunctionExpansion>
+      <IntrinsicFunctions>false</IntrinsicFunctions>
+      <AdditionalIncludeDirectories>..\..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;PLUGIN_CODEC_DLL_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <StringPooling>true</StringPooling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <ProgramDataBaseFileName>$(IntDir)$(TargetName).pdb</ProgramDataBaseFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <OutputFile>$(OutDir)SILK_pwplugin.dll</OutputFile>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <SubSystem>NotSet</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <ImportLibrary>$(IntDir)$(TargetName).lib</ImportLibrary>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="silkSrc\SKP_Silk_A2NLSF.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_ana_filt_bank_1.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_apply_sine_window_new.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_array_maxabs.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_autocorr.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_biquad.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_biquad_alt.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_burg_modified.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_bwexpander.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_bwexpander_32.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_CNG.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_code_signs.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_control_audio_bandwidth.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_control_codec_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_corrMatrix_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_create_init_destroy.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_dec_API.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_decode_core.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_decode_frame.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_decode_parameters.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_decode_pitch.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_decode_pulses.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_decoder_set_fs.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_detect_SWB_input.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_enc_API.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_encode_frame_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_encode_parameters.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_encode_pulses.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_find_LPC_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_find_LTP_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_find_pitch_lags_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_find_pred_coefs_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_gain_quant.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_HP_variable_cutoff_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_init_encoder_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_inner_prod_aligned.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_interpolate.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_k2a.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_k2a_Q16.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_LBRR_reset.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_lin2log.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_log2lin.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_LP_variable_cutoff.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_LPC_inv_pred_gain.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_LPC_synthesis_filter.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_LPC_synthesis_order16.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_LSF_cos_table.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_LTP_analysis_filter_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_LTP_scale_ctrl_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_MA.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_NLSF2A.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_NLSF2A_stable.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_NLSF_MSVQ_decode.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_NLSF_MSVQ_encode_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_NLSF_stabilize.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_NLSF_VQ_rate_distortion_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_NLSF_VQ_sum_error_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_NLSF_VQ_weights_laroia.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_noise_shape_analysis_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_NSQ.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_NSQ_del_dec.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_pitch_analysis_core.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_pitch_est_tables.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_PLC.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_prefilter_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_process_gains_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_process_NLSFs_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_quant_LTP_gains_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_range_coder.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_regularize_correlations_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_down2.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_down2_3.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_down3.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_private_AR2.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_private_ARMA4.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_private_copy.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_private_down4.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_private_down_FIR.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_private_IIR_FIR.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_private_up2_HQ.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_private_up4.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_rom.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_resampler_up2.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_residual_energy16_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_residual_energy_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_scale_copy_vector16.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_scale_vector.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_schur.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_schur64.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_shell_coder.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_sigm_Q15.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_solve_LS_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_sort.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_sum_sqr_shift.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_gain.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_LTP.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_NLSF_CB0_10.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_NLSF_CB0_16.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_NLSF_CB1_10.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_NLSF_CB1_16.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_other.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_pitch_lag.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_pulses_per_block.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_sign.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_tables_type_offset.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_VAD.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_VQ_nearest_neighbor_FIX.c" />
+    <ClCompile Include="silkSrc\SKP_Silk_warped_autocorrelation_FIX.c" />
+    <ClCompile Include="silkcodec.cxx" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="silkSrc\SKP_Silk_common_pitch_est_defines.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_control.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_define.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_errors.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_Inlines.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_macros.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_main.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_main_FIX.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_pitch_est_defines.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_PLC.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_resampler_private.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_resampler_rom.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_resampler_structs.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_SDK_API.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_setup_complexity.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_SigProc_FIX.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_structs.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_structs_FIX.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_tables.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_tables_NLSF_CB0_10.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_tables_NLSF_CB0_16.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_tables_NLSF_CB1_10.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_tables_NLSF_CB1_16.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_tuning_parameters.h" />
+    <ClInclude Include="silkSrc\SKP_Silk_typedef.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
