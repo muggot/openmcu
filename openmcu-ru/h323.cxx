@@ -2389,7 +2389,7 @@ void OpenMCUH323Connection::SetEndpointDefaultVideoParams(OpalMediaFormat & mf)
   // default & video parameters
   unsigned fr = ep.GetVideoFrameRate();
   if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
-  mf.SetOptionInteger("Frame Time", 1000/fr);
+  mf.SetOptionInteger("Frame Time", 90000/fr);
   mf.SetOptionInteger("Encoding Quality", DefaultVideoQuality);
 
   PStringList keys = MCUConfig("Video").GetKeys();
