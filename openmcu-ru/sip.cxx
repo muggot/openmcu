@@ -2,8 +2,6 @@
 #include "mcu.h"
 #include <sys/types.h>
 #ifdef _WIN32
-#  include <winsock2.h>
-#  include <ws2tcpip.h>
 #  define setenv(n,v,f) _putenv(n "=" v)
 #else
 #  include <sys/socket.h>
@@ -232,11 +230,14 @@ int InviteDataTempCreate(PString localIP, const SipKey &sik)
   return 1;
 }
 
-PString GetEndpointParam(PString param, PString uri, PString section)
+PString GetEndpointParam(PString param, PString uri, PString protocol)
 {
   // endpoints preffered parameters
   PString newParam;
-  MCUConfig epCfg = MCUConfig(section);
+  PString section;
+  if(protocol == "h323") section = "H323 Endpoints";
+  else section = "SIP Endpoints";
+  MCUConfig epCfg(section);
   PStringList epKeys = epCfg.GetKeys();
 
   PINDEX epIndex, epIpIndex;
@@ -249,8 +250,11 @@ PString GetEndpointParam(PString param, PString uri, PString section)
   if(epIndex != P_MAX_INDEX)
   {
     PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
-    if(endpointsOptions.GetStringsIndex(param) != P_MAX_INDEX)
-      newParam = epParams[endpointsOptions.GetStringsIndex(param)];
+    PStringArray options;
+    if(protocol == "h323") options = h323EndpointOptionsOrder;
+    else options = sipEndpointOptionsOrder;
+    if(options.GetStringsIndex(param) != P_MAX_INDEX)
+      newParam = epParams[options.GetStringsIndex(param)];
   }
   return newParam;
 }
@@ -1037,7 +1041,7 @@ int OpenMCUSipConnection::CreateSipData()
       roomName = sip->sip_to->a_url->url_user;
     }
     epBandwidthTo = atoi(GetEndpointParam("Preferred bandwidth to MCU",
-        PString(sip->sip_from->a_url->url_user)+"@"+PString(sip->sip_from->a_url->url_host), "Endpoints"));
+        PString(sip->sip_from->a_url->url_user)+"@"+PString(sip->sip_from->a_url->url_host), "sip"));
 
   } else { // outgoing
     ProxyServerMapType::iterator it =
@@ -1058,7 +1062,7 @@ int OpenMCUSipConnection::CreateSipData()
       roomName = sip->sip_from->a_url->url_user;
     }
     epBandwidthTo = atoi(GetEndpointParam("Preferred bandwidth to MCU",
-        PString(sip->sip_to->a_url->url_user)+"@"+PString(sip->sip_to->a_url->url_host), "Endpoints"));
+        PString(sip->sip_to->a_url->url_user)+"@"+PString(sip->sip_to->a_url->url_host), "sip"));
   }
   cseqNum = sip->sip_cseq->cs_seq+1;
   return 1;
@@ -1421,7 +1425,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sdp.Replace("RTP_AUDIO_PORT", invit->second->aPort, TRUE, 0);
     sdp.Replace("RTP_VIDEO_PORT", invit->second->vPort, TRUE, 0);
     unsigned epBandwidthTo = atoi(GetEndpointParam("Preferred bandwidth to MCU",
-        PString(sip_to->a_url->url_user)+"@"+PString(sip_to->a_url->url_host), "Endpoints"));
+        PString(sip_to->a_url->url_user)+"@"+PString(sip_to->a_url->url_host), "sip"));
     sdp.Replace("BANDWIDTH", epBandwidthTo, TRUE, 0);
     sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sdp);
 

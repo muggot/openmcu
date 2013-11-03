@@ -381,12 +381,12 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
  <li><a href="Parameters" id="menu_param"><strong id="l_settings"></strong></a>
   <menu>
    <li><a href='Parameters' id="l_param_general"></a></li>
-   <li><a href='EndpointsParameters' id="l_param_endpoints"></a></li>
    <li><a href='VideoParameters' id="l_param_video"></a></li>
    <li><a href='RecordParameters' id="l_param_record"></a></li>
    <li><a href='#' id="menu_h323" onmouseover="javascript:displayElement('submenu1',true);" onmouseout="javascript:displayElement('submenu1',false);">H.323</a>
     <menu id="submenu1" style="display:none" onmouseover="javascript:displayElement('submenu1',true);" onmouseout="javascript:displayElement('submenu1',false);">
      <li><a href='H323Parameters' id="l_param_h323"></a></li>
+     <li><a href='H323EndpointsParameters' id="l_param_h323_endpoints"></a></li>
      <li><a href='ReceiveSoundCodecs' id="l_param_receive_sound"></a></li>
      <li><a href='ReceiveVideoCodecs' id="l_param_receive_video"></a></li>
      <li><a href='TransmitSoundCodecs' id="l_param_transmit_sound"></a></li>
@@ -396,6 +396,7 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
    <li><a href='#' id="menu_sip" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">SIP</a>
     <menu id="submenu2" style="display:none" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">
      <li><a href='SIPParameters' id="l_param_sip"></a></li>
+     <li><a href='SipEndpointsParameters' id="l_param_sip_endpoints"></a></li>
      <li><a href='SipSoundCodecs' id="l_param_sip_sound"></a></li>
      <li><a href='SipVideoCodecs' id="l_param_sip_video"></a></li>
      <li><a href='ProxyServers' id="l_param_sip_proxy"></a></li>
@@ -472,7 +473,8 @@ $BODY$
    document.getElementById("l_manual").innerHTML = window.l_manual;
    document.getElementById("l_settings").innerHTML = window.l_settings;
    document.getElementById("l_param_general").innerHTML = window.l_param_general;
-   document.getElementById("l_param_endpoints").innerHTML = window.l_param_endpoints;
+   document.getElementById("l_param_h323_endpoints").innerHTML = window.l_param_h323_endpoints;
+   document.getElementById("l_param_sip_endpoints").innerHTML = window.l_param_sip_endpoints;
    document.getElementById("l_param_video").innerHTML = window.l_param_video;
    document.getElementById("l_param_record").innerHTML = window.l_param_record;
    document.getElementById("l_param_h323").innerHTML = window.l_param_h323;

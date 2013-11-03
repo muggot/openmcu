@@ -215,10 +215,20 @@ class GeneralPConfigPage : public DefaultPConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class EndpointsPConfigPage : public TablePConfigPage
+class H323EndpointsPConfigPage : public TablePConfigPage
 {
  public:
-   EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+   H323EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  private:
+    PConfig cfg;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class SipEndpointsPConfigPage : public TablePConfigPage
+{
+ public:
+   SipEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
   private:
     PConfig cfg;
 };

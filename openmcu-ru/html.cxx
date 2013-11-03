@@ -463,11 +463,53 @@ RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & t
 
 ///////////////////////////////////////////////////////////////
 
-EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  numCol = endpointsOptions.GetSize();
+  numCol = h323EndpointOptionsOrder.GetSize();
+
+  PStringStream html_begin, html_end, html_page, s;
+  s << "<form method='POST'><table cellspacing='8'><tbody>";
+  s << column("Address", 240);
+  s << column("Display name override", 120);
+  s << column("Preferred frame rate from MCU", 120);
+  s << column("Preferred bandwidth from MCU", 120);
+
+  PStringList keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    PString name = keys[i];
+    PString params = cfg.GetString(keys[i]);
+    s << rowInput(name);
+    s << stringItem(name, params.Tokenise(",")[0]);
+    s << integerItem(name, atoi(params.Tokenise(",")[1]), 1, MAX_FRAME_RATE);
+    s << integerItem(name, atoi(params.Tokenise(",")[2]), 64, 4000);
+  }
+  if(keys.GetSize() == 0)
+  {
+    s << rowInput("test");
+    s << stringItem("test", "");
+    s << integerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
+    s << integerItem("test", 384, 64, 4000);
+  }
+  s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
+
+  BuildHTML("");
+  BeginPage(html_begin, section, "window.l_param_h323_endpoints", "window.l_info_param_h323_endpoints");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();
+  string = html_page;
+}
+
+///////////////////////////////////////////////////////////////
+
+SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+  numCol = sipEndpointOptionsOrder.GetSize();
 
   PStringStream html_begin, html_end, html_page, s;
   s << "<form method='POST'><table cellspacing='8'><tbody>";
@@ -499,7 +541,7 @@ EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PStri
   s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
 
   BuildHTML("");
-  BeginPage(html_begin, section, "window.l_param_endpoints", "window.l_info_param_endpoints");
+  BeginPage(html_begin, section, "window.l_param_sip_endpoints", "window.l_info_param_sip_endpoints");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();

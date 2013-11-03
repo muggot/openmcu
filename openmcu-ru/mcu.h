@@ -129,7 +129,11 @@ static const char RejectDuplicateNameKey[] = "Reject duplicate name";
 static const char SIPReInviteKey[]         = "SIP ReInvite (pause)";
 
 // endpoints options
-static PStringArray endpointsOptions = PString(
+static PStringArray h323EndpointOptionsOrder = PString(
+                                        "Display name override,"
+                                        "Preferred frame rate from MCU,"
+                                        "Preferred bandwidth from MCU").Tokenise(",");
+static PStringArray sipEndpointOptionsOrder = PString(
                                         "Display name override,"
                                         "Preferred frame rate from MCU,"
                                         "Preferred bandwidth from MCU,"

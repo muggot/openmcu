@@ -9,7 +9,8 @@ window.l_invite_s = 'Invite succeeded';
 window.l_invite_f = 'Invite failed';
 window.l_settings = 'Settings';
 window.l_param_general = 'General';
-window.l_param_endpoints = 'Endpoints';
+window.l_param_h323_endpoints = 'H.323 Endpoints';
+window.l_param_sip_endpoints = 'SIP Endpoints';
 window.l_param_video = 'Video';
 window.l_param_record = 'Record';
 window.l_param_h323 = 'H323 parameters';
@@ -59,7 +60,8 @@ window.l_info_connections ='\
 Page shows current connections and terminal parameters.\
 ';
 window.l_info_param_general ='Global server parameters. To reset all settings to defaults - check "RESET" checkbox and click Accept.';
-window.l_info_param_endpoints ='';
+window.l_info_param_h323_endpoints ='';
+window.l_info_param_sip_endpoints ='';
 window.l_info_param_video ='Outgoing video quality.';
 window.l_info_param_record ='Recording quality.';
 window.l_info_param_h323 ='';

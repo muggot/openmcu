@@ -9,7 +9,8 @@ window.l_invite_s = 'Вызов успешно выполнен';
 window.l_invite_f = 'Вызов не выполнен';
 window.l_settings = 'Настройки';
 window.l_param_general = 'Основные';
-window.l_param_endpoints = 'Endpoints';
+window.l_param_h323_endpoints = 'H.323 Endpoints';
+window.l_param_sip_endpoints = 'SIP Endpoints';
 window.l_param_video = 'Видео';
 window.l_param_record = 'Запись';
 window.l_param_h323 = 'H323 параметры';
@@ -74,7 +75,8 @@ window.l_info_connections ='\
 Страница позволяет просматривать текущие соединения с сервером и параметры подключенных терминалов.\
 ';
 window.l_info_param_general ='Общие параметры работы сервера. Для сброса всех параметров на начальные - установите флаг RESET и нажмите Accept.';
-window.l_info_param_endpoints ='';
+window.l_info_param_h323_endpoints ='';
+window.l_info_param_sip_endpoints ='';
 window.l_info_param_video ='Настройки качества исходящего видео.';
 window.l_info_param_record ='Настройки качества записи.';
 window.l_info_param_h323 ='';

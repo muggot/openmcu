@@ -2415,10 +2415,13 @@ void OpenMCUH323Connection::SetEndpointDefaultVideoParams(OpalMediaFormat & mf)
   }
 }
 
-void OpenMCUH323Connection::SetEndpointPrefVideoParams(OpalMediaFormat & mf, PString uri, PString section)
+void OpenMCUH323Connection::SetEndpointPrefVideoParams(OpalMediaFormat & mf, PString uri, PString protocol)
 {
   // endpoints preffered parameters
-  MCUConfig epCfg = MCUConfig(section);
+  PString section;
+  if(protocol == "h323") section = "H323 Endpoints";
+  else section = "SIP Endpoints";
+  MCUConfig epCfg(section);
   PStringList epKeys = epCfg.GetKeys();
 
   PINDEX epIndex, epIpIndex;
@@ -2431,15 +2434,18 @@ void OpenMCUH323Connection::SetEndpointPrefVideoParams(OpalMediaFormat & mf, PSt
   if(epIndex != P_MAX_INDEX)
   {
     PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
-    for(PINDEX i = 0; i < endpointsOptions.GetSize(); i++)
+    PStringArray options;
+    if(protocol == "h323") options = h323EndpointOptionsOrder;
+    else options = sipEndpointOptionsOrder;
+    for(PINDEX i = 0; i < options.GetSize(); i++)
     {
-      if(endpointsOptions[i] == "Preferred frame rate from MCU")
+      if(options[i] == "Preferred frame rate from MCU")
       {
         unsigned fr = atoi(epParams[i]);
         if(fr < 1 || fr > MAX_FRAME_RATE) fr = 0;
         if(fr != 0) mf.SetOptionInteger("Frame Time", 90000/fr);
       }
-      if(endpointsOptions[i] == "Preferred bandwidth from MCU")
+      if(options[i] == "Preferred bandwidth from MCU")
       {
         unsigned bwFrom = atoi(epParams[i]);
         if(bwFrom < 64) bwFrom = 0;
@@ -2449,11 +2455,14 @@ void OpenMCUH323Connection::SetEndpointPrefVideoParams(OpalMediaFormat & mf, PSt
   }
 }
 
-PString OpenMCUH323Connection::GetEndpointParam(PString param, PString uri, PString section)
+PString OpenMCUH323Connection::GetEndpointParam(PString param, PString uri, PString protocol)
 {
   // endpoints preffered parameters
   PString newParam;
-  MCUConfig epCfg = MCUConfig(section);
+  PString section;
+  if(protocol == "h323") section = "H323 Endpoints";
+  else section = "SIP Endpoints";
+  MCUConfig epCfg(section);
   PStringList epKeys = epCfg.GetKeys();
 
   PINDEX epIndex, epIpIndex;
@@ -2466,8 +2475,11 @@ PString OpenMCUH323Connection::GetEndpointParam(PString param, PString uri, PStr
   if(epIndex != P_MAX_INDEX)
   {
     PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
-    if(endpointsOptions.GetStringsIndex(param) != P_MAX_INDEX)
-      newParam = epParams[endpointsOptions.GetStringsIndex(param)];
+    PStringArray options;
+    if(protocol == "h323") options = h323EndpointOptionsOrder;
+    else options = sipEndpointOptionsOrder;
+    if(options.GetStringsIndex(param) != P_MAX_INDEX)
+      newParam = epParams[options.GetStringsIndex(param)];
   }
   return newParam;
 }
@@ -2514,15 +2526,15 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
       {
         PString domain = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
         PString address = GetRemotePartyName()+"@"+domain;
-        SetEndpointPrefVideoParams(mf, address, "Endpoints");
-        PString overrideName = GetEndpointParam("Display name override", address, "Endpoints");
+        SetEndpointPrefVideoParams(mf, address, "h323");
+        PString overrideName = GetEndpointParam("Display name override", address, "h323");
         if(overrideName != "") remotePartyName = overrideName;
       } else {
         PString name = GetRemotePartyAddress().Tokenise("@")[0].Tokenise(":")[1];
         PString domain = GetRemotePartyAddress().Tokenise("@")[1];
         PString address = name+"@"+domain;
-        SetEndpointPrefVideoParams(mf, address, "Endpoints");
-        PString overrideName = GetEndpointParam("Display name override", address, "Endpoints");
+        SetEndpointPrefVideoParams(mf, address, "sip");
+        PString overrideName = GetEndpointParam("Display name override", address, "sip");
         if(overrideName != "") remotePartyName = overrideName;
       }
     }

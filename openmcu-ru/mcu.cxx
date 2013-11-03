@@ -236,8 +236,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   OnCreateConfigPage(cfg, *rsrc);
   httpNameSpace.AddResource(rsrc, PHTTPSpace::Overwrite);
 
-  // Create the config page - endpoints
-  httpNameSpace.AddResource(new EndpointsPConfigPage(*this, "EndpointsParameters", "Endpoints", authority), PHTTPSpace::Overwrite);
+  // Create the config page - h323 endpoints
+  httpNameSpace.AddResource(new H323EndpointsPConfigPage(*this, "H323EndpointsParameters", "H323 Endpoints", authority), PHTTPSpace::Overwrite);
+
+  // Create the config page - sip endpoints
+  httpNameSpace.AddResource(new SipEndpointsPConfigPage(*this, "SipEndpointsParameters", "SIP Endpoints", authority), PHTTPSpace::Overwrite);
 
   // Create the config page - video
 #if OPENMCU_VIDEO
