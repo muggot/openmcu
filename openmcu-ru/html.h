@@ -56,25 +56,38 @@ class TablePConfigPage : public PConfigPage
 
    PString column(PString name, int width)
    { return "<p>"+columnStyle+"width:"+PString(width)+"px'>"+name+"</p>"; }
-   PString rowInput(PString name, int size, int readonly = FALSE, int editable = TRUE)
+   PString rowText(PString name)
+   {
+     PString s = "<tr>"+rowStyle+name+"</td>";
+     return s;
+   }
+   PString rowInput(PString name, int size=15, int readonly=FALSE, int editable=TRUE)
    {
      PString s = "<tr>"+rowStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+name+"' "+inputStyle;
-     if(!readonly) s += ">"; else s += "readonly>";
+     if(!readonly) s += "></input>"; else s += "readonly></input>";
      if(editable) s += buttons();
      s += "</td>";
      return s;
    }
-   PString inputItem(PString name, PString value, int size, int readonly = FALSE)
+
+   PString stringItem(PString name, PString value, int size=10, int readonly=FALSE)
    {
      PString s = itemStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+value+"' "+inputStyle;
-     if(!readonly) s += "></td>"; else s += "readonly></td>";
+     if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
-   PString checkBoxItem(PString name, PString value)
+   PString integerItem(PString name, int value, int min=-2147483647, int max=2147483647, int size=10, int readonly=FALSE)
+   {
+     PString s = itemStyle+"<input name='MIN' value='"+PString(min)+"' type='hidden'>"
+                           "<input name='MAX' value='"+PString(max)+"' type='hidden'>"
+                           "<input type=number name='"+name+"' size='"+PString(size)+"' min='"+PString(min)+"' max='"+PString(max)+"' value='"+PString(value)+"' "+inputStyle;
+     if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
+     return s;
+   }
+   PString boolItem(PString name, BOOL value)
    {
      PString s = itemStyle+"<input name='"+name+"' value='FALSE' type='hidden'><input name='"+name+"' value='TRUE' type='checkbox'";
-     if(value == "TRUE") s +=" checked='yes'></td>";
-     else s +="></td>";
+     if(value) s +=" checked='yes'></input></td>"; else s +="></input></td>";
      return s;
    }
    PString selectItem(PString name, PString value, PString values)
@@ -98,6 +111,8 @@ class TablePConfigPage : public PConfigPage
      cfg.DeleteSection();
      for(PINDEX i = 0; dataArray[i] != NULL; i++)
        cfg.SetString(dataArray[i].Tokenise("=")[0], dataArray[i].Tokenise("=")[1]);
+     if(cfg.GetBoolean("RESET", FALSE))
+       cfg.DeleteSection();
      process.OnContinue();
      return TRUE;
    }
@@ -105,6 +120,7 @@ class TablePConfigPage : public PConfigPage
    {
      PStringArray entityData = connectInfo.GetEntityBody().Tokenise("&");
      PINDEX num = 0;
+     int integerMin=-2147483647, integerMax=2147483647, integerIndex=-1;
      for(PINDEX i = 0; i < entityData.GetSize(); i++)
      {
        PString key = PURL::UntranslateString(entityData[i].Tokenise("=")[0], PURL::QueryTranslation);
@@ -114,11 +130,26 @@ class TablePConfigPage : public PConfigPage
        if((i+1) < entityData.GetSize()) valueNext = PURL::UntranslateString(entityData[i+1].Tokenise("=")[1], PURL::QueryTranslation);
        if(value == "FALSE" && valueNext == "TRUE") continue;
        if(key == "submit") continue;
+       if(key == "MIN") { integerMin = atoi(value); continue; }
+       if(key == "MAX") { integerMax = atoi(value); integerIndex=i+1; continue; }
 
        if(num != 0) value.Replace(","," ",TRUE);
        PINDEX asize = dataArray.GetSize();
-       if(num == 0) dataArray.AppendString(value+"=");
-       else dataArray[asize-1] += value+",";
+       if(num == 0)
+       {
+         dataArray.AppendString(value+"=");
+       } else {
+         if(integerIndex == i)
+         {
+           int tmp = atoi(value);
+           if(tmp < integerMin) tmp = integerMin;
+           if(tmp > integerMax) tmp = integerMax;
+           dataArray[asize-1] += PString(tmp)+",";
+         } else {
+           dataArray[asize-1] += value+",";
+         }
+       }
+
        if(num == numCol) num = 0;
        else num++;
      }

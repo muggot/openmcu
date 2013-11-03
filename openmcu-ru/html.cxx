@@ -471,25 +471,30 @@ EndpointsPConfigPage::EndpointsPConfigPage(PHTTPServiceProcess & app,const PStri
 
   PStringStream html_begin, html_end, html_page, s;
   s << "<form method='POST'><table cellspacing='8'><tbody>";
-
   s << column("Address", 240);
-  for(PINDEX i = 0; i < endpointsOptions.GetSize(); i++)
-    s << column(endpointsOptions[i], 120);
+  s << column("Display name override", 120);
+  s << column("Preferred frame rate from MCU", 120);
+  s << column("Preferred bandwidth from MCU", 120);
+  s << column("Preferred bandwidth to MCU", 120);
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << rowInput(name, 15);
-    for(PINDEX j = 0; j < numCol; j++)
-      s << inputItem(name, params.Tokenise(",")[j], 10);
+    s << rowInput(name);
+    s << stringItem(name, params.Tokenise(",")[0]);
+    s << integerItem(name, atoi(params.Tokenise(",")[1]), 1, MAX_FRAME_RATE);
+    s << integerItem(name, atoi(params.Tokenise(",")[2]), 64, 4000);
+    s << integerItem(name, atoi(params.Tokenise(",")[3]), 64, 4000);
   }
   if(keys.GetSize() == 0)
   {
-    s << rowInput("test", 15);
-    for(PINDEX j = 0; j < numCol; j++)
-      s << inputItem("test", "", 10);
+    s << rowInput("test");
+    s << stringItem("test", "");
+    s << integerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
+    s << integerItem("test", 384, 64, 4000);
+    s << integerItem("test", 384, 64, 4000);
   }
   s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
 
@@ -511,7 +516,6 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
 
   PStringStream html_begin, html_end, html_page, s;
   s << "<form method='POST'><table cellspacing='8'><tbody>";
-
   s << column("Room name", 240);
   s << column("Registrar usage", 120);
   s << column("Registrar domain", 120);
@@ -524,17 +528,22 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << rowInput(name, 15);
-    s << checkBoxItem(name, params.Tokenise(",")[0]);
-    for(PINDEX j = 1; j < numCol; j++)
-      s << inputItem(name, params.Tokenise(",")[j], 10);
+    s << rowInput(name);
+    if(params.Tokenise(",")[0] == "TRUE") s << boolItem(name, 1);
+    else s << boolItem(name, 0);
+    s << stringItem(name, params.Tokenise(",")[1]);
+    s << stringItem(name, params.Tokenise(",")[2]);
+    s << stringItem(name, params.Tokenise(",")[3]);
+    s << integerItem(name, atoi(params.Tokenise(",")[4]), 60, 3600);
   }
   if(keys.GetSize() == 0)
   {
-    s << rowInput("room101", 15);
-    s << checkBoxItem("room101", "TRUE");
-    for(PINDEX j = 1; j < numCol; j++)
-      s << inputItem("room101", "", 10);
+    s << rowInput("room101");
+    s << boolItem("room101", 0);
+    s << stringItem("room101", "");
+    s << stringItem("room101", "");
+    s << stringItem("room101", "");
+    s << integerItem("room101", 60, 60, 3600);
   }
   s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
 
@@ -571,20 +580,20 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
     if(name == "*") s << rowInput(name, 15, TRUE, FALSE);
     else s << rowInput(name, 15);
     s << selectItem(name, access, "allow,deny");
-    if(name == "*") s << inputItem(name, params, 50, TRUE);
-    else s << inputItem(name, params, 50);
+    if(name == "*") s << stringItem(name, params, 50, TRUE);
+    else s << stringItem(name, params, 50);
   }
   if(keys.GetStringsIndex("*") == P_MAX_INDEX)
   {
     s << rowInput("*", 15, TRUE, FALSE);
     s << selectItem("*", "allow", "allow,deny");
-    s << inputItem("*", "", 50, TRUE);
+    s << stringItem("*", "", 50, TRUE);
   }
   if(keys.GetSize() < 2)
   {
     s << rowInput("room101", 15);
     s << selectItem("room101", "allow", "allow,deny");
-    s << inputItem("room101", "", 50);
+    s << stringItem("room101", "", 50);
   }
   s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
 
