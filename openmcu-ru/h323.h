@@ -263,9 +263,9 @@ class OpenMCUH323Connection : public H323Connection
 
     virtual void SetupCacheConnection(PString & format,Conference * conf, ConferenceMember * memb);
 
-    void SetEndpointDefaultVideoParams(OpalMediaFormat & mf);
-    void SetEndpointPrefVideoParams(OpalMediaFormat & mf, PString uri, PString protocol);
-    PString GetEndpointParam(PString param, PString uri, PString protocol);
+    void SetEndpointDefaultVideoParams();
+    void SetEndpointPrefVideoParams();
+    PString GetEndpointParam(PString param);
 
 #if OPENMCU_VIDEO
     virtual BOOL OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount);

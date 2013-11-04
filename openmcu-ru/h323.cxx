@@ -2286,6 +2286,12 @@ void OpenMCUH323Connection::JoinConference(const PString & roomToJoin)
 
   if(!joinSuccess)
     ChangeWelcomeState(JoinFailed);
+
+  if(joinSuccess)
+  {
+    if(GetEndpointParam("Initial audio status") == "mute")
+      conferenceMember->muteIncoming = TRUE;
+  }
 }
 
 void OpenMCUH323Connection::LeaveConference()
@@ -2384,8 +2390,12 @@ void OpenMCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
 }
 
 
-void OpenMCUH323Connection::SetEndpointDefaultVideoParams(OpalMediaFormat & mf)
+void OpenMCUH323Connection::SetEndpointDefaultVideoParams()
 {
+  H323VideoCodec *codec = GetVideoTransmitCodec();
+  if(codec == NULL) return;
+  OpalMediaFormat & mf = codec->GetWritableMediaFormat();
+
   // default & video parameters
   unsigned fr = ep.GetVideoFrameRate();
   if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
@@ -2415,30 +2425,50 @@ void OpenMCUH323Connection::SetEndpointDefaultVideoParams(OpalMediaFormat & mf)
   }
 }
 
-void OpenMCUH323Connection::SetEndpointPrefVideoParams(OpalMediaFormat & mf, PString uri, PString protocol)
+void OpenMCUH323Connection::SetEndpointPrefVideoParams()
 {
+  if(GetRemotePartyAddress() == "") return;
+  H323VideoCodec *codec = GetVideoTransmitCodec();
+  if(codec == NULL) return;
+  OpalMediaFormat & mf = codec->GetWritableMediaFormat();
+
+  PString domain, uri, section;
+  PStringArray options;
+  if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
+  {
+    domain = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
+    uri = GetRemotePartyName()+"@"+domain;
+    section = "H323 Endpoints";
+    options = h323EndpointOptionsOrder;
+  } else {
+    PString name = GetRemotePartyAddress().Tokenise("@")[0].Tokenise(":")[1];
+    domain = GetRemotePartyAddress().Tokenise("@")[1];
+    uri = name+"@"+domain;
+    section = "SIP Endpoints";
+    options = sipEndpointOptionsOrder;
+  }
+
   // endpoints preffered parameters
-  PString section;
-  if(protocol == "h323") section = "H323 Endpoints";
-  else section = "SIP Endpoints";
+  PString newParam;
   MCUConfig epCfg(section);
   PStringList epKeys = epCfg.GetKeys();
 
-  PINDEX epIndex, epIpIndex;
-  if(uri.Find("@") != P_MAX_INDEX) epIpIndex = epKeys.GetStringsIndex(uri.Tokenise("@")[1]);
-  else epIpIndex = epKeys.GetStringsIndex(uri);
-  PINDEX epUriIndex = epKeys.GetStringsIndex(uri);
+  PINDEX epIndex, epIpIndex, epUriIndex;
+  epIpIndex = epKeys.GetStringsIndex(domain);
+  epUriIndex = epKeys.GetStringsIndex(uri);
   if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
   else epIndex = epIpIndex;
 
   if(epIndex != P_MAX_INDEX)
   {
     PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
-    PStringArray options;
-    if(protocol == "h323") options = h323EndpointOptionsOrder;
-    else options = sipEndpointOptionsOrder;
     for(PINDEX i = 0; i < options.GetSize(); i++)
     {
+      if(options[i] == "Display name override")
+      {
+        if(epParams[i] != "")
+          remotePartyName = epParams[i];
+      }
       if(options[i] == "Preferred frame rate from MCU")
       {
         unsigned fr = atoi(epParams[i]);
@@ -2455,29 +2485,40 @@ void OpenMCUH323Connection::SetEndpointPrefVideoParams(OpalMediaFormat & mf, PSt
   }
 }
 
-PString OpenMCUH323Connection::GetEndpointParam(PString param, PString uri, PString protocol)
+PString OpenMCUH323Connection::GetEndpointParam(PString param)
 {
+  if(GetRemotePartyAddress() == "") return "";
+
+  PString domain, uri, section;
+  PStringArray options;
+  if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
+  {
+    domain = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
+    uri = GetRemotePartyName()+"@"+domain;
+    section = "H323 Endpoints";
+    options = h323EndpointOptionsOrder;
+  } else {
+    PString name = GetRemotePartyAddress().Tokenise("@")[0].Tokenise(":")[1];
+    domain = GetRemotePartyAddress().Tokenise("@")[1];
+    uri = name+"@"+domain;
+    section = "SIP Endpoints";
+    options = sipEndpointOptionsOrder;
+  }
+
   // endpoints preffered parameters
   PString newParam;
-  PString section;
-  if(protocol == "h323") section = "H323 Endpoints";
-  else section = "SIP Endpoints";
   MCUConfig epCfg(section);
   PStringList epKeys = epCfg.GetKeys();
 
-  PINDEX epIndex, epIpIndex;
-  if(uri.Find("@") != P_MAX_INDEX) epIpIndex = epKeys.GetStringsIndex(uri.Tokenise("@")[1]);
-  else epIpIndex = epKeys.GetStringsIndex(uri);
-  PINDEX epUriIndex = epKeys.GetStringsIndex(uri);
+  PINDEX epIndex, epIpIndex, epUriIndex;
+  epIpIndex = epKeys.GetStringsIndex(domain);
+  epUriIndex = epKeys.GetStringsIndex(uri);
   if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
   else epIndex = epIpIndex;
 
   if(epIndex != P_MAX_INDEX)
   {
     PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
-    PStringArray options;
-    if(protocol == "h323") options = h323EndpointOptionsOrder;
-    else options = sipEndpointOptionsOrder;
     if(options.GetStringsIndex(param) != P_MAX_INDEX)
       newParam = epParams[options.GetStringsIndex(param)];
   }
@@ -2517,29 +2558,15 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
       return FALSE;
     }
 
-    OpalMediaFormat & mf = codec.GetWritableMediaFormat();
-    unsigned fr;
     if(GetRemotePartyAddress() != "")
     {
-      SetEndpointDefaultVideoParams(mf);
-      if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
-      {
-        PString domain = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
-        PString address = GetRemotePartyName()+"@"+domain;
-        SetEndpointPrefVideoParams(mf, address, "h323");
-        PString overrideName = GetEndpointParam("Display name override", address, "h323");
-        if(overrideName != "") remotePartyName = overrideName;
-      } else {
-        PString name = GetRemotePartyAddress().Tokenise("@")[0].Tokenise(":")[1];
-        PString domain = GetRemotePartyAddress().Tokenise("@")[1];
-        PString address = name+"@"+domain;
-        SetEndpointPrefVideoParams(mf, address, "sip");
-        PString overrideName = GetEndpointParam("Display name override", address, "sip");
-        if(overrideName != "") remotePartyName = overrideName;
-      }
+      SetEndpointDefaultVideoParams();
+      SetEndpointPrefVideoParams();
     }
 
     // get frame time from codec
+    OpalMediaFormat & mf = codec.GetWritableMediaFormat();
+    unsigned fr;
     if(mf.GetOptionInteger("Frame Time") != 0)
       fr = 90000/mf.GetOptionInteger("Frame Time");
     else

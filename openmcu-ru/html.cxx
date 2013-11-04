@@ -403,13 +403,15 @@ RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & t
 
   s << BoolField("RESET", FALSE);
   s << StringField(RecorderFfmpegPathKey, mcu.vr_ffmpegPath, 35, pathInfo);
-  s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 35, "<b>%V</b> - input video stream, <b>%A</b> - input audio stream, <b>%F</b> - frame size");
+  s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 35,
+      "<b>%V</b> - input video stream, <b>%A</b> - input audio stream, <b>%F</b> - frame size, "
+      "<b>%R</b> - video frame rate, <b>%S</b> - audio sample rate, <b>%C</b> - number of channels for audio" );
   s << StringField(RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 35, dirInfo);
   s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920, 35);
   s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152, 35);
-  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 35, "<b>%R</b> - video frame rate");
-  s << SelectField(RecorderSampleRateKey, mcu.vr_sampleRate, "8000,16000,24000,32000,48000", 120, "<b>%S</b> - audio sample rate");
-  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8", 120, "<b>%C</b> - number of channels for audio");
+  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 35);
+  s << SelectField(RecorderSampleRateKey, mcu.vr_sampleRate, "8000,16000,24000,32000,48000");
+  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8");
 
   s << EndTable();
   BuildHTML("");
@@ -434,6 +436,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   s << ColumnItem("Display name override");
   s << ColumnItem("Preferred frame rate from MCU");
   s << ColumnItem("Preferred bandwidth from MCU");
+  s << ColumnItem("Initial audio status");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -441,9 +444,10 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
     s << NewRowInput(name);
-    s << StringItem(name, params.Tokenise(",")[0]);
-    s << IntegerItem(name, atoi(params.Tokenise(",")[1]), 1, MAX_FRAME_RATE);
-    s << IntegerItem(name, atoi(params.Tokenise(",")[2]), 64, 4000);
+    s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]), 1, MAX_FRAME_RATE);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]), 64, 4000);
+    s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Initial audio status")], "unmute,mute");
   }
   if(keys.GetSize() == 0)
   {
@@ -451,6 +455,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     s << StringItem("test", "");
     s << IntegerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
     s << IntegerItem("test", 384, 64, 4000);
+    s << SelectItem("test", "unmute", "mute,unmute");
   }
 
   s << EndTable();
@@ -478,6 +483,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   s << ColumnItem("Preferred frame rate from MCU");
   s << ColumnItem("Preferred bandwidth from MCU");
   s << ColumnItem("Preferred bandwidth to MCU");
+  s << ColumnItem("Initial audio status");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -485,10 +491,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
     s << NewRowInput(name);
-    s << StringItem(name, params.Tokenise(",")[0]);
-    s << IntegerItem(name, atoi(params.Tokenise(",")[1]), 1, MAX_FRAME_RATE);
-    s << IntegerItem(name, atoi(params.Tokenise(",")[2]), 64, 4000);
-    s << IntegerItem(name, atoi(params.Tokenise(",")[3]), 64, 4000);
+    s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")]);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]), 1, MAX_FRAME_RATE);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]), 64, 4000);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]), 64, 4000);
+    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Initial audio status")], "unmute,mute");
   }
   if(keys.GetSize() == 0)
   {
@@ -497,6 +504,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << IntegerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
     s << IntegerItem("test", 384, 64, 4000);
     s << IntegerItem("test", 384, 64, 4000);
+    s << SelectItem("test", "unmute", "mute,unmute");
   }
   s << EndTable();
 
