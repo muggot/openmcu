@@ -332,124 +332,90 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : DefaultPConfigPage(app,title,section,auth)
+    : TablePConfigPage(app,title,section,auth)
 {
-  PConfig cfg = MCUConfig(section);
-  PString style;
+  cfg = MCUConfig(section);
+  PStringStream html_begin, html_end, html_page, s;
+  s << BeginTable();
 
-  // Reset section
-  Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
+  s << BoolField("RESET", FALSE);
+  s << IntegerField("Video frame rate", cfg.GetInteger("Video frame rate", DefaultVideoFrameRate), 1, MAX_FRAME_RATE, 12, "range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)");
 
-  Add(new PHTTPIntegerField("Video frame rate", 1, MAX_FRAME_RATE, cfg.GetInteger("Video frame rate", DefaultVideoFrameRate),
-      "<td rowspan='1' valign='top' style='background-color:#fee;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>"
-      "Video frame rate, range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)"));
+  s << SeparatorField("H.263");
+  s << IntegerField("H.263 Max Bit Rate", cfg.GetInteger("H.263 Max Bit Rate", 0), 0, 4000, 12, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.263 Tx Key Frame Period", cfg.GetInteger("H.263 Tx Key Frame Period", 125), 0, 600, 12, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
-  style = "<td rowspan='1' valign='top' style='background-color:#d9e5e3;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
-//  Add(new PHTTPIntegerField("H.263 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.263 Temporal Spatial Trade Off", 31),
-//      style+"<b>H.263</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
-//  Add(new PHTTPIntegerField("H.263 Encoding Quality", 1, 31, cfg.GetInteger("H.263 Encoding Quality", DefaultVideoQuality),
-//      style+"<b>H.263</b> Encoding Quality, range: 1..31"));
-  Add(new PHTTPIntegerField("H.263 Max Bit Rate", 0, 4000, cfg.GetInteger("H.263 Max Bit Rate", 0),
-      style+"<b>H.263</b> Max Bit Rate, range 64..4000 kbit (for outgoing video, 0 disable)"));
-  Add(new PHTTPIntegerField("H.263 Tx Key Frame Period", 0, 600, cfg.GetInteger("H.263 Tx Key Frame Period", 125),
-      style+"<b>H.263</b> Tx Key Frame Period, range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)"));
+  s << SeparatorField("H.263p");
+  s << IntegerField("H.263p Max Bit Rate", cfg.GetInteger("H.263p Max Bit Rate", 0), 0, 4000, 12, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.263p Tx Key Frame Period", cfg.GetInteger("H.263p Tx Key Frame Period", 125), 0, 600, 12, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
-  style = "<td rowspan='1' valign='top' style='background-color:#efe;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
-//  Add(new PHTTPIntegerField("H.263p Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.263p Temporal Spatial Trade Off", 31),
-//      style+"<b>H.263p</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
-//  Add(new PHTTPIntegerField("H.263p Encoding Quality", 1, 31, cfg.GetInteger("H.263p Encoding Quality", DefaultVideoQuality),
-//      style+"<b>H.263p</b> Encoding Quality, range: 1..31"));
-  Add(new PHTTPIntegerField("H.263p Max Bit Rate", 0, 4000, cfg.GetInteger("H.263p Max Bit Rate", 0),
-      style+"<b>H.263p</b> Max Bit Rate, range 64..4000 kbit (for outgoing video, 0 disable)"));
-  Add(new PHTTPIntegerField("H.263p Tx Key Frame Period", 0, 600, cfg.GetInteger("H.263p Tx Key Frame Period", 125),
-      style+"<b>H.263p</b> Tx Key Frame Period, range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)"));
+  s << SeparatorField("H.264");
+  s << IntegerField("H.264 Max Bit Rate", cfg.GetInteger("H.264 Max Bit Rate", 0), 0, 4000, 12, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.264 Encoding Threads", cfg.GetInteger("H.264 Encoding Threads", 0), 0, 64, 12, "range 0..64 (0 auto)");
 
-  style = "<td rowspan='1' valign='top' style='background-color:#eec;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
-//  Add(new PHTTPIntegerField("H.264 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("H.264 Temporal Spatial Trade Off", 31),
-//      style+"<b>H.264</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
-//  Add(new PHTTPIntegerField("H.264 Encoding Quality", 1, 31, cfg.GetInteger("H.264 Encoding Quality", DefaultVideoQuality),
-//      style+"<b>H.264</b> Encoding Quality, range: 1..31"));
-  Add(new PHTTPIntegerField("H.264 Max Bit Rate", 0, 4000, cfg.GetInteger("H.264 Max Bit Rate", 0),
-      style+"<b>H.264</b> Max Bit Rate, range 64..4000 kbit (for outgoing video, 0 disable)"));
-  Add(new PHTTPIntegerField("H.264 Encoding Threads", 0, 64, cfg.GetInteger("H.264 Encoding Threads", 0),
-      style+"<b>H.264</b> Encoding Threads, range 0..64 (0 auto)"));
+  s << SeparatorField("VP8");
+  s << IntegerField("VP8 Max Bit Rate", cfg.GetInteger("VP8 Max Bit Rate", 0), 0, 4000, 12, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("VP8 Encoding Threads", cfg.GetInteger("VP8 Encoding Threads", 0), 0, 64, 12, "range 0..64 (0 default)");
+  s << IntegerField("VP8 Encoding CPU Used", cfg.GetInteger("VP8 Encoding CPU Used", 0), 0, 16, 12, "range: 0..16 (Values greater than 0 will increase encoder speed at the expense of quality)");
 
-  style = "<td rowspan='1' valign='top' style='background-color:#f7f4d8;padding:4px;border-left:10px solid white;border-bottom:1px solid white'>";
-//  Add(new PHTTPIntegerField("VP8 Temporal Spatial Trade Off", 1, 31, cfg.GetInteger("VP8 Temporal Spatial Trade Off", 31),
-//      style+"<b>VP8</b> Temporal Spatial Trade Off, range: 1..31  (for outgoing video)"));
-  Add(new PHTTPIntegerField("VP8 Max Bit Rate", 0, 4000, cfg.GetInteger("VP8 Max Bit Rate", 0),
-      style+"<b>VP8</b> Max Bit Rate, range 64..4000 kbit (for outgoing video, 0 disable)"));
-  Add(new PHTTPIntegerField("VP8 Encoding CPU Used", 0, 16, cfg.GetInteger("VP8 Encoding CPU Used", 0),
-      style+"<b>VP8</b> Encoding CPU Used, range: 0..16 (Values greater than 0 will increase encoder speed at the expense of quality)"));
-  Add(new PHTTPIntegerField("VP8 Encoding Threads", 0, 64, cfg.GetInteger("VP8 Encoding Threads", 0),
-      style+"<b>VP8</b> Encoding Threads, range 0..64 (0 default)"));
-
+  s << EndTable();
   BuildHTML("");
-  PStringStream html_begin, html_end;
   BeginPage(html_begin, "Video settings", "window.l_param_video", "window.l_info_param_video");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
-  PStringStream html_page; html_page << html_begin << string << html_end;
+  html_page << html_begin << s << html_end;
   string = html_page;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : DefaultPConfigPage(app,title,section,auth)
+    : TablePConfigPage(app,title,section,auth)
 {
   OpenMCU & mcu = OpenMCU::Current();
+  cfg = MCUConfig(section);
 
-  // Reset section
-  Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
+  PStringStream html_begin, html_end, html_page, s;
+  s << BeginTable();
 
   // video recorder setup
-  PStringStream recorderInfo;
-  recorderInfo
-    << "<td rowspan='8' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>"
-    << "<b>Video Recorder Setup:</b><br><br>"
-    << "Use the following definitions to set ffmpeg command-line options:<br>"
-    << "<b>%V</b> - input video stream,<br>"
-    << "<b>%A</b> - input audio stream,<br>"
-    << "<b>%F</b> - frame size, "
-    << "<b>%R</b> - frame rate,<br>"
-    << "<b>%S</b> - sample rate, <b>%C</b> - number of channels for audio,<br>"
-    << "<b>%O</b> - name without extension"
-    << "<br><br>";
-  if(!PFile::Exists(mcu.vr_ffmpegPath)) recorderInfo << "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
+  PString pathInfo, dirInfo;
+  if(!PFile::Exists(mcu.vr_ffmpegPath)) pathInfo += "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
   else
   { PFileInfo info;
     PFilePath path(mcu.vr_ffmpegPath);
     PFile::GetInfo(path, info);
-    if(!(info.type & 3)) recorderInfo << "<b><font color=red>Warning: ffmpeg neither file, nor symlink!</font></b>";
-    else if(!(info.permissions & 0111)) recorderInfo << "<b><font color=red>ffmpeg permissions check failed</font></b>";
+    if(!(info.type & 3)) pathInfo += "<b><font color=red>Warning: ffmpeg neither file, nor symlink!</font></b>";
+    else if(!(info.permissions & 0111)) pathInfo += "<b><font color=red>ffmpeg permissions check failed</font></b>";
     else
     {
       if(!PDirectory::Exists(mcu.vr_ffmpegDir)) if(!PFile::Exists(mcu.vr_ffmpegDir)) { PDirectory::Create(mcu.vr_ffmpegDir,0700); PThread::Sleep(50); }
-      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) recorderInfo << "<b><font color=red>Directory does not exist: " << mcu.vr_ffmpegDir << "</font></b>";
+      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) dirInfo += "<b><font color=red>Directory does not exist: "+mcu.vr_ffmpegDir+"</font></b>";
       else
       { PFileInfo info;
         PFilePath path(mcu.vr_ffmpegDir);
         PFile::GetInfo(path, info);
-        if(!(info.type & 6)) recorderInfo << "<b><font color=red>Warning: output directory neither directory, nor symlink!</font></b>";
-        else if(!(info.permissions & 0222)) recorderInfo << "<b><font color=red>output directory permissions check failed</font></b>";
-        else recorderInfo << "<b><font color=green>Looks good.</font> Execution script preview:</b><br><tt>" << mcu.ffmpegCall << "</tt>";
+        if(!(info.type & 6)) dirInfo += "<b><font color=red>Warning: output directory neither directory, nor symlink!</font></b>";
+        else if(!(info.permissions & 0222)) dirInfo += "<b><font color=red>output directory permissions check failed</font></b>";
+        else pathInfo += "<b><font color=green>Looks good.</font> Execution script preview:</b><br><tt>"+mcu.ffmpegCall+"</tt>";
       }
     }
   }
-  Add(new PHTTPStringField(RecorderFfmpegPathKey, 40, mcu.vr_ffmpegPath, recorderInfo));
-  Add(new PHTTPStringField(RecorderFfmpegOptsKey, 40, mcu.vr_ffmpegOpts));
-  Add(new PHTTPStringField(RecorderFfmpegDirKey, 40, mcu.vr_ffmpegDir));
-  Add(new PHTTPIntegerField(RecorderFrameWidthKey, 176, 1920, mcu.vr_framewidth));
-  Add(new PHTTPIntegerField(RecorderFrameHeightKey, 144, 1152, mcu.vr_frameheight));
-  Add(new PHTTPIntegerField(RecorderFrameRateKey, 1, 100, mcu.vr_framerate));
-  Add(new PHTTPIntegerField(RecorderSampleRateKey, 2000, 1000000, mcu.vr_sampleRate));
-  Add(new PHTTPIntegerField(RecorderAudioChansKey, 1, 8, mcu.vr_audioChans));
 
+  s << BoolField("RESET", FALSE);
+  s << StringField(RecorderFfmpegPathKey, mcu.vr_ffmpegPath, 35, pathInfo);
+  s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 35, "<b>%V</b> - input video stream, <b>%A</b> - input audio stream, <b>%F</b> - frame size");
+  s << StringField(RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 35, dirInfo);
+  s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920, 35);
+  s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152, 35);
+  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 35, "<b>%R</b> - video frame rate");
+  s << SelectField(RecorderSampleRateKey, mcu.vr_sampleRate, "8000,16000,24000,32000,48000", 120, "<b>%S</b> - audio sample rate");
+  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8", 120, "<b>%C</b> - number of channels for audio");
+
+  s << EndTable();
   BuildHTML("");
-  PStringStream html_begin, html_end;
-  BeginPage(html_begin, section, "window.l_param_record","window.l_info_param_record");
+  BeginPage(html_begin, "Record", "window.l_param_record","window.l_info_param_record");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
-  PStringStream html_page; html_page << html_begin << string << html_end;
+  html_page << html_begin << s << html_end;
   string = html_page;
 }
 
@@ -486,8 +452,8 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     s << IntegerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
     s << IntegerItem("test", 384, 64, 4000);
   }
-  s << EndTable();
 
+  s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_h323_endpoints", "window.l_info_param_h323_endpoints");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
@@ -666,32 +632,33 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : DefaultPConfigPage(app,title,section,auth)
+    : TablePConfigPage(app,title,section,auth)
 {
   OpenMCU & mcu = OpenMCU::Current();
+  cfg = MCUConfig(section);
+  PStringStream html_begin, html_end, html_page, s;
+  s << BeginTable();
 
-  // Reset section
-  Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
+  s << BoolField("RESET", FALSE);
 
   // SIP Listener setup
   mcu.sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
   if(mcu.sipListener=="") mcu.sipListener="0.0.0.0";
-  Add(new PHTTPStringField(SipListenerKey, 32, mcu.sipListener,"<td rowspan='3' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>SIP Setup</b><br><br><br><br>H.264 level value must be one of: 9, 10, 11, 12, 13, 20, 21, 22, 30, 31, 32, 40, 41, 42, 50, 51."));
+  s << StringField(SipListenerKey, mcu.sipListener);
   if(mcu.sipListener=="0.0.0.0") mcu.sipListener="0.0.0.0 :5060";
   mcu.sipendpoint->Resume();
 
-  // ReInvite
-  Add(new PHTTPBooleanField(SIPReInviteKey, cfg.GetBoolean(SIPReInviteKey, TRUE)));
+  s << BoolField(SIPReInviteKey, cfg.GetBoolean(SIPReInviteKey, TRUE));
 
 #if OPENMCU_VIDEO
-  Add(new PHTTPStringField(H264LevelForSIPKey, 2, PString(mcu.h264DefaultLevelForSip)));
+  s << SelectField(H264LevelForSIPKey, PString(mcu.h264DefaultLevelForSip), "9,10,11,12,13,20,21,22,30,31,32,40,41,42,50,51");
 #endif
 
+  s << EndTable();
   BuildHTML("");
-  PStringStream html_begin, html_end;
-  BeginPage(html_begin, section, "window.l_param_sip", "window.l_info_param_sip");
+  BeginPage(html_begin, "SIP settings", "window.l_param_sip", "window.l_info_param_sip");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
-  PStringStream html_page; html_page << html_begin << string << html_end;
+  html_page << html_begin << s << html_end;
   string = html_page;
 }
 

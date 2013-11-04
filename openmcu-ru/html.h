@@ -347,15 +347,17 @@ class RoomAccessSIPPConfigPage : public TablePConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class VideoPConfigPage : public DefaultPConfigPage
+class VideoPConfigPage : public TablePConfigPage
 {
  public:
    VideoPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  private:
+    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class RecordPConfigPage : public DefaultPConfigPage
+class RecordPConfigPage : public TablePConfigPage
 {
  public:
    RecordPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
@@ -371,10 +373,12 @@ class H323PConfigPage : public DefaultPConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class SIPPConfigPage : public DefaultPConfigPage
+class SIPPConfigPage : public TablePConfigPage
 {
  public:
    SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  private:
+    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
