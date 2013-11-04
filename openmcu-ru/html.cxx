@@ -241,99 +241,91 @@ BOOL DefaultPConfigPage::OnPOST(PHTTPServer & server,
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : DefaultPConfigPage(app,title,section,auth)
+    : TablePConfigPage(app,title,section,auth)
 {
   OpenMCU & mcu = OpenMCU::Current();
+  cfg = MCUConfig(section);
+
+  PStringStream html_begin, html_end, html_page, s;
+  s << initPage();
 
   // Reset section
-  Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
-
+  s << boolField("RESET", FALSE);
   // Language
-  Add(new PHTTPStringField("Language", 2, cfg.GetString("Language"), "<td rowspan='1' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'>RU, EN"));
-
-  // HTTP authentication username/password
-  Add(new PHTTPStringField(UserNameKey, 25, cfg.GetString(UserNameKey), "<td rowspan='4' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'><b>Security</b>"));
-  Add(new PHTTPPasswordField(PasswordKey, 25, PHTTPPasswordField::Decrypt(cfg.GetString(PasswordKey))));
-
+  s << selectField("Language", cfg.GetString("Language"), ",EN,RU");
   // OpenMCU Server Id
-  Add(new PHTTPStringField("OpenMCU Server Id", 25, cfg.GetString("OpenMCU Server Id", mcu.GetName()+" v"+mcu.GetVersion())));
+  s << stringField("OpenMCU Server Id", cfg.GetString("OpenMCU Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 35);
 
-  // HTTP Port number to use.
-  Add(new PHTTPIntegerField(HttpPortKey, 1, 32767, (WORD)cfg.GetInteger(HttpPortKey, DefaultHTTPPort)));
-
-  // RTP Port Setup
-  Add(new PHTTPIntegerField("RTP Base Port", 0, 65535, cfg.GetInteger("RTP Base Port", 0),"<td><td rowspan='2' valign='top' style='background-color:#eec;padding:4px;border-left:1px solid #770;border-right:1px solid #770;border-top:1px dotted #eec'><b>RTP Port Setup</b><br>0 = auto<br>Example: base=5000, max=6000"));
-  Add(new PHTTPIntegerField("RTP Max Port", 0, 65535, cfg.GetInteger("RTP Max Port", 0)));
-
-#if PTRACING
-  // Trace level
-  Add(new PHTTPIntegerField(TraceLevelKey, 0, 6, cfg.GetInteger(TraceLevelKey, DEFAULT_TRACE_LEVEL), "<td><td rowspan='5' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Logging:</b><br><br>Log level: 1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug<br>Trace level: 0=No tracing ... 6=Very detailed<br>Event buffer size: 10...1000<br><br>Copy web log to log: check if you want to store event log from Room Control Page"));
-#endif
-
-#ifdef SERVER_LOGS
-  // Log level for messages
-  Add(new PHTTPIntegerField(LogLevelKey, PSystemLog::Fatal, PSystemLog::NumLogLevels-1, cfg.GetInteger(LogLevelKey, DEFAULT_LOG_LEVEL)));
-
-  // Log filename
-  Add(new PHTTPStringField(CallLogFilenameKey, 40, mcu.logFilename));
-
-#endif
-
-  // Buffered events
-  Add(new PHTTPIntegerField(HttpLinkEventBufferKey, 10, 1000, cfg.GetInteger(HttpLinkEventBufferKey, 100)));
-
-  // Copy web log from Room Control Page to call log
-  Add(new PHTTPBooleanField("Copy web log to call log", mcu.copyWebLogToLog));
-
+  s << separatorField("Security");
+  // HTTP authentication username/password
+  s << stringField(UserNameKey, cfg.GetString(UserNameKey));
+  s << stringField(PasswordKey, PHTTPPasswordField::Decrypt(cfg.GetString(PasswordKey)));
 #if P_SSL
   // SSL certificate file.
   PString certificateFile = cfg.GetString(HTTPCertificateFileKey, "server.pem");
-  Add(new PHTTPStringField(HTTPCertificateFileKey, 25, certificateFile));
+  s << stringField(HTTPCertificateFileKey, certificateFile);
   if (!SetServerCertificate(certificateFile, TRUE)) {
     PSYSTEMLOG(Fatal, "MCU\tCould not load certificate \"" << certificateFile << '"');
     return FALSE;
   }
 #endif
 
+  s << separatorField("Port setup");
+  // HTTP Port number to use.
+  s << separatorField();
+  s << integerField(HttpPortKey, cfg.GetInteger(HttpPortKey, DefaultHTTPPort), 1, 32767);
+  // RTP Port Setup
+  s << integerField("RTP Base Port", cfg.GetInteger("RTP Base Port", 0), 0, 65535, 10, "0 = auto, Example: base=5000, max=6000");
+  s << integerField("RTP Max Port", cfg.GetInteger("RTP Max Port", 0), 0, 65535);
+
+  s << separatorField("Log setup");
+#if PTRACING
+  // Trace level
+  s << selectField(TraceLevelKey, cfg.GetString(TraceLevelKey, DEFAULT_TRACE_LEVEL), "0,1,2,3,4,5,6", 120, "0=No tracing ... 6=Very detailed");
+#endif
+#ifdef SERVER_LOGS
+  // Log level for messages
+  s << selectField(LogLevelKey, cfg.GetString(LogLevelKey, DEFAULT_LOG_LEVEL), "0,1,2,3,4,5", 120, "1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug");
+  // Log filename
+  s << stringField(CallLogFilenameKey, mcu.logFilename, 35);
+#endif
+  // Buffered events
+  s << integerField(HttpLinkEventBufferKey, cfg.GetInteger(HttpLinkEventBufferKey, 100), 10, 1000, 10, "range: 10...1000");
+  // Copy web log from Room Control Page to call log
+  s << boolField("Copy web log to call log", mcu.copyWebLogToLog, "check if you want to store event log from Room Control Page");
+
 #if OPENMCU_VIDEO
-  Add(new PHTTPBooleanField("Enable video", cfg.GetBoolean("Enable video", TRUE),
-      "<td rowspan='2' valign='top' style='background-color:#fee;padding:4px;border-left:2px solid #900;border-top:1px dotted #fcc'>"
-      "<b>Video Setup</b>"));
-  Add(new PHTTPBooleanField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE)));
+  s << separatorField("Video setup");
+  s << boolField("Enable video", cfg.GetBoolean("Enable video", TRUE));
+  s << boolField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE));
 #endif
 
+  s << separatorField("Room setup");
   // Default room
-  Add(new PHTTPStringField(DefaultRoomKey, 25, cfg.GetString(DefaultRoomKey, DefaultRoom), "<td rowspan='6' valign='top' style='background-color:#eec;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Room Setup</b>"));
-
+  s << stringField(DefaultRoomKey, cfg.GetString(DefaultRoomKey, DefaultRoom));
   // create/don't create empty room with default name at start
-  Add(new PHTTPBooleanField(CreateEmptyRoomKey, cfg.GetBoolean(CreateEmptyRoomKey, FALSE)));
-
+  s << boolField(CreateEmptyRoomKey, cfg.GetBoolean(CreateEmptyRoomKey, FALSE));
   // recall last template after room created
-  Add(new PHTTPBooleanField(RecallLastTemplateKey, cfg.GetBoolean(RecallLastTemplateKey, FALSE)));
-
+  s << boolField(RecallLastTemplateKey, cfg.GetBoolean(RecallLastTemplateKey, FALSE));
   // reject duplicate name
-  Add(new PHTTPBooleanField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, TRUE)));
-
+  s << boolField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, TRUE));
   // get conference time limit 
-  Add(new PHTTPIntegerField(DefaultRoomTimeLimitKey, 0, 10800, cfg.GetInteger(DefaultRoomTimeLimitKey, 0)));
-
+  s << integerField(DefaultRoomTimeLimitKey, cfg.GetInteger(DefaultRoomTimeLimitKey, 0), 0, 10800);
   // allow/disallow self-invite:
-  Add(new PHTTPBooleanField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE)));
+  s << boolField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
 
   // get WAV file played to a user when they enter a conference
-  //rsrc->Add(new PHTTPStringField(ConnectingWAVFileKey, 50, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile)));
-
+  //s << stringField(ConnectingWAVFileKey, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile));
   // get WAV file played to a conference when a new user enters
-  //rsrc->Add(new PHTTPStringField(EnteringWAVFileKey, 50, cfg.GetString(EnteringWAVFileKey, DefaultEnteringWAVFile)));
-
+  //s << stringField(EnteringWAVFileKey, cfg.GetString(EnteringWAVFileKey, DefaultEnteringWAVFile));
   // get WAV file played to a conference when a new user enters
-  //rsrc->Add(new PHTTPStringField(LeavingWAVFileKey, 50, cfg.GetString(LeavingWAVFileKey, DefaultLeavingWAVFile)));
+  //s << stringField(LeavingWAVFileKey, cfg.GetString(LeavingWAVFileKey, DefaultLeavingWAVFile));
 
+  s << endPage();
   BuildHTML("");
-  PStringStream html_begin, html_end;
   BeginPage(html_begin, section, "window.l_param_general","window.l_info_param_general");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
-  PStringStream html_page; html_page << html_begin << string << html_end;
+  html_page << html_begin << s << html_end;
   string = html_page;
 }
 
@@ -470,30 +462,31 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   numCol = h323EndpointOptionsOrder.GetSize();
 
   PStringStream html_begin, html_end, html_page, s;
-  s << "<form method='POST'><table cellspacing='8'><tbody>";
-  s << column("Address", 240);
-  s << column("Display name override", 120);
-  s << column("Preferred frame rate from MCU", 120);
-  s << column("Preferred bandwidth from MCU", 120);
+  buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+  s << initPage();
+  s << newRowColumn("Address");
+  s << columnItem("Display name override");
+  s << columnItem("Preferred frame rate from MCU");
+  s << columnItem("Preferred bandwidth from MCU");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << rowInput(name);
+    s << newRowInput(name);
     s << stringItem(name, params.Tokenise(",")[0]);
     s << integerItem(name, atoi(params.Tokenise(",")[1]), 1, MAX_FRAME_RATE);
     s << integerItem(name, atoi(params.Tokenise(",")[2]), 64, 4000);
   }
   if(keys.GetSize() == 0)
   {
-    s << rowInput("test");
+    s << newRowInput("test");
     s << stringItem("test", "");
     s << integerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
     s << integerItem("test", 384, 64, 4000);
   }
-  s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
+  s << endPage();
 
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_h323_endpoints", "window.l_info_param_h323_endpoints");
@@ -512,19 +505,20 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   numCol = sipEndpointOptionsOrder.GetSize();
 
   PStringStream html_begin, html_end, html_page, s;
-  s << "<form method='POST'><table cellspacing='8'><tbody>";
-  s << column("Address", 240);
-  s << column("Display name override", 120);
-  s << column("Preferred frame rate from MCU", 120);
-  s << column("Preferred bandwidth from MCU", 120);
-  s << column("Preferred bandwidth to MCU", 120);
+  buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+  s << initPage();
+  s << newRowColumn("Address");
+  s << columnItem("Display name override");
+  s << columnItem("Preferred frame rate from MCU");
+  s << columnItem("Preferred bandwidth from MCU");
+  s << columnItem("Preferred bandwidth to MCU");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << rowInput(name);
+    s << newRowInput(name);
     s << stringItem(name, params.Tokenise(",")[0]);
     s << integerItem(name, atoi(params.Tokenise(",")[1]), 1, MAX_FRAME_RATE);
     s << integerItem(name, atoi(params.Tokenise(",")[2]), 64, 4000);
@@ -532,13 +526,13 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   }
   if(keys.GetSize() == 0)
   {
-    s << rowInput("test");
+    s << newRowInput("test");
     s << stringItem("test", "");
     s << integerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
     s << integerItem("test", 384, 64, 4000);
     s << integerItem("test", 384, 64, 4000);
   }
-  s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
+  s << endPage();
 
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_sip_endpoints", "window.l_info_param_sip_endpoints");
@@ -557,20 +551,21 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
   numCol = 5;
 
   PStringStream html_begin, html_end, html_page, s;
-  s << "<form method='POST'><table cellspacing='8'><tbody>";
-  s << column("Room name", 240);
-  s << column("Registrar usage", 120);
-  s << column("Registrar domain", 120);
-  s << column("Username", 120);
-  s << column("Password", 120);
-  s << column("Expires", 120);
+  buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+  s << initPage();
+  s << newRowColumn("Room name");
+  s << columnItem("Registrar usage");
+  s << columnItem("Registrar domain");
+  s << columnItem("Username");
+  s << columnItem("Password");
+  s << columnItem("Expires");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << rowInput(name);
+    s << newRowInput(name);
     if(params.Tokenise(",")[0] == "TRUE") s << boolItem(name, 1);
     else s << boolItem(name, 0);
     s << stringItem(name, params.Tokenise(",")[1]);
@@ -580,14 +575,14 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
   }
   if(keys.GetSize() == 0)
   {
-    s << rowInput("room101");
+    s << newRowInput("room101");
     s << boolItem("room101", 0);
     s << stringItem("room101", "");
     s << stringItem("room101", "");
     s << stringItem("room101", "");
     s << integerItem("room101", 60, 60, 3600);
   }
-  s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
+  s << endPage();
 
   BuildHTML("");
   BeginPage(html_begin, "SIP proxy-servers", "window.l_param_sip_proxy", "window.l_info_param_sip_proxy");
@@ -607,11 +602,11 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
   firstEditRow = 2;
 
   PStringStream html_begin, html_end, html_page, s;
-  s << "<form method='POST'><table cellspacing='8'><tbody>";
-
-  s << column("Room name<br>'*' for all rooms", 240);
-  s << column("Access", 120);
-  s << column("<br>'user1@domain user2@ @domain @@via'", 120);
+  buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+  s << initPage();
+  s << newRowColumn("Room name");
+  s << columnItem("Access");
+  s << columnItem("'user1@domain user2@ @domain @@via'");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -619,25 +614,25 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
     PString name = keys[i];
     PString access = cfg.GetString(keys[i]).Tokenise(",")[0].ToLower();
     PString params = cfg.GetString(keys[i]).Tokenise(",")[1];
-    if(name == "*") s << rowInput(name, 15, TRUE, FALSE);
-    else s << rowInput(name, 15);
+    if(name == "*") s << newRowInput(name, 15, TRUE);
+    else s << newRowInput(name, 15);
     s << selectItem(name, access, "allow,deny");
     if(name == "*") s << stringItem(name, params, 50, TRUE);
     else s << stringItem(name, params, 50);
   }
   if(keys.GetStringsIndex("*") == P_MAX_INDEX)
   {
-    s << rowInput("*", 15, TRUE, FALSE);
+    s << newRowInput("*", 15, TRUE);
     s << selectItem("*", "allow", "allow,deny");
     s << stringItem("*", "", 50, TRUE);
   }
   if(keys.GetSize() < 2)
   {
-    s << rowInput("room101", 15);
+    s << newRowInput("room101", 15);
     s << selectItem("room101", "allow", "allow,deny");
     s << stringItem("room101", "", 50);
   }
-  s << "</tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>";
+  s << endPage();
 
   BuildHTML("");
   BeginPage(html_begin, "Access Rules", "window.l_param_access_rules", "window.l_info_param_access_rules");
