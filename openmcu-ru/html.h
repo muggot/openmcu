@@ -57,26 +57,26 @@ class TablePConfigPage : public PConfigPage
      buttonStyle = "margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;width:24px;";
    }
 
-   PString newRowColumn(PString name, int width=255)
+   PString NewRowColumn(PString name, int width=255)
    {
      return "<tr>"+columnStyle+"width:"+PString(width)+"px'><p style='"+textStyle+"'>"+name+"</p>";
    }
-   PString newRowText(PString name)
+   PString NewRowText(PString name)
    {
      PString s = "<tr>"+rowStyle+"<input name='"+name+"' value='"+name+"' type='hidden'><p style='"+textStyle+"'>"+name+"</p>";
      s += buttons()+"</td>";
      return s;
    }
-   PString newRowInput(PString name, int size=15, int readonly=FALSE)
+   PString NewRowInput(PString name, int size=15, int readonly=FALSE)
    {
      PString s = "<tr>"+rowStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+name+"' style='"+inputStyle+"'";
      if(!readonly) s += "></input>"; else s += "readonly></input>";
      s += buttons()+"</td>";
      return s;
    }
-   PString endRow() { return "</tr>"; }
+   PString EndRow() { return "</tr>"; }
 
-   PString separatorField(PString name="")
+   PString SeparatorField(PString name="")
    {
      PString s = "<tr>"
                  "<td align='left' style='background-color:white;padding:0px;'></td>"
@@ -84,39 +84,52 @@ class TablePConfigPage : public PConfigPage
                  "<td align='left' style='background-color:white;padding:0px;'></td></tr>";
      return s;
    }
-   PString stringField(PString name, PString value, int sizeInput=12, PString info="", int readonly=FALSE)
+   PString StringField(PString name, PString value, int sizeInput=12, PString info="", int readonly=FALSE)
    {
-     return newRowText(name) + stringItem(name, value, sizeInput) + infoItem(info);
+     return NewRowText(name) + StringItem(name, value, sizeInput) + InfoItem(info);
    }
-   PString integerField(PString name, int value, int min=-2147483647, int max=2147483647, int sizeInput=15, PString info="", int readonly=FALSE)
+   PString PasswordField(PString name, PString value, int sizeInput=12, PString info="", int readonly=FALSE)
    {
-     return newRowText(name) + integerItem(name, value, min, max) + infoItem(info);
+     return NewRowText(name) + PasswordItem(name, value, sizeInput) + InfoItem(info);
    }
-   PString boolField(PString name, BOOL value, PString info="", int readonly=FALSE)
+   PString IntegerField(PString name, int value, int min=-2147483647, int max=2147483647, int sizeInput=15, PString info="", int readonly=FALSE)
    {
-     return newRowText(name) + boolItem(name, value) + infoItem(info);
+     return NewRowText(name) + IntegerItem(name, value, min, max) + InfoItem(info);
    }
-   PString selectField(PString name, PString value, PString values, int width=120, PString info="", int readonly=FALSE)
+   PString BoolField(PString name, BOOL value, PString info="", int readonly=FALSE)
    {
-     return newRowText(name) + selectItem(name, value, values, width) + infoItem(info);
+     return NewRowText(name) + BoolItem(name, value) + InfoItem(info);
+   }
+   PString SelectField(PString name, PString value, PString values, int width=120, PString info="", int readonly=FALSE)
+   {
+     return NewRowText(name) + SelectItem(name, value, values, width) + InfoItem(info);
    }
 
-   PString columnItem(PString name, int width=120)
+   PString ColumnItem(PString name, int width=120)
    {
      return columnStyle+"width:"+PString(width)+"px'><p style='"+textStyle+"'>"+name+"</p>";
    }
-   PString infoItem(PString name)
+   PString InfoItem(PString name)
    {
      PString s = itemInfoStyle+"<p style='"+textStyle+"'>"+name+"</p></td>";
      return s;
    }
-   PString stringItem(PString name, PString value, int size=12, int readonly=FALSE)
+   PString StringItem(PString name, PString value, int size=12, int readonly=FALSE)
    {
-     PString s = itemStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
+     PString s = itemStyle+"<input type='text' name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
-   PString integerItem(PString name, int value, int min=-2147483647, int max=2147483647, int size=12, int readonly=FALSE)
+   PString PasswordItem(PString name, PString value, int size=12, int readonly=FALSE)
+   {
+     if(passwordDecrypt(value) == value)
+       value = passwordCrypt(value);
+     passwordFields.SetAt(name, value);
+     PString s = itemStyle+"<input type='password' name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
+     if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
+     return s;
+   }
+   PString IntegerItem(PString name, int value, int min=-2147483647, int max=2147483647, int size=12, int readonly=FALSE)
    {
      PString s = itemStyle+"<input name='MIN' value='"+PString(min)+"' type='hidden'>"
                            "<input name='MAX' value='"+PString(max)+"' type='hidden'>"
@@ -124,14 +137,14 @@ class TablePConfigPage : public PConfigPage
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
-   PString boolItem(PString name, BOOL value)
+   PString BoolItem(PString name, BOOL value)
    {
      PString s = itemStyle+"<input name='"+name+"' value='FALSE' type='hidden' style='"+inputStyle+"'>"
                            "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"'";
      if(value) s +=" checked='yes'></input></td>"; else s +="></input></td>";
      return s;
    }
-   PString selectItem(PString name, PString value, PString values, int width=120)
+   PString SelectItem(PString name, PString value, PString values, int width=120)
    {
      PStringArray data = values.Tokenise(",");
      PString s = itemStyle+"<select name='"+name+"' width='"+PString(width)+"' style='width:"+PString(width)+"px;"+inputStyle+"'>";
@@ -146,9 +159,9 @@ class TablePConfigPage : public PConfigPage
      return s;
    }
 
-   PString initPage()
+   PString BeginTable()
    { return "<form method='POST'><table id='table' cellspacing='8'><tbody>"; }
-   PString endPage()
+   PString EndTable()
    { return "<tr></tr></tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>"; }
    PString buttons()
    {
@@ -194,12 +207,30 @@ class TablePConfigPage : public PConfigPage
                      "}\n"
                      "</script>\n"; }
 
+   PString passwordCrypt(PString pass)
+   {
+     PTEACypher crypt(CypherKey);
+     return crypt.Encode(pass);
+   }
+   PString passwordDecrypt(PString pass)
+   {
+     PString clear;
+     PTEACypher crypt(CypherKey);
+     return crypt.Decode(pass, clear) ? clear : pass;
+   }
+
    BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & reply)
    {
      PHTTPForm::Post(request, data, reply);
      cfg.DeleteSection();
      for(PINDEX i = 0; dataArray[i] != NULL; i++)
-       cfg.SetString(dataArray[i].Tokenise("=")[0], dataArray[i].Tokenise("=")[1]);
+     {
+       PString value = "";
+       PINDEX valuePos = dataArray[i].Find("=");
+       if(valuePos != P_MAX_INDEX)
+         value = dataArray[i].Right(dataArray[i].GetSize()-valuePos-2);
+       cfg.SetString(dataArray[i].Tokenise("=")[0], value);
+     }
      if(cfg.GetBoolean("RESET", FALSE))
        cfg.DeleteSection();
      process.OnContinue();
@@ -212,8 +243,12 @@ class TablePConfigPage : public PConfigPage
      int integerMin=-2147483647, integerMax=2147483647, integerIndex=-1;
      for(PINDEX i = 0; i < entityData.GetSize(); i++)
      {
-       PString key = PURL::UntranslateString(entityData[i].Tokenise("=")[0], PURL::QueryTranslation);
-       PString value = PURL::UntranslateString(entityData[i].Tokenise("=")[1], PURL::QueryTranslation);
+       PString item = PURL::UntranslateString(entityData[i], PURL::QueryTranslation);
+       PString key = item.Tokenise("=")[0];
+       PString value = "";
+       PINDEX valuePos = item.Find("=");
+       if(valuePos != P_MAX_INDEX)
+         value = item.Right(item.GetSize()-valuePos-2);
 
        PString valueNext;
        if((i+1) < entityData.GetSize()) valueNext = PURL::UntranslateString(entityData[i+1].Tokenise("=")[1], PURL::QueryTranslation);
@@ -222,7 +257,7 @@ class TablePConfigPage : public PConfigPage
        if(key == "MIN") { integerMin = atoi(value); continue; }
        if(key == "MAX") { integerMax = atoi(value); integerIndex=i+1; continue; }
 
-       if(num != 0) value.Replace(","," ",TRUE);
+       if(num != 0 && key.ToLower().Find("password") == P_MAX_INDEX) value.Replace(","," ",TRUE);
        PINDEX asize = dataArray.GetSize();
        if(num == 0)
        {
@@ -235,6 +270,11 @@ class TablePConfigPage : public PConfigPage
            if(tmp > integerMax) tmp = integerMax;
            dataArray[asize-1] += PString(tmp)+",";
          } else {
+           if(passwordFields.GetAt(key) != NULL)
+           {
+             if(passwordFields(key) != value)
+               value = passwordCrypt(value);
+           }
            dataArray[asize-1] += value+",";
          }
          if(num == numCol) dataArray[asize-1] = dataArray[asize-1].Left(dataArray[asize-1].GetLength()-1);
@@ -252,6 +292,7 @@ class TablePConfigPage : public PConfigPage
    int numCol;
    int firstEditRow;
    int buttonUp, buttonDown, buttonClone, buttonDelete;
+   PStringToString passwordFields;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

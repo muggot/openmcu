@@ -247,81 +247,81 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   cfg = MCUConfig(section);
 
   PStringStream html_begin, html_end, html_page, s;
-  s << initPage();
+  s << BeginTable();
 
   // Reset section
-  s << boolField("RESET", FALSE);
+  s << BoolField("RESET", FALSE);
   // Language
-  s << selectField("Language", cfg.GetString("Language"), ",EN,RU");
+  s << SelectField("Language", cfg.GetString("Language"), ",EN,RU");
   // OpenMCU Server Id
-  s << stringField("OpenMCU Server Id", cfg.GetString("OpenMCU Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 35);
+  s << StringField("OpenMCU Server Id", cfg.GetString("OpenMCU Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 35);
 
-  s << separatorField("Security");
+  s << SeparatorField("Security");
   // HTTP authentication username/password
-  s << stringField(UserNameKey, cfg.GetString(UserNameKey));
-  s << stringField(PasswordKey, PHTTPPasswordField::Decrypt(cfg.GetString(PasswordKey)));
+  s << StringField(UserNameKey, cfg.GetString(UserNameKey));
+  s << PasswordField(PasswordKey, PHTTPPasswordField::Decrypt(cfg.GetString(PasswordKey)));
 #if P_SSL
   // SSL certificate file.
   PString certificateFile = cfg.GetString(HTTPCertificateFileKey, "server.pem");
-  s << stringField(HTTPCertificateFileKey, certificateFile);
+  s << StringField(HTTPCertificateFileKey, certificateFile);
   if (!SetServerCertificate(certificateFile, TRUE)) {
     PSYSTEMLOG(Fatal, "MCU\tCould not load certificate \"" << certificateFile << '"');
     return FALSE;
   }
 #endif
 
-  s << separatorField("Port setup");
+  s << SeparatorField("Port setup");
   // HTTP Port number to use.
-  s << separatorField();
-  s << integerField(HttpPortKey, cfg.GetInteger(HttpPortKey, DefaultHTTPPort), 1, 32767);
+  s << SeparatorField();
+  s << IntegerField(HttpPortKey, cfg.GetInteger(HttpPortKey, DefaultHTTPPort), 1, 32767);
   // RTP Port Setup
-  s << integerField("RTP Base Port", cfg.GetInteger("RTP Base Port", 0), 0, 65535, 10, "0 = auto, Example: base=5000, max=6000");
-  s << integerField("RTP Max Port", cfg.GetInteger("RTP Max Port", 0), 0, 65535);
+  s << IntegerField("RTP Base Port", cfg.GetInteger("RTP Base Port", 0), 0, 65535, 10, "0 = auto, Example: base=5000, max=6000");
+  s << IntegerField("RTP Max Port", cfg.GetInteger("RTP Max Port", 0), 0, 65535);
 
-  s << separatorField("Log setup");
+  s << SeparatorField("Log setup");
 #if PTRACING
   // Trace level
-  s << selectField(TraceLevelKey, cfg.GetString(TraceLevelKey, DEFAULT_TRACE_LEVEL), "0,1,2,3,4,5,6", 120, "0=No tracing ... 6=Very detailed");
+  s << SelectField(TraceLevelKey, cfg.GetString(TraceLevelKey, DEFAULT_TRACE_LEVEL), "0,1,2,3,4,5,6", 120, "0=No tracing ... 6=Very detailed");
 #endif
 #ifdef SERVER_LOGS
   // Log level for messages
-  s << selectField(LogLevelKey, cfg.GetString(LogLevelKey, DEFAULT_LOG_LEVEL), "0,1,2,3,4,5", 120, "1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug");
+  s << SelectField(LogLevelKey, cfg.GetString(LogLevelKey, DEFAULT_LOG_LEVEL), "0,1,2,3,4,5", 120, "1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug");
   // Log filename
-  s << stringField(CallLogFilenameKey, mcu.logFilename, 35);
+  s << StringField(CallLogFilenameKey, mcu.logFilename, 35);
 #endif
   // Buffered events
-  s << integerField(HttpLinkEventBufferKey, cfg.GetInteger(HttpLinkEventBufferKey, 100), 10, 1000, 10, "range: 10...1000");
+  s << IntegerField(HttpLinkEventBufferKey, cfg.GetInteger(HttpLinkEventBufferKey, 100), 10, 1000, 10, "range: 10...1000");
   // Copy web log from Room Control Page to call log
-  s << boolField("Copy web log to call log", mcu.copyWebLogToLog, "check if you want to store event log from Room Control Page");
+  s << BoolField("Copy web log to call log", mcu.copyWebLogToLog, "check if you want to store event log from Room Control Page");
 
 #if OPENMCU_VIDEO
-  s << separatorField("Video setup");
-  s << boolField("Enable video", cfg.GetBoolean("Enable video", TRUE));
-  s << boolField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE));
+  s << SeparatorField("Video setup");
+  s << BoolField("Enable video", cfg.GetBoolean("Enable video", TRUE));
+  s << BoolField(ForceSplitVideoKey, cfg.GetBoolean(ForceSplitVideoKey, TRUE));
 #endif
 
-  s << separatorField("Room setup");
+  s << SeparatorField("Room setup");
   // Default room
-  s << stringField(DefaultRoomKey, cfg.GetString(DefaultRoomKey, DefaultRoom));
+  s << StringField(DefaultRoomKey, cfg.GetString(DefaultRoomKey, DefaultRoom));
   // create/don't create empty room with default name at start
-  s << boolField(CreateEmptyRoomKey, cfg.GetBoolean(CreateEmptyRoomKey, FALSE));
+  s << BoolField(CreateEmptyRoomKey, cfg.GetBoolean(CreateEmptyRoomKey, FALSE));
   // recall last template after room created
-  s << boolField(RecallLastTemplateKey, cfg.GetBoolean(RecallLastTemplateKey, FALSE));
+  s << BoolField(RecallLastTemplateKey, cfg.GetBoolean(RecallLastTemplateKey, FALSE));
   // reject duplicate name
-  s << boolField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, TRUE));
+  s << BoolField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, TRUE));
   // get conference time limit 
-  s << integerField(DefaultRoomTimeLimitKey, cfg.GetInteger(DefaultRoomTimeLimitKey, 0), 0, 10800);
+  s << IntegerField(DefaultRoomTimeLimitKey, cfg.GetInteger(DefaultRoomTimeLimitKey, 0), 0, 10800);
   // allow/disallow self-invite:
-  s << boolField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
+  s << BoolField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
 
   // get WAV file played to a user when they enter a conference
-  //s << stringField(ConnectingWAVFileKey, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile));
+  //s << StringField(ConnectingWAVFileKey, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile));
   // get WAV file played to a conference when a new user enters
-  //s << stringField(EnteringWAVFileKey, cfg.GetString(EnteringWAVFileKey, DefaultEnteringWAVFile));
+  //s << StringField(EnteringWAVFileKey, cfg.GetString(EnteringWAVFileKey, DefaultEnteringWAVFile));
   // get WAV file played to a conference when a new user enters
-  //s << stringField(LeavingWAVFileKey, cfg.GetString(LeavingWAVFileKey, DefaultLeavingWAVFile));
+  //s << StringField(LeavingWAVFileKey, cfg.GetString(LeavingWAVFileKey, DefaultLeavingWAVFile));
 
-  s << endPage();
+  s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_general","window.l_info_param_general");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
@@ -463,30 +463,30 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
-  s << initPage();
-  s << newRowColumn("Address");
-  s << columnItem("Display name override");
-  s << columnItem("Preferred frame rate from MCU");
-  s << columnItem("Preferred bandwidth from MCU");
+  s << BeginTable();
+  s << NewRowColumn("Address");
+  s << ColumnItem("Display name override");
+  s << ColumnItem("Preferred frame rate from MCU");
+  s << ColumnItem("Preferred bandwidth from MCU");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << newRowInput(name);
-    s << stringItem(name, params.Tokenise(",")[0]);
-    s << integerItem(name, atoi(params.Tokenise(",")[1]), 1, MAX_FRAME_RATE);
-    s << integerItem(name, atoi(params.Tokenise(",")[2]), 64, 4000);
+    s << NewRowInput(name);
+    s << StringItem(name, params.Tokenise(",")[0]);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[1]), 1, MAX_FRAME_RATE);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[2]), 64, 4000);
   }
   if(keys.GetSize() == 0)
   {
-    s << newRowInput("test");
-    s << stringItem("test", "");
-    s << integerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
-    s << integerItem("test", 384, 64, 4000);
+    s << NewRowInput("test");
+    s << StringItem("test", "");
+    s << IntegerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
+    s << IntegerItem("test", 384, 64, 4000);
   }
-  s << endPage();
+  s << EndTable();
 
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_h323_endpoints", "window.l_info_param_h323_endpoints");
@@ -506,33 +506,33 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
-  s << initPage();
-  s << newRowColumn("Address");
-  s << columnItem("Display name override");
-  s << columnItem("Preferred frame rate from MCU");
-  s << columnItem("Preferred bandwidth from MCU");
-  s << columnItem("Preferred bandwidth to MCU");
+  s << BeginTable();
+  s << NewRowColumn("Address");
+  s << ColumnItem("Display name override");
+  s << ColumnItem("Preferred frame rate from MCU");
+  s << ColumnItem("Preferred bandwidth from MCU");
+  s << ColumnItem("Preferred bandwidth to MCU");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << newRowInput(name);
-    s << stringItem(name, params.Tokenise(",")[0]);
-    s << integerItem(name, atoi(params.Tokenise(",")[1]), 1, MAX_FRAME_RATE);
-    s << integerItem(name, atoi(params.Tokenise(",")[2]), 64, 4000);
-    s << integerItem(name, atoi(params.Tokenise(",")[3]), 64, 4000);
+    s << NewRowInput(name);
+    s << StringItem(name, params.Tokenise(",")[0]);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[1]), 1, MAX_FRAME_RATE);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[2]), 64, 4000);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[3]), 64, 4000);
   }
   if(keys.GetSize() == 0)
   {
-    s << newRowInput("test");
-    s << stringItem("test", "");
-    s << integerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
-    s << integerItem("test", 384, 64, 4000);
-    s << integerItem("test", 384, 64, 4000);
+    s << NewRowInput("test");
+    s << StringItem("test", "");
+    s << IntegerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
+    s << IntegerItem("test", 384, 64, 4000);
+    s << IntegerItem("test", 384, 64, 4000);
   }
-  s << endPage();
+  s << EndTable();
 
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_sip_endpoints", "window.l_info_param_sip_endpoints");
@@ -552,37 +552,37 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
-  s << initPage();
-  s << newRowColumn("Room name");
-  s << columnItem("Registrar usage");
-  s << columnItem("Registrar domain");
-  s << columnItem("Username");
-  s << columnItem("Password");
-  s << columnItem("Expires");
+  s << BeginTable();
+  s << NewRowColumn("Room name");
+  s << ColumnItem("Registrar usage");
+  s << ColumnItem("Registrar domain");
+  s << ColumnItem("Username");
+  s << ColumnItem("Password");
+  s << ColumnItem("Expires");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << newRowInput(name);
-    if(params.Tokenise(",")[0] == "TRUE") s << boolItem(name, 1);
-    else s << boolItem(name, 0);
-    s << stringItem(name, params.Tokenise(",")[1]);
-    s << stringItem(name, params.Tokenise(",")[2]);
-    s << stringItem(name, params.Tokenise(",")[3]);
-    s << integerItem(name, atoi(params.Tokenise(",")[4]), 60, 3600);
+    s << NewRowInput(name);
+    if(params.Tokenise(",")[0] == "TRUE") s << BoolItem(name, 1);
+    else s << BoolItem(name, 0);
+    s << StringItem(name, params.Tokenise(",")[1]);
+    s << StringItem(name, params.Tokenise(",")[2]);
+    s << StringItem(name, params.Tokenise(",")[3]);
+    s << IntegerItem(name, atoi(params.Tokenise(",")[4]), 60, 3600);
   }
   if(keys.GetSize() == 0)
   {
-    s << newRowInput("room101");
-    s << boolItem("room101", 0);
-    s << stringItem("room101", "");
-    s << stringItem("room101", "");
-    s << stringItem("room101", "");
-    s << integerItem("room101", 60, 60, 3600);
+    s << NewRowInput("room101");
+    s << BoolItem("room101", 0);
+    s << StringItem("room101", "");
+    s << StringItem("room101", "");
+    s << StringItem("room101", "");
+    s << IntegerItem("room101", 60, 60, 3600);
   }
-  s << endPage();
+  s << EndTable();
 
   BuildHTML("");
   BeginPage(html_begin, "SIP proxy-servers", "window.l_param_sip_proxy", "window.l_info_param_sip_proxy");
@@ -603,10 +603,10 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
-  s << initPage();
-  s << newRowColumn("Room name");
-  s << columnItem("Access");
-  s << columnItem("'user1@domain user2@ @domain @@via'");
+  s << BeginTable();
+  s << NewRowColumn("Room name");
+  s << ColumnItem("Access");
+  s << ColumnItem("'user1@domain user2@ @domain @@via'");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -614,25 +614,25 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
     PString name = keys[i];
     PString access = cfg.GetString(keys[i]).Tokenise(",")[0].ToLower();
     PString params = cfg.GetString(keys[i]).Tokenise(",")[1];
-    if(name == "*") s << newRowInput(name, 15, TRUE);
-    else s << newRowInput(name, 15);
-    s << selectItem(name, access, "allow,deny");
-    if(name == "*") s << stringItem(name, params, 50, TRUE);
-    else s << stringItem(name, params, 50);
+    if(name == "*") s << NewRowInput(name, 15, TRUE);
+    else s << NewRowInput(name, 15);
+    s << SelectItem(name, access, "allow,deny");
+    if(name == "*") s << StringItem(name, params, 50, TRUE);
+    else s << StringItem(name, params, 50);
   }
   if(keys.GetStringsIndex("*") == P_MAX_INDEX)
   {
-    s << newRowInput("*", 15, TRUE);
-    s << selectItem("*", "allow", "allow,deny");
-    s << stringItem("*", "", 50, TRUE);
+    s << NewRowInput("*", 15, TRUE);
+    s << SelectItem("*", "allow", "allow,deny");
+    s << StringItem("*", "", 50, TRUE);
   }
   if(keys.GetSize() < 2)
   {
-    s << newRowInput("room101", 15);
-    s << selectItem("room101", "allow", "allow,deny");
-    s << stringItem("room101", "", 50);
+    s << NewRowInput("room101", 15);
+    s << SelectItem("room101", "allow", "allow,deny");
+    s << StringItem("room101", "", 50);
   }
-  s << endPage();
+  s << EndTable();
 
   BuildHTML("");
   BeginPage(html_begin, "Access Rules", "window.l_param_access_rules", "window.l_info_param_access_rules");

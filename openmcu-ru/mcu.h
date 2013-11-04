@@ -139,6 +139,13 @@ static PStringArray sipEndpointOptionsOrder = PString(
                                         "Preferred bandwidth from MCU,"
                                         "Preferred bandwidth to MCU").Tokenise(",");
 
+static const PTEACypher::Key CypherKey = {
+  {
+    103,  60, 222,  17, 128, 157,  31, 137,
+    133,  64,  82, 148,  94, 136,   4, 209
+  }
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUConfig: public PConfig
