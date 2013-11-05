@@ -444,16 +444,16 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     PString params = cfg.GetString(keys[i]);
     s << NewRowInput(name);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]);
-    s << IntegerItem(name, atoi(params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]), 1, MAX_FRAME_RATE);
-    s << IntegerItem(name, atoi(params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]), 64, 4000);
+    s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
+    s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
     s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Initial audio status")], "default,mute");
   }
   if(keys.GetSize() == 0)
   {
     s << NewRowInput("test");
     s << StringItem("test", "");
-    s << IntegerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
-    s << IntegerItem("test", 384, 64, 4000);
+    s << StringItem("test", "");
+    s << StringItem("test", "");
     s << SelectItem("test", "default", "default,mute");
   }
 
@@ -489,18 +489,18 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     PString params = cfg.GetString(keys[i]);
     s << NewRowInput(name);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")]);
-    s << IntegerItem(name, atoi(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]), 1, MAX_FRAME_RATE);
-    s << IntegerItem(name, atoi(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]), 64, 4000);
-    s << IntegerItem(name, atoi(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]), 64, 4000);
+    s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
+    s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
+    s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]);
     s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Initial audio status")], "default,mute");
   }
   if(keys.GetSize() == 0)
   {
     s << NewRowInput("test");
     s << StringItem("test", "");
-    s << IntegerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
-    s << IntegerItem("test", 384, 64, 4000);
-    s << IntegerItem("test", 384, 64, 4000);
+    s << StringItem("test", "");
+    s << StringItem("test", "");
+    s << StringItem("test", "");
     s << SelectItem("test", "default", "default,mute");
   }
   s << EndTable();
