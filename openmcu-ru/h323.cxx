@@ -529,6 +529,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
           << "," << codecCacheMode << "," << JsQuoteScreen(formatString)       // c[r][4][m][13,14]: codecCacheMode, formatString
           << "," << member->GetVideoRxFrameRate()                              // c[r][4][m][15]: video rx frame rate
           << "," << member->GetVideoTxFrameRate()                              // c[r][4][m][16]: video tx frame rate
+          << "," << cacheUsersNumber                                           // c[r][4][m][17]: cache users number
           << ")";
         notFirstMember = TRUE;
       }
