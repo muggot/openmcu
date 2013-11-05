@@ -969,7 +969,12 @@ BOOL MainStatusPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
   if(!data.Contains("js")) return PServiceHTTPString::OnGET(server, url, info, connectInfo);
 
-  PString body = OpenMCU::Current().GetEndpoint().GetRoomStatusJS();
+  PString body;
+
+  if(data.Contains("start"))
+    body = OpenMCU::Current().GetEndpoint().GetRoomStatusJSStart();
+  else
+    body = OpenMCU::Current().GetEndpoint().GetRoomStatusJS();
   PINDEX length = body.GetLength();
 
   PStringStream message;

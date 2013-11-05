@@ -94,6 +94,7 @@ class OpenMCUH323EndPoint : public H323EndPoint
 
     PString GetRoomStatus(const PString & block);
     PString GetRoomStatusJS();
+    PString GetRoomStatusJSStart();
     PString GetMemberList(Conference & conference, ConferenceMemberId id);
     BOOL MemberExist(Conference & conference, ConferenceMemberId id);
     PString GetMemberListOpts(Conference & conference);

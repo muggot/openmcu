@@ -559,6 +559,28 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
   return str;
 }
 
+
+PString OpenMCUH323EndPoint::GetRoomStatusJSStart()
+{
+  PStringStream html;
+  BeginPage(html,"Connections","window.l_connections","window.l_info_connections");
+  html << "<script src='http://127.0.0.1:1420/status.js'></script>"
+    << "<script>var loadCounter=0;function page_reload(){"
+    << "if(loadCounter<=0) location.href=location.href;"
+    << "document.getElementById('status2').innerHTML=loadCounter;"
+    << "loadCounter--;setTimeout(page_reload, 990);}"
+    << "function status_init(){"
+    << "if(window.status_update_start) setTimeout(status_update_start,500);else{"
+    << "document.getElementById(\"status1\").innerHTML=\"<h1>ERROR: Can not load <font color=red>status.js</font></h1><h2>Page will reload after <span id='status2'>30</span> s</h2>\";"
+    << "loadCounter=30;setTimeout(page_reload, 990);}}setTimeout(status_init,333)</script>"
+    << "<div id=\"status1\"></div>";
+  EndPage(html,OpenMCU::Current().GetHtmlCopyright());
+  return html;
+}
+
+
+
+
 PString OpenMCUH323EndPoint::GetRoomStatus(const PString & block)
 { 
   PString substitution;
