@@ -61,6 +61,7 @@ entering.wav \
 leaving.wav \
 template.html \
 control.js \
+status.js \
 locale_ru.js \
 locale_en.js
 
