@@ -52,10 +52,11 @@ class TablePConfigPage : public PConfigPage
      buttonUp = buttonDown = buttonClone = buttonDelete = 0;
      columnStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-bottom:2px solid white;border-right:2px solid white;";
      rowStyle = "<td align='left' style='background-color:"+rowColor+";vertical-align:top;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     rowTableStyle = "<td align='left' style='background-color:"+itemColor+";padding:4px;'>";
+     rowTextStyle = "<td align='left' style='background-color:"+rowColor+";vertical-align:top;padding:4px;padding-top:0px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     rowArrayStyle = "<td align='left' style='background-color:"+itemColor+";vertical-align:top;padding:4px;'>";
      itemStyle = "<td align='left' style='background-color:"+itemColor+";vertical-align:top;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
      itemInfoStyle = "<td align='left' style='background-color:#f7f4d8;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     textStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
+     textStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;padding-top:10px;";
      inputStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
      buttonStyle = "margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;width:24px;";
    }
@@ -66,13 +67,13 @@ class TablePConfigPage : public PConfigPage
    }
    PString NewRowText(PString name)
    {
-     PString s = "<tr>"+rowStyle+"<input name='"+name+"' value='"+name+"' type='hidden'><p style='"+textStyle+"'>"+name+"</p>";
+     PString s = "<tr>"+rowTextStyle+"<input name='"+name+"' value='"+name+"' type='hidden'><p style='"+textStyle+"'>"+name+"</p>";
      s += buttons()+"</td>";
      return s;
    }
    PString NewRowInput(PString name, int size=15, int readonly=FALSE)
    {
-     PString s = "<tr>"+rowStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+name+"' style='"+inputStyle+"'";
+     PString s = "<tr style='padding:0px;margin:0px;'>"+rowStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+name+"' style='"+inputStyle+"'";
      if(!readonly) s += "></input>"; else s += "readonly></input>";
      s += buttons()+"</td>";
      return s;
@@ -106,6 +107,22 @@ class TablePConfigPage : public PConfigPage
    PString SelectField(PString name, PString value, PString values, int width=120, PString info="", int readonly=FALSE)
    {
      return NewRowText(name) + SelectItem(name, value, values, width) + InfoItem(info);
+   }
+   PString ArrayField(PString name, PString values, int size=12, PString info="", int readonly=FALSE)
+   {
+     PStringArray data = values.Tokenise(",");
+     PString s = NewRowText(name);
+     s += NewItemArray(name);
+     if(data.GetSize() == 0)
+     {
+       s += StringItemArray(name, "", size);
+     } else {
+       for(PINDEX i = 0; i < data.GetSize(); i++)
+         s += StringItemArray(name, data[i], size);
+     }
+     s += EndItemArray();
+     s += InfoItem(info);
+     return s;
    }
 
    PString ColumnItem(PString name, int width=120)
@@ -172,7 +189,7 @@ class TablePConfigPage : public PConfigPage
    }
    PString StringItemArray(PString name, PString value, int size=12)
    {
-     PString s = "<tr>"+rowTableStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'></input>";
+     PString s = "<tr>"+rowArrayStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'></input>";
      s += "<input type=button value='↑' onClick='rowUp(this,0)' style='"+buttonStyle+"'>";
      s += "<input type=button value='↓' onClick='rowDown(this)' style='"+buttonStyle+"'>";
      s += "<input type=button value='+' onClick='rowClone(this)' style='"+buttonStyle+"'>";
@@ -232,9 +249,18 @@ class TablePConfigPage : public PConfigPage
    PString jsRowDelete() { return "<script type='text/javascript'>\n"
                      "function rowDelete(obj)\n"
                      "{\n"
-                     "  var table = obj.parentNode.parentNode.parentNode;\n"
+                     "  var table = obj.parentNode.parentNode.parentNode.parentNode;\n"
                      "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
-                     "  table.deleteRow(rowNum);\n"
+                     "  if(table.id == 'table1')\n"
+                     "  {\n"
+                     "    table.deleteRow(rowNum);\n"
+                     "  } else {\n"
+                     "    var table2 = obj.parentNode.parentNode.parentNode;\n"
+                     "    var rows = table2.childNodes.length;\n"
+                     "    if(rows < 3)\n"
+                     "      return;\n"
+                     "    table2.deleteRow(rowNum);\n"
+                     "  }\n"
                      "}\n"
                      "</script>\n"; }
 
@@ -320,7 +346,7 @@ class TablePConfigPage : public PConfigPage
    }
  protected:
    PConfig cfg;
-   PString columnStyle, rowStyle, rowTableStyle, itemStyle, itemInfoStyle, textStyle, inputStyle, buttonStyle;
+   PString columnStyle, rowStyle, rowTextStyle, rowArrayStyle, itemStyle, itemInfoStyle, textStyle, inputStyle, buttonStyle;
    PStringArray dataArray;
    PString columnColor, rowColor, itemColor;
    int firstEditRow;
@@ -398,7 +424,7 @@ class RecordPConfigPage : public TablePConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class H323PConfigPage : public DefaultPConfigPage
+class H323PConfigPage : public TablePConfigPage
 {
  public:
    H323PConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);

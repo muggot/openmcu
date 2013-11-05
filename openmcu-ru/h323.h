@@ -90,7 +90,7 @@ class OpenMCUH323EndPoint : public H323EndPoint
     PString nat_lag_ip;
 
     // new functions
-    void Initialise(PConfig & cfg, PConfigPage * rsrc);
+    void Initialise(PConfig & cfg);
 
     PString GetRoomStatus(const PString & block);
     PString GetRoomStatusJS();

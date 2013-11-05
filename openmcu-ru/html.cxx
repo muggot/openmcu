@@ -611,21 +611,38 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : DefaultPConfigPage(app,title,section,auth)
+    : TablePConfigPage(app,title,section,auth)
 {
   OpenMCU & mcu = OpenMCU::Current();
+  cfg = MCUConfig(section);
 
-  // Reset section
-  Add(new PHTTPBooleanField("RESTORE DEFAULTS", FALSE));
-
-  mcu.GetEndpoint().Initialise(cfg, this);
+  mcu.GetEndpoint().Initialise(cfg);
   if(mcu.GetEndpoint().behind_masq){PStringStream msq; msq<<"Masquerading as "<<*(mcu.GetEndpoint().masqAddressPtr); mcu.HttpWriteEvent(msq);}
 
+  PStringStream html_begin, html_end, html_page, s;
+  s << BeginTable();
+
+  s << ArrayField(InterfaceKey, cfg.GetString(InterfaceKey));
+
+  s << StringField(NATRouterIPKey, cfg.GetString(NATRouterIPKey));
+  s << StringField(NATTreatAsGlobalKey, cfg.GetString(NATTreatAsGlobalKey));
+
+  s << BoolField(DisableFastStartKey, cfg.GetBoolean(DisableFastStartKey, TRUE));
+  s << BoolField(DisableH245TunnelingKey, cfg.GetBoolean(DisableH245TunnelingKey, FALSE));
+
+  PString labels = "No gatekeeper,Find gatekeeper,Use gatekeeper";
+  s << SelectField(GatekeeperModeKey, cfg.GetString(GatekeeperModeKey, labels[0]), labels, 160);
+  s << StringField(GatekeeperKey, cfg.GetString(GatekeeperKey));
+  s << StringField(GatekeeperUserNameKey, cfg.GetString(GatekeeperUserNameKey, "MCU"));
+  s << StringField(GatekeeperPasswordKey, PHTTPPasswordField::Decrypt(cfg.GetString(GatekeeperPasswordKey)));
+  s << StringField(GatekeeperAliasKey, cfg.GetString(GatekeeperAliasKey,"MCU*"));
+  s << ArrayField(GatekeeperPrefixesKey, cfg.GetString(GatekeeperPrefixesKey));
+
+  s << EndTable();
   BuildHTML("");
-  PStringStream html_begin, html_end;
   BeginPage(html_begin, section, "window.l_param_h323", "window.l_info_param_h323");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
-  PStringStream html_page; html_page << html_begin << string << html_end;
+  html_page << html_begin << s << html_end;
   string = html_page;
 }
 

@@ -84,7 +84,7 @@ OpenMCUH323EndPoint::~OpenMCUH323EndPoint()
 #endif
 }
 
-void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
+void OpenMCUH323EndPoint::Initialise(PConfig & cfg)
 {
 
 #ifdef HAS_AEC
@@ -95,15 +95,22 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 // Listeners
   PString defaultInterface = "*:1720";
   H323TransportAddressArray interfaces;
-  PINDEX arraySize = cfg.GetInteger(PString(InterfaceKey) + " Array Size");
-  if (arraySize == 0)
-    StartListener(defaultInterface);
-  else {
-    for (int i = 0; i < arraySize; i++)
-      interfaces.Append(new H323TransportAddress(cfg.GetString(psprintf("%s %u", InterfaceKey, i+1), "")));
-    StartListeners(interfaces);
+  PStringArray interfacesArray = cfg.GetString(InterfaceKey).Tokenise(",");
+  BOOL interfacesEmpty = TRUE;
+  for (int i = 0; i < interfacesArray.GetSize(); i++)
+  {
+    if(interfacesArray[i] != "")
+    {
+      interfacesEmpty = FALSE;
+      interfaces.Append(new H323TransportAddress(interfacesArray[i]));
+    }
   }
-  rsrc->Add(new PHTTPFieldArray(new PHTTPStringField(cfg.GetDefaultSection() + "\\" + InterfaceKey, InterfaceKey, 20, defaultInterface,"<td rowspan='3' valign='top' style='background-color:#efe;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>Network Setup</b><br /><br />Leave blank &laquo;NAT Router IP&raquo; if your OpenMCU isn't behind NAT.<br />\"Treat...\" - comma-separated LAN IPs (rarely used).\""), FALSE));
+  if (interfacesArray.GetSize() == 0 || interfacesEmpty)
+  {
+    interfaces.Append(new H323TransportAddress(defaultInterface));
+    cfg.SetString(InterfaceKey, defaultInterface);
+  }
+  StartListeners(interfaces);
 
   if (listeners.IsEmpty()) {
     PSYSTEMLOG(Fatal, "Main\tCould not open H.323 Listener");
@@ -115,7 +122,6 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 ///////////////////////////////////////////
 // NAT Router IP
   PString nat_ip = cfg.GetString(NATRouterIPKey);
-  rsrc->Add(new PHTTPStringField(NATRouterIPKey, 25, nat_ip));
   if (nat_ip.Trim().IsEmpty()) {
     behind_masq = FALSE;
   } else {
@@ -125,13 +131,11 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   }
 
   nat_lag_ip = cfg.GetString(NATTreatAsGlobalKey);
-  rsrc->Add(new PHTTPStringField(NATTreatAsGlobalKey, 25, nat_lag_ip));
   if(!nat_lag_ip.IsEmpty())
   {
     nat_lag_ip=","+nat_lag_ip+",";
     nat_lag_ip.Replace(" ","", TRUE, 0);
   }
-
 
 ///////////////////////////////////////////
 // RTP Port Setup
@@ -145,8 +149,6 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 // Enable/Disable Fast Start & H.245 Tunneling
   BOOL disableFastStart = cfg.GetBoolean(DisableFastStartKey, TRUE);
   BOOL disableH245Tunneling = cfg.GetBoolean(DisableH245TunnelingKey, FALSE);
-  rsrc->Add(new PHTTPBooleanField(DisableFastStartKey, disableFastStart,"<td rowspan='9' valign='top' style='background-color:#eec;padding:4px;border-right:2px solid #090;border-top:1px dotted #cfc'><b>H.323 Setup</b>"));
-  rsrc->Add(new PHTTPBooleanField(DisableH245TunnelingKey, disableH245Tunneling));
   DisableFastStart(disableFastStart);
   DisableH245Tunneling(disableH245Tunneling);
 
@@ -155,11 +157,9 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
   PStringArray labels(GKMODE_LABEL_COUNT, GKModeLabels); 
   PINDEX idx = labels.GetStringsIndex(cfg.GetString(GatekeeperModeKey, labels[0]));  
   PINDEX gkMode = (idx == P_MAX_INDEX) ? 0 : idx;
-  rsrc->Add(new PHTTPRadioField(GatekeeperModeKey, labels, gkMode));
 
   // Gatekeeper 
   PString gkName = cfg.GetString(GatekeeperKey);
-  rsrc->Add(new PHTTPStringField(GatekeeperKey, 25, gkName));
 
   // Gatekeeper UserName
   PString gkUserName = cfg.GetString(GatekeeperUserNameKey,"MCU");
@@ -176,17 +176,14 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
 //    SetLocalUserName(gkUserName);
     SetLocalUserName(serverId); // testing
   }
-  rsrc->Add(new PHTTPStringField(GatekeeperUserNameKey, 25, gkUserName));
   AliasList.AppendString(gkUserName);
 
   // Gatekeeper password
   PString gkPassword = PHTTPPasswordField::Decrypt(cfg.GetString(GatekeeperPasswordKey));
   SetGatekeeperPassword(gkPassword);
-  rsrc->Add(new PHTTPPasswordField(GatekeeperPasswordKey, 25, gkPassword));
 
   // Gatekeeper Alias
   gkAlias = cfg.GetString(GatekeeperAliasKey,"MCU*");
-  rsrc->Add(new PHTTPStringField(GatekeeperAliasKey, 25, gkAlias));
 
   for (PINDEX k=0; k< OpenMCU::defaultRoomCount; k++) {
 	  PString alias = gkAlias;
@@ -195,21 +192,20 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg, PConfigPage * rsrc)
       AliasList.AppendString(alias);  
   }
 
-  // Gatekeeper prefixes
-  PINDEX prefixSize = cfg.GetInteger(PString(GatekeeperPrefixesKey) + " Array Size");
-  if (prefixSize > 0) {
-	  for (int j = 0; j < prefixSize; j++) {
-	     PString prefix = cfg.GetString(psprintf("%s %u", GatekeeperPrefixesKey, j+1));
-         PrefixList.AppendString(prefix);
-
-		for (PINDEX k=0; k< OpenMCU::defaultRoomCount; k++) {
-			PString alias = prefix + PString(k);
-			AliasList.AppendString(alias);  
-		}
-	  }
+  PStringArray gkArray = cfg.GetString(GatekeeperPrefixesKey).Tokenise(",");
+  for (int i = 0; i < gkArray.GetSize(); i++)
+  {
+    if(gkArray[i] != "")
+    {
+      PString prefix = gkArray[i];
+      PrefixList.AppendString(prefix);
+      for (PINDEX k=0; k < OpenMCU::defaultRoomCount; k++)
+      {
+	PString alias = prefix + PString(k);
+	AliasList.AppendString(alias);
+      }
+    }
   }
-  rsrc->Add(new PHTTPFieldArray(new PHTTPStringField(cfg.GetDefaultSection() + "\\" + GatekeeperPrefixesKey, 
-	                                                                    GatekeeperPrefixesKey, 20, ""), FALSE));
 
    // Setup capabilities
    unsigned rsConfig=1, tsConfig=1, rvConfig=1, tvConfig=1;
