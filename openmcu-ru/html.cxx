@@ -427,7 +427,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  numCol = h323EndpointOptionsOrder.GetSize();
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
@@ -463,7 +462,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   BeginPage(html_begin, section, "window.l_param_h323_endpoints", "window.l_info_param_h323_endpoints");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
-  html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();
   string = html_page;
 }
 
@@ -473,7 +471,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  numCol = sipEndpointOptionsOrder.GetSize();
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
@@ -512,7 +509,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   BeginPage(html_begin, section, "window.l_param_sip_endpoints", "window.l_info_param_sip_endpoints");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
-  html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();
   string = html_page;
 }
 
@@ -522,7 +518,6 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  numCol = 5;
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
@@ -562,7 +557,6 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
   BeginPage(html_begin, "SIP proxy-servers", "window.l_param_sip_proxy", "window.l_info_param_sip_proxy");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
-  html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();
   string = html_page;
 }
 
@@ -572,7 +566,6 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  numCol = 2;
   firstEditRow = 2;
 
   PStringStream html_begin, html_end, html_page, s;
@@ -612,7 +605,6 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
   BeginPage(html_begin, "Access Rules", "window.l_param_access_rules", "window.l_info_param_access_rules");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
-  html_page << jsRowUp() << jsRowDown() << jsRowClone ()<< jsRowDelete();
   string = html_page;
 }
 

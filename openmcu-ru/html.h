@@ -45,12 +45,15 @@ class TablePConfigPage : public PConfigPage
      : PConfigPage(app,title,section,auth)
    {
      cfg = MCUConfig(section);
-     numCol = 1;
+     columnColor = "#d9e5e3";
+     rowColor = "#d9e5e3";
+     itemColor = "#f7f4d8";
      firstEditRow = 1;
      buttonUp = buttonDown = buttonClone = buttonDelete = 0;
-     columnStyle = "<td align='middle' style='background-color:#d9e5e3;padding:0px;border-bottom:2px solid white;border-right:2px solid white;";
-     rowStyle = "<td align='left' style='background-color:#d9e5e3;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     itemStyle = "<td align='left' style='background-color:#f7f4d8;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     columnStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-bottom:2px solid white;border-right:2px solid white;";
+     rowStyle = "<td align='left' style='background-color:"+rowColor+";vertical-align:top;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     rowTableStyle = "<td align='left' style='background-color:"+itemColor+";padding:4px;'>";
+     itemStyle = "<td align='left' style='background-color:"+itemColor+";vertical-align:top;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
      itemInfoStyle = "<td align='left' style='background-color:#f7f4d8;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
      textStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
      inputStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
@@ -159,10 +162,33 @@ class TablePConfigPage : public PConfigPage
      return s;
    }
 
+   PString NewItemArray(PString name)
+   {
+     return "<td><table id='"+name+"' cellspacing='3'><tbody>";
+   }
+   PString EndItemArray()
+   {
+     return "<tr></tr></tbody></table></td>";
+   }
+   PString StringItemArray(PString name, PString value, int size=12)
+   {
+     PString s = "<tr>"+rowTableStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'></input>";
+     s += "<input type=button value='↑' onClick='rowUp(this,0)' style='"+buttonStyle+"'>";
+     s += "<input type=button value='↓' onClick='rowDown(this)' style='"+buttonStyle+"'>";
+     s += "<input type=button value='+' onClick='rowClone(this)' style='"+buttonStyle+"'>";
+     s += "<input type=button value='-' onClick='rowDelete(this)' style='"+buttonStyle+"'>";
+     s += "</td>";
+     return s;
+   }
+
    PString BeginTable()
-   { return "<form method='POST'><table id='table' cellspacing='8'><tbody>"; }
+   { return "<form method='POST'><table id='table1' cellspacing='8'><tbody>"; }
    PString EndTable()
-   { return "<tr></tr></tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='Reset' type='reset'></p></form>"; }
+   {
+     PString s = "<tr></tr></tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='Reset' type='reset'></p></form>";
+     s += jsRowDown() + jsRowUp() + jsRowClone()+ jsRowDelete();
+     return s;
+   }
    PString buttons()
    {
      PString s;
@@ -192,9 +218,14 @@ class TablePConfigPage : public PConfigPage
    PString jsRowClone() { return "<script type='text/javascript'>\n"
                      "function rowClone(obj)\n"
                      "{\n"
-                     "  var table = obj.parentNode.parentNode.parentNode;\n"
+                     "  var table = obj.parentNode.parentNode.parentNode.parentNode;\n"
                      "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
                      "  var node = table.rows[rowNum].cloneNode(true);\n"
+                     "  if(table.id == 'table1')\n"
+                     "  {\n"
+                     "    var seconds = new Date().getTime();\n"
+                     "    node.cells[0].childNodes[0].name = seconds\n"
+                     "  }\n"
                      "  table.rows[rowNum].parentNode.insertBefore(node, table.rows[rowNum+1]);\n"
                      "}\n"
                      "</script>\n"; }
@@ -223,7 +254,7 @@ class TablePConfigPage : public PConfigPage
    {
      PHTTPForm::Post(request, data, reply);
      cfg.DeleteSection();
-     for(PINDEX i = 0; dataArray[i] != NULL; i++)
+     for(PINDEX i = 0; i < dataArray.GetSize(); i++)
      {
        PString value = "";
        PINDEX valuePos = dataArray[i].Find("=");
@@ -241,6 +272,7 @@ class TablePConfigPage : public PConfigPage
      PStringArray entityData = connectInfo.GetEntityBody().Tokenise("&");
      PINDEX num = 0;
      int integerMin=-2147483647, integerMax=2147483647, integerIndex=-1;
+     PString curKey = "";
      for(PINDEX i = 0; i < entityData.GetSize(); i++)
      {
        PString item = PURL::UntranslateString(entityData[i], PURL::QueryTranslation);
@@ -257,39 +289,40 @@ class TablePConfigPage : public PConfigPage
        if(key == "MIN") { integerMin = atoi(value); continue; }
        if(key == "MAX") { integerMax = atoi(value); integerIndex=i+1; continue; }
 
-       if(num != 0 && key.ToLower().Find("password") == P_MAX_INDEX) value.Replace(","," ",TRUE);
+       if(num == 1) curKey = key;
        PINDEX asize = dataArray.GetSize();
-       if(num == 0)
+       if(key != curKey)
        {
+         num = 0;
          dataArray.AppendString(value+"=");
        } else {
+         if(passwordFields.GetAt(key) == NULL) value.Replace(","," ",TRUE);
+         if(num != 1) dataArray[asize-1] += ",";
          if(integerIndex == i)
          {
            int tmp = atoi(value);
            if(tmp < integerMin) tmp = integerMin;
            if(tmp > integerMax) tmp = integerMax;
-           dataArray[asize-1] += PString(tmp)+",";
+           dataArray[asize-1] += PString(tmp);
          } else {
            if(passwordFields.GetAt(key) != NULL)
            {
              if(passwordFields(key) != value)
                value = passwordCrypt(value);
            }
-           dataArray[asize-1] += value+",";
+           dataArray[asize-1] += value;
          }
-         if(num == numCol) dataArray[asize-1] = dataArray[asize-1].Left(dataArray[asize-1].GetLength()-1);
        }
-       if(num == numCol) num = 0;
-       else num++;
+       num++;
      }
      PHTTPConfig::OnPOST(server, url, info, data, connectInfo);
      return TRUE;
    }
  protected:
    PConfig cfg;
-   PString columnStyle, rowStyle, itemStyle, itemInfoStyle, textStyle, inputStyle, buttonStyle;
+   PString columnStyle, rowStyle, rowTableStyle, itemStyle, itemInfoStyle, textStyle, inputStyle, buttonStyle;
    PStringArray dataArray;
-   int numCol;
+   PString columnColor, rowColor, itemColor;
    int firstEditRow;
    int buttonUp, buttonDown, buttonClone, buttonDelete;
    PStringToString passwordFields;
