@@ -476,8 +476,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
         int codecCacheMode=-1, cacheUsersNumber=-1;
         OpenMCUH323Connection * conn = NULL;
         H323Connection_ConferenceMember * connMember = NULL;
-        DWORD orx=0, otx=0, vorx=0, votx=0;
-
+        DWORD orx=0, otx=0, vorx=0, votx=0, prx=0, ptx=0, vprx=0, vptx=0;
         if(name=="file recorder")
         {
           duration = now - member->GetStartTime();
@@ -503,13 +502,17 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
               RTP_Session *sess=conn->GetSession(RTP_Session::DefaultAudioSessionID);
               if(sess != NULL)
               { orx = sess->GetOctetsReceived(); otx = sess->GetOctetsSent();
+                prx = sess->GetPacketsReceived(); ptx = sess->GetPacketsSent();
               }
 #             if OPENMCU_VIDEO
                 videoCodecR = conn->GetVideoReceiveCodecName() + "@" + connMember->GetVideoRxFrameSize();
                 videoCodecT = conn->GetVideoTransmitCodecName();
                 RTP_Session* vSess=conn->GetSession(RTP_Session::DefaultVideoSessionID);
                 if(vSess != NULL)
-                { vorx=vSess->GetOctetsReceived(); votx=vSess->GetOctetsSent(); }
+                { vorx=vSess->GetOctetsReceived(); votx=vSess->GetOctetsSent();
+                  vprx=vSess->GetPacketsReceived(); vptx=vSess->GetPacketsSent();
+
+                }
                 if(conn->GetVideoTransmitCodec()!=NULL)
                 { codecCacheMode=conn->GetVideoTransmitCodec()->cacheMode;
                   formatString=conn->GetVideoTransmitCodec()->formatString;
@@ -530,6 +533,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
           << "," << member->GetVideoRxFrameRate()                              // c[r][4][m][15]: video rx frame rate
           << "," << member->GetVideoTxFrameRate()                              // c[r][4][m][16]: video tx frame rate
           << "," << cacheUsersNumber                                           // c[r][4][m][17]: cache users number
+          << "," << prx << "," << ptx << "," << vprx << "," << vptx            // c[r][4][m][18-21]: prx, ptx, vprx, vptx
           << ")";
         notFirstMember = TRUE;
       }
