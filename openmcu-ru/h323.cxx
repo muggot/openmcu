@@ -468,7 +468,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
           << (long)id                                                          // c[r][4][m][0]: member id
           << "," << JsQuoteScreen(name)                                        // c[r][4][m][1]: member name
           << "," << (member->IsVisible() ? "1" : "0")                          // c[r][4][m][2]: is member visible: 1/0
-          << "," << (member->IsMCU() ? "1" : "0")                              // c[r][4][m][3]: is member visible: 1/0
+          << "," << (member->IsMCU() ? "1" : "0")                              // c[r][4][m][3]: is MCU: 1/0
         ;
 
         PTimeInterval duration;

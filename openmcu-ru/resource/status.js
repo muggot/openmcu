@@ -6,13 +6,22 @@ var fortyTwo=42
   ,UPDATE_RETRIES    = 1//5
   ,REQUEST_TIMEOUT   = 500//4000
   ,DATA_HANDLE_DELAY = 100//333
-
+  ,WORKPLACE         = null
+  ,OFFLINE_PREFIX    = "<B>[Offline] </B>" //localize it :)
+  ,OFFLINE_SUFFIX    = ""
+  ,ONLINE_PREFIX     = ""
+  ,ONLINE_SUFFIX     = ""
+  ,AUDIO_OUT_STR     = "Audio Out"
+  ,AUDIO_IN_STR      = "Audio In"
+  ,VIDEO_OUT_STR     = "Video Out"
+  ,VIDEO_IN_STR      = "Video In"
   ,data              = []
   ,gettingData       = 0
   ,getDataErrorCount = 0
   ,requestTimer      = null
-  ,rooms             = 0
+  ,roomCount         = 0
   ,roomList          = []
+  ,memberList        = []
   ,store             = []
   ,timer             = null
   ,xro               = null
@@ -100,17 +109,78 @@ function on_delete_data(d)
 
 function on_create_new_room(r)
 {
+  var s='r_b_'+r; on_delete_room(r);
+
+  var d=document.createElement('DIV');
+  d.id=s;
+  d.innerHTML='<b>' + r + '</b>'
+    + '<table id="r_t_' + r + '" class="table table-striped table-bordered table-condensed">'
+    + "<tr>"
+      + "<th>&nbsp;Name&nbsp;</th>"
+      + "<th>&nbsp;Duration&nbsp;</th>"
+      + "<th>&nbsp;RTP Channel: Codec&nbsp;</th>"
+      + "<th>&nbsp;Packets&nbsp;</th>"
+      + "<th>&nbsp;Bytes&nbsp;</th>"
+      + "<th>&nbsp;Kbit/s&nbsp;</th>"
+      + "<th>&nbsp;FPS&nbsp;</th>"
+    + "</tr>"
+
+    + '</table>';
+  WORKPLACE.appendChild(d);
 }
 
 function on_delete_room(r)
 {
+  var s='r_b_'+r;
+  try { WORKPLACE.removeChild(document.getElementById(s)); } catch(e) {}
+}
+
+function on_member_add(room, member)
+{
+  var t=null;
+  try {t=document.getElementById('r_t_'+room);} catch(e) {}
+  if(t==null) return;
+  var online = member[0]!=0;
+  var tr=t.insertRow(-1);
+  var td=tr.insertCell(0);
+  td.innerHTML = (online?ONLINE_PREFIX:OFFLINE_PREFIX) + member[1] + (online?ONLINE_SUFFIX:OFFLINE_SUFFIX);
+
+  td=tr.insertCell(1); //Duration
+  td.innerHTML = member[4];
+
+  td=tr.insertCell(2); //RTP Channel: Codec
+  td.innerHTML = 
+    "<b>" + AUDIO_IN_STR  + ":</b> " + member[ 9] + "<br>" +
+    "<b>" + AUDIO_OUT_STR + ":</b> " + member[10] + "<br>" +
+    "<b>" + VIDEO_IN_STR  + ":</b> " + member[11] + "<br>" +
+    "<b>" + VIDEO_OUT_STR + ":</b> " + member[12];
+
+}
+
+function on_member_delete(key)
+{
+  var t=null, a = key.split("\t",3);
+  var roomName = a[0];
+  try {t=document.getElementById('r_t_'+roomName);} catch(e) {}
+  if (t==null) return;
+
+  var memberName = a[2], online = (a[1] != 0);
+  var searchStr = (online?ONLINE_PREFIX:OFFLINE_PREFIX) + memberName + (online?ONLINE_SUFFIX:OFFLINE_SUFFIX);
+
+  for(var i=t.rows.length-1; i>=0; i--)
+  {
+    if(t.rows[i].cells[0].innerHTML == searchStr)
+    {
+      t.deleteRow(i);
+    }
+  }
 }
 
 function handle_data()
 { // new data block 'data' just received from server
-  rooms=data.length;
+  roomCount=data.length;
   var newRooms=[], i=0;
-  for(i=0; i<rooms; i++)
+  for(i=0; i<roomCount; i++)
   {
     newRooms.push(data[i][0]);
     if(!in_array(data[i][0], roomList))
@@ -127,16 +197,40 @@ function handle_data()
       roomList.splice(i,1);
     }
   }
-    
-//  document.getElementById('status').innerHTML=Math.random();
-  var s='';
-//  alert(store.length);
-//  for(var i=0;i<store.length;i++) s+=store[i][0][4][0][5]+"<br>";
-  for(var i=0;i<rooms;i++) s+=roomList[i]+"<br>";
-  document.getElementById('status').innerHTML=s;
+
+  var newMemberList=[];
+
+  for(i=0; i<roomCount; i++)
+  {
+    var j=0, roomName=data[i][0];
+    while(1)
+    {
+      var m=null; try { if(typeof data[i][4][j] != 'undefined') m=data[i][4][j]; } catch(e) {}
+      if(typeof m == 'undefined') break; if(m==null) break;
+      var memberKey = roomName + "\t" + m[0] + "\t" + m[1];
+      newMemberList.push(memberKey);
+      if(!in_array(memberKey, memberList))
+      {
+        on_member_add(roomName, m);
+        memberList.push(memberKey);
+      }
+      j++;
+    }
+  }
+
+  for(i=memberList.length-1; i>=0; i--)
+  {
+    if(!in_array(memberList[i], newMemberList))
+    {
+      on_member_delete(memberList[i]);
+      memberList.splice(i,1);
+    }
+  }
+
 }
 
 function status_update_start()
 {
+  WORKPLACE=document.getElementById('status1');
   timer=setTimeout(get_data, START_INTERVAL);
 }
