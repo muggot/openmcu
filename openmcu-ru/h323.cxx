@@ -560,7 +560,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJSStart()
 {
   PStringStream html;
   BeginPage(html,"Connections","window.l_connections","window.l_info_connections");
-  html << "<script src='http://127.0.0.1:1420/status.js'></script>"
+  html << "<script src='status.js'></script>"
     << "<script>var loadCounter=0;function page_reload(){"
     << "if(loadCounter<=0) location.href=location.href;"
     << "document.getElementById('status2').innerHTML=loadCounter;"
