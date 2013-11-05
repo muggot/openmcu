@@ -1149,7 +1149,7 @@ static struct PluginCodec_Definition h261CodecDefn[] =
     PluginCodec_H323VideoCodec_h261,    // h323CapabilityType 
     NULL                                // h323CapabilityData
   },
-
+/*
   { 
     // 720p only encoder (only CIF)
     PLUGIN_CODEC_VERSION_OPTIONS,       // codec API version
@@ -1224,7 +1224,7 @@ static struct PluginCodec_Definition h261CodecDefn[] =
     PluginCodec_H323VideoCodec_h261,    // h323CapabilityType 
     NULL                                // h323CapabilityData
   }
-
+*/
 };
 
 
