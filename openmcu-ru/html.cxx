@@ -446,7 +446,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]);
     s << IntegerItem(name, atoi(params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]), 1, MAX_FRAME_RATE);
     s << IntegerItem(name, atoi(params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]), 64, 4000);
-    s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Initial audio status")], "unmute,mute");
+    s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Initial audio status")], "default,mute");
   }
   if(keys.GetSize() == 0)
   {
@@ -454,7 +454,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     s << StringItem("test", "");
     s << IntegerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
     s << IntegerItem("test", 384, 64, 4000);
-    s << SelectItem("test", "unmute", "mute,unmute");
+    s << SelectItem("test", "default", "default,mute");
   }
 
   s << EndTable();
@@ -492,7 +492,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << IntegerItem(name, atoi(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]), 1, MAX_FRAME_RATE);
     s << IntegerItem(name, atoi(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]), 64, 4000);
     s << IntegerItem(name, atoi(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]), 64, 4000);
-    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Initial audio status")], "unmute,mute");
+    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Initial audio status")], "default,mute");
   }
   if(keys.GetSize() == 0)
   {
@@ -501,7 +501,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << IntegerItem("test", DefaultVideoFrameRate, 1, MAX_FRAME_RATE);
     s << IntegerItem("test", 384, 64, 4000);
     s << IntegerItem("test", 384, 64, 4000);
-    s << SelectItem("test", "unmute", "mute,unmute");
+    s << SelectItem("test", "default", "default,mute");
   }
   s << EndTable();
 

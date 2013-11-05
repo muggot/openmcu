@@ -181,7 +181,7 @@ class TablePConfigPage : public PConfigPage
 
    PString NewItemArray(PString name)
    {
-     return "<td><table id='"+name+"' cellspacing='3'><tbody>";
+     return "<td><table id='"+name+"' cellspacing='0' style='margin-top:-1px;margin-left:-1px;margin-right:1px;'><tbody>";
    }
    PString EndItemArray()
    {
