@@ -219,7 +219,7 @@ BOOL DefaultPConfigPage::Post(PHTTPRequest & request, const PStringToString & da
 
   section = sectionName;
 
-  if(cfg.GetBoolean("RESET", FALSE))
+  if(cfg.GetBoolean("RESTORE DEFAULTS", FALSE))
     cfg.DeleteSection();
 
   process.OnContinue();
@@ -250,7 +250,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << BeginTable();
 
   // Reset section
-  s << BoolField("RESET", FALSE);
+  s << BoolField("RESTORE DEFAULTS", FALSE);
   // Language
   s << SelectField("Language", cfg.GetString("Language"), ",EN,RU");
   // OpenMCU Server Id
@@ -338,7 +338,7 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
-  s << BoolField("RESET", FALSE);
+  s << BoolField("RESTORE DEFAULTS", FALSE);
   s << IntegerField("Video frame rate", cfg.GetInteger("Video frame rate", DefaultVideoFrameRate), 1, MAX_FRAME_RATE, 12, "range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)");
 
   s << SeparatorField("H.263");
@@ -401,7 +401,7 @@ RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & t
     }
   }
 
-  s << BoolField("RESET", FALSE);
+  s << BoolField("RESTORE DEFAULTS", FALSE);
   s << StringField(RecorderFfmpegPathKey, mcu.vr_ffmpegPath, 35, pathInfo);
   s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 35,
       "<b>%V</b> - input video stream, <b>%A</b> - input audio stream, <b>%F</b> - frame size, "
@@ -624,7 +624,7 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
   OpenMCU & mcu = OpenMCU::Current();
 
   // Reset section
-  Add(new PHTTPBooleanField("RESET", cfg.GetBoolean("RESET", FALSE)));
+  Add(new PHTTPBooleanField("RESTORE DEFAULTS", FALSE));
 
   mcu.GetEndpoint().Initialise(cfg, this);
   if(mcu.GetEndpoint().behind_masq){PStringStream msq; msq<<"Masquerading as "<<*(mcu.GetEndpoint().masqAddressPtr); mcu.HttpWriteEvent(msq);}
@@ -647,7 +647,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
-  s << BoolField("RESET", FALSE);
+  s << BoolField("RESTORE DEFAULTS", FALSE);
 
   // SIP Listener setup
   mcu.sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();

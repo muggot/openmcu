@@ -162,7 +162,7 @@ class TablePConfigPage : public PConfigPage
    PString BeginTable()
    { return "<form method='POST'><table id='table' cellspacing='8'><tbody>"; }
    PString EndTable()
-   { return "<tr></tr></tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='False' type='reset'></p></form>"; }
+   { return "<tr></tr></tbody></table><p><input name='submit' value='Accept' type='submit'><input name='reset' value='Reset' type='reset'></p></form>"; }
    PString buttons()
    {
      PString s;
@@ -231,7 +231,7 @@ class TablePConfigPage : public PConfigPage
          value = dataArray[i].Right(dataArray[i].GetSize()-valuePos-2);
        cfg.SetString(dataArray[i].Tokenise("=")[0], value);
      }
-     if(cfg.GetBoolean("RESET", FALSE))
+     if(cfg.GetBoolean("RESTORE DEFAULTS", FALSE))
        cfg.DeleteSection();
      process.OnContinue();
      return TRUE;
