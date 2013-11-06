@@ -1,13 +1,13 @@
 var fortyTwo=42
 
-  ,STEPS_TO_REMEMBER = 10
+  ,STEPS_TO_REMEMBER = 2
   ,START_DELAY       = 150
   ,UPDATE_INTERVAL   = 5000
   ,UPDATE_RETRIES    = 5
   ,REQUEST_TIMEOUT   = 4000
   ,DATA_HANDLE_DELAY = 25
   ,WORKPLACE         = null
-  ,OFFLINE_PREFIX    = "<B>[Offline] </B>" //localize it :)
+  ,OFFLINE_PREFIX    = "<B>[Offline] </B>"
   ,OFFLINE_SUFFIX    = ""
   ,HIDDEN_PREFIX     = "<B>[Hidden] </B>"
   ,HIDDEN_SUFFIX     = ""
@@ -59,10 +59,8 @@ var fortyTwo=42
     COL_FPS        = window.l_connections_COL_FPS       ;
     WORD_ROOM      = window.l_connections_word_room     ;
   }
-                       
-                       
-                       
-                       
+
+
 function in_array(needle, haystack)
 { for(var i=0; i<haystack.length; i++) if(haystack[i]==needle) return true;
   return false;
@@ -151,17 +149,46 @@ function member_get_nice_bytes(m)
   return m[5] + "<br>" + m[6] + "<br>" + m[7] + "<br>" + m[8];
 }
 
-function member_get_nice_kbps(m)
+function member_get_nice_kbps(roomName, m)
 {
   if(!m[0]) return "-";
   if(m[4]<=0) return "-";
   if(m[1]==CACHE_NAME) return "-";
   if(m[1]==FILE_RECORDER_NAME) return "-";
-  return "" +
+
+  if(store.length>1)
+  {
+    var s=store[store.length-2];
+    for(var i=0;i<s.length;i++)
+    {
+      if(s[i][0]==roomName)
+      {
+        var j=0;
+        while(1)
+        {
+          var m0=null; try { if(typeof s[i][4][j] != 'undefined') m0=s[i][4][j]; } catch(e) {}
+          if(typeof m0 == 'undefined') break; if(m0==null) break;
+          if(m0[0]) if(m0[1] == m[1])
+          {
+            var ms=m[4]-m0[4];
+            if(ms<=1) return ":(";
+            return "<font color='#001'>" +
+              integer_pad_float( (m[5]-m0[5])*8 / ms, 1) + "<br>" +
+              integer_pad_float( (m[6]-m0[6])*8 / ms, 1) + "<br>" +
+              integer_pad_float( (m[7]-m0[7])*8 / ms, 1) + "<br>" +
+              integer_pad_float( (m[8]-m0[8])*8 / ms, 1) + "</font>";
+          }
+          j++;
+        }
+      }
+    }
+  }
+
+  return "<font color='gray'>" +
     integer_pad_float(m[5] * 8 / m[4], 1) + "<br>" +
     integer_pad_float(m[6] * 8 / m[4], 1) + "<br>" +
     integer_pad_float(m[7] * 8 / m[4], 1) + "<br>" +
-    integer_pad_float(m[8] * 8 / m[4], 1);
+    integer_pad_float(m[8] * 8 / m[4], 1) + "</font>";
 }
 
 function member_get_nice_fps(m)
@@ -347,7 +374,7 @@ function on_member_add(room, member)
 
   td=tr.insertCell(5); //Kbit/s
   td.style.textAlign='right';
-  td.innerHTML = member_get_nice_kbps(member);
+  td.innerHTML = member_get_nice_kbps(room, member);
 
   td=tr.insertCell(6); //FPS
   td.style.textAlign='right';
@@ -373,7 +400,7 @@ function update_member(room, member)
   t.rows[row].cells[2].innerHTML = member_get_nice_codecs(member);
   t.rows[row].cells[3].innerHTML = member_get_nice_packets(member);
   t.rows[row].cells[4].innerHTML = member_get_nice_bytes(member);
-  t.rows[row].cells[5].innerHTML = member_get_nice_kbps(member);
+  t.rows[row].cells[5].innerHTML = member_get_nice_kbps(room, member);
   t.rows[row].cells[6].innerHTML = member_get_nice_fps(member);
 }
 
