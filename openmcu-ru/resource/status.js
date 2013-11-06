@@ -158,10 +158,10 @@ function member_get_nice_kbps(m)
   if(m[1]==CACHE_NAME) return "-";
   if(m[1]==FILE_RECORDER_NAME) return "-";
   return "" +
-    integer_pad_float(m[5] * 80 / m[4], 1) + "<br>" +
-    integer_pad_float(m[6] * 80 / m[4], 1) + "<br>" +
-    integer_pad_float(m[7] * 80 / m[4], 1) + "<br>" +
-    integer_pad_float(m[8] * 80 / m[4], 1);
+    integer_pad_float(m[5] * 8 / m[4], 1) + "<br>" +
+    integer_pad_float(m[6] * 8 / m[4], 1) + "<br>" +
+    integer_pad_float(m[7] * 8 / m[4], 1) + "<br>" +
+    integer_pad_float(m[8] * 8 / m[4], 1);
 }
 
 function member_get_nice_fps(m)
