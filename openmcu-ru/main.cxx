@@ -50,8 +50,13 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
 {
   if(!logo)
   {
+#  ifdef _WIN32
+   PString logoPath = PString(SYS_RESOURCE_DIR)+"\\logo.bmp";
+#  else
+   PString logoPath = PString(SYS_RESOURCE_DIR)+"/logo.bmp";
+#  endif
    FILE *fs;
-   fs=fopen("logo.bmp","r"); 
+   fs=fopen(logoPath,"r"); 
    if(fs)
    {
     unsigned char *p_buffer;
