@@ -53,7 +53,7 @@
 #define _CRT_SECURE_NO_WARNINGS 1
 
 #ifdef _WIN32
-#include <openh323buildopts.h>
+//#include <openh323buildopts.h>
 #if H323_STATIC_H261
   #define OPAL_STATIC_CODEC 1
 #endif
