@@ -552,7 +552,7 @@ BOOL Conference::RewriteMembersConf()
   PTRACE(6,"Conference\tRewriteMembersConf");
   FILE *membLst;
 #ifdef SYS_CONFIG_DIR
-  PString name=PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + number + ".conf";
+  PString name=PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "members_" + number + ".conf";
 #else
   PString name="members_"+number+".conf";
 #endif
