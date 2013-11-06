@@ -1,4 +1,5 @@
 #include <ptlib.h>
+#include <ptclib/random.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -49,6 +50,7 @@ class TablePConfigPage : public PConfigPage
      rowColor = "#d9e5e3";
      itemColor = "#f7f4d8";
      firstEditRow = 1;
+     firstDeleteRow = 1;
      buttonUp = buttonDown = buttonClone = buttonDelete = 0;
      columnStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-bottom:2px solid white;border-right:2px solid white;";
      rowStyle = "<td align='left' style='background-color:"+rowColor+";vertical-align:top;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
@@ -136,7 +138,9 @@ class TablePConfigPage : public PConfigPage
    }
    PString StringItem(PString name, PString value, int size=12, int readonly=FALSE)
    {
-     PString s = itemStyle+"<input type='text' name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
+     PString id = PString(rand());
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
+     s += itemStyle+"<input type='text' name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
@@ -144,30 +148,38 @@ class TablePConfigPage : public PConfigPage
    {
      if(passwordDecrypt(value) == value)
        value = passwordCrypt(value);
-     passwordFields.SetAt(name, value);
-     PString s = itemStyle+"<input type='password' name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
+     PString id = PString(rand());
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
+     s += itemStyle+"<input type='password' name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
+     passwordFields.SetAt(id, value);
      return s;
    }
    PString IntegerItem(PString name, int value, int min=-2147483647, int max=2147483647, int size=12, int readonly=FALSE)
    {
-     PString s = itemStyle+"<input name='MIN' value='"+PString(min)+"' type='hidden'>"
-                           "<input name='MAX' value='"+PString(max)+"' type='hidden'>"
-                           "<input type=number name='"+name+"' size='"+PString(size)+"' min='"+PString(min)+"' max='"+PString(max)+"' value='"+PString(value)+"' style='"+inputStyle+"'";
+     PString id = PString(rand());
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
+     s += itemStyle+"<input name='MIN' value='"+PString(min)+"' type='hidden'>"
+                    "<input name='MAX' value='"+PString(max)+"' type='hidden'>"
+                    "<input type=number name='"+name+"' size='"+PString(size)+"' min='"+PString(min)+"' max='"+PString(max)+"' value='"+PString(value)+"' style='"+inputStyle+"'";
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
    PString BoolItem(PString name, BOOL value)
    {
-     PString s = itemStyle+"<input name='"+name+"' value='FALSE' type='hidden' style='"+inputStyle+"'>"
-                           "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"'";
+     PString id = PString(rand());
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
+     s += itemStyle+"<input name='"+name+"' value='FALSE' type='hidden' style='"+inputStyle+"'>"
+                    "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"'";
      if(value) s +=" checked='yes'></input></td>"; else s +="></input></td>";
      return s;
    }
    PString SelectItem(PString name, PString value, PString values, int width=120)
    {
+     PString id = PString(rand());
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
      PStringArray data = values.Tokenise(",");
-     PString s = itemStyle+"<select name='"+name+"' width='"+PString(width)+"' style='width:"+PString(width)+"px;"+inputStyle+"'>";
+     s += itemStyle+"<select name='"+name+"' width='"+PString(width)+"' style='width:"+PString(width)+"px;"+inputStyle+"'>";
      for(PINDEX i = 0; i < data.GetSize(); i++)
      {
        if(data[i] == value)
@@ -193,7 +205,7 @@ class TablePConfigPage : public PConfigPage
      s += "<input type=button value='↑' onClick='rowUp(this,0)' style='"+buttonStyle+"'>";
      s += "<input type=button value='↓' onClick='rowDown(this)' style='"+buttonStyle+"'>";
      s += "<input type=button value='+' onClick='rowClone(this)' style='"+buttonStyle+"'>";
-     s += "<input type=button value='-' onClick='rowDelete(this)' style='"+buttonStyle+"'>";
+     s += "<input type=button value='-' onClick='rowDelete(this,0)' style='"+buttonStyle+"'>";
      s += "</td>";
      return s;
    }
@@ -212,7 +224,7 @@ class TablePConfigPage : public PConfigPage
      if(buttonUp) s += "<input type=button value='↑' onClick='rowUp(this,"+PString(firstEditRow)+")' style='"+buttonStyle+"'>";
      if(buttonDown) s += "<input type=button value='↓' onClick='rowDown(this)' style='"+buttonStyle+"'>";
      if(buttonClone) s += "<input type=button value='+' onClick='rowClone(this)' style='"+buttonStyle+"'>";
-     if(buttonDelete) s += "<input type=button value='-' onClick='rowDelete(this)' style='"+buttonStyle+"'>";
+     if(buttonDelete) s += "<input type=button value='-' onClick='rowDelete(this,"+PString(firstDeleteRow)+")' style='"+buttonStyle+"'>";
      return s;
    }
    PString jsRowUp() { return "<script type='text/javascript'>\n"
@@ -247,12 +259,14 @@ class TablePConfigPage : public PConfigPage
                      "}\n"
                      "</script>\n"; }
    PString jsRowDelete() { return "<script type='text/javascript'>\n"
-                     "function rowDelete(obj)\n"
+                     "function rowDelete(obj,firstDeleteRow)\n"
                      "{\n"
                      "  var table = obj.parentNode.parentNode.parentNode.parentNode;\n"
                      "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
                      "  if(table.id == 'table1')\n"
                      "  {\n"
+                     "    if(rowNum < firstDeleteRow)\n"
+                     "      return;\n"
                      "    table.deleteRow(rowNum);\n"
                      "  } else {\n"
                      "    var table2 = obj.parentNode.parentNode.parentNode;\n"
@@ -282,11 +296,13 @@ class TablePConfigPage : public PConfigPage
      cfg.DeleteSection();
      for(PINDEX i = 0; i < dataArray.GetSize(); i++)
      {
+       PString key = dataArray[i].Tokenise("=")[0];
+       if(key == "") continue;
        PString value = "";
        PINDEX valuePos = dataArray[i].Find("=");
        if(valuePos != P_MAX_INDEX)
          value = dataArray[i].Right(dataArray[i].GetSize()-valuePos-2);
-       cfg.SetString(dataArray[i].Tokenise("=")[0], value);
+       cfg.SetString(key, value);
      }
      if(cfg.GetBoolean("RESTORE DEFAULTS", FALSE))
        cfg.DeleteSection();
@@ -296,6 +312,7 @@ class TablePConfigPage : public PConfigPage
    BOOL OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo & info, const PStringToString & data, const PHTTPConnectionInfo & connectInfo)
    {
      PStringArray entityData = connectInfo.GetEntityBody().Tokenise("&");
+     PString TableItemId = "";
      PINDEX num = 0;
      int integerMin=-2147483647, integerMax=2147483647, integerIndex=-1;
      PString curKey = "";
@@ -314,6 +331,7 @@ class TablePConfigPage : public PConfigPage
        if(key == "submit") continue;
        if(key == "MIN") { integerMin = atoi(value); continue; }
        if(key == "MAX") { integerMax = atoi(value); integerIndex=i+1; continue; }
+       if(key == "TableItemId") { TableItemId = value; continue; }
 
        if(num == 1) curKey = key;
        PINDEX asize = dataArray.GetSize();
@@ -322,7 +340,7 @@ class TablePConfigPage : public PConfigPage
          num = 0;
          dataArray.AppendString(value+"=");
        } else {
-         if(passwordFields.GetAt(key) == NULL) value.Replace(","," ",TRUE);
+         if(passwordFields.GetAt(TableItemId) == NULL) value.Replace(","," ",TRUE);
          if(num != 1) dataArray[asize-1] += ",";
          if(integerIndex == i)
          {
@@ -331,9 +349,9 @@ class TablePConfigPage : public PConfigPage
            if(tmp > integerMax) tmp = integerMax;
            dataArray[asize-1] += PString(tmp);
          } else {
-           if(passwordFields.GetAt(key) != NULL)
+           if(passwordFields.GetAt(TableItemId) != NULL)
            {
-             if(passwordFields(key) != value)
+             if(passwordFields(TableItemId) != value)
                value = passwordCrypt(value);
            }
            dataArray[asize-1] += value;
@@ -349,7 +367,7 @@ class TablePConfigPage : public PConfigPage
    PString columnStyle, rowStyle, rowTextStyle, rowArrayStyle, itemStyle, itemInfoStyle, textStyle, inputStyle, buttonStyle;
    PStringArray dataArray;
    PString columnColor, rowColor, itemColor;
-   int firstEditRow;
+   int firstEditRow, firstDeleteRow;
    int buttonUp, buttonDown, buttonClone, buttonDelete;
    PStringToString passwordFields;
 };
@@ -360,6 +378,26 @@ class GeneralPConfigPage : public TablePConfigPage
 {
   public:
     GeneralPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  private:
+    PConfig cfg;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class ManagingUsersPConfigPage : public TablePConfigPage
+{
+  public:
+    ManagingUsersPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  private:
+    PConfig cfg;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class ManagingGroupsPConfigPage : public TablePConfigPage
+{
+  public:
+    ManagingGroupsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
   private:
     PConfig cfg;
 };

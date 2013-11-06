@@ -179,10 +179,22 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // allow/disallow self-invite:
   allowLoopbackCalls = cfg.GetBoolean(AllowLoopbackCallsKey, FALSE);
 
-  // Get the HTTP basic authentication info
-  PString adminUserName = cfg.GetString(UserNameKey);
-  PString adminPassword = PHTTPPasswordField::Decrypt(cfg.GetString(PasswordKey));
-  PHTTPSimpleAuth authority(GetName(), adminUserName, adminPassword);
+  // Get the HTTP authentication info
+  MCUConfig("Managing Groups").SetString("administrator", "");
+  MCUConfig("Managing Groups").SetString("conference creation and full control", "");
+
+  PHTTPMultiSimpAuth authority(GetName());
+  PStringList keysUsers = MCUConfig("Managing Users").GetKeys();
+  for(PINDEX i = 0; i < keysUsers.GetSize(); i++)
+  {
+    PStringArray params = MCUConfig("Managing Users").GetString(keysUsers[i]).Tokenise(",");
+    if(params.GetSize() < 2) continue;
+    if(params[1] == "administrator")
+      authority.AddUser(keysUsers[i], PHTTPPasswordField::Decrypt(params[0]));
+  }
+  //PString adminUserName = cfg.GetString(UserNameKey);
+  //PString adminPassword = PHTTPPasswordField::Decrypt(cfg.GetString(PasswordKey));
+  //PHTTPSimpleAuth authority(GetName(), adminUserName, adminPassword);
 
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
@@ -223,6 +235,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   GeneralPConfigPage * rsrc = new GeneralPConfigPage(*this, "Parameters", "Parameters", authority);
   OnCreateConfigPage(cfg, *rsrc);
   httpNameSpace.AddResource(rsrc, PHTTPSpace::Overwrite);
+
+  // Create the config page - managing users
+  httpNameSpace.AddResource(new ManagingUsersPConfigPage(*this, "ManagingUsers", "Managing Users", authority), PHTTPSpace::Overwrite);
+
+  // Create the config page - managing groups
+  httpNameSpace.AddResource(new ManagingGroupsPConfigPage(*this, "ManagingGroups", "Managing Groups", authority), PHTTPSpace::Overwrite);
 
   // Create the config page - h323 endpoints
   httpNameSpace.AddResource(new H323EndpointsPConfigPage(*this, "H323EndpointsParameters", "H323 Endpoints", authority), PHTTPSpace::Overwrite);

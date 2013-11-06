@@ -349,6 +349,7 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
  menu > li:hover menu {display: block;background-color: #242424;}
 
 <-- #topnav a#menu_param{ background:url(menu_param.png) no-repeat scroll 5% 50% transparent; } -->
+ menu a#menu_users { background:url(menu_left.png) no-repeat scroll 0% 50% transparent; }
  menu a#menu_h323 { background:url(menu_left.png) no-repeat scroll 0% 50% transparent; }
  menu a#menu_sip { background:url(menu_left.png) no-repeat scroll 0% 50% transparent; }
 
@@ -394,8 +395,14 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
    <li><a href='Parameters' id="l_param_general"></a></li>
    <li><a href='VideoParameters' id="l_param_video"></a></li>
    <li><a href='RecordParameters' id="l_param_record"></a></li>
-   <li><a href='#' id="menu_h323" onmouseover="javascript:displayElement('submenu1',true);" onmouseout="javascript:displayElement('submenu1',false);">H.323</a>
+   <li><a href='#' id="menu_users" onmouseover="javascript:displayElement('submenu1',true);" onmouseout="javascript:displayElement('submenu1',false);">Users</a>
     <menu id="submenu1" style="display:none" onmouseover="javascript:displayElement('submenu1',true);" onmouseout="javascript:displayElement('submenu1',false);">
+     <li><a href='ManagingUsers' id="l_param_managing_users"></a></li>
+     <li><a href='ManagingGroups' id="l_param_managing_groups"></a></li>
+    </menu>
+   </li>
+   <li><a href='#' id="menu_h323" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">H.323</a>
+    <menu id="submenu2" style="display:none" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">
      <li><a href='H323Parameters' id="l_param_h323"></a></li>
      <li><a href='H323EndpointsParameters' id="l_param_h323_endpoints"></a></li>
      <li><a href='ReceiveSoundCodecs' id="l_param_receive_sound"></a></li>
@@ -404,8 +411,8 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
      <li><a href='TransmitVideoCodecs' id="l_param_transmit_video"></a></li>
     </menu>
    </li>
-   <li><a href='#' id="menu_sip" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">SIP</a>
-    <menu id="submenu2" style="display:none" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">
+   <li><a href='#' id="menu_sip" onmouseover="javascript:displayElement('submenu3',true);" onmouseout="javascript:displayElement('submenu3',false);">SIP</a>
+    <menu id="submenu3" style="display:none" onmouseover="javascript:displayElement('submenu3',true);" onmouseout="javascript:displayElement('submenu3',false);">
      <li><a href='SIPParameters' id="l_param_sip"></a></li>
      <li><a href='SipEndpointsParameters' id="l_param_sip_endpoints"></a></li>
      <li><a href='SipSoundCodecs' id="l_param_sip_sound"></a></li>
@@ -484,6 +491,8 @@ $BODY$
    document.getElementById("l_manual").innerHTML = window.l_manual;
    document.getElementById("l_settings").innerHTML = window.l_settings;
    document.getElementById("l_param_general").innerHTML = window.l_param_general;
+   document.getElementById("l_param_managing_users").innerHTML = window.l_param_managing_users;
+   document.getElementById("l_param_managing_groups").innerHTML = window.l_param_managing_groups;
    document.getElementById("l_param_h323_endpoints").innerHTML = window.l_param_h323_endpoints;
    document.getElementById("l_param_sip_endpoints").innerHTML = window.l_param_sip_endpoints;
    document.getElementById("l_param_video").innerHTML = window.l_param_video;
@@ -504,6 +513,8 @@ $BODY$
    document.getElementById("l_status").innerHTML = window.l_status;
    document.getElementById("l_connections").innerHTML = window.l_connections;
    document.getElementById("l_records").innerHTML = window.l_records;
+   <!-- меню -->
+   document.getElementById("menu_users").innerHTML = window.l_param_managing_users;
    <!-- управление -->
    if(document.getElementById("l_select_create")) document.getElementById("l_select_create").value = window.l_select_create;
  </script>

@@ -248,12 +248,9 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // OpenMCU Server Id
   s << StringField("OpenMCU Server Id", cfg.GetString("OpenMCU Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 35);
 
-  s << SeparatorField("Security");
-  // HTTP authentication username/password
-  s << StringField(UserNameKey, cfg.GetString(UserNameKey));
-  s << PasswordField(PasswordKey, PHTTPPasswordField::Decrypt(cfg.GetString(PasswordKey)));
 #if P_SSL
   // SSL certificate file.
+  s << SeparatorField("Security");
   PString certificateFile = cfg.GetString(HTTPCertificateFileKey, "server.pem");
   s << StringField(HTTPCertificateFileKey, certificateFile);
   if (!SetServerCertificate(certificateFile, TRUE)) {
@@ -316,6 +313,78 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_general","window.l_info_param_general");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  string = html_page;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ManagingUsersPConfigPage::ManagingUsersPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+  PStringStream html_begin, html_end, html_page, s;
+  buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+  s << BeginTable();
+
+  s << NewRowColumn("User");
+  s << ColumnItem("Password");
+  s << ColumnItem("Group");
+
+  PString groups;
+  PStringList keysGroups = MCUConfig("Managing Groups").GetKeys();
+  for(PINDEX i = 0; i < keysGroups.GetSize(); i++)
+  {
+    if(i != 0) groups += ",";
+    groups += keysGroups[i];
+  }
+
+  PStringList keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    PString name = keys[i];
+    PStringArray params = cfg.GetString(keys[i]).Tokenise(",");
+    s << NewRowInput(name);
+    s << PasswordItem(name, PHTTPPasswordField::Decrypt(params[0]));
+    s << SelectItem(name, params[1], groups, 300);
+  }
+  if(keys.GetSize() == 0)
+  {
+    s << NewRowInput("admin");
+    s << PasswordItem("admin", PHTTPPasswordField::Decrypt(""));
+    s << SelectItem("admin", "administrator", groups, 300);
+  }
+
+  s << EndTable();
+  BuildHTML("");
+  BeginPage(html_begin, "Managing Users", "window.l_param_managing_users", "window.l_info_param_managing_users");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  string = html_page;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ManagingGroupsPConfigPage::ManagingGroupsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+  PStringStream html_begin, html_end, html_page, s;
+  s << BeginTable();
+
+  s << NewRowColumn("Groups");
+
+  PStringList keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    PString name = keys[i];
+    s << NewRowText(name);
+  }
+
+  s << EndTable();
+  BuildHTML("");
+  BeginPage(html_begin, "Managing Groups", "window.l_param_managing_groups", "window.l_nfo_param_managing_groups");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
