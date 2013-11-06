@@ -3005,6 +3005,7 @@ H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _c
   OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
   if(conn->GetEndpointParam("Initial audio status") == "mute without template")
     muteIncoming = TRUE;
+  conn->Unlock();
   conference->AddMember(this);
 }
 
