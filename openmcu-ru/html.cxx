@@ -380,11 +380,12 @@ ManagingGroupsPConfigPage::ManagingGroupsPConfigPage(PHTTPServiceProcess & app,c
   {
     PString name = keys[i];
     s << NewRowText(name);
+    s << InfoItem("");
   }
 
   s << EndTable();
   BuildHTML("");
-  BeginPage(html_begin, "Managing Groups", "window.l_param_managing_groups", "window.l_nfo_param_managing_groups");
+  BeginPage(html_begin, "Managing Groups", "window.l_param_managing_groups", "window.l_info_param_managing_groups");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
