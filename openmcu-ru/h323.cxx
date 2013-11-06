@@ -2312,7 +2312,7 @@ void OpenMCUH323Connection::JoinConference(const PString & roomToJoin)
 
   if(joinSuccess)
   {
-    if(GetEndpointParam("Initial audio status") == "mute")
+    if(GetEndpointParam("Initial audio status") == "mute always")
       conferenceMember->muteIncoming = TRUE;
   }
 }
@@ -3002,6 +3002,9 @@ BOOL OpenMCUH323Connection::OnIncomingVideo(const void * buffer, int width, int 
 H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _conference, OpenMCUH323EndPoint & _ep, const PString & _h323Token, ConferenceMemberId _id, BOOL _isMCU)
   : ConferenceMember(_conference, _id, _isMCU), ep(_ep), h323Token(_h323Token)
 { 
+  OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
+  if(conn->GetEndpointParam("Initial audio status") == "mute without template")
+    muteIncoming = TRUE;
   conference->AddMember(this);
 }
 
