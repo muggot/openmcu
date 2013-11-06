@@ -1811,9 +1811,41 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   PINDEX sortMode=0;
   if(data.Contains("sort")) {sortMode = data("sort").AsInteger(); if(sortMode<0 || sortMode>7) sortMode=0;}
 
-  if(fileList.GetSize()==0) shtml << "The direcory does not contain records at the moment."; else
+  PString freeSpace;
+#ifdef _WIN32
+#else
+  FILE* pfs = popen(PString("df -h ")+dir, "r");
+  if (pfs)
   {
-    shtml << "<table style='border:2px solid #82b8e3'><tr>"
+    PString fs0;
+    char buffer[128];
+    while(!feof(pfs)) if(fgets(buffer, 128, pfs) != NULL) fs0+=buffer;
+    pclose(pfs);
+    PINDEX slashPos=fs0.Find('/', 20);
+    if(slashPos!=P_MAX_INDEX)
+    {
+      BOOL space=FALSE; PINDEX sc=0;
+      for(PINDEX i=slashPos;i<fs0.GetLength();i++)
+      {
+        char c = fs0[i];
+        BOOL csp = c<=32;
+        if(csp && (!space)) { space=TRUE; sc++;}
+        space &= csp;
+        if(sc==3 && (!space))
+        {
+          PINDEX j=i;
+          while((j<fs0.GetLength()) && ((c=fs0[j]) > 32)) {freeSpace += c; j++;}
+          freeSpace += " free.";
+          break;
+        }
+      }
+    }
+  }
+#endif
+
+  if(fileList.GetSize()==0) shtml << "The direcory does not contain records at the moment. " << freeSpace; else
+  {
+    shtml << freeSpace << "<table style='border:2px solid #82b8e3'><tr>"
       << "<th class='h1' style='color:#afc'>N</th>"
       << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=0)?'0':'1') << "'>Date/Time</a></th>"
       << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=2)?'2':'3') << "'>Room</a></th>"
