@@ -484,6 +484,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
           if(fileMember->codec->cacheMode==1)
           { formatString=fileMember->codec->formatString;
             cacheUsersNumber=fileMember->codec->GetCacheUsersNumber();
+            codecCacheMode=fileMember->codec->cacheMode;
           }
           duration = now - member->GetStartTime();
         }
@@ -560,16 +561,9 @@ PString OpenMCUH323EndPoint::GetRoomStatusJSStart()
 {
   PStringStream html;
   BeginPage(html,"Connections","window.l_connections","window.l_info_connections");
-  html << "<script src='status.js'></script>"
-    << "<script>var loadCounter=0;function page_reload(){"
-    << "if(loadCounter<=0) location.href=location.href;"
-    << "document.getElementById('status2').innerHTML=loadCounter;"
-    << "loadCounter--;setTimeout(page_reload, 990);}"
-    << "function status_init(){"
-    << "if(window.status_update_start) setTimeout(status_update_start,500);else{"
-    << "document.getElementById(\"status1\").innerHTML=\"<h1>ERROR: Can not load <font color=red>status.js</font></h1><h2>Page will reload after <span id='status2'>30</span> s</h2>\";"
-    << "loadCounter=30;setTimeout(page_reload, 990);}}setTimeout(status_init,333)</script>"
-    << "<div id=\"status1\"></div>";
+  html
+    << "<script>var loadCounter=0;function page_reload(){if(loadCounter<=0) location.href=location.href;document.getElementById('status2').innerHTML=loadCounter;loadCounter--;setTimeout(page_reload, 990);}function status_init(){if(window.status_update_start) setTimeout(status_update_start,500);else{document.getElementById(\"status1\").innerHTML=\"<h1>ERROR: Can not load <font color=red>status.js</font></h1><h2>Page will reload after <span id='status2'>30</span> s</h2>\";loadCounter=30;setTimeout(page_reload, 990);}}</script>"
+    << "<div id=\"status1\"></div><script src='status.js'></script>";
   EndPage(html,OpenMCU::Current().GetHtmlCopyright());
   return html;
 }
@@ -3003,9 +2997,12 @@ H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _c
   : ConferenceMember(_conference, _id, _isMCU), ep(_ep), h323Token(_h323Token)
 { 
   OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
-  if(conn->GetEndpointParam("Initial audio status") == "mute without template")
-    muteIncoming = TRUE;
-  conn->Unlock();
+  if(conn != NULL)
+  {
+    if(conn->GetEndpointParam("Initial audio status") == "mute without template")
+      muteIncoming = TRUE;
+    conn->Unlock();
+  }
   conference->AddMember(this);
 }
 

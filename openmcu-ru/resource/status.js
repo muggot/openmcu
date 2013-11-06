@@ -1,11 +1,11 @@
 var fortyTwo=42
 
   ,STEPS_TO_REMEMBER = 10
-  ,START_INTERVAL    = 1500
-  ,UPDATE_INTERVAL   = 7000
+  ,START_DELAY       = 150
+  ,UPDATE_INTERVAL   = 5000
   ,UPDATE_RETRIES    = 5
   ,REQUEST_TIMEOUT   = 4000
-  ,DATA_HANDLE_DELAY = 333
+  ,DATA_HANDLE_DELAY = 25
   ,WORKPLACE         = null
   ,OFFLINE_PREFIX    = "<B>[Offline] </B>" //localize it :)
   ,OFFLINE_SUFFIX    = ""
@@ -16,6 +16,15 @@ var fortyTwo=42
   ,VIDEO_OUT_STR     = "Video Out"
   ,VIDEO_IN_STR      = "Video In"
   ,DAYS_STR          = "day(s)"
+  ,COL_NAME          = "Name"
+  ,COL_DURATION      = "Duration"
+  ,COL_RTP           = "RTP Channel: Codec"
+  ,COL_PACKETS       = "Packets"
+  ,COL_BYTES         = "Bytes"
+  ,COL_KBPS          = "Kbit/s"
+  ,COL_FPS           = "FPS"
+  ,FILE_RECORDER_NAME= "file recorder"
+  ,CACHE_NAME        = "cache"
   ,data              = []
   ,gettingData       = 0
   ,getDataErrorCount = 0
@@ -26,6 +35,7 @@ var fortyTwo=42
   ,store             = []
   ,timer             = null
   ,xro               = null
+  ,cache_fps         = []
   ;
 
 function in_array(needle, haystack)
@@ -50,11 +60,14 @@ function getTableByRoomName(roomName)
 function findMemberInTable(objTable, memberName, memberId)
 {
   var online = memberId != 0;
-  var searchStr = (online?"":OFFLINE_PREFIX) + memberName + (online?"":OFFLINE_SUFFIX);
+  var visible = (memberName!=CACHE_NAME) && (memberName!=FILE_RECORDER_NAME);
+  var searchStr = (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) + memberName + (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX);
   for(var i=objTable.rows.length-1; i>=0; i--)
   {
     if(objTable.rows[i].cells[0].innerHTML == searchStr) return i;
   }
+//special for firefox:
+  searchStr = searchStr.toLowerCase(); for(var i=objTable.rows.length-1; i>=0; i--) if(objTable.rows[i].cells[0].innerHTML.toLowerCase() == searchStr) return i;
   return -1;
 }
 
@@ -84,8 +97,8 @@ function member_get_nice_duration(m)
 function member_get_nice_codecs(m)
 {
   if(!m[0]) return "-";
-  if(m[1]=="file recorder") return "-";
-  if(m[1]=="cache") return "<nobr><b>" + VIDEO_OUT_STR + ":</b> " + m[14] + "</nobr>";
+  if(m[1]==FILE_RECORDER_NAME) return "-";
+  if(m[1]==CACHE_NAME) return "<nobr><b>" + VIDEO_OUT_STR + ":</b> " + m[14] + "</nobr>";
 
   var s=
     "<nobr><b>" + AUDIO_IN_STR  + ":</b> " + m[ 9] + "</nobr><br>" +
@@ -100,16 +113,16 @@ function member_get_nice_codecs(m)
 function member_get_nice_packets(m)
 {
   if(!m[0]) return "-";
-  if(m[1]=="cache") return "-";
-  if(m[1]=="file recorder") return "-";
+  if(m[1]==CACHE_NAME) return "-";
+  if(m[1]==FILE_RECORDER_NAME) return "-";
   return m[18] + "<br>" + m[19] + "<br>" + m[20] + "<br>" + m[21];
 }
 
 function member_get_nice_bytes(m)
 {
   if(!m[0]) return "-";
-  if(m[1]=="cache") return "-";
-  if(m[1]=="file recorder") return "-";
+  if(m[1]==CACHE_NAME) return "-";
+  if(m[1]==FILE_RECORDER_NAME) return "-";
   return m[5] + "<br>" + m[6] + "<br>" + m[7] + "<br>" + m[8];
 }
 
@@ -117,31 +130,68 @@ function member_get_nice_kbps(m)
 {
   if(!m[0]) return "-";
   if(m[4]<=0) return "-";
-  if(m[1]=="cache") return "-";
-  if(m[1]=="file recorder") return "-";
+  if(m[1]==CACHE_NAME) return "-";
+  if(m[1]==FILE_RECORDER_NAME) return "-";
   return "" +
-    Math.floor(m[5] * 80 / m[4] + 0.5)/10 + "<br>" +
-    Math.floor(m[6] * 80 / m[4] + 0.5)/10 + "<br>" +
-    Math.floor(m[7] * 80 / m[4] + 0.5)/10 + "<br>" +
-    Math.floor(m[8] * 80 / m[4] + 0.5)/10;
+    integer_pad_float(m[5] * 80 / m[4], 1) + "<br>" +
+    integer_pad_float(m[6] * 80 / m[4], 1) + "<br>" +
+    integer_pad_float(m[7] * 80 / m[4], 1) + "<br>" +
+    integer_pad_float(m[8] * 80 / m[4], 1);
 }
 
 function member_get_nice_fps(m)
 {
   if(!m[0]) return "-";
   if(m[4]<=0) return "-";
-  if(m[1]=="file recorder") return "-";
-  if(m[1]=="cache") return "<nobr><b><font color='green'>" + m[17] + " x</font> </b>" + Math.floor(m[16]*100 + 0.55)/100 + "</nobr>";
-  return "<br><br>" +
-    Math.floor(m[15]*100 + 0.55)/100 + "<br>" + 
-    Math.floor(m[16]*100 + 0.55)/100 + "<br>";
+  if(m[1]==FILE_RECORDER_NAME) return "-";
+  if(m[1]==CACHE_NAME) return "<nobr><b><font color='green'>" + m[17] + " x</font> </b>" + integer_pad_float(m[16], 2) + "</nobr>";
+  var s="<br><br>" +  integer_pad_float(m[15], 2) + "<br>";
+  if(m[13]==2)
+  {
+    return s + member_get_cache_fps(m);
+  } else return s+integer_pad_float(m[16],2);
 }
 
+function member_get_cache_fps(m)
+{
+  var fs = m[14]; // formstString
+  var fps='';
+  try
+  {
+    if(typeof cache_fps[fs] != 'undefined') fps=cache_fps[fs];
+  } catch(e) {}
+  if(fps!='') return fps;
 
-function add_unique(needle, haystack)
-{ for(var i=0; i<haystack.length; i++) if(haystack[i]==needle) return haystack;
-  haystack.push(needle);
-  return haystack;
+  fps="<font color='red'>err</font>";
+  cache_fps[fs]=fps;
+
+  var i=0, roomName = fs.substring(fs.indexOf('_')+1, fs.lastIndexOf('/'));
+  while (i<roomCount) if(data[i][0] = roomName) break; else i++;
+  if(i==roomCount) return fps;
+
+  var j=0;
+  while(1)
+  {
+    var c=null; try { if(typeof data[i][4][j] != 'undefined') c=data[i][4][j]; } catch(e) {}
+    if(typeof c == 'undefined') return fps;
+    if(c==null) return fps;
+    if(!c[0]) { j++; continue; }
+    if((c[13] != 1) || (c[14] != fs)) { j++; continue; }
+
+    fps="<font color='green'>" + integer_pad_float(c[16],2) + "</font>";
+    cache_fps[fs]=fps;
+    return fps;
+  }
+  return fps;
+}
+
+function integer_pad_float(v, f)
+{
+  var m=10; if(f==2) m=100; if(f==3) m=1000;
+  var s=""+(Math.round(v*m)/m)+"";
+  if(s.indexOf('.') == -1) s+='.';
+  while(s.length - (s.lastIndexOf('.')) < f+1) s+="0";
+  return s;
 }
 
 function createRequestObject()
@@ -222,15 +272,14 @@ function on_create_new_room(r)
   d.innerHTML='<b>' + r + '</b>'
     + '<table id="r_t_' + r + '" class="table table-striped table-bordered table-condensed">'
     + "<tr>"
-      + "<th>&nbsp;Name&nbsp;</th>"
-      + "<th>&nbsp;Duration&nbsp;</th>"
-      + "<th>&nbsp;RTP Channel: Codec&nbsp;</th>"
-      + "<th>&nbsp;Packets&nbsp;</th>"
-      + "<th>&nbsp;Bytes&nbsp;</th>"
-      + "<th>&nbsp;Kbit/s&nbsp;</th>"
-      + "<th>&nbsp;FPS&nbsp;</th>"
+      + "<th>&nbsp;"+COL_NAME    +"&nbsp;</th>"
+      + "<th>&nbsp;"+COL_DURATION+"&nbsp;</th>"
+      + "<th>&nbsp;"+COL_RTP     +"&nbsp;</th>"
+      + "<th>&nbsp;"+COL_PACKETS +"&nbsp;</th>"
+      + "<th>&nbsp;"+COL_BYTES   +"&nbsp;</th>"
+      + "<th>&nbsp;"+COL_KBPS    +"&nbsp;</th>"
+      + "<th>&nbsp;"+COL_FPS     +"&nbsp;</th>"
     + "</tr>"
-
     + '</table>';
   WORKPLACE.appendChild(d);
 }
@@ -244,6 +293,8 @@ function on_delete_room(r)
 function on_member_add(room, member)
 {
   var t=getTableByRoomName(room); if(t==null) return;
+
+  try { if(typeof member[2] == 'undefined') member[2]=1; } catch(e) {}
 
   var
     memberName  = member[1],
@@ -303,6 +354,8 @@ function update_member(room, member)
 
 function handle_data()
 { // new data block 'data' just received from server
+  cache_fps = [];
+
   roomCount=data.length;
   var newRooms=[], i=0;
   for(i=0; i<roomCount; i++)
@@ -355,12 +408,7 @@ function handle_data()
       memberList.splice(i,1);
     }
   }
-//  alert(data);
-
 }
 
-function status_update_start()
-{
-  WORKPLACE=document.getElementById('status1');
-  timer=setTimeout(get_data, START_INTERVAL);
-}
+WORKPLACE=document.getElementById('status1');
+timer=setTimeout(get_data, START_DELAY);
