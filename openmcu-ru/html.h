@@ -1,5 +1,4 @@
 #include <ptlib.h>
-#include <ptclib/random.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -49,16 +48,17 @@ class TablePConfigPage : public PConfigPage
      columnColor = "#d9e5e3";
      rowColor = "#d9e5e3";
      itemColor = "#f7f4d8";
+     itemInfoColor = "#f7f4d8";
      firstEditRow = 1;
      firstDeleteRow = 1;
      buttonUp = buttonDown = buttonClone = buttonDelete = 0;
      columnStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-bottom:2px solid white;border-right:2px solid white;";
-     rowStyle = "<td align='left' style='background-color:"+rowColor+";vertical-align:top;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     rowTextStyle = "<td align='left' style='background-color:"+rowColor+";vertical-align:top;padding:4px;padding-top:0px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     rowArrayStyle = "<td align='left' style='background-color:"+itemColor+";vertical-align:top;padding:4px;'>";
-     itemStyle = "<td align='left' style='background-color:"+itemColor+";vertical-align:top;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     itemInfoStyle = "<td align='left' style='background-color:#f7f4d8;padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     textStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;padding-top:10px;";
+     rowStyle = "<td align='left' style='background-color:"+rowColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     rowTextStyle = "<td align='left' style='background-color:"+rowColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     rowArrayStyle = "<td align='left' style='background-color:"+itemColor+";padding:4px;'>";
+     itemStyle = "<td align='left' style='background-color:"+itemColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     itemInfoStyle = "<td align='left' style='background-color:"+itemInfoColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     textStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
      inputStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
      buttonStyle = "margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;width:24px;";
    }
@@ -366,7 +366,7 @@ class TablePConfigPage : public PConfigPage
    PConfig cfg;
    PString columnStyle, rowStyle, rowTextStyle, rowArrayStyle, itemStyle, itemInfoStyle, textStyle, inputStyle, buttonStyle;
    PStringArray dataArray;
-   PString columnColor, rowColor, itemColor;
+   PString columnColor, rowColor, itemColor, itemInfoColor;
    int firstEditRow, firstDeleteRow;
    int buttonUp, buttonDown, buttonClone, buttonDelete;
    PStringToString passwordFields;

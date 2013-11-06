@@ -657,7 +657,7 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
   if(keys.GetSize() < 2)
   {
     s << NewRowInput("room101", 15);
-    s << SelectItem("room101", "allow", "allow,deny");
+    s << SelectItem("room101", "deny", "allow,deny");
     s << StringItem("room101", "", 50);
   }
   s << EndTable();
