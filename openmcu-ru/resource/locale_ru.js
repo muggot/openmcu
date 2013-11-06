@@ -1,6 +1,25 @@
 window.l_welcome = 'OpenMCU-ru';
 window.l_status = 'Состояние';
+
 window.l_connections = 'Подключения';
+window.l_connections_OFFLINE_PREFIX    = "<B>[Отключён] </B>"
+window.l_connections_OFFLINE_SUFFIX    = ""
+window.l_connections_HIDDEN_PREFIX     = "<B>[Системный] </B>"
+window.l_connections_HIDDEN_SUFFIX     = ""
+window.l_connections_AUDIO_OUT_STR     = "Аудиовыход"
+window.l_connections_AUDIO_IN_STR      = "Аудиовход"
+window.l_connections_VIDEO_OUT_STR     = "Видеовыход"
+window.l_connections_VIDEO_IN_STR      = "Видеовход"
+window.l_connections_DAYS_STR          = "д."
+window.l_connections_COL_NAME          = "Имя"
+window.l_connections_COL_DURATION      = "Длительность"
+window.l_connections_COL_RTP           = "RTP-канал и кодек"
+window.l_connections_COL_PACKETS       = "Пакеты"
+window.l_connections_COL_BYTES         = "Байты"
+window.l_connections_COL_KBPS          = "Кбит/с"
+window.l_connections_COL_FPS           = "Кадр/с"
+window.l_connections_word_room         = "Конференция"
+
 window.l_records = 'Видеозаписи';
 window.l_control = 'Управление';
 window.l_rooms = 'Комнаты';

@@ -23,6 +23,7 @@ var fortyTwo=42
   ,COL_BYTES         = "Bytes"
   ,COL_KBPS          = "Kbit/s"
   ,COL_FPS           = "FPS"
+  ,WORD_ROOM         = "Room"
   ,FILE_RECORDER_NAME= "file recorder"
   ,CACHE_NAME        = "cache"
   ,data              = []
@@ -38,6 +39,30 @@ var fortyTwo=42
   ,cache_fps         = []
   ;
 
+  if (typeof window.l_connections_OFFLINE_PREFIX != 'undefined')
+  {
+    OFFLINE_PREFIX = window.l_connections_OFFLINE_PREFIX;
+    OFFLINE_SUFFIX = window.l_connections_OFFLINE_SUFFIX;
+    HIDDEN_PREFIX  = window.l_connections_HIDDEN_PREFIX ;
+    HIDDEN_SUFFIX  = window.l_connections_HIDDEN_SUFFIX ;
+    AUDIO_OUT_STR  = window.l_connections_AUDIO_OUT_STR ;
+    AUDIO_IN_STR   = window.l_connections_AUDIO_IN_STR  ;
+    VIDEO_OUT_STR  = window.l_connections_VIDEO_OUT_STR ;
+    VIDEO_IN_STR   = window.l_connections_VIDEO_IN_STR  ;
+    DAYS_STR       = window.l_connections_DAYS_STR      ;
+    COL_NAME       = window.l_connections_COL_NAME      ;
+    COL_DURATION   = window.l_connections_COL_DURATION  ;
+    COL_RTP        = window.l_connections_COL_RTP       ;
+    COL_PACKETS    = window.l_connections_COL_PACKETS   ;
+    COL_BYTES      = window.l_connections_COL_BYTES     ;
+    COL_KBPS       = window.l_connections_COL_KBPS      ;
+    COL_FPS        = window.l_connections_COL_FPS       ;
+    WORD_ROOM      = window.l_connections_word_room     ;
+  }
+                       
+                       
+                       
+                       
 function in_array(needle, haystack)
 { for(var i=0; i<haystack.length; i++) if(haystack[i]==needle) return true;
   return false;
@@ -269,7 +294,7 @@ function on_create_new_room(r)
 
   var d=document.createElement('DIV');
   d.id=s;
-  d.innerHTML='<b>' + r + '</b>'
+  d.innerHTML='<b>' + WORD_ROOM + " " + r + '</b>'
     + '<table id="r_t_' + r + '" class="table table-striped table-bordered table-condensed">'
     + "<tr>"
       + "<th>&nbsp;"+COL_NAME    +"&nbsp;</th>"

@@ -1,6 +1,25 @@
 window.l_welcome = 'OpenMCU-ru';
 window.l_status = 'Status';
+
 window.l_connections = 'Connections';
+window.l_connections_OFFLINE_PREFIX    = "<B>[Offline] </B>"
+window.l_connections_OFFLINE_SUFFIX    = ""
+window.l_connections_HIDDEN_PREFIX     = "<B>[Hidden] </B>"
+window.l_connections_HIDDEN_SUFFIX     = ""
+window.l_connections_AUDIO_OUT_STR     = "Audio Out"
+window.l_connections_AUDIO_IN_STR      = "Audio In"
+window.l_connections_VIDEO_OUT_STR     = "Video Out"
+window.l_connections_VIDEO_IN_STR      = "Video In"
+window.l_connections_DAYS_STR          = "day(s)"
+window.l_connections_COL_NAME          = "Name"
+window.l_connections_COL_DURATION      = "Duration"
+window.l_connections_COL_RTP           = "RTP Channel: Codec"
+window.l_connections_COL_PACKETS       = "Packets"
+window.l_connections_COL_BYTES         = "Bytes"
+window.l_connections_COL_KBPS          = "Kbit/s"
+window.l_connections_COL_FPS           = "FPS"
+window.l_connections_word_room         = "Room"
+
 window.l_records = 'Records';
 window.l_control = 'Control';
 window.l_rooms = 'Rooms';
