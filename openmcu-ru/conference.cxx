@@ -678,13 +678,16 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     mcuMonitorRunning = TRUE;
   }
 
-//  memberToAdd->SetName();
-
   PStringStream msg;
 
   // add this member to the conference member name list
   if(memberToAdd!=memberToAdd->GetID())
   {
+    memberNameList.erase(memberToAdd->GetName());
+    memberNameList.insert(MemberNameList::value_type(memberToAdd->GetName(),memberToAdd));
+
+    PullMemberOptionsFromTemplate(memberToAdd, confTpl);
+
     PString username=memberToAdd->GetName(); username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
     msg="addmmbr(1,"; msg << (long)memberToAdd->GetID()
      << ",\"" << username << "\"," << memberToAdd->muteIncoming
@@ -693,9 +696,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
      << memberToAdd->GetAudioLevel() << ","
      << memberToAdd->GetVideoMixerNumber() << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
-
-    memberNameList.erase(memberToAdd->GetName());
-    memberNameList.insert(MemberNameList::value_type(memberToAdd->GetName(),memberToAdd));
   }
 /*  
   else
@@ -705,11 +705,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   }
 */  
 
-
-  if(memberToAdd->IsVisible())
-  {
-    PullMemberOptionsFromTemplate(memberToAdd, confTpl);
-  }
 
   msg = "<font color=green><b>+</b>";
   msg << memberToAdd->GetName() << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
