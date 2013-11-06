@@ -5,9 +5,7 @@
 #include <unistd.h>
 #endif
 
-//#include "conference.h"
 #include "mcu.h"
-//#include "filemembers.h"
 
 #define AUDIO_EXPORT_PCM_BUFFER_SIZE_MS    30
 

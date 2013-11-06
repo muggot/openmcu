@@ -38,15 +38,7 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
 { PWaitAndSignal m(html_mutex);
   if(html_template_size <= 0) // count on zero initialization
   { FILE *fs;
-#ifdef SYS_RESOURCE_DIR
-#  ifdef _WIN32
-    fs=fopen(SYS_RESOURCE_DIR+PString("\\template.html"), "r");
-#  else
-    fs=fopen(SYS_RESOURCE_DIR+PString("/template.html"), "r");
-#  endif
-#else
-    fs=fopen("template.html", "r");
-#endif
+    fs=fopen(PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + "template.html", "r");
     if(fs)
     { fseek(fs, 0L, SEEK_END); html_template_size = ftell(fs); rewind(fs);
       html_template_buffer = new char[html_template_size + 1];
@@ -1570,11 +1562,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   }
   if(data.Contains("getfile")) // just download
   {
-#ifdef _WIN32
-    PString filePathStr = OpenMCU::Current().vr_ffmpegDir + "\\" + data("getfile");
-#else
-    PString filePathStr = OpenMCU::Current().vr_ffmpegDir + "/" + data("getfile");
-#endif
+    PString filePathStr = OpenMCU::Current().vr_ffmpegDir + PATH_SEPARATOR + data("getfile");
     if(!PFile::Exists(filePathStr))
     { PHTTPRequest * request = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server);
       request->entityBody = connectInfo.GetEntityBody();
@@ -1710,11 +1698,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     wtd=data("deleteRecordConfirmed");
     if(wtd.Find('/')==P_MAX_INDEX) if(wtd.Find('\\')==P_MAX_INDEX)
     {
-#     ifdef _WIN32
-        unlink(OpenMCU::Current().vr_ffmpegDir + "\\" + wtd);
-#     else
-        unlink(OpenMCU::Current().vr_ffmpegDir + "/" + wtd);
-#     endif
+      unlink(OpenMCU::Current().vr_ffmpegDir + PATH_SEPARATOR + wtd);
       shtml << "<div style='border:1px solid green'>"
       << wtd << " deleted"
       << "</div>";

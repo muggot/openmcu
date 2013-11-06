@@ -133,18 +133,9 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   { PTRACE(1,"Conference\tOnCreateConference: \"Force split screen video\" unchecked, " << conference->GetNumber() << " skipping members.conf"); return; }
 
   FILE *membLst;
-#ifdef SYS_CONFIG_DIR
-#ifdef _WIN32
-  PString name=SYS_CONFIG_DIR+PString("\\members_")+conference->GetNumber()+".conf";
-#else
-  PString name=SYS_CONFIG_DIR+PString("/members_")+conference->GetNumber()+".conf";
-#endif
-#else
-  PString name="members_"+conference->GetNumber()+".conf";
-#endif
 
   // read members.conf into conference->membersConf
-  membLst = fopen(name,"rt");
+  membLst = fopen(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "members_" + conference->GetNumber() + ".conf","rt");
   PStringStream membersConf;
   if(membLst!=NULL)
   { char buf [128];

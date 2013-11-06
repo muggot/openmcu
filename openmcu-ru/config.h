@@ -1,6 +1,14 @@
 #ifndef _OpenMCU_CONFIG_H
 #define _OpenMCU_CONFIG_H
 
+
+#ifdef _WIN32
+#  define PATH_SEPARATOR "\\"
+#else
+#  define PATH_SEPARATOR "/"
+#endif
+
+
 // specify the path executable files
 #define SYS_BIN_DIR "/usr/local/bin"
 // specify the path for .conf files
@@ -59,21 +67,6 @@
 // libyuv filtering type: kFilterNone|kFilterBilinear|kFilterBox
 #define LIBYUV_FILTER	kFilterBilinear
 
-#ifdef _WIN32
-#  ifdef SYS_CONFIG_DIR
-#    define CONFIG_PATH PString(SYS_CONFIG_DIR)+"\\openmcu.ini"
-#  else
-#    define CONFIG_PATH ".\\openmcu.ini"
-#  endif
-#else
-#  ifdef SYS_CONFIG_DIR
-#    define CONFIG_PATH PString(SYS_CONFIG_DIR)+"/openmcu.ini"
-#  else
-#    define CONFIG_PATH "./openmcu.ini"
-#  endif
-#endif
-
-
 #undef P_SSL
 
 #ifdef _WIN32
@@ -83,23 +76,23 @@
 #  define USE_LIBSAMPLERATE  0
 #  undef  USE_AVRESAMPLE
 #  define USE_AVRESAMPLE     0
-#  undef  SYS_BIN_DIR
-#  define SYS_BIN_DIR       "."
 #  undef  SYS_CONFIG_DIR
-#  define SYS_CONFIG_DIR    "."
-#  undef  CONFIG_PATH
-#  define CONFIG_PATH       "openmcu.ini"
-#  undef  SYS_PIPE_DIR
-#  define SYS_PIPE_DIR      "."
+#  define SYS_CONFIG_DIR    "etc"
 #  undef  SYS_RESOURCE_DIR
-#  define SYS_RESOURCE_DIR  "."
+#  define SYS_RESOURCE_DIR  "share"
 #  undef  SERVER_LOGS
-#  define SERVER_LOGS       "."
+#  define SERVER_LOGS       "log"
 #  undef  TRUETYPE_FONT_DIR
-#  define TRUETYPE_FONT_DIR "."
+#  define TRUETYPE_FONT_DIR "font"
 #  undef  RECORDS_DIR
 #  define RECORDS_DIR       "records"
 #endif
+
+#ifndef SYS_CONFIG_DIR
+#  define SYS_CONFIG_DIR "."
+#endif
+#define CONFIG_PATH PString(SYS_CONFIG_DIR)+PATH_SEPARATOR+"openmcu.ini"
+
 
 #endif // _OpenMCU-ru_CONFIG_H
 

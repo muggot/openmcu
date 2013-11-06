@@ -50,104 +50,41 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
 {
   if(!logo)
   {
-#  ifdef _WIN32
-   PString logoPath = PString(SYS_RESOURCE_DIR)+"\\logo.bmp";
-#  else
-   PString logoPath = PString(SYS_RESOURCE_DIR)+"/logo.bmp";
-#  endif
-   FILE *fs;
-   fs=fopen(logoPath,"r"); 
-   if(fs)
-   {
-    unsigned char *p_buffer;
-    unsigned p_size;
-    int *val;
-//    PVideoFrameInfo src,dst;
-    PColourConverter *converter;
-    fseek(fs,0L,SEEK_END); p_size=ftell(fs); rewind(fs);
-    p_buffer=new unsigned char[p_size];
-    if(p_size == fread(p_buffer,1,p_size,fs))
+    FILE *fs;
+    fs=fopen(PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + "logo.bmp","r"); 
+    if(fs)
     {
-      val=(int *)(p_buffer+10);
-//    logo=p_buffer+*val;
-//    src.SetSize(CIF4_WIDTH,CIF4_HEIGHT); 
-//    dst.SetSize(CIF4_WIDTH,CIF4_HEIGHT);
-      converter = PColourConverter::Create("BGR24", "YUV420P", CIF4_WIDTH, CIF4_HEIGHT);
-      converter->SetDstFrameSize(CIF4_WIDTH, CIF4_HEIGHT);
-      converter->SetVFlipState(TRUE);
-      logo = new unsigned char[CIF4_SIZE];
-      converter->Convert(p_buffer+*val,logo);
-      delete converter;
+      unsigned char *p_buffer;
+      unsigned p_size;
+      int *val;
+      PColourConverter *converter;
+      fseek(fs,0L,SEEK_END); p_size=ftell(fs); rewind(fs);
+      p_buffer=new unsigned char[p_size];
+      if(p_size == fread(p_buffer,1,p_size,fs))
+      {
+        val=(int *)(p_buffer+10);
+        converter = PColourConverter::Create("BGR24", "YUV420P", CIF4_WIDTH, CIF4_HEIGHT);
+        converter->SetDstFrameSize(CIF4_WIDTH, CIF4_HEIGHT);
+        converter->SetVFlipState(TRUE);
+        logo = new unsigned char[CIF4_SIZE];
+        converter->Convert(p_buffer+*val,logo);
+        delete converter;
+      }
+      fclose(fs);
+      delete p_buffer;
     }
-    fclose(fs);
-    delete p_buffer;
-   }
   }
   
   if(logo)
   {
-   PTRACE(2, "MCU\tGetPreMediaFrame with logo:" << width << "x" << height);
+    PTRACE(2, "MCU\tGetPreMediaFrame with logo:" << width << "x" << height);
+    MCUVideoMixer::ResizeYUV420P(logo,buffer,CIF4_WIDTH,CIF4_HEIGHT,width,height);
+    return TRUE;
+  }
 
-   MCUVideoMixer::ResizeYUV420P(logo,buffer,CIF4_WIDTH,CIF4_HEIGHT,width,height);
-   return TRUE;
-/*
-   if (width == QCIF_WIDTH && height == QCIF_HEIGHT) {
-    MCUVideoMixer::ConvertCIF4ToQCIF(logo, buffer);
-    return TRUE;
-   }
-   else if (width == CIF_WIDTH && height == CIF_HEIGHT) {
-    MCUVideoMixer::ConvertCIF4ToCIF(logo, buffer);
-    return TRUE;
-   }
-   else if (width == CIF4_WIDTH && height == CIF4_HEIGHT) {
-    memcpy(buffer, logo, CIF4_SIZE);
-    return TRUE;
-   } 
-   else if (width == CIF16_WIDTH && height == CIF16_HEIGHT) {
-    MCUVideoMixer::ConvertCIF4ToCIF16(logo, buffer);
-    return TRUE;
-   } 
-   else if (width == Q3CIF4_WIDTH && height == Q3CIF4_HEIGHT) {
-    MCUVideoMixer::ConvertCIF4ToQ3CIF4(logo, buffer);
-    return TRUE;
-   } 
-   else if (width == TQCIF_WIDTH && height == TQCIF_HEIGHT) {
-    MCUVideoMixer::ConvertCIF4ToTQCIF(logo, buffer);
-    return TRUE;
-   } 
-   else if (width == Q3CIF_WIDTH && height == Q3CIF_HEIGHT) {
-    MCUVideoMixer::ConvertCIF4ToQ3CIF(logo, buffer);
-    return TRUE;
-   } 
-   else if (width == TCIF_WIDTH && height == TCIF_HEIGHT) {
-    MCUVideoMixer::ConvertCIF4ToTCIF(logo, buffer);
-    return TRUE;
-   } 
-   else
-   {
-    MCUVideoMixer::ConvertFRAMEToCUSTOM_FRAME(logo, buffer, CIF4_WIDTH, CIF4_HEIGHT, width, height);
-    return TRUE;
-   }
-*/
-  }
-  else
-  {
-   MCUVideoMixer::ResizeYUV420P(ImageData, buffer, QCIF_WIDTH, QCIF_HEIGHT, width, height);
-   return TRUE;
-/*   if (width == QCIF_WIDTH && height == QCIF_HEIGHT) {
-     memcpy(buffer, ImageData, QCIF_SIZE);
-     return TRUE;
-   }
-   else if (width == CIF_WIDTH && height == CIF_HEIGHT) {
-    MCUVideoMixer::ConvertQCIFToCIF(ImageData, buffer);
-    return TRUE;
-   }
-   else if (width == CIF4_WIDTH && height == CIF4_HEIGHT) {
-    MCUVideoMixer::ConvertQCIFToCIF4(ImageData, buffer);
-    return TRUE;
-   } */
-  }
-  return FALSE;
+  MCUVideoMixer::ResizeYUV420P(ImageData, buffer, QCIF_WIDTH, QCIF_HEIGHT, width, height);
+  return TRUE;
+//  return FALSE;
 }
 
 #endif // OPENMCU_VIDEO

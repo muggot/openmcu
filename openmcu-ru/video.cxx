@@ -404,11 +404,7 @@ void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer,
   if (ft_error==FT_INITIAL_ERROR) { // Initialization
     PTRACE(3,"FreeType\tInitialization"); if ((ft_error = FT_Init_FreeType(&ft_library))) return;
 #ifdef TRUETYPE_FONT_DIR
-#  ifdef _WIN32
-    ft_error = FT_New_Face(ft_library,PString(TRUETYPE_FONT_DIR)+"\\"+OpenMCU::vmcfg.fontfile,0,&ft_face);
-#  else
-    ft_error = FT_New_Face(ft_library,PString(TRUETYPE_FONT_DIR)+"/"+OpenMCU::vmcfg.fontfile,0,&ft_face);
-#  endif
+    ft_error = FT_New_Face(ft_library,PString(TRUETYPE_FONT_DIR)+PATH_SEPARATOR+OpenMCU::vmcfg.fontfile,0,&ft_face);
 #else
     ft_error = FT_New_Face(ft_library,OpenMCU::vmcfg.fontfile,0,&ft_face);
 #endif
@@ -4238,12 +4234,7 @@ void VideoMixConfigurator::go(unsigned frame_width, unsigned frame_height)
   bfw=frame_width; bfh=frame_height;
   FILE *fs; unsigned long f_size; char * f_buff;
 #ifdef SYS_CONFIG_DIR
-#ifdef _WIN32
-  PString lCfgName=SYS_CONFIG_DIR+std::string("\\")+std::string(VMPC_CONFIGURATION_NAME);
-#else
-  PString lCfgName=SYS_CONFIG_DIR+std::string("/")+std::string(VMPC_CONFIGURATION_NAME);
-#endif
-  fs = fopen(lCfgName,"r");
+  fs = fopen(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + VMPC_CONFIGURATION_NAME,"r");
 #else
   fs = fopen(VMPC_CONFIGURATION_NAME,"r");
 #endif

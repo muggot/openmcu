@@ -114,15 +114,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   }
   if(currentTraceLevel != TraceLevel)
   {
-#  ifdef SERVER_LOGS
-#    ifdef _WIN32
-    PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"\\trace.txt");
-#    else
-    PTrace::Initialise(TraceLevel,PString(SERVER_LOGS)+"/trace.txt");
-#    endif
-#  else
+#ifdef SERVER_LOGS
+    PTrace::Initialise(TraceLevel, PString(SERVER_LOGS) + PATH_SEPARATOR + "trace.txt");
+#else
     PTrace::Initialise(TraceLevel,"trace.txt");
-#  endif
+#endif
     PTrace::SetOptions(PTrace::FileAndLine);
     currentTraceLevel = TraceLevel;
   }
@@ -142,15 +138,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
 // default log file name
 #ifdef SERVER_LOGS
-#  ifdef _WIN32
-  { PString lfn = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
-    if(lfn.Find("\\")==P_MAX_INDEX) logFilename = PString(SERVER_LOGS)+"\\"+lfn; else logFilename = lfn;
+  {
+    PString lfn = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
+    if(lfn.Find(PATH_SEPARATOR) == P_MAX_INDEX) logFilename = PString(SERVER_LOGS)+PATH_SEPARATOR+lfn;
+    else logFilename = lfn;
   }
-#  else
-  { PString lfn = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
-    if(lfn.Find("/")==P_MAX_INDEX) logFilename = PString(SERVER_LOGS)+"/"+lfn; else logFilename = lfn;
-  }
-#  endif
 #else
   logFilename = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
 #endif
@@ -207,11 +199,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     PString opts = vr_ffmpegOpts;
     PStringStream frameSize; frameSize << vr_framewidth << "x" << vr_frameheight;
     PStringStream frameRate; frameRate << vr_framerate;
-#ifdef _WIN32
-    PStringStream outFile; outFile << vr_ffmpegDir << "\\%o";
-#else
-    PStringStream outFile; outFile << vr_ffmpegDir << "/%o";
-#endif
+    PStringStream outFile; outFile << vr_ffmpegDir << PATH_SEPARATOR << "%o";
     opts.Replace("%F",frameSize,TRUE,0);
     opts.Replace("%R",frameRate,TRUE,0);
     opts.Replace("%S",PString(vr_sampleRate),TRUE,0);
@@ -323,13 +311,8 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // adding web server links (eg. images):
 #ifdef SYS_RESOURCE_DIR
-#  ifdef _WIN32
-#    define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "\\" + r1), PHTTPSpace::Overwrite)
-#    define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "\\" + r1, mt1), PHTTPSpace::Overwrite)
-#  else
-#    define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "/" + r1), PHTTPSpace::Overwrite)
-#    define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + "/" + r1, mt1), PHTTPSpace::Overwrite)
-#  endif
+#  define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + r1), PHTTPSpace::Overwrite)
+#  define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + r1, mt1), PHTTPSpace::Overwrite)
 #else
 #  define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1), PHTTPSpace::Overwrite)
 #  define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, mt1), PHTTPSpace::Overwrite)
