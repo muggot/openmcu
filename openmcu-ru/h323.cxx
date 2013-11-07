@@ -2306,8 +2306,11 @@ void OpenMCUH323Connection::JoinConference(const PString & roomToJoin)
 
   if(joinSuccess)
   {
-    if(GetEndpointParam("Initial audio status") == "mute always")
+    PString epMute = GetEndpointParam("Initial audio status");
+    if(epMute == "mute always")
       conferenceMember->muteIncoming = TRUE;
+    else if (epMute == "unmute always")
+      conferenceMember->muteIncoming = FALSE;
   }
 }
 
@@ -2999,8 +3002,11 @@ H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _c
   OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
   if(conn != NULL)
   {
-    if(conn->GetEndpointParam("Initial audio status") == "mute without template")
+    PString epMute = conn->GetEndpointParam("Initial audio status");
+    if(epMute == "mute without template")
       muteIncoming = TRUE;
+    else if(epMute == "unmute without template")
+      muteIncoming = FALSE;
     conn->Unlock();
   }
   conference->AddMember(this);
