@@ -181,20 +181,25 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // Get the HTTP authentication info
   MCUConfig("Managing Groups").SetString("administrator", "");
-  MCUConfig("Managing Groups").SetString("conference creation and full control", "");
+  MCUConfig("Managing Groups").SetString("conference manager", "");
 
-  PHTTPMultiSimpAuth authority(GetName());
+  PHTTPMultiSimpAuth authSettings(GetName());
+  PHTTPMultiSimpAuth authConference(GetName());
   PStringList keysUsers = MCUConfig("Managing Users").GetKeys();
   for(PINDEX i = 0; i < keysUsers.GetSize(); i++)
   {
     PStringArray params = MCUConfig("Managing Users").GetString(keysUsers[i]).Tokenise(",");
     if(params.GetSize() < 2) continue;
     if(params[1] == "administrator")
-      authority.AddUser(keysUsers[i], PHTTPPasswordField::Decrypt(params[0]));
+    {
+      authSettings.AddUser(keysUsers[i], PHTTPPasswordField::Decrypt(params[0]));
+      authConference.AddUser(keysUsers[i], PHTTPPasswordField::Decrypt(params[0]));
+    }
+    if(params[1] == "conference manager")
+    {
+      authConference.AddUser(keysUsers[i], PHTTPPasswordField::Decrypt(params[0]));
+    }
   }
-  //PString adminUserName = cfg.GetString(UserNameKey);
-  //PString adminPassword = PHTTPPasswordField::Decrypt(cfg.GetString(PasswordKey));
-  //PHTTPSimpleAuth authority(GetName(), adminUserName, adminPassword);
 
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
@@ -232,78 +237,78 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   leavingWAVFile = cfg.GetString(LeavingWAVFileKey, DefaultLeavingWAVFile);
 
   // Create the config page - general
-  GeneralPConfigPage * rsrc = new GeneralPConfigPage(*this, "Parameters", "Parameters", authority);
+  GeneralPConfigPage * rsrc = new GeneralPConfigPage(*this, "Parameters", "Parameters", authSettings);
   OnCreateConfigPage(cfg, *rsrc);
   httpNameSpace.AddResource(rsrc, PHTTPSpace::Overwrite);
 
   // Create the config page - managing users
-  httpNameSpace.AddResource(new ManagingUsersPConfigPage(*this, "ManagingUsers", "Managing Users", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new ManagingUsersPConfigPage(*this, "ManagingUsers", "Managing Users", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - managing groups
-  httpNameSpace.AddResource(new ManagingGroupsPConfigPage(*this, "ManagingGroups", "Managing Groups", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new ManagingGroupsPConfigPage(*this, "ManagingGroups", "Managing Groups", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - h323 endpoints
-  httpNameSpace.AddResource(new H323EndpointsPConfigPage(*this, "H323EndpointsParameters", "H323 Endpoints", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new H323EndpointsPConfigPage(*this, "H323EndpointsParameters", "H323 Endpoints", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - sip endpoints
-  httpNameSpace.AddResource(new SipEndpointsPConfigPage(*this, "SipEndpointsParameters", "SIP Endpoints", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new SipEndpointsPConfigPage(*this, "SipEndpointsParameters", "SIP Endpoints", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - video
 #if OPENMCU_VIDEO
-  httpNameSpace.AddResource(new VideoPConfigPage(*this, "VideoParameters", "Video", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new VideoPConfigPage(*this, "VideoParameters", "Video", authSettings), PHTTPSpace::Overwrite);
 #endif
 
   // Create the config page - record
-  httpNameSpace.AddResource(new RecordPConfigPage(*this, "RecordParameters", "Parameters", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new RecordPConfigPage(*this, "RecordParameters", "Parameters", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - h323
-  httpNameSpace.AddResource(new H323PConfigPage(*this, "H323Parameters", "Parameters", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new H323PConfigPage(*this, "H323Parameters", "Parameters", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - sip
-  httpNameSpace.AddResource(new SIPPConfigPage(*this, "SIPParameters", "Parameters", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new SIPPConfigPage(*this, "SIPParameters", "Parameters", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - sip room acccess
-  httpNameSpace.AddResource(new RoomAccessSIPPConfigPage(*this, "RoomAccess", "RoomAccess", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new RoomAccessSIPPConfigPage(*this, "RoomAccess", "RoomAccess", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - sip proxy servers
-  httpNameSpace.AddResource(new ProxySIPPConfigPage(*this, "ProxyServers", "ProxyServers", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new ProxySIPPConfigPage(*this, "ProxyServers", "ProxyServers", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - receive sound codecs
-  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "ReceiveSoundCodecs", "RECEIVE_SOUND", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "ReceiveSoundCodecs", "RECEIVE_SOUND", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - transmit sound codecs
-  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "TransmitSoundCodecs", "TRANSMIT_SOUND", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "TransmitSoundCodecs", "TRANSMIT_SOUND", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - receive video codecs
-  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "ReceiveVideoCodecs", "RECEIVE_VIDEO", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "ReceiveVideoCodecs", "RECEIVE_VIDEO", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - transmit video codecs
-  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "TransmitVideoCodecs", "TRANSMIT_VIDEO", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "TransmitVideoCodecs", "TRANSMIT_VIDEO", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - sip sound codecs
-  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "SipSoundCodecs", "TRANSMIT_SOUND", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "SipSoundCodecs", "TRANSMIT_SOUND", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - sip video codecs
-  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "SipVideoCodecs", "TRANSMIT_VIDEO", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "SipVideoCodecs", "TRANSMIT_VIDEO", authSettings), PHTTPSpace::Overwrite);
 
   // Create the status page
-  httpNameSpace.AddResource(new MainStatusPage(*this, authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new MainStatusPage(*this, authConference), PHTTPSpace::Overwrite);
 
   // Create invite conference page
-  httpNameSpace.AddResource(new InvitePage(*this, authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new InvitePage(*this, authConference), PHTTPSpace::Overwrite);
 
   // Create room selection page
-  httpNameSpace.AddResource(new SelectRoomPage(*this, authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new SelectRoomPage(*this, authConference), PHTTPSpace::Overwrite);
 
   // Create video recording directory browser page:
-  httpNameSpace.AddResource(new RecordsBrowserPage(*this, authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new RecordsBrowserPage(*this, authConference), PHTTPSpace::Overwrite);
 
 #if USE_LIBJPEG
   // Create JPEG frame via HTTP
-  httpNameSpace.AddResource(new JpegFrameHTTP(*this, authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new JpegFrameHTTP(*this, authConference), PHTTPSpace::Overwrite);
 #endif
 
-  httpNameSpace.AddResource(new InteractiveHTTP(*this, authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new InteractiveHTTP(*this, authConference), PHTTPSpace::Overwrite);
 
   // Add log file links
 /*
@@ -312,7 +317,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     httpNameSpace.AddResource(new PHTTPTailFile("tail_logfile", systemLogFileName, authority));
   }
 */  
-  httpNameSpace.AddResource(new WelcomePage(*this, authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new WelcomePage(*this, authConference), PHTTPSpace::Overwrite);
 
   // create monitoring page
   PString monitorText =
@@ -325,7 +330,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #  endif
                         "<!--#equival monitorinfo-->"
                         "<!--#equival mcuinfo-->";
-  httpNameSpace.AddResource(new PServiceHTTPString("monitor.txt", monitorText, "text/plain", authority), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new PServiceHTTPString("monitor.txt", monitorText, "text/plain", authConference), PHTTPSpace::Overwrite);
 
   // adding web server links (eg. images):
 #ifdef SYS_RESOURCE_DIR
