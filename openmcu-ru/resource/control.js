@@ -13,7 +13,7 @@ var PANEL_ICON_HEIGHT=PANEL_ITEM_HEIGHT-2;
 var PANEL_ICON_WIDTH=PANEL_ICON_HEIGHT;
 var PANEL_LEVEL_WIDTH=2; // audio level block width
 var SCROLLER_WIDTH=22; // browser specific, maybe calculated, but not yet
-var PANEL_IP_WIDTH=120; // width of IP address bar in panel
+var panel_ip_width=120; // width of IP address bar in panel
 var PANEL_MIXERID_WIDTH=10; // width of mixer id bar in panel
 var PANEL_HIDEBUTTON_WIDTH=15;
 var MIXER_LAYOUT_SCROLL_LEFT_STYLE="line-height:10px;font-weight:bold;color:#fff;cursor:pointer";
@@ -495,14 +495,14 @@ function format_mmbr_button(m,st){
 
  if(st>0) hide="<img style='cursor:pointer' src='i15_getNoVideo.gif' width=15 height=15 title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>";
 
- var posx_mute=0;
- var posx_vad=PANEL_ICON_WIDTH;
- var posx_level=posx_vad+PANEL_ICON_WIDTH;
- var posx_name=posx_level+PANEL_LEVEL_WIDTH+2;
- var posx_kick=panel_width-PANEL_ICON_WIDTH-5;
- var posx_ip=posx_kick-PANEL_IP_WIDTH;
- var posx_mixer=posx_ip-PANEL_MIXERID_WIDTH-5-PANEL_HIDEBUTTON_WIDTH-2;
- var posx_hide=posx_mixer+PANEL_MIXERID_WIDTH+4;
+ var posx_mute   = 0;                                                          // >>
+ var posx_vad    = PANEL_ICON_WIDTH;
+ var posx_level  = posx_vad         + PANEL_ICON_WIDTH;
+ var posx_name   = posx_level       + PANEL_LEVEL_WIDTH      + 2;
+ var posx_kick   = panel_width      - PANEL_ICON_WIDTH       - SCROLLER_WIDTH; // <<
+ var posx_ip     = posx_kick        - panel_ip_width;
+ var posx_hide   = posx_ip          - PANEL_HIDEBUTTON_WIDTH - 2;
+ var posx_mixer  = posx_hide        - PANEL_MIXERID_WIDTH    - 2;
  var name_width=posx_mixer-posx_name;
  if(name_width<10){my_alert('Exception: maybe screen resolution too low?'); if(name_width<1)name_width=1;}
  ip="<span style='color:"+((st==0)?"#576":"blue")+";font-size:10px'>"+ip+"</span>";
@@ -513,7 +513,7 @@ function format_mmbr_button(m,st){
  s+=dpre+posx_name+"px'><div style='vertical-align:-1px;overflow:hidden;padding-left:2px;width:"+name_width+"px;height:"+(PANEL_ITEM_HEIGHT-2)+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px'><nobr>"+uname+"</nobr></div></div>";
  if(st>0)s+=dpre+posx_mixer+"px'><div onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' style='cursor:pointer;font-size:9px;background-color:#aaf;color:#505;vertical-align:-1px;overflow:hidden;padding-left:1px;padding-right:1px;width:"+PANEL_MIXERID_WIDTH+"px;height:"+(PANEL_ITEM_HEIGHT-2)+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px'>"+mixer+"</div></div>";
  if(st>0)s+=dpre+posx_hide+"px'>"+hide+"</div>";
- s+=dpre+posx_ip+"px'><div style='vertical-align:-1px;overflow:hidden;width:"+PANEL_IP_WIDTH+"px;height:"+(PANEL_ITEM_HEIGHT-2)+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px'>"+ip+"</div></div>";
+ s+=dpre+posx_ip+"px'><div style='vertical-align:-1px;overflow:hidden;width:"+panel_ip_width+"px;height:"+(PANEL_ITEM_HEIGHT-2)+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px'>"+ip+"</div></div>";
  s+=dpre+posx_kick+"px'><div style='vertical-align:-1px;overflow:hidden;width:"+PANEL_ICON_WIDTH+"px;height:"+PANEL_ICON_HEIGHT+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px'>"+kick+"</div></div>";
  s+='</div>';
 
@@ -964,9 +964,9 @@ function build_page()
     if(free_x<444)
       page_width=mmw+444;
     log_width=free_x/2;
-    panel_width=page_width-log_width-mmw-SCROLLER_WIDTH-5;
-    PANEL_IP_WIDTH = (panel_width/2)-PANEL_ICON_WIDTH;
+    panel_width=page_width-log_width-mmw-5;
     if(panel_width<275){ log_width-=(275-panel_width); panel_width=275; }
+    panel_ip_width = (panel_width/2) - PANEL_ICON_WIDTH - PANEL_HIDEBUTTON_WIDTH - 2;
   }
 
   if(total_height < 460) total_height = 460;
@@ -975,11 +975,11 @@ function build_page()
     var l0=document.getElementById('logging0');
     var l1=document.getElementById('logging1');
     var l2=document.getElementById('loggingframe');
-    l0.style.left='-'+log_width+'px';
+    l0.style.left='-'+(log_width-5)+'px';
     l1.style.width=(log_width-2)+'px'; l1.style.height=(total_height-2)+'px';
     l2.style.width=(log_width-2)+'px'; l2.style.height=(total_height-2)+'px';
     l0=document.getElementById('cb2');
-    l0.style.width=mmw+'px'; l0.style.height=total_height+'px';
+    l0.style.width=''+mmw+'px'; l0.style.height=total_height+'px';
   } catch(e) {};
 
   mockup_content=""; var pos_y=0;
@@ -999,14 +999,13 @@ function build_page()
     workplace_content+="&nbsp;";
   workplace_content+="</div>";
 
-  var panel_scroller_width = panel_width+SCROLLER_WIDTH;
   panel_content="<div id='pp_2' style='position:relative;top:0px;left:"+mmw+"px;width:0px;height:0px'>"; // pointing block for panel
     panel_content+="<div"+ // rectangle for panel
       " onmouseover='ddover(event,this,\"panel\",-1)'"+
       " onmouseout='ddout(event,this,\"panel\",-1)'"+
       " id='members_pan'"+
       " name='members_pan'"+
-      " style='position:absolute;width:"+panel_scroller_width+"px;height:"+total_height+"px'>";
+      " style='position:absolute;width:"+panel_width+"px;height:"+total_height+"px'>";
       panel_content+="...";
     panel_content+="</div>";
   panel_content+="</div>";
