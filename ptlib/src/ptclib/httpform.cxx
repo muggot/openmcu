@@ -2035,12 +2035,8 @@ BOOL PHTTPForm::Post(PHTTPRequest & request,
                      const PStringToString & data,
                      PHTML & msg)
 {
-  //PString prefix = request.url.GetQueryVars()("subformprefix");
   const PHTTPField * field = NULL;
-  //if (!prefix)
-  //  field = fields.LocateName(prefix);
-  //if (field == NULL)
-    field = &fields;
+  field = &fields;
 
   PStringStream errors;
   if (field->ValidateAll(data, errors)) {
@@ -2050,6 +2046,7 @@ BOOL PHTTPForm::Post(PHTTPRequest & request,
       msg << PHTML::Title() << "Accepted New Configuration" << PHTML::Body()
           << PHTML::Heading(1) << "Accepted New Configuration" << PHTML::Heading(1)
           << PHTML::HotLink(request.url.AsString()) << "Reload page" << PHTML::HotLink()
+          << "<script>location.href=\"" << request.url.AsString() << "\"</script>"
           << "&nbsp;&nbsp;&nbsp;&nbsp;"
           << PHTML::HotLink("/") << "Home page" << PHTML::HotLink();
     }
