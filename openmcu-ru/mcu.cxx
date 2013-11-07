@@ -25,6 +25,7 @@ OpenMCU::OpenMCU()
   sipendpoint       = NULL;
   currentLogLevel   = -1;
   currentTraceLevel = -1;
+  traceFileRotated  = FALSE;
 }
 
 void OpenMCU::Main()
@@ -112,13 +113,24 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     SetLogLevel((PSystemLog::Level)LogLevel);
     currentLogLevel = LogLevel;
   }
+  PINDEX rotationLevel = cfg.GetInteger(TraceRotateKey, 0);
   if(currentTraceLevel != TraceLevel)
   {
-#ifdef SERVER_LOGS
+    if(!traceFileRotated)
+    {
+      if(rotationLevel != 0)
+      {
+        PString
+          pfx = PString(SERVER_LOGS) + PATH_SEPARATOR + "trace",
+          sfx = ".txt";
+        PFile::Remove(pfx + PString(rotationLevel-1) + sfx, TRUE);
+        for (PINDEX i=rotationLevel-1; i>0; i--) PFile::Move(pfx + PString(i-1) + sfx, pfx + PString(i) + sfx, TRUE);
+        PFile::Move(pfx + sfx, pfx + "0" + sfx, TRUE);
+      }
+      traceFileRotated = TRUE;
+    }
+
     PTrace::Initialise(TraceLevel, PString(SERVER_LOGS) + PATH_SEPARATOR + "trace.txt");
-#else
-    PTrace::Initialise(TraceLevel,"trace.txt");
-#endif
     PTrace::SetOptions(PTrace::FileAndLine);
     currentTraceLevel = TraceLevel;
   }
@@ -340,6 +352,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #  define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1), PHTTPSpace::Overwrite)
 #  define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, mt1), PHTTPSpace::Overwrite)
 #endif
+#define WEBSERVER_LINK_LOGS(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SERVER_LOGS) + PATH_SEPARATOR + r1, mt1), PHTTPSpace::Overwrite)
   WEBSERVER_LINK_MIME("text/javascript"          , "control.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "status.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "locale_ru.js");
@@ -368,6 +381,14 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "openmcu.ico");
   WEBSERVER_LINK_MIME("image/x-windows-bmp"      , "openmcu.ru_logo_text.bmp");
   WEBSERVER_LINK_MIME("image/png"                , "menu_left.png");
+
+  for(PINDEX i=-1; i<rotationLevel; i++)
+  {
+    PString s="trace";
+    if(i>=0) s+=PString(i);
+    s+=".txt";
+    WEBSERVER_LINK_LOGS("application/octet-stream", s);
+  }
 
   // set up the HTTP port for listening & start the first HTTP thread
   if (ListenForHTTP((WORD)cfg.GetInteger(HttpPortKey, DefaultHTTPPort)))

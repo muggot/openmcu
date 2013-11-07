@@ -46,6 +46,7 @@ const WORD DefaultHTTPPort = 1420;
 
 static const char LogLevelKey[]           = "Log Level";
 static const char TraceLevelKey[]         = "Trace level";
+static const char TraceRotateKey[]        = "Rotate trace files at startup";
 static const char UserNameKey[]           = "Username";
 static const char PasswordKey[]           = "Password";
 static const char HttpPortKey[]           = "HTTP Port";
@@ -379,6 +380,7 @@ class OpenMCU : public OpenMCUProcessAncestor
 
     PString    defaultRoomName;
     BOOL       allowLoopbackCalls;
+    BOOL       traceFileRotated;
 
     int        httpBuffer, httpBufferIndex;
     PStringArray httpBufferedEvents;
