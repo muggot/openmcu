@@ -1076,6 +1076,12 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
 
   Conference * conference = conferenceManager.MakeAndLockConference(room); // hope it already created: we'll just get it
 
+  if(action == OTFC_REFRESH_VIDEO_MIXERS)
+  {
+    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
+    OpenMCU::Current().HttpWriteCmdRoom("mixrfr()",room);
+    OTF_RET_OK;
+  }
   if(action == OTFC_VIDEO_RECORDER_START)
   { if(conference->externalRecorder == NULL)
     { conference->externalRecorder = new ExternalVideoRecorderThread(room);

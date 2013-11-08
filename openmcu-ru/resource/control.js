@@ -26,6 +26,7 @@ var OTFC_UNMUTE                  =  0; // corresponds to h323.h
 var OTFC_MUTE                    =  1;
 var OTFC_MUTE_ALL                =  2;
 var OTFC_REMOVE_FROM_VIDEOMIXERS =  3;
+var OTFC_REFRESH_VIDEO_MIXERS    =  4;
 var OTFC_DROP_MEMBER             =  7;
 var OTFC_VAD_NORMAL              =  8;
 var OTFC_VAD_CHOSEN_VAN          =  9;
@@ -64,6 +65,8 @@ var OTFC_VIDEO_RECORDER_STOP     = 76;
 var libyuv_flt_desc = Array('None', 'Bilin.', 'Box');
 
 var mmw = -1; // build_page() initializer
+
+var mixer_refresh_timer = null;
 
 if(debug)document.write('<div style="width:800px;height:80px;overflow:auto;border:1px dotted red" id="debug1">'); function dmsg(s){if(debug){document.getElementById('debug1').innerHTML+=s+'. ';document.getElementById('debug1').scrollTop=document.getElementById('debug1').scrollHeight;}}
 
@@ -526,7 +529,7 @@ function additional_panel(){
   var cm="cursor:move;width:"; var cp="cursor:pointer;width:";
 //  var s="<div style='width:275px;height:17px;margin-bottom:5px'>"
   var s="<div style='width:"+panel_width+"px;height:"+PANEL_ITEM_HEIGHT+"px;margin-bottom:4px'>"
-   +dpre+"0"+dmain+cp+"80px' onmousedown='if(checkcontrol())queue_otf_request("+OTFC_MUTE_ALL+")'>Mute&nbsp;All</div></div>"
+   +dpre+"0"+dmain+cp+"80px' onmousedown='queue_otf_request("+OTFC_MUTE_ALL+")'>Mute&nbsp;All</div></div>"
 //   +dpre+"0"+dmain+cm+"20px' id='rpan_0' name='rpan_0' onmousedown='ddstart(event,this,\"panel_top\",0)'>[ ]</div></div>"
 //   +dpre+"23"+dmain+cm+"30px' id='rpan__1' name='rpan__1' onmousedown='ddstart(event,this,\"panel_top\",-1)'>VAD</div></div>"
 //   +dpre+"56"+dmain+cm+"36px' id='rpan__2' name='rpan__2' onmousedown='ddstart(event,this,\"panel_top\",-2)'>VAD2</div></div>"
@@ -643,6 +646,16 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr){
   alive();
   members_refresh();
   top_panel();
+  var check=false, i=0;
+  do
+  {
+    if(mixer_refresh_timer == null)
+    {
+      mixer_refresh_timer = setTimeout(function(){mixer_refresh_timer=null;queue_otf_request(OTFC_REFRESH_VIDEO_MIXERS,0);},250);
+      check = true;
+    }
+    i++;
+  } while ((!check) && (mixer_refresh_timer==null) && (i < 12));
 }
 
 function chmix(id,mx){
@@ -666,6 +679,16 @@ function remmmbr(st,id,name,mute,dvad,cvan,al,clear){
   alive();
   members_refresh();
   top_panel();
+  var check=false, i=0;
+  do
+  {
+    if(mixer_refresh_timer == null)
+    {
+      mixer_refresh_timer = setTimeout(function(){mixer_refresh_timer=null;queue_otf_request(OTFC_REFRESH_VIDEO_MIXERS,0);},250);
+      check = true;
+    }
+    i++;
+  } while ((!check) && (mixer_refresh_timer==null) && (i < 12));
 }
 
 function remove_all(){
@@ -1010,82 +1033,115 @@ function build_page()
     panel_content+="</div>";
   panel_content+="</div>";
 
-  vmp_content=""; var pos_y=0; visible_ids=',';
-//alert(array_print(conf));
 
-// start mixers drawing
+  vmp_content = get_mixers_content(); //sets visible_ids
 
-  for(i=0;i<mixers;i++){
-    vmp_content+="<div id='mixercontrol"+i+"'>";
+  main_content = mockup_content;
+  main_content += workplace_content;
+  main_content += panel_content;
+  main_content += vmp_content;
+
+  b.innerHTML=main_content;
+  members_refresh();
+  alive();
+  for(i=0;i<mixers;i++)frameload(i);
+
+}
+
+function get_mixers_content()
+{
+  var s='', pos_y=0;
+  visible_ids=',';
+  for(i=0;i<mixers;i++)
+  { s+="<div id='mixercontrol"+i+"'>";
     var mw=conf[i+1][0][0]; var mh=conf[i+1][0][1]; var pos_x=(mmw-mw)>>1;
-
 // walking through the mixer's positions
-
-    for(var j=0;j<conf[i+1][1].length;j++){
-      var id=false; try { if(typeof conf[i+1][2][j]!='undefined') id=conf[i+1][2][j]; } catch(e) {}; //alert(id + '\r\n\r\n' + array_print(conf[i+1]));
+    for(var j=0;j<conf[i+1][1].length;j++)
+    { var id=false; try { if(typeof conf[i+1][2][j]!='undefined') id=conf[i+1][2][j]; } catch(e) {}; //alert(id + '\r\n\r\n' + array_print(conf[i+1]));
       if((id!=0)&&(id!=-1)&&(id!=-2)) visible_ids+=''+id+',';
       var type=false;
       if(id!==false) if(typeof conf[i+1][3][j]!='undefined') type=conf[i+1][3][j];
       var x=Math.round(conf[i+1][1][j][0]/bfw*mw); var y=Math.round(conf[i+1][1][j][1]/bfh*mh);
       var w=Math.round(conf[i+1][1][j][2]/bfw*mw); var h=Math.round(conf[i+1][1][j][3]/bfh*mh);
       var border='1px solid '+mix_color; if(id==-1)border='1px solid red'; else if(id==-2) border='1px dotted #f00';
-      vmp_content+="<div id='pp"+i+"_"+j+"' style='position:relative;top:"+(pos_y+y)+"px;left:"+(pos_x+x)+"px;width:0px;height:0px'>"; // pointing block for member's mockup
-        vmp_content+="<div id='pr"+i+"_"+j+"'"+ // rectangle for member's mockup
+      s+="<div id='pp"+i+"_"+j+"' style='position:relative;top:"+(pos_y+y)+"px;left:"+(pos_x+x)+"px;width:0px;height:0px'>"; // pointing block for member's mockup
+        s+="<div id='pr"+i+"_"+j+"'"+ // rectangle for member's mockup
           " onmousedown='ddstart(event,this,"+i+","+j+")' onmouseover='ddover(event,this,"+i+","+j+")' onmouseout='ddout(event,this,"+i+","+j+")'"+
           " style='overflow:hidden;opacity:0.5;filter:alpha(opacity=50);position:absolute;background-color:#F2F2F2;text-align:center;"+
            "border:"+border+";padding:0;cursor:move;width:"+(w-2)+"px;height:"+(h-2)+"px'>";
-        vmp_content+=get_mixer_position_html(i,j);
-        vmp_content+="</div>";
-      vmp_content+="</div>";
+        s+=get_mixer_position_html(i,j);
+        s+="</div>";
+      s+="</div>";
     }
-
-    vmp_content+="</div>";
+    s+="</div>";
 
     // mixer panel:
+      s+="<div id='mxp"+i+"' style='position:relative;top:"+(pos_y+mh)+"px;left:0px;width:0px;height:0px'>"; // pointing block for mixer panel
+        s+="<div onmouseover='mixer_over("+i+")' onmouseout='mixer_out("+i+")' style='width:"+(mmw-2)+"px;height:"+(MIXER_PANEL_HEIGHT-1)+"px;background-color:"+MIXER_PANEL_BGCOLOR+";overflow:hidden;text-align:left;line-height:"+(MIXER_PANEL_HEIGHT-1)+"px;padding-left:2px'>";
+          s+="<span style='"+MIXER_PANEL_MIXER_STYLE+"'>#"+i;
 
-      vmp_content+="<div id='mxp"+i+"' style='position:relative;top:"+(pos_y+mh)+"px;left:0px;width:0px;height:0px'>"; // pointing block for mixer panel
-        vmp_content+="<div onmouseover='mixer_over("+i+")' onmouseout='mixer_out("+i+")' style='width:"+(mmw-2)+"px;height:"+(MIXER_PANEL_HEIGHT-1)+"px;background-color:"+MIXER_PANEL_BGCOLOR+";overflow:hidden;text-align:left;line-height:"+(MIXER_PANEL_HEIGHT-1)+"px;padding-left:2px'>";
-          vmp_content+="<span style='"+MIXER_PANEL_MIXER_STYLE+"'>#"+i;
+          s+=" <span style='color:red;cursor:pointer;position:relative;left:0px' onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_ADD_VIDEO_MIXER+","+i+");}'>+</span> ";
+          if(mixers>1)s+=" / <span style='color:blue;cursor:pointer;position:relative;left:0px' onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_DELETE_VIDEO_MIXER+","+i+");}'>&ndash;</span>";
 
-          vmp_content+=" <span style='color:red;cursor:pointer;position:relative;left:0px' onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_ADD_VIDEO_MIXER+","+i+");}'>+</span> ";
-          if(mixers>1)vmp_content+=" / <span style='color:blue;cursor:pointer;position:relative;left:0px' onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_DELETE_VIDEO_MIXER+","+i+");}'>&ndash;</span>";
-
-          vmp_content+="</span>&nbsp;";
-          vmp_content+=split_selector(i,conf[i+1][0][2]);
+          s+="</span>&nbsp;";
+          s+=split_selector(i,conf[i+1][0][2]);
 
           var str0="&nbsp;<img src='i24_";
           var str1=" width=24 height=24 style='vertical-align:middle;cursor:pointer' onclick='javascript:{if(checkcontrol())queue_otf_request(";
           var str2=","+i+");}' onmouseover='this.style.backgroundColor=\""+MIXER_PANEL_BGCOLOR2+"\"' onmouseout='this.style.backgroundColor=\""+MIXER_PANEL_BGCOLOR+"\"' />&nbsp;&nbsp;";
 
-          vmp_content += str0 + "mix.gif' alt='Arrange members'" + str1 + OTFC_MIXER_ARRANGE_VMP + str2
-                      +  str0 + "revert.gif' alt='Revert'"       + str1 + OTFC_MIXER_REVERT + str2
-                      +  str0 + "left.gif' alt='Rotate left'"    + str1 + OTFC_MIXER_SCROLL_LEFT + str2
-                      +  str0 + "shuff.gif' alt='Shuffle'"       + str1 + OTFC_MIXER_SHUFFLE_VMP + str2
-                      +  str0 + "right.gif' alt='Rotate right'"  + str1 + OTFC_MIXER_SCROLL_RIGHT + str2
-                      +  str0 + "clr.gif' alt='Clear positions'" + str1 + OTFC_MIXER_CLEAR + str2;
+          s += str0 + "mix.gif' alt='Arrange members'" + str1 + OTFC_MIXER_ARRANGE_VMP + str2
+            +  str0 + "revert.gif' alt='Revert'"       + str1 + OTFC_MIXER_REVERT + str2
+            +  str0 + "left.gif' alt='Rotate left'"    + str1 + OTFC_MIXER_SCROLL_LEFT + str2
+            +  str0 + "shuff.gif' alt='Shuffle'"       + str1 + OTFC_MIXER_SHUFFLE_VMP + str2
+            +  str0 + "right.gif' alt='Rotate right'"  + str1 + OTFC_MIXER_SCROLL_RIGHT + str2
+            +  str0 + "clr.gif' alt='Clear positions'" + str1 + OTFC_MIXER_CLEAR + str2;
 
-        vmp_content+="</div>";
-      vmp_content+="</div>";
+        s+="</div>";
+      s+="</div>";
     pos_y+=mh+MIXER_PANEL_HEIGHT;
   }
+  return s;
+}
 
-//  main_content  = "<div style='text-align:center'>"; //try to center everything inside
-//    main_content += "<div style='margin-left:auto;margin-right:auto;width:"+mmw+"px;height:"+total_height+"px;background-color:#fff'>"; // pointing block
-      main_content = mockup_content;
-//      main_content += log_content;
-      main_content += workplace_content;
-      main_content += panel_content;
-      main_content += vmp_content;
-//    main_content += "</div>"; // pointing
-//  main_content += "</div>"; // centering
+function mixrfr()
+{
+  var pos_y=0;
+  visible_ids=',';
+  for(i=0;i<mixers;i++)
+  { var obj = null;
+    try { obj=document.getElementById('mixercontrol'+i); } catch(e) {obj=null;}
+    if(obj==null) continue;
 
-
-
- b.innerHTML=main_content;
- members_refresh();
- alive();
- for(i=0;i<mixers;i++)frameload(i);
-
+    var s='';
+    var mw=conf[i+1][0][0]; var mh=conf[i+1][0][1]; var pos_x=(mmw-mw)>>1;
+// walking through the mixer's positions
+    for(var j=0;j<conf[i+1][1].length;j++)
+    { var id=false; try { if(typeof conf[i+1][2][j]!='undefined') id=conf[i+1][2][j]; } catch(e) {id=false;}
+      if(id !== false) if((id!=0)&&(id!=-1)&&(id!=-2)) visible_ids+=''+id+',';
+      var type=false; if(id!==false) try {if(typeof conf[i+1][3][j]!='undefined') type=conf[i+1][3][j];} catch(e) {type=false;}
+      var x=0, y=0, w=0, h=0;
+      try
+      { x=Math.round(conf[i+1][1][j][0]/bfw*mw); y=Math.round(conf[i+1][1][j][1]/bfh*mh);
+        w=Math.round(conf[i+1][1][j][2]/bfw*mw); h=Math.round(conf[i+1][1][j][3]/bfh*mh);
+      }
+      catch(e)
+      {
+        continue;
+      }
+      var border='1px solid '+mix_color; if(id==-1)border='1px solid red'; else if(id==-2) border='1px dotted #f00';
+      s+="<div id='pp"+i+"_"+j+"' style='position:relative;top:"+(pos_y+y)+"px;left:"+(pos_x+x)+"px;width:0px;height:0px'>"; // pointing block for member's mockup
+        s+="<div id='pr"+i+"_"+j+"'"+ // rectangle for member's mockup
+          " onmousedown='ddstart(event,this,"+i+","+j+")' onmouseover='ddover(event,this,"+i+","+j+")' onmouseout='ddout(event,this,"+i+","+j+")'"+
+          " style='overflow:hidden;opacity:0.5;filter:alpha(opacity=50);position:absolute;background-color:#F2F2F2;text-align:center;"+
+           "border:"+border+";padding:0;cursor:move;width:"+(w-2)+"px;height:"+(h-2)+"px'>";
+        s+=get_mixer_position_html(i,j);
+        s+="</div>";
+      s+="</div>";
+    }
+    obj.innerHTML=s;
+  }
+  alive();
 }
 
 function get_mixer_position_html(mixer, position)
