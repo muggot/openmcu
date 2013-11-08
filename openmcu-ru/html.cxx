@@ -329,9 +329,9 @@ ManagingUsersPConfigPage::ManagingUsersPConfigPage(PHTTPServiceProcess & app,con
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
 
-  s << NewRowColumn("User");
-  s << ColumnItem("Password");
-  s << ColumnItem("Group");
+  s << NewRowColumn(JsLocale("window.l_name_user"));
+  s << ColumnItem(JsLocale("window.l_name_password"));
+  s << ColumnItem(JsLocale("window.l_name_group"));
 
   PString groups;
   PStringList keysGroups = MCUConfig("Managing Groups").GetKeys();
@@ -374,7 +374,7 @@ ManagingGroupsPConfigPage::ManagingGroupsPConfigPage(PHTTPServiceProcess & app,c
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
-  s << NewRowColumn("Groups");
+  s << NewRowColumn(JsLocale("window.l_name_group"));
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -636,8 +636,8 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
-  s << NewRowColumn("Room name");
-  s << ColumnItem("Access");
+  s << NewRowColumn(JsLocale("window.l_name_roomname"));
+  s << ColumnItem(JsLocale("window.l_name_access"));
   s << ColumnItem("'user1@domain user2@ @domain @@via'");
 
   PStringList keys = cfg.GetKeys();

@@ -228,6 +228,11 @@ class TablePConfigPage : public PConfigPage
      return s;
    }
 
+   PString JsLocale(PString locale)
+   {
+     return "<script type='text/javascript'>document.write("+locale+");</script>";
+   }
+
    PString BeginTable()
    { return "<form method='POST'><table id='table1' cellspacing='8'><tbody>"; }
    PString EndTable()
