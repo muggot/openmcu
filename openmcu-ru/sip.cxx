@@ -15,7 +15,6 @@ InviteDataTempMapType InviteDataTempMap;
 PString GetFromIp(const char *toAddr, const char *toPort)
 {
     PTRACE(1, "MCUSIP\tGetFromIp");
-    char buffer[16];
     int sock = socket(AF_INET, SOCK_DGRAM, 0);
     if(sock == -1) return "";
 
@@ -36,6 +35,7 @@ PString GetFromIp(const char *toAddr, const char *toPort)
     if(err == -1) return "";
 
 #ifndef _WIN32
+    char buffer[16];
     inet_ntop(AF_INET, (const void *)&name.sin_addr, buffer, 16);
     close(sock);
     return (PString)buffer;

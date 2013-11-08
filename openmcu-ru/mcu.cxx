@@ -54,6 +54,7 @@ BOOL OpenMCU::OnStart()
 
 void OpenMCU::OnStop()
 {
+  PHTTPServiceProcess::OnStop();
   sipendpoint->terminating = 1;
   sipendpoint->WaitForTermination(10000);
   delete sipendpoint;
@@ -65,7 +66,7 @@ void OpenMCU::OnStop()
   delete manager;
   manager = NULL;
 
-  PHTTPServiceProcess::OnStop();
+//  PHTTPServiceProcess::OnStop();
 }
 
 void OpenMCU::OnControl()
