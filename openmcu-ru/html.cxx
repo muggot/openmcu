@@ -442,6 +442,10 @@ RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & t
 
   // video recorder setup
   PString pathInfo, dirInfo;
+  pathInfo =
+      "<b>%V</b> - input video stream<br><b>%A</b> - input audio stream<br><br><b>%F</b> - frame size<br>"
+      "<b>%R</b> - video frame rate<br><br><b>%S</b> - audio sample rate<br><b>%C</b> - number of channels for audio<br><br>";
+
   if(!PFile::Exists(mcu.vr_ffmpegPath)) pathInfo += "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
   else
   { PFileInfo info;
@@ -465,16 +469,14 @@ RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & t
   }
 
   s << BoolField("RESTORE DEFAULTS", FALSE);
-  s << StringField(RecorderFfmpegPathKey, mcu.vr_ffmpegPath, 35, pathInfo);
-  s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 35,
-      "<b>%V</b> - input video stream, <b>%A</b> - input audio stream, <b>%F</b> - frame size, "
-      "<b>%R</b> - video frame rate, <b>%S</b> - audio sample rate, <b>%C</b> - number of channels for audio" );
   s << StringField(RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 35, dirInfo);
-  s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920, 35);
-  s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152, 35);
-  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 35);
-  s << SelectField(RecorderSampleRateKey, mcu.vr_sampleRate, "8000,16000,24000,32000,48000");
-  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8");
+  s << StringField(RecorderFfmpegPathKey, mcu.vr_ffmpegPath, 35, pathInfo, FALSE, 7);
+  s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 35, "", FALSE, 0);
+  s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920, 35,"",FALSE,0);
+  s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152, 35,"",FALSE,0);
+  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 35,"",FALSE,0);
+  s << IntegerField(RecorderSampleRateKey, mcu.vr_sampleRate,8000,192000,35,"",FALSE,0);
+  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8",120,"",FALSE,0);
 
   s << EndTable();
   BuildHTML("");
