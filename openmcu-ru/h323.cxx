@@ -552,7 +552,6 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
   }
 
   str += ")";
-  PTRACE(1,"statusJs=" << str);
   return str;
 }
 
@@ -1371,8 +1370,8 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     {
       ConferenceMemberId id = mixer1->GetHonestId(pos1); if(((long)id<100)&&((long)id>=0)) id=NULL;
       ConferenceMemberId id2 = mixer2->GetHonestId(pos2); if(((long)id2<100)&&((long)id2>=0)) id2=NULL;
-      mixer2->PositionSetup(pos2, 1, id);
-      mixer1->PositionSetup(pos1, 1, id2);
+      mixer2->PositionSetup(pos2, 1, GetConferenceMemberById(conference, (long)id));
+      mixer1->PositionSetup(pos1, 1, GetConferenceMemberById(conference, (long)id2));
     }
     OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
@@ -1384,7 +1383,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     int type = data("o2").AsInteger();
     if((type<1)||(type>3)) type=2;
     long id = (long)mixer->GetHonestId(pos);
-    if((type==1)&&(id>=0)&&(id<100))
+    if((type==1)&&(id>=0)&&(id<100)) //static but no member
     {
       Conference::MemberList & memberList = conference->GetMemberList();
       Conference::MemberList::const_iterator r;
@@ -1396,7 +1395,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
           {
             if (mixer->VMPListFindVMP(r->second->GetID())==NULL)
             {
-              mixer->PositionSetup(pos,1,r->second->GetID());
+              mixer->PositionSetup(pos, 1, r->second);
               r->second->SetFreezeVideo(FALSE);
               break;
             }
@@ -1405,7 +1404,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
       }
       if(r==memberList.end()) mixer->PositionSetup(pos,1,NULL);
     }
-    else if((id>=0)&&(id<100)) mixer->PositionSetup(pos,type,(void*)(long)pos);
+    else if((id>=0)&&(id<100)) mixer->PositionSetup(pos,type,NULL);
     else mixer->SetPositionType(pos,type);
     conference->FreezeVideo(NULL);
     OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
@@ -1418,7 +1417,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
 
   if( action == OTFC_SET_VMP_STATIC )
   { unsigned n=data("o").AsInteger(); MCUVideoMixer * mixer = conference->VMLFind(n); if(mixer==NULL) OTF_RET_FAIL;
-    int pos = data("o2").AsInteger(); mixer->PositionSetup(pos, 1, member->GetID());
+    int pos = data("o2").AsInteger(); mixer->PositionSetup(pos, 1, member);
     H323Connection_ConferenceMember *connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
     if(connMember==NULL) OTF_RET_FAIL;
     connMember->SetFreezeVideo(FALSE);
@@ -1723,7 +1722,7 @@ PString OpenMCUH323EndPoint::SetRoomParams(const PStringToString & data)
     for(int i=0;i<100;i++) idr[i]=mixer->GetPositionId(i);
     return RoomCtrlPage(room,conference.IsModerated()=="+",mixer->GetPositionSet(),conference,idr);
   }
-
+/*
   PString mode = data("moderated");
   PString globalmute = data("muteUnvisible");
   PString pvidnum = data("vidmemnum");
@@ -1809,6 +1808,7 @@ PString OpenMCUH323EndPoint::SetRoomParams(const PStringToString & data)
   conference.FreezeVideo(NULL);
 
   return RoomCtrlPage(room,TRUE,vidnum,conference,idr);
+*/
 }
 
 
@@ -1917,45 +1917,6 @@ PString OpenMCUH323EndPoint::GetMonitorText()
   }
 
   return output;
-}
-
-PString OpenMCUH323EndPoint::GetUsername(ConferenceMemberId id)
-{
-  PStringStream output;
-  PStringStream output2;
-#ifndef _WIN32
-  if(conferenceManager.GetConferenceListMutex().WillBlock()) {
-    PTRACE(6,"GetUsername\tPossible deadlock, empty string will returned");
-    return output;
-  }
-#endif
-  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
-  ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-
-  ConferenceListType::iterator r;
-  for (r = conferenceList.begin(); r != conferenceList.end(); ++r) {
-    Conference & conference = *(r->second);
-    {
-#ifndef _WIN32
-      if(conference.GetMutex().WillBlock()) {
-        PTRACE(6,"GetUsername\tPreventing deadlock: empty string will returned");
-        return output;
-      }
-#endif
-      PWaitAndSignal m(conference.GetMutex());
-      Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
-      Conference::MemberNameList::const_iterator s;
-      for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
-      {
-        ConferenceMember * member = s->second;
-        if(member != NULL) {
-          if (member->GetID()==id){ output << s->first; return output; }
-          else if(member==id) output2 << s->first;
-        }
-      }
-    }
-  }
-  return output2;
 }
 
 BOOL OpenMCUH323EndPoint::OutgoingConferenceRequest(const PString & room)

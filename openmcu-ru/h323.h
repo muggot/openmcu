@@ -111,7 +111,6 @@ class OpenMCUH323EndPoint : public H323EndPoint
     void UnmoderateConference(Conference & conference);
     PString RoomCtrlPage(const PString room, BOOL ctrl, int n, Conference & conference, ConferenceMemberId *idp);
     PString GetMonitorText();
-    PString GetUsername(ConferenceMemberId id);
     void OnIncomingSipConnection(PString &token, H323Connection &connection);
 
     ConferenceManager & GetConferenceManager()

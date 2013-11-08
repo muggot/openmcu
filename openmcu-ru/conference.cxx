@@ -878,11 +878,11 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, unsigned audio
             else if(status == 0 && member->disableVAD == FALSE)
             {
               if(member->vad-VAdelay>500) // execute every 500 ms of voice activity
-                videoMixer->SetVAD2Position(member->GetID());
+                videoMixer->SetVAD2Position(member);
             }
             else if(status == -1 && member->disableVAD == FALSE) //find new vad position for active member
             {
-              ConferenceMemberId id = videoMixer->SetVADPosition(member->GetID(),member->chosenVan,VAtimeout);
+              ConferenceMemberId id = videoMixer->SetVADPosition(member,member->chosenVan,VAtimeout);
               if(id!=NULL)
               { FreezeVideo(id); member->SetFreezeVideo(FALSE); }
             }
@@ -1036,7 +1036,7 @@ void Conference::PutChosenVan()
       VideoMixerRecord * vmr = videoMixerList;
       while(vmr!=NULL){
         i=vmr->mixer->GetPositionStatus(r->second->GetID());
-        if(i < 0) vmr->mixer->SetVADPosition(r->second->GetID(),r->second->chosenVan,VAtimeout);
+        if(i < 0) vmr->mixer->SetVADPosition(r->second,r->second->chosenVan,VAtimeout);
         vmr = vmr->next;
       }
     }
@@ -1056,7 +1056,7 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
     if(id==NULL) return;
     int pos=videoMixerList->mixer->GetPositionNum(id);
     if(pos==posTo) return;
-    videoMixerList->mixer->InsertVideoSource(id,posTo);
+    videoMixerList->mixer->InsertVideoSource(&member,posTo);
     FreezeVideo(NULL);
     OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this),number);
     OpenMCU::Current().HttpWriteCmdRoom("build_page()",number);

@@ -417,8 +417,8 @@ class MCUVideoMixer
     virtual BOOL AddVideoSourceToLayout(ConferenceMemberId id, ConferenceMember & mbr) = 0;
     virtual void RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr) = 0;
     virtual void MyChangeLayout(unsigned newLayout) = 0;
-    virtual void PositionSetup(int pos, int type, ConferenceMemberId memberId) =0;
-    virtual BOOL MyAddVideoSource(int num, ConferenceMemberId *idp) = 0;
+    virtual void PositionSetup(int pos, int type, ConferenceMember * member) =0;
+//    virtual BOOL MyAddVideoSource(int num, ConferenceMemberId *idp) = 0;
 
     virtual void MyRemoveVideoSource(int pos, BOOL flag) = 0;
     virtual void MyRemoveVideoSourceById(ConferenceMemberId id, BOOL flag) = 0;
@@ -428,13 +428,13 @@ class MCUVideoMixer
     virtual int GetPositionStatus(ConferenceMemberId id) = 0;
     virtual int GetPositionType(ConferenceMemberId id) = 0;
     virtual void SetPositionType(int pos, int type) = 0;
-    virtual void InsertVideoSource(ConferenceMemberId id, int pos) = 0;
+    virtual void InsertVideoSource(ConferenceMember * member, int pos) = 0;
     virtual void SetPositionStatus(ConferenceMemberId id,int newStatus) = 0;
     virtual ConferenceMemberId GetPositionId(int pos) = 0;
     virtual ConferenceMemberId GetHonestId(int pos) = 0;
     virtual void Exchange(int pos1, int pos2) = 0;
-    virtual ConferenceMemberId SetVADPosition(ConferenceMemberId id, int chosenVan, unsigned short timeout) = 0;
-    virtual BOOL SetVAD2Position(ConferenceMemberId id) = 0;
+    virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout) = 0;
+    virtual BOOL SetVAD2Position(ConferenceMember * member) = 0;
 
     virtual VideoMixPosition * CreateVideoMixPosition(ConferenceMemberId _id, 
                                                          int _x, 
@@ -541,8 +541,8 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual BOOL AddVideoSourceToLayout(ConferenceMemberId id, ConferenceMember & mbr);
     virtual void RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
     virtual void MyChangeLayout(unsigned newLayout);
-    virtual void PositionSetup(int pos, int type, ConferenceMemberId memberId);
-    virtual BOOL MyAddVideoSource(int num, ConferenceMemberId *idp);
+    virtual void PositionSetup(int pos, int type, ConferenceMember * member);
+//    virtual BOOL MyAddVideoSource(int num, ConferenceMemberId *idp);
 
     virtual void MyRemoveVideoSource(int pos, BOOL flag);
     virtual void MyRemoveVideoSourceById(ConferenceMemberId id, BOOL flag);
@@ -552,13 +552,13 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual int GetPositionStatus(ConferenceMemberId id);
     virtual int GetPositionType(ConferenceMemberId id);
     virtual void SetPositionType(int pos, int type);
-    virtual void InsertVideoSource(ConferenceMemberId id, int pos);
+    virtual void InsertVideoSource(ConferenceMember * member, int pos);
     virtual void SetPositionStatus(ConferenceMemberId id,int newStatus);
     virtual ConferenceMemberId GetPositionId(int pos);
     virtual ConferenceMemberId GetHonestId(int pos);
     virtual void Exchange(int pos1, int pos2);
-    virtual ConferenceMemberId SetVADPosition(ConferenceMemberId id, int chosenVan, unsigned short timeout);
-    virtual BOOL SetVAD2Position(ConferenceMemberId id);
+    virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout);
+    virtual BOOL SetVAD2Position(ConferenceMember * member);
 //    virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
     virtual void imageStores_operational_size(long w, long h, BYTE mask){
       long s=w*h*3/2;
@@ -598,17 +598,17 @@ class TestVideoMixer : public MCUSimpleVideoMixer
     virtual void Scroll(BOOL reverse) {};
     virtual void Revert() {};
     virtual BOOL AddVideoSourceToLayout(ConferenceMemberId id, ConferenceMember & mbr) { return FALSE; };
-    virtual void PositionSetup(int pos, int type, ConferenceMemberId memberId) {};
-    virtual BOOL MyAddVideoSource(int num, ConferenceMemberId *idp) { return FALSE; };
+    virtual void PositionSetup(int pos, int type, ConferenceMember * member) {};
+//    virtual BOOL MyAddVideoSource(int num, ConferenceMemberId *idp) { return FALSE; };
     virtual void MyRemoveVideoSource(int pos, BOOL flag) {};
     virtual void MyRemoveVideoSourceById(ConferenceMemberId id, BOOL flag) {};
     virtual void MyRemoveAllVideoSource() {};
     virtual void SetPositionType(int pos, int type) {};
-    virtual void InsertVideoSource(ConferenceMemberId id, int pos) {};
+    virtual void InsertVideoSource(ConferenceMember * member, int pos) {};
     virtual void SetPositionStatus(ConferenceMemberId id,int newStatus) {};
     virtual void Exchange(int pos1, int pos2) {};
-    virtual ConferenceMemberId SetVADPosition(ConferenceMemberId id, int chosenVan, unsigned short timeout) { return NULL; };
-    virtual BOOL SetVAD2Position(ConferenceMemberId id) { return FALSE; };
+    virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout) { return NULL; };
+    virtual BOOL SetVAD2Position(ConferenceMember * member) { return FALSE; };
 
   protected:
     unsigned frames;

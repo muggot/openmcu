@@ -188,7 +188,7 @@ void Conference::LoadTemplate(PString tpl)
                 {
                   if(mixer!=NULL)
                   {
-                    mixer->PositionSetup(vmpN, 1, s->second->GetID());
+                    mixer->PositionSetup(vmpN, 1, s->second);
                     s->second->SetFreezeVideo(FALSE);
                   }
                 }
@@ -378,7 +378,7 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
           MCUVideoMixer * mixer = VMLFind(mixerCounter-1);
           if(mixer != NULL)
           {
-            mixer->PositionSetup(vmpCounter-1, 1, member->GetID());
+            mixer->PositionSetup(vmpCounter-1, 1, member);
             member->SetFreezeVideo(FALSE);
           }
         }
