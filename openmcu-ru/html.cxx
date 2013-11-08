@@ -1351,7 +1351,8 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
     ConferenceListType & conferenceList = OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceList();
     ConferenceListType::iterator r;
     for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
-    if(r != conferenceList.end() ) {
+    if(r != conferenceList.end() )
+    {
       Conference & conference = *(r->second);
       message << "<script>p.splitdata=Array(";
       for (unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
@@ -1368,6 +1369,14 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
         << "p.seltpl=\"" << conference.GetSelectedTemplateName() << "\"\n"
         << "p.build_page();\n"
         << "</script>\n";
+    }
+    else
+    { // no (no more) room -- redirect to /
+      OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
+      message << "<script>top.location.href='/';</script>\n";
+      server.Write((const char*)message,message.GetLength());
+      server.flush();
+      return FALSE;
     }
     OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
   }
