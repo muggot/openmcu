@@ -81,8 +81,8 @@ window.l_info_connections ='\
 Page shows current connections and terminal parameters.\
 ';
 window.l_info_param_general ='Global server parameters. To reset all settings to defaults - check "RESTORE DEFAULTS" checkbox and click Accept.';
-window.l_param_managing_users = '';
-window.l_param_managing_groups = '';
+window.l_info_param_managing_users = '';
+window.l_info_param_managing_groups = '';
 window.l_info_param_h323_endpoints ='';
 window.l_info_param_sip_endpoints ='';
 window.l_info_param_video ='Outgoing video quality.';
@@ -105,3 +105,9 @@ window.l_select_duration =     'Duration'
 window.l_select_delete =       'Delete room'
 
 window.l_not_found = 'not found';
+
+window.l_name_user           = 'User';
+window.l_name_group          = 'Group';
+window.l_name_password       = 'Password';
+window.l_name_roomname       = 'Room name';
+window.l_name_access         = 'Access';

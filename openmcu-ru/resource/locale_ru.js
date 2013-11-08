@@ -120,3 +120,9 @@ window.l_select_duration =     'Время работы'
 window.l_select_delete =       'Удалить комнату'
 
 window.l_not_found = 'не найден';
+
+window.l_name_user           = 'Пользователь';
+window.l_name_group          = 'Группа';
+window.l_name_password       = 'Пароль';
+window.l_name_roomname       = 'Имя комнаты';
+window.l_name_access         = 'Доступ';
