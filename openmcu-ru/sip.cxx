@@ -1698,10 +1698,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     if(ret != 1)
     {
       if(ret == 600)
-      {
-        sCon->CleanUpOnCallEnd();
-        delete sCon;
-      }
+        sCon->LeaveConference(TRUE); // leave conference and delete connection
       return 0;
     }
     SipConnMapInsert(sik, sCon);
@@ -1805,6 +1802,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
          return ReqReply(msg, ret);
        ReqReply(msg, SIP_200_OK, sCon);
        sCon->StartReceiveChannels(); // start receive logical channels
+       sCon->StartTransmitChannels(); // start transmit logical channels
      } else {
        sipConnMap.erase(sik);
        ReqReply(msg, SIP_405_METHOD_NOT_ALLOWED);
@@ -1823,10 +1821,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
    {
      ReqReply(msg, ret);
      if(ret == 600)
-     {
-       sCon->CleanUpOnCallEnd();
-       delete sCon;
-     }
+       sCon->LeaveConference(TRUE); // leave conference and delete connection
      return 0;
    }
    ReqReply(msg, SIP_200_OK, sCon);
