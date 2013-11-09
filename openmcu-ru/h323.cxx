@@ -2721,8 +2721,18 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
   if (conferenceMember == NULL)
     return;
 
-  PString msg = str;
-  PString code = msg.Right(msg.GetLength()-msg.FindLast("*")-1);
+  PString signalTypes = "1234567890*#ABCD";
+  if(str.GetLength() == 1 && signalTypes.Find(str) != P_MAX_INDEX)
+  {
+    dtmfBuffer += str;
+    if(str != "#")
+      return;
+  } else {
+    dtmfBuffer = str;
+  }
+
+  PString msg = dtmfBuffer;
+  PString code = dtmfBuffer.Right(msg.GetLength()-dtmfBuffer.FindLast("*")-1);
   code.Replace("#","",TRUE,0);
   MCUConfig cfg("Control Codes");
   if(code != "" && cfg.HasKey(code))
@@ -2736,6 +2746,7 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
   }
 
   conferenceMember->SendUserInputIndication(msg);
+  dtmfBuffer = "";
 }
 
 BOOL OpenMCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)

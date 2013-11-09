@@ -149,10 +149,8 @@ static const PTEACypher::Key CypherKey = {
   }
 };
 
-static PString MCUControlCodes = "no action,"
-                                 "ask voice,"
-                                 "mute,"
-                                 "unmute";
+static PString MCUControlCodes = "NO ACTION,"
+                                 "new action";
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

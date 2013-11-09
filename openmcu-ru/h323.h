@@ -267,6 +267,7 @@ class OpenMCUH323Connection : public H323Connection
     void SetEndpointDefaultVideoParams();
     void SetEndpointPrefVideoParams();
     PString GetEndpointParam(PString param);
+    PString dtmfBuffer;
 
 #if OPENMCU_VIDEO
     virtual BOOL OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount);

@@ -318,7 +318,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int direction; // 0=incoming, 1=outgoing
   int cseqNum;
   unsigned audioRtpPort, videoRtpPort;
-  PString dtmf;
 
   // preffered endpoints parameters
   unsigned epBandwidthTo;

@@ -474,14 +474,11 @@ void OpenMCUSipConnection::ReceiveDTMF(PString sdp)
     if(dataArray[i].Find("Signal=") != P_MAX_INDEX)
     {
       PString signal = dataArray[i].Tokenise("=")[1];
-      dtmf += signal;
+      PString signalTypes = "1234567890*#ABCD";
+      if(signal.GetLength() == 1 && signalTypes.Find(signal) != P_MAX_INDEX)
+        OnUserInputString(signal);
       break;
     }
-  }
-  if(dtmf.FindLast("#") == dtmf.GetLength()-1)
-  {
-    OnUserInputString(dtmf);
-    dtmf = "";
   }
 }
 
