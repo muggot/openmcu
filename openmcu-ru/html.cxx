@@ -331,6 +331,7 @@ ControlCodesPConfigPage::ControlCodesPConfigPage(PHTTPServiceProcess & app,const
 
   s << NewRowColumn(JsLocale("window.l_name_code"));
   s << ColumnItem(JsLocale("window.l_name_action"));
+  s << ColumnItem(JsLocale("window.l_name_message"));
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -338,12 +339,14 @@ ControlCodesPConfigPage::ControlCodesPConfigPage(PHTTPServiceProcess & app,const
     PString name = keys[i];
     PStringArray params = cfg.GetString(keys[i]).Tokenise(",");
     s << NewRowInput(name);
-    s << SelectItem(name, params[0], MCUControlCodes, 300);
+    s << SelectItem(name, params[0], MCUControlCodes, 280);
+    s << StringItem(name, params[1], 35);
   }
   if(keys.GetSize() == 0)
   {
     s << NewRowInput("1");
-    s << SelectItem("1", "", MCUControlCodes, 300);
+    s << SelectItem("1", "", MCUControlCodes, 280);
+    s << StringItem("1", "", 35);
   }
 
   s << EndTable();

@@ -463,6 +463,28 @@ void OpenMCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, 
     SendFastUpdatePicture();
 }
 
+void OpenMCUSipConnection::ReceiveDTMF(PString sdp)
+{
+  if(conference == NULL)
+    return;
+
+  PStringArray dataArray = sdp.Lines();
+  for(PINDEX i = 0; i < dataArray.GetSize(); i++)
+  {
+    if(dataArray[i].Find("Signal=") != P_MAX_INDEX)
+    {
+      PString signal = dataArray[i].Tokenise("=")[1];
+      dtmf += signal;
+      break;
+    }
+  }
+  if(dtmf.FindLast("#") == dtmf.GetLength()-1)
+  {
+    OnUserInputString(dtmf);
+    dtmf = "";
+  }
+}
+
 void SipCapability::Print()
 {
  cout << "Payload: " << payload << " Media: " << media << " Direction: " << dir << " Port: " << port << "\r\n";
@@ -1856,20 +1878,14 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
   if(request == "INFO" )
   {
     OpenMCUSipConnection *sCon = SipConnMapFind(sik);
-    if(sCon)
+    if(sCon && sip->sip_payload && sip->sip_payload->pl_data && sip->sip_content_type && sip->sip_content_type->c_type)
     {
-      if(sip->sip_payload && sip->sip_payload->pl_data &&
-         sip->sip_content_type && sip->sip_content_type->c_type)
-      {
-        PString type = PString(sip->sip_content_type->c_type);
-        PString data = PString(sip->sip_payload->pl_data);
-        if(type.Find("application/media_control") != P_MAX_INDEX &&
-           data.Find("to_encoder") != P_MAX_INDEX &&
-           data.Find("picture_fast_update") != P_MAX_INDEX)
-        {
-          sCon->FastUpdatePicture();
-        }
-      }
+      PString type = PString(sip->sip_content_type->c_type);
+      PString data = PString(sip->sip_payload->pl_data);
+      if(type.Find("application/media_control") != P_MAX_INDEX && data.Find("to_encoder") != P_MAX_INDEX && data.Find("picture_fast_update") != P_MAX_INDEX)
+        sCon->FastUpdatePicture();
+      else if (type.Find("application/dtmf-relay") != P_MAX_INDEX)
+        sCon->ReceiveDTMF(data);
     }
     return ReqReply(msg, SIP_200_OK);
   }

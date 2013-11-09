@@ -299,6 +299,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int SendFastUpdatePicture();
   int SendRequest(sip_method_t method, const char *method_name, msg_t *sip_msg);
   int CreateSipData();
+  void ReceiveDTMF(PString payload);
 
 //  virtual BOOL ClearCall(
 //      CallEndReason reason = EndedByLocalUser  ///< Reason for call clearing
@@ -317,6 +318,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int direction; // 0=incoming, 1=outgoing
   int cseqNum;
   unsigned audioRtpPort, videoRtpPort;
+  PString dtmf;
 
   // preffered endpoints parameters
   unsigned epBandwidthTo;

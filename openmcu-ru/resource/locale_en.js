@@ -117,3 +117,4 @@ window.l_name_roomname       = 'Room name';
 window.l_name_access         = 'Access';
 window.l_name_action         = 'Action';
 window.l_name_code           = 'Code';
+window.l_name_message        = 'Message';

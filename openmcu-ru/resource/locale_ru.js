@@ -132,3 +132,4 @@ window.l_name_roomname       = 'Имя комнаты';
 window.l_name_access         = 'Доступ';
 window.l_name_action         = 'Действие';
 window.l_name_code           = 'Код';
+window.l_name_message        = 'Сообщение';

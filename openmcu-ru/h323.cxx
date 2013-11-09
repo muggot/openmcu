@@ -2718,10 +2718,25 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
 {
   PWaitAndSignal m(connMutex);
 
-  if (conferenceMember != NULL)
-    conferenceMember->SendUserInputIndication(str);
-}
+  if (conferenceMember == NULL)
+    return;
 
+  PString msg = str;
+  PString code = msg.Right(msg.GetLength()-msg.FindLast("*")-1);
+  code.Replace("#","",TRUE,0);
+  MCUConfig cfg("Control Codes");
+  if(code != "" && cfg.HasKey(code))
+  {
+    PStringArray params = cfg.GetString(code).Tokenise(",");
+    if(params.GetSize() >= 2)
+    {
+      if(params[1] != "") msg = params[1];
+      else msg = params[0];
+    }
+  }
+
+  conferenceMember->SendUserInputIndication(msg);
+}
 
 BOOL OpenMCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
