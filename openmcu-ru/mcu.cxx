@@ -260,6 +260,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // Create the config page - managing groups
   httpNameSpace.AddResource(new ManagingGroupsPConfigPage(*this, "ManagingGroups", "Managing Groups", authSettings), PHTTPSpace::Overwrite);
 
+  // Create the config page - control codes
+  httpNameSpace.AddResource(new ControlCodesPConfigPage(*this, "ControlCodes", "Control Codes", authSettings), PHTTPSpace::Overwrite);
+
+  // Create the config page - room codes
+  httpNameSpace.AddResource(new RoomCodesPConfigPage(*this, "RoomCodes", "Room Codes", authSettings), PHTTPSpace::Overwrite);
+
   // Create the config page - h323 endpoints
   httpNameSpace.AddResource(new H323EndpointsPConfigPage(*this, "H323EndpointsParameters", "H323 Endpoints", authSettings), PHTTPSpace::Overwrite);
 

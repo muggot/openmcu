@@ -350,6 +350,7 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 
 <-- #topnav a#menu_param{ background:url(menu_param.png) no-repeat scroll 5% 50% transparent; } -->
  menu a#menu_users { background:url(menu_left.png) no-repeat scroll 0% 50% transparent; }
+ menu a#menu_codes { background:url(menu_left.png) no-repeat scroll 0% 50% transparent; }
  menu a#menu_h323 { background:url(menu_left.png) no-repeat scroll 0% 50% transparent; }
  menu a#menu_sip { background:url(menu_left.png) no-repeat scroll 0% 50% transparent; }
 
@@ -401,8 +402,14 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
      <li><a href='ManagingGroups' id="l_param_managing_groups"></a></li>
     </menu>
    </li>
-   <li><a href='#' id="menu_h323" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">H.323</a>
+   <li><a href='#' id="menu_codes" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">Control</a>
     <menu id="submenu2" style="display:none" onmouseover="javascript:displayElement('submenu2',true);" onmouseout="javascript:displayElement('submenu2',false);">
+     <li><a href='ControlCodes' id="l_param_control_codes"></a></li>
+     <li><a href='RoomCodes' id="l_param_room_codes"></a></li>
+    </menu>
+   </li>
+   <li><a href='#' id="menu_h323" onmouseover="javascript:displayElement('submenu3',true);" onmouseout="javascript:displayElement('submenu3',false);">H.323</a>
+    <menu id="submenu3" style="display:none" onmouseover="javascript:displayElement('submenu3',true);" onmouseout="javascript:displayElement('submenu3',false);">
      <li><a href='H323Parameters' id="l_param_h323"></a></li>
      <li><a href='H323EndpointsParameters' id="l_param_h323_endpoints"></a></li>
      <li><a href='ReceiveSoundCodecs' id="l_param_receive_sound"></a></li>
@@ -411,8 +418,8 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
      <li><a href='TransmitVideoCodecs' id="l_param_transmit_video"></a></li>
     </menu>
    </li>
-   <li><a href='#' id="menu_sip" onmouseover="javascript:displayElement('submenu3',true);" onmouseout="javascript:displayElement('submenu3',false);">SIP</a>
-    <menu id="submenu3" style="display:none" onmouseover="javascript:displayElement('submenu3',true);" onmouseout="javascript:displayElement('submenu3',false);">
+   <li><a href='#' id="menu_sip" onmouseover="javascript:displayElement('submenu4',true);" onmouseout="javascript:displayElement('submenu4',false);">SIP</a>
+    <menu id="submenu4" style="display:none" onmouseover="javascript:displayElement('submenu4',true);" onmouseout="javascript:displayElement('submenu4',false);">
      <li><a href='SIPParameters' id="l_param_sip"></a></li>
      <li><a href='SipEndpointsParameters' id="l_param_sip_endpoints"></a></li>
      <li><a href='SipSoundCodecs' id="l_param_sip_sound"></a></li>
@@ -493,6 +500,8 @@ $BODY$
    document.getElementById("l_param_general").innerHTML = window.l_param_general;
    document.getElementById("l_param_managing_users").innerHTML = window.l_param_managing_users;
    document.getElementById("l_param_managing_groups").innerHTML = window.l_param_managing_groups;
+   document.getElementById("l_param_control_codes").innerHTML = window.l_param_control_codes;
+   document.getElementById("l_param_room_codes").innerHTML = window.l_param_room_codes;
    document.getElementById("l_param_h323_endpoints").innerHTML = window.l_param_h323_endpoints;
    document.getElementById("l_param_sip_endpoints").innerHTML = window.l_param_sip_endpoints;
    document.getElementById("l_param_video").innerHTML = window.l_param_video;
@@ -515,6 +524,7 @@ $BODY$
    document.getElementById("l_records").innerHTML = window.l_records;
    <!-- меню -->
    document.getElementById("menu_users").innerHTML = window.l_param_managing_users;
+   document.getElementById("menu_codes").innerHTML = window.l_control;
    <!-- управление -->
    if(document.getElementById("l_select_create")) document.getElementById("l_select_create").value = window.l_select_create;
  </script>

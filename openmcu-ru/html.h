@@ -427,6 +427,26 @@ class ManagingGroupsPConfigPage : public TablePConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class ControlCodesPConfigPage : public TablePConfigPage
+{
+  public:
+    ControlCodesPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  private:
+    PConfig cfg;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class RoomCodesPConfigPage : public TablePConfigPage
+{
+  public:
+    RoomCodesPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  private:
+    PConfig cfg;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class H323EndpointsPConfigPage : public TablePConfigPage
 {
  public:

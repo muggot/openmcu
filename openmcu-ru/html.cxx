@@ -321,6 +321,76 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+ControlCodesPConfigPage::ControlCodesPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+  PStringStream html_begin, html_end, html_page, s;
+  buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+  s << BeginTable();
+
+  s << NewRowColumn(JsLocale("window.l_name_code"));
+  s << ColumnItem(JsLocale("window.l_name_action"));
+
+  PStringList keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    PString name = keys[i];
+    PStringArray params = cfg.GetString(keys[i]).Tokenise(",");
+    s << NewRowInput(name);
+    s << SelectItem(name, params[0], MCUControlCodes, 300);
+  }
+  if(keys.GetSize() == 0)
+  {
+    s << NewRowInput("1");
+    s << SelectItem("1", "", MCUControlCodes, 300);
+  }
+
+  s << EndTable();
+  BuildHTML("");
+  BeginPage(html_begin, "Control Codes", "window.l_param_control_codes", "window.l_info_param_control_codes");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  string = html_page;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RoomCodesPConfigPage::RoomCodesPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+  PStringStream html_begin, html_end, html_page, s;
+  buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+  s << BeginTable();
+
+  s << NewRowColumn(JsLocale("window.l_name_code"));
+  s << ColumnItem(JsLocale("window.l_name_roomname"));
+
+  PStringList keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    PString name = keys[i];
+    PStringArray params = cfg.GetString(keys[i]).Tokenise(",");
+    s << NewRowInput(name);
+    s << StringItem(name, params[0]);
+  }
+  if(keys.GetSize() == 0)
+  {
+    s << NewRowInput("1");
+    s << StringItem("1", "room101");
+  }
+
+  s << EndTable();
+  BuildHTML("");
+  BeginPage(html_begin, "Room Codes", "window.l_param_room_codes", "window.l_info_param_room_codes");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  string = html_page;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ManagingUsersPConfigPage::ManagingUsersPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
