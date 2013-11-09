@@ -1899,7 +1899,12 @@ void OpenMCUSipEndPoint::MainLoop()
   SipConnectionMapType::iterator scr;
   while(1)
   {
-    if(terminating) return;
+    if(terminating)
+    {
+      for(scr = sipConnMap.begin(); scr != sipConnMap.end(); scr++) 
+        if(scr->second != NULL) scr->second->SendBYE();
+      return;
+    }
     for (scr = sipConnMap.begin(); scr != sipConnMap.end(); scr++) 
     {
       OpenMCUSipConnection *sCon = scr->second;
