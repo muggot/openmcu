@@ -2730,16 +2730,31 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
     dtmfBuffer = str;
   }
 
-  PString code = dtmfBuffer.Right(dtmfBuffer.GetLength()-dtmfBuffer.FindLast("*")-1);
-  code.Replace("#","",TRUE,0);
-  MCUConfig cfg("Control Codes");
-  if(code != "" && cfg.HasKey(code))
+  cout << "Receive DTMF command: " << dtmfBuffer << "\n";
+  PString dtmfTmp = dtmfBuffer;
+  dtmfTmp.Replace("#","",TRUE,0);
+  ConferenceMember *codeConferenceMember;
+  PString code, codeAction, codeRoom, codeRoomName, codePos;
+  PStringStream codeMsg;
+  PStringArray codeArray = dtmfTmp.Tokenise("*");
+  if(codeArray.GetSize() == 2)
   {
-    PString text, name;
-    PStringStream msg;
-    PStringArray params = cfg.GetString(code).Tokenise(",");
+    code = codeArray[1];
+  //} else if(codeArray.GetSize() == 3) {
+    //codePos = codeArray[1];
+    //code = codeArray[2];
+  } else if(codeArray.GetSize() == 4) {
+    codeRoom = codeArray[1];
+    codePos = codeArray[2];
+    code = codeArray[3];
+  }
+  if(code != "" && MCUConfig("Control Codes").HasKey(code))
+  {
+    PString name, text;
+    PStringArray params = MCUConfig("Control Codes").GetString(code).Tokenise(",");
     if(params.GetSize() >= 2)
     {
+      codeAction = params[0];
       if(params[1] != "") text = params[1];
       else text = params[0];
     }
@@ -2747,10 +2762,63 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
       name = GetRemotePartyName()+" ["+GetRemotePartyAddress()+"]";
     else
       name = GetRemotePartyName();
-    msg << "<font color=blue><b>" << name << "</b>: " << text << "</font>";
-    OpenMCU::Current().HttpWriteEvent(msg);
-    //OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
+    codeMsg << "<font color=blue><b>" << name << "</b>: " << text;
+
+    if(codeRoom == "")
+    {
+      codeConferenceMember = conferenceMember;
+    } else {
+      codeConferenceMember = NULL;
+      codeRoomName = MCUConfig("Room Codes").GetString(codeRoom);
+    }
+
+    if(codeRoomName != "" && codePos != "")
+    {
+      {
+        ep.GetConferenceManager().GetConferenceListMutex().Wait();
+        ConferenceListType & conferenceList = ep.GetConferenceManager().GetConferenceList();
+        for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+        {
+          Conference *cConference = r->second;
+          if(cConference->GetNumber() == codeRoomName)
+          {
+            Conference::MemberList & memberList = conference->GetMemberList();
+            for(Conference::MemberList::const_iterator t = memberList.begin(); t != memberList.end(); ++t)
+            {
+              ConferenceMember *member = t->second;
+              if(member->GetName() == "file recorder" || member->GetName() == "cache") continue;
+              MCUVideoMixer *mixer = conference->VMLFind(member->GetVideoMixerNumber());
+              if(mixer == NULL) continue;
+              int pos = mixer->GetPositionNum(member->GetID());
+              if(pos < 0) continue;
+              if(pos == atoi(codePos))
+              {
+                codeConferenceMember = member;
+                codeMsg << "<br>-> action:"+codeAction+" room:"+codeRoomName+" pos:"+codePos+" found:" << member->GetName();
+                break;
+              }
+            }
+            break;
+          }
+        }
+      }
+      ep.GetConferenceManager().GetConferenceListMutex().Signal();
+    }
+
+    if(codeConferenceMember != NULL)
+    {
+      if(codeAction == "close")
+        codeConferenceMember->Close();
+      else if(codeAction == "mute")
+        codeConferenceMember->muteIncoming = TRUE;
+      else if(codeAction == "unmute")
+        codeConferenceMember->muteIncoming = FALSE;
+      codeMsg << "</font>";
+      OpenMCU::Current().HttpWriteEvent(codeMsg);
+      //OpenMCU::Current().HttpWriteEventRoom(codeMsg, conference->GetNumber());
+    }
   } else {
+    // the old "H.245/User Input Indication/DTMF" by kay27
     conferenceMember->SendUserInputIndication(dtmfBuffer);
   }
   dtmfBuffer = "";
