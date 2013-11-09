@@ -1480,6 +1480,21 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     member->chosenVan=FALSE;
     conferenceManager.UnlockConference();
     conference->PutChosenVan();
+#if 1 // DISABLING VAD WILL CAUSE MEMBER REMOVAL FROM VAD POSITIONS
+    {
+      PWaitAndSignal m(conference->GetMutex());
+      ConferenceMemberId id = member->GetID();
+      Conference::VideoMixerRecord * vmr = conference->videoMixerList;
+      while(vmr!=NULL)
+      {
+        int type = vmr->mixer->GetPositionType(id);
+        if(type<2 || type>3) { vmr=vmr->next; continue;} //-1:not found, 1:static, 2&3:VAD
+        vmr->mixer->MyRemoveVideoSourceById(id, FALSE);
+        vmr = vmr->next;
+      }
+      conference->FreezeVideo(id);
+    }
+#endif
     cmd << "ivad(" << v << ",2)";
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
     return "OK";
@@ -1722,6 +1737,8 @@ PString OpenMCUH323EndPoint::SetRoomParams(const PStringToString & data)
     for(int i=0;i<100;i++) idr[i]=mixer->GetPositionId(i);
     return RoomCtrlPage(room,conference.IsModerated()=="+",mixer->GetPositionSet(),conference,idr);
   }
+
+return "";
 /*
   PString mode = data("moderated");
   PString globalmute = data("muteUnvisible");

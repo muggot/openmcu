@@ -2960,68 +2960,27 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
   PWaitAndSignal m(mutex);
 
   VideoFrameStoreList::FrameStore & Fs = srcFrameStores.GetFrameStore(width, height);
-/*
-  if (!Fs.valid) 
-  {
-   if(width*CIF_HEIGHT!=height*CIF_WIDTH || 
-      (width!=CIF_WIDTH && width!=CIF4_WIDTH && width!=CIF16_WIDTH)) // non standart frame
-//eg width=16; height=9; 16*9>9*11=TRUE; nw=9*11/9=11;
-   {
-    int nw,nh;
-    if(width*CIF_HEIGHT == height*CIF_WIDTH) { nw=width; nh=height; }
-    else if(width*CIF_HEIGHT > height*CIF_WIDTH) // needs h cut
-    { nw=(height*CIF_WIDTH)/CIF_HEIGHT; nh=height; }
-    else { nw=width; nh=(width*CIF_HEIGHT)/CIF_WIDTH; }
-
-    if(nw <= CIF_WIDTH*1.5)
-    {
-     VideoFrameStoreList::FrameStore & cifFs = srcFrameStores.GetFrameStore(CIF_WIDTH, CIF_HEIGHT);
-     cifFs.used=300;
-     if(cifFs.valid)
-     {
-      imageStores_operational_size(nw,nh,_IMGST2);
-//      ConvertFRAMEToCUSTOM_FRAME(cifFs.data.GetPointer(),imageStore2.GetPointer(), CIF_WIDTH, CIF_HEIGHT,nw,nh);
-      ResizeYUV420P(cifFs.data.GetPointer(),imageStore2.GetPointer(), CIF_WIDTH, CIF_HEIGHT,nw,nh);
-      CopyRectIntoFrame(imageStore2.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
-      Fs.valid=1;
-     } 
-    }
-    else if(nw < CIF4_WIDTH+100)
-    {
-     VideoFrameStoreList::FrameStore & cif4Fs = srcFrameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT);
-     cif4Fs.used=300;
-     if(cif4Fs.valid)
-     {
-      imageStores_operational_size(nw,nh,_IMGST2);
-//      ConvertFRAMEToCUSTOM_FRAME(cif4Fs.data.GetPointer(),imageStore2.GetPointer(), CIF4_WIDTH, CIF4_HEIGHT,nw,nh);
-      ResizeYUV420P(cif4Fs.data.GetPointer(),imageStore2.GetPointer(), CIF4_WIDTH, CIF4_HEIGHT,nw,nh);
-      CopyRectIntoFrame(imageStore2.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
-//      nw = CIF4_WIDTH; nh = CIF4_HEIGHT;
-//      CopyRectIntoFrame(cif4Fs.data.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
-      Fs.valid=1;
-//      cout << "Read\n";
-     } 
-    }
-    else
-    {
-     VideoFrameStoreList::FrameStore & cif16Fs = srcFrameStores.GetFrameStore(CIF16_WIDTH, CIF16_HEIGHT);
-     cif16Fs.used=300;
-     if(cif16Fs.valid)
-     {
-      imageStores_operational_size(nw,nh,_IMGST2);
-//      ConvertFRAMEToCUSTOM_FRAME(cif16Fs.data.GetPointer(),imageStore2.GetPointer(), CIF16_WIDTH, CIF16_HEIGHT,nw,nh);
-      ResizeYUV420P(cif16Fs.data.GetPointer(),imageStore2.GetPointer(), CIF16_WIDTH, CIF16_HEIGHT,nw,nh);
-      CopyRectIntoFrame(imageStore2.GetPointer(),Fs.data.GetPointer(),(width-nw)>>1,(height-nh)>>1,nw,nh,width,height);
-      Fs.valid=1;
-     } 
-    } 
-   }
-  }
-*/
   if (!Fs.valid) 
   {
 //   if (!OpenMCU::Current().GetPreMediaFrame(Fs.data.GetPointer(), width, height, amount))
     MCUVideoMixer::FillYUVFrame(Fs.data.GetPointer(), 0, 0, 0, width, height);
+
+    if(width>=2 && height >=2) // grid
+    for (unsigned i=0; i<OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum; i++)
+    if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].border)
+    {
+      VMPCfgOptions & vmpcfg=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i];
+      int pw=vmpcfg.width*width/CIF4_WIDTH; // pixel w&h of vmp-->fs
+      int ph=vmpcfg.height*height/CIF4_HEIGHT;
+      if(pw<2 || ph<2) continue;
+      imageStores_operational_size(pw,ph,_IMGST);
+      const void *ist = imageStore.GetPointer();
+      FillYUVFrame(imageStore.GetPointer(), 0, 0, 0, pw, ph);
+      VideoSplitLines(imageStore.GetPointer(), pw, ph);
+      int px=vmpcfg.posx*width/CIF4_WIDTH; // pixel x&y of vmp-->fs
+      int py=vmpcfg.posy*height/CIF4_HEIGHT;
+      CopyRectIntoFrame(ist,Fs.data.GetPointer(),px,py,pw,ph,width,height);
+    }
     Fs.valid = TRUE;
   }
   memcpy(buffer, Fs.data.GetPointer(), amount);
@@ -3787,10 +3746,11 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
 
 void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
 {
+  PWaitAndSignal m(mutex);
+
   unsigned layoutCapacity = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
   if(((unsigned)pos1>=layoutCapacity)||((unsigned)pos2>=layoutCapacity)) return;
 
-  PWaitAndSignal m(mutex);
   VideoMixPosition * v1 = VMPListFindVMP(pos1);
   VideoMixPosition * v2 = VMPListFindVMP(pos2);
   if((v1==NULL)&&(v2==NULL)) return;
@@ -3808,20 +3768,26 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
     v2->border=o.border;
     v2->n=pos1;
     v2->label_init=FALSE;
-    v2->terminalName="";
     return;
   }
 
   ConferenceMemberId id0=v1->id;
   PString tn0=v1->terminalName;
+  int t=v1->type, st=v1->status;
 
-  v1->id=v2->id;
-  v1->terminalName=v2->terminalName;
-  v1->label_init=FALSE;
+  v1->id           = v2->id;
+  v1->type         = v2->type;
+  v1->status       = v2->status;
+  v1->terminalName = v2->terminalName;
+  v1->label_init   = FALSE;
+  if( (((unsigned long)v1->id)&(~(unsigned long)255)) < 100) NullRectangle(v1->xpos, v1->ypos, v1->width, v1->height, v1->border);
 
   v2->id=id0;
+  v2->type         = t;
+  v2->status       = st;
   v2->terminalName=tn0;
   v2->label_init=FALSE;
+  if( (((unsigned long)v2->id)&(~(unsigned long)255)) < 100) NullRectangle(v2->xpos, v2->ypos, v2->width, v2->height, v2->border);
 }
 
 

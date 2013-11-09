@@ -21,6 +21,8 @@ var MIXER_LAYOUT_SCROLL_RIGHT_STYLE=MIXER_LAYOUT_SCROLL_LEFT_STYLE;
 var MIXER_LAYOUT_SCROLL_LEFT_BUTTON="&#9668;";
 var MIXER_LAYOUT_SCROLL_RIGHT_BUTTON="&#9658;";
 var VAD_FIELD_STYLE="width:40px;background-color:#fce;border-radius:5px;color:blue;font-weight:bold";
+var MIX_BORDER_COLOR='#5ce';
+
 
 var OTFC_UNMUTE                  =  0; // corresponds to h323.h
 var OTFC_MUTE                    =  1;
@@ -65,6 +67,8 @@ var OTFC_VIDEO_RECORDER_STOP     = 76;
 var libyuv_flt_desc = Array('None', 'Bilin.', 'Box');
 
 var mmw = -1; // build_page() initializer
+var visible_ids='';
+var mixers=0, bfw=704, bfh=576, room='';
 
 var mixer_refresh_timer = null;
 
@@ -965,8 +969,6 @@ function build_page()
   b=document.getElementById('cb3');
   mixers=conf[0][0]; bfw=conf[0][1]; bfh=conf[0][2]; room=conf[0][3]; roomLink=encodeURIComponent(room);
 
-  mix_color='#5ce';
-
   var page_width = document.body.clientWidth || default_page_width;
   if(page_width != default_page_width) {
     page_width = page_width-page_border_width;
@@ -1052,18 +1054,17 @@ function get_mixers_content()
 {
   var s='', pos_y=0;
   visible_ids=',';
-  for(i=0;i<mixers;i++)
+  for(i=0;i<conf[0][0];i++)
   { s+="<div id='mixercontrol"+i+"'>";
     var mw=conf[i+1][0][0]; var mh=conf[i+1][0][1]; var pos_x=(mmw-mw)>>1;
 // walking through the mixer's positions
     for(var j=0;j<conf[i+1][1].length;j++)
-    { var id=false; try { if(typeof conf[i+1][2][j]!='undefined') id=conf[i+1][2][j]; } catch(e) {}; //alert(id + '\r\n\r\n' + array_print(conf[i+1]));
-      if((id!=0)&&(id!=-1)&&(id!=-2)) visible_ids+=''+id+',';
-      var type=false;
-      if(id!==false) if(typeof conf[i+1][3][j]!='undefined') type=conf[i+1][3][j];
+    { var id=false; try { if(typeof conf[i+1][2][j] != 'undefined') id=conf[i+1][2][j]; } catch(e) {id=false;}
+      if(id!==false) if((id!=0)&&(id!=-1)&&(id!=-2)) visible_ids += ''+id+',';
+      var type=false; if(id!==false) try { if(typeof conf[i+1][3][j]!='undefined') type=conf[i+1][3][j]; } catch(e) {type=false;}
       var x=Math.round(conf[i+1][1][j][0]/bfw*mw); var y=Math.round(conf[i+1][1][j][1]/bfh*mh);
       var w=Math.round(conf[i+1][1][j][2]/bfw*mw); var h=Math.round(conf[i+1][1][j][3]/bfh*mh);
-      var border='1px solid '+mix_color; if(id==-1)border='1px solid red'; else if(id==-2) border='1px dotted #f00';
+      var border='1px solid '+MIX_BORDER_COLOR; if(type===2)border='1px solid red'; else if(type===3) border='0;border-right:2px solid yellow;border-bottom:2px solid yellow';
       s+="<div id='pp"+i+"_"+j+"' style='position:relative;top:"+(pos_y+y)+"px;left:"+(pos_x+x)+"px;width:0px;height:0px'>"; // pointing block for member's mockup
         s+="<div id='pr"+i+"_"+j+"'"+ // rectangle for member's mockup
           " onmousedown='ddstart(event,this,"+i+","+j+")' onmouseover='ddover(event,this,"+i+","+j+")' onmouseout='ddout(event,this,"+i+","+j+")'"+
@@ -1129,7 +1130,7 @@ function mixrfr()
       {
         continue;
       }
-      var border='1px solid '+mix_color; if(id==-1)border='1px solid red'; else if(id==-2) border='1px dotted #f00';
+      var border='1px solid '+MIX_BORDER_COLOR; if(id==-1)border='1px solid red'; else if(id==-2) border='1px dotted #f00';
       s+="<div id='pp"+i+"_"+j+"' style='position:relative;top:"+(pos_y+y)+"px;left:"+(pos_x+x)+"px;width:0px;height:0px'>"; // pointing block for member's mockup
         s+="<div id='pr"+i+"_"+j+"'"+ // rectangle for member's mockup
           " onmousedown='ddstart(event,this,"+i+","+j+")' onmouseover='ddover(event,this,"+i+","+j+")' onmouseout='ddout(event,this,"+i+","+j+")'"+

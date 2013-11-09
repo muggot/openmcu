@@ -866,7 +866,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, unsigned audio
       else member->vad=0;
       VideoMixerRecord * vmr=videoMixerList; while(vmr!=NULL)
       {
-         MCUVideoMixer * videoMixer = vmr->mixer;
+        MCUVideoMixer * videoMixer = vmr->mixer;
         int status = videoMixer->GetPositionStatus(member->GetID());
         if(audioLevel > VAlevel)
         {
