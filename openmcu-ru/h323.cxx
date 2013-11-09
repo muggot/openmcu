@@ -2725,27 +2725,34 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
   if(str.GetLength() == 1 && signalTypes.Find(str) != P_MAX_INDEX)
   {
     dtmfBuffer += str;
-    if(str != "#")
-      return;
+    if(str != "#") return;
   } else {
     dtmfBuffer = str;
   }
 
-  PString msg = dtmfBuffer;
-  PString code = dtmfBuffer.Right(msg.GetLength()-dtmfBuffer.FindLast("*")-1);
+  PString code = dtmfBuffer.Right(dtmfBuffer.GetLength()-dtmfBuffer.FindLast("*")-1);
   code.Replace("#","",TRUE,0);
   MCUConfig cfg("Control Codes");
   if(code != "" && cfg.HasKey(code))
   {
+    PString text, name;
+    PStringStream msg;
     PStringArray params = cfg.GetString(code).Tokenise(",");
     if(params.GetSize() >= 2)
     {
-      if(params[1] != "") msg = params[1];
-      else msg = params[0];
+      if(params[1] != "") text = params[1];
+      else text = params[0];
     }
+    if(GetRemotePartyAddress().Find("sip:") != P_MAX_INDEX)
+      name = GetRemotePartyName()+" ["+GetRemotePartyAddress()+"]";
+    else
+      name = GetRemotePartyName();
+    msg << "<font color=blue><b>" << name << "</b>: " << text << "</font>";
+    OpenMCU::Current().HttpWriteEvent(msg);
+    //OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
+  } else {
+    conferenceMember->SendUserInputIndication(dtmfBuffer);
   }
-
-  conferenceMember->SendUserInputIndication(msg);
   dtmfBuffer = "";
 }
 
