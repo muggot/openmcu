@@ -584,7 +584,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
-    s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Initial audio status")], "default,mute always,mute without template,unmute always,unmute without template");
+    s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Initial audio status")], "not used,mute,unmute,mute only without template,unmute only without template", 220);
   }
   if(keys.GetSize() == 0)
   {
@@ -592,7 +592,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     s << StringItem("test", "");
     s << StringItem("test", "");
     s << StringItem("test", "");
-    s << SelectItem("test", "default", "default,mute always,mute without template,unmute always,unmute without template");
+    s << SelectItem("test", "not used", "not used,mute,unmute,mute only without template,unmute only without template", 220);
   }
 
   s << EndTable();
