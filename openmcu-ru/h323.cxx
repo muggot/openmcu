@@ -2779,8 +2779,8 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
         ConferenceListType & conferenceList = ep.GetConferenceManager().GetConferenceList();
         for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
         {
-          Conference *cConference = r->second;
-          if(cConference->GetNumber() == codeRoomName)
+          Conference *conference = r->second;
+          if(conference->GetNumber() == codeRoomName)
           {
             Conference::MemberList & memberList = conference->GetMemberList();
             for(Conference::MemberList::const_iterator t = memberList.begin(); t != memberList.end(); ++t)
