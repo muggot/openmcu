@@ -2287,15 +2287,6 @@ void OpenMCUH323Connection::JoinConference(const PString & roomToJoin)
 
   if(!joinSuccess)
     ChangeWelcomeState(JoinFailed);
-
-  if(joinSuccess)
-  {
-    PString epMute = GetEndpointParam("Initial audio status");
-    if(epMute == "mute")
-      conferenceMember->muteIncoming = TRUE;
-    else if (epMute == "unmute")
-      conferenceMember->muteIncoming = FALSE;
-  }
 }
 
 void OpenMCUH323Connection::LeaveConference()
@@ -3084,16 +3075,6 @@ BOOL OpenMCUH323Connection::OnIncomingVideo(const void * buffer, int width, int 
 H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _conference, OpenMCUH323EndPoint & _ep, const PString & _h323Token, ConferenceMemberId _id, BOOL _isMCU)
   : ConferenceMember(_conference, _id, _isMCU), ep(_ep), h323Token(_h323Token)
 { 
-  OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
-  if(conn != NULL)
-  {
-    PString epMute = conn->GetEndpointParam("Initial audio status");
-    if(epMute == "mute only without template")
-      muteIncoming = TRUE;
-    else if(epMute == "unmute only without template")
-      muteIncoming = FALSE;
-    conn->Unlock();
-  }
   conference->AddMember(this);
 }
 

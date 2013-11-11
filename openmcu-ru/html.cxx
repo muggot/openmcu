@@ -573,7 +573,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   s << ColumnItem("Display name override");
   s << ColumnItem("Preferred frame rate from MCU");
   s << ColumnItem("Preferred bandwidth from MCU");
-  s << ColumnItem("Initial audio status");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -584,7 +583,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
-    s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Initial audio status")], "not used,mute,unmute,mute only without template,unmute only without template", 220);
   }
   if(keys.GetSize() == 0)
   {
@@ -592,7 +590,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     s << StringItem("test", "");
     s << StringItem("test", "");
     s << StringItem("test", "");
-    s << SelectItem("test", "not used", "not used,mute,unmute,mute only without template,unmute only without template", 220);
   }
 
   s << EndTable();
@@ -618,7 +615,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   s << ColumnItem("Preferred frame rate from MCU");
   s << ColumnItem("Preferred bandwidth from MCU");
   s << ColumnItem("Preferred bandwidth to MCU");
-  s << ColumnItem("Initial audio status");
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -630,7 +626,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]);
-    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Initial audio status")], "default,mute always,mute without template,unmute always,unmute without template");
   }
   if(keys.GetSize() == 0)
   {
@@ -639,7 +634,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << StringItem("test", "");
     s << StringItem("test", "");
     s << StringItem("test", "");
-    s << SelectItem("test", "default", "default,mute always,mute without template,unmute always,unmute without template");
   }
   s << EndTable();
 
