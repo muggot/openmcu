@@ -2577,9 +2577,9 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
       fr = ep.GetVideoFrameRate();
 
     // update format string
-    codec.formatString = mf+"@"+PString(mf.GetOptionInteger(OpalVideoFormat::FrameWidthOption))+"x"+
-                                PString(mf.GetOptionInteger(OpalVideoFormat::FrameHeightOption))+":"+
-                                PString(mf.GetOptionInteger(OpalVideoFormat::MaxBitRateOption))+"x";
+    PString formatWH = codec.formatString.Left(codec.formatString.FindLast(":"));
+    codec.formatString = formatWH+":"+PString(mf.GetOptionInteger(OpalVideoFormat::MaxBitRateOption))+"x";
+
 
     // SetTxQualityLevel not send the value in encoder
     //codec.SetTxQualityLevel(ep.GetVideoTxQuality());
