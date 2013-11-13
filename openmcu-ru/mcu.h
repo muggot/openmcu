@@ -319,6 +319,9 @@ class OpenMCU : public OpenMCUProcessAncestor
     virtual MCUVideoMixer * CreateVideoMixer()
     { return new MCUSimpleVideoMixer(forceScreenSplit); }
 
+    virtual void RemovePreMediaFrame()
+    { }
+
     virtual BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount)
     { return FALSE; }
 

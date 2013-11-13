@@ -254,7 +254,7 @@ class MCUVideoMixer
 	unsigned int fc;
 	PBYTEArray label_buffer;
 	unsigned label_buffer_fw, label_buffer_fh;
-	PString terminalName;
+	PString endpointName;
 #if USE_FREETYPE
         unsigned minWidthForLabel;
 #endif

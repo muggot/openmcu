@@ -388,6 +388,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "openmcu.ico");
   WEBSERVER_LINK_MIME("image/x-windows-bmp"      , "openmcu.ru_logo_text.bmp");
   WEBSERVER_LINK_MIME("image/png"                , "menu_left.png");
+#if USE_LIBJPEG
+  WEBSERVER_LINK_MIME("image/jpeg"               , "logo.jpeg");
+#endif
 
   for(PINDEX i=-1; i<rotationLevel; i++)
   {

@@ -1000,6 +1000,78 @@ WelcomePage::WelcomePage(OpenMCU & _app, PHTTPAuthority & auth)
     app(_app)
 {}
 
+BOOL WelcomePage::OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo & info, const PStringToString & data, const PHTTPConnectionInfo & connectInfo)
+{
+  PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
+  if(!CheckAuthority(server, *req, connectInfo)) { delete req; return PServiceHTTPString::OnGET(server, url, info, connectInfo); }
+  delete req;
+#if USE_LIBJPEG
+  const PString & eb = connectInfo.GetEntityBody();
+  long l = connectInfo.GetEntityBodyLength();
+  if(l<1) return FALSE;
+  PINDEX o = eb.Find("image/jpeg");
+  if(o == P_MAX_INDEX) return FALSE;
+
+  PINDEX bs = 0, be = bs; // bs, be - boundary start, boundary end
+  BYTE c = eb[be];
+  while ((c != 10) && (c != 13) && (be < l))
+  {
+    be++;
+    c = eb[be];
+  }
+  if(be == l) return FALSE;
+  PINDEX bl = be - bs; // bl - boundary length
+  if(bl < 3) return FALSE;
+
+  o+=11;
+  PINDEX limit=PMIN(l, o+4);
+  while((o < limit) && ((eb[o] == 10) || (eb[o] == 13))) o++;
+
+  PINDEX o2 = o;
+  BOOL found = FALSE;
+  while((!found) && (o2 < l - bl))
+  {
+    found = TRUE;
+    for (PINDEX j = 0; j<bl; j++)
+    {
+      if(eb[o2+j] != eb[bs+j])
+      {
+        found = FALSE;
+        o2++;
+        break;
+      }
+    }
+  }
+
+  if(!found) return FALSE;
+  if(o2 > o) if((eb[o2-1] == 10) || (eb[o2-1] == 13))
+  { o2--;
+    if(o2 > o) if((eb[o2-1] == 10) || (eb[o2-1] == 13)) o2--;
+  }
+  if(o2<=o) return FALSE;
+  size_t cl = o2-o; // content length
+  if(cl > 524288) return FALSE; // too big
+
+  FILE *f;
+  size_t written=0;
+  f=fopen(PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + "logo.jpeg","wb"); 
+  if(f) written=fwrite((const void*)(((const char*)eb)+o), 1, (size_t)o2-o, f);
+  fclose(f);
+
+  PTRACE(1,"HTML\tlogo.jpeg " << written << " byte(s) re-written");
+
+  { PStringStream message; PTime now; message
+      << "HTTP/1.1 302 Found\r\n"
+      << "Location: /welcome.html\r\n"
+      << "\r\n";  //that's the last time we need to type \r\n instead of just \n
+    server.Write((const char*)message,message.GetLength());
+  }
+  server.flush();
+  OpenMCU::Current().RemovePreMediaFrame();
+#endif
+  return FALSE;
+}
+
 ///////////////////////////////////////////////////////////////
 
 BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
@@ -1051,6 +1123,11 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
 
 
         << app.GetEndpoint().GetMonitorText() << "</pre></div>";
+
+#if USE_LIBJPEG
+  shtml << "<br><form method=\"post\" enctype=\"multipart/form-data\"><h1>Prefatory Frame</h1>JPEG, max 500K:<br><img src=\"logo.jpeg\"><br>Change: <input name=\"image\" type=\"file\"><input type=\"submit\"></form>";
+#endif
+
   EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"

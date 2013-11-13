@@ -1,9 +1,16 @@
 
 #include <ptlib.h>
 #include "mcu.h"
+#if USE_LIBJPEG
+extern "C" {
+#include <jpeglib.h>
+}
+#endif
 
 extern unsigned char ImageData[];
 unsigned char *logo = NULL;
+unsigned logo_width, logo_height;
+PMutex logo_mutex;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -20,6 +27,7 @@ class MyMCU : public OpenMCU
     void OnCreateConfigPage(PConfig & cfg, PConfigPage & page);
 
 #if OPENMCU_VIDEO
+    void RemovePreMediaFrame();
     BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount);
 #endif // OPENMCU_VIDEO
 
@@ -45,47 +53,91 @@ void MyMCU::OnCreateConfigPage(PConfig & cfg, PConfigPage & rsrc)
 }
 
 #if OPENMCU_VIDEO
+   void MyMCU::RemovePreMediaFrame()
+   {
+     logo_mutex.Wait();
+     delete logo;
+     logo = NULL;
+     logo_mutex.Signal();
+   }
+   BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount)
+   {
+     logo_mutex.Wait();
+#    if USE_LIBJPEG
+       if(!logo)
+       {
+         struct jpeg_decompress_struct cinfo;
+         struct jpeg_error_mgr err;
+         FILE * infile;
+         if ((infile = fopen(PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + "logo.jpeg", "rb")))
+         {
+           jpeg_create_decompress(&cinfo);
+           cinfo.err = jpeg_std_error(&err);
+           jpeg_stdio_src(&cinfo, infile);
+           jpeg_read_header(&cinfo, 1);
+           jpeg_start_decompress(&cinfo);
+           logo_width = cinfo.output_width&(~1);
+           logo_height = cinfo.output_height&(~1);
+           PBYTEArray bmp(3 * logo_width * logo_height + 1024);
+           BYTE *p=(BYTE*)bmp.GetPointer();
+           PTRACE(2,"MAIN\tDecompressing logo.jpeg, " << logo_width << "*" << logo_height << ", 3=" << cinfo.output_components << "/" << cinfo.out_color_components << flush);
+           while (cinfo.output_scanline < logo_height)
+           {
+             p += 3 * logo_width * jpeg_read_scanlines(&cinfo, (JSAMPARRAY)&p, 1);
+           }
+           PColourConverter *converter = PColourConverter::Create("RGB24", "YUV420P", logo_width, logo_height);
+           converter->SetDstFrameSize(logo_width, logo_height);
+           logo = new unsigned char[logo_width * logo_height * 3 / 2];
+           converter->Convert(bmp.GetPointer(),logo);
+           delete converter;
+           jpeg_finish_decompress(&cinfo);
+           jpeg_destroy_decompress(&cinfo);
+           fclose(infile);
+         }
+       }
+#    endif
 
-BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount)
-{
-  if(!logo)
-  {
-    FILE *fs;
-    fs=fopen(PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + "logo.bmp","r"); 
-    if(fs)
-    {
-      unsigned char *p_buffer;
-      unsigned p_size;
-      int *val;
-      PColourConverter *converter;
-      fseek(fs,0L,SEEK_END); p_size=ftell(fs); rewind(fs);
-      p_buffer=new unsigned char[p_size];
-      if(p_size == fread(p_buffer,1,p_size,fs))
-      {
-        val=(int *)(p_buffer+10);
-        converter = PColourConverter::Create("BGR24", "YUV420P", CIF4_WIDTH, CIF4_HEIGHT);
-        converter->SetDstFrameSize(CIF4_WIDTH, CIF4_HEIGHT);
-        converter->SetVFlipState(TRUE);
-        logo = new unsigned char[CIF4_SIZE];
-        converter->Convert(p_buffer+*val,logo);
-        delete converter;
-      }
-      fclose(fs);
-      delete p_buffer;
-    }
-  }
-  
-  if(logo)
-  {
-    PTRACE(2, "MCU\tGetPreMediaFrame with logo:" << width << "x" << height);
-    MCUVideoMixer::ResizeYUV420P(logo,buffer,CIF4_WIDTH,CIF4_HEIGHT,width,height);
-    return TRUE;
-  }
+     if(!logo)
+     {
+       FILE *fs;
+       fs=fopen(PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + "logo.bmp","r"); 
+       if(fs)
+       {
+         unsigned char *p_buffer;
+         unsigned p_size;
+         int *val;
+         PColourConverter *converter;
+         fseek(fs,0L,SEEK_END); p_size=ftell(fs); rewind(fs);
+         p_buffer=new unsigned char[p_size];
+         if(p_size == fread(p_buffer,1,p_size,fs))
+         {
+           val=(int *)(p_buffer+10);
+           converter = PColourConverter::Create("BGR24", "YUV420P", CIF4_WIDTH, CIF4_HEIGHT);
+           converter->SetDstFrameSize(CIF4_WIDTH, CIF4_HEIGHT);
+           converter->SetVFlipState(TRUE);
+           logo = new unsigned char[CIF4_SIZE];
+           converter->Convert(p_buffer+*val,logo);
+           logo_width = CIF4_WIDTH;
+           logo_height = CIF4_HEIGHT;
+           delete converter;
+         }
+         fclose(fs);
+         delete p_buffer;
+       }
+     }
+     
+     if(logo)
+     {
+       PTRACE(5, "MCU\tGetPreMediaFrame with logo:" << width << "x" << height);
+       MCUVideoMixer::ResizeYUV420P(logo,buffer,logo_width,logo_height,width,height);
+       logo_mutex.Signal();
+       return TRUE;
+     }
+     logo_mutex.Signal();
 
-  MCUVideoMixer::ResizeYUV420P(ImageData, buffer, QCIF_WIDTH, QCIF_HEIGHT, width, height);
-  return TRUE;
-//  return FALSE;
-}
+     MCUVideoMixer::ResizeYUV420P(ImageData, buffer, QCIF_WIDTH, QCIF_HEIGHT, width, height);
+     return TRUE;
+   }
 
 #endif // OPENMCU_VIDEO
 

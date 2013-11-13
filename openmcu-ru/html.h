@@ -654,6 +654,7 @@ class WelcomePage : public PServiceHTTPString
 {
   public:
     WelcomePage(OpenMCU & app, PHTTPAuthority & auth);
+    BOOL OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo & info, const PStringToString & data, const PHTTPConnectionInfo & connectInfo);
     BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
 
   private:

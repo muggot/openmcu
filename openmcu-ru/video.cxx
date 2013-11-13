@@ -425,25 +425,25 @@ void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer,
 
   if((ft_error = FT_Set_Pixel_Sizes(ft_face,0,ft_fontsizepix))) return;
 
-  if(vmp.terminalName.GetLength()==0) return;
+  if(vmp.endpointName.GetLength()==0) return;
 
   struct Bitmaps{ PBYTEArray *bmp; int l, t, w, h, x; }; Bitmaps *ft_bmps=NULL; PINDEX slotCounter=0;
   int pen_x=x+ft_borderxl; int pen_y=y+ft_borderyt;
   int pen_x_max=pen_x;
   unsigned int charcode, c2, ft_previous=0;
-  PINDEX len=vmp.terminalName.GetLength(); for(PINDEX i=0;i<len;++i) {
-    charcode=(BYTE)vmp.terminalName[i]; if(i<len-1)c2=(BYTE)vmp.terminalName[i+1]; else c2=0;
+  PINDEX len=vmp.endpointName.GetLength(); for(PINDEX i=0;i<len;++i) {
+    charcode=(BYTE)vmp.endpointName[i]; if(i<len-1)c2=(BYTE)vmp.endpointName[i+1]; else c2=0;
     if(vmpcfg.cut_before_bracket) if(charcode==' ') if(c2=='[' || c2=='(') break;
     if(!(charcode&128))                                               { /* 0xxxxxxx */ } // utf-8 -> unicode
-    else if(((charcode&224)==192)&&(i+1<vmp.terminalName.GetLength())){ /* 110xxxxx 10xxxxxx */ charcode=((charcode&31)<<6)+(c2&63); i++; }
-    else if(((charcode&240)==224)&&(i+2<vmp.terminalName.GetLength())){ /* 1110xxxx 10xxxxxx 10xxxxxx */ charcode=((charcode&15)<<12) + (((unsigned int)(c2&63))<<6) + ((BYTE)vmp.terminalName[i+2]&63); i+=2; }
-    else if(((charcode&248)==240)&&(i+3<vmp.terminalName.GetLength())){ /* 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx */ charcode=((charcode&7)<<18) + (((unsigned int)(c2&63))<<12) + (((unsigned int)((BYTE)vmp.terminalName[i+2]&63))<<6) + ((BYTE)vmp.terminalName[i+3]&63); i+=3; }
+    else if(((charcode&224)==192)&&(i+1<vmp.endpointName.GetLength())){ /* 110xxxxx 10xxxxxx */ charcode=((charcode&31)<<6)+(c2&63); i++; }
+    else if(((charcode&240)==224)&&(i+2<vmp.endpointName.GetLength())){ /* 1110xxxx 10xxxxxx 10xxxxxx */ charcode=((charcode&15)<<12) + (((unsigned int)(c2&63))<<6) + ((BYTE)vmp.endpointName[i+2]&63); i+=2; }
+    else if(((charcode&248)==240)&&(i+3<vmp.endpointName.GetLength())){ /* 11110xxx 10xxxxxx 10xxxxxx 10xxxxxx */ charcode=((charcode&7)<<18) + (((unsigned int)(c2&63))<<12) + (((unsigned int)((BYTE)vmp.endpointName[i+2]&63))<<6) + ((BYTE)vmp.endpointName[i+3]&63); i+=3; }
     ft_bmps=(Bitmaps*)realloc((void *)ft_bmps,(slotCounter+1)*sizeof(Bitmaps));
     FT_GlyphSlot ft_slot=ft_face->glyph;
     ft_glyph_index=FT_Get_Char_Index(ft_face,charcode);
     if(ft_use_kerning && ft_previous && ft_glyph_index){ FT_Vector delta; FT_Get_Kerning(ft_face,ft_previous,ft_glyph_index,FT_KERNING_DEFAULT,&delta); pen_x+=delta.x>>6; }
     if( (ft_error = FT_Load_Glyph(ft_face,ft_glyph_index,FT_LOAD_RENDER)) ) {
-      PTRACE(1,"FreeType\tError " << ft_error << " during FT_Load_Glyph. Debug info:\n\tcharcode=" << charcode << "\n\ti=" << i << "/" << len << "\n\ttext=" << vmp.terminalName << "\n\n\n\n\t*** Further use of FreeType will blocked! ***\n\n\n");
+      PTRACE(1,"FreeType\tError " << ft_error << " during FT_Load_Glyph. Debug info:\n\tcharcode=" << charcode << "\n\ti=" << i << "/" << len << "\n\ttext=" << vmp.endpointName << "\n\n\n\n\t*** Further use of FreeType will blocked! ***\n\n\n");
       for(PINDEX i=slotCounter-1;i>=0;i--) {ft_bmps[i].bmp->SetSize(0); delete ft_bmps[i].bmp; }
       free((void*)ft_bmps); return;
     }
@@ -3234,7 +3234,7 @@ void MCUSimpleVideoMixer::InsertVideoSource(ConferenceMember * member, int pos)
         VideoMixPosition * v2 = VMPListFindVMP(id2);
         v2->id=v3->id;
         v3->id=(void*)(long)(endPos-1);
-        v2->terminalName=v3->terminalName;
+        v2->endpointName=v3->endpointName;
         v2->label_init=FALSE;
         VMPListDelVMP(v3);
         NullRectangle(v3->xpos,v3->ypos,v3->width,v3->height,v3->border);
@@ -3288,7 +3288,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSourceToLayout(ConferenceMemberId id, Conferen
       newPosition->n=i;
       newPosition->type=1;
       newPosition->label_init=FALSE;
-      newPosition->terminalName = mbr.GetName();
+      newPosition->endpointName = mbr.GetName();
       newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].border;
       if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin) VMPListInsVMP(newPosition); else VMPListAddVMP(newPosition);
       cout << "AddVideoSource " << id << " " << vmpNum << " added as " << i << " (" << newPosition << ")\n";
@@ -3346,7 +3346,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
     newPosition->type=1;
     newPosition->n=vmpNum;
     newPosition->label_init=FALSE;
-    newPosition->terminalName=mbr.GetName();
+    newPosition->endpointName=mbr.GetName();
     newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmpNum].border;
     if(OpenMCU::vmcfg.vmconf[newsL].splitcfg.new_from_begin) VMPListInsVMP(newPosition); else VMPListAddVMP(newPosition);
     cout << "AddVideoSource " << id << " " << vmpNum << " done (" << newPosition << ")\n";
@@ -3487,7 +3487,7 @@ void MCUSimpleVideoMixer::SetPositionType(int pos, int type)
   newPosition->type=type;
   newPosition->n=pos;
   newPosition->label_init=FALSE;
-  newPosition->terminalName = "Voice-activated " + PString(type-1);
+  newPosition->endpointName = "Voice-activated " + PString(type-1);
   newPosition->border=o.border;
 
   if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
@@ -3581,7 +3581,7 @@ ConferenceMemberId MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member
 
   if((maxStatus < timeout) && (!chosenVan)) return NULL;
   VADvmp->id=member->GetID(); VADvmp->status=0; VADvmp->chosenVan=chosenVan;
-  VADvmp->terminalName=member->GetName(); VADvmp->label_init=FALSE;
+  VADvmp->endpointName=member->GetName(); VADvmp->label_init=FALSE;
   
   cout << "SetVADPosition\n";
   if(maxId==NULL) return (void *)1;
@@ -3614,12 +3614,12 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
   if(oldVMP==NULL) return FALSE;
   int pos = GetPositionNum(id);
   int cv = VAD2vmp->chosenVan;
-  PString tn  = VAD2vmp->terminalName;
+  PString tn  = VAD2vmp->endpointName;
   VAD2vmp->id=id; VAD2vmp->status=0; VAD2vmp->chosenVan=oldVMP->chosenVan;
-  VAD2vmp->terminalName=member->GetName(); VAD2vmp->label_init=FALSE;
+  VAD2vmp->endpointName=member->GetName(); VAD2vmp->label_init=FALSE;
   if((long)maxId>=0 && (long)maxId<100) maxId=(ConferenceMemberId)(long)pos;
   oldVMP->id=maxId; oldVMP->status=0; oldVMP->chosenVan=cv;
-  oldVMP->terminalName=tn; oldVMP->label_init=FALSE;
+  oldVMP->endpointName=tn; oldVMP->label_init=FALSE;
 
   if((long)maxId>=0 && (long)maxId<100) NullRectangle(oldVMP->xpos,oldVMP->ypos,oldVMP->width,oldVMP->height,oldVMP->border);
  
@@ -3707,7 +3707,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
         NullRectangle(v->xpos, v->ypos, v->width, v->height, v->border);
         v->id=(void*)(long)v->n;
         v->label_init=FALSE;
-        v->terminalName="Voice-activated " + PString(type-1);
+        v->endpointName="Voice-activated " + PString(type-1);
         return;
       }
 
@@ -3715,7 +3715,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
 
       v->id=id;
       v->label_init=FALSE;
-      v->terminalName=member->GetName();
+      v->endpointName=member->GetName();
       return;
     }
 
@@ -3735,7 +3735,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
   VideoMixPosition * newPosition = CreateVideoMixPosition(id, o.posx, o.posy, o.width, o.height);
   newPosition->type=type;
   newPosition->n=pos;
-  newPosition->terminalName = name;
+  newPosition->endpointName = name;
   newPosition->label_init=FALSE;
   newPosition->border=o.border;
 
@@ -3772,20 +3772,20 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
   }
 
   ConferenceMemberId id0=v1->id;
-  PString tn0=v1->terminalName;
+  PString tn0=v1->endpointName;
   int t=v1->type, st=v1->status;
 
   v1->id           = v2->id;
   v1->type         = v2->type;
   v1->status       = v2->status;
-  v1->terminalName = v2->terminalName;
+  v1->endpointName = v2->endpointName;
   v1->label_init   = FALSE;
   if( (((unsigned long)v1->id)&(~(unsigned long)255)) < 100) NullRectangle(v1->xpos, v1->ypos, v1->width, v1->height, v1->border);
 
   v2->id=id0;
   v2->type         = t;
   v2->status       = st;
-  v2->terminalName=tn0;
+  v2->endpointName=tn0;
   v2->label_init=FALSE;
   if( (((unsigned long)v2->id)&(~(unsigned long)255)) < 100) NullRectangle(v2->xpos, v2->ypos, v2->width, v2->height, v2->border);
 }
@@ -4057,7 +4057,7 @@ BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
     { newPosition = CreateVideoMixPosition((void *)(long)i, o->posx, o->posy, o->width, o->height);
       newPosition->type=2;
     }
-    PStringStream s; s << "Mix Position " << i; newPosition->terminalName=s;
+    PStringStream s; s << "Mix Position " << i; newPosition->endpointName=s;
     newPosition->label_init=FALSE;
     newPosition->n=i; 
     newPosition->border=o->border;
@@ -4092,7 +4092,7 @@ void TestVideoMixer::MyChangeLayout(unsigned newLayout)
     { newPosition = CreateVideoMixPosition((void *)(long)i, o->posx, o->posy, o->width, o->height);
       newPosition->type=2;
     }
-    PStringStream s; s << "Mix Position " << i; newPosition->terminalName=s;
+    PStringStream s; s << "Mix Position " << i; newPosition->endpointName=s;
     newPosition->label_init=FALSE;
     newPosition->n=i; 
     newPosition->border=o->border;
@@ -4171,7 +4171,7 @@ BOOL EchoVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
   }
   vmpList->next->n=0;
   vmpList->next->id=id;
-  vmpList->next->terminalName = mbr.GetName();
+  vmpList->next->endpointName = mbr.GetName();
   vmpList->next->label_init=FALSE;
   return TRUE;
 }
