@@ -1209,7 +1209,7 @@ function get_mixer_position_html(mixer, position)
   if(clear_width>0)
   { s+="<div style='position:relative;top:0px;left:"+(type_width+user_width)+"px;width:0px;height:0px'>";
      s+="<div id='tp"+mixer+"_"+p+"'"
-       +" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='if(checkcontrol()){queue_otf_request("+OTFC_REMOVE_VMP+","+mixer+","+p+");}'"
+       +" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='if(checkcontrol()){queue_otf_request("+OTFC_REMOVE_VMP+","+mixer+","+p+");prvnt=0;}'"
        +" style='cursor:pointer;width:"+(clear_width)+"px;height:"+(label_height-2)+"px'>";
       s+="<img src='i20_close.gif' width="+clear_width+" height="+label_height+">";
     s+="</div></div>";
