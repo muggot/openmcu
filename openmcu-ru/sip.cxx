@@ -1814,7 +1814,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
    {
      sCon->direction = 0;
      sCon->c_sip_msg = msg_dup(msg);
-     if(MCUConfig("Parameters").GetBoolean(SIPReInviteKey, TRUE))
+     if(MCUConfig("SIP Parameters").GetBoolean(SIPReInviteKey, TRUE))
      {
        int ret = sCon->ProcessReInviteEvent();
        if(ret != 1)

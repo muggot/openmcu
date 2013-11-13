@@ -170,14 +170,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   endpoint->videoRate = MCUConfig("Video").GetInteger("Video frame rate", DefaultVideoFrameRate);
   endpoint->videoTxQuality = cfg.GetInteger("Video quality", DefaultVideoQuality);
   forceScreenSplit = cfg.GetBoolean(ForceSplitVideoKey, TRUE);
-
-  h264DefaultLevelForSip = cfg.GetString(H264LevelForSIPKey, "9").AsInteger();
-  if(h264DefaultLevelForSip < 9) h264DefaultLevelForSip=9;
-  else if(h264DefaultLevelForSip>13 && h264DefaultLevelForSip<20) h264DefaultLevelForSip=13;
-  else if(h264DefaultLevelForSip>22 && h264DefaultLevelForSip<30) h264DefaultLevelForSip=22;
-  else if(h264DefaultLevelForSip>32 && h264DefaultLevelForSip<40) h264DefaultLevelForSip=32;
-  else if(h264DefaultLevelForSip>42 && h264DefaultLevelForSip<50) h264DefaultLevelForSip=42;
-  else if(h264DefaultLevelForSip>51) h264DefaultLevelForSip=51;
 #if USE_LIBYUV
   scaleFilter=libyuv::LIBYUV_FILTER;
 #endif
@@ -281,10 +273,10 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpNameSpace.AddResource(new RecordPConfigPage(*this, "RecordParameters", "Parameters", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - h323
-  httpNameSpace.AddResource(new H323PConfigPage(*this, "H323Parameters", "Parameters", authSettings), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new H323PConfigPage(*this, "H323Parameters", "H323 Parameters", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - sip
-  httpNameSpace.AddResource(new SIPPConfigPage(*this, "SIPParameters", "Parameters", authSettings), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new SIPPConfigPage(*this, "SIPParameters", "SIP Parameters", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - sip room acccess
   httpNameSpace.AddResource(new RoomAccessSIPPConfigPage(*this, "RoomAccess", "RoomAccess", authSettings), PHTTPSpace::Overwrite);

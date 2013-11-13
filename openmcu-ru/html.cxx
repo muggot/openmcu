@@ -793,13 +793,20 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   // SIP Listener setup
   mcu.sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
   if(mcu.sipListener=="") mcu.sipListener="0.0.0.0";
-  s << StringField(SipListenerKey, mcu.sipListener);
+  s << StringField(SipListenerKey, mcu.sipListener, 20);
   if(mcu.sipListener=="0.0.0.0") mcu.sipListener="0.0.0.0 :5060";
   mcu.sipendpoint->Resume();
 
   s << BoolField(SIPReInviteKey, cfg.GetBoolean(SIPReInviteKey, TRUE));
 
 #if OPENMCU_VIDEO
+  mcu.h264DefaultLevelForSip = cfg.GetString(H264LevelForSIPKey, "9").AsInteger();
+  if(mcu.h264DefaultLevelForSip < 9) mcu.h264DefaultLevelForSip=9;
+  else if(mcu.h264DefaultLevelForSip>13 && mcu.h264DefaultLevelForSip<20) mcu.h264DefaultLevelForSip=13;
+  else if(mcu.h264DefaultLevelForSip>22 && mcu.h264DefaultLevelForSip<30) mcu.h264DefaultLevelForSip=22;
+  else if(mcu.h264DefaultLevelForSip>32 && mcu.h264DefaultLevelForSip<40) mcu.h264DefaultLevelForSip=32;
+  else if(mcu.h264DefaultLevelForSip>42 && mcu.h264DefaultLevelForSip<50) mcu.h264DefaultLevelForSip=42;
+  else if(mcu.h264DefaultLevelForSip>51) mcu.h264DefaultLevelForSip=51;
   s << SelectField(H264LevelForSIPKey, PString(mcu.h264DefaultLevelForSip), "9,10,11,12,13,20,21,22,30,31,32,40,41,42,50,51");
 #endif
 
