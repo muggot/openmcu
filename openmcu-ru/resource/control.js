@@ -1108,6 +1108,7 @@ function get_mixers_content()
 function mixrfr()
 {
   var pos_y=0;
+  var old_visible_ids=visible_ids;
   visible_ids=',';
   for(i=0;i<mixers;i++)
   { var obj = null;
@@ -1142,6 +1143,7 @@ function mixrfr()
     }
     obj.innerHTML=s;
   }
+  if(old_visible_ids != visible_ids) members_refresh();
   alive();
 }
 
