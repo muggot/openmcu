@@ -78,10 +78,10 @@ void MyMCU::OnCreateConfigPage(PConfig & cfg, PConfigPage & rsrc)
            jpeg_start_decompress(&cinfo);
            logo_width = cinfo.output_width&(~1);
            logo_height = cinfo.output_height&(~1);
-           PBYTEArray bmp(3 * logo_width * logo_height + 1024);
+           PBYTEArray bmp((((cinfo.output_width + 15) & (~15)) * ((cinfo.output_height + 15) & (~15))) << 2);
            BYTE *p=(BYTE*)bmp.GetPointer();
            PTRACE(2,"MAIN\tDecompressing logo.jpeg, " << logo_width << "*" << logo_height << ", 3=" << cinfo.output_components << "/" << cinfo.out_color_components << flush);
-           while (cinfo.output_scanline < logo_height)
+           while (cinfo.output_scanline < cinfo.output_height)
            {
              p += 3 * logo_width * jpeg_read_scanlines(&cinfo, (JSAMPARRAY)&p, 1);
            }
