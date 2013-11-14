@@ -2394,7 +2394,10 @@ void OpenMCUH323Connection::SetEndpointDefaultVideoParams()
   // default & video parameters
   unsigned fr = ep.GetVideoFrameRate();
   if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
+  codec->SetTargetFrameTimeMs(1000/fr);
+  mf.SetOptionInteger("Frame Rate", fr);
   mf.SetOptionInteger("Frame Time", 90000/fr);
+
   mf.SetOptionInteger("Encoding Quality", DefaultVideoQuality);
 
   PStringList keys = MCUConfig("Video").GetKeys();
@@ -2468,7 +2471,12 @@ void OpenMCUH323Connection::SetEndpointPrefVideoParams()
       {
         unsigned fr = atoi(epParams[i]);
         if(fr < 1 || fr > MAX_FRAME_RATE) fr = 0;
-        if(fr != 0) mf.SetOptionInteger("Frame Time", 90000/fr);
+        if(fr != 0)
+        {
+          codec->SetTargetFrameTimeMs(1000/fr);
+          mf.SetOptionInteger("Frame Rate", fr);
+          mf.SetOptionInteger("Frame Time", 90000/fr);
+        }
       }
       if(options[i] == "Preferred bandwidth from MCU")
       {
