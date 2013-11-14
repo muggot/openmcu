@@ -1017,8 +1017,16 @@ BOOL WelcomePage::OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo
   long l = connectInfo.GetEntityBodyLength();
   if(l<1) return FALSE;
   PINDEX o = eb.Find("image/jpeg");
-  if(o == P_MAX_INDEX) o = eb.Find("image/pjpeg"); else o += 11;
-  if(o == P_MAX_INDEX) return FALSE; else o += 12;
+  if(o != P_MAX_INDEX)
+  {
+    o += 11;
+  }
+  else
+  {
+    o = eb.Find("image/pjpeg");
+    if(o == P_MAX_INDEX) return FALSE;
+    o += 12;
+  }
 
   PINDEX bs = 0, be = bs; // bs, be - boundary start, boundary end
   BYTE c = eb[be];
