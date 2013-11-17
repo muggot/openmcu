@@ -1664,9 +1664,12 @@ RTP_Session * RTP_SessionManager::GetSession(unsigned sessionID) const
 {
   PWaitAndSignal wait(mutex);
   if (!sessions.Contains(sessionID))
+  {
+    PTRACE(3, "RTP\tNot found existing session " << sessionID);
     return NULL;
+  }
 
-  PTRACE(3, "RTP\tFound existing session " << sessionID);
+  //PTRACE(3, "RTP\tFound existing session " << sessionID);
   return &sessions[sessionID];
 }
 

@@ -145,43 +145,44 @@ void MCUSipLoggerFunc(void *logarg, char const *fmt, va_list ap)
 #else
   char *data = NULL;
   int ret = vasprintf(&data, fmt, ap);
-  if(ret == -1 || data == NULL)
-    return;
+  if(ret == -1 || data == NULL) return;
   PString trace = (const char *)data;
 #endif
   cout << trace;
   trace.Replace("   ","",TRUE,0);
   if(trace.IsEmpty()) return;
 
-  if(trace.Find("CSeq") != P_MAX_INDEX &&
-      (trace.Find("OPTIONS") != P_MAX_INDEX || trace.Find("INFO") != P_MAX_INDEX || trace.Find("SUBSCRIBE") != P_MAX_INDEX))
-  {
-    logMsgBuf = "";
-    return;
-  }
   if(trace.Left(4) == "send")
   {
     logMsgBuf = "MCUSIP\tSend SIP message:\n";
     logMsgBuf = logMsgBuf+trace;
     return;
   }
-  if(trace.Left(4) == "recv")
+  else if(trace.Left(4) == "recv")
   {
     logMsgBuf = "MCUSIP\tReceived SIP message:\n";
     logMsgBuf = logMsgBuf+trace;
     return;
   }
-  if(trace.Find("---") != P_MAX_INDEX)
+  else if(trace.Find("---") != P_MAX_INDEX)
   {
-    if(logMsgBuf.IsEmpty())
-      return;
+    if(logMsgBuf.IsEmpty()) return;
     logMsgBuf = logMsgBuf+trace;
-    PTRACE(1, logMsgBuf);
+    PRegularExpression RegEx("cseq: [0-9]* (options|info|subscribe)", PRegularExpression::Extended|PRegularExpression::IgnoreCase);
+    if(logMsgBuf.FindRegEx(RegEx) == P_MAX_INDEX) PTRACE(1, logMsgBuf);
+    else PTRACE(7, logMsgBuf);
     logMsgBuf = "";
     return;
   }
-  if(trace.Find("\n") == P_MAX_INDEX && !logMsgBuf.IsEmpty())
+  if(logMsgBuf.IsEmpty())
+  {
+    trace.Replace("\n","",TRUE,0);
+    PTRACE(6, trace);
+  }
+  else if(trace.Find("\n") == P_MAX_INDEX && !logMsgBuf.IsEmpty())
+  {
     logMsgBuf = logMsgBuf+trace+"\n";
+  }
 }
 
 void InviteDataTempDelete(const SipKey &sik)
@@ -1941,7 +1942,7 @@ void OpenMCUSipEndPoint::MainLoop()
       proxy->timeout++;
     }
     su_root_sleep(root,500);
-    PTRACE(6, "MCUSIP\tSIP Down to sleep");
+    PTRACE(9, "MCUSIP\tSIP Down to sleep");
   }
 }
 
