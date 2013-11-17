@@ -2263,7 +2263,7 @@ BOOL H323PluginVideoCodec::RenderFrame(const BYTE * buffer)
 //    videoOut->SetRenderFrameSize(frameWidth, frameHeight);
 //    videoOut->SetRenderFrameSize(videoOut->GetGrabWidth(), videoOut->GetGrabHeight());
 
-    PTRACE(6, "PLUGIN\tWrite data to video renderer");
+    PTRACE(9, "PLUGIN\tWrite data to video renderer");
     return videoOut->Write(buffer, 0 /*unused parameter*/);
 }
 

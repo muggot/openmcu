@@ -1354,7 +1354,7 @@ class CodecReadAnalyser
 
 #if PTRACING
     if (rtpTimestamp - lastDisplayedTimestamp > RTP_TRACE_DISPLAY_RATE) {
-      PTRACE(3, "H323RTP\tTransmitter sent timestamp " << rtpTimestamp);
+      PTRACE(9, "H323RTP\tTransmitter sent timestamp " << rtpTimestamp);
       lastDisplayedTimestamp = rtpTimestamp;
     }
 
@@ -1518,7 +1518,7 @@ void H323_RTPChannel::Receive()
 
 #if PTRACING
     if (rtpTimestamp - lastDisplayedTimestamp > RTP_TRACE_DISPLAY_RATE) {
-      PTRACE(3, "H323RTP\tReceiver written timestamp " << rtpTimestamp);
+      PTRACE(9, "H323RTP\tReceiver written timestamp " << rtpTimestamp);
       lastDisplayedTimestamp = rtpTimestamp;
     }
 #endif
@@ -1563,7 +1563,7 @@ void H323_RTPChannel::Receive()
           rtpTimestamp += codecFrameRate;
           size -= written != 0 ? written : size;
           ptr += written;
-          PTRACE(6, "H323RTP\tWrite to decoder");          
+          PTRACE(9, "H323RTP\tWrite to decoder");          
         }
         PTRACE_IF(1, size < 0, "H323RTP\tPayload size too small, short " << -size << " bytes.");
       }

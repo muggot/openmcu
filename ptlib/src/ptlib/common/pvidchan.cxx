@@ -197,7 +197,7 @@ BOOL PVideoChannel::Write(const void * buf,  //image data to be rendered
 
 
   if (mpInput == NULL) {
-    PTRACE(6,"PVC\t::Write, frame size is "
+    PTRACE(9,"PVC\t::Write, frame size is "
               << mpOutput->GetFrameWidth() << "x" << mpOutput->GetFrameHeight() << 
               " VideoGrabber is unavailabile");
     return mpOutput->SetFrameData(0, 0, mpOutput->GetFrameWidth(), mpOutput->GetFrameHeight(), (const BYTE *)buf, TRUE);

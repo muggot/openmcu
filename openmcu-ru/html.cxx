@@ -270,7 +270,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << SeparatorField("Log setup");
 #if PTRACING
   // Trace level
-  s << SelectField(TraceLevelKey, cfg.GetString(TraceLevelKey, DEFAULT_TRACE_LEVEL), "0,1,2,3,4,5,6", 120, "0=No tracing ... 6=Very detailed");
+  s << SelectField(TraceLevelKey, cfg.GetString(TraceLevelKey, DEFAULT_TRACE_LEVEL), "0,1,2,3,4,5,6,9", 120, "0=No tracing ... 6=Very detailed");
   s << IntegerField(TraceRotateKey, cfg.GetInteger(TraceRotateKey, 0), 0, 200, 10, "0 (don't rotate) ... 200");
 #endif
 #ifdef SERVER_LOGS
