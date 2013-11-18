@@ -790,12 +790,28 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
 
   s << BoolField("RESTORE DEFAULTS", FALSE);
 
-  // SIP Listener setup
-  mcu.sipListener = cfg.GetString(SipListenerKey, "0.0.0.0").Trim();
-  if(mcu.sipListener=="") mcu.sipListener="0.0.0.0";
-  s << StringField(SipListenerKey, mcu.sipListener, 20);
-  if(mcu.sipListener=="0.0.0.0") mcu.sipListener="0.0.0.0 :5060";
-  mcu.sipendpoint->Resume();
+  PStringArray sipListener;
+  PStringArray data = cfg.GetString(SipListenerKey, "0.0.0.0,transport=*").Tokenise(",");
+  for(PINDEX i = 0, j = 0; i < data.GetSize(); i++)
+  {
+    if(data[i].Find("transport") != P_MAX_INDEX) { sipListener[j-1] += ";"+data[i]; continue; }
+    sipListener.AppendString(data[i]);
+    j++;
+  }
+
+  PString item = NewRowText(SipListenerKey);
+  item += NewItemArray(SipListenerKey);
+  for(PINDEX i = 0; i < sipListener.GetSize(); i++)
+  {
+    PString url = sipListener[i].Tokenise(";")[0];
+    PString transport = sipListener[i].Tokenise(";")[1];
+    item += StringItemArray(SipListenerKey, url, 20);
+    item += SelectItem(SipListenerKey, transport, "transport=*,transport=udp,transport=tcp");
+    if(url == "0.0.0.0") sipListener[i] = url+" :5060;"+transport;
+  }
+  item += EndItemArray();
+  item += InfoItem("");
+  s << item;
 
   s << BoolField(SIPReInviteKey, cfg.GetBoolean(SIPReInviteKey, TRUE));
 
@@ -809,6 +825,10 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   else if(mcu.h264DefaultLevelForSip>51) mcu.h264DefaultLevelForSip=51;
   s << SelectField(H264LevelForSIPKey, PString(mcu.h264DefaultLevelForSip), "9,10,11,12,13,20,21,22,30,31,32,40,41,42,50,51");
 #endif
+
+  mcu.sipendpoint->Resume();
+  mcu.sipendpoint->sipListener = sipListener;
+  mcu.sipendpoint->restart = 1;
 
   s << EndTable();
   BuildHTML("");

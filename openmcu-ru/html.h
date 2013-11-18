@@ -49,6 +49,7 @@ class TablePConfigPage : public PConfigPage
      rowColor = "#d9e5e3";
      itemColor = "#f7f4d8";
      itemInfoColor = "#f7f4d8";
+     separator = ",";
      firstEditRow = 1;
      firstDeleteRow = 1;
      buttonUp = buttonDown = buttonClone = buttonDelete = 0;
@@ -57,8 +58,7 @@ class TablePConfigPage : public PConfigPage
      rowTextStyle = "<td align='left' style='background-color:"+rowColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
      rowArrayStyle = "<td align='left' style='background-color:"+itemColor+";padding:4px;'>";
      itemStyle = "<td align='left' style='background-color:"+itemColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     itemInfoStyle = "<td align='left' style='background-color:"+itemInfoColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     itemInfoStyleRowSpan = "<td rowspan='%ROWSPAN%' align='left' valign='top' style='background-color:"+itemInfoColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     itemInfoStyle = "<td rowspan='%ROWSPAN%' valign='top' align='left' style='background-color:"+itemInfoColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
      textStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
      inputStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
      buttonStyle = "margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;width:24px;";
@@ -93,32 +93,27 @@ class TablePConfigPage : public PConfigPage
    }
    PString StringField(PString name, PString value, int sizeInput=12, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
-     if(rowSpan!=1) return NewRowText(name) + StringItem(name, value, sizeInput) + InfoItem(info, rowSpan);
-     return NewRowText(name) + StringItem(name, value, sizeInput) + InfoItem(info);
+     return NewRowText(name) + StringItem(name, value, sizeInput) + InfoItem(info, rowSpan);
    }
    PString PasswordField(PString name, PString value, int sizeInput=12, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
-     if(rowSpan!=1) return NewRowText(name) + PasswordItem(name, value, sizeInput) + InfoItem(info, rowSpan);
-     return NewRowText(name) + PasswordItem(name, value, sizeInput) + InfoItem(info);
+     return NewRowText(name) + PasswordItem(name, value, sizeInput) + InfoItem(info, rowSpan);
    }
    PString IntegerField(PString name, int value, int min=-2147483647, int max=2147483647, int sizeInput=15, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
-     if(rowSpan!=1) return NewRowText(name) + IntegerItem(name, value, min, max) + InfoItem(info, rowSpan);
-     return NewRowText(name) + IntegerItem(name, value, min, max) + InfoItem(info);
+     return NewRowText(name) + IntegerItem(name, value, min, max) + InfoItem(info, rowSpan);
    }
    PString BoolField(PString name, BOOL value, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
-     if(rowSpan!=1) return NewRowText(name) + BoolItem(name, value) + InfoItem(info, rowSpan);
-     return NewRowText(name) + BoolItem(name, value) + InfoItem(info);
+     return NewRowText(name) + BoolItem(name, value) + InfoItem(info, rowSpan);
    }
    PString SelectField(PString name, PString value, PString values, int width=120, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
-     if(rowSpan!=1) return NewRowText(name) + SelectItem(name, value, values, width) + InfoItem(info, rowSpan);
-     return NewRowText(name) + SelectItem(name, value, values, width) + InfoItem(info);
+     return NewRowText(name) + SelectItem(name, value, values, width) + InfoItem(info, rowSpan);
    }
    PString ArrayField(PString name, PString values, int size=12, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
-     PStringArray data = values.Tokenise(",");
+     PStringArray data = values.Tokenise(separator);
      PString s = NewRowText(name);
      s += NewItemArray(name);
      if(data.GetSize() == 0)
@@ -129,8 +124,7 @@ class TablePConfigPage : public PConfigPage
          s += StringItemArray(name, data[i], size);
      }
      s += EndItemArray();
-     if(rowSpan!=1) s += InfoItem(info, rowSpan);
-     else s += InfoItem(info);
+     s += InfoItem(info, rowSpan);
      return s;
    }
 
@@ -138,18 +132,14 @@ class TablePConfigPage : public PConfigPage
    {
      return columnStyle+"width:"+PString(width)+"px'><p style='"+textStyle+"'>"+name+"</p>";
    }
-   PString InfoItem(PString name)
-   {
-     PString s = itemInfoStyle+"<p style='"+textStyle+"'>"+name+"</p></td>";
-     return s;
-   }
-   PString InfoItem(PString name, PINDEX rowSpan)
+   PString InfoItem(PString name, PINDEX rowSpan=1)
    {
      PString s;
      if(rowSpan>0)
      {
-       s = itemInfoStyleRowSpan;
-       s.Replace("%ROWSPAN%",PString(rowSpan),TRUE,0);
+       s = itemInfoStyle;
+       if(rowSpan == 1) s.Replace("rowspan='%ROWSPAN%' valign='top'","",TRUE,0);
+       else s.Replace("%ROWSPAN%",PString(rowSpan),TRUE,0);
        s += "<p style='"+textStyle+"'>"+name+"</p></td>";
      }
      return s;
@@ -363,8 +353,8 @@ class TablePConfigPage : public PConfigPage
          num = 0;
          dataArray.AppendString(value+"=");
        } else {
-         if(passwordFields.GetAt(TableItemId) == NULL) value.Replace(","," ",TRUE);
-         if(num != 1) dataArray[asize-1] += ",";
+         if(passwordFields.GetAt(TableItemId) == NULL) value.Replace(separator," ",TRUE);
+         if(num != 1) dataArray[asize-1] += separator;
          if(integerIndex == i)
          {
            int tmp = atoi(value);
@@ -387,6 +377,7 @@ class TablePConfigPage : public PConfigPage
    }
  protected:
    PConfig cfg;
+   PString separator;
    PString columnStyle, rowStyle, rowTextStyle, rowArrayStyle, itemStyle, itemInfoStyle, itemInfoStyleRowSpan, textStyle, inputStyle, buttonStyle;
    PStringArray dataArray;
    PString columnColor, rowColor, itemColor, itemInfoColor;

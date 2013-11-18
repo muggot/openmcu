@@ -54,7 +54,7 @@ class ProxyServer
  public:
  ProxyServer() { }
  PString localIP;
- PString localPort;
+ //PString localPort;
  PString proxyIP;
  PString proxyPort;
  PString userName;
@@ -109,6 +109,7 @@ class OpenMCUSipEndPoint : public PThread
      ep(_ep)
     {
      terminating = 0;
+     restart = 1;
 //     Resume();
     }
    ~OpenMCUSipEndPoint()
@@ -125,9 +126,11 @@ class OpenMCUSipEndPoint : public PThread
 
 //    H323Connection * connectionToDelete = connectionsActive.RemoveAt(token);
 
+   void Initialise();
+   int restart;
+   PStringArray sipListener;
    int ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon);
    int terminating;
-   url_string_t* listenerUrl;
    int SipMakeCall(PString room, PString to);
    nta_agent_t *GetAgent() { return agent; };
 
@@ -156,7 +159,6 @@ class OpenMCUSipEndPoint : public PThread
    PString MakeAuthStr(ProxyServer *proxy, const sip_t *sip);
    PString GetRoomAccess(const sip_t *sip);
    int ReqReply(msg_t *msg, unsigned method, const char *method_name, OpenMCUSipConnection *sCon);
-   PString localPort;
    PString sdpInvite;
 };
 

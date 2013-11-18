@@ -1051,7 +1051,7 @@ int OpenMCUSipConnection::CreateSipData()
     {
       ProxyServer *proxy = it->second;
       contact_t = sip_contact_create(home, (url_string_t *)(const char *)
-	  ("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
+	  ("sip:"+proxy->userName+"@"+proxy->localIP), NULL);
       localIP = proxy->localIP;
       roomName = proxy->roomName;
     } else {
@@ -1071,7 +1071,7 @@ int OpenMCUSipConnection::CreateSipData()
     {
       ProxyServer *proxy = it->second;
       contact_t = sip_contact_create(home, (url_string_t *)(const char *)
-	  ("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
+	  ("sip:"+proxy->userName+"@"+proxy->localIP), NULL);
       localIP = proxy->localIP;
       roomName = proxy->roomName;
     } else {
@@ -1420,7 +1420,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)(const char *)to);
 
     sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)
-	("sip:"+userName+"@"+localIP+":"+localPort), NULL);
+	("sip:"+userName+"@"+localIP), NULL);
     sip_contact->m_display = roomName;
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)sip_to->a_url, NULL);
@@ -1490,7 +1490,7 @@ int OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
 	("sip:"+proxy->userName+"@"+proxy->proxyIP+":"+proxy->proxyPort));
 
     sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)
-	("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
+	("sip:"+proxy->userName+"@"+proxy->localIP), NULL);
     sip_contact->m_display = proxy->roomName;
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_REGISTER, (url_string_t *)sip_to->a_url, NULL);
@@ -1598,7 +1598,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
     sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)sip->sip_to->a_url);
 
     sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)
-	("sip:"+proxy->userName+"@"+proxy->localIP+":"+proxy->localPort), NULL);
+	("sip:"+proxy->userName+"@"+proxy->localIP), NULL);
     sip_contact->m_display = proxy->roomName;
 
     sip_request_t *sip_rq = sip_request_create(&home, sip->sip_cseq->cs_method,
@@ -1900,6 +1900,11 @@ void OpenMCUSipEndPoint::MainLoop()
   SipConnectionMapType::iterator scr;
   while(1)
   {
+    if(restart)
+    {
+      restart = 0;
+      Initialise();
+    }
     if(terminating)
     {
       for(scr = sipConnMap.begin(); scr != sipConnMap.end(); scr++) 
@@ -1946,6 +1951,13 @@ void OpenMCUSipEndPoint::MainLoop()
   }
 }
 
+void OpenMCUSipEndPoint::Initialise()
+{
+  nta_agent_close_tports(agent);
+  for(PINDEX i = 0; i < sipListener.GetSize(); i++)
+    nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)("sip:"+sipListener[i])), NTATAG_UDP_MTU(64000), TAG_NULL());
+}
+
 void OpenMCUSipEndPoint::Main()
 {
   su_init();
@@ -1956,15 +1968,6 @@ void OpenMCUSipEndPoint::Main()
   su_log_set_level(NULL, 9);
   setenv("TPORT_LOG", "1", 1);
   su_log_redirect(NULL, MCUSipLoggerFunc, NULL);
-
-  if(OpenMCU::Current().sipListener!="0.0.0.0")
-    agent = nta_agent_create(root, URL_STRING_MAKE((const char*)("sip:"+OpenMCU::Current().sipListener)), ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, NTATAG_UDP_MTU(64000), TAG_NULL());
-  else
-    agent = nta_agent_create(root, NULL, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, NTATAG_UDP_MTU(64000), TAG_NULL());
-
-  localPort = (PString)OpenMCU::Current().sipListener.Tokenise(":")[1].Trim();
-  if(localPort == "")
-    localPort = "5060";
 
   // proxy servers
   PStringList keys = MCUConfig("ProxyServers").GetKeys();
@@ -1982,7 +1985,6 @@ void OpenMCUSipEndPoint::Main()
     proxy->password = tmp.Tokenise(",")[3];
     proxy->expires = tmp.Tokenise(",")[4];
     proxy->timeout = atoi(proxy->expires)*2;
-    proxy->localPort = localPort;
     proxy->localIP = GetFromIp((const char *)proxy->proxyIP, (const char *)proxy->proxyPort);
     if(proxy->localIP == "") continue;
     if(proxy->proxyPort == "") proxy->proxyPort = "5060";
@@ -1991,6 +1993,7 @@ void OpenMCUSipEndPoint::Main()
     ProxyServerMap.insert(ProxyServerMapType::value_type(proxy->userName+"@"+proxy->proxyIP, proxy));
   }
 
+  agent = nta_agent_create(root, (url_string_t *)-1, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, NTATAG_UDP_MTU(64000), TAG_NULL());
   if(agent != NULL)
   {
     MainLoop();

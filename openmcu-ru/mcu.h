@@ -351,8 +351,6 @@ class OpenMCU : public OpenMCUProcessAncestor
     int        vr_framewidth, vr_frameheight, vr_framerate;
     unsigned   vr_sampleRate, vr_audioChans;
 
-    PString    sipListener;
-
     BOOL       recallRoomTemplate;
 
     int        h264DefaultLevelForSip;
