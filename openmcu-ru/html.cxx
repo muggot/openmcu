@@ -805,9 +805,11 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   {
     PString url = sipListener[i].Tokenise(";")[0];
     PString transport = sipListener[i].Tokenise(";")[1];
+    if(url == "") url = "0.0.0.0";
     item += StringItemArray(SipListenerKey, url, 20);
     item += SelectItem(SipListenerKey, transport, "transport=*,transport=udp,transport=tcp");
-    if(url == "0.0.0.0") sipListener[i] = url+" :5060;"+transport;
+    if(url == "0.0.0.0") url += " :5060";
+    sipListener[i] = "sip:"+url+";"+transport;
   }
   item += EndItemArray();
   item += InfoItem("");

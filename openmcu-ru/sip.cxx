@@ -1955,7 +1955,7 @@ void OpenMCUSipEndPoint::Initialise()
 {
   nta_agent_close_tports(agent);
   for(PINDEX i = 0; i < sipListener.GetSize(); i++)
-    nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)("sip:"+sipListener[i])), NTATAG_UDP_MTU(64000), TAG_NULL());
+    nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)(sipListener[i])), NTATAG_UDP_MTU(64000), TAG_NULL());
 }
 
 void OpenMCUSipEndPoint::Main()
