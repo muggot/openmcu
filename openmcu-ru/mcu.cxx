@@ -270,7 +270,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #endif
 
   // Create the config page - record
-  httpNameSpace.AddResource(new RecordPConfigPage(*this, "RecordParameters", "Parameters", authSettings), PHTTPSpace::Overwrite);
+  //httpNameSpace.AddResource(new RecordPConfigPage(*this, "RecordParameters", "Parameters", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - h323
   httpNameSpace.AddResource(new H323PConfigPage(*this, "H323Parameters", "H323 Parameters", authSettings), PHTTPSpace::Overwrite);

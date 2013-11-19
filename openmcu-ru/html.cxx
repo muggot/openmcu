@@ -304,6 +304,44 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // allow/disallow self-invite:
   s << BoolField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
 
+  s << SeparatorField("Video recorder setup");
+  PString pathInfo, dirInfo;
+  pathInfo =
+      "<b>%V</b> - input video stream<br><b>%A</b> - input audio stream<br><br><b>%F</b> - frame size<br>"
+      "<b>%R</b> - video frame rate<br><br><b>%S</b> - audio sample rate<br><b>%C</b> - number of channels for audio<br><br>";
+
+  if(!PFile::Exists(mcu.vr_ffmpegPath)) pathInfo += "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
+  else
+  { PFileInfo info;
+    PFilePath path(mcu.vr_ffmpegPath);
+    PFile::GetInfo(path, info);
+    if(!(info.type & 3)) pathInfo += "<b><font color=red>Warning: ffmpeg neither file, nor symlink!</font></b>";
+    else if(!(info.permissions & 0111)) pathInfo += "<b><font color=red>ffmpeg permissions check failed</font></b>";
+    else
+    {
+      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) if(!PFile::Exists(mcu.vr_ffmpegDir)) { PDirectory::Create(mcu.vr_ffmpegDir,0700); PThread::Sleep(50); }
+      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) dirInfo += "<b><font color=red>Directory does not exist: "+mcu.vr_ffmpegDir+"</font></b>";
+      else
+      { PFileInfo info;
+        PFilePath path(mcu.vr_ffmpegDir);
+        PFile::GetInfo(path, info);
+        if(!(info.type & 6)) dirInfo += "<b><font color=red>Warning: output directory neither directory, nor symlink!</font></b>";
+        else if(!(info.permissions & 0222)) dirInfo += "<b><font color=red>output directory permissions check failed</font></b>";
+        else pathInfo += "<b><font color=green>Looks good.</font> Execution script preview:</b><br><tt>"+mcu.ffmpegCall+"</tt>";
+      }
+    }
+  }
+
+  s << StringField(RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 35, dirInfo);
+  s << StringField(RecorderFfmpegPathKey, mcu.vr_ffmpegPath, 35, pathInfo, FALSE, 7);
+  s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 35, "", FALSE, 0);
+  s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920, 35,"",FALSE,0);
+  s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152, 35,"",FALSE,0);
+  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 35,"",FALSE,0);
+  s << IntegerField(RecorderSampleRateKey, mcu.vr_sampleRate,8000,192000,35,"",FALSE,0);
+  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8",120,"",FALSE,0);
+
+
   // get WAV file played to a user when they enter a conference
   //s << StringField(ConnectingWAVFileKey, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile));
   // get WAV file played to a conference when a new user enters
