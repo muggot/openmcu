@@ -1387,16 +1387,23 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     if(agent == NULL)
       return 0;
 
-    PString localIP, remoteIP, remotePort, proxyIP, userName, roomName = "";
+    PString localIP, remoteUser, remoteIP, remotePort, proxyIP, userName, roomName = "";
     BOOL needProxy = false;
 
     PString addr = to.Tokenise(";")[0];
+    remoteUser = addr.Tokenise(":")[1].Tokenise("@")[0];
     remoteIP = addr.Tokenise(":")[1].Tokenise("@")[1];
-    if(remoteIP == "")
+    if(remoteUser == "" || remoteIP == "")
       return 0;
+
     remotePort = addr.Tokenise(":")[2];
-    if(remotePort == "")
-      remotePort = "5060";
+    if(remotePort == "") remotePort = "5060";
+
+    if(to.Find("transport") == P_MAX_INDEX)
+    {
+      PString transport = GetEndpointParamFromUri("Outgoing transport", remoteUser+"@"+remoteIP, "sip");
+      if(transport != "") to += ";"+transport;
+    }
 
     ProxyServer *proxy = NULL;
     ProxyServerMapType::iterator it;

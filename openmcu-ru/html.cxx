@@ -653,6 +653,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   s << ColumnItem(JsLocale("window.l_name_preferred_frame_rate_from_mcu"));
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_to_mcu"));
+  s << ColumnItem(JsLocale("window.l_name_outgoing_transport"));
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -664,6 +665,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]);
+    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Outgoing transport")], "transport=*,transport=udp,transport=tcp");
   }
   if(keys.GetSize() == 0)
   {
@@ -672,6 +674,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << StringItem("test", "");
     s << StringItem("test", "");
     s << StringItem("test", "");
+    s << SelectItem("test", "transport=*", "transport=*,transport=udp,transport=tcp");
   }
   s << EndTable();
 

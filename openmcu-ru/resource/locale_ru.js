@@ -141,6 +141,7 @@ window.l_name_display_name_override                = 'Отображаемое �
 window.l_name_preferred_frame_rate_from_mcu        = 'Частота кадров от MCU';
 window.l_name_preferred_bandwidth_from_mcu         = 'Пропускная способность от MCU';
 window.l_name_preferred_bandwidth_to_mcu           = 'Пропускная способность к MCU';
+window.l_name_outgoing_transport                   = 'Исходящий транспортный протокол';
 
 window.l_name_register                             = 'Регистрироваться';
 window.l_name_address_sip_proxy                    = 'Адрес SIP-прокси';
