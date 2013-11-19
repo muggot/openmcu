@@ -971,34 +971,46 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
    if(scap >= 0) continue;
    // PCMU
    if(c.format.ToLower() == "pcmu" && tsCaps.GetStringsIndex("G.711-uLaw-64k")!=P_MAX_INDEX)
-    { scap = c.payload; c.h323 = "G.711-uLaw-64k{sw}"; c.cap = H323Capability::Create("G.711-uLaw-64k{sw}"); }
+    { scap = c.payload; c.h323 = "G.711-uLaw-64k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // PCMA
    else if(c.format.ToLower() == "pcma" && tsCaps.GetStringsIndex("G.711-ALaw-64k")!=P_MAX_INDEX)
-    { scap = c.payload; c.h323 = "G.711-ALaw-64k{sw}"; c.cap = H323Capability::Create("G.711-ALaw-64k{sw}"); }
+    { scap = c.payload; c.h323 = "G.711-ALaw-64k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.722
    else if(c.format.ToLower() == "g722" && tsCaps.GetStringsIndex("G.722-64k{sw}")!=P_MAX_INDEX)
-    { scap = c.payload; c.h323 = "G.722-64k{sw}"; c.cap = H323Capability::Create("G.722-64k{sw}"); }
+    { scap = c.payload; c.h323 = "G.722-64k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.723.1
    else if(c.format.ToLower() == "g723" && tsCaps.GetStringsIndex("G.7231-6.3k[e]{sw}")!=P_MAX_INDEX)
-    { scap = c.payload; c.h323 = "G.7231-6.3k[e]{sw}"; c.cap = H323Capability::Create("G.7231-6.3k[e]{sw}"); }
+    { scap = c.payload; c.h323 = "G.7231-6.3k[e]{sw}"; c.cap = H323Capability::Create(c.h323); }
+   // G.726-16
+   else if(c.format.ToLower() == "g726-16" && tsCaps.GetStringsIndex("G.726-16k{sw}")!=P_MAX_INDEX)
+    { scap = c.payload; c.h323 = "G.726-16k{sw}"; c.cap = H323Capability::Create(c.h323); }
+   // G.726-24
+   else if(c.format.ToLower() == "g726-24" && tsCaps.GetStringsIndex("G.726-24k{sw}")!=P_MAX_INDEX)
+    { scap = c.payload; c.h323 = "G.726-24k{sw}"; c.cap = H323Capability::Create(c.h323); }
+   // G.726-32
+   else if(c.format.ToLower() == "g726-32" && tsCaps.GetStringsIndex("G.726-32k{sw}")!=P_MAX_INDEX)
+    { scap = c.payload; c.h323 = "G.726-32k{sw}"; c.cap = H323Capability::Create(c.h323); }
+   // G.726-40
+   else if(c.format.ToLower() == "g726-40" && tsCaps.GetStringsIndex("G.726-40k{sw}")!=P_MAX_INDEX)
+    { scap = c.payload; c.h323 = "G.726-40k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.728
    else if(c.format.ToLower() == "g728" && tsCaps.GetStringsIndex("G.728-16k[e]")!=P_MAX_INDEX)
-    { scap = c.payload; c.h323 = "G.728-16k[e]"; c.cap = H323Capability::Create("G.728-16k[e]"); }
+    { scap = c.payload; c.h323 = "G.728-16k[e]"; c.cap = H323Capability::Create(c.h323); }
    // G.729A
    else if(c.format.ToLower() == "g729" && tsCaps.GetStringsIndex("G.729A-8k[e]{sw}")!=P_MAX_INDEX)
-    { scap = c.payload; c.h323 = "G.729A-8k[e]{sw}"; c.cap = H323Capability::Create("G.729A-8k[e]{sw}"); }
+    { scap = c.payload; c.h323 = "G.729A-8k[e]{sw}"; c.cap = H323Capability::Create(c.h323); }
    // iLBC-13k3
    else if(c.format.ToLower() == "ilbc" && c.parm == "mode=30;" && tsCaps.GetStringsIndex("iLBC-13k3{sw}")!=P_MAX_INDEX)
-    { scap = c.payload; c.h323 = "iLBC-13k3{sw}"; c.cap = H323Capability::Create("iLBC-13k3{sw}"); }
+    { scap = c.payload; c.h323 = "iLBC-13k3{sw}"; c.cap = H323Capability::Create(c.h323); }
    // iLBC-15k2
    else if(c.format.ToLower() == "ilbc" && c.parm == "mode=20;" && tsCaps.GetStringsIndex("iLBC-15k2{sw}")!=P_MAX_INDEX)
-    { scap = c.payload; c.h323 = "iLBC-15k2{sw}"; c.cap = H323Capability::Create("iLBC-15k2{sw}"); }
+    { scap = c.payload; c.h323 = "iLBC-15k2{sw}"; c.cap = H323Capability::Create(c.h323); }
    // SILK 16000
    else if(c.format.ToLower() == "silk" && c.clock == 16000 && tsCaps.GetStringsIndex("SILK_B40{sw}")!=P_MAX_INDEX)
-    { scap = c.payload; c.h323 = "SILK_B40{sw}"; c.cap = H323Capability::Create("SILK_B40{sw}"); }
+    { scap = c.payload; c.h323 = "SILK_B40{sw}"; c.cap = H323Capability::Create(c.h323); }
    // SILK 24000
    else if(c.format.ToLower() == "silk" && c.clock == 24000 && tsCaps.GetStringsIndex("SILK_B40_24K{sw}")!=P_MAX_INDEX)
-    { scap = c.payload; c.h323 = "SILK_B40_24K{sw}"; c.cap = H323Capability::Create("SILK_B40_24K{sw}"); }
+    { scap = c.payload; c.h323 = "SILK_B40_24K{sw}"; c.cap = H323Capability::Create(c.h323); }
    // SPEEX
    else if(c.format.ToLower() == "speex") SelectCapability_SPEEX(c,tsCaps);
    // OPUS
