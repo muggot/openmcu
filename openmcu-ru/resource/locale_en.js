@@ -38,8 +38,8 @@ window.l_param_video = 'Video';
 window.l_param_record = 'Record';
 window.l_param_h323 = 'H323 parameters';
 window.l_param_sip = 'SIP parameters';
-window.l_param_access_rules = 'SIP access rules';
-window.l_param_sip_proxy = 'SIP proxy-servers';
+window.l_param_sip_proxy = 'Account information';
+window.l_param_access_rules = 'Access rules';
 window.l_param_receive_sound = 'Audio codecs (receive)';
 window.l_param_transmit_sound = 'Audio codecs (transmit)';
 window.l_param_receive_video = 'Video codecs (receive)';
@@ -120,9 +120,13 @@ window.l_name_access         = 'Access';
 window.l_name_action         = 'Action';
 window.l_name_code           = 'Code';
 window.l_name_message        = 'Message';
-window.l_name_address                              = 'Address';
+window.l_name_address        = 'Address';
+
 window.l_name_display_name_override                = 'Display name override';
 window.l_name_preferred_frame_rate_from_mcu        = 'Preferred frame rate from MCU';
 window.l_name_preferred_bandwidth_from_mcu         = 'Preferred bandwidth from MCU';
 window.l_name_preferred_bandwidth_to_mcu           = 'Preferred bandwidth to MCU';
 
+window.l_name_register                             = 'Register';
+window.l_name_address_sip_proxy                    = 'Address SIP-proxy';
+window.l_name_expires                              = 'Expires';

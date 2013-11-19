@@ -38,8 +38,8 @@ window.l_param_video = 'Видео';
 window.l_param_record = 'Запись';
 window.l_param_h323 = 'H323 параметры';
 window.l_param_sip = 'SIP параметры';
-window.l_param_access_rules = 'SIP правила доступа';
-window.l_param_sip_proxy = 'SIP прокси-серверы';
+window.l_param_sip_proxy = 'Учетные записи SIP';
+window.l_param_access_rules = 'Правила доступа';
 window.l_param_receive_sound = 'Аудио кодеки (прием)';
 window.l_param_transmit_sound = 'Аудио кодеки (отправка)';
 window.l_param_receive_video = 'Видео кодеки (прием)';
@@ -135,8 +135,13 @@ window.l_name_access         = 'Доступ';
 window.l_name_action         = 'Действие';
 window.l_name_code           = 'Код';
 window.l_name_message        = 'Сообщение';
-window.l_name_address                              = 'Адрес';
-window.l_name_display_name_override                = 'Переопределить отображаемое имя';
+window.l_name_address        = 'Адрес';
+
+window.l_name_display_name_override                = 'Отображаемое имя';
 window.l_name_preferred_frame_rate_from_mcu        = 'Частота кадров от MCU';
 window.l_name_preferred_bandwidth_from_mcu         = 'Пропускная способность от MCU';
 window.l_name_preferred_bandwidth_to_mcu           = 'Пропускная способность к MCU';
+
+window.l_name_register                             = 'Регистрироваться';
+window.l_name_address_sip_proxy                    = 'Адрес SIP-прокси';
+window.l_name_expires                              = 'Продолжительность регистрации';

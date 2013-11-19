@@ -692,12 +692,12 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
-  s << NewRowColumn("Room name");
-  s << ColumnItem("Registrar usage");
-  s << ColumnItem("Registrar domain");
-  s << ColumnItem("Username");
-  s << ColumnItem("Password");
-  s << ColumnItem("Expires");
+  s << NewRowColumn(JsLocale("window.l_name_roomname"));
+  s << ColumnItem(JsLocale("window.l_name_register"));
+  s << ColumnItem(JsLocale("window.l_name_address_sip_proxy"));
+  s << ColumnItem(JsLocale("window.l_name_user"));
+  s << ColumnItem(JsLocale("window.l_name_password"));
+  s << ColumnItem(JsLocale("window.l_name_expires"));
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
