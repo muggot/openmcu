@@ -49,7 +49,8 @@ PString GetFromIp(const char *toAddr, const char *toPort)
 PString CreateSdpInvite()
 {
  PTRACE(1, "MCUSIP\tCreateSDPInvite");
- PString types, type, map, name, fmtp;
+ PString types, map, name, fmtp;
+ int capType = 96;
  PStringArray caps;
  PINDEX tsNum = 0; while(OpenMCU::Current().GetEndpoint().tsCaps[tsNum]!=NULL) { caps.AppendString(OpenMCU::Current().GetEndpoint().tsCaps[tsNum]); tsNum++; }
  PINDEX tvNum = 0; while(OpenMCU::Current().GetEndpoint().tvCaps[tvNum]!=NULL) { caps.AppendString(OpenMCU::Current().GetEndpoint().tvCaps[tvNum]); tvNum++; }
@@ -71,7 +72,6 @@ PString CreateSdpInvite()
    if(cap)
    {
      const OpalMediaFormat & mf = cap->GetMediaFormat();
-     if(i <= tsNum) type = PString(96+i); else type = PString(96+i-tsNum-1);
      name = PString(cap->GetFormatName()).ToLower();
      if(name.Find("ulaw") != P_MAX_INDEX) name = "pcmu";
      if(name.Find("alaw") != P_MAX_INDEX) name = "pcma";
@@ -94,9 +94,10 @@ PString CreateSdpInvite()
      if(map.Find(name) != P_MAX_INDEX && map.Find(fmtp) != P_MAX_INDEX) goto end;
      if(map.Find(name) != P_MAX_INDEX && cap->GetMainType() != 0) goto end;
 
-     types += type+" ";
-     map += "a=rtpmap:"+type+" "+name+"\r\n";
-     if(fmtp != "\r\n" && i <= tsNum) map += "a=fmtp:"+type+" "+fmtp;
+     types += PString(capType)+" ";
+     map += "a=rtpmap:"+PString(capType)+" "+name+"\r\n";
+     if(fmtp != "\r\n" && i <= tsNum) map += "a=fmtp:"+PString(capType)+" "+fmtp;
+     capType++;
    }
 
    end:
