@@ -512,7 +512,8 @@ void Conference::InviteMember(const char *membName)
    PStringStream msg;
    msg << "Inviting " << address;
    OpenMCU::Current().HttpWriteEventRoom(msg,number);
-   OpenMCU::Current().sipendpoint->SipMakeCall(number, address);
+   while(OpenMCU::Current().sipendpoint->sipCallData != "") continue;
+   OpenMCU::Current().sipendpoint->sipCallData = number+","+address;
  }
  else
  {

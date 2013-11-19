@@ -1374,7 +1374,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     if(agent == NULL)
       return 0;
 
-    PString localIP, remoteIP, remotePort, proxyIP, userName, roomName;
+    PString localIP, remoteIP, remotePort, proxyIP, userName, roomName = "";
     BOOL needProxy = false;
 
     PString addr = to.Tokenise(";")[0];
@@ -1385,24 +1385,24 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     if(remotePort == "")
       remotePort = "5060";
 
+    ProxyServer *proxy = NULL;
     ProxyServerMapType::iterator it;
     for(it=ProxyServerMap.begin(); it!=ProxyServerMap.end(); it++)
     {
-      ProxyServer *proxy = it->second;
-      if(proxy->proxyIP == remoteIP)
-        needProxy = true;
+      proxy = it->second;
       if(proxy->proxyIP == remoteIP && proxy->roomName == room && proxy->enable == 1)
       {
+        needProxy = true;
         localIP = proxy->localIP;
         proxyIP = proxy->proxyIP;
         userName = proxy->userName;
         roomName = proxy->roomName;
         break;
+      } else {
+        proxy = NULL;
       }
     }
-    if(roomName == NULL && needProxy)
-      return 0;
-    if(roomName == NULL)
+    if(roomName == "")
     {
       localIP = GetFromIp(remoteIP, remotePort);
       if(localIP == "")
@@ -1450,6 +1450,10 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sdp.Replace("BANDWIDTH", epBandwidthTo, TRUE, 0);
     sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sdp);
 
+    sip_authorization_t *sip_proxy_auth=NULL;
+    if(proxy != NULL && proxy->sipProxyAuthStr != "")
+      sip_proxy_auth = sip_proxy_authorization_make(&home, proxy->sipProxyAuthStr);
+
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *orq = nta_outgoing_mcreate(agent, ProcessSipEventWrap_ntaout, (nta_outgoing_magic_t *)this,
 			(url_string_t *)sip_to->a_url,
@@ -1460,12 +1464,11 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip_call_id),
 			SIPTAG_CONTACT(sip_contact),
+			SIPTAG_PROXY_AUTHORIZATION(sip_proxy_auth),
 			SIPTAG_PAYLOAD(sip_payload),
 			SIPTAG_CONTENT_TYPE_STR("application/sdp"),
 			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
-    // su_epoll_port.c:206: su_epoll_port_register: Assertion `su_port_own_thread(self)' failed.
-    // without registration only send invite to IP address, do not use domain name
     if(orq == NULL)
     {
       InviteDataTempDelete(sik);
@@ -1475,11 +1478,15 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 }
 
 
-int OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
+int OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy, int unregister = 0)
 {
     PTRACE(1, "MCUSIP\tSipRegister");
     if(agent == NULL)
       return 0;
+
+    PString expires;
+    if(unregister) expires = "0";
+    else expires = proxy->expires;
 
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
 	("sip:"+proxy->userName+"@"+proxy->proxyIP));
@@ -1496,6 +1503,11 @@ int OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_REGISTER, (url_string_t *)sip_to->a_url, NULL);
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_REGISTER);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, "0");
+
+    sip_authorization_t *sip_auth=NULL;
+    if(proxy->sipAuthStr != "")
+      sip_auth = sip_authorization_make(&home, proxy->sipAuthStr);
+
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, ProcessSipEventWrap_ntaout, (nta_outgoing_magic_t *)this,
       			(url_string_t *)sip_to->a_url,
@@ -1506,7 +1518,8 @@ int OpenMCUSipEndPoint::SipRegister(ProxyServer *proxy)
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip_call_id),
 			SIPTAG_CONTACT(sip_contact),
-			SIPTAG_EXPIRES_STR((const char*)proxy->expires),
+			SIPTAG_AUTHORIZATION(sip_auth),
+			SIPTAG_EXPIRES_STR((const char*)expires),
 			SIPTAG_ALLOW_EVENTS_STR("INVITE, ACK, BYE"),
 			SIPTAG_USER_AGENT_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
@@ -1607,12 +1620,17 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
 			sip->sip_cseq->cs_method, sip->sip_cseq->cs_method_name);
     sip_call_id_t* sip_call_id = sip_call_id_create(&home, (const char *)call_id_suffix);
 
-    proxy->sipAuthStr = MakeAuthStr(proxy, sip);
     sip_authorization_t *sip_auth=NULL, *sip_proxy_auth=NULL;
     if(status == 401)
+    {
+      proxy->sipAuthStr = MakeAuthStr(proxy, sip);
       sip_auth = sip_authorization_make(&home, proxy->sipAuthStr);
+    }
     else if(status == 407)
-      sip_proxy_auth = sip_proxy_authorization_make(&home, proxy->sipAuthStr);
+    {
+      proxy->sipProxyAuthStr = MakeAuthStr(proxy, sip);
+      sip_proxy_auth = sip_proxy_authorization_make(&home, proxy->sipProxyAuthStr);
+    }
 
     nta_response_f *callback = NULL;
     if(sip->sip_cseq->cs_method == sip_method_invite)
@@ -1911,6 +1929,12 @@ void OpenMCUSipEndPoint::MainLoop()
         if(scr->second != NULL) scr->second->SendBYE();
       return;
     }
+    if(sipCallData != "")
+    {
+      SipMakeCall(sipCallData.Tokenise(",")[0], sipCallData.Tokenise(",")[1]);
+      sipCallData = "";
+      continue;
+    }
     for (scr = sipConnMap.begin(); scr != sipConnMap.end(); scr++) 
     {
       OpenMCUSipConnection *sCon = scr->second;
@@ -1951,25 +1975,15 @@ void OpenMCUSipEndPoint::MainLoop()
   }
 }
 
-void OpenMCUSipEndPoint::Initialise()
+void OpenMCUSipEndPoint::InitProxyServers()
 {
-  nta_agent_close_tports(agent);
-  for(PINDEX i = 0; i < sipListener.GetSize(); i++)
-    nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)(sipListener[i])), NTATAG_UDP_MTU(64000), TAG_NULL());
-}
+  ProxyServerMapType::iterator it = ProxyServerMap.begin();
+  while(it != ProxyServerMap.end())
+  {
+    if(it->second->enable == 1) SipRegister(it->second, 1);
+    ProxyServerMap.erase(it++); // alternatively, i = items.erase(i);
+  }
 
-void OpenMCUSipEndPoint::Main()
-{
-  su_init();
-  su_home_init(&home);
-  root = su_root_create(NULL);
-  if(root == NULL) return;
-
-  su_log_set_level(NULL, 9);
-  setenv("TPORT_LOG", "1", 1);
-  su_log_redirect(NULL, MCUSipLoggerFunc, NULL);
-
-  // proxy servers
   PStringList keys = MCUConfig("ProxyServers").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
@@ -1992,6 +2006,25 @@ void OpenMCUSipEndPoint::Main()
     if(atoi(proxy->expires) > 3600) proxy->expires = "3600";
     ProxyServerMap.insert(ProxyServerMapType::value_type(proxy->userName+"@"+proxy->proxyIP, proxy));
   }
+}
+
+void OpenMCUSipEndPoint::Initialise()
+{
+  nta_agent_close_tports(agent);
+  for(PINDEX i = 0; i < sipListener.GetSize(); i++)
+    nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)(sipListener[i])), NTATAG_UDP_MTU(64000), TAG_NULL());
+}
+
+void OpenMCUSipEndPoint::Main()
+{
+  su_init();
+  su_home_init(&home);
+  root = su_root_create(NULL);
+  if(root == NULL) return;
+
+  su_log_set_level(NULL, 9);
+  setenv("TPORT_LOG", "1", 1);
+  su_log_redirect(NULL, MCUSipLoggerFunc, NULL);
 
   agent = nta_agent_create(root, (url_string_t *)-1, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this, NTATAG_UDP_MTU(64000), TAG_NULL());
   if(agent != NULL)

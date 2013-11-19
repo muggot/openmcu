@@ -52,7 +52,7 @@ typedef std::map<SipKey, OpenMCUSipConnection *, CmpSipKey> SipConnectionMapType
 class ProxyServer
 {
  public:
- ProxyServer() { }
+ ProxyServer() { sipAuthStr = sipProxyAuthStr = ""; }
  PString localIP;
  //PString localPort;
  PString proxyIP;
@@ -61,7 +61,7 @@ class ProxyServer
  PString roomName;
  PString password;
  PString expires;
- PString sipAuthStr;
+ PString sipAuthStr, sipProxyAuthStr;
  int enable, timeout;
 };
 typedef std::map<PString, ProxyServer *> ProxyServerMapType;
@@ -126,13 +126,17 @@ class OpenMCUSipEndPoint : public PThread
 
 //    H323Connection * connectionToDelete = connectionsActive.RemoveAt(token);
 
-   void Initialise();
-   int restart;
-   PStringArray sipListener;
-   int ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon);
    int terminating;
-   int SipMakeCall(PString room, PString to);
+   int restart;
+   void Initialise();
+   PStringArray sipListener;
+
+   int ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon);
    nta_agent_t *GetAgent() { return agent; };
+
+   void InitProxyServers();
+   int SipMakeCall(PString room, PString to);
+   PString sipCallData;
 
   protected:
    void MainLoop();
@@ -155,7 +159,7 @@ class OpenMCUSipEndPoint : public PThread
    }
    int ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip);
 
-   int SipRegister(ProxyServer *);
+   int SipRegister(ProxyServer *, int unregister);
    PString MakeAuthStr(ProxyServer *proxy, const sip_t *sip);
    PString GetRoomAccess(const sip_t *sip);
    int ReqReply(msg_t *msg, unsigned method, const char *method_name, OpenMCUSipConnection *sCon);
