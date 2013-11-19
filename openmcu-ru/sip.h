@@ -130,6 +130,7 @@ class OpenMCUSipEndPoint : public PThread
    int restart;
    void Initialise();
    PStringArray sipListener;
+   int CheckListener(PString localIp);
 
    int ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon);
    nta_agent_t *GetAgent() { return agent; };

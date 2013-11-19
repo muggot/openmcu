@@ -687,7 +687,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  OpenMCU & mcu = OpenMCU::Current();
   cfg = MCUConfig(section);
 
   PStringStream html_begin, html_end, html_page, s;
@@ -723,8 +722,6 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
     s << IntegerItem("room101", 60, 60, 3600);
   }
   s << EndTable();
-
-  mcu.sipendpoint->InitProxyServers();
 
   BuildHTML("");
   BeginPage(html_begin, "SIP proxy-servers", "window.l_param_sip_proxy", "window.l_info_param_sip_proxy");
