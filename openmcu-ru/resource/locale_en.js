@@ -110,6 +110,8 @@ window.l_select_delete =       'Delete room'
 
 window.l_not_found = 'not found';
 
+window.l_name_accept         = 'Accept';
+window.l_name_reset          = 'Reset';
 window.l_name_user           = 'User';
 window.l_name_group          = 'Group';
 window.l_name_password       = 'Password';
@@ -118,3 +120,9 @@ window.l_name_access         = 'Access';
 window.l_name_action         = 'Action';
 window.l_name_code           = 'Code';
 window.l_name_message        = 'Message';
+window.l_name_address                              = 'Address';
+window.l_name_display_name_override                = 'Display name override';
+window.l_name_preferred_frame_rate_from_mcu        = 'Preferred frame rate from MCU';
+window.l_name_preferred_bandwidth_from_mcu         = 'Preferred bandwidth from MCU';
+window.l_name_preferred_bandwidth_to_mcu           = 'Preferred bandwidth to MCU';
+

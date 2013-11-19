@@ -607,10 +607,10 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
-  s << NewRowColumn("Address");
-  s << ColumnItem("Display name override");
-  s << ColumnItem("Preferred frame rate from MCU");
-  s << ColumnItem("Preferred bandwidth from MCU");
+  s << NewRowColumn(JsLocale("window.l_name_address"));
+  s << ColumnItem(JsLocale("window.l_name_display_name_override"));
+  s << ColumnItem(JsLocale("window.l_name_preferred_frame_rate_from_mcu"));
+  s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -648,11 +648,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
-  s << NewRowColumn("Address");
-  s << ColumnItem("Display name override");
-  s << ColumnItem("Preferred frame rate from MCU");
-  s << ColumnItem("Preferred bandwidth from MCU");
-  s << ColumnItem("Preferred bandwidth to MCU");
+  s << NewRowColumn(JsLocale("window.l_name_address"));
+  s << ColumnItem(JsLocale("window.l_name_display_name_override"));
+  s << ColumnItem(JsLocale("window.l_name_preferred_frame_rate_from_mcu"));
+  s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
+  s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_to_mcu"));
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -791,6 +791,7 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
 
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
+  s << BoolField("RESTORE DEFAULTS", FALSE);
 
   s << ArrayField(InterfaceKey, cfg.GetString(InterfaceKey));
 
@@ -825,7 +826,6 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   cfg = MCUConfig(section);
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
-
   s << BoolField("RESTORE DEFAULTS", FALSE);
 
   PStringArray sipListener;
