@@ -66,7 +66,9 @@ void OpenMCU::OnStop()
   delete manager;
   manager = NULL;
 
-//  PHTTPServiceProcess::OnStop();
+#ifndef _WIN32
+  CommonDestruct(); // delete configFiles;
+#endif
 }
 
 void OpenMCU::OnControl()
