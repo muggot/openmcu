@@ -344,4 +344,5 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
  PString sess_id;
  PString sess_ver;
  PString sess_username;
+ PString prefAudioCap, prefVideoCap;
 };

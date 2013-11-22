@@ -260,6 +260,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // Create the config page - room codes
   httpNameSpace.AddResource(new RoomCodesPConfigPage(*this, "RoomCodes", "Room Codes", authSettings), PHTTPSpace::Overwrite);
 
+  // Create the config page - h323
+  httpNameSpace.AddResource(new H323PConfigPage(*this, "H323Parameters", "H323 Parameters", authSettings), PHTTPSpace::Overwrite);
+
+  // Create the config page - sip
+  httpNameSpace.AddResource(new SIPPConfigPage(*this, "SIPParameters", "SIP Parameters", authSettings), PHTTPSpace::Overwrite);
+
   // Create the config page - h323 endpoints
   httpNameSpace.AddResource(new H323EndpointsPConfigPage(*this, "H323EndpointsParameters", "H323 Endpoints", authSettings), PHTTPSpace::Overwrite);
 
@@ -273,12 +279,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // Create the config page - record
   //httpNameSpace.AddResource(new RecordPConfigPage(*this, "RecordParameters", "Parameters", authSettings), PHTTPSpace::Overwrite);
-
-  // Create the config page - h323
-  httpNameSpace.AddResource(new H323PConfigPage(*this, "H323Parameters", "H323 Parameters", authSettings), PHTTPSpace::Overwrite);
-
-  // Create the config page - sip
-  httpNameSpace.AddResource(new SIPPConfigPage(*this, "SIPParameters", "SIP Parameters", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - sip room acccess
   httpNameSpace.AddResource(new RoomAccessSIPPConfigPage(*this, "RoomAccess", "RoomAccess", authSettings), PHTTPSpace::Overwrite);

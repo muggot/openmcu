@@ -131,3 +131,6 @@ window.l_name_outgoing_transport                   = 'Outgoing transport';
 window.l_name_register                             = 'Register';
 window.l_name_address_sip_proxy                    = 'Address SIP-proxy';
 window.l_name_expires                              = 'Expires';
+
+window.l_name_preferred_audio_capability           = 'Preferred audio capability';
+window.l_name_preferred_video_capability           = 'Preferred video capability';

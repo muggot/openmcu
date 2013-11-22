@@ -644,6 +644,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
+  OpenMCU & mcu = OpenMCU::Current();
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
@@ -654,6 +655,15 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_to_mcu"));
   s << ColumnItem(JsLocale("window.l_name_outgoing_transport"));
+  s << ColumnItem(JsLocale("window.l_name_preferred_audio_capability"));
+  s << ColumnItem(JsLocale("window.l_name_preferred_video_capability"));
+
+  PString audioCaps, videoCaps;
+  if(mcu.GetEndpoint().tsCaps != NULL && mcu.GetEndpoint().tvCaps != NULL)
+  {
+    PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { audioCaps += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; }
+    PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { videoCaps += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; }
+  }
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -666,6 +676,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]);
     s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Outgoing transport")], "transport=*,transport=udp,transport=tcp");
+    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred audio capability")], audioCaps);
+    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred video capability")], videoCaps);
   }
   if(keys.GetSize() == 0)
   {
@@ -675,6 +687,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << StringItem("test", "");
     s << StringItem("test", "");
     s << SelectItem("test", "transport=*", "transport=*,transport=udp,transport=tcp");
+    s << SelectItem("test", "", audioCaps);
+    s << SelectItem("test", "", videoCaps);
   }
   s << EndTable();
 

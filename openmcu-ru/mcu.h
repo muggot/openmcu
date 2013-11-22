@@ -139,7 +139,9 @@ static PStringArray sipEndpointOptionsOrder = PString(
                                         "Preferred frame rate from MCU,"
                                         "Preferred bandwidth from MCU,"
                                         "Preferred bandwidth to MCU,"
-                                        "Outgoing transport").Tokenise(",");
+                                        "Outgoing transport,"
+                                        "Preferred audio capability,"
+                                        "Preferred video capability").Tokenise(",");
 
 static const PTEACypher::Key CypherKey = {
   {

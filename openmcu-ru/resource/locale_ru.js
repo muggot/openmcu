@@ -146,3 +146,6 @@ window.l_name_outgoing_transport                   = 'Исходящий тра�
 window.l_name_register                             = 'Регистрироваться';
 window.l_name_address_sip_proxy                    = 'Адрес SIP-прокси';
 window.l_name_expires                              = 'Продолжительность регистрации';
+
+window.l_name_preferred_audio_capability           = 'Предпочитаемый аудио кодек';
+window.l_name_preferred_video_capability           = 'Предпочитаемый видео кодек';
