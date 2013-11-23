@@ -132,5 +132,5 @@ window.l_name_register                             = 'Register';
 window.l_name_address_sip_proxy                    = 'Address SIP-proxy';
 window.l_name_expires                              = 'Expires';
 
-window.l_name_preferred_audio_capability           = 'Preferred audio capability';
-window.l_name_preferred_video_capability           = 'Preferred video capability';
+window.l_name_preferred_audio_codec                = 'Audio codec';
+window.l_name_preferred_video_codec                = 'Video codec';

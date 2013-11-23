@@ -603,15 +603,30 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
+  OpenMCU & mcu = OpenMCU::Current();
 
   firstEditRow = 2;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
   s << NewRowColumn(JsLocale("window.l_name_address"));
+  //s << "";
+  //s << "";
+  //s << "";
   s << ColumnItem(JsLocale("window.l_name_display_name_override"));
   s << ColumnItem(JsLocale("window.l_name_preferred_frame_rate_from_mcu"));
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
+  //s << "";
+  //s << "";
+  s << ColumnItem(JsLocale("window.l_name_audio_codec"));
+  s << ColumnItem(JsLocale("window.l_name_video_codec"));
+
+  PString audioCaps, videoCaps;
+  if(mcu.GetEndpoint().tsCaps != NULL && mcu.GetEndpoint().tvCaps != NULL)
+  {
+    PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { audioCaps += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; }
+    PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { videoCaps += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; }
+  }
 
   PStringList keys = cfg.GetKeys();
   if(keys.GetStringsIndex("*") == P_MAX_INDEX)
@@ -623,12 +638,20 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
+
     if(name == "*") s << NewRowInput(name, 15, TRUE);
     else s << NewRowInput(name, 15);
+    s << HiddenItem(name);
+    s << HiddenItem(name);
+    s << HiddenItem(name);
     if(name == "*") s << StringItem(name, "", 12, TRUE);
     else s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
+    s << HiddenItem(name);
+    s << HiddenItem(name);
+    s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Audio codec")], audioCaps);
+    s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Video codec")], videoCaps);
   }
 
   s << EndTable();
@@ -652,13 +675,16 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
   s << NewRowColumn(JsLocale("window.l_name_address"));
+  s << ColumnItem(JsLocale("window.l_name_outgoing_transport"));
+  //s << "";
+  //s << "";
   s << ColumnItem(JsLocale("window.l_name_display_name_override"));
   s << ColumnItem(JsLocale("window.l_name_preferred_frame_rate_from_mcu"));
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_to_mcu"));
-  s << ColumnItem(JsLocale("window.l_name_outgoing_transport"));
-  s << ColumnItem(JsLocale("window.l_name_preferred_audio_capability"));
-  s << ColumnItem(JsLocale("window.l_name_preferred_video_capability"));
+  //s << "";
+  s << ColumnItem(JsLocale("window.l_name_audio_codec"));
+  s << ColumnItem(JsLocale("window.l_name_video_codec"));
 
   PString audioCaps, videoCaps;
   if(mcu.GetEndpoint().tsCaps != NULL && mcu.GetEndpoint().tvCaps != NULL)
@@ -677,16 +703,20 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
+
     if(name == "*") s << NewRowInput(name, 15, TRUE);
     else s << NewRowInput(name, 15);
+    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Outgoing transport")], "transport=*,transport=udp,transport=tcp");
+    s << HiddenItem(name);
+    s << HiddenItem(name);
     if(name == "*") s << StringItem(name, "", 12, TRUE);
     else s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]);
-    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Outgoing transport")], "transport=*,transport=udp,transport=tcp");
-    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred audio capability")], audioCaps);
-    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred video capability")], videoCaps);
+    s << HiddenItem(name);
+    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Audio codec")], audioCaps);
+    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Video codec")], videoCaps);
   }
   s << EndTable();
 

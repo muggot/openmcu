@@ -131,17 +131,27 @@ static const char SIPReInviteKey[]         = "SIP ReInvite (pause)";
 
 // endpoints options
 static PStringArray h323EndpointOptionsOrder = PString(
+                                        ","
+                                        ","
+                                        ","
                                         "Display name override,"
                                         "Preferred frame rate from MCU,"
-                                        "Preferred bandwidth from MCU").Tokenise(",");
+                                        "Preferred bandwidth from MCU,"
+                                        ","
+                                        ","
+                                        "Audio codec,"
+                                        "Video codec").Tokenise(",");
 static PStringArray sipEndpointOptionsOrder = PString(
+                                        "Outgoing transport,"
+                                        ","
+                                        ","
                                         "Display name override,"
                                         "Preferred frame rate from MCU,"
                                         "Preferred bandwidth from MCU,"
                                         "Preferred bandwidth to MCU,"
-                                        "Outgoing transport,"
-                                        "Preferred audio capability,"
-                                        "Preferred video capability").Tokenise(",");
+                                        ","
+                                        "Audio codec,"
+                                        "Video codec").Tokenise(",");
 
 static const PTEACypher::Key CypherKey = {
   {

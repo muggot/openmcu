@@ -198,6 +198,13 @@ class TablePConfigPage : public PConfigPage
      s +="</select>";
      return s;
    }
+   PString HiddenItem(PString name)
+   {
+     PString id = PString(rand());
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
+     s += "<input name='"+name+"' type='hidden'></input>";
+     return s;
+   }
 
    PString NewItemArray(PString name)
    {

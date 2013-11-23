@@ -2165,6 +2165,30 @@ void OpenMCUH323Connection::SetupCacheConnection(PString & format, Conference * 
  requestedRoom = conference->GetNumber();
 }
 
+BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteCaps, const H245_MultiplexCapability * muxCap, H245_TerminalCapabilitySetReject & rejectPDU)
+{
+  PString prefAudioCap = GetEndpointParam("Audio codec");
+  PString prefVideoCap = GetEndpointParam("Video codec");
+
+  H323Capabilities _remoteCaps(remoteCaps);
+  for(PINDEX i = 0; i < remoteCaps.GetSize(); i++)
+  {
+    PString capName = remoteCaps[i].GetFormatName();
+    if(capName.Find("UserInput") != P_MAX_INDEX) continue;
+    if(remoteCaps[i].GetMainType() == 0 && prefAudioCap != "" && capName != prefAudioCap)
+      _remoteCaps.Remove(capName);
+    if(remoteCaps[i].GetMainType() == 1 && prefVideoCap != "" && capName != prefVideoCap)
+      _remoteCaps.Remove(capName);
+  }
+
+  return H323Connection::OnReceivedCapabilitySet(_remoteCaps, muxCap, rejectPDU);
+}
+
+void OpenMCUH323Connection::OnSendCapabilitySet(H245_TerminalCapabilitySet & PDU)
+{
+  H323Connection::OnSendCapabilitySet(PDU);
+}
+
 BOOL OpenMCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
 {
   // get a good name from the other end
@@ -2185,6 +2209,25 @@ BOOL OpenMCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU
     remoteName = GetRemotePartyName();
 
   isMCU = setup.m_sourceInfo.m_mc;
+
+  // set endpoint param
+  remotePartyAddress = signallingChannel->GetRemoteAddress();
+  if (setup.m_sourceAddress.GetSize() > 0)
+    remotePartyAddress = H323GetAliasAddressString(setup.m_sourceAddress[0]) + '@' + signallingChannel->GetRemoteAddress();
+
+  PString prefAudioCap = GetEndpointParam("Audio codec");
+  PString prefVideoCap = GetEndpointParam("Video codec");
+
+  H323Capabilities _localCapabilities(localCapabilities);
+  for(PINDEX i = 0; i < _localCapabilities.GetSize(); i++)
+  {
+    PString capName = _localCapabilities[i].GetFormatName();
+    if(_localCapabilities[i].GetMainType() == 0 && prefAudioCap != "" && capName != prefAudioCap)
+      localCapabilities.Remove(capName);
+    if(_localCapabilities[i].GetMainType() == 1 && prefVideoCap != "" && capName != prefVideoCap)
+      localCapabilities.Remove(capName);
+  }
+  //
 
   return H323Connection::OnReceivedSignalSetup(setupPDU);
 }

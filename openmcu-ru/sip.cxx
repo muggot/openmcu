@@ -1068,8 +1068,8 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
  int cn = 0; while(endpoint.tsCaps[cn]!=NULL) { tsCaps.AppendString(endpoint.tsCaps[cn]); cn++; }
  cn = 0; while(endpoint.tvCaps[cn]!=NULL) { tvCaps.AppendString(endpoint.tvCaps[cn]); cn++; }
 
- prefAudioCap = GetEndpointParam("Preferred audio capability");
- prefVideoCap = GetEndpointParam("Preferred video capability");
+ prefAudioCap = GetEndpointParam("Audio codec");
+ prefVideoCap = GetEndpointParam("Video codec");
  if(tsCaps.GetStringsIndex(prefAudioCap) == P_MAX_INDEX) prefAudioCap = "";
  if(tvCaps.GetStringsIndex(prefVideoCap) == P_MAX_INDEX) prefVideoCap = "";
 
@@ -1576,8 +1576,8 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 
     // create sdp for outgoing request
     PString uri = PString(sip_to->a_url->url_user)+"@"+PString(sip_to->a_url->url_host);
-    PString prefAudioCap = GetEndpointParamFromUri("Preferred audio capability", uri, "sip");
-    PString prefVideoCap = GetEndpointParamFromUri("Preferred video capability", uri, "sip");
+    PString prefAudioCap = GetEndpointParamFromUri("Audio codec", uri, "sip");
+    PString prefVideoCap = GetEndpointParamFromUri("Video codec", uri, "sip");
     sdpInvite = CreateSdpInvite(prefAudioCap, prefVideoCap);
     PString sdp = sdpInvite;
     sdp.Replace("USERNAME", room, TRUE, 0);

@@ -147,5 +147,5 @@ window.l_name_register                             = 'Регистрироват
 window.l_name_address_sip_proxy                    = 'Адрес SIP-прокси';
 window.l_name_expires                              = 'Продолжительность регистрации';
 
-window.l_name_preferred_audio_capability           = 'Предпочитаемый аудио кодек';
-window.l_name_preferred_video_capability           = 'Предпочитаемый видео кодек';
+window.l_name_audio_codec                          = 'Аудио кодек';
+window.l_name_video_codec                          = 'Видео кодек';

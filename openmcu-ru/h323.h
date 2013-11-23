@@ -256,6 +256,9 @@ class OpenMCUH323Connection : public H323Connection
     virtual BOOL OnReceivedSignalSetup(const H323SignalPDU & setupPDU);
     virtual BOOL OnReceivedCallProceeding(const H323SignalPDU & proceedingPDU);
 
+    virtual BOOL OnReceivedCapabilitySet(const H323Capabilities & remoteCaps, const H245_MultiplexCapability * muxCap, H245_TerminalCapabilitySetReject & /*rejectPDU*/);
+    virtual void OnSendCapabilitySet(H245_TerminalCapabilitySet & /*pdu*/);
+
     virtual BOOL OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
     virtual BOOL OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
     virtual PString GetAudioTransmitCodecName() const { return audioTransmitCodecName; }
