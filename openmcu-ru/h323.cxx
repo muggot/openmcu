@@ -2169,6 +2169,8 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
 {
   PString prefAudioCap = GetEndpointParam("Audio codec");
   PString prefVideoCap = GetEndpointParam("Video codec");
+  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom audio capability: " << prefAudioCap); }
+  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom video capability: " << prefVideoCap); }
 
   H323Capabilities _remoteCaps(remoteCaps);
   for(PINDEX i = 0; i < remoteCaps.GetSize(); i++)
@@ -2187,6 +2189,26 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
 void OpenMCUH323Connection::OnSendCapabilitySet(H245_TerminalCapabilitySet & PDU)
 {
   H323Connection::OnSendCapabilitySet(PDU);
+}
+
+BOOL OpenMCUH323Connection::StartControlNegotiations(BOOL renegotiate)
+{
+  // set endpoint capability
+  PString prefAudioCap = GetEndpointParam("Audio codec");
+  PString prefVideoCap = GetEndpointParam("Video codec");
+  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom audio capability: " << prefAudioCap); }
+  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom video capability: " << prefVideoCap); }
+
+  H323Capabilities _localCapabilities(localCapabilities);
+  for(PINDEX i = 0; i < _localCapabilities.GetSize(); i++)
+  {
+    PString capName = _localCapabilities[i].GetFormatName();
+    if(_localCapabilities[i].GetMainType() == 0 && prefAudioCap != "" && capName != prefAudioCap)
+      localCapabilities.Remove(capName);
+    if(_localCapabilities[i].GetMainType() == 1 && prefVideoCap != "" && capName != prefVideoCap)
+      localCapabilities.Remove(capName);
+  }
+  return H323Connection::StartControlNegotiations(renegotiate);
 }
 
 BOOL OpenMCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
@@ -2210,13 +2232,15 @@ BOOL OpenMCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU
 
   isMCU = setup.m_sourceInfo.m_mc;
 
-  // set endpoint param
+  // set endpoint capability
   remotePartyAddress = signallingChannel->GetRemoteAddress();
   if (setup.m_sourceAddress.GetSize() > 0)
     remotePartyAddress = H323GetAliasAddressString(setup.m_sourceAddress[0]) + '@' + signallingChannel->GetRemoteAddress();
 
   PString prefAudioCap = GetEndpointParam("Audio codec");
   PString prefVideoCap = GetEndpointParam("Video codec");
+  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom audio capability: " << prefAudioCap); }
+  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom video capability: " << prefVideoCap); }
 
   H323Capabilities _localCapabilities(localCapabilities);
   for(PINDEX i = 0; i < _localCapabilities.GetSize(); i++)
