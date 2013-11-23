@@ -50,7 +50,7 @@ PString CreateSdpInvite(PString prefAudioCap = "", PString prefVideoCap = "")
 {
  PTRACE(1, "MCUSIP\tCreateSDPInvite");
  PString types, map, name, fmtp;
- int capType = 96;
+ int dynPt = 96;
  PStringArray caps;
  PINDEX tsNum = 0; while(OpenMCU::Current().GetEndpoint().tsCaps[tsNum]!=NULL) { caps.AppendString(OpenMCU::Current().GetEndpoint().tsCaps[tsNum]); tsNum++; }
  PINDEX tvNum = 0; while(OpenMCU::Current().GetEndpoint().tvCaps[tvNum]!=NULL) { caps.AppendString(OpenMCU::Current().GetEndpoint().tvCaps[tvNum]); tvNum++; }
@@ -83,10 +83,12 @@ PString CreateSdpInvite(PString prefAudioCap = "", PString prefVideoCap = "")
      cap = H323Capability::Create(caps[i]+"{sw}");
    if(cap)
    {
+     int pt;
      const OpalMediaFormat & mf = cap->GetMediaFormat();
      name = PString(cap->GetFormatName()).ToLower();
      if(name.Find("ulaw") != P_MAX_INDEX) name = "pcmu";
      if(name.Find("alaw") != P_MAX_INDEX) name = "pcma";
+     if(name.Find("723") != P_MAX_INDEX) name = "g723";
      name = name.Left(PString(cap->GetFormatName()).Find("-"))
             .Left(name.Find("_"))+"/"+PString(mf.GetTimeUnits()*1000);
      name.Replace(".","",TRUE,0);
@@ -106,10 +108,19 @@ PString CreateSdpInvite(PString prefAudioCap = "", PString prefVideoCap = "")
      if(map.Find(name) != P_MAX_INDEX && map.Find(fmtp) != P_MAX_INDEX) goto end;
      if(map.Find(name) != P_MAX_INDEX && cap->GetMainType() != 0) goto end;
 
-     types += PString(capType)+" ";
-     map += "a=rtpmap:"+PString(capType)+" "+name+"\r\n";
-     if(fmtp != "\r\n" && i <= tsNum) map += "a=fmtp:"+PString(capType)+" "+fmtp;
-     capType++;
+     if     (name == "pcmu/8000")   { pt = 0; }
+     else if(name == "pcma/8000")   { pt = 8; }
+     else if(name == "g723/8000")   { pt = 4; }
+     else if(name == "g722/8000")   { pt = 9; }
+     else if(name == "g728/8000")   { pt = 15; }
+     else if(name == "g729/8000")   { pt = 18; }
+     else if(name == "h261/90000")  { pt = 31; }
+     else if(name == "h263/90000")  { pt = 34; }
+     else                           { pt = dynPt; dynPt++; }
+
+     types += PString(pt)+" ";
+     map += "a=rtpmap:"+PString(pt)+" "+name+"\r\n";
+     if(fmtp != "\r\n" && i <= tsNum) map += "a=fmtp:"+PString(pt)+" "+fmtp;
    }
 
    end:
@@ -1070,10 +1081,10 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
   if(c.media == 0)
   {
    // PCMU
-   if(c.format.ToLower() == "pcmu" && tsCaps.GetStringsIndex("G.711-uLaw-64k")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.711-uLaw-64k"))
+   if((c.format.ToLower() == "pcmu" || c.payload == 0) && tsCaps.GetStringsIndex("G.711-uLaw-64k")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.711-uLaw-64k"))
     { scap = c.payload; c.h323 = "G.711-uLaw-64k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // PCMA
-   else if(c.format.ToLower() == "pcma" && tsCaps.GetStringsIndex("G.711-ALaw-64k")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.711-ALaw-64k"))
+   else if((c.format.ToLower() == "pcma" || c.payload == 0) && tsCaps.GetStringsIndex("G.711-ALaw-64k")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.711-ALaw-64k"))
     { scap = c.payload; c.h323 = "G.711-ALaw-64k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.722
    else if(c.format.ToLower() == "g722" && tsCaps.GetStringsIndex("G.722-64k{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.722-64k{sw}"))

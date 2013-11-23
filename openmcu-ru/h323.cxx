@@ -208,18 +208,34 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg)
   }
 
    // Setup capabilities
-   unsigned rsConfig=1, tsConfig=1, rvConfig=1, tvConfig=1;
    if(capabilities.GetSize() == 0)
-     AddAllCapabilities(0, 0, "*");
+   {
+     //AddAllCapabilities(0, 0, "*");
+     PTRACE(3, "H323\tAdd all capabilities");
+     H323CapabilityFactory::KeyList_T stdCaps = H323CapabilityFactory::GetKeyList();
+     for (H323CapabilityFactory::KeyList_T::const_iterator r = stdCaps.begin(); r != stdCaps.end(); ++r)
+     {
+        PString capName(*r);
+        OpalMediaFormat mediaFormat(capName);
+        if(!mediaFormat.IsValid() && (capName.Right(4) == "{sw}") && capName.GetLength() > 4)
+          mediaFormat = OpalMediaFormat(capName.Left(capName.GetLength()-4));
+        if(mediaFormat.IsValid())
+        {
+          H323Capability * cap = H323Capability::Create(capName);
+          if(cap) AddCapability(cap);
+        }
+     }
+   }
 
+   unsigned rsConfig=1, tsConfig=1, rvConfig=1, tvConfig=1;
    if(MCUConfig("RECEIVE_SOUND").GetKeys().GetSize() == 0) rsConfig = 0;
    if(MCUConfig("TRANSMIT_SOUND").GetKeys().GetSize() == 0) tsConfig = 0;
    if(MCUConfig("RECEIVE_VIDEO").GetKeys().GetSize() == 0) rvConfig = 0;
    if(MCUConfig("TRANSMIT_VIDEO").GetKeys().GetSize() == 0) tvConfig = 0;
 
-   for(unsigned i = 1; capabilities.FindCapability(i) != NULL; i++)
+   for(PINDEX i = 0; i < capabilities.GetSize(); i++)
    {
-     H323Capability *cap = capabilities.FindCapability(i);
+     H323Capability *cap = &capabilities[i];
      if(rsConfig == 0 && cap->GetMainType() == 0)
      {
        if(cap->GetFormatName().Right(4) == "{sw}")
