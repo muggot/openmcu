@@ -604,6 +604,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 {
   cfg = MCUConfig(section);
 
+  firstEditRow = 2;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
@@ -613,21 +614,21 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
 
   PStringList keys = cfg.GetKeys();
+  if(keys.GetStringsIndex("*") == P_MAX_INDEX)
+    keys.InsertAt(0, new PString("*"));
+  if(keys.GetSize() == 1)
+    keys.AppendString("test");
+
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << NewRowInput(name);
-    s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]);
+    if(name == "*") s << NewRowInput(name, 15, TRUE);
+    else s << NewRowInput(name, 15);
+    if(name == "*") s << StringItem(name, "", 12, TRUE);
+    else s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
-  }
-  if(keys.GetSize() == 0)
-  {
-    s << NewRowInput("test");
-    s << StringItem("test", "");
-    s << StringItem("test", "");
-    s << StringItem("test", "");
   }
 
   s << EndTable();
@@ -646,6 +647,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   cfg = MCUConfig(section);
   OpenMCU & mcu = OpenMCU::Current();
 
+  firstEditRow = 2;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
@@ -666,29 +668,25 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   }
 
   PStringList keys = cfg.GetKeys();
+  if(keys.GetStringsIndex("*") == P_MAX_INDEX)
+    keys.InsertAt(0, new PString("*"));
+  if(keys.GetSize() == 1)
+    keys.AppendString("test");
+
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
-    s << NewRowInput(name);
-    s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")]);
+    if(name == "*") s << NewRowInput(name, 15, TRUE);
+    else s << NewRowInput(name, 15);
+    if(name == "*") s << StringItem(name, "", 12, TRUE);
+    else s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]);
     s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Outgoing transport")], "transport=*,transport=udp,transport=tcp");
     s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred audio capability")], audioCaps);
     s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred video capability")], videoCaps);
-  }
-  if(keys.GetSize() == 0)
-  {
-    s << NewRowInput("test");
-    s << StringItem("test", "");
-    s << StringItem("test", "");
-    s << StringItem("test", "");
-    s << StringItem("test", "");
-    s << SelectItem("test", "transport=*", "transport=*,transport=udp,transport=tcp");
-    s << SelectItem("test", "", audioCaps);
-    s << SelectItem("test", "", videoCaps);
   }
   s << EndTable();
 
@@ -753,8 +751,8 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  firstEditRow = 2;
 
+  firstEditRow = 2;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
@@ -763,6 +761,11 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
   s << ColumnItem("'user1@domain user2@ @domain @@via'");
 
   PStringList keys = cfg.GetKeys();
+  if(keys.GetStringsIndex("*") == P_MAX_INDEX)
+    keys.InsertAt(0, new PString("*"));
+  if(keys.GetSize() == 1)
+    keys.AppendString("room101");
+
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
@@ -771,20 +774,8 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
     if(name == "*") s << NewRowInput(name, 15, TRUE);
     else s << NewRowInput(name, 15);
     s << SelectItem(name, access, "allow,deny");
-    if(name == "*") s << StringItem(name, params, 50, TRUE);
+    if(name == "*") s << StringItem(name, "", 50, TRUE);
     else s << StringItem(name, params, 50);
-  }
-  if(keys.GetStringsIndex("*") == P_MAX_INDEX)
-  {
-    s << NewRowInput("*", 15, TRUE);
-    s << SelectItem("*", "allow", "allow,deny");
-    s << StringItem("*", "", 50, TRUE);
-  }
-  if(keys.GetSize() < 2)
-  {
-    s << NewRowInput("room101", 15);
-    s << SelectItem("room101", "deny", "allow,deny");
-    s << StringItem("room101", "", 50);
   }
   s << EndTable();
 

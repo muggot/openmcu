@@ -2447,15 +2447,16 @@ void OpenMCUH323Connection::SetEndpointPrefVideoParams()
   }
 
   // endpoints preffered parameters
-  PString newParam;
   MCUConfig epCfg(section);
   PStringList epKeys = epCfg.GetKeys();
 
-  PINDEX epIndex, epIpIndex, epUriIndex;
+  PINDEX epIndex, epIpIndex, epUriIndex, epAllIndex;
   epIpIndex = epKeys.GetStringsIndex(domain);
   epUriIndex = epKeys.GetStringsIndex(uri);
+  epAllIndex = epKeys.GetStringsIndex("*");
   if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
-  else epIndex = epIpIndex;
+  else if(epIpIndex != P_MAX_INDEX) epIndex = epIpIndex;
+  else epIndex = epAllIndex;
 
   if(epIndex != P_MAX_INDEX)
   {
@@ -2493,6 +2494,7 @@ PString OpenMCUH323Connection::GetEndpointParam(PString param)
   if(GetRemotePartyAddress() == "") return "";
 
   PString domain, uri, section;
+  PString newParam;
   PStringArray options;
   if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
   {
@@ -2509,15 +2511,16 @@ PString OpenMCUH323Connection::GetEndpointParam(PString param)
   }
 
   // endpoints preffered parameters
-  PString newParam;
   MCUConfig epCfg(section);
   PStringList epKeys = epCfg.GetKeys();
 
-  PINDEX epIndex, epIpIndex, epUriIndex;
+  PINDEX epIndex, epIpIndex, epUriIndex, epAllIndex;
   epIpIndex = epKeys.GetStringsIndex(domain);
   epUriIndex = epKeys.GetStringsIndex(uri);
+  epAllIndex = epKeys.GetStringsIndex("*");
   if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
-  else epIndex = epIpIndex;
+  else if(epIpIndex != P_MAX_INDEX) epIndex = epIpIndex;
+  else epIndex = epAllIndex;
 
   if(epIndex != P_MAX_INDEX)
   {

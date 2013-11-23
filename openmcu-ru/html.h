@@ -64,9 +64,9 @@ class TablePConfigPage : public PConfigPage
      buttonStyle = "margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;width:24px;";
    }
 
-   PString NewRowColumn(PString name, int width=255)
+   PString NewRowColumn(PString name, int width=250)
    {
-     return "<tr>"+columnStyle+"width:"+PString(width)+"px'><p style='"+textStyle+"'>"+name+"</p>";
+     return "<tr>"+columnStyle+"width:"+PString(width)+"px'><p style='"+textStyle+";width:"+PString(width)+"px'>"+name+"</p>";
    }
    PString NewRowText(PString name)
    {
@@ -78,7 +78,7 @@ class TablePConfigPage : public PConfigPage
    {
      PString s = "<tr style='padding:0px;margin:0px;'>"+rowStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+name+"' style='"+inputStyle+"'";
      if(!readonly) s += "></input>"; else s += "readonly></input>";
-     s += buttons()+"</td>";
+     if(!readonly) s += buttons()+"</td>";
      return s;
    }
    PString EndRow() { return "</tr>"; }

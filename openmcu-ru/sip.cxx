@@ -59,14 +59,12 @@ PString CreateSdpInvite(PString prefAudioCap = "", PString prefVideoCap = "")
  if(caps.GetStringsIndex(prefAudioCap) != P_MAX_INDEX)
  {
    caps.RemoveAt(caps.GetStringsIndex(prefAudioCap));
-   PString *val = new PString(prefAudioCap);
-   caps.InsertAt(0, val);
+   caps.InsertAt(0, new PString(prefAudioCap));
  }
  if(caps.GetStringsIndex(prefVideoCap) != P_MAX_INDEX)
  {
    caps.RemoveAt(caps.GetStringsIndex(prefVideoCap));
-   PString *val = new PString(prefVideoCap);
-   caps.InsertAt(tsNum+1, val);
+   caps.InsertAt(tsNum+1, new PString(prefVideoCap));
  }
 
  PString sdp =
@@ -251,26 +249,33 @@ int InviteDataTempCreate(PString localIP, const SipKey &sik)
 PString GetEndpointParamFromUri(PString param, PString uri, PString protocol)
 {
   // endpoints preffered parameters
+  PString domain, section;
   PString newParam;
-  PString section;
-  if(protocol == "h323") section = "H323 Endpoints";
-  else section = "SIP Endpoints";
+  PStringArray options;
+  if(protocol == "h323")
+  {
+    section = "H323 Endpoints";
+    options = h323EndpointOptionsOrder;
+  } else {
+    section = "SIP Endpoints";
+    options = sipEndpointOptionsOrder;
+  }
+  if(uri.Find("@") != P_MAX_INDEX) domain = uri.Tokenise("@")[1];
+
   MCUConfig epCfg(section);
   PStringList epKeys = epCfg.GetKeys();
 
-  PINDEX epIndex, epIpIndex;
-  if(uri.Find("@") != P_MAX_INDEX) epIpIndex = epKeys.GetStringsIndex(uri.Tokenise("@")[1]);
-  else epIpIndex = epKeys.GetStringsIndex(uri);
-  PINDEX epUriIndex = epKeys.GetStringsIndex(uri);
+  PINDEX epIndex, epIpIndex, epUriIndex, epAllIndex;
+  epIpIndex = epKeys.GetStringsIndex(domain);
+  epUriIndex = epKeys.GetStringsIndex(uri);
+  epAllIndex = epKeys.GetStringsIndex("*");
   if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
-  else epIndex = epIpIndex;
+  else if(epIpIndex != P_MAX_INDEX) epIndex = epIpIndex;
+  else epIndex = epAllIndex;
 
   if(epIndex != P_MAX_INDEX)
   {
     PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
-    PStringArray options;
-    if(protocol == "h323") options = h323EndpointOptionsOrder;
-    else options = sipEndpointOptionsOrder;
     if(options.GetStringsIndex(param) != P_MAX_INDEX)
       newParam = epParams[options.GetStringsIndex(param)];
   }
