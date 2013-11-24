@@ -139,8 +139,10 @@ static PStringArray h323EndpointOptionsOrder = PString(
                                         "Preferred bandwidth from MCU,"
                                         "Preferred bandwidth to MCU,"
                                         ","
-                                        "Audio codec,"
-                                        "Video codec").Tokenise(",");
+                                        "Audio codec(receive),"
+                                        "Video codec(receive),"
+                                        "Audio codec(transmit),"
+                                        "Video codec(transmit)").Tokenise(",");
 static PStringArray sipEndpointOptionsOrder = PString(
                                         "Outgoing transport,"
                                         ","

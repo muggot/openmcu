@@ -2167,10 +2167,10 @@ void OpenMCUH323Connection::SetupCacheConnection(PString & format, Conference * 
 
 BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteCaps, const H245_MultiplexCapability * muxCap, H245_TerminalCapabilitySetReject & rejectPDU)
 {
-  PString prefAudioCap = GetEndpointParam("Audio codec");
-  PString prefVideoCap = GetEndpointParam("Video codec");
-  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom audio capability: " << prefAudioCap); }
-  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom video capability: " << prefVideoCap); }
+  PString prefAudioCap = GetEndpointParam("Audio codec(transmit)");
+  PString prefVideoCap = GetEndpointParam("Video codec(transmit)");
+  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom transmit audio: " << prefAudioCap); }
+  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom transmit video: " << prefVideoCap); }
 
   H323Capabilities _remoteCaps(remoteCaps);
   for(PINDEX i = 0; i < _remoteCaps.GetSize(); )
@@ -2196,12 +2196,15 @@ void OpenMCUH323Connection::OnSendCapabilitySet(H245_TerminalCapabilitySet & pdu
 BOOL OpenMCUH323Connection::StartControlNegotiations(BOOL renegotiate)
 {
   // set endpoint capability
-  PString prefAudioCap = GetEndpointParam("Audio codec");
-  PString prefVideoCap = GetEndpointParam("Video codec");
+  PString prefAudioCap = GetEndpointParam("Audio codec(receive)");
+  PString prefVideoCap = GetEndpointParam("Video codec(receive)");
   unsigned bandwidthTo = atoi(GetEndpointParam("Preferred bandwidth to MCU"));
-  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom audio capability: " << prefAudioCap); }
-  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom video capability: " << prefVideoCap); }
+  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom receive audio: " << prefAudioCap); }
+  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom receive video: " << prefVideoCap); }
   if(bandwidthTo != 0) { PTRACE(1, "OpenMCUH323Connection\tSet endpoint bandwidth to mcu: " << prefVideoCap); }
+
+  if(prefAudioCap.ToLower().Find("ulaw") || prefAudioCap.ToLower().Find("alaw"))
+    prefAudioCap = prefAudioCap.Left(prefAudioCap.GetLength()-4);
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {

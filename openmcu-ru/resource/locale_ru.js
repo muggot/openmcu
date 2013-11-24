@@ -149,3 +149,7 @@ window.l_name_expires                              = 'Продолжительн
 
 window.l_name_audio_codec                          = 'Аудио кодек';
 window.l_name_video_codec                          = 'Видео кодек';
+window.l_name_audio_codec_receive                  = 'Аудио кодек(прием)';
+window.l_name_video_codec_receive                  = 'Видео кодек(прием)';
+window.l_name_audio_codec_transmit                 = 'Аудио кодек(передача)';
+window.l_name_video_codec_transmit                 = 'Видео кодек(передача)';

@@ -132,5 +132,9 @@ window.l_name_register                             = 'Register';
 window.l_name_address_sip_proxy                    = 'Address SIP-proxy';
 window.l_name_expires                              = 'Expires';
 
-window.l_name_preferred_audio_codec                = 'Audio codec';
-window.l_name_preferred_video_codec                = 'Video codec';
+window.l_name_audio_codec                          = 'Audio codec';
+window.l_name_video_codec                          = 'Video codec';
+window.l_name_audio_codec_receive                  = 'Audio codec(receive)';
+window.l_name_video_codec_receive                  = 'Video codec(receive)';
+window.l_name_audio_codec_transmit                 = 'Audio codec(transmit)';
+window.l_name_video_codec_transmit                 = 'Video codec(transmit)';

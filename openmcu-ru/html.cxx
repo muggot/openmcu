@@ -618,14 +618,18 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_to_mcu"));
   //s << "";
-  s << ColumnItem(JsLocale("window.l_name_audio_codec"));
-  s << ColumnItem(JsLocale("window.l_name_video_codec"));
+  s << ColumnItem(JsLocale("window.l_name_audio_codec_receive"));
+  s << ColumnItem(JsLocale("window.l_name_video_codec_receive"));
+  s << ColumnItem(JsLocale("window.l_name_audio_codec_transmit"));
+  s << ColumnItem(JsLocale("window.l_name_video_codec_transmit"));
 
-  PString audioCaps, videoCaps;
+  PString aCapsR, vCapsR, aCapsT, vCapsT;
   if(mcu.GetEndpoint().tsCaps != NULL && mcu.GetEndpoint().tvCaps != NULL)
   {
-    PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { audioCaps += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; }
-    PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { videoCaps += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; }
+    PINDEX rsNum = 0; while(mcu.GetEndpoint().tsCaps[rsNum]!=NULL) { aCapsR += ","+PString(mcu.GetEndpoint().rsCaps[rsNum]); rsNum++; }
+    PINDEX rvNum = 0; while(mcu.GetEndpoint().tvCaps[rvNum]!=NULL) { vCapsR += ","+PString(mcu.GetEndpoint().rvCaps[rvNum]); rvNum++; }
+    PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { aCapsT += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; }
+    PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { vCapsT += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; }
   }
 
   PStringList keys = cfg.GetKeys();
@@ -650,8 +654,20 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]);
     s << HiddenItem(name);
-    s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Audio codec")], audioCaps);
-    s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Video codec")], videoCaps);
+
+    PString aCodecR = params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Audio codec(receive)")];
+    PString vCodecR = params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Video codec(receive)")];
+    PString aCodecT = params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Audio codec(transmit)")];
+    PString vCodecT = params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Video codec(transmit)")];
+    PString _aCapsR = aCapsR, _vCapsR = vCapsR, _aCapsT = aCapsT, _vCapsT = vCapsT;
+    if(aCodecR != "" && _aCapsR.Find(aCodecR) == P_MAX_INDEX) _aCapsR = aCodecR+","+_aCapsR;
+    if(vCodecR != "" && _vCapsR.Find(vCodecR) == P_MAX_INDEX) _vCapsR = vCodecR+","+_vCapsR;
+    if(aCodecT != "" && _aCapsT.Find(aCodecT) == P_MAX_INDEX) _aCapsT = aCodecT+","+_aCapsT;
+    if(vCodecT != "" && _vCapsT.Find(vCodecT) == P_MAX_INDEX) _vCapsT = vCodecT+","+_vCapsT;
+    s << SelectItem(name, aCodecR, _aCapsR);
+    s << SelectItem(name, vCodecR, _vCapsR);
+    s << SelectItem(name, aCodecT, _aCapsT);
+    s << SelectItem(name, vCodecT, _vCapsT);
   }
 
   s << EndTable();
@@ -686,11 +702,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   s << ColumnItem(JsLocale("window.l_name_audio_codec"));
   s << ColumnItem(JsLocale("window.l_name_video_codec"));
 
-  PString audioCaps, videoCaps;
+  PString aCaps, vCaps;
   if(mcu.GetEndpoint().tsCaps != NULL && mcu.GetEndpoint().tvCaps != NULL)
   {
-    PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { audioCaps += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; }
-    PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { videoCaps += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; }
+    PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { aCaps += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; }
+    PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { vCaps += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; }
   }
 
   PStringList keys = cfg.GetKeys();
@@ -715,8 +731,14 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]);
     s << HiddenItem(name);
-    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Audio codec")], audioCaps);
-    s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Video codec")], videoCaps);
+
+    PString aCodec = params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Audio codec")];
+    PString vCodec = params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Video codec")];
+    PString _aCaps = aCaps, _vCaps = vCaps;
+    if(aCodec != "" && _aCaps.Find(aCodec) == P_MAX_INDEX) _aCaps = aCodec+","+_aCaps;
+    if(vCodec != "" && _vCaps.Find(vCodec) == P_MAX_INDEX) _vCaps = vCodec+","+_vCaps;
+    s << SelectItem(name, aCodec, _aCaps);
+    s << SelectItem(name, vCodec, _vCaps);
   }
   s << EndTable();
 
