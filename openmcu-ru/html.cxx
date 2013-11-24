@@ -270,7 +270,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << SeparatorField("Log setup");
 #if PTRACING
   // Trace level
-  s << SelectField(TraceLevelKey, cfg.GetString(TraceLevelKey, DEFAULT_TRACE_LEVEL), "0,1,2,3,4,5,6,9", 120, "0=No tracing ... 6=Very detailed");
+  s << SelectField(TraceLevelKey, cfg.GetString(TraceLevelKey, DEFAULT_TRACE_LEVEL), "0,1,2,3,4,5,6,7,8,9", 120, "0=No tracing ... 6=Very detailed");
   s << IntegerField(TraceRotateKey, cfg.GetInteger(TraceRotateKey, 0), 0, 200, 10, "0 (don't rotate) ... 200");
 #endif
 #ifdef SERVER_LOGS
@@ -616,7 +616,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   s << ColumnItem(JsLocale("window.l_name_display_name_override"));
   s << ColumnItem(JsLocale("window.l_name_preferred_frame_rate_from_mcu"));
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
-  //s << "";
+  s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_to_mcu"));
   //s << "";
   s << ColumnItem(JsLocale("window.l_name_audio_codec"));
   s << ColumnItem(JsLocale("window.l_name_video_codec"));
@@ -648,7 +648,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     else s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")]);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")]);
-    s << HiddenItem(name);
+    s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")]);
     s << HiddenItem(name);
     s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Audio codec")], audioCaps);
     s << SelectItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Video codec")], videoCaps);

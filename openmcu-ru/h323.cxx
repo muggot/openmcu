@@ -2169,26 +2169,28 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
 {
   PString prefAudioCap = GetEndpointParam("Audio codec");
   PString prefVideoCap = GetEndpointParam("Video codec");
-  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom audio capability: " << prefAudioCap); }
-  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom video capability: " << prefVideoCap); }
+  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom audio capability: " << prefAudioCap); }
+  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom video capability: " << prefVideoCap); }
 
   H323Capabilities _remoteCaps(remoteCaps);
-  for(PINDEX i = 0; i < remoteCaps.GetSize(); i++)
+  for(PINDEX i = 0; i < _remoteCaps.GetSize(); )
   {
-    PString capName = remoteCaps[i].GetFormatName();
-    if(capName.Find("UserInput") != P_MAX_INDEX) continue;
-    if(remoteCaps[i].GetMainType() == 0 && prefAudioCap != "" && capName != prefAudioCap)
-      _remoteCaps.Remove(capName);
-    if(remoteCaps[i].GetMainType() == 1 && prefVideoCap != "" && capName != prefVideoCap)
-      _remoteCaps.Remove(capName);
+    PString capName = _remoteCaps[i].GetFormatName();
+    if(_remoteCaps[i].GetMainType() == H323Capability::e_Audio && prefAudioCap != "" && capName != prefAudioCap)
+    { _remoteCaps.Remove(&_remoteCaps[i]); continue; }
+    if(_remoteCaps[i].GetMainType() == H323Capability::e_Video && prefVideoCap != "" && capName != prefVideoCap)
+    { _remoteCaps.Remove(&_remoteCaps[i]); continue; }
+    i++;
   }
+  //cout << "OnReceivedCapabilitySet\n" << _remoteCaps << "\n";
 
   return H323Connection::OnReceivedCapabilitySet(_remoteCaps, muxCap, rejectPDU);
 }
 
-void OpenMCUH323Connection::OnSendCapabilitySet(H245_TerminalCapabilitySet & PDU)
+void OpenMCUH323Connection::OnSendCapabilitySet(H245_TerminalCapabilitySet & pdu)
 {
-  H323Connection::OnSendCapabilitySet(PDU);
+  H323Connection::OnSendCapabilitySet(pdu);
+  //cout << "OnSendCapabilitySet\n" << pdu << "\n";
 }
 
 BOOL OpenMCUH323Connection::StartControlNegotiations(BOOL renegotiate)
@@ -2196,18 +2198,28 @@ BOOL OpenMCUH323Connection::StartControlNegotiations(BOOL renegotiate)
   // set endpoint capability
   PString prefAudioCap = GetEndpointParam("Audio codec");
   PString prefVideoCap = GetEndpointParam("Video codec");
-  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom audio capability: " << prefAudioCap); }
-  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom video capability: " << prefVideoCap); }
+  unsigned bandwidthTo = atoi(GetEndpointParam("Preferred bandwidth to MCU"));
+  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom audio capability: " << prefAudioCap); }
+  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom video capability: " << prefVideoCap); }
+  if(bandwidthTo != 0) { PTRACE(1, "OpenMCUH323Connection\tSet endpoint bandwidth to mcu: " << prefVideoCap); }
 
-  H323Capabilities _localCapabilities(localCapabilities);
-  for(PINDEX i = 0; i < _localCapabilities.GetSize(); i++)
+  for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {
-    PString capName = _localCapabilities[i].GetFormatName();
-    if(_localCapabilities[i].GetMainType() == 0 && prefAudioCap != "" && capName != prefAudioCap)
-      localCapabilities.Remove(capName);
-    if(_localCapabilities[i].GetMainType() == 1 && prefVideoCap != "" && capName != prefVideoCap)
-      localCapabilities.Remove(capName);
+    PString capName = localCapabilities[i].GetFormatName();
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Audio && prefAudioCap != "" && capName != prefAudioCap)
+    { localCapabilities.Remove(&localCapabilities[i]); continue; }
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Video && prefVideoCap != "" && capName != prefVideoCap)
+    { localCapabilities.Remove(&localCapabilities[i]); continue; }
+    if(bandwidthTo != 0)
+    {
+      if(bandwidthTo < 64) bandwidthTo = 64;
+      if(bandwidthTo > 4000) bandwidthTo = 4000;
+      localCapabilities[i].GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidthTo*1000);
+    }
+    i++;
   }
+  //cout << "StartControlNegotiations\n" << localCapabilities << "\n";
+
   return H323Connection::StartControlNegotiations(renegotiate);
 }
 
@@ -2231,27 +2243,6 @@ BOOL OpenMCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU
     remoteName = GetRemotePartyName();
 
   isMCU = setup.m_sourceInfo.m_mc;
-
-  // set endpoint capability
-  remotePartyAddress = signallingChannel->GetRemoteAddress();
-  if (setup.m_sourceAddress.GetSize() > 0)
-    remotePartyAddress = H323GetAliasAddressString(setup.m_sourceAddress[0]) + '@' + signallingChannel->GetRemoteAddress();
-
-  PString prefAudioCap = GetEndpointParam("Audio codec");
-  PString prefVideoCap = GetEndpointParam("Video codec");
-  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom audio capability: " << prefAudioCap); }
-  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tEndpoint custom video capability: " << prefVideoCap); }
-
-  H323Capabilities _localCapabilities(localCapabilities);
-  for(PINDEX i = 0; i < _localCapabilities.GetSize(); i++)
-  {
-    PString capName = _localCapabilities[i].GetFormatName();
-    if(_localCapabilities[i].GetMainType() == 0 && prefAudioCap != "" && capName != prefAudioCap)
-      localCapabilities.Remove(capName);
-    if(_localCapabilities[i].GetMainType() == 1 && prefVideoCap != "" && capName != prefVideoCap)
-      localCapabilities.Remove(capName);
-  }
-  //
 
   return H323Connection::OnReceivedSignalSetup(setupPDU);
 }

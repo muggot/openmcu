@@ -137,7 +137,7 @@ static PStringArray h323EndpointOptionsOrder = PString(
                                         "Display name override,"
                                         "Preferred frame rate from MCU,"
                                         "Preferred bandwidth from MCU,"
-                                        ","
+                                        "Preferred bandwidth to MCU,"
                                         ","
                                         "Audio codec,"
                                         "Video codec").Tokenise(",");
