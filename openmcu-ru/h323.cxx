@@ -2182,6 +2182,19 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
     { _remoteCaps.Remove(&_remoteCaps[i]); continue; }
     i++;
   }
+  // replace video capability
+  if(prefVideoCap != "")
+  {
+    H323Capability *cap = _remoteCaps.FindCapability(prefVideoCap);
+    if(cap)
+    {
+      unsigned bandwidthFrom = cap->GetMediaFormat().GetOptionInteger("Max Bit Rate");
+      H323Capability *newCap = H323Capability::Create(prefVideoCap);
+      _remoteCaps.Remove(cap);
+      _remoteCaps.SetCapability(0,1,newCap);
+      newCap->GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidthFrom);
+    }
+  }
   //cout << "OnReceivedCapabilitySet\n" << _remoteCaps << "\n";
 
   return H323Connection::OnReceivedCapabilitySet(_remoteCaps, muxCap, rejectPDU);

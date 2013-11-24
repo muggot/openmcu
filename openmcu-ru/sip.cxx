@@ -99,10 +99,11 @@ PString CreateSdpInvite(PString prefAudioCap = "", PString prefVideoCap = "")
      if(MCUConfig("CODEC_OPTIONS").HasKey(cap->GetFormatName()))
      {
        fmtp = MCUConfig("CODEC_OPTIONS").GetString(cap->GetFormatName());
-     //} else {
-     //  for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
-     //    if(mf.GetOption(j).GetFMTPName() != "" && mf.GetOption(j).GetFMTPDefault() != mf.GetOption(j).AsString())
-     //      fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+     } else {
+       for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
+         if(mf.GetOption(j).GetFMTPName() != "" && mf.GetOption(j).GetFMTPDefault() != mf.GetOption(j).AsString())
+           fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+
      }
      fmtp += "\r\n";
      if(map.Find(name) != P_MAX_INDEX && map.Find(fmtp) != P_MAX_INDEX) goto end;
