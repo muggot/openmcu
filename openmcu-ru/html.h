@@ -231,10 +231,10 @@ class TablePConfigPage : public PConfigPage
    }
 
    PString BeginTable()
-   { return "<form method='POST'><table id='table1' cellspacing='8'><tbody>"; }
+   { return "<form method='POST'><div style='overflow-x:auto;overflow-y:hidden;'><table id='table1' cellspacing='8'><tbody>"; }
    PString EndTable()
    {
-     PString s = "<tr></tr></tbody></table><p><input id='button_accept' name='submit' value='Accept' type='submit'><input id='button_reset' name='reset' value='Reset' type='reset'></p></form>";
+     PString s = "<tr></tr></tbody></table></div><p><input id='button_accept' name='submit' value='Accept' type='submit'><input id='button_reset' name='reset' value='Reset' type='reset'></p></form>";
      s += jsRowDown() + jsRowUp() + jsRowClone()+ jsRowDelete();
      return s;
    }
