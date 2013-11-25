@@ -54,17 +54,14 @@ PString CreateSdpInvite(PString prefAudioCap = "", PString prefVideoCap = "")
  PStringArray caps;
  PINDEX tsNum = 0; while(OpenMCU::Current().GetEndpoint().tsCaps[tsNum]!=NULL) { caps.AppendString(OpenMCU::Current().GetEndpoint().tsCaps[tsNum]); tsNum++; }
  PINDEX tvNum = 0; while(OpenMCU::Current().GetEndpoint().tvCaps[tvNum]!=NULL) { caps.AppendString(OpenMCU::Current().GetEndpoint().tvCaps[tvNum]); tvNum++; }
- tsNum--; tvNum--;
 
- if(caps.GetStringsIndex(prefAudioCap) != P_MAX_INDEX)
+ for(PINDEX i = 0; i < caps.GetSize(); )
  {
-   caps.RemoveAt(caps.GetStringsIndex(prefAudioCap));
-   caps.InsertAt(0, new PString(prefAudioCap));
- }
- if(caps.GetStringsIndex(prefVideoCap) != P_MAX_INDEX)
- {
-   caps.RemoveAt(caps.GetStringsIndex(prefVideoCap));
-   caps.InsertAt(tsNum+1, new PString(prefVideoCap));
+   if(i < tsNum && prefAudioCap != "" && prefAudioCap != caps[i])
+   { caps.RemoveAt(i); tsNum--; continue; }
+   if(i >= tsNum && prefVideoCap != "" && prefVideoCap != caps[i])
+   { caps.RemoveAt(i); tvNum--; continue; }
+   i++;
  }
 
  PString sdp =
@@ -121,11 +118,11 @@ PString CreateSdpInvite(PString prefAudioCap = "", PString prefVideoCap = "")
 
      types += PString(pt)+" ";
      map += "a=rtpmap:"+PString(pt)+" "+name+"\r\n";
-     if(fmtp != "\r\n" && i <= tsNum) map += "a=fmtp:"+PString(pt)+" "+fmtp;
+     if(fmtp != "\r\n" && (i < tsNum || prefVideoCap != "")) map += "a=fmtp:"+PString(pt)+" "+fmtp;
    }
 
    end:
-   if(i == tsNum)
+   if(i == tsNum-1)
      { sdp += "m=audio RTP_AUDIO_PORT RTP/AVP "+types+"\r\n"+map; map=""; types=""; }
  }
  sdp += "m=video RTP_VIDEO_PORT RTP/AVP "+types+"\r\n"+map;
@@ -277,17 +274,22 @@ PString GetEndpointParamFromUri(PString param, PString uri, PString protocol)
   MCUConfig epCfg(section);
   PStringList epKeys = epCfg.GetKeys();
 
-  PINDEX epIndex, epIpIndex, epUriIndex, epAllIndex;
-  epIpIndex = epKeys.GetStringsIndex(domain);
-  epUriIndex = epKeys.GetStringsIndex(uri);
-  epAllIndex = epKeys.GetStringsIndex("*");
-  if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
-  else if(epIpIndex != P_MAX_INDEX) epIndex = epIpIndex;
-  else epIndex = epAllIndex;
+  PINDEX index, domainIndex, uriIndex, allIndex;
+  uriIndex = epKeys.GetStringsIndex(uri);
+  domainIndex = epKeys.GetStringsIndex(domain);
+  allIndex = epKeys.GetStringsIndex("*");
+  if(uriIndex != P_MAX_INDEX) index = uriIndex;
+  else index = domainIndex;
 
-  if(epIndex != P_MAX_INDEX)
+  if(index != P_MAX_INDEX)
   {
-    PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
+    PStringArray epParams = epCfg.GetString(epKeys[index]).Tokenise(",");
+    if(options.GetStringsIndex(param) != P_MAX_INDEX)
+      newParam = epParams[options.GetStringsIndex(param)];
+  }
+  if(newParam == "" && allIndex != P_MAX_INDEX)
+  {
+    PStringArray epParams = epCfg.GetString(epKeys[allIndex]).Tokenise(",");
     if(options.GetStringsIndex(param) != P_MAX_INDEX)
       newParam = epParams[options.GetStringsIndex(param)];
   }
@@ -339,9 +341,16 @@ RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
     {
       PString fmtp = "";
       if(MCUConfig("CODEC_OPTIONS").HasKey(sc->h323))
+      {
         fmtp = MCUConfig("CODEC_OPTIONS").GetString(sc->h323);
-      else // send incoming(from the client) ftmp
-        fmtp = sc->parm;
+      } else if(prefVideoCap != "" ) {
+        const OpalMediaFormat & mf = sc->cap->GetMediaFormat();
+        for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
+         if(mf.GetOption(j).GetFMTPName() != "" && mf.GetOption(j).GetFMTPDefault() != mf.GetOption(j).AsString())
+           fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+      } else {
+        fmtp = sc->parm; // send incoming(from the client) ftmp
+      }
       if(fmtp != "")
         sc->sdp = sc->sdp + "a=fmtp:" + PString(pt) + " " + fmtp + "\r\n";
     }
@@ -551,22 +560,6 @@ void OpenMCUSipConnection::SelectCapability_H261(SipCapability &c,PStringArray &
  //for(int kn=0; kn<keys.GetSize(); kn++) 
  // { if(keys[kn] == "F=1") { c.parm = "F=1;"; f=1; break; } }
 
- if(prefVideoCap.ToLower().Find("h.261") != P_MAX_INDEX)
- {
-   H323Capability *cap = H323Capability::Create(prefVideoCap);
-   if(cap)
-   {
-     c.cap = cap;
-     c.h323 = prefVideoCap;
-     vcap = c.payload;
-     PString SIPName = prefVideoCap.Tokenise("-")[1].Tokenise("{sw}")[0];
-     OpalMediaFormat & wf = c.cap->GetWritableMediaFormat(); 
-     int mpi = 1;
-     wf.SetOptionInteger(SIPName + " MPI",mpi);
-     c.parm += SIPName+"="+PString(mpi);
-   }
- }
-
  if(tvCaps.GetStringsIndex("H.261-CIF{sw}")!=P_MAX_INDEX && c.cap == NULL)
   FindCapability_H263(c,keys,"H.261-CIF{sw}","CIF");
  if(tvCaps.GetStringsIndex("H.263-CIF{sw}")!=P_MAX_INDEX && c.cap == NULL)
@@ -588,22 +581,6 @@ void OpenMCUSipConnection::SelectCapability_H263(SipCapability &c,PStringArray &
  c.parm = "";
  for(int kn=0; kn<keys.GetSize(); kn++) 
   { if(keys[kn] == "F=1") { c.parm = "F=1;"; f=1; break; } }
-
- if(prefVideoCap.ToLower().Find("h.263-") != P_MAX_INDEX)
- {
-   H323Capability *cap = H323Capability::Create(prefVideoCap);
-   if(cap)
-   {
-     c.cap = cap;
-     c.h323 = prefVideoCap;
-     vcap = c.payload;
-     PString SIPName = prefVideoCap.Tokenise("-")[1].Tokenise("{sw}")[0];
-     OpalMediaFormat & wf = c.cap->GetWritableMediaFormat(); 
-     int mpi = 1;
-     wf.SetOptionInteger(SIPName + " MPI",mpi);
-     c.parm += SIPName+"="+PString(mpi);
-   }
- }
 
  if(tvCaps.GetStringsIndex("H.263-16CIF{sw}")!=P_MAX_INDEX && c.cap == NULL)
   FindCapability_H263(c,keys,"H.263-16CIF{sw}","CIF16");
@@ -636,22 +613,6 @@ void OpenMCUSipConnection::SelectCapability_H263p(SipCapability &c,PStringArray 
   else if(keys[kn] == "D=1") { c.parm += "D=1;"; d=1; } 
   else if(keys[kn] == "E=1") { c.parm += "E=1;"; e=1; } 
   else if(keys[kn] == "G=1") { c.parm += "G=1;"; g=1; } 
- }
-
- if(prefVideoCap.ToLower().Find("h.263p-") != P_MAX_INDEX)
- {
-   H323Capability *cap = H323Capability::Create(prefVideoCap);
-   if(cap)
-   {
-     c.cap = cap;
-     c.h323 = prefVideoCap;
-     vcap = c.payload;
-     PString SIPName = prefVideoCap.Tokenise("-")[1].Tokenise("{sw}")[0];
-     OpalMediaFormat & wf = c.cap->GetWritableMediaFormat(); 
-     int mpi = 1;
-     wf.SetOptionInteger(SIPName + " MPI",mpi);
-     c.parm += SIPName+"="+PString(mpi);
-   }
  }
 
  if(tvCaps.GetStringsIndex("H.263p-16CIF{sw}")!=P_MAX_INDEX && c.cap == NULL)
@@ -707,22 +668,6 @@ const struct h241_to_x264_level {
 
 void OpenMCUSipConnection::SelectCapability_H264(SipCapability &c,PStringArray &tvCaps)
 {
- if(prefVideoCap.ToLower().Find("h.264") != P_MAX_INDEX)
- {
-   H323Capability *cap = H323Capability::Create(prefVideoCap);
-   if(cap)
-   {
-     c.cap = cap;
-     c.h323 = prefVideoCap;
-     c.parm = "";
-     vcap = c.payload;
-     OpalMediaFormat & wf = c.cap->GetWritableMediaFormat(); 
-     if(c.bandwidth) wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
-     else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
-     return;
-   }
- }
-
  int profile = 0, level = 0;
  int max_mbps = 0, max_fs = 0, max_br = 0;
  PStringArray keys = c.parm.Tokenise(";");
@@ -807,18 +752,6 @@ void OpenMCUSipConnection::SelectCapability_VP8(SipCapability &c,PStringArray &t
  }
 
  PString H323Name;
- if(c.cap) c.cap=NULL;
-
- if(prefVideoCap.ToLower().Find("vp8") != P_MAX_INDEX)
- {
-   H323Capability *cap = H323Capability::Create(prefVideoCap);
-   if(cap)
-   {
-     H323Name = prefVideoCap;
-     c.cap = cap;
-     c.parm = "";
-   }
- }
 
  if(!c.cap && width && height)
  {
@@ -860,8 +793,7 @@ void OpenMCUSipConnection::SelectCapability_VP8(SipCapability &c,PStringArray &t
  if(c.cap)
  {
   vcap = c.payload;
-  c.h323 = H323Name;
-
+  if(H323Name != "") c.h323 = H323Name;
   OpalMediaFormat & wf = c.cap->GetWritableMediaFormat();
   if(remoteApplication.ToLower().Find("linphone") == 0) wf.SetOptionEnum("Picture ID Size", 0);
   if(c.bandwidth) wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
@@ -875,9 +807,6 @@ void OpenMCUSipConnection::SelectCapability_SPEEX(SipCapability &c,PStringArray 
   if(c.clock == 8000) H323Name = "Speex_8K{sw}";
   else if(c.clock == 16000) H323Name = "Speex_16K{sw}";
   else if(c.clock == 32000) H323Name = "Speex_32K{sw}";
-
-  if(scap >= 0 && prefAudioCap != H323Name)
-    return;
 
   int vbr = -1;
   int mode = -1;
@@ -915,9 +844,6 @@ void OpenMCUSipConnection::SelectCapability_OPUS(SipCapability &c,PStringArray &
   if(c.clock == 8000) H323Name = "OPUS_8K{sw}";
   else if(c.clock == 16000) H323Name = "OPUS_16K{sw}";
   else if(c.clock == 48000) H323Name = "OPUS_48K{sw}";
-
-  if(scap >= 0 && prefAudioCap != H323Name)
-    return;
 
   int cbr = -1;
   int maxaveragebitrate = -1;
@@ -1069,11 +995,6 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
  int cn = 0; while(endpoint.tsCaps[cn]!=NULL) { tsCaps.AppendString(endpoint.tsCaps[cn]); cn++; }
  cn = 0; while(endpoint.tvCaps[cn]!=NULL) { tvCaps.AppendString(endpoint.tvCaps[cn]); cn++; }
 
- prefAudioCap = GetEndpointParam("Audio codec");
- prefVideoCap = GetEndpointParam("Video codec");
- if(tsCaps.GetStringsIndex(prefAudioCap) == P_MAX_INDEX) prefAudioCap = "";
- if(tvCaps.GetStringsIndex(prefVideoCap) == P_MAX_INDEX) prefVideoCap = "";
-
  scap = -1; vcap = -1;
  for(int cn=0; cn<par.GetSize(); cn++)
  {
@@ -1081,67 +1002,116 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
   SipCapability &c = cir->second[0];
   if(c.media == 0)
   {
+   if(scap >= 0) continue;
    // PCMU
-   if((c.format.ToLower() == "pcmu" || c.payload == 0) && tsCaps.GetStringsIndex("G.711-uLaw-64k")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.711-uLaw-64k"))
+   if((c.format.ToLower() == "pcmu" || c.payload == 0) && tsCaps.GetStringsIndex("G.711-uLaw-64k")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.711-uLaw-64k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // PCMA
-   else if((c.format.ToLower() == "pcma" || c.payload == 0) && tsCaps.GetStringsIndex("G.711-ALaw-64k")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.711-ALaw-64k"))
+   else if((c.format.ToLower() == "pcma" || c.payload == 0) && tsCaps.GetStringsIndex("G.711-ALaw-64k")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.711-ALaw-64k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.722
-   else if(c.format.ToLower() == "g722" && tsCaps.GetStringsIndex("G.722-64k{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.722-64k{sw}"))
+   else if(c.format.ToLower() == "g722" && tsCaps.GetStringsIndex("G.722-64k{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.722-64k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.723.1
-   else if(c.format.ToLower() == "g723" && tsCaps.GetStringsIndex("G.7231-6.3k[e]{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.7231-6.3k[e]{sw}"))
+   else if(c.format.ToLower() == "g723" && tsCaps.GetStringsIndex("G.7231-6.3k[e]{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.7231-6.3k[e]{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.726-16
-   else if(c.format.ToLower() == "g726-16" && tsCaps.GetStringsIndex("G.726-16k{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.726-16k{sw}"))
+   else if(c.format.ToLower() == "g726-16" && tsCaps.GetStringsIndex("G.726-16k{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.726-16k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.726-24
-   else if(c.format.ToLower() == "g726-24" && tsCaps.GetStringsIndex("G.726-24k{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.726-24k{sw}"))
+   else if(c.format.ToLower() == "g726-24" && tsCaps.GetStringsIndex("G.726-24k{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.726-24k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.726-32
-   else if(c.format.ToLower() == "g726-32" && tsCaps.GetStringsIndex("G.726-32k{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.726-32k{sw}"))
+   else if(c.format.ToLower() == "g726-32" && tsCaps.GetStringsIndex("G.726-32k{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.726-32k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.726-40
-   else if(c.format.ToLower() == "g726-40" && tsCaps.GetStringsIndex("G.726-40k{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.726-40k{sw}"))
+   else if(c.format.ToLower() == "g726-40" && tsCaps.GetStringsIndex("G.726-40k{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.726-40k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.728
-   else if(c.format.ToLower() == "g728" && tsCaps.GetStringsIndex("G.728-16k[e]")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.728-16k[e]"))
+   else if(c.format.ToLower() == "g728" && tsCaps.GetStringsIndex("G.728-16k[e]")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.728-16k[e]"; c.cap = H323Capability::Create(c.h323); }
    // G.729A
-   else if(c.format.ToLower() == "g729" && tsCaps.GetStringsIndex("G.729A-8k[e]{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "G.729A-8k[e]{sw}"))
+   else if(c.format.ToLower() == "g729" && tsCaps.GetStringsIndex("G.729A-8k[e]{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.729A-8k[e]{sw}"; c.cap = H323Capability::Create(c.h323); }
    // iLBC-13k3
-   else if(c.format.ToLower() == "ilbc" && c.parm == "mode=30;" && tsCaps.GetStringsIndex("iLBC-13k3{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "iLBC-13k3{sw}"))
+   else if(c.format.ToLower() == "ilbc" && c.parm == "mode=30;" && tsCaps.GetStringsIndex("iLBC-13k3{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "iLBC-13k3{sw}"; c.cap = H323Capability::Create(c.h323); }
    // iLBC-15k2
-   else if(c.format.ToLower() == "ilbc" && c.parm == "mode=20;" && tsCaps.GetStringsIndex("iLBC-15k2{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "iLBC-15k2{sw}"))
+   else if(c.format.ToLower() == "ilbc" && c.parm == "mode=20;" && tsCaps.GetStringsIndex("iLBC-15k2{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "iLBC-15k2{sw}"; c.cap = H323Capability::Create(c.h323); }
    // SILK 16000
-   else if(c.format.ToLower() == "silk" && c.clock == 16000 && tsCaps.GetStringsIndex("SILK_B40{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "SILK_B40{sw}"))
+   else if(c.format.ToLower() == "silk" && c.clock == 16000 && tsCaps.GetStringsIndex("SILK_B40{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "SILK_B40{sw}"; c.cap = H323Capability::Create(c.h323); }
    // SILK 24000
-   else if(c.format.ToLower() == "silk" && c.clock == 24000 && tsCaps.GetStringsIndex("SILK_B40_24K{sw}")!=P_MAX_INDEX && (scap < 0 || prefAudioCap == "SILK_B40_24K{sw}"))
+   else if(c.format.ToLower() == "silk" && c.clock == 24000 && tsCaps.GetStringsIndex("SILK_B40_24K{sw}")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "SILK_B40_24K{sw}"; c.cap = H323Capability::Create(c.h323); }
    // SPEEX
-   else if(c.format.ToLower() == "speex" && (scap < 0 || prefAudioCap.ToLower().Find("speex") != P_MAX_INDEX))
+   else if(c.format.ToLower() == "speex")
      SelectCapability_SPEEX(c,tsCaps);
    // OPUS
-   else if(c.format.ToLower() == "opus" && (scap < 0 || prefAudioCap.ToLower().Find("opus") != P_MAX_INDEX))
+   else if(c.format.ToLower() == "opus")
      SelectCapability_OPUS(c,tsCaps);
+
+   if(prefAudioCap != "" && prefAudioCap != c.h323)
+     scap = -1;
   }
   else if(c.media == 1)
   {
-   if(c.format.ToLower() == "h261" && (vcap < 0 || prefVideoCap.ToLower().Find("h.261") != P_MAX_INDEX))
-     SelectCapability_H261(c,tvCaps);
-   else if(c.format.ToLower() == "h263" && (vcap < 0 || prefVideoCap.ToLower().Find("h.263-") != P_MAX_INDEX))
-     SelectCapability_H263(c,tvCaps);
-   else if(c.format.ToLower() == "h263-1998" && (vcap < 0 || prefVideoCap.ToLower().Find("h.263p-") != P_MAX_INDEX))
-     SelectCapability_H263p(c,tvCaps);
-   else if(c.format.ToLower() == "h264" && (vcap < 0 || prefVideoCap.ToLower().Find("h.264") != P_MAX_INDEX))
-     SelectCapability_H264(c,tvCaps);
-   else if(c.format.ToLower() == "vp8" && (vcap < 0 || prefVideoCap.ToLower().Find("vp8") != P_MAX_INDEX))
-     SelectCapability_VP8(c,tvCaps); }
+    if(vcap >= 0) continue;
+    if(prefVideoCap == "")
+    {
+      if(c.format.ToLower() == "h261") SelectCapability_H261(c,tvCaps);
+      else if(c.format.ToLower() == "h263") SelectCapability_H263(c,tvCaps);
+      else if(c.format.ToLower() == "h263-1998") SelectCapability_H263p(c,tvCaps);
+      else if(c.format.ToLower() == "h264") SelectCapability_H264(c,tvCaps);
+      else if(c.format.ToLower() == "vp8") SelectCapability_VP8(c,tvCaps);
+    } else if(tvCaps.GetStringsIndex(prefVideoCap) != P_MAX_INDEX) {
+      if((c.format.ToLower() == "h261" && prefVideoCap.ToLower().Find("h.261") != P_MAX_INDEX) ||
+         (c.format.ToLower() == "h263" && prefVideoCap.ToLower().Find("h.263-") != P_MAX_INDEX) ||
+         (c.format.ToLower() == "h263-1998" && prefVideoCap.ToLower().Find("h.263p") != P_MAX_INDEX))
+      {
+        H323Capability *cap = H323Capability::Create(prefVideoCap);
+        if(cap)
+        {
+          c.cap = cap;
+          c.h323 = prefVideoCap;
+          vcap = c.payload;
+          PString SIPName = prefVideoCap.Tokenise("-")[1].Tokenise("{sw}")[0];
+          OpalMediaFormat & wf = c.cap->GetWritableMediaFormat(); 
+          int mpi = 1;
+          wf.SetOptionInteger(SIPName + " MPI",mpi);
+          c.parm += SIPName+"="+PString(mpi);
+          if(c.bandwidth) wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
+          else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
+        }
+      }
+      else if(c.format.ToLower() == "h264" && prefVideoCap.ToLower().Find("h.264") != P_MAX_INDEX)
+      {
+        H323Capability *cap = H323Capability::Create(prefVideoCap);
+        if(cap)
+        {
+          c.cap = cap;
+          c.h323 = prefVideoCap;
+          c.parm = "";
+          vcap = c.payload;
+          OpalMediaFormat & wf = c.cap->GetWritableMediaFormat(); 
+          if(c.bandwidth) wf.SetOptionInteger("Max Bit Rate",c.bandwidth*1000);
+          else if(bandwidth) wf.SetOptionInteger("Max Bit Rate",bandwidth*1000);
+        }
+      }
+      else if(c.format.ToLower() == "vp8" && prefVideoCap.ToLower().Find("vp8") != P_MAX_INDEX)
+      {
+        H323Capability *cap = H323Capability::Create(prefVideoCap);
+        if(cap)
+        {
+          c.cap = cap;
+          c.h323 = prefVideoCap;
+          c.parm = "";
+          SelectCapability_VP8(c,tvCaps);
+        }
+      }
+    }
+  }
  }
 
  if(scap < 0 && vcap < 0)
@@ -1255,8 +1225,24 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  if(sip->sip_user_agent && sip->sip_user_agent->g_string)
   remoteApplication = sip->sip_user_agent->g_string;
 
+ // endpoint display name override
+ PString overrideName = GetEndpointParam("Display name override");
+ if(overrideName != "")
+ {
+   PTRACE(1, "OpenMCUSipConnection\tSet endpoint display name override: " << overrideName);
+   remotePartyName = overrideName;
+ }
+
  callToken = remotePartyName + "@" + remotePartyAddress + ":" + PString(sip->sip_call_id->i_id);
  ep.OnIncomingSipConnection(callToken,*this);
+
+ // endpoint custom capability
+ prefAudioCap = GetEndpointParam("Audio codec");
+ prefVideoCap = GetEndpointParam("Video codec");
+ if(prefAudioCap.Find("{sw}") == P_MAX_INDEX && (prefAudioCap.ToLower().Find("ulaw") || prefAudioCap.ToLower().Find("alaw")))
+   prefAudioCap += "{sw}";
+ if(prefAudioCap != "") { PTRACE(1, "OpenMCUSipConnection\tSet endpoint custom audio: " << prefAudioCap); }
+ if(prefVideoCap != "") { PTRACE(1, "OpenMCUSipConnection\tSet endpoint custom video: " << prefVideoCap); }
 
  if(!ProcessSDP(sdp_sa, sipCapsId, sipCaps, 0))
    return 415; // SIP_415_UNSUPPORTED_MEDIA
