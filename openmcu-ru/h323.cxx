@@ -2236,6 +2236,14 @@ BOOL OpenMCUH323Connection::StartControlNegotiations(BOOL renegotiate)
   }
   //cout << "StartControlNegotiations\n" << localCapabilities << "\n";
 
+  // endpoint display name override
+  PString overrideName = GetEndpointParam("Display name override");
+  if(overrideName != "")
+  {
+    PTRACE(1, "OpenMCUH323Connection\tSet endpoint display name override: " << overrideName);
+    remotePartyName = overrideName;
+  }
+
   return H323Connection::StartControlNegotiations(renegotiate);
 }
 
@@ -2520,62 +2528,21 @@ void OpenMCUH323Connection::SetEndpointPrefVideoParams()
   if(codec == NULL) return;
   OpalMediaFormat & mf = codec->GetWritableMediaFormat();
 
-  PString domain, uri, section;
-  PStringArray options;
-  if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
+  unsigned fr = atoi(GetEndpointParam("Preferred frame rate from MCU"));
+  if(fr != 0)
   {
-    domain = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
-    uri = GetRemotePartyName()+"@"+domain;
-    section = "H323 Endpoints";
-    options = h323EndpointOptionsOrder;
-  } else {
-    PString name = GetRemotePartyAddress().Tokenise("@")[0].Tokenise(":")[1];
-    domain = GetRemotePartyAddress().Tokenise("@")[1];
-    uri = name+"@"+domain;
-    section = "SIP Endpoints";
-    options = sipEndpointOptionsOrder;
+    if(fr > MAX_FRAME_RATE) fr = MAX_FRAME_RATE;
+    codec->SetTargetFrameTimeMs(1000/fr);
+    mf.SetOptionInteger("Frame Rate", fr);
+    mf.SetOptionInteger("Frame Time", 90000/fr);
   }
 
-  // endpoints preffered parameters
-  MCUConfig epCfg(section);
-  PStringList epKeys = epCfg.GetKeys();
-
-  PINDEX epIndex, epIpIndex, epUriIndex, epAllIndex;
-  epIpIndex = epKeys.GetStringsIndex(domain);
-  epUriIndex = epKeys.GetStringsIndex(uri);
-  epAllIndex = epKeys.GetStringsIndex("*");
-  if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
-  else if(epIpIndex != P_MAX_INDEX) epIndex = epIpIndex;
-  else epIndex = epAllIndex;
-
-  if(epIndex != P_MAX_INDEX)
+  unsigned bwFrom = atoi(GetEndpointParam("Preferred bandwidth from MCU"));
+  if(bwFrom != 0)
   {
-    PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
-    for(PINDEX i = 0; i < options.GetSize(); i++)
-    {
-      if(options[i] == "Display name override")
-      {
-        if(epParams[i] != "")
-          remotePartyName = epParams[i];
-      }
-      if(options[i] == "Preferred frame rate from MCU")
-      {
-        unsigned fr = atoi(epParams[i]);
-        if(fr < 1 || fr > MAX_FRAME_RATE) fr = 0;
-        if(fr != 0)
-        {
-          codec->SetTargetFrameTimeMs(1000/fr);
-          mf.SetOptionInteger("Frame Rate", fr);
-          mf.SetOptionInteger("Frame Time", 90000/fr);
-        }
-      }
-      if(options[i] == "Preferred bandwidth from MCU")
-      {
-        unsigned bwFrom = atoi(epParams[i]);
-        if(bwFrom < 64) bwFrom = 0;
-        if(bwFrom != 0) mf.SetOptionInteger("Max Bit Rate", bwFrom*1000);
-      }
-    }
+    if(bwFrom < 64) bwFrom = 64;
+    if(bwFrom > 4000) bwFrom = 4000;
+    mf.SetOptionInteger("Max Bit Rate", bwFrom*1000);
   }
 }
 
@@ -2604,17 +2571,22 @@ PString OpenMCUH323Connection::GetEndpointParam(PString param)
   MCUConfig epCfg(section);
   PStringList epKeys = epCfg.GetKeys();
 
-  PINDEX epIndex, epIpIndex, epUriIndex, epAllIndex;
-  epIpIndex = epKeys.GetStringsIndex(domain);
-  epUriIndex = epKeys.GetStringsIndex(uri);
-  epAllIndex = epKeys.GetStringsIndex("*");
-  if(epUriIndex != P_MAX_INDEX) epIndex = epUriIndex;
-  else if(epIpIndex != P_MAX_INDEX) epIndex = epIpIndex;
-  else epIndex = epAllIndex;
+  PINDEX index, domainIndex, uriIndex, allIndex;
+  uriIndex = epKeys.GetStringsIndex(uri);
+  domainIndex = epKeys.GetStringsIndex(domain);
+  allIndex = epKeys.GetStringsIndex("*");
+  if(uriIndex != P_MAX_INDEX) index = uriIndex;
+  else index = domainIndex;
 
-  if(epIndex != P_MAX_INDEX)
+  if(index != P_MAX_INDEX)
   {
-    PStringArray epParams = epCfg.GetString(epKeys[epIndex]).Tokenise(",");
+    PStringArray epParams = epCfg.GetString(epKeys[index]).Tokenise(",");
+    if(options.GetStringsIndex(param) != P_MAX_INDEX)
+      newParam = epParams[options.GetStringsIndex(param)];
+  }
+  if(newParam == "" && allIndex != P_MAX_INDEX)
+  {
+    PStringArray epParams = epCfg.GetString(epKeys[allIndex]).Tokenise(",");
     if(options.GetStringsIndex(param) != P_MAX_INDEX)
       newParam = epParams[options.GetStringsIndex(param)];
   }
