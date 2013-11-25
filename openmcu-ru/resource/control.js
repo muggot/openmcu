@@ -109,6 +109,21 @@ var vad_setup_mode=false;
 var tpl_save_mode=false;
 var vad1=100; var vad2=1000; var vad3=10000;
 
+var hl_links=[];
+var hl_id = -1;
+var hl_state = -1;
+
+function index_exists(a, i)
+{
+  try
+  {
+    if(typeof a[i] == 'undefined') return false;
+    else return true;
+  }
+  catch (error){}
+  return false;
+}
+
 function uncheck_recall(){
  document.cookie='autorec=false';
  document.getElementById('autorecall').checked=false;
@@ -465,6 +480,31 @@ function remove_all0(obj){ if(confirm('Remove ALL inactive members from list?'))
 
 function save_members_conf(obj){ if(confirm('Rewrite members.conf?')) {queue_otf_request(OTFC_SAVE_MEMBERS_CONF,0); }}
 
+function highlight(id, state)
+{
+  if((hl_state == state) && (hl_id == id)) return;
+  if(state==0)
+  {
+    if((id != hl_id)||(hl_state==0)) return;
+    if(index_exists(hl_links,hl_id))
+    for(var i=0;i<hl_links[hl_id].length;i++)
+    {
+      document.getElementById(hl_links[hl_id][i]).style.opacity=0.5;
+    }
+  }
+  else
+  {
+    if(index_exists(hl_links,id))
+    {
+      for(var i=0;i<hl_links[id].length;i++)
+      {
+        document.getElementById(hl_links[id][i]).style.opacity=0;
+      }
+    }
+  }
+  hl_state = state;
+  hl_id = id;
+}
 
 function format_mmbr_button(m,st){
  var bgcolors=Array('#d3d4d5','#f5fffa','#f5ccff');
@@ -475,8 +515,7 @@ function format_mmbr_button(m,st){
  var id=m[1]+"";
  if(id.substr(0,1)=='-')id='_'+id.substr(1);
  s+='" id="rpan_'+id+'"';
-// if(st==1) s+=';cursor:move" id="rpan_'+id+'" onmousedown="ddstart(event,this,'+m[1]+',100)"';
- if(st!=0) s+=';cursor:move" id="rpan_'+id+'" onmousedown="ddstart(event,this,\'panel\','+m[1]+')"';
+ if(st!=0) s+=';cursor:move" id="rpan_'+id+'" onmousedown="{highlight('+m[1]+',0);ddstart(event,this,\'panel\','+m[1]+');}" onmouseover="highlight('+m[1]+',1)" onmouseout="highlight('+m[1]+',0)"';
  else s+='" id="rpan_'+id+'"';
  var uname=m[2]+"";
  var bpos=uname.lastIndexOf('[');
@@ -1054,6 +1093,7 @@ function get_mixers_content()
 {
   var s='', pos_y=0;
   visible_ids=',';
+  hl_links=[];
   for(i=0;i<conf[0][0];i++)
   { s+="<div id='mixercontrol"+i+"'>";
     var mw=conf[i+1][0][0]; var mh=conf[i+1][0][1]; var pos_x=(mmw-mw)>>1;
@@ -1065,6 +1105,7 @@ function get_mixers_content()
       var x=Math.round(conf[i+1][1][j][0]/bfw*mw); var y=Math.round(conf[i+1][1][j][1]/bfh*mh);
       var w=Math.round(conf[i+1][1][j][2]/bfw*mw); var h=Math.round(conf[i+1][1][j][3]/bfh*mh);
       var border='1px solid '+MIX_BORDER_COLOR; if(type===2)border='1px solid red'; else if(type===3) border='0;border-right:2px solid yellow;border-bottom:2px solid yellow';
+      if(id!==false)if(id!=-1)if(id!=-2){ if(index_exists(hl_links,id)) hl_links[id].push("pp"+i+"_"+j); else { hl_links[id]=[]; hl_links[id][0]="pp"+i+"_"+j; }}
       s+="<div id='pp"+i+"_"+j+"' style='position:relative;top:"+(pos_y+y)+"px;left:"+(pos_x+x)+"px;width:0px;height:0px'>"; // pointing block for member's mockup
         s+="<div id='pr"+i+"_"+j+"'"+ // rectangle for member's mockup
           " onmousedown='ddstart(event,this,"+i+","+j+")' onmouseover='ddover(event,this,"+i+","+j+")' onmouseout='ddout(event,this,"+i+","+j+")'"+
@@ -1110,6 +1151,7 @@ function mixrfr()
   var pos_y=0;
   var old_visible_ids=visible_ids;
   visible_ids=',';
+  hl_links=[];
   for(i=0;i<mixers;i++)
   { var obj = null;
     try { obj=document.getElementById('mixercontrol'+i); } catch(e) {obj=null;}
@@ -1132,6 +1174,7 @@ function mixrfr()
         continue;
       }
       var border='1px solid '+MIX_BORDER_COLOR; if(id==-1)border='1px solid red'; else if(id==-2) border='1px dotted #f00';
+      if(id!==false)if(id!=-1)if(id!=-2){ if(index_exists(hl_links,id)) hl_links[id].push("pp"+i+"_"+j); else { hl_links[id]=[]; hl_links[id][0]="pp"+i+"_"+j; }}
       s+="<div id='pp"+i+"_"+j+"' style='position:relative;top:"+(pos_y+y)+"px;left:"+(pos_x+x)+"px;width:0px;height:0px'>"; // pointing block for member's mockup
         s+="<div id='pr"+i+"_"+j+"'"+ // rectangle for member's mockup
           " onmousedown='ddstart(event,this,"+i+","+j+")' onmouseover='ddover(event,this,"+i+","+j+")' onmouseout='ddout(event,this,"+i+","+j+")'"+
