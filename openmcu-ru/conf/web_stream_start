@@ -1,8 +1,8 @@
 #!/bin/bash
 
-DIR_BIN="/usr/bin"
-DIR_CONF="../config"
-DIR_PIPE="../pipe"
+DIR_BIN="/usr/local/bin"
+DIR_CONF="/usr/local/share/openmcu-ru/config"
+DIR_PIPE="/usr/local/share/openmcu-ru/pipe"
 
 $DIR_BIN/ffserver -f $DIR_CONF/ffserver.conf &
 
