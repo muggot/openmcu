@@ -397,7 +397,7 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
         member->muteIncoming = (v[1] == "1");
         member->disableVAD   = (v[2] == "1");
         member->chosenVan    = (v[3] == "1");
-
+        if(member->chosenVan) PutChosenVan();
 // As we assume PullMemberOptionsFromTemplate() called from AddMember(), we don't need to SWITCH mixer here.
 // That's why the following is commented and the next will just make member->videoMixerNumber set.
 // Right mixer will be attached to connection via userData value during making the call.
