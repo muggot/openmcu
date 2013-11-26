@@ -53,42 +53,20 @@ class TablePConfigPage : public PConfigPage
      firstEditRow = 1;
      firstDeleteRow = 1;
      buttonUp = buttonDown = buttonClone = buttonDelete = 0;
-     columnStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-bottom:2px solid white;border-right:2px solid white;";
-     rowStyle = "<td align='left' style='background-color:"+rowColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     rowTextStyle = "<td align='left' style='background-color:"+rowColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     rowArrayStyle = "<td align='left' style='background-color:"+itemColor+";padding:4px;'>";
-     itemStyle = "<td align='left' style='background-color:"+itemColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
-     itemInfoStyle = "<td rowspan='%ROWSPAN%' valign='top' align='left' style='background-color:"+itemInfoColor+";padding:4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     colStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-bottom:2px solid white;border-right:2px solid white;";
+     rowStyle = "<td align='left' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     rowArrayStyle = "<td align='left' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;'>";
+     itemStyle = "<td align='left' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;border-bottom:2px solid white;border-right:2px solid white;'>";
+     itemInfoStyle = "<td rowspan='%ROWSPAN%' valign='top' align='left' style='background-color:"+itemInfoColor+";padding:0px 4px 0px 4px;border-bottom:2px solid white;border-right:2px solid white;'>";
      textStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
      inputStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
      buttonStyle = "margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;width:24px;";
    }
 
-   PString NewRowColumn(PString name, int width=250)
-   {
-     return "<tr>"+columnStyle+"width:"+PString(width)+"px'><p style='"+textStyle+";width:"+PString(width)+"px'>"+name+"</p>";
-   }
-   PString NewRowText(PString name)
-   {
-     PString s = "<tr>"+rowTextStyle+"<input name='"+name+"' value='"+name+"' type='hidden'><p style='"+textStyle+"'>"+name+"</p>";
-     s += buttons()+"</td>";
-     return s;
-   }
-   PString NewRowInput(PString name, int size=15, int readonly=FALSE)
-   {
-     PString s = "<tr style='padding:0px;margin:0px;'>"+rowStyle+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+name+"' style='"+inputStyle+"'";
-     if(!readonly) s += "></input>"; else s += "readonly></input>";
-     if(!readonly) s += buttons()+"</td>";
-     return s;
-   }
-   PString EndRow() { return "</tr>"; }
-
+   /////////////////////////////////////////////////////////////////////////////////////////////////
    PString SeparatorField(PString name="")
    {
-     PString s = "<tr>"
-                 "<td align='left' style='background-color:white;padding:0px;'></td>"
-                 "<td align='left' style='background-color:white;padding:0px;'><p style='text-align:center;"+textStyle+"'><b>"+name+"</b></p></td>"
-                 "<td align='left' style='background-color:white;padding:0px;'></td></tr>";
+     PString s = "<tr><td align='left' colspan='3' style='background-color:white;padding:0px;'><p style='text-align:center;"+textStyle+"'><b>"+name+"</b></p></td>";
      return s;
    }
    PString StringField(PString name, PString value, int sizeInput=12, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
@@ -128,9 +106,32 @@ class TablePConfigPage : public PConfigPage
      return s;
    }
 
+   /////////////////////////////////////////////////////////////////////////////////////////////////
+   PString NewRowColumn(PString name, int width=250)
+   {
+     return "<tr style='padding:0px;margin:0px;'>"+colStyle+"width:"+PString(width)+"px'><p style='"+textStyle+";width:"+PString(width)+"px'>"+name+"</p>";
+   }
+   PString NewRowText(PString name)
+   {
+     PString s = "<tr style='padding:0px;margin:0px;'>"+rowStyle+"<input name='"+name+"' value='"+name+"' type='hidden'><p style='"+textStyle+"'>"+name+"</p>";
+     s += "</td>";
+     if(buttons() != "") s += rowStyle+buttons()+"</td>";
+     return s;
+   }
+   PString NewRowInput(PString name, int size=15, int readonly=FALSE)
+   {
+     PString s = "<tr style='padding:0px;margin:0px;'>"+rowStyle+"<input type='text' name='"+name+"' size='"+PString(size)+"' value='"+name+"' style='"+inputStyle+"'";
+     if(!readonly) s += "></input>"; else s += "readonly></input>";
+     if(!readonly) s += buttons();
+     s += "</td>";
+     return s;
+   }
+   PString EndRow() { return "</tr>"; }
+
+   /////////////////////////////////////////////////////////////////////////////////////////////////
    PString ColumnItem(PString name, int width=120)
    {
-     return columnStyle+"width:"+PString(width)+"px'><p style='"+textStyle+"'>"+name+"</p>";
+     return colStyle+"width:"+PString(width)+"px'><p style='"+textStyle+"'>"+name+"</p>";
    }
    PString InfoItem(PString name, PINDEX rowSpan=1)
    {
@@ -178,7 +179,7 @@ class TablePConfigPage : public PConfigPage
      PString id = PString(rand());
      PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
      s += itemStyle+"<input name='"+name+"' value='FALSE' type='hidden' style='"+inputStyle+"'>"
-                    "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"'";
+                    "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"margin-top:12px;margin-bottom:12px;margin-left:3px;'";
      if(value) s +=" checked='yes'></input></td>"; else s +="></input></td>";
      return s;
    }
@@ -225,11 +226,7 @@ class TablePConfigPage : public PConfigPage
      return s;
    }
 
-   PString JsLocale(PString locale)
-   {
-     return "<script type='text/javascript'>document.write("+locale+");</script>";
-   }
-
+   /////////////////////////////////////////////////////////////////////////////////////////////////
    PString BeginTable()
    { return "<form method='POST'><div style='overflow-x:auto;overflow-y:hidden;'><table id='table1' cellspacing='8'><tbody>"; }
    PString EndTable()
@@ -237,6 +234,10 @@ class TablePConfigPage : public PConfigPage
      PString s = "<tr></tr></tbody></table></div><p><input id='button_accept' name='submit' value='Accept' type='submit'><input id='button_reset' name='reset' value='Reset' type='reset'></p></form>";
      s += jsRowDown() + jsRowUp() + jsRowClone()+ jsRowDelete();
      return s;
+   }
+   PString JsLocale(PString locale)
+   {
+     return "<script type='text/javascript'>document.write("+locale+");</script>";
    }
    PString buttons()
    {
@@ -385,7 +386,7 @@ class TablePConfigPage : public PConfigPage
  protected:
    PConfig cfg;
    PString separator;
-   PString columnStyle, rowStyle, rowTextStyle, rowArrayStyle, itemStyle, itemInfoStyle, itemInfoStyleRowSpan, textStyle, inputStyle, buttonStyle;
+   PString colStyle, rowStyle, rowArrayStyle, itemStyle, itemInfoStyle, itemInfoStyleRowSpan, textStyle, inputStyle, buttonStyle;
    PStringArray dataArray;
    PString columnColor, rowColor, itemColor, itemInfoColor;
    int firstEditRow, firstDeleteRow;

@@ -1003,36 +1003,43 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
 {
   cfg = MCUConfig(section);
 
-  PString info, infoStyle = "<td rowspan='1' style='background-color:#efe;padding:15px;border-bottom:2px solid white;'>";
+  buttonUp = buttonDown = 1;
+  firstEditRow = firstDeleteRow = 0;
+  PStringStream html_begin, html_end, html_page, s;
+  s << BeginTable();
+
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    info = "<input type=button value='↑' onClick='rowUp(this,0)' style='margin-top:10px;margin-left:10px;margin-right:1px;'><input type=button value='↓' onClick='rowDown(this)' style='margin-top:10px;margin-left:1px;margin-right:10px;'>";
+    PString info, fmtpInfo;
     H323Capability *cap = H323Capability::Create(keys[i]);
     if(cap == NULL && keys[i].Find("{sw}") == P_MAX_INDEX)
       cap = H323Capability::Create(keys[i]+"{sw}");
     if(cap)
     {
       const OpalMediaFormat & mf = cap->GetMediaFormat();
-      if(mf.GetTimeUnits() == 90)
-        info += infoStyle+PString(mf.GetOptionInteger("Frame Width"))+"x"+PString(mf.GetOptionInteger("Frame Height"));
+      if(cap->GetMainType() == H323Capability::e_Video)
+        info += PString(mf.GetOptionInteger("Frame Width"))+"x"+PString(mf.GetOptionInteger("Frame Height"));
       else
-        info += infoStyle+PString(mf.GetTimeUnits()*1000)+"Hz";
-      //info += infoStyle+PString(mf.GetBandwidth())+"bit/s";
-      info += infoStyle;
+        info += PString(mf.GetTimeUnits()*1000)+"Hz";
+      //info += PString(mf.GetBandwidth())+"bit/s";
       for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
        if(mf.GetOption(j).GetFMTPName() != "")
-         info += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
-      if(title == "SipSoundCodecs" || title == "SipVideoCodecs")
-        info += "<td align='left' style='background-color:#efe;border-bottom:2px solid white;'><input name='fmtp:"+keys[i]+"' size='25' value='"+MCUConfig("CODEC_OPTIONS").GetString(keys[i])+"' type='text' style='margin-top:10px;margin-right:10px;'></td>";
+         fmtpInfo += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
     } else {
-      info += infoStyle+"<script type='text/javascript'>document.write(window.l_not_found);</script>";
+      info += JsLocale("window.l_not_found");
     }
-    Add(new PHTTPBooleanField(keys[i], cfg.GetBoolean(keys[i]), info));
+    s << NewRowText(keys[i]);
+    s << BoolItem(keys[i], cfg.GetBoolean(keys[i]));
+    s << InfoItem(info);
+    s << InfoItem(fmtpInfo);
+    if(cap && (title == "SipSoundCodecs" || title == "SipVideoCodecs"))
+      s <<  StringItem("fmtp:"+keys[i], MCUConfig("CODEC_OPTIONS").GetString(keys[i]), 20);
+    s << EndRow();
   }
 
+  s << EndTable();
   BuildHTML("");
-  PStringStream html_begin, html_end;
   if(section == "RECEIVE_SOUND")
     BeginPage(html_begin, "Audio codecs(receive)", "window.l_param_receive_sound", "window.l_info_param_receive_sound");
   else if(section == "TRANSMIT_SOUND")
@@ -1044,9 +1051,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
   else
     BeginPage(html_begin, section, "", "");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
-  PStringStream html_page; html_page << html_begin << string << html_end;
-  html_page << jsRowUp() << jsRowDown();
-
+  html_page << html_begin << s << html_end;
   string = html_page;
 }
 
@@ -1097,7 +1102,7 @@ BOOL CodecsPConfigPage::OnPOST(PHTTPServer & server,
         fmtpArray.AppendString(key.Right(key.GetSize()-6)+"="+value);
       dataArray.RemoveAt(i); i--; continue;
     }
-    if(key == "submit" || key == "" || value == "")
+    if(key == "submit" || key == "TableItemId" || key == "" || value == "")
     {
       dataArray.RemoveAt(i); i--; continue;
     }
