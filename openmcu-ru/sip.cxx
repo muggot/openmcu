@@ -1007,7 +1007,7 @@ int OpenMCUSipConnection::ProcessSDP(PStringArray &sdp_sa, PIntArray &par, SipCa
    if((c.format.ToLower() == "pcmu" || c.payload == 0) && tsCaps.GetStringsIndex("G.711-uLaw-64k")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.711-uLaw-64k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // PCMA
-   else if((c.format.ToLower() == "pcma" || c.payload == 0) && tsCaps.GetStringsIndex("G.711-ALaw-64k")!=P_MAX_INDEX)
+   else if((c.format.ToLower() == "pcma" || c.payload == 8) && tsCaps.GetStringsIndex("G.711-ALaw-64k")!=P_MAX_INDEX)
     { scap = c.payload; c.h323 = "G.711-ALaw-64k{sw}"; c.cap = H323Capability::Create(c.h323); }
    // G.722
    else if(c.format.ToLower() == "g722" && tsCaps.GetStringsIndex("G.722-64k{sw}")!=P_MAX_INDEX)
@@ -1239,8 +1239,8 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  // endpoint custom capability
  prefAudioCap = GetEndpointParam("Audio codec");
  prefVideoCap = GetEndpointParam("Video codec");
- if(prefAudioCap.Find("{sw}") == P_MAX_INDEX && (prefAudioCap.ToLower().Find("ulaw") || prefAudioCap.ToLower().Find("alaw")))
-   prefAudioCap += "{sw}";
+ if(prefAudioCap != "" && prefAudioCap.Find("{sw}") == P_MAX_INDEX)
+     prefAudioCap += "{sw}";
  if(prefAudioCap != "") { PTRACE(1, "OpenMCUSipConnection\tSet endpoint custom audio: " << prefAudioCap); }
  if(prefVideoCap != "") { PTRACE(1, "OpenMCUSipConnection\tSet endpoint custom video: " << prefVideoCap); }
 
@@ -2125,7 +2125,7 @@ void OpenMCUSipEndPoint::InitProxyServers()
     proxy->proxyPort = tmp.Tokenise(",")[1].Tokenise(":")[1];
     proxy->userName = tmp.Tokenise(",")[2];
     if(proxy->enable == 0 || proxy->proxyIP == "" || proxy->userName == "") continue;
-    proxy->password = tmp.Tokenise(",")[3];
+    proxy->password = PHTTPPasswordField::Decrypt(tmp.Tokenise(",")[3]);
     proxy->expires = tmp.Tokenise(",")[4];
     proxy->timeout = atoi(proxy->expires)*2;
     proxy->localIP = GetFromIp((const char *)proxy->proxyIP, (const char *)proxy->proxyPort);

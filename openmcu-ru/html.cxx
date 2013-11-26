@@ -776,7 +776,8 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
     else s << BoolItem(name, 0);
     s << StringItem(name, params.Tokenise(",")[1]);
     s << StringItem(name, params.Tokenise(",")[2]);
-    s << StringItem(name, params.Tokenise(",")[3]);
+    //s << StringItem(name, params.Tokenise(",")[3]);
+    s << PasswordItem(name, PHTTPPasswordField::Decrypt(params.Tokenise(",")[3]));
     s << IntegerItem(name, atoi(params.Tokenise(",")[4]), 60, 3600);
   }
   if(keys.GetSize() == 0)
