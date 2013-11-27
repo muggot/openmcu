@@ -1027,8 +1027,9 @@ void Conference::FreezeVideo(ConferenceMemberId id)
   }
 }
 
-void Conference::PutChosenVan()
+BOOL Conference::PutChosenVan()
 {
+  BOOL put=FALSE;
   int i;
   PWaitAndSignal m(memberListMutex);
   MemberList::iterator r;
@@ -1037,11 +1038,12 @@ void Conference::PutChosenVan()
       VideoMixerRecord * vmr = videoMixerList;
       while(vmr!=NULL){
         i=vmr->mixer->GetPositionStatus(r->second->GetID());
-        if(i < 0) vmr->mixer->SetVADPosition(r->second,r->second->chosenVan,VAtimeout);
+        if(i < 0) put |= (NULL != vmr->mixer->SetVADPosition(r->second,r->second->chosenVan,VAtimeout));
         vmr = vmr->next;
       }
     }
   }
+  return put;
 }
 
 void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac){

@@ -1163,7 +1163,7 @@ class Conference : public PObject
     { return VMLFind(i); }
 
     virtual void FreezeVideo(ConferenceMemberId id);
-    virtual void PutChosenVan();
+    virtual BOOL PutChosenVan();
 
     VideoMixerRecord *videoMixerList;
     unsigned videoMixerCount;
