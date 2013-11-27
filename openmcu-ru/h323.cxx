@@ -2253,7 +2253,7 @@ BOOL OpenMCUH323Connection::StartControlNegotiations(BOOL renegotiate)
   if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom receive video: " << prefVideoCap); }
   if(bandwidthTo != 0) { PTRACE(1, "OpenMCUH323Connection\tSet endpoint bandwidth to mcu: " << prefVideoCap); }
 
-  if(prefAudioCap.ToLower().Find("ulaw") || prefAudioCap.ToLower().Find("alaw"))
+  if(prefAudioCap.ToLower().Find("ulaw") != P_MAX_INDEX || prefAudioCap.ToLower().Find("alaw") != P_MAX_INDEX)
     prefAudioCap = prefAudioCap.Left(prefAudioCap.GetLength()-4);
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
