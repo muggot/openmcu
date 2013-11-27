@@ -2172,28 +2172,65 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
   if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom transmit audio: " << prefAudioCap); }
   if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom transmit video: " << prefVideoCap); }
 
+  BOOL prefVideoCodecAgreed = FALSE;
+  unsigned h264Level = 0;
+  unsigned bandwidthFrom = 0;
+
   H323Capabilities _remoteCaps(remoteCaps);
   for(PINDEX i = 0; i < _remoteCaps.GetSize(); )
   {
     PString capName = _remoteCaps[i].GetFormatName();
+    if(prefVideoCap != "" && _remoteCaps[i].GetMainType() == H323Capability::e_Video)
+    {
+      if(prefVideoCap.Find("H.264") != P_MAX_INDEX && capName.Find("H.264") != P_MAX_INDEX && h264Level == 0)
+        h264Level = _remoteCaps[i].GetMediaFormat().GetOptionInteger("Generic Parameter 42");
+      if(bandwidthFrom == 0)
+        bandwidthFrom = _remoteCaps[i].GetMediaFormat().GetOptionInteger("Max Bit Rate");
+      if((prefVideoCap.Find("H.261") != P_MAX_INDEX && capName.Find("H.261") != P_MAX_INDEX) ||
+         (prefVideoCap.Find("H.263") != P_MAX_INDEX && capName.Find("H.263") != P_MAX_INDEX) ||
+         (prefVideoCap.Find("H.264") != P_MAX_INDEX && capName.Find("H.264") != P_MAX_INDEX) ||
+         (prefVideoCap.Find("VP8") != P_MAX_INDEX && capName.Find("VP8") != P_MAX_INDEX))
+      {
+        prefVideoCodecAgreed = TRUE;
+      }
+    }
     if(_remoteCaps[i].GetMainType() == H323Capability::e_Audio && prefAudioCap != "" && capName != prefAudioCap)
     { _remoteCaps.Remove(&_remoteCaps[i]); continue; }
     if(_remoteCaps[i].GetMainType() == H323Capability::e_Video && prefVideoCap != "" && capName != prefVideoCap)
     { _remoteCaps.Remove(&_remoteCaps[i]); continue; }
     i++;
   }
-  // replace video capability
-  if(prefVideoCap != "")
+  // replace video capability with default parameters
+  if(prefVideoCap != "" && prefVideoCodecAgreed)
   {
-    H323Capability *cap = _remoteCaps.FindCapability(prefVideoCap);
-    if(cap)
+    _remoteCaps.Remove(prefVideoCap);
+    H323Capability *newCap = H323Capability::Create(prefVideoCap);
+    OpalMediaFormat & wf = newCap->GetWritableMediaFormat();
+    _remoteCaps.SetCapability(0,1,newCap);
+
+    if(prefVideoCap.Find("H.264") != P_MAX_INDEX && h264Level != 0)
     {
-      unsigned bandwidthFrom = cap->GetMediaFormat().GetOptionInteger("Max Bit Rate");
-      H323Capability *newCap = H323Capability::Create(prefVideoCap);
-      _remoteCaps.Remove(cap);
-      _remoteCaps.SetCapability(0,1,newCap);
-      newCap->GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidthFrom);
+      unsigned h264BaseLevel = wf.GetOptionInteger("Generic Parameter 42");
+      unsigned h264MaxFs = 0;
+      if(h264BaseLevel == 15) h264MaxFs = 99;
+      else if(h264BaseLevel == 22) h264MaxFs = 396;
+      else if(h264BaseLevel == 29) h264MaxFs = 396;
+      else if(h264BaseLevel == 36) h264MaxFs = 396;
+      else if(h264BaseLevel == 43) h264MaxFs = 396;
+      else if(h264BaseLevel == 50) h264MaxFs = 792;
+      else if(h264BaseLevel == 57) h264MaxFs = 1620;
+      else if(h264BaseLevel == 64) h264MaxFs = 1620;
+      else if(h264BaseLevel == 71) h264MaxFs = 3600;
+      else if(h264BaseLevel == 78) h264MaxFs = 5120;
+      else if(h264BaseLevel == 85) h264MaxFs = 8192;
+      else if(h264BaseLevel == 92) h264MaxFs = 8192;
+      else if(h264BaseLevel == 99) h264MaxFs = 8704;
+      else if(h264BaseLevel == 106) h264MaxFs = 22080;
+      else if(h264BaseLevel == 113) h264MaxFs = 36864;
+      wf.SetOptionInteger("Generic Parameter 42", h264Level);
+      if(h264MaxFs != 0) wf.SetOptionInteger("Generic Parameter 4", (h264MaxFs/256)+1);
     }
+    wf.SetOptionInteger("Max Bit Rate", bandwidthFrom);
   }
   //cout << "OnReceivedCapabilitySet\n" << _remoteCaps << "\n";
 
