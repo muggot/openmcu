@@ -624,13 +624,14 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   s << ColumnItem(JsLocale("window.l_name_video_codec_transmit"));
 
   PString aCapsR, vCapsR, aCapsT, vCapsT;
-  if(mcu.GetEndpoint().tsCaps != NULL && mcu.GetEndpoint().tvCaps != NULL)
-  {
-    PINDEX rsNum = 0; while(mcu.GetEndpoint().tsCaps[rsNum]!=NULL) { aCapsR += ","+PString(mcu.GetEndpoint().rsCaps[rsNum]); rsNum++; }
-    PINDEX rvNum = 0; while(mcu.GetEndpoint().tvCaps[rvNum]!=NULL) { vCapsR += ","+PString(mcu.GetEndpoint().rvCaps[rvNum]); rvNum++; }
-    PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { aCapsT += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; }
-    PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { vCapsT += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; }
-  }
+  if(mcu.GetEndpoint().rsCaps != NULL)
+  { PINDEX rsNum = 0; while(mcu.GetEndpoint().rsCaps[rsNum]!=NULL) { aCapsR += ","+PString(mcu.GetEndpoint().rsCaps[rsNum]); rsNum++; } }
+  if(mcu.GetEndpoint().rvCaps != NULL)
+  { PINDEX rvNum = 0; while(mcu.GetEndpoint().rvCaps[rvNum]!=NULL) { vCapsR += ","+PString(mcu.GetEndpoint().rvCaps[rvNum]); rvNum++; } }
+  if(mcu.GetEndpoint().tsCaps != NULL)
+  { PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { aCapsT += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; } }
+  if(mcu.GetEndpoint().tvCaps != NULL)
+  { PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { vCapsT += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; } }
 
   PStringList keys = cfg.GetKeys();
   if(keys.GetStringsIndex("*") == P_MAX_INDEX)
