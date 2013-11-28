@@ -1509,7 +1509,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     if(to.Find("transport") == P_MAX_INDEX)
     {
       PString transport = GetEndpointParamFromUri("Outgoing transport", remoteUser+"@"+remoteIP, "sip");
-      if(transport != "") to += ";"+transport;
+      if(transport != "" && transport != "transport=*") to += ";"+transport;
     }
 
     ProxyServer *proxy = NULL;
@@ -1719,11 +1719,8 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
   if((status == 401 || status == 407) && sip->sip_cseq &&
     (sip->sip_cseq->cs_method == sip_method_register || sip->sip_cseq->cs_method == sip_method_invite))
   {
-    // the number of unauthorized requests for register/invite
-    unsigned reqNum= atoi(PString(sip->sip_call_id->i_id).Tokenise("@")[1]);
-
     ProxyServerMapType::iterator it = ProxyServerMap.find((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
-    if(it == ProxyServerMap.end() || reqNum > 2)
+    if(it == ProxyServerMap.end())
     {
       if(sip->sip_cseq->cs_method == sip_method_invite)
         InviteDataTempDelete(sik);
@@ -1731,12 +1728,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
       return 0;
     }
     ProxyServer *proxy = it->second;
-    PString call_id_suffix = PString(reqNum+1);
-
-    sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
-	("sip:"+proxy->userName+"@"+proxy->proxyIP));
-    sip_from->a_display = proxy->roomName;
-    sip_from_tag(&home, sip_from, nta_agent_newtag(&home, "tag=%s", agent));
 
     sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)sip->sip_to->a_url);
 
@@ -1746,15 +1737,12 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
 
     sip_request_t *sip_rq = sip_request_create(&home, sip->sip_cseq->cs_method,
 			sip->sip_cseq->cs_method_name, (url_string_t *)sip_to->a_url, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, sip->sip_cseq->cs_seq,
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, sip->sip_cseq->cs_seq+1,
 			sip->sip_cseq->cs_method, sip->sip_cseq->cs_method_name);
-    sip_call_id_t* sip_call_id = sip_call_id_create(&home, (const char *)call_id_suffix);
-
-    nta_response_f *callback = NULL;
-    if(sip->sip_cseq->cs_method == sip_method_invite)
-       callback = ProcessSipEventWrap_ntaout;
 
     sip_payload_t *sip_payload=NULL;
+    nta_response_f *callback = NULL;
+    const char *expires = NULL;
     if(sip->sip_cseq->cs_method == sip_method_invite)
     {
       InviteDataTempMapType::iterator invit = InviteDataTempMap.find(sik);
@@ -1764,7 +1752,6 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
       // temporarily save invite data
       InviteDataTemp *iData = invit->second;
       InviteDataTempMap.erase(sik);
-      sik.sid = sip_call_id->i_id;
       InviteDataTempMap.insert(InviteDataTempMapType::value_type(sik, iData));
 
       PString sdp = sdpInvite;
@@ -1772,12 +1759,15 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
       sdp.Replace("LOCALIP", proxy->localIP, TRUE, 0);
       sdp.Replace("RTP_AUDIO_PORT", iData->aPort, TRUE, 0);
       sdp.Replace("RTP_VIDEO_PORT", iData->vPort, TRUE, 0);
+      PString uri = PString(sip_to->a_url->url_user)+"@"+PString(sip_to->a_url->url_host);
+      unsigned epBandwidthTo = atoi(GetEndpointParamFromUri("Preferred bandwidth to MCU", uri, "sip"));
+      sdp.Replace("BANDWIDTH", epBandwidthTo, TRUE, 0);
       sip_payload = sip_payload_make(&home, (const char *)sdp);
-    }
 
-    const char *expires = NULL;
-    if(sip->sip_cseq->cs_method != sip_method_invite)
+      callback = ProcessSipEventWrap_ntaout;
+    } else {
       expires = proxy->expires;
+    }
 
     sip_authorization_t *sip_auth=NULL, *sip_proxy_auth=NULL;
     if(status == 401)
@@ -1796,10 +1786,10 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
 			(url_string_t *)sip->sip_to->a_url,
 			sip_msg,
 			SIPTAG_REQUEST(sip_rq),
-			SIPTAG_FROM(sip_from),
+			SIPTAG_FROM(sip->sip_from),
 			SIPTAG_TO(sip_to),
 			SIPTAG_CSEQ(sip_cseq),
-			SIPTAG_CALL_ID(sip_call_id),
+			SIPTAG_CALL_ID(sip->sip_call_id),
 			SIPTAG_CONTACT(sip_contact),
 			SIPTAG_AUTHORIZATION(sip_auth),
 			SIPTAG_PROXY_AUTHORIZATION(sip_proxy_auth),
@@ -2040,7 +2030,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
     }
     return ReqReply(msg, SIP_200_OK);
   }
-  if(request == "OPTIONS" || request == "SUBSCRIBE")
+  if(request == "OPTIONS" || request == "SUBSCRIBE" || request == "NOTIFY")
   {
     return ReqReply(msg, SIP_200_OK);
   }
