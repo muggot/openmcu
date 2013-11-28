@@ -1150,7 +1150,7 @@ int OpenMCUSipConnection::CreateSipData()
   if(direction == 0) //incoming
   {
     ProxyServerMapType::iterator it =
-        ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
+        ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(it != ProxyServerMap.end())
     {
       ProxyServer *proxy = it->second;
@@ -1444,7 +1444,7 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
     PString defaultAccess = MCUConfig("RoomAccess").GetString("*", "ALLOW").Tokenise(",")[0].ToUpper();
 
     ProxyServerMapType::iterator it =
-        ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
+        ProxyServerMap.find((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(it != ProxyServerMap.end())
       roomName = it->second->roomName;
     else
@@ -1719,7 +1719,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
   if((status == 401 || status == 407) && sip->sip_cseq &&
     (sip->sip_cseq->cs_method == sip_method_register || sip->sip_cseq->cs_method == sip_method_invite))
   {
-    ProxyServerMapType::iterator it = ProxyServerMap.find((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host);
+    ProxyServerMapType::iterator it = ProxyServerMap.find((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(it == ProxyServerMap.end())
     {
       if(sip->sip_cseq->cs_method == sip_method_invite)
