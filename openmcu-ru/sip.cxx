@@ -148,10 +148,16 @@ PString CreateRuriStr(msg_t *msg, int direction)
     ruri = ruri+"@"+PString(sip->sip_via->v_host);
   else
     ruri = ruri+"@"+PString(sip_to->a_url->url_host);
+
   if(sip->sip_via->v_port && sip->sip_request)
     ruri = ruri+":"+sip->sip_via->v_port;
   else if(sip_to->a_url->url_port)
     ruri = ruri+":"+sip_to->a_url->url_port;
+
+  if(PString(sip->sip_via->v_protocol).Find("UDP") != P_MAX_INDEX)
+    ruri += ";transport=udp";
+  else if(PString(sip->sip_via->v_protocol).Find("TCP") != P_MAX_INDEX)
+    ruri += ";transport=tcp";
   return ruri;
 }
 
