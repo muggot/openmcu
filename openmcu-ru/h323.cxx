@@ -2173,7 +2173,6 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
   if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom transmit video: " << prefVideoCap); }
 
   BOOL prefVideoCodecAgreed = FALSE;
-  unsigned h264Level = 0;
   unsigned bandwidthFrom = 0;
 
   H323Capabilities _remoteCaps(remoteCaps);
@@ -2182,8 +2181,6 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
     PString capName = _remoteCaps[i].GetFormatName();
     if(prefVideoCap != "" && _remoteCaps[i].GetMainType() == H323Capability::e_Video)
     {
-      if(prefVideoCap.Find("H.264") != P_MAX_INDEX && capName.Find("H.264") != P_MAX_INDEX && h264Level == 0)
-        h264Level = _remoteCaps[i].GetMediaFormat().GetOptionInteger("Generic Parameter 42");
       if(bandwidthFrom == 0)
         bandwidthFrom = _remoteCaps[i].GetMediaFormat().GetOptionInteger("Max Bit Rate");
       if((prefVideoCap.Find("H.261") != P_MAX_INDEX && capName.Find("H.261") != P_MAX_INDEX) ||
@@ -2208,7 +2205,7 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
     OpalMediaFormat & wf = newCap->GetWritableMediaFormat();
     _remoteCaps.SetCapability(0,1,newCap);
 
-    if(prefVideoCap.Find("H.264") != P_MAX_INDEX && h264Level != 0)
+    if(prefVideoCap.Find("H.264") != P_MAX_INDEX)
     {
       unsigned h264BaseLevel = wf.GetOptionInteger("Generic Parameter 42");
       unsigned h264MaxFs = 0;
@@ -2227,7 +2224,6 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
       else if(h264BaseLevel == 99) h264MaxFs = 8704;
       else if(h264BaseLevel == 106) h264MaxFs = 22080;
       else if(h264BaseLevel == 113) h264MaxFs = 36864;
-      wf.SetOptionInteger("Generic Parameter 42", h264Level);
       if(h264MaxFs != 0) wf.SetOptionInteger("Generic Parameter 4", (h264MaxFs/256)+1);
     }
     wf.SetOptionInteger("Max Bit Rate", bandwidthFrom);
@@ -2263,11 +2259,14 @@ BOOL OpenMCUH323Connection::StartControlNegotiations(BOOL renegotiate)
     { localCapabilities.Remove(&localCapabilities[i]); continue; }
     if(localCapabilities[i].GetMainType() == H323Capability::e_Video && prefVideoCap != "" && capName != prefVideoCap)
     { localCapabilities.Remove(&localCapabilities[i]); continue; }
-    if(bandwidthTo != 0)
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Video)
     {
-      if(bandwidthTo < 64) bandwidthTo = 64;
-      if(bandwidthTo > 4000) bandwidthTo = 4000;
-      localCapabilities[i].GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidthTo*1000);
+      if(bandwidthTo != 0)
+      {
+        if(bandwidthTo < 64) bandwidthTo = 64;
+        if(bandwidthTo > 4000) bandwidthTo = 4000;
+        localCapabilities[i].GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidthTo*1000);
+      }
     }
     i++;
   }
