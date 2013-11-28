@@ -2202,31 +2202,34 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
   {
     _remoteCaps.Remove(prefVideoCap);
     H323Capability *newCap = H323Capability::Create(prefVideoCap);
-    OpalMediaFormat & wf = newCap->GetWritableMediaFormat();
-    _remoteCaps.SetCapability(0,1,newCap);
-
-    if(prefVideoCap.Find("H.264") != P_MAX_INDEX)
+    if(newCap)
     {
-      unsigned h264BaseLevel = wf.GetOptionInteger("Generic Parameter 42");
-      unsigned h264MaxFs = 0;
-      if(h264BaseLevel == 15) h264MaxFs = 99;
-      else if(h264BaseLevel == 22) h264MaxFs = 396;
-      else if(h264BaseLevel == 29) h264MaxFs = 396;
-      else if(h264BaseLevel == 36) h264MaxFs = 396;
-      else if(h264BaseLevel == 43) h264MaxFs = 396;
-      else if(h264BaseLevel == 50) h264MaxFs = 792;
-      else if(h264BaseLevel == 57) h264MaxFs = 1620;
-      else if(h264BaseLevel == 64) h264MaxFs = 1620;
-      else if(h264BaseLevel == 71) h264MaxFs = 3600;
-      else if(h264BaseLevel == 78) h264MaxFs = 5120;
-      else if(h264BaseLevel == 85) h264MaxFs = 8192;
-      else if(h264BaseLevel == 92) h264MaxFs = 8192;
-      else if(h264BaseLevel == 99) h264MaxFs = 8704;
-      else if(h264BaseLevel == 106) h264MaxFs = 22080;
-      else if(h264BaseLevel == 113) h264MaxFs = 36864;
-      if(h264MaxFs != 0) wf.SetOptionInteger("Generic Parameter 4", (h264MaxFs/256)+1);
+      OpalMediaFormat & wf = newCap->GetWritableMediaFormat();
+      _remoteCaps.SetCapability(0,1,newCap);
+
+      if(prefVideoCap.Find("H.264") != P_MAX_INDEX)
+      {
+        unsigned h264BaseLevel = wf.GetOptionInteger("Generic Parameter 42");
+        unsigned h264MaxFs = 0;
+        if(h264BaseLevel == 15) h264MaxFs = 99;
+        else if(h264BaseLevel == 22) h264MaxFs = 396;
+        else if(h264BaseLevel == 29) h264MaxFs = 396;
+        else if(h264BaseLevel == 36) h264MaxFs = 396;
+        else if(h264BaseLevel == 43) h264MaxFs = 396;
+        else if(h264BaseLevel == 50) h264MaxFs = 792;
+        else if(h264BaseLevel == 57) h264MaxFs = 1620;
+        else if(h264BaseLevel == 64) h264MaxFs = 1620;
+        else if(h264BaseLevel == 71) h264MaxFs = 3600;
+        else if(h264BaseLevel == 78) h264MaxFs = 5120;
+        else if(h264BaseLevel == 85) h264MaxFs = 8192;
+        else if(h264BaseLevel == 92) h264MaxFs = 8192;
+        else if(h264BaseLevel == 99) h264MaxFs = 8704;
+        else if(h264BaseLevel == 106) h264MaxFs = 22080;
+        else if(h264BaseLevel == 113) h264MaxFs = 36864;
+        if(h264MaxFs != 0) wf.SetOptionInteger("Generic Parameter 4", (h264MaxFs/256)+1);
+      }
+      wf.SetOptionInteger("Max Bit Rate", bandwidthFrom);
     }
-    wf.SetOptionInteger("Max Bit Rate", bandwidthFrom);
   }
   //cout << "OnReceivedCapabilitySet\n" << _remoteCaps << "\n";
 
