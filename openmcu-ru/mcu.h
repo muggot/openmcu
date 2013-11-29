@@ -248,7 +248,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     { }
 
     PString GetDefaultRoomName() const { return defaultRoomName; }
-    BOOL IsLoopbackCallsAllowed() const { return allowLoopbackCalls; }
+    BOOL AreLoopbackCallsAllowed() const { return allowLoopbackCalls; }
     PString GetNewRoomNumber();
     void LogMessage(const PString & str);
     void LogMessageHTML(PString str);

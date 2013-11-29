@@ -1074,7 +1074,7 @@ class Conference : public PObject
     ConferenceManager & GetManager()
     { return manager; }
 
-    void InviteMember(const char *membName);
+    BOOL InviteMember(const char *membName, void * userData = NULL);
 
     /**
       * add the specified member to the conference
@@ -1258,6 +1258,7 @@ class Conference : public PObject
     virtual void SetLastUsedTemplate(PString tplName);
     virtual void DeleteTemplate(PString tplName);
     virtual BOOL RewriteMembersConf();
+    virtual void OnConnectionClean(const PString & remotePartyName, const PString & remotePartyAddress);
 
     ConferenceFileMember * fileRecorder;
 

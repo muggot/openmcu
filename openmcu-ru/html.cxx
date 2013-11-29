@@ -1411,29 +1411,35 @@ BOOL InvitePage::Post(PHTTPRequest & request,
   }
 
   OpenMCUH323EndPoint & ep = app.GetEndpoint();
-  BOOL created = ep.OutgoingConferenceRequest(room);
+  Conference * c = ep.MakeConference(room);
 
-  if (!created) {
+  if (c == NULL)
+  { // could not create conference - todo: add error description (?)
+    PTRACE(2,"Conference\tCould not create conference on outgoing request: " << room);
     BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
     html << html_invite;
     EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
     return TRUE;
   }
 
-  if(address.Find("sip:") == 0) {
-    while(OpenMCU::Current().sipendpoint->sipCallData != "") continue;
-    OpenMCU::Current().sipendpoint->sipCallData = room+","+address;
-  } else {
+//  if(address.Find("sip:") == 0) {
+//    while(OpenMCU::Current().sipendpoint->sipCallData != "") PThread::Sleep(10);
+//    OpenMCU::Current().sipendpoint->sipCallData = room+","+address;
+//  } else {
     PString h323Token;
     PString * userData = new PString(room);
-    if (ep.MakeCall(address, h323Token, userData) == NULL) {
+//    if (ep.MakeCall(address, h323Token, userData) == NULL) {
+    if(!c->InviteMember(address))
+    {
+      PTRACE(2,"Conference\tCould not invite " << address);
       BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
       html << html_invite;
       EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
-      ep.GetConferenceManager().RemoveConference(room);
+//      ep.GetConferenceManager().RemoveConference(room);
       return TRUE;
     }
-  }
+//    }
+//  }
 
   BeginPage(html,"Invite succeeded","window.l_invite_s","window.l_info_invite_s");
   html << html_invite;

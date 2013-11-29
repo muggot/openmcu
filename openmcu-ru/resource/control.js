@@ -154,8 +154,8 @@ function checkcontrol(){
 }
 
 function ddstart(e,o,substance,idx){
-  if(!checkcontrol()) return false;
   if(prvnt) return false;
+  if(!checkcontrol()) return false;
   if(e.preventDefault)e.preventDefault(); else e.returnValue=false;
 //something like mutex:
   if(dd_in_progress)return false; if(query_active)return false; dd_in_progress=true;
@@ -538,7 +538,7 @@ function format_mmbr_button(m,st){
  var cmd=10; if(!(m[4]|m[5]))var cmd=8; else if(m[5]) var cmd=9;
  if(st>0) vad="<img onclick='vadoptions(this,"+m[1]+")' style='cursor:pointer' src='openmcu.ru_vad_"+((cmd==8)?"vad":"")+((cmd==9)?"chosenvan":"")+((cmd==10)?"disable":"")+".gif' alt='"+((cmd==8)?"Normal":"")+((cmd==9)?"Van":"")+((cmd==10)?"AD disabled":"")+"' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" id='vrpan_"+id+"'>";
 
- if(st>0) kick="<img onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='openmcu.ru_drop_Abdylas_Tynyshov.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" alt='Drop'>";
+ if(st>0) kick="<img onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\");' onmouseover='prvnt=1' onmouseout='prvnt=0' style='cursor:pointer' src='openmcu.ru_drop_Abdylas_Tynyshov.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" alt='Drop'>";
  else kick="<img onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='openmcu.ru_remove.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" alt='Remove'>";
 
  if(st>0) hide="<img style='cursor:pointer' src='i15_getNoVideo.gif' width=15 height=15 title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>";

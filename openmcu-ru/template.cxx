@@ -207,12 +207,12 @@ void Conference::LoadTemplate(PString tpl)
           PString memberInternalName = v[5].Trim();
           for(int i=6; i<v.GetSize(); i++) memberInternalName += "," + v[i];
 
-          PString memberIPAddress;
+          PString memberAddress;
           PINDEX bp1 = memberInternalName.FindLast('[');
           if(bp1 != P_MAX_INDEX)
           {
             PINDEX bp2 = memberInternalName.FindLast(']');
-            if(bp2 > bp1) memberIPAddress = memberInternalName.Mid(bp1+1,bp2-bp1-1);
+            if(bp2 > bp1) memberAddress = memberInternalName.Mid(bp1+1,bp2-bp1-1);
           }
 
           PWaitAndSignal m(memberListMutex);
@@ -228,9 +228,10 @@ void Conference::LoadTemplate(PString tpl)
             PString numberWithMixer=number;
             if(v[4]!="0") numberWithMixer+="/"+v[4];
             PString * userData = new PString(numberWithMixer);
-            if(OpenMCU::Current().GetEndpoint().MakeCall(memberIPAddress, token, userData) != NULL)
+//            if(OpenMCU::Current().GetEndpoint().MakeCall(memberAddress, token, userData) != NULL)
+            if(InviteMember(memberAddress, userData))
             {
-              PStringStream msg; msg << "Inviting " << memberIPAddress;
+              PStringStream msg; msg << "Inviting " << memberAddress;
               OpenMCU::Current().HttpWriteEventRoom(msg,number);
             }
           }
@@ -397,7 +398,7 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
         member->muteIncoming = (v[1] == "1");
         member->disableVAD   = (v[2] == "1");
         member->chosenVan    = (v[3] == "1");
-        if(member->chosenVan) if(PutChosenVan()) member->SetFreezeVideo(FALSE);
+
 // As we assume PullMemberOptionsFromTemplate() called from AddMember(), we don't need to SWITCH mixer here.
 // That's why the following is commented and the next will just make member->videoMixerNumber set.
 // Right mixer will be attached to connection via userData value during making the call.
@@ -563,3 +564,67 @@ BOOL Conference::RewriteMembersConf()
   fclose(membLst);
   return (result >= 0);
 }
+
+void Conference::OnConnectionClean(const PString & remotePartyName, const PString & remotePartyAddress)
+{
+  PTRACE(4,"Conference\tOnConnectionClean: " << remotePartyName << " / " << remotePartyAddress);
+  PString name;
+  if(!remotePartyName.IsEmpty()) name += remotePartyName;
+  if (name.Right(1)!="]")
+  {
+    PString url = remotePartyAddress;
+    PINDEX i = url.Find("ip$");
+    if(i != P_MAX_INDEX) url=url.Mid(i+3);
+    if(!name.IsEmpty()) name+=' ';
+    name += '[' + url +']';
+  }
+
+  Conference::MemberNameList::iterator q = memberNameList.find(name);
+  if(q == memberNameList.end())
+  {
+    PTRACE(1,"Conference\tCould not match party name: " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
+    return;
+  }
+  if(q->second != NULL)
+  {
+    PTRACE(2,"Conference\tMember found in the list, but it's not offine (nothing to do): " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
+    return;
+  }
+
+  if(confTpl.Trim().IsEmpty()) return;
+
+  BOOL autoDial = FALSE;
+
+  PStringArray lines=confTpl.Lines();
+  PINDEX i;
+  for(i=0;i<lines.GetSize();i++)
+  {
+    PString l = lines[i].Trim();
+    PINDEX sp = l.Find(' ');
+    if(sp==P_MAX_INDEX) continue;
+    PString cmd = l.Left(sp);
+    if(cmd=="MEMBER")
+    {
+      PStringArray v=l.Mid(sp+1,P_MAX_INDEX).LeftTrim().Tokenise(',');
+      if(v.GetSize()>4) for(int i=0; i<=4;i++) v[i]=v[i].Trim();
+      PString iterationMemberName = v[5].LeftTrim();
+      for (PINDEX j=6; j<v.GetSize(); j++) iterationMemberName+=","+v[j];
+      if(iterationMemberName == name)
+      {
+        autoDial = (v[0] == "1");
+        break;
+      }
+    }
+  }
+
+  if(!autoDial) return;
+
+  PTRACE(2,"Conference\tGetting back member " << name);
+  InviteMember(name);
+}
+
+
+
+
+
+

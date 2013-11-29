@@ -498,42 +498,66 @@ void Conference::AddMonitorEvent(ConferenceMonitorInfo * info)
   manager.AddMonitorEvent(info); 
 }
 
-void Conference::InviteMember(const char *membName)
+BOOL Conference::InviteMember(const char *membName, void * userData)
 {
- char buf[128];
- int i=strlen(membName)-1;
- if(membName[i]!=']') return; while(i>=0 && membName[i]!='[') i--;
- if(i<0) return;
- i++;
- sscanf(&membName[i],"%127[^]]",buf); //buf[strlen(buf)-1]=0;
- PString address = buf;
- if(address.Find("sip:") == 0)
- {
-   PStringStream msg;
-   msg << "Inviting " << address;
-   OpenMCU::Current().HttpWriteEventRoom(msg,number);
-   while(OpenMCU::Current().sipendpoint->sipCallData != "") continue;
-   OpenMCU::Current().sipendpoint->sipCallData = number+","+address;
- }
- else
- {
-   OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-   PString h323Token;
-   PString * userData = new PString(number);
-   H323TransportAddressArray taa = ep.GetInterfaceAddresses(TRUE,NULL);
+  char buf[128];
+  int i=strlen(membName)-1;
+  if(membName[i]!=']')
+  {
+    i=0;
+  }
+  else
+  {
+    while(i>=0 && membName[i]!='[') i--;
+    if(i<0) return FALSE;
+    i++;
+  }
+  sscanf(&membName[i],"%127[^]]",buf); //buf[strlen(buf)-1]=0;
+  PString address = buf;
 
-   if(!OpenMCU::Current().IsLoopbackCallsAllowed()){
-     for(PINDEX i=0;i<taa.GetSize();i++)
-     if(taa[i].Find("ip$"+address+":") == 0) {
-       PTRACE(6,"Conference\tInviteMember LOCAL IP REJECTED (" << taa[i] << "): " << membName << " -> address=" << address << ";h323Token=" << h323Token << ";userData=" << userData);
-       return;
-     }
-   }
-   PStringStream msg;
-   msg << "Inviting " << address;
-   OpenMCU::Current().HttpWriteEventRoom(msg,number);
-   if (ep.MakeCall(address, h323Token, userData) == NULL) cout << "Invite err\n";
- }
+  OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+
+  if(!OpenMCU::Current().AreLoopbackCallsAllowed())
+  {
+    H323TransportAddressArray taa = ep.GetInterfaceAddresses(TRUE, NULL); // todo: join with SIP listener(s) ?
+    for(PINDEX i=0; i<taa.GetSize(); i++)
+    {
+      if(taa[i].Find("ip$"+address+":") == 0)
+      {
+        PTRACE(6,"Conference\tInviteMember Loopback call rejected (" << taa[i] << "): " << membName << " -> address=" << address);
+        return FALSE;
+      }
+    }
+  }
+
+  if(address.Find("sip:") == 0)
+  {
+    PStringStream msg;
+    msg << "Inviting " << address;
+    OpenMCU::Current().HttpWriteEventRoom(msg,number);
+    while(OpenMCU::Current().sipendpoint->sipCallData != "") continue;
+    if(userData!=NULL)
+    {
+      OpenMCU::Current().sipendpoint->sipCallData = *(PString *)userData+","+address;
+      delete userData;
+    }
+    else OpenMCU::Current().sipendpoint->sipCallData = number+","+address;
+  }
+  else // H.323
+  {
+    PString h323Token;
+    if(userData == NULL) userData = new PString(number);
+    PStringStream msg;
+    msg << "Inviting " << address;
+    OpenMCU::Current().HttpWriteEventRoom(msg,number);
+    if (ep.MakeCall(address, h323Token, userData) == NULL)
+    {
+      PTRACE(6,"Conference\tInvite error, address: " << address);
+      cout << "Invite error: " << address << "\n";
+      return FALSE;
+    }
+  }
+  return TRUE;
 }
 
 BOOL Conference::AddMember(ConferenceMember * memberToAdd)

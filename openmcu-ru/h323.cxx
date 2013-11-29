@@ -1738,110 +1738,18 @@ PString OpenMCUH323EndPoint::SetRoomParams(const PStringToString & data)
     return GetMemberListOptsJavascript(conference);
   }
 
-  if(!data.Contains("vidmemnum")) // Operator just entered
-  {
-    OpenMCU::Current().HttpWriteEventRoom("MCU Operator connected",room);
-    PTRACE(6,"WebCtrl\tOperator connected");
-    ConferenceListType::iterator r;
-    PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
-    ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-    for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
-    if(r == conferenceList.end() ) return "OpenMCU.ru: Bad room";
-    Conference & conference = *(r->second);
-    MCUVideoMixer * mixer = conference.videoMixerList->mixer;
-    ConferenceMemberId idr[100];
-    for(int i=0;i<100;i++) idr[i]=mixer->GetPositionId(i);
-    return RoomCtrlPage(room,conference.IsModerated()=="+",mixer->GetPositionSet(),conference,idr);
-  }
-
-return "";
-/*
-  PString mode = data("moderated");
-  PString globalmute = data("muteUnvisible");
-  PString pvidnum = data("vidmemnum");
-  int vidnum = pvidnum.AsInteger();
-
-  long usr[100];
-  ConferenceMemberId *idl=(ConferenceMemberId *) usr;
-  ConferenceMemberId idr[100];
-
-  for (long i=0;i<100;i++)
-  {
-    PStringStream usrX;
-    usrX << "usr" << i;
-    PString usrXX=data(usrX);
-    usr[i]=usrXX.AsInteger();
-    idr[i]=idl[i];
-  }
-
+  OpenMCU::Current().HttpWriteEventRoom("MCU Operator connected",room);
+  PTRACE(6,"WebCtrl\tOperator connected");
+  ConferenceListType::iterator r;
   PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-
-  ConferenceListType::iterator r;
-
-  for (r = conferenceList.begin(); r != conferenceList.end(); ++r) 
-  {
-    if(r->second->GetNumber() == room) break;
-  }
-  if(r == conferenceList.end() ) return "Bad room";
-
+  for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
+  if(r == conferenceList.end() ) return "OpenMCU.ru: Bad room";
   Conference & conference = *(r->second);
-
-// this type of control was replaced by "on the fly" control:
-//  OfflineMembersManager(conference,data);
-
-  if(mode == "+") {
-    conference.SetModerated(TRUE);
-    conference.videoMixerList->mixer->SetForceScreenSplit(TRUE);
-  }
-  else {
-   conference.SetModerated(FALSE);
-   conference.videoMixerList->mixer->SetForceScreenSplit(OpenMCU::Current().GetForceScreenSplit());
-   UnmoderateConference(conference);
-   return RoomCtrlPage(room,FALSE,vidnum,conference,idl);
-  }
-
-  if(globalmute == "+") conference.SetMuteUnvisible(TRUE);
-  else conference.SetMuteUnvisible(FALSE);
-
-  PString pstr = data("VAdelay");
-  conference.VAdelay = (unsigned short int) (pstr.AsInteger()); 
-  pstr = data("VAtimeout");
-  conference.VAtimeout = (unsigned short int) (pstr.AsInteger()); 
-  pstr = data("VAlevel");
-  conference.VAlevel = (unsigned short int) (pstr.AsInteger()); 
-  pstr = data("echoLevel");
-  conference.echoLevel = (unsigned short int) (pstr.AsInteger()); 
-
-  Conference::VideoMixerRecord * vmr = conference.videoMixerList;
-  while( vmr!=NULL ) 
-  {
-    MCUVideoMixer * mixer = vmr->mixer;
-    if(mixer->GetPositionSet()!=vidnum) // set has been changed, clear all pos
-    {
-      mixer->MyRemoveAllVideoSource();
-    }
-    else
-    for(int i=0;i<100;i++)
-    {
-      ConferenceMemberId memberId = mixer->GetPositionId(i);
-      if(memberId==idl[i]) idl[i]=NULL;
-      else 
-      if(memberId!=NULL) mixer->MyRemoveVideoSource(i,TRUE);
-    }
-
-    for(int i=0;i<100;i++) if(idl[i]!=NULL && idl[i]!=(void *)(-1) && idl[i]!=(void *)(-2))if(!MemberExist(conference,idl[i])) idl[i]=NULL;
-
-    mixer->MyAddVideoSource(vidnum,idl);
-
-    vmr=vmr->next;
-  }
-
-  conference.PutChosenVan();
-  conference.FreezeVideo(NULL);
-
-  return RoomCtrlPage(room,TRUE,vidnum,conference,idr);
-*/
+  MCUVideoMixer * mixer = conference.videoMixerList->mixer;
+  ConferenceMemberId idr[100];
+  for(int i=0;i<100;i++) idr[i]=mixer->GetPositionId(i);
+  return RoomCtrlPage(room,conference.IsModerated()=="+",mixer->GetPositionSet(),conference,idr);
 }
 
 
@@ -1952,12 +1860,12 @@ PString OpenMCUH323EndPoint::GetMonitorText()
   return output;
 }
 
-BOOL OpenMCUH323EndPoint::OutgoingConferenceRequest(const PString & room)
+Conference * OpenMCUH323EndPoint::MakeConference(const PString & room)
 {
   // create/find the conference
-  BOOL stat = conferenceManager.MakeAndLockConference(room) != NULL;
+  Conference * c = conferenceManager.MakeAndLockConference(room);
   conferenceManager.UnlockConference();
-  return stat;
+  return c;
 }
 
 PString OpenMCUH323EndPoint::IncomingConferenceRequest(H323Connection & connection, 
@@ -2126,7 +2034,7 @@ OpenMCUH323Connection::OpenMCUH323Connection(OpenMCUH323EndPoint & _ep, unsigned
 #endif
 
   if (userData != NULL) {
-    requestedRoom    = *(PString *)userData; //to do: scan for videoMixer(?)
+    requestedRoom    = *(PString *)userData;
     PINDEX slashPos = requestedRoom.Find("/");
     if(slashPos!=P_MAX_INDEX)
     {
@@ -2317,14 +2225,35 @@ BOOL OpenMCUH323Connection::OnReceivedCallProceeding(const H323SignalPDU & proce
   return H323Connection::OnReceivedCallProceeding(proceedingPDU);
 }
 
+class TplCleanCheckThread : public PThread
+{
+  public:
+    TplCleanCheckThread(Conference * _c, const PString & _n, const PString & _a)
+      : PThread(10000, AutoDeleteThread), c(_c), n(_n), a(_a)
+    {
+      Resume();
+    }
+    void Main()
+    {
+      PThread::Sleep(3333); // previous connection may be still actvie
+      if(c!=NULL) c->OnConnectionClean(n, a);
+    }
+  protected:
+    Conference * c;
+    PString a, n;
+};
+
 void OpenMCUH323Connection::CleanUpOnCallEnd()
 {
   PTRACE(1, "OpenMCUH323Connection\tCleanUpOnCallEnd");
+
+  new TplCleanCheckThread(conference, remotePartyName, remotePartyAddress);
+
   videoReceiveCodecName = videoTransmitCodecName = "none";
   videoReceiveCodec = NULL;
   videoTransmitCodec = NULL;
-  LeaveConference();
 
+  LeaveConference();
   H323Connection::CleanUpOnCallEnd();
 }
 
@@ -2357,13 +2286,12 @@ class MemberDeleteThread : public PThread
     void Main()
     {
       cm->WaitForClose();
-/*
-      PThread::Sleep(1000);
-      if (conf->RemoveMember(cm))
-        ep->GetConferenceManager().RemoveConference(conf->GetID());
-*/
+
+      PString name=cm->GetName();
+      BOOL removeConf=FALSE;
 
       if (conf->RemoveMember(cm))
+      {
         if (conf->autoDelete
 #       if ENABLE_TEST_ROOMS
           || (conf->GetNumber().Left(8) == "testroom")
@@ -2372,10 +2300,12 @@ class MemberDeleteThread : public PThread
           || (conf->GetNumber().Left(4) *= "echo")
 #       endif
         )
-      ep->GetConferenceManager().RemoveConference(conf->GetID());
-
-//      PThread::Sleep(1000);
-
+        {
+          ep->GetConferenceManager().RemoveConference(conf->GetID());
+          removeConf=TRUE;
+        }
+      }
+      if(!removeConf) new TplCleanCheckThread(conf, name, ""); //???
       delete cm;
     }
 
@@ -3082,6 +3012,8 @@ void OpenMCUH323Connection::OnWelcomeStateChanged()
   switch(welcomeState) {
 
     case PlayingWelcome:
+      if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
+        JoinConference(requestedRoom);
       // Welcome file not implemented yet
       PlayWelcomeFile(FALSE, fn);
       break;
@@ -3092,8 +3024,7 @@ void OpenMCUH323Connection::OnWelcomeStateChanged()
       break;
 
     case CompleteConnection:
-      if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
-        JoinConference(requestedRoom);
+//        JoinConference(requestedRoom);
       break;
 
     case JoinFailed:
@@ -3239,38 +3170,49 @@ PString H323Connection_ConferenceMember::GetMonitorInfo(const PString & hdr)
 
 void H323Connection_ConferenceMember::SetName()
 {
- if(id!=this)
- {
-  cout << "SetName " << h323Token << "\n";
-  int connLock = 0;
-  OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
-  if(conn == NULL)
+  if(id!=this)
   {
-   conn = (OpenMCUH323Connection *)ep.FindConnectionWithoutLock(h323Token);
-   if(conn == NULL) return;
-//   conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
-//   PTRACE(1, "MCU\tDeadlock in SetName for " << h323Token);
+    cout << "SetName " << h323Token << "\n";
+    int connLock = 0;
+    OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
+    if(conn == NULL)
+    {
+      conn = (OpenMCUH323Connection *)ep.FindConnectionWithoutLock(h323Token);
+      if(conn == NULL) return;
+      PTRACE(1,"Could not lock connection in SetName(): " << h323Token << flush);
+    }
+    else connLock = 1;
+
+    H323Connection_ConferenceMember * connConferenceMemeber = conn->GetConferenceMember();
+    if( connConferenceMemeber == this || connConferenceMemeber == NULL) 
+    {
+      name = conn->GetRemotePartyName();
+      const char *nam = name; 
+      if(strstr(nam,"[")!=NULL)
+      { // incoming call, brackets set by h323plus, but right port value is not set because it's from unprivileged range :(
+        if(connLock != 0) conn->Unlock();
+        return; 
+      }
+      // outgoing call
+      PString sname = conn->GetRemotePartyAddress(); // H.323: 1111@ip$192.168.1.1:1720
+      PINDEX i = sname.Find("ip$");                  //        XXXXXXXX~~~~~~~~~~~~~~~~
+      if(i != P_MAX_INDEX) sname=sname.Mid(i+3);
+      PString defaultPort;
+      if(sname.Left(4)=="sip:")
+      {
+        defaultPort=":5060";
+      }
+      else
+      {
+        defaultPort=":1720";
+      }
+      if(sname.Right(5)==defaultPort) sname=sname.Left(sname.GetLength()-5);
+      name += " ["+sname+"]";
+    }
+    else PTRACE(1, "MCU\tWrong connection in SetName for " << h323Token);
+
+    if(connLock != 0) conn->Unlock();
   }
-  else connLock = 1;
-  H323Connection_ConferenceMember * connConferenceMemeber = conn->GetConferenceMember();
-  if( connConferenceMemeber == this || connConferenceMemeber == NULL) 
-  {
-   name = conn->GetRemotePartyName();
-   const char *nam = name; 
-   if(strstr(nam,"[")!=NULL) { if(connLock != 0) conn->Unlock(); return; } // incoming call
-   // outgoing call
-   PString sname = conn->GetRemotePartyAddress();
-   nam = sname; nam = strstr(nam,"$"); if(nam==NULL) nam = sname; else nam++;
-   if(PString(nam).Find("sip:") != 0)
-   {
-     char buf[128]; sscanf(nam,"%127[^:@]",buf);
-     sname = buf;
-   }
-   name += " ["+sname+"]";
-  }
-  else PTRACE(1, "MCU\tWrong connection in SetName for " << h323Token);
-  if(connLock != 0) conn->Unlock();
- }
 }
 
 // signal to codec plugin for disable(enable) decoding incoming video from unvisible(visible) member

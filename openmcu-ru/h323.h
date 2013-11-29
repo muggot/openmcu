@@ -74,7 +74,7 @@ class OpenMCUH323EndPoint : public H323EndPoint
                                       const H323SignalPDU & setupPDU,
                                       unsigned & videoMixerNumber);
 
-    BOOL OutgoingConferenceRequest(const PString & room);
+    Conference * MakeConference(const PString & room);
 
     // overrides from H323EndPoint
     virtual H323Connection * CreateConnection(unsigned callReference,void * userData,H323Transport * transport,H323SignalPDU * setupPDU);
