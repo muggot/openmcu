@@ -2083,38 +2083,42 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
   BOOL prefVideoCodecAgreed = FALSE;
   unsigned bandwidthFrom = 0;
 
-  H323Capabilities _remoteCaps(remoteCaps);
-  for(PINDEX i = 0; i < _remoteCaps.GetSize(); )
+  H323Capabilities _remoteCaps;
+  for(PINDEX i = 0; i < remoteCaps.GetSize(); i++)
   {
-    PString capName = _remoteCaps[i].GetFormatName();
-    if(prefVideoCap != "" && _remoteCaps[i].GetMainType() == H323Capability::e_Video)
+    PString capName = remoteCaps[i].GetFormatName();
+    if(remoteCaps[i].GetMainType() == H323Capability::e_Video)
     {
-      if(bandwidthFrom == 0)
-        bandwidthFrom = _remoteCaps[i].GetMediaFormat().GetOptionInteger("Max Bit Rate");
-      if((prefVideoCap.Find("H.261") != P_MAX_INDEX && capName.Find("H.261") != P_MAX_INDEX) ||
-         (prefVideoCap.Find("H.263") != P_MAX_INDEX && capName.Find("H.263") != P_MAX_INDEX) ||
-         (prefVideoCap.Find("H.264") != P_MAX_INDEX && capName.Find("H.264") != P_MAX_INDEX) ||
-         (prefVideoCap.Find("VP8") != P_MAX_INDEX && capName.Find("VP8") != P_MAX_INDEX))
+      if(prefVideoCap == "")
       {
-        prefVideoCodecAgreed = TRUE;
+        _remoteCaps.Copy(remoteCaps[i]);
+        //_remoteCaps.SetCapability(0, remoteCaps[i].GetMainType(), (H323Capability*)remoteCaps[i].Clone());
+      } else {
+        if(bandwidthFrom == 0)
+          bandwidthFrom = remoteCaps[i].GetMediaFormat().GetOptionInteger("Max Bit Rate");
+        if(prefVideoCap.Left(4) == capName.Left(4))
+          prefVideoCodecAgreed = TRUE;
       }
     }
-    if(_remoteCaps[i].GetMainType() == H323Capability::e_Audio && prefAudioCap != "" && capName != prefAudioCap)
-    { _remoteCaps.Remove(&_remoteCaps[i]); continue; }
-    if(_remoteCaps[i].GetMainType() == H323Capability::e_Video && prefVideoCap != "" && capName != prefVideoCap)
-    { _remoteCaps.Remove(&_remoteCaps[i]); continue; }
-    i++;
+    else if(remoteCaps[i].GetMainType() == H323Capability::e_Audio)
+    {
+      if(prefAudioCap == "" || (prefAudioCap != "" && capName == prefAudioCap))
+        _remoteCaps.Copy(remoteCaps[i]);
+        //_remoteCaps.SetCapability(0, 0, (H323Capability*)remoteCaps[i].Clone());
+    }
+    else
+    {
+      _remoteCaps.Copy(remoteCaps[i]);
+      //_remoteCaps.SetCapability(0, remoteCaps[i].GetMainType(), (H323Capability*)remoteCaps[i].Clone());
+    }
   }
   // replace video capability with default parameters
   if(prefVideoCap != "" && prefVideoCodecAgreed)
   {
-    _remoteCaps.Remove(prefVideoCap);
     H323Capability *newCap = H323Capability::Create(prefVideoCap);
     if(newCap)
     {
       OpalMediaFormat & wf = newCap->GetWritableMediaFormat();
-      _remoteCaps.SetCapability(0,1,newCap);
-
       if(prefVideoCap.Find("H.264") != P_MAX_INDEX)
       {
         unsigned h264BaseLevel = wf.GetOptionInteger("Generic Parameter 42");
@@ -2137,8 +2141,11 @@ BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & rem
         if(h264MaxFs != 0) wf.SetOptionInteger("Generic Parameter 4", (h264MaxFs/256)+1);
       }
       wf.SetOptionInteger("Max Bit Rate", bandwidthFrom);
+      _remoteCaps.Add(newCap);
+      //_remoteCaps.SetCapability(0, 1, newCap);
     }
   }
+  //cout << "OnReceivedCapabilitySet\n" << remoteCaps << "\n";
   //cout << "OnReceivedCapabilitySet\n" << _remoteCaps << "\n";
 
   return H323Connection::OnReceivedCapabilitySet(_remoteCaps, muxCap, rejectPDU);
@@ -2158,7 +2165,7 @@ BOOL OpenMCUH323Connection::StartControlNegotiations(BOOL renegotiate)
   unsigned bandwidthTo = atoi(GetEndpointParam("Preferred bandwidth to MCU"));
   if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom receive audio: " << prefAudioCap); }
   if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom receive video: " << prefVideoCap); }
-  if(bandwidthTo != 0) { PTRACE(1, "OpenMCUH323Connection\tSet endpoint bandwidth to mcu: " << prefVideoCap); }
+  if(bandwidthTo != 0) { PTRACE(1, "OpenMCUH323Connection\tSet endpoint bandwidth to mcu: " << bandwidthTo); }
 
   if(prefAudioCap.ToLower().Find("ulaw") != P_MAX_INDEX || prefAudioCap.ToLower().Find("alaw") != P_MAX_INDEX)
     prefAudioCap = prefAudioCap.Left(prefAudioCap.GetLength()-4);
