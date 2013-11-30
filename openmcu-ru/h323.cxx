@@ -2247,7 +2247,7 @@ class TplCleanCheckThread : public PThread
     }
   protected:
     Conference * c;
-    PString a, n;
+    PString n, a;
 };
 
 void OpenMCUH323Connection::CleanUpOnCallEnd()
@@ -3196,24 +3196,28 @@ void H323Connection_ConferenceMember::SetName()
       name = conn->GetRemotePartyName();
       const char *nam = name; 
       if(strstr(nam,"[")!=NULL)
-      { // incoming call, brackets set by h323plus, but right port value is not set because it's from unprivileged range :(
+      {
         if(connLock != 0) conn->Unlock();
         return; 
       }
-      // outgoing call
+
+      BOOL answered = conn->HadAnsweredCall(); //todo: check/implement for SIP
       PString sname = conn->GetRemotePartyAddress(); // H.323: 1111@ip$192.168.1.1:1720
       PINDEX i = sname.Find("ip$");                  //        XXXXXXXX~~~~~~~~~~~~~~~~
       if(i != P_MAX_INDEX) sname=sname.Mid(i+3);
-      PString defaultPort;
-      if(sname.Left(4)=="sip:")
+
+      if(answered)
       {
-        defaultPort=":5060";
+        sname=sname.Left(sname.Find(':'));
+      }
+      else if(sname.Left(4)=="sip:")
+      {
+        if(sname.Right(5)==":5060") sname=sname.Left(sname.GetLength()-5);
       }
       else
       {
-        defaultPort=":1720";
+        if(sname.Right(5)==":1720") sname=sname.Left(sname.GetLength()-5);
       }
-      if(sname.Right(5)==defaultPort) sname=sname.Left(sname.GetLength()-5);
       name += " ["+sname+"]";
     }
     else PTRACE(1, "MCU\tWrong connection in SetName for " << h323Token);

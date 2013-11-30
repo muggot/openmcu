@@ -539,7 +539,7 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
     if(userData!=NULL)
     {
       OpenMCU::Current().sipendpoint->sipCallData = *(PString *)userData+","+address;
-      delete userData;
+      delete (PString *) userData;
     }
     else OpenMCU::Current().sipendpoint->sipCallData = number+","+address;
   }

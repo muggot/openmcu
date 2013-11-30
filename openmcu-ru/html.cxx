@@ -1427,7 +1427,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
 //    OpenMCU::Current().sipendpoint->sipCallData = room+","+address;
 //  } else {
     PString h323Token;
-    PString * userData = new PString(room);
+//    PString * userData = new PString(room);
 //    if (ep.MakeCall(address, h323Token, userData) == NULL) {
     if(!c->InviteMember(address))
     {
