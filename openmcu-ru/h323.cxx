@@ -3201,14 +3201,18 @@ void H323Connection_ConferenceMember::SetName()
         return; 
       }
 
-      BOOL answered = conn->HadAnsweredCall(); //todo: check/implement for SIP
+      BOOL answered = conn->HadAnsweredCall();
       PString sname = conn->GetRemotePartyAddress(); // H.323: 1111@ip$192.168.1.1:1720
       PINDEX i = sname.Find("ip$");                  //        XXXXXXXX~~~~~~~~~~~~~~~~
       if(i != P_MAX_INDEX) sname=sname.Mid(i+3);
 
       if(answered)
       {
-        sname=sname.Left(sname.Find(':'));
+        i=sname.FindLast(':');
+        if((i != P_MAX_INDEX) && (i > 4)) // found & not match url prefix
+        {
+          sname=sname.Left(i);
+        }
       }
       else if(sname.Left(4)=="sip:")
       {

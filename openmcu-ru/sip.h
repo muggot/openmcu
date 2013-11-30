@@ -307,6 +307,7 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int SendRequest(sip_method_t method, const char *method_name, msg_t *sip_msg);
   int CreateSipData();
   void ReceiveDTMF(PString payload);
+  BOOL HadAnsweredCall(){ return (direction=0); }
 
 //  virtual BOOL ClearCall(
 //      CallEndReason reason = EndedByLocalUser  ///< Reason for call clearing
@@ -317,7 +318,6 @@ class OpenMCUSipConnection : public OpenMCUH323Connection
   int noInpTimeout;
   int inpBytes;
   H323toSipQueue cmdQueue;
-
   sip_contact_t *contact_t;
   PString localIP, remoteIP, roomName;
   msg_t *c_sip_msg;
