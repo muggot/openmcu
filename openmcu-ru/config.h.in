@@ -1,10 +1,6 @@
 #ifndef _OpenMCU_CONFIG_H
 #define _OpenMCU_CONFIG_H
 
-#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
-#  define BOOL PBoolean
-#endif
-
 #ifdef _WIN32
 #  define PATH_SEPARATOR "\\"
 #else

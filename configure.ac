@@ -498,7 +498,7 @@ if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
   H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}__s.a"
   H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_"
 
-  H323BUILDOPTS="PTLIBDIR=${PTLIBDIR} PWLIBDIR=${PTLIBDIR} CFLAGS=\"-DPBoolean=BOOL\""
+  H323BUILDOPTS="CFLAGS=\"-DPBoolean=BOOL\""
 else
   PTLIB_LIBDIR="${PTLIBDIR}/lib"
   PTLIB_SO_FILE="libpt_${OSTYPE}_${MACHTYPE}_r.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
@@ -808,6 +808,8 @@ if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
   sed -i -r "s#define P_STUN 1#undef P_STUN#g" ${PTLIBDIR}/include/ptbuildopts.h
   sed -i -r "s#\#define P_PLUGINS#\#define P_HAS_PLUGINS 1\\n\#define P_PLUGINS#g" ${PTLIBDIR}/include/ptbuildopts.h
   sed -i -r "s#define H323_GNUGK 1#undef H323_GNUGK#g" ${H323PLUSDIR}/include/openh323buildopts.h
+  sed -i -r "s#${PTLIBDIR}#${PTLIBDIR}\\nPTLIBDIR\\t= ${PTLIBDIR}#g" ${H323PLUSDIR}/openh323u.mak
+  sed -i -r "s#define _OpenMCU_CONFIG_H#define _OpenMCU_CONFIG_H\\n\\n\#define BOOL PBoolean#g" ${MCUDIR}/config.h
 fi
 
 dnl ########################################################################
