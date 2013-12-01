@@ -32,7 +32,7 @@ endif
 
 clean:
 	($(MAKE) clean -C @PTLIBDIR@)    || exit $$?
-	($(MAKE) clean -C @H323PLUSDIR@) || exit $$?
+	($(MAKE) clean -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?
 	($(MAKE) clean -C @MCUDIR@ @MCUBUILDOPTS@)      || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) clean -C $$dir) || exit $$?; \

@@ -35,7 +35,7 @@ void OpenMCU::Main()
 
 BOOL OpenMCU::OnStart()
 {
-#ifdef _WIN32
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR == 0
   char ** argv=PXGetArgv();
   executableFile = argv[0];
   PDirectory exeDir = executableFile.GetDirectory();
