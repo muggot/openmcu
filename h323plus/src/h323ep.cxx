@@ -1308,8 +1308,10 @@ H323EndPoint::~H323EndPoint()
   // And shut down the gatekeeper (if there was one)
   RemoveGatekeeper();
 
+#ifdef H323_GNUGK
 #if H323_FILE
   delete gnugk;
+#endif
 #endif
 
   // Shut down the listeners as soon as possible to avoid race conditions

@@ -4041,7 +4041,7 @@ BOOL H323DynaLink::LoadPlugin(const PString & filename)
 
 /////////////////////////////////////////////////////////////////////////////
 
-static PAtomicInteger bootStrapCount = 0;
+static PAtomicInteger bootStrapCount(0);
 
 void H323PluginCodecManager::Bootstrap()
 {

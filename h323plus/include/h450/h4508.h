@@ -196,7 +196,11 @@ class H4508_ExtendedName : public PASN_BMPString
 
     H4508_ExtendedName & operator=(const char * v);
     H4508_ExtendedName & operator=(const PString & v);
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+    H4508_ExtendedName & operator=(const PWCharArray & v);
+#else
     H4508_ExtendedName & operator=(const PWORDArray & v);
+#endif
     H4508_ExtendedName & operator=(const PASN_BMPString & v);
     PObject * Clone() const;
 };

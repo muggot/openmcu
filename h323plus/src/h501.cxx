@@ -2475,7 +2475,11 @@ H501_ElementIdentifier & H501_ElementIdentifier::operator=(const PString & v)
 }
 
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+H501_ElementIdentifier & H501_ElementIdentifier::operator=(const PWCharArray & v)
+#else
 H501_ElementIdentifier & H501_ElementIdentifier::operator=(const PWORDArray & v)
+#endif
 {
   SetValue(v);
   return *this;

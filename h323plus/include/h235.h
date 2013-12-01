@@ -88,7 +88,11 @@ class H235_Password : public PASN_BMPString
 
     H235_Password & operator=(const char * v);
     H235_Password & operator=(const PString & v);
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+    H235_Password & operator=(const PWCharArray & v);
+#else
     H235_Password & operator=(const PWORDArray & v);
+#endif
     H235_Password & operator=(const PASN_BMPString & v);
     PObject * Clone() const;
 };
@@ -108,7 +112,11 @@ class H235_Identifier : public PASN_BMPString
 
     H235_Identifier & operator=(const char * v);
     H235_Identifier & operator=(const PString & v);
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+    H235_Identifier & operator=(const PWCharArray & v);
+#else
     H235_Identifier & operator=(const PWORDArray & v);
+#endif
     H235_Identifier & operator=(const PASN_BMPString & v);
     PObject * Clone() const;
 };

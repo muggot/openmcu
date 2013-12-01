@@ -168,8 +168,11 @@ H235_Password & H235_Password::operator=(const PString & v)
   return *this;
 }
 
-
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+H235_Password & H235_Password::operator=(const PWCharArray & v)
+#else
 H235_Password & H235_Password::operator=(const PWORDArray & v)
+#endif
 {
   SetValue(v);
   return *this;
@@ -217,7 +220,11 @@ H235_Identifier & H235_Identifier::operator=(const PString & v)
 }
 
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+H235_Identifier & H235_Identifier::operator=(const PWCharArray & v)
+#else
 H235_Identifier & H235_Identifier::operator=(const PWORDArray & v)
+#endif
 {
   SetValue(v);
   return *this;

@@ -556,7 +556,11 @@ GCC_TextString & GCC_TextString::operator=(const PString & v)
 }
 
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+GCC_TextString & GCC_TextString::operator=(const PWCharArray & v)
+#else
 GCC_TextString & GCC_TextString::operator=(const PWORDArray & v)
+#endif
 {
   SetValue(v);
   return *this;
@@ -605,7 +609,11 @@ GCC_SimpleTextString & GCC_SimpleTextString::operator=(const PString & v)
 }
 
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+GCC_SimpleTextString & GCC_SimpleTextString::operator=(const PWCharArray & v)
+#else
 GCC_SimpleTextString & GCC_SimpleTextString::operator=(const PWORDArray & v)
+#endif
 {
   SetValue(v);
   return *this;
@@ -759,7 +767,11 @@ GCC_ExtraDialingString & GCC_ExtraDialingString::operator=(const PString & v)
 }
 
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+GCC_ExtraDialingString & GCC_ExtraDialingString::operator=(const PWCharArray & v)
+#else
 GCC_ExtraDialingString & GCC_ExtraDialingString::operator=(const PWORDArray & v)
+#endif
 {
   SetValue(v);
   return *this;

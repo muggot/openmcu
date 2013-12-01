@@ -605,9 +605,17 @@ const char * H235AuthSimpleMD5::GetName() const
 }
 
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+static PWCharArray GetUCS2plusNULL(const PString & str)
+#else
 static PWORDArray GetUCS2plusNULL(const PString & str)
+#endif
 {
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+  PWCharArray ucs2 = str.AsUCS2();
+#else
   PWORDArray ucs2 = str.AsUCS2();
+#endif
   PINDEX len = ucs2.GetSize();
   if (len > 0 && ucs2[len-1] != 0)
     ucs2.SetSize(len+1);

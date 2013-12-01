@@ -534,8 +534,13 @@ class PVideoInputDevice_OpenMCU : public PVideoInputDevice
       */
     static PStringList GetInputDeviceNames();
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+    virtual PStringArray GetDeviceNames() const
+      { return GetInputDeviceNames(); }
+#else
     virtual PStringList GetDeviceNames() const
       { return GetInputDeviceNames(); }
+#endif
 
     /**Get the maximum frame size in bytes.
 
@@ -657,10 +662,15 @@ class PVideoOutputDevice_OpenMCU : public PVideoOutputDevice
 
     /**Get a list of all of the drivers available.
       */
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+    static PStringArray GetOutputDeviceNames();
+    virtual PStringArray GetDeviceNames() const
+      { return GetOutputDeviceNames(); }
+#else
     static PStringList GetOutputDeviceNames();
-
     virtual PStringList GetDeviceNames() const
       { return GetOutputDeviceNames(); }
+#endif
 
     /**Open the device given the device name.
       */

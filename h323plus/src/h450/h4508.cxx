@@ -418,7 +418,11 @@ H4508_ExtendedName & H4508_ExtendedName::operator=(const PString & v)
 }
 
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+H4508_ExtendedName & H4508_ExtendedName::operator=(const PWCharArray & v)
+#else
 H4508_ExtendedName & H4508_ExtendedName::operator=(const PWORDArray & v)
+#endif
 {
   SetValue(v);
   return *this;

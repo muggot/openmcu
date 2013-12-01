@@ -35,10 +35,12 @@ void OpenMCU::Main()
 
 BOOL OpenMCU::OnStart()
 {
+#ifdef _WIN32
   char ** argv=PXGetArgv();
   executableFile = argv[0];
   PDirectory exeDir = executableFile.GetDirectory();
   exeDir.Change();
+#endif
 
   SetConfigurationPath(CONFIG_PATH);
 
@@ -419,7 +421,7 @@ void OpenMCU::OnConfigChanged()
 
 PString OpenMCU::GetNewRoomNumber()
 {
-  static PAtomicInteger number = 100;
+  static PAtomicInteger number(100);
   return PString(PString::Unsigned, ++number);
 }
 

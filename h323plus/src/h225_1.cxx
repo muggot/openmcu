@@ -2761,7 +2761,11 @@ H225_GatekeeperIdentifier & H225_GatekeeperIdentifier::operator=(const PString &
 }
 
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+H225_GatekeeperIdentifier & H225_GatekeeperIdentifier::operator=(const PWCharArray & v)
+#else
 H225_GatekeeperIdentifier & H225_GatekeeperIdentifier::operator=(const PWORDArray & v)
+#endif
 {
   SetValue(v);
   return *this;
@@ -2877,7 +2881,11 @@ H225_EndpointIdentifier & H225_EndpointIdentifier::operator=(const PString & v)
 }
 
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+H225_EndpointIdentifier & H225_EndpointIdentifier::operator=(const PWCharArray & v)
+#else
 H225_EndpointIdentifier & H225_EndpointIdentifier::operator=(const PWORDArray & v)
+#endif
 {
   SetValue(v);
   return *this;

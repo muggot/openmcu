@@ -3,9 +3,9 @@
 SUBDIRS 	= @PTLIBDIR@ @H323PLUSDIR@ @MCUDIR@
 
 all:
-	($(MAKE) $(MAKEFLAGS) opt -C @PTLIBDIR@)    || exit $$?
-	($(MAKE) $(MAKEFLAGS)     -C @H323PLUSDIR@) || exit $$?
-	($(MAKE) $(MAKEFLAGS)     -C @MCUDIR@)      || exit $$?
+	($(MAKE) $(MAKEFLAGS) opt -C @PTLIBDIR@)                    || exit $$?
+	($(MAKE) $(MAKEFLAGS)     -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?
+	($(MAKE) $(MAKEFLAGS)     -C @MCUDIR@ @MCUBUILDOPTS@)       || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) $(MAKEFLAGS) -C $$dir) || exit $$?; \
 	done )
@@ -13,9 +13,9 @@ all:
 install:
 if ENABLE_DEVEL
 	($(MAKE) install -C @PTLIBDIR@)    || exit $$?
-	($(MAKE) install -C @H323PLUSDIR@) || exit $$?
+	($(MAKE) install -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?
 endif
-	($(MAKE) install -C @MCUDIR@)      || exit $$?
+	($(MAKE) install -C @MCUDIR@ @MCUBUILDOPTS@)      || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) install -C $$dir) || exit $$?; \
 	done )
@@ -23,9 +23,9 @@ endif
 uninstall:
 if ENABLE_DEVEL
 	($(MAKE) uninstall -C @PTLIBDIR@)    || exit $$?
-	($(MAKE) uninstall -C @H323PLUSDIR@) || exit $$?
+	($(MAKE) uninstall -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?
 endif
-	($(MAKE) uninstall -C @MCUDIR@)      || exit $$?
+	($(MAKE) uninstall -C @MCUDIR@ @MCUBUILDOPTS@)      || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) uninstall -C $$dir) || exit $$?; \
 	done )
@@ -33,7 +33,7 @@ endif
 clean:
 	($(MAKE) clean -C @PTLIBDIR@)    || exit $$?
 	($(MAKE) clean -C @H323PLUSDIR@) || exit $$?
-	($(MAKE) clean -C @MCUDIR@)      || exit $$?
+	($(MAKE) clean -C @MCUDIR@ @MCUBUILDOPTS@)      || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) clean -C $$dir) || exit $$?; \
 	done )
@@ -42,10 +42,10 @@ clean:
 	cd @PTLIBDIR@ && $(MAKE) $(MAKEFLAGS) opt
 
 @H323PLUSDIR@:
-	cd @H323PLUSDIR@ && $(MAKE) $(MAKEFLAGS)
+	cd @H323PLUSDIR@ && $(MAKE) $(MAKEFLAGS) @H323BUILDOPTS@
 
 @MCUDIR@:
-	cd @MCUDIR@ && $(MAKE) $(MAKEFLAGS)
+	cd @MCUDIR@ && $(MAKE) $(MAKEFLAGS) @MCUBUILDOPTS@
 
 h261:
 	cd @PLUGIN_H261_DIR@ && $(MAKE) $(MAKEFLAGS)

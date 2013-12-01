@@ -1,6 +1,9 @@
 #ifndef _OpenMCU_CONFIG_H
 #define _OpenMCU_CONFIG_H
 
+#ifndef BOOL
+#  define BOOL PBoolean
+#endif
 
 #ifdef _WIN32
 #  define PATH_SEPARATOR "\\"

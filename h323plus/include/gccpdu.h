@@ -271,7 +271,11 @@ class GCC_TextString : public PASN_BMPString
 
     GCC_TextString & operator=(const char * v);
     GCC_TextString & operator=(const PString & v);
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+    GCC_TextString & operator=(const PWCharArray & v);
+#else
     GCC_TextString & operator=(const PWORDArray & v);
+#endif
     GCC_TextString & operator=(const PASN_BMPString & v);
     PObject * Clone() const;
 };
@@ -291,7 +295,11 @@ class GCC_SimpleTextString : public PASN_BMPString
 
     GCC_SimpleTextString & operator=(const char * v);
     GCC_SimpleTextString & operator=(const PString & v);
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+    GCC_SimpleTextString & operator=(const PWCharArray & v);
+#else
     GCC_SimpleTextString & operator=(const PWORDArray & v);
+#endif
     GCC_SimpleTextString & operator=(const PASN_BMPString & v);
     PObject * Clone() const;
 };
@@ -365,7 +373,11 @@ class GCC_ExtraDialingString : public PASN_BMPString
 
     GCC_ExtraDialingString & operator=(const char * v);
     GCC_ExtraDialingString & operator=(const PString & v);
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+    GCC_ExtraDialingString & operator=(const PWCharArray & v);
+#else
     GCC_ExtraDialingString & operator=(const PWORDArray & v);
+#endif
     GCC_ExtraDialingString & operator=(const PASN_BMPString & v);
     PObject * Clone() const;
 };

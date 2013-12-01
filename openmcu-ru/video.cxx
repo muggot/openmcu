@@ -244,9 +244,15 @@ BOOL PVideoOutputDevice_OpenMCU::IsOpen()
 }
 
 
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+PStringArray PVideoOutputDevice_OpenMCU::GetOutputDeviceNames()
+{
+  PStringArray list;
+#else
 PStringList PVideoOutputDevice_OpenMCU::GetOutputDeviceNames()
 {
   PStringList list;
+#endif
   return list;
 }
 

@@ -22,6 +22,15 @@ AC_SUBST(BUILD_NUMBER)
 AC_SUBST(BUILD_TYPE)
 AC_SUBST(MCU_VERSION)
 
+dnl ########################################################################
+dnl PTLib version
+
+PTLIB_MAJOR_VERSION=`cat ptlib/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
+PTLIB_MINOR_VERSION=`cat ptlib/version.h | grep MINOR_VERSION | cut -f3 -d' '`
+PTLIB_BUILD_NUMBER=`cat ptlib/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
+AC_SUBST(PTLIB_MAJOR_VERSION)
+AC_SUBST(PTLIB_MINOR_VERSION)
+AC_SUBST(PTLIB_BUILD_NUMBER)
 
 dnl #######################################################################
 
@@ -454,7 +463,7 @@ dnl ########################################################################
 dnl configuration ptlib
 
 PWLIBDIR=`pwd`/ptlib
-PTLIBDIR=${PWLIBDIR}
+PTLIBDIR="${PWLIBDIR}"
 PTLIB_CONFIG=${PWLIBDIR}/make/ptlib-config
 
 export PWLIBDIR=${PWLIBDIR}
@@ -471,11 +480,47 @@ AC_CONFIG_FILES(ptlib/Makefile)
 dnl ########################################################################
 dnl configuration h323plus
 
-H323PLUSDIR=h323plus
+H323PLUSDIR=`pwd`/h323plus
 AC_SUBST(H323PLUSDIR)
 AC_CONFIG_SUBDIRS(h323plus)
 AC_CONFIG_FILES(h323plus/Makefile)
 
+dnl ########################################################################
+dnl h323plus/ptlib
+
+if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
+  PTLIB_LIBDIR="${PTLIBDIR}/lib_${OSTYPE}_${MACHTYPE}"
+  PTLIB_SO_FILE="libpt.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
+  PTLIB_A_FILE="libpt_s.a"
+  PTLIB_LINK_FILE="pt_s"
+  H323PLUS_LIBDIR="${H323PLUSDIR}/lib"
+  H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_r.so.1.20.2"
+  H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}__s.a"
+  H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_"
+
+  H323BUILDOPTS="PTLIBDIR=${PTLIBDIR} PWLIBDIR=${PTLIBDIR} CFLAGS=\"-DPBoolean=BOOL\""
+else
+  PTLIB_LIBDIR="${PTLIBDIR}/lib"
+  PTLIB_SO_FILE="libpt_${OSTYPE}_${MACHTYPE}_r.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
+  PTLIB_A_FILE="libpt_${OSTYPE}_${MACHTYPE}_r_s.a"
+  PTLIB_LINK_FILE="pt_${OSTYPE}_${MACHTYPE}_r"
+  H323PLUS_LIBDIR="${H323PLUSDIR}/lib"
+  H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_r.so.1.20.2"
+  H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}_r_s.a"
+  H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_r"
+fi
+
+AC_SUBST(PTLIB_LIBDIR)
+AC_SUBST(PTLIB_SO_FILE)
+AC_SUBST(PTLIB_A_FILE)
+AC_SUBST(PTLIB_LINK_FILE)
+AC_SUBST(H323PLUS_LIBDIR)
+AC_SUBST(H323PLUS_SO_FILE)
+AC_SUBST(H323PLUS_A_FILE)
+AC_SUBST(H323PLUS_LINK_FILE)
+
+AC_SUBST(H323BUILDOPTS)
+AC_SUBST(MCUBUILDOPTS)
 
 dnl ########################################################################
 dnl configuration plugins
@@ -632,12 +677,12 @@ AC_ARG_ENABLE(static, [AS_HELP_STRING([--disable-static],[build static linking w
 if test "${static}" = "yes"; then
   ENABLE_STATIC=1
   ENABLE_DEVEL=0
-  MCU_LDFLAGS="${MCU_LDFLAGS} -Wl,--start-group ../ptlib/lib/libpt_${OSTYPE}_${MACHTYPE}_r_s.a ../h323plus/lib/libh323_${OSTYPE}_${MACHTYPE}_r_s.a -Wl,--end-group"
+  MCU_LDFLAGS="${MCU_LDFLAGS} -Wl,--start-group  ${PTLIB_LIBDIR}/${PTLIB_A_FILE} ${H323PLUS_LIBDIR}/${H323PLUS_A_FILE} -Wl,--end-group"
   MCU_LDLIBS="$MCU_LDLIBS"
 else
   ENABLE_STATIC=0
-  MCU_LDFLAGS="${MCU_LDFLAGS} -L../ptlib/lib -L../h323plus/lib"
-  MCU_LDLIBS="${MCU_LDLIBS} -lh323_${OSTYPE}_${MACHTYPE}_r -lpt_${OSTYPE}_${MACHTYPE}_r"
+  MCU_LDFLAGS="${MCU_LDFLAGS} -L${PTLIB_LIBDIR} -L${H323PLUS_LIBDIR}"
+  MCU_LDLIBS="${MCU_LDLIBS} -l${H323PLUS_LINK_FILE} -l${PTLIB_LINK_FILE}"
 fi
 
 AC_SUBST(ENABLE_STATIC)
@@ -757,6 +802,13 @@ sed -i -r "s#^PTINSTDIR=.*#PTINSTDIR=${PTLIB_INSTALLPREFIX}/share/ptlib#g" ${PTL
 sed -i -r "s#^INSTALLPREFIX=.*#INSTALLPREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/make/ptlib-config
 sed -i -r "s#^\#define P_DEFAULT_PLUGIN_DIR.*#\#define P_DEFAULT_PLUGIN_DIR \"${P_DEFAULT_PLUGIN_DIR}\"#g" ${PTLIBDIR}/include/ptbuildopts.h
 sed -i -r "s#^PREFIX=.*#PREFIX=${H323PLUS_INSTALLPREFIX}#g" ${H323PLUSDIR}/Makefile
+
+# ptlib > 2.0
+if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
+  sed -i -r "s#define P_STUN 1#undef P_STUN#g" ${PTLIBDIR}/include/ptbuildopts.h
+  sed -i -r "s#\#define P_PLUGINS#\#define P_HAS_PLUGINS 1\\n\#define P_PLUGINS#g" ${PTLIBDIR}/include/ptbuildopts.h
+  sed -i -r "s#define H323_GNUGK 1#undef H323_GNUGK#g" ${H323PLUSDIR}/include/openh323buildopts.h
+fi
 
 dnl ########################################################################
 dnl Summary

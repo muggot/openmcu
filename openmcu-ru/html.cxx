@@ -154,7 +154,11 @@ BOOL DefaultPConfigPage::Post(PHTTPRequest & request, const PStringToString & da
   for (fld = 0; fld < fields.GetSize(); fld++) {
     PHTTPField & field = fields[fld];
     if (&field != keyField && &field != valField && &field != sectionField) {
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+      PStringArray names;
+#else
       PStringList names;
+#endif
       field.GetAllNames(names);
       oldValues = names;
     }
@@ -186,7 +190,11 @@ BOOL DefaultPConfigPage::Post(PHTTPRequest & request, const PStringToString & da
   for (fld = 0; fld < fields.GetSize(); fld++) {
     PHTTPField & field = fields[fld];
     if (&field != keyField && &field != valField && &field != sectionField) {
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
+      PStringArray names;
+#else
       PStringList names;
+#endif
       field.GetAllNames(names);
       for (PINDEX i = 0; i < names.GetSize(); i++) {
         PINDEX idx = oldValues.GetStringsIndex(names[i]);
