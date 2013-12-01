@@ -1,7 +1,7 @@
 #ifndef _OpenMCU_CONFIG_H
 #define _OpenMCU_CONFIG_H
 
-#ifndef BOOL
+#if PTLIB_MAJOR == 2 && PTLIB_MINOR > 0
 #  define BOOL PBoolean
 #endif
 
