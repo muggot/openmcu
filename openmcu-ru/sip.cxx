@@ -1226,7 +1226,8 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  remoteName = remote_addr_t->a_url->url_user;
  remoteName = PURL::UntranslateString(remoteName, PURL::QueryTranslation);
 
- remotePartyAddress = PString("sip:")+remoteName+"@"+remote_addr_t->a_url->url_host;
+ remotePartyAddress = CreateRuriStr(c_sip_msg, direction);
+ remotePartyAddress = PURL::UntranslateString(remotePartyAddress, PURL::QueryTranslation);
 
  if(sip->sip_user_agent && sip->sip_user_agent->g_string)
   remoteApplication = sip->sip_user_agent->g_string;
@@ -2054,11 +2055,10 @@ void OpenMCUSipEndPoint::MainLoop()
         if(scr->second != NULL) scr->second->SendBYE();
       return;
     }
-    if(sipCallData != "")
+    for(PString *callData = (PString*)sipCallData.GetAt(0); callData != NULL; callData = (PString*)sipCallData.GetAt(0))
     {
-      SipMakeCall(sipCallData.Tokenise(",")[0], sipCallData.Tokenise(",")[1]);
-      sipCallData = "";
-      continue;
+      SipMakeCall(callData->Tokenise(",")[0], callData->Tokenise(",")[1]);
+      sipCallData.Remove(callData);
     }
     for (scr = sipConnMap.begin(); scr != sipConnMap.end(); scr++) 
     {
@@ -2070,7 +2070,7 @@ void OpenMCUSipEndPoint::MainLoop()
       if(vs) count += vs->GetPacketsReceived() + vs->GetRtpcReceived();
       if(count == sCon->inpBytes) sCon->noInpTimeout++;
       else { sCon->noInpTimeout = 0; sCon->inpBytes = count; }
-      if(sCon->noInpTimeout == 30) // 15 sec timeout
+      if(sCon->noInpTimeout >= 30) // 15 sec timeout
       {
         PTRACE(1, "MCUSIP\t15 sec timeout waiting incoming stream data");
         sipConnMap.erase(scr->first);
@@ -2088,7 +2088,7 @@ void OpenMCUSipEndPoint::MainLoop()
     for(it=ProxyServerMap.begin(); it!=ProxyServerMap.end(); it++)
     {
       ProxyServer *proxy = it->second;
-      if(proxy->enable == 1 && proxy->timeout == atoi(proxy->expires)*2)
+      if(proxy->enable == 1 && proxy->timeout >= atoi(proxy->expires)*2)
       {
         SipRegister(proxy);
         proxy->timeout = 0;

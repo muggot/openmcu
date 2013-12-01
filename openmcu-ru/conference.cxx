@@ -530,18 +530,18 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
     }
   }
 
-  if(address.Find("sip:") == 0)
+  if(address.Left(4) == "sip:")
   {
     PStringStream msg;
     msg << "Inviting " << address;
     OpenMCU::Current().HttpWriteEventRoom(msg,number);
-    while(OpenMCU::Current().sipendpoint->sipCallData != "") continue;
     if(userData!=NULL)
     {
-      OpenMCU::Current().sipendpoint->sipCallData = *(PString *)userData+","+address;
+      OpenMCU::Current().sipendpoint->sipCallData.InsertAt(0, new PString(*(PString *)userData+","+address));
       delete (PString *) userData;
+    } else {
+      OpenMCU::Current().sipendpoint->sipCallData.InsertAt(0, new PString(number+","+address));
     }
-    else OpenMCU::Current().sipendpoint->sipCallData = number+","+address;
   }
   else // H.323
   {

@@ -137,7 +137,7 @@ class OpenMCUSipEndPoint : public PThread
 
    void InitProxyServers();
    int SipMakeCall(PString room, PString to);
-   PString sipCallData;
+   PStringArray sipCallData;
 
   protected:
    void MainLoop();

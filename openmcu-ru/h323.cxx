@@ -2529,18 +2529,18 @@ PString OpenMCUH323Connection::GetEndpointParam(PString param)
   PString domain, uri, section;
   PString newParam;
   PStringArray options;
-  if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
+  if(GetRemotePartyAddress().Left(4) == "sip:")
   {
+    PString address = GetRemotePartyAddress().Tokenise(";")[0];
+    uri = address.Tokenise(":")[1];
+    domain = uri.Tokenise("@")[1];
+    section = "SIP Endpoints";
+    options = sipEndpointOptionsOrder;
+  } else {
     domain = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
     uri = GetRemotePartyName()+"@"+domain;
     section = "H323 Endpoints";
     options = h323EndpointOptionsOrder;
-  } else {
-    PString name = GetRemotePartyAddress().Tokenise("@")[0].Tokenise(":")[1];
-    domain = GetRemotePartyAddress().Tokenise("@")[1];
-    uri = name+"@"+domain;
-    section = "SIP Endpoints";
-    options = sipEndpointOptionsOrder;
   }
 
   // endpoints preffered parameters
@@ -2798,7 +2798,7 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
       if(params[1] != "") text = params[1];
       else text = params[0];
     }
-    if(GetRemotePartyAddress().Find("sip:") != P_MAX_INDEX)
+    if(GetRemotePartyAddress().Left(4) == "sip:")
       name = GetRemotePartyName()+" ["+GetRemotePartyAddress()+"]";
     else
       name = GetRemotePartyName();
@@ -3019,7 +3019,7 @@ void OpenMCUH323Connection::OnWelcomeStateChanged()
   switch(welcomeState) {
 
     case PlayingWelcome:
-      if(GetRemotePartyAddress().Find("sip:") == P_MAX_INDEX)
+      if(GetRemotePartyAddress().Left(4) != "sip:")
         JoinConference(requestedRoom);
       // Welcome file not implemented yet
       PlayWelcomeFile(FALSE, fn);
