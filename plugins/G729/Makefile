@@ -103,11 +103,11 @@ $(PLUGIN): $(OBJECTS)
 	$(CXX) $(LDSO)$(SONAME) -o $@ $^ $(EXTRALIBS)
 
 install:
-	mkdir -p $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/
-	cp $(PLUGIN) $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/
+	mkdir -p $(DESTDIR)$(LIBDIR)/ptlib/codecs/audio/
+	cp $(PLUGIN) $(DESTDIR)$(LIBDIR)/ptlib/codecs/audio/
 
 uninstall:
-	rm -f $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/$(PLUGIN)
+	rm -f $(DESTDIR)$(LIBDIR)/ptlib/codecs/audio/$(PLUGIN)
 
 clean:
 	rm -rf $(PLUGIN) g729_test $(OBJDIR)
