@@ -68,6 +68,9 @@ g7231:
 g726:
 	cd @PLUGIN_G726_DIR@ && $(MAKE) $(MAKEFLAGS)
 
+g729:
+	cd @PLUGIN_G729_DIR@ && $(MAKE) $(MAKEFLAGS)
+
 ilbc:
 	cd @PLUGIN_ILBC_DIR@ && $(MAKE) $(MAKEFLAGS)
 

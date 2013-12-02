@@ -532,6 +532,7 @@ vp8=yes
 g722=yes
 g7231=yes
 g726=yes
+g729=yes
 ilbc=yes
 speex=yes
 silk=yes
@@ -544,6 +545,7 @@ AC_ARG_ENABLE(vp8, [AS_HELP_STRING([--enable-vp8],[Enable/Disable VP8 support (d
 AC_ARG_ENABLE(g722, [AS_HELP_STRING([--enable-g722],[Enable/Disable G.722 support (default enabled)],[40],[100])], [g722="$enableval"])
 AC_ARG_ENABLE(g7231, [AS_HELP_STRING([--enable-g7231],[Enable/Disable G.723.1 support (default enabled)],[40],[100])], [g7231="$enableval"])
 AC_ARG_ENABLE(g726, [AS_HELP_STRING([--enable-g726],[Enable/Disable G.726 support (default enabled)],[40],[100])], [g726="$enableval"])
+AC_ARG_ENABLE(g729, [AS_HELP_STRING([--enable-g729],[Enable/Disable G.729 support (default enabled)],[40],[100])], [g729="$enableval"])
 AC_ARG_ENABLE(ilbc, [AS_HELP_STRING([--enable-ilbc],[Enable/Disable iLBC support (default enabled)],[40],[100])], [ilbc="$enableval"])
 AC_ARG_ENABLE(speex, [AS_HELP_STRING([--enable-speex],[Enable/Disable Speex support (default enabled)],[40],[100])], [speex="$enableval"])
 AC_ARG_ENABLE(silk, [AS_HELP_STRING([--enable-silk],[Enable/Disable SILK support (default enabled)],[40],[100])], [silk="$enableval"])
@@ -553,7 +555,7 @@ vp8_ffmpeg=yes
 AC_ARG_ENABLE(separator, [    ])
 AC_ARG_ENABLE(vp8_ffmpeg, [AS_HELP_STRING([--disable-vp8-ffmpeg],[Disable VP8 ffmpeg decoding (default enabled)],[40],[100])], [vp8_ffmpeg="$enableval"])
 
-PLUGINS="h261 h263 h264 vp8 g722 g7231 g726 ilbc silk opus"
+PLUGINS="h261 h263 h264 vp8 g722 g7231 g726 g729 ilbc silk opus"
 AC_SUBST(PLUGINS)
 
 PLUGIN_H261_DIR=${top_srcdir}/plugins/H.261-vic
@@ -614,6 +616,13 @@ AC_SUBST(PLUGIN_G726_DIR)
 if test "${g726}" = "yes"; then
     AC_CONFIG_FILES(plugins/G726/Makefile)
     PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_G726_DIR} "
+fi
+
+PLUGIN_G729_DIR=${top_srcdir}/plugins/G729
+AC_SUBST(PLUGIN_G729_DIR)
+if test "${g729}" = "yes"; then
+    AC_CONFIG_FILES(plugins/G729/Makefile)
+    PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_G729_DIR} "
 fi
 
 PLUGIN_ILBC_DIR=${top_srcdir}/plugins/iLBC
@@ -913,6 +922,11 @@ if test "x${g726}" = "xyes" ; then
 echo "              G.726 Audio Plugin  :  enabled"
 else
 echo "              G.726 Audio Plugin  :  disabled"
+fi
+if test "x${g729}" = "xyes" ; then
+echo "              G.729 Audio Plugin  :  enabled"
+else
+echo "              G.729 Audio Plugin  :  disabled"
 fi
 
 echo ""
