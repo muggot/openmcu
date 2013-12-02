@@ -30,11 +30,10 @@ STDCCFLAGS += -fPIC
 PREFIX=@INSTALLPREFIX@
 exec_prefix = ${PREFIX}
 LIBDIR=@LIBDIR@
-H323_SYSTEM_GSM=@H323_SYSTEM_GSM@
 
-CC=@CC@
+CC=gcc
 CXX=@CXX@
-LDSO=@LDSO@
+LDSO=-shared -Wl,-soname,
 
 ifndef PREFIX
 PREFIX=/usr/local

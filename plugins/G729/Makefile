@@ -30,7 +30,6 @@ STDCCFLAGS += -fPIC
 PREFIX=/usr/local
 exec_prefix = ${PREFIX}
 LIBDIR=${exec_prefix}/lib
-H323_SYSTEM_GSM=@H323_SYSTEM_GSM@
 
 CC=gcc
 CXX=g++
