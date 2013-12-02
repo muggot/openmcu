@@ -25,9 +25,11 @@
 # Added G.729 plugin
 #
 #
+AC_PLUGIN_DIR=@AUDIO_PLUGIN_DIR@
+PREFIX=@PLUGIN_INSTALLPREFIX@
+
 STDCCFLAGS += -fPIC
 
-PREFIX=@INSTALLPREFIX@
 exec_prefix = ${PREFIX}
 LIBDIR=@LIBDIR@
 
@@ -103,11 +105,11 @@ $(PLUGIN): $(OBJECTS)
 	$(CXX) $(LDSO)$(SONAME) -o $@ $^ $(EXTRALIBS)
 
 install:
-	mkdir -p $(DESTDIR)$(LIBDIR)/ptlib/codecs/audio/
-	cp $(PLUGIN) $(DESTDIR)$(LIBDIR)/ptlib/codecs/audio/
+	mkdir -p $(PREFIX)/$(AC_PLUGIN_DIR)
+	cp $(PLUGIN) $(PREFIX)/$(AC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(DESTDIR)$(LIBDIR)/ptlib/codecs/audio/$(PLUGIN)
+	rm -f $(PREFIX)/$(AC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -rf $(PLUGIN) g729_test $(OBJDIR)
