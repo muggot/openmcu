@@ -311,9 +311,14 @@ class TablePConfigPage : public PConfigPage
      return crypt.Decode(pass, clear) ? clear : pass;
    }
 
+   BOOL FormPost(PHTTPRequest & request, const PStringToString & data, PHTML & msg)
+   {
+     if(msg.IsEmpty())
+       msg << "<script>location.href=\"" << request.url.AsString() << "\"</script>";
+     return TRUE;
+   }
    BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & reply)
    {
-     PHTTPForm::Post(request, data, reply);
      cfg.DeleteSection();
      for(PINDEX i = 0; i < dataArray.GetSize(); i++)
      {
@@ -328,6 +333,7 @@ class TablePConfigPage : public PConfigPage
      if(cfg.GetBoolean("RESTORE DEFAULTS", FALSE))
        cfg.DeleteSection();
      process.OnContinue();
+     FormPost(request, data, reply);
      return TRUE;
    }
    BOOL OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo & info, const PStringToString & data, const PHTTPConnectionInfo & connectInfo)

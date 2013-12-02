@@ -2051,8 +2051,12 @@ void OpenMCUSipEndPoint::MainLoop()
     }
     if(terminating)
     {
-      for(scr = sipConnMap.begin(); scr != sipConnMap.end(); scr++) 
-        if(scr->second != NULL) scr->second->SendBYE();
+      for(scr = sipConnMap.begin(); scr != sipConnMap.end(); )
+      {
+        if(scr->second) scr->second->SendBYE();
+        sipConnMap.erase(scr++);
+      }
+      su_root_sleep(root,500);
       return;
     }
     for(PString *callData = (PString*)sipCallData.GetAt(0); callData != NULL; callData = (PString*)sipCallData.GetAt(0))

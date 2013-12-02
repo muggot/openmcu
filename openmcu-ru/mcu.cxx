@@ -56,7 +56,10 @@ BOOL OpenMCU::OnStart()
 
 void OpenMCU::OnStop()
 {
+#if !(PTLIB_MAJOR == 2 && PTLIB_MINOR == 10)
   PHTTPServiceProcess::OnStop();
+#endif
+
   sipendpoint->terminating = 1;
   sipendpoint->WaitForTermination(10000);
   delete sipendpoint;
