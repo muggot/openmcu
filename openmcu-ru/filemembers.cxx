@@ -150,7 +150,7 @@ void ConferenceFileMember::Construct()
   if(conference==NULL) return;
   roomName=conference->GetNumber();
 
-  running = TRUE;
+  running = TRUE; a_ended = FALSE; v_ended = FALSE;
   conference->AddMember(this);
 
   if (mode == PFile::WriteOnly)
