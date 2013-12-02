@@ -1,0 +1,119 @@
+#
+# Makefile for ITU G.729 codec plugin
+#
+# Copyright (C) 2005 Nickolay V. Shmyrev, All Rights Reserved
+#
+# The contents of this file are subject to the Mozilla Public License
+# Version 1.0 (the "License"); you may not use this file except in
+# compliance with the License. You may obtain a copy of the License at
+# http://www.mozilla.org/MPL/
+#
+# Software distributed under the License is distributed on an "AS IS"
+# basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+# the License for the specific language governing rights and limitations
+# under the License.
+#
+# The Original Code is Open H323 library.
+#
+# The Initial Developer of the Original Code is Nickolay V. Shmyrev
+#
+# Contributor(s): ______________________________________.
+#
+# $Log: Makefile.in,v $
+#
+# Revision 1.1  2004/05/10 11:28:57  nshmyrev
+# Added G.729 plugin
+#
+#
+STDCCFLAGS += -fPIC
+
+PREFIX=/usr/local
+exec_prefix = ${PREFIX}
+LIBDIR=${exec_prefix}/lib
+H323_SYSTEM_GSM=@H323_SYSTEM_GSM@
+
+CC=gcc
+CXX=g++
+LDSO=-shared -Wl,-soname,
+
+ifndef PREFIX
+PREFIX=/usr/local
+endif
+
+SONAME	= g729
+
+SRCDIR	= ./g729a_v11
+OBJDIR	= ./obj
+
+HEADERS = \
+	$(SRCDIR)/basic_op.h \
+	$(SRCDIR)/dec_gain.h \
+	$(SRCDIR)/ld8a.h \
+	$(SRCDIR)/lpcfunc.h \
+	$(SRCDIR)/lspdec.h \
+	$(SRCDIR)/lspgetq.h \
+	$(SRCDIR)/pre_proc.h \
+	$(SRCDIR)/qua_gain.h \
+	$(SRCDIR)/qua_lsp.h \
+	$(SRCDIR)/tab_ld8a.h \
+	$(SRCDIR)/taming.h \
+	$(SRCDIR)/util.h
+
+SRCS	+= \
+	g729codec.c \
+	$(SRCDIR)/acelp_ca.c  \
+	$(SRCDIR)/basic_op.c  \
+	$(SRCDIR)/cod_ld8a.c  \
+	$(SRCDIR)/cor_func.c  \
+	$(SRCDIR)/de_acelp.c  \
+	$(SRCDIR)/dec_gain.c  \
+	$(SRCDIR)/dec_lag3.c  \
+	$(SRCDIR)/dec_ld8a.c  \
+	$(SRCDIR)/dspfunc.c   \
+	$(SRCDIR)/filter.c    \
+	$(SRCDIR)/gainpred.c  \
+	$(SRCDIR)/lpc.c	      \
+	$(SRCDIR)/lpcfunc.c   \
+	$(SRCDIR)/lspdec.c    \
+	$(SRCDIR)/lspgetq.c   \
+	$(SRCDIR)/oper_32b.c  \
+	$(SRCDIR)/pitch_a.c   \
+	$(SRCDIR)/postfilt.c  \
+	$(SRCDIR)/post_pro.c  \
+	$(SRCDIR)/p_parity.c  \
+	$(SRCDIR)/pred_lt3.c  \
+	$(SRCDIR)/pre_proc.c  \
+	$(SRCDIR)/qua_gain.c  \
+	$(SRCDIR)/qua_lsp.c   \
+	$(SRCDIR)/tab_ld8a.c  \
+	$(SRCDIR)/taming.c    \
+	$(SRCDIR)/util.c      
+
+vpath	%.o $(OBJDIR)
+vpath	%.c $(SRCDIR)
+
+$(OBJDIR)/%.o : %.c $(HEADERS)
+	@mkdir -p $(OBJDIR) >/dev/null 2>&1
+	$(CC) -g -O0 -Wall -I. -I./g729a_v11 $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
+
+PLUGIN	= ./g729_audio_pwplugin.so
+
+OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(notdir $(SRCS))))
+
+$(PLUGIN): $(OBJECTS)
+	$(CXX) $(LDSO)$(SONAME) -o $@ $^ $(EXTRALIBS)
+
+install:
+	mkdir -p $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/
+	cp $(PLUGIN) $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/
+
+uninstall:
+	rm -f $(DESTDIR)$(LIBDIR)/pwlib/codecs/audio/$(PLUGIN)
+
+clean:
+	rm -rf $(PLUGIN) g729_test $(OBJDIR)
+
+g729_test: $(OBJECTS) g729_test.c
+	$(CC) -g -O0 -Wall -Werror -I./g729a_v11 -o $@ $^
+
+###########################################
