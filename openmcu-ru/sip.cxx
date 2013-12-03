@@ -1496,14 +1496,15 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
       return 0;
 
     PString localIP, remoteUser, remoteIP, remotePort, proxyIP, userName, roomName = "";
-    BOOL needProxy = false;
-
     PString addr = to.Tokenise(";")[0];
-    remoteUser = addr.Tokenise(":")[1].Tokenise("@")[0];
-    remoteIP = addr.Tokenise(":")[1].Tokenise("@")[1];
-    if(remoteUser == "" || remoteIP == "")
-      return 0;
-
+    if(addr.Find("@") != P_MAX_INDEX)
+    {
+      remoteUser = addr.Tokenise(":")[1].Tokenise("@")[0];
+      remoteIP = addr.Tokenise(":")[1].Tokenise("@")[1];
+    } else {
+      remoteIP = addr.Tokenise(":")[1];
+    }
+    if(remoteIP == "") return 0;
     remotePort = addr.Tokenise(":")[2];
     if(remotePort == "") remotePort = "5060";
 
@@ -1520,7 +1521,6 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
       proxy = it->second;
       if(proxy->proxyIP == remoteIP && proxy->roomName == room && proxy->enable == 1)
       {
-        needProxy = true;
         localIP = proxy->localIP;
         proxyIP = proxy->proxyIP;
         userName = proxy->userName;
