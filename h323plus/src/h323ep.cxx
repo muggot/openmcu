@@ -3580,7 +3580,38 @@ void H323EndPoint::SetSTUNServer(const PString & server)
 void H323EndPoint::InternalTranslateTCPAddress(PIPSocket::Address & localAddr, const PIPSocket::Address & remoteAddr, 
 											   const H323Connection * connection)
 {
+  if (remoteAddr.GetVersion() != 4)
+      return;
+
 #ifdef P_STUN
+#if PTLIB_VER > PTLIB_VERSION_INT(2,0,1)
+  // if using NAT Method, then translate internal local address to external if required
+  if (connection && !connection->HasNATSupport())
+      return;
+
+  if (localAddr.IsRFC1918() && !remoteAddr.IsRFC1918()) {
+      if (!connection) {
+#if PTLIB_VER > PTLIB_VERSION_INT(2,8,0)
+        PNatMethod * stun = GetNatMethods().GetMethodByName("STUN");
+#else
+        PNatMethod * stun = GetNatMethods().GetMethod();
+#endif
+        if (stun && stun->IsAvailable(remoteAddr) && stun->GetExternalAddress(localAddr)) {
+           PTRACE(2,"EP\tSTUN set localIP as " << localAddr);
+        } else {
+            //const PNatList & list = natMethods->GetNATList();
+            const PNatList & list = natMethods.GetNATList();
+              for (PINDEX i=0; i < list.GetSize(); i++) {
+                  if (list[i].IsAvailable(remoteAddr) && list[i].GetExternalAddress(localAddr)) {
+                     PTRACE(2,"EP\tNATMethod " << list[i].GetName() << " rewrite localIP as " << localAddr);
+                     break;
+                  }
+              }
+        }
+      }
+   }
+  else
+#else
   // if using STUN server, then translate internal local address to external if required
   BOOL disableSTUN;
   if (connection != NULL)
@@ -3602,6 +3633,7 @@ void H323EndPoint::InternalTranslateTCPAddress(PIPSocket::Address & localAddr, c
     localAddr = addr;
   }
   else
+#endif // PTLIB_VER
 #endif // P_STUN
      TranslateTCPAddress(localAddr, remoteAddr);
 }

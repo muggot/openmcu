@@ -1,6 +1,11 @@
 #ifndef _OpenMCU_CONFIG_H
 #define _OpenMCU_CONFIG_H
 
+#ifndef PTLIB_VERSION_INT
+#define PTLIB_VERSION_INT(major,minor,build) ((major<<24)|(minor<<16)|build)
+#endif
+#define PTLIB_VER PTLIB_VERSION_INT(PTLIB_MAJOR, PTLIB_MINOR, PTLIB_BUILD)
+
 #ifdef _WIN32
 #  define PATH_SEPARATOR "\\"
 #else

@@ -488,17 +488,15 @@ AC_CONFIG_FILES(h323plus/Makefile)
 dnl ########################################################################
 dnl h323plus/ptlib
 
-if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
+if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 3; then
   PTLIB_LIBDIR="${PTLIBDIR}/lib_${OSTYPE}_${MACHTYPE}"
   PTLIB_SO_FILE="libpt.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
   PTLIB_A_FILE="libpt_s.a"
-  PTLIB_LINK_FILE="pt_s"
+  PTLIB_LINK_FILE="pt"
   H323PLUS_LIBDIR="${H323PLUSDIR}/lib"
-  H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_r.so.1.20.2"
+  H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_.so.1.20.2"
   H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}__s.a"
   H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_"
-
-  H323BUILDOPTS="CFLAGS=\"-DPBoolean=BOOL\""
 else
   PTLIB_LIBDIR="${PTLIBDIR}/lib"
   PTLIB_SO_FILE="libpt_${OSTYPE}_${MACHTYPE}_r.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
@@ -508,6 +506,10 @@ else
   H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_r.so.1.20.2"
   H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}_r_s.a"
   H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_r"
+fi
+
+if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
+  H323BUILDOPTS="CFLAGS=\"-DPBoolean=BOOL -DP_HAS_PLUGINS=1\""
 fi
 
 AC_SUBST(PTLIB_LIBDIR)
@@ -810,13 +812,10 @@ sed -i -r "s#^PREFIX=.*#PREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/Makefile
 sed -i -r "s#^PTINSTDIR=.*#PTINSTDIR=${PTLIB_INSTALLPREFIX}/share/ptlib#g" ${PTLIBDIR}/make/ptlib-config
 sed -i -r "s#^INSTALLPREFIX=.*#INSTALLPREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/make/ptlib-config
 sed -i -r "s#^\#define P_DEFAULT_PLUGIN_DIR.*#\#define P_DEFAULT_PLUGIN_DIR \"${P_DEFAULT_PLUGIN_DIR}\"#g" ${PTLIBDIR}/include/ptbuildopts.h
+
 sed -i -r "s#^PREFIX=.*#PREFIX=${H323PLUS_INSTALLPREFIX}#g" ${H323PLUSDIR}/Makefile
 
-# ptlib > 2.0
 if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
-  sed -i -r "s#define P_STUN 1#undef P_STUN#g" ${PTLIBDIR}/include/ptbuildopts.h
-  sed -i -r "s#\#define P_PLUGINS#\#define P_HAS_PLUGINS 1\\n\#define P_PLUGINS#g" ${PTLIBDIR}/include/ptbuildopts.h
-  sed -i -r "s#define H323_GNUGK 1#undef H323_GNUGK#g" ${H323PLUSDIR}/include/openh323buildopts.h
   sed -i -r "s#${PTLIBDIR}#${PTLIBDIR}\\nPTLIBDIR\\t= ${PTLIBDIR}#g" ${H323PLUSDIR}/openh323u.mak
   sed -i -r "s#define _OpenMCU_CONFIG_H#define _OpenMCU_CONFIG_H\\n\\n\#define BOOL PBoolean#g" ${MCUDIR}/config.h
 fi

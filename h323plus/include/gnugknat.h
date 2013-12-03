@@ -239,18 +239,45 @@ public:
 
    BOOL OpenSocket(PUDPSocket & socket, PortInfo & portInfo) const;
 
-   static PStringList GetNatMethodName() {  return PStringList("GNUGK"); };
+#if PTLIB_VER > PTLIB_VERSION_INT(2,0,1)
+   static PString GetNatMethodName() { return PString("GNUGK"); };
+   virtual PString GetName() const { return GetNatMethodName(); }
+#else
+   static PStringList GetNatMethodName() { return PStringList("GNUGK"); };
+   virtual PStringList GetName() const { return GetNatMethodName(); }
+#endif
 
-   virtual PStringList GetName() const
-            { return GetNatMethodName(); }
-  //@}
+#if PTLIB_VER > PTLIB_VERSION_INT(2,0,1) && PTLIB_VER < PTLIB_VERSION_INT(2,11,0)
+   virtual bool GetServerAddress(PIPSocket::Address & address, WORD & port) const { return false; };
+   virtual bool GetInterfaceAddress(PIPSocket::Address & internalAddress) const { return false; };
+   virtual PBoolean CreateSocket(PUDPSocket * & socket, const PIPSocket::Address & binding = PIPSocket::GetDefaultIpAny(), WORD localPort = 0) { return false; };
+   virtual bool IsAvailable(const PIPSocket::Address&) { return (available && active); }
+   virtual RTPSupportTypes GetRTPSupport(PBoolean force = PFalse)  { return RTPSupported; }
+protected:
+   PBoolean active;
+#elif PTLIB_VER >= PTLIB_VERSION_INT(2,11,0)
+    virtual PString GetServer() const { return PString(); }
+    virtual bool GetServerAddress(PIPSocketAddressAndPort & ) const { return false; }
+    virtual NatTypes GetNatType(bool) { return UnknownNat; }
+    virtual NatTypes GetNatType(const PTimeInterval &) { return UnknownNat; }
+    virtual bool SetServer(const PString &) { return false; }
+    virtual bool Open(const PIPSocket::Address &) { return false; }
+    virtual bool CreateSocket(BYTE component,PUDPSocket * & socket,
+            const PIPSocket::Address & binding = PIPSocket::GetDefaultIpAny(),WORD localPort = 0)  { return false; }
+    virtual void SetCredentials(const PString &, const PString &, const PString &) {}
+protected:
+    virtual NatTypes InternalGetNatType(bool, const PTimeInterval &) { return UnknownNat; }
+#endif
 
 protected:
 	BOOL available;
-
 };
 
+#if PTLIB_VER > PTLIB_VERSION_INT(2,8,0)
+PPLUGIN_STATIC_LOAD(GnuGk, PNatMethod);
+#else
 PWLIB_STATIC_LOAD_PLUGIN(GnuGk, PNatMethod);
+#endif
 
 class GNUGKUDPSocket : public PUDPSocket
 {

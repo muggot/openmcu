@@ -23,8 +23,8 @@ git_revision        = $(shell git rev-list master --max-count=1 HEAD)
 #git_revision_number = $(shell git rev-list master | wc -l)
 STDCCFLAGS     +=-D GIT_REVISION=$(git_revision)
 
-PTLIBDIR        = ../ptlib
-include ../ptlib/make/ptbuildopts.mak
+PTLIBDIR        = @PTLIBDIR@
+include $(PTLIBDIR)/make/ptbuildopts.mak
 
 
 CONFIG_FILES= \
