@@ -1756,8 +1756,8 @@ static int encoder_set_options(const PluginCodec_Definition *,
       context->SetMaxRTPFrameSize (atoi(option[1]));
     if (STRCMPI(option[0], PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0)
        context->SetTargetBitrate(atoi(option[1]));
-    if (STRCMPI(options[0], "Frame Rate") == 0)
-       context->SetFrameRate(atoi(options[1]));
+//    if (STRCMPI(options[0], "Frame Rate") == 0)
+//       context->SetFrameRate(atoi(options[1]));
 //    if (STRCMPI(option[0], PLUGINCODEC_OPTION_TARGET_BIT_RATE) == 0)
 //       context->SetTargetBitrate(atoi(option[1]));
     if (STRCMPI(option[0], PLUGINCODEC_OPTION_TX_KEY_FRAME_PERIOD) == 0)
