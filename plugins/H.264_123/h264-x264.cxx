@@ -105,7 +105,6 @@ H264EncoderContext::H264EncoderContext()
   targetBitrate = 20000000;
   cpb = 0;
   maxBr = 0;
-  used = 0;
   x264 = new X264EncoderContext();
 }
 
