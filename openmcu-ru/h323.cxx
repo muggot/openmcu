@@ -2526,47 +2526,18 @@ PString OpenMCUH323Connection::GetEndpointParam(PString param)
 {
   if(GetRemotePartyAddress() == "") return "";
 
-  PString domain, uri, section;
-  PString newParam;
-  PStringArray options;
+  PString domain, uri;
   if(GetRemotePartyAddress().Left(4) == "sip:")
   {
     PString address = GetRemotePartyAddress().Tokenise(";")[0];
     uri = address.Tokenise(":")[1];
     domain = uri.Tokenise("@")[1];
-    section = "SIP Endpoints";
-    options = sipEndpointOptionsOrder;
+    return OpenMCU::Current().GetEndpointParamFromUri(param, uri, "sip");
   } else {
     domain = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
     uri = GetRemotePartyName()+"@"+domain;
-    section = "H323 Endpoints";
-    options = h323EndpointOptionsOrder;
+    return OpenMCU::Current().GetEndpointParamFromUri(param, uri, "h323");
   }
-
-  // endpoints preffered parameters
-  MCUConfig epCfg(section);
-  PStringList epKeys = epCfg.GetKeys();
-
-  PINDEX index, domainIndex, uriIndex, allIndex;
-  uriIndex = epKeys.GetStringsIndex(uri);
-  domainIndex = epKeys.GetStringsIndex(domain);
-  allIndex = epKeys.GetStringsIndex("*");
-  if(uriIndex != P_MAX_INDEX) index = uriIndex;
-  else index = domainIndex;
-
-  if(index != P_MAX_INDEX)
-  {
-    PStringArray epParams = epCfg.GetString(epKeys[index]).Tokenise(",");
-    if(options.GetStringsIndex(param) != P_MAX_INDEX)
-      newParam = epParams[options.GetStringsIndex(param)];
-  }
-  if(newParam == "" && allIndex != P_MAX_INDEX)
-  {
-    PStringArray epParams = epCfg.GetString(epKeys[allIndex]).Tokenise(",");
-    if(options.GetStringsIndex(param) != P_MAX_INDEX)
-      newParam = epParams[options.GetStringsIndex(param)];
-  }
-  return newParam;
 }
 
 #if OPENMCU_VIDEO

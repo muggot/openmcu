@@ -493,4 +493,44 @@ OpenMCUH323EndPoint * OpenMCU::CreateEndPoint(ConferenceManager & manager)
   return new OpenMCUH323EndPoint(manager);
 }
 
+PString OpenMCU::GetEndpointParamFromUri(PString param, PString uri, PString protocol)
+{
+  PString domain, section;
+  PString newParam;
+  PStringArray options;
+  if(protocol == "h323")
+  {
+    section = "H323 Endpoints";
+    options = h323EndpointOptionsOrder;
+  } else {
+    section = "SIP Endpoints";
+    options = sipEndpointOptionsOrder;
+  }
+  if(uri.Find("@") != P_MAX_INDEX) domain = uri.Tokenise("@")[1];
+
+  MCUConfig cfg(section);
+  PStringList keys = cfg.GetKeys();
+
+  PINDEX index, domainIndex, uriIndex, allIndex;
+  uriIndex = keys.GetStringsIndex(uri);
+  domainIndex = keys.GetStringsIndex(domain);
+  allIndex = keys.GetStringsIndex("*");
+  if(uriIndex != P_MAX_INDEX) index = uriIndex;
+  else index = domainIndex;
+
+  if(index != P_MAX_INDEX)
+  {
+    PStringArray params = cfg.GetString(keys[index]).Tokenise(",");
+    if(options.GetStringsIndex(param) != P_MAX_INDEX)
+      newParam = params[options.GetStringsIndex(param)];
+  }
+  if(newParam == "" && allIndex != P_MAX_INDEX)
+  {
+    PStringArray params = cfg.GetString(keys[allIndex]).Tokenise(",");
+    if(options.GetStringsIndex(param) != P_MAX_INDEX)
+      newParam = params[options.GetStringsIndex(param)];
+  }
+  return newParam;
+}
+
 // End of File ///////////////////////////////////////////////////////////////
