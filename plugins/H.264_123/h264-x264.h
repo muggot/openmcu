@@ -114,6 +114,8 @@ class H264EncoderContext
     void Lock ();
     void Unlock ();
 
+  unsigned contextProfile, constraints, contextLevel, width, height, frameTime, maxMbps, maxFs, targetBitrate, cpb, maxBr;
+
   protected:
     CriticalSection _mutex;
     X264EncoderContext *x264;
