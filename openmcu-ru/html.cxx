@@ -1381,13 +1381,38 @@ InvitePage::InvitePage(OpenMCU & _app, PHTTPAuthority & auth)
 
   BeginPage(html,"Invite","window.l_invite","window.l_info_invite");
 
-  html << "<p>"
+  PString select = "<select class='input-large' onchange='changeSelect(this)'><option value=''></option>";
+  PStringList keys = MCUConfig("SIP Endpoints").GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    if(keys[i] == "*" || keys[i] == "test") continue;
+    select += "<option value='sip:"+keys[i]+"'>sip:"+keys[i]+"</option>";
+  }
+  keys = MCUConfig("H323 Endpoints").GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    if(keys[i] == "*" || keys[i] == "test") continue;
+    select += "<option value='h323:"+keys[i]+"'>h323:"+keys[i]+"</option>";
+  }
+  select += "</select>";
+
+  form << "<p>"
     << "<form method=\"POST\" class=\"well form-inline\">"
     << "<input type=\"text\" class=\"input-small\" placeholder=\"" << app.GetDefaultRoomName() << "\" name=\"room\" value=\"" << app.GetDefaultRoomName() << "\"> "
-    << "<input type=\"text\" class=\"input-large\" placeholder=\"Address\" name=\"address\"><script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
-    << "&nbsp;&nbsp;<input type=\"submit\" class=\"btn\" value=\"Invite\">"
+    << "<input id='address' type=\"text\" class=\"input-large\" placeholder=\"Address\" name=\"address\">"
+    << "&nbsp;"+select
+    << "<script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
+    << "&nbsp;&nbsp;<input class=\"input-small\" type=\"submit\" class=\"btn\" value=\"Invite\">"
     << "</form>";
 
+  form << "<script type='text/javascript'>\n"
+       << "function changeSelect(obj)\n"
+       << "{\n"
+       << "  document.getElementById('address').value=obj.options[obj.selectedIndex].value\n"
+       << "}\n"
+       << "</script>\n";
+
+  html << form;
   EndPage(html,OpenMCU::Current().GetHtmlCopyright());
 
   string = html;
@@ -1404,12 +1429,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
   PStringStream html;
 
   PStringStream html_invite;
-  html_invite << "<p>"
-    << "<form method=\"POST\" class=\"well form-inline\">"
-    << "<input type=\"text\" class=\"input-small\" placeholder=\"" << room << "\" name=\"room\" value=\"" << room << "\"> "
-    << "<input type=\"text\" class=\"input-large\" placeholder=\"Address\" name=\"address\"><script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
-    << "&nbsp;&nbsp;<input type=\"submit\" class=\"btn\" value=\"Invite\">"
-    << "</form>";
+  html_invite << form;
 
   if (room.IsEmpty() || address.IsEmpty()) {
     BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
@@ -1430,13 +1450,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
     return TRUE;
   }
 
-//  if(address.Find("sip:") == 0) {
-//    while(OpenMCU::Current().sipendpoint->sipCallData != "") PThread::Sleep(10);
-//    OpenMCU::Current().sipendpoint->sipCallData = room+","+address;
-//  } else {
     PString h323Token;
-//    PString * userData = new PString(room);
-//    if (ep.MakeCall(address, h323Token, userData) == NULL) {
     if(!c->InviteMember(address))
     {
       PTRACE(2,"Conference\tCould not invite " << address);
@@ -1446,8 +1460,6 @@ BOOL InvitePage::Post(PHTTPRequest & request,
 //      ep.GetConferenceManager().RemoveConference(room);
       return TRUE;
     }
-//    }
-//  }
 
   BeginPage(html,"Invite succeeded","window.l_invite_s","window.l_info_invite_s");
   html << html_invite;

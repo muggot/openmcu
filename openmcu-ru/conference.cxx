@@ -545,6 +545,7 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
   }
   else // H.323
   {
+    if(address.Left(5) == "h323:") address = address.Right(address.GetLength()-5);
     PString h323Token;
     if(userData == NULL) userData = new PString(number);
     PStringStream msg;
