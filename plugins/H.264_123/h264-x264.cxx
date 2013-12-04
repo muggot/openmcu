@@ -735,11 +735,11 @@ static int encoder_set_options(
 
 
     cout << "Profile/level: " << profile << "/" << level << "\n";
-    cout << "Size: " << width << "x" << height << "\n";
-    cout << "frameRate: " << (int)(H264_CLOCKRATE / frameTime) << "\n";
-    cout << "targetBitrate: " << targetBitrate << "bit/sec\n";
-    cout << "maxBitrate: " << maxBr << "bit/sec\n";
-    cout << "vbv_buffer: " << cpb << "bit\n";
+    cout << "Size: " << context->width << "x" << context->height << "\n";
+    cout << "frameRate: " << (int)(H264_CLOCKRATE / context->frameTime) << "\n";
+    cout << "targetBitrate: " << context->targetBitrate << "bit/sec\n";
+    cout << "maxBitrate: " << context->maxBr << "bit/sec\n";
+    cout << "vbv_buffer: " << context->cpb << "bit\n";
     TRACE(1,"Profile/level: " << profile << "/" << level);
     TRACE(1,"Size: " << context->width << "x" << context->height);
     TRACE(1,"frameRate: " << (int)(H264_CLOCKRATE / context->frameTime));
