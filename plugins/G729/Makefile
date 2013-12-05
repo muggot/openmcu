@@ -105,11 +105,11 @@ $(PLUGIN): $(OBJECTS)
 	$(CXX) $(LDSO)$(SONAME) -o $@ $^ $(EXTRALIBS)
 
 install:
-	mkdir -p $(PREFIX)/$(AC_PLUGIN_DIR)
-	cp $(PLUGIN) $(PREFIX)/$(AC_PLUGIN_DIR)
+	mkdir -p $(DESTDIR)$(PREFIX)/$(AC_PLUGIN_DIR)
+	cp $(PLUGIN) $(DESTDIR)$(PREFIX)/$(AC_PLUGIN_DIR)
 
 uninstall:
-	rm -f $(PREFIX)/$(AC_PLUGIN_DIR)/$(PLUGIN)
+	rm -f $(DESTDIR)$(PREFIX)/$(AC_PLUGIN_DIR)/$(PLUGIN)
 
 clean:
 	rm -rf $(PLUGIN) g729_test $(OBJDIR)
