@@ -688,7 +688,7 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr){
   {
     var uri = name.substring(name.lastIndexOf('[')+1, name.lastIndexOf(']')-1);
     var member_uri = members[i][2].substring(members[i][2].lastIndexOf('[')+1, members[i][2].lastIndexOf(']')-1);
-    if(uri.substring(0,4) == "sip:")
+    if(uri.substring(0,4) == "sip:" && name.lastIndexOf(" ##") == -1)
     {
       var addr = uri.split(";")[0].split(":")[1];
       var member_addr = member_uri.split(";")[0].split(":")[1];

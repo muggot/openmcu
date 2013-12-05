@@ -715,7 +715,25 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // add this member to the conference member name list
   if(memberToAdd!=memberToAdd->GetID())
   {
-    memberNameList.erase(memberToAdd->GetName());
+    if(memberToAdd->GetName().Find("[sip:") != P_MAX_INDEX && memberToAdd->GetName().Find(" ##") == P_MAX_INDEX)
+    {
+      // для SIP поиск по user@host
+      PString addr = memberToAdd->GetName().Tokenise("[")[1].Tokenise(";")[0].Tokenise(":")[1];
+      BOOL found = FALSE;
+      for (Conference::MemberNameList::const_iterator s = memberNameList.begin(); s != memberNameList.end(); ++s)
+      {
+        PString memberName = s->first;
+        PString memberAddr = memberName.Tokenise("[")[1].Tokenise(";")[0].Tokenise(":")[1];
+        if(memberAddr == addr)
+        {
+          memberNameList.erase(memberName);
+          if(!found) confTpl.Replace(memberName,memberToAdd->GetName(),TRUE,0);
+          found = TRUE;
+        }
+      }
+    } else {
+      memberNameList.erase(memberToAdd->GetName());
+    }
     memberNameList.insert(MemberNameList::value_type(memberToAdd->GetName(),memberToAdd));
 
     PullMemberOptionsFromTemplate(memberToAdd, confTpl);
