@@ -726,9 +726,12 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         PString memberAddr = memberName.Tokenise("[")[1].Tokenise(";")[0].Tokenise(":")[1];
         if(memberAddr == addr)
         {
-          memberNameList.erase(memberName);
-          if(!found) confTpl.Replace(memberName,memberToAdd->GetName(),TRUE,0);
-          found = TRUE;
+          if(s->second == NULL)
+          {
+            memberNameList.erase(memberName);
+            if(!found) confTpl.Replace(memberName,memberToAdd->GetName(),TRUE,0);
+            found = TRUE;
+          }
         }
       }
     } else {
