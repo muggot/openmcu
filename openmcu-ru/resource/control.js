@@ -685,8 +685,20 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr){
   if(typeof members==='undefined') return alive();
   var found=0; var j=members.length;
   for(var i=j-1;i>=0;i--)
-  if((members[i][1]==id)||(members[i][2]==name))
-  if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
+  {
+    var uri = name.substring(name.lastIndexOf('[')+1, name.lastIndexOf(']')-1);
+    var member_uri = members[i][2].substring(members[i][2].lastIndexOf('[')+1, members[i][2].lastIndexOf(']')-1);
+    if(uri.substring(0,4) == "sip:")
+    {
+      var addr = uri.split(";")[0].split(":")[1];
+      var member_addr = member_uri.split(";")[0].split(":")[1];
+      if((members[i][1] == id) || (member_addr == addr))
+        if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
+    } else {
+      if((members[i][1] == id) || (members[i][2] == name))
+        if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
+    }
+  }
   members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr);
   alive();
   members_refresh();
