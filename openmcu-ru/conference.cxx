@@ -545,6 +545,13 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
   }
   else // H.323
   {
+    if(address.Left(5) == "h323:") address = address.Right(address.GetLength()-5);
+    PString port = address.Tokenise(":")[1];
+    if(port == "")
+    {
+      port = OpenMCU::Current().GetEndpointParamFromUri("H323 port", address, "h323");
+      if(port != "") address += ":"+port;
+    }
     PString h323Token;
     if(userData == NULL) userData = new PString(number);
     PStringStream msg;

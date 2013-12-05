@@ -132,7 +132,7 @@ static const char SIPReInviteKey[]         = "SIP ReInvite (pause)";
 // endpoints options
 static PStringArray h323EndpointOptionsOrder = PString(
                                         ","
-                                        ","
+                                        "H323 port,"
                                         ","
                                         "Display name override,"
                                         "Preferred frame rate from MCU,"
@@ -145,7 +145,7 @@ static PStringArray h323EndpointOptionsOrder = PString(
                                         "Video codec(transmit)").Tokenise(",");
 static PStringArray sipEndpointOptionsOrder = PString(
                                         "Outgoing transport,"
-                                        ","
+                                        "SIP port,"
                                         ","
                                         "Display name override,"
                                         "Preferred frame rate from MCU,"
@@ -387,6 +387,8 @@ class OpenMCU : public OpenMCUProcessAncestor
 
     PFilePath  logFilename;
     BOOL       copyWebLogToLog;
+
+    PString GetEndpointParamFromUri(PString param, PString uri, PString protocol);
 
   protected:
     int        currentLogLevel, currentTraceLevel;

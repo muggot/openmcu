@@ -261,47 +261,6 @@ int InviteDataTempCreate(PString localIP, const SipKey &sik)
   return 1;
 }
 
-PString GetEndpointParamFromUri(PString param, PString uri, PString protocol)
-{
-  // endpoints preffered parameters
-  PString domain, section;
-  PString newParam;
-  PStringArray options;
-  if(protocol == "h323")
-  {
-    section = "H323 Endpoints";
-    options = h323EndpointOptionsOrder;
-  } else {
-    section = "SIP Endpoints";
-    options = sipEndpointOptionsOrder;
-  }
-  if(uri.Find("@") != P_MAX_INDEX) domain = uri.Tokenise("@")[1];
-
-  MCUConfig epCfg(section);
-  PStringList epKeys = epCfg.GetKeys();
-
-  PINDEX index, domainIndex, uriIndex, allIndex;
-  uriIndex = epKeys.GetStringsIndex(uri);
-  domainIndex = epKeys.GetStringsIndex(domain);
-  allIndex = epKeys.GetStringsIndex("*");
-  if(uriIndex != P_MAX_INDEX) index = uriIndex;
-  else index = domainIndex;
-
-  if(index != P_MAX_INDEX)
-  {
-    PStringArray epParams = epCfg.GetString(epKeys[index]).Tokenise(",");
-    if(options.GetStringsIndex(param) != P_MAX_INDEX)
-      newParam = epParams[options.GetStringsIndex(param)];
-  }
-  if(newParam == "" && allIndex != P_MAX_INDEX)
-  {
-    PStringArray epParams = epCfg.GetString(epKeys[allIndex]).Tokenise(",");
-    if(options.GetStringsIndex(param) != P_MAX_INDEX)
-      newParam = epParams[options.GetStringsIndex(param)];
-  }
-  return newParam;
-}
-
 RTP_UDP *OpenMCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
 {
   int id = (!sc->media)?RTP_Session::DefaultAudioSessionID:RTP_Session::DefaultVideoSessionID;
@@ -1166,7 +1125,7 @@ int OpenMCUSipConnection::CreateSipData()
       localIP = sip->sip_to->a_url->url_host;
       roomName = sip->sip_to->a_url->url_user;
     }
-    epBandwidthTo = atoi(GetEndpointParamFromUri("Preferred bandwidth to MCU",
+    epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUri("Preferred bandwidth to MCU",
         PString(sip->sip_from->a_url->url_user)+"@"+PString(sip->sip_from->a_url->url_host), "sip"));
   } else { // outgoing
     ProxyServerMapType::iterator it =
@@ -1186,7 +1145,7 @@ int OpenMCUSipConnection::CreateSipData()
       localIP = sip->sip_from->a_url->url_host;
       roomName = sip->sip_from->a_url->url_user;
     }
-    epBandwidthTo = atoi(GetEndpointParamFromUri("Preferred bandwidth to MCU",
+    epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUri("Preferred bandwidth to MCU",
         PString(sip->sip_to->a_url->url_user)+"@"+PString(sip->sip_to->a_url->url_host), "sip"));
   }
   cseqNum = sip->sip_cseq->cs_seq+1;
@@ -1495,7 +1454,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     if(agent == NULL)
       return 0;
 
-    PString localIP, remoteUser, remoteIP, remotePort, proxyIP, userName, roomName = "";
+    PString ruri, localIP, remoteUser, remoteIP, remotePort, proxyIP, userName, roomName, transport;
     PString addr = to.Tokenise(";")[0];
     if(addr.Find("@") != P_MAX_INDEX)
     {
@@ -1505,14 +1464,20 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
       remoteIP = addr.Tokenise(":")[1];
     }
     if(remoteIP == "") return 0;
+
     remotePort = addr.Tokenise(":")[2];
-    if(remotePort == "") remotePort = "5060";
+    if(remotePort == "")
+      remotePort = OpenMCU::Current().GetEndpointParamFromUri("SIP port", remoteUser+"@"+remoteIP, "sip");
+    if(remotePort == "")
+      remotePort = "5060";
 
     if(to.Find("transport") == P_MAX_INDEX)
     {
-      PString transport = GetEndpointParamFromUri("Outgoing transport", remoteUser+"@"+remoteIP, "sip");
-      if(transport != "" && transport != "transport=*") to += ";"+transport;
+      transport = OpenMCU::Current().GetEndpointParamFromUri("Outgoing transport", remoteUser+"@"+remoteIP, "sip");
+      if(transport == "transport=*") transport = "";
     }
+
+    ruri = "sip:"+remoteUser+"@"+remoteIP+":"+remotePort+";"+transport;
 
     ProxyServer *proxy = NULL;
     ProxyServerMapType::iterator it;
@@ -1547,7 +1512,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
     sip_from->a_display = roomName;
     sip_from_tag(&home, sip_from, nta_agent_newtag(&home, "tag=%s", agent));
 
-    sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)(const char *)to);
+    sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)(const char *)ruri);
 
     sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)
 	("sip:"+userName+"@"+localIP), NULL);
@@ -1570,15 +1535,15 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 
     // create sdp for outgoing request
     PString uri = PString(sip_to->a_url->url_user)+"@"+PString(sip_to->a_url->url_host);
-    PString prefAudioCap = GetEndpointParamFromUri("Audio codec", uri, "sip");
-    PString prefVideoCap = GetEndpointParamFromUri("Video codec", uri, "sip");
+    PString prefAudioCap = OpenMCU::Current().GetEndpointParamFromUri("Audio codec", uri, "sip");
+    PString prefVideoCap = OpenMCU::Current().GetEndpointParamFromUri("Video codec", uri, "sip");
     sdpInvite = CreateSdpInvite(prefAudioCap, prefVideoCap);
     PString sdp = sdpInvite;
     sdp.Replace("USERNAME", room, TRUE, 0);
     sdp.Replace("LOCALIP", localIP, TRUE, 0);
     sdp.Replace("RTP_AUDIO_PORT", invit->second->aPort, TRUE, 0);
     sdp.Replace("RTP_VIDEO_PORT", invit->second->vPort, TRUE, 0);
-    unsigned epBandwidthTo = atoi(GetEndpointParamFromUri("Preferred bandwidth to MCU", uri, "sip"));
+    unsigned epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUri("Preferred bandwidth to MCU", uri, "sip"));
     sdp.Replace("BANDWIDTH", epBandwidthTo, TRUE, 0);
     sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sdp);
 
@@ -1761,7 +1726,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
       sdp.Replace("RTP_AUDIO_PORT", iData->aPort, TRUE, 0);
       sdp.Replace("RTP_VIDEO_PORT", iData->vPort, TRUE, 0);
       PString uri = PString(sip_to->a_url->url_user)+"@"+PString(sip_to->a_url->url_host);
-      unsigned epBandwidthTo = atoi(GetEndpointParamFromUri("Preferred bandwidth to MCU", uri, "sip"));
+      unsigned epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUri("Preferred bandwidth to MCU", uri, "sip"));
       sdp.Replace("BANDWIDTH", epBandwidthTo, TRUE, 0);
       sip_payload = sip_payload_make(&home, (const char *)sdp);
 

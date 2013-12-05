@@ -127,6 +127,7 @@ window.l_name_preferred_frame_rate_from_mcu        = 'Preferred frame rate from 
 window.l_name_preferred_bandwidth_from_mcu         = 'Preferred bandwidth from MCU';
 window.l_name_preferred_bandwidth_to_mcu           = 'Preferred bandwidth to MCU';
 window.l_name_outgoing_transport                   = 'Outgoing transport';
+window.l_name_port                                 = 'port';
 
 window.l_name_register                             = 'Register';
 window.l_name_address_sip_proxy                    = 'Address SIP-proxy';
