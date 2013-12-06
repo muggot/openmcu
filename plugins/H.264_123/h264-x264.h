@@ -271,7 +271,7 @@ static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323para
 	{{1},4, PluginCodec_H323GenericParameterDefinition::PluginCodec_GenericParameter_unsignedMin,{0}}, \
 	{{1},5, PluginCodec_H323GenericParameterDefinition::PluginCodec_GenericParameter_unsignedMin,{0}}, \
 	{{1},6, PluginCodec_H323GenericParameterDefinition::PluginCodec_GenericParameter_unsignedMin,{0}}, \
-	NULL \
+	0 \
 }; \
 static struct PluginCodec_H323GenericCodecData prefix##_h323GenericData[] = { \
 	OpalPluginCodec_Identifer_H264_Generic, \

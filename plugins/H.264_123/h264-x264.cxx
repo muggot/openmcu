@@ -753,6 +753,26 @@ static int encoder_set_options(
     context->SetProfileLevel(profile, context->constraints, level);
     context->ApplyOptions();
     context->Unlock();
+
+    // Write back the option list the changed information to the level
+    if (parm != NULL)
+    {
+      char ** options = (char **)parm;
+      if (options == NULL) return 0;
+      for (int i = 0; options[i] != NULL; i += 2)
+      {
+        if (STRCMPI(options[i], PLUGINCODEC_OPTION_TARGET_BIT_RATE) == 0)
+        options[i+1] = num2str(context->targetBitrate);
+        if (STRCMPI(options[i], PLUGINCODEC_OPTION_FRAME_TIME) == 0)
+        options[i+1] = num2str(context->frameTime);
+        if (STRCMPI(options[i], PLUGINCODEC_OPTION_FRAME_HEIGHT) == 0)
+        options[i+1] = num2str(context->height);
+        if (STRCMPI(options[i], PLUGINCODEC_OPTION_FRAME_WIDTH) == 0)
+        options[i+1] = num2str(context->width);
+//        if (STRCMPI(options[i], PLUGINCODEC_OPTION_LEVEL) == 0)
+//        options[i+1] = num2str(level);
+      }
+    }
   }
   return 1;
 }
