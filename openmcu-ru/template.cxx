@@ -181,7 +181,17 @@ void Conference::LoadTemplate(PString tpl)
           { PINDEX commaPosition = value.Find(',');
             if(commaPosition != P_MAX_INDEX)
             { PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
-              MemberNameList::iterator s = memberNameList.find(name);
+              //MemberNameList::iterator s = memberNameList.find(name);
+              // Поиск по UrlId
+              MemberNameList::iterator s;
+              for(s = memberNameList.begin(); s != memberNameList.end(); ++s)
+              {
+                if(s->second!=NULL) // online
+                {
+                  if(name.Find(s->second->GetUrlId()) != P_MAX_INDEX)
+                    break;
+                }
+              }
               if(s!=memberNameList.end())
               {
                 if(s->second!=NULL) // online
@@ -216,7 +226,20 @@ void Conference::LoadTemplate(PString tpl)
           }
 
           PWaitAndSignal m(memberListMutex);
-          MemberNameList::const_iterator r = memberNameList.find(memberInternalName);
+          //MemberNameList::const_iterator r = memberNameList.find(memberInternalName);
+          // Поиск по UrlId
+          MemberNameList::const_iterator r;
+          for(r = memberNameList.begin(); r != memberNameList.end(); ++r)
+          {
+            if(r->second!=NULL) // online
+            {
+              if(memberInternalName.Find(r->second->GetUrlId()) != P_MAX_INDEX)
+              {
+                memberInternalName = r->first;
+                break;
+              }
+            }
+          }
           BOOL offline = (r == memberNameList.end());
 
           if(offline) memberNameList.insert(MemberNameList::value_type(memberInternalName, (ConferenceMember*)NULL));

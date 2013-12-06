@@ -145,9 +145,11 @@ PString CreateRuriStr(msg_t *msg, int direction)
 
   PString ruri = "sip:";
 
-  PString user = sip_to->a_url->url_user;
-  if(user == "" && sip->sip_contact && sip->sip_contact->m_url)
+  PString user;
+  if(sip->sip_contact && sip->sip_contact->m_url)
     user = sip->sip_contact->m_url->url_user;
+  if(user == "")
+    user = sip_to->a_url->url_user;
   ruri += user;
 
   if(strcmp(sip->sip_via->v_host, "0.0.0.0") != 0 && sip->sip_request)

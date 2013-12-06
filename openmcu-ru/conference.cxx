@@ -715,16 +715,14 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // add this member to the conference member name list
   if(memberToAdd!=memberToAdd->GetID())
   {
-    if(memberToAdd->GetName().Find("[sip:") != P_MAX_INDEX && memberToAdd->GetName().Find(" ##") == P_MAX_INDEX)
+    if(memberToAdd->GetName().Find(" ##") == P_MAX_INDEX)
     {
-      // для SIP поиск по user@host
-      PString addr = memberToAdd->GetName().Tokenise("[")[1].Tokenise(";")[0].Tokenise(":")[1];
+      // поиск по UrlId
       BOOL found = FALSE;
       for (Conference::MemberNameList::const_iterator s = memberNameList.begin(); s != memberNameList.end(); ++s)
       {
         PString memberName = s->first;
-        PString memberAddr = memberName.Tokenise("[")[1].Tokenise(";")[0].Tokenise(":")[1];
-        if(memberAddr == addr)
+        if(memberName.Find(memberToAdd->GetUrlId()) != P_MAX_INDEX)
         {
           if(s->second == NULL)
           {

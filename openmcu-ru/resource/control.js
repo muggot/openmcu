@@ -686,12 +686,19 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr){
   var found=0; var j=members.length;
   for(var i=j-1;i>=0;i--)
   {
-    var uri = name.substring(name.lastIndexOf('[')+1, name.lastIndexOf(']')-1);
-    var member_uri = members[i][2].substring(members[i][2].lastIndexOf('[')+1, members[i][2].lastIndexOf(']')-1);
-    if(uri.substring(0,4) == "sip:" && name.lastIndexOf(" ##") == -1 && members[i][0] == 0)
+    var uri = name.substring(name.lastIndexOf('[')+1, name.lastIndexOf(']'));
+    var member_uri = members[i][2].substring(members[i][2].lastIndexOf('[')+1, members[i][2].lastIndexOf(']'));
+    if(name.lastIndexOf(" ##") == -1 && members[i][0] == 0)
     {
-      var addr = uri.split(";")[0].split(":")[1];
-      var member_addr = member_uri.split(";")[0].split(":")[1];
+      var addr, member_addr;
+      if(uri.substring(0,4) == "sip:")
+      {
+        addr = uri.split(";")[0].split(":")[1];
+        member_addr = member_uri.split(";")[0].split(":")[1];
+      } else {
+        addr = uri.split(";")[0].split(":")[0];
+        member_addr = member_uri.split(";")[0].split(":")[0];
+      }
       if((members[i][1] == id) || (member_addr == addr))
         if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
     } else {
