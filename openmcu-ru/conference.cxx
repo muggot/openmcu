@@ -508,8 +508,9 @@ void Conference::RefreshAddressBook()
 {
   for(PINDEX i = 0; i < OpenMCU::Current().addressBook.GetSize(); i++)
   {
-    PString uri=OpenMCU::Current().addressBook[i];
-    memberNameList.insert(MemberNameList::value_type("#####"+uri, NULL));
+    PString addr=OpenMCU::Current().addressBook[i];
+    if(addr.Find("h323:") != P_MAX_INDEX) addr.Replace("h323:","",TRUE,0);
+    memberNameList.insert(MemberNameList::value_type("#####"+addr, NULL));
   }
 }
 
