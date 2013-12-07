@@ -181,8 +181,6 @@ void Conference::LoadTemplate(PString tpl)
           { PINDEX commaPosition = value.Find(',');
             if(commaPosition != P_MAX_INDEX)
             { PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
-              name.Replace("[","<",TRUE,0);
-              name.Replace("]",">",TRUE,0);
               // Поиск по UriId
               MemberNameList::iterator s;
               for(s = memberNameList.begin(); s != memberNameList.end(); ++s)
@@ -216,8 +214,6 @@ void Conference::LoadTemplate(PString tpl)
           BOOL memberAutoDial = (v[0]=="1");
 
           PString memberInternalName = v[5].Trim();
-          memberInternalName.Replace("[","<",TRUE,0);
-          memberInternalName.Replace("]",">",TRUE,0);
           for(int i=6; i<v.GetSize(); i++) memberInternalName += "," + v[i];
           PString memberAddress = GetUri(memberInternalName);
 

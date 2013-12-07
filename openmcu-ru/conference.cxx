@@ -142,6 +142,10 @@ void ConferenceManager::OnCreateConference(Conference * conference)
     while(fgets(buf, 128, membLst)!=NULL) membersConf << buf;
     fclose(membLst);
   }
+
+  membersConf.Replace("[","<",TRUE,0);
+  membersConf.Replace("]",">",TRUE,0);
+
   conference->membersConf=membersConf;
   if(membersConf.Left(1)!="\n") membersConf="\n"+membersConf;
 
