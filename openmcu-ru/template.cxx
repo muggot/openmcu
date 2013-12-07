@@ -181,14 +181,15 @@ void Conference::LoadTemplate(PString tpl)
           { PINDEX commaPosition = value.Find(',');
             if(commaPosition != P_MAX_INDEX)
             { PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
-              //MemberNameList::iterator s = memberNameList.find(name);
-              // Поиск по UrlId
+              name.Replace("[","<",TRUE,0);
+              name.Replace("]",">",TRUE,0);
+              // Поиск по UriId
               MemberNameList::iterator s;
               for(s = memberNameList.begin(); s != memberNameList.end(); ++s)
               {
                 if(s->second!=NULL) // online
                 {
-                  if(name.Find(s->second->GetUrlId()) != P_MAX_INDEX)
+                  if(GetUriId(name) == GetUriId(s->first))
                     break;
                 }
               }
@@ -215,25 +216,19 @@ void Conference::LoadTemplate(PString tpl)
           BOOL memberAutoDial = (v[0]=="1");
 
           PString memberInternalName = v[5].Trim();
+          memberInternalName.Replace("[","<",TRUE,0);
+          memberInternalName.Replace("]",">",TRUE,0);
           for(int i=6; i<v.GetSize(); i++) memberInternalName += "," + v[i];
-
-          PString memberAddress;
-          PINDEX bp1 = memberInternalName.FindLast('[');
-          if(bp1 != P_MAX_INDEX)
-          {
-            PINDEX bp2 = memberInternalName.FindLast(']');
-            if(bp2 > bp1) memberAddress = memberInternalName.Mid(bp1+1,bp2-bp1-1);
-          }
+          PString memberAddress = GetUri(memberInternalName);
 
           PWaitAndSignal m(memberListMutex);
-          //MemberNameList::const_iterator r = memberNameList.find(memberInternalName);
-          // Поиск по UrlId
+          // Поиск по UriId
           MemberNameList::const_iterator r;
           for(r = memberNameList.begin(); r != memberNameList.end(); ++r)
           {
             if(r->second!=NULL) // online
             {
-              if(memberInternalName.Find(r->second->GetUrlId()) != P_MAX_INDEX)
+              if(GetUriId(memberInternalName) == GetUriId(r->first))
               {
                 memberInternalName = r->first;
                 break;
@@ -600,7 +595,7 @@ void Conference::OnConnectionClean(const PString & remotePartyName, const PStrin
     PINDEX i = url.Find("ip$");
     if(i != P_MAX_INDEX) url=url.Mid(i+3);
     if(!name.IsEmpty()) name+=' ';
-    name += '[' + url +']';
+    name += '<' + url +'>';
   }
 
   Conference::MemberNameList::iterator q = memberNameList.find(name);

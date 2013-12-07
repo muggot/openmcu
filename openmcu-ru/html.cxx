@@ -647,10 +647,14 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   if(keys.GetSize() == 1)
     keys.AppendString("test");
 
+  mcu.addressBook.RemoveAll();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
+
+    if(keys[i] != "" && keys[i] != "*" && keys[i] != "test")
+      mcu.addressBook.AppendString(params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]+" <h323:"+name+">");
 
     if(name == "*") s << NewRowInput(name, 15, TRUE);
     else s << NewRowInput(name, 15);
@@ -728,6 +732,9 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
+
+    if(keys[i] != "" && keys[i] != "*" && keys[i] != "test")
+      mcu.addressBook.AppendString(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")]+" <sip:"+name+">");
 
     if(name == "*") s << NewRowInput(name, 15, TRUE);
     else s << NewRowInput(name, 15);
@@ -1382,17 +1389,12 @@ InvitePage::InvitePage(OpenMCU & _app, PHTTPAuthority & auth)
   BeginPage(html,"Invite","window.l_invite","window.l_info_invite");
 
   PString select = "<select class='input-large' onchange='changeSelect(this)'><option value=''></option>";
-  PStringList keys = MCUConfig("SIP Endpoints").GetKeys();
-  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  for(PINDEX i = 0; i < OpenMCU::Current().addressBook.GetSize(); i++)
   {
-    if(keys[i] == "*" || keys[i] == "test") continue;
-    select += "<option value='sip:"+keys[i]+"'>sip:"+keys[i]+"</option>";
-  }
-  keys = MCUConfig("H323 Endpoints").GetKeys();
-  for(PINDEX i = 0; i < keys.GetSize(); i++)
-  {
-    if(keys[i] == "*" || keys[i] == "test") continue;
-    select += "<option value='h323:"+keys[i]+"'>h323:"+keys[i]+"</option>";
+    PString uri = OpenMCU::Current().addressBook[i];
+    uri.Replace("<","&lt;",TRUE,0);
+    uri.Replace(">","&gt;",TRUE,0);
+    select += "<option value='"+uri+"'>"+uri+"</option>";
   }
   select += "</select>";
 

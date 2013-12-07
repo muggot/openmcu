@@ -145,6 +145,8 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   conference->membersConf=membersConf;
   if(membersConf.Left(1)!="\n") membersConf="\n"+membersConf;
 
+  conference->RefreshAddressBook();
+
   // recall last template
   if(!OpenMCU::Current().recallRoomTemplate) return;
   PINDEX dp=membersConf.Find("\nLAST_USED ");
@@ -498,6 +500,15 @@ void Conference::AddMonitorEvent(ConferenceMonitorInfo * info)
   manager.AddMonitorEvent(info); 
 }
 
+void Conference::RefreshAddressBook()
+{
+  for(PINDEX i = 0; i < OpenMCU::Current().addressBook.GetSize(); i++)
+  {
+    PString uri=OpenMCU::Current().addressBook[i];
+    memberNameList.insert(MemberNameList::value_type("#####"+uri, NULL));
+  }
+}
+
 BOOL Conference::InviteMember(const char *membName, void * userData)
 {
   char buf[128];
@@ -530,6 +541,7 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
     }
   }
 
+  if(IsUri(address)) address = GetUri(address);
   if(address.Left(4) == "sip:")
   {
     PStringStream msg;
@@ -722,7 +734,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
       for (Conference::MemberNameList::const_iterator s = memberNameList.begin(); s != memberNameList.end(); ++s)
       {
         PString memberName = s->first;
-        if(memberName.Find(memberToAdd->GetUrlId()) != P_MAX_INDEX)
+        if(GetUriId(memberName) == GetUriId(memberToAdd->GetName()))
         {
           if(s->second == NULL)
           {

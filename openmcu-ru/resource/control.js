@@ -520,12 +520,8 @@ function format_mmbr_button(m,st){
  if(st!=0) s+=';cursor:move" id="rpan_'+id+'" onmousedown="{highlight('+m[1]+',0);ddstart(event,this,\'panel\','+m[1]+');}" onmouseover="highlight('+m[1]+',1)" onmouseout="highlight('+m[1]+',0)"';
  else s+='" id="rpan_'+id+'"';
  var uname=m[2]+"";
- var bpos=uname.lastIndexOf('[');
- var b2pos=uname.lastIndexOf(']');
- if(bpos!=-1)if(b2pos>bpos){
-  ip=uname.substring(bpos+1,b2pos); uname=uname.substr(0,bpos);
-  bpos=uname.lastIndexOf('('); b2pos=uname.lastIndexOf(')'); if(bpos!=-1)if(b2pos>bpos) uname=uname.substr(0,bpos);
- }
+ ip=get_addr_uri(uname)
+ uname=get_addr_name(uname)
 
  var mute=''; var vad=''; var kick=''; var hide='';
 
@@ -586,13 +582,18 @@ function additional_panel(){
   return s;
 }
 
+function book_panel(){
+  var s=""
+  return s;
+}
+
 function members_refresh(){
  if(typeof members==='undefined'){
   document.getElementById('members_pan').innerHTML='ERROR: <i>members</i> variable not set';
   return false;
  }
  var p_height=200;
- if(typeof total_height!='undefined') p_height=total_height-2;
+ if(typeof total_height!='undefined') p_height=total_height*0.6;
  if(!document.getElementById('right_scroller')) document.getElementById('members_pan').innerHTML='<div id="right_scroller" style="width:'+panel_width+';height:'+p_height+'px;overflow:hidden;overflow-y:auto">Initializing panel...</div>';
 // var formids=',';
  offliners=false;
@@ -600,7 +601,8 @@ function members_refresh(){
  var vmr='';
  var amr='';
  var imr='';
- for(i=0;i<members.length;i++){
+ for(i=0;i<members.length;i++)
+ {
   mmbr=members[i];
 //  alert(mmbr[1]); if(mmbr[1]!=0){alert('!');alert(mmbr[7]);}
   if(mmbr[0])
@@ -615,6 +617,20 @@ function members_refresh(){
   mp.innerHTML=result;
  }
  for(i=0;i<members.length;i++) if(members[i][0]&&members[i][6])audio(members[i][1],members[i][6]);
+
+ if(typeof addressbook==='undefined') return true;
+ if(!document.getElementById('right_scroller_book')) document.getElementById('members_pan').innerHTML+='<div id="right_scroller_book" style="width:'+panel_width+';height:'+(total_height-p_height)+'px;overflow:hidden;overflow-y:auto">Address book</div>';
+ imr='';
+ for(i=0;i<addressbook.length;i++)
+ {
+   mmbr=addressbook[i];
+   imr+=format_mmbr_button(mmbr,0);
+ }
+ result='<div style="width:"+panel_width+"px" id="right_pan">'+book_panel()+imr+'</div>';
+ var mp_book=document.getElementById('right_scroller_book');
+ if(mp_book.innerHTML!=result){
+  mp_book.innerHTML=result;
+ }
 
  return true;
 }
@@ -681,24 +697,29 @@ function audio(id,vol){
   alive();
 }
 
+function get_addr_name(addr){
+  return addr.substring(0, addr.lastIndexOf('<'));
+}
+function get_addr_uri(addr){
+  return addr.substring(addr.lastIndexOf('<')+1, addr.lastIndexOf('>'));
+}
+function get_addr_uriid(addr){
+  var uri = get_addr_uri(addr)
+  if(uri.substring(0,4) == "sip:")
+    return uri.split(";")[0].split(":")[1];
+  else
+    return uri.split(";")[0].split(":")[0];
+}
+
 function addmmbr(st,id,name,mute,dvad,cvan,al,mixr){
   if(typeof members==='undefined') return alive();
   var found=0; var j=members.length;
   for(var i=j-1;i>=0;i--)
   {
-    var uri = name.substring(name.lastIndexOf('[')+1, name.lastIndexOf(']'));
-    var member_uri = members[i][2].substring(members[i][2].lastIndexOf('[')+1, members[i][2].lastIndexOf(']'));
     if(name.lastIndexOf(" ##") == -1 && members[i][0] == 0)
     {
-      var addr, member_addr;
-      if(uri.substring(0,4) == "sip:")
-      {
-        addr = uri.split(";")[0].split(":")[1];
-        member_addr = member_uri.split(";")[0].split(":")[1];
-      } else {
-        addr = uri.split(";")[0].split(":")[0];
-        member_addr = member_uri.split(";")[0].split(":")[0];
-      }
+      var addr = get_addr_uriid(name);
+      var member_addr = get_addr_uriid(members[i][2]);
       if((members[i][1] == id) || (member_addr == addr))
         if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
     } else {
@@ -1095,13 +1116,25 @@ function build_page()
     panel_content+="</div>";
   panel_content+="</div>";
 
-
   vmp_content = get_mixers_content(); //sets visible_ids
 
   main_content = mockup_content;
   main_content += workplace_content;
   main_content += panel_content;
   main_content += vmp_content;
+
+  addressbook = new Array();
+  for(i=0,j=0;i<members.length;i++)
+  {
+    if(members[i][2].lastIndexOf("#####") != -1)
+    {
+      addressbook[j] = members[i];
+      addressbook[j][2] = addressbook[j][2].replace("#####","");
+      members.splice(i, 1);
+      j++;
+      i--;
+    }
+  }
 
   b.innerHTML=main_content;
   members_refresh();

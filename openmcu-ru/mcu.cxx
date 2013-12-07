@@ -412,6 +412,13 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     GetEndpoint().GetConferenceManager().UnlockConference();
   }
 
+  // refresh Address Book
+  PWaitAndSignal m(GetEndpoint().GetConferenceManager().GetConferenceListMutex());
+  ConferenceListType & conferenceList = GetEndpoint().GetConferenceManager().GetConferenceList();
+  ConferenceListType::iterator r;
+  for (r = conferenceList.begin(); r != conferenceList.end(); ++r)
+    if(r->second) r->second->RefreshAddressBook();
+
   PSYSTEMLOG(Info, "Service " << GetName() << ' ' << initMsg);
   return TRUE;
 }
@@ -534,3 +541,4 @@ PString OpenMCU::GetEndpointParamFromUri(PString param, PString uri, PString pro
 }
 
 // End of File ///////////////////////////////////////////////////////////////
+

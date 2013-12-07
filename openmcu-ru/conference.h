@@ -955,20 +955,6 @@ class ConferenceMember : public PObject
       return audioLevel;
     }
 
-    virtual PString GetUrl() const
-    {
-      return name.Mid(name.FindLast("[")+1, name.FindLast("]")-1);
-    }
-    virtual PString GetUrlId() const
-    {
-     // return user@host
-     PString url = GetUrl();
-     if(url.Left(4) == "sip:")
-       return GetUrl().Tokenise(";")[0].Tokenise(":")[1];
-     else
-       return GetUrl().Tokenise(";")[0].Tokenise(":")[0];
-    }
-
     BOOL autoDial;
     BOOL muteIncoming;
     BOOL disableVAD;
@@ -1088,6 +1074,7 @@ class Conference : public PObject
     ConferenceManager & GetManager()
     { return manager; }
 
+    void RefreshAddressBook();
     BOOL InviteMember(const char *membName, void * userData = NULL);
 
     /**

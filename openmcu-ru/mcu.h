@@ -176,6 +176,42 @@ class MCUConfig: public PConfig
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static inline BOOL IsUri(PString addr)
+{
+  if(addr.Find("<") != P_MAX_INDEX && addr.Find(">") != P_MAX_INDEX)
+    return TRUE;
+  return FALSE;
+}
+static inline PString GetUriElement(PString addr, PINDEX num = 1)
+{
+  PString delim1 = "<";
+  PString delim2 = ">";
+  if(num == 0) return addr.Left(addr.Find(delim1)-1);
+
+  PINDEX pos1 = 0;
+  for(PINDEX i = 1; i <= num; i++)
+    pos1 = addr.FindOneOf(delim1, i == 1 ? pos1 : pos1+1);
+  if(pos1 == P_MAX_INDEX) return "";
+  PINDEX pos2 = addr.FindOneOf(delim2, pos1);
+  if(pos2 == P_MAX_INDEX) return "";
+  return addr.Mid(pos1+1, pos2-pos1-1);
+}
+static inline PString GetUri(PString addr)
+{
+  return GetUriElement(addr);
+}
+static inline PString GetUriId(PString addr)
+{
+  // return user@host
+  PString uri = GetUri(addr);
+  if(uri.Left(4) == "sip:")
+    return uri.Tokenise(";")[0].Tokenise(":")[1];
+  else
+    return uri.Tokenise(";")[0].Tokenise(":")[0];
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // All this silly stuff to get the plugins to load 
 // because windows is stoopid and the pluginloader never gets instanced.
 // This is required for ALL MFC based applications looking to load plugins!
@@ -389,6 +425,8 @@ class OpenMCU : public OpenMCUProcessAncestor
     BOOL       copyWebLogToLog;
 
     PString GetEndpointParamFromUri(PString param, PString uri, PString protocol);
+
+    PStringArray addressBook;
 
   protected:
     int        currentLogLevel, currentTraceLevel;
