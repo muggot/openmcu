@@ -440,8 +440,8 @@ static const char * qcifMPI_tag                           = "QCIF MPI";
 static const char * cifMPI_tag                            = "CIF MPI";
 static const char * cif4MPI_tag                           = "CIF4 MPI";
 static const char * cif16MPI_tag                          = "CIF16 MPI";
-static const char * i480MPI_tag                           = "I480 MPI";
-static const char * p720MPI_tag                           = "720P MPI";
+//static const char * i480MPI_tag                           = "I480 MPI";
+//static const char * p720MPI_tag                           = "720P MPI";
 static const char * i1080MPI_tag                          = "I1080 MPI";
 
 // H.261 only
@@ -1672,8 +1672,8 @@ void cache::GetFrame(RTP_DataFrame &frame, unsigned int &toLen, unsigned int &nu
  int i=0; // for debug
  while ((r == rtpCaches.end() || r->second->lock) && num<seqN) 
  {
-  if(i>0) PTRACE(3, "H323READ\t Lost Packet " << i << " " << num); //for debug
-  if(r!=rtpCaches.end() && r->second->lock) PTRACE(3, "H323READ\t Lost Packet " << i << " " << num << " " << r->second->lock); //for debug
+  PTRACE_IF(3, i>0, "H323READ\t Lost Packet " << i << " " << num); //for debug
+  PTRACE_IF(3, (r!=rtpCaches.end() && r->second->lock), "H323READ\t Lost Packet " << i << " " << num << " " << r->second->lock); //for debug
   num=(num&FRAME_MASK)+FRAME_OFFSET; // may be lost frames, fix it
   r = rtpCaches.find(num);
   i++; // for debug
@@ -2235,7 +2235,7 @@ BOOL H323PluginVideoCodec::Write(const BYTE * buffer, unsigned length, const RTP
   }
 
   
-  if(h->width!=frameWidth || h->height!=frameHeight) 
+  if(h->width!=(unsigned int)frameWidth || h->height!=(unsigned int)frameHeight) 
   {
    PVideoChannel *videoOut = (PVideoChannel *)rawDataChannel;
    SetFrameSize(h->width,h->height);
@@ -2891,14 +2891,15 @@ void H323PluginCodecManager::OnShutdown()
 
 void H323PluginCodecManager::OnLoadPlugin(PDynaLink & dll, INT code)
 {
-  PluginCodec_GetCodecFunction getCodecs;
-  if (!dll.GetFunction(PString(signatureFunctionName), (PDynaLink::Function &)getCodecs)) {
+  PDynaLink::Function getCodecs; //  PluginCodec_GetCodecFunction
+  if (!dll.GetFunction(PString(signatureFunctionName), getCodecs))
+  {
     PTRACE(3, "H323PLUGIN\tPlugin Codec DLL " << dll.GetName() << " is not a plugin codec");
     return;
   }
 
   unsigned int count;
-  PluginCodec_Definition * codecs = (*getCodecs)(&count, PLUGIN_CODEC_VERSION_OPTIONS);
+  PluginCodec_Definition * codecs = (*((PluginCodec_GetCodecFunction)getCodecs))(&count, PLUGIN_CODEC_VERSION_OPTIONS);
   if (codecs == NULL || count == 0) {
     PTRACE(3, "H323PLUGIN\tPlugin Codec DLL " << dll.GetName() << " contains no codec definitions");
     return;
@@ -2954,7 +2955,7 @@ void H323PluginCodecManager::RegisterCodecs(unsigned int count, void * _codecLis
     // for every encoder, we need a decoder
     BOOL found = FALSE;
     BOOL isEncoder = FALSE;
-    if (encoder.h323CapabilityType != PluginCodec_H323Codec_undefined &&
+    if (encoder.h323CapabilityType != PluginCodec_H323Codec_undefined && (
          (
            ((encoder.flags & PluginCodec_MediaTypeMask) == PluginCodec_MediaTypeAudio) &&
             (strcmp(encoder.sourceFormat, "L16") == 0 ||
@@ -2970,7 +2971,7 @@ void H323PluginCodecManager::RegisterCodecs(unsigned int count, void * _codecLis
            ((encoder.flags & PluginCodec_MediaTypeMask) == PluginCodec_MediaTypeVideo) && 
            strcmp(encoder.sourceFormat, "YUV420P") == 0
         )
-       ) {
+      )) {
       isEncoder = TRUE;
       for (j = 0; j < count; j++) {
 

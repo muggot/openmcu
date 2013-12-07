@@ -594,7 +594,7 @@ BOOL PInternetProtocol::WriteResponse(const PString & code,
                                        const PString & info)
 {
   if (info.FindOneOf(CRLF) == P_MAX_INDEX)
-    return WriteString(code & info + CRLF);
+    return WriteString((code & info) + CRLF);
 
   PStringArray lines = info.Lines();
   PINDEX i;
@@ -602,7 +602,7 @@ BOOL PInternetProtocol::WriteResponse(const PString & code,
     if (!WriteString(code + '-' + lines[i] + CRLF))
       return FALSE;
 
-  return WriteString(code & lines[i] + CRLF);
+  return WriteString((code & lines[i]) + CRLF);
 }
 
 

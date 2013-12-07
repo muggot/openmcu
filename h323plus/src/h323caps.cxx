@@ -4329,7 +4329,7 @@ BOOL H323Capabilities::IsAllowed(const unsigned a_capno1, const unsigned a_capno
 
 
 struct msNonStandardCodecDef {
-  char * name;
+  const char * name;
   BYTE sig[2];
 };
 

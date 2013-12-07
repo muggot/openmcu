@@ -451,7 +451,7 @@ static struct PluginCodec_Definition g726CodecDefn[] = {
   PREF_FRAMES_PER_PACKET,               // recommended number of frames per packet
   MAX_FRAMES_PER_PACKET,                // maximum number of frames per packe
   PAYLOAD_CODE,                         // IANA RTP payload code
-  sdpG726_32,                           // RTP payload name
+  sdpG726_24,                           // RTP payload name
 
   create_codec,                         // create codec function
   destroy_codec,                        // destroy codec

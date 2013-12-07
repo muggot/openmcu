@@ -288,14 +288,15 @@ h235PluginDeviceManager::~h235PluginDeviceManager()
 
 void h235PluginDeviceManager::OnLoadPlugin(PDynaLink & dll, INT code)
 {
-  Pluginh235_Geth235Function geth235;
-  if (!dll.GetFunction(PString(signatureFunctionName), (PDynaLink::Function &)geth235)) {
+  PDynaLink::Function geth235;
+  if (!dll.GetFunction(PString(signatureFunctionName), geth235))
+  {
     PTRACE(3, "H323h235\tPlugin DLL " << dll.GetName() << " is not a H235 plugin");	  
     return;
   }
 
   unsigned int count;
-  Pluginh235_Definition * h235 = (*geth235)(&count, PLUGIN_H235_VERSION);
+  Pluginh235_Definition * h235 = (*((Pluginh235_Geth235Function)geth235))(&count, PLUGIN_H235_VERSION);
   if (h235 == NULL || count == 0) {
     PTRACE(3, "H323PLUGIN\tPlugin DLL " << dll.GetName() << " contains no H235 definitions" );
     return;

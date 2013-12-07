@@ -1138,8 +1138,8 @@ void PTEACypher::EncodeBlock(const void * in, void * out)
   DWORD sum = 0;
   for (PINDEX count = 32; count > 0; count--) {
     sum += TEADelta;    // Magic number for key schedule
-    y += (z<<4)+k0 ^ z+sum ^ (z>>5)+k1;
-    z += (y<<4)+k2 ^ y+sum ^ (y>>5)+k3;   /* end cycle */
+    y += ((z<<4)+k0) ^ (z+sum) ^ ((z>>5)+k1);
+    z += ((y<<4)+k2) ^ (y+sum) ^ ((y>>5)+k3);   /* end cycle */
   }
   ((PUInt32b*)out)[0] = y;
   ((PUInt32b*)out)[1] = z;
@@ -1152,8 +1152,8 @@ void PTEACypher::DecodeBlock(const void * in, void * out)
   DWORD z = ((PUInt32b*)in)[1];
   DWORD sum = TEADelta<<5;
   for (PINDEX count = 32; count > 0; count--) {
-    z -= (y<<4)+k2 ^ y+sum ^ (y>>5)+k3; 
-    y -= (z<<4)+k0 ^ z+sum ^ (z>>5)+k1;
+    z -= ((y<<4)+k2) ^ (y+sum) ^ ((y>>5)+k3); 
+    y -= ((z<<4)+k0) ^ (z+sum) ^ ((z>>5)+k1);
     sum -= TEADelta;    // Magic number for key schedule
   }
   ((PUInt32b*)out)[0] = y;

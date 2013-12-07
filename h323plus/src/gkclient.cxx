@@ -1146,12 +1146,14 @@ BOOL H323Gatekeeper::OnReceiveRegistrationConfirm(const H225_RegistrationConfirm
 #ifdef H323_GNUGK
   if (rcf.HasOptionalField(H225_RegistrationConfirm::e_nonStandardData))
   {
-	  PString NATaddr = rcf.m_nonStandardData.m_data.AsString();
-       if (!NATaddr.IsEmpty())
-		  if (NATaddr.Left(4) == "NAT=")
-		      endpoint.OnGatekeeperNATDetect(NATaddr.Right(NATaddr.GetLength()-4),endpointIdentifier,gkRouteAddress);
-		  else
-              endpoint.OnGatekeeperOpenNATDetect(endpointIdentifier,gkRouteAddress);
+    PString NATaddr = rcf.m_nonStandardData.m_data.AsString();
+    if (!NATaddr.IsEmpty())
+    {
+      if (NATaddr.Left(4) == "NAT=")
+        endpoint.OnGatekeeperNATDetect(NATaddr.Right(NATaddr.GetLength()-4),endpointIdentifier,gkRouteAddress);
+      else
+        endpoint.OnGatekeeperOpenNATDetect(endpointIdentifier,gkRouteAddress);
+    }
   }
 #endif
 
