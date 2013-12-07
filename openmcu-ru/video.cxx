@@ -439,7 +439,7 @@ void MCUSimpleVideoMixer::Print_Subtitles(VideoMixPosition & vmp, void * buffer,
   unsigned int charcode, c2, ft_previous=0;
   PINDEX len=vmp.endpointName.GetLength(); for(PINDEX i=0;i<len;++i) {
     charcode=(BYTE)vmp.endpointName[i]; if(i<len-1)c2=(BYTE)vmp.endpointName[i+1]; else c2=0;
-    if(vmpcfg.cut_before_bracket) if(charcode==' ') if(c2=='[' || c2=='(') break;
+    if(vmpcfg.cut_before_bracket) if(charcode==' ') if(c2=='<' || c2=='(') break;
     if(!(charcode&128))                                               { /* 0xxxxxxx */ } // utf-8 -> unicode
     else if(((charcode&224)==192)&&(i+1<vmp.endpointName.GetLength())){ /* 110xxxxx 10xxxxxx */ charcode=((charcode&31)<<6)+(c2&63); i++; }
     else if(((charcode&240)==224)&&(i+2<vmp.endpointName.GetLength())){ /* 1110xxxx 10xxxxxx 10xxxxxx */ charcode=((charcode&15)<<12) + (((unsigned int)(c2&63))<<6) + ((BYTE)vmp.endpointName[i+2]&63); i+=2; }
