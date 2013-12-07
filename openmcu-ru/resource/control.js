@@ -593,7 +593,7 @@ function members_refresh(){
   return false;
  }
  var p_height=200;
- if(typeof total_height!='undefined') p_height=total_height*0.6;
+ if(typeof total_height!='undefined') p_height=total_height-2;
  if(!document.getElementById('right_scroller')) document.getElementById('members_pan').innerHTML='<div id="right_scroller" style="width:'+panel_width+';height:'+p_height+'px;overflow:hidden;overflow-y:auto">Initializing panel...</div>';
 // var formids=',';
  offliners=false;
@@ -601,8 +601,7 @@ function members_refresh(){
  var vmr='';
  var amr='';
  var imr='';
- for(i=0;i<members.length;i++)
- {
+ for(i=0;i<members.length;i++){
   mmbr=members[i];
 //  alert(mmbr[1]); if(mmbr[1]!=0){alert('!');alert(mmbr[7]);}
   if(mmbr[0])
@@ -617,20 +616,6 @@ function members_refresh(){
   mp.innerHTML=result;
  }
  for(i=0;i<members.length;i++) if(members[i][0]&&members[i][6])audio(members[i][1],members[i][6]);
-
- if(typeof addressbook==='undefined') return true;
- if(!document.getElementById('right_scroller_book')) document.getElementById('members_pan').innerHTML+='<div id="right_scroller_book" style="width:'+panel_width+';height:'+(total_height-p_height)+'px;overflow:hidden;overflow-y:auto">Address book</div>';
- imr='';
- for(i=0;i<addressbook.length;i++)
- {
-   mmbr=addressbook[i];
-   imr+=format_mmbr_button(mmbr,0);
- }
- result='<div style="width:"+panel_width+"px" id="right_pan">'+book_panel()+imr+'</div>';
- var mp_book=document.getElementById('right_scroller_book');
- if(mp_book.innerHTML!=result){
-  mp_book.innerHTML=result;
- }
 
  return true;
 }
