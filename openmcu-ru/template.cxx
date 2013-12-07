@@ -297,7 +297,7 @@ void Conference::LoadTemplate(PString tpl)
       }
     }
   }
-
+  RefreshAddressBook();
 }
 
 PString Conference::GetTemplateList()
