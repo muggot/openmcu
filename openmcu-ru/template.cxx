@@ -592,7 +592,7 @@ void Conference::OnConnectionClean(const PString & remotePartyName, const PStrin
     PINDEX i = url.Find("ip$");
     if(i != P_MAX_INDEX) url=url.Mid(i+3);
     if(!name.IsEmpty()) name+=' ';
-    name += '<' + url +'>';
+    name += '[' + url +']';
   }
 
   Conference::MemberNameList::iterator q = memberNameList.find(name);

@@ -683,10 +683,10 @@ function audio(id,vol){
 }
 
 function get_addr_name(addr){
-  return addr.substring(0, addr.lastIndexOf('<'));
+  return addr.substring(0, addr.lastIndexOf('['));
 }
 function get_addr_uri(addr){
-  return addr.substring(addr.lastIndexOf('<')+1, addr.lastIndexOf('>'));
+  return addr.substring(addr.lastIndexOf('[')+1, addr.lastIndexOf(']'));
 }
 function get_addr_uriid(addr){
   var uri = get_addr_uri(addr)
@@ -1286,8 +1286,6 @@ function get_mixer_position_html(mixer, position)
      s+="<div id='us"+mixer+"_"+p+"'"
        +" onmouseout='javascript:{prvnt=0;}' onmouseover='javascript:{prvnt=1;}' onclick='javascript:{member_selector(this,"+mixer+","+p+","+id+")}'"
        +" style='x-overflow:hidden;white-space:nowrap;cursor:pointer;width:"+(user_width)+"px;height:"+(label_height-2)+"px'>";
-    memberName = memberName.replace("<","&lt;");
-    memberName = memberName.replace(">","&gt;");
     s+=memberName;
     s+="</div></div>";
   }
@@ -1432,10 +1430,7 @@ function member_selector(obj,mixer,position,id)
       else selector+="onclick='javascript:member_selector_mouse_out();' ";
       selector+=" class='btn btn-large";
       if(current) selector+=" btn-success";
-      var memberName = members[i][2];
-      memberName = memberName.replace("<","&lt;");
-      memberName = memberName.replace(">","&gt;");
-      selector+="' style='margin:1px;width:"+(selWidth-8)+"px;text-align:left'><nobr>"+memberName+"</nobr></p>";
+      selector+="' style='margin:1px;width:"+(selWidth-8)+"px;text-align:left'><nobr>"+members[i][2]+"</nobr></p>";
     }
   }
 

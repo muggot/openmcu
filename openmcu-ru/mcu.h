@@ -178,14 +178,14 @@ class MCUConfig: public PConfig
 
 static inline BOOL IsUri(PString addr)
 {
-  if(addr.Find("<") != P_MAX_INDEX && addr.Find(">") != P_MAX_INDEX)
+  if(addr.Find("[") != P_MAX_INDEX && addr.Find("]") != P_MAX_INDEX)
     return TRUE;
   return FALSE;
 }
 static inline PString GetUriElement(PString addr, PINDEX num = 1)
 {
-  PString delim1 = "<";
-  PString delim2 = ">";
+  PString delim1 = "[";
+  PString delim2 = "]";
   if(num == 0) return addr.Left(addr.Find(delim1)-1);
 
   PINDEX pos1 = 0;

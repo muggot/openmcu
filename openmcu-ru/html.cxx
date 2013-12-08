@@ -653,8 +653,9 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
 
+    PString dname = params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")];
     if(keys[i] != "" && keys[i] != "*" && keys[i] != "test")
-      mcu.addressBook.AppendString(params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]+" <h323:"+name+">");
+      mcu.addressBook.AppendString(dname+" [h323:"+name+"]");
 
     if(name == "*") s << NewRowInput(name, 15, TRUE);
     else s << NewRowInput(name, 15);
@@ -662,7 +663,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("H323 port")], 8);
     s << HiddenItem(name);
     if(name == "*") s << StringItem(name, "", 12, TRUE);
-    else s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")]);
+    else s << StringItem(name, dname);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")], 8);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")], 8);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")], 8);
@@ -733,8 +734,9 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
 
+    PString dname = params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")];
     if(keys[i] != "" && keys[i] != "*" && keys[i] != "test")
-      mcu.addressBook.AppendString(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")]+" <sip:"+name+">");
+      mcu.addressBook.AppendString(dname+" [sip:"+name+"]");
 
     if(name == "*") s << NewRowInput(name, 15, TRUE);
     else s << NewRowInput(name, 15);
@@ -742,7 +744,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("SIP port")], 8);
     s << HiddenItem(name);
     if(name == "*") s << StringItem(name, "", 12, TRUE);
-    else s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")]);
+    else s << StringItem(name, dname);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")], 8);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")], 8);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")], 8);
@@ -1392,8 +1394,6 @@ InvitePage::InvitePage(OpenMCU & _app, PHTTPAuthority & auth)
   for(PINDEX i = 0; i < OpenMCU::Current().addressBook.GetSize(); i++)
   {
     PString uri = OpenMCU::Current().addressBook[i];
-    uri.Replace("<","&lt;",TRUE,0);
-    uri.Replace(">","&gt;",TRUE,0);
     select += "<option value='"+uri+"'>"+uri+"</option>";
   }
   select += "</select>";
