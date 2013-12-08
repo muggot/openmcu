@@ -3165,9 +3165,10 @@ void H323Connection_ConferenceMember::SetName()
     if( connConferenceMemeber == this || connConferenceMemeber == NULL) 
     {
       name = conn->GetRemotePartyName();
-      const char *nam = name; 
-      if(strstr(nam,"[")!=NULL)
+      if(name.Find("[") != P_MAX_INDEX && name.Find("]") != P_MAX_INDEX)
       {
+        name.Replace("[","<",TRUE,0);
+        name.Replace("]",">",TRUE,0);
         if(connLock != 0) conn->Unlock();
         return; 
       }
@@ -3193,7 +3194,7 @@ void H323Connection_ConferenceMember::SetName()
       {
         if(sname.Right(5)==":1720") sname=sname.Left(sname.GetLength()-5);
       }
-      name += " ["+sname+"]";
+      name += " <"+sname+">";
     }
     else PTRACE(1, "MCU\tWrong connection in SetName for " << h323Token);
 

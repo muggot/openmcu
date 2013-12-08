@@ -1281,6 +1281,8 @@ function get_mixer_position_html(mixer, position)
   }
 
   var memberName = member_read_by_id(id,2);
+  memberName = memberName.replace("<","&lt;");
+  memberName = memberName.replace(">","&gt;");
   if(user_width>0) if(type==1) if(memberName !== false)
   { s+="<div style='position:relative;top:0px;left:"+(type_width)+"px;width:0px;height:0px'>";
      s+="<div id='us"+mixer+"_"+p+"'"
@@ -1430,7 +1432,10 @@ function member_selector(obj,mixer,position,id)
       else selector+="onclick='javascript:member_selector_mouse_out();' ";
       selector+=" class='btn btn-large";
       if(current) selector+=" btn-success";
-      selector+="' style='margin:1px;width:"+(selWidth-8)+"px;text-align:left'><nobr>"+members[i][2]+"</nobr></p>";
+      var memberName = members[i][2];
+      memberName = memberName.replace("<","&lt;");
+      memberName = memberName.replace(">","&gt;");
+      selector+="' style='margin:1px;width:"+(selWidth-8)+"px;text-align:left'><nobr>"+memberName+"</nobr></p>";
     }
   }
 

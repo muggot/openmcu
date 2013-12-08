@@ -786,9 +786,10 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   }
 */  
 
-
+  PString addr = memberToAdd->GetName();
+  addr.Replace("<","&lt;",TRUE,0); addr.Replace(">","&gt;",TRUE,0);
   msg = "<font color=green><b>+</b>";
-  msg << memberToAdd->GetName() << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
+  msg << addr << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
   return TRUE;
 }
 
@@ -828,7 +829,10 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
        memberNameList.insert(MemberNameList::value_type(username,zerop));
      }
 
-    PStringStream msg; msg << "<font color=red><b>-</b>" << username << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
+    PString addr = username;
+    addr.Replace("<","&lt;",TRUE,0); addr.Replace(">","&gt;",TRUE,0);
+    PStringStream msg; msg << "<font color=red><b>-</b>" << addr << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
+
     username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
     msg="remmmbr(0,"; msg << (long)userid
      << ",\"" << username << "\"," << memberToRemove->muteIncoming
