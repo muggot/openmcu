@@ -1281,14 +1281,14 @@ function get_mixer_position_html(mixer, position)
   }
 
   var memberName = member_read_by_id(id,2);
-  memberName = memberName.replace("<","&lt;");
-  memberName = memberName.replace(">","&gt;");
   if(user_width>0) if(type==1) if(memberName !== false)
   { s+="<div style='position:relative;top:0px;left:"+(type_width)+"px;width:0px;height:0px'>";
      s+="<div id='us"+mixer+"_"+p+"'"
        +" onmouseout='javascript:{prvnt=0;}' onmouseover='javascript:{prvnt=1;}' onclick='javascript:{member_selector(this,"+mixer+","+p+","+id+")}'"
        +" style='x-overflow:hidden;white-space:nowrap;cursor:pointer;width:"+(user_width)+"px;height:"+(label_height-2)+"px'>";
-      s+=memberName;
+    memberName = memberName.replace("<","&lt;");
+    memberName = memberName.replace(">","&gt;");
+    s+=memberName;
     s+="</div></div>";
   }
 
