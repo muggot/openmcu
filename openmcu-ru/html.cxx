@@ -734,6 +734,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
 
+    if(name != "*" && name != "test" && name.Find("@") == P_MAX_INDEX) name = "@"+name;
     PString dname = params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")];
     if(keys[i] != "" && keys[i] != "*" && keys[i] != "test")
       mcu.addressBook.AppendString(dname+" [sip:"+name+"]");

@@ -553,6 +553,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
           
       for(Conference::MemberNameList::const_iterator s=memberNameList.begin(), se=memberNameList.end(); s!=se; ++s)
       { if(s->second != NULL) continue;
+        if(GetUriId(s->first).Right(5) == "#####") continue;
         c << (notFirstMember ? "," : "") << "Array("                           // c[r][4][m]: member m descriptor
           << "0"                                                               // c[r][4][m][0]: member id: 0 (offline)
           << "," << JsQuoteScreen(s->first)                                    // c[r][4][m][1]: member name

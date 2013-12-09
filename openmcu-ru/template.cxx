@@ -86,7 +86,7 @@ PString Conference::SaveTemplate(PString tplName)
   PWaitAndSignal m(memberListMutex);
   for(s = memberNameList.begin(); s != memberNameList.end(); ++s)
   {
-    if(GetUriId(s->first).Left(5) == "#####") continue;
+    if(GetUriId(s->first).Right(5) == "#####") continue;
     if(s->second != NULL)
     {
       t << "  MEMBER "

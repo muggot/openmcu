@@ -513,13 +513,13 @@ void Conference::RefreshAddressBook()
     if(addr.Find("h323:") != P_MAX_INDEX) addr.Replace("h323:","",TRUE,0);
 
     PString uriId = GetUriId(addr);
-    addr.Replace(uriId,"#####"+uriId,TRUE,0);
-    uriId = "#####"+uriId;
+    addr.Replace(uriId,uriId+"#####",TRUE,0);
+    uriId = uriId+"#####";
     for(r = memberNameList.begin(); r != memberNameList.end(); r++)
     {
       PString memberName = r->first;
       PString memberUriId = GetUriId(memberName);
-      if(memberUriId.Left(5) != "#####" || r->second) continue;
+      if(memberUriId.Right(5) != "#####" || r->second) continue;
       if(memberUriId == uriId)
         memberNameList.erase(memberName);
     }
