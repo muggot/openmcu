@@ -508,6 +508,48 @@ function highlight(id, state)
   hl_id = id;
 }
 
+function on_abook_check_all(obj){
+  var checked = obj.checked;
+  for(i=0;i<addressbook.length;i++)
+  {
+    mmbr=addressbook[i];
+    check_box = document.getElementById("abook_check_"+mmbr[2]);
+    if(check_box)
+      check_box.checked = checked;
+  }
+}
+function on_abook_check(obj){
+  if(obj.checked) return;
+  check_box = document.getElementById("abook_check_all");
+  if(check_box)
+      check_box.checked = obj.checked;
+}
+function invite_checked_abook(){
+  check_box = document.getElementById("abook_check_all");
+  if(check_box)
+    check_box.checked =false;
+  for(i=0;i<addressbook.length;i++)
+  {
+    mmbr=addressbook[i];
+    check_box = document.getElementById("abook_check_"+mmbr[2]);
+    if(check_box)
+    {
+      if(check_box.checked)
+      {
+        inviteoffline(this,encodeURIComponent(mmbr[2]));
+        check_box.checked = false;
+      }
+    }
+  }
+}
+function on_invite_abook_input(){
+  if(document.getElementById("invite_input"))
+  {
+    var addr = document.getElementById("invite_input").value;
+    if(addr != "") inviteoffline(this,addr);
+  }
+}
+
 function format_mmbr_button(m,st){
  var bgcolors=Array('#d3d4d5','#f5fffa','#f5ccff');
  var shadowcolors=Array('#000','green','magenta');
@@ -520,8 +562,8 @@ function format_mmbr_button(m,st){
  if(st!=0) s+=';cursor:move" id="rpan_'+id+'" onmousedown="{highlight('+m[1]+',0);ddstart(event,this,\'panel\','+m[1]+');}" onmouseover="highlight('+m[1]+',1)" onmouseout="highlight('+m[1]+',0)"';
  else s+='" id="rpan_'+id+'"';
  var uname=m[2]+"";
- ip=get_addr_uri(uname)
- uname=get_addr_name(uname)
+ ip=get_addr_uri(uname);
+ uname=get_addr_name(uname);
 
  var mute=''; var vad=''; var kick=''; var hide='';
 
@@ -564,13 +606,56 @@ function format_mmbr_button(m,st){
  return s;
 }
 
+function format_mmbr_abook(m,st,num){
+  var bgcolors=Array('#F5F5F5','#E6E6FA');
+  var state_color;
+  if(num%2==0) bgcolor = bgcolors[0];
+  else bgcolor = bgcolors[1];
+
+  var height = PANEL_ICON_HEIGHT; //15
+  var width = PANEL_ICON_WIDTH; // 15
+  var s='<div style="margin-left:2px;border-radius:0px;padding:2px 0px 2px 0px;';
+  s+="width:"+(panel_width)+"px;overflow:hidden;height:"+(height+2)+"px;text-align:left;background-color:"+bgcolor;
+  var id=m[1]+"";
+  if(id.substr(0,1)=='-')id='_'+id.substr(1);
+  s+='" id="rpan_'+id+'"';
+  s+='>';
+
+  var uname=m[2]+"";
+  var name=get_addr_name(uname);
+  var ip=get_addr_uri(uname);
+
+  var invite = "", check = "";
+  if(!st) invite="<img onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
+  else invite="<img style='' src='i20_plus.gif' width='"+width+"' height='"+height+"' alt='Invite'>";
+  if(!st) check="<input id='abook_check_"+uname+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
+
+  var posx_invite = 8;
+  var posx_check  = posx_invite      + width + 16;
+  var posx_name   = posx_check       + width + 10;
+  var free        = (panel_width)    - posx_name - SCROLLER_WIDTH;
+  var width_ip    = free/2           + SCROLLER_WIDTH;
+  var width_name  = free/2           - SCROLLER_WIDTH - 10;
+  var posx_ip     = panel_width      - width_ip - SCROLLER_WIDTH;
+
+  if(width_name<10){my_alert('Exception: maybe screen resolution too low?'); if(width_name<1)width_name=1;}
+
+  var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
+  s+=dpre+posx_invite+"px'><div style='width:"+width+"px;height:"+height+"px'>"+invite+"</div></div>";
+  s+=dpre+posx_check+"px'><div style='width:"+width+"px;height:"+height+"px'>"+check+"</div></div>";
+  s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'><nobr>"+name+"</nobr></div></div>";
+  s+=dpre+posx_ip+"px'><div style='overflow:hidden;font-size:10px;width:"+width_ip+"px;'>"+ip+"</div></div>";
+  s+='</div>';
+  return s;
+}
+
 function additional_panel(){
   var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
   var dmain="px'><div style='background-color:#eff;padding:0;border-top:1px dotted #165;border-left:1px dotted #054;border-bottom:1px solid #165;border-right:1px solid #054;border-radius:4px;height:"+PANEL_ITEM_HEIGHT+"px;line-height:"+(PANEL_ITEM_HEIGHT-2)+"px;text-align:center;";
   var cm="cursor:move;width:"; var cp="cursor:pointer;width:";
 //  var s="<div style='width:275px;height:17px;margin-bottom:5px'>"
   var s="<div style='width:"+panel_width+"px;height:"+PANEL_ITEM_HEIGHT+"px;margin-bottom:4px'>"
-   +dpre+"0"+dmain+cp+"80px' onmousedown='queue_otf_request("+OTFC_MUTE_ALL+")'>Mute&nbsp;All</div></div>"
+   +dpre+"2"+dmain+cp+"80px' onmousedown='queue_otf_request("+OTFC_MUTE_ALL+")'>Mute&nbsp;All</div></div>"
 //   +dpre+"0"+dmain+cm+"20px' id='rpan_0' name='rpan_0' onmousedown='ddstart(event,this,\"panel_top\",0)'>[ ]</div></div>"
 //   +dpre+"23"+dmain+cm+"30px' id='rpan__1' name='rpan__1' onmousedown='ddstart(event,this,\"panel_top\",-1)'>VAD</div></div>"
 //   +dpre+"56"+dmain+cm+"36px' id='rpan__2' name='rpan__2' onmousedown='ddstart(event,this,\"panel_top\",-2)'>VAD2</div></div>"
@@ -582,9 +667,47 @@ function additional_panel(){
   return s;
 }
 
-function book_panel(){
-  var s=""
+function additional_panel_abook(){
+  var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
+  var height = PANEL_ICON_HEIGHT; // 15
+  var width = PANEL_ICON_WIDTH; // 15
+  var dbutton="<div class='btn btn-small' style='border-width:1px;border-radius:0px;padding:2px 0px 2px 0px;height:"+height+"px;line-height:"+height+"px;text-align:center;cursor:pointer;";
+  var input_width = 200;
+  var input_posx = panel_width-input_width-5;
+  var s="<div id='additional_panel_abook' style='display:none;width:"+panel_width+"px;height:20px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>"
+   +dpre+"2px;'>"+dbutton+"width:28px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif'></img></div></div>"
+   +dpre+"34px;'>"+dbutton+"width:28px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;'></input></div></div>"
+   +dpre+(input_posx-width-5)+"px'><img onclick='on_invite_abook_input()' style='margin-top:2px;cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'></img></div>"
+   +dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;padding:0px;'></input></div>"
+   +"</div>";
   return s;
+}
+function tab_panel(){
+  var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
+  var dmain="px'><div style='width:120px;padding:0;border-bottom:solid 1px #CDC9C9;border-top-left-radius:10px;border-top-right-radius:10px;height:22px;line-height:22px;text-align:center;cursor:pointer;";
+  var tab1_name = window.l_connections_word_room;
+  var tab2_name = window.l_param_managing_users;
+  var s ="<div id='tab_panel' style='border-bottom:solid 1px #E6E6FA;width:"+panel_width+"px;height:22px;margin-bottom:4px'>"
+   +dpre+"2"+dmain+"background-color:#E6E6FA' id='tab_members' onclick='on_tab_members()'>"+tab1_name+"</div></div>"
+   +dpre+"124"+dmain+"background-color:#F5F5F5' id='tab_abook' onclick='on_tab_abook()'>"+tab2_name+"</div></div>"
+   +"</div>";
+  return s;
+}
+function on_tab_members(){
+  if(document.getElementById('right_scroller')) document.getElementById('right_scroller').style.display = "block";
+  if(document.getElementById('right_scroller_book')) document.getElementById('right_scroller_book').style.display = "none";
+  document.getElementById('tab_members').style.backgroundColor = "#E6E6FA";
+  document.getElementById('tab_abook').style.backgroundColor = "#F5F5F5";
+  document.getElementById('additional_panel_abook').style.display = "none";
+  members_refresh();
+}
+function on_tab_abook(){
+  if(document.getElementById('right_scroller')) document.getElementById('right_scroller').style.display = "none";
+  if(document.getElementById('right_scroller_book')) document.getElementById('right_scroller_book').style.display = "block";
+  document.getElementById('tab_members').style.backgroundColor = "#F5F5F5";
+  document.getElementById('tab_abook').style.backgroundColor = "#E6E6FA";
+  document.getElementById('additional_panel_abook').style.display = "block";
+  members_refresh();
 }
 
 function members_refresh(){
@@ -593,7 +716,8 @@ function members_refresh(){
   return false;
  }
  var p_height=200;
- if(typeof total_height!='undefined') p_height=total_height-2;
+ var tab_height = 24;
+ if(typeof total_height!='undefined') p_height=total_height-tab_height-2;
  if(!document.getElementById('right_scroller')) document.getElementById('members_pan').innerHTML='<div id="right_scroller" style="width:'+panel_width+';height:'+p_height+'px;overflow:hidden;overflow-y:auto">Initializing panel...</div>';
 // var formids=',';
  offliners=false;
@@ -616,6 +740,33 @@ function members_refresh(){
   mp.innerHTML=result;
  }
  for(i=0;i<members.length;i++) if(members[i][0]&&members[i][6])audio(members[i][1],members[i][6]);
+
+ if(typeof addressbook==='undefined') return true;
+ var addpanel_height = 28;
+ if(!document.getElementById('right_scroller_book'))
+   document.getElementById('members_pan').innerHTML+='<div id="right_scroller_book" style="display:none;width:'+panel_width+';height:'+(p_height-addpanel_height)+'px;overflow:hidden;overflow-y:auto">Address book</div>';
+ imr='';
+ for(i=0;i<addressbook.length;i++)
+ {
+   mmbr=addressbook[i];
+   var state = 0;
+   var uriid = get_addr_uriid(mmbr[2]);
+   for(j=0;j<members.length;j++)
+   {
+     if(get_addr_uriid(members[j][2]) == uriid)
+     {
+       if(members[j][0]) state = 1;
+       break;
+     }
+   }
+   imr+=format_mmbr_abook(mmbr,state,i);
+ }
+ //result="<div style='width:"+panel_width+"px' id='right_pan'>"+additional_panel_abook()+imr+"</div>";
+ result="<div style='width:"+panel_width+"px' id='right_pan'>"+imr+"</div>";
+ var mp_book=document.getElementById("right_scroller_book");
+ if(mp_book.innerHTML!=result){
+  mp_book.innerHTML=result;
+ }
 
  return true;
 }
@@ -1091,6 +1242,8 @@ function build_page()
   workplace_content+="</div>";
 
   panel_content="<div id='pp_2' style='position:relative;top:0px;left:"+mmw+"px;width:0px;height:0px'>"; // pointing block for panel
+    panel_content += tab_panel();
+    panel_content += additional_panel_abook();
     panel_content+="<div"+ // rectangle for panel
       " onmouseover='ddover(event,this,\"panel\",-1)'"+
       " onmouseout='ddout(event,this,\"panel\",-1)'"+
