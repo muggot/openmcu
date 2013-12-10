@@ -740,6 +740,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // add this member to the conference member name list
   if(memberToAdd!=memberToAdd->GetID())
   {
+    PWaitAndSignal m(memberListMutex);
     if(memberToAdd->GetName().Find(" ##") == P_MAX_INDEX)
     {
       // поиск по UrlId

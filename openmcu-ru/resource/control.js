@@ -741,8 +741,8 @@ function members_refresh(){
  }
  for(i=0;i<members.length;i++) if(members[i][0]&&members[i][6])audio(members[i][1],members[i][6]);
 
- var abook = document.getElementById('right_scroller_abook');
- if(abook && abook.style.display != "none")
+ var scroller_abook = document.getElementById('right_scroller_abook');
+ if(scroller_abook && scroller_abook.style.display != "none")
    abook_refresh();
 
  return true;
@@ -760,7 +760,10 @@ function abook_refresh(){
   height = height-tab_height-addpanel_height-4;
 
   if(!document.getElementById('right_scroller_abook'))
-    document.getElementById('members_pan').innerHTML+='<div id="right_scroller_abook" style="width:'+panel_width+';height:'+height+'px;overflow:hidden;overflow-y:auto"></div>';
+    document.getElementById('members_pan').innerHTML+='<div id="right_scroller_abook" style="display:none;width:'+panel_width+';height:'+height+'px;overflow:hidden;overflow-y:auto"></div>';
+  var scroller_members = document.getElementById('right_scroller');
+  if(scroller_members && scroller_members.style.display == "none")
+    document.getElementById('right_scroller_abook').style.display = "block";
 
   var imr='';
   for(i=0;i<addressbook.length;i++)

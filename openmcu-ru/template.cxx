@@ -181,7 +181,7 @@ void Conference::LoadTemplate(PString tpl)
           { PINDEX commaPosition = value.Find(',');
             if(commaPosition != P_MAX_INDEX)
             { PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
-              // Поиск по UriId
+              PWaitAndSignal m(memberListMutex);
               MemberNameList::iterator s;
               for(s = memberNameList.begin(); s != memberNameList.end(); ++s)
               {
@@ -218,7 +218,6 @@ void Conference::LoadTemplate(PString tpl)
           PString memberAddress = GetUri(memberInternalName);
 
           PWaitAndSignal m(memberListMutex);
-          // Поиск по UriId
           MemberNameList::const_iterator r;
           for(r = memberNameList.begin(); r != memberNameList.end(); ++r)
           {
