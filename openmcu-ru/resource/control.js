@@ -695,7 +695,7 @@ function tab_panel(){
 }
 function on_tab_members(){
   if(document.getElementById('right_scroller')) document.getElementById('right_scroller').style.display = "block";
-  if(document.getElementById('right_scroller_book')) document.getElementById('right_scroller_book').style.display = "none";
+  if(document.getElementById('right_scroller_abook')) document.getElementById('right_scroller_abook').style.display = "none";
   document.getElementById('tab_members').style.backgroundColor = "#E6E6FA";
   document.getElementById('tab_abook').style.backgroundColor = "#F5F5F5";
   document.getElementById('additional_panel_abook').style.display = "none";
@@ -703,11 +703,11 @@ function on_tab_members(){
 }
 function on_tab_abook(){
   if(document.getElementById('right_scroller')) document.getElementById('right_scroller').style.display = "none";
-  if(document.getElementById('right_scroller_book')) document.getElementById('right_scroller_book').style.display = "block";
+  if(document.getElementById('right_scroller_abook')) document.getElementById('right_scroller_abook').style.display = "block";
   document.getElementById('tab_members').style.backgroundColor = "#F5F5F5";
   document.getElementById('tab_abook').style.backgroundColor = "#E6E6FA";
   document.getElementById('additional_panel_abook').style.display = "block";
-  members_refresh();
+  abook_refresh();
 }
 
 function members_refresh(){
@@ -741,34 +741,51 @@ function members_refresh(){
  }
  for(i=0;i<members.length;i++) if(members[i][0]&&members[i][6])audio(members[i][1],members[i][6]);
 
- if(typeof addressbook==='undefined') return true;
- var addpanel_height = 28;
- if(!document.getElementById('right_scroller_book'))
-   document.getElementById('members_pan').innerHTML+='<div id="right_scroller_book" style="display:none;width:'+panel_width+';height:'+(p_height-addpanel_height)+'px;overflow:hidden;overflow-y:auto">Address book</div>';
- imr='';
- for(i=0;i<addressbook.length;i++)
- {
-   mmbr=addressbook[i];
-   var state = 0;
-   var uriid = get_addr_uriid(mmbr[2]);
-   for(j=0;j<members.length;j++)
-   {
-     if(get_addr_uriid(members[j][2]) == uriid)
-     {
-       if(members[j][0]) state = 1;
-       break;
-     }
-   }
-   imr+=format_mmbr_abook(mmbr,state,i);
- }
- //result="<div style='width:"+panel_width+"px' id='right_pan'>"+additional_panel_abook()+imr+"</div>";
- result="<div style='width:"+panel_width+"px' id='right_pan'>"+imr+"</div>";
- var mp_book=document.getElementById("right_scroller_book");
- if(mp_book.innerHTML!=result){
-  mp_book.innerHTML=result;
- }
+ var abook = document.getElementById('right_scroller_abook');
+ if(abook && abook.style.display != "none")
+   abook_refresh();
 
  return true;
+}
+
+function abook_refresh(){
+  if(typeof addressbook==='undefined') return true;
+  var tab_height = 25;
+  var addpanel_height = 23;
+  if(document.getElementById('tab_panel')) tab_height = document.getElementById('tab_panel').offsetHeight;
+  if(document.getElementById('additional_panel_abook')) addpanel_height = document.getElementById('additional_panel_abook').offsetHeight;
+
+  var height = 200;
+  if(typeof total_height!='undefined') height = total_height;
+  height = height-tab_height-addpanel_height-4;
+
+  if(!document.getElementById('right_scroller_abook'))
+    document.getElementById('members_pan').innerHTML+='<div id="right_scroller_abook" style="width:'+panel_width+';height:'+height+'px;overflow:hidden;overflow-y:auto"></div>';
+
+  var imr='';
+  for(i=0;i<addressbook.length;i++)
+  {
+    mmbr=addressbook[i];
+    var state = 0;
+    if(typeof members!=='undefined')
+    {
+      var uriid = get_addr_uriid(mmbr[2]);
+      for(j=0;j<members.length;j++)
+      {
+        if(get_addr_uriid(members[j][2]) == uriid)
+        {
+          if(members[j][0]) state = 1;
+          break;
+        }
+      }
+    }
+    imr+=format_mmbr_abook(mmbr,state,i);
+  }
+  result="<div style='width:"+panel_width+"px' id='right_pan_abook'>"+imr+"</div>";
+
+  var abook=document.getElementById("right_scroller_abook");
+  if(abook.innerHTML!=result) abook.innerHTML=result;
+  return true;
 }
 
 function inviteall(){
@@ -1260,19 +1277,6 @@ function build_page()
   main_content += workplace_content;
   main_content += panel_content;
   main_content += vmp_content;
-
-  addressbook = new Array();
-  for(i=0,j=0;i<members.length;i++)
-  {
-    if(members[i][2].lastIndexOf("#####") != -1)
-    {
-      addressbook[j] = members[i];
-      addressbook[j][2] = addressbook[j][2].replace("#####","");
-      members.splice(i, 1);
-      j++;
-      i--;
-    }
-  }
 
   b.innerHTML=main_content;
   members_refresh();

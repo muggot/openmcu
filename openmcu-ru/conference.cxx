@@ -149,8 +149,6 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   conference->membersConf=membersConf;
   if(membersConf.Left(1)!="\n") membersConf="\n"+membersConf;
 
-  conference->RefreshAddressBook();
-
   // recall last template
   if(!OpenMCU::Current().recallRoomTemplate) return;
   PINDEX dp=membersConf.Find("\nLAST_USED ");
@@ -506,25 +504,22 @@ void Conference::AddMonitorEvent(ConferenceMonitorInfo * info)
 
 void Conference::RefreshAddressBook()
 {
-  MemberNameList::iterator r;
-  for(PINDEX i = 0; i < OpenMCU::Current().addressBook.GetSize(); i++)
+  PStringArray abook = OpenMCU::Current().addressBook;
+  PStringStream msg;
+  msg = "addressbook=Array(";
+  for(PINDEX i = 0; i < abook.GetSize(); i++)
   {
-    PString addr=OpenMCU::Current().addressBook[i];
-    if(addr.Find("h323:") != P_MAX_INDEX) addr.Replace("h323:","",TRUE,0);
-
-    PString uriId = GetUriId(addr);
-    addr.Replace(uriId,uriId+"#####",TRUE,0);
-    uriId = uriId+"#####";
-    for(r = memberNameList.begin(); r != memberNameList.end(); r++)
-    {
-      PString memberName = r->first;
-      PString memberUriId = GetUriId(memberName);
-      if(memberUriId.Right(5) != "#####" || r->second) continue;
-      if(memberUriId == uriId)
-        memberNameList.erase(memberName);
-    }
-    memberNameList.insert(MemberNameList::value_type(addr, NULL));
+    if(i>0) msg << ",";
+    PString addr = abook[i];
+    addr.Replace("&","&amp;",TRUE,0);
+    addr.Replace("\"","&quot;",TRUE,0);
+    msg << "Array(0,0,";
+    msg << "\"" << addr << "\"" << ")";
   }
+  msg << ");";
+  OpenMCU::Current().HttpWriteCmdRoom(msg,number);
+  msg = "abook_refresh()";
+  OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 }
 
 BOOL Conference::InviteMember(const char *membName, void * userData)

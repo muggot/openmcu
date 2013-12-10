@@ -553,7 +553,6 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
           
       for(Conference::MemberNameList::const_iterator s=memberNameList.begin(), se=memberNameList.end(); s!=se; ++s)
       { if(s->second != NULL) continue;
-        if(GetUriId(s->first).Right(5) == "#####") continue;
         c << (notFirstMember ? "," : "") << "Array("                           // c[r][4][m]: member m descriptor
           << "0"                                                               // c[r][4][m][0]: member id: 0 (offline)
           << "," << JsQuoteScreen(s->first)                                    // c[r][4][m][1]: member name
@@ -1014,6 +1013,20 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
   }
  }
  members << ");";
+
+ members << "\np.addressbook=Array(";
+ PStringArray abook = OpenMCU::Current().addressBook;
+ for(PINDEX i = 0; i < abook.GetSize(); i++)
+ {
+   if(i>0) members << ",";
+   PString addr = abook[i];
+   addr.Replace("&","&amp;",TRUE,0);
+   addr.Replace("\"","&quot;",TRUE,0);
+   members << "Array(0,0,";
+   members << "\"" << addr << "\"" << ")";
+ }
+ members << ");";
+
  return members;
 }
 
