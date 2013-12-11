@@ -1845,9 +1845,6 @@ PString OpenMCUH323EndPoint::GetMonitorText()
               << hdr << "  Conference Member Id: " << r->id << "\n"
               << hdr << "  Position type: " << r->type << "\n"
               << hdr << "  Position status: " << r->status << "\n";
-#if USE_FREETYPE
-            output << hdr << "  Frame counter: " << std::dec << r->fc << "\n";
-#endif
            r=r->next;
           }
         }
@@ -1870,9 +1867,6 @@ PString OpenMCUH323EndPoint::GetMonitorText()
                << "    Conference Member Id: " << r->id << "\n"
                << "    Position type: " << r->type << "\n"
                << "    Position status: " << r->status << "\n";
-#if USE_FREETYPE
-        output << "    Frame counter: " << std::dec << r->fc << "\n";
-#endif
         r=r->next;
       }
       vmr=vmr->next;

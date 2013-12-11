@@ -105,6 +105,15 @@ class MCULock : public PObject
 
 ////////////////////////////////////////////////////
 
+#if USE_FREETYPE
+  struct MCUSubtitles
+  {
+    unsigned x, y, w, h;
+    PBYTEArray b;
+  };
+  typedef std::map<unsigned, MCUSubtitles*> MCUSubtitlesMapType;
+#endif
+
 class VideoFrameStoreList {
   public:
     class FrameStore {
@@ -154,23 +163,29 @@ class ConferenceFileMember;
 #define VMPC_DEFAULT_BORDER                     1
 #define VMPC_DEFAULT_VIDNUM                     0
 #define VMPC_DEFALUT_SCALE_MODE                 1
-#define VMPC_DEFAULT_REALLOCATE_ON_DISCONNECT   0
+#define VMPC_DEFAULT_REALLOCATE_ON_DISCONNECT   1
 #define VMPC_DEFAULT_NEW_FROM_BEGIN             1
 #define VMPC_DEFAULT_MOCKUP_WIDTH               388
 #define VMPC_DEFAULT_MOCKUP_HEIGHT              218
 
 #ifdef USE_FREETYPE
-#  define VMPC_DEFAULT_LABEL_MASK               152
-#  define VMPC_DEFAULT_LABEL_COLOR              0x0ffffff
-#  define VMPC_DEFAULT_LABEL_BGCOLOR            0x004040
+#  define VMPC_DEFAULT_LABEL_MASK               89
+//#  define VMPC_DEFAULT_LABEL_COLOR              0x0ffffff
+#  define VMPC_DEFAULT_LABEL_BGCOLOR            0xA85D //RGB 0x115599
 #  define VMPC_DEFAULT_FONTFILE                 "Russo_One.ttf"
 #  define VMPC_DEFAULT_FONTSIZE                 "1/16"
 #  define VMPC_DEFAULT_BORDER_LEFT              "5/80"
 #  define VMPC_DEFAULT_BORDER_RIGHT             "5/80"
-#  define VMPC_DEFAULT_BORDER_TOP               "0"
-#  define VMPC_DEFAULT_BORDER_BOTTOM            "1/60"
+#  define VMPC_DEFAULT_BORDER_TOP               "1/200"
+#  define VMPC_DEFAULT_BORDER_BOTTOM            "1/100"
+#  define VMPC_DEFAULT_H_PAD                    "1/16"
+#  define VMPC_DEFAULT_V_PAD                    "1/24"
+#  define VMPC_DEFAULT_SHADOW_L                 "1/200"
+#  define VMPC_DEFAULT_SHADOW_R                 "1/80"
+#  define VMPC_DEFAULT_SHADOW_T                 "1/150"
+#  define VMPC_DEFAULT_SHADOW_B                 "1/65"
 #  define VMPC_DEFAULT_CUT_BEFORE_BRACKET       1
-#  define VMPC_DEFAULT_MINIMUM_WIDTH_FOR_LABEL  "1/6"
+#  define VMPC_DEFAULT_MINIMUM_WIDTH_FOR_LABEL  "1/5"
 #endif
 
 struct VMPBlock {
@@ -178,10 +193,13 @@ struct VMPBlock {
 };
 
 struct VMPCfgOptions {
- unsigned posx, posy, width, height, border, label_mask, label_color, label_bgcolor, scale_mode, blks;
-// char label_text[64];
+ unsigned posx, posy, width, height, border, label_mask, /* label_color, */ label_bgcolor, scale_mode, blks;
  bool cut_before_bracket;
- char fontsize[10], border_left[10], border_right[10], border_top[10], border_bottom[10];
+ char
+   fontsize[10],
+   border_left[10], border_right[10], border_top[10], border_bottom[10],
+   h_pad[10], v_pad[10],
+   dropshadow_l[10], dropshadow_r[10], dropshadow_t[10], dropshadow_b[10];
  VMPBlock *blk;
 };
 
@@ -238,8 +256,7 @@ class MCUVideoMixer
                                   int _w = 0, 
                                   int _h = 0);
                                   
-        virtual ~VideoMixPosition()
-        { }
+        virtual ~VideoMixPosition();
 
         VideoMixPosition *next;
         VideoMixPosition *prev;
@@ -249,13 +266,9 @@ class MCUVideoMixer
         int status; // static | vad visibility
         volatile int type; // static, vad, vad2, vad3
         int chosenVan; // always visible vad members (can switched between vad and vad2)
-	int label_x, label_y, label_w, label_h;
-	BOOL label_init;
-	unsigned int fc;
-	PBYTEArray label_buffer;
-	unsigned label_buffer_fw, label_buffer_fh;
 	PString endpointName;
 #if USE_FREETYPE
+	MCUSubtitlesMapType subtitlesList; // one per framestore
         unsigned minWidthForLabel;
 #endif
         BOOL border;
@@ -523,7 +536,11 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 
 #if USE_FREETYPE
     virtual unsigned printsubs_calc(unsigned v, char s[10]);
-    virtual void Print_Subtitles(VideoMixPosition & vmp, void * buffer, unsigned int fw, unsigned int fh, unsigned int ft_properties);
+    virtual void DeleteSubtitlesByFS(unsigned w, unsigned h);
+    virtual void PrintSubtitles(VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties);
+    virtual void RemoveSubtitles(VideoMixPosition & vmp);
+    virtual void InitializeSubtitles();
+    virtual MCUSubtitles * RenderSubtitles(unsigned key, VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties);
 #endif
     virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount);
 /*
@@ -865,12 +882,12 @@ class ConferenceMember : public PObject
     /**
       * called to when a new video source added
       */
-    virtual BOOL AddVideoSource(ConferenceMemberId id);
+    virtual BOOL AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
 
     /**
       * called to when a new video source removed
       */
-    virtual void RemoveVideoSource(ConferenceMemberId id);
+    virtual void RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
 
     virtual BOOL OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount);
     virtual BOOL OnOutgoingVideo(void * buffer, int width, int height, PINDEX & amount);

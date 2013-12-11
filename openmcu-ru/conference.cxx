@@ -704,11 +704,11 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         if (!UseSameVideoForAllMembers()) {
           if (conn->IsVisible())
           {
-            memberToAdd->AddVideoSource(conn->GetID());
+            memberToAdd->AddVideoSource(conn->GetID(), *conn);
           }
           if (memberToAdd->IsVisible())
           {
-            conn->AddVideoSource(memberToAdd->GetID());
+            conn->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
           }
         }
 #endif
@@ -859,9 +859,9 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 #if OPENMCU_VIDEO
         if (!UseSameVideoForAllMembers()) {
           if (memberToRemove->IsVisible())
-            conn->RemoveVideoSource(userid);
+            conn->RemoveVideoSource(userid, *memberToRemove);
           if (conn->IsVisible())
-            memberToRemove->RemoveVideoSource(conn->GetID());
+            memberToRemove->RemoveVideoSource(conn->GetID(), *conn);
         }
 #endif
       }
@@ -1044,7 +1044,7 @@ BOOL Conference::WriteMemberVideo(ConferenceMember * member, const void * buffer
   else {
     PWaitAndSignal m(memberListMutex);
     MemberList::iterator r;
-    for (r = memberList.begin(); r != memberList.end(); r++)
+    for (r = memberList.begin(); r != memberList.end(); ++r)
       r->second->OnExternalSendVideo(member->GetID(), buffer, width, height, amount);
   }
   return TRUE;
@@ -1576,16 +1576,16 @@ void ConferenceMember::UnlockExternalVideo()
   lock.Signal();
 }
 
-BOOL ConferenceMember::AddVideoSource(ConferenceMemberId id)
+BOOL ConferenceMember::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
   PAssert(videoMixer != NULL, "attempt to add video source to NULL video mixer");
-  return videoMixer->AddVideoSource(id, *this);
+  return videoMixer->AddVideoSource(id, mbr);
 }
 
-void ConferenceMember::RemoveVideoSource(ConferenceMemberId id)
+void ConferenceMember::RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
   PAssert(videoMixer != NULL, "attempt to remove video source from NULL video mixer");
-  videoMixer->RemoveVideoSource(id, *this);
+  videoMixer->RemoveVideoSource(id, mbr);
 }
 
 BOOL ConferenceMember::OnOutgoingVideo(void * buffer, int width, int height, PINDEX & amount)
