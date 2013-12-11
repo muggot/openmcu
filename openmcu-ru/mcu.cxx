@@ -518,12 +518,14 @@ PString OpenMCU::GetEndpointParamFromUri(PString param, PString uri, PString pro
   MCUConfig cfg(section);
   PStringList keys = cfg.GetKeys();
 
-  PINDEX index, domainIndex, uriIndex, allIndex;
-  uriIndex = keys.GetStringsIndex(uri);
-  domainIndex = keys.GetStringsIndex(domain);
-  allIndex = keys.GetStringsIndex("*");
-  if(uriIndex != P_MAX_INDEX) index = uriIndex;
-  else index = domainIndex;
+  PINDEX index = P_MAX_INDEX;
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    if(keys[i] == uri) index = i;
+    if(domain != "" && keys[i] == domain) index = i;
+    if(domain != "" && keys[i] == "@"+domain) index = i;
+    if(index != P_MAX_INDEX) break;
+  }
 
   if(index != P_MAX_INDEX)
   {
@@ -531,12 +533,14 @@ PString OpenMCU::GetEndpointParamFromUri(PString param, PString uri, PString pro
     if(options.GetStringsIndex(param) != P_MAX_INDEX)
       newParam = params[options.GetStringsIndex(param)];
   }
-  if(newParam == "" && allIndex != P_MAX_INDEX)
+  if(newParam == "") index = keys.GetStringsIndex("*");
+  if(index != P_MAX_INDEX)
   {
-    PStringArray params = cfg.GetString(keys[allIndex]).Tokenise(",");
+    PStringArray params = cfg.GetString(keys[index]).Tokenise(",");
     if(options.GetStringsIndex(param) != P_MAX_INDEX)
       newParam = params[options.GetStringsIndex(param)];
   }
+
   return newParam;
 }
 

@@ -717,11 +717,10 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   s << ColumnItem(JsLocale("window.l_name_video_codec"));
 
   PString aCaps, vCaps;
-  if(mcu.GetEndpoint().tsCaps != NULL && mcu.GetEndpoint().tvCaps != NULL)
-  {
-    PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { aCaps += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; }
-    PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { vCaps += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; }
-  }
+  if(mcu.GetEndpoint().tsCaps != NULL)
+  { PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { aCaps += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; } }
+  if(mcu.GetEndpoint().tvCaps != NULL)
+  { PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { vCaps += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; } }
 
   PStringList keys = cfg.GetKeys();
   if(keys.GetStringsIndex("*") == P_MAX_INDEX)
