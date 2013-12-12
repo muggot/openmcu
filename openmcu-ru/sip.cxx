@@ -1181,17 +1181,15 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  requestedRoom = roomName;
 
  if(sip->sip_contact && sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") != 0)
-   remotePartyName = sip->sip_contact->m_display;
+   remoteName = sip->sip_contact->m_display;
  else if(remote_addr_t->a_display && strcmp(remote_addr_t->a_display, "") != 0)
-   remotePartyName = remote_addr_t->a_display;
+   remoteName = remote_addr_t->a_display;
  else
-   remotePartyName = remote_addr_t->a_url->url_user;
+   remoteName = remote_addr_t->a_url->url_user;
 
- remotePartyName.Replace("\"","",TRUE,0);
- remotePartyName = PURL::UntranslateString(remotePartyName, PURL::QueryTranslation);
-
- remoteName = remote_addr_t->a_url->url_user;
+ remoteName.Replace("\"","",TRUE,0);
  remoteName = PURL::UntranslateString(remoteName, PURL::QueryTranslation);
+ remotePartyName = remoteName;
 
  remotePartyAddress = CreateRuriStr(c_sip_msg, direction);
  remotePartyAddress = PURL::UntranslateString(remotePartyAddress, PURL::QueryTranslation);
