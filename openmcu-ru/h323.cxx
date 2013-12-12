@@ -1201,7 +1201,14 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
   if(action == OTFC_INVITE)
   { conference->InviteMember(value); OTF_RET_OK; }
   if(action == OTFC_REMOVE_OFFLINE_MEMBER)
-  { conference->RemoveOfflineMemberFromNameList(value); OTF_RET_OK; }
+  {
+    conference->RemoveOfflineMemberFromNameList(value);
+    PStringStream msg;
+    msg << GetMemberListOptsJavascript(*conference) << "\n"
+        << "p.members_refresh()";
+    OpenMCU::Current().HttpWriteCmdRoom(msg,room);
+    OTF_RET_OK;
+  }
   if(action == OTFC_DROP_ALL_ACTIVE_MEMBERS)
   {
     conferenceManager.UnlockConference();
