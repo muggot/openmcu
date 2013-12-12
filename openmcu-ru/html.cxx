@@ -653,6 +653,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
 
+    if(name != "*" && name != "test" && name.Find("@") == P_MAX_INDEX) name = "@"+name;
     PString dname = params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")];
     if(keys[i] != "" && keys[i] != "*" && keys[i] != "test")
       mcu.addressBook.AppendString(dname+" [h323:"+name+"]");

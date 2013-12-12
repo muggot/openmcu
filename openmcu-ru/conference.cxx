@@ -143,9 +143,6 @@ void ConferenceManager::OnCreateConference(Conference * conference)
     fclose(membLst);
   }
 
-  membersConf.Replace("<","[",TRUE,0);
-  membersConf.Replace(">","]",TRUE,0);
-
   conference->membersConf=membersConf;
   if(membersConf.Left(1)!="\n") membersConf="\n"+membersConf;
 
@@ -570,7 +567,6 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
   }
   else // H.323
   {
-    if(address.Left(5) == "h323:") address = address.Right(address.GetLength()-5);
     PString port = address.Tokenise(":")[1];
     if(port == "")
     {

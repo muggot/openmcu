@@ -861,10 +861,21 @@ function get_addr_uri(addr){
 }
 function get_addr_uriid(addr){
   var uri = get_addr_uri(addr)
-  if(uri.substring(0,4) == "sip:")
-    return uri.split(";")[0].split(":")[1];
-  else
-    return uri.split(";")[0].split(":")[0];
+  var id;
+  if(uri.substring(0,4) != "sip:") // bak H.323
+  {
+    var name = addr.substring(0,addr.lastIndexOf("["));
+    var host;
+    if(uri.substring(0,5) == "h323:")
+      host = uri.split(";")[0].split(":")[1];
+    else
+      host = uri.split(";")[0].split(":")[0];
+    if(host.lastIndexOf("@") != -1)
+      host = host.split("@")[1];
+    id = name+" ["+host+"]";
+  }
+  else id = uri.split(";")[0].split(":")[1];
+  return id;
 }
 
 function addmmbr(st,id,name,mute,dvad,cvan,al,mixr){

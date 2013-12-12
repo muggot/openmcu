@@ -3176,38 +3176,59 @@ void H323Connection_ConferenceMember::SetName()
     else connLock = 1;
 
     H323Connection_ConferenceMember * connConferenceMemeber = conn->GetConferenceMember();
-    if( connConferenceMemeber == this || connConferenceMemeber == NULL) 
+    if( connConferenceMemeber == this || connConferenceMemeber == NULL)
     {
-      name = conn->GetRemotePartyName();
-      const char *nam = name; 
-      if(strstr(nam,"[")!=NULL)
+      PString dname, address;
+      PString partyName = conn->GetRemotePartyName();
+      PString partyAddress = conn->GetRemotePartyAddress();
+      PStringArray partyAliases = conn->GetRemotePartyAliases();
+      if(partyAddress.Left(4) == "sip:")
       {
-        if(connLock != 0) conn->Unlock();
-        return; 
-      }
+        dname = partyName;
+        address = partyAddress;
+      } else {
+        PString host = partyAddress;
+        PString port;
+        PINDEX pos = host.Find("ip$");
+        if(pos != P_MAX_INDEX) host = host.Mid(pos+3);
+        port = host.Tokenise(":")[1];
+        host = host.Tokenise(":")[0];
 
-      BOOL answered = conn->HadAnsweredCall();
-      PString sname = conn->GetRemotePartyAddress(); // H.323: 1111@ip$192.168.1.1:1720
-      PINDEX i = sname.Find("ip$");                  //        XXXXXXXX~~~~~~~~~~~~~~~~
-      if(i != P_MAX_INDEX) sname=sname.Mid(i+3);
-
-      if(answered)
-      {
-        i=sname.FindLast(':');
-        if((i != P_MAX_INDEX) && (i > 4)) // found & not match url prefix
+        PString alias;
+        if(conn->HadAnsweredCall()) // incoming
         {
-          sname=sname.Left(i);
+          port = "";
+          dname = partyName;
+          if(partyAliases.GetSize() == 1)
+          { dname = alias = partyAliases[0]; }
+          else if(partyAliases.GetSize() > 1)
+          { dname = partyAliases[0]; alias = partyAliases[1]; }
+        } else {
+          dname = partyName;
+          if(partyAliases.GetSize() == 1)
+            alias = partyAliases[0];
+          else if(partyAliases.GetSize() > 1)
+            alias = partyAliases[1];
         }
+        // ???
+        //if(conn->GetRemoteApplication().Find("MyPhone") != P_MAX_INDEX && dname == alias)
+        //  alias = "";
+        if(dname == alias) alias = "";
+        //
+
+        PRegularExpression RegEx("[^0-9]");
+        if(alias.FindRegEx(RegEx) != P_MAX_INDEX) alias = "";
+
+        if(port != "" && port != "1720") host += ":"+port;
+        address = "h323:"+alias+"@"+host;
       }
-      else if(sname.Left(4)=="sip:")
-      {
-        if(sname.Right(5)==":5060") sname=sname.Left(sname.GetLength()-5);
-      }
-      else
-      {
-        if(sname.Right(5)==":1720") sname=sname.Left(sname.GetLength()-5);
-      }
-      name += " ["+sname+"]";
+
+      name = dname+" ["+address+"]";
+
+      PTRACE(1, "SetName remotePartyName: " << partyName);
+      PTRACE(1, "SetName remotePartyAddress: " << partyAddress);
+      PTRACE(1, "SetName remotePartyAliases: " << partyAliases);
+      PTRACE(1, "SetName name: " << name);
     }
     else PTRACE(1, "MCU\tWrong connection in SetName for " << h323Token);
 
