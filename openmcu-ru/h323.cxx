@@ -161,22 +161,19 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg)
   // Gatekeeper 
   PString gkName = cfg.GetString(GatekeeperKey);
 
-  // Gatekeeper UserName
-  PString gkUserName = cfg.GetString(GatekeeperUserNameKey,"MCU");
-
   // OpenMCU Server Id
-  PString serverId = cfg.GetString("OpenMCU Server Id",OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
-  if(serverId.IsEmpty()) serverId = gkUserName;
-
+  PString serverId = MCUConfig("Parameters").GetString("OpenMCU Server Id",OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
   if (gkMode == Gatekeeper_None ) {
     // Local alias name for H.323 endpoint
-//    SetLocalUserName(cfg.GetString(LocalUserNameKey, OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion()));
+    //SetLocalUserName(cfg.GetString(LocalUserNameKey, OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion()));
     SetLocalUserName(serverId);
   } else {
-//    SetLocalUserName(gkUserName);
-    SetLocalUserName(serverId); // testing
+    SetLocalUserName(serverId);
   }
-  AliasList.AppendString(gkUserName);
+
+  // Gatekeeper UserName
+  PString gkUserName = cfg.GetString(GatekeeperUserNameKey,"MCU");
+  localAliasNames.AppendString(gkUserName);
 
   // Gatekeeper password
   PString gkPassword = PHTTPPasswordField::Decrypt(cfg.GetString(GatekeeperPasswordKey));
@@ -3186,41 +3183,48 @@ void H323Connection_ConferenceMember::SetName()
     H323Connection_ConferenceMember * connConferenceMemeber = conn->GetConferenceMember();
     if( connConferenceMemeber == this || connConferenceMemeber == NULL)
     {
-      PString dname, address;
       PString remoteName = conn->GetRemoteName();
       PString partyName = conn->GetRemotePartyName();
       PString partyAddress = conn->GetRemotePartyAddress();
       PString partyNumber = conn->GetRemotePartyNumber();
       PStringArray partyAliases = conn->GetRemotePartyAliases();
+      PString dname = partyName;
+      PString address;
       if(partyAddress.Left(4) == "sip:")
       {
-        dname = partyName;
         address = partyAddress;
       } else {
-        PString host = partyAddress;
-        PString port;
-        PINDEX pos = host.Find("ip$");
-        if(pos != P_MAX_INDEX) host = host.Mid(pos+3);
-        port = host.Tokenise(":")[1];
-        host = host.Tokenise(":")[0];
-        if(!conn->HadAnsweredCall() && port != "1720") host += ":"+port;
-
-        dname = partyName;
+        PString alias, host, port;
         if(dname.Find("[") != P_MAX_INDEX && dname.Find("]") != P_MAX_INDEX)
           dname = remoteName;
-
-        PString alias;
-        if(partyAliases.GetSize() == 1)
-          alias = partyAliases[0];
-        else if(partyAliases.GetSize() > 1)
-          alias = partyAliases[1];
+        if(partyAddress.Left(4) == "url:" && ep.IsRegisteredWithGatekeeper())
+        {
+          //H323Gatekeeper *gk = ep.GetGatekeeper();
+          //PURL url(gk->GetName(), "h323");
+          PURL url(partyAddress.Right(partyAddress.GetLength()-4), "h323");
+          alias = url.GetUserName();
+          host = url.GetHostName();
+          port = url.GetPort();
+          host.Replace("@","",TRUE,0);
+        } else {
+          host = partyAddress;
+          PINDEX pos = host.Find("ip$");
+          if(pos != P_MAX_INDEX) host = host.Mid(pos+3);
+          port = host.Tokenise(":")[1];
+          host = host.Tokenise(":")[0];
+          if(partyAliases.GetSize() == 1)
+            alias = partyAliases[0];
+          else if(partyAliases.GetSize() > 1)
+            alias = partyAliases[1];
+        }
+        if(!conn->HadAnsweredCall() && port != "" && port != "1720") host += ":"+port;
         if(partyNumber != "") alias = partyNumber;
 
         PRegularExpression RegEx("[^0-9]");
         if(alias.FindRegEx(RegEx) != P_MAX_INDEX) alias = "";
 
-        //if(conn->GetRemoteApplication().Find("MyPhone") != P_MAX_INDEX && dname == alias) // ???
-        //  alias = "";
+        if(conn->GetRemoteApplication().Find("MyPhone") != P_MAX_INDEX && dname == alias) // ???
+          alias = "";
 
         address = "h323:"+alias+"@"+host;
       }
