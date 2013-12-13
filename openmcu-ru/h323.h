@@ -255,6 +255,7 @@ class OpenMCUH323Connection : public H323Connection
     virtual void OnUserInputString(const PString & value);
     virtual BOOL OnReceivedSignalSetup(const H323SignalPDU & setupPDU);
     virtual BOOL OnReceivedCallProceeding(const H323SignalPDU & proceedingPDU);
+    virtual BOOL OnReceivedSignalConnect(const H323SignalPDU & pdu);
 
     virtual BOOL OnReceivedCapabilitySet(const H323Capabilities & remoteCaps, const H245_MultiplexCapability * muxCap, H245_TerminalCapabilitySetReject & /*rejectPDU*/);
     virtual void OnSendCapabilitySet(H245_TerminalCapabilitySet & /*pdu*/);
@@ -268,6 +269,7 @@ class OpenMCUH323Connection : public H323Connection
 
     virtual void SetupCacheConnection(PString & format,Conference * conf, ConferenceMember * memb);
 
+    void SetRemoteName(const H323SignalPDU & pdu);
     void SetEndpointDefaultVideoParams();
     void SetEndpointPrefVideoParams();
     PString GetRemoteNumber();
