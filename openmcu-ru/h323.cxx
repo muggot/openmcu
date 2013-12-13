@@ -993,6 +993,7 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
       << ",0"
       << ",0"
       << ",0"
+      << ",\"" << GetUrlId(s->first) << "\""
       << ")";
     i++;
   } else {          //   active member
@@ -1005,6 +1006,7 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
       << "," << member->chosenVan                       // [i][5] = chosen van
       << "," << member->GetAudioLevel()                 // [i][6] = audiolevel (peak)
       << "," << member->GetVideoMixerNumber()           // [i][7] = number of mixer member receiving
+      << ",\"" << GetUrlId(s->first) << "\""
       << ")";
     i++;
   }
@@ -1016,11 +1018,14 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
  for(PINDEX i = 0; i < abook.GetSize(); i++)
  {
    if(i>0) members << ",";
-   PString addr = abook[i];
-   addr.Replace("&","&amp;",TRUE,0);
-   addr.Replace("\"","&quot;",TRUE,0);
-   members << "Array(0,0,";
-   members << "\"" << addr << "\"" << ")";
+   PString username = abook[i];
+   username.Replace("&","&amp;",TRUE,0);
+   username.Replace("\"","&quot;",TRUE,0);
+   members << "Array("
+      << "0"
+      << ",\"" << GetUrlId(abook[i]) << "\""
+      << ",\"" << username << "\""
+      << ")";
  }
  members << ");";
 
@@ -2542,21 +2547,15 @@ void OpenMCUH323Connection::SetEndpointPrefVideoParams()
 
 PString OpenMCUH323Connection::GetEndpointParam(PString param)
 {
-  if(GetRemotePartyAddress() == "") return "";
-
-  PString domain, uri;
+  PString url;
   if(GetRemotePartyAddress().Left(4) == "sip:")
   {
-    PString address = GetRemotePartyAddress().Tokenise(";")[0];
-    uri = address.Tokenise(":")[1];
-    domain = uri.Tokenise("@")[1];
-    return OpenMCU::Current().GetEndpointParamFromUri(param, uri, "sip");
+    url = GetRemotePartyAddress();
   } else {
-    PString address = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
-    domain = address;
-    uri = GetRemotePartyNumber()+"@"+domain;
-    return OpenMCU::Current().GetEndpointParamFromUri(param, uri, "h323");
+    PString host = GetRemotePartyAddress().Tokenise("$")[1].Tokenise(":")[0];
+    url = "h323:"+GetRemoteNumber()+"@"+host;
   }
+  return OpenMCU::Current().GetEndpointParamFromUrl(param, url);
 }
 
 #if OPENMCU_VIDEO
@@ -3063,6 +3062,25 @@ void OpenMCUH323Connection::OnWelcomeWaveEnded()
   }
 }
 
+PString OpenMCUH323Connection::GetRemoteNumber()
+{
+  PString number;
+  if(remotePartyAddress.Left(4) == "url:" && ep.IsRegisteredWithGatekeeper())
+  {
+    PURL url(remotePartyAddress.Right(remotePartyAddress.GetLength()-4), "h323");
+    number = url.GetUserName();
+  }
+  if(number == "") number = remotePartyNumber;
+  if(number == "")
+  {
+    if(remoteAliasNames.GetSize() == 1)
+      number = remoteAliasNames[0];
+    else if(remoteAliasNames.GetSize() > 1)
+      number = remoteAliasNames[1];
+  }
+  return number;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 
 #if OPENMCU_VIDEO
@@ -3186,8 +3204,6 @@ void H323Connection_ConferenceMember::SetName()
       PString remoteName = conn->GetRemoteName();
       PString partyName = conn->GetRemotePartyName();
       PString partyAddress = conn->GetRemotePartyAddress();
-      PString partyNumber = conn->GetRemotePartyNumber();
-      PStringArray partyAliases = conn->GetRemotePartyAliases();
       PString dname = partyName;
       PString address;
       if(partyAddress.Left(4) == "sip:")
@@ -3202,7 +3218,6 @@ void H323Connection_ConferenceMember::SetName()
           //H323Gatekeeper *gk = ep.GetGatekeeper();
           //PURL url(gk->GetName(), "h323");
           PURL url(partyAddress.Right(partyAddress.GetLength()-4), "h323");
-          alias = url.GetUserName();
           host = url.GetHostName();
           port = url.GetPort();
           host.Replace("@","",TRUE,0);
@@ -3212,13 +3227,10 @@ void H323Connection_ConferenceMember::SetName()
           if(pos != P_MAX_INDEX) host = host.Mid(pos+3);
           port = host.Tokenise(":")[1];
           host = host.Tokenise(":")[0];
-          if(partyAliases.GetSize() == 1)
-            alias = partyAliases[0];
-          else if(partyAliases.GetSize() > 1)
-            alias = partyAliases[1];
         }
         if(!conn->HadAnsweredCall() && port != "" && port != "1720") host += ":"+port;
-        if(partyNumber != "") alias = partyNumber;
+
+        alias = conn->GetRemoteNumber();
 
         PRegularExpression RegEx("[^0-9]");
         if(alias.FindRegEx(RegEx) != P_MAX_INDEX) alias = "";
@@ -3231,9 +3243,10 @@ void H323Connection_ConferenceMember::SetName()
 
       name = dname+" ["+address+"]";
 
-      PTRACE(1, "SetName remotePartyName: " << partyName);
-      PTRACE(1, "SetName remotePartyAddress: " << partyAddress);
-      PTRACE(1, "SetName remotePartyAliases: " << partyAliases);
+      PTRACE(1, "SetName remotePartyName: " << conn->GetRemotePartyName());
+      PTRACE(1, "SetName remotePartyAddress: " << conn->GetRemotePartyAddress());
+      PTRACE(1, "SetName remotePartyAliases: " << conn->GetRemotePartyAliases());
+      PTRACE(1, "SetName remotePartyNumber: " << conn->GetRemotePartyNumber());
       PTRACE(1, "SetName name: " << name);
     }
     else PTRACE(1, "MCU\tWrong connection in SetName for " << h323Token);

@@ -507,11 +507,14 @@ void Conference::RefreshAddressBook()
   for(PINDEX i = 0; i < abook.GetSize(); i++)
   {
     if(i>0) msg << ",";
-    PString addr = abook[i];
-    addr.Replace("&","&amp;",TRUE,0);
-    addr.Replace("\"","&quot;",TRUE,0);
-    msg << "Array(0,0,";
-    msg << "\"" << addr << "\"" << ")";
+    PString username = abook[i];
+    username.Replace("&","&amp;",TRUE,0);
+    username.Replace("\"","&quot;",TRUE,0);
+    msg << "Array("
+        << "0"
+        << ",\"" << GetUrlId(abook[i]) << "\""
+        << ",\"" << username << "\""
+        << ")";
   }
   msg << ");";
   OpenMCU::Current().HttpWriteCmdRoom(msg,number);
@@ -551,7 +554,7 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
     }
   }
 
-  if(IsUri(address)) address = GetUri(address);
+  if(IsUrl(address)) address = GetUrl(address);
   if(address.Left(4) == "sip:")
   {
     PStringStream msg;
@@ -567,10 +570,11 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
   }
   else // H.323
   {
-    PString port = address.Tokenise(":")[1];
+    if(address.Left(5) != "h323:") address = "h323:"+address;
+    PString port = address.Tokenise(":")[2];
     if(port == "")
     {
-      port = OpenMCU::Current().GetEndpointParamFromUri("H323 port", address, "h323");
+      port = OpenMCU::Current().GetEndpointParamFromUrl("H323 port", address);
       if(port != "") address += ":"+port;
     }
     PString h323Token;
@@ -734,6 +738,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   PStringStream msg;
 
   // add this member to the conference member name list
+  PString memberToAddUrlId = GetUrlId(memberToAdd->GetName());
   if(memberToAdd!=memberToAdd->GetID())
   {
     PWaitAndSignal m(memberListMutex);
@@ -744,7 +749,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
       for (Conference::MemberNameList::const_iterator s = memberNameList.begin(); s != memberNameList.end(); ++s)
       {
         PString memberName = s->first;
-        if(GetUriId(memberName) == GetUriId(memberToAdd->GetName()))
+        if(GetUrlId(memberName) == memberToAddUrlId)
         {
           if(s->second == NULL)
           {
@@ -762,12 +767,15 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     PullMemberOptionsFromTemplate(memberToAdd, confTpl);
 
     PString username=memberToAdd->GetName(); username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
-    msg="addmmbr(1,"; msg << (long)memberToAdd->GetID()
-     << ",\"" << username << "\"," << memberToAdd->muteIncoming
-     << "," << memberToAdd->disableVAD << ","
-     << memberToAdd->chosenVan << ","
-     << memberToAdd->GetAudioLevel() << ","
-     << memberToAdd->GetVideoMixerNumber() << ")";
+    msg="addmmbr(1";
+    msg << "," << (long)memberToAdd->GetID()
+        << ",\"" << username << "\""
+        << "," << memberToAdd->muteIncoming
+        << "," << memberToAdd->disableVAD
+        << "," << memberToAdd->chosenVan
+        << "," << memberToAdd->GetAudioLevel()
+        << "," << memberToAdd->GetVideoMixerNumber()
+        << ",\"" << memberToAddUrlId << "\"" << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
   }
 /*  
@@ -822,11 +830,14 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
     PStringStream msg; msg << "<font color=red><b>-</b>" << username << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
     username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
-    msg="remmmbr(0,"; msg << (long)userid
-     << ",\"" << username << "\"," << memberToRemove->muteIncoming
-     << "," << memberToRemove->disableVAD << ","
-     << memberToRemove->chosenVan << ","
-     << memberToRemove->GetAudioLevel();
+    msg="remmmbr(0";
+    msg << ","  << (long)userid
+        << ",\"" << username << "\""
+        << ","  << memberToRemove->muteIncoming
+        << "," << memberToRemove->disableVAD
+        << ","  << memberToRemove->chosenVan
+        << ","  << memberToRemove->GetAudioLevel()
+        << ",\"" << GetUrlId(memberToRemove->GetName()) << "\"";
     if(s==memberNameList.end()) msg << ",1";
     msg << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);

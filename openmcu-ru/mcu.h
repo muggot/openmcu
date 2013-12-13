@@ -176,13 +176,13 @@ class MCUConfig: public PConfig
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline BOOL IsUri(PString addr)
+static inline BOOL IsUrl(PString addr)
 {
   if(addr.Find("[") != P_MAX_INDEX && addr.Find("]") != P_MAX_INDEX)
     return TRUE;
   return FALSE;
 }
-static inline PString GetUriElement(PString addr, PINDEX num = 1)
+static inline PString GetUrlElement(PString addr, PINDEX num = 1)
 {
   PString delim1 = "[";
   PString delim2 = "]";
@@ -196,7 +196,7 @@ static inline PString GetUriElement(PString addr, PINDEX num = 1)
   if(pos2 == P_MAX_INDEX) return "";
   return addr.Mid(pos1+1, pos2-pos1-1);
 }
-static inline PString GetUri(PString addr)
+static inline PString GetUrl(PString addr)
 {
   PINDEX pos1 = addr.FindLast("[");
   PINDEX pos2 = addr.FindLast("]");
@@ -204,23 +204,23 @@ static inline PString GetUri(PString addr)
     return addr;
   return addr.Mid(pos1+1, pos2-pos1-1);
 }
-static inline PString GetUriId(PString addr)
+static inline PString GetUrlId(PString addr)
 {
-  PString uri = GetUri(addr);
+  PString url = GetUrl(addr);
   PString id;
-  if(uri.Left(4) != "sip:") // bak H.323, id = "name [host]"
+  if(url.Left(4) != "sip:") // bak H.323, id = "name [host]"
   {
     PString name = addr.Left(addr.Find("[")-1);
     PString host;
-    if(uri.Left(5) == "h323:")
-      host = uri.Tokenise(";")[0].Tokenise(":")[1];
+    if(url.Left(5) == "h323:")
+      host = url.Tokenise(";")[0].Tokenise(":")[1];
     else
-      host = uri.Tokenise(":")[0];
+      host = url.Tokenise(":")[0];
     if(host.Find("@") != P_MAX_INDEX)
       host = host.Tokenise("@")[1];
     id = name+" ["+host+"]";
   }
-  else id = uri.Tokenise(";")[0].Tokenise(":")[1];
+  else id = url.Tokenise(";")[0].Tokenise(":")[1];
   return id;
 }
 
@@ -438,7 +438,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     PFilePath  logFilename;
     BOOL       copyWebLogToLog;
 
-    PString GetEndpointParamFromUri(PString param, PString uri, PString protocol);
+    PString GetEndpointParamFromUrl(PString param, PString url);
 
     PStringArray addressBook;
 

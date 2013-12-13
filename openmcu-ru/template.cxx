@@ -187,7 +187,7 @@ void Conference::LoadTemplate(PString tpl)
               {
                 if(s->second!=NULL) // online
                 {
-                  if(GetUriId(name) == GetUriId(s->first))
+                  if(GetUrlId(name) == GetUrlId(s->first))
                     break;
                 }
               }
@@ -215,7 +215,7 @@ void Conference::LoadTemplate(PString tpl)
 
           PString memberInternalName = v[5].Trim();
           for(int i=6; i<v.GetSize(); i++) memberInternalName += "," + v[i];
-          PString memberAddress = GetUri(memberInternalName);
+          PString memberAddress = GetUrl(memberInternalName);
 
           PWaitAndSignal m(memberListMutex);
           MemberNameList::const_iterator r;
@@ -223,7 +223,7 @@ void Conference::LoadTemplate(PString tpl)
           {
             if(r->second!=NULL) // online
             {
-              if(GetUriId(memberInternalName) == GetUriId(r->first))
+              if(GetUrlId(memberInternalName) == GetUrlId(r->first))
               {
                 memberInternalName = r->first;
                 break;

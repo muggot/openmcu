@@ -500,32 +500,37 @@ OpenMCUH323EndPoint * OpenMCU::CreateEndPoint(ConferenceManager & manager)
   return new OpenMCUH323EndPoint(manager);
 }
 
-PString OpenMCU::GetEndpointParamFromUri(PString param, PString uri, PString protocol)
+PString OpenMCU::GetEndpointParamFromUrl(PString param, PString addr)
 {
-  PString domain, section;
+  PString user, host, scheme, section;
   PString newParam;
   PStringArray options;
-  if(protocol == "h323")
+  if(addr.Left(5) == "h323:")
   {
+    scheme = "h323";
     section = "H323 Endpoints";
     options = h323EndpointOptionsOrder;
-  } else {
+  }
+  else if(addr.Left(4) == "sip:")
+  {
+    scheme = "sip";
     section = "SIP Endpoints";
     options = sipEndpointOptionsOrder;
+  } else {
+    return "";
   }
-  if(uri.Find("@") != P_MAX_INDEX) domain = uri.Tokenise("@")[1];
+  PURL url(addr, scheme);
+  user = url.GetUserName();
+  host = url.GetHostName();
+  if(scheme == "h323" && host == "") { host = user; user = ""; }
 
   MCUConfig cfg(section);
   PStringList keys = cfg.GetKeys();
-
-  PINDEX index = P_MAX_INDEX;
-  for(PINDEX i = 0; i < keys.GetSize(); i++)
-  {
-    if(keys[i] == uri) index = i;
-    if(domain != "" && keys[i] == domain) index = i;
-    if(domain != "" && keys[i] == "@"+domain) index = i;
-    if(index != P_MAX_INDEX) break;
-  }
+  PINDEX index = keys.GetStringsIndex(user+"@"+host);
+  if(index == P_MAX_INDEX && host != "") index = keys.GetStringsIndex(host);
+  if(index == P_MAX_INDEX && host != "") index = keys.GetStringsIndex("@"+host);
+  if(index == P_MAX_INDEX && user != "") index = keys.GetStringsIndex(user);
+  if(index == P_MAX_INDEX && user != "") index = keys.GetStringsIndex(user+"@");
 
   if(index != P_MAX_INDEX)
   {

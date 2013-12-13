@@ -270,6 +270,7 @@ class OpenMCUH323Connection : public H323Connection
 
     void SetEndpointDefaultVideoParams();
     void SetEndpointPrefVideoParams();
+    PString GetRemoteNumber();
     PString GetEndpointParam(PString param);
     PString dtmfBuffer;
 

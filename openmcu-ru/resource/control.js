@@ -772,13 +772,11 @@ function abook_refresh(){
     var state = 0;
     if(typeof members!=='undefined')
     {
-      var uriid = get_addr_uriid(mmbr[2]);
       for(j=0;j<members.length;j++)
       {
-        if(get_addr_uriid(members[j][2]) == uriid)
+        if(members[j][8] == mmbr[1]) // urlid
         {
-          if(members[j][0]) state = 1;
-          break;
+          if(members[j][0]) { state = 1; break; }
         }
       }
     }
@@ -859,42 +857,22 @@ function get_addr_name(addr){
 function get_addr_uri(addr){
   return addr.substring(addr.lastIndexOf('[')+1, addr.lastIndexOf(']'));
 }
-function get_addr_uriid(addr){
-  var uri = get_addr_uri(addr)
-  var id;
-  if(uri.substring(0,4) != "sip:") // bak H.323
-  {
-    var name = addr.substring(0,addr.lastIndexOf("["));
-    var host;
-    if(uri.substring(0,5) == "h323:")
-      host = uri.split(";")[0].split(":")[1];
-    else
-      host = uri.split(";")[0].split(":")[0];
-    if(host.lastIndexOf("@") != -1)
-      host = host.split("@")[1];
-    id = name+" ["+host+"]";
-  }
-  else id = uri.split(";")[0].split(":")[1];
-  return id;
-}
 
-function addmmbr(st,id,name,mute,dvad,cvan,al,mixr){
+function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid){
   if(typeof members==='undefined') return alive();
   var found=0; var j=members.length;
   for(var i=j-1;i>=0;i--)
   {
     if(name.lastIndexOf(" ##") == -1 && members[i][0] == 0)
     {
-      var addr = get_addr_uriid(name);
-      var member_addr = get_addr_uriid(members[i][2]);
-      if((members[i][1] == id) || (member_addr == addr))
+      if((members[i][1] == id) || (members[i][8] == urlid))
         if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
     } else {
       if((members[i][1] == id) || (members[i][2] == name))
         if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
     }
   }
-  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr);
+  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,urlid);
   alive();
   members_refresh();
   top_panel();
@@ -920,14 +898,14 @@ function chmix(id,mx){
   alive();
 }
 
-function remmmbr(st,id,name,mute,dvad,cvan,al,clear){
+function remmmbr(st,id,name,mute,dvad,cvan,al,urlid,clear){
   if(typeof clear=='undefined') clear=false;
   if(typeof members==='undefined') return alive();
   var found=0; var j=members.length;
   for(var i=j-1;i>=0;i--)
   if((members[i][2]==name)||(members[i][1]==id))
   if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
-  if(!clear)members[j]=Array(st,0,name,mute,dvad,cvan,al);
+  if(!clear)members[j]=Array(st,0,name,mute,dvad,cvan,al,0,urlid);
   alive();
   members_refresh();
   top_panel();
