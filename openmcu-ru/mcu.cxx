@@ -549,5 +549,34 @@ PString OpenMCU::GetEndpointParamFromUrl(PString param, PString addr)
   return newParam;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUURL::MCUURL(PString str)
+{
+  PINDEX delim1 = str.FindLast("[");
+  PINDEX delim2 = str.FindLast("]");
+  if(delim1 != P_MAX_INDEX && delim2 != P_MAX_INDEX)
+  {
+    displayName = str.Left(delim1-1);
+    partyUrl = str.Mid(delim1+1, delim2-delim1-1);
+  } else {
+    partyUrl = str;
+  }
+  if(partyUrl.Left(4) == "sip:") MCUScheme = "sip";
+  else if(partyUrl.Left(5) == "h323:") MCUScheme = "h323";
+  else { partyUrl = "h323:"+partyUrl; MCUScheme = "h323"; }
+
+  Parse((const char *)partyUrl, MCUScheme);
+  // parse old H.323 scheme
+  if(MCUScheme == "h323" && partyUrl.Left(5) != "h323" && partyUrl.Find("@") == P_MAX_INDEX &&
+     hostname == "" && username != "")
+  {
+    hostname = username;
+    username = "";
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // End of File ///////////////////////////////////////////////////////////////
 

@@ -993,7 +993,7 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
       << ",0"
       << ",0"
       << ",0"
-      << ",\"" << GetUrlId(s->first) << "\""
+      << ",\"" << MCUURL(s->first).GetUrlId() << "\""
       << ")";
     i++;
   } else {          //   active member
@@ -1006,7 +1006,7 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
       << "," << member->chosenVan                       // [i][5] = chosen van
       << "," << member->GetAudioLevel()                 // [i][6] = audiolevel (peak)
       << "," << member->GetVideoMixerNumber()           // [i][7] = number of mixer member receiving
-      << ",\"" << GetUrlId(s->first) << "\""
+      << ",\"" << MCUURL(s->first).GetUrlId() << "\""
       << ")";
     i++;
   }
@@ -1023,7 +1023,7 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
    username.Replace("\"","&quot;",TRUE,0);
    members << "Array("
       << "0"
-      << ",\"" << GetUrlId(abook[i]) << "\""
+      << ",\"" << MCUURL(abook[i]).GetUrlId() << "\""
       << ",\"" << username << "\""
       << ")";
  }

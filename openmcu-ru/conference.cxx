@@ -512,7 +512,7 @@ void Conference::RefreshAddressBook()
     username.Replace("\"","&quot;",TRUE,0);
     msg << "Array("
         << "0"
-        << ",\"" << GetUrlId(abook[i]) << "\""
+        << ",\"" << MCUURL(abook[i]).GetUrlId() << "\""
         << ",\"" << username << "\""
         << ")";
   }
@@ -554,7 +554,7 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
     }
   }
 
-  if(IsUrl(address)) address = GetUrl(address);
+  address = MCUURL(address).GetUrl();
   if(address.Left(4) == "sip:")
   {
     PStringStream msg;
@@ -738,7 +738,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   PStringStream msg;
 
   // add this member to the conference member name list
-  PString memberToAddUrlId = GetUrlId(memberToAdd->GetName());
+  PString memberToAddUrlId = MCUURL(memberToAdd->GetName()).GetUrlId();
   if(memberToAdd!=memberToAdd->GetID())
   {
     PWaitAndSignal m(memberListMutex);
@@ -749,7 +749,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
       for (Conference::MemberNameList::const_iterator s = memberNameList.begin(); s != memberNameList.end(); ++s)
       {
         PString memberName = s->first;
-        if(GetUrlId(memberName) == memberToAddUrlId)
+        if(MCUURL(memberName).GetUrlId() == memberToAddUrlId)
         {
           if(s->second == NULL)
           {
@@ -837,7 +837,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
         << "," << memberToRemove->disableVAD
         << ","  << memberToRemove->chosenVan
         << ","  << memberToRemove->GetAudioLevel()
-        << ",\"" << GetUrlId(memberToRemove->GetName()) << "\"";
+        << ",\"" << MCUURL(memberToRemove->GetName()).GetUrlId() << "\"";
     if(s==memberNameList.end()) msg << ",1";
     msg << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);

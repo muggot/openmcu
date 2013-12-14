@@ -176,53 +176,25 @@ class MCUConfig: public PConfig
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static inline BOOL IsUrl(PString addr)
+class MCUURL : public PURL
 {
-  if(addr.Find("[") != P_MAX_INDEX && addr.Find("]") != P_MAX_INDEX)
-    return TRUE;
-  return FALSE;
-}
-static inline PString GetUrlElement(PString addr, PINDEX num = 1)
-{
-  PString delim1 = "[";
-  PString delim2 = "]";
-  if(num == 0) return addr.Left(addr.Find(delim1)-1);
-
-  PINDEX pos1 = 0;
-  for(PINDEX i = 1; i <= num; i++)
-    pos1 = addr.FindOneOf(delim1, i == 1 ? pos1 : pos1+1);
-  if(pos1 == P_MAX_INDEX) return "";
-  PINDEX pos2 = addr.FindOneOf(delim2, pos1);
-  if(pos2 == P_MAX_INDEX) return "";
-  return addr.Mid(pos1+1, pos2-pos1-1);
-}
-static inline PString GetUrl(PString addr)
-{
-  PINDEX pos1 = addr.FindLast("[");
-  PINDEX pos2 = addr.FindLast("]");
-  if(pos1 == P_MAX_INDEX || pos2 == P_MAX_INDEX)
-    return addr;
-  return addr.Mid(pos1+1, pos2-pos1-1);
-}
-static inline PString GetUrlId(PString addr)
-{
-  PString url = GetUrl(addr);
-  PString id;
-  if(url.Left(4) != "sip:") // bak H.323, id = "name [host]"
-  {
-    PString name = addr.Left(addr.Find("[")-1);
-    PString host;
-    if(url.Left(5) == "h323:")
-      host = url.Tokenise(";")[0].Tokenise(":")[1];
-    else
-      host = url.Tokenise(":")[0];
-    if(host.Find("@") != P_MAX_INDEX)
-      host = host.Tokenise("@")[1];
-    id = name+" ["+host+"]";
-  }
-  else id = url.Tokenise(";")[0].Tokenise(":")[1];
-  return id;
-}
+  public:
+    //MCUURL();
+    MCUURL(PString str);
+    const PString & GetDisplayName() const { return displayName; }
+    const PString & GetUrl() const { return partyUrl; }
+    const PString GetUrlId() const
+    {
+      if(MCUScheme == "sip")
+        return username+"@"+hostname;
+      else
+        return displayName+"@"+hostname;
+    }
+  protected:
+    PString partyUrl;
+    PString displayName;
+    PString MCUScheme;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
