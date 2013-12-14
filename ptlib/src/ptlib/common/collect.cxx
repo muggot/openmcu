@@ -277,13 +277,12 @@
 #define __CLASS__ GetClass()
 #endif
 
-
 ///////////////////////////////////////////////////////////////////////////////
 
 void PCollection::PrintOn(ostream &strm) const
 {
   char separator = strm.fill();
-  int width = strm.width();
+  int width = (int)strm.width();
   for (PINDEX  i = 0; i < GetSize(); i++) {
     if (i > 0 && separator != ' ')
       strm << separator;

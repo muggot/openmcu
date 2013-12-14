@@ -45,7 +45,7 @@
  * First implementation of DirectSound driver
  */
 
-#pragma implementation "sound_directsound.h"
+//#pragma implementation "sound_directsound.h"
 
 #include <ptlib.h>
 

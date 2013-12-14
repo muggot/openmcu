@@ -215,7 +215,7 @@ PObject::Comparison PTimeInterval::Compare(const PObject & obj) const
 
 void PTimeInterval::PrintOn(ostream & stream) const
 {
-  int precision = stream.precision();
+  int precision = (int)stream.precision();
 
   Formats fmt = NormalFormat;
   if ((stream.flags()&ios::scientific) != 0)
@@ -225,7 +225,7 @@ void PTimeInterval::PrintOn(ostream & stream) const
     precision = -precision;
   }
 
-  stream << AsString(precision, fmt, stream.width());
+  stream << AsString(precision, fmt, (int)stream.width());
 }
 
 

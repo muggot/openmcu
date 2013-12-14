@@ -921,7 +921,7 @@ void PAbstractArray::CloneContents(const PAbstractArray * array)
 void PAbstractArray::PrintOn(ostream & strm) const
 {
   char separator = strm.fill();
-  int width = strm.width();
+  int width = (int)strm.width();
   for (PINDEX  i = 0; i < GetSize(); i++) {
     if (i > 0 && separator != '\0')
       strm << separator;
@@ -1107,7 +1107,7 @@ void PAbstractArray::ReadElementFrom(istream & /*stream*/, PINDEX /*index*/)
 
 void PCharArray::PrintOn(ostream & strm) const
 {
-  PINDEX width = strm.width();
+  PINDEX width = (PINDEX)strm.width();
   if (width > GetSize())
     width -= GetSize();
   else
@@ -1142,12 +1142,12 @@ void PCharArray::ReadFrom(istream &strm)
 
 void PBYTEArray::PrintOn(ostream & strm) const
 {
-  PINDEX line_width = strm.width();
+  PINDEX line_width = (PINDEX)strm.width();
   if (line_width == 0)
     line_width = 16;
   strm.width(0);
 
-  PINDEX indent = strm.precision();
+  PINDEX indent = (PINDEX)strm.precision();
 
   PINDEX val_width = ((strm.flags()&ios::basefield) == ios::hex) ? 2 : 3;
 

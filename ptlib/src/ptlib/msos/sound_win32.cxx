@@ -1634,7 +1634,7 @@ BOOL PSoundChannelWin32::SetVolume(unsigned newVolume)
 		mxcd.dwControlID = mc.dwControlID;
 
 		MIXERCONTROLDETAILS_UNSIGNED mxdu[2];
-		mxdu[0].dwValue = (newVolume*65535.0/100.0);//(mc.Bounds.dwMaximum - mc.Bounds.dwMinimum));
+		mxdu[0].dwValue = (DWORD)(newVolume*65535.0/100.0);//(mc.Bounds.dwMaximum - mc.Bounds.dwMinimum));
 		mxdu[1].dwValue = mxdu[0].dwValue;
 		mxcd.cbDetails = sizeof(MIXERCONTROLDETAILS_UNSIGNED) * mxcd.cChannels;
 		mxcd.paDetails = mxdu;
@@ -1809,8 +1809,8 @@ BOOL PSoundChannelWin32::GetVolume(unsigned & oldVolume)
 
 		MIXERCONTROLDETAILS_UNSIGNED mxdu[2];
 		memset(mxdu, 0, sizeof(MIXERCONTROLDETAILS_UNSIGNED)*2);
-		mxdu[0].dwValue = -1; 
-		mxdu[1].dwValue = -1; 
+		mxdu[0].dwValue = (DWORD)-1; 
+		mxdu[1].dwValue = (DWORD)-1; 
 		mxcd.cbDetails = sizeof(MIXERCONTROLDETAILS_UNSIGNED)*mxcd.cChannels;
 		mxcd.paDetails = mxdu;
 
@@ -1824,9 +1824,9 @@ BOOL PSoundChannelWin32::GetVolume(unsigned & oldVolume)
 		mixerClose(hMixer);
 
 		if(mxcd.cChannels==1)
-			oldVolume = ((double)mxdu[0].dwValue/65535.0*100.0);
+			oldVolume = (unsigned)((double)mxdu[0].dwValue/65535.0*100.0);
 		if(mxcd.cChannels==2)
-			oldVolume = ((double)(mxdu[0].dwValue+mxdu[1].dwValue)/2.0/65535.0*100.0);
+			oldVolume = (unsigned)((double)(mxdu[0].dwValue+mxdu[1].dwValue)/2.0/65535.0*100.0);
 		printf("oldVolume = %d\n", oldVolume);
 		return TRUE;
 	}

@@ -1271,7 +1271,7 @@ PObject * PASN_BitString::Clone() const
 
 void PASN_BitString::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   _Ios_Fmtflags flags = strm.flags();
 
   if (totalBits > 128)
@@ -1432,7 +1432,7 @@ PObject * PASN_OctetString::Clone() const
 
 void PASN_OctetString::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   _Ios_Fmtflags flags = strm.flags();
 
   strm << ' ' << value.GetSize() << " octets {\n"
@@ -1890,7 +1890,7 @@ PObject::Comparison PASN_BMPString::Compare(const PObject & obj) const
 
 void PASN_BMPString::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   PINDEX sz = value.GetSize();
   strm << ' ' << sz << " characters {\n";
   PINDEX i = 0;
@@ -2367,7 +2367,7 @@ PObject * PASN_Sequence::Clone() const
 
 void PASN_Sequence::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   for (PINDEX i = 0; i < fields.GetSize(); i++) {
     strm << setw(indent+6) << "field[" << i << "] <";
@@ -2545,7 +2545,7 @@ PObject::Comparison PASN_Array::Compare(const PObject & obj) const
 
 void PASN_Array::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << array.GetSize() << " entries {\n";
   for (PINDEX i = 0; i < array.GetSize(); i++)
     strm << setw(indent+1) << "[" << i << "]=" << setprecision(indent) << array[i] << '\n';
@@ -2632,7 +2632,7 @@ void PASN_Stream::Construct()
 
 void PASN_Stream::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << " size=" << GetSize()
        << " pos=" << byteOffset << '.' << (8-bitOffset)
        << " {\n";

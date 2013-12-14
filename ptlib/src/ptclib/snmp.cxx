@@ -31,7 +31,7 @@ PSNMP_Message::PSNMP_Message(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void PSNMP_Message::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "version = " << setprecision(indent) << m_version << '\n';
   strm << setw(indent+12) << "community = " << setprecision(indent) << m_community << '\n';
@@ -289,7 +289,7 @@ PSNMP_VarBind::PSNMP_VarBind(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void PSNMP_VarBind::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "name = " << setprecision(indent) << m_name << '\n';
   strm << setw(indent+8) << "value = " << setprecision(indent) << m_value << '\n';
@@ -403,7 +403,7 @@ PSNMP_PDU::PSNMP_PDU(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void PSNMP_PDU::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "request_id = " << setprecision(indent) << m_request_id << '\n';
   strm << setw(indent+15) << "error_status = " << setprecision(indent) << m_error_status << '\n';
@@ -500,7 +500,7 @@ PSNMP_Trap_PDU::PSNMP_Trap_PDU(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void PSNMP_Trap_PDU::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "enterprise = " << setprecision(indent) << m_enterprise << '\n';
   strm << setw(indent+13) << "agent_addr = " << setprecision(indent) << m_agent_addr << '\n';
