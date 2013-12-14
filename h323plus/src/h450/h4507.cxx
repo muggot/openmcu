@@ -373,7 +373,7 @@ H4507_MWIActivateArg::H4507_MWIActivateArg(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H4507_MWIActivateArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "servedUserNr = " << setprecision(indent) << m_servedUserNr << '\n';
   strm << setw(indent+15) << "basicService = " << setprecision(indent) << m_basicService << '\n';
@@ -517,7 +517,7 @@ H4507_MWIDeactivateArg::H4507_MWIDeactivateArg(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void H4507_MWIDeactivateArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "servedUserNr = " << setprecision(indent) << m_servedUserNr << '\n';
   strm << setw(indent+15) << "basicService = " << setprecision(indent) << m_basicService << '\n';
@@ -631,7 +631,7 @@ H4507_MWIInterrogateArg::H4507_MWIInterrogateArg(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H4507_MWIInterrogateArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "servedUserNr = " << setprecision(indent) << m_servedUserNr << '\n';
   strm << setw(indent+15) << "basicService = " << setprecision(indent) << m_basicService << '\n';
@@ -746,7 +746,7 @@ H4507_MWIInterrogateResElt::H4507_MWIInterrogateResElt(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H4507_MWIInterrogateResElt::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "basicService = " << setprecision(indent) << m_basicService << '\n';
   if (HasOptionalField(e_msgCentreId))

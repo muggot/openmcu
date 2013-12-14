@@ -280,7 +280,7 @@ H235_NonStandardParameter::H235_NonStandardParameter(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void H235_NonStandardParameter::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+24) << "nonStandardIdentifier = " << setprecision(indent) << m_nonStandardIdentifier << '\n';
   strm << setw(indent+7) << "data = " << setprecision(indent) << m_data << '\n';
@@ -366,7 +366,7 @@ H235_DHset::H235_DHset(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H235_DHset::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "halfkey = " << setprecision(indent) << m_halfkey << '\n';
   strm << setw(indent+10) << "modSize = " << setprecision(indent) << m_modSize << '\n';
@@ -458,7 +458,7 @@ H235_ECpoint::H235_ECpoint(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H235_ECpoint::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_x))
     strm << setw(indent+4) << "x = " << setprecision(indent) << m_x << '\n';
@@ -639,7 +639,7 @@ H235_ECGDSASignature::H235_ECGDSASignature(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H235_ECGDSASignature::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+4) << "r = " << setprecision(indent) << m_r << '\n';
   strm << setw(indent+4) << "s = " << setprecision(indent) << m_s << '\n';
@@ -722,7 +722,7 @@ H235_TypedCertificate::H235_TypedCertificate(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H235_TypedCertificate::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "type = " << setprecision(indent) << m_type << '\n';
   strm << setw(indent+14) << "certificate = " << setprecision(indent) << m_certificate << '\n';
@@ -1126,7 +1126,7 @@ H235_Params::H235_Params(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H235_Params::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_ranInt))
     strm << setw(indent+9) << "ranInt = " << setprecision(indent) << m_ranInt << '\n';
@@ -1230,7 +1230,7 @@ H235_ReturnSig::H235_ReturnSig(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H235_ReturnSig::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "generalId = " << setprecision(indent) << m_generalId << '\n';
   strm << setw(indent+17) << "responseRandom = " << setprecision(indent) << m_responseRandom << '\n';
@@ -1352,7 +1352,7 @@ H235_KeySyncMaterial::H235_KeySyncMaterial(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H235_KeySyncMaterial::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "generalID = " << setprecision(indent) << m_generalID << '\n';
   strm << setw(indent+14) << "keyMaterial = " << setprecision(indent) << m_keyMaterial << '\n';
@@ -1454,7 +1454,7 @@ H235_V3KeySyncMaterial::H235_V3KeySyncMaterial(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void H235_V3KeySyncMaterial::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_generalID))
     strm << setw(indent+12) << "generalID = " << setprecision(indent) << m_generalID << '\n';
@@ -1608,7 +1608,7 @@ H235_ECKASDH_eckasdhp::H235_ECKASDH_eckasdhp(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H235_ECKASDH_eckasdhp::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "public_key = " << setprecision(indent) << m_public_key << '\n';
   strm << setw(indent+10) << "modulus = " << setprecision(indent) << m_modulus << '\n';
@@ -1715,7 +1715,7 @@ H235_ECKASDH_eckasdh2::H235_ECKASDH_eckasdh2(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H235_ECKASDH_eckasdh2::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "public_key = " << setprecision(indent) << m_public_key << '\n';
   strm << setw(indent+12) << "fieldSize = " << setprecision(indent) << m_fieldSize << '\n';
@@ -1851,7 +1851,7 @@ H235_ProfileElement::H235_ProfileElement(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H235_ProfileElement::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "elementID = " << setprecision(indent) << m_elementID << '\n';
   if (HasOptionalField(e_paramS))
@@ -1947,7 +1947,7 @@ H235_KeySignedMaterial::H235_KeySignedMaterial(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void H235_KeySignedMaterial::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "generalId = " << setprecision(indent) << m_generalId << '\n';
   strm << setw(indent+10) << "mrandom = " << setprecision(indent) << m_mrandom << '\n';
@@ -2076,7 +2076,7 @@ H235_H235CertificateSignature::H235_H235CertificateSignature(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void H235_H235CertificateSignature::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "certificate = " << setprecision(indent) << m_certificate << '\n';
   strm << setw(indent+17) << "responseRandom = " << setprecision(indent) << m_responseRandom << '\n';
@@ -2318,7 +2318,7 @@ H235_ClearToken::H235_ClearToken(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H235_ClearToken::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "tokenOID = " << setprecision(indent) << m_tokenOID << '\n';
   if (HasOptionalField(e_timeStamp))
@@ -2695,7 +2695,7 @@ H235_CryptoToken_cryptoEncryptedToken::H235_CryptoToken_cryptoEncryptedToken(uns
 #ifndef PASN_NOPRINTON
 void H235_CryptoToken_cryptoEncryptedToken::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "tokenOID = " << setprecision(indent) << m_tokenOID << '\n';
   strm << setw(indent+8) << "token = " << setprecision(indent) << m_token << '\n';
@@ -2778,7 +2778,7 @@ H235_CryptoToken_cryptoSignedToken::H235_CryptoToken_cryptoSignedToken(unsigned 
 #ifndef PASN_NOPRINTON
 void H235_CryptoToken_cryptoSignedToken::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "tokenOID = " << setprecision(indent) << m_tokenOID << '\n';
   strm << setw(indent+8) << "token = " << setprecision(indent) << m_token << '\n';
@@ -2861,7 +2861,7 @@ H235_CryptoToken_cryptoHashedToken::H235_CryptoToken_cryptoHashedToken(unsigned 
 #ifndef PASN_NOPRINTON
 void H235_CryptoToken_cryptoHashedToken::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "tokenOID = " << setprecision(indent) << m_tokenOID << '\n';
   strm << setw(indent+13) << "hashedVals = " << setprecision(indent) << m_hashedVals << '\n';

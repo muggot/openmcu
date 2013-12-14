@@ -32,7 +32,7 @@ H230OID2_Participant::H230OID2_Participant(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H230OID2_Participant::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+8) << "token = " << setprecision(indent) << m_token << '\n';
   strm << setw(indent+9) << "number = " << setprecision(indent) << m_number << '\n';
@@ -167,7 +167,7 @@ H230OID2_ParticipantList::H230OID2_ParticipantList(unsigned tag, PASN_Object::Ta
 #ifndef PASN_NOPRINTON
 void H230OID2_ParticipantList::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "list = " << setprecision(indent) << m_list << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";

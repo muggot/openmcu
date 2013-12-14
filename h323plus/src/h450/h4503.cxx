@@ -506,7 +506,7 @@ H4503_IntResult::H4503_IntResult(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4503_IntResult::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "servedUserNr = " << setprecision(indent) << m_servedUserNr << '\n';
   strm << setw(indent+15) << "basicService = " << setprecision(indent) << m_basicService << '\n';
@@ -623,7 +623,7 @@ H4503_DivertingLegInfo2Arg::H4503_DivertingLegInfo2Arg(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H4503_DivertingLegInfo2Arg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+19) << "diversionCounter = " << setprecision(indent) << m_diversionCounter << '\n';
   strm << setw(indent+18) << "diversionReason = " << setprecision(indent) << m_diversionReason << '\n';

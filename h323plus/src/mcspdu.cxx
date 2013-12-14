@@ -372,7 +372,7 @@ MCS_DomainParameters::MCS_DomainParameters(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void MCS_DomainParameters::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "maxChannelIds = " << setprecision(indent) << m_maxChannelIds << '\n';
   strm << setw(indent+13) << "maxUserIds = " << setprecision(indent) << m_maxUserIds << '\n';
@@ -497,7 +497,7 @@ MCS_Connect_Initial::MCS_Connect_Initial(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void MCS_Connect_Initial::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+24) << "callingDomainSelector = " << setprecision(indent) << m_callingDomainSelector << '\n';
   strm << setw(indent+23) << "calledDomainSelector = " << setprecision(indent) << m_calledDomainSelector << '\n';
@@ -616,7 +616,7 @@ MCS_Connect_Additional::MCS_Connect_Additional(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void MCS_Connect_Additional::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+18) << "calledConnectId = " << setprecision(indent) << m_calledConnectId << '\n';
   strm << setw(indent+15) << "dataPriority = " << setprecision(indent) << m_dataPriority << '\n';
@@ -700,7 +700,7 @@ MCS_PDin::MCS_PDin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_PDin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "heightLimit = " << setprecision(indent) << m_heightLimit << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -778,7 +778,7 @@ MCS_EDrq::MCS_EDrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_EDrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "subHeight = " << setprecision(indent) << m_subHeight << '\n';
   strm << setw(indent+14) << "subInterval = " << setprecision(indent) << m_subInterval << '\n';
@@ -1171,7 +1171,7 @@ MCS_AUrq::MCS_AUrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_AUrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent-1) << setprecision(indent-2) << "}";
 }
@@ -1226,7 +1226,7 @@ MCS_CJrq::MCS_CJrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CJrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
@@ -1309,7 +1309,7 @@ MCS_CCrq::MCS_CCrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CCrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -1385,7 +1385,7 @@ MCS_CDrq::MCS_CDrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CDrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
@@ -1468,7 +1468,7 @@ MCS_CDin::MCS_CDin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CDin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -1544,7 +1544,7 @@ MCS_SDrq::MCS_SDrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_SDrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
@@ -1648,7 +1648,7 @@ MCS_SDin::MCS_SDin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_SDin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
@@ -1752,7 +1752,7 @@ MCS_USrq::MCS_USrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_USrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
@@ -1856,7 +1856,7 @@ MCS_USin::MCS_USin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_USin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
@@ -1960,7 +1960,7 @@ MCS_TGrq::MCS_TGrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TGrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
@@ -2043,7 +2043,7 @@ MCS_TIrq::MCS_TIrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TIrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
@@ -2126,7 +2126,7 @@ MCS_TVrq::MCS_TVrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TVrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
@@ -2216,7 +2216,7 @@ MCS_TVin::MCS_TVin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TVin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
@@ -2306,7 +2306,7 @@ MCS_TPrq::MCS_TPrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TPrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
@@ -2389,7 +2389,7 @@ MCS_TPin::MCS_TPin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TPin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
@@ -2472,7 +2472,7 @@ MCS_TRrq::MCS_TRrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TRrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
@@ -2555,7 +2555,7 @@ MCS_TTrq::MCS_TTrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TTrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
@@ -2638,7 +2638,7 @@ MCS_TTcf::MCS_TTcf(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TTcf::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
@@ -4163,7 +4163,7 @@ MCS_ChannelAttributes_static::MCS_ChannelAttributes_static(unsigned tag, PASN_Ob
 #ifndef PASN_NOPRINTON
 void MCS_ChannelAttributes_static::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -4239,7 +4239,7 @@ MCS_ChannelAttributes_userId::MCS_ChannelAttributes_userId(unsigned tag, PASN_Ob
 #ifndef PASN_NOPRINTON
 void MCS_ChannelAttributes_userId::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "joined = " << setprecision(indent) << m_joined << '\n';
   strm << setw(indent+9) << "userId = " << setprecision(indent) << m_userId << '\n';
@@ -4322,7 +4322,7 @@ MCS_ChannelAttributes_assigned::MCS_ChannelAttributes_assigned(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void MCS_ChannelAttributes_assigned::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -4491,7 +4491,7 @@ MCS_TokenAttributes_grabbed::MCS_TokenAttributes_grabbed(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void MCS_TokenAttributes_grabbed::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
   strm << setw(indent+10) << "grabber = " << setprecision(indent) << m_grabber << '\n';
@@ -4574,7 +4574,7 @@ MCS_TokenAttributes_inhibited::MCS_TokenAttributes_inhibited(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void MCS_TokenAttributes_inhibited::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
   strm << setw(indent+13) << "inhibitors = " << setprecision(indent) << m_inhibitors << '\n';
@@ -4657,7 +4657,7 @@ MCS_TokenAttributes_giving::MCS_TokenAttributes_giving(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void MCS_TokenAttributes_giving::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
   strm << setw(indent+10) << "grabber = " << setprecision(indent) << m_grabber << '\n';
@@ -4747,7 +4747,7 @@ MCS_TokenAttributes_ungivable::MCS_TokenAttributes_ungivable(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void MCS_TokenAttributes_ungivable::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
   strm << setw(indent+10) << "grabber = " << setprecision(indent) << m_grabber << '\n';
@@ -4830,7 +4830,7 @@ MCS_TokenAttributes_given::MCS_TokenAttributes_given(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void MCS_TokenAttributes_given::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "tokenId = " << setprecision(indent) << m_tokenId << '\n';
   strm << setw(indent+12) << "recipient = " << setprecision(indent) << m_recipient << '\n';
@@ -4976,7 +4976,7 @@ MCS_Connect_Response::MCS_Connect_Response(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void MCS_Connect_Response::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent+18) << "calledConnectId = " << setprecision(indent) << m_calledConnectId << '\n';
@@ -5073,7 +5073,7 @@ MCS_Connect_Result::MCS_Connect_Result(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void MCS_Connect_Result::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -5149,7 +5149,7 @@ MCS_MCrq::MCS_MCrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_MCrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "mergeChannels = " << setprecision(indent) << m_mergeChannels << '\n';
   strm << setw(indent+18) << "purgeChannelIds = " << setprecision(indent) << m_purgeChannelIds << '\n';
@@ -5232,7 +5232,7 @@ MCS_MCcf::MCS_MCcf(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_MCcf::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "mergeChannels = " << setprecision(indent) << m_mergeChannels << '\n';
   strm << setw(indent+18) << "purgeChannelIds = " << setprecision(indent) << m_purgeChannelIds << '\n';
@@ -5315,7 +5315,7 @@ MCS_PCin::MCS_PCin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_PCin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "detachUserIds = " << setprecision(indent) << m_detachUserIds << '\n';
   strm << setw(indent+18) << "purgeChannelIds = " << setprecision(indent) << m_purgeChannelIds << '\n';
@@ -5398,7 +5398,7 @@ MCS_MTrq::MCS_MTrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_MTrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "mergeTokens = " << setprecision(indent) << m_mergeTokens << '\n';
   strm << setw(indent+16) << "purgeTokenIds = " << setprecision(indent) << m_purgeTokenIds << '\n';
@@ -5481,7 +5481,7 @@ MCS_MTcf::MCS_MTcf(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_MTcf::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "mergeTokens = " << setprecision(indent) << m_mergeTokens << '\n';
   strm << setw(indent+16) << "purgeTokenIds = " << setprecision(indent) << m_purgeTokenIds << '\n';
@@ -5564,7 +5564,7 @@ MCS_PTin::MCS_PTin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_PTin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "purgeTokenIds = " << setprecision(indent) << m_purgeTokenIds << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -5640,7 +5640,7 @@ MCS_DPum::MCS_DPum(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_DPum::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "reason = " << setprecision(indent) << m_reason << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -5716,7 +5716,7 @@ MCS_RJum::MCS_RJum(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_RJum::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "diagnostic = " << setprecision(indent) << m_diagnostic << '\n';
   strm << setw(indent+16) << "initialOctets = " << setprecision(indent) << m_initialOctets << '\n';
@@ -5799,7 +5799,7 @@ MCS_AUcf::MCS_AUcf(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_AUcf::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   if (HasOptionalField(e_initiator))
@@ -5885,7 +5885,7 @@ MCS_DUrq::MCS_DUrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_DUrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "reason = " << setprecision(indent) << m_reason << '\n';
   strm << setw(indent+10) << "userIds = " << setprecision(indent) << m_userIds << '\n';
@@ -5968,7 +5968,7 @@ MCS_DUin::MCS_DUin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_DUin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "reason = " << setprecision(indent) << m_reason << '\n';
   strm << setw(indent+10) << "userIds = " << setprecision(indent) << m_userIds << '\n';
@@ -6051,7 +6051,7 @@ MCS_CJcf::MCS_CJcf(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CJcf::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
@@ -6151,7 +6151,7 @@ MCS_CLrq::MCS_CLrq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CLrq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "channelIds = " << setprecision(indent) << m_channelIds << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -6227,7 +6227,7 @@ MCS_CCcf::MCS_CCcf(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CCcf::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
@@ -6320,7 +6320,7 @@ MCS_CArq::MCS_CArq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CArq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
@@ -6410,7 +6410,7 @@ MCS_CAin::MCS_CAin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CAin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
@@ -6500,7 +6500,7 @@ MCS_CErq::MCS_CErq(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CErq::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
@@ -6590,7 +6590,7 @@ MCS_CEin::MCS_CEin(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_CEin::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';
   strm << setw(indent+10) << "userIds = " << setprecision(indent) << m_userIds << '\n';
@@ -6673,7 +6673,7 @@ MCS_TGcf::MCS_TGcf(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TGcf::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
@@ -6770,7 +6770,7 @@ MCS_TIcf::MCS_TIcf(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TIcf::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
@@ -6867,7 +6867,7 @@ MCS_TVrs::MCS_TVrs(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TVrs::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent+12) << "recipient = " << setprecision(indent) << m_recipient << '\n';
@@ -6957,7 +6957,7 @@ MCS_TVcf::MCS_TVcf(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TVcf::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
@@ -7054,7 +7054,7 @@ MCS_TRcf::MCS_TRcf(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void MCS_TRcf::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent+12) << "initiator = " << setprecision(indent) << m_initiator << '\n';
@@ -7151,7 +7151,7 @@ MCS_ChannelAttributes_private::MCS_ChannelAttributes_private(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void MCS_ChannelAttributes_private::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "joined = " << setprecision(indent) << m_joined << '\n';
   strm << setw(indent+12) << "channelId = " << setprecision(indent) << m_channelId << '\n';

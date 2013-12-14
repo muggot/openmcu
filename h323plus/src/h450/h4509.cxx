@@ -232,7 +232,7 @@ H4509_CcRequestArg::H4509_CcRequestArg(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H4509_CcRequestArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "numberA = " << setprecision(indent) << m_numberA << '\n';
   strm << setw(indent+10) << "numberB = " << setprecision(indent) << m_numberB << '\n';
@@ -360,7 +360,7 @@ H4509_CcRequestRes::H4509_CcRequestRes(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H4509_CcRequestRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "retain_service = " << setprecision(indent) << m_retain_service << '\n';
   if (HasOptionalField(e_extension))
@@ -447,7 +447,7 @@ H4509_CcShortArg::H4509_CcShortArg(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4509_CcShortArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_ccIdentifier))
     strm << setw(indent+15) << "ccIdentifier = " << setprecision(indent) << m_ccIdentifier << '\n';
@@ -537,7 +537,7 @@ H4509_CcLongArg::H4509_CcLongArg(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4509_CcLongArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_numberA))
     strm << setw(indent+10) << "numberA = " << setprecision(indent) << m_numberA << '\n';

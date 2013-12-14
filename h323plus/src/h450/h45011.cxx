@@ -248,7 +248,7 @@ H45011_CIRequestArg::H45011_CIRequestArg(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H45011_CIRequestArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+20) << "ciCapabilityLevel = " << setprecision(indent) << m_ciCapabilityLevel << '\n';
   if (HasOptionalField(e_argumentExtension))
@@ -335,7 +335,7 @@ H45011_CIRequestRes::H45011_CIRequestRes(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H45011_CIRequestRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+22) << "ciStatusInformation = " << setprecision(indent) << m_ciStatusInformation << '\n';
   if (HasOptionalField(e_resultExtension))
@@ -422,7 +422,7 @@ H45011_CIGetCIPLOptArg::H45011_CIGetCIPLOptArg(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void H45011_CIGetCIPLOptArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_argumentExtension))
     strm << setw(indent+20) << "argumentExtension = " << setprecision(indent) << m_argumentExtension << '\n';
@@ -502,7 +502,7 @@ H45011_CIGetCIPLRes::H45011_CIGetCIPLRes(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H45011_CIGetCIPLRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+20) << "ciProtectionLevel = " << setprecision(indent) << m_ciProtectionLevel << '\n';
   if (HasOptionalField(e_silentMonitoringPermitted))
@@ -599,7 +599,7 @@ H45011_CIIsOptArg::H45011_CIIsOptArg(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H45011_CIIsOptArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_argumentExtension))
     strm << setw(indent+20) << "argumentExtension = " << setprecision(indent) << m_argumentExtension << '\n';
@@ -679,7 +679,7 @@ H45011_CIIsOptRes::H45011_CIIsOptRes(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H45011_CIIsOptRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_resultExtension))
     strm << setw(indent+18) << "resultExtension = " << setprecision(indent) << m_resultExtension << '\n';
@@ -759,7 +759,7 @@ H45011_CIFrcRelArg::H45011_CIFrcRelArg(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H45011_CIFrcRelArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+20) << "ciCapabilityLevel = " << setprecision(indent) << m_ciCapabilityLevel << '\n';
   if (HasOptionalField(e_argumentExtension))
@@ -846,7 +846,7 @@ H45011_CIFrcRelOptRes::H45011_CIFrcRelOptRes(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H45011_CIFrcRelOptRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_resultExtension))
     strm << setw(indent+18) << "resultExtension = " << setprecision(indent) << m_resultExtension << '\n';
@@ -926,7 +926,7 @@ H45011_CIWobOptArg::H45011_CIWobOptArg(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H45011_CIWobOptArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_argumentExtension))
     strm << setw(indent+20) << "argumentExtension = " << setprecision(indent) << m_argumentExtension << '\n';
@@ -1006,7 +1006,7 @@ H45011_CIWobOptRes::H45011_CIWobOptRes(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H45011_CIWobOptRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_resultExtension))
     strm << setw(indent+18) << "resultExtension = " << setprecision(indent) << m_resultExtension << '\n';
@@ -1086,7 +1086,7 @@ H45011_CISilentArg::H45011_CISilentArg(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H45011_CISilentArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+20) << "ciCapabilityLevel = " << setprecision(indent) << m_ciCapabilityLevel << '\n';
   if (HasOptionalField(e_specificCall))
@@ -1183,7 +1183,7 @@ H45011_CISilentOptRes::H45011_CISilentOptRes(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H45011_CISilentOptRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_resultExtension))
     strm << setw(indent+18) << "resultExtension = " << setprecision(indent) << m_resultExtension << '\n';
@@ -1263,7 +1263,7 @@ H45011_CINotificationArg::H45011_CINotificationArg(unsigned tag, PASN_Object::Ta
 #ifndef PASN_NOPRINTON
 void H45011_CINotificationArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+22) << "ciStatusInformation = " << setprecision(indent) << m_ciStatusInformation << '\n';
   if (HasOptionalField(e_argumentExtension))

@@ -649,7 +649,7 @@ void H323VideoCodec::OnFreezePicture()
 
 void H323VideoCodec::OnFreezeVideo(int disable)
 {
-  PTRACE(3, "Codec\tOnFreezeVideo()");
+  PTRACE(3, "Codec\tOnFreezeVideo(" << disable << ")");
 }
 
 

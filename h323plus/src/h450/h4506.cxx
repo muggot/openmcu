@@ -99,7 +99,7 @@ H4506_CallWaitingArg::H4506_CallWaitingArg(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H4506_CallWaitingArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_nbOfAddWaitingCalls))
     strm << setw(indent+22) << "nbOfAddWaitingCalls = " << setprecision(indent) << m_nbOfAddWaitingCalls << '\n';

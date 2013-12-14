@@ -93,7 +93,7 @@ H245_RefPictureSelection_additionalPictureMemory::H245_RefPictureSelection_addit
 #ifndef PASN_NOPRINTON
 void H245_RefPictureSelection_additionalPictureMemory::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_sqcifAdditionalPictureMemory))
     strm << setw(indent+31) << "sqcifAdditionalPictureMemory = " << setprecision(indent) << m_sqcifAdditionalPictureMemory << '\n';
@@ -388,7 +388,7 @@ H245_AudioCapability_g7231::H245_AudioCapability_g7231(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H245_AudioCapability_g7231::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+23) << "maxAl_sduAudioFrames = " << setprecision(indent) << m_maxAl_sduAudioFrames << '\n';
   strm << setw(indent+21) << "silenceSuppression = " << setprecision(indent) << m_silenceSuppression << '\n';
@@ -477,7 +477,7 @@ H245_G7231AnnexCCapability_g723AnnexCAudioMode::H245_G7231AnnexCCapability_g723A
 #ifndef PASN_NOPRINTON
 void H245_G7231AnnexCCapability_g723AnnexCAudioMode::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "highRateMode0 = " << setprecision(indent) << m_highRateMode0 << '\n';
   strm << setw(indent+16) << "highRateMode1 = " << setprecision(indent) << m_highRateMode1 << '\n';
@@ -868,7 +868,7 @@ H245_T84Profile_t84Restricted::H245_T84Profile_t84Restricted(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void H245_T84Profile_t84Restricted::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "qcif = " << setprecision(indent) << m_qcif << '\n';
   strm << setw(indent+6) << "cif = " << setprecision(indent) << m_cif << '\n';
@@ -2581,7 +2581,7 @@ H245_UnicastAddress_iPAddress::H245_UnicastAddress_iPAddress(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void H245_UnicastAddress_iPAddress::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "network = " << setprecision(indent) << m_network << '\n';
   strm << setw(indent+17) << "tsapIdentifier = " << setprecision(indent) << m_tsapIdentifier << '\n';
@@ -2667,7 +2667,7 @@ H245_UnicastAddress_iPXAddress::H245_UnicastAddress_iPXAddress(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void H245_UnicastAddress_iPXAddress::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "node = " << setprecision(indent) << m_node << '\n';
   strm << setw(indent+9) << "netnum = " << setprecision(indent) << m_netnum << '\n';
@@ -2759,7 +2759,7 @@ H245_UnicastAddress_iP6Address::H245_UnicastAddress_iP6Address(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void H245_UnicastAddress_iP6Address::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "network = " << setprecision(indent) << m_network << '\n';
   strm << setw(indent+17) << "tsapIdentifier = " << setprecision(indent) << m_tsapIdentifier << '\n';
@@ -2844,7 +2844,7 @@ H245_MulticastAddress_iPAddress::H245_MulticastAddress_iPAddress(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void H245_MulticastAddress_iPAddress::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "network = " << setprecision(indent) << m_network << '\n';
   strm << setw(indent+17) << "tsapIdentifier = " << setprecision(indent) << m_tsapIdentifier << '\n';
@@ -2929,7 +2929,7 @@ H245_MulticastAddress_iP6Address::H245_MulticastAddress_iP6Address(unsigned tag,
 #ifndef PASN_NOPRINTON
 void H245_MulticastAddress_iP6Address::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "network = " << setprecision(indent) << m_network << '\n';
   strm << setw(indent+17) << "tsapIdentifier = " << setprecision(indent) << m_tsapIdentifier << '\n';
@@ -4925,7 +4925,7 @@ H245_G7231AnnexCMode_g723AnnexCAudioMode::H245_G7231AnnexCMode_g723AnnexCAudioMo
 #ifndef PASN_NOPRINTON
 void H245_G7231AnnexCMode_g723AnnexCAudioMode::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "highRateMode0 = " << setprecision(indent) << m_highRateMode0 << '\n';
   strm << setw(indent+16) << "highRateMode1 = " << setprecision(indent) << m_highRateMode1 << '\n';
@@ -5685,7 +5685,7 @@ H245_ConferenceResponse_extensionAddressResponse::H245_ConferenceResponse_extens
 #ifndef PASN_NOPRINTON
 void H245_ConferenceResponse_extensionAddressResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+19) << "extensionAddress = " << setprecision(indent) << m_extensionAddress << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -5941,7 +5941,7 @@ H245_MultilinkRequest_callInformation::H245_MultilinkRequest_callInformation(uns
 #ifndef PASN_NOPRINTON
 void H245_MultilinkRequest_callInformation::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+35) << "maxNumberOfAdditionalConnections = " << setprecision(indent) << m_maxNumberOfAdditionalConnections << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -6017,7 +6017,7 @@ H245_MultilinkRequest_addConnection::H245_MultilinkRequest_addConnection(unsigne
 #ifndef PASN_NOPRINTON
 void H245_MultilinkRequest_addConnection::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "sequenceNumber = " << setprecision(indent) << m_sequenceNumber << '\n';
   strm << setw(indent+21) << "dialingInformation = " << setprecision(indent) << m_dialingInformation << '\n';
@@ -6100,7 +6100,7 @@ H245_MultilinkRequest_removeConnection::H245_MultilinkRequest_removeConnection(u
 #ifndef PASN_NOPRINTON
 void H245_MultilinkRequest_removeConnection::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+23) << "connectionIdentifier = " << setprecision(indent) << m_connectionIdentifier << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -6177,7 +6177,7 @@ H245_MultilinkResponse_callInformation::H245_MultilinkResponse_callInformation(u
 #ifndef PASN_NOPRINTON
 void H245_MultilinkResponse_callInformation::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+21) << "dialingInformation = " << setprecision(indent) << m_dialingInformation << '\n';
   strm << setw(indent+24) << "callAssociationNumber = " << setprecision(indent) << m_callAssociationNumber << '\n';
@@ -6260,7 +6260,7 @@ H245_MultilinkResponse_removeConnection::H245_MultilinkResponse_removeConnection
 #ifndef PASN_NOPRINTON
 void H245_MultilinkResponse_removeConnection::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+23) << "connectionIdentifier = " << setprecision(indent) << m_connectionIdentifier << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -6337,7 +6337,7 @@ H245_MultilinkResponse_maximumHeaderInterval::H245_MultilinkResponse_maximumHead
 #ifndef PASN_NOPRINTON
 void H245_MultilinkResponse_maximumHeaderInterval::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+18) << "currentInterval = " << setprecision(indent) << m_currentInterval << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -6413,7 +6413,7 @@ H245_MultilinkIndication_crcDesired::H245_MultilinkIndication_crcDesired(unsigne
 #ifndef PASN_NOPRINTON
 void H245_MultilinkIndication_crcDesired::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent-1) << setprecision(indent-2) << "}";
 }
@@ -6468,7 +6468,7 @@ H245_MultilinkIndication_excessiveError::H245_MultilinkIndication_excessiveError
 #ifndef PASN_NOPRINTON
 void H245_MultilinkIndication_excessiveError::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+23) << "connectionIdentifier = " << setprecision(indent) << m_connectionIdentifier << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -7813,7 +7813,7 @@ H245_UserInputIndication_encryptedAlphanumeric::H245_UserInputIndication_encrypt
 #ifndef PASN_NOPRINTON
 void H245_UserInputIndication_encryptedAlphanumeric::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "algorithmOID = " << setprecision(indent) << m_algorithmOID << '\n';
   if (HasOptionalField(e_paramS))
@@ -8197,7 +8197,7 @@ H245_H223Capability_h223MultiplexTableCapability_enhanced::H245_H223Capability_h
 #ifndef PASN_NOPRINTON
 void H245_H223Capability_h223MultiplexTableCapability_enhanced::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+22) << "maximumNestingDepth = " << setprecision(indent) << m_maximumNestingDepth << '\n';
   strm << setw(indent+25) << "maximumElementListSize = " << setprecision(indent) << m_maximumElementListSize << '\n';
@@ -8321,7 +8321,7 @@ H245_RefPictureSelection_enhancedReferencePicSelect_subPictureRemovalParameters:
 #ifndef PASN_NOPRINTON
 void H245_RefPictureSelection_enhancedReferencePicSelect_subPictureRemovalParameters::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "mpuHorizMBs = " << setprecision(indent) << m_mpuHorizMBs << '\n';
   strm << setw(indent+13) << "mpuVertMBs = " << setprecision(indent) << m_mpuVertMBs << '\n';
@@ -8509,7 +8509,7 @@ H245_DataApplicationCapability_application_t84::H245_DataApplicationCapability_a
 #ifndef PASN_NOPRINTON
 void H245_DataApplicationCapability_application_t84::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "t84Protocol = " << setprecision(indent) << m_t84Protocol << '\n';
   strm << setw(indent+13) << "t84Profile = " << setprecision(indent) << m_t84Profile << '\n';
@@ -8592,7 +8592,7 @@ H245_DataApplicationCapability_application_nlpid::H245_DataApplicationCapability
 #ifndef PASN_NOPRINTON
 void H245_DataApplicationCapability_application_nlpid::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "nlpidProtocol = " << setprecision(indent) << m_nlpidProtocol << '\n';
   strm << setw(indent+12) << "nlpidData = " << setprecision(indent) << m_nlpidData << '\n';
@@ -8675,7 +8675,7 @@ H245_DepFECCapability_rfc2733_separateStream::H245_DepFECCapability_rfc2733_sepa
 #ifndef PASN_NOPRINTON
 void H245_DepFECCapability_rfc2733_separateStream::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "separatePort = " << setprecision(indent) << m_separatePort << '\n';
   strm << setw(indent+11) << "samePort = " << setprecision(indent) << m_samePort << '\n';
@@ -9022,7 +9022,7 @@ H245_H223LogicalChannelParameters_adaptationLayerType_al3::H245_H223LogicalChann
 #ifndef PASN_NOPRINTON
 void H245_H223LogicalChannelParameters_adaptationLayerType_al3::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+21) << "controlFieldOctets = " << setprecision(indent) << m_controlFieldOctets << '\n';
   strm << setw(indent+17) << "sendBufferSize = " << setprecision(indent) << m_sendBufferSize << '\n';
@@ -9528,7 +9528,7 @@ H245_H223ModeParameters_adaptationLayerType_al3::H245_H223ModeParameters_adaptat
 #ifndef PASN_NOPRINTON
 void H245_H223ModeParameters_adaptationLayerType_al3::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+21) << "controlFieldOctets = " << setprecision(indent) << m_controlFieldOctets << '\n';
   strm << setw(indent+17) << "sendBufferSize = " << setprecision(indent) << m_sendBufferSize << '\n';
@@ -9611,7 +9611,7 @@ H245_DataMode_application_nlpid::H245_DataMode_application_nlpid(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void H245_DataMode_application_nlpid::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "nlpidProtocol = " << setprecision(indent) << m_nlpidProtocol << '\n';
   strm << setw(indent+12) << "nlpidData = " << setprecision(indent) << m_nlpidData << '\n';
@@ -9842,7 +9842,7 @@ H245_MiscellaneousCommand_type_videoFastUpdateGOB::H245_MiscellaneousCommand_typ
 #ifndef PASN_NOPRINTON
 void H245_MiscellaneousCommand_type_videoFastUpdateGOB::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "firstGOB = " << setprecision(indent) << m_firstGOB << '\n';
   strm << setw(indent+15) << "numberOfGOBs = " << setprecision(indent) << m_numberOfGOBs << '\n';
@@ -9928,7 +9928,7 @@ H245_MiscellaneousCommand_type_videoFastUpdateMB::H245_MiscellaneousCommand_type
 #ifndef PASN_NOPRINTON
 void H245_MiscellaneousCommand_type_videoFastUpdateMB::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_firstGOB))
     strm << setw(indent+11) << "firstGOB = " << setprecision(indent) << m_firstGOB << '\n';
@@ -10027,7 +10027,7 @@ H245_MiscellaneousCommand_type_videoBadMBs::H245_MiscellaneousCommand_type_video
 #ifndef PASN_NOPRINTON
 void H245_MiscellaneousCommand_type_videoBadMBs::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "firstMB = " << setprecision(indent) << m_firstMB << '\n';
   strm << setw(indent+14) << "numberOfMBs = " << setprecision(indent) << m_numberOfMBs << '\n';
@@ -10150,7 +10150,7 @@ H245_MiscellaneousCommand_type_lostPartialPicture::H245_MiscellaneousCommand_typ
 #ifndef PASN_NOPRINTON
 void H245_MiscellaneousCommand_type_lostPartialPicture::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+19) << "pictureReference = " << setprecision(indent) << m_pictureReference << '\n';
   strm << setw(indent+10) << "firstMB = " << setprecision(indent) << m_firstMB << '\n';
@@ -10241,7 +10241,7 @@ H245_MiscellaneousCommand_type_encryptionUpdateAck::H245_MiscellaneousCommand_ty
 #ifndef PASN_NOPRINTON
 void H245_MiscellaneousCommand_type_encryptionUpdateAck::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "synchFlag = " << setprecision(indent) << m_synchFlag << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -10319,7 +10319,7 @@ H245_NewATMVCCommand_aal_aal5::H245_NewATMVCCommand_aal_aal5(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void H245_NewATMVCCommand_aal_aal5::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+24) << "forwardMaximumSDUSize = " << setprecision(indent) << m_forwardMaximumSDUSize << '\n';
   strm << setw(indent+25) << "backwardMaximumSDUSize = " << setprecision(indent) << m_backwardMaximumSDUSize << '\n';
@@ -10443,7 +10443,7 @@ H245_MiscellaneousIndication_type_videoNotDecodedMBs::H245_MiscellaneousIndicati
 #ifndef PASN_NOPRINTON
 void H245_MiscellaneousIndication_type_videoNotDecodedMBs::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "firstMB = " << setprecision(indent) << m_firstMB << '\n';
   strm << setw(indent+14) << "numberOfMBs = " << setprecision(indent) << m_numberOfMBs << '\n';
@@ -10535,7 +10535,7 @@ H245_NewATMVCIndication_aal_aal5::H245_NewATMVCIndication_aal_aal5(unsigned tag,
 #ifndef PASN_NOPRINTON
 void H245_NewATMVCIndication_aal_aal5::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+24) << "forwardMaximumSDUSize = " << setprecision(indent) << m_forwardMaximumSDUSize << '\n';
   strm << setw(indent+25) << "backwardMaximumSDUSize = " << setprecision(indent) << m_backwardMaximumSDUSize << '\n';
@@ -10658,7 +10658,7 @@ H245_UserInputIndication_signal_rtp::H245_UserInputIndication_signal_rtp(unsigne
 #ifndef PASN_NOPRINTON
 void H245_UserInputIndication_signal_rtp::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_timestamp))
     strm << setw(indent+12) << "timestamp = " << setprecision(indent) << m_timestamp << '\n';
@@ -10754,7 +10754,7 @@ H245_UserInputIndication_signalUpdate_rtp::H245_UserInputIndication_signalUpdate
 #ifndef PASN_NOPRINTON
 void H245_UserInputIndication_signalUpdate_rtp::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+23) << "logicalChannelNumber = " << setprecision(indent) << m_logicalChannelNumber << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -10830,7 +10830,7 @@ H245_UserInputIndication_extendedAlphanumeric_encryptedAlphanumeric::H245_UserIn
 #ifndef PASN_NOPRINTON
 void H245_UserInputIndication_extendedAlphanumeric_encryptedAlphanumeric::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "algorithmOID = " << setprecision(indent) << m_algorithmOID << '\n';
   if (HasOptionalField(e_paramS))
@@ -10925,7 +10925,7 @@ H245_VCCapability_availableBitRates_type_rangeOfBitRates::H245_VCCapability_avai
 #ifndef PASN_NOPRINTON
 void H245_VCCapability_availableBitRates_type_rangeOfBitRates::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "lowerBitRate = " << setprecision(indent) << m_lowerBitRate << '\n';
   strm << setw(indent+16) << "higherBitRate = " << setprecision(indent) << m_higherBitRate << '\n';
@@ -11011,7 +11011,7 @@ H245_CustomPictureFormat_mPI_customPCF_subtype::H245_CustomPictureFormat_mPI_cus
 #ifndef PASN_NOPRINTON
 void H245_CustomPictureFormat_mPI_customPCF_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+22) << "clockConversionCode = " << setprecision(indent) << m_clockConversionCode << '\n';
   strm << setw(indent+15) << "clockDivisor = " << setprecision(indent) << m_clockDivisor << '\n';
@@ -11103,7 +11103,7 @@ H245_CustomPictureFormat_pixelAspectInformation_extendedPAR_subtype::H245_Custom
 #ifndef PASN_NOPRINTON
 void H245_CustomPictureFormat_pixelAspectInformation_extendedPAR_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+8) << "width = " << setprecision(indent) << m_width << '\n';
   strm << setw(indent+9) << "height = " << setprecision(indent) << m_height << '\n';
@@ -11314,7 +11314,7 @@ H245_FECData_rfc2733_pktMode_rfc2733sameport::H245_FECData_rfc2733_pktMode_rfc27
 #ifndef PASN_NOPRINTON
 void H245_FECData_rfc2733_pktMode_rfc2733sameport::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent-1) << setprecision(indent-2) << "}";
 }

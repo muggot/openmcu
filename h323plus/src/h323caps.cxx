@@ -1978,7 +1978,7 @@ void H323ExtendedVideoCapability::PrintOn(ostream & strm) const
     strm << " <" << assignedCapabilityNumber << '>';
 
 	if (extCapabilities.GetSize() > 0) {
-	  int indent = strm.precision() + 2;
+	  int indent = (int)strm.precision() + 2;
       for (PINDEX i=0; i< extCapabilities.GetSize(); i++) {
          strm << '\n' << setw(indent+6) << extCapabilities[i];
 	  }
@@ -3117,7 +3117,7 @@ H323Capabilities & H323Capabilities::operator=(const H323Capabilities & original
 
 void H323Capabilities::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision()-1;
+  int indent = (int)strm.precision()-1;
   strm << setw(indent) << " " << "Table:\n";
   for (PINDEX i = 0; i < table.GetSize(); i++)
     strm << setw(indent+2) << " " << table[i] << '\n';

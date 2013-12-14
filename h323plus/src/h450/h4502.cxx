@@ -1058,7 +1058,7 @@ H4502_CTInitiateArg::H4502_CTInitiateArg(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H4502_CTInitiateArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "callIdentity = " << setprecision(indent) << m_callIdentity << '\n';
   strm << setw(indent+18) << "reroutingNumber = " << setprecision(indent) << m_reroutingNumber << '\n';
@@ -1151,7 +1151,7 @@ H4502_CTSetupArg::H4502_CTSetupArg(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4502_CTSetupArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "callIdentity = " << setprecision(indent) << m_callIdentity << '\n';
   if (HasOptionalField(e_transferringNumber))
@@ -1247,7 +1247,7 @@ H4502_CTIdentifyRes::H4502_CTIdentifyRes(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H4502_CTIdentifyRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "callIdentity = " << setprecision(indent) << m_callIdentity << '\n';
   strm << setw(indent+18) << "reroutingNumber = " << setprecision(indent) << m_reroutingNumber << '\n';
@@ -1341,7 +1341,7 @@ H4502_CTUpdateArg::H4502_CTUpdateArg(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H4502_CTUpdateArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+20) << "redirectionNumber = " << setprecision(indent) << m_redirectionNumber << '\n';
   if (HasOptionalField(e_redirectionInfo))
@@ -1447,7 +1447,7 @@ H4502_SubaddressTransferArg::H4502_SubaddressTransferArg(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void H4502_SubaddressTransferArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+24) << "redirectionSubaddress = " << setprecision(indent) << m_redirectionSubaddress << '\n';
   if (HasOptionalField(e_argumentExtension))
@@ -1534,7 +1534,7 @@ H4502_CTCompleteArg::H4502_CTCompleteArg(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H4502_CTCompleteArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "endDesignation = " << setprecision(indent) << m_endDesignation << '\n';
   strm << setw(indent+20) << "redirectionNumber = " << setprecision(indent) << m_redirectionNumber << '\n';
@@ -1655,7 +1655,7 @@ H4502_CTActiveArg::H4502_CTActiveArg(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H4502_CTActiveArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+19) << "connectedAddress = " << setprecision(indent) << m_connectedAddress << '\n';
   if (HasOptionalField(e_basicCallInfoElements))

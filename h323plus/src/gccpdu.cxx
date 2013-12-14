@@ -461,7 +461,7 @@ GCC_NonStandardParameter::GCC_NonStandardParameter(unsigned tag, PASN_Object::Ta
 #ifndef PASN_NOPRINTON
 void GCC_NonStandardParameter::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+6) << "key = " << setprecision(indent) << m_key << '\n';
   strm << setw(indent+7) << "data = " << setprecision(indent) << m_data << '\n';
@@ -838,7 +838,7 @@ GCC_Password::GCC_Password(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void GCC_Password::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "numeric = " << setprecision(indent) << m_numeric << '\n';
   if (HasOptionalField(e_text))
@@ -1172,7 +1172,7 @@ GCC_ChallengeItem::GCC_ChallengeItem(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void GCC_ChallengeItem::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+20) << "responseAlgorithm = " << setprecision(indent) << m_responseAlgorithm << '\n';
   strm << setw(indent+16) << "challengeData = " << setprecision(indent) << m_challengeData << '\n';
@@ -1255,7 +1255,7 @@ GCC_ChallengeResponse::GCC_ChallengeResponse(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void GCC_ChallengeResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "challengeTag = " << setprecision(indent) << m_challengeTag << '\n';
   strm << setw(indent+20) << "responseAlgorithm = " << setprecision(indent) << m_responseAlgorithm << '\n';
@@ -1435,7 +1435,7 @@ GCC_ConferenceName::GCC_ConferenceName(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceName::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "numeric = " << setprecision(indent) << m_numeric << '\n';
   if (HasOptionalField(e_text))
@@ -1784,7 +1784,7 @@ GCC_ConferencePriority::GCC_ConferencePriority(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void GCC_ConferencePriority::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "priority = " << setprecision(indent) << m_priority << '\n';
   strm << setw(indent+9) << "scheme = " << setprecision(indent) << m_scheme << '\n';
@@ -1936,7 +1936,7 @@ GCC_NodeProperties::GCC_NodeProperties(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void GCC_NodeProperties::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+19) << "managementDevice = " << setprecision(indent) << m_managementDevice << '\n';
   strm << setw(indent+19) << "peripheralDevice = " << setprecision(indent) << m_peripheralDevice << '\n';
@@ -2112,7 +2112,7 @@ GCC_ConferenceDescriptor::GCC_ConferenceDescriptor(unsigned tag, PASN_Object::Ta
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "conferenceName = " << setprecision(indent) << m_conferenceName << '\n';
   if (HasOptionalField(e_conferenceNameModifier))
@@ -2237,7 +2237,7 @@ GCC_SessionKey::GCC_SessionKey(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void GCC_SessionKey::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+25) << "applicationProtocolKey = " << setprecision(indent) << m_applicationProtocolKey << '\n';
   if (HasOptionalField(e_sessionID))
@@ -2517,7 +2517,7 @@ GCC_RegistryKey::GCC_RegistryKey(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void GCC_RegistryKey::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "sessionKey = " << setprecision(indent) << m_sessionKey << '\n';
   strm << setw(indent+13) << "resourceID = " << setprecision(indent) << m_resourceID << '\n';
@@ -2804,7 +2804,7 @@ GCC_UserIDIndication::GCC_UserIDIndication(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void GCC_UserIDIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+6) << "tag = " << setprecision(indent) << m_tag << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -2880,7 +2880,7 @@ GCC_ConferenceQueryRequest::GCC_ConferenceQueryRequest(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceQueryRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "nodeType = " << setprecision(indent) << m_nodeType << '\n';
   if (HasOptionalField(e_asymmetryIndicator))
@@ -2976,7 +2976,7 @@ GCC_ConferenceJoinRequest::GCC_ConferenceJoinRequest(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceJoinRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_conferenceName))
     strm << setw(indent+17) << "conferenceName = " << setprecision(indent) << m_conferenceName << '\n';
@@ -3115,7 +3115,7 @@ GCC_ConferenceAddRequest::GCC_ConferenceAddRequest(unsigned tag, PASN_Object::Ta
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceAddRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "networkAddress = " << setprecision(indent) << m_networkAddress << '\n';
   strm << setw(indent+17) << "requestingNode = " << setprecision(indent) << m_requestingNode << '\n';
@@ -3225,7 +3225,7 @@ GCC_ConferenceLockRequest::GCC_ConferenceLockRequest(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceLockRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent-1) << setprecision(indent-2) << "}";
 }
@@ -3280,7 +3280,7 @@ GCC_ConferenceLockIndication::GCC_ConferenceLockIndication(unsigned tag, PASN_Ob
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceLockIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent-1) << setprecision(indent-2) << "}";
 }
@@ -3335,7 +3335,7 @@ GCC_ConferenceUnlockRequest::GCC_ConferenceUnlockRequest(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceUnlockRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent-1) << setprecision(indent-2) << "}";
 }
@@ -3390,7 +3390,7 @@ GCC_ConferenceUnlockIndication::GCC_ConferenceUnlockIndication(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceUnlockIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent-1) << setprecision(indent-2) << "}";
 }
@@ -3445,7 +3445,7 @@ GCC_RegistryRegisterChannelRequest::GCC_RegistryRegisterChannelRequest(unsigned 
 #ifndef PASN_NOPRINTON
 void GCC_RegistryRegisterChannelRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
   strm << setw(indent+6) << "key = " << setprecision(indent) << m_key << '\n';
@@ -3535,7 +3535,7 @@ GCC_RegistryAssignTokenRequest::GCC_RegistryAssignTokenRequest(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void GCC_RegistryAssignTokenRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
   strm << setw(indent+6) << "key = " << setprecision(indent) << m_key << '\n';
@@ -3619,7 +3619,7 @@ GCC_RegistrySetParameterRequest::GCC_RegistrySetParameterRequest(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void GCC_RegistrySetParameterRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
   strm << setw(indent+6) << "key = " << setprecision(indent) << m_key << '\n';
@@ -3719,7 +3719,7 @@ GCC_RegistryRetrieveEntryRequest::GCC_RegistryRetrieveEntryRequest(unsigned tag,
 #ifndef PASN_NOPRINTON
 void GCC_RegistryRetrieveEntryRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
   strm << setw(indent+6) << "key = " << setprecision(indent) << m_key << '\n';
@@ -3802,7 +3802,7 @@ GCC_RegistryDeleteEntryRequest::GCC_RegistryDeleteEntryRequest(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void GCC_RegistryDeleteEntryRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
   strm << setw(indent+6) << "key = " << setprecision(indent) << m_key << '\n';
@@ -3885,7 +3885,7 @@ GCC_RegistryMonitorEntryRequest::GCC_RegistryMonitorEntryRequest(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void GCC_RegistryMonitorEntryRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
   strm << setw(indent+6) << "key = " << setprecision(indent) << m_key << '\n';
@@ -3968,7 +3968,7 @@ GCC_RegistryMonitorEntryIndication::GCC_RegistryMonitorEntryIndication(unsigned 
 #ifndef PASN_NOPRINTON
 void GCC_RegistryMonitorEntryIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+6) << "key = " << setprecision(indent) << m_key << '\n';
   strm << setw(indent+7) << "item = " << setprecision(indent) << m_item << '\n';
@@ -4069,7 +4069,7 @@ GCC_RegistryAllocateHandleRequest::GCC_RegistryAllocateHandleRequest(unsigned ta
 #ifndef PASN_NOPRINTON
 void GCC_RegistryAllocateHandleRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
   strm << setw(indent+18) << "numberOfHandles = " << setprecision(indent) << m_numberOfHandles << '\n';
@@ -4152,7 +4152,7 @@ GCC_ConductorAssignIndication::GCC_ConductorAssignIndication(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void GCC_ConductorAssignIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "conductingNode = " << setprecision(indent) << m_conductingNode << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -4228,7 +4228,7 @@ GCC_ConductorReleaseIndication::GCC_ConductorReleaseIndication(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void GCC_ConductorReleaseIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent-1) << setprecision(indent-2) << "}";
 }
@@ -4283,7 +4283,7 @@ GCC_ConductorPermissionAskIndication::GCC_ConductorPermissionAskIndication(unsig
 #ifndef PASN_NOPRINTON
 void GCC_ConductorPermissionAskIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "grantFlag = " << setprecision(indent) << m_grantFlag << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -4359,7 +4359,7 @@ GCC_ConferenceTimeRemainingIndication::GCC_ConferenceTimeRemainingIndication(uns
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceTimeRemainingIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "timeRemaining = " << setprecision(indent) << m_timeRemaining << '\n';
   if (HasOptionalField(e_nodeID))
@@ -4445,7 +4445,7 @@ GCC_ConferenceTimeInquireIndication::GCC_ConferenceTimeInquireIndication(unsigne
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceTimeInquireIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+23) << "nodeSpecificTimeFlag = " << setprecision(indent) << m_nodeSpecificTimeFlag << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -4521,7 +4521,7 @@ GCC_ConferenceTimeExtendIndication::GCC_ConferenceTimeExtendIndication(unsigned 
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceTimeExtendIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "timeToExtend = " << setprecision(indent) << m_timeToExtend << '\n';
   strm << setw(indent+23) << "nodeSpecificTimeFlag = " << setprecision(indent) << m_nodeSpecificTimeFlag << '\n';
@@ -4604,7 +4604,7 @@ GCC_ConferenceAssistanceIndication::GCC_ConferenceAssistanceIndication(unsigned 
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceAssistanceIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_userData))
     strm << setw(indent+11) << "userData = " << setprecision(indent) << m_userData << '\n';
@@ -4683,7 +4683,7 @@ GCC_TextMessageIndication::GCC_TextMessageIndication(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void GCC_TextMessageIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "message = " << setprecision(indent) << m_message << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -4759,7 +4759,7 @@ GCC_NonStandardPDU::GCC_NonStandardPDU(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void GCC_NonStandardPDU::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "data = " << setprecision(indent) << m_data << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -4835,7 +4835,7 @@ GCC_ConnectData::GCC_ConnectData(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void GCC_ConnectData::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "t124Identifier = " << setprecision(indent) << m_t124Identifier << '\n';
   strm << setw(indent+13) << "connectPDU = " << setprecision(indent) << m_connectPDU << '\n';
@@ -6564,7 +6564,7 @@ GCC_UserData_subtype::GCC_UserData_subtype(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void GCC_UserData_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+6) << "key = " << setprecision(indent) << m_key << '\n';
   if (HasOptionalField(e_value))
@@ -6890,7 +6890,7 @@ GCC_RegistryEntryOwner_owned::GCC_RegistryEntryOwner_owned(unsigned tag, PASN_Ob
 #ifndef PASN_NOPRINTON
 void GCC_RegistryEntryOwner_owned::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "nodeID = " << setprecision(indent) << m_nodeID << '\n';
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
@@ -7768,7 +7768,7 @@ GCC_NetworkAddress_subtype_transportConnection::GCC_NetworkAddress_subtype_trans
 #ifndef PASN_NOPRINTON
 void GCC_NetworkAddress_subtype_transportConnection::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "nsapAddress = " << setprecision(indent) << m_nsapAddress << '\n';
   if (HasOptionalField(e_transportSelector))
@@ -7854,7 +7854,7 @@ GCC_ApplicationRecord_nonCollapsingCapabilities_subtype::GCC_ApplicationRecord_n
 #ifndef PASN_NOPRINTON
 void GCC_ApplicationRecord_nonCollapsingCapabilities_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "capabilityID = " << setprecision(indent) << m_capabilityID << '\n';
   if (HasOptionalField(e_applicationData))
@@ -7940,7 +7940,7 @@ GCC_ApplicationInvokeSpecifier_expectedCapabilitySet_subtype::GCC_ApplicationInv
 #ifndef PASN_NOPRINTON
 void GCC_ApplicationInvokeSpecifier_expectedCapabilitySet_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "capabilityID = " << setprecision(indent) << m_capabilityID << '\n';
   strm << setw(indent+18) << "capabilityClass = " << setprecision(indent) << m_capabilityClass << '\n';
@@ -8117,7 +8117,7 @@ GCC_NetworkAddress_subtype_aggregatedChannel_transferModes::GCC_NetworkAddress_s
 #ifndef PASN_NOPRINTON
 void GCC_NetworkAddress_subtype_aggregatedChannel_transferModes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "speech = " << setprecision(indent) << m_speech << '\n';
   strm << setw(indent+13) << "voice_band = " << setprecision(indent) << m_voice_band << '\n';
@@ -8312,7 +8312,7 @@ GCC_NetworkAddress_subtype_aggregatedChannel_highLayerCompatibility::GCC_Network
 #ifndef PASN_NOPRINTON
 void GCC_NetworkAddress_subtype_aggregatedChannel_highLayerCompatibility::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "telephony3kHz = " << setprecision(indent) << m_telephony3kHz << '\n';
   strm << setw(indent+16) << "telephony7kHz = " << setprecision(indent) << m_telephony7kHz << '\n';
@@ -8822,7 +8822,7 @@ GCC_RosterUpdateIndication_applicationInformation_subtype_applicationCapabilitie
 #ifndef PASN_NOPRINTON
 void GCC_RosterUpdateIndication_applicationInformation_subtype_applicationCapabilitiesList_refresh_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "capabilityID = " << setprecision(indent) << m_capabilityID << '\n';
   strm << setw(indent+18) << "capabilityClass = " << setprecision(indent) << m_capabilityClass << '\n';
@@ -8982,7 +8982,7 @@ GCC_ChallengeRequest::GCC_ChallengeRequest(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void GCC_ChallengeRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "challengeTag = " << setprecision(indent) << m_challengeTag << '\n';
   strm << setw(indent+15) << "challengeSet = " << setprecision(indent) << m_challengeSet << '\n';
@@ -9065,7 +9065,7 @@ GCC_NodeRecord::GCC_NodeRecord(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void GCC_NodeRecord::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_superiorNode))
     strm << setw(indent+15) << "superiorNode = " << setprecision(indent) << m_superiorNode << '\n';
@@ -9218,7 +9218,7 @@ GCC_ApplicationRecord::GCC_ApplicationRecord(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void GCC_ApplicationRecord::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+20) << "applicationActive = " << setprecision(indent) << m_applicationActive << '\n';
   strm << setw(indent+29) << "conductingOperationCapable = " << setprecision(indent) << m_conductingOperationCapable << '\n';
@@ -9331,7 +9331,7 @@ GCC_ApplicationInvokeSpecifier::GCC_ApplicationInvokeSpecifier(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void GCC_ApplicationInvokeSpecifier::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "sessionKey = " << setprecision(indent) << m_sessionKey << '\n';
   if (HasOptionalField(e_expectedCapabilitySet))
@@ -9434,7 +9434,7 @@ GCC_ConferenceCreateRequest::GCC_ConferenceCreateRequest(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceCreateRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "conferenceName = " << setprecision(indent) << m_conferenceName << '\n';
   if (HasOptionalField(e_convenerPassword))
@@ -9623,7 +9623,7 @@ GCC_ConferenceCreateResponse::GCC_ConferenceCreateResponse(unsigned tag, PASN_Ob
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceCreateResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "nodeID = " << setprecision(indent) << m_nodeID << '\n';
   strm << setw(indent+6) << "tag = " << setprecision(indent) << m_tag << '\n';
@@ -9723,7 +9723,7 @@ GCC_ConferenceQueryResponse::GCC_ConferenceQueryResponse(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceQueryResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "nodeType = " << setprecision(indent) << m_nodeType << '\n';
   if (HasOptionalField(e_asymmetryIndicator))
@@ -9843,7 +9843,7 @@ GCC_ConferenceJoinResponse::GCC_ConferenceJoinResponse(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceJoinResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_nodeID))
     strm << setw(indent+9) << "nodeID = " << setprecision(indent) << m_nodeID << '\n';
@@ -10048,7 +10048,7 @@ GCC_ConferenceInviteRequest::GCC_ConferenceInviteRequest(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceInviteRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "conferenceName = " << setprecision(indent) << m_conferenceName << '\n';
   strm << setw(indent+9) << "nodeID = " << setprecision(indent) << m_nodeID << '\n';
@@ -10245,7 +10245,7 @@ GCC_ConferenceInviteResponse::GCC_ConferenceInviteResponse(unsigned tag, PASN_Ob
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceInviteResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   if (HasOptionalField(e_userData))
@@ -10331,7 +10331,7 @@ GCC_ConferenceAddResponse::GCC_ConferenceAddResponse(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceAddResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+6) << "tag = " << setprecision(indent) << m_tag << '\n';
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
@@ -10424,7 +10424,7 @@ GCC_ConferenceLockResponse::GCC_ConferenceLockResponse(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceLockResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -10500,7 +10500,7 @@ GCC_ConferenceUnlockResponse::GCC_ConferenceUnlockResponse(unsigned tag, PASN_Ob
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceUnlockResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -10576,7 +10576,7 @@ GCC_ConferenceTerminateRequest::GCC_ConferenceTerminateRequest(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceTerminateRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "reason = " << setprecision(indent) << m_reason << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -10652,7 +10652,7 @@ GCC_ConferenceTerminateResponse::GCC_ConferenceTerminateResponse(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceTerminateResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -10728,7 +10728,7 @@ GCC_ConferenceTerminateIndication::GCC_ConferenceTerminateIndication(unsigned ta
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceTerminateIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "reason = " << setprecision(indent) << m_reason << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -10804,7 +10804,7 @@ GCC_ConferenceEjectUserRequest::GCC_ConferenceEjectUserRequest(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceEjectUserRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "nodeToEject = " << setprecision(indent) << m_nodeToEject << '\n';
   strm << setw(indent+9) << "reason = " << setprecision(indent) << m_reason << '\n';
@@ -10887,7 +10887,7 @@ GCC_ConferenceEjectUserResponse::GCC_ConferenceEjectUserResponse(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceEjectUserResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "nodeToEject = " << setprecision(indent) << m_nodeToEject << '\n';
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
@@ -10970,7 +10970,7 @@ GCC_ConferenceEjectUserIndication::GCC_ConferenceEjectUserIndication(unsigned ta
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceEjectUserIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "nodeToEject = " << setprecision(indent) << m_nodeToEject << '\n';
   strm << setw(indent+9) << "reason = " << setprecision(indent) << m_reason << '\n';
@@ -11054,7 +11054,7 @@ GCC_ConferenceTransferRequest::GCC_ConferenceTransferRequest(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceTransferRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "conferenceName = " << setprecision(indent) << m_conferenceName << '\n';
   if (HasOptionalField(e_conferenceNameModifier))
@@ -11171,7 +11171,7 @@ GCC_ConferenceTransferResponse::GCC_ConferenceTransferResponse(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceTransferResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "conferenceName = " << setprecision(indent) << m_conferenceName << '\n';
   if (HasOptionalField(e_conferenceNameModifier))
@@ -11275,7 +11275,7 @@ GCC_ConferenceTransferIndication::GCC_ConferenceTransferIndication(unsigned tag,
 #ifndef PASN_NOPRINTON
 void GCC_ConferenceTransferIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "conferenceName = " << setprecision(indent) << m_conferenceName << '\n';
   if (HasOptionalField(e_conferenceNameModifier))
@@ -11393,7 +11393,7 @@ GCC_ApplicationInvokeIndication::GCC_ApplicationInvokeIndication(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void GCC_ApplicationInvokeIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+31) << "applicationProtocolEntiyList = " << setprecision(indent) << m_applicationProtocolEntiyList << '\n';
   if (HasOptionalField(e_destinationNodes))
@@ -11480,7 +11480,7 @@ GCC_RegistryAllocateHandleResponse::GCC_RegistryAllocateHandleResponse(unsigned 
 #ifndef PASN_NOPRINTON
 void GCC_RegistryAllocateHandleResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
   strm << setw(indent+18) << "numberOfHandles = " << setprecision(indent) << m_numberOfHandles << '\n';
@@ -11577,7 +11577,7 @@ GCC_RegistryResponse::GCC_RegistryResponse(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void GCC_RegistryResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
   strm << setw(indent+16) << "primitiveType = " << setprecision(indent) << m_primitiveType << '\n';
@@ -11700,7 +11700,7 @@ GCC_ConductorPermissionGrantIndication::GCC_ConductorPermissionGrantIndication(u
 #ifndef PASN_NOPRINTON
 void GCC_ConductorPermissionGrantIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "permissionList = " << setprecision(indent) << m_permissionList << '\n';
   if (HasOptionalField(e_waitingList))
@@ -11786,7 +11786,7 @@ GCC_FunctionNotSupportedResponse::GCC_FunctionNotSupportedResponse(unsigned tag,
 #ifndef PASN_NOPRINTON
 void GCC_FunctionNotSupportedResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "request = " << setprecision(indent) << m_request << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -11862,7 +11862,7 @@ GCC_PasswordChallengeRequestResponse_challengeRequestResponse::GCC_PasswordChall
 #ifndef PASN_NOPRINTON
 void GCC_PasswordChallengeRequestResponse_challengeRequestResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_challengeRequest))
     strm << setw(indent+19) << "challengeRequest = " << setprecision(indent) << m_challengeRequest << '\n';
@@ -11952,7 +11952,7 @@ GCC_RosterUpdateIndication_nodeInformation::GCC_RosterUpdateIndication_nodeInfor
 #ifndef PASN_NOPRINTON
 void GCC_RosterUpdateIndication_nodeInformation::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "nodeRecordList = " << setprecision(indent) << m_nodeRecordList << '\n';
   strm << setw(indent+23) << "rosterInstanceNumber = " << setprecision(indent) << m_rosterInstanceNumber << '\n';
@@ -12049,7 +12049,7 @@ GCC_NetworkAddress_subtype_aggregatedChannel::GCC_NetworkAddress_subtype_aggrega
 #ifndef PASN_NOPRINTON
 void GCC_NetworkAddress_subtype_aggregatedChannel::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "transferModes = " << setprecision(indent) << m_transferModes << '\n';
   strm << setw(indent+22) << "internationalNumber = " << setprecision(indent) << m_internationalNumber << '\n';
@@ -12163,7 +12163,7 @@ GCC_RosterUpdateIndication_applicationInformation_subtype::GCC_RosterUpdateIndic
 #ifndef PASN_NOPRINTON
 void GCC_RosterUpdateIndication_applicationInformation_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "sessionKey = " << setprecision(indent) << m_sessionKey << '\n';
   strm << setw(indent+24) << "applicationRecordList = " << setprecision(indent) << m_applicationRecordList << '\n';
@@ -12274,7 +12274,7 @@ GCC_RosterUpdateIndication_nodeInformation_nodeRecordList_refresh_subtype::GCC_R
 #ifndef PASN_NOPRINTON
 void GCC_RosterUpdateIndication_nodeInformation_nodeRecordList_refresh_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "nodeID = " << setprecision(indent) << m_nodeID << '\n';
   strm << setw(indent+13) << "nodeRecord = " << setprecision(indent) << m_nodeRecord << '\n';
@@ -12357,7 +12357,7 @@ GCC_RosterUpdateIndication_nodeInformation_nodeRecordList_update_subtype::GCC_Ro
 #ifndef PASN_NOPRINTON
 void GCC_RosterUpdateIndication_nodeInformation_nodeRecordList_update_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "nodeID = " << setprecision(indent) << m_nodeID << '\n';
   strm << setw(indent+13) << "nodeUpdate = " << setprecision(indent) << m_nodeUpdate << '\n';
@@ -12440,7 +12440,7 @@ GCC_RosterUpdateIndication_applicationInformation_subtype_applicationRecordList_
 #ifndef PASN_NOPRINTON
 void GCC_RosterUpdateIndication_applicationInformation_subtype_applicationRecordList_refresh_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "nodeID = " << setprecision(indent) << m_nodeID << '\n';
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
@@ -12530,7 +12530,7 @@ GCC_RosterUpdateIndication_applicationInformation_subtype_applicationRecordList_
 #ifndef PASN_NOPRINTON
 void GCC_RosterUpdateIndication_applicationInformation_subtype_applicationRecordList_update_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "nodeID = " << setprecision(indent) << m_nodeID << '\n';
   strm << setw(indent+11) << "entityID = " << setprecision(indent) << m_entityID << '\n';
@@ -12620,7 +12620,7 @@ GCC_RosterUpdateIndication::GCC_RosterUpdateIndication(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void GCC_RosterUpdateIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "fullRefresh = " << setprecision(indent) << m_fullRefresh << '\n';
   strm << setw(indent+18) << "nodeInformation = " << setprecision(indent) << m_nodeInformation << '\n';

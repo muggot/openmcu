@@ -29,7 +29,7 @@ H225_H350ServiceControl::H225_H350ServiceControl(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H225_H350ServiceControl::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "ldapURL = " << setprecision(indent) << m_ldapURL << '\n';
   strm << setw(indent+9) << "ldapDN = " << setprecision(indent) << m_ldapDN << '\n';

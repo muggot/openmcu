@@ -354,7 +354,7 @@ H248_DomainName::H248_DomainName(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_DomainName::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "name = " << setprecision(indent) << m_name << '\n';
   if (HasOptionalField(e_portNumber))
@@ -442,7 +442,7 @@ H248_IP4Address::H248_IP4Address(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_IP4Address::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "address = " << setprecision(indent) << m_address << '\n';
   if (HasOptionalField(e_portNumber))
@@ -530,7 +530,7 @@ H248_IP6Address::H248_IP6Address(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_IP6Address::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "address = " << setprecision(indent) << m_address << '\n';
   if (HasOptionalField(e_portNumber))
@@ -826,7 +826,7 @@ H248_TransactionPending::H248_TransactionPending(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H248_TransactionPending::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "transactionId = " << setprecision(indent) << m_transactionId << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -933,7 +933,7 @@ H248_TransactionAck::H248_TransactionAck(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H248_TransactionAck::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "firstAck = " << setprecision(indent) << m_firstAck << '\n';
   if (HasOptionalField(e_lastAck))
@@ -1120,7 +1120,7 @@ H248_ContextAttrAuditRequest::H248_ContextAttrAuditRequest(unsigned tag, PASN_Ob
 #ifndef PASN_NOPRINTON
 void H248_ContextAttrAuditRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_topology))
     strm << setw(indent+11) << "topology = " << setprecision(indent) << m_topology << '\n';
@@ -3673,7 +3673,7 @@ H248_DigitMapValue::H248_DigitMapValue(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H248_DigitMapValue::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_startTimer))
     strm << setw(indent+13) << "startTimer = " << setprecision(indent) << m_startTimer << '\n';
@@ -3977,7 +3977,7 @@ H248_ServiceChangeProfile::H248_ServiceChangeProfile(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void H248_ServiceChangeProfile::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "profileName = " << setprecision(indent) << m_profileName << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -4085,7 +4085,7 @@ H248_PackagesItem::H248_PackagesItem(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H248_PackagesItem::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "packageName = " << setprecision(indent) << m_packageName << '\n';
   strm << setw(indent+17) << "packageVersion = " << setprecision(indent) << m_packageVersion << '\n';
@@ -4276,7 +4276,7 @@ H248_H221NonStandard::H248_H221NonStandard(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H248_H221NonStandard::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+18) << "t35CountryCode1 = " << setprecision(indent) << m_t35CountryCode1 << '\n';
   strm << setw(indent+18) << "t35CountryCode2 = " << setprecision(indent) << m_t35CountryCode2 << '\n';
@@ -4375,7 +4375,7 @@ H248_TimeNotation::H248_TimeNotation(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H248_TimeNotation::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "date = " << setprecision(indent) << m_date << '\n';
   strm << setw(indent+7) << "time = " << setprecision(indent) << m_time << '\n';
@@ -5809,7 +5809,7 @@ H248_AuthenticationHeader::H248_AuthenticationHeader(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void H248_AuthenticationHeader::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "secParmIndex = " << setprecision(indent) << m_secParmIndex << '\n';
   strm << setw(indent+9) << "seqNum = " << setprecision(indent) << m_seqNum << '\n';
@@ -5900,7 +5900,7 @@ H248_Message::H248_Message(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_Message::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "version = " << setprecision(indent) << m_version << '\n';
   strm << setw(indent+6) << "mId = " << setprecision(indent) << m_mId << '\n';
@@ -5990,7 +5990,7 @@ H248_TransactionRequest::H248_TransactionRequest(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H248_TransactionRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "transactionId = " << setprecision(indent) << m_transactionId << '\n';
   strm << setw(indent+10) << "actions = " << setprecision(indent) << m_actions << '\n';
@@ -6073,7 +6073,7 @@ H248_TransactionReply::H248_TransactionReply(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H248_TransactionReply::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "transactionId = " << setprecision(indent) << m_transactionId << '\n';
   if (HasOptionalField(e_immAckRequired))
@@ -6166,7 +6166,7 @@ H248_ErrorDescriptor::H248_ErrorDescriptor(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H248_ErrorDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "errorCode = " << setprecision(indent) << m_errorCode << '\n';
   if (HasOptionalField(e_errorText))
@@ -6253,7 +6253,7 @@ H248_ContextRequest::H248_ContextRequest(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H248_ContextRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_priority))
     strm << setw(indent+11) << "priority = " << setprecision(indent) << m_priority << '\n';
@@ -6352,7 +6352,7 @@ H248_CommandRequest::H248_CommandRequest(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H248_CommandRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "command = " << setprecision(indent) << m_command << '\n';
   if (HasOptionalField(e_optional))
@@ -6448,7 +6448,7 @@ H248_AmmRequest::H248_AmmRequest(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_AmmRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "terminationID = " << setprecision(indent) << m_terminationID << '\n';
   strm << setw(indent+14) << "descriptors = " << setprecision(indent) << m_descriptors << '\n';
@@ -6531,7 +6531,7 @@ H248_AmmsReply::H248_AmmsReply(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_AmmsReply::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "terminationID = " << setprecision(indent) << m_terminationID << '\n';
   if (HasOptionalField(e_terminationAudit))
@@ -6617,7 +6617,7 @@ H248_AuditDescriptor::H248_AuditDescriptor(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H248_AuditDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_auditToken))
     strm << setw(indent+13) << "auditToken = " << setprecision(indent) << m_auditToken << '\n';
@@ -6701,7 +6701,7 @@ H248_IndAudLocalControlDescriptor::H248_IndAudLocalControlDescriptor(unsigned ta
 #ifndef PASN_NOPRINTON
 void H248_IndAudLocalControlDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_streamMode))
     strm << setw(indent+13) << "streamMode = " << setprecision(indent) << m_streamMode << '\n';
@@ -6810,7 +6810,7 @@ H248_IndAudPropertyParm::H248_IndAudPropertyParm(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H248_IndAudPropertyParm::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "name = " << setprecision(indent) << m_name << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -6887,7 +6887,7 @@ H248_IndAudLocalRemoteDescriptor::H248_IndAudLocalRemoteDescriptor(unsigned tag,
 #ifndef PASN_NOPRINTON
 void H248_IndAudLocalRemoteDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_propGroupID))
     strm << setw(indent+14) << "propGroupID = " << setprecision(indent) << m_propGroupID << '\n';
@@ -6973,7 +6973,7 @@ H248_IndAudTerminationStateDescriptor::H248_IndAudTerminationStateDescriptor(uns
 #ifndef PASN_NOPRINTON
 void H248_IndAudTerminationStateDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "propertyParms = " << setprecision(indent) << m_propertyParms << '\n';
   if (HasOptionalField(e_eventBufferControl))
@@ -7069,7 +7069,7 @@ H248_IndAudEventsDescriptor::H248_IndAudEventsDescriptor(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void H248_IndAudEventsDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_requestID))
     strm << setw(indent+12) << "requestID = " << setprecision(indent) << m_requestID << '\n';
@@ -7165,7 +7165,7 @@ H248_IndAudEventBufferDescriptor::H248_IndAudEventBufferDescriptor(unsigned tag,
 #ifndef PASN_NOPRINTON
 void H248_IndAudEventBufferDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "eventName = " << setprecision(indent) << m_eventName << '\n';
   if (HasOptionalField(e_streamID))
@@ -7251,7 +7251,7 @@ H248_IndAudSignal::H248_IndAudSignal(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H248_IndAudSignal::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "signalName = " << setprecision(indent) << m_signalName << '\n';
   if (HasOptionalField(e_streamID))
@@ -7337,7 +7337,7 @@ H248_IndAudDigitMapDescriptor::H248_IndAudDigitMapDescriptor(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void H248_IndAudDigitMapDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_digitMapName))
     strm << setw(indent+15) << "digitMapName = " << setprecision(indent) << m_digitMapName << '\n';
@@ -7416,7 +7416,7 @@ H248_IndAudStatisticsDescriptor::H248_IndAudStatisticsDescriptor(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void H248_IndAudStatisticsDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "statName = " << setprecision(indent) << m_statName << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -7493,7 +7493,7 @@ H248_IndAudPackagesDescriptor::H248_IndAudPackagesDescriptor(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void H248_IndAudPackagesDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "packageName = " << setprecision(indent) << m_packageName << '\n';
   strm << setw(indent+17) << "packageVersion = " << setprecision(indent) << m_packageVersion << '\n';
@@ -7576,7 +7576,7 @@ H248_NotifyReply::H248_NotifyReply(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_NotifyReply::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "terminationID = " << setprecision(indent) << m_terminationID << '\n';
   if (HasOptionalField(e_errorDescriptor))
@@ -7662,7 +7662,7 @@ H248_ObservedEventsDescriptor::H248_ObservedEventsDescriptor(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void H248_ObservedEventsDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "requestId = " << setprecision(indent) << m_requestId << '\n';
   strm << setw(indent+19) << "observedEventLst = " << setprecision(indent) << m_observedEventLst << '\n';
@@ -7803,7 +7803,7 @@ H248_EventParameter::H248_EventParameter(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H248_EventParameter::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+21) << "eventParameterName = " << setprecision(indent) << m_eventParameterName << '\n';
   strm << setw(indent+8) << "value = " << setprecision(indent) << m_value << '\n';
@@ -7896,7 +7896,7 @@ H248_ServiceChangeReply::H248_ServiceChangeReply(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H248_ServiceChangeReply::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "terminationID = " << setprecision(indent) << m_terminationID << '\n';
   strm << setw(indent+22) << "serviceChangeResult = " << setprecision(indent) << m_serviceChangeResult << '\n';
@@ -7980,7 +7980,7 @@ H248_TerminationID::H248_TerminationID(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H248_TerminationID::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "wildcard = " << setprecision(indent) << m_wildcard << '\n';
   strm << setw(indent+5) << "id = " << setprecision(indent) << m_id << '\n';
@@ -8063,7 +8063,7 @@ H248_LocalControlDescriptor::H248_LocalControlDescriptor(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void H248_LocalControlDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_streamMode))
     strm << setw(indent+13) << "streamMode = " << setprecision(indent) << m_streamMode << '\n';
@@ -8169,7 +8169,7 @@ H248_PropertyParm::H248_PropertyParm(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H248_PropertyParm::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "name = " << setprecision(indent) << m_name << '\n';
   strm << setw(indent+8) << "value = " << setprecision(indent) << m_value << '\n';
@@ -8262,7 +8262,7 @@ H248_LocalRemoteDescriptor::H248_LocalRemoteDescriptor(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H248_LocalRemoteDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "propGrps = " << setprecision(indent) << m_propGrps << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -8338,7 +8338,7 @@ H248_TerminationStateDescriptor::H248_TerminationStateDescriptor(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void H248_TerminationStateDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "propertyParms = " << setprecision(indent) << m_propertyParms << '\n';
   if (HasOptionalField(e_eventBufferControl))
@@ -8434,7 +8434,7 @@ H248_EventsDescriptor::H248_EventsDescriptor(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H248_EventsDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_requestID))
     strm << setw(indent+12) << "requestID = " << setprecision(indent) << m_requestID << '\n';
@@ -8520,7 +8520,7 @@ H248_SecondEventsDescriptor::H248_SecondEventsDescriptor(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void H248_SecondEventsDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_requestID))
     strm << setw(indent+12) << "requestID = " << setprecision(indent) << m_requestID << '\n';
@@ -8606,7 +8606,7 @@ H248_SecondRequestedActions::H248_SecondRequestedActions(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void H248_SecondRequestedActions::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_keepActive))
     strm << setw(indent+13) << "keepActive = " << setprecision(indent) << m_keepActive << '\n';
@@ -8705,7 +8705,7 @@ H248_EventSpec::H248_EventSpec(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_EventSpec::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "eventName = " << setprecision(indent) << m_eventName << '\n';
   if (HasOptionalField(e_streamID))
@@ -8799,7 +8799,7 @@ H248_SeqSigList::H248_SeqSigList(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_SeqSigList::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+5) << "id = " << setprecision(indent) << m_id << '\n';
   strm << setw(indent+13) << "signalList = " << setprecision(indent) << m_signalList << '\n';
@@ -8883,7 +8883,7 @@ H248_Signal::H248_Signal(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_Signal::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "signalName = " << setprecision(indent) << m_signalName << '\n';
   if (HasOptionalField(e_streamID))
@@ -9016,7 +9016,7 @@ H248_SigParameter::H248_SigParameter(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H248_SigParameter::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+19) << "sigParameterName = " << setprecision(indent) << m_sigParameterName << '\n';
   strm << setw(indent+8) << "value = " << setprecision(indent) << m_value << '\n';
@@ -9109,7 +9109,7 @@ H248_DigitMapDescriptor::H248_DigitMapDescriptor(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H248_DigitMapDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_digitMapName))
     strm << setw(indent+15) << "digitMapName = " << setprecision(indent) << m_digitMapName << '\n';
@@ -9199,7 +9199,7 @@ H248_ServiceChangeResParm::H248_ServiceChangeResParm(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void H248_ServiceChangeResParm::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_serviceChangeMgcId))
     strm << setw(indent+21) << "serviceChangeMgcId = " << setprecision(indent) << m_serviceChangeMgcId << '\n';
@@ -9318,7 +9318,7 @@ H248_StatisticsParameter::H248_StatisticsParameter(unsigned tag, PASN_Object::Ta
 #ifndef PASN_NOPRINTON
 void H248_StatisticsParameter::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "statName = " << setprecision(indent) << m_statName << '\n';
   if (HasOptionalField(e_statValue))
@@ -9404,7 +9404,7 @@ H248_NonStandardData::H248_NonStandardData(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H248_NonStandardData::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+24) << "nonStandardIdentifier = " << setprecision(indent) << m_nonStandardIdentifier << '\n';
   strm << setw(indent+7) << "data = " << setprecision(indent) << m_data << '\n';
@@ -9487,7 +9487,7 @@ H248_MegacoMessage::H248_MegacoMessage(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H248_MegacoMessage::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_authHeader))
     strm << setw(indent+13) << "authHeader = " << setprecision(indent) << m_authHeader << '\n';
@@ -9573,7 +9573,7 @@ H248_ActionRequest::H248_ActionRequest(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H248_ActionRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "contextId = " << setprecision(indent) << m_contextId << '\n';
   if (HasOptionalField(e_contextRequest))
@@ -9676,7 +9676,7 @@ H248_ActionReply::H248_ActionReply(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_ActionReply::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "contextId = " << setprecision(indent) << m_contextId << '\n';
   if (HasOptionalField(e_errorDescriptor))
@@ -9779,7 +9779,7 @@ H248_TopologyRequest::H248_TopologyRequest(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H248_TopologyRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+18) << "terminationFrom = " << setprecision(indent) << m_terminationFrom << '\n';
   strm << setw(indent+16) << "terminationTo = " << setprecision(indent) << m_terminationTo << '\n';
@@ -9874,7 +9874,7 @@ H248_SubtractRequest::H248_SubtractRequest(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H248_SubtractRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "terminationID = " << setprecision(indent) << m_terminationID << '\n';
   if (HasOptionalField(e_auditDescriptor))
@@ -9960,7 +9960,7 @@ H248_AuditRequest::H248_AuditRequest(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H248_AuditRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "terminationID = " << setprecision(indent) << m_terminationID << '\n';
   strm << setw(indent+18) << "auditDescriptor = " << setprecision(indent) << m_auditDescriptor << '\n';
@@ -10043,7 +10043,7 @@ H248_AuditResult::H248_AuditResult(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_AuditResult::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "terminationID = " << setprecision(indent) << m_terminationID << '\n';
   strm << setw(indent+25) << "terminationAuditResult = " << setprecision(indent) << m_terminationAuditResult << '\n';
@@ -10126,7 +10126,7 @@ H248_IndAudMediaDescriptor::H248_IndAudMediaDescriptor(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H248_IndAudMediaDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_termStateDescr))
     strm << setw(indent+17) << "termStateDescr = " << setprecision(indent) << m_termStateDescr << '\n';
@@ -10215,7 +10215,7 @@ H248_IndAudStreamParms::H248_IndAudStreamParms(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void H248_IndAudStreamParms::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_localControlDescriptor))
     strm << setw(indent+25) << "localControlDescriptor = " << setprecision(indent) << m_localControlDescriptor << '\n';
@@ -10315,7 +10315,7 @@ H248_IndAudSeqSigList::H248_IndAudSeqSigList(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H248_IndAudSeqSigList::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+5) << "id = " << setprecision(indent) << m_id << '\n';
   if (HasOptionalField(e_signalList))
@@ -10401,7 +10401,7 @@ H248_NotifyRequest::H248_NotifyRequest(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H248_NotifyRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "terminationID = " << setprecision(indent) << m_terminationID << '\n';
   strm << setw(indent+27) << "observedEventsDescriptor = " << setprecision(indent) << m_observedEventsDescriptor << '\n';
@@ -10494,7 +10494,7 @@ H248_ObservedEvent::H248_ObservedEvent(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H248_ObservedEvent::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "eventName = " << setprecision(indent) << m_eventName << '\n';
   if (HasOptionalField(e_streamID))
@@ -10597,7 +10597,7 @@ H248_MediaDescriptor::H248_MediaDescriptor(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H248_MediaDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_termStateDescr))
     strm << setw(indent+17) << "termStateDescr = " << setprecision(indent) << m_termStateDescr << '\n';
@@ -10686,7 +10686,7 @@ H248_StreamParms::H248_StreamParms(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H248_StreamParms::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_localControlDescriptor))
     strm << setw(indent+25) << "localControlDescriptor = " << setprecision(indent) << m_localControlDescriptor << '\n';
@@ -10785,7 +10785,7 @@ H248_MuxDescriptor::H248_MuxDescriptor(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H248_MuxDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "muxType = " << setprecision(indent) << m_muxType << '\n';
   strm << setw(indent+11) << "termList = " << setprecision(indent) << m_termList << '\n';
@@ -10878,7 +10878,7 @@ H248_RequestedActions::H248_RequestedActions(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H248_RequestedActions::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_keepActive))
     strm << setw(indent+13) << "keepActive = " << setprecision(indent) << m_keepActive << '\n';
@@ -10987,7 +10987,7 @@ H248_SecondRequestedEvent::H248_SecondRequestedEvent(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void H248_SecondRequestedEvent::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "pkgdName = " << setprecision(indent) << m_pkgdName << '\n';
   if (HasOptionalField(e_streamID))
@@ -11090,7 +11090,7 @@ H248_ModemDescriptor::H248_ModemDescriptor(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H248_ModemDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+6) << "mtl = " << setprecision(indent) << m_mtl << '\n';
   strm << setw(indent+6) << "mpl = " << setprecision(indent) << m_mpl << '\n';
@@ -11185,7 +11185,7 @@ H248_ServiceChangeParm::H248_ServiceChangeParm(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void H248_ServiceChangeParm::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+22) << "serviceChangeMethod = " << setprecision(indent) << m_serviceChangeMethod << '\n';
   if (HasOptionalField(e_serviceChangeAddress))
@@ -11343,7 +11343,7 @@ H248_IndAudStreamDescriptor::H248_IndAudStreamDescriptor(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void H248_IndAudStreamDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "streamID = " << setprecision(indent) << m_streamID << '\n';
   strm << setw(indent+14) << "streamParms = " << setprecision(indent) << m_streamParms << '\n';
@@ -11426,7 +11426,7 @@ H248_ServiceChangeRequest::H248_ServiceChangeRequest(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void H248_ServiceChangeRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "terminationID = " << setprecision(indent) << m_terminationID << '\n';
   strm << setw(indent+21) << "serviceChangeParms = " << setprecision(indent) << m_serviceChangeParms << '\n';
@@ -11509,7 +11509,7 @@ H248_StreamDescriptor::H248_StreamDescriptor(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H248_StreamDescriptor::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "streamID = " << setprecision(indent) << m_streamID << '\n';
   strm << setw(indent+14) << "streamParms = " << setprecision(indent) << m_streamParms << '\n';
@@ -11592,7 +11592,7 @@ H248_RequestedEvent::H248_RequestedEvent(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H248_RequestedEvent::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "pkgdName = " << setprecision(indent) << m_pkgdName << '\n';
   if (HasOptionalField(e_streamID))

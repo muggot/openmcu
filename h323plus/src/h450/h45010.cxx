@@ -100,7 +100,7 @@ H45010_CoReqOptArg::H45010_CoReqOptArg(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H45010_CoReqOptArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extension))
     strm << setw(indent+12) << "extension = " << setprecision(indent) << m_extension << '\n';
@@ -180,7 +180,7 @@ H45010_RUAlertOptArg::H45010_RUAlertOptArg(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H45010_RUAlertOptArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extension))
     strm << setw(indent+12) << "extension = " << setprecision(indent) << m_extension << '\n';
@@ -260,7 +260,7 @@ H45010_CfbOvrOptArg::H45010_CfbOvrOptArg(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H45010_CfbOvrOptArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extension))
     strm << setw(indent+12) << "extension = " << setprecision(indent) << m_extension << '\n';

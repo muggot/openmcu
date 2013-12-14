@@ -33,7 +33,7 @@ H46019_TraversalParameters::H46019_TraversalParameters(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H46019_TraversalParameters::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_multiplexedMediaChannel))
     strm << setw(indent+26) << "multiplexedMediaChannel = " << setprecision(indent) << m_multiplexedMediaChannel << '\n';

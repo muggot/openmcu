@@ -930,7 +930,7 @@ H225_H221NonStandard::H225_H221NonStandard(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H225_H221NonStandard::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "t35CountryCode = " << setprecision(indent) << m_t35CountryCode << '\n';
   strm << setw(indent+15) << "t35Extension = " << setprecision(indent) << m_t35Extension << '\n';
@@ -1022,7 +1022,7 @@ H225_TunnelledProtocolAlternateIdentifier::H225_TunnelledProtocolAlternateIdenti
 #ifndef PASN_NOPRINTON
 void H225_TunnelledProtocolAlternateIdentifier::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "protocolType = " << setprecision(indent) << m_protocolType << '\n';
   if (HasOptionalField(e_protocolVariant))
@@ -1796,7 +1796,7 @@ H225_GSM_UIM::H225_GSM_UIM(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H225_GSM_UIM::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_imsi))
     strm << setw(indent+7) << "imsi = " << setprecision(indent) << m_imsi << '\n';
@@ -2123,7 +2123,7 @@ H225_ExtendedAliasAddress::H225_ExtendedAliasAddress(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void H225_ExtendedAliasAddress::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "address = " << setprecision(indent) << m_address << '\n';
   if (HasOptionalField(e_presentationIndicator))
@@ -2515,7 +2515,7 @@ H225_Q954Details::H225_Q954Details(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H225_Q954Details::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+20) << "conferenceCalling = " << setprecision(indent) << m_conferenceCalling << '\n';
   strm << setw(indent+20) << "threePartyService = " << setprecision(indent) << m_threePartyService << '\n';
@@ -3090,7 +3090,7 @@ H225_CallIdentifier::H225_CallIdentifier(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H225_CallIdentifier::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "guid = " << setprecision(indent) << m_guid << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -3406,7 +3406,7 @@ H225_ICV::H225_ICV(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H225_ICV::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "algorithmOID = " << setprecision(indent) << m_algorithmOID << '\n';
   strm << setw(indent+6) << "icv = " << setprecision(indent) << m_icv << '\n';
@@ -3728,7 +3728,7 @@ H225_CallLinkage::H225_CallLinkage(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H225_CallLinkage::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_globalCallId))
     strm << setw(indent+15) << "globalCallId = " << setprecision(indent) << m_globalCallId << '\n';
@@ -3817,7 +3817,7 @@ H225_CapacityReportingCapability::H225_CapacityReportingCapability(unsigned tag,
 #ifndef PASN_NOPRINTON
 void H225_CapacityReportingCapability::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+24) << "canReportCallCapacity = " << setprecision(indent) << m_canReportCallCapacity << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -3895,7 +3895,7 @@ H225_CarrierInfo::H225_CarrierInfo(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H225_CarrierInfo::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_carrierIdentificationCode))
     strm << setw(indent+28) << "carrierIdentificationCode = " << setprecision(indent) << m_carrierIdentificationCode << '\n';
@@ -4174,7 +4174,7 @@ H225_CallCreditCapability::H225_CallCreditCapability(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void H225_CallCreditCapability::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_canDisplayAmountString))
     strm << setw(indent+25) << "canDisplayAmountString = " << setprecision(indent) << m_canDisplayAmountString << '\n';
@@ -4537,7 +4537,7 @@ H225_TransportChannelInfo::H225_TransportChannelInfo(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void H225_TransportChannelInfo::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_sendAddress))
     strm << setw(indent+14) << "sendAddress = " << setprecision(indent) << m_sendAddress << '\n';
@@ -6096,7 +6096,7 @@ H225_UUIEsRequested::H225_UUIEsRequested(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H225_UUIEsRequested::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+8) << "setup = " << setprecision(indent) << m_setup << '\n';
   strm << setw(indent+17) << "callProceeding = " << setprecision(indent) << m_callProceeding << '\n';
@@ -6817,7 +6817,7 @@ H225_H323_UserInformation_user_data::H225_H323_UserInformation_user_data(unsigne
 #ifndef PASN_NOPRINTON
 void H225_H323_UserInformation_user_data::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+25) << "protocol_discriminator = " << setprecision(indent) << m_protocol_discriminator << '\n';
   strm << setw(indent+19) << "user_information = " << setprecision(indent) << m_user_information << '\n';
@@ -7607,7 +7607,7 @@ H225_Setup_UUIE_connectionParameters::H225_Setup_UUIE_connectionParameters(unsig
 #ifndef PASN_NOPRINTON
 void H225_Setup_UUIE_connectionParameters::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "connectionType = " << setprecision(indent) << m_connectionType << '\n';
   strm << setw(indent+25) << "numberOfScnConnections = " << setprecision(indent) << m_numberOfScnConnections << '\n';
@@ -7856,7 +7856,7 @@ H225_TransportAddress_ipAddress::H225_TransportAddress_ipAddress(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void H225_TransportAddress_ipAddress::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+5) << "ip = " << setprecision(indent) << m_ip << '\n';
   strm << setw(indent+7) << "port = " << setprecision(indent) << m_port << '\n';
@@ -7942,7 +7942,7 @@ H225_TransportAddress_ipxAddress::H225_TransportAddress_ipxAddress(unsigned tag,
 #ifndef PASN_NOPRINTON
 void H225_TransportAddress_ipxAddress::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "node = " << setprecision(indent) << m_node << '\n';
   strm << setw(indent+9) << "netnum = " << setprecision(indent) << m_netnum << '\n';
@@ -8034,7 +8034,7 @@ H225_TransportAddress_ip6Address::H225_TransportAddress_ip6Address(unsigned tag,
 #ifndef PASN_NOPRINTON
 void H225_TransportAddress_ip6Address::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+5) << "ip = " << setprecision(indent) << m_ip << '\n';
   strm << setw(indent+7) << "port = " << setprecision(indent) << m_port << '\n';
@@ -8278,7 +8278,7 @@ H225_AddressPattern_range::H225_AddressPattern_range(unsigned tag, PASN_Object::
 #ifndef PASN_NOPRINTON
 void H225_AddressPattern_range::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "startOfRange = " << setprecision(indent) << m_startOfRange << '\n';
   strm << setw(indent+13) << "endOfRange = " << setprecision(indent) << m_endOfRange << '\n';
@@ -8471,7 +8471,7 @@ H225_CryptoH323Token_cryptoEPPwdHash::H225_CryptoH323Token_cryptoEPPwdHash(unsig
 #ifndef PASN_NOPRINTON
 void H225_CryptoH323Token_cryptoEPPwdHash::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+8) << "alias = " << setprecision(indent) << m_alias << '\n';
   strm << setw(indent+12) << "timeStamp = " << setprecision(indent) << m_timeStamp << '\n';
@@ -8561,7 +8561,7 @@ H225_CryptoH323Token_cryptoGKPwdHash::H225_CryptoH323Token_cryptoGKPwdHash(unsig
 #ifndef PASN_NOPRINTON
 void H225_CryptoH323Token_cryptoGKPwdHash::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "gatekeeperId = " << setprecision(indent) << m_gatekeeperId << '\n';
   strm << setw(indent+12) << "timeStamp = " << setprecision(indent) << m_timeStamp << '\n';
@@ -8651,7 +8651,7 @@ H225_CapacityReportingSpecification_when::H225_CapacityReportingSpecification_wh
 #ifndef PASN_NOPRINTON
 void H225_CapacityReportingSpecification_when::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_callStart))
     strm << setw(indent+12) << "callStart = " << setprecision(indent) << m_callStart << '\n';
@@ -8875,7 +8875,7 @@ H225_RasUsageSpecification_when::H225_RasUsageSpecification_when(unsigned tag, P
 #ifndef PASN_NOPRINTON
 void H225_RasUsageSpecification_when::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_start))
     strm << setw(indent+8) << "start = " << setprecision(indent) << m_start << '\n';
@@ -8974,7 +8974,7 @@ H225_RasUsageSpecification_callStartingPoint::H225_RasUsageSpecification_callSta
 #ifndef PASN_NOPRINTON
 void H225_RasUsageSpecification_callStartingPoint::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_alerting))
     strm << setw(indent+11) << "alerting = " << setprecision(indent) << m_alerting << '\n';

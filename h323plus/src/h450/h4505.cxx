@@ -251,7 +251,7 @@ H4505_CpRequestArg::H4505_CpRequestArg(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H4505_CpRequestArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "parkingNumber = " << setprecision(indent) << m_parkingNumber << '\n';
   strm << setw(indent+15) << "parkedNumber = " << setprecision(indent) << m_parkedNumber << '\n';
@@ -362,7 +362,7 @@ H4505_CpRequestRes::H4505_CpRequestRes(unsigned tag, PASN_Object::TagClass tagCl
 #ifndef PASN_NOPRINTON
 void H4505_CpRequestRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "parkedToNumber = " << setprecision(indent) << m_parkedToNumber << '\n';
   if (HasOptionalField(e_parkedToPosition))
@@ -466,7 +466,7 @@ H4505_CpSetupArg::H4505_CpSetupArg(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4505_CpSetupArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+16) << "parkingNumber = " << setprecision(indent) << m_parkingNumber << '\n';
   strm << setw(indent+15) << "parkedNumber = " << setprecision(indent) << m_parkedNumber << '\n';
@@ -577,7 +577,7 @@ H4505_CpSetupRes::H4505_CpSetupRes(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4505_CpSetupRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+17) << "parkedToNumber = " << setprecision(indent) << m_parkedToNumber << '\n';
   if (HasOptionalField(e_parkedToPosition))
@@ -681,7 +681,7 @@ H4505_GroupIndicationOnArg::H4505_GroupIndicationOnArg(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H4505_GroupIndicationOnArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "callPickupId = " << setprecision(indent) << m_callPickupId << '\n';
   strm << setw(indent+20) << "groupMemberUserNr = " << setprecision(indent) << m_groupMemberUserNr << '\n';
@@ -806,7 +806,7 @@ H4505_GroupIndicationOnRes::H4505_GroupIndicationOnRes(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H4505_GroupIndicationOnRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extensionRes))
     strm << setw(indent+15) << "extensionRes = " << setprecision(indent) << m_extensionRes << '\n';
@@ -886,7 +886,7 @@ H4505_GroupIndicationOffArg::H4505_GroupIndicationOffArg(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void H4505_GroupIndicationOffArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "callPickupId = " << setprecision(indent) << m_callPickupId << '\n';
   strm << setw(indent+20) << "groupMemberUserNr = " << setprecision(indent) << m_groupMemberUserNr << '\n';
@@ -980,7 +980,7 @@ H4505_GroupIndicationOffRes::H4505_GroupIndicationOffRes(unsigned tag, PASN_Obje
 #ifndef PASN_NOPRINTON
 void H4505_GroupIndicationOffRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extensionRes))
     strm << setw(indent+15) << "extensionRes = " << setprecision(indent) << m_extensionRes << '\n';
@@ -1060,7 +1060,7 @@ H4505_PickrequArg::H4505_PickrequArg(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H4505_PickrequArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+19) << "picking_upNumber = " << setprecision(indent) << m_picking_upNumber << '\n';
   if (HasOptionalField(e_callPickupId))
@@ -1184,7 +1184,7 @@ H4505_PickrequRes::H4505_PickrequRes(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H4505_PickrequRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "callPickupId = " << setprecision(indent) << m_callPickupId << '\n';
   if (HasOptionalField(e_extensionRes))
@@ -1271,7 +1271,7 @@ H4505_PickupArg::H4505_PickupArg(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4505_PickupArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "callPickupId = " << setprecision(indent) << m_callPickupId << '\n';
   strm << setw(indent+19) << "picking_upNumber = " << setprecision(indent) << m_picking_upNumber << '\n';
@@ -1365,7 +1365,7 @@ H4505_PickupRes::H4505_PickupRes(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4505_PickupRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extensionRes))
     strm << setw(indent+15) << "extensionRes = " << setprecision(indent) << m_extensionRes << '\n';
@@ -1445,7 +1445,7 @@ H4505_PickExeArg::H4505_PickExeArg(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4505_PickExeArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "callPickupId = " << setprecision(indent) << m_callPickupId << '\n';
   strm << setw(indent+19) << "picking_upNumber = " << setprecision(indent) << m_picking_upNumber << '\n';
@@ -1546,7 +1546,7 @@ H4505_PickExeRes::H4505_PickExeRes(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4505_PickExeRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extensionRes))
     strm << setw(indent+15) << "extensionRes = " << setprecision(indent) << m_extensionRes << '\n';
@@ -1626,7 +1626,7 @@ H4505_CpNotifyArg::H4505_CpNotifyArg(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void H4505_CpNotifyArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_parkingNumber))
     strm << setw(indent+16) << "parkingNumber = " << setprecision(indent) << m_parkingNumber << '\n';
@@ -1716,7 +1716,7 @@ H4505_CpickupNotifyArg::H4505_CpickupNotifyArg(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void H4505_CpickupNotifyArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_picking_upNumber))
     strm << setw(indent+19) << "picking_upNumber = " << setprecision(indent) << m_picking_upNumber << '\n';

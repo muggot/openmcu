@@ -374,7 +374,7 @@ H460P_PresenceIdentifier::H460P_PresenceIdentifier(unsigned tag, PASN_Object::Ta
 #ifndef PASN_NOPRINTON
 void H460P_PresenceIdentifier::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+7) << "guid = " << setprecision(indent) << m_guid << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -757,7 +757,7 @@ H460P_PresenceStatus::H460P_PresenceStatus(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H460P_PresenceStatus::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "notification = " << setprecision(indent) << m_notification << '\n';
   if (HasOptionalField(e_instruction))
@@ -843,7 +843,7 @@ H460P_PresenceInstruct::H460P_PresenceInstruct(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void H460P_PresenceInstruct::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "instruction = " << setprecision(indent) << m_instruction << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -919,7 +919,7 @@ H460P_PresenceAuthorize::H460P_PresenceAuthorize(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H460P_PresenceAuthorize::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "subscription = " << setprecision(indent) << m_subscription << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -995,7 +995,7 @@ H460P_PresenceNotify::H460P_PresenceNotify(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H460P_PresenceNotify::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "notification = " << setprecision(indent) << m_notification << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -1071,7 +1071,7 @@ H460P_PresenceRequest::H460P_PresenceRequest(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H460P_PresenceRequest::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "subscription = " << setprecision(indent) << m_subscription << '\n';
   if (HasOptionalField(e_tokens))
@@ -1167,7 +1167,7 @@ H460P_PresenceResponse::H460P_PresenceResponse(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void H460P_PresenceResponse::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "subscription = " << setprecision(indent) << m_subscription << '\n';
   if (HasOptionalField(e_tokens))
@@ -1263,7 +1263,7 @@ H460P_PresenceAlive::H460P_PresenceAlive(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H460P_PresenceAlive::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "identifier = " << setprecision(indent) << m_identifier << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -1339,7 +1339,7 @@ H460P_PresenceRemove::H460P_PresenceRemove(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H460P_PresenceRemove::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "identifier = " << setprecision(indent) << m_identifier << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -1415,7 +1415,7 @@ H460P_PresenceAlert::H460P_PresenceAlert(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H460P_PresenceAlert::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "notification = " << setprecision(indent) << m_notification << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";
@@ -1491,7 +1491,7 @@ H460P_PresenceSubscription::H460P_PresenceSubscription(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H460P_PresenceSubscription::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+12) << "subscribe = " << setprecision(indent) << m_subscribe << '\n';
   strm << setw(indent+10) << "aliases = " << setprecision(indent) << m_aliases << '\n';
@@ -1625,7 +1625,7 @@ H460P_Presentity::H460P_Presentity(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H460P_Presentity::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+8) << "state = " << setprecision(indent) << m_state << '\n';
   if (HasOptionalField(e_display))
@@ -1731,7 +1731,7 @@ H460P_PresenceNotification::H460P_PresenceNotification(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H460P_PresenceNotification::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "presentity = " << setprecision(indent) << m_presentity << '\n';
   if (HasOptionalField(e_aliasAddress))

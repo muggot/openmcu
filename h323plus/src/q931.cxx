@@ -652,7 +652,7 @@ BOOL Q931::Encode(PBYTEArray & data) const
 
 void Q931::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   _Ios_Fmtflags flags = strm.flags();
 
   strm << "{\n"

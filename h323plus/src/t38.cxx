@@ -510,7 +510,7 @@ T38_IFPPacket::T38_IFPPacket(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void T38_IFPPacket::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "type_of_msg = " << setprecision(indent) << m_type_of_msg << '\n';
   if (HasOptionalField(e_data_field))
@@ -596,7 +596,7 @@ T38_PreCorrigendum_IFPPacket::T38_PreCorrigendum_IFPPacket(unsigned tag, PASN_Ob
 #ifndef PASN_NOPRINTON
 void T38_PreCorrigendum_IFPPacket::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "type_of_msg = " << setprecision(indent) << m_type_of_msg << '\n';
   if (HasOptionalField(e_data_field))
@@ -683,7 +683,7 @@ T38_Data_Field_subtype::T38_Data_Field_subtype(unsigned tag, PASN_Object::TagCla
 #ifndef PASN_NOPRINTON
 void T38_Data_Field_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "field_type = " << setprecision(indent) << m_field_type << '\n';
   if (HasOptionalField(e_field_data))
@@ -770,7 +770,7 @@ T38_PreCorrigendum_Data_Field_subtype::T38_PreCorrigendum_Data_Field_subtype(uns
 #ifndef PASN_NOPRINTON
 void T38_PreCorrigendum_Data_Field_subtype::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "field_type = " << setprecision(indent) << m_field_type << '\n';
   if (HasOptionalField(e_field_data))
@@ -875,7 +875,7 @@ T38_UDPTLPacket_error_recovery_fec_info::T38_UDPTLPacket_error_recovery_fec_info
 #ifndef PASN_NOPRINTON
 void T38_UDPTLPacket_error_recovery_fec_info::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "fec_npackets = " << setprecision(indent) << m_fec_npackets << '\n';
   strm << setw(indent+11) << "fec_data = " << setprecision(indent) << m_fec_data << '\n';
@@ -978,7 +978,7 @@ T38_UDPTLPacket::T38_UDPTLPacket(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void T38_UDPTLPacket::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "seq_number = " << setprecision(indent) << m_seq_number << '\n';
   strm << setw(indent+21) << "primary_ifp_packet = " << setprecision(indent) << m_primary_ifp_packet << '\n';

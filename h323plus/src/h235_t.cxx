@@ -19,7 +19,7 @@ H235_SIGNED<ToBeSigned>::H235_SIGNED(unsigned tag, PASN_Object::TagClass tagClas
 template <class ToBeSigned>
 void H235_SIGNED<ToBeSigned>::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+13) << "toBeSigned = " << setprecision(indent) << m_toBeSigned << '\n';
   strm << setw(indent+15) << "algorithmOID = " << setprecision(indent) << m_algorithmOID << '\n';
@@ -123,7 +123,7 @@ H235_ENCRYPTED<ToBeEncrypted>::H235_ENCRYPTED(unsigned tag, PASN_Object::TagClas
 template <class ToBeEncrypted>
 void H235_ENCRYPTED<ToBeEncrypted>::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "algorithmOID = " << setprecision(indent) << m_algorithmOID << '\n';
   strm << setw(indent+9) << "paramS = " << setprecision(indent) << m_paramS << '\n';
@@ -220,7 +220,7 @@ H235_HASHED<ToBeHashed>::H235_HASHED(unsigned tag, PASN_Object::TagClass tagClas
 template <class ToBeHashed>
 void H235_HASHED<ToBeHashed>::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "algorithmOID = " << setprecision(indent) << m_algorithmOID << '\n';
   strm << setw(indent+9) << "paramS = " << setprecision(indent) << m_paramS << '\n';

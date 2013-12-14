@@ -31,7 +31,7 @@ H46018_IncomingCallIndication::H46018_IncomingCallIndication(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void H46018_IncomingCallIndication::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+24) << "callSignallingAddress = " << setprecision(indent) << m_callSignallingAddress << '\n';
   strm << setw(indent+9) << "callID = " << setprecision(indent) << m_callID << '\n';
@@ -114,7 +114,7 @@ H46018_LRQKeepAliveData::H46018_LRQKeepAliveData(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H46018_LRQKeepAliveData::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+23) << "lrqKeepAliveInterval = " << setprecision(indent) << m_lrqKeepAliveInterval << '\n';
   strm << setw(indent-1) << setprecision(indent-2) << "}";

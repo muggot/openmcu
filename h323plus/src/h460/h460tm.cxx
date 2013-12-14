@@ -71,7 +71,7 @@ H460TM_MultipointTM::H460TM_MultipointTM(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H460TM_MultipointTM::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+10) << "message = " << setprecision(indent) << m_message << '\n';
   if (HasOptionalField(e_sender))

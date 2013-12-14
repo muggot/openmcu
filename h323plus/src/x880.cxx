@@ -415,7 +415,7 @@ X880_ReturnResult_result::X880_ReturnResult_result(unsigned tag, PASN_Object::Ta
 #ifndef PASN_NOPRINTON
 void X880_ReturnResult_result::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+9) << "opcode = " << setprecision(indent) << m_opcode << '\n';
   strm << setw(indent+9) << "result = " << setprecision(indent) << m_result << '\n';
@@ -641,7 +641,7 @@ X880_Invoke::X880_Invoke(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void X880_Invoke::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "invokeId = " << setprecision(indent) << m_invokeId << '\n';
   if (HasOptionalField(e_linkedId))
@@ -744,7 +744,7 @@ X880_ReturnResult::X880_ReturnResult(unsigned tag, PASN_Object::TagClass tagClas
 #ifndef PASN_NOPRINTON
 void X880_ReturnResult::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "invokeId = " << setprecision(indent) << m_invokeId << '\n';
   if (HasOptionalField(e_result))
@@ -830,7 +830,7 @@ X880_ReturnError::X880_ReturnError(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void X880_ReturnError::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "invokeId = " << setprecision(indent) << m_invokeId << '\n';
   strm << setw(indent+12) << "errorCode = " << setprecision(indent) << m_errorCode << '\n';
@@ -923,7 +923,7 @@ X880_Reject::X880_Reject(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void X880_Reject::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+11) << "invokeId = " << setprecision(indent) << m_invokeId << '\n';
   strm << setw(indent+10) << "problem = " << setprecision(indent) << m_problem << '\n';

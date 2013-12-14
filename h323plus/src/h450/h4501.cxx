@@ -922,7 +922,7 @@ H4501_Extension::H4501_Extension(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4501_Extension::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "extensionId = " << setprecision(indent) << m_extensionId << '\n';
   strm << setw(indent+20) << "extensionArgument = " << setprecision(indent) << m_extensionArgument << '\n';
@@ -1067,7 +1067,7 @@ H4501_NetworkFacilityExtension::H4501_NetworkFacilityExtension(unsigned tag, PAS
 #ifndef PASN_NOPRINTON
 void H4501_NetworkFacilityExtension::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+15) << "sourceEntity = " << setprecision(indent) << m_sourceEntity << '\n';
   if (HasOptionalField(e_sourceEntityAddress))
@@ -1170,7 +1170,7 @@ H4501_AddressScreened::H4501_AddressScreened(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H4501_AddressScreened::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "partyNumber = " << setprecision(indent) << m_partyNumber << '\n';
   strm << setw(indent+21) << "screeningIndicator = " << setprecision(indent) << m_screeningIndicator << '\n';
@@ -1263,7 +1263,7 @@ H4501_NumberScreened::H4501_NumberScreened(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H4501_NumberScreened::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "partyNumber = " << setprecision(indent) << m_partyNumber << '\n';
   strm << setw(indent+21) << "screeningIndicator = " << setprecision(indent) << m_screeningIndicator << '\n';
@@ -1346,7 +1346,7 @@ H4501_Address::H4501_Address(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4501_Address::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "partyNumber = " << setprecision(indent) << m_partyNumber << '\n';
   if (HasOptionalField(e_partySubaddress))
@@ -1432,7 +1432,7 @@ H4501_EndpointAddress::H4501_EndpointAddress(unsigned tag, PASN_Object::TagClass
 #ifndef PASN_NOPRINTON
 void H4501_EndpointAddress::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+21) << "destinationAddress = " << setprecision(indent) << m_destinationAddress << '\n';
   if (HasOptionalField(e_remoteExtensionAddress))
@@ -1518,7 +1518,7 @@ H4501_UserSpecifiedSubaddress::H4501_UserSpecifiedSubaddress(unsigned tag, PASN_
 #ifndef PASN_NOPRINTON
 void H4501_UserSpecifiedSubaddress::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+24) << "subaddressInformation = " << setprecision(indent) << m_subaddressInformation << '\n';
   if (HasOptionalField(e_oddCountIndicator))
@@ -1604,7 +1604,7 @@ H4501_SupplementaryService::H4501_SupplementaryService(unsigned tag, PASN_Object
 #ifndef PASN_NOPRINTON
 void H4501_SupplementaryService::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_networkFacilityExtension))
     strm << setw(indent+27) << "networkFacilityExtension = " << setprecision(indent) << m_networkFacilityExtension << '\n';

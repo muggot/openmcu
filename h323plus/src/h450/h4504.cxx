@@ -159,7 +159,7 @@ H4504_Extension::H4504_Extension(unsigned tag, PASN_Object::TagClass tagClass)
 #ifndef PASN_NOPRINTON
 void H4504_Extension::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   strm << setw(indent+14) << "extensionId = " << setprecision(indent) << m_extensionId << '\n';
   strm << setw(indent+11) << "argument = " << setprecision(indent) << m_argument << '\n';
@@ -274,7 +274,7 @@ H4504_HoldNotificArg::H4504_HoldNotificArg(unsigned tag, PASN_Object::TagClass t
 #ifndef PASN_NOPRINTON
 void H4504_HoldNotificArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extensionArg))
     strm << setw(indent+15) << "extensionArg = " << setprecision(indent) << m_extensionArg << '\n';
@@ -354,7 +354,7 @@ H4504_RetrieveNotificArg::H4504_RetrieveNotificArg(unsigned tag, PASN_Object::Ta
 #ifndef PASN_NOPRINTON
 void H4504_RetrieveNotificArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extensionArg))
     strm << setw(indent+15) << "extensionArg = " << setprecision(indent) << m_extensionArg << '\n';
@@ -434,7 +434,7 @@ H4504_RemoteHoldArg::H4504_RemoteHoldArg(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H4504_RemoteHoldArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extensionArg))
     strm << setw(indent+15) << "extensionArg = " << setprecision(indent) << m_extensionArg << '\n';
@@ -514,7 +514,7 @@ H4504_RemoteHoldRes::H4504_RemoteHoldRes(unsigned tag, PASN_Object::TagClass tag
 #ifndef PASN_NOPRINTON
 void H4504_RemoteHoldRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extensionRes))
     strm << setw(indent+15) << "extensionRes = " << setprecision(indent) << m_extensionRes << '\n';
@@ -594,7 +594,7 @@ H4504_RemoteRetrieveArg::H4504_RemoteRetrieveArg(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H4504_RemoteRetrieveArg::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extensionArg))
     strm << setw(indent+15) << "extensionArg = " << setprecision(indent) << m_extensionArg << '\n';
@@ -674,7 +674,7 @@ H4504_RemoteRetrieveRes::H4504_RemoteRetrieveRes(unsigned tag, PASN_Object::TagC
 #ifndef PASN_NOPRINTON
 void H4504_RemoteRetrieveRes::PrintOn(ostream & strm) const
 {
-  int indent = strm.precision() + 2;
+  int indent = (int)strm.precision() + 2;
   strm << "{\n";
   if (HasOptionalField(e_extensionRes))
     strm << setw(indent+15) << "extensionRes = " << setprecision(indent) << m_extensionRes << '\n';
