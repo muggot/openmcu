@@ -44,7 +44,6 @@ openmcu.gif \
 openmcu.ru_vad_vad.gif \
 i20_static.gif \
 i24_revert.gif \
-openmcu.ru_drop_Abdylas_Tynyshov.gif \
 i15_inv.gif \
 i20_vad2.gif \
 i24_right.gif \
@@ -53,7 +52,6 @@ i15_mic_off.gif \
 i20_vad.gif \
 i24_shuff.gif \
 i15_getNoVideo.gif \
-openmcu.ru_remove.gif \
 openmcu.ru_logo_text.bmp \
 menu_left.png \
 connecting.wav \
@@ -63,7 +61,9 @@ template.html \
 control.js \
 status.js \
 locale_ru.js \
-locale_en.js
+locale_en.js \
+i16_close_gray.png \
+i16_close_red.png \
 
 OBJDIR	= ./obj
 OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdir $(SOURCES)))))

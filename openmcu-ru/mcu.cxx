@@ -366,13 +366,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/gif"                , "i15_mic_on.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "i15_mic_off.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "i15_getNoVideo.gif");
-  WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_drop_Abdylas_Tynyshov.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_vad_vad.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_vad_disable.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_vad_chosenvan.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "i15_inv.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_launched_Ypf.gif");
-  WEBSERVER_LINK_MIME("image/gif"                , "openmcu.ru_remove.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "i20_close.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "i20_vad.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "i20_vad2.gif");
@@ -390,6 +388,8 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #if USE_LIBJPEG
   WEBSERVER_LINK_MIME("image/jpeg"               , "logo.jpeg");
 #endif
+  WEBSERVER_LINK_MIME("image/png"                , "i16_close_gray.png");
+  WEBSERVER_LINK_MIME("image/png"                , "i16_close_red.png");
 
   for(PINDEX i=-1; i<rotationLevel; i++)
   {
