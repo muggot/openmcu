@@ -181,19 +181,27 @@ class MCUURL : public PURL
   public:
     //MCUURL();
     MCUURL(PString str);
+
+    void SetDisplayName(PString name) { displayName = name; }
+
     const PString & GetDisplayName() const { return displayName; }
     const PString & GetUrl() const { return partyUrl; }
     const PString GetUrlId() const
     {
-      if(MCUScheme == "sip")
+      if(URLScheme == "sip")
         return username+"@"+hostname;
       else
         return displayName+"@"+hostname;
     }
+    const PString GetMemberFormatName() const
+    {
+        return displayName+" ["+partyUrl+"]";
+    }
+
   protected:
     PString partyUrl;
     PString displayName;
-    PString MCUScheme;
+    PString URLScheme;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

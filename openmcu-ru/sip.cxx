@@ -1133,8 +1133,8 @@ int OpenMCUSipConnection::CreateSipData()
       localIP = sip->sip_to->a_url->url_host;
       roomName = sip->sip_to->a_url->url_user;
     }
-    epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU",
-        "sip:"+PString(sip->sip_from->a_url->url_user)+"@"+PString(sip->sip_from->a_url->url_host)));
+    PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_from);
+    epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url));
   } else { // outgoing
     ProxyServerMapType::iterator it =
         ProxyServerMap.find((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
@@ -1153,8 +1153,8 @@ int OpenMCUSipConnection::CreateSipData()
       localIP = sip->sip_from->a_url->url_host;
       roomName = sip->sip_from->a_url->url_user;
     }
-    epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU",
-        "sip:"+PString(sip->sip_to->a_url->url_user)+"@"+PString(sip->sip_to->a_url->url_host)));
+    PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_to);
+    epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url));
   }
   cseqNum = sip->sip_cseq->cs_seq+1;
   return 1;
@@ -1207,6 +1207,7 @@ int OpenMCUSipConnection::ProcessInviteEvent()
 
  callToken = remotePartyName + "@" + remotePartyAddress + ":" + PString(sip->sip_call_id->i_id);
  ep.OnIncomingSipConnection(callToken,*this);
+ SetMemberName();
 
  // endpoint custom capability
  prefAudioCap = GetEndpointParam("Audio codec");
@@ -1540,7 +1541,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
       return 0;
 
     // create sdp for outgoing request
-    PString url = "sip:"+PString(sip_to->a_url->url_user)+"@"+PString(sip_to->a_url->url_host);
+    PString url = sip_header_as_string(&home, (sip_header_t const *)sip_to);
     PString prefAudioCap = OpenMCU::Current().GetEndpointParamFromUrl("Audio codec", url);
     PString prefVideoCap = OpenMCU::Current().GetEndpointParamFromUrl("Video codec", url);
     sdpInvite = CreateSdpInvite(prefAudioCap, prefVideoCap);
@@ -1731,7 +1732,7 @@ int OpenMCUSipEndPoint::ProcessSipEvent_ntaout(nta_outgoing_magic_t *context, nt
       sdp.Replace("LOCALIP", proxy->localIP, TRUE, 0);
       sdp.Replace("RTP_AUDIO_PORT", iData->aPort, TRUE, 0);
       sdp.Replace("RTP_VIDEO_PORT", iData->vPort, TRUE, 0);
-      PString url = "sip:"+PString(sip_to->a_url->url_user)+"@"+PString(sip_to->a_url->url_host);
+      PString url = sip_header_as_string(&home, (sip_header_t const *)sip_to);
       unsigned epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url));
       sdp.Replace("BANDWIDTH", epBandwidthTo, TRUE, 0);
       sip_payload = sip_payload_make(&home, (const char *)sdp);

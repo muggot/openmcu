@@ -266,10 +266,12 @@ class OpenMCUH323Connection : public H323Connection
     virtual PString GetAudioTransmitCodecName() const { return audioTransmitCodecName; }
     virtual PString GetAudioReceiveCodecName() const  { return audioReceiveCodecName; }
     virtual PString GetRemoteName() const             { return remoteName; }
+    virtual PString GetMemberName() const             { return memberName; }
 
     virtual void SetupCacheConnection(PString & format,Conference * conf, ConferenceMember * memb);
 
     void SetRemoteName(const H323SignalPDU & pdu);
+    void SetMemberName();
     void SetEndpointDefaultVideoParams();
     void SetEndpointPrefVideoParams();
     PString GetRemoteNumber();
@@ -382,6 +384,7 @@ class OpenMCUH323Connection : public H323Connection
     virtual void OnWelcomeWaveEnded();
 
     PString remoteName;
+    PString memberName;
 
     // Wave file played during the welcome procedure.
     OpalWAVFile playFile;

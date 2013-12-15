@@ -502,27 +502,25 @@ OpenMCUH323EndPoint * OpenMCU::CreateEndPoint(ConferenceManager & manager)
 
 PString OpenMCU::GetEndpointParamFromUrl(PString param, PString addr)
 {
-  PString user, host, scheme, section;
+  PString user, host, section;
   PString newParam;
   PStringArray options;
-  if(addr.Left(5) == "h323:")
+
+  MCUURL url(addr);
+  user = url.GetUserName();
+  host = url.GetHostName();
+  if(url.GetScheme() == "h323")
   {
-    scheme = "h323";
     section = "H323 Endpoints";
     options = h323EndpointOptionsOrder;
   }
-  else if(addr.Left(4) == "sip:")
+  else if(url.GetScheme() == "sip")
   {
-    scheme = "sip";
     section = "SIP Endpoints";
     options = sipEndpointOptionsOrder;
   } else {
     return "";
   }
-  PURL url(addr, scheme);
-  user = url.GetUserName();
-  host = url.GetHostName();
-  if(scheme == "h323" && host == "") { host = user; user = ""; }
 
   MCUConfig cfg(section);
   PStringList keys = cfg.GetKeys();
@@ -555,20 +553,30 @@ MCUURL::MCUURL(PString str)
 {
   PINDEX delim1 = str.FindLast("[");
   PINDEX delim2 = str.FindLast("]");
-  if(delim1 != P_MAX_INDEX && delim2 != P_MAX_INDEX)
+  PINDEX delim3 = str.FindLast("<sip:");
+  PINDEX delim4 = str.FindLast(">");
+
+  if(delim3 != P_MAX_INDEX && delim4 != P_MAX_INDEX)
+  {
+    displayName = str.Left(delim3-1);
+    displayName.Replace("\"","",TRUE,0);
+    partyUrl = str.Mid(delim3+1, delim4-delim3-1);
+  }
+  else if(delim1 != P_MAX_INDEX && delim2 != P_MAX_INDEX)
   {
     displayName = str.Left(delim1-1);
     partyUrl = str.Mid(delim1+1, delim2-delim1-1);
   } else {
     partyUrl = str;
   }
-  if(partyUrl.Left(4) == "sip:") MCUScheme = "sip";
-  else if(partyUrl.Left(5) == "h323:") MCUScheme = "h323";
-  else { partyUrl = "h323:"+partyUrl; MCUScheme = "h323"; }
 
-  Parse((const char *)partyUrl, MCUScheme);
+  if(partyUrl.Left(4) == "sip:") URLScheme = "sip";
+  else if(partyUrl.Left(5) == "h323:") URLScheme = "h323";
+  else { partyUrl = "h323:"+partyUrl; URLScheme = "h323"; }
+
+  Parse((const char *)partyUrl, URLScheme);
   // parse old H.323 scheme
-  if(MCUScheme == "h323" && partyUrl.Left(5) != "h323" && partyUrl.Find("@") == P_MAX_INDEX &&
+  if(URLScheme == "h323" && partyUrl.Left(5) != "h323" && partyUrl.Find("@") == P_MAX_INDEX &&
      hostname == "" && username != "")
   {
     hostname = username;
