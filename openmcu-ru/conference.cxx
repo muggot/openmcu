@@ -524,29 +524,19 @@ void Conference::RefreshAddressBook()
 
 BOOL Conference::InviteMember(const char *membName, void * userData)
 {
-  char buf[128];
-  int i=strlen(membName)-1;
-  if(membName[i]!=']')
-  {
-    i=0;
-  }
-  else
-  {
-    while(i>=0 && membName[i]!='[') i--;
-    if(i<0) return FALSE;
-    i++;
-  }
-  sscanf(&membName[i],"%127[^]]",buf); //buf[strlen(buf)-1]=0;
-  PString address = buf;
+  MCUURL url(membName);
+  PString address = url.GetUrl();
+  if(url.GetUserName() == "" && url.GetHostName() == "") return FALSE;
 
   OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
   if(!OpenMCU::Current().AreLoopbackCallsAllowed())
   {
+    PString hostport = url.GetHostName()+":"+PString(url.GetPort());
     H323TransportAddressArray taa = ep.GetInterfaceAddresses(TRUE, NULL); // todo: join with SIP listener(s) ?
     for(PINDEX i=0; i<taa.GetSize(); i++)
     {
-      if(taa[i].Find("ip$"+address+":") == 0)
+      if(taa[i].Find("ip$"+hostport) == 0)
       {
         PTRACE(6,"Conference\tInviteMember Loopback call rejected (" << taa[i] << "): " << membName << " -> address=" << address);
         return FALSE;
@@ -554,7 +544,6 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
     }
   }
 
-  address = MCUURL(address).GetUrl();
   if(address.Left(4) == "sip:")
   {
     PStringStream msg;

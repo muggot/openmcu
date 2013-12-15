@@ -562,7 +562,7 @@ function format_mmbr_button(m,st){
  if(st!=0) s+=';cursor:move" id="rpan_'+id+'" onmousedown="{highlight('+m[1]+',0);ddstart(event,this,\'panel\','+m[1]+');}" onmouseover="highlight('+m[1]+',1)" onmouseout="highlight('+m[1]+',0)"';
  else s+='" id="rpan_'+id+'"';
  var uname=m[2]+"";
- ip=get_addr_uri(uname);
+ ip=get_addr_url_without_param(uname);
  uname=get_addr_name(uname);
 
  var mute=''; var vad=''; var kick=''; var hide='';
@@ -623,7 +623,7 @@ function format_mmbr_abook(m,st,num){
 
   var uname=m[2]+"";
   var name=get_addr_name(uname);
-  var ip=get_addr_uri(uname);
+  var ip=get_addr_url_without_param(uname);
 
   var invite = "", check = "";
   if(!st) invite="<img onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
@@ -862,8 +862,14 @@ function audio(id,vol){
 function get_addr_name(addr){
   return addr.substring(0, addr.lastIndexOf('['));
 }
-function get_addr_uri(addr){
+function get_addr_url(addr){
   return addr.substring(addr.lastIndexOf('[')+1, addr.lastIndexOf(']'));
+}
+function get_addr_url_without_param(addr){
+  var url = get_addr_url(addr);
+  if(url.lastIndexOf(";") != -1)
+    url = url.substring(0, url.lastIndexOf(';'));
+  return url;
 }
 
 function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid){
