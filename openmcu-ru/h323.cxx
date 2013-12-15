@@ -3170,12 +3170,17 @@ void OpenMCUH323Connection::SetMemberName()
     PString alias, host, port;
     if(remotePartyAddress.Left(4) == "url:" && ep.IsRegisteredWithGatekeeper())
     {
-      //H323Gatekeeper *gk = ep.GetGatekeeper();
-      //PURL url(gk->GetName(), "h323");
       PURL url(remotePartyAddress.Right(remotePartyAddress.GetLength()-4), "h323");
       host = url.GetHostName();
       port = url.GetPort();
       host.Replace("@","",TRUE,0);
+    }
+    else if(remotePartyAddress.Find("ip$") == P_MAX_INDEX && ep.IsRegisteredWithGatekeeper())
+    {
+      H323Gatekeeper *gk = ep.GetGatekeeper();
+      PURL url(gk->GetName(), "h323");
+      host = url.GetHostName();
+      port = url.GetPort();
     } else {
       host = remotePartyAddress;
       PINDEX pos = host.Find("ip$");
