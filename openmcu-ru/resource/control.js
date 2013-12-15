@@ -472,11 +472,11 @@ function chosenvan_yes_no(obj,mid,cvan){ obj.style.color='#ff0'; queue_otf_reque
 
 function kick_confirm(obj,mid,mname){ if(confirm("Drop connection with "+decodeURIComponent(mname)+"?")) {queue_otf_request(OTFC_DROP_MEMBER,mid); obj.src='openmcu.ru_launched_Ypf.gif'; }}
 
-function drop_all0(obj){ if(confirm('Drop ALL active connections?')) {queue_otf_request(OTFC_DROP_ALL_ACTIVE_MEMBERS,0); }}
+function drop_all0(obj){ if(confirm(window.l_room_drop_all_active_members)) {queue_otf_request(OTFC_DROP_ALL_ACTIVE_MEMBERS,0); }}
 
-function invite_all(obj){ if(confirm('Invite ALL inactive members?')) {queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,0); }}
+function invite_all(obj){ if(confirm(window.l_room_invite_all_inactive_members)) {queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,0); }}
 
-function remove_all0(obj){ if(confirm('Remove ALL inactive members from list?')) {queue_otf_request(OTFC_REMOVE_ALL_INACT_MMBRS,0); }}
+function remove_all0(obj){ if(confirm(window.l_room_remove_all_inactive_members)) {queue_otf_request(OTFC_REMOVE_ALL_INACT_MMBRS,0); }}
 
 function save_members_conf(obj){ if(confirm('Rewrite members.conf?')) {queue_otf_request(OTFC_SAVE_MEMBERS_CONF,0); }}
 
