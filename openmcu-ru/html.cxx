@@ -272,8 +272,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << SeparatorField();
   s << IntegerField(HttpPortKey, cfg.GetInteger(HttpPortKey, DefaultHTTPPort), 1, 32767);
   // RTP Port Setup
-  s << IntegerField("RTP Base Port", cfg.GetInteger("RTP Base Port", 0), 0, 65535, 10, "0 = auto, Example: base=5000, max=6000");
-  s << IntegerField("RTP Max Port", cfg.GetInteger("RTP Max Port", 0), 0, 65535);
+  s << IntegerField(RTPPortBaseKey, cfg.GetInteger(RTPPortBaseKey, 0), 0, 65535, 10, "0 = auto, Example: base=5000, max=6000");
+  s << IntegerField(RTPPortMaxKey, cfg.GetInteger(RTPPortMaxKey, 0), 0, 65535);
 
   s << SeparatorField("Log setup");
 #if PTRACING

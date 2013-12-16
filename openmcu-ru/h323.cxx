@@ -139,8 +139,8 @@ void OpenMCUH323EndPoint::Initialise(PConfig & cfg)
 
 ///////////////////////////////////////////
 // RTP Port Setup
-  unsigned rtpPortBase = cfg.GetInteger(RTPPortBaseKey, 0);
-  unsigned rtpPortMax = cfg.GetInteger(RTPPortMaxKey, 0);
+  unsigned rtpPortBase = MCUConfig("Parameters").GetInteger(RTPPortBaseKey, 0);
+  unsigned rtpPortMax = MCUConfig("Parameters").GetInteger(RTPPortMaxKey, 0);
   if((rtpPortBase>65532)||(rtpPortBase==0)) rtpPortBase=5000;
   if(rtpPortMax<=rtpPortBase) rtpPortMax=PMIN(rtpPortBase+5000,65532);
   SetRtpIpPorts(rtpPortBase, rtpPortMax);
