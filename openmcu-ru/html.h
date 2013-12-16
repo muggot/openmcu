@@ -49,6 +49,7 @@ class TablePConfigPage : public PConfigPage
      : PConfigPage(app,title,section,auth)
    {
      cfg = MCUConfig(section);
+     deleteSection = TRUE;
      columnColor = "#d9e5e3";
      rowColor = "#d9e5e3";
      itemColor = "#f7f4d8";
@@ -323,7 +324,8 @@ class TablePConfigPage : public PConfigPage
    }
    BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & reply)
    {
-     cfg.DeleteSection();
+     if(deleteSection)
+       cfg.DeleteSection();
      for(PINDEX i = 0; i < dataArray.GetSize(); i++)
      {
        PString key = dataArray[i].Tokenise("=")[0];
@@ -395,6 +397,7 @@ class TablePConfigPage : public PConfigPage
    }
  protected:
    PConfig cfg;
+   BOOL deleteSection;
    PString separator;
    PString colStyle, rowStyle, rowArrayStyle, itemStyle, itemInfoStyle, itemInfoStyleRowSpan, textStyle, inputStyle, buttonStyle;
    PStringArray dataArray;

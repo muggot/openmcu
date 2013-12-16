@@ -13,6 +13,8 @@
 #include <sofia-sip/su_log.h>
 #include <sofia-sip/auth_digest.h>
 #include <sofia-sip/sofia_features.h>
+#include <sofia-sip/nta_tport.h>
+#include <sofia-sip/tport.h>
 
 #define MCUSIP_USER_AGENT_STR  OpenMCU::Current().GetName()+"/"+OpenMCU::Current().GetVersion()+" ("+SOFIA_SIP_NAME_VERSION+")"
 
@@ -129,8 +131,8 @@ class OpenMCUSipEndPoint : public PThread
    int terminating;
    int restart;
    void Initialise();
-   PStringArray sipListener;
-   int CheckListener(PString localIp);
+   PStringArray sipListenerArray;
+   int FindListener(PString addr);
 
    int ProcessH323toSipQueue(const SipKey &key, OpenMCUSipConnection *sCon);
    nta_agent_t *GetAgent() { return agent; };

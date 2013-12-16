@@ -127,7 +127,6 @@ static const char RTPPortBaseKey[]        = "RTP Base Port";
 static const char RTPPortMaxKey[]         = "RTP Max Port";
 
 static const char RejectDuplicateNameKey[] = "Reject duplicate name";
-static const char SIPReInviteKey[]         = "SIP ReInvite (pause)";
 
 // endpoints options
 static PStringArray h323EndpointOptionsOrder = PString(
@@ -186,22 +185,18 @@ class MCUURL : public PURL
 
     const PString & GetDisplayName() const { return displayName; }
     const PString & GetUrl() const { return partyUrl; }
-    const PString GetUrlId() const
-    {
-      if(URLScheme == "sip")
-        return username+"@"+hostname;
-      else
-        return displayName+"@"+hostname;
-    }
-    const PString GetMemberFormatName() const
-    {
-        return displayName+" ["+partyUrl+"]";
-    }
+    const PString & GetUrlId() const { return urlId; }
+    const PString & GetMemberFormatName() const { return memberName; }
+    const PString GetPort() const { return PString(port); }
+    const PString & GetSipProto() const { return sipProto; }
 
   protected:
     PString partyUrl;
     PString displayName;
     PString URLScheme;
+    PString urlId;
+    PString memberName;
+    PString sipProto;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -285,6 +280,9 @@ class OpenMCU : public OpenMCUProcessAncestor
 
     OpenMCUH323EndPoint & GetEndpoint()
     { return *endpoint; }
+
+    OpenMCUSipEndPoint * GetSipEndpoint()
+    { return sipendpoint; }
 
     int GetRoomTimeLimit() const
     { return roomTimeLimit; }
@@ -400,8 +398,6 @@ class OpenMCU : public OpenMCUProcessAncestor
 
     int        h264DefaultLevelForSip;
 
-    OpenMCUSipEndPoint * sipendpoint;
-
     PFilePath GetLeavingWAVFile() const
     { return leavingWAVFile; }
 
@@ -428,6 +424,8 @@ class OpenMCU : public OpenMCUProcessAncestor
     ConferenceManager * manager;
     OpenMCUH323EndPoint * endpoint;
     long GetCodec(const PString & codecname);
+
+    OpenMCUSipEndPoint * sipendpoint;
 
     PString    defaultRoomName;
     BOOL       allowLoopbackCalls;

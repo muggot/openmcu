@@ -306,7 +306,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // recall last template after room created
   s << BoolField(RecallLastTemplateKey, cfg.GetBoolean(RecallLastTemplateKey, FALSE));
   // reject duplicate name
-  s << BoolField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, TRUE));
+  s << BoolField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, FALSE));
   // get conference time limit 
   s << IntegerField(DefaultRoomTimeLimitKey, cfg.GetInteger(DefaultRoomTimeLimitKey, 0), 0, 10800);
   // allow/disallow self-invite:
@@ -933,8 +933,6 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   item += InfoItem("");
   s << item;
 
-  s << BoolField(SIPReInviteKey, cfg.GetBoolean(SIPReInviteKey, TRUE));
-
 #if OPENMCU_VIDEO
   mcu.h264DefaultLevelForSip = cfg.GetString(H264LevelForSIPKey, "9").AsInteger();
   if(mcu.h264DefaultLevelForSip < 9) mcu.h264DefaultLevelForSip=9;
@@ -946,9 +944,9 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   s << SelectField(H264LevelForSIPKey, PString(mcu.h264DefaultLevelForSip), "9,10,11,12,13,20,21,22,30,31,32,40,41,42,50,51");
 #endif
 
-  mcu.sipendpoint->Resume();
-  mcu.sipendpoint->sipListener = sipListener;
-  mcu.sipendpoint->restart = 1;
+  mcu.GetSipEndpoint()->Resume();
+  mcu.GetSipEndpoint()->sipListenerArray = sipListener;
+  mcu.GetSipEndpoint()->restart = 1;
 
   s << EndTable();
   BuildHTML("");

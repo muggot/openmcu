@@ -582,6 +582,20 @@ MCUURL::MCUURL(PString str)
     hostname = username;
     username = "";
   }
+
+  memberName = displayName+" ["+partyUrl+"]";
+
+  if(URLScheme == "sip")
+    urlId = username+"@"+hostname;
+  else if(URLScheme == "h323")
+    urlId = displayName+"@"+hostname;
+
+  if(URLScheme == "sip")
+  {
+    sipProto = "*";
+    if(partyUrl.Find("transport=udp") != P_MAX_INDEX) sipProto = "udp";
+    if(partyUrl.Find("transport=tcp") != P_MAX_INDEX) sipProto = "tcp";
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

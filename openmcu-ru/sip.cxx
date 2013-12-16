@@ -1457,32 +1457,26 @@ PString OpenMCUSipEndPoint::GetRoomAccess(const sip_t *sip)
 
 int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
 {
-    PTRACE(1, "MCUSIP\tSipMakeCall");
+    PTRACE(1, "MCUSIP\tSipMakeCall room:" << room << " to:" << to);
     if(agent == NULL)
       return 0;
 
+    MCUURL url(to);
+    if(url.GetHostName() == "") return 0;
+
     PString ruri, localIP, remoteUser, remoteIP, remotePort, proxyIP, userName, roomName, transport;
-    PString addr = to.Tokenise(";")[0];
-    if(addr.Find("@") != P_MAX_INDEX)
-    {
-      remoteUser = addr.Tokenise(":")[1].Tokenise("@")[0];
-      remoteIP = addr.Tokenise(":")[1].Tokenise("@")[1];
-    } else {
-      remoteIP = addr.Tokenise(":")[1];
-    }
-    if(remoteIP == "") return 0;
+    remoteUser = url.GetUserName();
+    remoteIP = url.GetHostName();
+    remotePort = url.GetPort();
+    transport = "transport="+url.GetSipProto();
 
-    remotePort = addr.Tokenise(":")[2];
-    if(remotePort == "")
-      remotePort = OpenMCU::Current().GetEndpointParamFromUrl("SIP port", "sip:"+remoteUser+"@"+remoteIP);
-    if(remotePort == "")
-      remotePort = "5060";
+    PString epPort = OpenMCU::Current().GetEndpointParamFromUrl("SIP port", "sip:"+remoteUser+"@"+remoteIP);
+    if(epPort != "")
+      remotePort = epPort;
 
-    if(to.Find("transport") == P_MAX_INDEX)
-    {
-      transport = OpenMCU::Current().GetEndpointParamFromUrl("Outgoing transport", "sip:"+remoteUser+"@"+remoteIP);
-      if(transport == "transport=*") transport = "";
-    }
+    PString epTransport = OpenMCU::Current().GetEndpointParamFromUrl("Outgoing transport", "sip:"+remoteUser+"@"+remoteIP);
+    if(epTransport != "")
+      transport = epTransport;
 
     ruri = "sip:"+remoteUser+"@"+remoteIP+":"+remotePort+";"+transport;
 
@@ -1511,7 +1505,7 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
       userName = room;
       roomName = room;
     }
-    if(CheckListener(localIP) == FALSE)
+    if(FindListener(localIP) == FALSE)
       return 0;
 
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
@@ -1541,16 +1535,15 @@ int OpenMCUSipEndPoint::SipMakeCall(PString room, PString to)
       return 0;
 
     // create sdp for outgoing request
-    PString url = sip_header_as_string(&home, (sip_header_t const *)sip_to);
-    PString prefAudioCap = OpenMCU::Current().GetEndpointParamFromUrl("Audio codec", url);
-    PString prefVideoCap = OpenMCU::Current().GetEndpointParamFromUrl("Video codec", url);
+    PString prefAudioCap = OpenMCU::Current().GetEndpointParamFromUrl("Audio codec", "sip:"+remoteUser+"@"+remoteIP);
+    PString prefVideoCap = OpenMCU::Current().GetEndpointParamFromUrl("Video codec", "sip:"+remoteUser+"@"+remoteIP);
     sdpInvite = CreateSdpInvite(prefAudioCap, prefVideoCap);
     PString sdp = sdpInvite;
     sdp.Replace("USERNAME", room, TRUE, 0);
     sdp.Replace("LOCALIP", localIP, TRUE, 0);
     sdp.Replace("RTP_AUDIO_PORT", invit->second->aPort, TRUE, 0);
     sdp.Replace("RTP_VIDEO_PORT", invit->second->vPort, TRUE, 0);
-    unsigned epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url));
+    unsigned epBandwidthTo = atoi(OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", "sip:"+remoteUser+"@"+remoteIP));
     sdp.Replace("BANDWIDTH", epBandwidthTo, TRUE, 0);
     sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sdp);
 
@@ -1931,19 +1924,12 @@ int OpenMCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t
    {
      sCon->direction = 0;
      sCon->c_sip_msg = msg_dup(msg);
-     if(MCUConfig("SIP Parameters").GetBoolean(SIPReInviteKey, TRUE))
-     {
-       int ret = sCon->ProcessReInviteEvent();
-       if(ret != 1)
-         return ReqReply(msg, ret);
-       ReqReply(msg, SIP_200_OK, sCon);
-       sCon->StartReceiveChannels(); // start receive logical channels
-       sCon->StartTransmitChannels(); // start transmit logical channels
-     } else {
-       sipConnMap.erase(sik);
-       ReqReply(msg, SIP_405_METHOD_NOT_ALLOWED);
-       sCon->LeaveConference(TRUE);
-     }
+     int ret = sCon->ProcessReInviteEvent();
+     if(ret != 1)
+       return ReqReply(msg, ret);
+     ReqReply(msg, SIP_200_OK, sCon);
+     sCon->StartReceiveChannels(); // start receive logical channels
+     sCon->StartTransmitChannels(); // start transmit logical channels
      return 0;
    }
 
@@ -2101,7 +2087,7 @@ void OpenMCUSipEndPoint::InitProxyServers()
     proxy->expires = tmp.Tokenise(",")[4];
     proxy->timeout = atoi(proxy->expires)*2;
     proxy->localIP = GetFromIp((const char *)proxy->proxyIP, (const char *)proxy->proxyPort);
-    if(proxy->localIP == "" || CheckListener(proxy->localIP) == FALSE) continue;
+    if(proxy->localIP == "" || FindListener(proxy->localIP) == FALSE) continue;
     if(proxy->proxyPort == "") proxy->proxyPort = "5060";
     if(atoi(proxy->expires) < 60) proxy->expires = "60";
     if(atoi(proxy->expires) > 3600) proxy->expires = "3600";
@@ -2112,30 +2098,26 @@ void OpenMCUSipEndPoint::InitProxyServers()
 void OpenMCUSipEndPoint::Initialise()
 {
   nta_agent_close_tports(agent);
-  for(PINDEX i = 0; i < sipListener.GetSize(); i++)
-    nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)(sipListener[i])), NTATAG_UDP_MTU(64000), TAG_NULL());
+  for(PINDEX i = 0; i < sipListenerArray.GetSize(); i++)
+    nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)(sipListenerArray[i])), NTATAG_UDP_MTU(64000), TAG_NULL());
   InitProxyServers();
 }
 
-int OpenMCUSipEndPoint::CheckListener(PString localIp)
+int OpenMCUSipEndPoint::FindListener(PString addr)
 {
-  for(PINDEX i = 0; i < sipListener.GetSize(); i++)
+  if(agent == NULL) return FALSE;
+  if(addr.Left(4) != "sip:") addr = "sip:"+addr;
+  MCUURL url(addr);
+  for(tport_t *tp = nta_agent_tports(agent); tp != NULL; tp = tport_next(tp))
   {
-    PString ip = sipListener[i].Tokenise(":")[1].Tokenise(";")[0];
-    ip.Replace(" ","",TRUE,0);
-    if(ip == localIp || ip == "0.0.0.0") return TRUE;
+    tp_name_t const *tp_name = tport_name(tp);
+    PString host = tp_name->tpn_host;
+    PString port = tp_name->tpn_port;
+    PString proto = tp_name->tpn_proto;
+    if(host == url.GetHostName() && port == url.GetPort() && (proto == url.GetSipProto() || url.GetSipProto() == "*"))
+      return TRUE;
   }
   return FALSE;
-  /*
-  sip_via_t *via = nta_agent_via(agent);
-  for (sip_via_t *v = via; v->v_next; v = v->v_next)
-  {
-    cout << v->v_host;
-    if(v->v_protocol) cout << " " << v->v_protocol;
-    if(v->v_port) cout << " " << v->v_port;
-    cout << "\n";
-  }
-  */
 }
 
 void OpenMCUSipEndPoint::Main()

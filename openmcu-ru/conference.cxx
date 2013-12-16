@@ -528,37 +528,50 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
   PString address = url.GetUrl();
   if(url.GetUserName() == "" && url.GetHostName() == "") return FALSE;
 
-  OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-
   if(!OpenMCU::Current().AreLoopbackCallsAllowed())
   {
-    PString hostport = url.GetHostName()+":"+PString(url.GetPort());
-    H323TransportAddressArray taa = ep.GetInterfaceAddresses(TRUE, NULL); // todo: join with SIP listener(s) ?
-    for(PINDEX i=0; i<taa.GetSize(); i++)
+    if(url.GetScheme() == "sip")
     {
-      if(taa[i].Find("ip$"+hostport) == 0)
+      OpenMCUSipEndPoint * sipep = OpenMCU::Current().GetSipEndpoint();
+      if(sipep->FindListener(url.GetUrl()))
       {
-        PTRACE(6,"Conference\tInviteMember Loopback call rejected (" << taa[i] << "): " << membName << " -> address=" << address);
+        PTRACE(1,"Conference\tInviteMember Loopback call rejected: " << membName << " -> address=" << address);
         return FALSE;
+      }
+    }
+    else if(url.GetScheme() == "h323")
+    {
+      OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+      PString hostport = url.GetHostName()+":"+url.GetPort();
+      H323TransportAddressArray taa = ep.GetInterfaceAddresses(TRUE, NULL);
+      for(PINDEX i=0; i<taa.GetSize(); i++)
+      {
+        if(taa[i].Find("ip$"+hostport) == 0)
+        {
+          PTRACE(1,"Conference\tInviteMember Loopback call rejected (" << taa[i] << "): " << membName << " -> address=" << address);
+          return FALSE;
+        }
       }
     }
   }
 
-  if(address.Left(4) == "sip:")
+  if(url.GetScheme() == "sip")
   {
+    OpenMCUSipEndPoint * sipep = OpenMCU::Current().GetSipEndpoint();
+    if(userData!=NULL)
+    {
+      sipep->sipCallData.InsertAt(0, new PString(*(PString *)userData+","+address));
+      delete (PString *) userData;
+    } else {
+      sipep->sipCallData.InsertAt(0, new PString(number+","+address));
+    }
     PStringStream msg;
     msg << "Inviting " << address;
     OpenMCU::Current().HttpWriteEventRoom(msg,number);
-    if(userData!=NULL)
-    {
-      OpenMCU::Current().sipendpoint->sipCallData.InsertAt(0, new PString(*(PString *)userData+","+address));
-      delete (PString *) userData;
-    } else {
-      OpenMCU::Current().sipendpoint->sipCallData.InsertAt(0, new PString(number+","+address));
-    }
   }
-  else // H.323
+  else if (url.GetScheme() == "h323")
   {
+    OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
     if(address.Left(5) != "h323:") address = "h323:"+address;
     PString port = address.Tokenise(":")[2];
     if(port == "")
@@ -595,7 +608,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // check for duplicate name or very fast reconnect
   {
     Conference::MemberNameList::const_iterator s = memberNameList.find(memberToAdd->GetName());
-    if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, TRUE))
+    if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
     {
       if(s != memberNameList.end())
       {
