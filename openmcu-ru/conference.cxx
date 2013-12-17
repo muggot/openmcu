@@ -163,6 +163,7 @@ void ConferenceManager::OnCreateConference(Conference * conference)
 
 void ConferenceManager::OnDestroyConference(Conference * conference)
 {
+  conference->stopping=TRUE;
   PTRACE(2,"MCU\tOnDestroyConference() Cleaning out conference " << conference->GetNumber());
 
 // step 1: stop external video recorder:
@@ -457,6 +458,7 @@ Conference::Conference(        ConferenceManager & _manager,
 )
   : manager(_manager), guid(_guid), number(_number), name(_name), mcuNumber(_mcuNumber), mcuMonitorRunning(FALSE)
 { 
+  stopping=FALSE;
 #if OPENMCU_VIDEO
   VMLInit(_videoMixer);
 #endif

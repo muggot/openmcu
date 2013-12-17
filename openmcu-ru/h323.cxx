@@ -2257,7 +2257,10 @@ void OpenMCUH323Connection::CleanUpOnCallEnd()
 {
   PTRACE(1, "OpenMCUH323Connection\tCleanUpOnCallEnd");
 
-  new TplCleanCheckThread(conference, remotePartyName, remotePartyAddress);
+  if(!conference->stopping)
+  {
+    new TplCleanCheckThread(conference, remotePartyName, remotePartyAddress);
+  }
 
   videoReceiveCodecName = videoTransmitCodecName = "none";
   videoReceiveCodec = NULL;
