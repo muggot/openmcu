@@ -605,6 +605,9 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 
   memberToAdd->SetName();
 
+  // lock the member list
+  PWaitAndSignal m(memberListMutex);
+
   // check for duplicate name or very fast reconnect
   {
     Conference::MemberNameList::const_iterator s = memberNameList.find(memberToAdd->GetName());
@@ -652,7 +655,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     cout << "Adding member " << memberToAdd->GetName() << " " << memberToAdd->GetTitle() << " to conference " << guid << endl;
 
     // lock the member list
-    PWaitAndSignal m(memberListMutex);
+//    PWaitAndSignal m(memberListMutex);
     std::map<void *, ConferenceMember *>::const_iterator r;
 
     ConferenceMemberId mid = memberToAdd->GetID();
@@ -743,12 +746,13 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   PString memberToAddUrlId = MCUURL(memberToAdd->GetName()).GetUrlId();
   if(memberToAdd!=memberToAdd->GetID())
   {
-    PWaitAndSignal m(memberListMutex);
+//    PWaitAndSignal m(memberListMutex);
     if(memberToAdd->GetName().Find(" ##") == P_MAX_INDEX)
     {
       // поиск по UrlId
       BOOL found = FALSE;
-      for (Conference::MemberNameList::const_iterator s = memberNameList.begin(); s != memberNameList.end(); ++s)
+      Conference::MemberNameList theCopy(memberNameList);
+      for (Conference::MemberNameList::iterator s=theCopy.begin(), e=theCopy.end(); s!=e; ++s)
       {
         PString memberName = s->first;
         if(MCUURL(memberName).GetUrlId() == memberToAddUrlId)

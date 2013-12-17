@@ -2987,8 +2987,8 @@ void OpenMCUH323Connection::OnWelcomeStateChanged()
   switch(welcomeState) {
 
     case PlayingWelcome:
-      if(GetRemotePartyAddress().Left(4) != "sip:")
-        JoinConference(requestedRoom);
+//      if(GetRemotePartyAddress().Left(4) != "sip:")
+//        JoinConference(requestedRoom);
       // Welcome file not implemented yet
       PlayWelcomeFile(FALSE, fn);
       break;
@@ -3152,6 +3152,8 @@ void OpenMCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
       remoteName = remotePartyName;
   }
   SetMemberName();
+
+  if(!(GetRemotePartyAddress().Left(4) *= "sip:")) JoinConference(requestedRoom);
 }
 
 void OpenMCUH323Connection::SetMemberName()
