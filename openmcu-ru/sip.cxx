@@ -1203,6 +1203,7 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  {
    PTRACE(1, "OpenMCUSipConnection\tSet endpoint display name override: " << overrideName);
    remotePartyName = overrideName;
+   remoteName = overrideName;
  }
 
  callToken = remotePartyName + "@" + remotePartyAddress + ":" + PString(sip->sip_call_id->i_id);
