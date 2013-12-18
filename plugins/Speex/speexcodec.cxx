@@ -250,7 +250,6 @@ class Decoder : public PluginCodec<CODEC>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define OpalPluginCodec_Identifer_SPEEX_8K          "1.3.6.1.4.1.17091.1.11.8"
 #define SPEEX_8K_MediaFmt                           "Speex_8K"
 #define SPEEX_8K_PayloadName                        "speex"
 #define SPEEX_8K_PayloadType                         0
@@ -261,7 +260,6 @@ static unsigned int SPEEX_8K_Samples                =160;
 static unsigned int SPEEX_8K_MaxBytesPerFrame       =4000;
 static unsigned int SPEEX_8K_FramesPerPacket        =1;
 
-#define OpalPluginCodec_Identifer_SPEEX_16K         "1.3.6.1.4.1.17091.1.11.16"
 #define SPEEX_16K_MediaFmt                          "Speex_16K"
 #define SPEEX_16K_PayloadName                       "speex"
 #define SPEEX_16K_PayloadType                        0
@@ -272,7 +270,6 @@ static unsigned int SPEEX_16K_Samples               =320;
 static unsigned int SPEEX_16K_MaxBytesPerFrame      =4000;
 static unsigned int SPEEX_16K_FramesPerPacket       =1;
 
-#define OpalPluginCodec_Identifer_SPEEX_32K         "1.3.6.1.4.1.17091.1.11.32"
 #define SPEEX_32K_MediaFmt                          "Speex_32K"
 #define SPEEX_32K_PayloadName                       "speex"
 #define SPEEX_32K_PayloadType                        0
@@ -283,8 +280,20 @@ static unsigned int SPEEX_32K_Samples               =640;
 static unsigned int SPEEX_32K_MaxBytesPerFrame      =4000;
 static unsigned int SPEEX_32K_FramesPerPacket       =1;
 
-#define PLUGIN_CODEC(prefix) \
-static struct PluginCodec_Option const prefix##_vbr = \
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define XIPH_COUNTRY_CODE                   181
+#define XIPH_EXTENSION_CODE                 0
+#define XIPH_MANUFACTURER_CODE              38
+
+static const unsigned char SPEEX_8K_XIPH_Str[] = "speex sr=8000;mode=3;vbr=off;cng=off";
+static const unsigned char SPEEX_16K_XIPH_Str[] = "speex sr=16000;mode=6;vbr=off;cng=off";
+static const unsigned char SPEEX_32K_XIPH_Str[] = "speex sr=32000;mode=6;vbr=off;cng=off";
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define PLUGIN_CODEC(nameprefix, prefix, manuf) \
+static struct PluginCodec_Option const nameprefix##prefix##_vbr = \
 { \
   PluginCodec_EnumOption,             /* Option type */ \
   "vbr",                              /* User visible name */ \
@@ -296,7 +305,7 @@ static struct PluginCodec_Option const prefix##_vbr = \
   0,                                  /* H.245 generic capability code and bit mask */ \
   "off:on"                            /* Enumeration */ \
 }; \
-static struct PluginCodec_Option const prefix##_mode = \
+static struct PluginCodec_Option const nameprefix##prefix##_mode = \
 { \
   PluginCodec_IntegerOption,          /* Option type */ \
   "mode",                             /* User visible name */ \
@@ -309,31 +318,27 @@ static struct PluginCodec_Option const prefix##_mode = \
   "0",                                /* Minimum value */ \
   "10"                                /* Maximum value */ \
 }; \
-static struct PluginCodec_Option const * prefix##_OptionTable[] = \
+static struct PluginCodec_Option const * nameprefix##prefix##_OptionTable[] = \
 { \
   &prefix##_vbr, \
   &prefix##_mode, \
   NULL \
 }; \
-static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \
+static struct PluginCodec_H323NonStandardCodecData nameprefix##prefix##_Cap = \
 { \
-    NULL \
+  NULL, \
+  manuf##_COUNTRY_CODE, manuf##_EXTENSION_CODE, manuf##_MANUFACTURER_CODE, \
+  (const unsigned char *)prefix##_##manuf##_Str, sizeof(prefix##_##manuf##_Str)-1, \
+  NULL \
 }; \
-static struct PluginCodec_H323GenericCodecData prefix##_Cap = \
-{ \
-    OpalPluginCodec_Identifer_##prefix, \
-    0, \
-    0, \
-    prefix##_h323params \
-}; \
-class prefix##_AudioFormat : public AudioFormat \
+class nameprefix##prefix##_AudioFormat : public AudioFormat \
 { \
   public: \
-    prefix##_AudioFormat() \
+    nameprefix##prefix##_AudioFormat() \
       : AudioFormat( \
-        prefix##_MediaFmt, \
+        #nameprefix prefix##_MediaFmt, \
         prefix##_PayloadName, \
-        prefix##_MediaFmt, \
+        #nameprefix prefix##_MediaFmt, \
         prefix##_Samples, \
         prefix##_MaxBytesPerFrame, \
         prefix##_SampleRate, \
@@ -342,17 +347,17 @@ class prefix##_AudioFormat : public AudioFormat \
       m_payloadType = prefix##_PayloadType; \
       m_recommendedFramesPerPacket = prefix##_FramesPerPacket; \
       m_maxFramesPerPacket = prefix##_FramesPerPacket; \
-      m_h323CapabilityType = PluginCodec_H323Codec_generic; \
-      m_h323CapabilityData = (struct PluginCodec_H323GenericCodecData *)&prefix##_Cap; \
+      m_h323CapabilityType = PluginCodec_H323Codec_nonStandard; \
+      m_h323CapabilityData = (PluginCodec_H323NonStandardCodecData *)&prefix##_Cap; \
     } \
 }; \
-static prefix##_AudioFormat prefix##_AudioFormatInfo;
+static nameprefix##prefix##_AudioFormat nameprefix##prefix##_AudioFormatInfo;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PLUGIN_CODEC(SPEEX_8K);
-PLUGIN_CODEC(SPEEX_16K);
-PLUGIN_CODEC(SPEEX_32K);
+PLUGIN_CODEC(,SPEEX_8K, XIPH);
+PLUGIN_CODEC(,SPEEX_16K, XIPH);
+PLUGIN_CODEC(,SPEEX_32K, XIPH);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
