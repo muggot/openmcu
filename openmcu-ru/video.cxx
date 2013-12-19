@@ -3745,7 +3745,13 @@ void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
       vmp->width=OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].width;
       vmp->height=OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].height;
       vmp->border=OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].border;
-    } else { VMPListDelVMP(vmp); delete vmp; }
+    }
+    else
+    {
+      r=r->prev;
+      VMPListDelVMP(vmp);
+      delete vmp;
+    }
     r=r->next;
   }
 }
@@ -3800,7 +3806,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
       if((v->type==1) && (id==NULL)) // special case: VMP needs to be removed
       {
         NullRectangle(v->xpos, v->ypos, v->width, v->height, v->border);
-        { VMPListDelVMP(v); delete v; v=NULL; }
+        { VMPListDelVMP(v); delete v; }
         return;
       }
 
