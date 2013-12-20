@@ -1807,9 +1807,10 @@ PString OpenMCUH323EndPoint::GetMonitorText()
         PStringStream hdr; hdr << "  ";
         PString name = member->GetName();
         BOOL isFileMember = (name=="cache" || name == "file recorder");
-        output << hdr << "Title: " << hex << member->GetTitle() << "\n";
-        if (isFileMember) output << " (file object)" << "\n";
-        output << hdr << "Name: " << name << "\n"
+        output << hdr << "Title: " << hex << member->GetTitle();
+        if (isFileMember) output << " (file object)";
+        output << "\n"
+               << hdr << "Name: " << name << "\n"
                << hdr << "Outgoing video mixer: " << member->GetVideoMixerNumber() << "\n"
                << hdr << "Duration: " << (PTime() - member->GetStartTime()) << "\n"
                << member->GetMonitorInfo(hdr);
@@ -1838,7 +1839,7 @@ PString OpenMCUH323EndPoint::GetMonitorText()
         { output << hdr << "Video Mixer ID: " << member->videoMixer << "\n";
           int n=member->videoMixer->GetPositionSet();
           output << hdr << "Video Mixer Layout ID: " << OpenMCU::vmcfg.vmconf[n].splitcfg.Id << "\n"
-            << hdr << "Video Mixer Layout capacity: " << OpenMCU::vmcfg.vmconf[n].splitcfg.vidnum << "\n";
+            << hdr << "Video Mixer Layout capacity: " << dec << OpenMCU::vmcfg.vmconf[n].splitcfg.vidnum << hex << "\n";
           MCUVideoMixer::VideoMixPosition *r=member->videoMixer->vmpList->next;
           while(r!=NULL)
           { output << hdr << "[Position " << r->n << "]\n"
