@@ -2090,6 +2090,41 @@ void OpenMCUH323Connection::SetupCacheConnection(PString & format, Conference * 
  requestedRoom = conference->GetNumber();
 }
 
+void OpenMCUH323Connection::OnSetLocalCapabilities()
+{
+  PTRACE(1, "OpenMCUH323Connection\tOnSetLocalCapabilities");
+  // set endpoint capability
+  PString prefAudioCap = GetEndpointParam("Audio codec(receive)");
+  PString prefVideoCap = GetEndpointParam("Video codec(receive)");
+  unsigned bandwidthTo = atoi(GetEndpointParam("Preferred bandwidth to MCU"));
+  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom receive audio: " << prefAudioCap); }
+  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom receive video: " << prefVideoCap); }
+  if(bandwidthTo != 0) { PTRACE(1, "OpenMCUH323Connection\tSet endpoint bandwidth to mcu: " << bandwidthTo); }
+
+  if(prefAudioCap.ToLower().Find("ulaw") != P_MAX_INDEX || prefAudioCap.ToLower().Find("alaw") != P_MAX_INDEX)
+    prefAudioCap = prefAudioCap.Left(prefAudioCap.GetLength()-4);
+
+  for(PINDEX i = 0; i < localCapabilities.GetSize(); )
+  {
+    PString capName = localCapabilities[i].GetFormatName();
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Audio && prefAudioCap != "" && capName != prefAudioCap)
+    { localCapabilities.Remove(&localCapabilities[i]); continue; }
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Video && prefVideoCap != "" && capName != prefVideoCap)
+    { localCapabilities.Remove(&localCapabilities[i]); continue; }
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Video)
+    {
+      if(bandwidthTo != 0)
+      {
+        if(bandwidthTo < 64) bandwidthTo = 64;
+        if(bandwidthTo > 4000) bandwidthTo = 4000;
+        localCapabilities[i].GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidthTo*1000);
+      }
+    }
+    i++;
+  }
+  //cout << "OnSetLocalCapabilities\n" << localCapabilities << "\n";
+}
+
 BOOL OpenMCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteCaps, const H245_MultiplexCapability * muxCap, H245_TerminalCapabilitySetReject & rejectPDU)
 {
   PString prefAudioCap = GetEndpointParam("Audio codec(transmit)");
@@ -2176,38 +2211,9 @@ void OpenMCUH323Connection::OnSendCapabilitySet(H245_TerminalCapabilitySet & pdu
 
 BOOL OpenMCUH323Connection::StartControlNegotiations(BOOL renegotiate)
 {
-  // set endpoint capability
-  PString prefAudioCap = GetEndpointParam("Audio codec(receive)");
-  PString prefVideoCap = GetEndpointParam("Video codec(receive)");
-  unsigned bandwidthTo = atoi(GetEndpointParam("Preferred bandwidth to MCU"));
-  if(prefAudioCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom receive audio: " << prefAudioCap); }
-  if(prefVideoCap != "") { PTRACE(1, "OpenMCUH323Connection\tSet endpoint custom receive video: " << prefVideoCap); }
-  if(bandwidthTo != 0) { PTRACE(1, "OpenMCUH323Connection\tSet endpoint bandwidth to mcu: " << bandwidthTo); }
-
-  if(prefAudioCap.ToLower().Find("ulaw") != P_MAX_INDEX || prefAudioCap.ToLower().Find("alaw") != P_MAX_INDEX)
-    prefAudioCap = prefAudioCap.Left(prefAudioCap.GetLength()-4);
-
-  for(PINDEX i = 0; i < localCapabilities.GetSize(); )
-  {
-    PString capName = localCapabilities[i].GetFormatName();
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Audio && prefAudioCap != "" && capName != prefAudioCap)
-    { localCapabilities.Remove(&localCapabilities[i]); continue; }
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Video && prefVideoCap != "" && capName != prefVideoCap)
-    { localCapabilities.Remove(&localCapabilities[i]); continue; }
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Video)
-    {
-      if(bandwidthTo != 0)
-      {
-        if(bandwidthTo < 64) bandwidthTo = 64;
-        if(bandwidthTo > 4000) bandwidthTo = 4000;
-        localCapabilities[i].GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidthTo*1000);
-      }
-    }
-    i++;
-  }
-  //cout << "StartControlNegotiations\n" << localCapabilities << "\n";
   return H323Connection::StartControlNegotiations(renegotiate);
 }
+
 BOOL OpenMCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
 {
   const H225_Setup_UUIE & setup = setupPDU.m_h323_uu_pdu.m_h323_message_body;
