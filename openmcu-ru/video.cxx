@@ -14,7 +14,7 @@
 #include <ptlib/vconvert.h>
 
 #define MAX_SUBFRAMES        100
-#define FRAMESTORE_TIMEOUT 60000 /* ms */
+#define FRAMESTORE_TIMEOUT 60 /* s */
 
 #if USE_FREETYPE
 #include <ft2build.h>
@@ -367,8 +367,10 @@ MCUVideoMixer::VideoMixPosition::~VideoMixPosition()
 #if USE_FREETYPE
   for(MCUSubtitlesMapType::iterator q=subtitlesList.begin(), e=subtitlesList.end(); q!=e; ++q)
   {
+    if(q->second->b)free(q->second->b);
     delete q->second;
   }
+  subtitlesList.clear();
 #endif
 }
 
@@ -389,6 +391,7 @@ void MCUSimpleVideoMixer::RemoveSubtitles(VideoMixPosition & vmp)
 {
   for(MCUSubtitlesMapType::iterator q=vmp.subtitlesList.begin(), e=vmp.subtitlesList.end(); q!=e; ++q)
   {
+    if(q->second->b)free(q->second->b);
     delete q->second;
   }
   vmp.subtitlesList.clear();
@@ -406,6 +409,7 @@ void MCUSimpleVideoMixer::DeleteSubtitlesByFS(unsigned w, unsigned h)
     MCUSubtitlesMapType::iterator q = vmp.subtitlesList.find(key);
     if(q != vmp.subtitlesList.end())
     {
+      if(q->second->b)free(q->second->b);
       delete q->second;
       vmp.subtitlesList.erase(key);
     }
@@ -436,9 +440,9 @@ void MCUSimpleVideoMixer::PrintSubtitles(VideoMixPosition & vmp, void * buffer, 
 
   VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
 
-  if(ft_properties & FT_P_SUBTITLES) MixRectIntoFrameSubsMode(st->b.GetPointer(),(BYTE *)buffer,st->x,st->y,st->w,st->h,fw,fh,0);
+  if(ft_properties & FT_P_SUBTITLES) MixRectIntoFrameSubsMode(st->b,(BYTE *)buffer,st->x,st->y,st->w,st->h,fw,fh,0);
 
-  if(ft_properties & FT_P_TRANSPARENT) MixRectIntoFrameGrayscale(st->b.GetPointer(),(BYTE *)buffer,st->x,st->y,st->w,st->h,fw,fh,1);
+  if(ft_properties & FT_P_TRANSPARENT) MixRectIntoFrameGrayscale(st->b,(BYTE *)buffer,st->x,st->y,st->w,st->h,fw,fh,1);
 
   if(ft_properties & FT_P_TRANSPARENT)
   {
@@ -448,7 +452,7 @@ void MCUSimpleVideoMixer::PrintSubtitles(VideoMixPosition & vmp, void * buffer, 
 
 //  if(ft_properties & FT_P_SUBTITLES) MixRectIntoFrameSubsMode(st->b.GetPointer(),(BYTE *)buffer,st->x,st->y,st->w,st->h,fw,fh,0);
 
-  if(!(ft_properties & (FT_P_SUBTITLES + FT_P_TRANSPARENT))) CopyRectIntoFrame(st->b.GetPointer(),(BYTE *)buffer,st->x,st->y,st->w,st->h,fw,fh);
+  if(!(ft_properties & (FT_P_SUBTITLES + FT_P_TRANSPARENT))) CopyRectIntoFrame(st->b,(BYTE *)buffer,st->x,st->y,st->w,st->h,fw,fh);
 
 }
 
@@ -509,6 +513,7 @@ MCUSubtitles * MCUSimpleVideoMixer::RenderSubtitles(unsigned key, VideoMixPositi
 
   MCUSubtitles * st = new MCUSubtitles;
   st->w = 0;
+  st->b = NULL;
 
   VMPCfgSplitOptions & split = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg;
 
@@ -532,6 +537,8 @@ MCUSubtitles * MCUSimpleVideoMixer::RenderSubtitles(unsigned key, VideoMixPositi
           dst = printsubs_calc (fh, vmpcfg.dropshadow_t ),
           dsb = printsubs_calc (fh, vmpcfg.dropshadow_b ),
   fontsizepix = printsubs_calc (fh, vmpcfg.fontsize)     ;
+
+  if(fontsizepix < 4) return st;
 
   int wi = (int)fw-(hp<<1)-bl-br;
   int hi = (int)fh-(vp<<1)-bt-bb;
@@ -610,26 +617,37 @@ MCUSubtitles * MCUSimpleVideoMixer::RenderSubtitles(unsigned key, VideoMixPositi
   if(ft_properties & FT_P_RIGHT) st->x = fw-hp-lw;
   else if(ft_properties & FT_P_H_CENTER) st->x = (fw-lw)>>1;
   else st->x = hp;
-  if(ft_properties & FT_P_BOTTOM) st->y = fh-vp-lh;
+  if(ft_properties & FT_P_BOTTOM) st->y = fh-vp-lh-1;
   else if(ft_properties & FT_P_V_CENTER) st->y = (fh-lh)>>1;
   else st->y = vp;
   st->x&=~1; st->y&=~1;
 
-  PTRACE(3,"FreeType\tRendering to st->b(" << (lw*lh*3/2) << ")");
-  FillYUVFrame_YUV(st->b.GetPointer(lw*lh*3/2),0,vmpcfg.label_bgcolor>>8,vmpcfg.label_bgcolor&0xFF,lw,lh);
-  pen_y=lh-bb-2;
-  for(PINDEX i=0;i<slotCounter;i++)
+  size_t bufferSize = ((lw*lh*3) >> 1);
+  st->b=malloc(bufferSize);
+  if(st->b)
   {
-    if(i>0) if(bmps[i].x < bmps[i-1].x) pen_y+=fontsizepix+1; //lf
-    int y=pen_y-bmps[i].t;
-    int h=bmps[i].h;
-    if((int)(y+h) > (int)(fontsizepix+(bb>>1))) h=fontsizepix+1+(bb>>1)-y; //allow to use 1/2 of bottom border
-    CopyGrayscaleIntoFrame( bmps[i].bmp->GetPointer(), st->b.GetPointer(),
-     bmps[i].l + bmps[i].x + bl, y,
-     bmps[i].w, h, lw, lh );
-  }
+    PTRACE(3,"FreeType\tRendering to st->b[" << bufferSize << "]");
+    FillYUVFrame_YUV(st->b,0,vmpcfg.label_bgcolor>>8,vmpcfg.label_bgcolor&0xFF,lw,lh);
+//    pen_y=lh-bb-2;
+    pen_y=bt;
+    for(PINDEX i=0;i<slotCounter;i++)
+    {
+      if(i>0) if(bmps[i].x < bmps[i-1].x) pen_y+=(fontsizepix+1); //lf
+      int y=pen_y+fontsizepix-bmps[i].t-1;
+      int h=bmps[i].h;
+      if((int)(y+h) > (int)(lh+(bb>>1))) h=fontsizepix+1+(bb>>1)-y; //allow to use 1/2 of bottom border
 
-  if(ft_properties & FT_P_SUBTITLES) SubtitlesDropShadow(st->b.GetPointer(), lw, lh, dsl, dst, dsr, dsb);
+ int x = bmps[i].l + bmps[i].x + bl;
+ if(x < 0 || y < 0) continue;     // вот оно
+ if(x + bmps[i].w > (int)lw) continue; // это я так, должно быть меньше ???
+
+      CopyGrayscaleIntoFrame( bmps[i].bmp->GetPointer(), st->b,
+       bmps[i].l + bmps[i].x + bl, y,
+       bmps[i].w, h, lw, lh );
+    }
+
+    if(ft_properties & FT_P_SUBTITLES) SubtitlesDropShadow(st->b, lw, lh, dsl, dst, dsr, dsb);
+  }
 
   for(PINDEX i=slotCounter-1;i>=0;i--)
   {
@@ -3018,7 +3036,7 @@ BOOL MCUSimpleVideoMixer::ReadFrame(ConferenceMember &, void * buffer, int width
       if (!OpenMCU::Current().GetPreMediaFrame(fs.data.GetPointer(), width, height, amount))
         FillYUVFrame(fs.data.GetPointer(), 0, 0, 0, width, height);
       fs.valid = TRUE;
-      fs.lastRead = PTime();
+      fs.lastRead = time(NULL);
     }
     memcpy(buffer, fs.data.GetPointer(), amount);
   }
@@ -3060,7 +3078,7 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
     Fs.valid = TRUE;
   }
   memcpy(buffer, Fs.data.GetPointer(), amount);
-  Fs.lastRead=PTime();
+  Fs.lastRead=time(NULL);
 
   return TRUE;
 }
@@ -3955,9 +3973,9 @@ void MCUSimpleVideoMixer::NullAllFrameStores()
 {
   PWaitAndSignal m(mutex);
 
-  VideoFrameStoreList::VideoFrameStoreListMapType::iterator r;
-  PTime inactiveSign; inactiveSign-=FRAMESTORE_TIMEOUT;
-  for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++)
+  time_t inactiveSign = time(NULL) - FRAMESTORE_TIMEOUT;
+  VideoFrameStoreList::VideoFrameStoreListMapType theCopy(frameStores.videoFrameStoreList);
+  for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
   { VideoFrameStoreList::FrameStore & vf = *(r->second);
     if(vf.lastRead<inactiveSign)
     {
@@ -3965,7 +3983,7 @@ void MCUSimpleVideoMixer::NullAllFrameStores()
       DeleteSubtitlesByFS(vf.width,vf.height);
 #endif
       delete r->second; r->second=NULL;
-      frameStores.videoFrameStoreList.erase(r);
+      frameStores.videoFrameStoreList.erase(r->first);
       continue;
     }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
@@ -3983,9 +4001,9 @@ void MCUSimpleVideoMixer::NullAllFrameStores()
 
 void MCUSimpleVideoMixer::NullRectangle(int x, int y, int w, int h, BOOL border)
 { PWaitAndSignal m(mutex);
-  VideoFrameStoreList::VideoFrameStoreListMapType::iterator r;
-  PTime inactiveSign; inactiveSign-=FRAMESTORE_TIMEOUT;
-  for (r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++)
+  time_t inactiveSign = time(NULL) - FRAMESTORE_TIMEOUT;
+  VideoFrameStoreList::VideoFrameStoreListMapType theCopy(frameStores.videoFrameStoreList);
+  for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
   { VideoFrameStoreList::FrameStore & vf = *(r->second);
     if(vf.lastRead<inactiveSign)
     {
@@ -3993,7 +4011,7 @@ void MCUSimpleVideoMixer::NullRectangle(int x, int y, int w, int h, BOOL border)
       DeleteSubtitlesByFS(vf.width,vf.height);
 #endif
       delete r->second; r->second=NULL;
-      frameStores.videoFrameStoreList.erase(r);
+      frameStores.videoFrameStoreList.erase(r->first);
       continue;
     }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
@@ -4016,10 +4034,12 @@ void MCUSimpleVideoMixer::NullRectangle(int x, int y, int w, int h, BOOL border)
 BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount)
 {
   VMPCfgOptions & vmpcfg=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
-  PTime inactiveSign; inactiveSign-=FRAMESTORE_TIMEOUT;
+  time_t inactiveSign = time(NULL) - FRAMESTORE_TIMEOUT;
   PWaitAndSignal m(mutex);
-  for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r=frameStores.videoFrameStoreList.begin(); r!=frameStores.videoFrameStoreList.end(); r++)
+  VideoFrameStoreList::VideoFrameStoreListMapType theCopy(frameStores.videoFrameStoreList);
+  for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
   {
+    cout << "{" << r->second << "}" << flush;
     VideoFrameStoreList::FrameStore & vf = *(r->second);
     if(vf.lastRead<inactiveSign)
     {
@@ -4028,7 +4048,7 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 #endif
       delete r->second;
       r->second=NULL;
-      frameStores.videoFrameStoreList.erase(r);
+      frameStores.videoFrameStoreList.erase(r->first);
       continue;
     }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2

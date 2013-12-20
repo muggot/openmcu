@@ -109,7 +109,7 @@ class MCULock : public PObject
   struct MCUSubtitles
   {
     unsigned x, y, w, h;
-    PBYTEArray b;
+    void* b;
   };
   typedef std::map<unsigned, MCUSubtitles*> MCUSubtitlesMapType;
 #endif
@@ -125,7 +125,7 @@ class VideoFrameStoreList {
       BOOL valid;
       int width;
       int height;
-      PTime lastRead;
+      time_t lastRead;
       PBYTEArray data;
     };
 
