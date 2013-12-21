@@ -288,20 +288,26 @@ class MCUVideoMixer
 
     void VMPListInsVMP(VideoMixPosition *pVMP)
     {
-     VideoMixPosition *vmpListMember = vmpList->next;
-     while(vmpListMember!=NULL)
-     {
-      if(vmpListMember == pVMP) 
-       { cout << "VMP already in listr\n"; return; }
-      vmpListMember = vmpListMember->next;
+      VideoMixPosition *vmpListMember = vmpList->next;
+      while(vmpListMember!=NULL)
+      {
+        if(vmpListMember == pVMP) 
+        {
+          PTRACE(3, "VMP " << pVMP->n << " already in list"); 
+          return;
+        }
+       vmpListMember = vmpListMember->next;
      }
 
      vmpListMember = vmpList->next;
      while(vmpListMember!=NULL)
      {
-      if(vmpListMember->id == pVMP->id) 
-       { cout << "Duplicate key error\n"; return; }
-      vmpListMember = vmpListMember->next;
+       if(vmpListMember->id == pVMP->id) 
+       {
+         PTRACE(1, "VMP " << pVMP->n << " duplicate key error: " << pVMP->id); 
+         return;
+       }
+       vmpListMember = vmpListMember->next;
      }
 
      pVMP->prev = vmpList; pVMP->next = vmpList->next;
@@ -320,7 +326,6 @@ class MCUVideoMixer
       {
         r << vmp->n << ":" << (long)(vmp->id);
         q << vmp->n << ":" << vmp->type;
-        cout << "VMPListScanJS: n=" << vmp->n << ", id=" << (long)(vmp->id) << ", type=" << vmp->type << "\n";
         vmp = vmp->next;
         if(vmp!=NULL) { r << ","; q << ","; }
       }
@@ -332,29 +337,39 @@ class MCUVideoMixer
     {
       VideoMixPosition *vmpListMember;
       VideoMixPosition *vmpListLastMember=NULL;
-      vmpListMember = vmpList->next; while(vmpListMember!=NULL)
+      vmpListMember = vmpList->next;
+      while(vmpListMember!=NULL)
       {
-        if(vmpListMember == pVMP) { cout << "VMP already in listr\n"; return; }
+        if(vmpListMember == pVMP)
+        {
+          PTRACE(3, "VMP " << pVMP->n << " already in list"); 
+          return;
+        }
         vmpListMember = vmpListMember->next;
       }
-      vmpListMember = vmpList->next; while(vmpListMember!=NULL)
+      vmpListMember = vmpList->next;
+      while(vmpListMember!=NULL)
       {
-        if(vmpListMember->id == pVMP->id) { cout << "Duplicate key error\n"; return; }
+        if(vmpListMember->id == pVMP->id)
+        {
+          PTRACE(1, "VMP " << pVMP->n << " duplicate key error: " << pVMP->id); 
+          return;
+        }
         vmpListLastMember=vmpListMember;
         vmpListMember = vmpListMember->next; 
       }
-     if(vmpListLastMember!=NULL)
-     {
-       vmpListLastMember->next=pVMP;
-       pVMP->prev = vmpListLastMember;
-     }
-     if(vmpList->next == NULL)
-     {
-       vmpList->next=pVMP;
-       pVMP->prev = vmpList;
-     }
-     pVMP->next = NULL;
-     vmpNum++;
+      if(vmpListLastMember!=NULL)
+      {
+        vmpListLastMember->next=pVMP;
+        pVMP->prev = vmpListLastMember;
+      }
+      if(vmpList->next == NULL)
+      {
+        vmpList->next=pVMP;
+        pVMP->prev = vmpList;
+      }
+      pVMP->next = NULL;
+      vmpNum++;
     }
 
     void VMPListDelVMP(VideoMixPosition *pVMP)

@@ -310,7 +310,7 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
 #  endif
   audioPipeName = cstr;
   const char *cname = cstr;
-  cout << "cname= " << cname << "\n";
+  PTRACE(2,"AudioExportThread\tcname=" << cname);
   mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
   int SS=open(cname,O_WRONLY);
 #endif
@@ -342,7 +342,6 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
     if (write(SS,(const void *)pcmData.GetPointer(), amountBytes)<0) 
      { if(!running) break; close(SS); SS=open(cname,O_WRONLY); success=0; audioDelay.Restart(); }
     else if(success==0) { success++; audioDelay.Restart(); } 
-//    cout << "Write ";
 #endif
 
     // and delay
@@ -358,8 +357,6 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
 #else
   close(SS);
 #endif
-//  ConferenceManager & mgr = conference->GetManager();
-//  mgr.RemoveMember(conference->GetID(), this);
   a_ended=TRUE;
 }
 
@@ -385,7 +382,7 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
 #endif
   videoPipeName = cstr;
   const char *cname = cstr;
-  cout << "cname= " << cname << "\n";
+  PTRACE(2,"VideoExportThread\tcname=" << cname);
   mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
   int SV=open(cname,O_WRONLY);
 #endif
@@ -493,8 +490,6 @@ void ConferenceFileMember::VideoEncoderCacheThread(PThread &, INT)
       delete(codec); codec=NULL;
       caps.RemoveAll();
       v_ended=TRUE;
-//      ConferenceManager & mgr = conference->GetManager();
-//      mgr.RemoveMember(conference->GetID(), this);
       return;
     }
 

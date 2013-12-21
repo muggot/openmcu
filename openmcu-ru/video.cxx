@@ -165,7 +165,8 @@ BOOL PVideoInputDevice_OpenMCU::GetFrameSizeLimits(unsigned & minWidth,
 
 BOOL PVideoInputDevice_OpenMCU::SetFrameSize(unsigned width, unsigned height)
 {
- cout << "SetFrameSize " << width << " " << height << "\n";
+  cout << "SetFrameSize " << width << " " << height << "\n";
+  PTRACE(4,"SetFrameSize " << width << " " << height);
   if (!PVideoDevice::SetFrameSize(width, height))
     return FALSE;
 
@@ -3372,14 +3373,14 @@ BOOL MCUSimpleVideoMixer::AddVideoSourceToLayout(ConferenceMemberId id, Conferen
 
   if (vmpNum == OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum)
   {
-    cout << "AddVideoSource " << id << " " << vmpNum << " layout capacity exceeded (" << OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum << ")\n";
+    PTRACE(3, "AddVideoSource " << id << " " << vmpNum << " layout capacity exceeded (" << OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum << ")");
     return FALSE;
   }
 
   // make sure this source is not already in the list
   VideoMixPosition *newPosition = VMPListFindVMP(id); if(newPosition != NULL)
   {
-    cout << "AddVideoSource " << id << " " << vmpNum << " already in list (" << newPosition << ")\n";
+    PTRACE(3, "AddVideoSource " << id << " " << vmpNum << " already in list (" << newPosition << ")");
     return TRUE;
   }
 
@@ -3398,7 +3399,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSourceToLayout(ConferenceMemberId id, Conferen
       newPosition->endpointName = mbr.GetName();
       newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].border;
       if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin) VMPListInsVMP(newPosition); else VMPListAddVMP(newPosition);
-      cout << "AddVideoSource " << id << " " << vmpNum << " added as " << i << " (" << newPosition << ")\n";
+      PTRACE(3, "AddVideoSource " << id << " " << vmpNum << " added as " << i << " (" << newPosition << ")");
       break;
     }
   }
@@ -3420,14 +3421,15 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
 
   if (vmpNum == MAX_SUBFRAMES)
   {
-   cout << "AddVideoSource " << id << " " << vmpNum << " maximum exceeded (" << MAX_SUBFRAMES << ")\n";
-   return FALSE;
+    cout << "AddVideoSource " << id << " " << vmpNum << " maximum exceeded (" << MAX_SUBFRAMES << ")\n";
+    PTRACE(2, "AddVideoSource " << id << " " << vmpNum << " maximum exceeded (" << MAX_SUBFRAMES << ")");
+    return FALSE;
   }
 
   // make sure this source is not already in the list
   VideoMixPosition *newPosition = VMPListFindVMP(id); if(newPosition != NULL)
   {
-    cout << "AddVideoSource " << id << " " << vmpNum << " already in list (" << newPosition << ")\n";
+    PTRACE(2, "AddVideoSource " << id << " " << vmpNum << " already in list (" << newPosition << ")");
     return TRUE;
   }
 
@@ -3455,7 +3457,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
     newPosition->endpointName=mbr.GetName();
     newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmpNum].border;
     if(OpenMCU::vmcfg.vmconf[newsL].splitcfg.new_from_begin) VMPListInsVMP(newPosition); else VMPListAddVMP(newPosition);
-    cout << "AddVideoSource " << id << " " << vmpNum << " done (" << newPosition << ")\n";
+//    cout << "AddVideoSource " << id << " " << vmpNum << " done (" << newPosition << ")\n";
     ReallocatePositions();
   }
   else  // otherwise find an empty position
@@ -3474,7 +3476,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
 #endif
         newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].border;
         if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin) VMPListInsVMP(newPosition); else VMPListAddVMP(newPosition);
-        cout << "AddVideoSource " << id << " " << vmpNum << " added as " << i << " (" << newPosition << ")\n";
+//        cout << "AddVideoSource " << id << " " << vmpNum << " added as " << i << " (" << newPosition << ")\n";
         break;
       }
     }
@@ -3487,7 +3489,10 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
       FillYUVFrame(fs.GetPointer(), 0, 0, 0, newPosition->width, newPosition->height);
     WriteSubFrame(*newPosition, fs.GetPointer(), newPosition->width, newPosition->height, amount);
   }
-  else cout << "AddVideoSource " << id << " " << vmpNum << " could not find empty video position";
+  else
+  {
+    PTRACE(2, "AddVideoSource " << id << " " << vmpNum << " could not find empty video position");
+  }
   return TRUE;
 }
 
@@ -4039,7 +4044,6 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
   VideoFrameStoreList::VideoFrameStoreListMapType theCopy(frameStores.videoFrameStoreList);
   for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
   {
-    cout << "{" << r->second << "}" << flush;
     VideoFrameStoreList::FrameStore & vf = *(r->second);
     if(vf.lastRead<inactiveSign)
     {
@@ -4788,15 +4792,19 @@ bool VideoMixConfigurator::option_cmp(const char* p,const char* str){
    return true;
   }
 
-void VideoMixConfigurator::warning(char* &f_buff,long line,long lo,const char warn[64],long pos,long pos1){
-   cout << "Warning! " << VMPC_CONFIGURATION_NAME << ":" << line << ":" << lo << ": "<< warn;
-   if(pos1>pos) {
-    cout << ": \"";
-    for(long i=pos;i<pos1;i++) cout << (char)f_buff[i];
-    cout << "\"";
-   }
-   cout << "\n";
+void VideoMixConfigurator::warning(char* &f_buff,long line,long lo,const char warn[64],long pos,long pos1)
+{
+  PStringStream w;
+  w << "Warning! " << VMPC_CONFIGURATION_NAME << ":" << line << ":" << lo << ": "<< warn;
+  if(pos1>pos)
+  {
+    w << ": \"";
+    for(long i=pos;i<pos1;i++) w << (char)f_buff[i];
+    w << "\"";
   }
+  cout << w << "\n";
+  PTRACE(1, w);
+}
 
 void VideoMixConfigurator::initialize_layout_desc(char* &f_buff,long pos,long pos1,long line,long lo){
    ldm=1;

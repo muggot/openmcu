@@ -48,7 +48,8 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
     }
     else html_template_size = -1; // read error indicator
   }
-  if(html_template_size <= 0) { cout << "Can't load HTML template!\n"; PTRACE(1,"WebCtrl\tCan't read HTML template from file"); return; }
+  if(html_template_size <= 0)
+  { cout << "Can't load HTML template!\n"; PTRACE(1,"WebCtrl\tCan't read HTML template from file"); return; }
 
   PString lang = MCUConfig("Parameters").GetString("Language").ToLower();
 

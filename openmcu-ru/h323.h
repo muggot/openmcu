@@ -238,8 +238,8 @@ class OpenMCUH323Connection : public H323Connection
     virtual void LeaveConference();
     virtual H323Connection_ConferenceMember * GetConferenceMember()
     {
-     cout << "GetConferenceMember " << conferenceMember << "\n";
-     return conferenceMember;
+      PTRACE(5, "GetConferenceMember " << conferenceMember);
+      return conferenceMember;
     }
 
     // overrides from H323Connection

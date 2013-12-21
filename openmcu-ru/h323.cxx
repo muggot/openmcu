@@ -3324,7 +3324,7 @@ void H323Connection_ConferenceMember::SetName()
 {
   if(id!=this)
   {
-    cout << "SetName " << h323Token << "\n";
+    PTRACE(4,"H323\tSetName " << h323Token);
     int connLock = 0;
     OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
     if(conn == NULL)
@@ -3353,6 +3353,7 @@ void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
  if(id!=this)
  {
   cout << id << "->SetFreezeVideo(" << disable << ")\n";
+  PTRACE(5,id << "->SetFreezeVideo(" << disable << ")");
   OpenMCUH323Connection * conn = (OpenMCUH323Connection *)ep.FindConnectionWithLock(h323Token);
   if(conn == NULL) return;
   H323Connection_ConferenceMember * connConferenceMemeber = conn->GetConferenceMember();
@@ -3412,7 +3413,7 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
       iISequence=iISequence.Right(10);
     }
     else iISequence=str.Trim();
-    cout << "*uii: " << iISequence << "\n";
+//    cout << "*uii: " << iISequence << "\n";
     PINDEX hashPos=iISequence.FindLast("#");
     if(hashPos != P_MAX_INDEX)
     {
@@ -3475,26 +3476,6 @@ OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, 
   : ep(_ep), conn(_conn), sampleRate(_sampleRate), channels(_channels)
 {
   os_handle = 0;
-/*
-#if USE_SWRESAMPLE
-  swrc = NULL;
-#else
-  swrc = 0;
-#endif
-  sampleRate = _sampleRate;
-  if(sampleRate == 0) sampleRate = 8000; // g711
-  if(sampleRate != 16000)
-  {
-#if USE_SWRESAMPLE
-   swrc = swr_alloc_set_opts(NULL, AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, sampleRate,
-                            AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, 16000,
-                            0, NULL);
-   swr_init(swrc);
-#else
-   swrc = 1;
-#endif //USE_SWRESAMPLE
-  }
-*/
 }
 
 void OutgoingAudio::CreateSilence(void * buffer, PINDEX amount)
@@ -3514,43 +3495,6 @@ BOOL OutgoingAudio::Read(void * buffer, PINDEX amount)
 
   lastReadCount = amount;
   return TRUE;
-
-/*
-  PINDEX amount16 = amount;
-  void * buffer16 = buffer;
-*/
-
-//  cout << "SEND amount=" << amount << "\n";
-  
-
-/*
-#if USE_SWRESAMPLE
-  if(swrc != NULL) //8000
-#else
-  if(swrc) //8000
-#endif
-  {
-   amount16 = amount*16000/sampleRate; if((amount16&1) != 0) amount16+=1;
-   if((amount16>>1) > swr_buf.GetSize()) swr_buf.SetSize(amount16>>1);
-   buffer16 = swr_buf.GetPointer();
-  }
-
-  // do the read call here, by calling conn.OnOutgoingAudio():
-  if (!conn.OnOutgoingAudio(buffer16, amount16))
-    CreateSilence(buffer16, amount16);
-
-#if USE_SWRESAMPLE
-  if(swrc != NULL) //8000
-   swr_convert(swrc, (uint8_t **)&buffer, amount>>1, (const uint8_t **)&buffer16, amount16>>1);
-#else
-  if(swrc) //8000
-    for(PINDEX i=0;i<(amount>>1);i++) ((short*)buffer)[i] = ((short*)buffer16)[i*16000/sampleRate];
-#endif
-
-
-//  delay.Delay(amount16 / 32);
-*/
-
 }
 
 BOOL OutgoingAudio::Close()
@@ -3560,13 +3504,6 @@ BOOL OutgoingAudio::Close()
 
   PWaitAndSignal mutexC(audioChanMutex);
   os_handle = -1;
-/*
-#if USE_SWRESAMPLE
-  if(swrc != NULL) swr_free(&swrc);
-#else
-  swrc = 0;
-#endif
-*/
   return TRUE;
 }
 
@@ -3576,26 +3513,6 @@ IncomingAudio::IncomingAudio(H323EndPoint & _ep, OpenMCUH323Connection & _conn, 
   : sampleRate(_sampleRate), channels(_channels), ep(_ep), conn(_conn)
 {
   os_handle = 0;
-/*
-#if USE_SWRESAMPLE
-  swrc = NULL;
-#else
-  swrc = 0;
-#endif
-  sampleRate = _sampleRate;
-  if(sampleRate == 0) sampleRate = 8000; // g711
-#if USE_SWRESAMPLE
-  if(sampleRate != 16000)
-  {
-   swrc = swr_alloc_set_opts(NULL, AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, 16000,
-                            AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, sampleRate,
-                            0, NULL);
-   swr_init(swrc);
-  }
-#else
-  swrc = 1;
-#endif
-*/
 }
 
 BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
@@ -3608,32 +3525,6 @@ BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
   delay.Delay(msPerFrame);
 
   return TRUE;
-
-//  PINDEX amount16 = amount;
-
-//  cout << "RECV amount=" << amount << "\n";
-
-/*
-#if USE_SWRESAMPLE
-  if(swrc != NULL) //8000
-#else
-  if(swrc) //8000
-#endif
-  {
-   void * buffer16;
-   amount16 = amount*16000/sampleRate; if((amount16&1) != 0) amount16+=1;
-   if((amount16>>1) > swr_buf.GetSize()) swr_buf.SetSize(amount16>>1);
-   buffer16 = swr_buf.GetPointer();
-#if USE_SWRESAMPLE
-   swr_convert(swrc, (uint8_t **)&buffer16, amount16>>1, (const uint8_t **)&buffer, amount>>1);
-#else
-   for(PINDEX i=0;i<(amount16>>1);i++) ((short*)buffer16)[i] = ((short*)buffer)[i*sampleRate/16000];
-#endif
-   conn.OnIncomingAudio(buffer16, amount16, sampleRate);
-  }
-  else */ 
-
-//  delay.Delay(amount16 / 32);
 }
 
 BOOL IncomingAudio::Close()
@@ -3643,13 +3534,6 @@ BOOL IncomingAudio::Close()
 
   PWaitAndSignal mutexA(audioChanMutex);
   os_handle = -1;
-/*
-#if USE_SWRESAMPLE
-  if(swrc != NULL) swr_free(&swrc);
-#else
-  swrc = 0;
-#endif
-*/
   return TRUE;
 }
 

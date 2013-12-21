@@ -153,10 +153,9 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   { PINDEX dp2=membersConf.Find('\n',dp+10);
     if(dp2!=P_MAX_INDEX)
     { PString lastUsedTemplate=membersConf.Mid(dp+11,dp2-dp-11).Trim();
-      cout << "Extracting & loading last used template: " << lastUsedTemplate << "\n";
+      PTRACE(4, "Extracting & loading last used template: " << lastUsedTemplate);
       conference->confTpl=conference->ExtractTemplate(lastUsedTemplate);
       conference->LoadTemplate(conference->confTpl);
-      cout << "***" << conference->confTpl;
     }
   }
 }
@@ -313,7 +312,7 @@ void ConferenceManager::RemoveConference(const OpalGloballyUniqueID & confId)
     conferenceList.erase(confId);
     mcuNumberMap.RemoveNumber(conf->GetMCUNumber());
     monitor->RemoveForConference(conf->GetID());
-    cout << "RemoveConference\n";
+    PTRACE(2, "RemoveConference");
     delete conf;
   }
 }
@@ -589,7 +588,6 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
     if (ep.MakeCall(address, h323Token, userData) == NULL)
     {
       PTRACE(6,"Conference\tInvite error, address: " << address);
-      cout << "Invite error: " << address << "\n";
       return FALSE;
     }
   }
