@@ -132,7 +132,7 @@ static const char RejectDuplicateNameKey[] = "Reject duplicate name";
 static PStringArray h323EndpointOptionsOrder = PString(
                                         ","
                                         "H323 port,"
-                                        ","
+                                        "Address book,"
                                         "Display name override,"
                                         "Preferred frame rate from MCU,"
                                         "Preferred bandwidth from MCU,"
@@ -145,7 +145,7 @@ static PStringArray h323EndpointOptionsOrder = PString(
 static PStringArray sipEndpointOptionsOrder = PString(
                                         "Outgoing transport,"
                                         "SIP port,"
-                                        ","
+                                        "Address book,"
                                         "Display name override,"
                                         "Preferred frame rate from MCU,"
                                         "Preferred bandwidth from MCU,"

@@ -621,7 +621,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   s << NewRowColumn(JsLocale("window.l_name_address"));
   //s << "";
   s << ColumnItem("H.323 "+JsLocale("window.l_name_port"));
-  //s << "";
+  s << ColumnItem(JsLocale("window.l_name_address_book"));
   s << ColumnItem(JsLocale("window.l_name_display_name_override"));
   s << ColumnItem(JsLocale("window.l_name_preferred_frame_rate_from_mcu"));
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
@@ -646,26 +646,30 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   if(keys.GetStringsIndex("*") == P_MAX_INDEX)
     keys.InsertAt(0, new PString("*"));
   if(keys.GetSize() == 1)
-    keys.AppendString("test");
+    keys.AppendString("empty");
 
   mcu.addressBook.RemoveAll();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
+    PString dname;
+    BOOL abook = FALSE;
 
-    if(name != "*" && name != "test" && name.Find("@") == P_MAX_INDEX) name = "@"+name;
-    PString dname = params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")];
-    if(keys[i] != "" && keys[i] != "*" && keys[i] != "test")
-      mcu.addressBook.AppendString(dname+" [h323:"+name+"]");
+    if(name != "*" && name != "empty")
+    {
+      if(name.Find("@") == P_MAX_INDEX) name = "@"+name;
+      if(params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Address book")].ToLower() == "true") abook = TRUE;
+      if(abook) mcu.addressBook.AppendString(dname+" [h323:"+name+"]");
+      dname = params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")];
+    }
+    if(name == "empty") abook = TRUE;
 
-    if(name == "*") s << NewRowInput(name, 15, TRUE);
-    else s << NewRowInput(name, 15);
+    if(name == "*") s << NewRowInput(name, 15, TRUE); else s << NewRowInput(name, 15);
     s << HiddenItem(name);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("H323 port")], 8);
-    s << HiddenItem(name);
-    if(name == "*") s << StringItem(name, "", 12, TRUE);
-    else s << StringItem(name, dname);
+    if(name == "*") s << BoolItem(name, abook, TRUE); else s << BoolItem(name, abook);
+    if(name == "*") s << StringItem(name, "", 12, TRUE); else s << StringItem(name, dname);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")], 8);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")], 8);
     s << StringItem(name, params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")], 8);
@@ -709,7 +713,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   s << NewRowColumn(JsLocale("window.l_name_address"));
   s << ColumnItem(JsLocale("window.l_name_outgoing_transport"));
   s << ColumnItem("SIP "+JsLocale("window.l_name_port"));
-  //s << "";
+  s << ColumnItem(JsLocale("window.l_name_address_book"));
   s << ColumnItem(JsLocale("window.l_name_display_name_override"));
   s << ColumnItem(JsLocale("window.l_name_preferred_frame_rate_from_mcu"));
   s << ColumnItem(JsLocale("window.l_name_preferred_bandwidth_from_mcu"));
@@ -728,25 +732,29 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   if(keys.GetStringsIndex("*") == P_MAX_INDEX)
     keys.InsertAt(0, new PString("*"));
   if(keys.GetSize() == 1)
-    keys.AppendString("test");
+    keys.AppendString("empty");
 
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
     PString params = cfg.GetString(keys[i]);
+    PString dname;
+    BOOL abook = FALSE;
 
-    if(name != "*" && name != "test" && name.Find("@") == P_MAX_INDEX) name = "@"+name;
-    PString dname = params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")];
-    if(keys[i] != "" && keys[i] != "*" && keys[i] != "test")
-      mcu.addressBook.AppendString(dname+" [sip:"+name+"]");
+    if(name != "*" && name != "empty")
+    {
+      if(name.Find("@") == P_MAX_INDEX) name = "@"+name;
+      if(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Address book")].ToLower() == "true") abook = TRUE;
+      if(abook) mcu.addressBook.AppendString(dname+" [sip:"+name+"]");
+      dname = params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")];
+    }
+    if(name == "empty") abook = TRUE;
 
-    if(name == "*") s << NewRowInput(name, 15, TRUE);
-    else s << NewRowInput(name, 15);
+    if(name == "*") s << NewRowInput(name, 15, TRUE); else s << NewRowInput(name, 15);
     s << SelectItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Outgoing transport")], "transport=*,transport=udp,transport=tcp");
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("SIP port")], 8);
-    s << HiddenItem(name);
-    if(name == "*") s << StringItem(name, "", 12, TRUE);
-    else s << StringItem(name, dname);
+    if(name == "*") s << BoolItem(name, abook, TRUE); else s << BoolItem(name, abook);
+    if(name == "*") s << StringItem(name, "", 12, TRUE); else s << StringItem(name, dname);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred frame rate from MCU")], 8);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth from MCU")], 8);
     s << StringItem(name, params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Preferred bandwidth to MCU")], 8);
