@@ -703,6 +703,7 @@ class ConferenceConnection : public PObject {
     void ReadAndMixAudio(BYTE * ptr, PINDEX amount, PINDEX channels, unsigned short echoLevel, unsigned sampleRate, unsigned codecChannels);
 
     unsigned outgoingSampleRate, outgoingCodecChannels;
+    PMutex audioBufferMutex;
 
   protected:
     Conference * conference;
@@ -714,7 +715,7 @@ class ConferenceConnection : public PObject {
     PINDEX bufferLen;     ///Number of bytes unread in the buffer.
     PINDEX bufferStart;   ///Current position in the buffer.
     PINDEX bufferSize;    ///Total number of bytes in buffer. Never gets changed.
-    PMutex audioBufferMutex;
+//    PMutex audioBufferMutex;
     BOOL hasUnderflow;
 
 //    BufferListType bufferList;

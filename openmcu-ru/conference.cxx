@@ -919,11 +919,13 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   // get number of channels to mix
-  ConferenceMember::ConnectionListType & connectionList = member->GetConnectionList();
-  ConferenceMember::ConnectionListType::iterator r;
-  for (r = connectionList.begin(); r != connectionList.end(); ++r) 
+//  ConferenceMember::ConnectionListType & connectionList = member->GetConnectionList();
+  ConferenceMember::ConnectionListType connectionList(member->GetConnectionList()); // make a copy
+  for (ConferenceMember::ConnectionListType::iterator r=connectionList.begin(), e=connectionList.end(); r!=e; ++r) 
+  {
     if (r->second != NULL)
     {
+      PWaitAndSignal m(((ConferenceConnection*)r->second)->audioBufferMutex);
       BOOL skip=moderated&&muteUnvisible;
       if(skip)
       {
@@ -935,6 +937,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDE
       if(!skip) // default behaviour
         r->second->ReadAndMixAudio((BYTE *)buffer, amount, (PINDEX)connectionList.size(), 0, sampleRate, channels);
     }
+  }
 }
 
 // tint - time interval since last call in msec
