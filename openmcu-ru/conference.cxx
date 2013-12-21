@@ -1624,6 +1624,8 @@ ConferenceConnection::ConferenceConnection(ConferenceMemberId _id)
 
 ConferenceConnection::~ConferenceConnection()
 {
+  PWaitAndSignal m(audioBufferMutex);
+  bufferLen=-0x800000;
 //  delete[] buffer;
 }
 
