@@ -4039,7 +4039,6 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
   VideoFrameStoreList::VideoFrameStoreListMapType theCopy(frameStores.videoFrameStoreList);
   for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
   {
-    cout << "{" << r->second << "}" << flush;
     VideoFrameStoreList::FrameStore & vf = *(r->second);
     if(vf.lastRead<inactiveSign)
     {
