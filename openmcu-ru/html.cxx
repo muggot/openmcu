@@ -659,8 +659,8 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     {
       if(name.Find("@") == P_MAX_INDEX) name = "@"+name;
       if(params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Address book")].ToLower() == "true") abook = TRUE;
-      if(abook) mcu.addressBook.AppendString(dname+" [h323:"+name+"]");
       dname = params.Tokenise(",")[h323EndpointOptionsOrder.GetStringsIndex("Display name override")];
+      if(abook) mcu.addressBook.AppendString(dname+" [h323:"+name+"]");
     }
     if(name == "empty") abook = TRUE;
 
@@ -744,8 +744,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     {
       if(name.Find("@") == P_MAX_INDEX) name = "@"+name;
       if(params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Address book")].ToLower() == "true") abook = TRUE;
-      if(abook) mcu.addressBook.AppendString(dname+" [sip:"+name+"]");
       dname = params.Tokenise(",")[sipEndpointOptionsOrder.GetStringsIndex("Display name override")];
+      if(abook) mcu.addressBook.AppendString(dname+" [sip:"+name+"]");
     }
     if(name == "empty") abook = TRUE;
 
