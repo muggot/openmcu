@@ -121,6 +121,7 @@ window.l_name_action         = 'Action';
 window.l_name_code           = 'Code';
 window.l_name_message        = 'Message';
 window.l_name_address        = 'Address';
+window.l_name_address_book   = 'Address book';
 
 window.l_name_display_name_override                = 'Display name override';
 window.l_name_preferred_frame_rate_from_mcu        = 'Preferred frame rate from MCU';

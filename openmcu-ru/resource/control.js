@@ -671,12 +671,13 @@ function additional_panel_abook(){
   var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
   var height = PANEL_ICON_HEIGHT; // 15
   var width = PANEL_ICON_WIDTH; // 15
+  var bwidth = 28;
   var dbutton="<div class='btn btn-small' style='border-width:1px;border-radius:0px;padding:2px 0px 2px 0px;height:"+(height+1)+"px;line-height:"+(height+1)+"px;text-align:center;cursor:pointer;";
-  var input_width = 200;
-  var input_posx = panel_width-input_width-5;
+  var input_posx = 4*bwidth;
+  var input_width = panel_width-input_posx-5;
   var s="<div id='additional_panel_abook' style='display:none;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>"
-   +dpre+"2px;'>"+dbutton+"width:28px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif'></img></div></div>"
-   +dpre+"34px;'>"+dbutton+"width:28px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;'></input></div></div>"
+   +dpre+"2px;'>"+dbutton+"width:"+bwidth+"px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif'></img></div></div>"
+   +dpre+"34px;'>"+dbutton+"width:"+bwidth+"px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;'></input></div></div>"
    +dpre+(input_posx-width-5)+"px'><img onclick='on_invite_abook_input()' style='margin-top:3px;cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'></img></div>"
    +dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;'></input></div>"
    +"</div>";
@@ -687,7 +688,7 @@ function tab_panel(){
   var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
   var dmain="px'><div style='width:120px;padding:0;border-bottom:solid 1px #CDC9C9;border-top-left-radius:10px;border-top-right-radius:10px;height:22px;line-height:22px;text-align:center;cursor:pointer;";
   var tab1_name = window.l_connections_word_room;
-  var tab2_name = window.l_param_managing_users;
+  var tab2_name = window.l_name_address_book;
   var s ="<div id='tab_panel' style='border-bottom:solid 1px #E6E6FA;width:"+panel_width+"px;height:22px;margin-bottom:4px'>"
    +dpre+"2"+dmain+"background-color:#E6E6FA' id='tab_members' onclick='on_tab_members()'>"+tab1_name+"</div></div>"
    +dpre+"124"+dmain+"background-color:#F5F5F5' id='tab_abook' onclick='on_tab_abook()'>"+tab2_name+"</div></div>"

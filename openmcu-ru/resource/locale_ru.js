@@ -136,6 +136,7 @@ window.l_name_action         = 'Действие';
 window.l_name_code           = 'Код';
 window.l_name_message        = 'Сообщение';
 window.l_name_address        = 'Адрес';
+window.l_name_address_book   = 'Адресная книга';
 
 window.l_name_display_name_override                = 'Отображаемое имя';
 window.l_name_preferred_frame_rate_from_mcu        = 'Частота кадров от MCU';
