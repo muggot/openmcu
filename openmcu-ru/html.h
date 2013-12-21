@@ -125,7 +125,9 @@ class TablePConfigPage : public PConfigPage
    }
    PString NewRowInput(PString name, int size=15, int readonly=FALSE)
    {
-     PString s = "<tr style='padding:0px;margin:0px;'>"+rowStyle+"<input type='text' name='"+name+"' size='"+PString(size)+"' value='"+name+"' style='"+inputStyle+"'";
+     PString value = name;
+     if(name == "empty") value = "";
+     PString s = "<tr style='padding:0px;margin:0px;'>"+rowStyle+"<input type='text' name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
      if(!readonly) s += "></input>"; else s += "readonly></input>";
      if(!readonly) s += buttons();
      s += "</td>";
@@ -179,13 +181,14 @@ class TablePConfigPage : public PConfigPage
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
-   PString BoolItem(PString name, BOOL value)
+   PString BoolItem(PString name, BOOL value, int readonly=FALSE)
    {
      PString id = PString(rand());
      PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
      s += itemStyle+"<input name='"+name+"' value='FALSE' type='hidden' style='"+inputStyle+"'>"
                     "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"margin-top:12px;margin-bottom:12px;margin-left:3px;'";
-     if(value) s +=" checked='yes'></input></td>"; else s +="></input></td>";
+     if(value) s +=" checked='yes'";
+     if(!readonly) s += "></input></td>"; else s += " readonly></input></td>";
      return s;
    }
    PString SelectItem(PString name, PString value, PString values, int width=120)
