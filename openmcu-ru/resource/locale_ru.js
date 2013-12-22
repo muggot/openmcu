@@ -137,6 +137,8 @@ window.l_name_code           = 'Код';
 window.l_name_message        = 'Сообщение';
 window.l_name_address        = 'Адрес';
 window.l_name_address_book   = 'Адресная книга';
+window.l_name_save           = 'Сохранить';
+window.l_name_cancel         = 'Отменить';
 
 window.l_name_display_name_override                = 'Отображаемое имя';
 window.l_name_preferred_frame_rate_from_mcu        = 'Частота кадров от MCU';
@@ -159,3 +161,5 @@ window.l_name_video_codec_transmit                 = 'Видео кодек(пе
 window.l_room_invite_all_inactive_members          = 'Позвонить всем неактивным участникам?';
 window.l_room_drop_all_active_members              = 'Отключить всех активных участников?';
 window.l_room_remove_all_inactive_members          = 'Удалить всех неактивных участников из списка?';
+window.l_room_drop_connection_with                 = 'Разорвать соединение с';
+window.l_room_remove_from_list                     = 'Удалить из списка';

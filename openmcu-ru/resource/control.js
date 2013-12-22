@@ -464,13 +464,13 @@ function alive(){
 
 function inviteoffline(obj,mname){ queue_otf_request(OTFC_INVITE,mname); obj.src='openmcu.ru_launched_Ypf.gif'; }
 
-function removeoffline(obj,mname){ if(confirm("Remove "+decodeURIComponent(mname)+"?")) {queue_otf_request(OTFC_REMOVE_OFFLINE_MEMBER,mname); obj.src='openmcu.ru_launched_Ypf.gif'; }}
+function removeoffline(obj,mname){ if(confirm(window.l_room_remove_from_list+" \""+decodeURIComponent(mname)+"\" ?")) {queue_otf_request(OTFC_REMOVE_OFFLINE_MEMBER,mname); obj.src='openmcu.ru_launched_Ypf.gif'; }}
 
 function disablevad_yes_no(obj,mid,disv){ obj.style.color='#ff0'; queue_otf_request(3-disv,mid); return false; }
 
 function chosenvan_yes_no(obj,mid,cvan){ obj.style.color='#ff0'; queue_otf_request(5-cvan,mid); return false; }
 
-function kick_confirm(obj,mid,mname){ if(confirm("Drop connection with "+decodeURIComponent(mname)+"?")) {queue_otf_request(OTFC_DROP_MEMBER,mid); obj.src='openmcu.ru_launched_Ypf.gif'; }}
+function kick_confirm(obj,mid,mname){ if(confirm(window.l_room_drop_connection_with+" \""+decodeURIComponent(mname)+"\" ?")) {queue_otf_request(OTFC_DROP_MEMBER,mid); obj.src='openmcu.ru_launched_Ypf.gif'; }}
 
 function drop_all0(obj){ if(confirm(window.l_room_drop_all_active_members)) {queue_otf_request(OTFC_DROP_ALL_ACTIVE_MEMBERS,0); }}
 
@@ -873,6 +873,16 @@ function get_addr_url_without_param(addr){
   return url;
 }
 
+function members_sort_name_asc_func(i, j)
+{
+  if(i[2] > j[2])
+    return 1;
+  else if(i[2] < j[2])
+    return -1;
+  else
+    return 0;
+}
+
 function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid){
   if(typeof members==='undefined') return alive();
   var found=0; var j=members.length;
@@ -888,6 +898,8 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid){
     }
   }
   members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,urlid);
+  if(j == members.length-1)
+    members.sort(members_sort_name_asc_func);
   alive();
   members_refresh();
   top_panel();
