@@ -9,9 +9,6 @@
 #if PTLIB_VER > PTLIB_VERSION_INT(2,0,1)
   #define BOOL PBoolean
 #endif
-#if PTLIB_VER == PTLIB_VERSION_INT(2,0,1)
-  #undef P_SSL
-#endif
 
 
 #ifdef _WIN32

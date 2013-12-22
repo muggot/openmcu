@@ -914,6 +914,9 @@ PSSLContext::PSSLContext(const void * sessionId, PINDEX idSize)
   InitialisationMutex.Signal();
 
   // create the new SSL context
+#if OPENSSL_VERSION_NUMBER >= 0x00909000L
+  const
+#endif
   SSL_METHOD * meth = SSLv23_method();
   context  = SSL_CTX_new(meth);
   if (context == NULL)
