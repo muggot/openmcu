@@ -1,6 +1,18 @@
 #ifndef _OpenMCU_CONFIG_H
 #define _OpenMCU_CONFIG_H
 
+#ifndef PTLIB_VERSION_INT
+  #define PTLIB_VERSION_INT(major,minor,build) ((major<<24)|(minor<<16)|build)
+#endif
+#define PTLIB_VER PTLIB_VERSION_INT(PTLIB_MAJOR, PTLIB_MINOR, PTLIB_BUILD)
+
+#if PTLIB_VER > PTLIB_VERSION_INT(2,0,1)
+  #define BOOL PBoolean
+#endif
+#if PTLIB_VER == PTLIB_VERSION_INT(2,0,1)
+  #undef P_SSL
+#endif
+
 
 #ifdef _WIN32
 #  define PATH_SEPARATOR "\\"
@@ -66,8 +78,6 @@
 
 // libyuv filtering type: kFilterNone|kFilterBilinear|kFilterBox
 #define LIBYUV_FILTER	kFilterBilinear
-
-#undef P_SSL
 
 #ifdef _WIN32
 #  undef  USE_SWRESAMPLE

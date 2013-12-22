@@ -191,6 +191,20 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // allow/disallow self-invite:
   allowLoopbackCalls = cfg.GetBoolean(AllowLoopbackCallsKey, FALSE);
 
+#if P_SSL
+  // Secure HTTP
+  BOOL enableSSL = cfg.GetBoolean(HTTPSecureKey, FALSE);
+  disableSSL = !enableSSL;
+  if(enableSSL)
+  {
+    PString certificateFile = cfg.GetString(HTTPCertificateFileKey, DefaultHTTPCertificateFile);
+    if (!SetServerCertificate(certificateFile, TRUE)) {
+      PSYSTEMLOG(Fatal, "MCU\tCould not load certificate \"" << certificateFile << '"');
+      return FALSE;
+    }
+  }
+#endif
+
   // Get the HTTP authentication info
   MCUConfig("Managing Groups").SetString("administrator", "");
   MCUConfig("Managing Groups").SetString("conference manager", "");

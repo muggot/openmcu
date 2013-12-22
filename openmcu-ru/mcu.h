@@ -55,7 +55,9 @@ static const char HttpLinkEventBufferKey[]= "Room control event buffer size";
 static const char CallLogFilenameKey[]    = "Call log filename";
 
 #if P_SSL
+static const char HTTPSecureKey[]           = "Enable HTTP secure";
 static const char HTTPCertificateFileKey[]  = "HTTP Certificate";
+static PString DefaultHTTPCertificateFile   = PString(SYS_CONFIG_DIR)+PString(PATH_SEPARATOR)+"server.pem";
 #endif
 static const char DefaultRoomKey[]          = "Default room";
 static const char DefaultRoomTimeLimitKey[] = "Room time limit";

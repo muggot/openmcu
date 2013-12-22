@@ -817,7 +817,6 @@ sed -i -r "s#^PREFIX=.*#PREFIX=${H323PLUS_INSTALLPREFIX}#g" ${H323PLUSDIR}/Makef
 
 if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
   sed -i -r "s#${PTLIBDIR}#${PTLIBDIR}\\nPTLIBDIR\\t= ${PTLIBDIR}#g" ${H323PLUSDIR}/openh323u.mak
-  sed -i -r "s#define _OpenMCU_CONFIG_H#define _OpenMCU_CONFIG_H\\n\\n\#define BOOL PBoolean#g" ${MCUDIR}/config.h
 fi
 
 dnl ########################################################################

@@ -258,14 +258,9 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << StringField("OpenMCU Server Id", cfg.GetString("OpenMCU Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 35);
 
 #if P_SSL
-  // SSL certificate file.
   s << SeparatorField("Security");
-  PString certificateFile = cfg.GetString(HTTPCertificateFileKey, "server.pem");
-  s << StringField(HTTPCertificateFileKey, certificateFile);
-  if (!SetServerCertificate(certificateFile, TRUE)) {
-    PSYSTEMLOG(Fatal, "MCU\tCould not load certificate \"" << certificateFile << '"');
-    return FALSE;
-  }
+  s << BoolField(HTTPSecureKey, cfg.GetBoolean(HTTPSecureKey, FALSE));
+  s << StringField(HTTPCertificateFileKey, cfg.GetString(HTTPCertificateFileKey, DefaultHTTPCertificateFile), 35);
 #endif
 
   s << SeparatorField("Port setup");
