@@ -122,6 +122,8 @@ window.l_name_code           = 'Code';
 window.l_name_message        = 'Message';
 window.l_name_address        = 'Address';
 window.l_name_address_book   = 'Address book';
+window.l_name_save           = 'Save';
+window.l_name_cancel         = 'Cancel';
 
 window.l_name_display_name_override                = 'Display name override';
 window.l_name_preferred_frame_rate_from_mcu        = 'Preferred frame rate from MCU';
@@ -144,3 +146,5 @@ window.l_name_video_codec_transmit                 = 'Video codec(transmit)';
 window.l_room_invite_all_inactive_members          = 'Invite ALL inactive members?';
 window.l_room_drop_all_active_members              = 'Drop ALL active connections?';
 window.l_room_remove_all_inactive_members          = 'Remove ALL inactive members from list?';
+window.l_room_drop_connection_with                 = 'Drop connection with';
+window.l_room_remove_from_list                     = 'Remove from list';
