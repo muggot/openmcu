@@ -13,6 +13,7 @@ PString Conference::SaveTemplate(PString tplName)
     << "  GLOBAL_MUTE " << (muteUnvisible?"on":"off") << "\n"
     << "  CONTROL_TYPE " << (moderated?"manual":"auto") << "\n"
     << "  VAD_VALUES " << VAdelay << ", " << VAtimeout << ", " << VAlevel << "\n";
+  PWaitAndSignal m3(videoMixerListMutex);
   VideoMixerRecord * vmr = videoMixerList;
   while(vmr != NULL)
   { t << "  MIXER " << vmr->id << "\n"
