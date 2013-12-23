@@ -1542,6 +1542,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     if(conference.GetNumber()==room)
     {
       if(conference.videoMixerList==NULL){ app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal(); return FALSE; }
+      PWaitAndSignal m3(conference.videoMixerListMutex);
       jpegMixer=conference.VMLFind(requestedMixer);
       if(jpegMixer==NULL) { app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal(); return FALSE; }
       if(t1-(jpegMixer->jpegTime)>1)

@@ -674,12 +674,14 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 #  endif
     )
     {
-     if (UseSameVideoForAllMembers() && memberToAdd->IsVisible()) {
-      if (!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd)) 
-        memberToAdd->SetFreezeVideo(TRUE);
-       //        memberToAdd->videoStatus = 1;
-     PTRACE(3, "Conference\tUseSameVideoForAllMembers ");
-     }
+      if (UseSameVideoForAllMembers() && memberToAdd->IsVisible())
+      {
+        videoMixerListMutex.Wait();
+        if (!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd)) memberToAdd->SetFreezeVideo(TRUE);
+        videoMixerListMutex.Signal();
+//          memberToAdd->videoStatus = 1;
+        PTRACE(3, "Conference\tUseSameVideoForAllMembers ");
+      }
     }
     else memberToAdd->SetFreezeVideo(TRUE);
 
@@ -881,10 +883,14 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
     )
     { if (UseSameVideoForAllMembers())
       if (memberToRemove->IsVisible())
+      {
+        PWaitAndSignal m(videoMixerListMutex);
         videoMixerList->mixer->RemoveVideoSource(userid, *memberToRemove);
+      }
     }
     else
     {
+      PWaitAndSignal m(videoMixerListMutex);
       VideoMixerRecord * vmr=videoMixerList; while(vmr!=NULL)
       {
         vmr->mixer->MyRemoveVideoSourceById(userid,FALSE);
@@ -929,6 +935,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDE
       BOOL skip=moderated&&muteUnvisible;
       if(skip)
       {
+        PWaitAndSignal m(videoMixerListMutex);
         VideoMixerRecord * vmr = videoMixerList;
         while(vmr != NULL) if(vmr->mixer->GetPositionStatus(r->first)>=0)
         { skip=FALSE; break; }
@@ -954,12 +961,15 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, unsigned audio
     }
   }
 #if OPENMCU_VIDEO
-  if (UseSameVideoForAllMembers()) {
+  if (UseSameVideoForAllMembers())
+  {
+    PWaitAndSignal m(videoMixerListMutex);
     if (videoMixerList != NULL)
     {
       if(audioLevel > VAlevel) member->vad+=tint;
       else member->vad=0;
-      VideoMixerRecord * vmr=videoMixerList; while(vmr!=NULL)
+      VideoMixerRecord * vmr=videoMixerList;
+      while(vmr!=NULL)
       {
         MCUVideoMixer * videoMixer = vmr->mixer;
         int status = videoMixer->GetPositionStatus(member->GetID());
@@ -1001,6 +1011,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, unsigned audio
 
 void Conference::ReadMemberVideo(ConferenceMember * member, void * buffer, int width, int height, PINDEX & amount)
 {
+  PWaitAndSignal m(videoMixerListMutex);
   if (videoMixerList == NULL)
     return;
 
@@ -1040,7 +1051,9 @@ void Conference::ReadMemberVideo(ConferenceMember * member, void * buffer, int w
 
 BOOL Conference::WriteMemberVideo(ConferenceMember * member, const void * buffer, int width, int height, PINDEX amount)
 {
-  if (UseSameVideoForAllMembers()) {
+  if (UseSameVideoForAllMembers())
+  {
+    PWaitAndSignal m(videoMixerListMutex);
     if (videoMixerList != NULL) {
       VideoMixerRecord * vmr = videoMixerList; BOOL writeResult=FALSE;
       while(vmr!=NULL)
@@ -1050,7 +1063,8 @@ BOOL Conference::WriteMemberVideo(ConferenceMember * member, const void * buffer
       return writeResult;
     }
   }
-  else {
+  else
+  {
     PWaitAndSignal m(memberListMutex);
     MemberList::iterator r;
     for (r = memberList.begin(); r != memberList.end(); ++r)
@@ -1084,7 +1098,9 @@ void Conference::FreezeVideo(ConferenceMemberId id)
   if(id!=NULL)
   {
     r = memberList.find(id); if(r == memberList.end()) return;
-    VideoMixerRecord * vmr = videoMixerList; while(vmr!=NULL)
+    PWaitAndSignal m(videoMixerListMutex);
+    VideoMixerRecord * vmr = videoMixerList;
+    while(vmr!=NULL)
     { i=vmr->mixer->GetPositionStatus(id);
       if(i>=0) {
         r->second->SetFreezeVideo(FALSE);
@@ -1096,11 +1112,16 @@ void Conference::FreezeVideo(ConferenceMemberId id)
     r->second->SetFreezeVideo(TRUE);
     return;
   }
-  for (r = memberList.begin(); r != memberList.end(); r++) {
+  for (r = memberList.begin(); r != memberList.end(); r++)
+  {
     ConferenceMemberId mid=r->second->GetID();
-    VideoMixerRecord * vmr = videoMixerList; while(vmr!=NULL){
+    PWaitAndSignal m(videoMixerListMutex);
+    VideoMixerRecord * vmr = videoMixerList;
+    while(vmr!=NULL)
+    {
       i=vmr->mixer->GetPositionStatus(mid);
-      if(i>=0) {
+      if(i>=0)
+      {
         r->second->SetFreezeVideo(FALSE);
         break;
       }
@@ -1127,8 +1148,11 @@ BOOL Conference::PutChosenVan()
   int i;
   PWaitAndSignal m(memberListMutex);
   MemberList::iterator r;
-  for (r = memberList.begin(); r != memberList.end(); ++r) {
-    if(r->second->chosenVan) {
+  for (r = memberList.begin(); r != memberList.end(); ++r)
+  {
+    if(r->second->chosenVan)
+    {
+      PWaitAndSignal m(videoMixerListMutex);
       VideoMixerRecord * vmr = videoMixerList;
       while(vmr!=NULL){
         i=vmr->mixer->GetPositionStatus(r->second->GetID());
@@ -1151,10 +1175,17 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
     if(videoMixerCount==0) return;
     ConferenceMemberId id=member.GetID();
     if(id==NULL) return;
-    int pos=videoMixerList->mixer->GetPositionNum(id);
-    if(pos==posTo) return;
-    videoMixerList->mixer->InsertVideoSource(&member,posTo);
+
+    {
+      PWaitAndSignal m(videoMixerListMutex);
+      if(videoMixerList==NULL) return;
+      if(videoMixerList->mixer==NULL) return;
+      int pos=videoMixerList->mixer->GetPositionNum(id);
+      if(pos==posTo) return;
+      videoMixerList->mixer->InsertVideoSource(&member,posTo);
+    }
     FreezeVideo(NULL);
+
     OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this),number);
     OpenMCU::Current().HttpWriteCmdRoom("build_page()",number);
   }
