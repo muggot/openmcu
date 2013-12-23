@@ -4056,7 +4056,23 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     int pw=vmp.width*vf.width/CIF4_WIDTH; int ph=vmp.height*vf.height/CIF4_HEIGHT; if(pw<2 || ph<2) continue;
 
     const void *ist;
-    if(pw==width && ph==height) ist = buffer; //same size
+    if(pw==width && ph==height) //same size
+    {
+#     if USE_FREETYPE
+        if(theCopy.size()<2)
+        {
+          ist = buffer; 
+        }
+        else
+        {
+          imageStores_operational_size(pw,ph,_IMGST);
+          ist = imageStore.GetPointer(); 
+          memcpy((void*)ist, buffer, pw*ph*3/2);
+        }
+#     else
+        ist = buffer; 
+#     endif
+    }
     else if(pw*height<ph*width){
       imageStores_operational_size(ph*width/height,ph,_IMGST+_IMGST1);
       ResizeYUV420P((const BYTE *)buffer,    imageStore1.GetPointer(), width, height, ph*width/height, ph);
