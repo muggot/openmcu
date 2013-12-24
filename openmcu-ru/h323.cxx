@@ -1740,7 +1740,7 @@ void OpenMCUH323EndPoint::UnmoderateConference(Conference & conference)
   if(conference.videoMixerList!=NULL) mixer = conference.videoMixerList->mixer;
   if(mixer==NULL)
   {
-    conference.videoMixerListMutex.Wait();
+    conference.videoMixerListMutex.Signal();
     return;
   }
   mixer->MyRemoveAllVideoSource();
