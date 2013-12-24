@@ -1401,6 +1401,7 @@ function mixrfr()
       s+="</div>";
     }
     obj.innerHTML=s;
+    pos_y+=mh+MIXER_PANEL_HEIGHT;
   }
   if(old_visible_ids != visible_ids) members_refresh();
   alive();
