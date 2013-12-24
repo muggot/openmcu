@@ -1735,17 +1735,18 @@ PString OpenMCUH323EndPoint::RoomCtrlPage(const PString room, BOOL ctrl, int n, 
 
 void OpenMCUH323EndPoint::UnmoderateConference(Conference & conference)
 {
-  PWaitAndSignal m(conference.GetMutex());
-
-  PWaitAndSignal m2(conference.videoMixerListMutex);
-
+  conference.videoMixerListMutex.Wait();
   MCUVideoMixer * mixer = NULL;
   if(conference.videoMixerList!=NULL) mixer = conference.videoMixerList->mixer;
-
-  if(mixer==NULL) return;
-
+  if(mixer==NULL)
+  {
+    conference.videoMixerListMutex.Wait();
+    return;
+  }
   mixer->MyRemoveAllVideoSource();
+  conference.videoMixerListMutex.Signal();
 
+  conference.GetMutex().Wait();
   Conference::MemberList & memberList = conference.GetMemberList();
   Conference::MemberList::const_iterator s;
   for (s = memberList.begin(); s != memberList.end(); ++s) 
@@ -1756,8 +1757,11 @@ void OpenMCUH323EndPoint::UnmoderateConference(Conference & conference)
     if(mixer->AddVideoSource(member->GetID(), *member)) member->SetFreezeVideo(FALSE);
     else member->SetFreezeVideo(TRUE);
   }
+  conference.GetMutex().Signal();
 
+  conference.videoMixerListMutex.Wait();
   while(conference.videoMixerCount>1) conference.VMLDel(conference.videoMixerCount-1);
+  conference.videoMixerListMutex.Signal();
 }
 
 

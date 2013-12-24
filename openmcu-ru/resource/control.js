@@ -226,7 +226,7 @@ function ddstop(e){
 function ddover(e,o,substance,idx){
  if(!dd_in_progress) return true;
  if(dd_over===o)return false; //already complete
- if((dd_flying_substance==0)&&(dd_flying_idx===idx)) {dd_over_idx=-1;return false;} //?????????????????????
+ if((dd_flying_substance==substance)&&(dd_flying_idx===idx)) {dd_over_idx=-1;return false;}
  if(dd_over!==0)ddout(event,dd_over,idx);
  dd_over=o;
  dd_over_bgbkp=o.style.backgroundColor;
