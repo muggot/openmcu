@@ -1309,7 +1309,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
       PStringStream msg; msg << "Video mixer " << n << " added";
       OpenMCU::Current().HttpWriteEventRoom(msg,room);
       OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-      OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
+      OpenMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()",room);
       OTF_RET_OK;
     }
     OTF_RET_FAIL;
@@ -1323,7 +1323,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
       { PStringStream msg; msg << "Video mixer " << v << " removed";
         OpenMCU::Current().HttpWriteEventRoom(msg,room);
         OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-        OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
+        OpenMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()",room);
         OTF_RET_OK;
       }
     }
