@@ -2278,7 +2278,14 @@ class TplCleanCheckThread : public PThread
     void Main()
     {
       PThread::Sleep(3333); // previous connection may be still actvie
-      if(c!=NULL) c->OnConnectionClean(n, a);
+      if(c!=NULL)
+      {
+        if(OpenMCU::Current().GetEndpoint().GetConferenceManager().CheckAndLockConference(c))
+        {
+          c->OnConnectionClean(n, a);
+          OpenMCU::Current().GetEndpoint().GetConferenceManager().UnlockConference();
+        }
+      }
     }
   protected:
     Conference * c;
