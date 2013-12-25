@@ -245,8 +245,8 @@ void Conference::LoadTemplate(PString tpl)
 //            if(OpenMCU::Current().GetEndpoint().MakeCall(memberAddress, token, userData) != NULL)
             if(InviteMember(memberAddress, userData))
             {
-              PStringStream msg; msg << "Inviting " << memberAddress;
-              OpenMCU::Current().HttpWriteEventRoom(msg,number);
+//              PStringStream msg; msg << "Inviting " << memberAddress;
+//              OpenMCU::Current().HttpWriteEventRoom(msg,number);
             }
           }
           if(!offline) // online: just tune him up
@@ -588,17 +588,40 @@ void Conference::OnConnectionClean(const PString & remotePartyName, const PStrin
   if (name.Right(1)!="]")
   {
     PString url = remotePartyAddress;
+
     PINDEX i = url.Find("ip$");
     if(i != P_MAX_INDEX) url=url.Mid(i+3);
+
+    if(url.Mid(1,6).Find(':') == P_MAX_INDEX) // no url prefix :(
+    {
+      if(url.Find('@') == P_MAX_INDEX) url=PString("@")+url;
+      { // will used defaut prefix "h323:", fix it
+        url=PString("h323:") + url;
+        if(url.Right(5)==":1720") url=url.Left(url.GetLength()-5);
+      }
+    }
+
     if(!name.IsEmpty()) name+=' ';
     name += '[' + url +']';
   }
 
+  PWaitAndSignal m(memberListMutex);
   Conference::MemberNameList::iterator q = memberNameList.find(name);
   if(q == memberNameList.end())
   {
-    PTRACE(1,"Conference\tCould not match party name: " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
-    return;
+    for(q=memberNameList.begin(); q!=memberNameList.end(); ++q)
+    {
+      if(q->first.FindLast(name) != P_MAX_INDEX)
+      {
+        name = q->first;
+        break;
+      }
+    }
+    if(q == memberNameList.end())
+    {
+      PTRACE(1,"Conference\tCould not match party name: " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
+      return;
+    }
   }
   if(q->second != NULL)
   {
