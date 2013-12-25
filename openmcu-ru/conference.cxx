@@ -88,6 +88,19 @@ BOOL ConferenceManager::CheckAndLockConference(Conference * c)
   return FALSE;
 }
 
+Conference * ConferenceManager::FindConferenceWithLock(const PString & n)
+{
+  if(n.IsEmpty()) return NULL;
+  conferenceListMutex.Wait();
+  ConferenceListType::const_iterator r;
+  for (r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  {
+    if(r->second->GetNumber() == n) return r->second;
+  }
+  conferenceListMutex.Signal();
+  return NULL;
+}
+
 Conference * ConferenceManager::MakeAndLockConference(const OpalGloballyUniqueID & conferenceID, 
                                                                    const PString & roomToCreate, 
                                                                    const PString & name)
