@@ -75,6 +75,18 @@ Conference * ConferenceManager::MakeAndLockConference(const PString & roomToCrea
   return MakeAndLockConference(conferenceID, roomToCreate, name);
 }
 
+BOOL ConferenceManager::CheckAndLockConference(Conference * c)
+{
+  if(!c) return FALSE;
+  conferenceListMutex.Wait();
+  ConferenceListType::const_iterator r;
+  for (r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  {
+    if(r->second == c) return TRUE;
+  }
+  conferenceListMutex.Signal();
+  return FALSE;
+}
 
 Conference * ConferenceManager::MakeAndLockConference(const OpalGloballyUniqueID & conferenceID, 
                                                                    const PString & roomToCreate, 

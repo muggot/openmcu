@@ -1422,6 +1422,8 @@ class ConferenceManager : public PObject
       const PString & name
     );
 
+    BOOL CheckAndLockConference(Conference * c);
+
     /**
      * Make a new conference with the specified number and name, and use a new conference ID
      */
