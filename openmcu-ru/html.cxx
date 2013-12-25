@@ -627,7 +627,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   s << ColumnItem(JsLocale("window.l_name_audio_codec_transmit"));
   s << ColumnItem(JsLocale("window.l_name_video_codec_transmit"));
 
-  PString aCapsR, vCapsR, aCapsT, vCapsT;
+  PString aCapsR = ",Disabled", vCapsR = ",Disabled", aCapsT = ",Disabled", vCapsT = ",Disabled";
   if(mcu.GetEndpoint().rsCaps != NULL)
   { PINDEX rsNum = 0; while(mcu.GetEndpoint().rsCaps[rsNum]!=NULL) { aCapsR += ","+PString(mcu.GetEndpoint().rsCaps[rsNum]); rsNum++; } }
   if(mcu.GetEndpoint().rvCaps != NULL)
@@ -717,7 +717,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   s << ColumnItem(JsLocale("window.l_name_audio_codec"));
   s << ColumnItem(JsLocale("window.l_name_video_codec"));
 
-  PString aCaps, vCaps;
+  PString aCaps = ",Disabled", vCaps = ",Disabled";
   if(mcu.GetEndpoint().tsCaps != NULL)
   { PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { aCaps += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; } }
   if(mcu.GetEndpoint().tvCaps != NULL)
