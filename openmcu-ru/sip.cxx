@@ -41,7 +41,7 @@ PString GetFromIp(const char *toAddr, const char *toPort)
     return (PString)buffer;
 #else
     PString buffer0 = PIPSocket::Address(name.sin_addr);
-    close(sock);
+    closesocket(sock);
     return buffer0;
 #endif
 }
