@@ -242,7 +242,8 @@ function integer_pad_float(v, f)
   var m=10; if(f==2) m=100; if(f==3) m=1000;
   var s=""+(Math.round(v*m)/m)+"";
   if(s.indexOf('.') == -1) s+='.';
-  while(s.length - (s.lastIndexOf('.')) < f+1) s+="0";
+  var dp=s.lastIndexOf('.');
+  while(s.length - dp < f+1) s+="0";
   return s;
 }
 
@@ -282,7 +283,7 @@ function get_data()
 
 function get_data_fail()
 { xro.abort();
-  if((getDataErrorCounter++) <= UPDATE_RETRIES) timer=setTimeout(get_data, UPDATE_INTERVAL);
+  if((getDataErrorCount++) <= UPDATE_RETRIES) timer=setTimeout(get_data, UPDATE_INTERVAL);
   else show_error();
 }
 
@@ -296,7 +297,7 @@ function got_data()
       eval("data="+xro.responseText+";");
       while(store.length >= STEPS_TO_REMEMBER) on_delete_data(store.shift());
       store.push(data);
-      getDataErrorCounter=0;
+      getDataErrorCount=0;
     }
     else
     {
