@@ -2102,6 +2102,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
 
 // directory d is now opened
   PStringArray fileList;
+  unsigned long totalSize = 0;
 
 #ifdef _WIN32
   do if(strcmp(".", d.cFileName) && strcmp("..", d.cFileName))
@@ -2110,7 +2111,10 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     if(f!=NULL)
     {
       fseek(f, 0, SEEK_END);
-      PStringStream r; r << d.cFileName << "," << ftell(f);
+      long fileSize=ftell(f);
+      totalSize+=fileSize;
+      PStringStream r;
+      r << d.cFileName << "," << fileSize;
       fileList.AppendString(r);
       fclose(f);
     }
@@ -2125,7 +2129,9 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     if(f!=NULL)
     {
       fseek(f, 0, SEEK_END);
-      PStringStream r; r << e->d_name << "," << ftell(f);
+      long fileSize=ftell(f);
+      totalSize+=fileSize;
+      PStringStream r; r << e->d_name << "," << fileSize;
       fileList.AppendString(r);
       fclose(f);
     }
@@ -2137,36 +2143,22 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   if(data.Contains("sort")) {sortMode = data("sort").AsInteger(); if(sortMode<0 || sortMode>7) sortMode=0;}
 
   PString freeSpace;
-#ifdef _WIN32
-#else
-  FILE* pfs = popen(PString("df -h ")+dir, "r");
-  if (pfs)
   {
-    PString fs0;
-    char buffer[128];
-    while(!feof(pfs)) if(fgets(buffer, 128, pfs) != NULL) fs0+=buffer;
-    pclose(pfs);
-    PINDEX slashPos=fs0.Find('/', 20);
-    if(slashPos!=P_MAX_INDEX)
+    PDirectory pd(dir);
+    PInt64 t, f;
+    DWORD cs;
+    if(pd.GetVolumeSpace(t, f, cs))
     {
-      BOOL space=FALSE; PINDEX sc=0;
-      for(PINDEX i=slashPos;i<fs0.GetLength();i++)
-      {
-        char c = fs0[i];
-        BOOL csp = c<=32;
-        if(csp && (!space)) { space=TRUE; sc++;}
-        space &= csp;
-        if(sc==3 && (!space))
-        {
-          PINDEX j=i;
-          while((j<fs0.GetLength()) && ((c=fs0[j]) > 32)) {freeSpace += c; j++;}
-          freeSpace += " free.";
-          break;
-        }
-      }
+      PStringStream q;
+      if(!t)t=1;
+      q << "<pre>" << dec << setprecision(1) << fixed
+        <<     "Total drive size: " << (t        >>30) << " GiB."
+        << "<br>Records takes up: " << (totalSize>>30) << " GiB (" << (100.0 * totalSize / t) << "%)."
+        << "<br>Free space left:  " << (f        >>30) << " GiB (" << (100.0 * f         / t) << "%)."
+        << "</pre>";
+      freeSpace=q;
     }
   }
-#endif
 
   if(fileList.GetSize()==0) shtml << "The direcory does not contain records at the moment. " << freeSpace; else
   {
