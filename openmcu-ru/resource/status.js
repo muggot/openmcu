@@ -218,7 +218,7 @@ function member_get_cache_fps(m)
   cache_fps[fs]=fps;
 
   var i=0, roomName = fs.substring(fs.indexOf('_')+1, fs.lastIndexOf('/'));
-  while (i<roomCount) if(data[i][0] = roomName) break; else i++;
+  while (i<roomCount) if(data[i][0] == roomName) break; else i++;
   if(i==roomCount) return fps;
 
   var j=0;
