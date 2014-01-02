@@ -15,6 +15,9 @@ var fortyTwo=42
   ,AUDIO_IN_STR      = "Audio In"
   ,VIDEO_OUT_STR     = "Video Out"
   ,VIDEO_IN_STR      = "Video In"
+  ,BUTTON_TEXT       = "Get Text"
+  ,BUTTON_FORUM      = "Get BBCode"
+  ,BUTTON_HTML       = "Get HTML"
   ,DAYS_STR          = "day(s)"
   ,COL_NAME          = "Name"
   ,COL_DURATION      = "Duration"
@@ -37,6 +40,7 @@ var fortyTwo=42
   ,timer             = null
   ,xro               = null
   ,cache_fps         = []
+  ,haveCode          = 0
   ;
 
   if (typeof window.l_connections_OFFLINE_PREFIX != 'undefined')
@@ -242,7 +246,8 @@ function integer_pad_float(v, f)
   var m=10; if(f==2) m=100; if(f==3) m=1000;
   var s=""+(Math.round(v*m)/m)+"";
   if(s.indexOf('.') == -1) s+='.';
-  while(s.length - (s.lastIndexOf('.')) < f+1) s+="0";
+  var dp=s.lastIndexOf('.');
+  while(s.length - dp < f+1) s+="0";
   return s;
 }
 
@@ -282,7 +287,7 @@ function get_data()
 
 function get_data_fail()
 { xro.abort();
-  if((getDataErrorCounter++) <= UPDATE_RETRIES) timer=setTimeout(get_data, UPDATE_INTERVAL);
+  if((getDataErrorCount++) <= UPDATE_RETRIES) timer=setTimeout(get_data, UPDATE_INTERVAL);
   else show_error();
 }
 
@@ -296,7 +301,7 @@ function got_data()
       eval("data="+xro.responseText+";");
       while(store.length >= STEPS_TO_REMEMBER) on_delete_data(store.shift());
       store.push(data);
-      getDataErrorCounter=0;
+      getDataErrorCount=0;
     }
     else
     {
@@ -462,5 +467,151 @@ function handle_data()
   }
 }
 
+function get_code(codeType)
+{
+  if(haveCode) return;
+  haveCode=1;
+  var text='', result='', openTag='', closeTag='';
+  if(codeType==1)
+  {
+    openTag='[';
+    closeTag=']';
+  }
+  else if(codeType==2)
+  {
+    openTag='<';
+    closeTag='>';
+  }
+  var rooms=WORKPLACE.getElementsByTagName('div');
+  for (var i=0;i<rooms.length;i++)
+  {
+    var roomName=rooms[i].id;
+    if(roomName.substr(0,4)!='r_b_') continue;
+    text+=rooms[i].innerHTML;
+  }
+  var i=0, skip=0, openFont='font', cellCount=0;
+
+  while(i<text.length)
+  {
+    var c=text[i];
+    if(c=='<')
+    {
+      var j=text.indexOf('>',i+1);
+      if(j==-1) break;
+      var tag=text.substring(i+1,j).toLowerCase();
+      i=j;
+      var close=(tag[0]=='/');
+      if(close) tag=tag.substr(1);
+      var offs=0;
+      if(tag.substr(0,4)=='font') offs=5;
+      j=tag.indexOf('/',offs);
+      if(j>0) tag=tag.substr(0,j);
+      j=tag.indexOf(' ',offs);
+      if(j>0) tag=tag.substr(0,j);
+      if(tag.length>0)
+      {
+        if(!codeType)
+        {
+          if(close)
+          {
+                 if(tag=="th")    { skip=0; }
+            else if(tag=="table") { result+="\n\n"; }
+          }
+          else
+          {
+                 if(tag=="tr")    { cellCount=0; result+="\n"; }
+            else if(tag=="td")    { cellCount++; if(cellCount>1) result+='; '; }
+            else if(tag=="th")    { cellCount++; skip=1; }
+            else if(tag=="br")    { result+="|"; }
+          }
+          i++;
+          continue;
+        }
+        if(codeType==1)
+        {
+          if(tag=='th') tag='td';
+          else
+          if(tag.substr(0,10)=='font color')
+          {
+            tag=tag.substr(5);
+            tag=tag.replace(/("|')/g, "");
+            openFont='color';
+          }
+          else
+          if(tag.substr(0,9)=='font size')
+          {
+            tag=tag.substr(5);
+            tag=tag.replace(/("|')/g, "");
+            openFont='size';
+          }
+          else
+          if(tag=='font') tag=openFont;
+        }
+        if((tag=='br')||(tag=='b')||(tag=='i')||(tag=='s')||(tag=='table')||(tag=='tr')||(tag=='td')||(tag=='th')||(tag=='font')||(tag.substr(0,9)=='font size')||(tag.substr(0,10)=='font color')||(tag.substr(0,5)=='color')||(tag.substr(0,4)=='size')||(tag=='hr'))
+        {
+          result+=openTag+(close?'/':'')+tag+closeTag;
+        }
+      }
+    }
+    else
+    if(c=='>')
+    {
+      break;
+    }
+    else
+    if(c=='&')
+    {
+      if(text.substr(i,6)=='&nbsp;')
+      {
+        if(codeType==1) result+=' ';
+        else if(codeType==2) result+='&nbsp;';
+        i+=5;
+      }
+      else
+      {
+        var j=text.indexOf(';',i+1);
+        if(j==-1) break;
+        i=j;
+      }
+    }
+    else
+    {
+      if(!skip)
+      {
+        result+=c;
+      }
+    }
+    i++;
+  }
+  var d=document.createElement('DIV');
+  d.id='statusCode';
+  d.innerHTML='<textarea onblur="close_code()" onkeyup="close_code()" title="Ctrl+C to copy" id="statusCodeSelector" style="width:90%;height:200px">'+result+'</textarea><br>'
+    +'<span class="btn" onclick="close_code()">X</span>';
+  document.getElementById('buttons').appendChild(d);
+  var s=document.getElementById('statusCodeSelector');
+  s.focus();
+  s.select();
+}
+
+function close_code()
+{
+  document.getElementById('buttons').removeChild(document.getElementById('statusCode'));
+  haveCode=0;
+}
+
+
+
 WORKPLACE=document.getElementById('status1');
+
+{
+  var d=document.createElement('DIV');
+  d.id='buttons';
+  d.innerHTML=
+       '<span class="btn" onclick="javascript:get_code(0)">' + BUTTON_TEXT + '</span>'
+    + ' <span class="btn" onclick="javascript:get_code(1)">' + BUTTON_FORUM+ '</span>'
+    + ' <span class="btn" onclick="javascript:get_code(2)">' + BUTTON_HTML + '</span>'
+  ;
+  WORKPLACE.appendChild(d);
+}
+
 timer=setTimeout(get_data, START_DELAY);
