@@ -52,7 +52,7 @@ i15_mic_off.gif \
 i20_vad.gif \
 i24_shuff.gif \
 i15_getNoVideo.gif \
-openmcu.ru_logo_text.bmp \
+openmcu.ru_logo_text.png \
 menu_left.png \
 connecting.wav \
 entering.wav \
