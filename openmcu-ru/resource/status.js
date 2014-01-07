@@ -91,10 +91,14 @@ function findMemberInTable(objTable, memberName, memberId)
   var searchStr = (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) + memberName + (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX);
   for(var i=objTable.rows.length-1; i>=0; i--)
   {
-    if(objTable.rows[i].cells[0].innerHTML == searchStr) return i;
+    if(objTable.rows[i].cells[0].innerHTML == searchStr) if(objTable.rows[i].cells[0].id==memberId) return i;
   }
 //special for firefox:
-  searchStr = searchStr.toLowerCase(); for(var i=objTable.rows.length-1; i>=0; i--) if(objTable.rows[i].cells[0].innerHTML.toLowerCase() == searchStr) return i;
+  searchStr = searchStr.toLowerCase();
+  for(var i=objTable.rows.length-1; i>=0; i--)
+  {
+    if(objTable.rows[i].cells[0].innerHTML.toLowerCase() == searchStr) if(objTable.rows[i].cells[0].id==memberId)  return i;
+  }
   return -1;
 }
 
@@ -291,6 +295,56 @@ function get_data_fail()
   else show_error();
 }
 
+function sort_rooms(a,b)
+{
+  if(a[0]>b[0]) return 1;
+  if(a[0]<b[0]) return -1;
+  return 0;
+}
+
+function sort_members(a,b)
+{
+  if(b[1]==FILE_RECORDER_NAME) //file recorder on top
+  {
+    return 1;
+  }
+  if(a[1]==FILE_RECORDER_NAME) //file recorder on top
+  {
+    return -1;
+  }
+
+  if(b[1]==CACHE_NAME)
+  {
+    if(a[1] != CACHE_NAME) return 1;
+    if(a[14]>b[14]) return 1;
+    if(a[14]<b[14]) return -1;
+    return 0;
+  }
+
+  if(a[0]==0) //offline member: BOTTOM
+  {
+    if(b[0]) return 1;
+    if(a[1]>b[1]) return 1;
+    if(a[1]<b[1]) return -1;
+    return 0;
+  }
+
+  if(a[1]>b[1]) return 1;
+  if(a[1]<b[1]) return -1;
+  return 0;
+}
+
+function data_sort_function(data)
+{
+  data.sort(sort_rooms);
+  var i;
+  for(i=0;i<data.length;i++)
+  {
+    data[i][4].sort(sort_members);
+  }
+  return data;
+}
+
 function got_data()
 { try
   {
@@ -300,6 +354,7 @@ function got_data()
     {
       eval("data="+xro.responseText+";");
       while(store.length >= STEPS_TO_REMEMBER) on_delete_data(store.shift());
+      data=data_sort_function(data);
       store.push(data);
       getDataErrorCount=0;
     }
@@ -361,6 +416,7 @@ function on_member_add(room, member)
 
   var td=tr.insertCell(0);
   td.innerHTML = (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) + member[1] + (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX);
+  td.id=member[0];
 
   td=tr.insertCell(1); //Duration
   td.style.textAlign='right';
@@ -493,14 +549,14 @@ function get_code(codeType)
 
   while(i<text.length)
   {
-    var c=text[i];
+    var c=text.charAt(i);
     if(c=='<')
     {
       var j=text.indexOf('>',i+1);
       if(j==-1) break;
       var tag=text.substring(i+1,j).toLowerCase();
       i=j;
-      var close=(tag[0]=='/');
+      var close=(tag.charAt(0)=='/');
       if(close) tag=tag.substr(1);
       var offs=0;
       if(tag.substr(0,4)=='font') offs=5;
@@ -578,7 +634,7 @@ function get_code(codeType)
     {
       if(!skip)
       {
-        result+=c;
+        if(c>=" ")result+=c;
       }
     }
     i++;
