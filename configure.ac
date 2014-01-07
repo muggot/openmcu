@@ -247,6 +247,7 @@ if test "${rendering_names}" = "yes"; then
     FREETYPE_LDFLAGS="`pkg-config --silence-errors --libs-only-L freetype2`";
     LDLIBS="$LDLIBS -lfreetype"
   else
+    rendering_names=no
     AC_MSG_WARN(libfreetype not found!)
   fi
 fi
@@ -302,17 +303,27 @@ if test "${resample}" = "yes"; then
     RESAMPLE_CPPFLAGS="${LIBAV_CPPFLAGS}";
     RESAMPLE_LDFLAGS="${LIBAV_LDFLAGS}";
     LDLIBS="$LDLIBS -lswresample"
+    resampler_libav=no
+    resampler_libsamplerate=no
   elif test "${AVRESAMPLE}" = "1"; then
     USE_AVRESAMPLE=1
     RESAMPLE_CPPFLAGS="${LIBAV_CPPFLAGS}";
     RESAMPLE_LDFLAGS="${LIBAV_LDFLAGS}";
     LDLIBS="$LDLIBS -lavresample"
+    resampler_ffmpeg=no
+    resampler_libsamplerate=no
   elif test "${LIBSAMPLERATE}" = "1"; then
     USE_LIBSAMPLERATE=1
     RESAMPLE_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I samplerate`";
     RESAMPLE_LDFLAGS="`pkg-config --silence-errors --libs-only-L samplerate`";
     LDLIBS="$LDLIBS -lsamplerate"
+    resampler_libav=no
+    resampler_libsamplerate=no
   else
+    resample=no
+    resampler_ffmpeg=no
+    resampler_libav=no
+    resampler_libsamplerate=no
     AC_MSG_WARN(libswresample/libavresample/libsamplerate not found!)
   fi
 fi
@@ -328,6 +339,7 @@ if test "${live_video}" = "yes"; then
     JPEG_LDFLAGS="`pkg-config --silence-errors --libs-only-L libjpeg`";
     LDLIBS="$LDLIBS -ljpeg"
   else
+    live_video=no
     AC_MSG_WARN(libjpeg not found!)
   fi
 fi
@@ -343,6 +355,7 @@ if test "${optimized_frame_resize}" = "yes"; then
     YUV_LDFLAGS="`pkg-config --silence-errors --libs-only-L libyuv`";
     LDLIBS="$LDLIBS -lyuv"
   else
+    optimized_frame_resize=no
     AC_MSG_WARN(libyuv not found!)
   fi
 fi
