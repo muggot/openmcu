@@ -87,10 +87,14 @@ function findMemberInTable(objTable, memberName, memberId)
   var searchStr = (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) + memberName + (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX);
   for(var i=objTable.rows.length-1; i>=0; i--)
   {
-    if(objTable.rows[i].cells[0].innerHTML == searchStr) return i;
+    if(objTable.rows[i].cells[0].innerHTML == searchStr) if(objTable.rows[i].cells[0].id==memberId) return i;
   }
 //special for firefox:
-  searchStr = searchStr.toLowerCase(); for(var i=objTable.rows.length-1; i>=0; i--) if(objTable.rows[i].cells[0].innerHTML.toLowerCase() == searchStr) return i;
+  searchStr = searchStr.toLowerCase();
+  for(var i=objTable.rows.length-1; i>=0; i--)
+  {
+    if(objTable.rows[i].cells[0].innerHTML.toLowerCase() == searchStr) if(objTable.rows[i].cells[0].id==memberId)  return i;
+  }
   return -1;
 }
 
@@ -357,6 +361,7 @@ function on_member_add(room, member)
 
   var td=tr.insertCell(0);
   td.innerHTML = (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) + member[1] + (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX);
+  td.id=member[0];
 
   td=tr.insertCell(1); //Duration
   td.style.textAlign='right';
