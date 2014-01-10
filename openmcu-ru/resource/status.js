@@ -15,9 +15,15 @@ var fortyTwo=42
   ,AUDIO_IN_STR      = "Audio In"
   ,VIDEO_OUT_STR     = "Video Out"
   ,VIDEO_IN_STR      = "Video In"
+  ,AI_NEG_ERR        = "A/I Neg. Error"
+  ,AO_NEG_ERR        = "A/O Neg. Error"
+  ,VI_NEG_ERR        = "V/I Neg. Error"
+  ,VO_NEG_ERR        = "V/O Neg. Error"
   ,BUTTON_TEXT       = "Get Text"
   ,BUTTON_FORUM      = "Get BBCode"
   ,BUTTON_HTML       = "Get HTML"
+  ,BUTTON_CLOSE      = "X"
+  ,CODE_TOOLTIP      = "Ctrl+C to copy"
   ,DAYS_STR          = "day(s)"
   ,COL_NAME          = "Name"
   ,COL_DURATION      = "Duration"
@@ -53,6 +59,15 @@ var fortyTwo=42
     AUDIO_IN_STR   = window.l_connections_AUDIO_IN_STR  ;
     VIDEO_OUT_STR  = window.l_connections_VIDEO_OUT_STR ;
     VIDEO_IN_STR   = window.l_connections_VIDEO_IN_STR  ;
+    AI_NEG_ERR     = window.l_connections_AI_NEG_ERR    ;
+    AO_NEG_ERR     = window.l_connections_AO_NEG_ERR    ;
+    VI_NEG_ERR     = window.l_connections_VI_NEG_ERR    ;
+    VO_NEG_ERR     = window.l_connections_VO_NEG_ERR    ;
+    BUTTON_TEXT    = window.l_connections_BUTTON_TEXT   ;
+    BUTTON_FORUM   = window.l_connections_BUTTON_FORUM  ;
+    BUTTON_HTML    = window.l_connections_BUTTON_HTML   ;
+    BUTTON_CLOSE   = window.l_connections_BUTTON_CLOSE  ;
+    CODE_TOOLTIP   = window.l_connections_CODE_TOOLTIP  ;
     DAYS_STR       = window.l_connections_DAYS_STR      ;
     COL_NAME       = window.l_connections_COL_NAME      ;
     COL_DURATION   = window.l_connections_COL_DURATION  ;
@@ -125,20 +140,59 @@ function member_get_nice_duration(m)
   return "" + d + DAYS_STR + " " + line;
 }
 
+function member_get_nice_stream(isAudio, isCached, streamName, streamText, streamNegErrorText)
+{ // функция посвящается уважаемому palexa, http://openmcu.ru/forum/index.php/topic,611.0.html
+  // её можно и нужно настроить по своему усмотрению, как это сделать - см. комментарии далее:
+
+  var r='<nobr><b>'; // будем формировать строку <nobr><b>ПОТОК:</b> кодек</nobr>
+
+  var atPos=streamText.lastIndexOf('@'); // ищем @, делим streamText на две части
+  var leftPart=streamText;
+  var rightPart='';
+  if(atPos!=-1)
+  {
+    leftPart=streamText.substr(0,atPos);
+    rightPart=streamText.substr(atPos+1);
+  }
+
+  var negError = ((leftPart=='none')||(rightPart=='0x0')); // слева none или справа 0x0 - признаки ошибки согласования
+
+  if(negError) // если ошибка, то красим красным, текст ошибки
+  {
+    r+="<font color='red'>"+streamNegErrorText+"</font>";
+  }
+  else // иначе красим как обычно и текст обычный
+  {
+    if(isCached) r+="<font color='green'>";
+    r+=streamName;
+    if(isCached) r+="</font>";
+  }
+
+  r+=":</b> "; // ну и так далее и тому подобное :)
+  if(negError)
+  {
+    if(leftPart=='none') r+="<font color='blue'>"+streamText+"</font>";
+    else                 r+="<font color='red'>" +streamText+"</font>";
+  }
+  else
+  {
+    r+=streamText;
+  }
+
+  r+="</nobr>";
+  return r;
+}
+
 function member_get_nice_codecs(m)
 {
   if(!m[0]) return "-";
   if(m[1]==FILE_RECORDER_NAME) return "-";
   if(m[1]==CACHE_NAME) return "<nobr><b>" + VIDEO_OUT_STR + ":</b> " + m[14] + "</nobr>";
 
-  var s=
-    "<nobr><b>" + AUDIO_IN_STR  + ":</b> " + m[ 9] + "</nobr><br>" +
-    "<nobr><b>" + AUDIO_OUT_STR + ":</b> " + m[10] + "</nobr><br>" +
-    "<nobr><b>" + VIDEO_IN_STR  + ":</b> " + m[11] + "</nobr><br>";
-  var s2="<nobr><b>"; if(m[13]==2) s2+="<font color='green'>";
-  s2+=VIDEO_OUT_STR; if(m[13]==2) s2+="</font>";
-  s2+=":</b> " + m[12] + "</nobr>";
-  return s+s2;
+  return member_get_nice_stream(1,0         ,AUDIO_IN_STR ,m[ 9], AI_NEG_ERR ) + "<br>" +
+         member_get_nice_stream(1,0         ,AUDIO_OUT_STR,m[10], AO_NEG_ERR) + "<br>" +
+         member_get_nice_stream(0,0         ,VIDEO_IN_STR ,m[11], VI_NEG_ERR ) + "<br>" +
+         member_get_nice_stream(0,(m[13]==2),VIDEO_OUT_STR,m[12],VO_NEG_ERR);
 }
 
 function member_get_nice_packets(m)
@@ -641,8 +695,8 @@ function get_code(codeType)
   }
   var d=document.createElement('DIV');
   d.id='statusCode';
-  d.innerHTML='<textarea onblur="close_code()" onkeyup="close_code()" title="Ctrl+C to copy" id="statusCodeSelector" style="width:90%;height:200px">'+result+'</textarea><br>'
-    +'<span class="btn" onclick="close_code()">X</span>';
+  d.innerHTML='<textarea onblur="close_code()" onkeyup="close_code()" title="'+CODE_TOOLTIP+'" id="statusCodeSelector" style="width:90%;height:200px">'+result+'</textarea><br>'
+    +'<span class="btn" onclick="close_code()">'+BUTTON_CLOSE+'</span>';
   document.getElementById('buttons').appendChild(d);
   var s=document.getElementById('statusCodeSelector');
   s.focus();
