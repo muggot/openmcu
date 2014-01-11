@@ -64,6 +64,7 @@ locale_ru.js \
 locale_en.js \
 i16_close_gray.png \
 i16_close_red.png \
+../win/openmcu.ico \
 
 OBJDIR	= ./obj
 OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdir $(SOURCES)))))
