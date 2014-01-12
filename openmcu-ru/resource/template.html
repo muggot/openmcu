@@ -37,10 +37,11 @@
       <ul id="topnav">
         <li><span style="padding:0px 15px;"></span></li>
 
-        <li><a href="http://openmcu.ru/forum/" target="_blank"><strong id="l_help"></strong></a>
+        <li><script type='text/javascript'>document.write('<a href="http://openmcu.ru/wiki/'+window.lang_code+'/help/index/" target="_blank"><strong id="l_help"></strong></a>');</script>
          <menu>
+          <li><script type='text/javascript'>document.write('<a href="http://openmcu.ru/wiki/'+window.lang_code+'/help/index/" id="l_help2" target="_blank"></a>');</script></li>
+          <li><script type='text/javascript'>document.write('<a href="http://openmcu.ru/wiki/'+window.lang_code+'/support/" id="l_support" target="_blank"></a>');</script></li>
           <li><a href='http://openmcu.ru/forum/' target="_blank" id="l_forum"></a></li>
-          <li><a href='http://openmcu.ru/public/user_guide.pdf' target="_blank" id="l_manual"></a></li>
          </menu>
         </li>
 
@@ -149,8 +150,9 @@ $BODY$
  <script type="text/javascript">
    <!-- локализация панели -->
    document.getElementById("l_help").innerHTML = window.l_help;
+   document.getElementById("l_help2").innerHTML = window.l_help;
    document.getElementById("l_forum").innerHTML = window.l_forum;
-   document.getElementById("l_manual").innerHTML = window.l_manual;
+   document.getElementById("l_support").innerHTML = window.l_support;
    document.getElementById("l_settings").innerHTML = window.l_settings;
    document.getElementById("l_param_general").innerHTML = window.l_param_general;
    document.getElementById("l_param_managing_users").innerHTML = window.l_param_managing_users;

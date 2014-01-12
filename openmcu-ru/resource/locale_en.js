@@ -58,6 +58,7 @@ window.l_param_sip_video = 'Video codecs';
 window.l_help = 'Help';
 window.l_forum = 'Forum';
 window.l_manual = 'Manual';
+window.l_support = 'Support';
 
 window.l_info_welcome ='\
 <p>\
