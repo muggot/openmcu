@@ -49,6 +49,7 @@ window.l_param_sip_video = 'Видео кодеки';
 window.l_help = 'Помощь';
 window.l_forum = 'Форум'
 window.l_manual = 'Документация';
+window.l_support = 'Поддержка';
 
 window.l_info_welcome ='\
 <p>\
