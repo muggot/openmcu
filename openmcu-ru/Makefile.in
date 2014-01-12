@@ -62,6 +62,7 @@ control.js \
 status.js \
 locale_ru.js \
 locale_en.js \
+main.css \
 i16_close_gray.png \
 i16_close_red.png \
 ../win/openmcu.ico \
