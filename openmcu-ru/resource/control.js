@@ -1199,7 +1199,7 @@ function split_selector(mixer, splitSelected){
       +OTFC_SET_VIDEO_MIXER_LAYOUT
       +",(parseInt(document.getElementById(\"splitselector"+mixer+"\").value)+splitdata.length-1)%splitdata.length,"+mixer+");}'"
     +">"+MIXER_LAYOUT_SCROLL_LEFT_BUTTON+"</span>";
-  r+="<select id='splitselector"+mixer+"' name='splitselector"+mixer+"' style='width:75px' onchange='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_VIDEO_MIXER_LAYOUT+",this.value,"+mixer+"); else this.value="+splitSelected+";}'>";
+  r+="<select id='splitselector"+mixer+"' name='splitselector"+mixer+"' style='width:90px' onchange='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_VIDEO_MIXER_LAYOUT+",this.value,"+mixer+"); else this.value="+splitSelected+";}'>";
   for(var i=0;i<splitdata.length;i++){
     r+="<option value="+i;
     if(i==splitSelected) r+=" selected";
