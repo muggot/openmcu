@@ -177,7 +177,7 @@ function member_get_nice_stream(isAudio, isCached, streamName, streamText, strea
   r+=":</b> "; // ну и так далее и тому подобное :)
   if(negError)
   {
-    if(leftPart=='none') r+="<font color='blue'>"+streamText+"</font>";
+    if(leftPart=='none') r+="<font color='brown'>"+streamText+"</font>";
     else                 r+="<font color='red'>" +streamText+"</font>";
   }
   else
@@ -431,13 +431,19 @@ function on_delete_data(d)
 {
 }
 
+function RoomControlPage(r)
+{
+  document.getElementById('clicker').room.value=decodeURIComponent(r);
+  document.getElementById('clicker').submit();
+}
+
 function on_create_new_room(r)
 {
   var s='r_b_'+r; on_delete_room(r);
 
   var d=document.createElement('DIV');
   d.id=s;
-  d.innerHTML="<p class='roomname'>" + WORD_ROOM + " " + r + "</p>"
+  d.innerHTML="<p onclick='javascript:RoomControlPage(\""+encodeURIComponent(r)+"\")' class='roomname'>" + WORD_ROOM + " " + r + "</p>"
     + '<table id="r_t_' + r + '" class="table table-striped table-bordered table-condensed">'
     + "<tr>"
       + "<th>&nbsp;"+COL_NAME    +"&nbsp;</th>"
@@ -726,9 +732,11 @@ WORKPLACE=document.getElementById('status1');
   var d=document.createElement('DIV');
   d.id='buttons';
   d.innerHTML=
-       '<span class="btn" onclick="javascript:get_code(0)">' + BUTTON_TEXT + '</span>'
+      '<form method="post" id="clicker" name="clicker" action="/Select"><input type="hidden" name="room" value="room101">'
+    + '<span class="btn" onclick="javascript:get_code(0)">' + BUTTON_TEXT + '</span>'
     + ' <span class="btn" onclick="javascript:get_code(1)">' + BUTTON_FORUM+ '</span>'
     + ' <span class="btn" onclick="javascript:get_code(2)">' + BUTTON_HTML + '</span>'
+    + '</form>';
   ;
   WORKPLACE.appendChild(d);
 }

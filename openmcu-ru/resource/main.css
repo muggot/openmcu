@@ -347,4 +347,4 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
  }
 
  .remapp{font-size:11px;color:#557}
- .roomname{font-size:15px;font-weight:bold;padding-top:14px;text-align:center;}
+ .roomname{font-size:15px;font-weight:bold;padding-top:14px;text-align:center;cursor:pointer;color:#00a}
