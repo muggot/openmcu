@@ -358,32 +358,23 @@ function sort_rooms(a,b)
 
 function sort_members(a,b)
 {
-  if(b[1]==FILE_RECORDER_NAME) //file recorder on top
+  if(b[1]==FILE_RECORDER_NAME) return  1; // 1) file recorder   -> top
+  if(a[1]==FILE_RECORDER_NAME) return -1;
+  if(b[1]==CACHE_NAME)                    // 2) caches          -> top (by formatString, idx 14):
   {
-    return 1;
-  }
-  if(a[1]==FILE_RECORDER_NAME) //file recorder on top
-  {
+    if(a[1]!=CACHE_NAME) return  1;
+    if(a[14]>b[14]) return 1;
     return -1;
   }
-
-  if(b[1]==CACHE_NAME)
+  if(a[1]==CACHE_NAME)
   {
-    if(a[1] != CACHE_NAME) return 1;
+    if(b[1]!=CACHE_NAME) return -1;
     if(a[14]>b[14]) return 1;
-    if(a[14]<b[14]) return -1;
-    return 0;
+    return -1;
   }
-
-  if(a[0]==0) //offline member: BOTTOM
-  {
-    if(b[0]) return 1;
-    if(a[1]>b[1]) return 1;
-    if(a[1]<b[1]) return -1;
-    return 0;
-  }
-
-  if(a[1]>b[1]) return 1;
+  if(!a[0]) if(b[0]) return  1;           // 3) offline members -> bottom
+  if(!b[0]) if(a[0]) return -1;
+  if(a[1]>b[1]) return  1;                // 4) by name, idx 1
   if(a[1]<b[1]) return -1;
   return 0;
 }
