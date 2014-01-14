@@ -440,7 +440,15 @@ PString JsQuoteScreen(PString s)
     if(c>31)
     { if     (c==0x22) r+="\\x22"; // "
       else if(c==0x5c) r+="\\x5c"; // backslash
+      else if(c=='<') r+="&lt;";
+      else if(c=='>') r+="&gt;";
       else r+=(char)c;
+    }
+    else
+    {
+      if(c==9) r+="&nbsp;|&nbsp;"; //tab
+      if(c==10) if(r.Right(1)!=" ") r+=" ";
+      if(c==13) if(r.Right(1)!=" ") r+=" ";
     }
   }
   r+="\"";
@@ -481,7 +489,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
         ;
 
         PTimeInterval duration;
-        PString formatString, audioCodecR, audioCodecT, videoCodecR, videoCodecT;
+        PString formatString, audioCodecR, audioCodecT, videoCodecR, videoCodecT, ra;
         int codecCacheMode=-1, cacheUsersNumber=-1;
         OpenMCUH323Connection * conn = NULL;
         H323Connection_ConferenceMember * connMember = NULL;
@@ -527,6 +535,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
                 { codecCacheMode=conn->GetVideoTransmitCodec()->cacheMode;
                   formatString=conn->GetVideoTransmitCodec()->formatString;
                 }
+                ra = conn->GetRemoteApplication();
 #             endif
               conn->Unlock();
             }
@@ -544,6 +553,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
           << "," << member->GetVideoTxFrameRate()                              // c[r][4][m][16]: video tx frame rate
           << "," << cacheUsersNumber                                           // c[r][4][m][17]: cache users number
           << "," << prx << "," << ptx << "," << vprx << "," << vptx            // c[r][4][m][18-21]: prx, ptx, vprx, vptx
+          << "," << JsQuoteScreen(ra)                                          // c[r][4][m][22]: remote application name
           << ")";
         notFirstMember = TRUE;
       }

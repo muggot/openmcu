@@ -106,13 +106,19 @@ function findMemberInTable(objTable, memberName, memberId)
   var searchStr = (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) + memberName + (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX);
   for(var i=objTable.rows.length-1; i>=0; i--)
   {
-    if(objTable.rows[i].cells[0].innerHTML == searchStr) if(objTable.rows[i].cells[0].id==memberId) return i;
+    var m=objTable.rows[i].cells[0].innerHTML;
+    var ltPos=m.indexOf('<');
+    if(ltPos>0) m=m.substr(0,ltPos);
+    if(m == searchStr) if(objTable.rows[i].cells[0].id==memberId) return i;
   }
 //special for firefox:
   searchStr = searchStr.toLowerCase();
   for(var i=objTable.rows.length-1; i>=0; i--)
   {
-    if(objTable.rows[i].cells[0].innerHTML.toLowerCase() == searchStr) if(objTable.rows[i].cells[0].id==memberId)  return i;
+    var m=objTable.rows[i].cells[0].innerHTML;
+    var ltPos=m.indexOf('<');
+    if(ltPos>0) m=m.substr(0,ltPos);
+    if(m.toLowerCase() == searchStr) if(objTable.rows[i].cells[0].id==memberId)  return i;
   }
   return -1;
 }
@@ -356,27 +362,32 @@ function sort_rooms(a,b)
   return 0;
 }
 
+function get_order_key(m)
+{
+  if(m[1]==FILE_RECORDER_NAME) return "0";
+  var r="1";
+  var cache=(m[1]==CACHE_NAME);
+  var cc; if(cache)cc=m[17]; // cache capacity
+  if(cache)if(cc)r+="0";else r+="3";else if(m[0])r+="1";else r+="2";
+  if(cache)
+  {
+    if(cc)
+    {
+      var pad='0000';
+      cc=""+(9999-cc);
+      return r+pad.substr(0,4-cc.length)+cc+m[14];
+    }
+    else return r+m[14];
+  }
+  return r+m[1];
+}
+
 function sort_members(a,b)
 {
-  if(b[1]==FILE_RECORDER_NAME) return  1; // 1) file recorder   -> top
-  if(a[1]==FILE_RECORDER_NAME) return -1;
-  if(b[1]==CACHE_NAME)                    // 2) caches          -> top (by formatString, idx 14):
-  {
-    if(a[1]!=CACHE_NAME) return  1;
-    if(a[14]>b[14]) return 1;
-    return -1;
-  }
-  if(a[1]==CACHE_NAME)
-  {
-    if(b[1]!=CACHE_NAME) return -1;
-    if(a[14]>b[14]) return 1;
-    return -1;
-  }
-  if(!a[0]) if(b[0]) return  1;           // 3) offline members -> bottom
-  if(!b[0]) if(a[0]) return -1;
-  if(a[1]>b[1]) return  1;                // 4) by name, idx 1
-  if(a[1]<b[1]) return -1;
-  return 0;
+  var a0=get_order_key(a), b0=get_order_key(b);
+  if(a0<b0) return -1;
+  if(a0>b0) return  1;
+  return 0
 }
 
 function data_sort_function(data)
@@ -426,7 +437,7 @@ function on_create_new_room(r)
 
   var d=document.createElement('DIV');
   d.id=s;
-  d.innerHTML='<b>' + WORD_ROOM + " " + r + '</b>'
+  d.innerHTML="<p class='roomname'>" + WORD_ROOM + " " + r + "</p>"
     + '<table id="r_t_' + r + '" class="table table-striped table-bordered table-condensed">'
     + "<tr>"
       + "<th>&nbsp;"+COL_NAME    +"&nbsp;</th>"
@@ -460,7 +471,11 @@ function on_member_add(room, member)
     tr          = t.insertRow(-1);
 
   var td=tr.insertCell(0);
-  td.innerHTML = (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) + member[1] + (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX);
+  td.innerHTML =
+    (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) +
+    member[1] +
+    (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX) +
+    ((online&&visible)?("<p class='remapp'>"+member[22]+"</p>"):"");
   td.id=member[0];
 
   td=tr.insertCell(1); //Duration
@@ -621,6 +636,7 @@ function get_code(codeType)
           else
           {
                  if(tag=="tr")    { cellCount=0; result+="\n"; }
+            else if(tag=="p" )    { if(cellCount==1) result+=" -- "; else result+="\n"; }
             else if(tag=="td")    { cellCount++; if(cellCount>1) result+='; '; }
             else if(tag=="th")    { cellCount++; skip=1; }
             else if(tag=="br")    { result+="|"; }
@@ -647,8 +663,10 @@ function get_code(codeType)
           }
           else
           if(tag=='font') tag=openFont;
+          else
+          if(tag=='p') {if(!close) result+="\n"; i++; continue;}
         }
-        if((tag=='br')||(tag=='b')||(tag=='i')||(tag=='s')||(tag=='table')||(tag=='tr')||(tag=='td')||(tag=='th')||(tag=='font')||(tag.substr(0,9)=='font size')||(tag.substr(0,10)=='font color')||(tag.substr(0,5)=='color')||(tag.substr(0,4)=='size')||(tag=='hr'))
+        if((tag=='p')||(tag=='br')||(tag=='b')||(tag=='i')||(tag=='s')||(tag=='table')||(tag=='tr')||(tag=='td')||(tag=='th')||(tag=='font')||(tag.substr(0,9)=='font size')||(tag.substr(0,10)=='font color')||(tag.substr(0,5)=='color')||(tag.substr(0,4)=='size')||(tag=='hr'))
         {
           result+=openTag+(close?'/':'')+tag+closeTag;
         }
