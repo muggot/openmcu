@@ -1838,6 +1838,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
 
     << "<tr>"
     << "<th><script type=\"text/javascript\">document.write(window.l_select_enter);</script><br></th>"
+    << "<th><script type=\"text/javascript\">document.write(window.l_select_record);</script><br></th>"
     << "<th><script type=\"text/javascript\">document.write(window.l_select_moderated);</script><br></th>"
     << "<th><script type=\"text/javascript\">document.write(window.l_select_visible);</script><br></th>"
     << "<th><script type=\"text/javascript\">document.write(window.l_select_unvisible);</script><br></th>"
@@ -1863,6 +1864,8 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
 #endif
       BOOL moderated=FALSE; PString charModerated = "-";
       if(controlled) { charModerated = conference.IsModerated(); moderated=(charModerated=="+"); }
+      if(charModerated=="-") charModerated = "<script type=\"text/javascript\">document.write(window.l_select_moderated_no);</script>";
+      else charModerated = "<script type=\"text/javascript\">document.write(window.l_select_moderated_yes);</script>";
       PINDEX   visibleMemberCount = conference.GetVisibleMemberCount();
       PINDEX unvisibleMemberCount = conference.GetMemberCount() - visibleMemberCount;
 
@@ -1891,8 +1894,9 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       }
 
       html << "<tr>"
-        << "<td>" << roomButton << "&nbsp" << recordButton << "</td>"
-        << "<td>" << moderated                             << "</td>"
+        << "<td>" << roomButton                            << "</td>"
+        << "<td>" << recordButton                          << "</td>"
+        << "<td>" << charModerated                         << "</td>"
         << "<td>" << visibleMemberCount                    << "</td>"
         << "<td>" << unvisibleMemberCount                  << "</td>"
         << "<td>" << (PTime() - conference.GetStartTime()) << "</td>"

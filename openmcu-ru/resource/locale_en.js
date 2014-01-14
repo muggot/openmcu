@@ -112,7 +112,10 @@ window.l_info_param_transmit_video = '';
 
 window.l_select_create =       'Create room'
 window.l_select_enter =        'Enter room'
+window.l_select_record =       'Record'
 window.l_select_moderated =    'Moderated'
+window.l_select_moderated_yes ='Yes'
+window.l_select_moderated_no = 'No'
 window.l_select_visible =      'Visible members'
 window.l_select_unvisible =    'Unvisible members'
 window.l_select_duration =     'Duration'

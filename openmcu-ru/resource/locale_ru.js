@@ -127,7 +127,10 @@ window.l_info_param_transmit_video = '';
 
 window.l_select_create =       'Создать комнату'
 window.l_select_enter =        'Управлять комнатой'
+window.l_select_record =       'Запись'
 window.l_select_moderated =    'Управляемый режим'
+window.l_select_moderated_yes ='Да'
+window.l_select_moderated_no = 'Нет'
 window.l_select_visible =      'Видимых участников'
 window.l_select_unvisible =    'Невидимых участников'
 window.l_select_duration =     'Время работы'
