@@ -493,7 +493,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
         int codecCacheMode=-1, cacheUsersNumber=-1;
         OpenMCUH323Connection * conn = NULL;
         H323Connection_ConferenceMember * connMember = NULL;
-        DWORD orx=0, otx=0, vorx=0, votx=0, prx=0, ptx=0, vprx=0, vptx=0;
+        DWORD orx=0, otx=0, vorx=0, votx=0, prx=0, ptx=0, vprx=0, vptx=0, plost=0, vplost=0;
         if(name=="file recorder")
         {
           duration = now - member->GetStartTime();
@@ -521,6 +521,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
               if(sess != NULL)
               { orx = sess->GetOctetsReceived(); otx = sess->GetOctetsSent();
                 prx = sess->GetPacketsReceived(); ptx = sess->GetPacketsSent();
+                plost = sess->GetPacketsLost();
               }
 #             if OPENMCU_VIDEO
                 videoCodecR = conn->GetVideoReceiveCodecName() + "@" + connMember->GetVideoRxFrameSize();
@@ -529,7 +530,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
                 if(vSess != NULL)
                 { vorx=vSess->GetOctetsReceived(); votx=vSess->GetOctetsSent();
                   vprx=vSess->GetPacketsReceived(); vptx=vSess->GetPacketsSent();
-
+                  vplost = vSess->GetPacketsLost();
                 }
                 if(conn->GetVideoTransmitCodec()!=NULL)
                 { codecCacheMode=conn->GetVideoTransmitCodec()->cacheMode;
@@ -554,6 +555,7 @@ PString OpenMCUH323EndPoint::GetRoomStatusJS()
           << "," << cacheUsersNumber                                           // c[r][4][m][17]: cache users number
           << "," << prx << "," << ptx << "," << vprx << "," << vptx            // c[r][4][m][18-21]: prx, ptx, vprx, vptx
           << "," << JsQuoteScreen(ra)                                          // c[r][4][m][22]: remote application name
+          << "," << plost << "," << vplost                                     // c[r][4][m][23,24]: rx packets lost (audio, video)
           << ")";
         notFirstMember = TRUE;
       }

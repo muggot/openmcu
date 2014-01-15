@@ -206,7 +206,10 @@ function member_get_nice_packets(m)
   if(!m[0]) return "-";
   if(m[1]==CACHE_NAME) return "-";
   if(m[1]==FILE_RECORDER_NAME) return "-";
-  return m[18] + "<br>" + m[19] + "<br>" + m[20] + "<br>" + m[21];
+  var plost='', vplost='';
+  if(m[23])  plost="<font color='red'>/"+m[23]+"</font>";
+  if(m[24]) vplost="<font color='red'>/"+m[24]+"</font>";
+  return m[18]+plost + "<br>" + m[19] + "<br>" + m[20]+vplost + "<br>" + m[21];
 }
 
 function member_get_nice_bytes(m)
