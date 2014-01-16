@@ -2879,7 +2879,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   {
     wtd=data("deleteRecord");
     shtml << "<div style='border:2px solid red;padding:8px;margin:4px;background-color:#fff'>"
-      << wtd << " will deleted"
+      << wtd << " will be deleted"
       << "<center><a style='color:red' href='/Records?deleteRecordConfirmed=" << wtd << "'>[OK]</a> :: <a href='/Records'>Cancel</a></center>"
       << "</div>";
   }
@@ -2959,10 +2959,11 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   {
     shtml << freeSpace << "<table style='border:2px solid #82b8e3'><tr>"
       << "<th class='h1' style='color:#afc'>N</th>"
-      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=0)?'0':'1') << "'>Date/Time</a></th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=0)?'0':'1') << "'>Start Date/Time</a></th>"
       << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=2)?'2':'3') << "'>Room</a></th>"
       << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=4)?'4':'5') << "'>Resolution</th>"
       << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=6)?'6':'7') << "'>File Size</th>"
+      << "<th class='h1' style='color:#afc'>Download</th>"
       << "<th class='h1' style='color:#afc'>Delete</th>"
       << "</tr>";
 
@@ -3012,12 +3013,13 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
           for(PINDEX j=l-1; j>=0; j--) { fileSize+=fileSize0[l-j-1]; if(!(j%3)) if(j!=0) fileSize+=' '; }
           PString fileName = s0.Left(s0.Find(','));
           shtml << "<tr>"
-            << "<td class='h0'><a href='/Records?getfile=" << fileName << "' download>" << (i+1) << "</a></td>"
+            << "<td class='h0' style='text-align:right'>" << (i+1) << "</td>"
             << "<td class='h0'>" << dateTime.Mid(7,2) << '.' << dateTime.Mid(5,2) << '.' << dateTime.Mid(0,4) << ' ' << dateTime.Mid(10,2) << ':' << dateTime.Mid(12,2) << "</td>"
             << "<td class='h0'>" << roomName << "</td>"
-            << "<td class='h0'>" << videoResolution << "</td>"
-            << "<td class='h0' style='text-align:right'><a href='/Records?getfile=" << fileName << "' download>" << fileSize << "</a></td>"
-            << "<td class='h0'><a href='/Records?deleteRecord=" << fileName << "' style='color:red;text-decoration:none'>x</a></td>"
+            << "<td class='h0' style='text-align:right'>" << videoResolution << "</td>"
+            << "<td class='h0' style='text-align:right'>" << fileSize << "</td>"
+            << "<td class='h0'><a href='/Records?getfile=" << fileName << "' download style='color:#00a;text-decoration:none'>Download</a></td>"
+            << "<td class='h0'><a href='/Records?deleteRecord=" << fileName << "' style='color:#00a;text-decoration:none'>Delete</a></td>"
             << "</tr>";
         }
       }
