@@ -1,0 +1,16 @@
+OpenMCU-ru 3.47 (undetermined)
+  work in progress: http://openmcu.ru/wiki/en/history
+
+OpenMCU-ru 3.46 (2013-12-17)
+  * VP8, OPUS plugins;
+  * SIP: outgoing calls, register, other improvements;
+  * localization;
+  * configurator and automated build (GNU Autotools);
+  * support for new versions libav/ffmpeg;
+  * support audio codec with an arbitrary sampling frequency, automatic resampling;
+  * support resamplers: libavresample, libsamplerate;
+  * individual terminal settings: bitrate, codecs, name etc.
+  * numerous new settings pages;
+  * ability to remove conferences;
+  * update status page without reloading the page;
+  * other improvements and bug fixes;
