@@ -368,9 +368,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #ifdef SYS_RESOURCE_DIR
 #  define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + r1), PHTTPSpace::Overwrite)
 #  define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + r1, mt1), PHTTPSpace::Overwrite)
+#  define WEBSERVER_LINK_MIME_CFG(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + r1, mt1), PHTTPSpace::Overwrite)
 #else
 #  define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1), PHTTPSpace::Overwrite)
 #  define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, mt1), PHTTPSpace::Overwrite)
+#  define WEBSERVER_LINK_MIME_CFG(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, mt1), PHTTPSpace::Overwrite)
 #endif
 #define WEBSERVER_LINK_LOGS(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SERVER_LOGS) + PATH_SEPARATOR + r1, mt1), PHTTPSpace::Overwrite)
   WEBSERVER_LINK_MIME("text/javascript"          , "control.js");
@@ -401,7 +403,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/png"                , "openmcu.ru_logo_text.png");
   WEBSERVER_LINK_MIME("image/png"                , "menu_left.png");
 #if USE_LIBJPEG
-  WEBSERVER_LINK_MIME("image/jpeg"               , "logo.jpeg");
+  WEBSERVER_LINK_MIME_CFG("image/jpeg"               , "logo.jpeg");
 #endif
   WEBSERVER_LINK_MIME("image/png"                , "i16_close_gray.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_close_red.png");

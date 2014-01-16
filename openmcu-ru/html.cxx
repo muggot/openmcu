@@ -1216,7 +1216,7 @@ BOOL WelcomePage::OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo
 
   FILE *f;
   size_t written=0;
-  f=fopen(PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + "logo.jpeg","wb"); 
+  f=fopen(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.jpeg","wb"); 
   if(f) written=fwrite((const void*)(((const char*)eb)+o), 1, (size_t)o2-o, f);
   fclose(f);
 
@@ -1287,7 +1287,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
         << app.GetEndpoint().GetMonitorText() << "</pre></div>";
 
 #if USE_LIBJPEG
-  shtml << "<br><form method=\"post\" enctype=\"multipart/form-data\"><h1>Prefatory Frame</h1>JPEG, max 500K:<br><img src=\"logo.jpeg\"><br>Change: <input name=\"image\" type=\"file\"><input type=\"submit\"></form>";
+  shtml << "<br><form method=\"post\" enctype=\"multipart/form-data\"><script type=\"text/javascript\">document.write(window.l_welcome_logo);</script><img src=\"logo.jpeg\"><br>Change: <input name=\"image\" type=\"file\"><input type=\"submit\"></form>";
 #endif
 
   EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());

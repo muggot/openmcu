@@ -80,6 +80,15 @@ More info can be found in <b>Help</b> (link leads to official Internet site).<br
 </p>\
 <p>Below shows a summary of the server.</p>\
 ';
+window.l_welcome_logo ='\
+<p>\
+<b>Custom logo iamge</b>\
+</p>\
+<p>\
+This image is shown when no input video in mixer. Accepted only JPEG, maximum 500kB.\
+</p>\
+';
+
 window.l_info_invite ='';
 window.l_info_invite_f ='';
 window.l_info_invite_s ='';
