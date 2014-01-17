@@ -1,67 +1,65 @@
-Notes for OpenMCU-ru
---------------------
+----------------------------------
+Video conference server OpenMCU-ru
+----------------------------------
+
 Homepage: http://www.openmcu.ru/
 
+Authors are listed in the file "AUTHORS".
 
+License: MPL, see file "COPYING" for details. Some plugins have
+other (open source) licenses - see the appropriate files in the plugin folders.
+
+Installation instructions can be found in the file "INSTALL".
+
+Changelog can be found in the file "NEWS".
+
+---------------
 1. Introduction
 ---------------
 
-OpenMCU-ru is a simple Mutli Conference Unit using the H.323 and SIP protocol.
-It is known to run on Linux, FreeBSD and Windows.
+OpenMCU-ru is an open-source Mutli Conference Unit using the H.323, SIP and RTSP
+protocols (software MCU). It is fork of the original OpenMCU with many new features.
+Server runs on Linux, Windows and FreeBSD.
 
+-----------
 2. Features
 -----------
 
-The code contains the following features:
+OpenMCU-ru has the following features:
+  * configuration and control via the web interface on port 1420
+    (use for connecting: http://host:1420)
+  * supported interface languages: English, Russian
+  * does not require codec hardware to operate
+  * outgoing video is cached to reduce the load on the server
+  * supported protocols: H.323, SIP
+  * supported video codecs: H.261, H.263, H.263+, H.264, VP8
+  * supported audio codecs: G.711, G.722, G723.1, G.726, G.729, iLBC, Speex, SILK, OPUS
+  * several different conferences can be taking place at the same time
+    using different 'rooms'
+  * display statistics on calls in real time
+  * initiate calls from the MCU to remote endpoints
+  * conference recording
+  * conference translation as web stream
 
-- configured by a web interface on port 1420 (use http://host:1420 access)
-- supported interface languages: English, Russian
-- requires no codec hardware to operate
-- supports H.263, H.264, VP8 video codecs
-- supports G.711, G.722, G723.1, G.726, iLBC, Speex, SILK, OPUS audio codecs
-- can accept multiple connections simultaneously
-- several different conferences can be talking place at the same time
-  using the 'rooms' feature
-- display statistics on calls in progress
-- initiate calls from the MCU to remote endpoints
-- audio loopback mode echoes back your audio in a specific room. Ideal for
-  setup of audio hardware and testing network performance.
 
-
+------------
 3. Operation
 ------------
 
-OpenMCU-ru works by setting up a H.323 and SIP listener process, and then waiting for
-incoming connections.
-You call the MCU using the format "room_name@server_name".
+OpenMCU-ru listens on H.323 and SIP ports for incoming connections.
 
-New rooms are created automatically and there is a default room for
-people who do not specify a room or cannot specify a room (eg NetMeeting).
-The default room is called room101.
+On incoming connection server creates room, specified by remote
+terminal and connects client to this room. If client did not specify
+any room then client will be connected to default room
+("room101" by default, can be changed in options).
 
+You can call to the server using the destination address:
+"room_name@server-name_or_address".
 
-4. Installation Instructions
------------------------
+New rooms are created automatically when they are accessed.
+Also, there is default room for clients which did not specify room
+or which are unable to specify it (for example NetMeeting).
 
-Requires:
-  * FFmpeg >= 0.10.4 - http://www.ffmpeg.org
-    or Libav >= 0.8  - http://libav.org
-  * libx264          - http://www.videolan.org/developers/x264.html
-  * libvpx >= 1.0    - http://webm.googlecode.com
-  * FreeType         - http://www.freetype.org
-  * libjpeg          - http://ijg.org
-    or libjpeg-turbo - http://libjpeg-turbo.virtualgl.org
-
-OpenMCU-ru contains the following required libraries in the repository:
-  * H323Plus         - http://www.h323plus.org
-  * PTLib            - http://www.opalvoip.org
-  * Sofia-SIP        - http://www.sofia-sip.sourceforge.net
-  * libSRTP          - http://srtp.sourceforge.net/srtp.html
-  * libzrtp          - http://zfoneproject.com/prod_sdk.html
-  * libyuv           - http://www.code.google.com/p/libyuv
-
-Install:
-  ./autogen.sh
-  ./configure
-  make all
-  make install
+During the conference you will hear other members and will see them
+in the video window. You can setup voice activation detection (VAD),
+change screen layout and configure other parameters via the web interface.
