@@ -1837,13 +1837,13 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     << "</tr>"
 
     << "<tr>"
-    << "<th><script type=\"text/javascript\">document.write(window.l_select_enter);</script><br></th>"
-    << "<th><script type=\"text/javascript\">document.write(window.l_select_record);</script><br></th>"
-    << "<th><script type=\"text/javascript\">document.write(window.l_select_moderated);</script><br></th>"
-    << "<th><script type=\"text/javascript\">document.write(window.l_select_visible);</script><br></th>"
-    << "<th><script type=\"text/javascript\">document.write(window.l_select_unvisible);</script><br></th>"
-    << "<th><script type=\"text/javascript\">document.write(window.l_select_duration);</script><br></th>"
-    << "<th><script type=\"text/javascript\">document.write(window.l_select_delete);</script><br></th>"
+    << "<th style='text-align:center'><script type=\"text/javascript\">document.write(window.l_select_enter);</script><br></th>"
+    << "<th style='text-align:center'><script type=\"text/javascript\">document.write(window.l_select_record);</script><br></th>"
+    << "<th style='text-align:center'><script type=\"text/javascript\">document.write(window.l_select_moderated);</script><br></th>"
+    << "<th style='text-align:center'><script type=\"text/javascript\">document.write(window.l_select_visible);</script><br></th>"
+    << "<th style='text-align:center'><script type=\"text/javascript\">document.write(window.l_select_unvisible);</script><br></th>"
+    << "<th style='text-align:center'><script type=\"text/javascript\">document.write(window.l_select_duration);</script><br></th>"
+    << "<th style='text-align:center'><script type=\"text/javascript\">document.write(window.l_select_delete);</script><br></th>"
     << "</tr>"
   ;
   
@@ -1894,13 +1894,13 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       }
 
       html << "<tr>"
-        << "<td>" << roomButton                            << "</td>"
-        << "<td>" << recordButton                          << "</td>"
-        << "<td>" << charModerated                         << "</td>"
-        << "<td>" << visibleMemberCount                    << "</td>"
-        << "<td>" << unvisibleMemberCount                  << "</td>"
-        << "<td>" << (PTime() - conference.GetStartTime()) << "</td>"
-        << "<td><span class=\"btn btn-large btn-danger\" onclick=\"if(confirm('Вы уверены? Are you sure?')){location.href='?action=delete&room=" << PURL::TranslateString(roomNumber,PURL::QueryTranslation) << "';}\">X</span></td>"
+        << "<td style='text-align:left'>"   << roomButton                            << "</td>"
+        << "<td style='text-align:center'>" << recordButton                          << "</td>"
+        << "<td style='text-align:center'>" << charModerated                         << "</td>"
+        << "<td style='text-align:right'>"  << visibleMemberCount                    << "</td>"
+        << "<td style='text-align:right'>"  << unvisibleMemberCount                  << "</td>"
+        << "<td style='text-align:right'>"  << (PTime() - conference.GetStartTime()).AsString(0, PTimeInterval::IncludeDays, 10) << "</td>"
+        << "<td style='text-align:center'><span class=\"btn btn-large btn-danger\" onclick=\"if(confirm('Вы уверены? Are you sure?')){location.href='?action=delete&room=" << PURL::TranslateString(roomNumber,PURL::QueryTranslation) << "';}\">X</span></td>"
         << "</tr>";
     }
   }
