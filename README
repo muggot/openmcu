@@ -1,73 +1,68 @@
-Notes for OpenMCU-ru
---------------------
-http://www.openmcu.ru
+----------------------------------
+Video conference server OpenMCU-ru
+----------------------------------
 
-OpenMCU-ru
-    Andrey Varnavskiy, muggot
-    Konstantin Yeliseyev, kay27
-    Andrey Burbovskiy, xak-mcu
+Homepage: http://www.openmcu.ru/
 
-OpenMCU
-    Roger Hardiman, 20 June 2001
-    Updated by Craig Southeren, 6 March 2006
+Authors are listed in the file "AUTHORS".
+
+License: MPL, see file "COPYING" for details. Some plugins have
+other (open source) licenses - see the appropriate files in the plugin folders.
+
+Installation instructions can be found in the file "INSTALL".
+
+Changelog can be found in the file "NEWS".
 
 
+---------------
 1. Introduction
 ---------------
 
-OpenMCU-ru is a simple Mutli Conference Unit using the H.323 and SIP protocols.
-It is known to run on Linux, FreeBSD and Windows.
-
-OpenMCU-ru requires the following libraries:
-- Sofia-SIP, http://sofia-sip.sourceforge.net/
-- FFmpeg, http://ffmpeg.org/ or Libav, http://libav.org/
-
-OpenMCU-ru will use the following libraries if they are available:
-- FreeType, http://freetype.org/
-- libyuv, http://code.google.com/p/libyuv/
-- libjpeg-turbo, http://libjpeg-turbo.virtualgl.org/ or libjpeg,
-  http://ijg.org/
-
-OpenMCU-ru contains PTLib and H323Plus libraries forked from:
-- PTLib, http://opalvoip.org/
-- H323Plus, http://h323plus.org/
+OpenMCU-ru is an open source Multipoint Control Unit (software MCU).
+It is fork of the original OpenMCU with many new features.
+OpenMCU-ru is a simple free software for video conferences
+based on H.323 and SIP protocols. Server runs on Linux, Windows and FreeBSD.
 
 
+-----------
 2. Features
 -----------
 
-The code contains the following features:
+OpenMCU-ru has the following features:
+  * configuration and control via the web interface on port 1420
+    (use for connecting: http://host:1420)
+  * supported interface languages: English, Russian
+  * does not require codec hardware to operate
+  * outgoing video is cached to reduce the load on the server
+  * supported protocols: H.323, SIP
+  * supported video codecs: H.261, H.263, H.263+, H.264, VP8
+  * supported audio codecs: G.711, G.722, G723.1, G.726, G.729, iLBC, Speex, SILK, OPUS
+  * several different conferences can be taking place at the same time
+    using different 'rooms'
+  * display statistics on calls in real time
+  * initiate calls from the MCU to remote endpoints
+  * conference recording
+  * conference translation as web stream
 
-- configured by a web interface on port 1420 (use http://host:1420 access)
-- supported interface languages: English, Russian
-- requires no codec hardware to operate
-- supports H.263, H.264, VP8 video codecs
-- supports G.711, G.722, G723.1, G.726, iLBC, Speex, SILK, OPUS audio codecs
-- can accept multiple connections simultaneously
-- several different conferences can be talking place at the same time
-  using the 'rooms' feature
-- display statistics on calls in progress
-- initiate calls from the MCU to remote endpoints
-- audio loopback mode echoes back your audio in a specific room. Ideal for
-  setup of audio hardware and testing network performance.
 
-
+------------
 3. Operation
 ------------
 
-OpenMCU works by setting up a H.323 and SIP listener processes, and then
-waiting for incoming connections.
-You call the MCU using the format "room_name@server_name".
+OpenMCU-ru listens on H.323 and SIP ports for incoming connections.
 
-New rooms are created automatically and there is a default room for
-people who do not specify a room or cannot specify a room (eg NetMeeting).
-The default room is called room101.
+On incoming connection server creates room, specified by remote
+terminal and connects client to this room. If client did not specify
+any room then client will be connected to default room
+("room101" by default, can be changed in options).
 
+You can call to the server using the destination address:
+"room_name@server-name_or_address".
 
-4. Installation Instructions
------------------------
+New rooms are created automatically when they are accessed.
+Also, there is default room for clients which did not specify room
+or which are unable to specify it (for example NetMeeting).
 
-./autogen.sh
-./configure
-make all
-make install
+During the conference you will hear other members and will see them
+in the video window. You can setup voice activation detection (VAD),
+change screen layout and configure other parameters via the web interface.
