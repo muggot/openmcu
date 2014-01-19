@@ -472,6 +472,7 @@ static struct PluginCodec_Option const * prefix##_OptionTable[] = \
 }; \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \
 { \
+/* try to fix h323 connection with LifeSize */ {{1,0,0,0,0},1, PluginCodec_H323GenericParameterDefinition::PluginCodec_GenericParameter_unsignedMin, {prefix##_FramesPerPacket}}, \
     NULL \
 }; \
 static struct PluginCodec_H323GenericCodecData prefix##_Cap = \

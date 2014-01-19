@@ -1046,6 +1046,7 @@ class VP8DecoderRFC : public VP8Decoder
 #define VP8PLUGIN_CODEC(prefix) \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \
 { \
+/* try to fix h323 connection with LifeSize */ {{1,0,0,0,0},1, PluginCodec_H323GenericParameterDefinition::PluginCodec_GenericParameter_unsignedMin, {5}}, \
     NULL \
 }; \
 static struct PluginCodec_H323GenericCodecData prefix##_Cap = \
