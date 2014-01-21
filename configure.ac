@@ -73,98 +73,94 @@ TARGETDIR=unix
 OSTYPE=
 
 case "$target_os" in
-  linux*)          OSTYPE=linux ;  
-                   OSRELEASE="\"`uname -r`\"";
-		   OS_TAG="P_LINUX" ;
+  linux*)          OSTYPE=linux ;
+                   OSRELEASE="\"`uname -r`\"" ;
+                   OS_TAG="P_LINUX" ;
                    need_pragma=yes ;
                    ;;
 
-  freebsd* )       OSTYPE=FreeBSD ;
-		   OS_TAG="P_FREEBSD" ;
+  freebsd*)        OSTYPE=FreeBSD ;
+                   OS_TAG="P_FREEBSD" ;
                    if test "x$OSRELEASE" = "x"; then
                      OSRELEASE="`sysctl -n kern.osreldate`" ;
                    fi
                    need_pragma=yes ;
-		   LDLIBS="$LDLIBS -lstdc++ -lm" ;
-		   ;;
+                   LDLIBS="$LDLIBS -lstdc++ -lm" ;
+                   ;;
 
-  mingw*)	   OSTYPE=mingw ;
-		   OS_TAG="P_MINGW" ;
-		   OSRELEASE=`uname -r` ;
-		   TARGETDIR=msos ;
-		   SHAREDLIBEXT="dll" ;
-		   STDCCFLAGS="$STDCCFLAGS -mms-bitfields" ;
-		   ENDLDLIBS="-lwinmm -lwsock32 -lsnmpapi -lmpr -lcomdlg32 -lgdi32 -lavicap32" ;
-		   ;;
+  mingw*)          OSTYPE=mingw ;
+                   OS_TAG="P_MINGW" ;
+                   OSRELEASE=`uname -r` ;
+                   TARGETDIR=msos ;
+                   SHAREDLIBEXT="dll" ;
+                   STDCCFLAGS="$STDCCFLAGS -mms-bitfields" ;
+                   ENDLDLIBS=" -lwsock32 -lsnmpapi -lmpr -lcomdlg32 -lgdi32" ;
+                   ;;
 
-  * )		   OSTYPE="$target_os" ;
-		   OS_TAG="P_UNKNOWN_OS" ;
-  		   OSRELEASE="\"${OSTYPE}_`uname -r`\"" ;
-		   AC_MSG_WARN("OS $target_os not recognized - proceed with caution!") ;
-		   ;;
+  *)               OSTYPE="$target_os" ;
+                   OS_TAG="P_UNKNOWN_OS" ;
+                   OSRELEASE="\"${OSTYPE}_`uname -r`\"" ;
+                   AC_MSG_WARN("OS $target_os not recognized - proceed with caution!") ;
+                   ;;
 esac
 
 MACHTYPE=
 
 case "$target_cpu" in
-   x86 | i686 | i586 | i486 | i386 ) MACHTYPE=x86
+   x86 | i686 | i586 | i486 | i386) MACHTYPE=x86
                    ;;
 
-   x86_64)	   MACHTYPE=x86_64 ;
-		   P_64BIT=1 ;
+   x86_64 | amd64) MACHTYPE=x86_64 ;
+                   P_64BIT=1 ;
                    LIB64=1 ;
-		   ;;
-
-   amd64)	   MACHTYPE=amd64 ;
-		   P_64BIT=1 ;
-                   LIB64=1 ;
-		   ;;
+                   ;;
 
    alpha | alphaev56 | alphaev6 | alphaev67 | alphaev7) MACHTYPE=alpha ;
-		   P_64BIT=1 ;
-		   ;;
+                   P_64BIT=1 ;
+                   ;;
 
-   hppa )          MACHTYPE=hppa ;
-		   ;;
+   hppa)           MACHTYPE=hppa ;
+                   ;;
 
-   hppa64 )        MACHTYPE=hppa64 ;
-		   P_64BIT=1 ;
+   hppa64)         MACHTYPE=hppa64 ;
+                   P_64BIT=1 ;
                    LIB64=1 ;
-		   ;;
+                   ;;
 
-   sparc )         MACHTYPE=sparc ;
-		   ;;
+   sparc)          MACHTYPE=sparc ;
+                   ;;
 
-   powerpc )       MACHTYPE=ppc ;
-		   ;;
+   powerpc)        MACHTYPE=ppc ;
+                   ;;
 
-   ppc )           MACHTYPE=ppc ;
-		   ;;
+   ppc)            MACHTYPE=ppc ;
+                   ;;
 
-   powerpc64 )     MACHTYPE=ppc64 ;
-		   P_64BIT=1 ;
+   powerpc64)      MACHTYPE=ppc64 ;
+                   P_64BIT=1 ;
                    LIB64=1 ;
-		   ;;
+                   ;;
 
-   ppc64 )         MACHTYPE=ppc64 ;
-		   P_64BIT=1 ;
+   ppc64)          MACHTYPE=ppc64 ;
+                   P_64BIT=1 ;
                    LIB64=1 ;
-		   ;;
+                   ;;
 
-   ia64)	   MACHTYPE=ia64 ;
-		   P_64BIT=1 ;
-	  	   ;;
+   ia64)           MACHTYPE=ia64 ;
+                   P_64BIT=1 ;
+                   ;;
 
-   s390x)	   MACHTYPE=s390x ;
-		   P_64BIT=1 ;
+   s390x)          MACHTYPE=s390x ;
+                   P_64BIT=1 ;
                    LIB64=1 ;
-		   ;;
+                   ;;
 
-   s390)	   MACHTYPE=s390 ;
-		   ;;
+   s390)           MACHTYPE=s390 ;
+                   ;;
 
-   * )		   MACHTYPE=$target_cpu ;
-		   AC_MSG_WARN("CPU $target_cpu not recognized - proceed with caution!") ;;
+   *)              MACHTYPE=$target_cpu ;
+                   AC_MSG_WARN("CPU $target_cpu not recognized - proceed with caution!") ;
+                   ;;
 esac
 
 AC_MSG_NOTICE(OSTYPE set to $OSTYPE);
@@ -663,6 +659,13 @@ fi
 
 PLUGIN_OPUS_DIR=${top_srcdir}/plugins/OPUS
 AC_SUBST(PLUGIN_OPUS_DIR)
+if test "${opus}" = "yes"; then
+  AC_CHECK_LIB(opus, opus_encoder_init, USE_OPUS=1, USE_OPUS=0)
+  if test ${USE_OPUS} = 0 ; then
+    opus=no
+    AC_MSG_WARN(libopus not found!)
+  fi
+fi
 if test "${opus}" = "yes"; then
     AC_CONFIG_FILES(plugins/OPUS/Makefile)
     PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_OPUS_DIR} "
