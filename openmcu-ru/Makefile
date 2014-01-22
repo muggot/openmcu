@@ -60,6 +60,7 @@ leaving.wav \
 template.html \
 control.js \
 status.js \
+locale_uk.js \
 locale_ru.js \
 locale_en.js \
 main.css \
