@@ -126,7 +126,7 @@ window.l_info_param_receive_video = '';
 window.l_info_param_transmit_video = '';
 
 window.l_select_create =       'Створити кімнату'     ;
-window.l_select_enter =        'Управляти кімнатою'   ;
+window.l_select_enter =        'Керувати кімнатою'    ;
 window.l_select_record =       'Запис'                ;
 window.l_select_moderated =    'Керований режим'      ;
 window.l_select_moderated_yes ='Да'                   ;
