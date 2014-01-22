@@ -9,12 +9,12 @@ PLUGINDIR=../..
 
 CC		=gcc -std=gnu99
 CXX		=g++
-LDSO		=-shared -lopus
+LDSO		=-shared
 PLUGINEXT	=so
 CFLAGS	       +=@CFLAGS@ -O2
 STDCCFLAGS	=-fPIC -D__STDC_CONSTANT_MACROS -DOPUS_BUILD -DVAR_ARRAYS -DLINK_OPUS_FLAG
 EXTRACFLAGS     =
-LDFLAGS        +=
+LDFLAGS        +=-lopus
 CPPFLAGS       +=
 OPTCCFLAGS      =$(CPPFLAGS)
 
