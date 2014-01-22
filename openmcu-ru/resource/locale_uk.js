@@ -25,7 +25,7 @@ window.l_connections_COL_DURATION      = "Тривалість"          ;
 window.l_connections_COL_RTP           = "RTP-канал i кодек"   ;
 window.l_connections_COL_PACKETS       = "Пакети"              ;
 window.l_connections_COL_BYTES         = "Байти"               ;
-window.l_connections_COL_KBPS          = "Кбит/с"              ;
+window.l_connections_COL_KBPS          = "Кбіт/с"              ;
 window.l_connections_COL_FPS           = "Кадр/с"              ;
 window.l_connections_word_room         = "Конференцiя"         ;
 
@@ -96,7 +96,7 @@ window.l_info_rooms ='Для перегляду і управління кімн
 
 window.l_info_control ='\
 <div id=\'tip\' name=\'tip\'\
-  onclick=\'if(typeof savedhelpcontent=="undefined"){savedhelpcontent=this.innerHTML;this.innerHTML="Ця сторінка призначена для управління конференцією. Управління розкладкою дозволяє вибрати видимих учасників конференції та призначити їм потрібне розташування на екрані. Для кожної позиції в розкладці можна явно вказати видимого учасника конференції, або залишити позицію порожній, або вказати, що позиція обрана для автоматичної активації по голосової активності.<br>За автоматичну активацію по голосової активності відповідають два режими VAD і VAD2. Якщо позиції в розкладці призначити режим VAD, то це означатиме, що позицію може зайняти будь-який термінал, з якого йде активний звуковий сигнал.<br>Заміна терміналу на зайнятій VAD позиції можлива після закінчення інтервалу Voice activation timeout.";}else {this.innerHTML=savedhelpcontent; try {delete savedhelpcontent;} catch(e){savedhelpcontent=undefined;};}\'\
+  onclick=\'if(typeof savedhelpcontent=="undefined"){savedhelpcontent=this.innerHTML;this.innerHTML="Ця сторінка призначена для управління конференцією. Управління розкладкою дозволяє вибрати видимих учасників конференції та призначити їм потрібне розташування на екрані. Для кожної позиції в розкладці можна явно вказати видимого учасника конференції, або залишити позицію порожньою, або вказати, що позиція обрана для автоматичної активації по голосовій активності.<br />За автоматичну активацію по голосовій активності відповідають два режими VAD і VAD2. Якщо позиції в розкладці призначити режим VAD, то це означатиме, що позицію може зайняти будь-який термінал, з якого йде активний звуковий сигнал.<br>Заміна терміналу на зайнятій VAD позиції можлива після закінчення інтервалу Voice activation timeout.";}else {this.innerHTML=savedhelpcontent; try {delete savedhelpcontent;} catch(e){savedhelpcontent=undefined;};}\'\
 >Ця сторінка призначена для\
  <span style=\'cursor:pointer;font-weight:bold;color:#095\'> ...</span>\
 </div>';
