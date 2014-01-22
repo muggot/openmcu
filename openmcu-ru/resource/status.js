@@ -109,6 +109,7 @@ function findMemberInTable(objTable, memberName, memberId)
     var m=objTable.rows[i].cells[0].innerHTML;
     var ltPos=m.indexOf('<');
     if(ltPos>0) m=m.substr(0,ltPos);
+    while((m.charAt(m.length-1)<' ')&&(m.length)) m=m.substr(0,m.length-1);
     if(m == searchStr) if(objTable.rows[i].cells[0].id==memberId) return i;
   }
 //special for firefox:
