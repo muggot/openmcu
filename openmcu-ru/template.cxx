@@ -584,7 +584,7 @@ void Conference::OnConnectionClean(const PString & remotePartyName, const PStrin
 {
   PTRACE(4,"Conference\tOnConnectionClean: " << remotePartyName << " / " << remotePartyAddress);
   PString name;
-  if(!remotePartyName.IsEmpty()) name += remotePartyName;
+  if(!remotePartyName.IsEmpty()) if(remotePartyName != remotePartyAddress) name += remotePartyName;
   if (name.Right(1)!="]")
   {
     PString url = remotePartyAddress;
