@@ -1019,7 +1019,8 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
       << "," << member->chosenVan                       // [i][5] = chosen van
       << "," << member->GetAudioLevel()                 // [i][6] = audiolevel (peak)
       << "," << member->GetVideoMixerNumber()           // [i][7] = number of mixer member receiving
-      << ",\"" << MCUURL(s->first).GetUrlId() << "\""
+      << ",\"" << MCUURL(s->first).GetUrlId() << "\""   // [i][8] ?? xak??
+      << "," << (unsigned short)member->channelCheck    // [i][9] = RTP channels checking bit mask 0000vVaA
       << ")";
     i++;
   }

@@ -997,6 +997,7 @@ class ConferenceMember : public PObject
     unsigned long audioCounter;
     unsigned audioLevelIndicator;
     unsigned previousAudioLevel;
+    BYTE channelCheck;
 
 #if OPENMCU_VIDEO
     MCUVideoMixer * videoMixer;
@@ -1018,6 +1019,7 @@ class ConferenceMember : public PObject
 //    OpenMCUH323Connection *h323con;
 //    PMutex h323conMutex;
     BufferListType bufferList;
+    float currVolCoef;
 
 #if OPENMCU_VIDEO
     //PMutex videoMutex;
