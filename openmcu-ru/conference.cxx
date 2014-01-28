@@ -808,7 +808,9 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         << "," << memberToAdd->chosenVan
         << "," << memberToAdd->GetAudioLevel()
         << "," << memberToAdd->GetVideoMixerNumber()
-        << ",\"" << memberToAddUrlId << "\"" << ")";
+        << ",\"" << memberToAddUrlId << "\""
+        << "," << dec << (unsigned)memberToAdd->channelCheck
+        << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
   }
 /*  
@@ -1253,6 +1255,23 @@ ConferenceMember::~ConferenceMember()
 #endif
 }   
 
+void ConferenceMember::ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState)
+{
+  if(bitState)
+  {
+    channelCheck|=bitMask;
+  }
+  else
+  {
+    channelCheck&=~bitMask;
+  }
+
+  if(!conference) return;
+
+  PStringStream msg;
+  msg << "rtp_state(" << dec << (long)id << ", " << (unsigned)channelCheck << ")";
+  OpenMCU::Current().HttpWriteCmdRoom(msg,conference->GetNumber());
+}
 
 BOOL ConferenceMember::AddToConference(Conference * _conference)
 {
@@ -1386,7 +1405,7 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
 
 void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-  channelCheck|=1;
+  if(!(channelCheck&1)) ChannelBrowserStateUpdate(1,TRUE);
   if(muteIncoming) return;
   // calculate average signal level for this member
   unsigned signalLevel=0;
@@ -1582,7 +1601,7 @@ void ConferenceMember::OnExternalSendAudio(ConferenceMemberId source, const void
 
 void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-  channelCheck|=2;
+  if(!(channelCheck&2)) ChannelBrowserStateUpdate(2,TRUE);
 
   // First, set the buffer to empty.
   memset(buffer, 0, amount);
@@ -1599,7 +1618,7 @@ void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRa
 // called whenever the connection needs a frame of video to send
 void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & amount)
 {
-  channelCheck|=8;
+  if(!(channelCheck&8)) ChannelBrowserStateUpdate(8,TRUE);
   ++totalVideoFramesSent;
   if (!firstFrameSendTime.IsValid())
     firstFrameSendTime = PTime();
@@ -1617,7 +1636,7 @@ void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & 
 // called whenever the connection receives a frame of video
 void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PINDEX amount)
 {
-  channelCheck|=4;
+  if(!(channelCheck&4)) ChannelBrowserStateUpdate(4,TRUE);
   ++totalVideoFramesReceived;
   rxFrameWidth=width; rxFrameHeight=height;
   if (!firstFrameReceiveTime.IsValid())

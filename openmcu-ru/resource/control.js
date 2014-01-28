@@ -550,6 +550,12 @@ function on_invite_abook_input(){
   }
 }
 
+function rtp_state(id,cc)
+{
+  if(member_modify_by_id(id,9,cc)) members_refresh();
+  alive();
+}
+
 function format_mmbr_button(m,st)
 {
   var bgcolors=Array('#d3d4d5','#f5fffa','#f5ccff');
@@ -884,7 +890,7 @@ function members_sort_name_asc_func(i, j)
     return 0;
 }
 
-function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid){
+function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc){
   if(typeof members==='undefined') return alive();
   var found=0; var j=members.length;
   for(var i=j-1;i>=0;i--)
@@ -898,7 +904,7 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid){
         if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
     }
   }
-  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,urlid);
+  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc);
   if(j == members.length-1)
     members.sort(members_sort_name_asc_func);
   alive();

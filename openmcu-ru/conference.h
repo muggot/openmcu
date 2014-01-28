@@ -763,6 +763,8 @@ class ConferenceMember : public PObject
       */
     ~ConferenceMember();
 
+    void ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState);
+
     /**
       * used to pre-emptively close a members connection
       */
