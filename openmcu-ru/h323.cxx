@@ -2613,6 +2613,7 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
   ConferenceMember * conferenceMember = GetConferenceMember();
   if(conferenceMember!=NULL)
   {
+    conferenceMember->ChannelBrowserStateUpdate(8,TRUE);
     if(conferenceMember->IsVisible())
     {
       videoMixerNumber=conferenceMember->GetVideoMixerNumber();

@@ -1266,10 +1266,16 @@ void ConferenceMember::ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState)
     channelCheck&=~bitMask;
   }
 
-  if(!conference) return;
-
   PStringStream msg;
   msg << "rtp_state(" << dec << (long)id << ", " << (unsigned)channelCheck << ")";
+  PTRACE(1,"channelCheck change: " << (bitState?"+":"-") << (unsigned)bitMask << ". Result: " << (unsigned)channelCheck << ", conference=" << conference << ", msg=" << msg);
+
+  if(!conference)
+  {
+    OpenMCU::Current().HttpWriteCmd(msg);
+    return;
+  }
+
   OpenMCU::Current().HttpWriteCmdRoom(msg,conference->GetNumber());
 }
 
