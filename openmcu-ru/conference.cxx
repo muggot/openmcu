@@ -598,12 +598,17 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
   else if (url.GetScheme() == "h323")
   {
     OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-    if(address.Left(5) != "h323:") address = "h323:"+address;
-    PString port = address.Tokenise(":")[2];
-    if(port == "")
+    if(url.GetHostName() == "")
     {
-      port = OpenMCU::Current().GetEndpointParamFromUrl("H323 port", address);
-      if(port != "") address += ":"+port;
+      address = url.GetUserName();
+    } else {
+      if(address.Left(5) != "h323:") address = "h323:"+address;
+      PString port = address.Tokenise(":")[2];
+      if(port == "")
+      {
+        port = OpenMCU::Current().GetEndpointParamFromUrl("H323 port", address);
+        if(port != "") address += ":"+port;
+      }
     }
     PString h323Token;
     if(userData == NULL) userData = new PString(number);
