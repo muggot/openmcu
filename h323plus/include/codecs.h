@@ -462,10 +462,12 @@ class H323Codec : public PObject
 
     Direction GetDirection()   const { return direction; }
 
+    H323Channel * GetLogicalChannel() const { return logicalChannel; }
     virtual const OpalMediaFormat & GetMediaFormat() const { return mediaFormat; }
     OpalMediaFormat & GetWritableMediaFormat() { return mediaFormat; }
 
     virtual BOOL SetFrameSize(int /*frameWidth*/, int /*frameHeight*/) { return FALSE; };
+    virtual void SetVideoSize(int, int) { return; };
 
     /**Attach the raw data channel for use by codec.
        Note the channel provided will be deleted on destruction of the codec.
@@ -691,7 +693,7 @@ class H323AudioCodec : public H323Codec
        levelThreshold, signalDeadbandFrames and silenceDeadbandFrames
        member variables.
       */
-    virtual BOOL DetectSilence();
+    virtual BOOL DetectSilence(unsigned sampleRate, unsigned codecChannels);
 
     /**Get the average signal level in the audio stream.
        This is called from within DetectSilence() to calculate the average
@@ -714,6 +716,7 @@ class H323AudioCodec : public H323Codec
        PAec * /*_ARC*/   ///* Acoustic Echo Cancellation Instance
     ) {};
 #endif
+	virtual void EnableAGC( int ) {};
 
   protected:
     unsigned samplesPerFrame;
@@ -855,10 +858,16 @@ class H323FramedAudioCodec : public H323AudioCodec
     );
 #endif
 
+	virtual void EnableAGC(int);
+
   protected:
 	PAec * aec;     // Acoustic Echo Canceller
     PShortArray sampleBuffer;
     unsigned    bytesPerFrame;
+    unsigned    sampleRate;
+    unsigned long lastReadTime, readPerSecond; // lame values to calc sampleRate added by kay27
+    float currVolCoef;
+    int agc;
 };
 
 

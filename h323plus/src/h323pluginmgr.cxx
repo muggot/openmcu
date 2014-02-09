@@ -715,8 +715,11 @@ static BOOL SetCodecControl(const PluginCodec_Definition * codec,
   if (codecControls == NULL)
     return FALSE;
 
-  char const * options[2] = { parm, value };
-  unsigned optionsLen = 2;
+///////////////////// ZAZ /////////////////////////
+  char const * options[3] = { parm, value, NULL };
+  unsigned optionsLen = sizeof(const char **);
+  //char const * options[2] = { parm, value };
+  //unsigned optionsLen = 2;
   return (*codecControls->control)(codec, context, SET_CODEC_OPTIONS_CONTROL, options, &optionsLen);
 }
 
@@ -1351,6 +1354,7 @@ class H323PluginFramedAudioCodec : public H323FramedAudioCodec
         return FALSE;
       unsigned int fromLen = codec->parm.audio.samplesPerFrame*2*codecChannels;
       toLen                = codec->parm.audio.bytesPerFrame;
+      PTRACE(6, "PluginFramedAudioCodec\tfromLen" << fromLen);
       unsigned flags = 0;
       return (codec->codecFunction)(codec, context, 
                                  (const unsigned char *)sampleBuffer.GetPointer(), &fromLen,
@@ -1524,7 +1528,7 @@ class cacheArray
  
         cache *GetCache();
         int n;
-        cache c[3];
+        cache c[10];
    private:
 };
 
@@ -2234,12 +2238,13 @@ BOOL H323PluginVideoCodec::Write(const BYTE * buffer, unsigned length, const RTP
     return TRUE;
   }
 
-  
-  if(h->width!=(unsigned int)frameWidth || h->height!=(unsigned int)frameHeight) 
+  PVideoChannel *videoOut = (PVideoChannel *)rawDataChannel;
+
+  if(h->width!=(unsigned int)frameWidth || h->height!=(unsigned int)frameHeight ||
+	  h->width!=videoOut->GetRenderWidth() || h->height!=videoOut->GetRenderHeight()) 
   {
-   PVideoChannel *videoOut = (PVideoChannel *)rawDataChannel;
-   SetFrameSize(h->width,h->height);
-   videoOut->SetRenderFrameSize(frameWidth, frameHeight);
+	  SetFrameSize(h->width,h->height);
+	  videoOut->SetRenderFrameSize(frameWidth, frameHeight);
   }
 
   if (flags & PluginCodec_ReturnCoderLastFrame) {
@@ -2279,12 +2284,17 @@ BOOL H323PluginVideoCodec::SetFrameSize(int _width, int _height)
         PTRACE(3, "PLUGIN\tERROR: Frame Size " << _width << "x" << _height  << " exceeds codec limits " << maxWidth << "x" << maxHeight); 
         return FALSE;
     }
+   PTRACE(3,"PLUGIN\tCurrent frame size w:" << frameWidth << " h:" << frameHeight); 
+
+    if (_width*_height > frameWidth*frameHeight) return FALSE;
 
     frameWidth = _width;
     frameHeight = _height;
 
     PTRACE(3,"PLUGIN\tResize to w:" << frameWidth << " h:" << frameHeight); 
 
+	SetCodecControl(codec, context, SET_CODEC_OPTIONS_CONTROL, "Frame Width", frameWidth);
+	SetCodecControl(codec, context, SET_CODEC_OPTIONS_CONTROL, "Frame Height", frameHeight);
     mediaFormat.SetOptionInteger(OpalVideoFormat::FrameWidthOption,frameWidth); 
     mediaFormat.SetOptionInteger(OpalVideoFormat::FrameHeightOption,frameHeight); 
 

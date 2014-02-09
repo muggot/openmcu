@@ -66,8 +66,8 @@
 #if FFMPEG_DECODER
 extern "C" {
 #include "libavcodec/avcodec.h"
+#include "libavutil/mem.h"
 }
-# include "libavutil/mem.h"
 #endif
 
 #define MY_CODEC_LOG "VP8"

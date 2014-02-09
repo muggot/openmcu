@@ -3041,15 +3041,24 @@ BOOL H323EndPoint::OpenAudioChannel(H323Connection & /*connection*/,
 
   int rate = codec.GetMediaFormat().GetTimeUnits() * 1000;
 
+  unsigned codecChannels = 1;
   PString deviceName;
   PString deviceDriver;
   if (isEncoding) {
     deviceName   = GetSoundChannelRecordDevice();
     deviceDriver = GetSoundChannelRecordDriver();
+   { PString OptionValue; if(codec.GetMediaFormat().GetOptionValue((const PString)"Encoder Channels", OptionValue))
+      codecChannels = atoi(OptionValue);
+    }
   } else {
     deviceName = GetSoundChannelPlayDevice();
     deviceDriver = GetSoundChannelPlayDriver();
+    { PString OptionValue; if(codec.GetMediaFormat().GetOptionValue((const PString)"Decoder Channels", OptionValue))
+        codecChannels = atoi(OptionValue);
+    }
   }
+
+  PTRACE(1, "OpenAudioChannel\tTring to use driver=" << deviceDriver << " device=" << deviceName);
 
   PSoundChannel * soundChannel;
   if (!deviceDriver.IsEmpty()) 
@@ -3057,6 +3066,7 @@ BOOL H323EndPoint::OpenAudioChannel(H323Connection & /*connection*/,
   else {
     soundChannel = new PSoundChannel;
     deviceDriver = "default";
+    PTRACE(1, "OpenAudioChannel\tFailed to set driver, using default");
   }
 
   if (soundChannel == NULL) {
@@ -3066,10 +3076,10 @@ BOOL H323EndPoint::OpenAudioChannel(H323Connection & /*connection*/,
 
   if (soundChannel->Open(deviceName, isEncoding ? PSoundChannel::Recorder
                                                 : PSoundChannel::Player,
-                         1, rate, 16)) {
+                         codecChannels, rate, 16)) {
     PTRACE(3, "Codec\tOpened sound channel \"" << deviceName
            << "\" for " << (isEncoding ? "record" : "play")
-           << "ing at " << rate << " samples/second using " << soundChannelBuffers
+           << "ing at " << codecChannels << "x" << rate << " samples/second using " << soundChannelBuffers
            << 'x' << bufferSize << " byte buffers.");
     soundChannel->SetBuffers(bufferSize, soundChannelBuffers);
     return codec.AttachChannel(soundChannel);
@@ -3366,7 +3376,7 @@ BOOL H323EndPoint::RemoveAliasName(const PString & name)
 
 BOOL H323EndPoint::SetSoundChannelPlayDevice(const PString & name)
 {
-  if (PSoundChannel::GetDeviceNames(PSoundChannel::Player).GetValuesIndex(name) == P_MAX_INDEX)
+  if (PSoundChannel::GetDeviceNames(soundChannelPlayDriver, PSoundChannel::Player).GetValuesIndex(name) == P_MAX_INDEX)
     return FALSE;
 
   soundChannelPlayDevice = name;
@@ -3376,7 +3386,7 @@ BOOL H323EndPoint::SetSoundChannelPlayDevice(const PString & name)
 
 BOOL H323EndPoint::SetSoundChannelRecordDevice(const PString & name)
 {
-  if (PSoundChannel::GetDeviceNames(PSoundChannel::Recorder).GetValuesIndex(name) == P_MAX_INDEX)
+  if (PSoundChannel::GetDeviceNames(soundChannelRecordDriver, PSoundChannel::Recorder).GetValuesIndex(name) == P_MAX_INDEX)
     return FALSE;
 
   soundChannelRecordDevice = name;
@@ -3413,6 +3423,8 @@ BOOL H323EndPoint::SetSoundChannelRecordDriver(const PString & name)
   list = PSoundChannel::GetDeviceNames(name, PSoundChannel::Recorder);
   if (list.GetSize() == 0)
     return FALSE;
+
+  PTRACE(1,"SetSoundChannelRecordDriver\tAvailable devices: " << list);
 
   soundChannelRecordDevice = list[0];
   return TRUE;

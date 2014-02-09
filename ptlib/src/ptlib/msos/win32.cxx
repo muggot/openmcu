@@ -615,7 +615,7 @@
   #endif
 #endif
 
-#include "../common/pglobalstatic.cxx"
+//#include "../common/pglobalstatic.cxx"
 
 
 #define new PNEW

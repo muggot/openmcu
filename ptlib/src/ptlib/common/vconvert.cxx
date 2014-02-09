@@ -25,273 +25,9 @@
  *   Thorsten Westheider (thorsten.westheider@teleos-web.de)
  *   Mark Cooke (mpc@star.sr.bham.ac.uk)
  *
- * $Log: vconvert.cxx,v $
- * Revision 1.70  2007/09/08 11:34:29  rjongbloed
- * Improved memory checking (leaks etc), especially when using MSVC debug library.
- *
- * Revision 1.69  2007/06/18 19:23:40  dsandras
- * Fixed previous commit.
- *
- * Revision 1.68  2007/06/18 18:23:01  dsandras
- * Added patch from Elaine Xiong <elaine xiong sun com> to optimize
- * color space conversions using MediaLib.
- *
- * Revision 1.67  2007/06/10 06:31:46  rjongbloed
- * Fixed compiler warnings
- *
- * Revision 1.66  2007/06/09 17:23:28  dsandras
- * Added UYVY422 resizing method thanks to Luc Saillard <luc saillard org>.
- * Thanks!
- *
- * Revision 1.65  2007/04/24 08:28:52  csoutheren
- * Add backwards compatible API
- *
- * Revision 1.64  2007/04/20 06:47:48  csoutheren
- * Really disable video code when video is turned off
- *
- * Revision 1.63  2007/04/20 06:11:37  csoutheren
- * Add backwards compatible API for PColourConverter
- *
- * Revision 1.62  2007/04/20 05:40:49  csoutheren
- * Add backwards compatible API for PColourConverter
- *
- * Revision 1.61  2007/04/16 01:37:13  rjongbloed
- * Added simple crop to YUV420P to RGB converter.
- *
- * Revision 1.60  2007/04/14 07:08:55  rjongbloed
- * Major update of video subsystem:
- *   Abstracted video frame info (width, height etc) into separate class.
- *   Changed devices, converter and video file to use above.
- *   Enhanced video file hint detection for frame rate and more
- *     flexible formats.
- *   Fixed issue if need to convert both colour format and size, had to do
- *     colour format first or it didn't convert size.
- *   Win32 video output device can be selected by "MSWIN" alone.
- *
- * Revision 1.59  2007/04/13 07:13:14  rjongbloed
- * Major update of video subsystem:
- *   Abstracted video frame info (width, height etc) into separate class.
- *   Changed devices, converter and video file to use above.
- *   Enhanced video file hint detection for frame rate and more
- *     flexible formats.
- *   Fixed issue if need to convert both colour format and size, had to do
- *     colour format first or it didn't convert size.
- *   Win32 video output device can be selected by "MSWIN" alone.
- *
- * Revision 1.58  2006/12/07 21:32:41  dominance
- * make sure can fit the jpeg image into the buffer for MJPEG and JPEG cams.
- * Thanks goes to Luc Saillard for this patch.
- *
- * Revision 1.57  2006/11/01 17:47:10  dsandras
- * Added patch from Brian Lu <brian lu sun com> to fix compilation on
- * OpenSolaris.
- *
- * Revision 1.56  2006/06/21 03:28:44  csoutheren
- * Various cleanups thanks for Frederic Heem
- *
- * Revision 1.55  2006/06/20 05:39:40  csoutheren
- * Applied patch 1501428
- * Only shortcut YUV420P inplace resizing if sizes are the same
- * Thanks to raaf123
- *
- * Revision 1.54  2006/05/16 11:10:36  shorne
- * Removed warning message MSVC 6
- *
- * Revision 1.53  2006/04/30 21:26:46  dsandras
- * Fixed green color problem when converting images in some of the color formats
- * used by the iSight thanks to Luc Saillard <luc saillard org>.
- *
- * Revision 1.52  2006/04/23 20:20:49  dsandras
- * Added resizing capability for VYUY YUYV formats thanks to Luc Saillard.
- * Many thanks!
- *
- * Revision 1.51  2006/04/19 04:09:37  csoutheren
- * Add special case conversion from QCIF to CIF
- *
- * Revision 1.50  2006/03/12 11:09:53  dsandras
- * Applied patch from Luc Saillard to fix problems with MJPEG. Thanks!
- *
- * Revision 1.49  2006/03/07 20:53:51  dsandras
- * Added support for JPEG based webcams, thanks to Luc Saillard <luc saillard org>.
- *
- * Revision 1.48  2006/02/22 11:17:53  csoutheren
- * Applied patch #1425825
- * MaxOSX compatibility
- *
- * Revision 1.47  2006/01/31 03:24:43  csoutheren
- * Removed MJPEG capabilities when compiling with Microsoft compilers
- *
- * Revision 1.46  2006/01/29 22:46:38  csoutheren
- * Added support for cameras that return MJPEG streams
- * Thanks to Luc Saillard and Damien Sandras
- *
- * Revision 1.45  2006/01/16 20:18:01  dsandras
- * Applied patch from Luc Saillard <luc saillard org> to improve conversion
- * routines. Thanks!!
- *
- * Revision 1.44  2006/01/09 18:19:12  dsandras
- * Add YUY2 (or YUV420) format. Resizing to YUV420P is done, but it's not very
- * efficient.
- * Fix the gray border when doing padding for YUV420P (change it to black).
- * Logitech webcam fusion export only big format in yuy2.
- * Patches provided by Luc Saillard <luc _AT____ saillard.org>. Many thanks!
- *
- * Revision 1.43  2006/01/07 13:33:02  dsandras
- * Added code allowing real resizing on YUV420P streams thanks to Luc Sailard <luc ___AT_-_ saillard.org>. Thank you very much for that nice patch Luc!
- *
- * Revision 1.42  2005/11/30 12:47:42  csoutheren
- * Removed tabs, reformatted some code, and changed tags for Doxygen
- *
- * Revision 1.41  2005/08/09 09:08:11  rjongbloed
- * Merged new video code from branch back to the trunk.
- *
- * Revision 1.40.6.2  2005/07/17 12:58:15  rjongbloed
- * Sorted out the ordering or Red. Blue, Cr and Cb in RGB/BGR/YUV420 formats
- *
- * Revision 1.40.6.1  2005/07/17 09:27:08  rjongbloed
- * Major revisions of the PWLib video subsystem including:
- *   removal of F suffix on colour formats for vertical flipping, all done with existing bool
- *   working through use of RGB and BGR formats so now consistent
- *   cleaning up the plug in system to use virtuals instead of pointers to functions.
- *   rewrite of SDL to be a plug in compatible video output device.
- *   extensive enhancement of video test program
- *
- * Revision 1.40  2005/01/25 06:35:28  csoutheren
- * Removed warnings under MSVC
- *
- * Revision 1.39  2005/01/04 07:44:03  csoutheren
- * More changes to implement the new configuration methodology, and also to
- * attack the global static problem
- *
- * Revision 1.38  2004/11/07 06:28:00  rjongbloed
- * Removed warnings about unused parameters in SBGGR8 conversion functions. Left one
- *   in (flip vertical) as it should be implemented but wasn't.
- *
- * Revision 1.37  2004/10/27 09:24:18  dsandras
- * Added patch from Nicola Orru' to convert from SBGGR8 to YUV420P. Thanks!
- *
- * Revision 1.36  2004/09/21 13:01:08  dsandras
- * Added conversion from sbggr to rgb thanks to an anonymous patcher.
- *
- * Revision 1.35  2003/11/23 22:17:35  dsandras
- * Added YUV420P to BGR24 and BGR32 conversion.
- *
- * Revision 1.34  2003/06/14 02:57:36  rjongbloed
- * REmoved redundent parameter, grey scale does not have rgb increment!
- *
- * Revision 1.33  2003/06/09 22:37:24  dereksmithies
- * Fix from Clive Nicolson to make b/w colour conversions work (i.e. grey palette).
- * many thanks!
- *
- * Revision 1.32  2003/04/03 09:28:37  robertj
- * Added reversed RGB byte order versions (BGR24), thanks Damien Sandras
- *
- * Revision 1.31  2003/03/31 11:30:14  rogerh
- * make 'cb' and 'cr' contain the values that their name implies.
- *
- * Revision 1.30  2002/09/01 23:00:05  dereks
- * Fix noise in flipped RGB image. Thanks Alex Phtahov.
- *
- * Revision 1.29  2002/02/26 02:23:21  dereks
- * Reduced verbosity in PTRACE output for when video is enabled.
- *
- * Revision 1.28  2002/02/20 02:37:26  dereks
- * Initial release of Firewire camera support for linux.
- * Many thanks to Ryutaroh Matsumoto <ryutaroh@rmatsumoto.org>.
- *
- * Revision 1.27  2002/02/03 19:55:57  dereks
- * *** empty log message ***
- *
- * Revision 1.26  2002/01/08 01:32:50  robertj
- * Tidied up some PTRACE debug output.
- *
- * Revision 1.25  2002/01/04 04:11:45  dereks
- * Add video flip code from Walter Whitlock, which flips code at the grabber.
- *
- * Revision 1.24  2001/12/08 00:33:11  robertj
- * Changed some (unsigned int *) to (DWORD *) as the latter is assured to be a
- *   pointer to a 32 bit integer and the former is not.
- *
- * Revision 1.23  2001/12/06 22:14:45  dereks
- * Improve YUV 422 resize routine so it now subsamples as required.
- *
- * Revision 1.22  2001/12/03 02:21:50  dereks
- * Add YUV420P to RGB24F, RGB32F converters.
- *
- * Revision 1.21  2001/12/02 21:53:56  dereks
- * Additional debug information
- *
- * Revision 1.20  2001/11/28 04:43:10  robertj
- * Added synonym colour class for equivalent colour format strings.
- * Allowed for setting ancestor classes in PCOLOUR_CONVERTER() macro.
- * Moved static functions into internal class to avoid pasing lots of parameters.
- * Added conversions for flipped RGB colour formats.
- *
- * Revision 1.19  2001/09/06 02:06:36  robertj
- * Fixed bug in detecting size mismatch, thanks Vjacheslav Andrejev
- *
- * Revision 1.18  2001/08/22 02:14:08  robertj
- * Fixed MSVC compatibility.
- *
- * Revision 1.17  2001/08/22 02:06:17  robertj
- * Resolved confusion with YUV411P and YUV420P video formats, thanks Mark Cooke.
- *
- * Revision 1.16  2001/08/20 07:01:26  robertj
- * Fixed wierd problems with YUV411P and YUV420P formats, thanks Mark Cooke.
- *
- * Revision 1.15  2001/08/16 23:17:29  robertj
- * Added 420P to 411P converter, thanks Mark Cooke.
- *
- * Revision 1.14  2001/08/03 10:13:56  robertj
- * Changes to previous check in to support MSVC.
- *
- * Revision 1.13  2001/08/03 04:21:51  dereks
- * Add colour/size conversion for YUV422->YUV411P
- * Add Get/Set Brightness,Contrast,Hue,Colour for PVideoDevice,  and
- * Linux PVideoInputDevice.
- * Add lots of PTRACE statement for debugging colour conversion.
- * Add support for Sony Vaio laptop under linux. Requires 2.4.7 kernel.
- *
- * Revision 1.12  2001/07/20 05:23:51  robertj
- * Added YUV411P to RGB24 converter.
- *
- * Revision 1.11  2001/05/14 05:10:38  robertj
- * Fixed problems with video colour converters registration, could not rely
- *   on static PList being initialised before all registration instances.
- *
- * Revision 1.10  2001/03/20 02:21:57  robertj
- * More enhancements from Mark Cooke
- *
- * Revision 1.9  2001/03/08 23:36:03  robertj
- * Added backward compatibility SetFrameSize() function.
- * Added internal SimpleConvert() function for same type converters.
- * Fixed some documentation.
- *
- * Revision 1.8  2001/03/08 08:31:34  robertj
- * Numerous enhancements to the video grabbing code including resizing
- *   infrastructure to converters. Thanks a LOT, Mark Cooke.
- *
- * Revision 1.7  2001/03/07 01:39:56  dereks
- * Fix image flip (top to bottom) in YUV411P to RGB24 conversion
- *
- * Revision 1.6  2001/03/06 23:48:32  robertj
- * Fixed naming convention on video converter classes.
- *
- * Revision 1.5  2001/03/03 23:25:07  robertj
- * Fixed use of video conversion function, returning bytes in destination frame.
- *
- * Revision 1.4  2001/03/03 06:13:01  robertj
- * Major upgrade of video conversion and grabbing classes.
- *
- * Revision 1.3  2001/03/03 05:06:31  robertj
- * Major upgrade of video conversion and grabbing classes.
- *
- * Revision 1.2  2000/12/19 23:58:14  robertj
- * Fixed MSVC compatibility issues.
- *
- * Revision 1.1  2000/12/19 22:20:26  dereks
- * Add video channel classes to connect to the PwLib PVideoInputDevice class.
- * Add PFakeVideoInput class to generate test images for video.
+ * $Revision: 26686 $
+ * $Author: rjongbloed $
+ * $Date: 2011-11-23 20:22:20 -0600 (Wed, 23 Nov 2011) $
  */
 
 #include <ptlib.h>
@@ -346,12 +82,12 @@ class PStandardColourConverter : public PColourConverter
       const PVideoFrameInfo & dst
     ) : PColourConverter(src, dst) { }
 
-    BOOL SBGGR8toYUV420P(
+    bool SBGGR8toYUV420P(
      const BYTE * srgb,
       BYTE * rgb,
       PINDEX * bytesReturned
-    ) const;
-    BOOL SBGGR8toRGB(
+    );
+    bool SBGGR8toRGB(
       const BYTE * srgb,
       BYTE * rgb,
       PINDEX * bytesReturned
@@ -360,11 +96,11 @@ class PStandardColourConverter : public PColourConverter
       const BYTE * rgb,
       BYTE * yuv
     ) const;
-    void GreytoYUV420PWithResize(
+    void GreytoYUV420PWithCrop(
       const BYTE * rgb,
       BYTE * yuv
     ) const;
-    BOOL GreytoYUV420P(
+    bool GreytoYUV420P(
       const BYTE * rgb,
       BYTE * yuv,
       PINDEX * bytesReturned
@@ -376,22 +112,22 @@ class PStandardColourConverter : public PColourConverter
       unsigned redOffset,
       unsigned blueOffset
     ) const;
-    void RGBtoYUV420PWithResize(
+    void RGBtoYUV420PWithCrop(
       const BYTE * rgb,
       BYTE * yuv,
       unsigned rgbIncrement,
       unsigned redOffset,
       unsigned blueOffset
     ) const;
-    BOOL RGBtoYUV420P(
+    bool RGBtoYUV420P(
       const BYTE * rgb,
       BYTE * yuv,
       PINDEX * bytesReturned,
       unsigned rgbIncrement,
       unsigned redOffset,
       unsigned blueOffset
-    ) const;
-    BOOL YUV420PtoRGB(
+    );
+    bool YUV420PtoRGB(
       const BYTE * yuv,
       BYTE * rgb,
       PINDEX * bytesReturned,
@@ -399,30 +135,32 @@ class PStandardColourConverter : public PColourConverter
       unsigned redOffset,
       unsigned blueOffset
     ) const;
-    BOOL SwapRedAndBlue(
+    BOOL YUV420PtoRGB565(
+      const BYTE * yuv,
+      BYTE * rgb,
+      PINDEX * bytesReturned
+    ) const;
+    bool SwapRedAndBlue(
       const BYTE * src,
       BYTE * dst,
       PINDEX * bytesReturned,
       unsigned srcIncrement,
       unsigned dstIncrement
     ) const;
-    void ResizeUYVY422(
+    void UYVY422WithCrop(
       const BYTE *src_uyvy,
       BYTE *dst_uyvy
     ) const;
-    void ResizeYUV422(
+    void YUV422WithCrop(
       const BYTE * src,
-      BYTE * dest
-    ) const;
-    void ResizeYUV420P(
-      const BYTE * src,
-      BYTE * dest
+      BYTE * dest,
+      bool centred
     ) const;
     void UYVY422toYUV420PSameSize(
       const BYTE *uyvy,
       BYTE *yuv420p
     ) const;
-    void UYVY422toYUV420PWithResize(
+    void UYVY422toYUV420PWithCrop(
       const BYTE *uyvy,
       BYTE *yuv420p
     ) const;
@@ -430,7 +168,11 @@ class PStandardColourConverter : public PColourConverter
       const BYTE *yuy2,
       BYTE *yuv420p
     ) const;
-    void YUY2toYUV420PWithResize(
+    void YUY2toYUV420PWithGrow(
+      const BYTE *yuy2,
+      BYTE *yuv420p
+    ) const;
+    void YUY2toYUV420PWithShrink(
       const BYTE *yuy2,
       BYTE *yuv420p
     ) const;
@@ -441,9 +183,9 @@ class PStandardColourConverter : public PColourConverter
 #if defined (__GNUC__) || defined (__sun)
     bool MJPEGtoXXX(
       const BYTE *mjpeg,
-	    BYTE *output_data,
-	    PINDEX *bytesReturned,
-	    int format
+            BYTE *output_data,
+            PINDEX *bytesReturned,
+            int format
     );
     bool MJPEGtoYUV420P(
       const BYTE *mjpeg,
@@ -461,6 +203,11 @@ class PStandardColourConverter : public PColourConverter
 
 #define PSTANDARD_COLOUR_CONVERTER(from,to) \
   PCOLOUR_CONVERTER2(P_##from##_##to,PStandardColourConverter,#from,#to)
+
+
+#define BLACK_Y 0
+#define BLACK_U 128
+#define BLACK_V 128
 
 
 #define new PNEW
@@ -518,59 +265,56 @@ PColourConverter * PColourConverter::Create(const PString & srcColourFormat,
 }
 
 
-PColourConverter::PColourConverter(
-      const PString & _srcColourFormat,  ///< Name of source colour format
-      const PString & _dstColourFormat,  ///< Name of destination colour format
-      unsigned width,   ///< Width of frame
-      unsigned height   ///< Height of frame
-)
-  : verticalFlip(FALSE)
-#ifndef P_MACOSX
-  , jdec(NULL)
-#endif
+PColourConverter::PColourConverter(const PString & srcColourFmt,
+                                   const PString & dstColourFmt,
+                                   unsigned width,
+                                   unsigned height)
 {
-  PVideoFrameInfo src;
-  src.SetColourFormat(_srcColourFormat);
-  src.SetFrameSize(width, height);
-
-  PVideoFrameInfo dst;
-  dst.SetColourFormat(_dstColourFormat);
-
-  srcColourFormat = src.GetColourFormat();
-  dstColourFormat = dst.GetColourFormat();
-  resizeMode = dst.GetResizeMode();
-
-  src.GetFrameSize(srcFrameWidth, srcFrameHeight);
-  srcFrameBytes = src.CalculateFrameBytes();
-  dst.GetFrameSize(dstFrameWidth, dstFrameHeight);
-  dstFrameBytes = dst.CalculateFrameBytes();
-  PTRACE(6,"PColCnv\tPColourConverter constructed: " << srcColourFormat << ' ' << srcFrameWidth << 'x'<< srcFrameHeight
-                                           << " -> " << dstColourFormat << ' ' << dstFrameWidth << 'x'<< dstFrameHeight);
+  Construct(PVideoFrameInfo(width, height, srcColourFmt),
+            PVideoFrameInfo(width, height, dstColourFmt));
 }
 
 PColourConverter::PColourConverter(const PVideoFrameInfo & src,
                                    const PVideoFrameInfo & dst)
-  : srcColourFormat(src.GetColourFormat())
-  , dstColourFormat(dst.GetColourFormat())
-  , resizeMode(dst.GetResizeMode())
-  , verticalFlip(FALSE)
-#ifndef P_MACOSX
-  , jdec(NULL)
-#endif
 {
+  Construct(src, dst);
+}
+
+
+void PColourConverter::Construct(const PVideoFrameInfo & src, const PVideoFrameInfo & dst)
+{
+#ifndef P_MACOSX
+  jdec = NULL;
+#endif
+
+  srcColourFormat = src.GetColourFormat();
   src.GetFrameSize(srcFrameWidth, srcFrameHeight);
   srcFrameBytes = src.CalculateFrameBytes();
+
+  dstColourFormat = dst.GetColourFormat();
   dst.GetFrameSize(dstFrameWidth, dstFrameHeight);
   dstFrameBytes = dst.CalculateFrameBytes();
-  PTRACE(6,"PColCnv\tPColourConverter constructed: " << srcColourFormat << ' ' << srcFrameWidth << 'x'<< srcFrameHeight
-                                           << " -> " << dstColourFormat << ' ' << dstFrameWidth << 'x'<< dstFrameHeight);
+
+  resizeMode = dst.GetResizeMode();
+
+  verticalFlip = false;
+
+  PTRACE(4,"PColCnv\tPColourConverter constructed: " << src << " -> " << dst);
+}
+
+
+void PColourConverter::PrintOn(ostream & strm) const
+{
+  strm << srcColourFormat << ':' << srcFrameWidth << 'x' << srcFrameHeight << "->"
+       << dstColourFormat << ':' << dstFrameWidth << 'x' << dstFrameHeight << '/'
+       << resizeMode;
 }
 
 
 BOOL PColourConverter::SetFrameSize(unsigned width, unsigned height)
 {
-  BOOL ok1 = SetSrcFrameSize(width, height);
-  BOOL ok2 = SetDstFrameSize(width, height);
+  bool ok1 = SetSrcFrameSize(width, height);
+  bool ok2 = SetDstFrameSize(width, height);
   PTRACE(2,"PColCnv\tSetFrameSize: " << width << 'x' << height
          << (ok1 && ok2 ? " OK" : " Failed"));
   return ok1 && ok2;
@@ -579,8 +323,8 @@ BOOL PColourConverter::SetFrameSize(unsigned width, unsigned height)
 
 BOOL PColourConverter::SetSrcFrameInfo(const PVideoFrameInfo & info)
 {
-  if (info.GetColourFormat() != GetSrcColourFormat())
-    return FALSE;
+  if (!PAssert(info.GetColourFormat() != GetSrcColourFormat(), "Cannot change colour format"))
+    return false;
 
   unsigned w, h;
   return info.GetFrameSize(w, h) && SetSrcFrameSize(w, h);
@@ -589,8 +333,8 @@ BOOL PColourConverter::SetSrcFrameInfo(const PVideoFrameInfo & info)
 
 BOOL PColourConverter::SetDstFrameInfo(const PVideoFrameInfo & info)
 {
-  if (info.GetColourFormat() != GetDstColourFormat())
-    return FALSE;
+  if (!PAssert(info.GetColourFormat() != GetDstColourFormat(), "Cannot change colour format"))
+    return false;
 
   SetResizeMode(info.GetResizeMode());
 
@@ -616,7 +360,7 @@ void PColourConverter::GetDstFrameInfo(PVideoFrameInfo & info)
 BOOL PColourConverter::SetSrcFrameSize(unsigned width, unsigned height)
 {
   if (srcFrameWidth == width && srcFrameHeight == height)
-    return TRUE;
+    return true;
 
   srcFrameWidth = width;
   srcFrameHeight = height;
@@ -645,28 +389,24 @@ BOOL PColourConverter::SetDstFrameSize(unsigned width, unsigned height)
   return dstFrameBytes != 0;
 }
 
-BOOL PColourConverter::SetDstFrameSize(
-      unsigned width, 
-      unsigned height,
-      BOOL bScale
-)
+BOOL PColourConverter::SetDstFrameSize(unsigned width, unsigned height, BOOL bScale)
 {
   if (!SetDstFrameSize(width, height))
-    return FALSE;
+    return false;
 
   if (bScale)
     SetResizeMode(PVideoFrameInfo::eScale);
   else
     SetResizeMode(PVideoFrameInfo::eCropCentre);
 
-  return TRUE;
+  return true;
 }
 
 BOOL PColourConverter::GetSrcFrameSize(unsigned &width, unsigned &height) const
 {
   width = srcFrameWidth;
   height = srcFrameHeight;
-  return TRUE;
+  return true;
 }
 
 
@@ -674,7 +414,7 @@ BOOL PColourConverter::GetDstFrameSize(unsigned &width, unsigned &height) const
 {
   width = dstFrameWidth;
   height = dstFrameHeight;
-  return TRUE;
+  return true;
 }
 
 
@@ -683,22 +423,342 @@ BOOL PColourConverter::ConvertInPlace(BYTE * frameBuffer,
                                       BOOL noIntermediateFrame)
 {
   if (Convert(frameBuffer, frameBuffer, bytesReturned))
-    return TRUE;
+    return true;
 
   if (noIntermediateFrame) {
     PTRACE(2,"PColCnv\tError in ConvertInPlace, no intermediate frame available.");
-    return FALSE;
+    return false;
   }
 
   BYTE * intermediate = intermediateFrameStore.GetPointer(dstFrameBytes);
   PINDEX bytes;
   if (!Convert(frameBuffer, intermediate, &bytes))
-    return FALSE;
+    return false;
 
   memcpy(frameBuffer, intermediate, bytes);
   if (bytesReturned != NULL)
     *bytesReturned = bytes;
-  return TRUE;
+  return true;
+}
+
+
+#define RGB2Y(r, g, b, y) \
+  y=(BYTE)(((int)257*(r)  +(int)504*(g) +(int)98*(b))/1000)
+
+#define RGB2YUV(r, g, b, y, cb, cr) \
+  RGB2Y(r, g, b, y); \
+  cb=(BYTE)((-148*(r)  -291*(g) +439*(b))/1000 + 128); \
+  cr=(BYTE)(( 439*(r)  -368*(g) - 71*(b))/1000 + 128)
+
+
+void PColourConverter::RGBtoYUV(unsigned   r, unsigned   g, unsigned   b,
+                                unsigned & y, unsigned & u, unsigned & v)
+{
+  RGB2YUV(r, g, b, y, u, v);
+}
+
+
+void PColourConverter::RGBtoYUV(unsigned r, unsigned g, unsigned b,
+                                BYTE   & y, BYTE   & u, BYTE   & v)
+{
+  RGB2YUV(r, g, b, y, u, v);
+}
+
+
+// Consider a YUV420P image of 4x4 pixels.
+//
+// A plane of Y values    A B C D
+//                        E F G H
+//                        I J K L 
+//                        M N O P
+//
+// A plane of U values    1 . 2 . 
+//                           . . . .
+//                           3 . 4 .
+//                        . . . .
+//
+// A plane of V values    1 . 2 .
+//                           . . . .
+//                        3 . 4 .
+//                        . . . .
+// 
+// YUV420P is stored as all Y (w*h), then U (w*h/4), then V
+//   thus, a 4x4 image requires 24 bytes of storage.
+//
+// Grow and Shrink utilise the Variable Duty Cycle algorithm, currently
+// no interpolation is used, just pixel dropping or doubling
+
+static void GrowYUV420P(unsigned srcX, unsigned srcY, unsigned srcWidth, unsigned srcHeight,
+                        unsigned srcFrameWidth, const BYTE * srcYUV,
+                        unsigned dstX, unsigned dstY, unsigned dstWidth, unsigned dstHeight,
+                        unsigned dstFrameWidth, BYTE * dstYUV)
+{
+  const BYTE * srcPtr = srcYUV + srcY * srcFrameWidth + srcX;
+  BYTE * dstPtr = dstYUV + dstY * dstFrameWidth + dstX;
+
+  unsigned repeatRow = 0;
+  for (unsigned y = 0; y < srcHeight; y++) {
+
+    const BYTE * srcPixel = srcPtr;
+    BYTE * dstPixel = dstPtr;
+    unsigned repeatPixel = 0;
+
+    for (unsigned x = 0; x < srcWidth; x++) {
+      do {
+        *dstPixel++ = *srcPixel;
+        repeatPixel += srcWidth;
+      } while (repeatPixel < dstWidth);
+      repeatPixel -= dstWidth;
+
+      srcPixel++;
+    }
+
+    BYTE * repeatPtr = dstPtr;
+
+    repeatRow += srcHeight;
+    while (repeatRow < dstHeight) {
+      dstPtr += dstFrameWidth;
+      memcpy(dstPtr, repeatPtr, dstWidth);
+      repeatRow += srcHeight;
+    }
+    repeatRow -= dstHeight;
+
+    srcPtr += srcFrameWidth;
+    dstPtr += dstFrameWidth;
+  }
+}
+
+
+static void ShrinkYUV420P(unsigned srcX, unsigned srcY, unsigned srcWidth, unsigned srcHeight,
+                          unsigned srcFrameWidth, const BYTE * srcYUV,
+                          unsigned dstX, unsigned dstY, unsigned dstWidth, unsigned dstHeight,
+                          unsigned dstFrameWidth, BYTE * dstYUV)
+{
+  const BYTE * srcPtr = srcYUV + srcY * srcFrameWidth + srcX;
+  BYTE * dstPtr = dstYUV + dstY * dstFrameWidth + dstX;
+
+  unsigned repeatRow = 0;
+  for (unsigned y = 0; y < dstHeight; y++) {
+
+    const BYTE * srcPixel = srcPtr;
+    BYTE * dstPixel = dstPtr;
+    unsigned repeatPixel = 0;
+
+    for (unsigned x = 0; x < dstWidth; x++) {
+      *dstPixel++ = *srcPixel;
+
+      do {
+        srcPixel++;
+        repeatPixel += dstWidth;
+      } while (repeatPixel < srcWidth);
+      repeatPixel -= srcWidth;
+    }
+
+    do {
+      srcPtr += srcFrameWidth;
+      repeatRow += dstHeight;
+    } while (repeatRow < srcHeight);
+    repeatRow -= srcHeight;
+
+    dstPtr += dstFrameWidth;
+  }
+}
+
+
+static void CropYUV420P(unsigned srcX, unsigned srcY, unsigned srcWidth, unsigned srcHeight,
+                          unsigned srcFrameWidth, const BYTE * srcYUV,
+                          unsigned dstX, unsigned dstY, unsigned , unsigned ,
+                          unsigned dstFrameWidth, BYTE * dstYUV)
+{
+  const BYTE * srcPtr = srcYUV + srcY * srcFrameWidth + srcX;
+  BYTE * dstPtr = dstYUV + dstY * dstFrameWidth + dstX;
+  for (unsigned y = 0; y < srcHeight; y++) {
+    memcpy(dstPtr, srcPtr, srcWidth);
+    srcPtr += srcFrameWidth;
+    dstPtr += dstFrameWidth;
+  }
+}
+
+
+static bool ValidateDimensions(unsigned srcFrameWidth, unsigned srcFrameHeight, unsigned dstFrameWidth, unsigned dstFrameHeight)
+{
+  if (srcFrameWidth == 0 || dstFrameWidth == 0 || srcFrameHeight == 0 || dstFrameHeight == 0) {
+    PTRACE(2,"PColCnv\tDimensions cannot be zero: "
+           << srcFrameWidth << 'x' << srcFrameHeight << " -> " << dstFrameWidth << 'x' << dstFrameHeight);
+    return false;
+  }
+
+  if ((srcFrameWidth | dstFrameWidth | srcFrameHeight | dstFrameHeight) & 1) {
+    PTRACE(2,"PColCnv\tDimensions must be even: "
+           << srcFrameWidth << 'x' << srcFrameHeight << " -> " << dstFrameWidth << 'x' << dstFrameHeight);
+    return false;
+  }
+
+  if (srcFrameWidth <= dstFrameWidth && srcFrameHeight <= dstFrameHeight)
+    return true;
+
+  if (srcFrameWidth >= dstFrameWidth && srcFrameHeight >= dstFrameHeight)
+    return true;
+
+  PTRACE(2,"PColCnv\tCannot do one dimension shrinking and the other one growing: "
+         << srcFrameWidth << 'x' << srcFrameHeight << " -> " << dstFrameWidth << 'x' << dstFrameHeight);
+  return false;
+}
+
+
+bool PColourConverter::CopyYUV420P(unsigned srcX, unsigned srcY, unsigned srcWidth, unsigned srcHeight,
+                                   unsigned srcFrameWidth, unsigned srcFrameHeight, const BYTE * srcYUV,
+                                   unsigned dstX, unsigned dstY, unsigned dstWidth, unsigned dstHeight,
+                                   unsigned dstFrameWidth, unsigned dstFrameHeight, BYTE * dstYUV,
+                                   PVideoFrameInfo::ResizeMode resizeMode)
+{
+  if (srcX == 0 && srcY == 0 && dstX == 0 && dstY == 0 &&
+      srcWidth == dstWidth && srcHeight == dstHeight &&
+      srcFrameWidth == dstFrameWidth && srcFrameHeight == dstFrameHeight &&
+      srcWidth == srcFrameWidth && srcHeight == srcFrameHeight) {
+    memcpy(dstYUV, srcYUV, srcFrameWidth*srcFrameHeight*3/2);
+    return true;
+  }
+
+  if (srcFrameWidth == 0 || srcFrameHeight == 0 ||
+      dstFrameWidth == 0 || dstFrameHeight == 0 ||
+      !ValidateDimensions(srcWidth, srcHeight, dstWidth, dstHeight) ||
+      srcX + srcWidth > srcFrameWidth ||
+      srcY + srcHeight > srcFrameHeight ||
+      dstX + dstWidth > dstFrameWidth ||
+      dstY + dstHeight > dstFrameHeight) {
+    PAssertAlways(PInvalidParameter);
+    return false;
+  }
+
+  void (*rowFunction)(unsigned srcX, unsigned srcY, unsigned srcWidth, unsigned srcHeight,
+                      unsigned srcFrameWidth, const BYTE * srcYUV,
+                      unsigned dstX, unsigned dstY, unsigned dstWidth, unsigned dstHeight,
+                      unsigned dstFrameWidth, BYTE * dstYUV) = CropYUV420P;
+
+  switch (resizeMode) {
+    case PVideoFrameInfo::eScale :
+      if (srcWidth > dstWidth)
+        rowFunction = ShrinkYUV420P;
+      else if (srcWidth < dstWidth)
+        rowFunction = GrowYUV420P;
+      break;
+
+    case PVideoFrameInfo::eCropTopLeft :
+      if (srcWidth < dstWidth) {
+        FillYUV420P(dstX + srcWidth, dstY, dstWidth - srcWidth, dstHeight, dstFrameWidth, dstFrameHeight, dstYUV, 0, 0, 0);
+        if (srcHeight < dstHeight)
+          FillYUV420P(dstX, dstY + srcHeight, dstWidth, dstHeight - srcHeight, dstFrameWidth, dstFrameHeight, dstYUV, 0, 0, 0);
+        dstWidth = srcWidth;
+        dstHeight = srcHeight;
+      }
+      else {
+        srcWidth = dstWidth;
+        srcHeight = dstHeight;
+      }
+      break;
+
+    case PVideoFrameInfo::eCropCentre :
+      if (srcWidth < dstWidth) {
+        unsigned deltaX = (dstWidth - srcWidth)/2;
+        unsigned deltaY = (dstHeight - srcHeight)/2;
+        FillYUV420P(dstX, dstY, deltaX, dstHeight, dstFrameWidth, dstFrameHeight, dstYUV, 0, 0, 0);
+        FillYUV420P(dstX+deltaX+srcWidth, dstY, deltaX, dstHeight, dstFrameWidth, dstFrameHeight, dstYUV, 0, 0, 0);
+        if (srcHeight < dstHeight) {
+          FillYUV420P(dstX+deltaX, dstY, srcWidth, deltaY, dstFrameWidth, dstFrameHeight, dstYUV, 0, 0, 0);
+          FillYUV420P(dstX+deltaX, dstY+deltaY+srcHeight, srcWidth, deltaY, dstFrameWidth, dstFrameHeight, dstYUV, 0, 0, 0);
+        }
+        dstX += deltaX;
+        dstY += deltaY;
+        dstWidth = srcWidth;
+        dstHeight = srcHeight;
+      }
+      else {
+        srcX += (srcWidth - dstWidth)/2;
+        srcY += (srcHeight - dstHeight)/2;
+        srcWidth = dstWidth;
+        srcHeight = dstHeight;
+      }
+      break;
+
+    default :
+      PAssertAlways(PInvalidParameter);
+      return false;
+  }
+
+  // Copy plane Y
+  rowFunction(srcX, srcY, srcWidth, srcHeight, srcFrameWidth, srcYUV,
+              dstX, dstY, dstWidth, dstHeight, dstFrameWidth, dstYUV);
+
+  srcYUV += srcFrameWidth*srcFrameHeight;
+  dstYUV += dstFrameWidth*dstFrameHeight;
+
+  // U & V planes half size
+  srcX /= 2;
+  srcY /= 2;
+  dstX /= 2;
+  dstY /= 2;
+  srcWidth /= 2;
+  srcHeight /= 2;
+  dstWidth /= 2;
+  dstHeight /= 2;
+  srcFrameWidth /= 2;
+  srcFrameHeight /= 2;
+  dstFrameWidth /= 2;
+  dstFrameHeight /= 2;
+
+  // Copy plane U
+  rowFunction(srcX, srcY, srcWidth, srcHeight, srcFrameWidth, srcYUV,
+              dstX, dstY, dstWidth, dstHeight, dstFrameWidth, dstYUV);
+
+  srcYUV += srcFrameWidth*srcFrameHeight;
+  dstYUV += dstFrameWidth*dstFrameHeight;
+
+  // Copy plane V
+  rowFunction(srcX, srcY, srcWidth, srcHeight, srcFrameWidth, srcYUV,
+              dstX, dstY, dstWidth, dstHeight, dstFrameWidth, dstYUV);
+  return true;
+}
+
+
+bool PColourConverter::FillYUV420P(unsigned x, unsigned y, int width, int height,
+                                   unsigned frameWidth, unsigned frameHeight, BYTE * yuv,
+                                   unsigned r, unsigned g, unsigned b)
+{
+  if (frameWidth == 0 || frameHeight == 0 || x + width > frameWidth || y + height > frameHeight) {
+    PAssertAlways(PInvalidParameter);
+    return false;
+  }
+
+  unsigned Y, Cb, Cr;
+  PColourConverter::RGBtoYUV(r, g, b, Y, Cb, Cr);
+
+  x &= 0xfffffffe; // Make sure is even
+
+  int offset       = ( y * frameWidth ) + x;
+  int colourOffset = ( (y * frameWidth) >> 2) + (x >> 1);
+
+  unsigned char * Yptr  = yuv + offset;
+  unsigned char * CbPtr = yuv + (frameWidth * frameHeight) + colourOffset;
+  unsigned char * CrPtr = yuv + (frameWidth * frameHeight) + (frameWidth * frameHeight/4)  + colourOffset;
+
+  int halfRectWidth  = width/2;
+  int halfFrameWidth = frameWidth/2;
+  
+  for (int dy = 0; dy < height; dy += 2) {
+    memset(Yptr, Y, width);
+    Yptr += frameWidth;
+    memset(Yptr, Y, width);
+    Yptr += frameWidth;
+
+    memset(CbPtr, Cb, halfRectWidth);
+    memset(CrPtr, Cr, halfRectWidth);
+
+    CbPtr += halfFrameWidth;
+    CrPtr += halfFrameWidth;
+  }
+
+  return true;
 }
 
 
@@ -719,7 +779,7 @@ PColourConverter * PSynonymColourRegistration::Create(const PVideoFrameInfo & sr
 
 BOOL PSynonymColour::Convert(const BYTE *srcFrameBuffer,
                              BYTE *dstFrameBuffer,
-			     unsigned int __srcFrameBytes,
+                             unsigned int __srcFrameBytes,
                              PINDEX * bytesReturned)
 {
   srcFrameBytes = __srcFrameBytes;
@@ -731,15 +791,15 @@ BOOL PSynonymColour::Convert(const BYTE *srcFrameBuffer,
                              PINDEX * bytesReturned)
 {
   if ((srcFrameWidth != dstFrameWidth) || (srcFrameHeight != dstFrameHeight)) {
-    PTRACE(2,"PColCnv\tCannot do synonym colour conversion, source and destination frame size not equal.");
-    return FALSE;
+    PTRACE(2,"PColCnv\tCannot do synonym conversion, source and destination size not equal: " << *this);
+    return false;
   }
 
   if (verticalFlip) {
     PINDEX rowSize = dstFrameBytes/srcFrameHeight;
     if (rowSize*srcFrameHeight != dstFrameBytes) {
-      PTRACE(2,"PColCnv\tCannot do synonym colour conversion, frame does not have equal sized scan lines.");
-      return FALSE;
+      PTRACE(2,"PColCnv\tCannot do synonym conversion, frame does not have equal scan lines: " << *this);
+      return false;
     }
 
     if (srcFrameBuffer != dstFrameBuffer) {
@@ -772,14 +832,10 @@ BOOL PSynonymColour::Convert(const BYTE *srcFrameBuffer,
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
 
-  return TRUE;
+  return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-
-#define BLACK_Y 0
-#define BLACK_U 128
-#define BLACK_V 128
 
 #define greytoy(r, y) y=r
 #define greytoyuv(r, y, u, v) greytoy(r,y); u=BLACK_U; v=BLACK_V
@@ -819,7 +875,7 @@ void PStandardColourConverter::GreytoYUV420PSameSize(const BYTE * grey, BYTE * y
 
 // Simple crop/pad version.  Image aligned to top-left
 // and cropped / padded with black borders as required.
-void PStandardColourConverter::GreytoYUV420PWithResize(const BYTE * grey, BYTE * yuv) const
+void PStandardColourConverter::GreytoYUV420PWithCrop(const BYTE * grey, BYTE * yuv) const
 {
   int planeSize = dstFrameWidth*dstFrameHeight;
   const int halfWidth = dstFrameWidth >> 1;
@@ -881,29 +937,24 @@ void PStandardColourConverter::GreytoYUV420PWithResize(const BYTE * grey, BYTE *
 }
 
 
-BOOL PStandardColourConverter::GreytoYUV420P(const BYTE * grey, BYTE * yuv, PINDEX * bytesReturned) const
+bool PStandardColourConverter::GreytoYUV420P(const BYTE * grey, BYTE * yuv, PINDEX * bytesReturned) const
 {
-  if (grey == yuv)
-    return FALSE; // Cannot do in place conversion
+  if (grey == yuv) {
+    PTRACE(2,"PColCnv\tCannot do in-place conversion, not implemented.");
+    return false;
+  }
 
   if ((srcFrameWidth == dstFrameWidth) && (srcFrameHeight == dstFrameHeight)) 
     GreytoYUV420PSameSize(grey, yuv);
   else
-    GreytoYUV420PWithResize(grey, yuv);
+    GreytoYUV420PWithCrop(grey, yuv);
 
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
 
-  return TRUE;
+  return true;
 }
 
-#define RGB2Y(r, g, b, y) \
-  y=(BYTE)(((int)257*(r)  +(int)504*(g) +(int)98*(b))/1000)
-
-#define RGB2YUV(r, g, b, y, cb, cr) \
-  RGB2Y(r, g, b, y); \
-  cb=(BYTE)((-148*(r)  -291*(g) +439*(b))/1000 + 128); \
-  cr=(BYTE)(( 439*(r)  -368*(g) - 71*(b))/1000 + 128)
 
 void PStandardColourConverter::RGBtoYUV420PSameSize(const BYTE * rgb,
                                                     BYTE * yuv,
@@ -944,11 +995,11 @@ void PStandardColourConverter::RGBtoYUV420PSameSize(const BYTE * rgb,
 
 // Simple crop/pad version.  Image aligned to top-left
 // and cropped / padded with black borders as required.
-void PStandardColourConverter::RGBtoYUV420PWithResize(const BYTE * rgb,
-                                                      BYTE * yuv,
-                                                      unsigned rgbIncrement,
-                                                      unsigned redOffset,
-                                                      unsigned blueOffset) const
+void PStandardColourConverter::RGBtoYUV420PWithCrop(const BYTE * rgb,
+                                                    BYTE * yuv,
+                                                    unsigned rgbIncrement,
+                                                    unsigned redOffset,
+                                                    unsigned blueOffset) const
 {
   int planeSize = dstFrameWidth*dstFrameHeight;
   const int halfWidth = dstFrameWidth >> 1;
@@ -1009,25 +1060,33 @@ void PStandardColourConverter::RGBtoYUV420PWithResize(const BYTE * rgb,
 }
 
 
-BOOL PStandardColourConverter::RGBtoYUV420P(const BYTE * rgb,
+bool PStandardColourConverter::RGBtoYUV420P(const BYTE * rgb,
                                             BYTE * yuv,
                                             PINDEX * bytesReturned,
                                             unsigned rgbIncrement,
                                             unsigned redOffset,
-                                            unsigned blueOffset) const
+                                            unsigned blueOffset)
 {
-  if (rgb == yuv)
-    return FALSE; // Cannot do in place conversion
+  if (rgb == yuv) {
+    PTRACE(2,"PColCnv\tCannot do in-place conversion, not implemented.");
+    return false;
+  }
 
   if ((srcFrameWidth == dstFrameWidth) && (srcFrameHeight == dstFrameHeight)) 
     RGBtoYUV420PSameSize(rgb, yuv, rgbIncrement, redOffset, blueOffset);
-  else
-    RGBtoYUV420PWithResize(rgb, yuv, rgbIncrement, redOffset, blueOffset);
+  else if (resizeMode == PVideoFrameInfo::eCropTopLeft)
+    RGBtoYUV420PWithCrop(rgb, yuv, rgbIncrement, redOffset, blueOffset);
+  else {
+    unsigned intermediateSize = PVideoFrameInfo::CalculateFrameBytes(srcFrameWidth, srcFrameHeight, dstColourFormat);
+    RGBtoYUV420PSameSize(rgb, intermediateFrameStore.GetPointer(intermediateSize), rgbIncrement, redOffset, blueOffset);
+    CopyYUV420P(0, 0, srcFrameWidth, srcFrameHeight, srcFrameWidth, srcFrameHeight, intermediateFrameStore,
+                0, 0, dstFrameWidth, dstFrameHeight, dstFrameWidth, dstFrameHeight, yuv, resizeMode);
+  }
 
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
 
-  return TRUE;
+  return true;
 }
 
 
@@ -1097,17 +1156,17 @@ void  PStandardColourConverter::YUY2toYUV420PSameSize(const BYTE *yuy2, BYTE *yu
 
      /* Copy the first line keeping all information */
      for (x=0; x<srcFrameWidth; x+=2) {
-	*y++ = *s++;
-	*u++ = *s++;
-	*y++ = *s++;
-	*v++ = *s++;
+        *y++ = *s++;
+        *u++ = *s++;
+        *y++ = *s++;
+        *v++ = *s++;
      }
      /* Copy the second line discarding u and v information */
      for (x=0; x<srcFrameWidth; x+=2) {
-	*y++ = *s++;
-	s++;
-	*y++ = *s++;
-	s++;
+        *y++ = *s++;
+        s++;
+        *y++ = *s++;
+        s++;
      }
   }
 }
@@ -1131,146 +1190,149 @@ void  PStandardColourConverter::YUY2toYUV420PSameSize(const BYTE *yuy2, BYTE *yu
  * 
  * So, we loose some bit of information when converting YUY2 to YUV420 
  *
- * NOTE: This algorithm works only if the width and the height is pair.
+ * NOTE: This algorithm works only if the width and the height are even numbers.
  */
-void PStandardColourConverter::YUY2toYUV420PWithResize(const BYTE *yuy2, BYTE *yuv420p) const
+void PStandardColourConverter::YUY2toYUV420PWithGrow(const BYTE *yuy2, BYTE *yuv420p) const
 {
   const BYTE *s;
   BYTE *y, *u, *v;
   unsigned int x, h;  
-  unsigned int npixels = srcFrameWidth * srcFrameHeight;
+  unsigned int npixels = dstFrameWidth * dstFrameHeight;
 
   s = yuy2;
   y = yuv420p;
   u = yuv420p + npixels;
   v = u + npixels/4;
 
-  if ( (dstFrameWidth * dstFrameHeight) > npixels ) {
+  // dest is bigger than the source. No subsampling.
+  // Place the src in the middle of the destination.
+  unsigned int yOffset = (dstFrameHeight - srcFrameHeight)/2;
+  unsigned int xOffset = (dstFrameWidth - srcFrameWidth)/2;
+  unsigned int bpixels = yOffset * dstFrameWidth;
 
-     // dest is bigger than the source. No subsampling.
-     // Place the src in the middle of the destination.
-     unsigned int yOffset = (dstFrameHeight - srcFrameHeight)/2;
-     unsigned int xOffset = (dstFrameWidth - srcFrameWidth)/2;
-     unsigned int bpixels = yOffset * dstFrameWidth;
+  /* Top border */
+  memset(y, BLACK_Y, bpixels);   y += bpixels;
+  memset(u, BLACK_U, bpixels/4); u += bpixels/4;
+  memset(v, BLACK_V, bpixels/4); v += bpixels/4;
 
-     /* Top border */
-     memset(y, BLACK_Y, bpixels);	y += bpixels;
-     memset(u, BLACK_U, bpixels/4);	u += bpixels/4;
-     memset(v, BLACK_V, bpixels/4);	v += bpixels/4;
+  for (h=0; h<srcFrameHeight; h+=2)
+  {
+    /* Left border */
+    memset(y, BLACK_Y, xOffset);   y += xOffset;
+    memset(u, BLACK_U, xOffset/2); u += xOffset/2;
+    memset(v, BLACK_V, xOffset/2); v += xOffset/2;
 
-     for (h=0; h<srcFrameHeight; h+=2)
+    /* Copy the first line keeping all information */
+    for (x=0; x<srcFrameWidth; x+=2)
+    {
+      *y++ = *s++;
+      *u++ = *s++;
+      *y++ = *s++;
+      *v++ = *s++;
+    }
+    /* Right and Left border */
+    for (x=0; x<xOffset*2; x++)
+      *y++ = BLACK_Y;
+
+    /* Copy the second line discarding u and v information */
+    for (x=0; x<srcFrameWidth; x+=2)
+    {
+      *y++ = *s++;
+      s++;
+      *y++ = *s++;
+      s++;
+    }
+    /* Fill the border with black (right side) */
+    memset(y, BLACK_Y, xOffset);        y += xOffset;
+    memset(u, BLACK_U, xOffset/2);        u += xOffset/2;
+    memset(v, BLACK_V, xOffset/2);        v += xOffset/2;
+  }
+  memset(y, BLACK_Y, bpixels);
+  memset(u, BLACK_U, bpixels/4);
+  memset(v, BLACK_V, bpixels/4);
+}
+
+
+void PStandardColourConverter::YUY2toYUV420PWithShrink(const BYTE *yuy2, BYTE *yuv420p) const
+{
+  const BYTE *s;
+  BYTE *y, *u, *v;
+  unsigned int x, h;  
+  unsigned int npixels = dstFrameWidth * dstFrameHeight;
+
+  s = yuy2;
+  y = yuv420p;
+  u = yuv420p + npixels;
+  v = u + npixels/4;
+
+  // source is bigger than the destination
+  // We are doing linear interpolation to find value.
+  // Note this algorithm only works if dst is an even multple of src
+  unsigned int dx = srcFrameWidth/dstFrameWidth;
+  unsigned int dy = srcFrameHeight/dstFrameHeight;
+  unsigned int fy, fx;
+
+  for (fy=0, h=0; h<dstFrameHeight; h+=2, fy+=dy*2)
+  {
+    /* Copy the first line with U&V */
+    unsigned int yy = fy;
+    unsigned int yy2 = (fy+dy);
+    const unsigned char *line1, *line2;
+    unsigned char lastU, lastV;
+
+    line1 = s + (yy*2*srcFrameWidth);
+    line2 = s + (yy2*2*srcFrameWidth);
+    lastU = line1[1];
+    lastV = line1[3];
+    for (fx=0, x=0; x<dstFrameWidth; x+=2, fx+=dx*2)
+    {
+      unsigned int xx = fx*2;
+      *y++ = line1[xx];
+      if ( (xx&2) == 0)
       {
-        /* Left border */
-        memset(y, BLACK_Y, xOffset);	y += xOffset;
-        memset(u, BLACK_U, xOffset/2);	u += xOffset/2;
-        memset(v, BLACK_V, xOffset/2);	v += xOffset/2;
-
-        /* Copy the first line keeping all information */
-        for (x=0; x<srcFrameWidth; x+=2)
-         {
-           *y++ = *s++;
-           *u++ = *s++;
-           *y++ = *s++;
-           *v++ = *s++;
-         }
-        /* Right and Left border */
-        for (x=0; x<xOffset*2; x++)
-          *y++ = BLACK_Y;
-
-        /* Copy the second line discarding u and v information */
-        for (x=0; x<srcFrameWidth; x+=2)
-         {
-           *y++ = *s++;
-           s++;
-           *y++ = *s++;
-           s++;
-         }
-        /* Fill the border with black (right side) */
-        memset(y, BLACK_Y, xOffset);	y += xOffset;
-        memset(u, BLACK_U, xOffset/2);	u += xOffset/2;
-        memset(v, BLACK_V, xOffset/2);	v += xOffset/2;
+        *u++ = lastU = (line1[xx+1] + line2[xx+1])/2;
+        *v++ = lastV = (line1[xx+3] + line2[xx+3])/2;
       }
-     memset(y, BLACK_Y, bpixels);
-     memset(u, BLACK_U, bpixels/4);
-     memset(v, BLACK_V, bpixels/4);
-
-
-  } else {
-
-     // source is bigger than the destination
-     // We are doing linear interpolation to find value.
-#define FIX_FLOAT       12
-     unsigned int dx = (srcFrameWidth<<FIX_FLOAT)/dstFrameWidth;
-     unsigned int dy = (srcFrameHeight<<FIX_FLOAT)/dstFrameHeight;
-     unsigned int fy, fx;
-
-     for (fy=0, h=0; h<dstFrameHeight; h+=2, fy+=dy*2)
+      else
       {
-	/* Copy the first line with U&V */
-	unsigned int yy = fy>>FIX_FLOAT;
-	unsigned int yy2 = (fy+dy)>>FIX_FLOAT;
-	const unsigned char *line1, *line2;
-	unsigned char lastU, lastV;
+        *u++ = lastU;
+        *v++ = lastV = (line1[xx+1] + line2[xx+1])/2;
+      }
+      
+      xx = (fx+dx);
+      *y++ = line1[xx];
+      if ( (xx&2) == 0)
+        lastU = (line1[xx+1] + line2[xx+1])/2;
+      else
+        lastV = (line1[xx+3] + line2[xx+3])/2;
+    }
 
-	line1 = s + (yy*2*srcFrameWidth);
-	line2 = s + (yy2*2*srcFrameWidth);
-	lastU = line1[0];
-	lastV = line1[2];
-	for (fx=0, x=0; x<dstFrameWidth; x+=2, fx+=dx*2)
-	 {
-	   unsigned int xx = (fx>>FIX_FLOAT)*2;
-	   *y++ = line1[xx+1];
-	   if ( (xx&2) == 0)
-	    {
-	      *u++ = lastU = (line1[xx+1] + line2[xx+1])/2;
-	      *v++ = lastV = (line1[xx+3] + line2[xx+3])/2;
-	    }
-	   else
-	    {
-	      *u++ = lastU;
-	      *v++ = lastV = (line1[xx+1] + line2[xx+1])/2;
-	    }
-	   xx = ((fx+dx)>>FIX_FLOAT)*2;
-	   *y++ = line1[xx+1];
-	   if ( (xx&2) == 0)
-	     lastU = (line1[xx+1] + line2[xx+1])/2;
-	   else
-	     lastV = (line1[xx+1] + line2[xx+1])/2;
-	 }
-
-	/* Copy the second line without U&V */
-        for (fx=0, x=0; x<dstFrameWidth; x++, fx+=dx)
-         {
-           unsigned int xx = (fx>>FIX_FLOAT)*2;
-           *y++ = line2[xx];
-         }
-      } /* end of for (fy=0, h=0; h<dstFrameHeight; h+=2, fy+=dy*2) */
-
-   }
-
+    /* Copy the second line without U&V */
+    for (fx=0, x=0; x<dstFrameWidth; x++, fx+=dx)
+    {
+      unsigned int xx = fx*2;
+      *y++ = line2[xx];
+    }
+  } /* end of for (fy=0, h=0; h<dstFrameHeight; h+=2, fy+=dy*2) */
 }
 
 
 PSTANDARD_COLOUR_CONVERTER(YUY2,YUV420P)
 {
-  const BYTE *yuy2 = srcFrameBuffer;
-  BYTE *yuv420p = dstFrameBuffer;
+  if (!ValidateDimensions(srcFrameWidth, srcFrameHeight, dstFrameWidth, dstFrameHeight))
+    return false;
 
-  if ((srcFrameWidth | dstFrameWidth | srcFrameHeight | dstFrameHeight) & 1) {
-    PTRACE(2,"PColCnv\tError in YUY2 to YUV420P converter, All size need to be pair.");
-    return FALSE;
-  }
-
-  if ((srcFrameWidth == dstFrameWidth) || (srcFrameHeight == dstFrameHeight)) {
-     YUY2toYUV420PSameSize(yuy2, yuv420p);
-  } else {
-     YUY2toYUV420PWithResize(yuy2, yuv420p);
-  }
+  if (dstFrameWidth == srcFrameWidth)
+    YUY2toYUV420PSameSize(srcFrameBuffer, dstFrameBuffer);
+  else if (dstFrameWidth < srcFrameWidth)
+    YUY2toYUV420PWithShrink(srcFrameBuffer, dstFrameBuffer);
+  else
+    YUY2toYUV420PWithGrow(srcFrameBuffer, dstFrameBuffer);
 
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
 
-  return TRUE;
+  return true;
 }
 
 // Consider a YUV422P image of 8x2 pixels.
@@ -1291,7 +1353,7 @@ PSTANDARD_COLOUR_CONVERTER(YUY2,YUV420P)
 //        padded                 (src smaller than dst)      
 //        subsampled and padded  (src bigger than dst)  
 
-void PStandardColourConverter::ResizeYUV422(const BYTE * src, BYTE * dest) const
+void PStandardColourConverter::YUV422WithCrop(const BYTE * src, BYTE * dest, bool centred) const
 {
   DWORD *result = (DWORD *)dest;
   DWORD black   = (DWORD)(BLACK_U<<24) + (BLACK_Y<<16) + (BLACK_U<<8) + BLACK_Y;
@@ -1303,8 +1365,8 @@ void PStandardColourConverter::ResizeYUV422(const BYTE * src, BYTE * dest) const
 
     //dest is bigger than the source. No subsampling.
     //Place the src in the middle of the destination.
-    unsigned yOffset = dstFrameHeight - srcFrameHeight;
-    unsigned xOffset = dstFrameWidth - srcFrameWidth;
+    unsigned yOffset = centred ? dstFrameHeight - srcFrameHeight : 0;
+    unsigned xOffset = centred ? dstFrameWidth - srcFrameWidth : 0;
 
     BYTE *s_ptr,*d_ptr;
     d_ptr = (yOffset * dstFrameWidth) + xOffset + dest;
@@ -1346,194 +1408,16 @@ PSTANDARD_COLOUR_CONVERTER(YUV422,YUV422)
     *bytesReturned = dstFrameBytes;
   
   if (srcFrameBuffer == dstFrameBuffer)
-    return TRUE;
+    return true;
 
   if ((srcFrameWidth == dstFrameWidth) && (srcFrameHeight == dstFrameHeight)) 
     memcpy(dstFrameBuffer,srcFrameBuffer,srcFrameWidth*srcFrameHeight*2);
   else
-    ResizeYUV422(srcFrameBuffer, dstFrameBuffer);
+    YUV422WithCrop(srcFrameBuffer, dstFrameBuffer, resizeMode == PVideoFrameInfo::eCropCentre);
 
-  return TRUE;
+  return true;
 }
 
-
-// copied from OpenMCU
-static void ConvertQCIFToCIF(const void * _src, void * _dst)
-{
-  BYTE * src = (BYTE *)_src;
-  BYTE * dst = (BYTE *)_dst;
-
-  //BYTE * dstEnd = dst + CIF_SIZE;
-  int y, x;
-  BYTE * srcRow;
-
-  // copy Y
-  for (y = 0; y < PVideoFrameInfo::QCIFHeight; y++) {
-    srcRow = src;
-    for (x = 0; x < PVideoFrameInfo::QCIFWidth; x++) {
-      dst[0] = dst[1] = *srcRow++;
-      dst += 2;
-    }
-    srcRow = src;
-    for (x = 0; x < PVideoFrameInfo::QCIFWidth; x++) {
-      dst[0] = dst[1] = *srcRow++;
-      dst += 2;
-    }
-    src += PVideoFrameInfo::QCIFWidth;
-  }
-
-  // copy U
-  for (y = 0; y < PVideoFrameInfo::QCIFHeight/2; y++) {
-    srcRow = src;
-    for (x = 0; x < PVideoFrameInfo::QCIFWidth/2; x++) {
-      dst[0] = dst[1] = *srcRow++;
-      dst += 2;
-    }
-    srcRow = src;
-    for (x = 0; x < PVideoFrameInfo::QCIFWidth/2; x++) {
-      dst[0] = dst[1] = *srcRow++;
-      dst += 2;
-    }
-    src += PVideoFrameInfo::QCIFWidth/2;
-  }
-
-  // copy V
-  for (y = 0; y < PVideoFrameInfo::QCIFHeight/2; y++) {
-    srcRow = src;
-    for (x = 0; x < PVideoFrameInfo::QCIFWidth/2; x++) {
-      dst[0] = dst[1] = *srcRow++;
-      dst += 2;
-    }
-    srcRow = src;
-    for (x = 0; x < PVideoFrameInfo::QCIFWidth/2; x++) {
-      dst[0] = dst[1] = *srcRow++;
-      dst += 2;
-    }
-    src += PVideoFrameInfo::QCIFWidth/2;
-  }
-}
-
-
-// Consider a YUV420P image of 4x4 pixels.
-//
-// A plane of Y values    A B C D
-//                        E F G H
-//                        I J K L 
-//                        M N O P
-//
-// A plane of U values    1 . 2 . 
-// 			  . . . .
-// 			  3 . 4 .
-//                        . . . .
-//
-// A plane of V values    1 . 2 .
-// 			  . . . .
-//                        3 . 4 .
-//                        . . . .
-// 
-// YUV420P is stored as all Y (w*h), then U (w*h/4), then V
-//   thus, a 4x4 image requires 24 bytes of storage.
-//
-// Image has two possible transformations.
-//        padded                 (src smaller than dst)      
-//        subsampled and padded  (src bigger than dst)  
-
-void PStandardColourConverter::ResizeYUV420P(const BYTE * src, BYTE * dest) const
-{
-  unsigned int i, y, x, npixels;
-  BYTE *d;
-  const BYTE *s;
-
-  npixels = dstFrameWidth * dstFrameHeight;
-  if ( (dstFrameWidth*dstFrameHeight) > (srcFrameWidth*srcFrameHeight) ) { 
-
-    if (srcFrameWidth  == PVideoFrameInfo::QCIFWidth && 
-        srcFrameHeight == PVideoFrameInfo::QCIFHeight &&
-        dstFrameWidth  == PVideoFrameInfo::CIFWidth && 
-        dstFrameHeight == PVideoFrameInfo::CIFHeight) {
-      ConvertQCIFToCIF(src, dest);
-    } 
-    else {
-
-      // dest is bigger than the source. No subsampling.
-      // Place the src in the middle of the destination.
-      unsigned int yOffset = (dstFrameHeight - srcFrameHeight)/2;
-      unsigned int xOffset = (dstFrameWidth - srcFrameWidth)/2;
-
-      d = dest;
-      for (i=0; i < npixels; i++) 
-        *d++ = BLACK_Y;
-      for (i=0; i < npixels/4; i++)
-        *d++ = BLACK_U;
-      for (i=0; i < npixels/4; i++)
-        *d++ = BLACK_V;
-
-      // Copy plane Y
-      d = dest + yOffset * dstFrameWidth + xOffset;
-      s = src;
-      for (y = 0; y < srcFrameHeight; y++) {
-        memcpy(d, s, srcFrameWidth);
-        s += srcFrameWidth;
-        d += dstFrameWidth;
-      }
-
-      // Copy plane U
-      d = dest + npixels + (yOffset*dstFrameWidth/4) + xOffset/2;
-      for (y = 0; y < srcFrameHeight/2; y++) {
-        memcpy(d, s, srcFrameWidth/2);
-        s += srcFrameWidth/2;
-        d += dstFrameWidth/2;
-      }
-
-      // Copy plane V
-      d = dest + npixels + npixels/4 + (yOffset*dstFrameWidth/4) + xOffset/2;
-      for (y = 0; y < srcFrameHeight/2; y++) {
-        memcpy(d, s, srcFrameWidth/2);
-        s += srcFrameWidth/2;
-        d += dstFrameWidth/2;
-      }
-    }
-
-  } else {  
-    // source is bigger than the destination.
-    //
-#define FIX_FLOAT	12
-    unsigned int dx = (srcFrameWidth<<FIX_FLOAT)/dstFrameWidth;
-    unsigned int dy = (srcFrameHeight<<FIX_FLOAT)/dstFrameHeight;
-    unsigned int fy, fx;
-
-    s = src;
-    d = dest;
-
-    /* Copy Plane Y */
-    for (fy=0, y=0; y<dstFrameHeight; y++, fy+=dy) {
-       s = src + (fy>>FIX_FLOAT) * srcFrameWidth;
-       for (fx=0, x=0; x<dstFrameWidth; x++, fx+=dx) {
-	  *d++ = s[fx>>FIX_FLOAT];
-       }
-    }
-
-    /* Copy Plane U */
-    src += srcFrameWidth*srcFrameHeight;
-    for (fy=0, y=0; y<dstFrameHeight/2; y++, fy+=dy) {
-       s = src + (fy>>FIX_FLOAT) * srcFrameWidth/2;
-       for (fx=0, x=0; x<dstFrameWidth/2; x++, fx+=dx) {
-	  *d++ = s[fx>>FIX_FLOAT];
-       }
-    }
-
-    /* Copy Plane V */
-    src += srcFrameWidth*srcFrameHeight/4;
-    for (fy=0, y=0; y<dstFrameHeight/2; y++, fy+=dy) {
-       s = src + (fy>>FIX_FLOAT) * srcFrameWidth/2;
-       for (fx=0, x=0; x<dstFrameWidth/2; x++, fx+=dx) {
-	  *d++ = s[fx>>FIX_FLOAT];
-       }
-    }
-
-  }
-
-}
 
 PSTANDARD_COLOUR_CONVERTER(YUV420P,YUV420P)
 {
@@ -1542,27 +1426,16 @@ PSTANDARD_COLOUR_CONVERTER(YUV420P,YUV420P)
   
   if (srcFrameBuffer == dstFrameBuffer) {
     if (srcFrameWidth == dstFrameWidth && srcFrameHeight == dstFrameHeight) 
-      return TRUE;
-    if(srcFrameWidth < dstFrameWidth || srcFrameHeight < dstFrameHeight)
-      return FALSE;
+      return true;
+    if(srcFrameWidth < dstFrameWidth || srcFrameHeight < dstFrameHeight) {
+      PTRACE(2,"PColCnv\tCannot do in place conversion, increasing image size.");
+      return false;
+    }
   }
 
-  if ((srcFrameWidth == dstFrameWidth) && (srcFrameHeight == dstFrameHeight)) {
-    memcpy(dstFrameBuffer,srcFrameBuffer,srcFrameWidth*srcFrameHeight*3/2);
-    return TRUE;
-  }
-
-  switch (resizeMode) {
-    case PVideoFrameInfo::eScale :
-      ResizeYUV420P(srcFrameBuffer, dstFrameBuffer);
-      return TRUE;
-
-    //case PVideoFrameInfo::eCropTopLeft :
-    //  break;
-
-    default :
-      return FALSE;
-  }
+  return CopyYUV420P(0, 0, srcFrameWidth, srcFrameHeight, srcFrameWidth, srcFrameHeight, srcFrameBuffer,
+                     0, 0, dstFrameWidth, dstFrameHeight, dstFrameWidth, dstFrameHeight, dstFrameBuffer,
+                     resizeMode);
 }
 
 /*
@@ -1587,20 +1460,20 @@ PSTANDARD_COLOUR_CONVERTER(YUV420P,YUV420P)
  */
 PSTANDARD_COLOUR_CONVERTER(YUV422,YUV420P)
 {
-  if ((srcFrameWidth | dstFrameWidth | srcFrameHeight | dstFrameHeight) & 1) {
-    PTRACE(2,"PColCnv\tError in YUV422 to YUV420P converter, All size need to be pair.");
-    return FALSE;
-  }
+  if (!ValidateDimensions(srcFrameWidth, srcFrameHeight, dstFrameWidth, dstFrameHeight))
+    return false;
 
-  if ((srcFrameWidth==dstFrameWidth) && (srcFrameHeight==dstFrameHeight))
+  if (dstFrameWidth == srcFrameWidth)
     YUY2toYUV420PSameSize(srcFrameBuffer, dstFrameBuffer);
+  else if (dstFrameWidth < srcFrameWidth)
+    YUY2toYUV420PWithShrink(srcFrameBuffer, dstFrameBuffer);
   else
-    YUY2toYUV420PWithResize(srcFrameBuffer, dstFrameBuffer);
+    YUY2toYUV420PWithGrow(srcFrameBuffer, dstFrameBuffer);
 
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
 
-  return TRUE;
+  return true;
 }
 
 
@@ -1609,12 +1482,13 @@ static inline int clip(int a, int limit) {
   return a<limit?a:limit;
 }
 
-BOOL PStandardColourConverter::SBGGR8toYUV420P(const BYTE * src, BYTE * dst, PINDEX * bytesReturned) const
+bool PStandardColourConverter::SBGGR8toYUV420P(const BYTE * src, BYTE * dst, PINDEX * bytesReturned)
 {
 #define USE_SBGGR8_NATIVE 1 // set to 0 to use the double conversion algorithm (Bayer->RGB->YUV420P)
   
 #if USE_SBGGR8_NATIVE
-
+if ((srcFrameWidth == dstFrameWidth) && (srcFrameHeight == dstFrameHeight))
+{
   // kernels for Y conversion, normalised by 2^16
   const int kR[]={1802,9667,1802,9667,19661,9667,1802,9667,1802}; 
   const int kG1[]={7733,9830,7733,3604,7733,3604,7733,9830,7733};
@@ -1697,25 +1571,32 @@ BOOL PStandardColourConverter::SBGGR8toYUV420P(const BYTE * src, BYTE * dst, PIN
     *bytesReturned = srcFrameHeight*srcFrameWidth+2*hSize*vSize;
 
   return true;
-
-#else //USE_SBGGR8_NATIVE
-
+}
+else
+#endif //USE_SBGGR8_NATIVE
+{
   // shortest but less efficient (one malloc per conversion!)
   BYTE * tempDest=(BYTE*)malloc(3*srcFrameWidth*srcFrameHeight);
   SBGGR8toRGB(src, tempDest, NULL);
-  BOOL r = RGBtoYUV420P(tempDest, dst, bytesReturned, 3, 2, 0);
+  bool r = RGBtoYUV420P(tempDest, dst, bytesReturned, 3, 0, 2);
   free(tempDest);
   return r;
-
-#endif //USE_SBGGR8_NATIVE
+}
 }
 
-BOOL PStandardColourConverter::SBGGR8toRGB(const BYTE * src,
+bool PStandardColourConverter::SBGGR8toRGB(const BYTE * src,
                                            BYTE       * dst,
                                            PINDEX     * bytesReturned) const
 {
-  if (src == dst || verticalFlip)
-    return FALSE;
+  if (src == dst) {
+    PTRACE(2,"PColCnv\tCannot do in-place conversion, not implemented.");
+    return false;
+  }
+
+  if (verticalFlip) {
+    PTRACE(2,"PColCnv\tCannot do vertical flip, not implemented.");
+    return false;
+  }
 
   long int i;
   const BYTE *rawpt;
@@ -1787,7 +1668,7 @@ BOOL PStandardColourConverter::SBGGR8toRGB(const BYTE * src,
   if (bytesReturned)
     *bytesReturned = scanpt - dst;
 
-  return TRUE;
+  return true;
 }
 
 #define SCALEBITS 12
@@ -1812,15 +1693,17 @@ BOOL PStandardColourConverter::SBGGR8toRGB(const BYTE * src,
  * B = Y + 1.772 (Cb-128)
  * 
  */
-BOOL PStandardColourConverter::YUV420PtoRGB(const BYTE * srcFrameBuffer,
+bool PStandardColourConverter::YUV420PtoRGB(const BYTE * srcFrameBuffer,
                                             BYTE * dstFrameBuffer,
                                             PINDEX * bytesReturned,
                                             unsigned rgbIncrement,
                                             unsigned redOffset,
                                             unsigned blueOffset) const
 {
-  if (srcFrameBuffer == dstFrameBuffer)
-    return FALSE; // Cannot do in-place conversion
+  if (srcFrameBuffer == dstFrameBuffer) {
+    PTRACE(2,"PColCnv\tCannot do in-place conversion, not implemented.");
+    return false;
+  }
 
   static const unsigned greenOffset = 1;
 
@@ -1861,10 +1744,10 @@ BOOL PStandardColourConverter::YUV420PtoRGB(const BYTE * srcFrameBuffer,
 
   if (verticalFlip) {
     dstScanLine += (dstFrameHeight - 2) * dstFrameWidth * rgbIncrement;
-    dstPixpos[0] = dstFrameWidth;
-    dstPixpos[1] = dstFrameWidth +1;
+    dstPixpos[0] = dstPixpos[2];
+    dstPixpos[1] = dstPixpos[3];
     dstPixpos[2] = 0;
-    dstPixpos[3] = 1;
+    dstPixpos[3] = rgbIncrement;
   }
 
   for (unsigned y = 0; y < height; y += 2)
@@ -1883,7 +1766,7 @@ BOOL PStandardColourConverter::YUV420PtoRGB(const BYTE * srcFrameBuffer,
 
       for (unsigned p = 0; p < 4; p++)
       {
-        int yvalue = *(yplane + srcPixpos[p]);
+        int yvalue = yplane[srcPixpos[p]];
 
         int l = yvalue << SCALEBITS;
 
@@ -1915,8 +1798,99 @@ BOOL PStandardColourConverter::YUV420PtoRGB(const BYTE * srcFrameBuffer,
     *bytesReturned = dstFrameBytes;
 #endif
 
-  return TRUE;
+  return true;
 }
+
+
+BOOL PStandardColourConverter::YUV420PtoRGB565(const BYTE * srcFrameBuffer,
+                                            BYTE * dstFrameBuffer,
+                                            PINDEX * bytesReturned) const
+{
+  if (srcFrameBuffer == dstFrameBuffer) {
+    PTRACE(2,"PColCnv\tCannot do in-place conversion, not implemented.");
+    return false;
+  }
+
+  static const unsigned rgbIncrement = 2;
+
+  unsigned height = PMIN(srcFrameHeight, dstFrameHeight)&(UINT_MAX-1); // Must be even
+  unsigned width = PMIN(srcFrameWidth, dstFrameWidth)&(UINT_MAX-1);
+
+  unsigned    yplanesize = srcFrameWidth*srcFrameHeight;
+  const BYTE *yplane     = srcFrameBuffer;        // 1 byte Y (luminance) for each pixel
+  const BYTE *uplane     = yplane+yplanesize;     // 1 byte U for a block of 4 pixels
+  const BYTE *vplane     = uplane+(yplanesize/4); // 1 byte V for a block of 4 pixels
+
+  BYTE * dstScanLine   = dstFrameBuffer;
+
+  unsigned int srcPixpos[4] = { 0, 1, srcFrameWidth, srcFrameWidth + 1 };
+  unsigned int dstPixpos[4] = { 0, rgbIncrement, dstFrameWidth*rgbIncrement, (dstFrameWidth+1)*rgbIncrement };
+
+  if (verticalFlip) {
+    dstScanLine += (dstFrameHeight - 2) * dstFrameWidth * rgbIncrement;
+    dstPixpos[0] = dstFrameWidth*rgbIncrement;
+    dstPixpos[1] = (dstFrameWidth +1)*rgbIncrement;
+    dstPixpos[2] = 0;
+    dstPixpos[3] = 1*rgbIncrement;
+  }
+
+  for (unsigned y = 0; y < height; y += 2)
+  {
+    BYTE * dstPixelGroup = dstScanLine;
+    for (unsigned x = 0; x < width; x += 2)
+    {
+      // The RGB value without luminance
+      long cb = *uplane-128;
+      long cr = *vplane-128;
+      long rd = FIX(1.40200) * cr + ONE_HALF;
+      long gd = -FIX(0.34414) * cb -FIX(0.71414) * cr + ONE_HALF;
+      long bd = FIX(1.77200) * cb + ONE_HALF;
+
+      // Add luminance to each of the 4 pixels
+
+      for (unsigned p = 0; p < 4; p++)
+      {
+        int yvalue = *(yplane + srcPixpos[p]);
+
+        int l = yvalue << SCALEBITS;
+
+        int r = (l+rd)>>SCALEBITS;
+        int g = (l+gd)>>SCALEBITS;
+        int b = (l+bd)>>SCALEBITS;
+
+        BYTE * rgpPtr = dstPixelGroup + dstPixpos[p];
+        WORD r16,g16,b16;
+        WORD color;
+        WORD *colorptr=NULL;
+
+        r16 = ( (LIMIT(r)) >> 3) & 0x001f;
+        g16 = ( (LIMIT(g)) >> 2) & 0x003f;
+        b16 = ( (LIMIT(b)) >> 3) & 0x001f;
+        color = ((r16 << 11) & (0xf800))
+          | ((g16 << 5 ) & (0x07e0))
+          | ((b16 ) & (0x001f));
+        colorptr = (WORD *)(rgpPtr);
+        *colorptr = color;
+      }
+
+      yplane += 2;
+      dstPixelGroup += rgbIncrement*2;
+
+      uplane++;
+      vplane++;
+    }
+ 
+    yplane += srcFrameWidth;
+
+    dstScanLine += (verticalFlip?-2:2)*rgbIncrement*dstFrameWidth;
+  }
+
+  if (bytesReturned != NULL)
+    *bytesReturned = dstFrameBytes;
+
+  return true;
+}
+
 
 PSTANDARD_COLOUR_CONVERTER(SBGGR8,RGB24)
 {
@@ -1949,6 +1923,17 @@ PSTANDARD_COLOUR_CONVERTER(YUV420P,BGR32)
 }
 
 
+PSTANDARD_COLOUR_CONVERTER(YUV420P,RGB565)
+{
+  return YUV420PtoRGB565(srcFrameBuffer, dstFrameBuffer, bytesReturned);
+}
+
+PSTANDARD_COLOUR_CONVERTER(YUV420P,RGB16)
+{
+  return YUV420PtoRGB565(srcFrameBuffer, dstFrameBuffer, bytesReturned);
+}
+
+
 static void SwapRedAndBlueRow(const BYTE * srcRowPtr,
                               BYTE * dstRowPtr,
                               unsigned width,
@@ -1966,14 +1951,16 @@ static void SwapRedAndBlueRow(const BYTE * srcRowPtr,
   }
 }
 
-BOOL PStandardColourConverter::SwapRedAndBlue(const BYTE * srcFrameBuffer,
+bool PStandardColourConverter::SwapRedAndBlue(const BYTE * srcFrameBuffer,
                                               BYTE * dstFrameBuffer,
                                               PINDEX * bytesReturned,
                                               unsigned srcIncrement,
                                               unsigned dstIncrement) const
 {
-  if ((dstFrameWidth != srcFrameWidth) || (dstFrameHeight != srcFrameHeight))
-    return FALSE;
+  if ((dstFrameWidth != srcFrameWidth) || (dstFrameHeight != srcFrameHeight)) {
+    PTRACE(2,"PColCnv\tCannot do different sized RGB swap, not implemented.");
+    return false;
+  }
 
   unsigned srcRowSize = srcFrameBytes/srcFrameHeight;
   const BYTE * srcRowPtr = srcFrameBuffer;
@@ -2013,7 +2000,7 @@ BOOL PStandardColourConverter::SwapRedAndBlue(const BYTE * srcFrameBuffer,
 
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
-  return TRUE;
+  return true;
 }
 
 
@@ -2067,8 +2054,10 @@ PSTANDARD_COLOUR_CONVERTER(BGR32,RGB32)
 
 PSTANDARD_COLOUR_CONVERTER(RGB24,RGB32)
 {
-  if ((dstFrameWidth != srcFrameWidth) || (dstFrameHeight != srcFrameHeight))
-    return FALSE;
+  if ((dstFrameWidth != srcFrameWidth) || (dstFrameHeight != srcFrameHeight)) {
+    PTRACE(2,"PColCnv\tCannot do RGB 24/32 conversion on different sized image, not implemented.");
+    return false;
+  }
 
   // Go from bottom to top so can do in place conversion
   const BYTE * src = srcFrameBuffer+srcFrameBytes-1;
@@ -2084,14 +2073,16 @@ PSTANDARD_COLOUR_CONVERTER(RGB24,RGB32)
 
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
-  return TRUE;
+  return true;
 }
 
 
 PSTANDARD_COLOUR_CONVERTER(RGB32,RGB24)
 {
-  if ((dstFrameWidth != srcFrameWidth) || (dstFrameHeight != srcFrameHeight))
-    return FALSE;
+  if ((dstFrameWidth != srcFrameWidth) || (dstFrameHeight != srcFrameHeight)) {
+    PTRACE(2,"PColCnv\tCannot do RGB 32/24 conversion on different sized image, not implemented.");
+    return false;
+  }
 
   const BYTE * src = srcFrameBuffer;
   BYTE * dst = dstFrameBuffer;
@@ -2106,7 +2097,7 @@ PSTANDARD_COLOUR_CONVERTER(RGB32,RGB24)
 
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
-  return TRUE;
+  return true;
 }
 
 
@@ -2147,11 +2138,15 @@ PSTANDARD_COLOUR_CONVERTER(RGB32,RGB24)
 //
 PSTANDARD_COLOUR_CONVERTER(YUV420P,YUV411P)
 {
-  if (srcFrameBuffer == dstFrameBuffer)
-    return FALSE;
+  if (srcFrameBuffer == dstFrameBuffer) {
+    PTRACE(2,"PColCnv\tCannot do in-place conversion, not implemented.");
+    return false;
+  }
 
-  if ((dstFrameWidth != srcFrameWidth) || (dstFrameHeight != srcFrameHeight))
-    return FALSE;
+  if ((dstFrameWidth != srcFrameWidth) || (dstFrameHeight != srcFrameHeight)) {
+    PTRACE(2,"PColCnv\tCannot do YUV 420/411 conversion on different sized image, not implemented.");
+    return false;
+  }
 
   // Copy over the Y plane.
   memcpy(dstFrameBuffer, srcFrameBuffer, srcFrameWidth*srcFrameHeight);
@@ -2201,7 +2196,7 @@ PSTANDARD_COLOUR_CONVERTER(YUV420P,YUV411P)
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
   
-  return TRUE;
+  return true;
 }
 
 
@@ -2230,11 +2225,15 @@ PSTANDARD_COLOUR_CONVERTER(YUV420P,YUV411P)
 //
 PSTANDARD_COLOUR_CONVERTER(YUV411P,YUV420P)
 {
-  if (srcFrameBuffer == dstFrameBuffer)
-    return FALSE;
+  if (srcFrameBuffer == dstFrameBuffer) {
+    PTRACE(2,"PColCnv\tCannot do in-place conversion, not implemented.");
+    return false;
+  }
 
-  if ((dstFrameWidth != srcFrameWidth) || (dstFrameHeight != srcFrameHeight))
-    return FALSE;
+  if ((dstFrameWidth != srcFrameWidth) || (dstFrameHeight != srcFrameHeight)) {
+    PTRACE(2,"PColCnv\tCannot do YUV 411/420 conversion on different sized image, not implemented.");
+    return false;
+  }
 
   // Copy over the Y plane.
   memcpy(dstFrameBuffer, srcFrameBuffer, srcFrameWidth*srcFrameHeight);
@@ -2284,7 +2283,7 @@ PSTANDARD_COLOUR_CONVERTER(YUV411P,YUV420P)
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
 
-  return TRUE;
+  return true;
 }
 
 
@@ -2303,18 +2302,20 @@ PSTANDARD_COLOUR_CONVERTER(UYVY422, UYVY422)
     *bytesReturned = dstFrameBytes;
   
   if (srcFrameBuffer == dstFrameBuffer) {
-	if (srcFrameWidth == dstFrameWidth && srcFrameHeight == dstFrameHeight) 
-		return TRUE;
-	else if(srcFrameWidth < dstFrameWidth || srcFrameHeight < dstFrameHeight)
-		return FALSE;
+    if (srcFrameWidth == dstFrameWidth && srcFrameHeight == dstFrameHeight) 
+      return true;
+    if(srcFrameWidth < dstFrameWidth || srcFrameHeight < dstFrameHeight) {
+      PTRACE(2,"PColCnv\tCannot do in place conversion, increasing image size.");
+      return false;
+    }
   }
 
   if ((srcFrameWidth == dstFrameWidth) && (srcFrameHeight == dstFrameHeight)) 
     memcpy(dstFrameBuffer,srcFrameBuffer,srcFrameWidth*srcFrameHeight*2);
   else
-    ResizeUYVY422(srcFrameBuffer, dstFrameBuffer);
+    UYVY422WithCrop(srcFrameBuffer, dstFrameBuffer);
 
-  return TRUE;
+  return true;
 }
 
 /*
@@ -2328,7 +2329,7 @@ PSTANDARD_COLOUR_CONVERTER(UYVY422, UYVY422)
  *
  * NOTE: This algorithm works only if the width and the height is pair.
  */
-void PStandardColourConverter::ResizeUYVY422(const BYTE *src_uyvy, BYTE *dst_uyvy) const
+void PStandardColourConverter::UYVY422WithCrop(const BYTE *src_uyvy, BYTE *dst_uyvy) const
 {
   const BYTE *s;
   BYTE *d;
@@ -2348,47 +2349,47 @@ void PStandardColourConverter::ResizeUYVY422(const BYTE *src_uyvy, BYTE *dst_uyv
      /* Top border */
      for (h=0; h<yOffset; h++)
       {
-	for (x=0; x<dstFrameWidth/2; x++)
-	 {
-	   *d++ = BLACK_U;
-	   *d++ = BLACK_Y;
-	   *d++ = BLACK_V;
-	   *d++ = BLACK_Y;
-	 }
+        for (x=0; x<dstFrameWidth/2; x++)
+         {
+           *d++ = BLACK_U;
+           *d++ = BLACK_Y;
+           *d++ = BLACK_V;
+           *d++ = BLACK_Y;
+         }
       }
 
      for (h=0; h<srcFrameHeight; h+=2)
       {
         /* Left border */
-       	for (x=0; x<xOffset/2; x++)
-	 {
-	   *d++ = BLACK_U;
-	   *d++ = BLACK_Y;
-	   *d++ = BLACK_V;
-	   *d++ = BLACK_Y;
-	 }
+               for (x=0; x<xOffset/2; x++)
+         {
+           *d++ = BLACK_U;
+           *d++ = BLACK_Y;
+           *d++ = BLACK_V;
+           *d++ = BLACK_Y;
+         }
 
         /* Copy the first line keeping all information */
-	memcpy(d, s, srcFrameWidth*2);
-	d += srcFrameWidth*2;
+        memcpy(d, s, srcFrameWidth*2);
+        d += srcFrameWidth*2;
         /* Right and Left border */
-       	for (x=0; x<xOffset/2; x++)
-	 {
-	   *d++ = BLACK_U;
-	   *d++ = BLACK_Y;
-	   *d++ = BLACK_V;
-	   *d++ = BLACK_Y;
-	 }
+               for (x=0; x<xOffset/2; x++)
+         {
+           *d++ = BLACK_U;
+           *d++ = BLACK_Y;
+           *d++ = BLACK_V;
+           *d++ = BLACK_Y;
+         }
       }
      for (h=0; h<yOffset; h++)
       {
-	for (x=0; x<dstFrameWidth/2; x++)
-	 {
-	   *d++ = BLACK_U;
-	   *d++ = BLACK_Y;
-	   *d++ = BLACK_V;
-	   *d++ = BLACK_Y;
-	 }
+        for (x=0; x<dstFrameWidth/2; x++)
+         {
+           *d++ = BLACK_U;
+           *d++ = BLACK_Y;
+           *d++ = BLACK_V;
+           *d++ = BLACK_Y;
+         }
       }
 
   } else {
@@ -2437,17 +2438,17 @@ void  PStandardColourConverter::UYVY422toYUV420PSameSize(const BYTE *uyvy, BYTE 
 
      /* Copy the first line keeping all information */
      for (x=0; x<srcFrameWidth; x+=2) {
-	*u++ = *s++;
-	*y++ = *s++;
-	*v++ = *s++;
-	*y++ = *s++;
+        *u++ = *s++;
+        *y++ = *s++;
+        *v++ = *s++;
+        *y++ = *s++;
      }
      /* Copy the second line discarding u and v information */
      for (x=0; x<srcFrameWidth; x+=2) {
-	s++;
-	*y++ = *s++;
-	s++;
-	*y++ = *s++;
+        s++;
+        *y++ = *s++;
+        s++;
+        *y++ = *s++;
      }
   }
 }
@@ -2474,7 +2475,7 @@ void  PStandardColourConverter::UYVY422toYUV420PSameSize(const BYTE *uyvy, BYTE 
  *
  * NOTE: This algorithm works only if the width and the height is pair.
  */
-void PStandardColourConverter::UYVY422toYUV420PWithResize(const BYTE *uyvy, BYTE *yuv420p) const
+void PStandardColourConverter::UYVY422toYUV420PWithCrop(const BYTE *uyvy, BYTE *yuv420p) const
 {
   const BYTE *s;
   BYTE *y, *u, *v;
@@ -2495,16 +2496,16 @@ void PStandardColourConverter::UYVY422toYUV420PWithResize(const BYTE *uyvy, BYTE
      unsigned int bpixels = yOffset * dstFrameWidth;
 
      /* Top border */
-     memset(y, BLACK_Y, bpixels);	y += bpixels;
-     memset(u, BLACK_U, bpixels/4);	u += bpixels/4;
-     memset(v, BLACK_V, bpixels/4);	v += bpixels/4;
+     memset(y, BLACK_Y, bpixels);        y += bpixels;
+     memset(u, BLACK_U, bpixels/4);        u += bpixels/4;
+     memset(v, BLACK_V, bpixels/4);        v += bpixels/4;
 
      for (h=0; h<srcFrameHeight; h+=2)
       {
         /* Left border */
-        memset(y, BLACK_Y, xOffset);	y += xOffset;
-        memset(u, BLACK_U, xOffset/2);	u += xOffset/2;
-        memset(v, BLACK_V, xOffset/2);	v += xOffset/2;
+        memset(y, BLACK_Y, xOffset);        y += xOffset;
+        memset(u, BLACK_U, xOffset/2);        u += xOffset/2;
+        memset(v, BLACK_V, xOffset/2);        v += xOffset/2;
 
         /* Copy the first line keeping all information */
         for (x=0; x<srcFrameWidth; x+=2)
@@ -2527,9 +2528,9 @@ void PStandardColourConverter::UYVY422toYUV420PWithResize(const BYTE *uyvy, BYTE
            *y++ = *s++;
          }
         /* Fill the border with black (right side) */
-        memset(y, BLACK_Y, xOffset);	y += xOffset;
-        memset(u, BLACK_U, xOffset/2);	u += xOffset/2;
-        memset(v, BLACK_V, xOffset/2);	v += xOffset/2;
+        memset(y, BLACK_Y, xOffset);        y += xOffset;
+        memset(u, BLACK_U, xOffset/2);        u += xOffset/2;
+        memset(v, BLACK_V, xOffset/2);        v += xOffset/2;
       }
      memset(y, BLACK_Y, bpixels);
      memset(u, BLACK_U, bpixels/4);
@@ -2547,39 +2548,39 @@ void PStandardColourConverter::UYVY422toYUV420PWithResize(const BYTE *uyvy, BYTE
 
      for (fy=0, h=0; h<dstFrameHeight; h+=2, fy+=dy*2)
       {
-	/* Copy the first line with U&V */
-	unsigned int yy = fy>>FIX_FLOAT;
-	unsigned int yy2 = (fy+dy)>>FIX_FLOAT;
-	const unsigned char *line1, *line2;
-	unsigned char lastU, lastV;
+        /* Copy the first line with U&V */
+        unsigned int yy = fy>>FIX_FLOAT;
+        unsigned int yy2 = (fy+dy)>>FIX_FLOAT;
+        const unsigned char *line1, *line2;
+        unsigned char lastU, lastV;
 
-	line1 = s + (yy*2*srcFrameWidth);
-	line2 = s + (yy2*2*srcFrameWidth);
-	lastU = line1[0];
-	lastV = line1[2];
-	for (fx=0, x=0; x<dstFrameWidth; x+=2, fx+=dx*2)
-	 {
-	   unsigned int xx = (fx>>FIX_FLOAT)*2;
-	   if ( (xx&2) == 0)
-	    {
-	      *u++ = lastU = (line1[xx+0] + line2[xx+0])/2;
-	      *v++ = lastV = (line1[xx+2] + line2[xx+2])/2;
-	    }
-	   else
-	    {
-	      *u++ = lastU;
-	      *v++ = lastV = (line1[xx+0] + line2[xx+0])/2;
-	    }
-	   *y++ = line1[xx+1];
-	   xx = ((fx+dx)>>FIX_FLOAT)*2;
-	   if ( (xx&2) == 0)
-	     lastU = (line1[xx+0] + line2[xx+0])/2;
-	   else
-	     lastV = (line1[xx+0] + line2[xx+0])/2;
-	   *y++ = line1[xx+1];
-	 }
+        line1 = s + (yy*2*srcFrameWidth);
+        line2 = s + (yy2*2*srcFrameWidth);
+        lastU = line1[0];
+        lastV = line1[2];
+        for (fx=0, x=0; x<dstFrameWidth; x+=2, fx+=dx*2)
+         {
+           unsigned int xx = (fx>>FIX_FLOAT)*2;
+           if ( (xx&2) == 0)
+            {
+              *u++ = lastU = (line1[xx+0] + line2[xx+0])/2;
+              *v++ = lastV = (line1[xx+2] + line2[xx+2])/2;
+            }
+           else
+            {
+              *u++ = lastU;
+              *v++ = lastV = (line1[xx+0] + line2[xx+0])/2;
+            }
+           *y++ = line1[xx+1];
+           xx = ((fx+dx)>>FIX_FLOAT)*2;
+           if ( (xx&2) == 0)
+             lastU = (line1[xx+0] + line2[xx+0])/2;
+           else
+             lastV = (line1[xx+0] + line2[xx+0])/2;
+           *y++ = line1[xx+1];
+         }
 
-	/* Copy the second line without U&V */
+        /* Copy the second line without U&V */
         for (fx=0, x=0; x<dstFrameWidth; x++, fx+=dx)
          {
            unsigned int xx = (fx>>FIX_FLOAT)*2;
@@ -2602,24 +2603,28 @@ http://www.1394ta.org/Download/Technology/Specifications/2000/IIDC_Spec_v1_30.pd
  */
 PSTANDARD_COLOUR_CONVERTER(UYVY422,YUV420P)
 {
-  if (srcFrameBuffer == dstFrameBuffer)
-    return FALSE;
+  if (srcFrameBuffer == dstFrameBuffer) {
+    PTRACE(2,"PColCnv\tCannot do in-place conversion, not implemented.");
+    return false;
+  }
 
   if ((srcFrameWidth==dstFrameWidth) && (srcFrameHeight==dstFrameHeight))
     UYVY422toYUV420PSameSize(srcFrameBuffer, dstFrameBuffer);
   else
-    UYVY422toYUV420PWithResize(srcFrameBuffer, dstFrameBuffer);
+    UYVY422toYUV420PWithCrop(srcFrameBuffer, dstFrameBuffer);
 
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
 
-  return TRUE;
+  return true;
 }
 
 PSTANDARD_COLOUR_CONVERTER(UYV444,YUV420P)
 {
-  if (srcFrameBuffer == dstFrameBuffer)
-    return FALSE;
+  if (srcFrameBuffer == dstFrameBuffer) {
+    PTRACE(2,"PColCnv\tCannot do in-place conversion, not implemented.");
+    return false;
+  }
 
   unsigned int row,column;
   unsigned char *y = dstFrameBuffer;  //Initialise y,u,v here, to stop compiler warnings.
@@ -2672,7 +2677,7 @@ PSTANDARD_COLOUR_CONVERTER(UYV444,YUV420P)
   }
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
-  return TRUE;
+  return true;
 }
 
 #if  defined (__GNUC__) || defined (__sun)
@@ -2685,53 +2690,57 @@ bool PStandardColourConverter::MJPEGtoXXXSameSize(const BYTE *mjpeg, BYTE *rgb, 
 {
   BYTE *components[1];
 
+  struct jdec_private *jdec;
+ 
   components[0] = rgb;
+ 
+  jdec = tinyjpeg_init();
 
   if (jdec == NULL) {
-    jdec = tinyjpeg_init();
-    if (jdec == NULL) {
-      PTRACE(2, "PColCnv\tJpeg error: Can't allocate memory");
-	    return FALSE;
-    }
-    tinyjpeg_set_flags(jdec, TINYJPEG_FLAGS_MJPEG_TABLE);
+     PTRACE(2, "PColCnv\tJpeg error: Can't allocate memory");
+     return false;
   }
+  tinyjpeg_set_flags(jdec, TINYJPEG_FLAGS_MJPEG_TABLE);
   tinyjpeg_set_components(jdec, components, 1);
   if (tinyjpeg_parse_header(jdec, mjpeg, srcFrameBytes) < 0) {
      PTRACE(2, "PColCnv\tJpeg error: " << tinyjpeg_get_errorstring(jdec));
-     return FALSE;
+     free(jdec);
+     return false;
   }
   if (tinyjpeg_decode(jdec, format) < 0) {
      PTRACE(2, "PColCnv\tJpeg error: " << tinyjpeg_get_errorstring(jdec));
-     return FALSE;
+     free(jdec);
+     return false;
   }
 
-  return TRUE;
+  free(jdec);
+  return true;
 }
 
 
 bool PStandardColourConverter::MJPEGtoXXX(const BYTE *mjpeg,
                                           BYTE *output_data,
                                           PINDEX *bytesReturned,
-					  int format)
+                                          int format)
 {
   if ((srcFrameWidth | dstFrameWidth | srcFrameHeight | dstFrameHeight) & 0xf) {
     PTRACE(2,"PColCnv\tError MJPEG decoder need width and height to be a multiple of 16");
-    return FALSE;
+    return false;
   }
 
   if ((srcFrameWidth == dstFrameWidth) && (srcFrameHeight == dstFrameHeight)) {
-     if (MJPEGtoXXXSameSize(mjpeg, output_data, format) == FALSE)
-       return FALSE;
+     if (MJPEGtoXXXSameSize(mjpeg, output_data, format) == false)
+       return false;
   } else {
      /* not efficient (convert then resize) */
      /* TODO: */
-     return FALSE;
+     return false;
   }
 
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
   
-  return TRUE;
+  return true;
 
 }
 
@@ -2772,33 +2781,36 @@ PSTANDARD_COLOUR_CONVERTER(JPEG,Grey)
 bool PStandardColourConverter::MJPEGtoYUV420PSameSize(const BYTE *mjpeg, BYTE *yuv420p)
 {
   BYTE *components[4];
+  struct jdec_private *jdec;
 
   int npixels = srcFrameWidth * srcFrameHeight;
 
   components[0] = yuv420p;
   components[1] = yuv420p + npixels;
   components[2] = yuv420p + npixels + npixels/4;
+  components[3] = NULL;
+ 
+  jdec = tinyjpeg_init();
 
   if (jdec == NULL) {
-    PTRACE(2, "PColCnv\tJpeg: Allocating Jpeg decoder private structure");
-    jdec = tinyjpeg_init();
-    if (jdec == NULL) {
-      PTRACE(2, "PColCnv\tJpeg error: Can't allocate memory");
-      return FALSE;
-    }
-    tinyjpeg_set_flags(jdec, TINYJPEG_FLAGS_MJPEG_TABLE);
+    PTRACE(2, "PColCnv\tJpeg error: Can't allocate memory");
+    return false;
   }
+  tinyjpeg_set_flags(jdec, TINYJPEG_FLAGS_MJPEG_TABLE);
   tinyjpeg_set_components(jdec, components, 4);
   if (tinyjpeg_parse_header(jdec, mjpeg, srcFrameBytes) < 0) {
      PTRACE(2, "PColCnv\tJpeg error: " << tinyjpeg_get_errorstring(jdec));
-     return FALSE;
+     free(jdec);
+     return false;
   }
   if (tinyjpeg_decode(jdec, TINYJPEG_FMT_YUV420P) < 0) {
      PTRACE(2, "PColCnv\tJpeg error: " << tinyjpeg_get_errorstring(jdec));
-     return FALSE;
+     free(jdec);
+     return false;
   }
 
-  return TRUE;
+  free(jdec);
+  return true;
 }
 
 /*
@@ -2807,31 +2819,33 @@ bool PStandardColourConverter::MJPEGtoYUV420PSameSize(const BYTE *mjpeg, BYTE *y
  */
 bool PStandardColourConverter::MJPEGtoYUV420P(const BYTE *mjpeg,
                                               BYTE *yuv420p,
-					      PINDEX *bytesReturned)
+                                              PINDEX *bytesReturned)
 {
   if ((srcFrameWidth | dstFrameWidth | srcFrameHeight | dstFrameHeight) & 0xf) {
     PTRACE(2,"PColCnv\tError in MJPEG to YUV420P converter, All size need to be a multiple of 16.");
-    return FALSE;
+    return false;
   }
 
   if ((srcFrameWidth == dstFrameWidth) && (srcFrameHeight == dstFrameHeight)) {
 
      PTRACE(2,"PColCnv\tMJPEG to YUV420P\n");
-     if (MJPEGtoYUV420PSameSize(mjpeg, yuv420p) == FALSE)
-       return FALSE;
+     if (MJPEGtoYUV420PSameSize(mjpeg, yuv420p) == false)
+       return false;
 
   } else {
      /* Very not efficient */
      unsigned int frameBytes = srcFrameWidth * srcFrameHeight * 3 / 2;
      BYTE *intermed = intermediateFrameStore.GetPointer(frameBytes);
      MJPEGtoYUV420PSameSize(mjpeg, intermed);
-     ResizeYUV420P(intermed, yuv420p);
+     CopyYUV420P(0, 0, srcFrameWidth, srcFrameHeight, srcFrameWidth, srcFrameHeight, intermed,
+                 0, 0, dstFrameWidth, dstFrameHeight, dstFrameWidth, dstFrameHeight, yuv420p,
+                     resizeMode);
   }
 
   if (bytesReturned != NULL)
     *bytesReturned = dstFrameBytes;
   
-  return TRUE;
+  return true;
 }
 
 /*

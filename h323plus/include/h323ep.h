@@ -1818,6 +1818,17 @@ class H323EndPoint : public PObject
       BOOL mode ///< New default mode
     ) { disableFastStart = mode; } 
 
+    /**Get the default single line mode.
+      */
+    BOOL IsSingleLine() const
+      { return singleLine; }
+
+    /**Set the default single line mode.
+      */
+    void StrictSingleLine(
+      BOOL mode ///< New default mode
+    ) { singleLine = mode; } 
+
     /**Get the default H.245 tunneling mode.
       */
     BOOL IsH245TunnelingDisabled() const
@@ -2158,6 +2169,7 @@ class H323EndPoint : public PObject
 
 	void SetAECEnabled(BOOL enabled)  { enableAEC = enabled; }
 #endif
+        int agc;
 
 #ifdef P_STUN
 
@@ -2508,6 +2520,7 @@ class H323EndPoint : public PObject
 
     BOOL        autoCallForward;
     BOOL        disableFastStart;
+    BOOL        singleLine;
     BOOL        disableH245Tunneling;
     BOOL        disableH245inSetup;
 	BOOL        disableH245QoS;

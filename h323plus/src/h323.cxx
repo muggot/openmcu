@@ -1620,6 +1620,12 @@ BOOL H323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
         return FALSE;
     }
 
+    if(endpoint.IsSingleLine()) if(endpoint.GetAllConnections().GetSize() > 1){
+      ClearCall(EndedByLocalBusy);
+      PTRACE(1,"H225\tLocal endpoint is BUSY (uncheck \"Single Line\" to allow multiple conversations)");
+      return false;
+    }
+
 if (!IsNonCallConnection) {
 
     /** Here is a spot where we should wait in case of Call Intrusion
@@ -4495,6 +4501,7 @@ BOOL H323Connection::OpenAudioChannel(BOOL isEncoding, unsigned bufferSize, H323
   }
    codec.AttachAEC(aec);
 #endif
+  if(isEncoding) codec.EnableAGC(endpoint.agc);
 
   return endpoint.OpenAudioChannel(*this, isEncoding, bufferSize, codec);
 }

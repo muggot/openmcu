@@ -25,112 +25,13 @@
  *                 Thorsten Westheider (thorsten.westheider@teleos-web.de)
  *                 Mark Cooke (mpc@star.sr.bham.ac.uk)
  *
- * $Log: vconvert.h,v $
- * Revision 1.25  2007/04/24 08:28:52  csoutheren
- * Add backwards compatible API
- *
- * Revision 1.24  2007/04/20 06:47:02  csoutheren
- * Really disable video code when video is turned off
- *
- * Revision 1.23  2007/04/20 06:11:22  csoutheren
- * Add backwards compatible API for PColourConverter
- *
- * Revision 1.22  2007/04/20 05:40:33  csoutheren
- * Add backwards compatible API for PColourConverter
- *
- * Revision 1.21  2007/04/13 07:13:13  rjongbloed
- * Major update of video subsystem:
- *   Abstracted video frame info (width, height etc) into separate class.
- *   Changed devices, converter and video file to use above.
- *   Enhanced video file hint detection for frame rate and more
- *     flexible formats.
- *   Fixed issue if need to convert both colour format and size, had to do
- *     colour format first or it didn't convert size.
- *   Win32 video output device can be selected by "MSWIN" alone.
- *
- * Revision 1.20  2006/03/12 11:09:48  dsandras
- * Applied patch from Luc Saillard to fix problems with MJPEG. Thanks!
- *
- * Revision 1.19  2006/02/22 11:17:53  csoutheren
- * Applied patch #1425825
- * MaxOSX compatibility
- *
- * Revision 1.18  2006/02/20 06:12:10  csoutheren
- * Added guard defines
- *
- * Revision 1.17  2006/01/29 22:46:41  csoutheren
- * Added support for cameras that return MJPEG streams
- * Thanks to Luc Saillard and Damien Sandras
- *
- * Revision 1.16  2005/11/30 12:47:38  csoutheren
- * Removed tabs, reformatted some code, and changed tags for Doxygen
- *
- * Revision 1.15  2005/11/25 03:43:47  csoutheren
- * Fixed function argument comments to be compatible with Doxygen
- *
- * Revision 1.14  2005/08/09 09:08:09  rjongbloed
- * Merged new video code from branch back to the trunk.
- *
- * Revision 1.13.14.1  2005/07/17 09:27:04  rjongbloed
- * Major revisions of the PWLib video subsystem including:
- *   removal of F suffix on colour formats for vertical flipping, all done with existing bool
- *   working through use of RGB and BGR formats so now consistent
- *   cleaning up the plug in system to use virtuals instead of pointers to functions.
- *   rewrite of SDL to be a plug in compatible video output device.
- *   extensive enhancement of video test program
- *
- * Revision 1.13  2003/03/17 07:44:20  robertj
- * Removed redundant toggle function.
- *
- * Revision 1.12  2002/09/16 01:08:59  robertj
- * Added #define so can select if #pragma interface/implementation is used on
- *   platform basis (eg MacOS) rather than compiler, thanks Robert Monaghan.
- *
- * Revision 1.11  2002/01/04 04:11:45  dereks
- * Add video flip code from Walter Whitlock, which flips code at the grabber.
- *
- * Revision 1.10  2001/11/28 04:41:28  robertj
- * Added synonym colour class for equivalent colour format strings.
- * Allowed for setting ancestor classes in PCOLOUR_CONVERTER() macro.
- *
- * Revision 1.9  2001/05/14 05:10:38  robertj
- * Fixed problems with video colour converters registration, could not rely
- *   on static PList being initialised before all registration instances.
- *
- * Revision 1.8  2001/03/20 02:21:57  robertj
- * More enhancements from Mark Cooke
- *
- * Revision 1.7  2001/03/08 23:36:02  robertj
- * Added backward compatibility SetFrameSize() function.
- * Added internal SimpleConvert() function for same type converters.
- * Fixed some documentation.
- *
- * Revision 1.6  2001/03/08 08:31:34  robertj
- * Numerous enhancements to the video grabbing code including resizing
- *   infrastructure to converters. Thanks a LOT, Mark Cooke.
- *
- * Revision 1.5  2001/03/07 01:42:59  dereks
- * miscellaneous video fixes. Works on linux now. Add debug statements
- * (at PTRACE level of 1)
- *
- * Revision 1.4  2001/03/03 23:25:07  robertj
- * Fixed use of video conversion function, returning bytes in destination frame.
- *
- * Revision 1.3  2001/03/03 05:06:31  robertj
- * Major upgrade of video conversion and grabbing classes.
- *
- * Revision 1.2  2000/12/19 23:58:14  robertj
- * Fixed MSVC compatibility issues.
- *
- * Revision 1.1  2000/12/19 22:20:26  dereks
- * Add video channel classes to connect to the PwLib PVideoInputDevice class.
- * Add PFakeVideoInput class to generate test images for video.
- *
- *
+ * $Revision: 26686 $
+ * $Author: rjongbloed $
+ * $Date: 2011-11-23 20:22:20 -0600 (Wed, 23 Nov 2011) $
  */
 
-#ifndef _PCONVERT
-#define _PCONVERT
+#ifndef PTLIB_CONVERT_H
+#define PTLIB_CONVERT_H
 
 #ifdef P_USE_PRAGMA
 #ifndef P_MACOSX
@@ -193,6 +94,11 @@ class PColourConverter : public PObject
       const PVideoFrameInfo & dst  ///< Destination frame info
     );
 
+    /// Print description of converter
+    virtual void PrintOn(
+      ostream & strm
+    ) const;
+
     /**Get the video conversion vertical flip state
      */
     BOOL GetVFlipState() 
@@ -200,8 +106,9 @@ class PColourConverter : public PObject
     
     /**Set the video conversion vertical flip state
      */
-    void SetVFlipState(BOOL vFlipState) 
-      { verticalFlip = vFlipState; }
+    void SetVFlipState(
+      BOOL vFlipState  ///< New state for flipping images
+    ) { verticalFlip = vFlipState; }
     
     /**Set the frame size to be used.
 
@@ -215,10 +122,10 @@ class PColourConverter : public PObject
     /**Set the source frame info to be used.
 
        Default behaviour sets the srcFrameWidth and srcFrameHeight variables and
-       recalculates the frame buffer size in bytes then returns TRUE if the size
+       recalculates the frame buffer size in bytes then returns true if the size
        was calculated correctly.
 
-       Returns FALSE if the colour formats do not agree.
+       Returns false if the colour formats do not agree.
     */
     virtual BOOL SetSrcFrameInfo(
       const PVideoFrameInfo & info   ///< New info for frame
@@ -228,9 +135,9 @@ class PColourConverter : public PObject
 
        Default behaviour sets the dstFrameWidth and dstFrameHeight variables,
        and the scale / crop preference. It then recalculates the frame buffer
-       size in bytes then returns TRUE if the size was calculated correctly.
+       size in bytes then returns true if the size was calculated correctly.
 
-       Returns FALSE if the colour formats do not agree.
+       Returns false if the colour formats do not agree.
     */
     virtual BOOL SetDstFrameInfo(
       const PVideoFrameInfo & info  ///< New info for frame
@@ -251,7 +158,7 @@ class PColourConverter : public PObject
     /**Set the source frame size to be used.
 
        Default behaviour sets the srcFrameWidth and srcFrameHeight variables and
-       recalculates the frame buffer size in bytes then returns TRUE if the size
+       recalculates the frame buffer size in bytes then returns true if the size
        was calculated correctly.
     */
     virtual BOOL SetSrcFrameSize(
@@ -263,16 +170,16 @@ class PColourConverter : public PObject
 
        Default behaviour sets the dstFrameWidth and dstFrameHeight variables,
        and the scale / crop preference. It then recalculates the frame buffer
-       size in bytes then returns TRUE if the size was calculated correctly.
+       size in bytes then returns true if the size was calculated correctly.
     */
     virtual BOOL SetDstFrameSize(
-      unsigned width,  ///< New width of target frame
-      unsigned height ///< New height of target frame
+      unsigned width,   ///< New width of target frame
+      unsigned height   ///< New height of target frame
     );
     virtual BOOL SetDstFrameSize(
-      unsigned width,  ///< New width of target frame
-      unsigned height, ///< New height of target frame
-      BOOL bScale
+      unsigned width,   ///< New width of target frame
+      unsigned height,  ///< New height of target frame
+      BOOL bScale   ///< Indicate if scaling or cropping is to be used
     );
 
     /**Get the source colour format.
@@ -304,7 +211,7 @@ class PColourConverter : public PObject
        where srcFrameBuffer and dstFrameBuffer are the same, if the conversion
        algorithm allows for that to occur without an intermediate frame store.
 
-       The function should return FALSE if srcFrameBuffer and dstFrameBuffer
+       The function should return false if srcFrameBuffer and dstFrameBuffer
        are the same and that form pf conversion is not allowed
     */
     virtual BOOL Convert(
@@ -316,30 +223,30 @@ class PColourConverter : public PObject
     virtual BOOL Convert(
       const BYTE * srcFrameBuffer,  ///< Frame store for source pixels
       BYTE * dstFrameBuffer,        ///< Frame store for destination pixels
-      unsigned int srcFrameBytes,
+      unsigned int srcFrameBytes,   ///< Bytes used in source frame buffer
       PINDEX * bytesReturned = NULL ///< Bytes written to dstFrameBuffer
     ) = 0;
 
     /**Convert from one colour format to another.
        This version will copy the data from one frame buffer to the same frame
        buffer. Not all conversions can do this so an intermediate store and
-       copy may be required. If the noIntermediateFrame parameter is TRUE
+       copy may be required. If the noIntermediateFrame parameter is true
        and the conversion cannot be done in place then the function returns
-       FALSE. If the in place conversion can be done then that parameter is
+       false. If the in place conversion can be done then that parameter is
        ignored.
 
        Note that the frame should be large enough to take the destination
        pixels.
 
        Default behaviour calls Convert() from the frameBuffer to itself, and
-       if that returns FALSE then calls it again (provided noIntermediateFrame
-       is FALSE) using an intermediate store, copying the intermediate store
+       if that returns false then calls it again (provided noIntermediateFrame
+       is false) using an intermediate store, copying the intermediate store
        back to the original frame store.
     */
     virtual BOOL ConvertInPlace(
       BYTE * frameBuffer,               ///< Frame buffer to translate data
       PINDEX * bytesReturned = NULL,    ///< Bytes written to frameBuffer
-      BOOL noIntermediateFrame = FALSE  ///< Flag to use intermediate store
+      BOOL noIntermediateFrame = false  ///< Flag to use intermediate store
     );
 
 
@@ -387,7 +294,40 @@ class PColourConverter : public PObject
     */
     PVideoFrameInfo::ResizeMode GetResizeMode() const { return resizeMode; }
 
+    /**Convert RGB to YUV.
+      */
+    static void RGBtoYUV(
+      unsigned   r, unsigned   g, unsigned   b,
+      unsigned & y, unsigned & u, unsigned & v
+    );
+    static void RGBtoYUV(
+      unsigned r, unsigned g, unsigned b,
+      BYTE   & y, BYTE   & u, BYTE   & v
+    );
+
+    /**Copy a section of the source frame to a section of the destination
+       frame with scaling/cropping as required.
+      */
+    static bool CopyYUV420P(
+      unsigned srcX, unsigned srcY, unsigned srcWidth, unsigned srcHeight,
+      unsigned srcFrameWidth, unsigned srcFrameHeight, const BYTE * srcYUV,
+      unsigned dstX, unsigned dstY, unsigned dstWidth, unsigned dstHeight,
+      unsigned dstFrameWidth, unsigned dstFrameHeight, BYTE * dstYUV,
+      PVideoFrameInfo::ResizeMode resizeMode
+    );
+
+    static bool FillYUV420P(
+      unsigned x, unsigned y, int width, int height,
+      unsigned frameWidth, unsigned frameHeight, BYTE * yuv,
+      unsigned r, unsigned g, unsigned b
+    );
+
   protected:
+    void Construct(
+      const PVideoFrameInfo & src, ///< Source frame info (colour formet, size etc)
+      const PVideoFrameInfo & dst  ///< Destination frame info
+    );
+
     PString  srcColourFormat;
     PString  dstColourFormat;
     unsigned srcFrameWidth;
@@ -434,8 +374,8 @@ static class cls##_Registration : public PColourConverterRegistration { \
 } p_##cls##_registration_instance; \
 PColourConverter * cls##_Registration::Create(const PVideoFrameInfo & src, const PVideoFrameInfo & dst) const \
   { return new cls(src, dst); } \
-BOOL cls::Convert(const BYTE *srcFrameBuffer, BYTE *dstFrameBuffer, unsigned int __srcFrameBytes, PINDEX * bytesReturned) \
-  { srcFrameBytes = __srcFrameBytes;return Convert(srcFrameBuffer, dstFrameBuffer, bytesReturned); } \
+BOOL cls::Convert(const BYTE *srcFrameBuffer, BYTE *dstFrameBuffer, unsigned int p_srcFrameBytes, PINDEX * bytesReturned) \
+  { srcFrameBytes = p_srcFrameBytes;return Convert(srcFrameBuffer, dstFrameBuffer, bytesReturned); } \
 BOOL cls::Convert(const BYTE *srcFrameBuffer, BYTE *dstFrameBuffer, PINDEX * bytesReturned)
 
 
@@ -487,9 +427,10 @@ class PSynonymColourRegistration : public PColourConverterRegistration {
 #define PSYNONYM_COLOUR_CONVERTER(from,to) \
   static PSynonymColourRegistration p_##from##_##to##_registration_instance(#from,#to)
 
+
 #endif // P_VIDEO
 
+#endif // PTLIB_CONVERT_H
 
-#endif // _PCONVERT
 
 // End of file ///////////////////////////////////////////////////////////////
