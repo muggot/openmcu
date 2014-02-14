@@ -1273,7 +1273,7 @@ function build_page()
     mockup_content+="<div style='position:relative;top:"+pos_y+"px;left:"+pos_x+"px;width:0px;height:0px'>"; // pointing block for mockup[i]
      mockup_content+="<img style='position:absolute' id='frame"+i+"' name='frame"+i+"'"+ // rectangle for mockup[i]
       " src='Jpeg?room="+roomLink+"&w="+mw+"&h="+mh+"&mixer="+i+"'"+
-      " alt='Video Mixer "+(i+1)+"'"+
+      " alt='Video Mixer #"+i+"'"+
      " />";
     mockup_content+="</div>";
     pos_y+=mh+MIXER_PANEL_HEIGHT;
