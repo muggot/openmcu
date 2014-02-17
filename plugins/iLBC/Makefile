@@ -63,7 +63,7 @@
 #
 #
 AC_PLUGIN_DIR=codecs/audio
-prefix=/usr/local/lib/ptlib
+prefix=/opt/freemcu/lib/ptlib
 exec_prefix = ${prefix}
 
 SONAME	= ilbccodec

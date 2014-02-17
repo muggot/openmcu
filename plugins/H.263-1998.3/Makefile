@@ -21,7 +21,7 @@
 #
 
 VC_PLUGIN_DIR=codecs/video
-prefix=/usr/local/lib/ptlib
+prefix=/opt/freemcu/lib/ptlib
 exec_prefix=${prefix}
 target_os=linux-gnu
 
@@ -38,10 +38,12 @@ CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
 CFLAGS	       +=-g  -Os
-STDCCFLAGS	= -I/usr/local/include   -fPIC -D__STDC_CONSTANT_MACROS
-LIBAVCODEC_CFLAGS=-I${prefix}/include  
-LDFLAGS	       += -L/usr/local/lib   -lavcodec -lavutil
+STDCCFLAGS     +=-fPIC -D__STDC_CONSTANT_MACROS
+LDFLAGS	       +=-L/opt/freemcu/lib -lavcodec -lavutil
+CPPFLAGS       +=-I/opt/freemcu/include
+OPTCCFLAGS      =$(CPPFLAGS)
 EXTRACFLAGS	= -I$(PLUGINDIR)
+LIBAVCODEC_CFLAGS=-I${prefix}/include
 
 # HAVE_LIBAVCODEC_RTP_MODE=1
 

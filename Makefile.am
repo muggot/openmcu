@@ -2,85 +2,127 @@
 
 SUBDIRS 	= @PTLIBDIR@ @H323PLUSDIR@ @MCUDIR@
 
+####################################################################################################
+
 all:
-	($(MAKE) $(MAKEFLAGS) opt -C @PTLIBDIR@)                    || exit $$?
+	($(MAKE) $(MAKEFLAGS) opt -C @PTLIBDIR@) || exit $$?
 	($(MAKE) $(MAKEFLAGS)     -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?
-	($(MAKE) $(MAKEFLAGS)     -C @MCUDIR@ @MCUBUILDOPTS@)       || exit $$?
+if COMPILER_USE_LIBYUV
+	cd @LIBYUV_DIR@ && \
+	( for file in source/*.cc; do \
+	    echo $$file ; gcc -fPIC -c -fno-stack-protector -Iinclude $$file -o $$file.o ; \
+	  done \
+	) \
+	&& \
+	gcc -shared -Wl,-soname,libyuv.so -o libyuv.so source/*.o -lstdc++
+endif
+if COMPILER_USE_LIBSRTP
+	($(MAKE) $(MAKEFLAGS)     -C @LIBSRTP_DIR@) || exit $$?
+endif
+if COMPILER_USE_LIBZRTP
+	($(MAKE) $(MAKEFLAGS)     -C @LIBZRTP_DIR@) || exit $$?
+endif
+if COMPILER_USE_LIBSOFIA
+	($(MAKE) $(MAKEFLAGS)     -C @LIBSOFIA_DIR@) || exit $$?
+endif
+if COMPILER_USE_LIBSPEEX
+	($(MAKE) $(MAKEFLAGS)     -C @LIBSPEEX_DIR@) || exit $$?
+endif
+if COMPILER_USE_LIBOPUS
+	($(MAKE) $(MAKEFLAGS)     -C @LIBOPUS_DIR@) || exit $$?
+endif
+	($(MAKE) $(MAKEFLAGS)     -C @MCUDIR@ @MCUBUILDOPTS@) || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) $(MAKEFLAGS) -C $$dir) || exit $$?; \
 	done )
 
+####################################################################################################
+
 install:
-if ENABLE_DEVEL
-	($(MAKE) install -C @PTLIBDIR@)    || exit $$?
-	($(MAKE) install -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?
-endif
-	($(MAKE) install -C @MCUDIR@ @MCUBUILDOPTS@)      || exit $$?
+	($(MAKE) install -C @MCUDIR@ @MCUBUILDOPTS@) || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) install -C $$dir) || exit $$?; \
 	done )
+if COMPILER_NO_STATIC
+	install -m 644 @PTLIB_LIBDIR@/@PTLIB_SO_FILE@ $(DESTDIR)@MCU_LIB_DIR@
+	install -m 644 @H323PLUS_LIBDIR@/@H323PLUS_SO_FILE@ $(DESTDIR)@MCU_LIB_DIR@
+endif
+if COMPILER_USE_LIBSOFIA
+	install -m 644 @LIBSOFIA_DIR@/libsofia-sip-ua/.libs/libsofia-sip-ua.so.0.6.0 $(DESTDIR)@MCU_LIB_DIR@
+	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so.0.6.0 $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so.0
+	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so.0.6.0 $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so
+endif
+if COMPILER_USE_LIBYUV
+	install -m 644 @LIBYUV_DIR@/libyuv.so $(DESTDIR)@MCU_LIB_DIR@
+endif
+if COMPILER_USE_LIBOPUS
+	install -m 644 @LIBOPUS_DIR@/.libs/libopus.so.0.5.0 $(DESTDIR)@MCU_LIB_DIR@
+	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libopus.so.0.5.0 $(DESTDIR)@MCU_LIB_DIR@/libopus.so.0
+	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libopus.so.0.5.0 $(DESTDIR)@MCU_LIB_DIR@/libopus.so
+endif
+if COMPILER_USE_LIBSPEEX
+	install -m 644 @LIBSPEEX_DIR@/libspeex/.libs/libspeex.so.1.5.0 $(DESTDIR)@MCU_LIB_DIR@
+	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libspeex.so.1.5.0 $(DESTDIR)@MCU_LIB_DIR@/libspeex.so.1
+	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libspeex.so.1.5.0 $(DESTDIR)@MCU_LIB_DIR@/libspeex.so
+endif
+
+####################################################################################################
 
 uninstall:
-if ENABLE_DEVEL
-	($(MAKE) uninstall -C @PTLIBDIR@)    || exit $$?
-	($(MAKE) uninstall -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?
-endif
-	($(MAKE) uninstall -C @MCUDIR@ @MCUBUILDOPTS@)      || exit $$?
+	($(MAKE) uninstall -C @MCUDIR@ @MCUBUILDOPTS@) || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) uninstall -C $$dir) || exit $$?; \
 	done )
+if COMPILER_NO_STATIC
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/@PTLIB_SO_FILE@ 
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/@H323PLUS_SO_FILE@
+endif
+if COMPILER_USE_LIBSOFIA
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so.0.6.0
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so.0
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so
+endif
+if COMPILER_USE_LIBYUV
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libyuv.so
+endif
+if COMPILER_USE_LIBOPUS
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libopus.so.0.5.0
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libopus.so.0
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libopus.so
+endif
+if COMPILER_USE_LIBSPEEX
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libspeex.so.1.5.0
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libspeex.so.1
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libspeex.so
+endif
+
+####################################################################################################
 
 clean:
-	($(MAKE) clean -C @PTLIBDIR@)    || exit $$?
+if COMPILER_USE_LIBSRTP
+	($(MAKE) clean -C @LIBSRTP_DIR@) || exit $$?
+endif
+if COMPILER_USE_LIBZRTP
+	($(MAKE) clean -C @LIBZRTP_DIR@) || exit $$?
+endif
+if COMPILER_USE_LIBSOFIA
+	($(MAKE) clean -C @LIBSOFIA_DIR@) || exit $$?
+endif
+if COMPILER_USE_LIBOPUS
+	($(MAKE) clean -C @LIBOPUS_DIR@) || exit $$?
+endif
+if COMPILER_USE_LIBSPEEX
+	($(MAKE) clean -C @LIBSPEEX_DIR@) || exit $$?
+endif
+	($(MAKE) clean -C @PTLIBDIR@) || exit $$?
 	($(MAKE) clean -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?
-	($(MAKE) clean -C @MCUDIR@ @MCUBUILDOPTS@)      || exit $$?
+	($(MAKE) clean -C @MCUDIR@ @MCUBUILDOPTS@) || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) clean -C $$dir) || exit $$?; \
 	done )
 
-@PTLIBDIR@:
-	cd @PTLIBDIR@ && $(MAKE) $(MAKEFLAGS) opt
-
-@H323PLUSDIR@:
-	cd @H323PLUSDIR@ && $(MAKE) $(MAKEFLAGS) @H323BUILDOPTS@
-
-@MCUDIR@:
-	cd @MCUDIR@ && $(MAKE) $(MAKEFLAGS) @MCUBUILDOPTS@
-
-h261:
-	cd @PLUGIN_H261_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-h263:
-	cd @PLUGIN_H263_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-h264:
-	cd @PLUGIN_H264_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-vp8:
-	cd @PLUGIN_VP8_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-g722:
-	cd @PLUGIN_G722_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-g7231:
-	cd @PLUGIN_G7231_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-g726:
-	cd @PLUGIN_G726_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-g729:
-	cd @PLUGIN_G729_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-ilbc:
-	cd @PLUGIN_ILBC_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-speex:
-	cd @PLUGIN_SPEEX_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-silk:
-	cd @PLUGIN_SILK_DIR@ && $(MAKE) $(MAKEFLAGS)
-
-opus:
-	cd @PLUGIN_OPUS_DIR@ && $(MAKE) $(MAKEFLAGS)
+####################################################################################################
 
 .PHONY: @PTLIBDIR@ @H323PLUSDIR@ @MCUDIR@ @PLUGINS@
+
+####################################################################################################

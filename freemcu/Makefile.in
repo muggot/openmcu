@@ -1,0 +1,125 @@
+#
+# Makefile
+#
+# Make file for FreeMCU
+#
+
+PREFIX          = @INSTALLPREFIX@
+OSTYPE          = @OSTYPE@
+MACHTYPE	= @MACHTYPE@
+PROG		= freemcu
+SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx \
+                   mcu_rtp.cxx reg.cxx reg_sip.cxx reg_h323.cxx
+
+CXX		= g++
+CFLAGS         += @CFLAGS@ -Os
+LDFLAGS        += @MCU_LDFLAGS@
+RFLAGS         += @RPATH@
+SFLAGS         += @MCU_SFLAGS@
+LDLIBS	       += @MCU_LDLIBS@
+STDCCFLAGS     += @STDCCFLAGS@ -D__STDC_CONSTANT_MACROS -Wall
+STDCXXFLAGS    += @STDCXXFLAGS@
+CPPFLAGS       += @MCU_CPPFLAGS@
+OPTCCFLAGS      =$(CPPFLAGS)
+
+git_revision        = $(shell git rev-list master --max-count=1 HEAD)
+#git_revision_number = $(shell git rev-list master | wc -l)
+STDCCFLAGS     +=-D GIT_REVISION=$(git_revision)
+
+PTLIBDIR        = @PTLIBDIR@
+include $(PTLIBDIR)/make/ptbuildopts.mak
+
+
+CONFIG_FILES= \
+layouts.conf \
+ffserver.conf \
+freemcu.ini
+
+RESOURCE_FILES=i15_mic_on.gif \
+i24_clr.gif \
+vad_chosenvan.gif \
+i20_close.gif \
+i24_left.gif \
+vad_disable.gif \
+i20_plus.gif \
+i24_mix.gif \
+mcu.gif \
+vad_vad.gif \
+i20_static.gif \
+i24_revert.gif \
+i15_inv.gif \
+i20_vad2.gif \
+i24_right.gif \
+launched.gif \
+i15_mic_off.gif \
+i20_vad.gif \
+i24_shuff.gif \
+i15_getNoVideo.gif \
+logo_text.png \
+menu_left.png \
+connecting.wav \
+entering.wav \
+leaving.wav \
+template.html \
+control.js \
+status.js \
+locale_ru.js \
+locale_en.js \
+i16_close_gray.png \
+i16_close_red.png \
+
+OBJDIR	= ./obj
+OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdir $(SOURCES)))))
+
+$(OBJDIR)/%.o : %.cxx
+	@mkdir -p $(OBJDIR) >/dev/null 2>&1
+	@echo [CC] $@
+	@$(CXX) $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) $(STDCXXFLAGS) -c $< -o $@
+
+all: $(OBJDIR)/$(PROG)
+
+$(OBJDIR)/$(PROG): $(OBJECTS)
+	$(CXX) $(LDSO) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(SFLAGS) $(RFLAGS) $(OBJS) $(LDLIBS) $(ENDLDLIBS) $(ENDLDFLAGS)
+
+install:
+	mkdir -p $(DESTDIR)@MCU_DIR@
+	mkdir -p $(DESTDIR)@MCU_BIN_DIR@
+	mkdir -p $(DESTDIR)@MCU_CONFIG_DIR@
+	mkdir -p $(DESTDIR)@MCU_FONT_DIR@
+	mkdir -p $(DESTDIR)@MCU_LIB_DIR@
+	mkdir -p $(DESTDIR)@MCU_LOG_DIR@
+	mkdir -p $(DESTDIR)@MCU_PIPE_DIR@
+	mkdir -p $(DESTDIR)@MCU_RECORDS_DIR@
+	mkdir -p $(DESTDIR)@MCU_RESOURCE_DIR@
+	mkdir -p $(DESTDIR)@MCU_SSL_DIR@
+	( for file in ${CONFIG_FILES}; \
+	    do install -m 644 conf/$$file $(DESTDIR)@MCU_CONFIG_DIR@; \
+	done )
+	( for file in ${RESOURCE_FILES}; \
+	    do install -m 644 resource/$$file $(DESTDIR)@MCU_RESOURCE_DIR@; \
+	done )
+	install -m 755 conf/web_stream_start $(DESTDIR)@MCU_CONFIG_DIR@
+	install -m 755 $(OBJDIR)/$(PROG) $(DESTDIR)@MCU_BIN_DIR@
+	install -m 644 resource/Russo_One.ttf $(DESTDIR)@MCU_FONT_DIR@
+	install -m 644 ../AUTHORS $(DESTDIR)@MCU_DIR@
+	install -m 644 ../COPYING $(DESTDIR)@MCU_DIR@
+	install -m 644 ../NEWS $(DESTDIR)@MCU_DIR@
+	install -m 644 ../README $(DESTDIR)@MCU_DIR@
+	ln -sf $(DESTDIR)@MCU_BIN_DIR@/$(PROG) /usr/local/bin/$(PROG)
+#	install -m 644 ssl/agent.pem $(DESTDIR)@MCU_SSL_DIR@
+#	install -m 644 ssl/cafile.pem $(DESTDIR)@MCU_SSL_DIR@
+
+uninstall:
+	rm -rf $(DESTDIR)@MCU_FONT_DIR@
+	rm -rf $(DESTDIR)@MCU_LOG_DIR@
+	rm -rf $(DESTDIR)@MCU_PIPE_DIR@
+	rm -rf $(DESTDIR)@MCU_RESOURCE_DIR@
+	rm -f $(DESTDIR)@MCU_DIR@/AUTHORS
+	rm -f $(DESTDIR)@MCU_DIR@/COPYING
+	rm -f $(DESTDIR)@MCU_DIR@/NEWS
+	rm -f $(DESTDIR)@MCU_DIR@/README
+	rm -f $(DESTDIR)@MCU_BIN_DIR@/$(PROG)
+	rm -f /usr/bin/$(PROG)
+
+clean:
+	rm -rf $(OBJDIR)

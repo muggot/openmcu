@@ -1,5 +1,5 @@
 AC_PLUGIN_DIR=codecs/audio
-prefix=/usr/local/lib/ptlib
+prefix=/opt/freemcu/lib/ptlib
 target_os=linux-gnu
 
 SONAME	= silk_b40

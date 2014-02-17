@@ -33,7 +33,7 @@
 #include "codec/opalplugin.hpp"
 #include "codec/plugin-config.h"
 
-#include "src/include/speex/speex.h"
+#include <speex/speex.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

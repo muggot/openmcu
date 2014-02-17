@@ -1,20 +1,24 @@
 dnl #######################################################################
 dnl INIT
 
-AC_INIT([OpenMCU-ru],[3.1.0],[openmcu-ru])
+AC_INIT([FreeMCU],[3.47.100],[FreeMCU])
 AC_CANONICAL_TARGET()
 AM_INIT_AUTOMAKE()
 
 AC_PROG_CXX
 AC_LANG(C++)
 
-dnl ########################################################################
-dnl OpenMCU-ru version
+AC_SUBST(PROG, freemcu)
 
-MAJOR_VERSION=`cat openmcu-ru/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
-MINOR_VERSION=`cat openmcu-ru/version.h | grep MINOR_VERSION | cut -f3 -d' '`
-BUILD_NUMBER=`cat openmcu-ru/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
-BUILD_TYPE=`cat openmcu-ru/version.h | grep BUILD_TYPE | cut -f 3 -d ' ' | sed 's/BetaCode/-beta/' | sed 's/AlphaCode/-alpha/' | sed 's/ReleaseCode/\./'`
+#AM_MAINTAINER_MODE
+
+dnl ########################################################################
+dnl FreeMCU version
+
+MAJOR_VERSION=`cat freemcu/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
+MINOR_VERSION=`cat freemcu/version.h | grep MINOR_VERSION | cut -f3 -d' '`
+BUILD_NUMBER=`cat freemcu/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
+BUILD_TYPE=`cat freemcu/version.h | grep BUILD_TYPE | cut -f 3 -d ' ' | sed 's/BetaCode/-beta/' | sed 's/AlphaCode/-alpha/' | sed 's/ReleaseCode/\./'`
 MCU_VERSION=$MAJOR_VERSION.$MINOR_VERSION.$BUILD_NUMBER
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)
@@ -25,9 +29,9 @@ AC_SUBST(MCU_VERSION)
 dnl ########################################################################
 dnl PTLib version
 
-PTLIB_MAJOR_VERSION=`cat ptlib/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
-PTLIB_MINOR_VERSION=`cat ptlib/version.h | grep MINOR_VERSION | cut -f3 -d' '`
-PTLIB_BUILD_NUMBER=`cat ptlib/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
+PTLIB_MAJOR_VERSION=`cat libs/ptlib/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
+PTLIB_MINOR_VERSION=`cat libs/ptlib/version.h | grep MINOR_VERSION | cut -f3 -d' '`
+PTLIB_BUILD_NUMBER=`cat libs/ptlib/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
 AC_SUBST(PTLIB_MAJOR_VERSION)
 AC_SUBST(PTLIB_MINOR_VERSION)
 AC_SUBST(PTLIB_BUILD_NUMBER)
@@ -41,9 +45,10 @@ dnl ########################################################################
 dnl install PREFIX
 
 if test "x$prefix" = "xNONE"; then
-   INSTALLPREFIX="/usr/local"
+  INSTALLPREFIX="/usr/local"
+  #INSTALLPREFIX="/opt"
 else
-   INSTALLPREFIX="${prefix}"
+  INSTALLPREFIX="${prefix}"
 fi
 AC_SUBST(INSTALLPREFIX)
 
@@ -54,11 +59,15 @@ LIBAV_LDFLAGS="${LIBAV_LDFLAGS} ${LDFLAGS}";
 LIBVPX_CPPFLAGS="${LIBVPX_CPPFLAGS} ${CPPFLAGS}";
 LIBVPX_LDFLAGS="${LIBVPX_LDFLAGS} ${LDFLAGS}";
 
-CPPFLAGS="$CPPFLAGS -I$INSTALLPREFIX/include -I/usr/include -I/usr/local/include "
-LDFLAGS="$LDFLAGS -L$INSTALLPREFIX/lib -L/usr/lib -L/usr/local/lib "
+MCU_CPPFLAGS="${CPPFLAGS} -I${INSTALLPREFIX}/include -I${INSTALLPREFIX}/${PROG}/include -I/usr/include -I/usr/local/include"
+MCU_LDFLAGS="${LDFLAGS} -L${INSTALLPREFIX}/lib -L${INSTALLPREFIX}/${PROG}/lib -L/usr/lib -L/usr/local/lib"
+MCU_LDLIBS="${LDLIBS}"
 
-export PKG_CONFIG_PATH=$INSTALLPREFIX/lib/pkgconfig:${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
-export LD_LIBRARY_PATH=$INSTALLPREFIX/lib:${LD_LIBRARY_PATH}:/usr/lib:/usr/local/lib
+export CPPFLAGS=${MCU_CPPFLAGS}
+export LDFLAGS=${MCU_LDFLAGS}
+
+export PKG_CONFIG_PATH=${INSTALLPREFIX}/lib/pkgconfig:${INSTALLPREFIX}/${PROG}/lib/pkgconfig:${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
+export LD_LIBRARY_PATH=${INSTALLPREFIX}/lib:${INSTALLPREFIX}/${PROG}/lib:${LD_LIBRARY_PATH}:/usr/lib:/usr/local/lib
 
 dnl ########################################################################
 dnl LIBDIR accordingly
@@ -215,254 +224,65 @@ else
 fi
 
 dnl ########################################################################
-dnl arg
+dnl configuration freemcu
 
-resample=yes
-resampler_ffmpeg=yes
-resampler_libav=yes
-resampler_libsamplerate=yes
-rendering_names=yes
-live_video=yes
-optimized_frame_resize=yes
-
-AC_ARG_ENABLE(separator, [ ])
-AC_ARG_ENABLE(resample, [AS_HELP_STRING([--enable-resample],[Enable/Disable resampling (default enabled)],[40],[100])], [resample="$enableval"])
-AC_ARG_ENABLE(resampler-ffmpeg, [AS_HELP_STRING([--enable-resampler-ffmpeg],[Enable check only libswresample resampler(default auto)],[40],[100])], [resampler_ffmpeg="yes" resampler_libav="no" resampler_libsamplerate="no"])
-AC_ARG_ENABLE(resampler-libav, [AS_HELP_STRING([--enable-resampler-libav],[Enable check only libavresample resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="yes" resampler_libsamplerate="no"])
-AC_ARG_ENABLE(resampler-libsamplerate, [AS_HELP_STRING([--enable-resampler-libsamplerate],[Enable check only libsamplerate resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="no" resampler_libsamplerate="yes"])
-AC_ARG_ENABLE(separator, [  ])
-AC_ARG_ENABLE(rendering-names, [AS_HELP_STRING([--enable-rendering-names],[Enable/Disable, requires libfreetype (default enabled)],[40],[100])], [rendering_names="$enableval"])
-AC_ARG_ENABLE(live-video, [AS_HELP_STRING([--enable-live-video],[Enable/Disable, requires libjpeg (default enabled)],[40],[100])], [live_video="$enableval"])
-AC_ARG_ENABLE(optimized-frame-resize, [AS_HELP_STRING([--enable-optimized-frame-resize],[Enable/Disable, requires libyuv (default enabled)],[40],[100])], [optimized_frame_resize="$enableval"])
-AC_ARG_ENABLE(separator, [   ])
-
-dnl ########################################################################
-dnl check for freetype library
-
-AC_SUBST(USE_FREETYPE, 0)
-if test "${rendering_names}" = "yes"; then
-  AC_CHECK_LIB(freetype, FT_Init_FreeType, USE_FREETYPE=1, USE_FREETYPE=0)
-  if test ${USE_FREETYPE} = 1 ; then
-    FREETYPE_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I freetype2`";
-    FREETYPE_LDFLAGS="`pkg-config --silence-errors --libs-only-L freetype2`";
-    LDLIBS="$LDLIBS -lfreetype"
-  else
-    AC_MSG_WARN(libfreetype not found!)
-  fi
-fi
-
-dnl ########################################################################
-dnl check for video library
-
-AC_CHECK_LIB(avcodec, avcodec_version, USE_AVCODEC=1, USE_AVCODEC=0)
-if test ${USE_AVCODEC} = 1; then
-  LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
-  LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
-else
-  AC_MSG_ERROR(libavcodec not found!)
-fi
-
-AC_CHECK_LIB(avutil, avutil_version, USE_AVUTIL=1, USE_AVUTIL=0)
-if test ${USE_AVUTIL} = 0; then
-  AC_MSG_ERROR(libavutil not found!)
-fi
-
-
-dnl ########################################################################
-dnl check for ffmpeg path
-
-AC_SUBST(FFMPEG_PATH, "/usr/bin/ffmpeg")
-AC_CHECK_FILE("/usr/bin/avconv", [USE_AVCONV_PATH=1], [USE_AVCONV_PATH=0])
-
-if test "${USE_AVCONV_PATH}" = "1"; then
-  FFMPEG_PATH="/usr/bin/avconv"
-fi
-
-
-dnl ########################################################################
-dnl check for resampling library
-
-AC_SUBST(USE_SWRESAMPLE, 0)
-AC_SUBST(USE_AVRESAMPLE, 0)
-AC_SUBST(USE_LIBSAMPLERATE, 0)
-
-if test "${resample}" = "yes"; then
-  if test "${resampler_ffmpeg}" = "yes"; then
-    AC_CHECK_LIB(swresample, swr_convert, SWRESAMPLE=1, SWRESAMPLE=0)
-  fi
-  if test "${resampler_libav}" = "yes"; then
-    AC_CHECK_LIB(avresample, avresample_convert, AVRESAMPLE=1, AVRESAMPLE=0)
-  fi
-  if test "${resampler_libsamplerate}" = "yes"; then
-    AC_CHECK_LIB(samplerate, src_process, LIBSAMPLERATE=1, LIBSAMPLERATE=0)
-  fi
-
-  if test "${SWRESAMPLE}" = "1"; then
-    USE_SWRESAMPLE=1
-    RESAMPLE_CPPFLAGS="${LIBAV_CPPFLAGS}";
-    RESAMPLE_LDFLAGS="${LIBAV_LDFLAGS}";
-    LDLIBS="$LDLIBS -lswresample"
-  elif test "${AVRESAMPLE}" = "1"; then
-    USE_AVRESAMPLE=1
-    RESAMPLE_CPPFLAGS="${LIBAV_CPPFLAGS}";
-    RESAMPLE_LDFLAGS="${LIBAV_LDFLAGS}";
-    LDLIBS="$LDLIBS -lavresample"
-  elif test "${LIBSAMPLERATE}" = "1"; then
-    USE_LIBSAMPLERATE=1
-    RESAMPLE_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I samplerate`";
-    RESAMPLE_LDFLAGS="`pkg-config --silence-errors --libs-only-L samplerate`";
-    LDLIBS="$LDLIBS -lsamplerate"
-  else
-    AC_MSG_WARN(libswresample/libavresample/libsamplerate not found!)
-  fi
-fi
-
-dnl ########################################################################
-dnl check for jpeg library
-
-AC_SUBST(USE_LIBJPEG, 0)
-if test "${live_video}" = "yes"; then
-  AC_CHECK_LIB(jpeg, jpeg_destroy_decompress, USE_LIBJPEG=1, USE_LIBJPEG=0)
-  if test ${USE_LIBJPEG} = 1 ; then
-    JPEG_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I libjpeg`";
-    JPEG_LDFLAGS="`pkg-config --silence-errors --libs-only-L libjpeg`";
-    LDLIBS="$LDLIBS -ljpeg"
-  else
-    AC_MSG_WARN(libjpeg not found!)
-  fi
-fi
-
-dnl ########################################################################
-dnl check for yuv library
-
-AC_SUBST(USE_LIBYUV, 0)
-if test "${optimized_frame_resize}" = "yes"; then
-  AC_CHECK_LIB(yuv, I420Scale, USE_LIBYUV=1, USE_LIBYUV=0)
-  if test ${USE_LIBYUV} = 1 ; then
-    YUV_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I libyuv`";
-    YUV_LDFLAGS="`pkg-config --silence-errors --libs-only-L libyuv`";
-    LDLIBS="$LDLIBS -lyuv"
-  else
-    AC_MSG_WARN(libyuv not found!)
-  fi
-fi
-
-dnl ########################################################################
-dnl check for sofia-sip library
-
-AC_SUBST(USE_LIBSOFIA, 0)
-AC_CHECK_LIB(sofia-sip-ua, nta_agent_create, USE_LIBSOFIA=1, USE_LIBSOFIA=0)
-if test ${USE_LIBSOFIA} = 1 ; then
-  SOFIA_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I sofia-sip-ua`";
-  SOFIA_LDFLAGS="`pkg-config --silence-errors --libs-only-L sofia-sip-ua`";
-  LDLIBS="$LDLIBS -lsofia-sip-ua"
-else
-  AC_MSG_ERROR(libsofia-sip-ua not found!)
-fi
-
-dnl ########################################################################
-dnl configuration ptlib/h323plus
-
-AC_ARG_WITH(separator,[ ])
-AC_ARG_WITH(ptlib_prefix, [AS_HELP_STRING([--with-ptlib-prefix],[PTLib installation prefix (default =prefix)],[40],[100])], [ptlib_prefix=$withval], [ptlib_prefix=""])
-AC_ARG_WITH(h323plus_prefix, [AS_HELP_STRING([--with-h323plus-prefix],[H323Plus installation prefix (default =prefix)],[40],[100])], [h323plus_prefix=$withval], [h323plus_prefix=""])
-AC_ARG_WITH(plugins_prefix, [AS_HELP_STRING([--with-plugins-prefix],[plugins installation prefix (default =prefix)],[40],[100])], [plugins_prefix=$withval], [plugins_prefix=""])
-
-if test "x$ptlib_prefix" = "x"; then
-   PTLIB_INSTALLPREFIX=${INSTALLPREFIX}
-else
-   PTLIB_INSTALLPREFIX=${ptlib_prefix}
-fi
-
-if test "x$h323plus_prefix" = "x"; then
-   H323PLUS_INSTALLPREFIX=${INSTALLPREFIX}
-else
-   H323PLUS_INSTALLPREFIX=${h323plus_prefix}
-fi
-
-PTLIB_INSTALLPREFIX=`echo ${PTLIB_INSTALLPREFIX} | sed "s/\/\//\//g"`
-H323PLUS_INSTALLPREFIX=`echo ${H323PLUS_INSTALLPREFIX} | sed "s/\/\//\//g"`
-LDFLAGS="${LDFLAGS} -L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib "
-
-if test "x$plugins_prefix" = "x"; then
-  P_DEFAULT_PLUGIN_DIR=${PTLIB_INSTALLPREFIX}/lib/ptlib
-  PLUGIN_INSTALLPREFIX=${P_DEFAULT_PLUGIN_DIR}
-  AUDIO_PLUGIN_DIR=codecs/audio
-  VIDEO_PLUGIN_DIR=codecs/video
-else
-  P_DEFAULT_PLUGIN_DIR=${plugins_prefix}
-  PLUGIN_INSTALLPREFIX=${P_DEFAULT_PLUGIN_DIR}
-  AUDIO_PLUGIN_DIR=codecs/audio
-  VIDEO_PLUGIN_DIR=codecs/video
-fi
-
-#if test "x$LIB64" != "x" ; then
-#  PLUGIN_INSTALLPREFIX="${PLUGIN_INSTALLPREFIX}64"
-#fi
-
-AC_SUBST(PTLIB_INSTALLPREFIX)
-AC_SUBST(H323PLUS_INSTALLPREFIX)
-AC_SUBST(P_DEFAULT_PLUGIN_DIR)
-AC_SUBST(PLUGIN_INSTALLPREFIX)
-AC_SUBST(AUDIO_PLUGIN_DIR)
-AC_SUBST(VIDEO_PLUGIN_DIR)
-
-dnl ########################################################################
-dnl configuration openmcu-ru
-
-MCUDIR=openmcu-ru
 AC_ARG_WITH(separator,[  ])
 AC_ARG_WITH(config_prefix, [AS_HELP_STRING([--with-config-prefix],[config directory prefix],[40],[100])], [config_prefix=$withval])
 AC_ARG_WITH(log_prefix, [AS_HELP_STRING([--with-log-prefix],[log directory prefix],[40],[100])], [log_prefix=$withval])
 AC_ARG_WITH(pipe_prefix, [AS_HELP_STRING([--with-pipe-prefix],[pipe directory prefix],[40],[100])], [pipe_prefix=$withval])
 AC_ARG_WITH(records_prefix, [AS_HELP_STRING([--with-records-prefix],[records directory prefix],[40],[100])], [records_prefix=$withval])
 
-MCU_BIN_DIR=${INSTALLPREFIX}/bin
-MCU_SHARE_DIR=${INSTALLPREFIX}/share/${MCUDIR}
-MCU_RESOURCE_DIR=${MCU_SHARE_DIR}/resource
-MCU_FONT_DIR=${MCU_SHARE_DIR}/font
+MCUDIR=freemcu
+MCU_DIR=${INSTALLPREFIX}/${MCUDIR}
+MCU_BIN_DIR=${MCU_DIR}/bin
+MCU_FONT_DIR=${MCU_DIR}/font
+MCU_LIB_DIR=${MCU_DIR}/lib
+MCU_RESOURCE_DIR=${MCU_DIR}/resource
+MCU_SSL_DIR=${MCU_DIR}/ssl
 
 if test "x$config_prefix" = "x"; then
-  MCU_CONFIG_DIR=${MCU_SHARE_DIR}/config
+  MCU_CONFIG_DIR=${MCU_DIR}/config
 else
   MCU_CONFIG_DIR=${config_prefix}/${MCUDIR}
 fi
 
 if test "x$log_prefix" = "x"; then
-  MCU_LOG_DIR=${MCU_SHARE_DIR}/log
+  MCU_LOG_DIR=${MCU_DIR}/log
 else
   MCU_LOG_DIR=${log_prefix}/${MCUDIR}
 fi
 
 if test "x$pipe_prefix" = "x"; then
-  MCU_PIPE_DIR=${MCU_SHARE_DIR}/pipe
+  MCU_PIPE_DIR=${MCU_DIR}/pipe
 else
   MCU_PIPE_DIR=${pipe_prefix}/${MCUDIR}
 fi
 
 if test "x$records_prefix" = "x"; then
-  MCU_RECORDS_DIR=${MCU_SHARE_DIR}/records
+  MCU_RECORDS_DIR=${MCU_DIR}/records
 else
   MCU_RECORDS_DIR=${records_prefix}/${MCUDIR}
 fi
 
 AC_SUBST(MCUDIR)
-AC_SUBST(MCU_SHARE_DIR)
+AC_SUBST(MCU_DIR)
 AC_SUBST(MCU_BIN_DIR)
 AC_SUBST(MCU_CONFIG_DIR)
-AC_SUBST(MCU_PIPE_DIR)
-AC_SUBST(MCU_RESOURCE_DIR)
-AC_SUBST(MCU_RECORDS_DIR)
 AC_SUBST(MCU_FONT_DIR)
+AC_SUBST(MCU_LIB_DIR)
 AC_SUBST(MCU_LOG_DIR)
+AC_SUBST(MCU_PIPE_DIR)
+AC_SUBST(MCU_RECORDS_DIR)
+AC_SUBST(MCU_RESOURCE_DIR)
+AC_SUBST(MCU_SSL_DIR)
 
-AC_CONFIG_FILES(openmcu-ru/Makefile)
-AC_CONFIG_FILES(openmcu-ru/config.h)
+AC_CONFIG_FILES(freemcu/Makefile)
+AC_CONFIG_FILES(freemcu/config.h)
 
 dnl ########################################################################
 dnl configuration ptlib
 
-PWLIBDIR=`pwd`/ptlib
+PWLIBDIR=${top_srcdir}/libs/ptlib
 PTLIBDIR="${PWLIBDIR}"
 PTLIB_CONFIG=${PWLIBDIR}/make/ptlib-config
 
@@ -474,16 +294,16 @@ AC_SUBST(PWLIBDIR)
 AC_SUBST(PTLIBDIR)
 AC_SUBST(PTLIB_CONFIG)
 
-AC_CONFIG_SUBDIRS(ptlib)
-AC_CONFIG_FILES(ptlib/Makefile)
+AC_CONFIG_SUBDIRS(libs/ptlib)
+AC_CONFIG_FILES(libs/ptlib/Makefile)
 
 dnl ########################################################################
 dnl configuration h323plus
 
-H323PLUSDIR=`pwd`/h323plus
+H323PLUSDIR=${top_srcdir}/libs/h323plus
 AC_SUBST(H323PLUSDIR)
-AC_CONFIG_SUBDIRS(h323plus)
-AC_CONFIG_FILES(h323plus/Makefile)
+AC_CONFIG_SUBDIRS(libs/h323plus)
+AC_CONFIG_FILES(libs/h323plus/Makefile)
 
 dnl ########################################################################
 dnl h323plus/ptlib
@@ -525,6 +345,306 @@ AC_SUBST(H323BUILDOPTS)
 AC_SUBST(MCUBUILDOPTS)
 
 dnl ########################################################################
+dnl arg
+
+resample=yes
+resampler_ffmpeg=yes
+resampler_libav=yes
+resampler_libsamplerate=yes
+libfreetype=yes
+libjpeg=yes
+libyuv=yes
+openssl=yes
+libsrtp=yes
+libzrtp=yes
+
+AC_ARG_ENABLE(separator, [ ])
+AC_ARG_ENABLE(resample, [AS_HELP_STRING([--disable-resample],[Disable resampling (default enabled)],[40],[100])], [resample="$enableval"])
+AC_ARG_ENABLE(resampler-ffmpeg, [AS_HELP_STRING([--disable-resampler-ffmpeg],[Enable check only libswresample resampler(default auto)],[40],[100])], [resampler_ffmpeg="yes" resampler_libav="no" resampler_libsamplerate="no"])
+AC_ARG_ENABLE(resampler-libav, [AS_HELP_STRING([--disable-resampler-libav],[Enable check only libavresample resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="yes" resampler_libsamplerate="no"])
+AC_ARG_ENABLE(resampler-libsamplerate, [AS_HELP_STRING([--disable-resampler-libsamplerate],[Enable check only libsamplerate resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="no" resampler_libsamplerate="yes"])
+AC_ARG_ENABLE(separator, [  ])
+AC_ARG_ENABLE(libfreetype, [AS_HELP_STRING([--disable-libfreetype],[Disable subtitles (default enabled)],[40],[100])], [libfreetype="$enableval"])
+AC_ARG_ENABLE(libjpeg, [AS_HELP_STRING([--disable-libjpeg],[Disable JPEG Frame Encoder for browser (default enabled)],[40],[100])], [libjpeg="$enableval"])
+AC_ARG_ENABLE(libyuv, [AS_HELP_STRING([--disable-libyuv],[Disable libyuv to resize video (default enabled)],[40],[100])], [libyuv="$enableval"])
+AC_ARG_ENABLE(separator, [   ])
+AC_ARG_ENABLE(openssl, [AS_HELP_STRING([--disable-openssl],[Disable OpenSSL support (default enabled)],[40],[100])], [openssl="$enableval"])
+AC_ARG_ENABLE(libsrtp, [AS_HELP_STRING([--disable-libsrtp],[Disable SRTP support for SIP (default enabled)],[40],[100])], [libsrtp="$enableval"])
+AC_ARG_ENABLE(libzrtp, [AS_HELP_STRING([--disable-libzrtp],[Disable ZRTP support for SIP (default enabled)],[40],[100])], [libzrtp="$enableval"])
+
+dnl ########################################################################
+dnl configure openssl
+
+AC_SUBST(USE_OPENSSL, 0)
+if test "${openssl}" = "yes"; then
+  AC_CHECK_HEADERS(openssl/ssl.h, USE_OPENSSL=1, USE_OPENSSL=0, [-])
+  if test ${USE_OPENSSL} = 1 ; then
+    MCU_LDLIBS="$MCU_LDLIBS -lssl"
+  else
+    AC_MSG_ERROR(openssl headers not found!)
+  fi
+fi
+
+dnl ########################################################################
+dnl configure srtp
+
+AC_SUBST(USE_LIBSRTP, 0)
+AC_SUBST(COMPILE_LIBSRTP, 0)
+AC_SUBST(LIBSRTP_DIR, ${top_srcdir}/libs/srtp)
+
+if test "${libsrtp}" = "yes"; then
+  AC_CHECK_HEADERS(srtp/srtp.h, USE_LIBSRTP=1, USE_LIBSRTP=0, [-])
+  if test ${USE_LIBSRTP} = 1 ; then
+    AC_CHECK_LIB(srtp, srtp_protect, USE_LIBSRTP=1, USE_LIBSRTP=0)
+  fi
+  if test ${USE_LIBSRTP} = 1 ; then
+    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libsrtp`";
+    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L libsrtp`";
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L libsrtp`";
+    MCU_LDLIBS="$MCU_LDLIBS -lsrtp"
+  fi
+  if test ${USE_LIBSRTP} = 0 ; then
+    AC_CONFIG_SUBDIRS(libs/srtp)
+    MCU_SFLAGS="$MCU_SFLAGS -Wl,--start-group ../libs/srtp/libsrtp.a -Wl,--end-group"
+    MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/srtp/include -I../libs/srtp/crypto/include"
+    USE_LIBSRTP=1
+    COMPILE_LIBSRTP=1
+  fi
+fi
+AM_CONDITIONAL(COMPILER_USE_LIBSRTP, [test ${COMPILE_LIBSRTP} = 1])
+
+dnl ########################################################################
+dnl configure srtp
+
+AC_SUBST(USE_LIBZRTP, 0)
+AC_SUBST(COMPILE_LIBZRTP, 0)
+AC_SUBST(LIBZRTP_DIR, ${top_srcdir}/libs/libzrtp)
+
+if test "${libzrtp}" = "yes"; then
+  AC_CONFIG_SUBDIRS(libs/libzrtp)
+  MCU_SFLAGS="$MCU_SFLAGS -Wl,--start-group ../libs/libzrtp/libzrtp.a ../libs/libzrtp/third_party/bnlib/libbn.a -Wl,--end-group"
+  MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libzrtp/include -I../libs/libzrtp/third_party/bnlib -I../libs/libzrtp/third_party/bgaes"
+  USE_LIBZRTP=1
+  COMPILE_LIBZRTP=1
+fi
+AM_CONDITIONAL(COMPILER_USE_LIBZRTP, [test ${COMPILE_LIBZRTP} = 1])
+
+dnl ########################################################################
+dnl check for freetype library
+
+AC_SUBST(USE_FREETYPE, 0)
+if test "${libfreetype}" = "yes"; then
+  AC_CHECK_HEADERS(freetype2/freetype/config/ftheader.h, USE_FREETYPE=1, USE_FREETYPE=0, [-])
+  if test ${USE_FREETYPE} = 0 ; then
+    AC_MSG_ERROR(freetype headers not found!)
+  fi
+  AC_CHECK_LIB(freetype, FT_Library_Version, USE_FREETYPE=1, USE_FREETYPE=0)
+  if test ${USE_FREETYPE} = 0 ; then
+    AC_MSG_ERROR(freetype library not found!)
+  fi
+  if test ${USE_FREETYPE} = 1 ; then
+    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I freetype2`";
+    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L freetype2`";
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L freetype2`";
+    MCU_LDLIBS="$MCU_LDLIBS -lfreetype"
+  fi
+fi
+
+dnl ########################################################################
+dnl check for jpeg library
+
+AC_SUBST(USE_LIBJPEG, 0)
+if test "${libjpeg}" = "yes"; then
+  AC_CHECK_HEADERS(jpeglib.h, USE_LIBJPEG=1, USE_LIBJPEG=0, [-])
+  if test ${USE_LIBJPEG} = 0 ; then
+    AC_MSG_ERROR(jpeg headers not found!)
+  fi
+  AC_CHECK_LIB(jpeg, jpeg_set_defaults, USE_LIBJPEG=1, USE_LIBJPEG=0)
+  if test ${USE_LIBJPEG} = 0 ; then
+    AC_MSG_ERROR(jpeg library not found!)
+  fi
+  if test ${USE_LIBJPEG} = 1 ; then
+    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libjpeg`";
+    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L libjpeg`";
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L libjpeg`";
+    MCU_LDLIBS="$MCU_LDLIBS -ljpeg"
+  fi
+fi
+
+dnl ########################################################################
+dnl check for yuv library
+
+AC_SUBST(USE_LIBYUV, 0)
+AC_SUBST(COMPILE_LIBYUV, 0)
+AC_SUBST(LIBYUV_DIR, ${top_srcdir}/libs/libyuv)
+
+if test "${libyuv}" = "yes"; then
+  AC_CHECK_HEADERS(libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0, [-])
+  if test ${USE_LIBYUV} = 1 ; then
+    AC_CHECK_LIB(yuv, I420Scale, USE_LIBYUV=1, USE_LIBYUV=0)
+  fi
+  if test ${USE_LIBYUV} = 1 ; then
+    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libyuv`";
+    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L libyuv`";
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L libyuv`";
+    MCU_LDLIBS="$MCU_LDLIBS -lyuv"
+  fi
+  if test ${USE_LIBYUV} = 0 ; then
+    MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libyuv/include"
+    MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libyuv";
+    MCU_LDLIBS="$MCU_LDLIBS -lyuv"
+    USE_LIBYUV=1
+    COMPILE_LIBYUV=1
+  fi
+fi
+AM_CONDITIONAL(COMPILER_USE_LIBYUV, [test ${COMPILE_LIBYUV} = 1])
+
+dnl ########################################################################
+dnl check for sofia-sip library
+
+AC_SUBST(USE_LIBSOFIA, 1)
+AC_SUBST(LIBSOFIA_DIR, ${top_srcdir}/libs/sofia-sip)
+AC_CONFIG_SUBDIRS(libs/sofia-sip)
+AM_CONDITIONAL(COMPILER_USE_LIBSOFIA, [test ${USE_LIBSOFIA} = 1])
+
+MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/sofia-sip/libsofia-sip-ua/.libs"
+MCU_LDLIBS="$MCU_LDLIBS -lsofia-sip-ua"
+MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
+                    -I../libs/sofia-sip/libsofia-sip-ua/docs \
+                    -I../libs/sofia-sip/libsofia-sip-ua/features \
+                    -I../libs/sofia-sip/libsofia-sip-ua/http \
+                    -I../libs/sofia-sip/libsofia-sip-ua/ipt \
+                    -I../libs/sofia-sip/libsofia-sip-ua/iptsec \
+                    -I../libs/sofia-sip/libsofia-sip-ua/msg \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nea \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nta \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nth \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nua \
+                    -I../libs/sofia-sip/libsofia-sip-ua/sdp \
+                    -I../libs/sofia-sip/libsofia-sip-ua/sip \
+                    -I../libs/sofia-sip/libsofia-sip-ua/soa \
+                    -I../libs/sofia-sip/libsofia-sip-ua/sresolv \
+                    -I../libs/sofia-sip/libsofia-sip-ua/stun \
+                    -I../libs/sofia-sip/libsofia-sip-ua/su \
+                    -I../libs/sofia-sip/libsofia-sip-ua/tport \
+                    -I../libs/sofia-sip/libsofia-sip-ua/url"
+
+dnl ########################################################################
+dnl check for video library
+
+AC_CHECK_HEADERS(libavcodec/avcodec.h, USE_AVCODEC=1, USE_AVCODEC=0, [-])
+if test ${USE_AVCODEC} = 0; then
+  AC_MSG_ERROR(libavcodec headers not found!)
+fi
+AC_CHECK_LIB(avcodec, avcodec_version, USE_AVCODEC=1, USE_AVCODEC=0)
+if test ${USE_AVCODEC} = 0; then
+  AC_MSG_ERROR(libavcodec library not found!)
+fi
+
+LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
+LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
+
+dnl ########################################################################
+dnl check for ffmpeg path
+
+AC_SUBST(FFMPEG_PATH)
+AC_SUBST(FILE_FOUND, 0)
+
+if test "${FILE_FOUND}" = "0"; then
+  AC_CHECK_FILE(${MCU_BIN_DIR}/ffmpeg, [FILE_FOUND=1], [FILE_FOUND=0])
+  if test "${FILE_FOUND}" = "1"; then
+    FFMPEG_PATH=${INSTALLPREFIX}/bin/ffmpeg
+  fi
+fi
+if test "${FILE_FOUND}" = "0"; then
+  AC_CHECK_FILE(/usr/bin/ffmpeg, [FILE_FOUND=1], [FILE_FOUND=0])
+  if test "${FILE_FOUND}" = "1"; then
+    FFMPEG_PATH=/usr/bin/ffmpeg
+  fi
+fi
+if test "${FILE_FOUND}" = "0"; then
+  AC_CHECK_FILE(/usr/local/bin/ffmpeg, [FILE_FOUND=1], [FILE_FOUND=0])
+  if test "${FILE_FOUND}" = "1"; then
+    FFMPEG_PATH=/usr/local/bin/ffmpeg
+  fi
+fi
+if test "${FILE_FOUND}" = "0"; then
+  AC_CHECK_FILE(${MCU_BIN_DIR}/avconv, [FILE_FOUND=1], [FILE_FOUND=0])
+  if test "${FILE_FOUND}" = "1"; then
+    FFMPEG_PATH=${INSTALLPREFIX}/bin/avconv
+  fi
+fi
+if test "${FILE_FOUND}" = "0"; then
+  AC_CHECK_FILE(/usr/bin/avconv, [FILE_FOUND=1], [FILE_FOUND=0])
+  if test "${FILE_FOUND}" = "1"; then
+    FFMPEG_PATH=/usr/bin/avconv
+  fi
+fi
+if test "${FILE_FOUND}" = "0"; then
+  AC_CHECK_FILE(/usr/local/bin/avconv, [FILE_FOUND=1], [FILE_FOUND=0])
+  if test "${FILE_FOUND}" = "1"; then
+    FFMPEG_PATH=/usr/local/bin/avconv
+  fi
+fi
+
+dnl ########################################################################
+dnl check for resampling library
+
+AC_SUBST(USE_SWRESAMPLE, 0)
+AC_SUBST(USE_AVRESAMPLE, 0)
+AC_SUBST(USE_LIBSAMPLERATE, 0)
+
+if test "${resample}" = "yes"; then
+  if test "${resampler_ffmpeg}" = "yes"; then
+    AC_CHECK_HEADERS(libswresample/swresample.h, SWRESAMPLE=1, SWRESAMPLE=0, [-])
+    if test "${SWRESAMPLE}" = "1"; then
+      AC_CHECK_LIB(swresample, swr_convert, SWRESAMPLE=1, SWRESAMPLE=0)
+    fi
+  fi
+  if test "${resampler_libav}" = "yes"; then
+    AC_CHECK_LIB(avresample, avresample_convert, AVRESAMPLE=1, AVRESAMPLE=0)
+  fi
+  if test "${resampler_libsamplerate}" = "yes"; then
+    AC_CHECK_LIB(samplerate, src_process, LIBSAMPLERATE=1, LIBSAMPLERATE=0)
+  fi
+
+  if test "${SWRESAMPLE}" = "1"; then
+    USE_SWRESAMPLE=1
+    MCU_CPPFLAGS="$MCU_CPPFLAGS ${LIBAV_CPPFLAGS}";
+    MCU_LDFLAGS="$MCU_LDFLAGS ${LIBAV_LDFLAGS}";
+    MCU_RFLAGS="$MCU_RFLAGS ${LIBAV_LDFLAGS}"
+    MCU_LDLIBS="$MCU_LDLIBS -lswresample"
+  elif test "${AVRESAMPLE}" = "1"; then
+    USE_AVRESAMPLE=1
+    MCU_CPPFLAGS="$MCU_CPPFLAGS ${LIBAV_CPPFLAGS}";
+    MCU_LDFLAGS="$MCU_LDFLAGS ${LIBAV_LDFLAGS}";
+    MCU_RFLAGS="$MCU_RFLAGS ${LIBAV_LDFLAGS}"
+    MCU_LDLIBS="$MCU_LDLIBS -lavresample"
+  elif test "${LIBSAMPLERATE}" = "1"; then
+    USE_LIBSAMPLERATE=1
+    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I samplerate`";
+    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L samplerate`";
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L samplerate`"
+    MCU_LDLIBS="$MCU_LDLIBS -lsamplerate"
+  else
+    AC_MSG_WARN(libswresample/libavresample/libsamplerate not found!)
+  fi
+fi
+
+dnl ########################################################################
+dnl configuration plugins
+
+P_DEFAULT_PLUGIN_DIR=${MCU_LIB_DIR}/ptlib
+PLUGIN_INSTALLPREFIX=${P_DEFAULT_PLUGIN_DIR}
+AUDIO_PLUGIN_DIR=codecs/audio
+VIDEO_PLUGIN_DIR=codecs/video
+
+AC_SUBST(P_DEFAULT_PLUGIN_DIR)
+AC_SUBST(PLUGIN_INSTALLPREFIX)
+AC_SUBST(AUDIO_PLUGIN_DIR)
+AC_SUBST(VIDEO_PLUGIN_DIR)
+
+dnl ########################################################################
 dnl configuration plugins
 
 h261=yes
@@ -540,18 +660,19 @@ speex=yes
 silk=yes
 opus=yes
 
-AC_ARG_ENABLE(h261, [AS_HELP_STRING([--enable-h261],[Enable/Disable H.261 support (default enabled)],[40],[100])], [h261="$enableval"])
-AC_ARG_ENABLE(h263, [AS_HELP_STRING([--enable-h263],[Enable/Disable H.263 support (default enabled)],[40],[100])], [h263="$enableval"])
-AC_ARG_ENABLE(h264, [AS_HELP_STRING([--enable-h264],[Enable/Disable H.264 support (default enabled)],[40],[100])], [h264="$enableval"])
-AC_ARG_ENABLE(vp8, [AS_HELP_STRING([--enable-vp8],[Enable/Disable VP8 support (default enabled)],[40],[100])], [vp8="$enableval"])
-AC_ARG_ENABLE(g722, [AS_HELP_STRING([--enable-g722],[Enable/Disable G.722 support (default enabled)],[40],[100])], [g722="$enableval"])
-AC_ARG_ENABLE(g7231, [AS_HELP_STRING([--enable-g7231],[Enable/Disable G.723.1 support (default enabled)],[40],[100])], [g7231="$enableval"])
-AC_ARG_ENABLE(g726, [AS_HELP_STRING([--enable-g726],[Enable/Disable G.726 support (default enabled)],[40],[100])], [g726="$enableval"])
-AC_ARG_ENABLE(g729, [AS_HELP_STRING([--enable-g729],[Enable/Disable G.729 support (default enabled)],[40],[100])], [g729="$enableval"])
-AC_ARG_ENABLE(ilbc, [AS_HELP_STRING([--enable-ilbc],[Enable/Disable iLBC support (default enabled)],[40],[100])], [ilbc="$enableval"])
-AC_ARG_ENABLE(speex, [AS_HELP_STRING([--enable-speex],[Enable/Disable Speex support (default enabled)],[40],[100])], [speex="$enableval"])
-AC_ARG_ENABLE(silk, [AS_HELP_STRING([--enable-silk],[Enable/Disable SILK support (default enabled)],[40],[100])], [silk="$enableval"])
-AC_ARG_ENABLE(opus, [AS_HELP_STRING([--enable-opus],[Enable/Disable OPUS support (default enabled)],[40],[100])], [opus="$enableval"])
+AC_ARG_ENABLE(separator, [    ])
+AC_ARG_ENABLE(h261, [AS_HELP_STRING([--disable-h261],[Disable H.261 support (default enabled)],[40],[100])], [h261="$enableval"])
+AC_ARG_ENABLE(h263, [AS_HELP_STRING([--disable-h263],[Disable H.263 support (default enabled)],[40],[100])], [h263="$enableval"])
+AC_ARG_ENABLE(h264, [AS_HELP_STRING([--disable-h264],[Disable H.264 support (default enabled)],[40],[100])], [h264="$enableval"])
+AC_ARG_ENABLE(vp8, [AS_HELP_STRING([--disable-vp8],[Disable VP8 support (default enabled)],[40],[100])], [vp8="$enableval"])
+AC_ARG_ENABLE(g722, [AS_HELP_STRING([--disable-g722],[Disable G.722 support (default enabled)],[40],[100])], [g722="$enableval"])
+AC_ARG_ENABLE(g7231, [AS_HELP_STRING([--disable-g7231],[Disable G.723.1 support (default enabled)],[40],[100])], [g7231="$enableval"])
+AC_ARG_ENABLE(g726, [AS_HELP_STRING([--disable-g726],[Disable G.726 support (default enabled)],[40],[100])], [g726="$enableval"])
+AC_ARG_ENABLE(g729, [AS_HELP_STRING([--disable-g729],[Disable G.729 support (default enabled)],[40],[100])], [g729="$enableval"])
+AC_ARG_ENABLE(ilbc, [AS_HELP_STRING([--disable-ilbc],[Disable iLBC support (default enabled)],[40],[100])], [ilbc="$enableval"])
+AC_ARG_ENABLE(speex, [AS_HELP_STRING([--disable-speex],[Disable Speex support (default enabled)],[40],[100])], [speex="$enableval"])
+AC_ARG_ENABLE(silk, [AS_HELP_STRING([--disable-silk],[Disable SILK support (default enabled)],[40],[100])], [silk="$enableval"])
+AC_ARG_ENABLE(opus, [AS_HELP_STRING([--disable-opus],[Disable OPUS support (default enabled)],[40],[100])], [opus="$enableval"])
 
 vp8_ffmpeg=yes
 AC_ARG_ENABLE(separator, [    ])
@@ -584,7 +705,10 @@ fi
 PLUGIN_VP8_DIR=${top_srcdir}/plugins/VP8-WebM
 AC_SUBST(PLUGIN_VP8_DIR)
 if test "${vp8}" = "yes"; then
-    AC_CHECK_LIB(vpx, vpx_codec_encode, USE_VP8=1, USE_VP8=0)
+    AC_CHECK_HEADERS(vpx/vp8.h, USE_VP8=1, USE_VP8=0, [-])
+    if test ${USE_VP8} = 1 ; then
+      AC_CHECK_LIB(vpx, vpx_codec_encode, USE_VP8=1, USE_VP8=0)
+    fi
     if test ${USE_VP8} = 1 ; then
         LIBVPX_CPPFLAGS="$LIBVPX_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libvpx`";
         LIBVPX_LDFLAGS="$LIBVPX_LDFLAGS `pkg-config --silence-errors --libs-only-L libvpx`";
@@ -634,13 +758,6 @@ if test "${ilbc}" = "yes"; then
     PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_ILBC_DIR} "
 fi
 
-PLUGIN_SPEEX_DIR=${top_srcdir}/plugins/Speex
-AC_SUBST(PLUGIN_SPEEX_DIR)
-if test "${speex}" = "yes"; then
-    AC_CONFIG_FILES(plugins/Speex/Makefile)
-    PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_SPEEX_DIR} "
-fi
-
 PLUGIN_SILK_DIR=${top_srcdir}/plugins/SILK_B40
 AC_SUBST(PLUGIN_SILK_DIR)
 if test "${silk}" = "yes"; then
@@ -648,56 +765,98 @@ if test "${silk}" = "yes"; then
     PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_SILK_DIR} "
 fi
 
-PLUGIN_OPUS_DIR=${top_srcdir}/plugins/OPUS
-AC_SUBST(PLUGIN_OPUS_DIR)
-if test "${opus}" = "yes"; then
-    AC_CONFIG_FILES(plugins/OPUS/Makefile)
-    PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_OPUS_DIR} "
-fi
+dnl ########################################################################
+dnl plugin SPEEX
 
-AC_SUBST(PLUGIN_DIRS)
+AC_SUBST(USE_LIBSPEEX, 0)
+AC_SUBST(COMPILE_LIBSPEEX, 0)
+AC_SUBST(PLUGIN_SPEEX_DIR, ${top_srcdir}/plugins/Speex)
+
+AC_SUBST(SPEEX_LDFLAGS)
+AC_SUBST(SPEEX_CPPFLAGS)
+
+if test "${speex}" = "yes"; then
+  AC_CHECK_HEADERS(speex/speex.h, USE_LIBSPEEX=1, USE_LIBSPEEX=0, [-])
+  if test ${USE_LIBSPEEX} = 1 ; then
+    AC_CHECK_LIB(speex, speex_encoder_init, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
+  fi
+  if test ${USE_LIBSPEEX} = 1 ; then
+    SPEEX_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I speex`";
+    SPEEX_LDFLAGS="`pkg-config --silence-errors --libs-only-L speex` -lspeex";
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L speex`";
+  fi
+  if test ${USE_LIBSPEEX} = 0 ; then
+    SPEEX_CPPFLAGS="-I../../libs/speex/include"
+    SPEEX_LDFLAGS="-L../../libs/speex/libspeex/.libs -lspeex"
+    AC_SUBST(LIBSPEEX_DIR, ${top_srcdir}/libs/speex)
+    AC_CONFIG_SUBDIRS(libs/speex)
+    COMPILE_LIBSPEEX=1
+  fi
+  AC_CONFIG_FILES(plugins/Speex/Makefile)
+  PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_SPEEX_DIR} "
+fi
+AM_CONDITIONAL(COMPILER_USE_LIBSPEEX, [test ${COMPILE_LIBSPEEX} = 1])
+
+
+dnl ########################################################################
+dnl plugin OPUS
+
+AC_SUBST(USE_LIBOPUS, 0)
+AC_SUBST(COMPILE_LIBOPUS, 0)
+AC_SUBST(PLUGIN_OPUS_DIR, ${top_srcdir}/plugins/OPUS)
+
+AC_SUBST(OPUS_LDFLAGS)
+AC_SUBST(OPUS_CPPFLAGS)
+
+if test "${opus}" = "yes"; then
+  AC_CHECK_HEADERS(opus/opus.h, USE_LIBOPUS=1, USE_LIBOPUS=0, [-])
+  if test ${USE_LIBOPUS} = 1 ; then
+    AC_CHECK_LIB(opus, opus_encoder_init, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
+  fi
+  if test ${USE_LIBOPUS} = 1 ; then
+    OPUS_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I opus`";
+    OPUS_LDFLAGS="`pkg-config --silence-errors --libs-only-L opus` -lopus";
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L opus`";
+  fi
+  if test ${USE_LIBOPUS} = 0 ; then
+    OPUS_CPPFLAGS="-I../../libs/opus/include"
+    OPUS_LDFLAGS="-L../../libs/opus/.libs -lopus"
+    AC_SUBST(LIBOPUS_DIR, ${top_srcdir}/libs/opus)
+    AC_CONFIG_SUBDIRS(libs/opus)
+    COMPILE_LIBOPUS=1
+  fi
+  AC_CONFIG_FILES(plugins/OPUS/Makefile)
+  PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_OPUS_DIR}"
+fi
+AM_CONDITIONAL(COMPILER_USE_LIBOPUS, [test ${COMPILE_LIBOPUS} = 1])
 
 
 dnl ########################################################################
 dnl configure rpath stage1
 
 rpath=yes
-AC_ARG_ENABLE(separator, [     ])
+AC_ARG_ENABLE(separator, [      ])
 AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="$enableval"])
 
 
 dnl ########################################################################
-dnl configure development files
-
-devel=no
-AC_ARG_ENABLE(devel, [AS_HELP_STRING([--enable-devel],[install development files (default disabled, always disabled if static linking)],[40],[90])], [devel="$enableval"])
-if test "${devel}" = yes; then
-  ENABLE_DEVEL=1
-else
-  ENABLE_DEVEL=0
-fi
-
-AC_SUBST(ENABLE_DEVEL)
-
-dnl ########################################################################
 dnl configure static linking
 
-static=yes
-AC_ARG_ENABLE(static, [AS_HELP_STRING([--disable-static],[build static linking with ptlib,h323plus (default enabled)],[40],[100])], [static="$enableval"])
+static=no
+AC_ARG_ENABLE(static, [AS_HELP_STRING([--enable-static],[build static linking with ptlib,h323plus (default disabled)],[40],[100])], [static="$enableval"])
 
+
+AC_SUBST(ENABLE_STATIC, 0)
 if test "${static}" = "yes"; then
-  ENABLE_STATIC=1
-  ENABLE_DEVEL=0
-  MCU_LDFLAGS="${MCU_LDFLAGS} -Wl,--start-group  ${PTLIB_LIBDIR}/${PTLIB_A_FILE} ${H323PLUS_LIBDIR}/${H323PLUS_A_FILE} -Wl,--end-group"
+  MCU_SFLAGS="${MCU_SFLAGS} -Wl,--start-group ${PTLIB_LIBDIR}/${PTLIB_A_FILE} ${H323PLUS_LIBDIR}/${H323PLUS_A_FILE} -Wl,--end-group"
   MCU_LDLIBS="$MCU_LDLIBS"
+  ENABLE_STATIC=1
 else
-  ENABLE_STATIC=0
   MCU_LDFLAGS="${MCU_LDFLAGS} -L${PTLIB_LIBDIR} -L${H323PLUS_LIBDIR}"
   MCU_LDLIBS="${MCU_LDLIBS} -l${H323PLUS_LINK_FILE} -l${PTLIB_LINK_FILE}"
+  ENABLE_STATIC=0
 fi
-
-AC_SUBST(ENABLE_STATIC)
-AM_CONDITIONAL(ENABLE_DEVEL, [test ${ENABLE_DEVEL} = 1])
+AM_CONDITIONAL(COMPILER_NO_STATIC, [test ${ENABLE_STATIC} = 0])
 
 dnl ########################################################################
 dnl configure debugging
@@ -718,12 +877,9 @@ if test "${OSTYPE}" != "linux" && test "${OSTYPE}" != "FreeBSD"; then
 fi
 
 if test "${rpath}" = "yes"; then
-  if test "${static}" != "yes"; then
-    RPATH_LDFLAGS="${RPATH_LDFLAGS} -L${PTLIB_INSTALLPREFIX}/lib -L${H323PLUS_INSTALLPREFIX}/lib "
-  fi
-  RPATH_LDFLAGS="${RPATH_LDFLAGS} ${FREETYPE_LDFLAGS} ${JPEG_LDFLAGS} ${YUV_LDFLAGS} ${SOFIA_LDFLAGS} \
-                 ${RESAMPLE_LDFLAGS} ${LIBAV_LDFLAGS} ${LIBVPX_LDFLAGS}"
+  RPATH_LDFLAGS="${RPATH_LDFLAGS} ${MCU_RFLAGS} ${LIBAV_LDFLAGS} ${LIBVPX_LDFLAGS}"
   RPATH_LDFLAGS=$(echo $(printf '%s\n' $RPATH_LDFLAGS | sort -u))
+  RPATH_LDFLAGS="-L${MCU_LIB_DIR} ${RPATH_LDFLAGS}"
 
   # ldconfig search directories
   if test "${OSTYPE}" = "FreeBSD"; then
@@ -762,13 +918,12 @@ fi
 dnl ########################################################################
 dnl removing duplicate paths
 
-CPPFLAGS="${CPPFLAGS} ${FREETYPE_CPPFLAGS} ${JPEG_CPPFLAGS} ${YUV_CPPFLAGS} ${SOFIA_CPPFLAGS} \
-         ${RESAMPLE_CPPFLAGS}"
-CPPFLAGS=$(echo $(printf '%s\n' $CPPFLAGS | sort -u))
+MCU_LDFLAGS="${MCU_LDFLAGS} -L${MCU_LIB_DIR}"
 
-LDFLAGS="${LDFLAGS} ${FREETYPE_LDFLAGS} ${JPEG_LDFLAGS} ${YUV_LDFLAGS} ${SOFIA_LDFLAGS} \
-         ${RESAMPLE_LDFLAGS}"
-LDFLAGS=$(echo $(printf '%s\n' $LDFLAGS | sort -u))
+MCU_CPPFLAGS="-I../libs/ptlib/include -I../libs/h323plus/include ${MCU_CPPFLAGS}"
+MCU_CPPFLAGS=$(echo $(printf '%s\n' $MCU_CPPFLAGS | sort -u))
+
+MCU_LDFLAGS=$(echo $(printf '%s\n' $MCU_LDFLAGS | sort -u))
 
 LIBAV_CPPFLAGS=$(echo $(printf '%s\n' $LIBAV_CPPFLAGS | sort -u))
 LIBAV_LDFLAGS=$(echo $(printf '%s\n' $LIBAV_LDFLAGS | sort -u))
@@ -778,14 +933,19 @@ LIBVPX_LDFLAGS=$(echo $(printf '%s\n' $LIBVPX_LDFLAGS | sort -u))
 dnl ########################################################################
 dnl final declarations
 
+AC_SUBST(PLUGIN_DIRS)
+
 AC_SUBST(LIBAV_CPPFLAGS)
 AC_SUBST(LIBAV_LDFLAGS)
 AC_SUBST(LIBVPX_CPPFLAGS)
 AC_SUBST(LIBVPX_LDFLAGS)
 
-AC_SUBST(RPATH)
 AC_SUBST(MCU_LDFLAGS)
 AC_SUBST(MCU_LDLIBS)
+AC_SUBST(MCU_CPPFLAGS)
+
+AC_SUBST(RPATH)
+AC_SUBST(MCU_SFLAGS)
 
 AC_SUBST(STDCCFLAGS)
 AC_SUBST(STDCXXFLAGS)
@@ -808,12 +968,7 @@ sed -i -r 's/all: all-recursive/all: all/g' Makefile
 dnl ########################################################################
 dnl replace default install path
 
-sed -i -r "s#^PREFIX=.*#PREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/Makefile
-sed -i -r "s#^PTINSTDIR=.*#PTINSTDIR=${PTLIB_INSTALLPREFIX}/share/ptlib#g" ${PTLIBDIR}/make/ptlib-config
-sed -i -r "s#^INSTALLPREFIX=.*#INSTALLPREFIX=${PTLIB_INSTALLPREFIX}#g" ${PTLIBDIR}/make/ptlib-config
 sed -i -r "s#^\#define P_DEFAULT_PLUGIN_DIR.*#\#define P_DEFAULT_PLUGIN_DIR \"${P_DEFAULT_PLUGIN_DIR}\"#g" ${PTLIBDIR}/include/ptbuildopts.h
-
-sed -i -r "s#^PREFIX=.*#PREFIX=${H323PLUS_INSTALLPREFIX}#g" ${H323PLUSDIR}/Makefile
 
 if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
   sed -i -r "s#${PTLIBDIR}#${PTLIBDIR}\\nPTLIBDIR\\t= ${PTLIBDIR}#g" ${H323PLUSDIR}/openh323u.mak
@@ -823,21 +978,29 @@ dnl ########################################################################
 dnl Summary
 dnl ########################################################################
 echo ""
-echo "============== OpenMCU-ru Build Configuration ================="
+echo "============== FreeMCU Build Configuration ================="
 echo "                         OS Type  :  $target_os"
 echo "                    Machine Type  :  $target_cpu"
 echo "          Installing into prefix  :  $INSTALLPREFIX"
+echo "          Installing directory    :  $MCU_DIR"
 
 echo ""
-if test "x${rendering_names}" = "xyes" ; then
+if test "x${libfreetype}" = "xyes" ; then
 echo "                       Subtitles  :  enabled"
 else
 echo "                       Subtitles  :  disabled"
 fi
-if test "x${live_video}" = "xyes" ; then
+
+if test "x${libjpeg}" = "xyes" ; then
 echo " JPEG Frame Encoder (for browser) :  enabled"
 else
 echo "JPEG Frame Encoder (for browser)  :  disabled"
+fi
+
+if test "x${libyuv}" = "xyes" ; then
+echo "      Use libyuv to resize video  :  enabled"
+else
+echo "      Use libyuv to resize video  :  disabled"
 fi
 
 if test "x${resample}" = "xyes" ; then
@@ -856,12 +1019,6 @@ fi
 fi
 else
 echo "        External Audio Resampler  :  disabled (built-in will used)"
-fi
-
-if test "x${optimized_frame_resize}" = "xyes" ; then
-echo "      Use libyuv to resize video  :  enabled"
-else
-echo "      Use libyuv to resize video  :  disabled"
 fi
 
 echo ""

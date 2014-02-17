@@ -55,7 +55,7 @@
 #
 
 AC_PLUGIN_DIR=codecs/audio
-prefix=/usr/local/lib/ptlib
+prefix=/opt/freemcu/lib/ptlib
 
 SONAME	= g726
 

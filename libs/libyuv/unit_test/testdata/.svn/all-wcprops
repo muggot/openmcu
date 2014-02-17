@@ -1,0 +1,17 @@
+K 25
+svn:wc:ra_dav:version-url
+V 42
+/svn/!svn/ver/153/trunk/unit_test/testdata
+END
+tegra3.txt
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/153/trunk/unit_test/testdata/tegra3.txt
+END
+arm_v7.txt
+K 25
+svn:wc:ra_dav:version-url
+V 53
+/svn/!svn/ver/153/trunk/unit_test/testdata/arm_v7.txt
+END

@@ -26,7 +26,7 @@
 #
 #
 AC_PLUGIN_DIR=codecs/audio
-PREFIX=/usr/local/lib/ptlib
+PREFIX=/opt/freemcu/lib/ptlib
 
 STDCCFLAGS += -fPIC
 
@@ -58,7 +58,7 @@ HEADERS = \
 	$(SRCDIR)/qua_lsp.h \
 	$(SRCDIR)/tab_ld8a.h \
 	$(SRCDIR)/taming.h \
-	$(SRCDIR)/util.h
+	$(SRCDIR)/util.h 
 
 SRCS	+= \
 	g729codec.c \
@@ -95,7 +95,7 @@ vpath	%.c $(SRCDIR)
 
 $(OBJDIR)/%.o : %.c $(HEADERS)
 	@mkdir -p $(OBJDIR) >/dev/null 2>&1
-	$(CC) -g -O0 -Wall -I. -I./g729a_v11 $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) -I. -I./g729a_v11 $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) -c $< -o $@
 
 PLUGIN	= ./g729_audio_pwplugin.so
 
@@ -115,6 +115,6 @@ clean:
 	rm -rf $(PLUGIN) g729_test $(OBJDIR)
 
 g729_test: $(OBJECTS) g729_test.c
-	$(CC) -g -O0 -Wall -Werror -I./g729a_v11 -o $@ $^
+	$(CC) -g -I./g729a_v11 -o $@ $^
 
 ###########################################
