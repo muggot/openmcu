@@ -2221,9 +2221,6 @@ void MCUH323Connection::OnEstablished()
 {
   H323Connection::OnEstablished();
 
-  Registrar *registrar = FreeMCU::Current().GetRegistrar();
-  registrar->SetRequestedRoom(callToken, requestedRoom);
-
   JoinConference(requestedRoom);
 
   if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
@@ -2234,6 +2231,7 @@ void MCUH323Connection::OnEstablished()
 
   if(conference && conferenceMember && conferenceMember->IsJoined())
   {
+    Registrar *registrar = FreeMCU::Current().GetRegistrar();
     registrar->ConnectionEstablished(callToken);
   }
 }
@@ -2276,6 +2274,12 @@ void MCUH323Connection::LeaveConference()
     conferenceMember = NULL;
     conference = NULL;
   }
+}
+
+void MCUH323Connection::SetRequestedRoom()
+{
+  Registrar *registrar = FreeMCU::Current().GetRegistrar();
+  registrar->SetRequestedRoom(callToken, requestedRoom);
 }
 
 void MCUH323Connection::JoinConference(const PString & roomToJoin)
@@ -2525,6 +2529,7 @@ BOOL MCUH323Connection::OnReceivedSignalConnect(const H323SignalPDU & pdu)
 {
   BOOL ret = H323Connection::OnReceivedSignalConnect(pdu);
   SetRemoteName(pdu);
+  SetRequestedRoom(); // override requested room from registrar
   return ret;
 }
 
@@ -2541,7 +2546,6 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
   PString account = GetRemoteNumber()+"@"+url.GetHostName();
   Registrar *registrar = FreeMCU::Current().GetRegistrar();
   return registrar->OnIncomingMsg(account, requestedRoom, callToken, callIdentifier);
-//  return AnswerCallNow;
 }
 
 BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize */, H323AudioCodec & codec)

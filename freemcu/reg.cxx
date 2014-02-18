@@ -179,11 +179,7 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
   else if(regAccount_out->account_type == ACCOUNT_TYPE_H323)
   {
     PString callToken_out;
-    //
-    // for H.323 return address = internal_room :(
-    //
-    void *userData = new PString(regConn->roomname);
-    //void *userData = new PString(regConn->username_in);
+    void *userData = new PString(regConn->username_in);
     ep->MakeCall(address, callToken_out, userData);
     if(callToken_out != "")
     {

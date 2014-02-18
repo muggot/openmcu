@@ -364,6 +364,7 @@ class MCUH323Connection : public H323Connection
     virtual void OnCreated();
     virtual void LeaveConference();
     virtual void JoinConference(const PString & room);
+    virtual void SetRequestedRoom();
 
 #if MCU_VIDEO
     virtual BOOL InitGrabber(PVideoInputDevice  * grabber, int frameWidth, int frameHeight, int frameRate);

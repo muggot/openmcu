@@ -1624,6 +1624,7 @@ int MCUSipConnnection::ProcessInviteEvent()
 
   // join conference
   requestedRoom = roomname;
+  SetRequestedRoom(); // override requested room from registrar
   connectionState = EstablishedConnection;
   OnEstablished();
   if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
