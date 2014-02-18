@@ -247,12 +247,14 @@ class MCUH323Connection : public H323Connection
     MCUH323Connection(MCUH323EndPoint &, unsigned, void *);
     ~MCUH323Connection();
 
-    virtual void LeaveConference();
     virtual H323Connection_ConferenceMember * GetConferenceMember()
     {
       PTRACE(5, "GetConferenceMember " << conferenceMember);
       return conferenceMember;
     }
+
+     // leave conference and delete connection
+    virtual void LeaveMCU();
 
     // overrides from H323Connection
     virtual void AttachSignalChannel(const PString & token, H323Transport * channel, BOOL answeringCall);
@@ -364,6 +366,7 @@ class MCUH323Connection : public H323Connection
   protected:
 
     virtual void OnCreated();
+    virtual void LeaveConference();
     virtual void JoinConference(const PString & room);
 
 #if MCU_VIDEO

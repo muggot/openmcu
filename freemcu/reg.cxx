@@ -417,7 +417,7 @@ void Registrar::IncomingCallCancel(RegistrarConnection *regConn)
   {
     SipReqReply(regConn->msg_invite, SIP_603_DECLINE);
   }
-  LeaveConference(regConn->account_type_in, regConn->callToken_in);
+  Leave(regConn->account_type_in, regConn->callToken_in);
 /*
   else if(regConn->account_type_in == ACCOUNT_TYPE_H323)
   {
@@ -425,7 +425,7 @@ void Registrar::IncomingCallCancel(RegistrarConnection *regConn)
     if(conn)
     {
       //conn->AnsweringCall(H323Connection::AnswerCallDenied);
-      conn->LeaveConference();
+      conn->LeaveMCU();
       conn->Unlock();
     }
   }
@@ -442,13 +442,13 @@ void Registrar::OutgoingCallCancel(RegistrarConnection *regConn)
   }
   if(regConn->callToken_out != "")
   {
-    LeaveConference(regConn->account_type_out, regConn->callToken_out);
+    Leave(regConn->account_type_out, regConn->callToken_out);
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::LeaveConference(int account_type, PString callToken)
+void Registrar::Leave(int account_type, PString callToken)
 {
   MCUH323Connection *conn = NULL;
   if(account_type == ACCOUNT_TYPE_SIP)
@@ -457,7 +457,7 @@ void Registrar::LeaveConference(int account_type, PString callToken)
     conn = (MCUH323Connection *)ep->FindConnectionWithLock(callToken);
   if(conn)
   {
-    conn->LeaveConference();
+    conn->LeaveMCU();
     conn->Unlock();
   }
 }
@@ -572,13 +572,13 @@ void Registrar::MainLoop()
       // leave incoming
       if(regConn->state == CONN_LEAVE_IN)
       {
-        LeaveConference(regConn->account_type_in, regConn->callToken_in);
+        Leave(regConn->account_type_in, regConn->callToken_in);
         regConn->state = CONN_END;
       }
       // leave outgoing
       if(regConn->state == CONN_LEAVE_OUT)
       {
-        LeaveConference(regConn->account_type_out, regConn->callToken_out);
+        Leave(regConn->account_type_out, regConn->callToken_out);
         regConn->state = CONN_END;
       }
       // internal call end

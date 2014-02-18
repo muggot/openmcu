@@ -49,6 +49,33 @@ void SpliceMacro(PString & text, const PString & token, const PString & value)
 
 ///////////////////////////////////////////////////////////////
 
+class MemberDeleteThread : public PThread
+{
+  public:
+    MemberDeleteThread(MCUH323EndPoint * _ep, Conference * _conf, ConferenceMember * _cm)
+      : PThread(10000, AutoDeleteThread), ep(_ep), conf(_conf), cm(_cm)
+    {
+      Resume();
+    }
+
+    void Main()
+    {
+      cm->WaitForClose();
+      if(conf->RemoveMember(cm))
+      {
+        //
+      }
+      delete cm;
+    }
+
+  protected:
+    MCUH323EndPoint * ep;
+    Conference * conf;
+    ConferenceMember * cm;
+};
+
+///////////////////////////////////////////////////////////////
+
 #ifdef _WIN32
 PluginLoaderStartup2  FreeMCU::pluginLoader;
 H323PluginCodecManager * FreeMCU::plugmgr=NULL;
@@ -2200,8 +2227,20 @@ void MCUH323Connection::OnCreated()
 void MCUH323Connection::OnEstablished()
 {
   H323Connection::OnEstablished();
-  Registrar *registrar = FreeMCU::Current().GetRegistrar();
-  registrar->ConnectionEstablished(callToken);
+
+  JoinConference(requestedRoom);
+
+  if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
+  {
+    if(callToken.Left(4) != "sip:")
+      LeaveMCU();
+  }
+
+  if(conference && conferenceMember && conferenceMember->IsJoined())
+  {
+    Registrar *registrar = FreeMCU::Current().GetRegistrar();
+    registrar->ConnectionEstablished(callToken);
+  }
 }
 
 void MCUH323Connection::OnCleared()
@@ -2209,6 +2248,68 @@ void MCUH323Connection::OnCleared()
   H323Connection::OnCleared();
   Registrar *registrar = FreeMCU::Current().GetRegistrar();
   registrar->ConnectionCleared(callToken);
+}
+
+void MCUH323Connection::CleanUpOnCallEnd()
+{
+  PTRACE(2, "MCUH323Connection\tCleanUpOnCallEnd");
+  videoReceiveCodecName = videoTransmitCodecName = "none";
+  videoReceiveCodec = NULL;
+  videoTransmitCodec = NULL;
+  LeaveConference();
+
+  H323Connection::CleanUpOnCallEnd();
+}
+
+void MCUH323Connection::LeaveMCU()
+{
+  PWaitAndSignal m(connMutex);
+
+  LeaveConference();
+  ClearCall();
+}
+
+void MCUH323Connection::LeaveConference()
+{
+  PWaitAndSignal m(connMutex);
+
+  if(conference != NULL && conferenceMember != NULL)
+  {
+    LogCall();
+
+    new MemberDeleteThread(&ep, conference, conferenceMember);
+    conferenceMember = NULL;
+    conference = NULL;
+  }
+}
+
+void MCUH323Connection::JoinConference(const PString & roomToJoin)
+{
+  PTRACE(1, "MCUH323Connection\tJoinConference, room: " << roomToJoin << " remotePartyName: " << remotePartyName);
+
+  PWaitAndSignal m(connMutex);
+
+  if(conference != NULL || conferenceMember != NULL)
+    return;
+
+  if(roomToJoin.IsEmpty())
+    return;
+
+  // create or join the conference
+  ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
+  conference = manager.MakeAndLockConference(roomToJoin);
+  if(!conference)
+    return;
+
+  conferenceIdentifier = conference->GetID();
+
+  if(videoTransmitCodec!=NULL)
+//   videoTransmitCodec->encoderCacheKey = ((long)conference&0xFFFFFF00)|(videoTransmitCodec->encoderCacheKey&0x000000FF);
+    videoTransmitCodec->encoderCacheKey = ((long)(conference->videoMixerList)<<8)|(videoTransmitCodec->encoderCacheKey&0x000000FF);
+
+  // crete member connection
+  conferenceMember = new H323Connection_ConferenceMember(conference, ep, GetCallToken(), this, isMCU);
+  manager.UnlockConference();
 }
 
 RTP_Session * MCUH323Connection::UseSession(unsigned sessionID,
@@ -2412,7 +2513,6 @@ BOOL MCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
 
   BOOL ret = H323Connection::OnReceivedSignalSetup(setupPDU);
   SetRemoteName(setupPDU);
-  JoinConference(requestedRoom);
   return ret;
 }
 
@@ -2423,7 +2523,6 @@ BOOL MCUH323Connection::OnReceivedCallProceeding(const H323SignalPDU & proceedin
 
   BOOL ret = H323Connection::OnReceivedCallProceeding(proceedingPDU);
   SetRemoteName(proceedingPDU);
-  JoinConference(requestedRoom);
   return ret;
 }
 
@@ -2431,19 +2530,7 @@ BOOL MCUH323Connection::OnReceivedSignalConnect(const H323SignalPDU & pdu)
 {
   BOOL ret = H323Connection::OnReceivedSignalConnect(pdu);
   SetRemoteName(pdu);
-  JoinConference(requestedRoom);
   return ret;
-}
-
-void MCUH323Connection::CleanUpOnCallEnd()
-{
-  PTRACE(2, "MCUH323Connection\tCleanUpOnCallEnd");
-  videoReceiveCodecName = videoTransmitCodecName = "none";
-  videoReceiveCodec = NULL;
-  videoTransmitCodec = NULL;
-  LeaveConference();
-
-  H323Connection::CleanUpOnCallEnd();
 }
 
 H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString & /*caller*/,
@@ -2460,91 +2547,6 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
   Registrar *registrar = FreeMCU::Current().GetRegistrar();
   return registrar->OnIncomingMsg(account, requestedRoom, callToken, callIdentifier);
 //  return AnswerCallNow;
-}
-
-class MemberDeleteThread : public PThread
-{
-  public:
-    MemberDeleteThread(MCUH323EndPoint * _ep, Conference * _conf, ConferenceMember * _cm)
-      : PThread(10000, AutoDeleteThread), ep(_ep), conf(_conf), cm(_cm)
-    {
-      Resume();
-    }
-
-    void Main()
-    {
-      cm->WaitForClose();
-      if(conf->RemoveMember(cm))
-      {
-        //
-      }
-      delete cm;
-    }
-
-  protected:
-    MCUH323EndPoint * ep;
-    Conference * conf;
-    ConferenceMember * cm;
-};
-
-void MCUH323Connection::JoinConference(const PString & roomToJoin)
-{
-  PTRACE(1, "MCUH323Connection\tJoinConference, room: " << roomToJoin << " remotePartyName: " << remotePartyName);
-  cout <<  "MCUH323Connection JoinConference, room: " << roomToJoin << " remotePartyName: " << remotePartyName << "\n";
-  PWaitAndSignal m(connMutex);
-
-  if (conference != NULL)
-    return;
-
-  BOOL joinSuccess = FALSE;
-
-  if (!roomToJoin.IsEmpty()) {
-    // create or join the conference
-    ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-    Conference * newConf = manager.MakeAndLockConference(roomToJoin);
-    if (newConf != NULL) {
-      conference = newConf;
-      conferenceIdentifier = conference->GetID();
-
-      if(videoTransmitCodec!=NULL)
-//       videoTransmitCodec->encoderCacheKey = ((long)conference&0xFFFFFF00)|(videoTransmitCodec->encoderCacheKey&0x000000FF);
-       videoTransmitCodec->encoderCacheKey = ((long)(conference->videoMixerList)<<8)|(videoTransmitCodec->encoderCacheKey&0x000000FF);
-      conferenceMember = new H323Connection_ConferenceMember(conference, ep, GetCallToken(), this, isMCU);
-
-      if (!conferenceMember->IsJoined())
-      { PTRACE(1, "MCU\tMember connection refused"); }
-      else
-        joinSuccess = TRUE;
-
-      manager.UnlockConference();
-
-      if(!joinSuccess) {
-        new MemberDeleteThread(&ep, conference, conferenceMember);
-        conferenceMember = NULL;
-        conference = NULL;
-      }
-    }
-  }
-
-  if(!joinSuccess)
-    ChangeWelcomeState(JoinFailed);
-}
-
-void MCUH323Connection::LeaveConference()
-{
-  PWaitAndSignal m(connMutex);
-
-  if (conference != NULL && conferenceMember != NULL) {
-    LogCall();
-
-    new MemberDeleteThread(&ep, conference, conferenceMember);
-    conferenceMember = NULL;
-    conference = NULL;
-
-    // - called from another thread than usual
-    // - may clear the call immediately
-    ChangeWelcomeState(ConferenceEnded);
-  }
 }
 
 BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize */, H323AudioCodec & codec)
@@ -3148,8 +3150,6 @@ void MCUH323Connection::OnWelcomeStateChanged()
   switch(welcomeState) {
 
     case PlayingWelcome:
-//      if(GetRemotePartyAddress().Left(4) != "sip:")
-//        JoinConference(requestedRoom);
       // Welcome file not implemented yet
       PlayWelcomeFile(FALSE, fn);
       break;
@@ -3160,7 +3160,6 @@ void MCUH323Connection::OnWelcomeStateChanged()
       break;
 
     case CompleteConnection:
-//        JoinConference(requestedRoom);
       break;
 
     case JoinFailed:
@@ -3193,7 +3192,6 @@ void MCUH323Connection::OnWelcomeWaveEnded()
 
     case JoinFailed:
     case ConferenceEnded:
-      ClearCall();
       break;
 
     default:
@@ -3201,6 +3199,8 @@ void MCUH323Connection::OnWelcomeWaveEnded()
       break;
   }
 }
+
+///////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323Connection::GetRemoteNumber()
 {
@@ -3428,7 +3428,7 @@ void H323Connection_ConferenceMember::Close()
 {
   MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(h323Token);
   if (conn != NULL) {
-    conn->LeaveConference();
+    conn->LeaveMCU();
     conn->Unlock();
   }
 }
@@ -3772,7 +3772,7 @@ BOOL ConnectionRTPTimeoutInfo::Perform(H323Connection & conn)
   if(no_input_timeout >= 9) // 3+27=30 sec timeout
   {
     PTRACE(1, "MCU\tConnection: " << callToken << ", 30 sec timeout waiting incoming stream data.");
-    ((MCUH323Connection &)conn).LeaveConference();
+    ((MCUH323Connection &)conn).LeaveMCU();
     return TRUE;
   }
 

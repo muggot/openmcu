@@ -41,8 +41,6 @@ enum SipSecureTypes
 class MCUSipEndPoint;
 class MCUSipConnnection;
 
-typedef std::map<PString /* callToken */, MCUSipConnnection *> SipConnectionMapType;
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class ProxyAccount
@@ -260,8 +258,8 @@ class MCUSipConnnection : public MCUH323Connection
     void DeleteMediaChannels(int pt);
     void DeleteChannels();
     void CleanUpOnCallEnd();
-    void LeaveConference();
-    void LeaveConference(BOOL remove);
+    void LeaveMCU();
+    void LeaveMCU(BOOL remove);
     void FastUpdatePicture();
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     int SendBYE();
@@ -368,6 +366,12 @@ class MCUSipEndPoint : public PThread
     su_root_t *root;
     nta_agent_t *agent;
 
+    MCUSipConnnection * FindConnectionWithLock(const PString & callToken)
+    { return (MCUSipConnnection *)ep->FindConnectionWithLock(callToken); }
+
+    MCUSipConnnection * FindConnectionWithoutLock(const PString & callToken)
+    { return (MCUSipConnnection *)ep->FindConnectionWithoutLock(callToken); }
+
     static int /*__attribute__((cdecl))*/ ProcessSipEventWrap_cb(nta_agent_magic_t *context, nta_agent_t *agent, msg_t *msg, sip_t *sip)
     { return ((MCUSipEndPoint *)context)->ProcessSipEvent_cb(agent, msg, sip); }
     int ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *sip);
@@ -380,26 +384,12 @@ class MCUSipEndPoint : public PThread
     { return ((MCUSipEndPoint *)context)->ProcessSipEvent_request1(leg, irq, sip); }
     int ProcessSipEvent_request1(nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip);
 
-    SipConnectionMapType SipConnMap; // map of sip connections
-    void InsertSipConn(PString callToken, MCUSipConnnection *sCon)
-    {
-      SipConnMap.insert(SipConnectionMapType::value_type(callToken, sCon));
-    }
-    MCUSipConnnection *FindSipConn(PString callToken)
-    {
-      SipConnectionMapType::iterator it = SipConnMap.find(callToken);
-      if(it != SipConnMap.end()) return it->second;
-      return NULL;
-    }
-
     PString CreateSdpInvite(MCUSipConnnection *sCon, PString local_url, PString remote_url);
     BOOL GetCapabilityParams(PString & capname, unsigned & pt, PString & name, unsigned & rate, PString & fmtp);
     sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, PString & capname, unsigned & dyn_pt);
     sdp_media_t *CreateSdpMedia(su_home_t *sess_home, PStringArray & caps, sdp_media_e m_type, sdp_proto_e m_proto, unsigned m_port, unsigned & dyn_pt);
     sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);
     char * SdpText(PString text);
-
-    void RemoveSipConnection(MCUSipConnnection *sCon);
 
     int SipRegister(ProxyAccount *, int unregister);
     PString GetRoomAccess(const sip_t *sip);

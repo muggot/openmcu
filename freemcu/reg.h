@@ -375,7 +375,7 @@ class Registrar : public PThread
     BOOL SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
 
     // internal call process function
-    void LeaveConference(int account_type, PString callToken);
+    void Leave(int account_type, PString callToken);
     void IncomingCallAccept(RegistrarConnection *regConn);
     void IncomingCallCancel(RegistrarConnection *regConn);
     void OutgoingCallCancel(RegistrarConnection *regConn);

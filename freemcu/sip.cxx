@@ -1627,12 +1627,13 @@ int MCUSipConnnection::ProcessInviteEvent()
   if(!ProcessSDP(sdp_txt, sipCaps, 0))
     return 415; // SIP_415_UNSUPPORTED_MEDIA
 
-  PTRACE(1, "MCUSIP\tJoinConference");
-  JoinConference(requestedRoom);
-  if(conferenceMember == NULL || conference == NULL)
+  // join conference
+  connectionState = EstablishedConnection;
+  OnEstablished();
+  if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
     return 600;
 
-  PTRACE(1, "MCUSIP\tCreateLogicalChannels");
+  // create logical channels
   CreateLogicalChannels();
 //  if(direction == 1) // for incoming connection start channels after ACK
 //  {
@@ -1640,8 +1641,6 @@ int MCUSipConnnection::ProcessInviteEvent()
     StartTransmitChannels(); // start transmit logical channels
 //  }
 
-  connectionState = EstablishedConnection;
-  OnEstablished();
   return 1;
 }
 
@@ -1801,23 +1800,20 @@ int MCUSipConnnection::SendFastUpdatePicture()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::LeaveConference()
+void MCUSipConnnection::LeaveMCU()
 {
   PString *bye = new PString("bye:"+callToken);
   sep->SipQueue.Push(bye);
-  LeaveConference(FALSE);
+  LeaveMCU(FALSE);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::LeaveConference(BOOL remove)
+void MCUSipConnnection::LeaveMCU(BOOL remove)
 {
-  PTRACE(1, "MCUSIP\tLeaveConference " << remove);
+  PTRACE(1, "MCUSIP\tLeave " << callToken << " remove=" << remove);
   if(remove == FALSE) return;
-  if(conference != NULL && conferenceMember != NULL)
-    MCUH323Connection::LeaveConference();
-  else
-    ClearCall();
+  MCUH323Connection::LeaveMCU();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1969,7 +1965,7 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString r
 
     // temporarily invite data
     PString callToken = "sip:"+PString(sip_to->a_url->url_user)+":"+PString(sip_call_id->i_id);
-    MCUSipConnnection *sCon = FindSipConn(callToken);
+    MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
     if(!sCon)
     {
       sCon = new MCUSipConnnection(this, ep, callToken);
@@ -2001,11 +1997,8 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString r
 			SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
 			TAG_END());
     if(orq == NULL)
-    {
-      RemoveSipConnection(sCon);
-      return NULL;
-    }
-    InsertSipConn(callToken, sCon);
+      sCon->LeaveMCU(TRUE);
+
     return orq;
 }
 
@@ -2172,7 +2165,7 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
       return 0;
     MakeProxyAuth(proxy, sip);
 
-    MCUSipConnnection *sCon = FindSipConn(callToken);
+    MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
     if(!sCon) // connection not exist
       return 0;
 
@@ -2213,7 +2206,8 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
 			SIPTAG_SERVER_STR((const char*)(MCUSIP_USER_AGENT_STR)),
 			TAG_END());
     if(a_orq == NULL)
-      RemoveSipConnection(sCon); // connection exist, delete
+      sCon->LeaveMCU(TRUE);
+
     nta_outgoing_destroy(orq);
     return 0;
   }
@@ -2228,13 +2222,6 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
   {
     SendACK(msg);
 
-    if(sip->sip_payload==NULL || sip->sip_payload->pl_data==NULL)
-      return 0;
-
-    MCUSipConnnection *sCon = FindSipConn(callToken);
-    if(!sCon || (sCon && sCon->IsConnected())) // repeated OK
-      return 0;
-
     CreateOutgoingConnection(msg);
 
     nta_outgoing_destroy(orq);
@@ -2242,8 +2229,11 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
   }
   if(status >= 300)
   {
-    MCUSipConnnection *sCon = FindSipConn(callToken);
-    if(sCon) RemoveSipConnection(sCon); // connection exist, delete
+    MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+    if(sCon)
+    {
+      sCon->LeaveMCU(TRUE);
+    }
     nta_outgoing_destroy(orq);
   }
   return 0;
@@ -2325,10 +2315,13 @@ int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg, PString override_
   sip_t *sip = sip_object(msg);
   if(!sip) return 0;
 
+  if(sip->sip_payload==NULL || sip->sip_payload->pl_data==NULL)
+    return 0;
+
   PString callToken = "sip:"+PString(sip->sip_to->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
 
-  MCUSipConnnection *sCon = FindSipConn(callToken);
-  if(!sCon) // connection not found
+  MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+  if(!sCon || (sCon && sCon->IsConnected())) // repeated OK
     return 0;
 
   sCon->c_sip_msg = msg_dup(msg);
@@ -2339,8 +2332,7 @@ int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg, PString override_
   int ret = sCon->ProcessInviteEvent();
   if(ret != 1)
   {
-    RemoveSipConnection(sCon); // leave conference and delete connection
-    return 0;
+    sCon->LeaveMCU(TRUE); // leave conference and delete connection
   }
   return 0;
 }
@@ -2361,7 +2353,7 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg, PString override_
 
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
 
-  MCUSipConnnection *sCon = FindSipConn(callToken);
+  MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
   if(!sCon)
     return 0;
 
@@ -2387,22 +2379,11 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg, PString override_
   if(ret != 1)
   {
     ReqReply(msg, ret);
-    RemoveSipConnection(sCon); // leave conference and delete connection
+    sCon->LeaveMCU(TRUE); // leave conference and delete connection
     return 0;
   }
   ReqReply(msg, SIP_200_OK, sCon);
   return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipEndPoint::RemoveSipConnection(MCUSipConnnection *sCon)
-{
-  if(sCon)
-  {
-    SipConnMap.erase(sCon->GetCallToken());
-    if(sCon) sCon->LeaveConference(TRUE); // leave conference and delete connection
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2418,7 +2399,7 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   if(sip->sip_cseq)    cseq = sip->sip_cseq->cs_method;
 
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
-  MCUSipConnnection *sCon = FindSipConn(callToken);
+  MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
 
   Registrar *registrar = FreeMCU::Current().GetRegistrar();
   // add new incoming connection
@@ -2427,7 +2408,6 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
     sCon = new MCUSipConnnection(this, ep, callToken);
     sCon->direction = 0;
     sCon->c_sip_msg = msg_dup(msg);
-    InsertSipConn(callToken, sCon);
     sCon = NULL;
   }
   if(!sCon || (sCon && !sCon->IsEstablished()))
@@ -2472,14 +2452,14 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   {
     if(!sCon)
       return ReqReply(msg, SIP_200_OK);
-    RemoveSipConnection(sCon); // leave conference and delete connection
+    sCon->LeaveMCU(TRUE); // leave conference and delete connection
     return ReqReply(msg, SIP_200_OK);
   }
   if(request == sip_method_cancel)
   {
     if(!sCon)
       return ReqReply(msg, SIP_200_OK);
-    RemoveSipConnection(sCon); // leave conference and delete connection
+    sCon->LeaveMCU(TRUE); // leave conference and delete connection
     return ReqReply(msg, SIP_200_OK);
   }
   if(request == sip_method_info)
@@ -2646,21 +2626,21 @@ void MCUSipEndPoint::ProcessSipQueue()
   {
     if(cmd->Left(4) == "bye:")
     {
-      PString callToken = cmd->Right(cmd->GetSize()-5);
-      MCUSipConnnection *sCon = FindSipConn(callToken);
+      PString callToken = cmd->Right(cmd->GetLength()-4);
+      MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
       if(sCon)
       {
         if(sCon->IsConnected()) sCon->SendBYE();
         sCon->StopTransmitChannels();
         sCon->StopReceiveChannels();
         sCon->DeleteChannels();
-        sCon->LeaveConference(TRUE); // leave conference and delete connection
+        sCon->LeaveMCU(TRUE); // leave conference and delete connection
         PTRACE(1, "MCUSIP\tSIP BYE sent\n");
       }
     }
     if(cmd->Left(7) == "invite:")
     {
-      PString data = cmd->Right(cmd->GetSize()-8);
+      PString data = cmd->Right(cmd->GetLength()-7);
       PString from = data.Tokenise(",")[0];
       PString to = data.Tokenise(",")[1];
       PString call_id = data.Tokenise(",")[2];
@@ -2684,10 +2664,6 @@ void MCUSipEndPoint::MainLoop()
     }
     if(terminating)
     {
-      for(SipConnectionMapType::iterator it = SipConnMap.begin(); it != SipConnMap.end(); )
-      {
-        SipConnMap.erase(it++);
-      }
       for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); )
       {
         if(it->second->enable) SipRegister(it->second, 1);
