@@ -6,13 +6,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::ConnectionCreated(PString & callToken)
+void Registrar::ConnectionCreated(const PString & callToken)
 {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::ConnectionEstablished(PString & callToken)
+void Registrar::ConnectionEstablished(const PString & callToken)
 {
   RegistrarConnection *regConn = FindRegConnWithLock(callToken);
   if(!regConn)
@@ -29,7 +29,7 @@ void Registrar::ConnectionEstablished(PString & callToken)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::ConnectionCleared(PString & callToken)
+void Registrar::ConnectionCleared(const PString & callToken)
 {
   RegistrarConnection *regConn = FindRegConnWithLock(callToken);
   if(!regConn)
@@ -57,6 +57,19 @@ void Registrar::ConnectionCleared(PString & callToken)
     regConn->state = CONN_LEAVE_OUT;
 
   regConn->Unlock();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::SetRequestedRoom(const PString & callToken, PString & requestedRoom)
+{
+  RegistrarConnection *regConn = FindRegConnWithLock(callToken);
+  if(regConn)
+  {
+    if(regConn->roomname != "")
+      requestedRoom = regConn->roomname;
+    regConn->Unlock();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -155,7 +168,7 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
   if(regAccount_out->account_type == ACCOUNT_TYPE_SIP)
   {
     PString call_id;
-    nta_outgoing_t *orq = sep->SipMakeCall(regAccount_in->username, address, regConn->roomname, call_id);
+    nta_outgoing_t *orq = sep->SipMakeCall(regConn->username_in, address, call_id);
     if(orq)
     {
       regConn->orq_invite_out = orq;
@@ -166,7 +179,11 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
   else if(regAccount_out->account_type == ACCOUNT_TYPE_H323)
   {
     PString callToken_out;
+    //
+    // for H.323 return address = internal_room :(
+    //
     void *userData = new PString(regConn->roomname);
+    //void *userData = new PString(regConn->username_in);
     ep->MakeCall(address, callToken_out, userData);
     if(callToken_out != "")
     {
@@ -396,7 +413,7 @@ void Registrar::IncomingCallAccept(RegistrarConnection *regConn)
 {
   if(regConn->account_type_in == ACCOUNT_TYPE_SIP)
   {
-    sep->CreateIncomingConnection(regConn->msg_invite, regConn->roomname);
+    sep->CreateIncomingConnection(regConn->msg_invite);
   }
   else if(regConn->account_type_in == ACCOUNT_TYPE_H323)
   {

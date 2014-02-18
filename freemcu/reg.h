@@ -312,9 +312,10 @@ class Registrar : public PThread
     const PString & GetRegistrarDomain() const { return registrar_domain; };
     const PString & GetInternalRoomPrefix() const { return internal_room_prefix; };
 
-    void ConnectionCreated(PString & callToken);
-    void ConnectionEstablished(PString & callToken);
-    void ConnectionCleared(PString & callToken);
+    void ConnectionCreated(const PString & callToken);
+    void ConnectionEstablished(const PString & callToken);
+    void ConnectionCleared(const PString & callToken);
+    void SetRequestedRoom(const PString & callToken, PString & requestedRoom);
 
     BOOL MakeCall(PString room, PString to, PString & callToken);
 

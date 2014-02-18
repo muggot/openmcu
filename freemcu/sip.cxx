@@ -1488,13 +1488,13 @@ int MCUSipConnnection::ProcessSDP(PString & sdp_txt, SipCapMapType & sipCaps, in
   }
 
   sdp_msg = "v=0\r\no=";
-  sdp_msg = sdp_msg + requestedRoom + " ";
+  sdp_msg = sdp_msg + FreeMCU::Current().GetName() + " ";
   sdp_seq++;
   sdp_msg = sdp_msg + PString(sdp_id) + " ";
   sdp_msg = sdp_msg + PString(sdp_seq);
   sdp_msg = sdp_msg + " IN IP4 ";
   sdp_msg = sdp_msg + local_ip + "\r\n";
-  sdp_msg = sdp_msg + "s=FreeMCU\r\n";
+  sdp_msg = sdp_msg + "s="+FreeMCU::Current().GetName()+"\r\n";
   sdp_msg = sdp_msg + "c=IN IP4 ";
   sdp_msg = sdp_msg + local_ip + "\r\n";
   if(bandwidth_to > 64) sdp_msg = sdp_msg + "b=AS:" + PString(bandwidth_to) + "\r\n";
@@ -1572,11 +1572,6 @@ int MCUSipConnnection::ProcessInviteEvent()
   if(direction == 0) remote_addr_t = sip_from_dup(home, sip->sip_from);
   else remote_addr_t = sip_to_dup(home, sip->sip_to);
 
-  if(override_room == "")
-    requestedRoom = roomname;
-  else
-    requestedRoom = override_room;
-
   if(sip->sip_contact && sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") != 0)
     remoteName = sip->sip_contact->m_display;
   else if(remote_addr_t->a_display && strcmp(remote_addr_t->a_display, "") != 0)
@@ -1628,6 +1623,7 @@ int MCUSipConnnection::ProcessInviteEvent()
     return 415; // SIP_415_UNSUPPORTED_MEDIA
 
   // join conference
+  requestedRoom = roomname;
   connectionState = EstablishedConnection;
   OnEstablished();
   if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
@@ -1875,7 +1871,7 @@ PString MCUSipEndPoint::GetRoomAccess(const sip_t *sip)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString roomname, PString & call_id)
+nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & call_id)
 {
     PTRACE(1, "MCUSIP\tSipMakeCall from:" << from << " to:" << to);
     if(agent == NULL) return NULL;
@@ -1970,7 +1966,6 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString r
     {
       sCon = new MCUSipConnnection(this, ep, callToken);
       sCon->direction = 1;
-      sCon->override_room = roomname;
       PString local_url = "sip:"+local_user+"@"+local_ip;
       PString remote_url = "sip:"+remote_user+"@"+remote_domain;
       CreateSdpInvite(sCon, local_url, remote_url);
@@ -2309,7 +2304,7 @@ int MCUSipEndPoint::ProcessSipEvent_request1(nta_leg_t *leg, nta_incoming_t *irq
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg, PString override_room)
+int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg)
 {
   PTRACE(1, "MCUSIP\tCreateOutgoingConnection");
   sip_t *sip = sip_object(msg);
@@ -2325,8 +2320,6 @@ int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg, PString override_
     return 0;
 
   sCon->c_sip_msg = msg_dup(msg);
-  if(override_room != "")
-    sCon->override_room = override_room;
   sCon->DeleteTempSockets();
 
   int ret = sCon->ProcessInviteEvent();
@@ -2339,7 +2332,7 @@ int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg, PString override_
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg, PString override_room)
+int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
 {
   PTRACE(1, "MCUSIP\tCreateIncomingConnection");
   sip_t *sip = sip_object(msg);
@@ -2348,7 +2341,7 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg, PString override_
   if(sip->sip_payload==NULL || (sip->sip_payload!=NULL && sip->sip_payload->pl_data==NULL))
     return ReqReply(msg, SIP_415_UNSUPPORTED_MEDIA);
 
-  if(override_room == "" && GetRoomAccess(sip) == "DENY")
+  if(GetRoomAccess(sip) == "DENY")
     return ReqReply(msg, SIP_403_FORBIDDEN);
 
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
@@ -2372,8 +2365,6 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg, PString override_
   }
 
   PTRACE(1, "MCUSIP\tSIP INVITE");
-  if(override_room != "")
-    sCon->override_room = override_room;
 
   int ret = sCon->ProcessInviteEvent();
   if(ret != 1)
@@ -2644,7 +2635,7 @@ void MCUSipEndPoint::ProcessSipQueue()
       PString from = data.Tokenise(",")[0];
       PString to = data.Tokenise(",")[1];
       PString call_id = data.Tokenise(",")[2];
-      SipMakeCall(from, to, "", call_id);
+      SipMakeCall(from, to, call_id);
     }
     delete cmd;
     cmd = SipQueue.Pop();

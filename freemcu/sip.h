@@ -283,7 +283,6 @@ class MCUSipConnnection : public MCUH323Connection
     // preffered endpoints parameters
     unsigned bandwidth_to;
     PString pref_audio_cap, pref_video_cap;
-    PString override_room;
 
     PString invite_sdp_txt;
     PString key_audio80;
@@ -338,9 +337,9 @@ class MCUSipEndPoint : public PThread
     su_home_t *GetHome() { return &home; };
 
     PString CreateRuriStr(const msg_t *msg, int direction);
-    nta_outgoing_t * SipMakeCall(PString from, PString to, PString room, PString & call_id);
-    int CreateIncomingConnection(const msg_t *msg, PString room="");
-    int CreateOutgoingConnection(const msg_t *msg, PString room="");
+    nta_outgoing_t * SipMakeCall(PString from, PString to, PString & call_id);
+    int CreateIncomingConnection(const msg_t *msg);
+    int CreateOutgoingConnection(const msg_t *msg);
     int ReqReply(const msg_t *msg, unsigned method, const char *method_name=NULL, MCUSipConnnection *sCon=NULL);
     int SendACK(const msg_t *msg);
 

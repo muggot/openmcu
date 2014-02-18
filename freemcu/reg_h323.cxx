@@ -63,14 +63,14 @@ H323Connection::AnswerCallResponse Registrar::OnIncomingMsg(PString remoteAccoun
   }
 
   regConn = InsertRegConnWithLock(callToken, username_in, username_out);
-  regConn->roomname = internal_room_prefix + OpalGloballyUniqueID().AsString();
-
   // MCU call if !regAccount_out
   if(!regAccount_out)
   {
+    regConn->roomname = requestedRoom;
     regConn->state = CONN_MCU_WAIT;
     response = H323Connection::AnswerCallNow;
   } else {
+    regConn->roomname = internal_room_prefix + OpalGloballyUniqueID().AsString();
     requestedRoom = regConn->roomname;
     regConn->state = CONN_WAIT;
     response = H323Connection::AnswerCallPending;

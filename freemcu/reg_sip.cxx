@@ -331,7 +331,6 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   }
 
   regConn = InsertRegConnWithLock(callToken, username_in, username_out);
-  regConn->roomname = internal_room_prefix + OpalGloballyUniqueID().AsString();
   msg_destroy(regConn->msg_invite);
   regConn->msg_invite = msg_dup(msg);
 
@@ -341,6 +340,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     regConn->state = CONN_MCU_WAIT;
     response_code = 0; // MCU call
   } else {
+    regConn->roomname = internal_room_prefix + OpalGloballyUniqueID().AsString();
     regConn->state = CONN_WAIT;
     response_code = 100; // SIP_100_TRYING
   }

@@ -1987,14 +1987,6 @@ PString MCUH323EndPoint::Invite(PString room, PString toAddress)
   return callToken;
 }
 
-Conference * MCUH323EndPoint::MakeConference(const PString & room)
-{
-  // create/find the conference
-  Conference * c = conferenceManager.MakeAndLockConference(room);
-  conferenceManager.UnlockConference();
-  return c;
-}
-
 PString MCUH323EndPoint::IncomingConferenceRequest(H323Connection & connection, 
                                                   const H323SignalPDU & setupPDU,
                                                   unsigned & videoMixerNumber)
@@ -2170,8 +2162,9 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
   videoMixerNumber = 0;
 #endif
 
-  if (userData != NULL) {
-    requestedRoom    = *(PString *)userData;
+  if(userData != NULL)
+  {
+    requestedRoom = *(PString *)userData;
     PINDEX slashPos = requestedRoom.Find("/");
     if(slashPos!=P_MAX_INDEX)
     {
@@ -2181,11 +2174,11 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
       requestedRoom=requestedRoom.Left(slashPos);
     }
     delete (PString *)userData;
-
   }
 
   if(requestedRoom == "")
     requestedRoom = FreeMCU::Current().GetDefaultRoomName();
+
   localPartyName = requestedRoom;
   localDisplayName = FreeMCU::Current().GetName()+" / "+localPartyName;
   if(!ep.IsRegisteredWithGatekeeper())
@@ -2228,6 +2221,9 @@ void MCUH323Connection::OnEstablished()
 {
   H323Connection::OnEstablished();
 
+  Registrar *registrar = FreeMCU::Current().GetRegistrar();
+  registrar->SetRequestedRoom(callToken, requestedRoom);
+
   JoinConference(requestedRoom);
 
   if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
@@ -2238,7 +2234,6 @@ void MCUH323Connection::OnEstablished()
 
   if(conference && conferenceMember && conferenceMember->IsJoined())
   {
-    Registrar *registrar = FreeMCU::Current().GetRegistrar();
     registrar->ConnectionEstablished(callToken);
   }
 }
@@ -2608,8 +2603,7 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
 void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
 {
   Conference *conf = conference;
-     //  const H323Capabilities &caps = ep.GetCapabilities();
-  if(conf == NULL) 
+  if(conf == NULL)
   { // creating conference if needed
     MCUH323EndPoint & ep = FreeMCU::Current().GetEndpoint();
     ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();

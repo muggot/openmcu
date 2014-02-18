@@ -76,12 +76,8 @@ class MCUH323EndPoint : public H323EndPoint
   public:
     MCUH323EndPoint(ConferenceManager & conferenceManager);
     ~MCUH323EndPoint();
-    
-    PString IncomingConferenceRequest(H323Connection & connection, 
-                                      const H323SignalPDU & setupPDU,
-                                      unsigned & videoMixerNumber);
 
-    Conference * MakeConference(const PString & room);
+    PString IncomingConferenceRequest(H323Connection & connection, const H323SignalPDU & setupPDU, unsigned & videoMixerNumber);
 
     // overrides from H323EndPoint
     virtual H323Connection * CreateConnection(unsigned callReference,void * userData,H323Transport * transport,H323SignalPDU * setupPDU);
