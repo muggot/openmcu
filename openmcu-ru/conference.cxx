@@ -204,23 +204,21 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   for(Conference::MemberList::iterator r=theCopy.begin(); r!=theCopy.end(); ++r)
   {
     Conference::MemberList::iterator s; ConferenceMember * member;
-    conference->GetMutex().Wait();
-    if((s=conference->GetMemberList().find(r->first)) != conference->GetMemberList().end()) member=s->second;
-    else member=NULL; // NULL may be set here or (!) inerator may point to NULL so please keep in mind...
-    if(member!=NULL)
-    {
-      PString name=member->GetName();
-      BOOL needsClose = !((name == "cache") || (name=="file recorder"));
-      conference->GetMutex().Signal();
-      member->SetConference(NULL); // prevent further attempts to read audio/video data from conference
 
-      if(needsClose)
-      {
-        member->Close();
-        r->second = NULL; // don't touch when will find caches
-      }
+    conference->GetMutex().Wait();
+    if((s=conference->GetMemberList().find(r->first)) != conference->GetMemberList().end()) member=s->second; else member=NULL;
+    if(member==NULL) { conference->GetMutex().Signal(); continue; }
+    PString name=member->GetName();
+    BOOL needsClose = !((name == "cache") || (name=="file recorder"));
+    conference->GetMutex().Signal();
+
+    member->SetConference(NULL); // prevent further attempts to read audio/video data from conference
+
+    if(needsClose)
+    {
+      member->Close();
+      r->second = NULL; // don't touch when will find caches
     }
-    else conference->GetMutex().Signal();
   }
 
 // step 3.5: additinal check (linphone fails without it)
@@ -489,7 +487,15 @@ Conference::Conference(        ConferenceManager & _manager,
   vidmembernum = 0;
   fileRecorder = NULL;
   externalRecorder=NULL;
-  autoDelete=FALSE;
+  autoDelete = 
+    OpenMCU::Current().autoDeleteRoom
+#   if ENABLE_ECHO_MIXER
+      || (number.Left(4) *= "echo")
+#   endif
+#   if ENABLE_TEST_ROOMS
+      || (number.Left(8) == "testroom")
+#   endif
+  ;
   autoStartRecord=OpenMCU::Current().autoStartRecord;
   autoStopRecord=OpenMCU::Current().autoStopRecord;
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
@@ -944,7 +950,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
 
     // return TRUE if conference is empty 
-    closeConference = visibleMembers;
+    closeConference = (visibleMembers==0);
 //fix it: just remove it:
     PAssert(GetVisibleMemberCount() == visibleMembers, "Visible members counter failed");
   }

@@ -232,6 +232,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   autoStartRecord = cfg.GetInteger(AutoStartRecorderKey, -1);
   autoStopRecord = cfg.GetInteger(AutoStopRecorderKey, -1);
+  autoDeleteRoom = cfg.GetBoolean(AutoDeleteRoomKey, FALSE);
 
   { // video recorder setup
     vr_ffmpegPath  = cfg.GetString( RecorderFfmpegPathKey,  DefaultFfmpegPath);

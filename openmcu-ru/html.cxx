@@ -302,7 +302,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // recall last template after room created
   s << BoolField(RecallLastTemplateKey, cfg.GetBoolean(RecallLastTemplateKey, FALSE));
   // reject duplicate name
-  s << BoolField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, FALSE));
+  s << BoolField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, FALSE), "Reject duplicate participants (Rename if unchecked)");
   // get conference time limit 
   s << IntegerField(DefaultRoomTimeLimitKey, cfg.GetInteger(DefaultRoomTimeLimitKey, 0), 0, 10800);
   // allow/disallow self-invite:
@@ -310,7 +310,10 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // auto start recorder counter:
     << IntegerField(AutoStartRecorderKey, mcu.autoStartRecord, -1, 100, 10, "Set it to N=-1..100. Video recorder will auto started when N participants will connected. -1 to disable the feature.")
   // auto stop recorder counter:
-    << IntegerField(AutoStopRecorderKey, mcu.autoStopRecord, -1, 99, 10, "Set it to M=-1..(N-1). Video recorder will auto stopped when M or less participants left in a conference. -1 to disable the feature.");
+    << IntegerField(AutoStopRecorderKey, mcu.autoStopRecord, -1, 99, 10, "Set it to M=-1..(N-1). Video recorder will auto stopped when M or less participants left in a conference. -1 to disable the feature.")
+  // auto delete empty rooms:
+    << BoolField(AutoDeleteRoomKey, mcu.autoDeleteRoom, "Auto delete room when last participant disconnected")
+  ;
 
   s << SeparatorField("Video recorder setup");
   PString pathInfo, dirInfo;

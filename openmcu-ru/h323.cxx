@@ -1982,11 +1982,19 @@ PString OpenMCUH323EndPoint::IncomingConferenceRequest(H323Connection & connecti
   }
 
   // if there is a room to create, then join this call to that conference
-  if (roomToJoin.IsEmpty()) 
+  if (roomToJoin.IsEmpty())
+  {
     roomToJoin = OpenMCU::Current().GetDefaultRoomName();
+    if (!roomToJoin.IsEmpty())
+    {
+      PTRACE(3, "MCU\tJoining default room " << roomToJoin);
+      videoMixerNumber = 0;
+      return roomToJoin;
+    }
+  }
 
   if (!roomToJoin.IsEmpty()) {
-    PTRACE(3, "MCU\tJoining default room " << roomToJoin);
+    PTRACE(3, "MCU\tJoining room " << roomToJoin);
     videoMixerNumber = 0;
     return roomToJoin;
   }

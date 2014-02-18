@@ -537,7 +537,6 @@ static BOOL IsRegistryPath(const PString & path)
   if(isRP) isRP = ((path.Find(LocalMachineStr) == 0) && (path != LocalMachineStr))
                || ((path.Find(CurrentUserStr)  == 0) && (path != CurrentUserStr ));
 
-  PTRACE(4,"WinCfg\tIsRegistryPath(" << path << ") = " << isRP);
   return isRP;
 }
 
@@ -568,7 +567,6 @@ PString PProcess::GetConfigurationFile()
     }
   }
 
-  PTRACE(4,"WinCfg\tGetConfigurationFile() = " << getCF);
   return getCF;
 }
 
