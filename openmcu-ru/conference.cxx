@@ -146,13 +146,11 @@ void ConferenceManager::OnCreateConference(Conference * conference)
 #endif
   conference->fileRecorder = new ConferenceFileMember(conference, (const PString) "recorder" , PFile::WriteOnly);
 
-  if(conference->autoRecord)
-  {
-    conference->externalRecorder = new ExternalVideoRecorderThread(conference->GetNumber());
-    OpenMCU::Current().HttpWriteEventRoom("Video recording started",conference->GetNumber());
-  }
+  if(conference->autoStartRecord==0) conference->StartRecorder(); // special case of start recording even if no participants currently connected
 
+#if ENABLE_TEST_ROOMS
   if(conference->GetNumber() == "testroom") return;
+#endif
 
   if(!OpenMCU::Current().GetForceScreenSplit())
   { PTRACE(1,"Conference\tOnCreateConference: \"Force split screen video\" unchecked, " << conference->GetNumber() << " skipping members.conf"); return; }
@@ -192,12 +190,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
 // step 1: stop external video recorder:
 
-  if(conference->externalRecorder != NULL)
-  { PTRACE(4,"EVRT\tVideo Recorder is active - stopping now");
-    conference->externalRecorder->running=FALSE;
-    PThread::Sleep(1000);
-    conference->externalRecorder = NULL;
-  }
+  conference->StopRecorder();
 
 // step 2: get the copy of memberList (because we will destroy the original):
 
@@ -497,7 +490,8 @@ Conference::Conference(        ConferenceManager & _manager,
   fileRecorder = NULL;
   externalRecorder=NULL;
   autoDelete=FALSE;
-  autoRecord=FALSE;
+  autoStartRecord=OpenMCU::Current().autoStartRecord;
+  autoStopRecord=OpenMCU::Current().autoStopRecord;
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 
@@ -506,6 +500,34 @@ Conference::~Conference()
 #if OPENMCU_VIDEO
   VMLClear();
 #endif
+}
+
+void Conference::StartRecorder()
+{
+  if(externalRecorder) return; // already started
+  externalRecorder = new ExternalVideoRecorderThread(number);
+  PThread::Sleep(500);
+  if(!externalRecorder->running)
+  {
+    externalRecorder = NULL;
+    PTRACE(1,"EVRT\tRecorder failed to start");
+    return;
+  }
+  OpenMCU::Current().HttpWriteEventRoom("Video recording started",number);
+  OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this),number);
+  OpenMCU::Current().HttpWriteCmdRoom("build_page()",number);
+}
+
+void Conference::StopRecorder()
+{
+  if(!externalRecorder) return; // already stopped
+  externalRecorder->running=FALSE;
+  PTRACE(4,"EVRT\tVideo Recorder is active - stopping now");
+  PThread::Sleep(1000);
+  externalRecorder = NULL;
+  OpenMCU::Current().HttpWriteEventRoom("Video recording stopped",number);
+  OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this),number);
+  OpenMCU::Current().HttpWriteCmdRoom("build_page()",number);
 }
 
 int Conference::GetVisibleMemberCount() const
@@ -626,7 +648,6 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
 
 BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 {
-
   PTRACE(3, "Conference\tAbout to add member " << memberToAdd->GetTitle() << " to conference " << guid);
 
   // see if the callback refuses the new member (always true)
@@ -680,40 +701,33 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   if (!memberToAdd->AddToConference(this))
     return FALSE;
 
+  PINDEX visibleMembers = 0;
   {
     PTRACE(3, "Conference\tAdding member " << memberToAdd->GetName() << " " << memberToAdd->GetTitle() << " to conference " << guid);
     cout << "Adding member " << memberToAdd->GetName() << " " << memberToAdd->GetTitle() << " to conference " << guid << endl;
 
-    // lock the member list
-//    PWaitAndSignal m(memberListMutex);
     std::map<void *, ConferenceMember *>::const_iterator r;
-
     ConferenceMemberId mid = memberToAdd->GetID();
-
     r = memberList.find(mid);
     if(r != memberList.end()) return FALSE;
 
-#if OPENMCU_VIDEO
-//    if(!UseSameVideoForAllMembers()) memberToAdd->videoStatus = 1;
-
-    if (moderated==FALSE
-#  if ENABLE_TEST_ROOMS
-      || number=="testroom"
-#  endif
-    )
-    {
-      if (UseSameVideoForAllMembers() && memberToAdd->IsVisible())
+#   if OPENMCU_VIDEO
+      if(moderated==FALSE
+#       if ENABLE_TEST_ROOMS
+          || number=="testroom"
+#       endif
+      )
       {
-        videoMixerListMutex.Wait();
-        if (!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd)) memberToAdd->SetFreezeVideo(TRUE);
-        videoMixerListMutex.Signal();
-//          memberToAdd->videoStatus = 1;
-        PTRACE(3, "Conference\tUseSameVideoForAllMembers ");
+        if (UseSameVideoForAllMembers() && memberToAdd->IsVisible())
+        {
+          videoMixerListMutex.Wait();
+          if (!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd)) memberToAdd->SetFreezeVideo(TRUE);
+          videoMixerListMutex.Signal();
+          PTRACE(3, "Conference\tUseSameVideoForAllMembers ");
+        }
       }
-    }
-    else memberToAdd->SetFreezeVideo(TRUE);
-
-#endif
+      else memberToAdd->SetFreezeVideo(TRUE);
+#   endif
 
     // add this member to the conference member list
     memberList.insert(MemberList::value_type(memberToAdd->GetID(), memberToAdd));
@@ -723,39 +737,35 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 
     // make sure each member has a connection created for the new member
     // make sure the new member has a connection created for each existing member
-    PINDEX visibleMembers = 0;
-//    std::map<void *, ConferenceMember *>::const_iterator r;
-    for (r = memberList.begin(); r != memberList.end(); r++) {
+    for (r = memberList.begin(); r != memberList.end(); ++r)
+    {
       ConferenceMember * conn = r->second;
-      if (conn != memberToAdd) {
+      if (conn != memberToAdd)
+      {
         conn->AddConnection(memberToAdd);
         memberToAdd->AddConnection(conn);
-#if OPENMCU_VIDEO
-        if (moderated==FALSE
-#  if ENABLE_TEST_ROOMS
-         || number == "testroom"
-#  endif
-        )
-        if (!UseSameVideoForAllMembers()) {
-          if (conn->IsVisible())
+#       if OPENMCU_VIDEO
+          if (moderated==FALSE
+#           if ENABLE_TEST_ROOMS
+              || number == "testroom"
+#           endif
+          )
+          if (!UseSameVideoForAllMembers())
           {
-            memberToAdd->AddVideoSource(conn->GetID(), *conn);
+            if (conn->IsVisible()) memberToAdd->AddVideoSource(conn->GetID(), *conn);
+            if (memberToAdd->IsVisible()) conn->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
           }
-          if (memberToAdd->IsVisible())
-          {
-            conn->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
-          }
-        }
-#endif
+#       endif
       }
       if (conn->IsVisible())
         ++visibleMembers;
     }
 
     // update the statistics
-    if (memberToAdd->IsVisible()) {
+    if (memberToAdd->IsVisible())
+    {
+      ++visibleMembers;
       maxMemberCount = PMAX(maxMemberCount, visibleMembers);
-
       // trigger H245 thread for join message
 //      new NotifyH245Thread(*this, TRUE, memberToAdd);
     }
@@ -778,7 +788,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   PString memberToAddUrlId = MCUURL(memberToAdd->GetName()).GetUrlId();
   if(memberToAdd!=memberToAdd->GetID())
   {
-//    PWaitAndSignal m(memberListMutex);
     if(memberToAdd->GetName().Find(" ##") == P_MAX_INDEX)
     {
       // поиск по UrlId
@@ -818,26 +827,22 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
   }
-/*  
-  else
-  {
-   serviceMemberNameList.erase(memberToAdd->GetName());
-   serviceMemberNameList.insert(MemberNameList::value_type(memberToAdd->GetName(),memberToAdd));
-  }
-*/  
-
 
   msg = "<font color=green><b>+</b>";
   msg << memberToAdd->GetName() << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
+
+  if((autoStopRecord>=0) && (visibleMembers <= autoStopRecord)) StopRecorder();
+  else if((autoStartRecord>autoStopRecord) && (visibleMembers >= autoStartRecord)) StartRecorder();
+
   return TRUE;
 }
 
 
 BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 {
-  if(memberToRemove == NULL) return TRUE;
-
   PWaitAndSignal m(memberListMutex);
+  if(memberToRemove == NULL) return TRUE;
+  BOOL rmVisible = memberToRemove->IsVisible();
 
   PString username = memberToRemove->GetName();
 
@@ -856,8 +861,8 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
 
   BOOL closeConference;
+  PINDEX visibleMembers = 0;
   {
-
     MemberNameList::iterator s;
     s = memberNameList.find(username);
     
@@ -889,45 +894,47 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
     MemberList::iterator r;
     // remove this member from the connection lists for all other members
-    for (r = memberList.begin(); r != memberList.end(); r++) {
+    for (r = memberList.begin(); r != memberList.end(); ++r)
+    {
       ConferenceMember * conn = r->second;
-      if(conn != NULL)
-      if (conn != memberToRemove) {
+      if((conn != NULL) && (conn != memberToRemove))
+      {
         conn->RemoveConnection(userid);
-#if OPENMCU_VIDEO
-        if (!UseSameVideoForAllMembers()) {
-          if (memberToRemove->IsVisible())
-            conn->RemoveVideoSource(userid, *memberToRemove);
-          if (conn->IsVisible())
-            memberToRemove->RemoveVideoSource(conn->GetID(), *conn);
-        }
-#endif
+#       if OPENMCU_VIDEO
+          BOOL isVisible = conn->IsVisible();
+          if (!UseSameVideoForAllMembers())
+          {
+            if(rmVisible) conn->RemoveVideoSource(userid, *memberToRemove);
+            if(isVisible) memberToRemove->RemoveVideoSource(conn->GetID(), *conn);
+          }
+          if(isVisible) ++visibleMembers;
+#       endif
       }
     }
 
-#if OPENMCU_VIDEO
-    if (moderated==FALSE
-#  if ENABLE_TEST_ROOMS
-    || number == "testroom"
-#  endif
-    )
-    { if (UseSameVideoForAllMembers())
-      if (memberToRemove->IsVisible())
+#   if OPENMCU_VIDEO
+      if (moderated==FALSE
+#       if ENABLE_TEST_ROOMS
+          || number == "testroom"
+#       endif
+      )
+      { if (UseSameVideoForAllMembers())
+        if (rmVisible)
+        {
+          PWaitAndSignal m(videoMixerListMutex);
+          videoMixerList->mixer->RemoveVideoSource(userid, *memberToRemove);
+        }
+      }
+      else
       {
         PWaitAndSignal m(videoMixerListMutex);
-        videoMixerList->mixer->RemoveVideoSource(userid, *memberToRemove);
+        VideoMixerRecord * vmr=videoMixerList; while(vmr!=NULL)
+        {
+          vmr->mixer->MyRemoveVideoSourceById(userid,FALSE);
+          vmr=vmr->next;
+        }
       }
-    }
-    else
-    {
-      PWaitAndSignal m(videoMixerListMutex);
-      VideoMixerRecord * vmr=videoMixerList; while(vmr!=NULL)
-      {
-        vmr->mixer->MyRemoveVideoSourceById(userid,FALSE);
-        vmr=vmr->next;
-      }
-    }
-#endif
+#   endif
 
     // trigger H245 thread for leave message
 //    if (memberToRemove->IsVisible())
@@ -937,16 +944,19 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
 
     // return TRUE if conference is empty 
-//    closeConference = memberList.size() == 0;
-    closeConference = GetVisibleMemberCount() == 0;
+    closeConference = visibleMembers;
+//fix it: just remove it:
+    PAssert(GetVisibleMemberCount() == visibleMembers, "Visible members counter failed");
   }
 
   // notify that member is not joined anymore
   memberToRemove->SetJoined(FALSE);
 
   // call the callback function
-//  if (!closeConference)
-    OnMemberLeaving(memberToRemove);
+  OnMemberLeaving(memberToRemove);
+
+  if((autoStopRecord>=0) && (visibleMembers <= autoStopRecord)) StopRecorder();
+  else if((autoStartRecord>autoStopRecord) && (visibleMembers >= autoStartRecord)) StartRecorder();
 
   return closeConference;
 }

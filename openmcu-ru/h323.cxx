@@ -1128,30 +1128,10 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     OTF_RET_OK;
   }
   if(action == OTFC_VIDEO_RECORDER_START)
-  { if(conference->externalRecorder == NULL)
-    { conference->externalRecorder = new ExternalVideoRecorderThread(room);
-      PThread::Sleep(500);
-      if(conference->externalRecorder->running)
-      { OpenMCU::Current().HttpWriteEventRoom("Video recording started",room);
-        OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-        OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-        OTF_RET_OK;
-      }
-      conference->externalRecorder = NULL;
-    }
-    OTF_RET_FAIL;
+  { conference->StartRecorder(); OTF_RET_OK;
   }
   if(action == OTFC_VIDEO_RECORDER_STOP)
-  { if(conference->externalRecorder != NULL)
-    { conference->externalRecorder->running=FALSE;
-      PThread::Sleep(1000);
-      conference->externalRecorder = NULL;
-      OpenMCU::Current().HttpWriteEventRoom("Video recording stopped",room);
-      OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-      OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-      OTF_RET_OK;
-    }
-    OTF_RET_FAIL;
+  { conference->StopRecorder(); OTF_RET_OK;
   }
   if(action == OTFC_TEMPLATE_RECALL)
   {

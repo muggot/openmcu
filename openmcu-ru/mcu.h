@@ -61,6 +61,8 @@ static PString DefaultHTTPCertificateFile   = PString(SYS_CONFIG_DIR)+PString(PA
 #endif
 static const char DefaultRoomKey[]          = "Default room";
 static const char DefaultRoomTimeLimitKey[] = "Room time limit";
+static const char AutoStartRecorderKey[]    = "Auto start recorder";
+static const char AutoStopRecorderKey[]     = "Auto stop recorder";
 
 static const char DefaultCallLogFilename[] = "mcu_log.txt"; 
 static const char DefaultRoom[]            = "room101";
@@ -419,6 +421,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     PString GetEndpointParamFromUrl(PString param, PString url);
 
     PStringArray addressBook;
+    PINDEX autoStartRecord, autoStopRecord;
 
   protected:
     int        currentLogLevel, currentTraceLevel;

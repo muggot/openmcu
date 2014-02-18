@@ -1106,6 +1106,9 @@ class Conference : public PObject
 
     ~Conference();
 
+    void StartRecorder();
+    void StopRecorder();
+
     PMutex & GetMutex()
     { return memberListMutex; }
 
@@ -1311,7 +1314,8 @@ class Conference : public PObject
 
     ConferenceFileMember * fileRecorder;
 
-    BOOL autoDelete, autoRecord;
+    BOOL autoDelete;
+    PINDEX autoStartRecord, autoStopRecord;
     BOOL stopping;
 
   protected:

@@ -306,7 +306,11 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // get conference time limit 
   s << IntegerField(DefaultRoomTimeLimitKey, cfg.GetInteger(DefaultRoomTimeLimitKey, 0), 0, 10800);
   // allow/disallow self-invite:
-  s << BoolField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
+  s << BoolField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE))
+  // auto start recorder counter:
+    << IntegerField(AutoStartRecorderKey, mcu.autoStartRecord, -1, 100, 10, "Set it to N=-1..100. Video recorder will auto started when N participants will connected. -1 to disable the feature.")
+  // auto stop recorder counter:
+    << IntegerField(AutoStopRecorderKey, mcu.autoStopRecord, -1, 99, 10, "Set it to M=-1..(N-1). Video recorder will auto stopped when M or less participants left in a conference. -1 to disable the feature.");
 
   s << SeparatorField("Video recorder setup");
   PString pathInfo, dirInfo;
@@ -1754,15 +1758,8 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       if(cm.HasConference(room))
       { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
         if(conference != NULL)
-        { if(conference->externalRecorder == NULL)
-          { conference->externalRecorder = new ExternalVideoRecorderThread(room);
-            PThread::Sleep(500);
-            if(conference->externalRecorder->running)
-            { OpenMCU::Current().HttpWriteEventRoom("Video recording started",room);
-              OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*conference),room);
-              OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-            } else conference->externalRecorder = NULL;
-          }
+        {
+          conference->StartRecorder();
           cm.UnlockConference();
         }
       }
@@ -1772,14 +1769,8 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       if(cm.HasConference(room))
       { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
         if(conference != NULL)
-        { if(conference->externalRecorder != NULL)
-          { conference->externalRecorder->running=FALSE;
-            PThread::Sleep(1000);
-            conference->externalRecorder = NULL;
-            OpenMCU::Current().HttpWriteEventRoom("Video recording stopped",room);
-            OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*conference),room);
-            OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-          }
+        {
+          conference->StopRecorder();
           cm.UnlockConference();
         }
       }
@@ -1932,11 +1923,34 @@ BOOL SelectRoomPage::Post(PHTTPRequest & request,
                           const PStringToString & data,
                           PHTML & msg)
 {
-  if(OpenMCU::Current().GetForceScreenSplit())
+  if(!OpenMCU::Current().GetForceScreenSplit())
   {
-    msg << OpenMCU::Current().GetEndpoint().SetRoomParams(data);
+    msg << ErrorPage(request.localAddr.AsString(),request.localPort,423,"Locked","Room Control feature is locked","To unlock the page: click &laquo;<a href='/Parameters'>Parameters</a>&raquo;, check &laquo;Force split screen video and enable Room Control feature&raquo; and accept.<br/><br/>");
+    return TRUE;
   }
-  else msg << ErrorPage(request.localAddr.AsString(),request.localPort,423,"Locked","Room Control feature is locked","To unlock the page: click &laquo;<a href='/Parameters'>Parameters</a>&raquo;, check &laquo;Force split screen video and enable Room Control feature&raquo; and accept.<br/><br/>");
+
+# if ENABLE_TEST_ROOMS||ENABLE_ECHO_MIXER
+    if(data.Contains("room"))
+    {
+      const PString room=data("room");
+#     if ENABLE_TEST_ROOMS
+        if((room.Left(8) == "testroom") && (room.GetLength() > 8))
+        {
+          msg << ErrorPage(request.localAddr.AsString(),request.localPort,423,"Locked","Room Control feature is locked","The room you've tried to control is for test purposes only, control features not implemented yet. Please use &laquo;testroom&raquo; (without a number) if you want to test several video layouts.<br/><br/>");
+          return TRUE;
+        }
+#     endif
+#     if ENABLE_ECHO_MIXER
+        if(room.Left(4)*="echo")
+        {
+          msg << ErrorPage(request.localAddr.AsString(),request.localPort,423,"Locked","Room Control feature is locked","This is the personal echo room, it does not supply control functions.<br/><br/>");
+          return TRUE;
+        }
+#     endif
+    }
+# endif
+
+  msg << OpenMCU::Current().GetEndpoint().SetRoomParams(data);
   return TRUE;
 }
 

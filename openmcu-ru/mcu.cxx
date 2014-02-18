@@ -230,6 +230,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
 
+  autoStartRecord = cfg.GetInteger(AutoStartRecorderKey, -1);
+  autoStopRecord = cfg.GetInteger(AutoStopRecorderKey, -1);
+
   { // video recorder setup
     vr_ffmpegPath  = cfg.GetString( RecorderFfmpegPathKey,  DefaultFfmpegPath);
     vr_ffmpegOpts  = cfg.GetString( RecorderFfmpegOptsKey,  DefaultFfmpegOptions);
