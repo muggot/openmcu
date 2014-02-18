@@ -1106,6 +1106,7 @@ class Conference : public PObject
 
     ~Conference();
 
+    BOOL RecorderCheckSpace();
     void StartRecorder();
     void StopRecorder();
 
@@ -1384,6 +1385,19 @@ class ConferenceMCUCheckInfo : public ConferenceRepeatingInfo
       : ConferenceRepeatingInfo(guid, _repeatTime)
     { }
 
+    BOOL Perform(Conference & conference);
+};
+
+class CheckPartitionSpace : public ConferenceRepeatingInfo
+{
+  public:
+    CheckPartitionSpace(const OpalGloballyUniqueID & guid, const PTimeInterval & _repeatTime)
+      : ConferenceRepeatingInfo(guid, _repeatTime)
+    {
+      last=0; trigger=TRUE;
+    }
+    unsigned long now, delta, last;
+    BOOL trigger;
     BOOL Perform(Conference & conference);
 };
 

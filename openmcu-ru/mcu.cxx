@@ -235,14 +235,15 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   autoDeleteRoom = cfg.GetBoolean(AutoDeleteRoomKey, FALSE);
 
   { // video recorder setup
-    vr_ffmpegPath  = cfg.GetString( RecorderFfmpegPathKey,  DefaultFfmpegPath);
-    vr_ffmpegOpts  = cfg.GetString( RecorderFfmpegOptsKey,  DefaultFfmpegOptions);
-    vr_ffmpegDir   = cfg.GetString( RecorderFfmpegDirKey,   DefaultRecordingDirectory);
-    vr_framewidth  = cfg.GetInteger(RecorderFrameWidthKey,  DefaultRecorderFrameWidth);
-    vr_frameheight = cfg.GetInteger(RecorderFrameHeightKey, DefaultRecorderFrameHeight);
-    vr_framerate   = cfg.GetInteger(RecorderFrameRateKey,   DefaultRecorderFrameRate);
-    vr_sampleRate  = cfg.GetInteger(RecorderSampleRateKey,  DefaultRecorderSampleRate);
-    vr_audioChans  = cfg.GetInteger(RecorderAudioChansKey,  DefaultRecorderAudioChans);
+    vr_ffmpegPath      = cfg.GetString( RecorderFfmpegPathKey,  DefaultFfmpegPath);
+    vr_ffmpegOpts      = cfg.GetString( RecorderFfmpegOptsKey,  DefaultFfmpegOptions);
+    vr_ffmpegDir       = cfg.GetString( RecorderFfmpegDirKey,   DefaultRecordingDirectory);
+    vr_framewidth      = cfg.GetInteger(RecorderFrameWidthKey,  DefaultRecorderFrameWidth);
+    vr_frameheight     = cfg.GetInteger(RecorderFrameHeightKey, DefaultRecorderFrameHeight);
+    vr_framerate       = cfg.GetInteger(RecorderFrameRateKey,   DefaultRecorderFrameRate);
+    vr_sampleRate      = cfg.GetInteger(RecorderSampleRateKey,  DefaultRecorderSampleRate);
+    vr_audioChans      = cfg.GetInteger(RecorderAudioChansKey,  DefaultRecorderAudioChans);
+    vr_minimumSpaceMiB = cfg.GetInteger(RecorderMinSpaceKey,  0);
     PString opts = vr_ffmpegOpts;
     PStringStream frameSize; frameSize << vr_framewidth << "x" << vr_frameheight;
     PStringStream frameRate; frameRate << vr_framerate;

@@ -85,6 +85,7 @@ static const char RecorderFrameHeightKey[] = "Video Recorder frame height";
 static const char RecorderFrameRateKey[]   = "Video Recorder frame rate";
 static const char RecorderSampleRateKey[]  = "Video Recorder sound rate";
 static const char RecorderAudioChansKey[]  = "Video Recorder sound channels";
+static const char RecorderMinSpaceKey[]    = "Video Recorder minimum disk space";
 #ifdef _WIN32
 static const char DefaultFfmpegPath[]         = "ffmpeg.exe";
 #else
@@ -397,7 +398,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     PString    vr_ffmpegPath, vr_ffmpegOpts, vr_ffmpegDir;
     PString    ffmpegCall;
     int        vr_framewidth, vr_frameheight, vr_framerate;
-    unsigned   vr_sampleRate, vr_audioChans;
+    unsigned   vr_sampleRate, vr_audioChans, vr_minimumSpaceMiB;
 
     BOOL       recallRoomTemplate;
 

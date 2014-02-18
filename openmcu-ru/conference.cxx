@@ -137,6 +137,8 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   if (timeLimit > 0)
     monitor->AddMonitorEvent(new ConferenceTimeLimitInfo(conference->GetID(), PTime() + timeLimit*1000));
 
+  if(OpenMCU::Current().vr_minimumSpaceMiB) AddMonitorEvent( new CheckPartitionSpace(conference->GetID(), 1000));
+
   // add file recorder member    
 #if ENABLE_TEST_ROOMS
   if((conference->GetNumber().Left(8) == "testroom") && (conference->GetNumber().GetLength() > 8)) return;
@@ -360,42 +362,30 @@ void ConferenceManager::AddMonitorEvent(ConferenceMonitorInfo * info)
 void ConferenceMonitor::Main()
 {
   running = TRUE;
-
-  for (;;) {
-
-    if (!running)
-      break;
-
+  for (;running;)
+  {
     Sleep(1000);
-
-    if (!running)
-      break;
+    if (!running) break;
 
     PWaitAndSignal m(mutex);
 
+    MonitorInfoList theCopy(monitorList);
     PTime now;
-    MonitorInfoList::iterator r = monitorList.begin();
-    while (r != monitorList.end()) {
+    for(MonitorInfoList::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
+    {
       ConferenceMonitorInfo & info = **r;
-      if (now < info.timeToPerform)
-        ++r;
-      else {
-        BOOL deleteAfterPerform = TRUE;
+      if (now < info.timeToPerform) continue;
+      BOOL deleteAfterPerform = TRUE;
+      {
+        PWaitAndSignal m2(manager.GetConferenceListMutex());
+        ConferenceListType & confList = manager.GetConferenceList();
+        ConferenceListType::iterator s = confList.find(info.guid);
+        if (s != confList.end())
         {
-          PWaitAndSignal m2(manager.GetConferenceListMutex());
-          ConferenceListType & confList = manager.GetConferenceList();
-          ConferenceListType::iterator s = confList.find(info.guid);
-          if (s != confList.end())
-            deleteAfterPerform = info.Perform(*s->second);
-        }
-        if (!deleteAfterPerform)
-          ++r;
-        else {
-          delete *r;
-          monitorList.erase(r);
-          r = monitorList.begin();
+          deleteAfterPerform = info.Perform(*s->second);
         }
       }
+      if (deleteAfterPerform) monitorList.erase(r);
     }
   }
 }
@@ -459,6 +449,20 @@ BOOL ConferenceMCUCheckInfo::Perform(Conference & conference)
   return TRUE;
 }
 
+BOOL CheckPartitionSpace::Perform(Conference & conference)
+{
+  PTRACE(5,"Monitor\tCheckPartitionSpace::Perform now=" << now << " last=" << last << " delta=" << delta << " trigger=" << trigger);
+  now=(unsigned long)time(0);
+  delta=now-last;
+  if(delta>=10)
+  {
+    last=now;
+    trigger = conference.RecorderCheckSpace();
+  }
+  if(!trigger) conference.StopRecorder();
+  return FALSE;
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -508,9 +512,26 @@ Conference::~Conference()
 #endif
 }
 
+BOOL Conference::RecorderCheckSpace()
+{
+  PDirectory pd(OpenMCU::Current().vr_ffmpegDir);
+  PInt64 t, f;
+  DWORD cs;
+  if(!pd.GetVolumeSpace(t, f, cs))
+  {
+    PTRACE(1,"EVRT\tRecorder space check failed");
+    return TRUE;
+  }
+  BOOL result = ((f>>20) >= OpenMCU::Current().vr_minimumSpaceMiB);
+  if(!result) OpenMCU::Current().HttpWriteEvent("<b><font color='red'>Insufficient disk space</font>: Video Recorder DISABLED</b>");
+  PTRACE_IF(1,!result,"EVRT\tInsufficient disk space: Video Recorder DISABLED");
+  return result;
+}
+
 void Conference::StartRecorder()
 {
   if(externalRecorder) return; // already started
+  if(!RecorderCheckSpace()) return;
   externalRecorder = new ExternalVideoRecorderThread(number);
   PThread::Sleep(500);
   if(!externalRecorder->running)

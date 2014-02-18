@@ -351,7 +351,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 35,"",FALSE,0);
   s << IntegerField(RecorderSampleRateKey, mcu.vr_sampleRate,8000,192000,35,"",FALSE,0);
   s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8",120,"",FALSE,0);
-
+  s << IntegerField(RecorderMinSpaceKey, mcu.vr_minimumSpaceMiB, 0, 1000000000, 35,"Recorder minimum partition space (MiB), 0 = don't check");
 
   // get WAV file played to a user when they enter a conference
   //s << StringField(ConnectingWAVFileKey, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile));
