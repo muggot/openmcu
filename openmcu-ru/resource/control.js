@@ -113,6 +113,8 @@ var hl_links=[];
 var hl_id = -1;
 var hl_state = -1;
 
+var abgctr1=0;
+
 function index_exists(a, i)
 {
   try
@@ -512,8 +514,7 @@ function on_abook_check_all(obj){
   var checked = obj.checked;
   for(i=0;i<addressbook.length;i++)
   {
-    mmbr=addressbook[i];
-    check_box = document.getElementById("abook_check_"+mmbr[2]);
+    var check_box = document.getElementById("abook_check_"+i);
     if(check_box)
       check_box.checked = checked;
   }
@@ -524,29 +525,28 @@ function on_abook_check(obj){
   if(check_box)
       check_box.checked = obj.checked;
 }
-function invite_checked_abook(){
+function invite_checked_abook(obj){
   check_box = document.getElementById("abook_check_all");
   if(check_box)
     check_box.checked =false;
   for(i=0;i<addressbook.length;i++)
   {
-    mmbr=addressbook[i];
-    check_box = document.getElementById("abook_check_"+mmbr[2]);
+    check_box = document.getElementById("abook_check_"+i);
     if(check_box)
     {
       if(check_box.checked)
       {
-        inviteoffline(this,encodeURIComponent(mmbr[2]));
+        inviteoffline(document.getElementById('adrbkpic'+i),encodeURIComponent(addressbook[i][2]));
         check_box.checked = false;
       }
     }
   }
 }
-function on_invite_abook_input(){
+function on_invite_abook_input(obj){
   if(document.getElementById("invite_input"))
   {
     var addr = document.getElementById("invite_input").value;
-    if(addr != "") inviteoffline(this,addr);
+    if(addr != "") inviteoffline(obj,addr);
   }
 }
 
@@ -617,29 +617,27 @@ function format_mmbr_button(m,st)
   return s;
 }
 
-function format_mmbr_abook(m,st,num){
+function format_mmbr_abook(m,st,num)
+{
   var bgcolors=Array('#F5F5F5','#E6E6FA');
   var state_color;
-  if(num%2==0) bgcolor = bgcolors[0];
-  else bgcolor = bgcolors[1];
+  var bgcolor=bgcolors[num&1];
 
   var height = PANEL_ICON_HEIGHT; //15
   var width = PANEL_ICON_WIDTH; // 15
-  var s='<div style="margin-left:2px;border-radius:0px;padding:2px 0px 2px 0px;';
-  s+="width:"+(panel_width)+"px;overflow:hidden;height:"+(height+2)+"px;text-align:left;background-color:"+bgcolor;
-  var id=m[1]+"";
-  if(id.substr(0,1)=='-')id='_'+id.substr(1);
-  s+='" id="rpan_'+id+'"';
-  s+='>';
+  var s=
+    "<div style='margin-left:2px;padding:2px 0px 2px 0px;" +
+    "width:"+(panel_width)+"px;overflow:hidden;height:"+(height+2) +
+    "px;text-align:left;background-color:"+bgcolor + "'>";
 
   var uname=m[2]+"";
   var name=get_addr_name(uname);
   var ip=get_addr_url_without_param(uname);
 
   var invite = "", check = "";
-  if(!st) invite="<img onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
-  else invite="<img style='' src='i20_plus.gif' width='"+width+"' height='"+height+"' alt='Invite'>";
-  if(!st) check="<input id='abook_check_"+uname+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
+  if(!st) invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
+  else invite="<img id='adrbkpic"+num+"' src='i20_plus.gif' width='"+width+"' height='"+height+"' alt='Invite'>";
+  if(!st) check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
 
   var posx_invite = 8;
   var posx_check  = posx_invite      + width + 16;
@@ -687,10 +685,10 @@ function additional_panel_abook(){
   var input_posx = 4*bwidth;
   var input_width = panel_width-input_posx-5;
   var s="<div id='additional_panel_abook' style='display:none;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>"
-   +dpre+"2px;'>"+dbutton+"width:"+bwidth+"px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif'></img></div></div>"
-   +dpre+"34px;'>"+dbutton+"width:"+bwidth+"px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;'></input></div></div>"
-   +dpre+(input_posx-width-5)+"px'><img onclick='on_invite_abook_input()' style='margin-top:3px;cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'></img></div>"
-   +dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;'></input></div>"
+   +dpre+"2px;'>"+dbutton+"width:"+bwidth+"px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif' /></div></div>"
+   +dpre+"34px;'>"+dbutton+"width:"+bwidth+"px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;' /></div></div>"
+   +dpre+(input_posx-width-5)+"px'><img id='adrbkpinv' onclick='on_invite_abook_input(this);abgctr1=1;' style='margin-top:3px;cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite' /></div>"
+   +dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;' onkeyup='javascript:{if(abgctr1){document.getElementById(\"adrbkpinv\").src=\"i15_inv.gif\";abgctr1=0;};if(event.keyCode==13){on_invite_abook_input(document.getElementById(\"adrbkpinv\"));abgctr1=1;}}' /></div>"
    +"</div>";
   return s;
 }
