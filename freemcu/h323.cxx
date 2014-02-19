@@ -1148,30 +1148,17 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_OK;
   }
   if(action == OTFC_VIDEO_RECORDER_START)
-  { if(conference->externalRecorder == NULL)
-    { conference->externalRecorder = new ExternalVideoRecorderThread(room);
-      PThread::Sleep(500);
-      if(conference->externalRecorder->running)
-      { FreeMCU::Current().HttpWriteEventRoom("Video recording started",room);
-        FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-        FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
-        OTF_RET_OK;
-      }
-      conference->externalRecorder = NULL;
+  {
+    if(conference->StartExternalRecorder())
+    {
+      OTF_RET_OK;
     }
     OTF_RET_FAIL;
   }
   if(action == OTFC_VIDEO_RECORDER_STOP)
-  { if(conference->externalRecorder != NULL)
-    { conference->externalRecorder->running=FALSE;
-      PThread::Sleep(1000);
-      conference->externalRecorder = NULL;
-      FreeMCU::Current().HttpWriteEventRoom("Video recording stopped",room);
-      FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-      FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
-      OTF_RET_OK;
-    }
-    OTF_RET_FAIL;
+  {
+    conference->StopExternalRecorder();
+    OTF_RET_OK;
   }
   if(action == OTFC_TEMPLATE_RECALL)
   {
@@ -1237,7 +1224,10 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_OK;
   }
   if(action == OTFC_INVITE)
-  { Invite(conference->GetNumber(), value); OTF_RET_OK; }
+  {
+    Invite(conference->GetNumber(), value);
+    OTF_RET_OK;
+  }
   if(action == OTFC_REMOVE_OFFLINE_MEMBER)
   {
     conference->RemoveOfflineMemberFromNameList(value);
@@ -1259,7 +1249,6 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
       if(member->GetName()=="file recorder") continue;
       if(member->GetName()=="cache") continue;
       member->Close();
-//      memberList.erase(r->first);
     }
     FreeMCU::Current().HttpWriteEventRoom("Active members dropped by operator",room);
     FreeMCU::Current().HttpWriteCmdRoom("drop_all()",room);
@@ -1282,7 +1271,8 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     return "OK";
   }
   if(action == OTFC_INVITE_ALL_INACT_MMBRS)
-  { Conference::MemberNameList & memberNameList = conference->GetMemberNameList();
+  {
+    Conference::MemberNameList & memberNameList = conference->GetMemberNameList();
     Conference::MemberNameList::const_iterator r;
     for (r = memberNameList.begin(); r != memberNameList.end(); ++r)
       if(r->second==NULL)
@@ -1290,7 +1280,8 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_OK;
   }
   if(action == OTFC_REMOVE_ALL_INACT_MMBRS)
-  { Conference::MemberNameList & memberNameList = conference->GetMemberNameList();
+  {
+    Conference::MemberNameList & memberNameList = conference->GetMemberNameList();
     Conference::MemberNameList::const_iterator r;
     for (r = memberNameList.begin(); r != memberNameList.end(); ++r) if(r->second==NULL) conference->RemoveOfflineMemberFromNameList((PString &)(r->first));
     FreeMCU::Current().HttpWriteEventRoom("Offline members removed by operator",room);
@@ -1298,7 +1289,8 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_OK;
   }
   if(action == OTFC_SAVE_MEMBERS_CONF)
-  { FILE *membLst;
+  {
+    FILE *membLst;
     PString name="members_"+room+".conf";
     membLst = fopen(name,"w");
     if(membLst==NULL) { FreeMCU::Current().HttpWriteEventRoom("<font color=red>Error: Can't save member list</font>",room); OTF_RET_FAIL; }
@@ -1308,8 +1300,10 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_OK;
   }
   if(action == OTFC_TAKE_CONTROL)
-  { if(conference->IsModerated()=="-")
-    { conference->SetModerated(TRUE);
+  {
+    if(conference->IsModerated()=="-")
+    {
+      conference->SetModerated(TRUE);
       conference->videoMixerListMutex.Wait();
       conference->videoMixerList->mixer->SetForceScreenSplit(TRUE);
       conference->videoMixerListMutex.Signal();
@@ -1320,8 +1314,10 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_OK;
   }
   if(action == OTFC_DECONTROL)
-  { if(conference->IsModerated()=="+")
-    { conference->SetModerated(FALSE);
+  {
+    if(conference->IsModerated()=="+")
+    {
+      conference->SetModerated(FALSE);
       {
         PWaitAndSignal m(conference->videoMixerListMutex);
         if(!conference->videoMixerList) OTF_RET_FAIL;
@@ -1339,8 +1335,10 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_OK;
   }
   if(action == OTFC_ADD_VIDEO_MIXER)
-  { if(conference->IsModerated()=="+" && conference->GetNumber() != "testroom")
-    { unsigned n = conference->VMLAdd();
+  {
+    if(conference->IsModerated()=="+")
+    {
+      unsigned n = conference->VMLAdd();
       PStringStream msg; msg << "Video mixer " << n << " added";
       FreeMCU::Current().HttpWriteEventRoom(msg,room);
       FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
@@ -1350,12 +1348,14 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_FAIL;
   }
   if(action == OTFC_DELETE_VIDEO_MIXER)
-  { if(conference->IsModerated()=="+" && conference->GetNumber() != "testroom")
+  {
+    if(conference->IsModerated()=="+")
     {
       unsigned n_old=conference->videoMixerCount;
       unsigned n = conference->VMLDel(v);
       if(n_old!=n)
-      { PStringStream msg; msg << "Video mixer " << v << " removed";
+      {
+        PStringStream msg; msg << "Video mixer " << v << " removed";
         FreeMCU::Current().HttpWriteEventRoom(msg,room);
         FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
         FreeMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()",room);
@@ -1364,11 +1364,13 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     }
     OTF_RET_FAIL;
   }
-  if (action == OTFC_SET_VIDEO_MIXER_LAYOUT)
-  { unsigned option = data("o").AsInteger();
+  if(action == OTFC_SET_VIDEO_MIXER_LAYOUT)
+  {
+    unsigned option = data("o").AsInteger();
     MCUVideoMixer * mixer = conference->VMLFind(option);
     if(mixer!=NULL)
-    { mixer->MyChangeLayout(v);
+    {
+      mixer->MyChangeLayout(v);
       conference->PutChosenVan();
       conference->FreezeVideo(NULL);
       FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
@@ -1377,8 +1379,9 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     }
     OTF_RET_FAIL;
   }
-  if (action == OTFC_REMOVE_VMP)
-  { MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
+  if(action == OTFC_REMOVE_VMP)
+  {
+    MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
     unsigned pos = data("o").AsInteger();
     mixer->MyRemoveVideoSource(pos,TRUE);
     conference->FreezeVideo(NULL);
@@ -1387,7 +1390,8 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_OK;
   }
   if(action == OTFC_MIXER_ARRANGE_VMP)
-  { MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
+  {
+    MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
     Conference::MemberList & memberList = conference->GetMemberList();
     for (Conference::MemberList::const_iterator r = memberList.begin(); r != memberList.end(); ++r)
     if(r->second != NULL) if(r->second->IsVisible())
@@ -1397,61 +1401,70 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_OK;
   }
   if(action == OTFC_MIXER_CLEAR)
-  { MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
+  {
+    MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
     mixer->MyRemoveAllVideoSource();
     FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
   }
   if(action == OTFC_MIXER_SHUFFLE_VMP)
-  { MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
+  {
+    MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
     mixer->Shuffle();
     FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
   }
   if(action == OTFC_MIXER_SCROLL_LEFT)
-  { MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
+  {
+    MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
     mixer->Scroll(TRUE);
     FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
   }
   if(action == OTFC_MIXER_SCROLL_RIGHT)
-  { MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
+  {
+    MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
     mixer->Scroll(FALSE);
     FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
   }
   if(action == OTFC_MIXER_REVERT)
-  { MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
+  {
+    MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
     mixer->Revert();
     FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
   }
   if(action == OTFC_GLOBAL_MUTE)
-  { if(data("v")=="true")v=1; if(data("v")=="false") v=0; conference->SetMuteUnvisible((BOOL)v);
+  {
+    if(data("v")=="true")v=1; if(data("v")=="false") v=0; conference->SetMuteUnvisible((BOOL)v);
     FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
   }
   if(action == OTFC_SET_VAD_VALUES)
-  { conference->VAlevel   = (unsigned short int) v;
+  {
+    conference->VAlevel   = (unsigned short int) v;
     conference->VAdelay   = (unsigned short int) (data("o").AsInteger());
     conference->VAtimeout = (unsigned short int) (data("o2").AsInteger());
     FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
   }
-  if (action == OTFC_MOVE_VMP)
-  { MCUVideoMixer * mixer1 = conference->VMLFind(v); if(mixer1==NULL) OTF_RET_FAIL;
+  if(action == OTFC_MOVE_VMP)
+  {
+    MCUVideoMixer * mixer1 = conference->VMLFind(v); if(mixer1==NULL) OTF_RET_FAIL;
     if(!data.Contains("o2")) OTF_RET_FAIL; MCUVideoMixer * mixer2=conference->VMLFind(data("o2").AsInteger()); if(mixer2==NULL) OTF_RET_FAIL;
     int pos1 = data("o").AsInteger(); int pos2 = data("o3").AsInteger();
-    if(mixer1==mixer2) mixer1->Exchange(pos1,pos2);
-    else
+    if(mixer1==mixer2)
     {
+      mixer1->Exchange(pos1,pos2);
+    } else {
       ConferenceMemberId id = mixer1->GetHonestId(pos1); if(((long)id<100)&&((long)id>=0)) id=NULL;
       ConferenceMemberId id2 = mixer2->GetHonestId(pos2); if(((long)id2<100)&&((long)id2>=0)) id2=NULL;
       mixer2->PositionSetup(pos2, 1, GetConferenceMemberById(conference, (long)id));
@@ -1461,8 +1474,9 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
   }
-  if (action == OTFC_VAD_CLICK)
-  { MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
+  if(action == OTFC_VAD_CLICK)
+  {
+    MCUVideoMixer * mixer = conference->VMLFind(v); if(mixer==NULL) OTF_RET_FAIL;
     unsigned pos = data("o").AsInteger();
     int type = data("o2").AsInteger();
     if((type<1)||(type>3)) type=2;
@@ -1488,8 +1502,10 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
       }
       if(r==memberList.end()) mixer->PositionSetup(pos,1,NULL);
     }
-    else if((id>=0)&&(id<100)) mixer->PositionSetup(pos,type,NULL);
-    else mixer->SetPositionType(pos,type);
+    else if((id>=0)&&(id<100))
+      mixer->PositionSetup(pos,type,NULL);
+    else
+      mixer->SetPositionType(pos,type);
     conference->FreezeVideo(NULL);
     FreeMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
@@ -1499,8 +1515,9 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   ConferenceMember * member = GetConferenceMemberById(conference, v); if(member==NULL) OTF_RET_FAIL;
   PStringStream cmd;
 
-  if( action == OTFC_SET_VMP_STATIC )
-  { unsigned n=data("o").AsInteger(); MCUVideoMixer * mixer = conference->VMLFind(n); if(mixer==NULL) OTF_RET_FAIL;
+  if(action == OTFC_SET_VMP_STATIC )
+  {
+    unsigned n=data("o").AsInteger(); MCUVideoMixer * mixer = conference->VMLFind(n); if(mixer==NULL) OTF_RET_FAIL;
     int pos = data("o2").AsInteger(); mixer->PositionSetup(pos, 1, member);
     H323Connection_ConferenceMember *connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
     if(connMember==NULL) OTF_RET_FAIL;
@@ -1509,17 +1526,27 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
   }
-  if( action == OTFC_UNMUTE )
-  { member->muteIncoming=FALSE; cmd << "iunmute(" << v << ")"; FreeMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
-  if( action == OTFC_MUTE)
-  { member->muteIncoming=TRUE; cmd << "imute(" << v << ")"; FreeMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
-  if( action == OTFC_REMOVE_FROM_VIDEOMIXERS)
-  { if(conference->IsModerated()=="+" && conference->GetNumber() != "testroom")
+  if(action == OTFC_UNMUTE )
+  {
+    member->muteIncoming=FALSE; cmd << "iunmute(" << v << ")";
+    FreeMCU::Current().HttpWriteCmdRoom(cmd,room);
+    OTF_RET_OK;
+  }
+  if(action == OTFC_MUTE)
+  {
+    member->muteIncoming=TRUE; cmd << "imute(" << v << ")";
+    FreeMCU::Current().HttpWriteCmdRoom(cmd,room);
+    OTF_RET_OK;
+  }
+  if(action == OTFC_REMOVE_FROM_VIDEOMIXERS)
+  {
+    if(conference->IsModerated()=="+")
     {
       PWaitAndSignal m(conference->videoMixerListMutex);
       Conference::VideoMixerRecord * vmr = conference->videoMixerList;
-      while( vmr!=NULL ) 
-      { MCUVideoMixer * mixer = vmr->mixer;
+      while( vmr!=NULL )
+      {
+        MCUVideoMixer * mixer = vmr->mixer;
         int oldPos = mixer->GetPositionNum(member->GetID());
         if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, TRUE);
         vmr=vmr->next;
@@ -1531,14 +1558,12 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
       OTF_RET_OK;
     }
   }
-  if( action == OTFC_DROP_MEMBER )
+  if(action == OTFC_DROP_MEMBER )
   {
-    // MAY CAUSE DEADLOCK PWaitAndSignal m(conference->GetMutex();
-//    conference->GetMemberList().erase(member->GetID());
     member->Close();
     OTF_RET_OK;
   }
-  if (action == OTFC_VAD_NORMAL)
+  if(action == OTFC_VAD_NORMAL)
   {
     member->disableVAD=FALSE;
     member->chosenVan=FALSE;
@@ -1548,7 +1573,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     FreeMCU::Current().HttpWriteCmdRoom(cmd,room);
     return "OK";
   }
-  if (action == OTFC_VAD_CHOSEN_VAN)
+  if(action == OTFC_VAD_CHOSEN_VAN)
   {
     member->disableVAD=FALSE;
     member->chosenVan=TRUE;
@@ -1559,7 +1584,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     FreeMCU::Current().HttpWriteCmdRoom(cmd,room);
     return "OK";
   }
-  if (action == OTFC_VAD_DISABLE_VAD)
+  if(action == OTFC_VAD_DISABLE_VAD)
   {
     member->disableVAD=TRUE;
     member->chosenVan=FALSE;
@@ -1586,15 +1611,18 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     FreeMCU::Current().HttpWriteCmdRoom(cmd,room);
     return "OK";
   }
-  if (action == OTFC_SET_MEMBER_VIDEO_MIXER)
-  { unsigned option = data("o").AsInteger();
+  if(action == OTFC_SET_MEMBER_VIDEO_MIXER)
+  {
+    unsigned option = data("o").AsInteger();
     if(SetMemberVideoMixer(*conference,member,option))
-    { cmd << "chmix(" << v << "," << option << ")";
+    {
+      cmd << "chmix(" << v << "," << option << ")";
       FreeMCU::Current().HttpWriteCmdRoom(cmd,room);
       OTF_RET_OK;
     }
     if(SetMemberVideoMixer(*conference,member,0)) // rotate back to 0
-    { cmd << "chmix(" << v << ",0)";
+    {
+      cmd << "chmix(" << v << ",0)";
       FreeMCU::Current().HttpWriteCmdRoom(cmd,room);
       OTF_RET_OK;
     }
@@ -1718,12 +1746,6 @@ PString MCUH323EndPoint::GetRoomList(const PString & block)
   {
     Conference & conference = *(r->second);
     PString roomNumber = conference.GetNumber();
-#if ENABLE_TEST_ROOMS
-    if((roomNumber.Left(8)=="testroom") && (roomNumber.GetLength() > 8)) continue;
-#endif
-#if ENABLE_ECHO_MIXER
-    if(roomNumber.Left(4)*="echo") continue;
-#endif
     // make a copy of the repeating html chunk
     members << "<span class=\"btn btn-large";
     if(conference.IsModerated()=="+") members << " btn-success";
@@ -1837,7 +1859,8 @@ PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
 
 
 PString MCUH323EndPoint::GetMonitorText()
-{ PStringStream output;
+{
+  PStringStream output;
 
   PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
@@ -3753,6 +3776,12 @@ void ConnectionMonitor::RemoveForConnection(const PString & callToken)
   }
 }
 
+BOOL ConnectionRepeatingInfo::Perform(H323Connection & conn)
+{
+  this->timeToPerform = PTime() + repeatTime;
+  return FALSE;
+}
+
 BOOL ConnectionRTPTimeoutInfo::Perform(H323Connection & conn)
 {
   RTP_Session * as = conn.GetSession(RTP_Session::DefaultAudioSessionID);
@@ -3771,11 +3800,10 @@ BOOL ConnectionRTPTimeoutInfo::Perform(H323Connection & conn)
   {
     PTRACE(1, "MCU\tConnection: " << callToken << ", 30 sec timeout waiting incoming stream data.");
     ((MCUH323Connection &)conn).LeaveMCU();
-    return TRUE;
+    return TRUE; // delete monitor
   }
 
-  this->timeToPerform = PTime() + repeatTime;
-  return FALSE;
+  return ConnectionRepeatingInfo::Perform(conn);
 }
 
 ///////////////////////////////////////////////////////////////////////////

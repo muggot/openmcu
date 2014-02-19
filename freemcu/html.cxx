@@ -2011,73 +2011,58 @@ SelectRoomPage::SelectRoomPage(FreeMCU & _app, PHTTPAuthority & auth)
 
 BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
 {
-  { PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
+  {
+    PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
     if(!CheckAuthority(server, *req, connectInfo)) {delete req; return FALSE;}
     delete req;
   }
 
   PStringToString data;
-  { PString request=url.AsString(); PINDEX q;
+  {
+    PString request=url.AsString(); PINDEX q;
     if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
   }
 
-  if(data.Contains("action"))
+  MCUH323EndPoint & ep = FreeMCU::Current().GetEndpoint();
+  ConferenceManager & cm = ep.GetConferenceManager();
+
+  if(data.Contains("action") && !data("room").IsEmpty())
   {
-    PString action=data("action");
-    PString room=data("room");
-    if(action == "create" && (!room.IsEmpty()))
-    { ConferenceManager & cm = FreeMCU::Current().GetEndpoint().GetConferenceManager();
+    PString action = data("action");
+    PString room = data("room");
+    if(action == "create")
+    {
       cm.MakeAndLockConference(room);
       cm.UnlockConference();
     }
-    else if(action == "delete" && (!room.IsEmpty()))
-    { ConferenceManager & cm = FreeMCU::Current().GetEndpoint().GetConferenceManager();
-      if(cm.HasConference(room))
-      { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
-        if(conference != NULL)
-        { cm.RemoveConference(conference->GetID());
-          cm.UnlockConference();
-        }
+    else if(action == "delete")
+    {
+      Conference * conference = cm.FindConferenceWithLock(room);
+      if(conference)
+      {
+        cm.RemoveConference(conference->GetID());
+        cm.UnlockConference();
       }
     }
-    else if(action == "startRecorder" && (!room.IsEmpty()))
-    { ConferenceManager & cm = FreeMCU::Current().GetEndpoint().GetConferenceManager();
-      if(cm.HasConference(room))
-      { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
-        if(conference != NULL)
-        { if(conference->externalRecorder == NULL)
-          { conference->externalRecorder = new ExternalVideoRecorderThread(room);
-            PThread::Sleep(500);
-            if(conference->externalRecorder->running)
-            { FreeMCU::Current().HttpWriteEventRoom("Video recording started",room);
-              FreeMCU::Current().HttpWriteCmdRoom(FreeMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*conference),room);
-              FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
-            } else conference->externalRecorder = NULL;
-          }
-          cm.UnlockConference();
-        }
+    else if(action == "startRecorder")
+    {
+      Conference * conference = cm.FindConferenceWithLock(room);
+      if(conference)
+      {
+        conference->StartExternalRecorder();
+        cm.UnlockConference();
       }
     }
-    else if(action == "stopRecorder" && (!room.IsEmpty()))
-    { ConferenceManager & cm = FreeMCU::Current().GetEndpoint().GetConferenceManager();
-      if(cm.HasConference(room))
-      { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
-        if(conference != NULL)
-        { if(conference->externalRecorder != NULL)
-          { conference->externalRecorder->running=FALSE;
-            PThread::Sleep(1000);
-            conference->externalRecorder = NULL;
-            FreeMCU::Current().HttpWriteEventRoom("Video recording stopped",room);
-            FreeMCU::Current().HttpWriteCmdRoom(FreeMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*conference),room);
-            FreeMCU::Current().HttpWriteCmdRoom("build_page()",room);
-          }
-          cm.UnlockConference();
-        }
+    else if(action == "stopRecorder")
+    {
+      Conference * conference = cm.FindConferenceWithLock(room);
+      if(conference)
+      {
+        conference->StopExternalRecorder();
+        cm.UnlockConference();
       }
     }
   }
-
-  MCUH323EndPoint & ep=FreeMCU::Current().GetEndpoint();
 
   PStringStream html;
   BeginPage(html,"Rooms","window.l_rooms","window.l_info_rooms");
@@ -2085,18 +2070,13 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   if(data.Contains("action")) html << "<script language='javascript'>location.href='Select';</script>";
 
   PString nextRoom;
-  { ConferenceManager & cm = ep.GetConferenceManager();
-    ConferenceListType::const_iterator r;
+  {
     PWaitAndSignal m(cm.GetConferenceListMutex());
-    for(r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r)
-    { PString room0 = r->second->GetNumber().Trim(); PINDEX lastCharPos=room0.GetLength()-1;
+    for(ConferenceListType::const_iterator r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r)
+    {
+      PString room0 = r->second->GetNumber().Trim();
       if(room0.IsEmpty()) continue;
-#     if ENABLE_ECHO_MIXER
-        if(room0.Left(4) *= "echo") continue;
-#     endif
-#     if ENABLE_TEST_ROOMS
-        if(room0.Left(8) == "testroom") continue;
-#     endif
+      PINDEX lastCharPos=room0.GetLength()-1;
       PINDEX i, d1=-1, d2=-1;
       for (i=lastCharPos; i>=0; i--)
       { char c=room0[i];
@@ -2109,7 +2089,8 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       PINDEX roomStart=room0.Mid(d1,d2).AsInteger(); PString roomText=room0.Left(d1);
       PString roomText2; if(d2<lastCharPos) roomText2=room0.Mid(d2+1,lastCharPos);
       while(1)
-      { roomStart++;
+      {
+        roomStart++;
         PString testName = roomText + PString(roomStart) + roomText2;
         for (r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r) if(r->second->GetNumber()==testName) break;
         if(r == cm.GetConferenceList().end()) { nextRoom = testName; break; }
@@ -2136,12 +2117,11 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     << "<th><script type=\"text/javascript\">document.write(window.l_select_delete);</script><br></th>"
     << "</tr>"
   ;
-  
-  { PWaitAndSignal m(ep.GetConferenceManager().GetConferenceListMutex());
-    ConferenceListType & conferenceList = ep.GetConferenceManager().GetConferenceList();
 
-    ConferenceListType::iterator r;
-    for (r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  {
+    PWaitAndSignal m(cm.GetConferenceListMutex());
+    ConferenceListType & conferenceList = cm.GetConferenceList();
+    for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
     {
       Conference & conference = *(r->second);
       PString roomNumber = conference.GetNumber();
@@ -2191,7 +2171,8 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   html << "</table></form>";
 
   EndPage(html,FreeMCU::Current().GetHtmlCopyright());
-  { PStringStream message; PTime now; message
+  {
+    PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
       << "Server: FreeMCU\r\n"

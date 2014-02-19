@@ -1308,6 +1308,9 @@ class Conference : public PObject
     void SetForceScreenSplit(BOOL _forceScreenSplit) { forceScreenSplit = _forceScreenSplit; }
     BOOL GetForceScreenSplit() { return forceScreenSplit; }
 
+    BOOL StartExternalRecorder();
+    BOOL StopExternalRecorder();
+
   protected:
     ConferenceManager & manager;
     PMutex memberListMutex;
@@ -1366,6 +1369,26 @@ class ConferenceRepeatingInfo : public ConferenceMonitorInfo
 
   protected:
     PTimeInterval repeatTime;
+};
+
+class ConferenceStatusInfo : public ConferenceRepeatingInfo
+{
+  public:
+    ConferenceStatusInfo(const OpalGloballyUniqueID & guid)
+      : ConferenceRepeatingInfo(guid, 1000)
+    { }
+
+    BOOL Perform(Conference & conference);
+};
+
+class ConferenceRecorderInfo : public ConferenceRepeatingInfo
+{
+  public:
+    ConferenceRecorderInfo(const OpalGloballyUniqueID & guid)
+      : ConferenceRepeatingInfo(guid, 1000)
+    { }
+
+    BOOL Perform(Conference & conference);
 };
 
 class ConferenceMCUCheckInfo : public ConferenceRepeatingInfo

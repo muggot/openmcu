@@ -553,7 +553,7 @@ AC_SUBST(FILE_FOUND, 0)
 if test "${FILE_FOUND}" = "0"; then
   AC_CHECK_FILE(${MCU_BIN_DIR}/ffmpeg, [FILE_FOUND=1], [FILE_FOUND=0])
   if test "${FILE_FOUND}" = "1"; then
-    FFMPEG_PATH=${INSTALLPREFIX}/bin/ffmpeg
+    FFMPEG_PATH=${MCU_BIN_DIR}/ffmpeg
   fi
 fi
 if test "${FILE_FOUND}" = "0"; then
@@ -571,7 +571,7 @@ fi
 if test "${FILE_FOUND}" = "0"; then
   AC_CHECK_FILE(${MCU_BIN_DIR}/avconv, [FILE_FOUND=1], [FILE_FOUND=0])
   if test "${FILE_FOUND}" = "1"; then
-    FFMPEG_PATH=${INSTALLPREFIX}/bin/avconv
+    FFMPEG_PATH=${MCU_BIN_DIR}/avconv
   fi
 fi
 if test "${FILE_FOUND}" = "0"; then

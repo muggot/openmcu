@@ -775,21 +775,32 @@ class ConnectionMonitorInfo : public PObject
     virtual BOOL Perform(H323Connection &) = 0;
 };
 
-class ConnectionRTPTimeoutInfo : public ConnectionMonitorInfo
+class ConnectionRepeatingInfo : public ConnectionMonitorInfo
 {
   public:
-    ConnectionRTPTimeoutInfo(const PString & callToken)
-      : ConnectionMonitorInfo(callToken, PTime() + PTimeInterval(3000))
-    {
-      input_bytes = 0;
-      no_input_timeout = 0;
-      repeatTime = PTimeInterval(3000);
-    }
+    ConnectionRepeatingInfo(const PString & callToken, const PTimeInterval & _repeatTime)
+      : ConnectionMonitorInfo(callToken, PTime() + _repeatTime), repeatTime(_repeatTime)
+    { }
 
     BOOL Perform(H323Connection & conn);
 
   protected:
     PTimeInterval repeatTime;
+};
+
+class ConnectionRTPTimeoutInfo : public ConnectionRepeatingInfo
+{
+  public:
+    ConnectionRTPTimeoutInfo(const PString & callToken)
+      : ConnectionRepeatingInfo(callToken, 3000)
+    {
+      input_bytes = 0;
+      no_input_timeout = 0;
+    }
+
+    BOOL Perform(H323Connection & conn);
+
+  protected:
     int input_bytes;
     int no_input_timeout;
 };

@@ -118,13 +118,12 @@ Conference * ConferenceManager::MakeAndLockConference(const OpalGloballyUniqueID
 
 void ConferenceManager::OnCreateConference(Conference * conference)
 {
-  // set time limit, if there is one
+  // add monitor event
+  monitor->AddMonitorEvent(new ConferenceStatusInfo(conference->GetID()));
+  monitor->AddMonitorEvent(new ConferenceRecorderInfo(conference->GetID()));
   int timeLimit = FreeMCU::Current().GetConferenceParam(conference->GetNumber(), RoomTimeLimitKey, 0);
   if(timeLimit > 0)
     monitor->AddMonitorEvent(new ConferenceTimeLimitInfo(conference->GetID(), PTime() + timeLimit*1000));
-
-  // add repeating event
-  monitor->AddMonitorEvent(new ConferenceRepeatingInfo(conference->GetID(), 1000));
 
   // add file recorder member
   if(!FreeMCU::Current().GetConferenceParam(conference->GetNumber(), RoomAllowRecordKey, TRUE))
@@ -215,18 +214,25 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _guid,
                                                               const PString & _number,
                                                               const PString & _name,
-                                                                          int _mcuNumber)
-{ 
+                                                              int _mcuNumber)
+{
 #if MCU_VIDEO
 #  if ENABLE_ECHO_MIXER
-     if (_number.Left(4) *= "echo") return new Conference(*this, _guid, "echo"+_guid.AsString(), _name, _mcuNumber, new EchoVideoMixer());
+     if(_number.Left(4) *= "echo")
+       return new Conference(*this, _guid, "echo"+_guid.AsString(), _name, _mcuNumber, new EchoVideoMixer());
 #  endif
 #  if ENABLE_TEST_ROOMS
-     if (_number.Left(8) == "testroom")
-     { PString number = _number; int count = 0;
-       if (_number.GetLength() > 8)
-       { count = _number.Mid(8).AsInteger(); if (count <= 0) { count = 0; number = "testroom"; } }
-       if (count >= 0) return new Conference(*this, _guid, number, _name, _mcuNumber, new TestVideoMixer(count));
+     if(_number.Left(8) == "testroom")
+     {
+       PString number = _number;
+       int count = 0;
+       if(_number.GetLength() > 8)
+       {
+         count = _number.Mid(8).AsInteger();
+         if(count <= 0) { count = 0; number = "testroom"; }
+       }
+       if(count >= 0)
+         return new Conference(*this, _guid, number, _name, _mcuNumber, new TestVideoMixer(count));
      }
 #  endif
 #endif
@@ -398,44 +404,46 @@ BOOL ConferenceTimeLimitInfo::Perform(Conference & conference)
 
 BOOL ConferenceRepeatingInfo::Perform(Conference & conference)
 {
+  this->timeToPerform = PTime() + repeatTime;
+  return FALSE;
+}
+
+BOOL ConferenceStatusInfo::Perform(Conference & conference)
+{
   // auto delete empty room
   BOOL autoDeleteEmpty = FreeMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAutoDeleteEmptyKey, FALSE);
   if(autoDeleteEmpty && !conference.GetVisibleMemberCount())
   {
     ConferenceManager & cm = FreeMCU::Current().GetEndpoint().GetConferenceManager();
     cm.RemoveConference(conference.GetID());
-    return FALSE;
+    return TRUE; // delete monitor
   }
 
+  return ConferenceRepeatingInfo::Perform(conference);
+}
+
+BOOL ConferenceRecorderInfo::Perform(Conference & conference)
+{
+  // external recorder
   BOOL autoRecordNotEmpty = FreeMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAutoRecordNotEmptyKey, FALSE);
   BOOL allowRecord = FreeMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAllowRecordKey, TRUE);
   if(autoRecordNotEmpty && allowRecord)
   {
-    // check
-    if(conference.externalRecorder && !conference.externalRecorder->running)
-      conference.externalRecorder = NULL;
     // stop recorder if room is empty
-    if(!conference.GetVisibleMemberCount() && conference.externalRecorder)
-    {
-      conference.externalRecorder->running = FALSE;
-      conference.externalRecorder = NULL;
-    }
+    if(!conference.GetVisibleMemberCount())
+      conference.StopExternalRecorder();
     // start recorder if room is not empty
-    if(conference.GetVisibleMemberCount() && !conference.externalRecorder && conference.fileRecorder)
-    {
-      conference.externalRecorder = new ExternalVideoRecorderThread(conference.GetNumber());
-    }
+    if(conference.GetVisibleMemberCount())
+      conference.StartExternalRecorder();
   }
-  if(!allowRecord && conference.externalRecorder)
+  if(!allowRecord)
   {
-    conference.externalRecorder->running = FALSE;
-    conference.externalRecorder = NULL;
+    conference.StopExternalRecorder();
+    return TRUE; // delete monitor
   }
 
-  this->timeToPerform = PTime() + repeatTime;
-  return FALSE;
+  return ConferenceRepeatingInfo::Perform(conference);
 }
-
 
 BOOL ConferenceMCUCheckInfo::Perform(Conference & conference)
 {
@@ -494,6 +502,41 @@ Conference::~Conference()
 #if MCU_VIDEO
   VMLClear();
 #endif
+}
+
+BOOL Conference::StartExternalRecorder()
+{
+  if(externalRecorder)
+    return TRUE;
+  if(!fileRecorder)
+    return FALSE;
+  externalRecorder = new ExternalVideoRecorderThread(number);
+  PThread::Sleep(500);
+  if(!externalRecorder->running)
+  {
+    externalRecorder = NULL;
+    PTRACE(1,"MCU\tConference: " << number <<", failed to start recorder");
+    return FALSE;
+  }
+  PTRACE(1,"MCU\tConference: " << number <<", external video recorder started");
+  FreeMCU::Current().HttpWriteEventRoom("external video recording started", number);
+  FreeMCU::Current().HttpWriteCmdRoom(FreeMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
+  FreeMCU::Current().HttpWriteCmdRoom("build_page()", number);
+  return TRUE;
+}
+
+BOOL Conference::StopExternalRecorder()
+{
+  if(!externalRecorder)
+    return TRUE;
+  externalRecorder->running = FALSE;
+  PThread::Sleep(500);
+  externalRecorder = NULL;
+  PTRACE(1,"MCU\tConference: " << number <<", external video recorder stopped");
+  FreeMCU::Current().HttpWriteEventRoom("external video recording stopped", number);
+  FreeMCU::Current().HttpWriteCmdRoom(FreeMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
+  FreeMCU::Current().HttpWriteCmdRoom("build_page()", number);
+  return TRUE;
 }
 
 int Conference::GetVisibleMemberCount() const
@@ -596,8 +639,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     PTRACE(3, "Conference\tAdding member " << memberToAdd->GetName() << " " << memberToAdd->GetTitle() << " to conference " << guid);
     cout << "Adding member " << memberToAdd->GetName() << " " << memberToAdd->GetTitle() << " to conference " << guid << endl;
 
-    // lock the member list
-//    PWaitAndSignal m(memberListMutex);
     std::map<void *, ConferenceMember *>::const_iterator r;
 
     ConferenceMemberId mid = memberToAdd->GetID();
@@ -636,8 +677,8 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     // make sure each member has a connection created for the new member
     // make sure the new member has a connection created for each existing member
     PINDEX visibleMembers = 0;
-//    std::map<void *, ConferenceMember *>::const_iterator r;
-    for (r = memberList.begin(); r != memberList.end(); r++) {
+    for(r = memberList.begin(); r != memberList.end(); r++)
+    {
       ConferenceMember * conn = r->second;
       if (conn != memberToAdd) {
         conn->AddConnection(memberToAdd);
