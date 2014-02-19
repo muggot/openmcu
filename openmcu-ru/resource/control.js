@@ -914,8 +914,7 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc)
     { // нормальный:
       if(online)
       {
-        if((members[i][1] == id) || (members[i][8] == urlid))
-          members.splice(i,1);
+        if((members[i][1] == id) || (members[i][8] == urlid)) members.splice(i,1);
       }
       else
       { // offline: skip id check
@@ -924,8 +923,7 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc)
     }
     else
     { // дубль:
-      if((members[i][1] == id) || (members[i][2] == name))
-        if(found) members.splice(i,1); else found=1;
+      if((members[i][1] == id) || (members[i][2] == name)) members.splice(i,1);
     }
   }
   j=members.length;
