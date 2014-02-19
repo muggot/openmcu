@@ -1282,11 +1282,8 @@ class Conference : public PObject
 
     void AddMonitorEvent(ConferenceMonitorInfo * info);
     
-    void AddOfflineMemberToNameList(PString & name)
-    {
-     ConferenceMember *zerop=NULL;
-     memberNameList.insert(MemberNameList::value_type(name,zerop));
-    }
+    void AddOfflineMemberToNameList(PString & name);
+
     void RemoveOfflineMemberFromNameList(PString & name)
     {
      memberNameList.erase(name);

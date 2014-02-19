@@ -1231,6 +1231,16 @@ BOOL Conference::PutChosenVan()
   return put;
 }
 
+void Conference::AddOfflineMemberToNameList(PString & name)
+{
+  ConferenceMember *zerop=NULL;
+  memberNameList.insert(MemberNameList::value_type(name,zerop));
+  PString username(name);
+  username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
+  PString url=MCUURL(username).GetUrlId();
+  OpenMCU::Current().HttpWriteCmdRoom("addmmbr(0,0,'"+username+"',0,0,0,0,0,'"+url+"',0)",number);
+}
+
 void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac){
   PTRACE(3,"Conference\tHandling feature access code " << fac << " from " << member.GetName());
   PStringArray s = fac.Tokenise("*");

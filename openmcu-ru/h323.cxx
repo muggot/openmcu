@@ -1198,6 +1198,12 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
   }
   if(action == OTFC_INVITE)
   { conference->InviteMember(value); OTF_RET_OK; }
+  if(action == OTFC_ADD_AND_INVITE)
+  {
+    conference->AddOfflineMemberToNameList(value);
+    conference->InviteMember(value);
+    OTF_RET_OK;
+  }
   if(action == OTFC_REMOVE_OFFLINE_MEMBER)
   {
     conference->RemoveOfflineMemberFromNameList(value);

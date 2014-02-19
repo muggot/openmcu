@@ -29,6 +29,7 @@ var OTFC_MUTE                    =  1;
 var OTFC_MUTE_ALL                =  2;
 var OTFC_REMOVE_FROM_VIDEOMIXERS =  3;
 var OTFC_REFRESH_VIDEO_MIXERS    =  4;
+var OTFC_ADD_AND_INVITE          =  5;
 var OTFC_DROP_MEMBER             =  7;
 var OTFC_VAD_NORMAL              =  8;
 var OTFC_VAD_CHOSEN_VAN          =  9;
@@ -464,7 +465,13 @@ function alive(){
   check_alive=setTimeout(checking_failed,5000);
 }
 
-function inviteoffline(obj,mname){ queue_otf_request(OTFC_INVITE,mname); obj.src='openmcu.ru_launched_Ypf.gif'; }
+function inviteoffline(obj,mname,add)
+{
+  if(typeof add == 'undefined') add=0;
+  if(add)queue_otf_request(OTFC_ADD_AND_INVITE,mname);
+  else queue_otf_request(OTFC_INVITE,mname);
+  obj.src='openmcu.ru_launched_Ypf.gif';
+}
 
 function removeoffline(obj,mname){ if(confirm(window.l_room_remove_from_list+" \""+decodeURIComponent(mname)+"\" ?")) {queue_otf_request(OTFC_REMOVE_OFFLINE_MEMBER,mname); obj.src='openmcu.ru_launched_Ypf.gif'; }}
 
@@ -536,7 +543,7 @@ function invite_checked_abook(obj){
     {
       if(check_box.checked)
       {
-        inviteoffline(document.getElementById('adrbkpic'+i),encodeURIComponent(addressbook[i][2]));
+        inviteoffline(document.getElementById('adrbkpic'+i),encodeURIComponent(addressbook[i][2]),1);
         check_box.checked = false;
       }
     }
@@ -635,7 +642,7 @@ function format_mmbr_abook(m,st,num)
   var ip=get_addr_url_without_param(uname);
 
   var invite = "", check = "";
-  if(!st) invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
+  if(!st) invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
   else invite="<img id='adrbkpic"+num+"' src='i20_plus.gif' width='"+width+"' height='"+height+"' alt='Invite'>";
   if(!st) check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
 
