@@ -214,11 +214,15 @@ void ConferenceFileMember::Unlisten()
     PTRACE(5,"ConferenceFileMember\tWaiting for termination: " << GetName() << "(" << thread->GetThreadName() << ")");
     if(thread->GetThreadName().Left(8) == "recorder")
     {
+#ifdef _WIN32
+      thread->WaitForTermination();
+#else
       int SS = open(audioPipeName, O_RDONLY | O_NONBLOCK);
       PBYTEArray buffer;
       buffer.SetSize(100);
       while(!thread->IsTerminated()) { (void)read(SS, buffer.GetPointer(), buffer.GetSize()); }
       close(SS);
+#endif
     } else {
       thread->WaitForTermination();
     }
@@ -230,11 +234,15 @@ void ConferenceFileMember::Unlisten()
     PTRACE(5,"ConferenceFileMember\tWaiting for termination: " << GetName() << "(" << vthread->GetThreadName() << ")");
     if(vthread->GetThreadName().Left(8) == "recorder")
     {
+#ifdef _WIN32
+      vthread->WaitForTermination();
+#else
       int SS = open(videoPipeName, O_RDONLY | O_NONBLOCK);
       PBYTEArray buffer;
       buffer.SetSize(100);
       while(!vthread->IsTerminated()) { (void)read(SS, buffer.GetPointer(), buffer.GetSize()); }
       close(SS);
+#endif
     } else {
       vthread->WaitForTermination();
     }

@@ -544,6 +544,117 @@ MCUH323EndPoint * FreeMCU::CreateEndPoint(ConferenceManager & manager)
   return new MCUH323EndPoint(manager);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef _WIN32
+static pid_t popen2(const char *command, int *infp = NULL, int *outfp = NULL)
+{
+    int read = 0, write = 1;
+    int p_stdin[2], p_stdout[2];
+    pid_t pid;
+
+    if (pipe(p_stdin) != 0 || pipe(p_stdout) != 0)
+      return -1;
+
+    signal(SIGCHLD, SIG_IGN);
+    pid = fork();
+
+    if (pid < 0)
+      return pid;
+    else if (pid == 0)
+    {
+      close(p_stdin[write]);
+      dup2(p_stdin[read], read);
+      close(p_stdout[read]);
+      dup2(p_stdout[write], write);
+
+      PStringArray pargv = PString(command).Tokenise(" ");
+      PINDEX argc=pargv.GetSize();
+      char *argv[argc+1];
+      for(int i = 0; i< argc; i++) argv[i] = (char*)(const char*)pargv[i];
+      argv[argc]=NULL;
+      execv(FreeMCU::Current().vr_ffmpegPath, argv);
+      perror("execv");
+      exit(1);
+    }
+
+    if (infp == NULL)
+      close(p_stdin[write]);
+    else
+      *infp = p_stdin[write];
+
+    if (outfp == NULL)
+      close(p_stdout[read]);
+    else
+      *outfp = p_stdout[read];
+
+    return pid;
+};
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ExternalVideoRecorderThread::ExternalVideoRecorderThread(PString roomName)
+  : PThread(1000, AutoDeleteThread)
+{
+  running=FALSE;
+  PStringStream t; t << roomName << "__" // fileName format: room101__2013-0516-1058270__704x576x10
+    << PTime().AsString("yyyy-MMdd-hhmmssu", PTime::Local) << "__"
+    << FreeMCU::Current().vr_framewidth << "x"
+    << FreeMCU::Current().vr_frameheight << "x"
+    << FreeMCU::Current().vr_framerate;
+  fileName = t;
+  t = FreeMCU::Current().ffmpegCall;
+  t.Replace("%o",fileName,TRUE,0);
+  PString audio, video;
+#ifdef _WIN32
+  audio = "\\\\.\\pipe\\sound_" + roomName;
+  video = "\\\\.\\pipe\\video_" + roomName;
+#else
+#  ifdef SYS_PIPE_DIR
+  audio = PString(SYS_PIPE_DIR)+"/sound." + roomName;
+  video = PString(SYS_PIPE_DIR)+"/video." + roomName;
+#  else
+  audio = "sound." + roomName;
+  video = "video." + roomName;
+#  endif
+#endif
+  t.Replace("%A",audio,TRUE,0);
+  t.Replace("%V",video,TRUE,0);
+#ifdef _WIN32
+  recordState=_popen(t, "w");
+  PTRACE(1,"EVRT\tStarting new external recording thread, popen result: " << recordState << ", CL: " << t);
+#else
+  recordPid = popen2(t);
+  PTRACE(1,"EVRT\tStarting new external recording thread, pid: " << recordPid << ", CL: " << t);
+#endif
+#ifdef _WIN32
+  if(recordState) {running=TRUE; Resume(); }
+#else
+  if(recordPid > 0) {running=TRUE; Resume(); }
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ExternalVideoRecorderThread::Main()
+{
+  while(running) PThread::Sleep(100);
+  PTRACE(1,"EVRT\tStopping external recording thread" << flush);
+#ifdef _WIN32
+  fputs("q\r\n",recordState);
+#else
+  kill(recordPid, SIGINT);
+#endif
+  PThread::Sleep(200);
+#ifdef _WIN32
+  _pclose(recordState);
+#endif
+  PThread::Terminate();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString FreeMCU::GetEndpointParamFromUrl(PString param, PString addr)
 {
   PString user, host;
@@ -579,6 +690,8 @@ PString FreeMCU::GetEndpointParamFromUrl(PString param, PString addr)
   }
   return value;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int FreeMCU::GetConferenceParam(PString room, PString param, int defaultValue)
 {

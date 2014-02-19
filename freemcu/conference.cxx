@@ -167,13 +167,8 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 {
   PTRACE(2,"MCU\tOnDestroyConference " << conference->GetNumber());
 
-  if(conference->externalRecorder != NULL)
-  {
-    PTRACE(4,"EVRT\tVideo Recorder is active - stopping now");
-    conference->externalRecorder->running=FALSE;
-    PThread::Sleep(1000);
-    conference->externalRecorder = NULL;
-  }
+  // stop external recorder
+  conference->StopExternalRecorder();
 
   PTRACE(2,"MCU\tOnDestroyConference " << conference->GetNumber() <<", disconnect remote endpoints");
   conference->GetMutex().Wait();
