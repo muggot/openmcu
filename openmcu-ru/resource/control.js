@@ -73,7 +73,7 @@ var mixers=0, bfw=704, bfh=576, room='';
 
 var mixer_refresh_timer = null;
 
-if(debug)document.write('<div style="width:800px;height:80px;overflow:auto;border:1px dotted red" id="debug1">'); function dmsg(s){if(debug){document.getElementById('debug1').innerHTML+=s+'. ';document.getElementById('debug1').scrollTop=document.getElementById('debug1').scrollHeight;}}
+if(debug)document.write('<div style="width:100%;height:80px;overflow:auto;border:1px dotted red" id="debug1"></div>'); function dmsg(s){if(debug){document.getElementById('debug1').innerHTML+=s+'. ';document.getElementById('debug1').scrollTop=document.getElementById('debug1').scrollHeight;}}
 
 var fv_ids=Array('room','tag','moderated','vidmemnum','muteUnvisible','VAdelay','VAtimeout','VAlevel');
 var idsl=fv_ids.length;
@@ -730,7 +730,8 @@ function on_tab_abook(){
   abook_refresh();
 }
 
-function members_refresh(){
+function members_refresh()
+{
  if(typeof members==='undefined'){
   document.getElementById('members_pan').innerHTML='ERROR: <i>members</i> variable not set';
   return false;
@@ -895,23 +896,43 @@ function members_sort_name_asc_func(i, j)
     return 0;
 }
 
-function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc){
+function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc)
+{
   if(typeof members==='undefined') return alive();
-  var found=0; var j=members.length;
-  for(var i=j-1;i>=0;i--)
+  var j=members.length;
+  dmsg('addmmbr('+st+','+id+','+name+'...); l1='+j);
+
+  var nameLength = name.length;
+  var dhPos = name.lastIndexOf(" ##");
+  var dup = (dhPos >= nameLength-8);
+  var online = (st!=0);
+
+  var i;
+  for(i=j-1;i>=0;i--)
   {
-    if(name.lastIndexOf(" ##") == -1 && members[i][0] == 0)
-    {
-      if((members[i][1] == id) || (members[i][8] == urlid))
-        if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
-    } else {
+    if((!dup) && (members[i][0] == 0))
+    { // нормальный:
+      if(online)
+      {
+        if((members[i][1] == id) || (members[i][8] == urlid))
+          members.splice(i,1);
+      }
+      else
+      { // offline: skip id check
+        if(members[i][8] == urlid) members.splice(i,1);
+      }
+    }
+    else
+    { // дубль:
       if((members[i][1] == id) || (members[i][2] == name))
-        if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
+        if(found) members.splice(i,1); else found=1;
     }
   }
+  j=members.length;
+  dmsg('l2='+j);
+
   members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc);
-  if(j == members.length-1)
-    members.sort(members_sort_name_asc_func);
+  members.sort(members_sort_name_asc_func);
   alive();
   members_refresh();
   top_panel();
