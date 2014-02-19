@@ -10,14 +10,6 @@ This project is a fork of the project openmcu-ru
 FreeMCU is a simple Mutli Conference Unit using the H.323 and SIP protocol.
 It is known to run on Linux, FreeBSD and Windows.
 
-Requires the H323Plus library - see http://www.h323plus.org for more information.
-Requires the PTLib library - see http://www.opalvoip.org for more information.
-Requires the Sofia-SIP library - see http://www.sofia-sip.sourceforge.net for more information.
-Requires the FFmpeg library - see http://www.ffmpeg.org for more information.
-Requires the FreeType library - see http://www.freetype.org for more information.
-Requires the libyuv library - see http://www.code.google.com/p/libyuv for more information.
-
-
 2. Features
 -----------
 
@@ -52,7 +44,25 @@ The default room is called room101.
 4. Installation Instructions
 -----------------------
 
-./autogen.sh
-./configure
-make all
-make install
+Requires:
+  * FFmpeg >= 0.10.4 - http://www.ffmpeg.org
+    or Libav >= 0.8  - http://libav.org
+  * libx264          - http://www.videolan.org/developers/x264.html
+  * libvpx >= 1.0    - http://webm.googlecode.com
+  * FreeType         - http://www.freetype.org
+  * libjpeg          - http://ijg.org
+    or libjpeg-turbo - http://libjpeg-turbo.virtualgl.org
+
+FreeMCU contains the following required libraries in the repository:
+  * H323Plus         - http://www.h323plus.org
+  * PTLib            - http://www.opalvoip.org
+  * Sofia-SIP        - http://www.sofia-sip.sourceforge.net
+  * libSRTP          - http://srtp.sourceforge.net/srtp.html
+  * libzrtp          - http://zfoneproject.com/prod_sdk.html
+  * libyuv           - http://www.code.google.com/p/libyuv
+
+Install:
+  ./autogen.sh
+  ./configure
+  make all
+  make install
