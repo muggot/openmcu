@@ -137,7 +137,7 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   if (timeLimit > 0)
     monitor->AddMonitorEvent(new ConferenceTimeLimitInfo(conference->GetID(), PTime() + timeLimit*1000));
 
-  if(OpenMCU::Current().vr_minimumSpaceMiB) AddMonitorEvent( new CheckPartitionSpace(conference->GetID(), 1000));
+  if(OpenMCU::Current().vr_minimumSpaceMiB) AddMonitorEvent( new CheckPartitionSpace(conference->GetID(), 30000));
 
   // add file recorder member    
 #if ENABLE_TEST_ROOMS
@@ -322,17 +322,19 @@ BOOL ConferenceManager::HasConference(const PString & number, OpalGloballyUnique
 
 void ConferenceManager::RemoveConference(const OpalGloballyUniqueID & confId)
 {
-  PWaitAndSignal m(conferenceListMutex);
+  PTRACE(2, "RemoveConference\t3");
+  conferenceListMutex.Wait();
   ConferenceListType::iterator r = conferenceList.find(confId);
-  if (r != conferenceList.end())  {
-    Conference * conf = r->second;
-    OnDestroyConference(conf);
-    conferenceList.erase(confId);
-    mcuNumberMap.RemoveNumber(conf->GetMCUNumber());
-    monitor->RemoveForConference(conf->GetID());
-    PTRACE(2, "RemoveConference");
-    delete conf;
-  }
+  if(r == conferenceList.end()) { conferenceListMutex.Signal(); return; }
+  Conference * conf = r->second;
+  OnDestroyConference(conf);
+  conferenceList.erase(confId);
+  mcuNumberMap.RemoveNumber(conf->GetMCUNumber());
+  conferenceListMutex.Signal();
+  monitor->RemoveForConference(conf->GetID());
+  PTRACE(2, "RemoveConference\t2");
+  delete conf;
+  PTRACE(2, "RemoveConference\t1");
 }
 
 void ConferenceManager::RemoveMember(const OpalGloballyUniqueID & confId, ConferenceMember * toRemove)
@@ -368,7 +370,6 @@ void ConferenceMonitor::Main()
     if (!running) break;
 
     PWaitAndSignal m(mutex);
-
     MonitorInfoList theCopy(monitorList);
     PTime now;
     for(MonitorInfoList::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
@@ -380,10 +381,7 @@ void ConferenceMonitor::Main()
         PWaitAndSignal m2(manager.GetConferenceListMutex());
         ConferenceListType & confList = manager.GetConferenceList();
         ConferenceListType::iterator s = confList.find(info.guid);
-        if (s != confList.end())
-        {
-          deleteAfterPerform = info.Perform(*s->second);
-        }
+        if (s != confList.end()) deleteAfterPerform = info.Perform(*s->second);
       }
       if (deleteAfterPerform) monitorList.erase(r);
     }
@@ -399,17 +397,13 @@ void ConferenceMonitor::AddMonitorEvent(ConferenceMonitorInfo * info)
 void ConferenceMonitor::RemoveForConference(const OpalGloballyUniqueID & guid)
 {
   PWaitAndSignal m(mutex);
-
-  MonitorInfoList::iterator r = monitorList.begin();
-  while (r != monitorList.end()) {
+  MonitorInfoList theCopy(monitorList);
+  for(MonitorInfoList::iterator r = theCopy.begin(), e=theCopy.end(); r!=e; ++r)
+  {
     ConferenceMonitorInfo & info = **r;
-    if (info.guid != guid)
-      ++r;
-    else {
-      delete *r;
-      monitorList.erase(r);
-      r = monitorList.begin();
-    }
+    if (info.guid != guid) continue;
+    delete *r;
+    monitorList.erase(r);
   }
 }
 
@@ -451,15 +445,7 @@ BOOL ConferenceMCUCheckInfo::Perform(Conference & conference)
 
 BOOL CheckPartitionSpace::Perform(Conference & conference)
 {
-  PTRACE(5,"Monitor\tCheckPartitionSpace::Perform now=" << now << " last=" << last << " delta=" << delta << " trigger=" << trigger);
-  now=(unsigned long)time(0);
-  delta=now-last;
-  if(delta>=10)
-  {
-    last=now;
-    trigger = conference.RecorderCheckSpace();
-  }
-  if(!trigger) conference.StopRecorder();
+  if(!conference.RecorderCheckSpace()) conference.StopRecorder();
   return FALSE;
 }
 

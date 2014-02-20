@@ -1119,7 +1119,8 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
 #define OTF_RET_OK { conferenceManager.UnlockConference(); return "OK"; }
 #define OTF_RET_FAIL { conferenceManager.UnlockConference(); return "FAIL"; }
 
-  Conference * conference = conferenceManager.MakeAndLockConference(room); // hope it already created: we'll just get it
+  Conference * conference = conferenceManager.FindConferenceWithLock(room);
+  if(conference == NULL) return "FAIL"; // todo: 404 (?)
 
   if(action == OTFC_REFRESH_VIDEO_MIXERS)
   {

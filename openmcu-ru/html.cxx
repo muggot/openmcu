@@ -1749,7 +1749,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     else if(action == "delete" && (!room.IsEmpty()))
     { ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
       if(cm.HasConference(room))
-      { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
+      { Conference * conference = cm.FindConferenceWithLock(room); // find & get locked
         if(conference != NULL)
         { cm.RemoveConference(conference->GetID());
           cm.UnlockConference();
@@ -1759,7 +1759,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     else if(action == "startRecorder" && (!room.IsEmpty()))
     { ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
       if(cm.HasConference(room))
-      { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
+      { Conference * conference = cm.FindConferenceWithLock(room); // find & get locked
         if(conference != NULL)
         {
           conference->StartRecorder();
@@ -1770,7 +1770,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     else if(action == "stopRecorder" && (!room.IsEmpty()))
     { ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
       if(cm.HasConference(room))
-      { Conference * conference = cm.MakeAndLockConference(room); // find & get locked
+      { Conference * conference = cm.FindConferenceWithLock(room); // find & get locked
         if(conference != NULL)
         {
           conference->StopRecorder();
