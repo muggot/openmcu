@@ -542,10 +542,9 @@ SipRTP_UDP *MCUSipConnnection::CreateRTPSession(int pt, SipCapability *sc)
 
 int MCUSipConnnection::CreateAudioChannel(int pt, int dir)
 {
-  SipCapMapType::iterator it = sipCaps.find(pt);
-  if(it == sipCaps.end()) return 0;
+  SipCapability *sc = FindSipCap(pt);
+  if(!sc) return 0;
 
-  SipCapability *sc = it->second;
   H323Capability * cap = sc->cap;
   if(cap == NULL) return 0;
 
@@ -610,10 +609,9 @@ int MCUSipConnnection::CreateAudioChannel(int pt, int dir)
 
 int MCUSipConnnection::CreateVideoChannel(int pt, int dir)
 {
-  SipCapMapType::iterator it = sipCaps.find(pt);
-  if(it == sipCaps.end()) return 0;
+  SipCapability *sc = FindSipCap(pt);
+  if(!sc) return 0;
 
-  SipCapability *sc = it->second;
   H323Capability * cap = sc->cap;
   if(cap == NULL) return 0;
 
@@ -669,6 +667,23 @@ int MCUSipConnnection::CreateVideoChannel(int pt, int dir)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUSipConnnection::InsertSipCap(SipCapability *sc)
+{
+  if(!sc) return;
+  SipCapMap.insert(SipCapMapType::value_type(sc->payload, sc));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+SipCapability * MCUSipConnnection::FindSipCap(int payload)
+{
+  SipCapMapType::iterator it = SipCapMap.find(payload);
+  if(it != SipCapMap.end()) return it->second;
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUSipConnnection::CreateLogicalChannels()
 {
   if(scap >= 0) // audio capability is set
@@ -688,10 +703,10 @@ void MCUSipConnnection::CreateLogicalChannels()
 void MCUSipConnnection::StartChannel(int pt, int dir)
 {
   if(pt < 0) return;
-  SipCapMapType::iterator cir = sipCaps.find(pt);
-  if(cir == sipCaps.end()) return;
-  if(dir == 0 && (cir->second->mode&2) && cir->second->inpChan && !cir->second->inpChan->IsRunning()) cir->second->inpChan->Start();
-  if(dir == 1 && (cir->second->mode&1) && cir->second->outChan && !cir->second->outChan->IsRunning()) cir->second->outChan->Start();
+  SipCapability *sc = FindSipCap(pt);
+  if(!sc) return;
+  if(dir == 0 && (sc->mode&2) && sc->inpChan && !sc->inpChan->IsRunning()) sc->inpChan->Start();
+  if(dir == 1 && (sc->mode&1) && sc->outChan && !sc->outChan->IsRunning()) sc->outChan->Start();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -715,10 +730,10 @@ void MCUSipConnnection::StartTransmitChannels()
 void MCUSipConnnection::StopChannel(int pt, int dir)
 {
   if(pt < 0) return;
-  SipCapMapType::iterator cir = sipCaps.find(pt);
-  if(cir == sipCaps.end()) return;
-  if(dir==0 && cir->second->inpChan) cir->second->inpChan->CleanUpOnTermination();
-  if(dir==1 && cir->second->outChan) cir->second->outChan->CleanUpOnTermination();
+  SipCapability *sc = FindSipCap(pt);
+  if(!sc) return;
+  if(dir==0 && sc->inpChan) sc->inpChan->CleanUpOnTermination();
+  if(dir==1 && sc->outChan) sc->outChan->CleanUpOnTermination();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -742,10 +757,10 @@ void MCUSipConnnection::StopReceiveChannels()
 void MCUSipConnnection::DeleteMediaChannels(int pt)
 {
   if(pt<0) return;
-  SipCapMapType::iterator cir = sipCaps.find(pt);
-  if(cir == sipCaps.end()) return;
-  if(cir->second->inpChan) { delete cir->second->inpChan; cir->second->inpChan = NULL; }
-  if(cir->second->outChan) { delete cir->second->outChan; cir->second->outChan = NULL; }
+  SipCapability *sc = FindSipCap(pt);
+  if(!sc) return;
+  if(sc->inpChan) { delete sc->inpChan; sc->inpChan = NULL; }
+  if(sc->outChan) { delete sc->outChan; sc->outChan = NULL; }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -773,11 +788,12 @@ void MCUSipConnnection::CleanUpOnCallEnd()
 
 void MCUSipConnnection::FastUpdatePicture()
 {
-  SipCapMapType::iterator cir = sipCaps.find(vcap);
-  if(cir != sipCaps.end() && cir->second->outChan != NULL)
+  if(vcap < 0) return;
+  SipCapability *sc = FindSipCap(vcap);
+  if(sc && sc->outChan)
   {
-    H323VideoCodec *vcodec = (H323VideoCodec*)cir->second->outChan->GetCodec();
-    if(vcodec != NULL)
+    H323VideoCodec *vcodec = (H323VideoCodec*)sc->outChan->GetCodec();
+    if(vcodec)
       vcodec->OnFastUpdatePicture();
   }
 }
@@ -787,7 +803,10 @@ void MCUSipConnnection::FastUpdatePicture()
 void MCUSipConnnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsigned commandIdentifier)
 {
   if(commandIdentifier == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
-    SendFastUpdatePicture();
+  {
+    PString *cmd = new PString("fast_update:"+callToken);
+    sep->SipQueue.Push(cmd);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1213,7 +1232,7 @@ sdp_parser_t *MCUSipConnnection::SdpParser(PString sdp_txt)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnnection::ProcessSDP(PString & sdp_txt, SipCapMapType & sipCaps, int reinvite)
+int MCUSipConnnection::ProcessSDP(PString & sdp_txt, SipCapMapType & SipCaps, int reinvite)
 {
   PTRACE(1, "MCUSIP\tProcessSDP");
   sdp_parser_t *parser = SdpParser(sdp_txt);
@@ -1323,8 +1342,8 @@ int MCUSipConnnection::ProcessSDP(PString & sdp_txt, SipCapMapType & sipCaps, in
       for(sdp_rtpmap_t *rm = m->m_rtpmaps; rm != NULL; rm = rm->rm_next)
       {
         int payload = rm->rm_pt;
-        SipCapMapType::iterator it = sipCaps.find(payload);
-        if(it != sipCaps.end()) continue;
+        SipCapMapType::iterator it = SipCaps.find(payload);
+        if(it != SipCaps.end()) continue;
         SipCapability *sc = new SipCapability(payload, media, mode, port, bw);
         if(rm->rm_encoding) sc->format = rm->rm_encoding;
         if(rm->rm_rate) sc->clock = rm->rm_rate;
@@ -1344,7 +1363,7 @@ int MCUSipConnnection::ProcessSDP(PString & sdp_txt, SipCapMapType & sipCaps, in
         sc->dtls_fp_type = dtls_fp_type;
         sc->dtls_fp = dtls_fp;
         //
-        sipCaps.insert(SipCapMapType::value_type(payload, sc));
+        SipCaps.insert(SipCapMapType::value_type(payload, sc));
       }
     }
   }
@@ -1355,7 +1374,7 @@ int MCUSipConnnection::ProcessSDP(PString & sdp_txt, SipCapMapType & sipCaps, in
   cn = 0; while(endpoint.tvCaps[cn]!=NULL) { tvCaps.AppendString(endpoint.tvCaps[cn]); cn++; }
 
   scap = -1; vcap = -1;
-  for(SipCapMapType::iterator it=sipCaps.begin(); it!=sipCaps.end(); it++)
+  for(SipCapMapType::iterator it=SipCaps.begin(); it!=SipCaps.end(); it++)
   {
     SipCapability &c = it->second[0];
     if(c.media == 0)
@@ -1478,13 +1497,13 @@ int MCUSipConnnection::ProcessSDP(PString & sdp_txt, SipCapMapType & sipCaps, in
 
   if(scap != -1)
   {
-    SipCapMapType::iterator it = sipCaps.find(scap);
-    if(it != sipCaps.end()) it->second->Print();
+    SipCapMapType::iterator it = SipCaps.find(scap);
+    if(it != SipCaps.end()) it->second->Print();
   }
   if(vcap != -1)
   {
-    SipCapMapType::iterator it = sipCaps.find(vcap);
-    if(it != sipCaps.end()) it->second->Print();
+    SipCapMapType::iterator it = SipCaps.find(vcap);
+    if(it != SipCaps.end()) it->second->Print();
   }
 
   sdp_msg = "v=0\r\no=";
@@ -1619,7 +1638,7 @@ int MCUSipConnnection::ProcessInviteEvent()
   if(pref_video_cap != "") { PTRACE(1, "MCUSipConnnection\tSet endpoint custom video: " << pref_video_cap); }
 
   PString sdp_txt = sip->sip_payload->pl_data;
-  if(!ProcessSDP(sdp_txt, sipCaps, 0))
+  if(!ProcessSDP(sdp_txt, SipCapMap, 0))
     return 415; // SIP_415_UNSUPPORTED_MEDIA
 
   // join conference
@@ -1651,24 +1670,27 @@ int MCUSipConnnection::ProcessReInviteEvent()
     return 415; // SIP_415_UNSUPPORTED_MEDIA
 
   PString sdp_txt = sip->sip_payload->pl_data;
-  SipCapMapType new_caps;
+  SipCapMapType NewSipCapMap;
 
   int cur_scap = scap;
   int cur_vcap = vcap;
   PString cur_sdp_msg = sdp_msg;
 
-  if(!ProcessSDP(sdp_txt, new_caps, 1))
+  if(!ProcessSDP(sdp_txt, NewSipCapMap, 1))
     return 415; // SIP_415_UNSUPPORTED_MEDIA
 
   int sflag = 1; // 0 - no changes
   //cout << "scap: " << scap << " cur_scap: " << cur_scap << "\n";
   if(scap >= 0 && cur_scap >= 0)
   {
-    SipCapMapType::iterator cir = sipCaps.find(cur_scap);
-    if(cir == sipCaps.end()) return 500; // SIP_500_INTERNAL_SERVER_ERROR
+    SipCapMapType::iterator cir = SipCapMap.find(cur_scap);
+    if(cir == SipCapMap.end()) return 500; // SIP_500_INTERNAL_SERVER_ERROR
     SipCapability *cur_sc = cir->second;
-    cir = new_caps.find(scap);
+
+    cir = NewSipCapMap.find(scap);
+    if(cir == NewSipCapMap.end()) return 500; // SIP_500_INTERNAL_SERVER_ERROR
     SipCapability *new_sc = cir->second;
+
     sflag = new_sc->CmpSipCaps(*cur_sc);
     if(!sflag) sdp_msg += new_sc->sdp;
   }
@@ -1683,11 +1705,14 @@ int MCUSipConnnection::ProcessReInviteEvent()
   int vflag = 1; // 0 - no changes
   if(vcap >= 0 && cur_vcap >= 0)
   {
-    SipCapMapType::iterator cir = sipCaps.find(cur_vcap);
-    if(cir == sipCaps.end()) return 500; // SIP_500_INTERNAL_SERVER_ERROR
+    SipCapMapType::iterator cir = SipCapMap.find(cur_vcap);
+    if(cir == SipCapMap.end()) return 500; // SIP_500_INTERNAL_SERVER_ERROR
     SipCapability *cur_sc = cir->second;
-    cir = new_caps.find(vcap);
+
+    cir = NewSipCapMap.find(vcap);
+    if(cir == NewSipCapMap.end()) return 500; // SIP_500_INTERNAL_SERVER_ERROR
     SipCapability *new_sc = cir->second;
+
     vflag = new_sc->CmpSipCaps(*cur_sc);
     if(!vflag) sdp_msg += new_sc->sdp;
   }
@@ -1709,7 +1734,7 @@ int MCUSipConnnection::ProcessReInviteEvent()
     return 1;
   }
 
-  sipCaps = new_caps;
+  SipCapMap = NewSipCapMap;
 
   if(sflag && scap>=0)
   {
@@ -2505,6 +2530,22 @@ void MCUSipEndPoint::ProcessProxyAccount()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUSipEndPoint::InsertProxyAccount(ProxyAccount *proxy)
+{
+  ProxyAccountMap.insert(ProxyAccountMapType::value_type(proxy->username+"@"+proxy->domain, proxy));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ProxyAccount * MCUSipEndPoint::FindProxyAccount(PString account)
+{
+  ProxyAccountMapType::iterator it = ProxyAccountMap.find(account);
+  if(it != ProxyAccountMap.end()) return it->second;
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUSipEndPoint::InitProxyAccounts()
 {
   for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); )
@@ -2637,6 +2678,15 @@ void MCUSipEndPoint::ProcessSipQueue()
       PString to = data.Tokenise(",")[1];
       PString call_id = data.Tokenise(",")[2];
       SipMakeCall(from, to, call_id);
+    }
+    if(cmd->Left(12) == "fast_update:")
+    {
+      PString callToken = cmd->Right(cmd->GetLength()-12);
+      MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+      if(sCon)
+      {
+        sCon->SendFastUpdatePicture();
+      }
     }
     delete cmd;
     cmd = SipQueue.Pop();

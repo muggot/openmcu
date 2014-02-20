@@ -394,17 +394,19 @@ class Registrar : public PThread
     RegistrarConnection * FindRegConn(PString callToken);
     RegistrarConnection * FindRegConnUsername(PString username);
 
-    typedef std::map<PString /*  username  */, RegistrarAccount *> AccountMapType;
+    typedef std::map<PString /* username */, RegistrarAccount *> AccountMapType;
+    AccountMapType AccountMap;
+
     typedef std::map<PString /* username */, Subscription *> SubscriptionMapType;
+    SubscriptionMapType SubscriptionMap;
+
     typedef std::map<PString /* callToken */, RegistrarConnection *> RegistrarConnectionMapType;
+    RegistrarConnectionMapType RegistrarConnectionMap;
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
     PMutex & GetMutex() { return mutex; }
     PMutex mutex;
-    AccountMapType AccountMap;
-    RegistrarConnectionMapType RegistrarConnectionMap;
-    SubscriptionMapType SubscriptionMap;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

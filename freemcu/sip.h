@@ -145,46 +145,38 @@ typedef std::map<int, SipCapability *> SipCapMapType;
 class H323toSipQueue
 {
   public:
-    H323toSipQueue()
-      :rp(0), wp(0), qsize(100)
-    { for(int i=0; i<qsize; i++) queue[i] = NULL; }
-    ~H323toSipQueue() { for (int i=0; i<qsize; i++) if(queue[i]) delete queue[i]; }
+    H323toSipQueue() { }
+    ~H323toSipQueue() { }
     BOOL Push(PString *cmd)
     {
+      PThread::Sleep(10);
+      if(!cmd) return FALSE;
       Lock();
-      int tp = wp;
-      if(queue[wp] != NULL)
-      {
-        PTRACE(1, "MCUSIP\tH323toSipQueue full, " << *cmd << "message lost");
-        Unlock();
-        return FALSE;
-      }
-      wp = (wp+1)%qsize; queue[tp] = cmd;
+      if(queue.GetSize() > 100) { Unlock(); return FALSE; }
+      if(queue.GetStringsIndex(*cmd) != P_MAX_INDEX) { Unlock(); return FALSE; }
+      queue.Append(cmd);
       Unlock();
       return TRUE;
     }
     PString *Pop()
     {
+      PThread::Sleep(10);
       Lock();
-      PString *cmd = NULL;
-      if(queue[rp] != NULL)
+      PString *cmd = (PString *)queue.GetAt(0);
+      if(cmd)
       {
-        cmd = queue[rp];
-        queue[rp] = NULL;
-        rp++;
+        cmd = new PString(*cmd);
+        queue.RemoveAt(0);
       }
       Unlock();
       return cmd;
     }
 
   protected:
+    PStringArray queue;
     void Lock()   { mutex.Wait(); }
     void Unlock() { mutex.Signal(); }
     PMutex mutex;
-    int rp;
-    int wp;
-    int qsize;
-    PString *queue[100];
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -298,9 +290,12 @@ class MCUSipConnnection : public MCUH323Connection
     unsigned audio_rtp_port, video_rtp_port;
 
   protected:
+    SipCapMapType SipCapMap;
+    void InsertSipCap(SipCapability *sc);
+    SipCapability *FindSipCap(int payload);
+
     MCUSipEndPoint *sep;
     PString sdp_s; // sdp for SIP_200_OK
-    SipCapMapType sipCaps; // map of sip capabilities
     int scap; // selected audio capability payload type
     int vcap; // selected video capability payload type
     unsigned int sdp_seq;
@@ -347,16 +342,8 @@ class MCUSipEndPoint : public PThread
     PString MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce);
 
     ProxyAccountMapType ProxyAccountMap;
-    void InsertProxyAccount(ProxyAccount *proxy)
-    {
-      ProxyAccountMap.insert(ProxyAccountMapType::value_type(proxy->username+"@"+proxy->domain, proxy));
-    }
-    ProxyAccount *FindProxyAccount(PString account)
-    {
-      ProxyAccountMapType::iterator it = ProxyAccountMap.find(account);
-      if(it != ProxyAccountMap.end()) return it->second;
-      return NULL;
-    }
+    void InsertProxyAccount(ProxyAccount *proxy);
+    ProxyAccount *FindProxyAccount(PString account);
 
   protected:
     void MainLoop();
