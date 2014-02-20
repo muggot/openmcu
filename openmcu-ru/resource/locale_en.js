@@ -93,7 +93,14 @@ window.l_info_invite ='';
 window.l_info_invite_f ='';
 window.l_info_invite_s ='';
 window.l_info_rooms ='To view room and set it in managed mode - click its name.';
-window.l_info_control ='';
+
+window.l_info_control ='\
+<div id=\'tip\' name=\'tip\'\
+  onclick=\'if(typeof savedhelpcontent=="undefined"){savedhelpcontent=this.innerHTML;this.innerHTML="This page is used to manage your conference. You can chose participants from the list and place them in desired parts of a screen with layout control feature (drag-and-drop or drop-down boxes). Each position may be assigned to any participant directly (static), or it could be activated by voice.<br>Voice-activated positions could be marked as VAD or VAD2 (most active participants will be automatically moved from VAD to VAD2).";}else {this.innerHTML=savedhelpcontent; try {delete savedhelpcontent;} catch(e){savedhelpcontent=undefined;};}\'\
+>This page is used to\
+ <span style=\'cursor:pointer;font-weight:bold;color:#095\'> ...</span>\
+</div>';
+
 window.l_info_records ='\
 Page shows video records directory (on the server), \
 and allows to download them.';
@@ -170,3 +177,10 @@ window.l_room_drop_all_active_members              = 'Drop ALL active connection
 window.l_room_remove_all_inactive_members          = 'Remove ALL inactive members from list?';
 window.l_room_drop_connection_with                 = 'Drop connection with';
 window.l_room_remove_from_list                     = 'Remove from list';
+
+window.l_room_deletion_text = ["",                   "Closing room &laquo;%&raquo;: disconnecting participants",
+                                                     "Closing room &laquo;%&raquo;: waiting for participants get out of room",
+                                                     "Closing room &laquo;%&raquo;: disconnecting hidden system members",
+                                                     "Closing room &laquo;%&raquo;: waiting for members get out of room",
+                                                     "Room &laquo;%&raquo; DELETED"
+];

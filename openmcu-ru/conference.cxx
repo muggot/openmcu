@@ -187,8 +187,15 @@ void ConferenceManager::OnCreateConference(Conference * conference)
 
 void ConferenceManager::OnDestroyConference(Conference * conference)
 {
+  PString number = conference->GetNumber();
+
+  PString jsName(number);
+  jsName.Replace("\"","\\x27",TRUE,0); jsName.Replace("'","\\x22",TRUE,0);
+  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(1,'" + jsName + "')", number);
+
   conference->stopping=TRUE;
-  PTRACE(2,"MCU\tOnDestroyConference() Cleaning out conference " << conference->GetNumber());
+
+  PTRACE(2,"MCU\tOnDestroyConference() Cleaning out conference " << number);
 
 // step 1: stop external video recorder:
 
@@ -223,11 +230,15 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
     }
   }
 
+  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(2,'" + jsName + "')", number);
+
 // step 3.5: additinal check (linphone fails without it)
   PTRACE(3,"MCU\tOnDestroyConference() waiting for visibleMembersCount==0, up to 10 s");
   for(PINDEX i=0;i<100;i++) if(conference->GetVisibleMemberCount()==0) break; else PThread::Sleep(100);
 
 // step 4: delete caches and file recorder:
+
+  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(3,'" + jsName + "')", number);
 
   if(theCopy.size() > 0)
   for(Conference::MemberList::iterator r=theCopy.begin(); r!=theCopy.end(); ++r)
@@ -257,9 +268,13 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
 // step 5: all done. wait for empty member list (but not as long):
 
+  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(4,'" + jsName + "')", number);
+
   PTRACE(3,"MCU\tOnDestroyConference() Removal in progress. Waiting up to 10 s");
 
   for(PINDEX i=0;i<100;i++) if(conference->GetMemberList().size()==0) break; else PThread::Sleep(100);
+
+  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(5,'" + jsName + "')", number);
   PTRACE(3,"MCU\tOnDestroyConference() Removal done");
 }
 

@@ -473,6 +473,21 @@ function inviteoffline(obj,mname,add)
   obj.src='openmcu.ru_launched_Ypf.gif';
 }
 
+function notice_deletion(stage, room)
+{
+  if(typeof window.l_room_deletion_text == 'undefined')
+  {
+    my_alert('Stopping and deleting &laquo;'+room+'&raquo;: ' + (5-stage));
+  }
+  else
+  {
+    var s=window.l_room_deletion_text[stage];
+    s=s.replace(/\%/g, room);
+    my_alert(s);
+  }
+  if(stage==5) location.href='/Select';
+}
+
 function removeoffline(obj,mname){ if(confirm(window.l_room_remove_from_list+" \""+decodeURIComponent(mname)+"\" ?")) {queue_otf_request(OTFC_REMOVE_OFFLINE_MEMBER,mname); obj.src='openmcu.ru_launched_Ypf.gif'; }}
 
 function disablevad_yes_no(obj,mid,disv){ obj.style.color='#ff0'; queue_otf_request(3-disv,mid); return false; }
