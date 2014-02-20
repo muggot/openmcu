@@ -465,7 +465,7 @@ void Registrar::Leave(int account_type, PString callToken)
 {
   MCUH323Connection *conn = NULL;
   if(account_type == ACCOUNT_TYPE_SIP)
-    conn = (MCUSipConnnection *)ep->FindConnectionWithLock(callToken);
+    conn = (MCUSipConnection *)ep->FindConnectionWithLock(callToken);
   else if(account_type == ACCOUNT_TYPE_H323)
     conn = (MCUH323Connection *)ep->FindConnectionWithLock(callToken);
   if(conn)
@@ -512,7 +512,6 @@ void Registrar::MainLoop()
       // registrar
       if(regAccount->registered)
       {
-        //cout << "111111111111111111 " << regAccount->start_time << " " << regAccount->expires << "\n";
         if(now > regAccount->start_time + PTimeInterval(regAccount->expires*1000))
           regAccount->registered = FALSE;
       }
@@ -535,7 +534,6 @@ void Registrar::MainLoop()
       // MCU call answer limit
       if(regConn->state == CONN_MCU_WAIT)
       {
-        //cout << "222222222222222222 " << regConn->start_time << " " << regConn->accept_timeout << "\n";
         if(!ep->HasConnection(regConn->callToken_in))
         {
           if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
@@ -545,7 +543,6 @@ void Registrar::MainLoop()
       // make internal call
       if(regConn->state == CONN_WAIT)
       {
-        //cout << "222222222222222222 " << regConn->start_time << " " << regConn->accept_timeout << "\n";
         if(regConn->callToken_out == "")
         {
           if(!MakeCall(regConn, regConn->username_in, regConn->username_out))

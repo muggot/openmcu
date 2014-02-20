@@ -39,7 +39,7 @@ enum SipSecureTypes
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUSipEndPoint;
-class MCUSipConnnection;
+class MCUSipConnection;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -177,10 +177,10 @@ class H323toSipQueue
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class MCUSipConnnection : public MCUH323Connection
+class MCUSipConnection : public MCUH323Connection
 {
   public:
-    MCUSipConnnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken)
+    MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken)
       :MCUH323Connection(*_ep, 0, NULL), sep(_sep)
       {
        callToken = _callToken;
@@ -204,10 +204,10 @@ class MCUSipConnnection : public MCUH323Connection
        aDataSocket = aControlSocket = vDataSocket = vControlSocket = NULL; // temp rtp sockets
        audio_rtp_port = video_rtp_port = 0;
       }
-    ~MCUSipConnnection()
+    ~MCUSipConnection()
     {
-      PTRACE(1, "MCUSipConnnection\tDestructor called,  remotePartyAddress: " << remotePartyAddress);
-      cout << "MCUSipConnnection\tDestructor called, remotePartyAddress: " << remotePartyAddress << "\n";
+      PTRACE(1, "MCUSipConnection\tDestructor called,  remotePartyAddress: " << remotePartyAddress);
+      cout << "MCUSipConnection\tDestructor called, remotePartyAddress: " << remotePartyAddress << "\n";
       if(c_sip_msg) msg_destroy(c_sip_msg);
       DeleteTempSockets();
     }
@@ -331,7 +331,7 @@ class MCUSipEndPoint : public PThread
     nta_outgoing_t * SipMakeCall(PString from, PString to, PString & call_id);
     int CreateIncomingConnection(const msg_t *msg);
     int CreateOutgoingConnection(const msg_t *msg);
-    int ReqReply(const msg_t *msg, unsigned method, const char *method_name=NULL, MCUSipConnnection *sCon=NULL);
+    int ReqReply(const msg_t *msg, unsigned method, const char *method_name=NULL, MCUSipConnection *sCon=NULL);
     int SendACK(const msg_t *msg);
 
     BOOL MakeProxyAuth(ProxyAccount *proxy, const sip_t *sip);
@@ -348,11 +348,11 @@ class MCUSipEndPoint : public PThread
     su_root_t *root;
     nta_agent_t *agent;
 
-    MCUSipConnnection * FindConnectionWithLock(const PString & callToken)
-    { return (MCUSipConnnection *)ep->FindConnectionWithLock(callToken); }
+    MCUSipConnection * FindConnectionWithLock(const PString & callToken)
+    { return (MCUSipConnection *)ep->FindConnectionWithLock(callToken); }
 
-    MCUSipConnnection * FindConnectionWithoutLock(const PString & callToken)
-    { return (MCUSipConnnection *)ep->FindConnectionWithoutLock(callToken); }
+    MCUSipConnection * FindConnectionWithoutLock(const PString & callToken)
+    { return (MCUSipConnection *)ep->FindConnectionWithoutLock(callToken); }
 
     static int /*__attribute__((cdecl))*/ ProcessSipEventWrap_cb(nta_agent_magic_t *context, nta_agent_t *agent, msg_t *msg, sip_t *sip)
     { return ((MCUSipEndPoint *)context)->ProcessSipEvent_cb(agent, msg, sip); }
@@ -366,7 +366,7 @@ class MCUSipEndPoint : public PThread
     { return ((MCUSipEndPoint *)context)->ProcessSipEvent_request1(leg, irq, sip); }
     int ProcessSipEvent_request1(nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip);
 
-    PString CreateSdpInvite(MCUSipConnnection *sCon, PString local_url, PString remote_url);
+    PString CreateSdpInvite(MCUSipConnection *sCon, PString local_url, PString remote_url);
     BOOL GetCapabilityParams(PString & capname, unsigned & pt, PString & name, unsigned & rate, PString & fmtp);
     sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, PString & capname, unsigned & dyn_pt);
     sdp_media_t *CreateSdpMedia(su_home_t *sess_home, PStringArray & caps, sdp_media_e m_type, sdp_proto_e m_proto, unsigned m_port, unsigned & dyn_pt);

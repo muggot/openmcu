@@ -253,6 +253,7 @@ class MCUH323Connection : public H323Connection
     virtual void LeaveMCU();
 
     // overrides from H323Connection
+    virtual BOOL OnH245_MiscellaneousCommand(const H245_MiscellaneousCommand & pdu /* Received PDU */ );
     virtual void AttachSignalChannel(const PString & token, H323Transport * channel, BOOL answeringCall);
     virtual BOOL OpenAudioChannel(BOOL, unsigned,   H323AudioCodec & codec);
 #if MCU_VIDEO
@@ -427,14 +428,6 @@ class MCUH323Connection : public H323Connection
     unsigned int recordDuration;
     unsigned int recordLimit;
 
-/*
-    void StartRecording(
-      const PFilePath & filename, 
-      unsigned int recordLimit = 5, 
-      unsigned int recordSilenceThreshold = 1
-    );
-    virtual void OnFinishRecording();
-*/
     //PAdaptiveDelay playDelay;
 
     // True if the state has not changed since the wave file started.
@@ -444,6 +437,10 @@ class MCUH323Connection : public H323Connection
     PString audioReceiveCodecName;
 
     BOOL isMCU;
+
+    PTime fastUpdateTime; // time of the 1 request of
+    int fastUpdateCount; // limit request for interval
+    BOOL CheckFastUpdate();
 
 #if MCU_VIDEO
     MCUPVideoInputDevice * videoGrabber;

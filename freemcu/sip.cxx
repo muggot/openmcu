@@ -50,7 +50,7 @@ PString GetFromIp(PString toAddr, PString toPort)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSipConnnection::CreateTempSockets(PString localIP)
+BOOL MCUSipConnection::CreateTempSockets(PString localIP)
 {
   unsigned localDataPort = FreeMCU::Current().GetEndpoint().GetRtpIpPortPair();
   PQoS * dataQos = NULL;
@@ -261,7 +261,7 @@ sdp_attribute_t * MCUSipEndPoint::CreateSdpAttr(su_home_t *sess_home, PString m_
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString MCUSipEndPoint::CreateSdpInvite(MCUSipConnnection *sCon, PString local_url, PString remote_url)
+PString MCUSipEndPoint::CreateSdpInvite(MCUSipConnection *sCon, PString local_url, PString remote_url)
 {
   /*
     get endpoint param
@@ -465,7 +465,7 @@ PString MCUSipEndPoint::CreateRuriStr(const msg_t *msg, int direction)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SipRTP_UDP *MCUSipConnnection::CreateRTPSession(int pt, SipCapability *sc)
+SipRTP_UDP *MCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
 {
   int id = (!sc->media)?RTP_Session::DefaultAudioSessionID:RTP_Session::DefaultVideoSessionID;
   SipRTP_UDP *session = (SipRTP_UDP *)(rtpSessions.UseSession(id));
@@ -540,7 +540,7 @@ SipRTP_UDP *MCUSipConnnection::CreateRTPSession(int pt, SipCapability *sc)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnnection::CreateAudioChannel(int pt, int dir)
+int MCUSipConnection::CreateAudioChannel(int pt, int dir)
 {
   SipCapability *sc = FindSipCap(pt);
   if(!sc) return 0;
@@ -607,7 +607,7 @@ int MCUSipConnnection::CreateAudioChannel(int pt, int dir)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnnection::CreateVideoChannel(int pt, int dir)
+int MCUSipConnection::CreateVideoChannel(int pt, int dir)
 {
   SipCapability *sc = FindSipCap(pt);
   if(!sc) return 0;
@@ -667,7 +667,7 @@ int MCUSipConnnection::CreateVideoChannel(int pt, int dir)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::InsertSipCap(SipCapability *sc)
+void MCUSipConnection::InsertSipCap(SipCapability *sc)
 {
   if(!sc) return;
   SipCapMap.insert(SipCapMapType::value_type(sc->payload, sc));
@@ -675,7 +675,7 @@ void MCUSipConnnection::InsertSipCap(SipCapability *sc)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SipCapability * MCUSipConnnection::FindSipCap(int payload)
+SipCapability * MCUSipConnection::FindSipCap(int payload)
 {
   SipCapMapType::iterator it = SipCapMap.find(payload);
   if(it != SipCapMap.end()) return it->second;
@@ -684,7 +684,7 @@ SipCapability * MCUSipConnnection::FindSipCap(int payload)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::CreateLogicalChannels()
+void MCUSipConnection::CreateLogicalChannels()
 {
   if(scap >= 0) // audio capability is set
   {
@@ -700,7 +700,7 @@ void MCUSipConnnection::CreateLogicalChannels()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::StartChannel(int pt, int dir)
+void MCUSipConnection::StartChannel(int pt, int dir)
 {
   if(pt < 0) return;
   SipCapability *sc = FindSipCap(pt);
@@ -711,7 +711,7 @@ void MCUSipConnnection::StartChannel(int pt, int dir)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::StartReceiveChannels()
+void MCUSipConnection::StartReceiveChannels()
 {
   StartChannel(scap,0);
   StartChannel(vcap,0);
@@ -719,7 +719,7 @@ void MCUSipConnnection::StartReceiveChannels()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::StartTransmitChannels()
+void MCUSipConnection::StartTransmitChannels()
 {
   StartChannel(scap,1);
   StartChannel(vcap,1);
@@ -727,7 +727,7 @@ void MCUSipConnnection::StartTransmitChannels()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::StopChannel(int pt, int dir)
+void MCUSipConnection::StopChannel(int pt, int dir)
 {
   if(pt < 0) return;
   SipCapability *sc = FindSipCap(pt);
@@ -738,7 +738,7 @@ void MCUSipConnnection::StopChannel(int pt, int dir)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::StopTransmitChannels()
+void MCUSipConnection::StopTransmitChannels()
 {
   StopChannel(scap,1);
   StopChannel(vcap,1);
@@ -746,7 +746,7 @@ void MCUSipConnnection::StopTransmitChannels()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::StopReceiveChannels()
+void MCUSipConnection::StopReceiveChannels()
 {
   StopChannel(scap,0);
   StopChannel(vcap,0);
@@ -754,7 +754,7 @@ void MCUSipConnnection::StopReceiveChannels()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::DeleteMediaChannels(int pt)
+void MCUSipConnection::DeleteMediaChannels(int pt)
 {
   if(pt<0) return;
   SipCapability *sc = FindSipCap(pt);
@@ -765,7 +765,7 @@ void MCUSipConnnection::DeleteMediaChannels(int pt)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::DeleteChannels()
+void MCUSipConnection::DeleteChannels()
 {
   DeleteMediaChannels(scap);
   DeleteMediaChannels(vcap);
@@ -773,7 +773,7 @@ void MCUSipConnnection::DeleteChannels()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::CleanUpOnCallEnd()
+void MCUSipConnection::CleanUpOnCallEnd()
 {
   PTRACE(1, "MCUSIP\tCleanUpOnCallEnd");
   StopTransmitChannels();
@@ -786,8 +786,11 @@ void MCUSipConnnection::CleanUpOnCallEnd()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::FastUpdatePicture()
+void MCUSipConnection::FastUpdatePicture()
 {
+  if(!CheckFastUpdate())
+    return;
+
   if(vcap < 0) return;
   SipCapability *sc = FindSipCap(vcap);
   if(sc && sc->outChan)
@@ -800,7 +803,7 @@ void MCUSipConnnection::FastUpdatePicture()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsigned commandIdentifier)
+void MCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsigned commandIdentifier)
 {
   if(commandIdentifier == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
   {
@@ -811,7 +814,7 @@ void MCUSipConnnection::SendLogicalChannelMiscCommand(H323Channel & channel, uns
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::ReceiveDTMF(PString sdp)
+void MCUSipConnection::ReceiveDTMF(PString sdp)
 {
   if(conference == NULL)
     return;
@@ -844,7 +847,7 @@ void SipCapability::Print()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::FindCapability_H263(SipCapability &sc,PStringArray &keys, const char * _H323Name, const char * _SIPName)
+void MCUSipConnection::FindCapability_H263(SipCapability &sc,PStringArray &keys, const char * _H323Name, const char * _SIPName)
 {
  PString H323Name(_H323Name);
  PString SIPName(_SIPName);
@@ -865,7 +868,7 @@ void MCUSipConnnection::FindCapability_H263(SipCapability &sc,PStringArray &keys
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::SelectCapability_H261(SipCapability &sc,PStringArray &tvCaps)
+void MCUSipConnection::SelectCapability_H261(SipCapability &sc,PStringArray &tvCaps)
 {
  //int f=0; // annex f
  PStringArray keys = sc.parm.Tokenise(";");
@@ -888,7 +891,7 @@ void MCUSipConnnection::SelectCapability_H261(SipCapability &sc,PStringArray &tv
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::SelectCapability_H263(SipCapability &sc,PStringArray &tvCaps)
+void MCUSipConnection::SelectCapability_H263(SipCapability &sc,PStringArray &tvCaps)
 {
  int f=0; // annex f
  PStringArray keys = sc.parm.Tokenise(";");
@@ -917,7 +920,7 @@ void MCUSipConnnection::SelectCapability_H263(SipCapability &sc,PStringArray &tv
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::SelectCapability_H263p(SipCapability &sc,PStringArray &tvCaps)
+void MCUSipConnection::SelectCapability_H263p(SipCapability &sc,PStringArray &tvCaps)
 {
  int f=0,d=0,e=0,g=0; // annexes
  PStringArray keys = sc.parm.Tokenise(";");
@@ -980,7 +983,7 @@ const struct h241_to_x264_level {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::SelectCapability_H264(SipCapability &sc,PStringArray &tvCaps)
+void MCUSipConnection::SelectCapability_H264(SipCapability &sc,PStringArray &tvCaps)
 {
  int profile = 0, level = 0;
  int max_mbps = 0, max_fs = 0, max_br = 0;
@@ -1054,7 +1057,7 @@ void MCUSipConnnection::SelectCapability_H264(SipCapability &sc,PStringArray &tv
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::SelectCapability_VP8(SipCapability &sc,PStringArray &tvCaps)
+void MCUSipConnection::SelectCapability_VP8(SipCapability &sc,PStringArray &tvCaps)
 {
  int width = 0, height = 0;
  PStringArray keys = sc.parm.Tokenise(";");
@@ -1117,7 +1120,7 @@ void MCUSipConnnection::SelectCapability_VP8(SipCapability &sc,PStringArray &tvC
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::SelectCapability_SPEEX(SipCapability &sc,PStringArray &tsCaps)
+void MCUSipConnection::SelectCapability_SPEEX(SipCapability &sc,PStringArray &tsCaps)
 {
   PString H323Name;
   if(sc.clock == 8000) H323Name = "Speex_8K{sw}";
@@ -1156,7 +1159,7 @@ void MCUSipConnnection::SelectCapability_SPEEX(SipCapability &sc,PStringArray &t
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::SelectCapability_OPUS(SipCapability &sc,PStringArray &tsCaps)
+void MCUSipConnection::SelectCapability_OPUS(SipCapability &sc,PStringArray &tsCaps)
 {
   PString H323Name;
   if(sc.clock == 8000) H323Name = "OPUS_8K{sw}";
@@ -1198,7 +1201,7 @@ void MCUSipConnnection::SelectCapability_OPUS(SipCapability &sc,PStringArray &ts
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-sdp_parser_t *MCUSipConnnection::SdpParser(PString sdp_txt)
+sdp_parser_t *MCUSipConnection::SdpParser(PString sdp_txt)
 {
   // RTP/SAVPF parse
   BOOL found_savpf = FALSE;
@@ -1232,7 +1235,7 @@ sdp_parser_t *MCUSipConnnection::SdpParser(PString sdp_txt)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnnection::ProcessSDP(PString & sdp_txt, SipCapMapType & SipCaps, int reinvite)
+int MCUSipConnection::ProcessSDP(PString & sdp_txt, SipCapMapType & SipCaps, int reinvite)
 {
   PTRACE(1, "MCUSIP\tProcessSDP");
   sdp_parser_t *parser = SdpParser(sdp_txt);
@@ -1523,7 +1526,7 @@ int MCUSipConnnection::ProcessSDP(PString & sdp_txt, SipCapMapType & SipCaps, in
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnnection::CreateSipData()
+int MCUSipConnection::CreateSipData()
 {
   PTRACE(1, "MCUSIP\tCreateSipData");
   su_home_t *home = msg_home(c_sip_msg);
@@ -1573,7 +1576,7 @@ int MCUSipConnnection::CreateSipData()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnnection::ProcessInviteEvent()
+int MCUSipConnection::ProcessInviteEvent()
 {
   PTRACE(1, "MCUSIP\tProcessInviteEvent");
   su_home_t *home = msg_home(c_sip_msg);
@@ -1614,7 +1617,7 @@ int MCUSipConnnection::ProcessInviteEvent()
   PString override_name = GetEndpointParam("Display name override");
   if(override_name != "")
   {
-    PTRACE(1, "MCUSipConnnection\tSet endpoint display name override: " << override_name);
+    PTRACE(1, "MCUSipConnection\tSet endpoint display name override: " << override_name);
     remotePartyName = override_name;
     remoteName = override_name;
   }
@@ -1634,8 +1637,8 @@ int MCUSipConnnection::ProcessInviteEvent()
   pref_video_cap = GetEndpointParam("Video codec");
   if(pref_audio_cap != "" && pref_audio_cap.Find("{sw}") == P_MAX_INDEX)
     pref_audio_cap += "{sw}";
-  if(pref_audio_cap != "") { PTRACE(1, "MCUSipConnnection\tSet endpoint custom audio: " << pref_audio_cap); }
-  if(pref_video_cap != "") { PTRACE(1, "MCUSipConnnection\tSet endpoint custom video: " << pref_video_cap); }
+  if(pref_audio_cap != "") { PTRACE(1, "MCUSipConnection\tSet endpoint custom audio: " << pref_audio_cap); }
+  if(pref_video_cap != "") { PTRACE(1, "MCUSipConnection\tSet endpoint custom video: " << pref_video_cap); }
 
   PString sdp_txt = sip->sip_payload->pl_data;
   if(!ProcessSDP(sdp_txt, SipCapMap, 0))
@@ -1662,7 +1665,7 @@ int MCUSipConnnection::ProcessInviteEvent()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnnection::ProcessReInviteEvent()
+int MCUSipConnection::ProcessReInviteEvent()
 {
   PTRACE(1, "MCUSIP\tProcessReInviteEvent");
   sip_t *sip = sip_object(c_sip_msg);
@@ -1752,7 +1755,7 @@ int MCUSipConnnection::ProcessReInviteEvent()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnnection::SendRequest(sip_method_t method, const char *method_name, msg_t *req_msg=NULL)
+int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, msg_t *req_msg=NULL)
 {
   PTRACE(1, "MCUSIP\tSendRequest");
   sip_t *sip = sip_object(c_sip_msg);
@@ -1799,7 +1802,7 @@ int MCUSipConnnection::SendRequest(sip_method_t method, const char *method_name,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnnection::SendBYE()
+int MCUSipConnection::SendBYE()
 {
   PTRACE(1, "MCUSIP\tSendBYE");
   return SendRequest(SIP_METHOD_BYE);
@@ -1807,7 +1810,7 @@ int MCUSipConnnection::SendBYE()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnnection::SendFastUpdatePicture()
+int MCUSipConnection::SendFastUpdatePicture()
 {
   PTRACE(1, "MCUSIP\tSendFastUpdatePicture");
   msg_t *msg_req = nta_msg_create(sep->GetAgent(), 0);
@@ -1822,7 +1825,7 @@ int MCUSipConnnection::SendFastUpdatePicture()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::LeaveMCU()
+void MCUSipConnection::LeaveMCU()
 {
   PString *bye = new PString("bye:"+callToken);
   sep->SipQueue.Push(bye);
@@ -1831,7 +1834,7 @@ void MCUSipConnnection::LeaveMCU()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnnection::LeaveMCU(BOOL remove)
+void MCUSipConnection::LeaveMCU(BOOL remove)
 {
   PTRACE(1, "MCUSIP\tLeave " << callToken << " remove=" << remove);
   if(remove == FALSE) return;
@@ -1987,10 +1990,10 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
 
     // temporarily invite data
     PString callToken = "sip:"+PString(sip_to->a_url->url_user)+":"+PString(sip_call_id->i_id);
-    MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+    MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
     if(!sCon)
     {
-      sCon = new MCUSipConnnection(this, ep, callToken);
+      sCon = new MCUSipConnection(this, ep, callToken);
       sCon->direction = 1;
       PString local_url = "sip:"+local_user+"@"+local_ip;
       PString remote_url = "sip:"+remote_user+"@"+remote_domain;
@@ -2186,7 +2189,7 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
       return 0;
     MakeProxyAuth(proxy, sip);
 
-    MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+    MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
     if(!sCon) // connection not exist
       return 0;
 
@@ -2250,7 +2253,7 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
   }
   if(status >= 300)
   {
-    MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+    MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
     if(sCon)
     {
       sCon->LeaveMCU(TRUE);
@@ -2291,7 +2294,7 @@ int MCUSipEndPoint::SendACK(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipEndPoint::ReqReply(const msg_t *msg, unsigned method, const char *method_name, MCUSipConnnection *sCon)
+int MCUSipEndPoint::ReqReply(const msg_t *msg, unsigned method, const char *method_name, MCUSipConnection *sCon)
 {
   PTRACE(1, "MCUSIP\tReqReply");
   sip_t *sip = sip_object(msg);
@@ -2341,7 +2344,7 @@ int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg)
 
   PString callToken = "sip:"+PString(sip->sip_to->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
 
-  MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+  MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
   if(!sCon || (sCon && sCon->IsConnected())) // repeated OK
     return 0;
 
@@ -2372,7 +2375,7 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
 
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
 
-  MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+  MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
   if(!sCon)
     return 0;
 
@@ -2416,13 +2419,13 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   if(sip->sip_cseq)    cseq = sip->sip_cseq->cs_method;
 
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
-  MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+  MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
 
   Registrar *registrar = FreeMCU::Current().GetRegistrar();
   // add new incoming connection
   if(!sCon && request == sip_method_invite)
   {
-    sCon = new MCUSipConnnection(this, ep, callToken);
+    sCon = new MCUSipConnection(this, ep, callToken);
     sCon->direction = 0;
     sCon->c_sip_msg = msg_dup(msg);
     sCon = NULL;
@@ -2436,7 +2439,7 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   // add new incoming connection
   if(!sCon && request == sip_method_invite)
   {
-    sCon = new MCUSipConnnection(this, ep, callToken);
+    sCon = new MCUSipConnection(this, ep, callToken);
     sCon->direction = 0;
     sCon->c_sip_msg = msg_dup(msg);
     InsertSipConn(callToken, sCon);
@@ -2660,7 +2663,7 @@ void MCUSipEndPoint::ProcessSipQueue()
     if(cmd->Left(4) == "bye:")
     {
       PString callToken = cmd->Right(cmd->GetLength()-4);
-      MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+      MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
       if(sCon)
       {
         if(sCon->IsConnected()) sCon->SendBYE();
@@ -2682,7 +2685,7 @@ void MCUSipEndPoint::ProcessSipQueue()
     if(cmd->Left(12) == "fast_update:")
     {
       PString callToken = cmd->Right(cmd->GetLength()-12);
-      MCUSipConnnection *sCon = FindConnectionWithoutLock(callToken);
+      MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
       if(sCon)
       {
         sCon->SendFastUpdatePicture();

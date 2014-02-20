@@ -2211,6 +2211,8 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
     localAliasNames.AppendString(localPartyName);
   }
 
+  fastUpdateCount = 0;
+
   audioReceiveCodecName = audioTransmitCodecName = "none";
 
 #if MCU_VIDEO
@@ -2570,6 +2572,34 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
   PString account = GetRemoteNumber()+"@"+url.GetHostName();
   Registrar *registrar = FreeMCU::Current().GetRegistrar();
   return registrar->OnIncomingMsg(account, requestedRoom, callToken, callIdentifier);
+}
+
+BOOL MCUH323Connection::CheckFastUpdate()
+{
+  PTime now;
+  if(now < fastUpdateTime + PTimeInterval(5000))
+  {
+    if(fastUpdateCount < 5)
+    {
+      fastUpdateCount++;
+    } else {
+      return FALSE;
+    }
+  } else {
+    fastUpdateTime = now;
+    fastUpdateCount = 1;
+  }
+  return TRUE;
+}
+
+BOOL MCUH323Connection::OnH245_MiscellaneousCommand(const H245_MiscellaneousCommand & pdu)
+{
+  if(pdu.m_type.GetTag() == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
+  {
+    if(!CheckFastUpdate())
+      return TRUE;
+  }
+  return H323Connection::OnH245_MiscellaneousCommand(pdu);
 }
 
 BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize */, H323AudioCodec & codec)
