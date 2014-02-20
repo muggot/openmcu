@@ -792,7 +792,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     // update the statistics
     if (memberToAdd->IsVisible())
     {
-      ++visibleMembers;
+//      ++visibleMembers;
       maxMemberCount = PMAX(maxMemberCount, visibleMembers);
       // trigger H245 thread for join message
 //      new NotifyH245Thread(*this, TRUE, memberToAdd);
@@ -858,6 +858,8 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 
   msg = "<font color=green><b>+</b>";
   msg << memberToAdd->GetName() << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
+
+  PAssert(GetVisibleMemberCount() == visibleMembers, "Visible members counter failed");
 
   if((autoStopRecord>=0) && (visibleMembers <= autoStopRecord)) StopRecorder();
   else if((autoStartRecord>autoStopRecord) && (visibleMembers >= autoStartRecord)) StartRecorder();
@@ -974,7 +976,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
     // return TRUE if conference is empty 
     closeConference = (visibleMembers==0);
 //fix it: just remove it:
-    PAssert(GetVisibleMemberCount() == visibleMembers, "Visible members counter failed");
+//    PAssert(GetVisibleMemberCount() == visibleMembers, "Visible members counter failed");
   }
 
   // notify that member is not joined anymore
