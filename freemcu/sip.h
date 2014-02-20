@@ -151,31 +151,27 @@ class H323toSipQueue
     {
       PThread::Sleep(10);
       if(!cmd) return FALSE;
-      Lock();
-      if(queue.GetSize() > 100) { Unlock(); return FALSE; }
-      if(queue.GetStringsIndex(*cmd) != P_MAX_INDEX) { Unlock(); return FALSE; }
+      PWaitAndSignal m(mutex);
+      if(queue.GetSize() > 100) return FALSE;
+      if(queue.GetStringsIndex(*cmd) != P_MAX_INDEX) return FALSE;
       queue.Append(cmd);
-      Unlock();
       return TRUE;
     }
     PString *Pop()
     {
       PThread::Sleep(10);
-      Lock();
+      PWaitAndSignal m(mutex);
       PString *cmd = (PString *)queue.GetAt(0);
       if(cmd)
       {
         cmd = new PString(*cmd);
         queue.RemoveAt(0);
       }
-      Unlock();
       return cmd;
     }
 
   protected:
     PStringArray queue;
-    void Lock()   { mutex.Wait(); }
-    void Unlock() { mutex.Signal(); }
     PMutex mutex;
 };
 

@@ -1139,7 +1139,8 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
 #define OTF_RET_OK { conferenceManager.UnlockConference(); return "OK"; }
 #define OTF_RET_FAIL { conferenceManager.UnlockConference(); return "FAIL"; }
 
-  Conference * conference = conferenceManager.MakeAndLockConference(room); // hope it already created: we'll just get it
+  Conference * conference = conferenceManager.FindConferenceWithLock(room);
+  if(!conference) return "FAIL";
 
   if(action == OTFC_REFRESH_VIDEO_MIXERS)
   {
@@ -2631,14 +2632,14 @@ void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
 {
   Conference *conf = conference;
   if(conf == NULL)
-  { // creating conference if needed
+  {
     MCUH323EndPoint & ep = FreeMCU::Current().GetEndpoint();
     ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-    conf = manager.MakeAndLockConference(requestedRoom);
+    conf = manager.MakeAndLockConference(requestedRoom); // creating conference if needed
     manager.UnlockConference();
   }
-// starting new cache thread
 
+  // starting new cache thread
   unsigned videoMixerNumber=0;
   PINDEX slashPos=srcCodec.formatString.Find("/");
   if(slashPos!=P_MAX_INDEX) videoMixerNumber=atoi(srcCodec.formatString.Mid(slashPos+1,P_MAX_INDEX));
