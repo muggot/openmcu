@@ -2211,7 +2211,14 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
     localAliasNames.AppendString(localPartyName);
   }
 
-  fastUpdateCount = 0;
+  vfuLastTimeSend = PTime(0);
+  vfuLastTime = PTime(0);
+  vfuIntervalTime = PTime(0);
+  vfuDelayTime = PTimeInterval(0);
+  vfuLimitTime = PTimeInterval(10000);
+  vfuLimit = 10;
+  vfuLimitCount = 0;
+  vfuTotalCount = 0;
 
   audioReceiveCodecName = audioTransmitCodecName = "none";
 
@@ -2574,21 +2581,33 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
   return registrar->OnIncomingMsg(account, requestedRoom, callToken, callIdentifier);
 }
 
-BOOL MCUH323Connection::CheckFastUpdate()
+BOOL MCUH323Connection::CheckVFU()
 {
   PTime now;
-  if(now < fastUpdateTime + PTimeInterval(5000))
+  vfuTotalCount++;
+  vfuLimitCount++;
+  // only show warning if the number of received VFU requests(vfuLimitCount) for a certain interval(vfuLimitTime)
+  // more than vfuLimit
+  if(now < vfuIntervalTime + vfuLimitTime)
   {
-    if(fastUpdateCount < 5)
+    if(vfuLimitCount == vfuLimit+1)
     {
-      fastUpdateCount++;
-    } else {
-      return FALSE;
+      PTRACE(6, "MCUH323Connection\ttoo many VFU requests from \"" << remotePartyAddress << "\", received 10 requests per 10 seconds");
+      PString msg = "<font color=red>Warning: too many VFU requests from \""+remoteName+"\", received 10 requests per 10 seconds</font>";
+      FreeMCU::Current().HttpWriteEventRoom(msg, requestedRoom);
     }
   } else {
-    fastUpdateTime = now;
-    fastUpdateCount = 1;
+    vfuIntervalTime = now;
+    vfuLimitCount = 1;
   }
+  // skip requests
+  vfuDelayTime = PTimeInterval(atoi(GetEndpointParam(VFUDelayKey))*1000);
+  if(now < vfuLastTime + vfuDelayTime)
+  {
+    return FALSE;
+  }
+  vfuLastTime = now;
+
   return TRUE;
 }
 
@@ -2596,7 +2615,7 @@ BOOL MCUH323Connection::OnH245_MiscellaneousCommand(const H245_MiscellaneousComm
 {
   if(pdu.m_type.GetTag() == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
   {
-    if(!CheckFastUpdate())
+    if(!CheckVFU())
       return TRUE;
   }
   return H323Connection::OnH245_MiscellaneousCommand(pdu);

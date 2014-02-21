@@ -438,9 +438,15 @@ class MCUH323Connection : public H323Connection
 
     BOOL isMCU;
 
-    PTime fastUpdateTime; // time of the 1 request of
-    int fastUpdateCount; // limit request for interval
-    BOOL CheckFastUpdate();
+    BOOL CheckVFU();
+    PTime vfuLastTimeSend;         // time of the last send request
+    PTime vfuLastTime;             // time of the last request
+    PTime vfuIntervalTime;         // time of the first request for interval
+    PTimeInterval vfuDelayTime;
+    PTimeInterval vfuLimitTime;    // interval
+    unsigned int vfuLimit;         // limit requests for interval
+    unsigned int vfuLimitCount;    // count requests for interval
+    unsigned int vfuTotalCount;    // count total requests
 
 #if MCU_VIDEO
     MCUPVideoInputDevice * videoGrabber;

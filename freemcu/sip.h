@@ -248,10 +248,10 @@ class MCUSipConnection : public MCUH323Connection
     void CleanUpOnCallEnd();
     void LeaveMCU();
     void LeaveMCU(BOOL remove);
-    void FastUpdatePicture();
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     int SendBYE();
-    int SendFastUpdatePicture();
+    int SendVFU();
+    void ReceiveVFU();
     int SendRequest(sip_method_t method, const char *method_name, msg_t *sip_msg);
     int CreateSipData();
     void ReceiveDTMF(PString payload);

@@ -734,6 +734,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString("Preferred frame rate from MCU");
   optionNames.AppendString("Preferred bandwidth from MCU");
   optionNames.AppendString("Preferred bandwidth to MCU");
+  optionNames.AppendString(VFUDelayKey);
 
   optionNames.AppendString("Audio codec(receive)");
   optionNames.AppendString("Video codec(receive)");
@@ -868,7 +869,11 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += rowArray+JsLocale("window.l_name_preferred_bandwidth_from_mcu")+StringItemInteger(name, scfg.GetString("Preferred bandwidth from MCU"), 4)+"</tr>";
       // bandwidth to MCU
       s2 += rowArray+JsLocale("window.l_name_preferred_bandwidth_to_mcu")+StringItemInteger(name, scfg.GetString("Preferred bandwidth to MCU"), 4)+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      // VFU delay
+      if(name == "*")
+        s2 += rowArray+"VFU(Video Fast Update) delay"+SelectItem(name, scfg.GetString(VFUDelayKey), "0,1,2,3,4,5,6,7,8,9,10", 60)+"</tr>";
+      else
+        s2 += rowArray+"VFU(Video Fast Update) delay"+SelectItem(name, scfg.GetString(VFUDelayKey), ",0,1,2,3,4,5,6,7,8,9,10", 60)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -937,6 +942,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString("Preferred frame rate from MCU");
   optionNames.AppendString("Preferred bandwidth from MCU");
   optionNames.AppendString("Preferred bandwidth to MCU");
+  optionNames.AppendString(VFUDelayKey);
 
   optionNames.AppendString("Audio codec");
   optionNames.AppendString("Video codec");
@@ -1070,7 +1076,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+JsLocale("window.l_name_preferred_bandwidth_from_mcu")+StringItemInteger(name, scfg.GetString("Preferred bandwidth from MCU"), 4)+"</tr>";
       // bandwidth to MCU
       s2 += rowArray+JsLocale("window.l_name_preferred_bandwidth_to_mcu")+StringItemInteger(name, scfg.GetString("Preferred bandwidth to MCU"), 4)+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      // VFU delay
+      if(name == "*")
+        s2 += rowArray+"VFU(Video Fast Update) delay"+SelectItem(name, scfg.GetString(VFUDelayKey), "0,1,2,3,4,5,6,7,8,9,10", 60)+"</tr>";
+      else
+        s2 += rowArray+"VFU(Video Fast Update) delay"+SelectItem(name, scfg.GetString(VFUDelayKey), ",0,1,2,3,4,5,6,7,8,9,10", 60)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }

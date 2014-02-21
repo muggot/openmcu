@@ -786,9 +786,9 @@ void MCUSipConnection::CleanUpOnCallEnd()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::FastUpdatePicture()
+void MCUSipConnection::ReceiveVFU()
 {
-  if(!CheckFastUpdate())
+  if(!CheckVFU())
     return;
 
   if(vcap < 0) return;
@@ -1810,7 +1810,7 @@ int MCUSipConnection::SendBYE()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::SendFastUpdatePicture()
+int MCUSipConnection::SendVFU()
 {
   PTRACE(1, "MCUSIP\tSendFastUpdatePicture");
   msg_t *msg_req = nta_msg_create(sep->GetAgent(), 0);
@@ -2491,7 +2491,7 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
       PString type = PString(sip->sip_content_type->c_type);
       PString data = PString(sip->sip_payload->pl_data);
       if(type.Find("application/media_control") != P_MAX_INDEX && data.Find("to_encoder") != P_MAX_INDEX && data.Find("picture_fast_update") != P_MAX_INDEX)
-        sCon->FastUpdatePicture();
+        sCon->ReceiveVFU();
       else if (type.Find("application/dtmf-relay") != P_MAX_INDEX)
         sCon->ReceiveDTMF(data);
       return ReqReply(msg, SIP_200_OK);
@@ -2688,7 +2688,7 @@ void MCUSipEndPoint::ProcessSipQueue()
       MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
       if(sCon)
       {
-        sCon->SendFastUpdatePicture();
+        sCon->SendVFU();
       }
     }
     delete cmd;

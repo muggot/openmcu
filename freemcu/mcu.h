@@ -69,7 +69,6 @@ static const char AllowLoopbackCallsKey[]  = "Allow loopback calls";
 
 static const char SipListenerKey[]         = "SIP Listener";
 
-#if MCU_VIDEO
 const unsigned int DefaultVideoFrameRate = 10;
 const unsigned int DefaultVideoQuality   = 10;
 
@@ -98,6 +97,7 @@ static const int  DefaultRecorderFrameRate    = 10;
 static const int  DefaultRecorderSampleRate   = 16000;
 static const int  DefaultRecorderAudioChans   = 1;
 
+// room parameters
 static const char ForceSplitVideoKey[]          = "Force split screen video";
 static const char RoomAutoCreateKey[]           = "Auto create";
 static const char RoomAutoDeleteEmptyKey[]      = "Auto delete empty";
@@ -106,8 +106,9 @@ static const char RoomAllowRecordKey[]          = "Allow record";
 static const char RoomRecallLastTemplateKey[]   = "Recall last template";
 static const char RoomTimeLimitKey[]            = "Room time limit";
 
+static const char VFUDelayKey[]                 = "VFU delay";
+
 static const char H264LevelForSIPKey[]        = "H.264 Default Level for SIP";
-#endif
 
 static PString DefaultConnectingWAVFile = PString(SYS_RESOURCE_DIR)+"/connecting.wav";
 static PString DefaultEnteringWAVFile   = PString(SYS_RESOURCE_DIR)+"/entering.wav";
