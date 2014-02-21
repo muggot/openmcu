@@ -2601,7 +2601,7 @@ BOOL MCUH323Connection::CheckVFU()
     vfuLimitCount = 1;
   }
   // skip requests
-  vfuDelayTime = PTimeInterval(atoi(GetEndpointParam(VFUDelayKey))*1000);
+  vfuDelayTime = PTimeInterval(atoi(GetEndpointParam(ReceivedVFUDelayKey))*1000);
   if(now < vfuLastTime + vfuDelayTime)
   {
     return FALSE;
@@ -2619,6 +2619,19 @@ BOOL MCUH323Connection::OnH245_MiscellaneousCommand(const H245_MiscellaneousComm
       return TRUE;
   }
   return H323Connection::OnH245_MiscellaneousCommand(pdu);
+}
+
+void MCUH323Connection::SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command)
+{
+  if(command == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
+  {
+    PTime now;
+    if(now < vfuLastTimeSend + PTimeInterval(1000))
+      return;
+    vfuLastTimeSend = now;
+  }
+
+  H323Connection::SendLogicalChannelMiscCommand(channel, command);
 }
 
 BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize */, H323AudioCodec & codec)

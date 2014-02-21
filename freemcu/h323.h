@@ -254,6 +254,7 @@ class MCUH323Connection : public H323Connection
 
     // overrides from H323Connection
     virtual BOOL OnH245_MiscellaneousCommand(const H245_MiscellaneousCommand & pdu /* Received PDU */ );
+    virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     virtual void AttachSignalChannel(const PString & token, H323Transport * channel, BOOL answeringCall);
     virtual BOOL OpenAudioChannel(BOOL, unsigned,   H323AudioCodec & codec);
 #if MCU_VIDEO

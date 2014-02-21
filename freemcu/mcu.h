@@ -106,7 +106,8 @@ static const char RoomAllowRecordKey[]          = "Allow record";
 static const char RoomRecallLastTemplateKey[]   = "Recall last template";
 static const char RoomTimeLimitKey[]            = "Room time limit";
 
-static const char VFUDelayKey[]                 = "VFU delay";
+static const char ReceivedVFUDelayKey[]         = "Received VFU delay";
+static const char SendVFUDelayKey[]             = "Send VFU delay";
 
 static const char H264LevelForSIPKey[]        = "H.264 Default Level for SIP";
 
