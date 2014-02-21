@@ -2420,7 +2420,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
   // set endpoint capability
   PString prefAudioCap = GetEndpointParam("Audio codec(receive)");
   PString prefVideoCap = GetEndpointParam("Video codec(receive)");
-  unsigned bandwidthTo = atoi(GetEndpointParam("Preferred bandwidth to MCU"));
+  unsigned bandwidthTo = GetEndpointParam("Preferred bandwidth to MCU", 0);
   if(prefAudioCap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive audio: " << prefAudioCap); }
   if(prefVideoCap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive video: " << prefVideoCap); }
   if(bandwidthTo != 0) { PTRACE(1, "MCUH323Connection\tSet endpoint bandwidth to mcu: " << bandwidthTo); }
@@ -2585,23 +2585,23 @@ BOOL MCUH323Connection::CheckVFU()
 {
   PTime now;
   vfuTotalCount++;
-  vfuLimitCount++;
   // only show warning if the number of received VFU requests(vfuLimitCount) for a certain interval(vfuLimitTime)
   // more than vfuLimit
   if(now < vfuIntervalTime + vfuLimitTime)
   {
-    if(vfuLimitCount == vfuLimit+1)
+    vfuLimitCount++;
+  } else {
+    if(vfuLimitCount > vfuLimit)
     {
-      PTRACE(6, "MCUH323Connection\ttoo many VFU requests from \"" << remotePartyAddress << "\", received 10 requests per 10 seconds");
-      PString msg = "<font color=red>Warning: too many VFU requests from \""+remoteName+"\", received 10 requests per 10 seconds</font>";
+      PTRACE(6, "RTP\ttoo many VFU requests from \""+remotePartyAddress+"\", received "+PString(vfuLimitCount)+" requests per 10 seconds");
+      PString msg = "<font color=red>Warning: too many VFU requests from \""+remoteName+"\", received "+PString(vfuLimitCount)+" requests per 10 seconds</font>";
       FreeMCU::Current().HttpWriteEventRoom(msg, requestedRoom);
     }
-  } else {
     vfuIntervalTime = now;
     vfuLimitCount = 1;
   }
   // skip requests
-  vfuDelayTime = PTimeInterval(atoi(GetEndpointParam(ReceivedVFUDelayKey))*1000);
+  vfuDelayTime = PTimeInterval(GetEndpointParam(ReceivedVFUDelayKey, 0)*1000);
   if(now < vfuLastTime + vfuDelayTime)
   {
     return FALSE;
@@ -2757,7 +2757,7 @@ void MCUH323Connection::SetEndpointPrefVideoParams()
   if(codec == NULL) return;
   OpalMediaFormat & mf = codec->GetWritableMediaFormat();
 
-  unsigned fr = atoi(GetEndpointParam("Preferred frame rate from MCU"));
+  unsigned fr = GetEndpointParam("Preferred frame rate from MCU", 0);
   if(fr != 0)
   {
     if(fr > MAX_FRAME_RATE) fr = MAX_FRAME_RATE;
@@ -2766,13 +2766,29 @@ void MCUH323Connection::SetEndpointPrefVideoParams()
     mf.SetOptionInteger("Frame Time", 90000/fr);
   }
 
-  unsigned bwFrom = atoi(GetEndpointParam("Preferred bandwidth from MCU"));
+  unsigned bwFrom = GetEndpointParam("Preferred bandwidth from MCU", 0);
   if(bwFrom != 0)
   {
     if(bwFrom < 64) bwFrom = 64;
     if(bwFrom > 4000) bwFrom = 4000;
     mf.SetOptionInteger("Max Bit Rate", bwFrom*1000);
   }
+}
+
+int MCUH323Connection::GetEndpointParam(PString param, int defaultValue)
+{
+  PString value = GetEndpointParam(param);
+  if(value == "")
+    return defaultValue;
+  return value.AsInteger();
+}
+
+PString MCUH323Connection::GetEndpointParam(PString param, PString defaultValue)
+{
+  PString value = GetEndpointParam(param);
+  if(value == "")
+    return defaultValue;
+  return value;
 }
 
 PString MCUH323Connection::GetEndpointParam(PString param)

@@ -395,6 +395,8 @@ class FreeMCU : public FreeMCUProcessAncestor
     BOOL       copyWebLogToLog;
 
     PString GetEndpointParamFromUrl(PString param, PString url);
+    PString GetEndpointParamFromUrl(PString param, PString url, PString defaultValue);
+    int GetEndpointParamFromUrl(PString param, PString url, int defaultValue);
 
     PString GetConferenceParam(PString room, PString param, PString defaultValue);
     int GetConferenceParam(PString room, PString param, int defaultValue);

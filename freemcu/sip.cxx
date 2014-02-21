@@ -273,11 +273,10 @@ PString MCUSipEndPoint::CreateSdpInvite(MCUSipConnection *sCon, PString local_ur
   PString prefAudioCap = FreeMCU::Current().GetEndpointParamFromUrl("Audio codec", remote_url);
   PString prefVideoCap = FreeMCU::Current().GetEndpointParamFromUrl("Video codec", remote_url);
 
-  unsigned bandwidth = atoi(FreeMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", remote_url));
+  unsigned bandwidth = FreeMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", remote_url, 0);
 
-  PString pref_rtp_proto = FreeMCU::Current().GetEndpointParamFromUrl("RTP proto", remote_url);
-  if(pref_rtp_proto == "") pref_rtp_proto = "RTP";
-  sCon->rtp_proto = pref_rtp_proto;
+  PString rtp_proto = FreeMCU::Current().GetEndpointParamFromUrl("RTP proto", remote_url, "RTP");
+  sCon->rtp_proto = rtp_proto;
 
   /*
      create temp sockets
@@ -343,14 +342,14 @@ PString MCUSipEndPoint::CreateSdpInvite(MCUSipConnection *sCon, PString local_ur
   sdp_media_t *m = NULL;
 
   // check proto
-  if(pref_rtp_proto == "SRTP")
+  if(rtp_proto == "SRTP")
   {
     m_audio_srtp = m_audio_rtp;
     m_audio_rtp = NULL;
     m_video_srtp = m_video_rtp;
     m_video_rtp = NULL;
   }
-  if(pref_rtp_proto == "SRTP/RTP")
+  if(rtp_proto == "SRTP/RTP")
   {
     if(m_audio_rtp) m_audio_srtp = sdp_media_dup(sess_home, m_audio_rtp, sess);
     if(m_video_rtp) m_video_srtp = sdp_media_dup(sess_home, m_video_rtp, sess);
@@ -786,7 +785,7 @@ void MCUSipConnection::CleanUpOnCallEnd()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::ReceiveVFU()
+void MCUSipConnection::ReceivedVFU()
 {
   if(!CheckVFU())
     return;
@@ -819,7 +818,7 @@ void MCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsi
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::ReceiveDTMF(PString sdp)
+void MCUSipConnection::ReceivedDTMF(PString sdp)
 {
   if(conference == NULL)
     return;
@@ -1556,7 +1555,7 @@ int MCUSipConnection::CreateSipData()
       roomname = sip->sip_to->a_url->url_user;
     }
     PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_from);
-    bandwidth_to = atoi(FreeMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url));
+    bandwidth_to = FreeMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
   } else { // outgoing
     ProxyAccount *proxy = sep->FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(proxy)
@@ -1573,7 +1572,7 @@ int MCUSipConnection::CreateSipData()
       roomname = sip->sip_from->a_url->url_user;
     }
     PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_to);
-    bandwidth_to = atoi(FreeMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url));
+    bandwidth_to = FreeMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
   }
   cseqNum = sip->sip_cseq->cs_seq+1;
   return 1;
@@ -1630,12 +1629,9 @@ int MCUSipConnection::ProcessInviteEvent()
   // set endpoint member name
   SetMemberName();
 
-  // endpoint rtp proto
-  if(rtp_proto == "") // for incoming, outgoing set in CreateSdpInvite
-  {
-    rtp_proto = GetEndpointParam("RTP proto");
-    if(rtp_proto == "") rtp_proto = "RTP";
-  }
+  // for incoming, outgoing set in CreateSdpInvite
+  if(rtp_proto == "")
+    rtp_proto = GetEndpointParam("RTP proto", "RTP");
 
   // endpoint custom capability
   pref_audio_cap = GetEndpointParam("Audio codec");
@@ -2496,9 +2492,9 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
       PString type = PString(sip->sip_content_type->c_type);
       PString data = PString(sip->sip_payload->pl_data);
       if(type.Find("application/media_control") != P_MAX_INDEX && data.Find("to_encoder") != P_MAX_INDEX && data.Find("picture_fast_update") != P_MAX_INDEX)
-        sCon->ReceiveVFU();
+        sCon->ReceivedVFU();
       else if (type.Find("application/dtmf-relay") != P_MAX_INDEX)
-        sCon->ReceiveDTMF(data);
+        sCon->ReceivedDTMF(data);
       return ReqReply(msg, SIP_200_OK);
     }
     return ReqReply(msg, SIP_501_NOT_IMPLEMENTED);

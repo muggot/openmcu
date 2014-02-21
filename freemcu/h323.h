@@ -305,8 +305,11 @@ class MCUH323Connection : public H323Connection
     void SetEndpointDefaultVideoParams();
     void SetEndpointPrefVideoParams();
     PString GetRemoteNumber();
-    PString GetEndpointParam(PString param);
     PString dtmfBuffer;
+
+    PString GetEndpointParam(PString param);
+    PString GetEndpointParam(PString param, PString defaultValue);
+    int GetEndpointParam(PString param, int deafaultValue);
 
 #if MCU_VIDEO
     virtual BOOL OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount);

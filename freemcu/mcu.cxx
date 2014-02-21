@@ -655,6 +655,26 @@ void ExternalVideoRecorderThread::Main()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+int FreeMCU::GetEndpointParamFromUrl(PString param, PString addr, int defaultValue)
+{
+  PString value = GetEndpointParamFromUrl(param, addr);
+  if(value == "")
+    return defaultValue;
+  return value.AsInteger();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PString FreeMCU::GetEndpointParamFromUrl(PString param, PString addr, PString defaultValue)
+{
+  PString value = GetEndpointParamFromUrl(param, addr);
+  if(value == "")
+    return defaultValue;
+  return value;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString FreeMCU::GetEndpointParamFromUrl(PString param, PString addr)
 {
   PString user, host;

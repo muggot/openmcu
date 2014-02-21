@@ -251,10 +251,10 @@ class MCUSipConnection : public MCUH323Connection
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     int SendBYE();
     int SendVFU();
-    void ReceiveVFU();
+    void ReceivedVFU();
     int SendRequest(sip_method_t method, const char *method_name, msg_t *sip_msg);
     int CreateSipData();
-    void ReceiveDTMF(PString payload);
+    void ReceivedDTMF(PString payload);
     BOOL HadAnsweredCall() { return (direction=0); }
 
     virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
