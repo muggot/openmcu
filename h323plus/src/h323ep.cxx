@@ -2204,9 +2204,9 @@ BOOL H323EndPoint::ResolveCallParty(const PString & _remoteParty, PStringList & 
         if(lcpos != P_MAX_INDEX) host = host.Left(lcpos);
         PTRACE(4,"H323\tDNS SRV Extracted host descriptor: " << host);
         PIPSocket::Address addr;
-        if (PIPSocket::GetHostAddress(host, addr))
+        if(addr.FromString(host))
         {
-          PTRACE(4,"H323\tDNS SRV Lookup prevented: host looks like IP " << addr.AsString());
+          PTRACE(4,"H323\tDNS SRV Lookup prevented: domain part is already IP address " << addr.AsString());
           addresses = PStringList(remoteParty);
           return TRUE;
         }
