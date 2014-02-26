@@ -2160,64 +2160,85 @@ BOOL H323EndPoint::ResolveCallParty(const PString & _remoteParty, PStringList & 
 
 #if P_DNS
   // if there is no gatekeeper, 
-  if (gatekeeper == NULL) {
+  if (gatekeeper == NULL)
+  {
+    //if there is no '@', and there is no URL scheme, then attempt to use ENUM
+    if ((_remoteParty.Find(':') == P_MAX_INDEX) && (remoteParty.Find('@') == P_MAX_INDEX))
+    {
+      PString number = _remoteParty;
+      if (number.Left(5) *= "h323:") number = number.Mid(5);
 
-     //if there is no '@', and there is no URL scheme, then attempt to use ENUM
-    if ((_remoteParty.Find(':') == P_MAX_INDEX) && (remoteParty.Find('@') == P_MAX_INDEX)) {
-
-	PString number = _remoteParty;
-	if (number.Left(5) *= "h323:")
-	   number = number.Mid(5);
-
-    PINDEX i;
-    for (i = 0; i < number.GetLength(); ++i)
-       if (!isdigit(number[i]))
-        break;
-		if (i >= number.GetLength()) {
-           PString str;
-          if (PDNS::ENUMLookup(number, "E2U+h323", str)) {
-		    if ((str.Find("//1") != P_MAX_INDEX) &&
-		         (str.Find('@') != P_MAX_INDEX)) {
-			   remoteParty = "h323:" + number + str.Mid(str.Find('@')-1);
-		    } else {
-              remoteParty = str;
-		  }
-		  PTRACE(4, "H323\tENUM converted remote party " << _remoteParty << " to " << remoteParty);
-        } else {
+      PINDEX i;
+      for (i = 0; i < number.GetLength(); ++i) if (!isdigit(number[i])) break;
+      if (i >= number.GetLength())
+      {
+        PString str;
+        if (PDNS::ENUMLookup(number, "E2U+h323", str))
+        {
+          if ((str.Find("//1") != P_MAX_INDEX) &&
+              (str.Find('@'  ) != P_MAX_INDEX))
+          {
+            remoteParty = "h323:" + number + str.Mid(str.Find('@')-1);
+          }
+          else
+          {
+            remoteParty = str;
+          }
+          PTRACE(4, "H323\tENUM converted remote party " << _remoteParty << " to " << remoteParty);
+        }
+        else
+        {
           PTRACE(4, "H323\tENUM Cannot resolve remote party " << _remoteParty);
         }
       }
-	}
+    }
 
      // attempt a DNS SRV lookup to detect a call signalling entry
-	BOOL found = FALSE;
-    if (remoteParty.Find('@') != P_MAX_INDEX) {
-       PString number = remoteParty;
-       if (number.Left(5) != "h323:") 
-          number = "h323:" + number;	  
-				
-	   PStringList str;
+    PINDEX atPos=remoteParty.Find('@');
+    if (atPos != P_MAX_INDEX)
+    {
 
-	   if (!found) str.RemoveAll();
-	   if (!found && (PDNS::LookupSRV(number,"_h323cs._tcp.",str))) {
-		   for (PINDEX i=0; i<str.GetSize(); i++) {
-	         PTRACE(4, "H323\tDNS SRV CS converted remote party " << _remoteParty << " to " << str[i]);
-             addresses.AppendString(str[i]);
-			 found = TRUE;
-		   }
-       } 
-	   if (!found) {
-           PTRACE(4, "H323\tDNS SRV Cannot resolve remote party " << remoteParty);
-		   addresses = PStringList(remoteParty);
-       }
-	} else {
-       addresses = PStringList(remoteParty);
+      {
+        PString host = remoteParty.Mid(atPos+1);
+        PINDEX lcpos = host.Find(':');
+        if(lcpos != P_MAX_INDEX) host = host.Left(lcpos);
+        PTRACE(4,"H323\tDNS SRV Extracted host descriptor: " << host);
+        PIPSocket::Address addr;
+        if (PIPSocket::GetHostAddress(host, addr))
+        {
+          PTRACE(4,"H323\tDNS SRV Lookup prevented: host looks like IP " << addr.AsString());
+          addresses = PStringList(remoteParty);
+          return TRUE;
+        }
+      }
+
+      PString number = remoteParty;
+      if (!(number.Left(5) *= "h323:")) number = "h323:" + number;
+
+      PStringList str;
+      if (PDNS::LookupSRV(number,"_h323cs._tcp.",str))
+      {
+        for (PINDEX i=0; i<str.GetSize(); i++)
+        {
+          PTRACE(4, "H323\tDNS SRV CS converted remote party " << _remoteParty << " to " << str[i]);
+          addresses.AppendString(str[i]);
+        }
+      } 
+      else
+      {
+        PTRACE(4, "H323\tDNS SRV Cannot resolve remote party " << remoteParty);
+        addresses = PStringList(remoteParty);
+      }
     }
-	return TRUE;
-   }  
+    else
+    {
+      addresses = PStringList(remoteParty);
+    }
+    return TRUE;
+  }  
 #endif
-    addresses = PStringList(remoteParty);
-	return TRUE;
+  addresses = PStringList(remoteParty);
+  return TRUE;
 }
 
 BOOL H323EndPoint::ParsePartyName(const PString & _remoteParty,
