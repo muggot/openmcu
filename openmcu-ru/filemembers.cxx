@@ -333,23 +333,22 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
     if(!result)result=(GetLastError()==ERROR_IO_PENDING);
     if(result) {
       if(success==0) { success++; audioDelay.Restart(); }
-    } else {
-      MY_NAMED_PIPE_CLOSE(pipe);
-      MY_NAMED_PIPE_OPEN("sound",amountBytes,0);
-      success=0; audioDelay.Restart();
     }
+    else
+    { MY_NAMED_PIPE_CLOSE; PThread::Sleep(120); if(!running) break; MY_NAMED_PIPE_OPEN("sound",amountBytes,0); success=0; audioDelay.Restart(); }
 #else
     if (write(SS,(const void *)pcmData.GetPointer(), amountBytes)<0) 
-     { if(!running) break; close(SS); SS=open(cname,O_WRONLY); success=0; audioDelay.Restart(); }
+    { close(SS); PThread::Sleep(120); if(!running) break; SS=open(cname,O_WRONLY); success=0; audioDelay.Restart(); }
     else if(success==0) { success++; audioDelay.Restart(); } 
 #endif
 
     // and delay
     modulo += m0;
     if(audioDelay.Delay(d + (modulo / (channels * sampleRate))))
-    { PTRACE(6,"AudioExportThread_Delay\tPAdaptiveDelay.Delay() called Too late. Sample rate = " << sampleRate << " Hz, delay = " << AUDIO_EXPORT_PCM_BUFFER_SIZE_MS << " ms, amount = " << amountBytes << " bytes."); }
+    {
+      PTRACE(6,"WriteThread\tAdaptive delay for " << AUDIO_EXPORT_PCM_BUFFER_SIZE_MS << "ms called too late, sampleRate=" << sampleRate << " amountBytes=" << amountBytes);
+    }
     modulo %= (channels * sampleRate);
-
   }
 
 #ifdef _WIN32
@@ -405,19 +404,20 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
     if(!result)result=(GetLastError()==ERROR_IO_PENDING);
     if(result) {
       if(success==0) { success++; videoDelay.Restart(); }
-    } else {
-      MY_NAMED_PIPE_CLOSE;
-      MY_NAMED_PIPE_OPEN("video",amount,0);
-      success=0; videoDelay.Restart();
     }
+    else
+    { MY_NAMED_PIPE_CLOSE; PThread::Sleep(120); if(!running) break; MY_NAMED_PIPE_OPEN("video",amount,0); success=0; videoDelay.Restart(); }
 #else
     if (write(SV,(const void *)videoData.GetPointer(), amount)<0) 
-     { if(!running) break; close(SV); SV=open(cname,O_WRONLY); success=0; videoDelay.Restart();}
+    { close(SV); PThread::Sleep(120); if(!running) break; SV=open(cname,O_WRONLY); success=0; videoDelay.Restart(); }
     else if(success==0) { success++; videoDelay.Restart(); }
 #endif
 
     // and delay
-    videoDelay.Delay(delay);
+    if(videoDelay.Delay(delay))
+    {
+      PTRACE(6,"WriteThreadV\tAdaptive delay for " << delay << "ms called too late, framerate=" << framerate << " amount=" << amount);
+    }
   }
 
 #ifdef _WIN32
