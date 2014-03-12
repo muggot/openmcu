@@ -317,12 +317,13 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
   PBYTEArray pcmData(amountBytes);
   PAdaptiveDelay audioDelay;
   int success=0;
+  unsigned wrn=63;
 
 //  write(SS, wavHeader, 44);
 
   a_ended=FALSE;
-  while (running) {
-
+  while (running)
+  {
     // read a block of data
     ReadAudio(pcmData.GetPointer(), amountBytes, sampleRate, channels);
 
@@ -335,10 +336,14 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
       if(success==0) { success++; audioDelay.Restart(); }
     }
     else
-    { MY_NAMED_PIPE_CLOSE; PThread::Sleep(120); if(!running) break; MY_NAMED_PIPE_OPEN("sound",amountBytes,0); success=0; audioDelay.Restart(); }
+    { MY_NAMED_PIPE_CLOSE; PThread::Sleep(120); if(!running) break; MY_NAMED_PIPE_OPEN("sound",amountBytes,0); success=0; audioDelay.Restart();
+      wrn=(wrn+1)&63; if(!wrn) OpenMCU::Current().HttpWriteEventRoom("Video recorder audio pipe problem",conference->GetNumber());
+    }
 #else
     if (write(SS,(const void *)pcmData.GetPointer(), amountBytes)<0) 
-    { close(SS); PThread::Sleep(120); if(!running) break; SS=open(cname,O_WRONLY); success=0; audioDelay.Restart(); }
+    { close(SS); PThread::Sleep(120); if(!running) break; SS=open(cname,O_WRONLY); success=0; audioDelay.Restart();
+      wrn=(wrn+1)&63; if(!wrn) OpenMCU::Current().HttpWriteEventRoom("Video recorder audio pipe problem",conference->GetNumber());
+    }
     else if(success==0) { success++; audioDelay.Restart(); } 
 #endif
 
@@ -388,10 +393,11 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
   PBYTEArray videoData(amount);
   PAdaptiveDelay videoDelay;
   int success=0;
-  
-  v_ended=FALSE;
-  while (running) {
+  unsigned wrn=63;
 
+  v_ended=FALSE;
+  while (running)
+  {
     // read a block of data
     if(videoMixer!=NULL) videoMixer->ReadFrame(*this,videoData.GetPointer(),width,height,amount);
     else conference->ReadMemberVideo(this,videoData.GetPointer(),width,height,amount);
@@ -406,10 +412,14 @@ void ConferenceFileMember::WriteThreadV(PThread &, INT)
       if(success==0) { success++; videoDelay.Restart(); }
     }
     else
-    { MY_NAMED_PIPE_CLOSE; PThread::Sleep(120); if(!running) break; MY_NAMED_PIPE_OPEN("video",amount,0); success=0; videoDelay.Restart(); }
+    { MY_NAMED_PIPE_CLOSE; PThread::Sleep(120); if(!running) break; MY_NAMED_PIPE_OPEN("video",amount,0); success=0; videoDelay.Restart();
+      wrn=(wrn+1)&63; if(!wrn) OpenMCU::Current().HttpWriteEventRoom("Video recorder video pipe problem",conference->GetNumber());
+    }
 #else
     if (write(SV,(const void *)videoData.GetPointer(), amount)<0) 
-    { close(SV); PThread::Sleep(120); if(!running) break; SV=open(cname,O_WRONLY); success=0; videoDelay.Restart(); }
+    { close(SV); PThread::Sleep(120); if(!running) break; SV=open(cname,O_WRONLY); success=0; videoDelay.Restart();
+      wrn=(wrn+1)&63; if(!wrn) OpenMCU::Current().HttpWriteEventRoom("Video recorder video pipe problem",conference->GetNumber());
+    }
     else if(success==0) { success++; videoDelay.Restart(); }
 #endif
 
