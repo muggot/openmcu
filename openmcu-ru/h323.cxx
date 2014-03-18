@@ -2608,7 +2608,6 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
   ConferenceMember * conferenceMember = GetConferenceMember();
   if(conferenceMember!=NULL)
   {
-    conferenceMember->ChannelBrowserStateUpdate(8,TRUE);
     if(conferenceMember->IsVisible())
     {
       videoMixerNumber=conferenceMember->GetVideoMixerNumber();
@@ -2706,8 +2705,9 @@ BOOL OpenMCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & c
     if (!codec.AttachChannel(channel,TRUE))
       return FALSE;
 
-   } else {
+    if(conferenceMember!=NULL) conferenceMember->ChannelBrowserStateUpdate(8,TRUE);
 
+  } else {
 
     videoReceiveCodec = &codec;
     if(conference && conference->IsModerated() == "+") conference->FreezeVideo(this);
