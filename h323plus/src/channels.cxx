@@ -1441,7 +1441,7 @@ void H323_RTPChannel::Transmit()
 
       if (!isAudio)
 //      { 
-       if(!frame.GetMarker()) PThread::Sleep(2);
+       if(!frame.GetMarker()) PThread::Sleep(1);
        /*else*/ //rtpTimestamp = nextTimestamp;
 //      }
 
