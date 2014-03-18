@@ -776,6 +776,7 @@ RTP_Session::RTP_Session(
   octetsReceived = 0;
   rtpcReceived = 0;
   packetsLost = 0;
+  packetsLostTx = 0;
   packetsOutOfOrder = 0;
   averageSendTime = 0;
   maximumSendTime = 0;
@@ -1414,8 +1415,9 @@ RTP_Session::SendReceiveStatus RTP_Session::OnReceiveControl(RTP_ControlFrame & 
           sender.rtpTimestamp = sr.rtp_ts;
           sender.packetsSent = sr.psent;
           sender.octetsSent = sr.osent;
-          OnRxSenderReport(sender,
-                BuildReceiverReportArray(frame, sizeof(RTP_ControlFrame::SenderReport)));
+          RTP_Session::ReceiverReportArray ra = BuildReceiverReportArray(frame, sizeof(RTP_ControlFrame::SenderReport));
+          if(ra.GetSize()>0) packetsLostTx = ra[ra.GetSize()-1].totalLost;
+          OnRxSenderReport(sender, ra);
         }
         else {
           PTRACE(2, "RTP\tSenderReport packet truncated");
@@ -1424,8 +1426,11 @@ RTP_Session::SendReceiveStatus RTP_Session::OnReceiveControl(RTP_ControlFrame & 
 
       case RTP_ControlFrame::e_ReceiverReport :
         if (size >= 4)
-          OnRxReceiverReport(*(const PUInt32b *)payload,
-                                      BuildReceiverReportArray(frame, sizeof(PUInt32b)));
+        {
+          RTP_Session::ReceiverReportArray ra = BuildReceiverReportArray(frame, sizeof(PUInt32b));
+          if(ra.GetSize()>0) packetsLostTx = ra[ra.GetSize()-1].totalLost;
+          OnRxReceiverReport(*(const PUInt32b *)payload, ra);
+        }
         else {
           PTRACE(2, "RTP\tReceiverReport packet truncated");
         }
