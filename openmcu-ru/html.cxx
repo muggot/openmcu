@@ -301,6 +301,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << BoolField(CreateEmptyRoomKey, cfg.GetBoolean(CreateEmptyRoomKey, FALSE));
   // recall last template after room created
   s << BoolField(RecallLastTemplateKey, cfg.GetBoolean(RecallLastTemplateKey, FALSE));
+  // template will lock conference by default
+  s << BoolField(LockTplByDefaultKey, mcu.lockTplByDefault);
   // reject duplicate name
   s << BoolField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, FALSE), "Reject duplicate participants (Rename if unchecked)");
   // get conference time limit 

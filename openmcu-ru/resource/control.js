@@ -64,6 +64,7 @@ var OTFC_SET_VIDEO_MIXER_LAYOUT  = 73;
 var OTFC_SET_MEMBER_VIDEO_MIXER  = 74;
 var OTFC_VIDEO_RECORDER_START    = 75;
 var OTFC_VIDEO_RECORDER_STOP     = 76;
+var OTFC_TOGGLE_TPL_LOCK         = 77;
 
 var libyuv_flt_desc = Array('None', 'Bilin.', 'Box');
 
@@ -115,6 +116,8 @@ var hl_id = -1;
 var hl_state = -1;
 
 var abgctr1=0;
+
+var isTemplateLocked=0;
 
 function index_exists(a, i)
 {
@@ -1077,6 +1080,21 @@ function room_change(newRoom){
   }
 }
 
+function get_tpllock_src()
+{ if(isTemplateLocked) return "i32_lock.png";
+  return "i32_lockopen.png";
+}
+function get_template_lock()
+{ try{ isTemplateLocked=conf[0][12]; } catch(e){}
+  return "<img id='imgTplLock' src='" + get_tpllock_src() + "' width=32 height=32 onclick='queue_otf_request("
+  + OTFC_TOGGLE_TPL_LOCK + ",document.getElementById(\"templateSelector\").value)' style='vertical-align:middle;cursor:pointer' />";
+}
+function tpllck(i)
+{ isTemplateLocked = i;
+  document.getElementById('imgTplLock').src=get_tpllock_src();
+  alive();
+}
+
 function top_panel(){
   if(vad_setup_mode) return;
   if(tpl_save_mode) return;
@@ -1143,7 +1161,7 @@ function top_panel(){
 
   c+="</td><td width='30%' align=right id='savetpl' name='savetpl'>";
 
-
+  c+=get_template_lock();
   c+="<input type='button' class='btn btn-large btn-danger' style='width:20px;padding-left:0px;padding-right:0px;margin-right:1px' value='&ndash;' onclick='javascript:{if(confirm(\"Template \"+document.getElementById(\"templateSelector\").value+\" will be deleted\"))queue_otf_request("+OTFC_DELETE_TEMPLATE+",document.getElementById(\"templateSelector\").value);}'>";
   c+="<select class='btn btn-large btn-disabled' style='margin-left:1px;height:39px' id='templateSelector' name='templateSelector' onchange='queue_otf_request("+OTFC_TEMPLATE_RECALL+",this.value)'>";
    if(typeof tl=='undefined') tl=Array();

@@ -947,6 +947,7 @@ PString OpenMCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 #endif
 
   if(c.externalRecorder != NULL) r << ",1"; else r << ",0";               // [0][11] = external video recording state (1=recording, 0=NO)
+  if(c.lockedTemplate) r << ",1"; else r << ",0";                         // [0][12] = member list locked by template (1=yes, 0=no)
 
   r << ")"; //l2 close
 
@@ -1195,6 +1196,15 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
         << "p.seltpl=\"" << conference->GetSelectedTemplateName() << "\"\n"
         << "p.build_page()";
       OpenMCU::Current().HttpWriteCmdRoom(msg,room);
+    OTF_RET_OK;
+  }
+  if(action == OTFC_TOGGLE_TPL_LOCK)
+  {
+    PString templateName=value.Trim();
+    if((templateName.IsEmpty())||(templateName.Right(1) == "*")) if(!conference->lockedTemplate) OTF_RET_FAIL;
+    conference->lockedTemplate = !conference->lockedTemplate;
+    if(conference->lockedTemplate) OpenMCU::Current().HttpWriteCmdRoom("tpllck(1)",room);
+    else OpenMCU::Current().HttpWriteCmdRoom("tpllck(0)",room);
     OTF_RET_OK;
   }
   if(action == OTFC_INVITE)

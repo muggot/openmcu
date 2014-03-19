@@ -503,6 +503,7 @@ Conference::Conference(        ConferenceManager & _manager,
   ;
   autoStartRecord=OpenMCU::Current().autoStartRecord;
   autoStopRecord=OpenMCU::Current().autoStopRecord;
+  lockedTemplate=OpenMCU::Current().lockTplByDefault;
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 

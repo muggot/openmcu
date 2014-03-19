@@ -229,6 +229,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
+  lockTplByDefault = cfg.GetBoolean(LockTplByDefaultKey, FALSE);
 
   autoStartRecord = cfg.GetInteger(AutoStartRecorderKey, -1);
   autoStopRecord = cfg.GetInteger(AutoStopRecorderKey, -1);
@@ -413,6 +414,8 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #endif
   WEBSERVER_LINK_MIME("image/png"                , "i16_close_gray.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_close_red.png");
+  WEBSERVER_LINK_MIME("image/png"                , "i32_lock.png");
+  WEBSERVER_LINK_MIME("image/png"                , "i32_lockopen.png");
 
   for(PINDEX i=-1; i<rotationLevel; i++)
   {

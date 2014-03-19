@@ -64,7 +64,7 @@ static const char DefaultRoomTimeLimitKey[] = "Room time limit";
 static const char AutoStartRecorderKey[]    = "Auto start recorder";
 static const char AutoStopRecorderKey[]     = "Auto stop recorder";
 static const char AutoDeleteRoomKey[]       = "Auto delete empty rooms";
-
+static const char LockTplByDefaultKey[]     = "Template locks conference by default";
 static const char DefaultCallLogFilename[] = "mcu_log.txt"; 
 static const char DefaultRoom[]            = "room101";
 static const char CreateEmptyRoomKey[]     = "Auto create empty room";
@@ -425,6 +425,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     PStringArray addressBook;
     PINDEX autoStartRecord, autoStopRecord;
     BOOL autoDeleteRoom;
+    BOOL lockTplByDefault;
 
   protected:
     int        currentLogLevel, currentTraceLevel;

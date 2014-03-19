@@ -62,6 +62,7 @@ extern "C" {
 #define OTFC_SET_MEMBER_VIDEO_MIXER   74
 #define OTFC_VIDEO_RECORDER_START     75
 #define OTFC_VIDEO_RECORDER_STOP      76
+#define OTFC_TOGGLE_TPL_LOCK          77
 
 class OpenMCUH323EndPoint : public H323EndPoint
 {

@@ -1315,6 +1315,7 @@ class Conference : public PObject
     BOOL autoDelete;
     PINDEX autoStartRecord, autoStopRecord;
     BOOL stopping;
+    BOOL lockedTemplate;
 
   protected:
     ConferenceManager & manager;
