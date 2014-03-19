@@ -1823,7 +1823,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   }
 
   html
-    << "<form method=\"post\"><input name='room' id='room' type=hidden>"
+    << "<form method=\"post\" onsubmit=\"javascript:{if(document.getElementById('newroom').value!='')location.href='?action=create&room='+encodeURIComponent(document.getElementById('newroom').value);return false;}\"><input name='room' id='room' type=hidden>"
     << "<table class=\"table table-striped table-bordered table-condensed\">"
 
     << "<tr>"
