@@ -1032,6 +1032,7 @@ H323FramedAudioCodec::H323FramedAudioCodec(const OpalMediaFormat & fmt, Directio
   currVolCoef = 1.0;
   lastReadTime = time(0);
   readPerSecond = 0;
+  agc = 0;
 }
 
 

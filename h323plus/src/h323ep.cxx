@@ -1279,6 +1279,8 @@ H323EndPoint::H323EndPoint()
   gnugk = NULL;
 #endif
 
+  agc = 0;
+
   PTRACE(3, "H323\tCreated endpoint.");
 }
 
