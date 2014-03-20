@@ -53,12 +53,14 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
 
   PString lang = MCUConfig("Parameters").GetString("Language").ToLower();
 
+  PString jsInit="defaultProtocol="+PString(OpenMCU::Current().defaultProtocol)+";\n";
+
   PString html0(html_template_buffer); html0 = html0.Left(html0.Find("$BODY$"));
   html0.Replace("$LANG$",     lang,     TRUE, 0);
   html0.Replace("$PTITLE$",   ptitle,   TRUE, 0);
   html0.Replace("$TITLE$",    title,    TRUE, 0);
   html0.Replace("$QUOTE$",    quotekey, TRUE, 0);
-
+  html0.Replace("$INIT$",     jsInit,   TRUE, 0);
   html << html0;
 }
 
@@ -256,6 +258,9 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << SelectField("Language", cfg.GetString("Language"), ",EN,RU,UK");
   // OpenMCU Server Id
   s << StringField("OpenMCU Server Id", cfg.GetString("OpenMCU Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 35);
+
+  PString dp; if(OpenMCU::Current().defaultProtocol==0) dp="H.323"; else dp="SIP";
+  s << SelectField(DefaultProtocolKey, dp, "H.323,SIP");
 
 #if P_SSL
   s << SeparatorField("Security");

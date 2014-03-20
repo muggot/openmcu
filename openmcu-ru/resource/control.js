@@ -147,10 +147,6 @@ function screen1(s){ s+=""; return s.replace(/\|/g,'%7C').replace(/\#/g,'%23'); 
 
 function pstrip(s){ return s.replace(/[^А-Яа-яA-Z0-9a-z-_]/gi,''); }
 
-function wpcheck(){ if(document.getElementById("disable_pe").checked){ alert("Please uncheck 'W/p' first."); return false; } return true; }
-
-function update_or_reload(layout_changed){ if(layout_changed)return document.forms[0].sendit.click(); else return form_gather_and_send(); }
-
 function my_trim(s){ s+=""; return s.replace(/(^[\s\t\n\r]+)|([\s\t\n\r]+$)/g, ""); }
 
 function checkcontrol(){
@@ -567,12 +563,21 @@ function invite_checked_abook(obj){
     }
   }
 }
-function on_invite_abook_input(obj){
-  if(document.getElementById("invite_input"))
+function on_invite_abook_input(obj)
+{
+  if(!document.getElementById("invite_input")) return;
+  var addr = document.getElementById("invite_input").value; if(addr=="") return;
+  var setProto = (addr.substr(0,5).toLowerCase()=='h323:') || (addr.substr(0,4).toLowerCase()=='sip:');
+  if(!setProto)
   {
-    var addr = document.getElementById("invite_input").value;
-    if(addr != "") inviteoffline(obj,addr);
+    if(document.getElementById('divInvProto').innerHTML=='SIP')
+    {
+      if(addr.indexOf('@')==-1) addr='sip:@'+addr;
+      else addr='sip:'+addr;
+    }
+    else addr='h323:'+addr;
   }
+  inviteoffline(obj,addr);
 }
 
 function rtp_state(id,cc)
@@ -701,18 +706,28 @@ function additional_panel(){
   return s;
 }
 
+function get_default_proto()
+{
+  if(typeof defaultProtocol=='undefined') defaultProtocol=0;
+  if(defaultProtocol==1) return 'SIP';
+  return 'H.323';
+}
+
 function additional_panel_abook(){
   var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
   var height = PANEL_ICON_HEIGHT; // 15
   var width = PANEL_ICON_WIDTH; // 15
   var bwidth = 28;
   var dbutton="<div class='btn btn-small' style='border-width:1px;border-radius:0px;padding:2px 0px 2px 0px;height:"+(height+1)+"px;line-height:"+(height+1)+"px;text-align:center;cursor:pointer;";
-  var input_posx = 4*bwidth;
+  var proto_posx = 4*bwidth;
+  var proto_width = 50;
+  var input_posx = proto_posx+proto_width;
   var input_width = panel_width-input_posx-5;
   var s="<div id='additional_panel_abook' style='display:none;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>"
    +dpre+"2px;'>"+dbutton+"width:"+bwidth+"px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif' /></div></div>"
    +dpre+"34px;'>"+dbutton+"width:"+bwidth+"px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;' /></div></div>"
-   +dpre+(input_posx-width-5)+"px'><img id='adrbkpinv' onclick='on_invite_abook_input(this);abgctr1=1;' style='margin-top:3px;cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite' /></div>"
+   +dpre+(proto_posx-width-5)+"px'><img id='adrbkpinv' onclick='on_invite_abook_input(this);abgctr1=1;' style='margin-top:3px;cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite' /></div>"
+   +dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;' onclick='javascript:{if(this.innerHTML==\"SIP\")this.innerHTML=\"H.323\";else this.innerHTML=\"SIP\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>"
    +dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;' onkeyup='javascript:{if(abgctr1){document.getElementById(\"adrbkpinv\").src=\"i15_inv.gif\";abgctr1=0;};if(event.keyCode==13){on_invite_abook_input(document.getElementById(\"adrbkpinv\"));abgctr1=1;}}' /></div>"
    +"</div>";
   return s;

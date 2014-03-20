@@ -227,6 +227,10 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     }
   }
 
+  PString dp = cfg.GetString(DefaultProtocolKey, "H.323");
+  if(dp=="SIP") defaultProtocol=DEFAULT_SIP;
+  else defaultProtocol=DEFAULT_H323;
+
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
   lockTplByDefault = cfg.GetBoolean(LockTplByDefaultKey, FALSE);

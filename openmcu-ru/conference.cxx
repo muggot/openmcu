@@ -601,13 +601,33 @@ void Conference::RefreshAddressBook()
 
 BOOL Conference::InviteMember(const char *membName, void * userData)
 {
-  MCUURL url(membName);
+  PString u = membName; u = u.LeftTrim();
+  BOOL isH323=FALSE;
+  BOOL isSIP = (u.Left(4)*="sip:");
+  if (!isSIP) isH323 = (u.Left(5)*="h323:");
+  if ( !(isSIP||isH323) )
+  {
+    if(OpenMCU::Current().defaultProtocol==DEFAULT_SIP)
+    {
+      u="sip:"+u;
+      isSIP=TRUE;
+    }
+    else
+    {
+      u="h323:"+u;
+      isH323=TRUE;
+    }
+  }
+
+//  MCUURL url(membName);
+  MCUURL url(u);
+
   PString address = url.GetUrl();
   if(url.GetUserName() == "" && url.GetHostName() == "") return FALSE;
 
   if(!OpenMCU::Current().AreLoopbackCallsAllowed())
   {
-    if(url.GetScheme() == "sip")
+    if(isSIP)
     {
       OpenMCUSipEndPoint * sipep = OpenMCU::Current().GetSipEndpoint();
       if(sipep->FindListener(url.GetUrl()))
@@ -616,7 +636,7 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
         return FALSE;
       }
     }
-    else if(url.GetScheme() == "h323")
+    else if(isH323)
     {
       OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
       PString hostport = url.GetHostName()+":"+url.GetPort();
@@ -632,7 +652,7 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
     }
   }
 
-  if(url.GetScheme() == "sip")
+  if(isSIP)
   {
     OpenMCUSipEndPoint * sipep = OpenMCU::Current().GetSipEndpoint();
     if(userData!=NULL)
@@ -646,19 +666,21 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
     msg << "Inviting " << address;
     OpenMCU::Current().HttpWriteEventRoom(msg,number);
   }
-  else if (url.GetScheme() == "h323")
+  else if(isH323)
   {
     OpenMCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-    if(url.GetHostName() == "")
+    if(url.GetHostName().IsEmpty())
     {
       address = url.GetUserName();
-    } else {
-      if(address.Left(5) != "h323:") address = "h323:"+address;
+    }
+    else
+    {
+//      if(address.Left(5) != "h323:") address = "h323:"+address;
       PString port = address.Tokenise(":")[2];
-      if(port == "")
+      if(port.IsEmpty())
       {
         port = OpenMCU::Current().GetEndpointParamFromUrl("H323 port", address);
-        if(port != "") address += ":"+port;
+        if(!port.IsEmpty()) address += ":"+port;
       }
     }
     PString h323Token;

@@ -67,6 +67,8 @@ main.css \
 i16_close_gray.png \
 i16_close_red.png \
 openmcu.ico \
+i32_lock.png \
+i32_lockopen.png \
 
 OBJDIR	= ./obj
 OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdir $(SOURCES)))))

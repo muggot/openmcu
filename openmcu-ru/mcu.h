@@ -131,6 +131,7 @@ static const char DisableFastStartKey[]   = "Disable Fast-Start";
 static const char DisableH245TunnelingKey[]="Disable H.245 Tunneling";
 static const char RTPPortBaseKey[]        = "RTP Base Port";
 static const char RTPPortMaxKey[]         = "RTP Max Port";
+static const char DefaultProtocolKey[]    = "Default protocol for outgoing calls";
 
 static const char RejectDuplicateNameKey[] = "Reject duplicate name";
 
@@ -169,6 +170,9 @@ static const PTEACypher::Key CypherKey = {
 
 static PString MCUControlCodes = "NO ACTION,"
                                  "new action";
+
+#define DEFAULT_H323 0
+#define DEFAULT_SIP  1
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -426,6 +430,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     PINDEX autoStartRecord, autoStopRecord;
     BOOL autoDeleteRoom;
     BOOL lockTplByDefault;
+    BYTE defaultProtocol; // H.323 or SIP
 
   protected:
     int        currentLogLevel, currentTraceLevel;
