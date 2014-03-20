@@ -1075,8 +1075,9 @@ function imute(id){
 
 function imute_all(v)
 { var src='i15_mic_off.gif'; if(!v) src='i15_mic_on.gif';
+  var nv=1; if(!v) nv=0;
   for(var i=0;i<members.length;i++) if(members[i][0])
-  { members[i][3]=1;
+  { members[i][3]=nv;
     if((o=object_return('mrpan_',members[i][1]))===false) continue;
     o.src=src;
   }
