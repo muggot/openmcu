@@ -1242,9 +1242,10 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     OpenMCU::Current().HttpWriteCmdRoom("drop_all()",room);
     return "OK";
   }
-  if(action == OTFC_MUTE_ALL)
+  if((action == OTFC_MUTE_ALL)||(action == OTFC_UNMUTE_ALL))
   {
     conferenceManager.UnlockConference();
+    BOOL newValue = (action==OTFC_MUTE_ALL);
     PWaitAndSignal m(conference->GetMutex());
     Conference::MemberList & memberList = conference->GetMemberList();
     Conference::MemberList::iterator r;
@@ -1253,9 +1254,11 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
       ConferenceMember * member = r->second;
       if(member->GetName()=="file recorder") continue;
       if(member->GetName()=="cache") continue;
-      member->muteIncoming=TRUE;
+      member->muteIncoming = newValue;
     }
-    OpenMCU::Current().HttpWriteCmdRoom("imute_all()",room);
+    PStringStream s;
+    s << "imute_all(" << (newValue?"1":"0") << ")";
+    OpenMCU::Current().HttpWriteCmdRoom(s,room);
     return "OK";
   }
   if(action == OTFC_INVITE_ALL_INACT_MMBRS)

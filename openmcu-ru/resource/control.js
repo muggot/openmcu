@@ -65,6 +65,7 @@ var OTFC_SET_MEMBER_VIDEO_MIXER  = 74;
 var OTFC_VIDEO_RECORDER_START    = 75;
 var OTFC_VIDEO_RECORDER_STOP     = 76;
 var OTFC_TOGGLE_TPL_LOCK         = 77;
+var OTFC_UNMUTE_ALL              = 78;
 
 var libyuv_flt_desc = Array('None', 'Bilin.', 'Box');
 
@@ -694,7 +695,8 @@ function additional_panel(){
   var width = PANEL_ICON_WIDTH; // 15
   var dbutton="<div class='btn btn-small' style='border-width:1px;border-radius:0px;padding:2px 0px 2px 0px;height:"+(height+1)+"px;line-height:"+(height+1)+"px;text-align:center;cursor:pointer;";
   var s="<div id='additional_panel' style='display:block;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>"
-   +dpre+"2px;'>"+dbutton+"width:80px' onmousedown='queue_otf_request("+OTFC_MUTE_ALL+")'>Mute&nbsp;All</div></div>"
+   +dpre+"2px;'>"+dbutton+"width:"+(2*PANEL_ICON_WIDTH)+"px' onmousedown='queue_otf_request("+OTFC_MUTE_ALL+")'><img style='cursor:pointer' src='i15_mic_off.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+"></div></div>"
+   +dpre+(2+(2*PANEL_ICON_WIDTH))+"px;'>"+dbutton+"width:"+(2*PANEL_ICON_WIDTH)+"px' onmousedown='queue_otf_request("+OTFC_UNMUTE_ALL+")'><img style='cursor:pointer' src='i15_mic_on.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+"></div></div>"
    +dpre+"100px;'>"+dbutton+"width:28px;' onclick='invite_all(this)'><img width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif'></div></div>"
    +dpre+"132px;'>"+dbutton+"width:28px' onclick='remove_all0(this)'><img width=16 height=16 src='i16_close_gray.png'></div></div>"
    +dpre+"164px;'>"+dbutton+"width:28px;' onclick='drop_all0(this)'><img width=16 height=16 src='i16_close_red.png'></div></div>"
@@ -1046,11 +1048,12 @@ function imute(id){
   }
 }
 
-function imute_all()
-{ for(var i=0;i<members.length;i++) if(members[i][0])
+function imute_all(v)
+{ var src='i15_mic_off.gif'; if(!v) src='i15_mic_on.gif';
+  for(var i=0;i<members.length;i++) if(members[i][0])
   { members[i][3]=1;
     if((o=object_return('mrpan_',members[i][1]))===false) continue;
-    o.src='i15_mic_off.gif';
+    o.src=src;
   }
   return alive();
 }
