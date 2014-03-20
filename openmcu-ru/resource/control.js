@@ -1202,7 +1202,7 @@ function top_panel(){
     + (recState?"STOP":"START")
     + ",0)'>";
 
-  c+="</td><td width='30%' align=right id='savetpl' name='savetpl'>";
+  c+="</td><td width='30%' align=right id='savetpl' name='savetpl'><nobr>";
 
   c+=get_template_lock();
   c+="<input type='button' class='btn btn-large btn-danger' style='width:20px;padding-left:0px;padding-right:0px;margin-right:1px' value='&ndash;' onclick='javascript:{if(confirm(\"Template \"+document.getElementById(\"templateSelector\").value+\" will be deleted\"))queue_otf_request("+OTFC_DELETE_TEMPLATE+",document.getElementById(\"templateSelector\").value);}'>";
@@ -1220,7 +1220,7 @@ function top_panel(){
   c+="<input onclick='javascript:{save_template();}' type='button' class='btn btn-large btn-inverse' value='Save'>";
   c+="</form>";
 
-  c+="</td></tr></table>";
+  c+="</nobr></td></tr></table>";
 
   t.innerHTML=c;
 }
