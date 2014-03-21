@@ -1689,7 +1689,21 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
         if(i!=0) message << ",";
         message << "\"" << split << "\"";
       }
-      message << ");\n"
+      message << ");\np.splitdata2={";
+      for (unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
+      {
+        PString split=OpenMCU::vmcfg.vmconf[i].splitcfg.Id;
+        split.Replace("\"","\\x22",TRUE,0);
+        message << "\"" << split << "\"" << ":[" << OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum;
+        for(unsigned j=0;j<OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum; j++)
+        {
+          VMPCfgOptions & vo=OpenMCU::vmcfg.vmconf[i].vmpcfg[j];
+          message << ",[" << vo.posx << "," << vo.posy << "," << vo.width << "," << vo.height << "," << vo.border << "," << vo.label_mask << "]";
+        }
+        message << "]";
+        if(i+1<OpenMCU::vmcfg.vmconfs) message << ",";
+      }
+      message << "};\n"
         << "p." << OpenMCU::Current().GetEndpoint().GetMemberListOptsJavascript(conference) << "\n"
         << "p." << OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(conference) << "\n"
         << "p.tl=Array" << conference.GetTemplateList() << "\n"

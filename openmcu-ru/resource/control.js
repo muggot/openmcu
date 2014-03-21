@@ -121,6 +121,9 @@ var mlgctr1=0;
 
 var isTemplateLocked=0;
 
+var splitSelectorWindow=null;
+var splitSelectorWindowMixerNumber=-1;
+
 function index_exists(a, i)
 {
   try
@@ -1301,19 +1304,85 @@ function change_split(mixer,value){
  my_alert('Mixer '+mixer+' is now '+value);
 }
 
+function selector_window(mixerNumber)
+{
+  if(typeof splitdata2=='undefined') {my_alert('Server error: no split data received'); return;}
+  if(splitSelectorWindow!=null)
+  {
+    splitSelectorWindow.close();
+    splitSelectorWindow=null;
+  }
+  splitSelectorWindow=window.open('','Thumbnails','menubar=0,status=0,titlebar=0,scrollbars=1');
+  splitSelectorWindowMixerNumber=mixerNumber;
+
+  var s="<!DOCTYPE HTML PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
+    + "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
+    + "<head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />"
+    + "<title>Thumbnails</title>"
+    + "<style>"
+    + ".tn{width:176px;height:176px;overflow:hidden;float:left;margin:8px;cursor:pointer;border:2px solid #ccc;border-radius:6px}"
+    + ".tn:hover{border:6px solid #bfb;margin:4px;border-radius:12px;background-color:#bfb}"
+    + ".tnp{position:relative;width:0px;height:0px}"
+    + ".tni{overflow:hidden;text-align:center;vertical-align:middle;display:table-cell;border:1px dotted black;font-size:12px}"
+    + ".tns{overflow:hidden;text-align:center;vertical-align:middle;display:table-cell}"
+    + "</style>\n"
+    + "<script>"
+    + "  function block(x,y,w,h,n)"
+    + "  {"
+    + "    document.write(\"<div class='tnp' style='left:\"+x+\"px;top:\"+y+\"px'><div class=tni style='background-color:#\"+(\"faaafafafffa\".substr(Math.floor(Math.random()*9.9999999999),3))+\";width:\"+w+\"px;height:\"+h+\"px;min-width:\"+w+\"px'>\"+n+\"</div></div>\");"
+    + "  }"
+    + "  function sign(s)"
+    + "  {"
+    + "    document.write(\"<div class='tnp' style='left:0px;top:0px'><div style='width:176px;height:144px;min-width:176px;background-color:#000'></div></div>\");"
+    + "    document.write(\"<div class='tnp' style='left:0px;top:144px'><div class=tns style='width:176px;height:32px;min-width:176px'><nobr>\"+s+\"</nobr></div></div>\");"
+    + "  }"
+    + "</script>\n"
+    + "</head>\n\n"
+    + "<body>";
+  var i;
+  for(i=0;i<splitdata.length;i++)
+  {
+    var name=splitdata[i].replace(/'/g, "\\'");
+    s+="<div class='tn' onclick='window.opener.set_split_close("+i+")'><script>sign('"+name+"');";
+    var j;
+    var t=splitdata2[splitdata[i]];
+    for(j=0;j<t[0];j++)
+    {
+      s+="block("+(t[j+1][0]>>2)+","+(t[j+1][1]>>2)+","+(t[j+1][2]>>2)+","+(t[j+1][3]>>2)+","+j+");";
+    }
+    s+="</script></div>";
+  }
+  + "</body>"
+  + "</html>";
+  splitSelectorWindow.document.write(s);
+}
+
+function set_split_close(i)
+{
+  if(splitSelectorWindow!=null)
+  {
+    splitSelectorWindow.close();
+    splitSelectorWindow=null;
+  }
+  var mixerNumber=splitSelectorWindowMixerNumber;
+  splitSelectorWindowMixerNumber=-1;
+  if(checkcontrol())queue_otf_request(OTFC_SET_VIDEO_MIXER_LAYOUT,i,mixerNumber);
+}
+
 function split_selector(mixer, splitSelected){
   if(typeof splitdata=='undefined')return 'No splits available';
   var r="<span style='"+MIXER_LAYOUT_SCROLL_LEFT_STYLE+"' onclick='javascript:{if(checkcontrol())queue_otf_request("
       +OTFC_SET_VIDEO_MIXER_LAYOUT
       +",(parseInt(document.getElementById(\"splitselector"+mixer+"\").value)+splitdata.length-1)%splitdata.length,"+mixer+");}'"
     +">"+MIXER_LAYOUT_SCROLL_LEFT_BUTTON+"</span>";
-  r+="<select id='splitselector"+mixer+"' name='splitselector"+mixer+"' style='width:90px' onchange='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_VIDEO_MIXER_LAYOUT+",this.value,"+mixer+"); else this.value="+splitSelected+";}'>";
+  r+="<select id='splitselector"+mixer+"' name='splitselector"+mixer+"' style='width:70px;padding-left:0px;padding-right:0px;font-size:12px;letter-spacing:-1px' onchange='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_VIDEO_MIXER_LAYOUT+",this.value,"+mixer+"); else this.value="+splitSelected+";}'>";
   for(var i=0;i<splitdata.length;i++){
     r+="<option value="+i;
     if(i==splitSelected) r+=" selected";
     r+=">"+splitdata[i]+"</option>";
   }
   r+="</select>";
+  r+="<button onclick='selector_window("+mixer+")' class='btn btn-success' style='width:19px;height:18px;margin-left:0px;margin-right:2px;padding:0px;font-weight:bold;border:1px solid #000'>&dArr;</button>";
   r+="<span style='"+MIXER_LAYOUT_SCROLL_RIGHT_STYLE+"' onclick='javascript:{if(checkcontrol())queue_otf_request("
       +OTFC_SET_VIDEO_MIXER_LAYOUT
       +",(parseInt(document.getElementById(\"splitselector"+mixer+"\").value)+1)%splitdata.length,"+mixer+");}'"
