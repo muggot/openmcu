@@ -534,6 +534,12 @@ void Conference::StartRecorder()
 {
   if(externalRecorder) return; // already started
   if(!RecorderCheckSpace()) return;
+  if(!PDirectory::Exists(OpenMCU::Current().vr_ffmpegDir))
+  {
+    PTRACE(1,"EVRT\tRecorder failed to start (check recorder directory)");
+    OpenMCU::Current().HttpWriteEventRoom("Recorder failed to start (check recorder directory)",number);
+    return;
+  }
   externalRecorder = new ExternalVideoRecorderThread(number);
   PThread::Sleep(500);
   if(!externalRecorder->running)

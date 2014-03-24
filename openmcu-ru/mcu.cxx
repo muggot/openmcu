@@ -248,7 +248,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     vr_framerate       = cfg.GetInteger(RecorderFrameRateKey,   DefaultRecorderFrameRate);
     vr_sampleRate      = cfg.GetInteger(RecorderSampleRateKey,  DefaultRecorderSampleRate);
     vr_audioChans      = cfg.GetInteger(RecorderAudioChansKey,  DefaultRecorderAudioChans);
-    vr_minimumSpaceMiB = cfg.GetInteger(RecorderMinSpaceKey,  0);
+    vr_minimumSpaceMiB = cfg.GetInteger(RecorderMinSpaceKey,  1024);
     PString opts = vr_ffmpegOpts;
     PStringStream frameSize; frameSize << vr_framewidth << "x" << vr_frameheight;
     PStringStream frameRate; frameRate << vr_framerate;
