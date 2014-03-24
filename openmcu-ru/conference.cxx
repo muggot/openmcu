@@ -607,26 +607,22 @@ void Conference::RefreshAddressBook()
 
 BOOL Conference::InviteMember(const char *membName, void * userData)
 {
-  PString u = membName; u = u.LeftTrim();
-  BOOL isH323=FALSE;
-  BOOL isSIP = (u.Left(4)*="sip:");
-  if (!isSIP) isH323 = (u.Left(5)*="h323:");
+  MCUURL url(membName);
+  PCaselessString scheme = url.GetScheme();
+  BOOL isSIP=(scheme=="sip"), isH323=FALSE;
+  if(!isSIP) isH323=(scheme=="h323");
+
   if ( !(isSIP||isH323) )
   {
     if(OpenMCU::Current().defaultProtocol==DEFAULT_SIP)
     {
-      u="sip:"+u;
       isSIP=TRUE;
     }
     else
     {
-      u="h323:"+u;
       isH323=TRUE;
     }
   }
-
-//  MCUURL url(membName);
-  MCUURL url(u);
 
   PString address = url.GetUrl();
   if(url.GetUserName() == "" && url.GetHostName() == "") return FALSE;
@@ -681,7 +677,7 @@ BOOL Conference::InviteMember(const char *membName, void * userData)
     }
     else
     {
-//      if(address.Left(5) != "h323:") address = "h323:"+address;
+      if(address.Left(5) != "h323:") address = "h323:"+address;
       PString port = address.Tokenise(":")[2];
       if(port.IsEmpty())
       {
