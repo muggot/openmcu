@@ -1341,29 +1341,6 @@ void H323_RTPChannel::Transmit()
    */
   while (codec->Read(frame.GetPayloadPtr()+frameOffset, length, frame))
   {
-    // Calculate the timestamp and real time to take in processing
-    if(isAudio)
-    {
-      rtpTimestamp += codec->GetFrameRate();
-    }
-    else
-    { // video:
-      if(frame.GetMarker())
-      {
-        rtpTimestamp = rtpFirstTimestamp + ((PTimer::Tick() - firstFrameTick).GetInterval() * 90);
-      }
-    }
-
-#if PTRACING
-    if (rtpTimestamp - lastDisplayedTimestamp > RTP_TRACE_DISPLAY_RATE) {
-      PTRACE(9, "H323RTP\tTransmitter sent timestamp " << rtpTimestamp);
-      lastDisplayedTimestamp = rtpTimestamp;
-    }
-
-    if (codecReadAnalysis != NULL)
-      codecReadAnalysis->AddSample(rtpTimestamp);
-#endif
-
     if (paused)
       length = 0; // Act as though silent/no video
 
@@ -1457,6 +1434,30 @@ void H323_RTPChannel::Transmit()
 
     if (terminating)
       break;
+
+    // Calculate the timestamp and real time to take in processing
+    if(isAudio)
+    {
+      rtpTimestamp += codec->GetFrameRate();
+    }
+    else
+    { // video:
+      if(frame.GetMarker())
+      {
+        rtpTimestamp = rtpFirstTimestamp + ((PTimer::Tick() - firstFrameTick).GetInterval() * 90);
+      }
+    }
+
+#if PTRACING
+    if (rtpTimestamp - lastDisplayedTimestamp > RTP_TRACE_DISPLAY_RATE) {
+      PTRACE(9, "H323RTP\tTransmitter sent timestamp " << rtpTimestamp);
+      lastDisplayedTimestamp = rtpTimestamp;
+    }
+
+    if (codecReadAnalysis != NULL)
+      codecReadAnalysis->AddSample(rtpTimestamp);
+#endif
+
   }
 
 
