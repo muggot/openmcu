@@ -541,9 +541,11 @@ void Conference::StartRecorder()
     return;
   }
   externalRecorder = new ExternalVideoRecorderThread(number);
-  PThread::Sleep(500);
-  if(!externalRecorder->running)
+  unsigned i;
+  for(i=0;i<2000;i++) if(externalRecorder->state) break; else PThread::Sleep(25);
+  if(externalRecorder->state!=1)
   {
+    delete externalRecorder;
     externalRecorder = NULL;
     PTRACE(1,"EVRT\tRecorder failed to start");
     return;
@@ -556,10 +558,10 @@ void Conference::StartRecorder()
 void Conference::StopRecorder()
 {
   if(!externalRecorder) return; // already stopped
-  externalRecorder->running=FALSE;
-  PTRACE(4,"EVRT\tVideo Recorder is active - stopping now");
-  PThread::Sleep(1000);
+  ExternalVideoRecorderThread * t = externalRecorder;
   externalRecorder = NULL;
+  delete t;
+  PTRACE(4,"EVRT\tVideo Recorder is active - stopping now");
   OpenMCU::Current().HttpWriteEventRoom("Video recording stopped",number);
   OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this),number);
   OpenMCU::Current().HttpWriteCmdRoom("build_page()",number);

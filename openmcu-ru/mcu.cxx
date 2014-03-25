@@ -630,5 +630,62 @@ MCUURL::MCUURL(PString str)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+ExternalVideoRecorderThread::ExternalVideoRecorderThread(const PString & _roomName)
+  : roomName(_roomName)
+{
+  state = 0;
+
+  PStringStream t; t << roomName << "__" // fileName format: room101__2013-0516-1058270__704x576x10
+    << PTime().AsString("yyyy-MMdd-hhmmssu", PTime::Local) << "__"
+    << OpenMCU::Current().vr_framewidth << "x"
+    << OpenMCU::Current().vr_frameheight << "x"
+    << OpenMCU::Current().vr_framerate;
+  fileName = t;
+
+  t = OpenMCU::Current().ffmpegCall;
+  t.Replace("%o",fileName,TRUE,0);
+  PString audio, video;
+#ifdef _WIN32
+  audio = "\\\\.\\pipe\\sound_" + roomName;
+  video = "\\\\.\\pipe\\video_" + roomName;
+#else
+#  ifdef SYS_PIPE_DIR
+  audio = PString(SYS_PIPE_DIR)+"/sound." + roomName;
+  video = PString(SYS_PIPE_DIR)+"/video." + roomName;
+#  else
+  audio = "sound." + roomName;
+  video = "video." + roomName;
+#  endif
+#endif
+  t.Replace("%A",audio,TRUE,0);
+  t.Replace("%V",video,TRUE,0);
+  PINDEX i;
+#ifdef _WIN32
+  PString t2; for(i=0;i<t.GetLength();i++) { char c=t[i]; if(c=='\\') t2+='\\'; t2+=c; } t=t2;
+#endif
+  if(!ffmpegPipe.Open(t, /* PPipeChannel::ReadWrite */ PPipeChannel::WriteOnly, FALSE, FALSE)) { state=2; return; }
+  if(!ffmpegPipe.IsOpen()) { state=2; return; }
+  for (i=0;i<100;i++) if(ffmpegPipe.IsRunning()) {state=1; break; } else PThread::Sleep(12);
+  if(state != 1) { ffmpegPipe.Close(); state=2; return; }
+
+  PTRACE(2,"EVRT\tStarted new external recording thread for room " << roomName << ", CL: " << t);
+//  char buf[100]; while(ffmpegPipe.Read(buf, 100)) PTRACE(1,"EVRT\tRead data: " << buf);//<--thread overloaded, never FALSE?
+}
+
+ExternalVideoRecorderThread::~ExternalVideoRecorderThread()
+{
+  state=3;
+  if(ffmpegPipe.IsOpen())
+  {
+    if(ffmpegPipe.IsRunning())
+    {
+      ffmpegPipe.Write("q\r\n",3);
+      ffmpegPipe.WaitForTermination(500);
+    }
+    ffmpegPipe.Close();
+  }
+  state=4;
+}
+
 // End of File ///////////////////////////////////////////////////////////////
 
