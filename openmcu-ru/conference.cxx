@@ -542,7 +542,7 @@ void Conference::StartRecorder()
   }
   externalRecorder = new ExternalVideoRecorderThread(number);
   unsigned i;
-  for(i=0;i<2000;i++) if(externalRecorder->state) break; else PThread::Sleep(25);
+  for(i=0;i<100;i++) if(externalRecorder->state) break; else PThread::Sleep(50);
   if(externalRecorder->state!=1)
   {
     delete externalRecorder;

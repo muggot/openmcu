@@ -680,7 +680,12 @@ ExternalVideoRecorderThread::~ExternalVideoRecorderThread()
     if(ffmpegPipe.IsRunning())
     {
       ffmpegPipe.Write("q\r\n",3);
-      ffmpegPipe.WaitForTermination(500);
+#     ifdef _WIN32
+        ffmpegPipe.WaitForTermination(500); // linux: assertion "unimplemented" - works like no parameter passed
+#     else
+        ffmpegPipe.Kill(SIGINT); // for ffmpeg to finalize record and flush output buffers
+        unsigned i; for(i=0;i<25;i++) while(ffmpegPipe.IsRunning()) PThread::Sleep(20);
+#     endif
     }
     ffmpegPipe.Close();
   }
