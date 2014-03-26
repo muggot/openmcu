@@ -1,6 +1,6 @@
 var fortyTwo=42
 
-  ,STEPS_TO_REMEMBER = 2
+  ,STEPS_TO_REMEMBER = 12
   ,START_DELAY       = 150
   ,UPDATE_INTERVAL   = 5000
   ,UPDATE_RETRIES    = 5
@@ -31,6 +31,7 @@ var fortyTwo=42
   ,COL_PACKETS       = "Packets"
   ,COL_BYTES         = "Bytes"
   ,COL_KBPS          = "Kbit/s"
+  ,COL_LOSTPCN       = "Lost/60s"
   ,COL_FPS           = "FPS"
   ,WORD_ROOM         = "Room"
   ,FILE_RECORDER_NAME= "file recorder"
@@ -234,13 +235,14 @@ function member_get_nice_bytes(m)
   return m[5] + "<br>" + m[6] + "<br>" + m[7] + "<br>" + m[8];
 }
 
+function wrong_check(m)
+{
+  return (!m[0]) || (m[4]<=0) || (m[1]==CACHE_NAME) || (m[1]==FILE_RECORDER_NAME);
+}
+
 function member_get_nice_kbps(roomName, m)
 {
-  if(!m[0]) return "-";
-  if(m[4]<=0) return "-";
-  if(m[1]==CACHE_NAME) return "-";
-  if(m[1]==FILE_RECORDER_NAME) return "-";
-
+  if(wrong_check(m)) return '-';
   if(store.length>1)
   {
     var s=store[store.length-2];
@@ -274,6 +276,54 @@ function member_get_nice_kbps(roomName, m)
     integer_pad_float(m[6] * 8 / m[4], 1) + "<br>" +
     integer_pad_float(m[7] * 8 / m[4], 1) + "<br>" +
     integer_pad_float(m[8] * 8 / m[4], 1) + "</font>";
+}
+
+function calc_lost_percent(l1, l0, p1, p0)
+{
+  var t1=l1+p1, t0=l0+p0;
+  var dt=t1-t0, dl=l1-l0;
+  if((dl<0)||(dt<=1)) return ':(';
+  if(dl==0) return '0%';
+  var p=dl*100/dt;
+  var s;
+  if(p<0.1)      s="<font color='#494'>%</font>";
+  else if(p<1)   s="<font color='#774'>%</font>";
+  else if(p<3)   s="<font color='#F00'>%</font>";
+  else           s="<font color='#F00'><b>% !!!</b></font>";
+  return s.replace(/(%)/g, (""+integer_pad_float(p,2)+"%"));
+}
+
+function member_get_nice_lost_percent(roomName, m)
+{
+  var sl=store.length, ui=UPDATE_INTERVAL;
+  if(wrong_check(m) || sl<=1) return '-';
+  if(ui<1) ui=1;
+  if(sl>=60000/ui) sl=Math.round(60000/ui);
+  if(sl>store.length) sl=store.length;
+  var s=store[store.length-sl];
+  var i, j=0, m0=null;
+  for(i=0;i<s.length;i++) if(s[i][0]==roomName) break;
+  if(s[i][0]!=roomName) return '-';
+  while(m0===null)
+  {
+    try { if(typeof s[i][4][j] != 'undefined') m0=s[i][4][j]; } catch(e) {}
+    if(typeof m0 == 'undefined') return '-';
+    if(m0==null) return '-';
+    if(m[0]) if(m0[1] == m[1]) break;
+    j++;
+    if(j<9999) m0=null; else return 'err_mem10K';
+  }
+  if(m0===null) return '-';
+  if(!m0[0]) return '-';
+
+  var ms=m[4]-m0[4];
+  if(ms<=1) return ":(";
+
+  return ""+
+    calc_lost_percent(m[23], m0[23], m[5], m0[5]) + "<br/>" +
+    calc_lost_percent(m[25], m0[25], m[6], m0[6]) + "<br/>" +
+    calc_lost_percent(m[24], m0[24], m[7], m0[7]) + "<br/>" +
+    calc_lost_percent(m[26], m0[26], m[8], m0[8]);
 }
 
 function member_get_nice_fps(m)
@@ -470,6 +520,7 @@ function on_create_new_room(r)
       + "<th>&nbsp;"+COL_BYTES   +"&nbsp;</th>"
       + "<th>&nbsp;"+COL_KBPS    +"&nbsp;</th>"
       + "<th>&nbsp;"+COL_FPS     +"&nbsp;</th>"
+      + "<th>&nbsp;"+COL_LOSTPCN +"&nbsp;</th>"
     + "</tr>"
     + '</table>';
   WORKPLACE.appendChild(d);
@@ -515,6 +566,10 @@ function on_member_add(room, member)
   td=tr.insertCell(6); //FPS
   td.style.textAlign='right';
   td.innerHTML = member_get_nice_fps(member)
+
+  td=tr.insertCell(7); //Lost%
+  td.style.textAlign='right';
+  td.innerHTML = member_get_nice_lost_percent(room, member)
 }
 
 function on_member_delete(key)
@@ -539,6 +594,7 @@ function update_member(room, member)
   t.rows[row].cells[4].innerHTML = member_get_nice_bytes(member);
   t.rows[row].cells[5].innerHTML = member_get_nice_kbps(room, member);
   t.rows[row].cells[6].innerHTML = member_get_nice_fps(member);
+  t.rows[row].cells[7].innerHTML = member_get_nice_lost_percent(room, member)
 }
 
 function handle_data()
