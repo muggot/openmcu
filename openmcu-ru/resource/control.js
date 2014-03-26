@@ -716,7 +716,7 @@ function additional_panel(){
   var width = PANEL_ICON_WIDTH; // 15
   var proto_width=50;
   var dbutton="<div class='btn btn-small' style='border-width:1px;border-radius:0px;padding:2px 0px 2px 0px;height:"+(height+1)+"px;line-height:"+(height+1)+"px;text-align:center;cursor:pointer;";
-  var s="<div id='additional_panel' style='display:block;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>"
+  var s="<form onsubmit='return false'><div id='additional_panel' style='display:block;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>"
    +dpre+"2px;'>"+dbutton+"width:"+(2*PANEL_ICON_WIDTH)+"px' onmousedown='queue_otf_request("+OTFC_MUTE_ALL+")'><img style='cursor:pointer' src='i15_mic_off.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+"></div></div>"
    +dpre+(2*(1+PANEL_ICON_WIDTH))+"px;'>"+dbutton+"width:"+(2*PANEL_ICON_WIDTH)+"px' onmousedown='queue_otf_request("+OTFC_UNMUTE_ALL+")'><img style='cursor:pointer' src='i15_mic_on.gif' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+"></div></div>"
    +dpre+(4*(2+PANEL_ICON_WIDTH))+"px;'>"+dbutton+"width:"+(2*PANEL_ICON_WIDTH)+"px' onclick='invite_all(this)'><img width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif'></div></div>"
@@ -732,7 +732,7 @@ function additional_panel(){
   var input_pos = 10*(3+PANEL_ICON_WIDTH) + proto_width;
   s+=dpre+input_pos+"px'><input id='invite_input_ml' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"mlinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_ml(document.getElementById(\"mlinv\"));mlgctr1=1;}}' /></div>"
    +dpre+(input_pos+input_width)+"px'>"+dbutton+"width:"+(2*width)+"px' onclick='dial_from_ml(document.getElementById(\"mlinv\"));mlgctr1=1;'><img id='mlinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='Invite' /></div></div>"
-   +"</div>";
+   +"</div></form>";
   return s;
 }
 
@@ -753,13 +753,13 @@ function additional_panel_abook(){
   var proto_width = 50;
   var input_posx = proto_posx+proto_width;
   var input_width = panel_width-input_posx-5;
-  var s="<div id='additional_panel_abook' style='display:none;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>"
+  var s="<form onsubmit='return false'><div id='additional_panel_abook' style='display:none;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>"
    +dpre+"2px;'>"+dbutton+"width:"+bwidth+"px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif' /></div></div>"
    +dpre+"34px;'>"+dbutton+"width:"+bwidth+"px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;' /></div></div>"
    +dpre+(proto_posx-width-5)+"px'><img id='adrbkpinv' onclick='on_invite_abook_input(this);abgctr1=1;' style='margin-top:3px;cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite' /></div>"
    +dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;' onclick='javascript:{if(this.innerHTML==\"SIP\")this.innerHTML=\"H.323\";else this.innerHTML=\"SIP\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>"
    +dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;' onkeyup='javascript:{if(abgctr1){document.getElementById(\"adrbkpinv\").src=\"i15_inv.gif\";abgctr1=0;};if(event.keyCode==13){on_invite_abook_input(document.getElementById(\"adrbkpinv\"));abgctr1=1;}}' /></div>"
-   +"</div>";
+   +"</div></form>";
   return s;
 }
 
