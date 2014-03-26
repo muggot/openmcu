@@ -124,6 +124,17 @@ function findMemberInTable(objTable, memberName, memberId)
   return -1;
 }
 
+function member_get_nice_name(m)
+{
+  var online=m[0]!=0;
+  var visible=m[2];
+  return "" +
+    (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) +
+    m[1] +
+    (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX) +
+    ((online&&visible)?("<p class='remapp'>"+m[22]+"</p>"):"");
+}
+
 function member_get_nice_duration(m)
 {
   if(!m[0]) return "-";
@@ -476,18 +487,10 @@ function on_member_add(room, member)
 
   try { if(typeof member[2] == 'undefined') member[2]=1; } catch(e) {}
 
-  var
-    memberName  = member[1],
-    online      = member[0]!=0, 
-    visible     = member[2], 
-    tr          = t.insertRow(-1);
+  var tr=t.insertRow(-1);
 
-  var td=tr.insertCell(0);
-  td.innerHTML =
-    (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) +
-    member[1] +
-    (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX) +
-    ((online&&visible)?("<p class='remapp'>"+member[22]+"</p>"):"");
+  var td=tr.insertCell(0); //Name
+  td.innerHTML = member_get_nice_name(member);
   td.id=member[0];
 
   td=tr.insertCell(1); //Duration
@@ -529,6 +532,7 @@ function update_member(room, member)
   var t=getTableByRoomName(room); if(t==null) return;
   var row = findMemberInTable(t, member[1], member[0]);
   if(row<0) return;
+  t.rows[row].cells[0].innerHTML = member_get_nice_name(member);
   t.rows[row].cells[1].innerHTML = member_get_nice_duration(member);
   t.rows[row].cells[2].innerHTML = member_get_nice_codecs(member);
   t.rows[row].cells[3].innerHTML = member_get_nice_packets(member);
