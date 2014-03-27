@@ -1,7 +1,7 @@
 var max_subframes=100;
 var default_page_width=942; //CHANGE IT IF YOU WISH, IT'LL BE AUTO-INCREASED IF NEEDED
 var page_border_width=70;   //for detect panel width
-var debug=1;
+var debug=0;
 var MIXER_PANEL_BGCOLOR='#575';
 var MIXER_PANEL_BGCOLOR2='#242';
 var MIXER_PANEL_MIXER_STYLE='font-weight:bold;background-color:'+MIXER_PANEL_BGCOLOR2+';padding-left:3px;padding-right:3px;border-radius:2px;border:2px solid #484;color:#fc5';
@@ -625,9 +625,11 @@ function gain_selector_select(id, value)
   queue_otf_request(OTFC_AUDIO_GAIN_LEVEL_SET,id,(value+20));
 }
 
-function gain_selector(obj, id, def)
+function gain_selector(obj, id)
 {
+  var def=member_read_by_id(id,10);
   dmsg('Creating gain selector for member id '+id+', sel '+def);
+  if(def===false) return;
   if(gainSelecting) document.body.removeChild(gainSelector);
 
   gainSelector=document.createElement('div');
@@ -672,8 +674,8 @@ function gain_selector(obj, id, def)
 
 function nice_db(level)
 {
-  s='';
-  if(level<0) {s='&minus;'; level=-level;}
+  var s;
+  if(level<0) {s='&minus;'; level=-level;} else s='+';
   if(level<10) s+="0";
   return "<nobr>"+s+level+" dB</nobr>";
 }
@@ -685,6 +687,7 @@ function setagl(id, level)
   if(id<0) { var q=-id; s="_"+q; }
   try { obj=document.getElementById('agl_'+s); } catch(e) { obj=null; }
   if(obj) obj.innerHTML=nice_db(level);
+  member_modify_by_id(id,10,level);
   alive();
 }
 
@@ -724,7 +727,7 @@ function format_mmbr_button(m,st)
 
   if(st>0) hide="<img style='cursor:pointer' src='i15_getNoVideo.gif' width=15 height=15 title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>";
 
-  if(st>0) kdb="<div id='agl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+","+m[10]+");return false;}'>"+nice_db(m[10])+"</div>";
+  if(st>0) kdb="<div id='agl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+");return false;}'>"+nice_db(m[10])+"</div>";
 
   var kdb_width   = 39;
 

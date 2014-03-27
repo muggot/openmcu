@@ -1458,9 +1458,12 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
     { if( *pcm > c_max_vol) c_max_vol =  *pcm; c_avg_vol += *pcm++; }
   }
   c_avg_vol /= samplesPerFrame;
-  *signalLevel = c_avg_vol;
 
-  if(!level) return;
+  if(!level)
+  {
+    *signalLevel = c_avg_vol;
+    return;
+  }
 
   float   max_vol = (float)23170.0 * kManual;
   float   overload = 32768 * kManual;
@@ -1468,7 +1471,10 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
   float & cvc = *currVolCoef;
   float   vc0= cvc;
   
-  if((unsigned)c_avg_vol > level)
+  unsigned wLevel;
+  if(kManual<1) wLevel = (unsigned)(kManual*level); else wLevel=level;
+
+  if((unsigned)c_avg_vol > wLevel)
   {
     if(c_max_vol*cvc >= overload) // есть перегрузка
       cvc = overload / c_max_vol;
@@ -1478,9 +1484,10 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
   }
   else // не должен срабатывать, но временно грубая защита от перегрузки:
   {
-    if(c_max_vol*cvc >= 32768) // есть перегрузка
-      cvc = (float)32767.0 / c_max_vol;
+    if(c_max_vol*cvc >= overload) // есть перегрузка
+      cvc = (float)overload / c_max_vol;
   }
+  *signalLevel = (unsigned)((float)c_avg_vol*cvc);
   PTRACE(6,"AGC\tavg" << c_avg_vol << " max" << c_max_vol << " vc" << vc0 << ">" << cvc);
 
   float delta0=(cvc-vc0)/samplesCount;
