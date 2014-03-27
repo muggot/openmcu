@@ -348,3 +348,9 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 
  .remapp{font-size:11px;color:#557}
  .roomname{font-size:15px;font-weight:bold;padding-top:14px;text-align:center;cursor:pointer;color:#00a}
+
+.kdb,.kdb1,.kdb2,.kdb0,.kdbs{border-right:1px solid #090;border-bottom:1px solid #090;border-radius:3px;font-size:11px;line-height:13px;width:36px;height:13px;background-color:#aeb;margin:1px 0px 0px 2px;color:#000;cursor:pointer;}
+.kdb1{background-color:#abe;border-bottom:1px solid #009;border-right:1px solid #009;}
+.kdb2{background-color:#eba;border-bottom:1px solid #900;border-right:1px solid #900;}
+.kdb0{background-color:#fff;border-bottom:1px solid #777;border-right:1px solid #777;}
+.kdbs{background-color:#009;color:#fff;border-bottom:1px dotted #ccc;border-right:1px dotted #ccc;cursor:default}

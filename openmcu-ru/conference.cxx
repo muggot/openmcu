@@ -881,6 +881,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         << "," << memberToAdd->GetVideoMixerNumber()
         << ",\"" << memberToAddUrlId << "\""
         << "," << dec << (unsigned)memberToAdd->channelCheck
+        << "," << memberToAdd->kManualGainDB
         << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
   }
@@ -1310,6 +1311,7 @@ ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId 
   audioLevel = 0;
   audioCounter = 0; previousAudioLevel = 65535; audioLevelIndicator = 0;
   currVolCoef = 1.0;
+  kManualGain = 1.0; kManualGainDB = 0;
   terminalNumber = -1;
   memberIsJoined = FALSE;
 
@@ -1440,7 +1442,7 @@ void ConferenceMember::RemoveAllConnections()
   }
 }
 
-void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef, unsigned* signalLevel)
+void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef, unsigned* signalLevel, float kManual)
 {
   unsigned samplesCount = samplesPerFrame*codecChannels;
   if(!samplesCount) return;
@@ -1460,15 +1462,16 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
 
   if(!level) return;
 
-  float   max_vol = 17000.0;
+  float   max_vol = (float)23170.0 * kManual;
+  float   overload = 32768 * kManual;
   float   inc_vol = (float)0.05*(float)8000.0/sampleRate;
   float & cvc = *currVolCoef;
   float   vc0= cvc;
   
   if((unsigned)c_avg_vol > level)
   {
-    if(c_max_vol*cvc >= 32768) // есть перегрузка
-      cvc = (float)32767.0 / c_max_vol;
+    if(c_max_vol*cvc >= overload) // есть перегрузка
+      cvc = overload / c_max_vol;
     else
     if(c_max_vol*cvc < max_vol) // нужно увеличить усиление
       cvc += inc_vol;
@@ -1499,7 +1502,7 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
   if(muteIncoming) return;
   // calculate average signal level for this member
   unsigned signalLevel=0;
-  AutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 2000, &currVolCoef, &signalLevel);
+  AutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 2000, &currVolCoef, &signalLevel, kManualGain);
   audioLevel = ((signalLevel * 2) + audioLevel) / 3;
 
   if (lock.Wait())

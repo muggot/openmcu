@@ -1005,6 +1005,9 @@ class ConferenceMember : public PObject
     MCUVideoMixer * videoMixer;
 #endif
 
+    float kManualGain;
+    int kManualGainDB;
+
   protected:
     unsigned videoMixerNumber;
     Conference * conference;

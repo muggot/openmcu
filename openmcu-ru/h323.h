@@ -64,6 +64,7 @@ extern "C" {
 #define OTFC_VIDEO_RECORDER_STOP      76
 #define OTFC_TOGGLE_TPL_LOCK          77
 #define OTFC_UNMUTE_ALL               78
+#define OTFC_AUDIO_GAIN_LEVEL_SET     79
 
 class OpenMCUH323EndPoint : public H323EndPoint
 {

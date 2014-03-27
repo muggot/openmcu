@@ -1012,16 +1012,17 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
     i++;
   } else {          //   active member
     if(i>0) members << ",";
-    members << "Array(1"                                // [i][0] = 1 : ONLINE
-      << ",\"" << dec << (long)member->GetID() << "\""  // [i][1] = long id
-      << ",\"" << username << "\""                      // [i][2] = name [ip]
-      << "," << member->muteIncoming                    // [i][3] = mute
-      << "," << member->disableVAD                      // [i][4] = disable vad
-      << "," << member->chosenVan                       // [i][5] = chosen van
-      << "," << member->GetAudioLevel()                 // [i][6] = audiolevel (peak)
-      << "," << member->GetVideoMixerNumber()           // [i][7] = number of mixer member receiving
-      << ",\"" << MCUURL(s->first).GetUrlId() << "\""   // [i][8] ?? xak??
-      << "," << (unsigned short)member->channelCheck    // [i][9] = RTP channels checking bit mask 0000vVaA
+    members << "Array(1"                                // [i][ 0] = 1 : ONLINE
+      << ",\"" << dec << (long)member->GetID() << "\""  // [i][ 1] = long id
+      << ",\"" << username << "\""                      // [i][ 2] = name [ip]
+      << "," << member->muteIncoming                    // [i][ 3] = mute
+      << "," << member->disableVAD                      // [i][ 4] = disable vad
+      << "," << member->chosenVan                       // [i][ 5] = chosen van
+      << "," << member->GetAudioLevel()                 // [i][ 6] = audiolevel (peak)
+      << "," << member->GetVideoMixerNumber()           // [i][ 7] = number of mixer member receiving
+      << ",\"" << MCUURL(s->first).GetUrlId() << "\""   // [i][ 8] = URL
+      << "," << (unsigned short)member->channelCheck    // [i][ 9] = RTP channels checking bit mask 0000vVaA
+      << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
       << ")";
     i++;
   }
@@ -1489,6 +1490,17 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
   }
   if( action == OTFC_UNMUTE )
   { member->muteIncoming=FALSE; cmd << "iunmute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
+  if( action == OTFC_AUDIO_GAIN_LEVEL_SET )
+  {
+    int n=data("o").AsInteger();
+    if(n<-20) n=-20;
+    if(n>60) n=60;
+    member->kManualGainDB=n-20;
+    member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
+    PTRACE(1,"AGL " << n << ": " << member->kManualGain);
+    cmd << "setagl(" << v << "," << member->kManualGainDB << ")";
+    OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK;
+  }
   if( action == OTFC_MUTE)
   { member->muteIncoming=TRUE; cmd << "imute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
   if( action == OTFC_REMOVE_FROM_VIDEOMIXERS)
