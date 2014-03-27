@@ -342,11 +342,13 @@ void ConferenceManager::RemoveConference(const OpalGloballyUniqueID & confId)
   ConferenceListType::iterator r = conferenceList.find(confId);
   if(r == conferenceList.end()) { conferenceListMutex.Signal(); return; }
   Conference * conf = r->second;
+  PAssert(conf != NULL, "Conference pointer is NULL");
+  monitor->RemoveForConference(conf->GetID());
   OnDestroyConference(conf);
   conferenceList.erase(confId);
   mcuNumberMap.RemoveNumber(conf->GetMCUNumber());
   conferenceListMutex.Signal();
-  monitor->RemoveForConference(conf->GetID());
+//  monitor->RemoveForConference(conf->GetID());
   PTRACE(2, "RemoveConference\t2");
   delete conf;
   PTRACE(2, "RemoveConference\t1");

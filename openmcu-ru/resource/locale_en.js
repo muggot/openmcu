@@ -28,6 +28,7 @@ window.l_connections_COL_BYTES         = "Bytes"               ;
 window.l_connections_COL_KBPS          = "Kbit/s"              ;
 window.l_connections_COL_FPS           = "FPS"                 ;
 window.l_connections_word_room         = "Room"                ;
+window.l_connections_COL_LOSTPCN       = "60s losses"          ;
 
 window.l_records = 'Records';
 window.l_control = 'Control';

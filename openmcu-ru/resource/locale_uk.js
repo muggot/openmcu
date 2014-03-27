@@ -28,6 +28,7 @@ window.l_connections_COL_BYTES         = "Байти"               ;
 window.l_connections_COL_KBPS          = "Кбіт/с"              ;
 window.l_connections_COL_FPS           = "Кадр/с"              ;
 window.l_connections_word_room         = "Конференцiя"         ;
+window.l_connections_COL_LOSTPCN       = "Втрати за 60с"       ;
 
 window.l_records = "Відеозаписи";
 window.l_control = "Управління";

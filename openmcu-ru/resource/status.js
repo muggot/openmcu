@@ -31,7 +31,7 @@ var fortyTwo=42
   ,COL_PACKETS       = "Packets"
   ,COL_BYTES         = "Bytes"
   ,COL_KBPS          = "Kbit/s"
-  ,COL_LOSTPCN       = "Lost/60s"
+  ,COL_LOSTPCN       = "60s losses"
   ,COL_FPS           = "FPS"
   ,WORD_ROOM         = "Room"
   ,FILE_RECORDER_NAME= "file recorder"
@@ -78,6 +78,7 @@ var fortyTwo=42
     COL_KBPS       = window.l_connections_COL_KBPS      ;
     COL_FPS        = window.l_connections_COL_FPS       ;
     WORD_ROOM      = window.l_connections_word_room     ;
+    COL_LOSTPCN    = window.l_connections_COL_LOSTPCN   ;
   }
 
 
@@ -286,10 +287,10 @@ function calc_lost_percent(l1, l0, p1, p0)
   if(dl==0) return '0%';
   var p=dl*100/dt;
   var s;
-  if(p<0.1)      s="<font color='#494'>%</font>";
-  else if(p<1)   s="<font color='#774'>%</font>";
-  else if(p<3)   s="<font color='#F00'>%</font>";
-  else           s="<font color='#F00'><b>% !!!</b></font>";
+  if(p<0.1)      s="<font color='#409541'>%</font>";
+  else if(p<1)   s="<font color='#727140'>%</font>";
+  else if(p<3)   s="<font color='#FF0000'>%</font>";
+  else           s="<font color='#FF0000'><b>% !!!</b></font>";
   return s.replace(/(%)/g, (""+integer_pad_float(p,2)+"%"));
 }
 
