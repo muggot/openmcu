@@ -1493,8 +1493,8 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
   if( action == OTFC_AUDIO_GAIN_LEVEL_SET )
   {
     int n=data("o").AsInteger();
-    if(n<-20) n=-20;
-    if(n>60) n=60;
+    if(n<0) n=0;
+    if(n>80) n=80;
     member->kManualGainDB=n-20;
     member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
     PTRACE(1,"AGL " << n << ": " << member->kManualGain);

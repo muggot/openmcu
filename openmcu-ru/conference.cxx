@@ -414,11 +414,10 @@ void ConferenceMonitor::AddMonitorEvent(ConferenceMonitorInfo * info)
 void ConferenceMonitor::RemoveForConference(const OpalGloballyUniqueID & guid)
 {
   PWaitAndSignal m(mutex);
-  MonitorInfoList theCopy(monitorList);
-  for(MonitorInfoList::iterator r = theCopy.begin(), e=theCopy.end(); r!=e; ++r)
+  for(MonitorInfoList::iterator r = monitorList.begin(), e=monitorList.end(); r!=e;)
   {
     ConferenceMonitorInfo & info = **r;
-    if (info.guid != guid) continue;
+    if (info.guid != guid) { ++r; continue; }
     delete *r;
     monitorList.erase(r);
   }
