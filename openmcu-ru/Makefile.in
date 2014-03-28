@@ -32,7 +32,7 @@ layouts.conf \
 ffserver.conf \
 openmcu.ini
 
-RESOURCE_FILES=i15_mic_on.gif \
+RESOURCE_FILES=s15_ch.png \
 i24_clr.gif \
 openmcu.ru_vad_chosenvan.gif \
 i20_close.gif \
@@ -48,7 +48,6 @@ i15_inv.gif \
 i20_vad2.gif \
 i24_right.gif \
 openmcu.ru_launched_Ypf.gif \
-i15_mic_off.gif \
 i20_vad.gif \
 i24_shuff.gif \
 i15_getNoVideo.gif \
