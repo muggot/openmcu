@@ -1471,7 +1471,7 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
   float   vc0= cvc;
   
   unsigned wLevel;
-  if(kManual<1) wLevel = (unsigned)(kManual*level); else wLevel=level;
+  if(kManual>10) wLevel = (unsigned)(level*10/kManual); else wLevel=level;
 
   if((unsigned)c_avg_vol > wLevel)
   {
