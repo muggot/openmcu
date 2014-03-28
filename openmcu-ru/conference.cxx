@@ -873,7 +873,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     msg="addmmbr(1";
     msg << "," << (long)memberToAdd->GetID()
         << ",\"" << username << "\""
-        << "," << memberToAdd->muteIncoming
+        << "," << memberToAdd->muteMask
         << "," << memberToAdd->disableVAD
         << "," << memberToAdd->chosenVan
         << "," << memberToAdd->GetAudioLevel()
@@ -937,7 +937,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
     msg="remmmbr(0";
     msg << ","  << (long)userid
         << ",\"" << username << "\""
-        << ","  << memberToRemove->muteIncoming
+        << ","  << memberToRemove->muteMask
         << "," << memberToRemove->disableVAD
         << ","  << memberToRemove->chosenVan
         << ","  << memberToRemove->GetAudioLevel()
@@ -1325,7 +1325,7 @@ ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId 
   rxFrameWidth = 0; rxFrameHeight = 0;
   vad = 0;
   autoDial = FALSE;
-  muteIncoming = FALSE;
+  muteMask = 0;
   disableVAD = FALSE;
   chosenVan = 0;
   videoMixerNumber = 0;
@@ -1334,7 +1334,7 @@ ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId 
 
 ConferenceMember::~ConferenceMember()
 {
-  muteIncoming = TRUE;
+  muteMask|=15;
 #if OPENMCU_VIDEO
   delete videoMixer;
 #endif
@@ -1505,7 +1505,7 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
 void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   if(!(channelCheck&1)) ChannelBrowserStateUpdate(1,TRUE);
-  if(muteIncoming) return;
+  if(muteMask&1) return;
   // calculate average signal level for this member
   unsigned signalLevel=0;
   AutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 2000, &currVolCoef, &signalLevel, kManualGain);

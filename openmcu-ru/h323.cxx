@@ -863,7 +863,7 @@ PString OpenMCUH323EndPoint::GetMemberListOpts(Conference & conference)
   members << "<th id=\"tam_" << i << "\" >";
   members << s->first;
   members << "<th>";
-  members << "<input type=\"checkbox\" name=\"m" << mint << "\" value=\"+\" " << ((member->muteIncoming)?"checked":"") << ">";
+  members << "<input type=\"checkbox\" name=\"m" << mint << "\" value=\"+\" " << ((member->muteMask&1)?"checked":"") << ">";
   members << "<th>";
   members << "<input type=\"checkbox\" name=\"v" << mint << "\" value=\"+\" " << ((member->disableVAD)?"checked":"") << ">";
   members << "<th>";
@@ -1015,7 +1015,7 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
     members << "Array(1"                                // [i][ 0] = 1 : ONLINE
       << ",\"" << dec << (long)member->GetID() << "\""  // [i][ 1] = long id
       << ",\"" << username << "\""                      // [i][ 2] = name [ip]
-      << "," << member->muteIncoming                    // [i][ 3] = mute
+      << "," << member->muteMask                        // [i][ 3] = mute
       << "," << member->disableVAD                      // [i][ 4] = disable vad
       << "," << member->chosenVan                       // [i][ 5] = chosen van
       << "," << member->GetAudioLevel()                 // [i][ 6] = audiolevel (peak)
@@ -1255,7 +1255,8 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
       ConferenceMember * member = r->second;
       if(member->GetName()=="file recorder") continue;
       if(member->GetName()=="cache") continue;
-      member->muteIncoming = newValue;
+      if(newValue)member->muteMask|= 1;
+      else        member->muteMask&=~1;
     }
     PStringStream s;
     s << "imute_all(" << (newValue?"1":"0") << ")";
@@ -1489,7 +1490,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     OTF_RET_OK;
   }
   if( action == OTFC_UNMUTE )
-  { member->muteIncoming=FALSE; cmd << "iunmute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
+  { member->muteMask&=~1; cmd << "iunmute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
   if( action == OTFC_AUDIO_GAIN_LEVEL_SET )
   {
     int n=data("o").AsInteger();
@@ -1502,7 +1503,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK;
   }
   if( action == OTFC_MUTE)
-  { member->muteIncoming=TRUE; cmd << "imute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
+  { member->muteMask|=1; cmd << "imute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
   if( action == OTFC_REMOVE_FROM_VIDEOMIXERS)
   { if(conference->IsModerated()=="+" && conference->GetNumber() != "testroom")
     {
@@ -1609,7 +1610,7 @@ void OpenMCUH323EndPoint::SetMemberListOpts(Conference & conference,const PStrin
   PString arg = (long)mid;
   PString arg1 = "m" + arg;
   PString opt = data(arg1);
-  member->muteIncoming = (opt == "+")?TRUE:FALSE; 
+  if(opt=="+")member->muteMask|=1;else member->muteMask&=~1;
   arg1 = "v" + arg;
   opt = data(arg1);
   member->disableVAD = (opt == "+")?TRUE:FALSE; 
@@ -2909,9 +2910,9 @@ void OpenMCUH323Connection::OnUserInputString(const PString & str)
       if(codeAction == "close")
         codeConferenceMember->Close();
       else if(codeAction == "mute")
-        codeConferenceMember->muteIncoming = TRUE;
+        codeConferenceMember->muteMask|=1;
       else if(codeAction == "unmute")
-        codeConferenceMember->muteIncoming = FALSE;
+        codeConferenceMember->muteMask&=~1;
       codeMsg << "</font>";
       OpenMCU::Current().HttpWriteEvent(codeMsg);
       //OpenMCU::Current().HttpWriteEventRoom(codeMsg, conference->GetNumber());
