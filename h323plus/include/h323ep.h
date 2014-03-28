@@ -2165,9 +2165,10 @@ class H323EndPoint : public PObject
 #endif
 
 #ifdef H323_AEC
-	BOOL AECEnabled()   {  return enableAEC; }
+	BOOL AECEnabled()   {  return algoAEC; }
+	int AECAlgo()   {  return algoAEC; }
 
-	void SetAECEnabled(BOOL enabled)  { enableAEC = enabled; }
+	void SetAECAlgo(int algo)  { algoAEC = algo; }
 #endif
         int agc;
 
@@ -2672,7 +2673,7 @@ class H323EndPoint : public PObject
 #endif
 
 #ifdef H323_AEC
-    BOOL enableAEC;
+    int algoAEC;
 #endif
 
 #ifdef H323_GNUGK

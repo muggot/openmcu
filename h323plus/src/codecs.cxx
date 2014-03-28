@@ -1128,19 +1128,8 @@ BOOL H323FramedAudioCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
     return FALSE;
   }
 
-  long lastReadTime0 = time(0);
-  readPerSecond += samplesPerFrame;
-  if(lastReadTime0 > lastReadTime)
-  {
-    unsigned long sampleRate0 = readPerSecond;
-    readPerSecond = 0;
-    lastReadTime = lastReadTime0;
-    if(sampleRate0 >= 4999 && sampleRate0 <= 192000) 
-    {
-      sampleRate = (unsigned) ((sampleRate * 3 + sampleRate0) >> 2);
-    }
-    PTRACE(6,"SR=" << sampleRate << " SR0=" << sampleRate0);
-  }
+  sampleRate = GetMediaFormat().GetTimeUnits() * 1000;
+  PTRACE(6,"SR=" << sampleRate);
 
   if (DetectSilence(sampleRate, codecChannels)) {
     length = 0;

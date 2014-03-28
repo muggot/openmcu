@@ -4493,14 +4493,17 @@ BOOL H323Connection::OnStartLogicalChannel(H323Channel & channel)
 #ifndef NO_H323_AUDIO_CODECS
 BOOL H323Connection::OpenAudioChannel(BOOL isEncoding, unsigned bufferSize, H323AudioCodec & codec)
 {
-#ifdef H323_AEC
-  if (endpoint.AECEnabled() && (aec == NULL)) {
-    PTRACE(2, "H323\tCreating AEC instance.");
-	int rate = codec.GetMediaFormat().GetTimeUnits() * 1000;
-	aec = new PAec(rate);
-  }
-   codec.AttachAEC(aec);
-#endif
+# ifdef H323_AEC
+    if (endpoint.AECEnabled() && (aec == NULL))
+    {
+      PTRACE(2, "H323\tCreating AEC instance.");
+      int rate = codec.GetMediaFormat().GetTimeUnits() * 1000;
+      aec = new PAec(endpoint.AECAlgo());
+//      aec = new PAec(128,0x3f);
+//      aec = new PAec(rate,30);
+    }
+    codec.AttachAEC(aec);
+# endif
   if(isEncoding) codec.EnableAGC(endpoint.agc);
 
   return endpoint.OpenAudioChannel(*this, isEncoding, bufferSize, codec);

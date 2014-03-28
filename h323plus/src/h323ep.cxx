@@ -1272,7 +1272,7 @@ H323EndPoint::H323EndPoint()
 #endif
 
 #ifdef H323_AEC 
-  enableAEC = FALSE;
+  algoAEC = 0;
 #endif
 
 #ifdef H323_GNUGK

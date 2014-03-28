@@ -354,3 +354,27 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .kdb2{background-color:#eba;border-bottom:1px solid #900;border-right:1px solid #900;}
 .kdb0{background-color:#fff;border-bottom:1px solid #777;border-right:1px solid #777;}
 .kdbs{background-color:#009;color:#fff;border-bottom:1px dotted #ccc;border-right:1px dotted #ccc;cursor:default}
+
+.mutespr11{width:15px;height:15px;background:url(s15_ch.png)    0px 0px;cursor:pointer}
+.mutespr10{width:15px;height:15px;background:url(s15_ch.png)  -15px 0px;cursor:pointer}
+.mutespr21{width:15px;height:15px;background:url(s15_ch.png)  -30px 0px;cursor:pointer}
+.mutespr20{width:15px;height:15px;background:url(s15_ch.png)  -45px 0px;cursor:pointer}
+.mutespr31{width:15px;height:15px;background:url(s15_ch.png)  -60px 0px;cursor:pointer}
+.mutespr30{width:15px;height:15px;background:url(s15_ch.png)  -75px 0px;cursor:pointer}
+.mutespr41{width:15px;height:15px;background:url(s15_ch.png)  -90px 0px;cursor:pointer}
+.mutespr40{width:15px;height:15px;background:url(s15_ch.png) -105px 0px;cursor:pointer}
+
+.mmbr0,.mmbr1,.mmbr2,.mmbrp15,.mmbrp1,.mmbrp2,.mmbrdd{margin-left:2px;padding:1px;overflow:hidden;border-radius:4px;margin-bottom:2px;text-align:left;height:31px}
+.mmbrdd {border-bottom:1px dotted #000   ;border-right:1px dotted #000   ;background-color:#aaf;position:absolute;cursor:move}
+.mmbr0  {border-bottom:1px dotted #000   ;border-right:1px dotted #000   ;background-color:#d3d4d5}
+.mmbr1  {border-bottom:1px dotted green  ;border-right:1px dotted green  ;background-color:#f5fffa;cursor:move}
+.mmbr2  {border-bottom:1px dotted magenta;border-right:1px dotted magenta;background-color:#f5ccff;cursor:move}
+.mmbrp15{border-bottom:1px dotted red    ;border-right:1px dotted red    ;background-color:#ffaaaa;cursor:move}
+.mmbrp1 {border-bottom:1px dotted #070   ;border-right:1px dotted #070   ;background-color:#9a9   ;cursor:move}
+.mmbrp2 {border-bottom:1px dotted #707   ;border-right:1px dotted #707   ;background-color:#a5a   ;cursor:move}
+.mbrpos1{width:0px;height:0px;position:relative;top:0px}
+.mbrpos11{width:0px;height:0px;position:relative;top:16px}
+.vlevel{padding-bottom:2px;margin-left:2px;vertical-align:-1px;overflow:hidden;width:2px;height:15px;line-height:15px}
+.mmbrname{vertical-align:-1px;overflow:hidden;padding-left:2px}
+.mmbrip{vertical-align:-1px;overflow:hidden;}
+.mmbrmi{cursor:pointer;font-size:9px;background-color:#aaf;color:#505;vertical-align:-1px;overflow:hidden;padding-left:1px;padding-right:1px}
