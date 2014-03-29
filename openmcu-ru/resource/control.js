@@ -181,7 +181,7 @@ function ddstart(e,o,substance,idx){
   s.height=''+(o.offsetHeight-2)+'px';
   somethingflying.innerHTML=o.innerHTML;
   s.opacity='0.5';
-  sfo_x=e.clientX; sfo_y=e.clientY-53;
+  sfo_x=e.clientX; sfo_y=e.clientY; if(substance=='panel') sfo_y-=53;
   if((substance!=='panel')&&(substance!=='panel_top')){ // from mockup:
    base_offset_x=document.getElementById('pp'+substance+'_'+idx).offsetLeft-document.getElementById('pbase').offsetLeft;
    base_offset_y=document.getElementById('pp'+substance+'_'+idx).offsetTop-document.getElementById('pbase').offsetTop;
@@ -221,6 +221,7 @@ function ddstop(e){
  if(appendedflying) document.getElementById('pbase').removeChild(somethingflying);
  appendedflying=false;
  dd_in_progress=false;
+ draggingobject.style.backgroundColor='';
  dd_do_it(dd_flying_substance,dd_flying_idx,dd_final_substance,dd_final_idx);
  return false;
 }
