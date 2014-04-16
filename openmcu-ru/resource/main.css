@@ -355,14 +355,15 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .kdb0{background-color:#fff;border-bottom:1px solid #777;border-right:1px solid #777;}
 .kdbs{background-color:#009;color:#fff;border-bottom:1px dotted #ccc;border-right:1px dotted #ccc;cursor:default}
 
-.mutespr11{width:15px;height:15px;background:url(s15_ch.png)    0px 0px;cursor:pointer}
-.mutespr10{width:15px;height:15px;background:url(s15_ch.png)  -15px 0px;cursor:pointer}
-.mutespr21{width:15px;height:15px;background:url(s15_ch.png)  -30px 0px;cursor:pointer}
-.mutespr20{width:15px;height:15px;background:url(s15_ch.png)  -45px 0px;cursor:pointer}
-.mutespr31{width:15px;height:15px;background:url(s15_ch.png)  -60px 0px;cursor:pointer}
-.mutespr30{width:15px;height:15px;background:url(s15_ch.png)  -75px 0px;cursor:pointer}
-.mutespr41{width:15px;height:15px;background:url(s15_ch.png)  -90px 0px;cursor:pointer}
-.mutespr40{width:15px;height:15px;background:url(s15_ch.png) -105px 0px;cursor:pointer}
+.mutespr11{width:15px;height:15px;background:url(s15_ch.png)    0px   0px;cursor:pointer}
+.mutespr10{width:15px;height:15px;background:url(s15_ch.png)  -15px   0px;cursor:pointer}
+.mutespr21{width:15px;height:15px;background:url(s15_ch.png)  -30px   0px;cursor:pointer}
+.mutespr20{width:15px;height:15px;background:url(s15_ch.png)  -45px   0px;cursor:pointer}
+.mutespr31{width:15px;height:15px;background:url(s15_ch.png)  -60px   0px;cursor:pointer}
+.mutespr30{width:15px;height:15px;background:url(s15_ch.png)  -75px   0px;cursor:pointer}
+.mutespr41{width:15px;height:15px;background:url(s15_ch.png)  -90px   0px;cursor:pointer}
+.mutespr40{width:15px;height:15px;background:url(s15_ch.png) -105px   0px;cursor:pointer}
+.lgalspr  {width:15px;height:15px;background:url(s15_ch.png)  -90px -15px;cursor:pointer;border:1px solid #000;margin:0px;background-color:#fff}
 
 .mmbr0,.mmbr1,.mmbr2,.mmbrp15,.mmbrp1,.mmbrp2,.mmbrdd{margin-left:2px;padding:1px;overflow:hidden;border-radius:4px;margin-bottom:2px;text-align:left;height:31px}
 .mmbrdd {border-bottom:1px dotted #000   ;border-right:1px dotted #000   ;background-color:#aaf;position:absolute;cursor:move}
@@ -377,4 +378,4 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .vlevel{padding-bottom:2px;margin-left:2px;vertical-align:-1px;overflow:hidden;width:2px;height:15px;line-height:15px}
 .mmbrname{vertical-align:-1px;overflow:hidden;padding-left:2px}
 .mmbrip{vertical-align:-1px;overflow:hidden;}
-.mmbrmi{cursor:pointer;font-size:9px;background-color:#aaf;color:#505;vertical-align:-1px;overflow:hidden;padding-left:1px;padding-right:1px}
+.mmbrmi{cursor:pointer;font-size:11px;border-radius:3px;text-align:center;background-color:#aaf;color:#505;vertical-align:-1px;overflow:hidden;padding-left:1px;padding-right:1px;width:30px}

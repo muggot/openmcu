@@ -1480,7 +1480,7 @@ function split_selector(mixer, splitSelected){
     r+=">"+splitdata[i]+"</option>";
   }
   r+="</select>";
-  r+="<button onclick='selector_window("+mixer+")' class='btn btn-success' style='width:19px;height:18px;margin-left:0px;margin-right:2px;padding:0px;font-weight:bold;border:1px solid #000'>&dArr;</button>";
+  r+="<button class='lgalspr' onclick='selector_window("+mixer+")'>&nbsp;</button>";
   r+="<span style='"+MIXER_LAYOUT_SCROLL_RIGHT_STYLE+"' onclick='javascript:{if(checkcontrol())queue_otf_request("
       +OTFC_SET_VIDEO_MIXER_LAYOUT
       +",(parseInt(document.getElementById(\"splitselector"+mixer+"\").value)+1)%splitdata.length,"+mixer+");}'"
@@ -1610,7 +1610,7 @@ function get_mixers_content()
     // mixer panel:
       s+="<div id='mxp"+i+"' style='position:relative;top:"+(pos_y+mh)+"px;left:0px;width:0px;height:0px'>"; // pointing block for mixer panel
         s+="<div onmouseover='mixer_over("+i+")' onmouseout='mixer_out("+i+")' style='width:"+(mmw-2)+"px;height:"+(MIXER_PANEL_HEIGHT-1)+"px;background-color:"+MIXER_PANEL_BGCOLOR+";overflow:hidden;text-align:left;line-height:"+(MIXER_PANEL_HEIGHT-1)+"px;padding-left:2px'>";
-          s+="<span style='"+MIXER_PANEL_MIXER_STYLE+"'>#"+i;
+          s+="<nobr><span style='"+MIXER_PANEL_MIXER_STYLE+"'>#"+i;
 
           s+=" <span style='color:red;cursor:pointer;position:relative;left:0px' onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_ADD_VIDEO_MIXER+","+i+");}'>+</span> ";
           if(mixers>1)s+=" / <span style='color:blue;cursor:pointer;position:relative;left:0px' onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_DELETE_VIDEO_MIXER+","+i+");}'>&ndash;</span>";
@@ -1629,6 +1629,7 @@ function get_mixers_content()
             +  str0 + "right.gif' alt='Rotate right'"  + str1 + OTFC_MIXER_SCROLL_RIGHT + str2
             +  str0 + "clr.gif' alt='Clear positions'" + str1 + OTFC_MIXER_CLEAR + str2;
 
+          s+="</nobr>";
         s+="</div>";
       s+="</div>";
     pos_y+=mh+MIXER_PANEL_HEIGHT;
