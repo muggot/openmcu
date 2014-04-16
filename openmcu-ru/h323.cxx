@@ -1023,6 +1023,7 @@ PString OpenMCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference
       << ",\"" << MCUURL(s->first).GetUrlId() << "\""   // [i][ 8] = URL
       << "," << (unsigned short)member->channelCheck    // [i][ 9] = RTP channels checking bit mask 0000vVaA
       << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
+      << "," << member->kOutputGainDB                   // [i][11] = Output audio gain, integer: -20..60
       << ")";
     i++;
   }
@@ -1250,17 +1251,18 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     PWaitAndSignal m(conference->GetMutex());
     Conference::MemberList & memberList = conference->GetMemberList();
     Conference::MemberList::iterator r;
+    H323Connection_ConferenceMember * connMember;
     for (r = memberList.begin(); r != memberList.end(); ++r)
     {
       ConferenceMember * member = r->second;
       if(member->GetName()=="file recorder") continue;
       if(member->GetName()=="cache") continue;
-      if(newValue)member->muteMask|= 1;
-      else        member->muteMask&=~1;
+      connMember = NULL;
+      connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
+      if(connMember==NULL) continue;
+      if(newValue)connMember->SetChannelPauses  (1);
+      else        connMember->UnsetChannelPauses(1);
     }
-    PStringStream s;
-    s << "imute_all(" << (newValue?"1":"0") << ")";
-    OpenMCU::Current().HttpWriteCmdRoom(s,room);
     return "OK";
   }
   if(action == OTFC_INVITE_ALL_INACT_MMBRS)
@@ -1489,8 +1491,6 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
   }
-  if( action == OTFC_UNMUTE )
-  { member->muteMask&=~1; cmd << "iunmute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
   if( action == OTFC_AUDIO_GAIN_LEVEL_SET )
   {
     int n=data("o").AsInteger();
@@ -1498,12 +1498,31 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     if(n>80) n=80;
     member->kManualGainDB=n-20;
     member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
-    PTRACE(1,"AGL " << n << ": " << member->kManualGain);
     cmd << "setagl(" << v << "," << member->kManualGainDB << ")";
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK;
   }
-  if( action == OTFC_MUTE)
-  { member->muteMask|=1; cmd << "imute(" << v << ")"; OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK; }
+  if( action == OTFC_OUTPUT_GAIN_SET )
+  {
+    int n=data("o").AsInteger();
+    if(n<0) n=0;
+    if(n>80) n=80;
+    member->kOutputGainDB=n-20;
+    member->kOutputGain=(float)pow(10.0,((float)member->kOutputGainDB)/20.0);
+    cmd << "setogl(" << v << "," << member->kOutputGainDB << ")";
+    OpenMCU::Current().HttpWriteCmdRoom(cmd,room); OTF_RET_OK;
+  }
+  if(action == OTFC_MUTE)
+  {
+    H323Connection_ConferenceMember * connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
+    if(connMember) connMember->SetChannelPauses(data("o").AsInteger());
+    OTF_RET_OK;
+  }
+  if(action == OTFC_UNMUTE)
+  {
+    H323Connection_ConferenceMember * connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
+    if(connMember) connMember->UnsetChannelPauses(data("o").AsInteger());
+    OTF_RET_OK;
+  }
   if( action == OTFC_REMOVE_FROM_VIDEOMIXERS)
   { if(conference->IsModerated()=="+" && conference->GetNumber() != "testroom")
     {
@@ -2483,11 +2502,13 @@ BOOL OpenMCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* buffer
     PString OptionValue;
     if(isEncoding)
     {
+      audioTransmitCodec = &codec;
       if(codec.GetMediaFormat().GetOptionValue((const PString)"Encoder Channels", OptionValue))
         codecChannels = atoi(OptionValue);
     }
     else
     {
+      audioReceiveCodec = &codec;
       if(codec.GetMediaFormat().GetOptionValue((const PString)"Decoder Channels", OptionValue))
         codecChannels = atoi(OptionValue);
     }
@@ -3523,6 +3544,100 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
   }
   else PTRACE(1, "MCU\tWrong connection in SendUserInputIndication for " << h323Token);
   conn->Unlock();
+}
+
+void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
+{
+  unsigned sumMask = 0;
+  OpenMCUH323Connection * conn = (OpenMCUH323Connection *)OpenMCU::Current().GetEndpoint().FindConnectionWithLock(h323Token);
+  if(conn == NULL) return;
+  PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
+  if(mask & 1)
+  { H323AudioCodec * codec = conn->GetAudioReceiveCodec();
+    if(codec)
+    { H323Channel * channel = codec->GetLogicalChannel();
+      if(channel)
+      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+        ConferenceMember::muteMask |= 1;
+        sumMask |= 1;
+  } } }
+  if(mask & 2)
+  { H323AudioCodec * codec = conn->GetAudioTransmitCodec();
+    if(codec)
+    { H323Channel * channel = codec->GetLogicalChannel();
+      if(channel)
+      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+        ConferenceMember::muteMask |= 2;
+        sumMask |= 2;
+  } } }
+  if(mask & 4)
+  { H323VideoCodec * codec = conn->GetVideoReceiveCodec();
+    if(codec)
+    { H323Channel * channel = codec->GetLogicalChannel();
+      if(channel)
+      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+        ConferenceMember::muteMask |= 4;
+        sumMask |= 4;
+  } } }
+  if(mask & 8)
+  { H323VideoCodec * codec = conn->GetVideoTransmitCodec();
+    if(codec)
+    { H323Channel * channel = codec->GetLogicalChannel();
+      if(channel)
+      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+        ConferenceMember::muteMask |= 8;
+        sumMask |= 8;
+  } } }
+  conn->Unlock();
+  PStringStream cmd; cmd << "imute(" << id << "," << sumMask << ")";
+  if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
+}
+
+void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
+{
+  unsigned sumMask = 0;
+  OpenMCUH323Connection * conn = (OpenMCUH323Connection *)OpenMCU::Current().GetEndpoint().FindConnectionWithLock(h323Token);
+  if(conn == NULL) return;
+  PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
+  if(mask & 1)
+  { H323AudioCodec * codec = conn->GetAudioReceiveCodec();
+    if(codec)
+    { H323Channel * channel = codec->GetLogicalChannel();
+      if(channel)
+      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+        ConferenceMember::muteMask &= ~1;
+        sumMask |= 1;
+  } } }
+  if(mask & 2)
+  { H323AudioCodec * codec = conn->GetAudioTransmitCodec();
+    if(codec)
+    { H323Channel * channel = codec->GetLogicalChannel();
+      if(channel)
+      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+        ConferenceMember::muteMask &= ~2;
+        sumMask |= 2;
+  } } }
+  if(mask & 4)
+  { H323VideoCodec * codec = conn->GetVideoReceiveCodec();
+    if(codec)
+    { H323Channel * channel = codec->GetLogicalChannel();
+      if(channel)
+      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+        ConferenceMember::muteMask &= ~4;
+        sumMask |= 4;
+  } } }
+  if(mask & 8)
+  { H323VideoCodec * codec = conn->GetVideoTransmitCodec();
+    if(codec)
+    { H323Channel * channel = codec->GetLogicalChannel();
+      if(channel)
+      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+        ConferenceMember::muteMask &= ~8;
+        sumMask |= 8;
+  } } }
+  conn->Unlock();
+  PStringStream cmd; cmd << "iunmute(" << id << "," << sumMask << ")";
+  if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
 }
 
 ///////////////////////////////////////////////////////////////

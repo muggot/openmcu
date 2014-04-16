@@ -12,7 +12,7 @@ var PANEL_ICON_HEIGHT=(PANEL_ITEM_HEIGHT/2)-2;
 var PANEL_ICON_WIDTH=PANEL_ICON_HEIGHT;
 var SCROLLER_WIDTH=22; // browser specific, maybe calculated, but not yet
 var panel_ip_width=120; // width of IP address bar in panel
-var PANEL_MIXERID_WIDTH=10; // width of mixer id bar in panel
+var PANEL_MIXERID_WIDTH=14; // width of mixer id bar in panel
 var PANEL_HIDEBUTTON_WIDTH=15;
 var MIXER_LAYOUT_SCROLL_LEFT_STYLE="line-height:10px;font-weight:bold;color:#fff;cursor:pointer";
 var MIXER_LAYOUT_SCROLL_RIGHT_STYLE=MIXER_LAYOUT_SCROLL_LEFT_STYLE;
@@ -65,6 +65,7 @@ var OTFC_VIDEO_RECORDER_STOP     = 76;
 var OTFC_TOGGLE_TPL_LOCK         = 77;
 var OTFC_UNMUTE_ALL              = 78;
 var OTFC_AUDIO_GAIN_LEVEL_SET    = 79;
+var OTFC_OUTPUT_GAIN_SET         = 80;
 
 var libyuv_flt_desc = Array('None', 'Bilin.', 'Box');
 
@@ -414,11 +415,12 @@ function member_read_by_id(id,index){
  return false;
 }
 
-function muteunmute(obj,mid){
+function muteunmute(obj,mid,mask){
   dmsg('Executing MUTE for member id '+mid);
-  var mute=member_read_by_id(mid,3);
+  var cmd, mute=member_read_by_id(mid,3)&mask;
+  if(!mute)cmd=OTFC_MUTE;else cmd=OTFC_UNMUTE;
   obj.src='openmcu.ru_launched_Ypf.gif';
-  queue_otf_request(OTFC_MUTE-mute,mid);
+  queue_otf_request(cmd,mid,mask);
   return false;
 }
 
@@ -610,16 +612,19 @@ function gain_selector_mouse_out()
   gainSelecting=false;
 }
 
-function gain_selector_select(id, value)
+function gain_selector_select(id, value, dir)
 {
   dmsg('gain_s_s'+id+"="+value);
   gain_selector_mouse_out();
-  queue_otf_request(OTFC_AUDIO_GAIN_LEVEL_SET,id,(value+20));
+  if(dir) queue_otf_request(OTFC_OUTPUT_GAIN_SET     ,id,(value+20));
+  else    queue_otf_request(OTFC_AUDIO_GAIN_LEVEL_SET,id,(value+20));
 }
 
-function gain_selector(obj, id)
+function gain_selector(obj, id, dir0)
 {
-  var def=member_read_by_id(id,10);
+  var dir=0;
+  if(typeof dir0!='undefined') if(dir0) dir=1;
+  var def=member_read_by_id(id,10+dir);
   dmsg('Creating gain selector for member id '+id+', sel '+def);
   if(def===false) return;
   if(gainSelecting) document.body.removeChild(gainSelector);
@@ -649,7 +654,7 @@ function gain_selector(obj, id)
     if(j<10) s+="0";
     s+=j;
     r+="<p ";
-    if(i!=def) r+="onclick='javascript:{gain_selector_select(" + id + "," + i + ");}' ";
+    if(i!=def) r+="onclick='javascript:{gain_selector_select(" + id + "," + i + "," + dir + ");}' ";
     else r+="onclick='javascript:gain_selector_mouse_out();' ";
     r+=" class='kdb";
     if(i==def) r+="s";
@@ -675,11 +680,18 @@ function nice_db(level)
 function setagl(id, level)
 {
   var obj=null;
-  var s=id;
-  if(id<0) { var q=-id; s="_"+q; }
-  try { obj=document.getElementById('agl_'+s); } catch(e) { obj=null; }
+  try { obj=document.getElementById('agl_'+idid(id)); } catch(e) { obj=null; }
   if(obj) obj.innerHTML=nice_db(level);
   member_modify_by_id(id,10,level);
+  alive();
+}
+
+function setogl(id, level)
+{
+  var obj=null;
+  try { obj=document.getElementById('ogl_'+idid(id)); } catch(e) { obj=null; }
+  if(obj) obj.innerHTML=nice_db(level);
+  member_modify_by_id(id,11,level);
   alive();
 }
 
@@ -695,18 +707,22 @@ function format_mmbr_button(m,st)
   if(st) s+=" id='rpan_"+id+"' onmousedown='{highlight("+m[1]+",0);ddstart(event,this,\"panel\","+m[1]+");}' onmouseover='highlight("+m[1]+",1)' onmouseout='highlight("+m[1]+",0)'";
   s+=">";
 
-  var ip=get_addr_url_without_param(memberName), uname=get_addr_name(memberName), mute, vad='', kick, hide='', kdb='', mixer=m[7], cmd=10;
+  var ip=get_addr_url_without_param(memberName), uname=get_addr_name(memberName), mute, vad, kick, hide, kdb, kdb2, mixer=m[7], cmd=10, mute2, mute4, mute8;
   if(mixer==-1) mixer='va';
   if(!(m[4]|m[5])) cmd=8; else if(m[5]) cmd=9;
   ip="<span style='color:"+((st==0)?"#576":"blue")+";font-size:10px'>"+ip+"</span>";
 
   if(st)
   { // online:
-    mute="<div onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+")' style='cursor:pointer' class='mutespr3"+(m[3]?"0":"1")+"' title='"+(m[3]?"Unmute":"Mute")+"' id='mrpan_"+id+"'></div>";
+    mute ="<div onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",1)' style='cursor:pointer' class='mutespr3"+((m[3]&1)?"0":"1")+"' title='"+((m[3]&1)?"Unmute":"Mute")+"' id='mrpan_" +id+"'></div>";
+    mute2="<div onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",2)' style='cursor:pointer' class='mutespr4"+((m[3]&2)?"0":"1")+"' title='"+((m[3]&2)?"Unmute":"Mute")+"' id='mrpan2_"+id+"'></div>";
+    mute4="<div onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",4)' style='cursor:pointer' class='mutespr2"+((m[3]&4)?"0":"1")+"' title='"+((m[3]&4)?"Unmute":"Mute")+"' id='mrpan4_"+id+"'></div>";
+    mute8="<div onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",8)' style='cursor:pointer' class='mutespr1"+((m[3]&8)?"0":"1")+"' title='"+((m[3]&8)?"Unmute":"Mute")+"' id='mrpan8_"+id+"'></div>";
     vad="<img onclick='vadoptions(this,"+m[1]+")' style='cursor:pointer' src='openmcu.ru_vad_"+((cmd==8)?"vad":"")+((cmd==9)?"chosenvan":"")+((cmd==10)?"disable":"")+".gif' alt='"+((cmd==8)?"Normal":"")+((cmd==9)?"Van":"")+((cmd==10)?"AD disabled":"")+"' width="+PANEL_ICON_WIDTH+" height="+PANEL_ICON_HEIGHT+" id='vrpan_"+id+"'>";
     kick="<img onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\");' onmouseover='prvnt=1' onmouseout='prvnt=0' style='cursor:pointer' src='i16_close_red.png' width=16 height=16 alt='Drop'>";
     hide="<img style='cursor:pointer' src='i15_getNoVideo.gif' width=15 height=15 title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>";
-    kdb="<div id='agl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+");return false;}'>"+nice_db(m[10])+"</div>";
+    kdb ="<div id='agl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+"  );return false;}'>"+nice_db(m[10])+"</div>";
+    kdbo="<div id='ogl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+",1);return false;}'>"+nice_db(m[11])+"</div>";
   }
   else
   { // offline:
@@ -714,10 +730,10 @@ function format_mmbr_button(m,st)
     kick="<img onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' style='cursor:pointer' src='i16_close_gray.png' width=16 height=16 alt='Remove'>";
   }
 
-  var kdb_width=39, w=PANEL_ICON_WIDTH, h=PANEL_ICON_HEIGHT;
-  var px1=2; var px2=px1+w; var px3=px2+2; var pxn=px3+kdb_width;
-  var px_1=panel_width-SCROLLER_WIDTH-w; var px_2=px_1-w; var px_3=px_2-w;
-  var name_width=px_3-pxn-kdb_width;
+  var kdb_width=39, w=PANEL_ICON_WIDTH, h=PANEL_ICON_HEIGHT, sp=5;
+  var px1=2; var px2=px1+w+sp; var px3=px2+2+sp; var pxn=px3+kdb_width;
+  var px_1=panel_width-SCROLLER_WIDTH-w; var px_2=px_1-w-sp; var px_3=px_2-w-sp; var px_4=px_3-w-sp;
+  var name_width=px_4-pxn-kdb_width;
   if(name_width<10) name_width=10;
 
   var dpre="<div class='mbrpos1' style='left:", dpre2="<div class='mbrpos11' style='left:";
@@ -726,12 +742,16 @@ function format_mmbr_button(m,st)
   {
     s+=dpre+px2+"px'><div class='vlevel' id='srpan_"+id+"'>&nbsp;</div></div>";
     s+=dpre+px3+"px'><div style='vertical-align:middle;overflow:hidden;width:"+kdb_width+"px;height:"+h+"px'>"+kdb+"</div></div>";
+    s+=dpre+px_4+"px'>"+mute4+"</div>";
     s+=dpre+px_3+"px'>"+vad+"</div>";
-    s+=dpre+px_2+"px'><div onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi' style='width:"+PANEL_MIXERID_WIDTH+"px;height:"+h+"px;line-height:"+h+"px'>"+mixer+"</div></div>";
-    s+=dpre+px_1+"px'>"+hide+"</div>";
+    s+=dpre+px_2+"px'>"+hide+"</div>";
+    s+=dpre2+(px1+4)+"px'>"+mute2+"</div>";
+    s+=dpre2+px3+"px'><div style='vertical-align:middle;overflow:hidden;width:"+kdb_width+"px;height:"+h+"px'>"+kdbo+"</div></div>";
+    s+=dpre2+(px_4+6)+"px'>"+mute8+"</div>";
+    s+=dpre2+(px_3+2)+"px'><div onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi' style='height:"+h+"px;line-height:"+h+"px'>#"+mixer+"</div></div>";
   }
   s+=dpre+pxn+"px'><div class='mmbrname' style='width:"+name_width+"px;height:"+h+"px;line-height:"+h+"px'><nobr>"+uname+"</nobr></div></div>";
-  s+=dpre2+px_1+"px'><div style='vertical-align:-1px;overflow:hidden;width:"+w+"px;height:"+h+"px;line-height:"+h+"px'>"+kick+"</div></div>";
+  s+=dpre+px_1+"px'><div style='vertical-align:-1px;overflow:hidden;width:"+w+"px;height:"+h+"px;line-height:"+h+"px'>"+kick+"</div></div>";
   s+=dpre2+pxn+"px'><div class='mmbrip' style='width:"+name_width+"px;height:"+h+"px;line-height:"+h+"px'>"+ip+"</div></div>";
   s+="</div>";
 
@@ -1028,7 +1048,7 @@ function members_sort_name_asc_func(i, j)
     return 0;
 }
 
-function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc,gl)
+function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc,gl,og)
 {
   if(typeof members==='undefined') return alive();
   var j=members.length;
@@ -1061,7 +1081,7 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc,gl)
   j=members.length;
   dmsg('l2='+j);
 
-  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc,gl);
+  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc,gl,og);
   members.sort(members_sort_name_asc_func);
   alive();
   members_refresh();
@@ -1130,42 +1150,48 @@ function object_return(o,id){
   id+='';
   if(id.substr(0,1)=='-')o+='_'+id.substr(1);else o+=id;
   try{
-    if(document.getElementById(o)==='undefined')return;
+    if(document.getElementById(o)==='undefined')return false;
     o=document.getElementById(o);
   } catch(e) { return false; }
   return o;
 }
 
-function imute(id){
-  for(var i=0;i<members.length;i++) if(members[i][1]==id)
-  { members[i][3]=1;
-    if((o=object_return('mrpan_',id))===false) return alive();
-    o.className='mutespr30';
-    o.title='Unmute';
-    return alive();
-  }
-}
-
-function imute_all(v)
-{ var cl='mutespr30'; if(!v) cl='mutespr31';
-  var nv=1; if(!v) nv=0;
-  for(var i=0;i<members.length;i++) if(members[i][0])
-  { members[i][3]=nv;
-    if((o=object_return('mrpan_',members[i][1]))===false) continue;
-    o.className=cl;
-    o.title='Unmute';
+function imute(id,mask){
+  for(var i=0;i<members.length;i++)
+  if(members[i][1]==id)
+  { members[i][3]|=mask;
+    if(mask&1) if((o=object_return('mrpan_' ,id))!==false) { o.className='mutespr30'; o.title='Unmute'; }
+    if(mask&2) if((o=object_return('mrpan2_',id))!==false) { o.className='mutespr40'; o.title='Unmute'; }
+    if(mask&4) if((o=object_return('mrpan4_',id))!==false) { o.className='mutespr20'; o.title='Unmute'; }
+    if(mask&8) if((o=object_return('mrpan8_',id))!==false) { o.className='mutespr10'; o.title='Unmute'; }
+    break;
   }
   return alive();
 }
 
-function iunmute(id){
-  for(var i=0;i<members.length;i++) if(members[i][1]==id){
-    members[i][3]=0;
-    if((o=object_return('mrpan_',id))===false) return alive();
-    o.className='mutespr31';
-    o.title='Mute';
-    return alive();
+function imute_all(v)
+{ var cl='mutespr30'; if(!v) cl='mutespr31';
+  for(var i=0;i<members.length;i++)
+  if(members[i][0])
+  { if(v)members[i][3]|=1; else members[i][3]&=14;
+    if((o=object_return('mrpan_',members[i][1]))===false) continue;
+    o.className=cl;
+    if(v)o.title='Unmute'; else o.title='Mute';
   }
+  return alive();
+}
+
+function iunmute(id,mask){
+  for(var i=0;i<members.length;i++)
+  if(members[i][1]==id)
+  { members[i][3]&=(15-mask);
+    if(mask&1) if((o=object_return('mrpan_' ,id))!==false) { o.className='mutespr31'; o.title='Mute'; }
+    if(mask&2) if((o=object_return('mrpan2_',id))!==false) { o.className='mutespr41'; o.title='Mute'; }
+    if(mask&4) if((o=object_return('mrpan4_',id))!==false) { o.className='mutespr21'; o.title='Mute'; }
+    if(mask&8) if((o=object_return('mrpan8_',id))!==false) { o.className='mutespr11'; o.title='Mute'; }
+    break;
+  }
+  return alive();
 }
 
 function ivad(id,v){

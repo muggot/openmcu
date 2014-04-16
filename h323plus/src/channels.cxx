@@ -864,6 +864,11 @@ void H323Channel::SendMiscCommand(unsigned command)
   connection.SendLogicalChannelMiscCommand(*this, command); 
 }
 
+void H323Channel::SendMiscIndication(unsigned command)
+{ 
+  connection.SendLogicalChannelMiscIndication(*this, command); 
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 

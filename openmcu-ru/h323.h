@@ -65,6 +65,7 @@ extern "C" {
 #define OTFC_TOGGLE_TPL_LOCK          77
 #define OTFC_UNMUTE_ALL               78
 #define OTFC_AUDIO_GAIN_LEVEL_SET     79
+#define OTFC_OUTPUT_GAIN_SET          80
 
 class OpenMCUH323EndPoint : public H323EndPoint
 {
@@ -290,6 +291,8 @@ class OpenMCUH323Connection : public H323Connection
     virtual void SetVideoTransmitCodecName(PString newVideoTransmitCodecName) { videoTransmitCodecName=newVideoTransmitCodecName; }
     virtual PString GetVideoReceiveCodecName() const  { return videoReceiveCodecName; }
     virtual BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount);
+    virtual H323AudioCodec * GetAudioReceiveCodec() const  { return audioReceiveCodec; }
+    virtual H323AudioCodec * GetAudioTransmitCodec() const  { return audioTransmitCodec; }
     virtual H323VideoCodec * GetVideoReceiveCodec() const  { return videoReceiveCodec; }
     virtual H323VideoCodec * GetVideoTransmitCodec() const  { return videoTransmitCodec; }
     virtual void RestartGrabber();
@@ -419,6 +422,9 @@ class OpenMCUH323Connection : public H323Connection
 
     BOOL isMCU;
 
+    H323AudioCodec *audioReceiveCodec;
+    H323AudioCodec *audioTransmitCodec;
+
 #if OPENMCU_VIDEO
     PVideoInputDevice_OpenMCU * videoGrabber;
     PVideoOutputDevice_OpenMCU * videoDisplay;
@@ -493,6 +499,9 @@ class H323Connection_ConferenceMember : public ConferenceMember
         conn->Unlock();
       }
     }
+
+    void SetChannelPauses(unsigned mask);
+    void UnsetChannelPauses(unsigned mask);
 
   protected:
     PStringStream iISequence; // input indication sequence

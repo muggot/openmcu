@@ -881,6 +881,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         << ",\"" << memberToAddUrlId << "\""
         << "," << dec << (unsigned)memberToAdd->channelCheck
         << "," << memberToAdd->kManualGainDB
+        << "," << memberToAdd->kOutputGainDB
         << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
   }
@@ -1041,7 +1042,24 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDE
         else vmr=vmr->next;
       }
       if(!skip) // default behaviour
+      {
         r->second->ReadAndMixAudio((BYTE *)buffer, amount, (PINDEX)connectionList.size(), 0, sampleRate, channels);
+        if(member) if(member->kOutputGainDB)
+        {
+          float k = member->kOutputGain;
+          unsigned i = (amount >> 1);
+          char * pos = (char*)buffer;
+          while(i)
+          {
+            int c = (int)(k*(*(short*)pos));
+            if(c>32766) *(short*)pos = 32767;
+            else if(c<-32767) *(short*)pos = -32768;
+            else *(short*)pos = (short)c;
+            pos+=2;
+            i--;
+          }
+        }
+      }
     }
   }
 }
@@ -1311,6 +1329,7 @@ ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId 
   audioCounter = 0; previousAudioLevel = 65535; audioLevelIndicator = 0;
   currVolCoef = 1.0;
   kManualGain = 1.0; kManualGainDB = 0;
+  kOutputGain = 1.0; kOutputGainDB = 0;
   terminalNumber = -1;
   memberIsJoined = FALSE;
 
@@ -1705,6 +1724,8 @@ void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRa
   // First, set the buffer to empty.
   memset(buffer, 0, amount);
 
+  if(muteMask&2) return;
+
   if (lock.Wait()) {
     if (conference != NULL)
       conference->ReadMemberAudio(this, buffer, amount, sampleRate, channels);
@@ -1718,6 +1739,8 @@ void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRa
 void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & amount)
 {
   if(!(channelCheck&8)) ChannelBrowserStateUpdate(8,TRUE);
+//  if(muteMask&8) { memset(buffer,0,amount); return; }
+  if(muteMask&8) return;
   ++totalVideoFramesSent;
   if (!firstFrameSendTime.IsValid())
     firstFrameSendTime = PTime();
@@ -1736,6 +1759,7 @@ void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & 
 void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PINDEX amount)
 {
   if(!(channelCheck&4)) ChannelBrowserStateUpdate(4,TRUE);
+  if(muteMask&4) return;
   ++totalVideoFramesReceived;
   rxFrameWidth=width; rxFrameHeight=height;
   if (!firstFrameReceiveTime.IsValid())

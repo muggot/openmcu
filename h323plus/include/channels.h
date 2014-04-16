@@ -402,6 +402,7 @@ class H323Channel : public PObject
        Typically, used to indicate a problem in the received video stream.
     */
     void SendMiscCommand(unsigned command);
+    void SendMiscIndication(unsigned command);
   //@}
 
   /**@name Member variable access */

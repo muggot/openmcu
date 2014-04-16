@@ -2064,6 +2064,10 @@ class H323Connection : public PObject
       H323Channel & channel,  ///< Channel to send command for
       unsigned command        ///< Command code to send
     );
+    virtual void SendLogicalChannelMiscIndication(
+      H323Channel & channel,  ///< Channel to send command for
+      unsigned command        ///< Indication code to send
+    );
 
     /**Get a logical channel.
        Locates the specified channel number and returns a pointer to it.

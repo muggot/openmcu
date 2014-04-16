@@ -5517,6 +5517,16 @@ void H323Connection::SendLogicalChannelMiscCommand(H323Channel & channel,
   }
 }
 
+void H323Connection::SendLogicalChannelMiscIndication(H323Channel & channel,
+                                                   unsigned commandIdentifier)
+{
+  H323ControlPDU pdu;
+  H245_IndicationMessage & indication = pdu.Build(H245_IndicationMessage::e_miscellaneousIndication);
+  H245_MiscellaneousIndication & miscIndication = indication;
+  miscIndication.m_logicalChannelNumber = (unsigned)channel.GetNumber();
+  miscIndication.m_type.SetTag(commandIdentifier);
+  WriteControlPDU(pdu);
+}
 
 void H323Connection::SetEnforcedDurationLimit(unsigned seconds)
 {
