@@ -363,7 +363,7 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .mutespr30{width:15px;height:15px;background:url(s15_ch.png)  -75px   0px;cursor:pointer}
 .mutespr41{width:15px;height:15px;background:url(s15_ch.png)  -90px   0px;cursor:pointer}
 .mutespr40{width:15px;height:15px;background:url(s15_ch.png) -105px   0px;cursor:pointer}
-.lgalspr  {width:15px;height:15px;background:url(s15_ch.png)  -90px -15px;cursor:pointer;border:1px solid #000;margin:0px;background-color:#fff}
+.lgalspr  {width:18px;height:17px;background:url(s15_ch.png)  -90px -15px;cursor:pointer;border:1px solid #000;vertical-align:middle;margin:0px;background-color:#fff}
 
 .mmbr0,.mmbr1,.mmbr2,.mmbrp15,.mmbrp1,.mmbrp2,.mmbrdd{margin-left:2px;padding:1px;overflow:hidden;border-radius:4px;margin-bottom:2px;text-align:left;height:31px}
 .mmbrdd {border-bottom:1px dotted #000   ;border-right:1px dotted #000   ;background-color:#aaf;position:absolute;cursor:move}
