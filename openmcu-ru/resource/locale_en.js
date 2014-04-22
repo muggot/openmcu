@@ -66,7 +66,7 @@ window.l_info_welcome ='\
 Service OpenMCU-ru is running and accepting connections.\
 </p>\
 <p>\
-Conference started by connection from some terminal will work in unmanaged mode. All members will see the same pictire. In unmanaged mode OpenMCU-ru automatically change layout depending on number of conference members, in order  from file "layouts.conf". After connecting 100 members other connecting members will not be visible, but will see others.<br />\
+Conference started by connection from some terminal will work in unmanaged mode. All members will see the same picture. In unmanaged mode OpenMCU-ru automatically change layout depending on number of conference members, in order  from file "layouts.conf". After connecting 100 members other connecting members will not be visible, but will see others.<br />\
 Audio streams in unmanaged mode are transmitting and receiving from all connected members.<br />\
 </p>\
 <p>\
