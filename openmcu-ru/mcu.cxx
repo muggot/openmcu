@@ -390,6 +390,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("text/javascript"          , "locale_ru.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "locale_en.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "locale_uk.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "locale_jp.js");
   WEBSERVER_LINK_MIME("text/css"                 , "main.css");
   WEBSERVER_LINK_MIME("image/png"                , "s15_ch.png");
   WEBSERVER_LINK_MIME("image/gif"                , "i15_getNoVideo.gif");

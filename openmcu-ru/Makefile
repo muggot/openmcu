@@ -59,6 +59,7 @@ leaving.wav \
 template.html \
 control.js \
 status.js \
+locale_jp.js \
 locale_uk.js \
 locale_ru.js \
 locale_en.js \
