@@ -154,7 +154,7 @@ class H323toSipQueue
       PWaitAndSignal m(mutex);
       if(queue.GetSize() > 100) return FALSE;
       if(queue.GetStringsIndex(*cmd) != P_MAX_INDEX) return FALSE;
-      queue.Append(cmd);
+      queue.InsertAt(0, cmd);
       return TRUE;
     }
     PString *Pop()
