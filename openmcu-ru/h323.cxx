@@ -3589,7 +3589,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
         sumMask |= 8;
   } } }
   conn->Unlock();
-  PStringStream cmd; cmd << "imute(" << id << "," << sumMask << ")";
+  PStringStream cmd; cmd << "imute(" << dec << id << "," << sumMask << ")";
   if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
 }
 
@@ -3636,7 +3636,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
         sumMask |= 8;
   } } }
   conn->Unlock();
-  PStringStream cmd; cmd << "iunmute(" << id << "," << sumMask << ")";
+  PStringStream cmd; cmd << "iunmute(" << dec << id << "," << sumMask << ")";
   if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
 }
 
