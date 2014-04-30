@@ -2143,6 +2143,8 @@ OpenMCUH323Connection::OpenMCUH323Connection(OpenMCUH323EndPoint & _ep, unsigned
   }
 
   audioReceiveCodecName = audioTransmitCodecName = "none";
+  audioTransmitCodec = NULL;
+  audioReceiveCodec = NULL;
 
 #if OPENMCU_VIDEO
   videoGrabber = NULL;
