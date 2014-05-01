@@ -1272,12 +1272,14 @@ H323EndPoint::H323EndPoint()
 #endif
 
 #ifdef H323_AEC 
-  enableAEC = FALSE;
+  algoAEC = 0;
 #endif
 
 #ifdef H323_GNUGK
   gnugk = NULL;
 #endif
+
+  agc = 0;
 
   PTRACE(3, "H323\tCreated endpoint.");
 }
@@ -2160,64 +2162,85 @@ BOOL H323EndPoint::ResolveCallParty(const PString & _remoteParty, PStringList & 
 
 #if P_DNS
   // if there is no gatekeeper, 
-  if (gatekeeper == NULL) {
+  if (gatekeeper == NULL)
+  {
+    //if there is no '@', and there is no URL scheme, then attempt to use ENUM
+    if ((_remoteParty.Find(':') == P_MAX_INDEX) && (remoteParty.Find('@') == P_MAX_INDEX))
+    {
+      PString number = _remoteParty;
+      if (number.Left(5) *= "h323:") number = number.Mid(5);
 
-     //if there is no '@', and there is no URL scheme, then attempt to use ENUM
-    if ((_remoteParty.Find(':') == P_MAX_INDEX) && (remoteParty.Find('@') == P_MAX_INDEX)) {
-
-	PString number = _remoteParty;
-	if (number.Left(5) *= "h323:")
-	   number = number.Mid(5);
-
-    PINDEX i;
-    for (i = 0; i < number.GetLength(); ++i)
-       if (!isdigit(number[i]))
-        break;
-		if (i >= number.GetLength()) {
-           PString str;
-          if (PDNS::ENUMLookup(number, "E2U+h323", str)) {
-		    if ((str.Find("//1") != P_MAX_INDEX) &&
-		         (str.Find('@') != P_MAX_INDEX)) {
-			   remoteParty = "h323:" + number + str.Mid(str.Find('@')-1);
-		    } else {
-              remoteParty = str;
-		  }
-		  PTRACE(4, "H323\tENUM converted remote party " << _remoteParty << " to " << remoteParty);
-        } else {
+      PINDEX i;
+      for (i = 0; i < number.GetLength(); ++i) if (!isdigit(number[i])) break;
+      if (i >= number.GetLength())
+      {
+        PString str;
+        if (PDNS::ENUMLookup(number, "E2U+h323", str))
+        {
+          if ((str.Find("//1") != P_MAX_INDEX) &&
+              (str.Find('@'  ) != P_MAX_INDEX))
+          {
+            remoteParty = "h323:" + number + str.Mid(str.Find('@')-1);
+          }
+          else
+          {
+            remoteParty = str;
+          }
+          PTRACE(4, "H323\tENUM converted remote party " << _remoteParty << " to " << remoteParty);
+        }
+        else
+        {
           PTRACE(4, "H323\tENUM Cannot resolve remote party " << _remoteParty);
         }
       }
-	}
+    }
 
      // attempt a DNS SRV lookup to detect a call signalling entry
-	BOOL found = FALSE;
-    if (remoteParty.Find('@') != P_MAX_INDEX) {
-       PString number = remoteParty;
-       if (number.Left(5) != "h323:") 
-          number = "h323:" + number;	  
-				
-	   PStringList str;
+    PINDEX atPos=remoteParty.Find('@');
+    if (atPos != P_MAX_INDEX)
+    {
 
-	   if (!found) str.RemoveAll();
-	   if (!found && (PDNS::LookupSRV(number,"_h323cs._tcp.",str))) {
-		   for (PINDEX i=0; i<str.GetSize(); i++) {
-	         PTRACE(4, "H323\tDNS SRV CS converted remote party " << _remoteParty << " to " << str[i]);
-             addresses.AppendString(str[i]);
-			 found = TRUE;
-		   }
-       } 
-	   if (!found) {
-           PTRACE(4, "H323\tDNS SRV Cannot resolve remote party " << remoteParty);
-		   addresses = PStringList(remoteParty);
-       }
-	} else {
-       addresses = PStringList(remoteParty);
+      {
+        PString host = remoteParty.Mid(atPos+1);
+        PINDEX lcpos = host.Find(':');
+        if(lcpos != P_MAX_INDEX) host = host.Left(lcpos);
+        PTRACE(4,"H323\tDNS SRV Extracted host descriptor: " << host);
+        PIPSocket::Address addr;
+        if(addr.FromString(host))
+        {
+          PTRACE(4,"H323\tDNS SRV Lookup prevented: domain part is already IP address " << addr.AsString());
+          addresses = PStringList(remoteParty);
+          return TRUE;
+        }
+      }
+
+      PString number = remoteParty;
+      if (!(number.Left(5) *= "h323:")) number = "h323:" + number;
+
+      PStringList str;
+      if (PDNS::LookupSRV(number,"_h323cs._tcp.",str))
+      {
+        for (PINDEX i=0; i<str.GetSize(); i++)
+        {
+          PTRACE(4, "H323\tDNS SRV CS converted remote party " << _remoteParty << " to " << str[i]);
+          addresses.AppendString(str[i]);
+        }
+      } 
+      else
+      {
+        PTRACE(4, "H323\tDNS SRV Cannot resolve remote party " << remoteParty);
+        addresses = PStringList(remoteParty);
+      }
     }
-	return TRUE;
-   }  
+    else
+    {
+      addresses = PStringList(remoteParty);
+    }
+    return TRUE;
+  }  
 #endif
-    addresses = PStringList(remoteParty);
-	return TRUE;
+  addresses = PStringList(remoteParty);
+  return TRUE;
 }
 
 BOOL H323EndPoint::ParsePartyName(const PString & _remoteParty,
@@ -3041,15 +3064,24 @@ BOOL H323EndPoint::OpenAudioChannel(H323Connection & /*connection*/,
 
   int rate = codec.GetMediaFormat().GetTimeUnits() * 1000;
 
+  unsigned codecChannels = 1;
   PString deviceName;
   PString deviceDriver;
   if (isEncoding) {
     deviceName   = GetSoundChannelRecordDevice();
     deviceDriver = GetSoundChannelRecordDriver();
+   { PString OptionValue; if(codec.GetMediaFormat().GetOptionValue((const PString)"Encoder Channels", OptionValue))
+      codecChannels = atoi(OptionValue);
+    }
   } else {
     deviceName = GetSoundChannelPlayDevice();
     deviceDriver = GetSoundChannelPlayDriver();
+    { PString OptionValue; if(codec.GetMediaFormat().GetOptionValue((const PString)"Decoder Channels", OptionValue))
+        codecChannels = atoi(OptionValue);
+    }
   }
+
+  PTRACE(1, "OpenAudioChannel\tTring to use driver=" << deviceDriver << " device=" << deviceName);
 
   PSoundChannel * soundChannel;
   if (!deviceDriver.IsEmpty()) 
@@ -3057,6 +3089,7 @@ BOOL H323EndPoint::OpenAudioChannel(H323Connection & /*connection*/,
   else {
     soundChannel = new PSoundChannel;
     deviceDriver = "default";
+    PTRACE(1, "OpenAudioChannel\tFailed to set driver, using default");
   }
 
   if (soundChannel == NULL) {
@@ -3066,10 +3099,10 @@ BOOL H323EndPoint::OpenAudioChannel(H323Connection & /*connection*/,
 
   if (soundChannel->Open(deviceName, isEncoding ? PSoundChannel::Recorder
                                                 : PSoundChannel::Player,
-                         1, rate, 16)) {
+                         codecChannels, rate, 16)) {
     PTRACE(3, "Codec\tOpened sound channel \"" << deviceName
            << "\" for " << (isEncoding ? "record" : "play")
-           << "ing at " << rate << " samples/second using " << soundChannelBuffers
+           << "ing at " << codecChannels << "x" << rate << " samples/second using " << soundChannelBuffers
            << 'x' << bufferSize << " byte buffers.");
     soundChannel->SetBuffers(bufferSize, soundChannelBuffers);
     return codec.AttachChannel(soundChannel);
@@ -3366,7 +3399,7 @@ BOOL H323EndPoint::RemoveAliasName(const PString & name)
 
 BOOL H323EndPoint::SetSoundChannelPlayDevice(const PString & name)
 {
-  if (PSoundChannel::GetDeviceNames(PSoundChannel::Player).GetValuesIndex(name) == P_MAX_INDEX)
+  if (PSoundChannel::GetDeviceNames(soundChannelPlayDriver, PSoundChannel::Player).GetValuesIndex(name) == P_MAX_INDEX)
     return FALSE;
 
   soundChannelPlayDevice = name;
@@ -3376,7 +3409,7 @@ BOOL H323EndPoint::SetSoundChannelPlayDevice(const PString & name)
 
 BOOL H323EndPoint::SetSoundChannelRecordDevice(const PString & name)
 {
-  if (PSoundChannel::GetDeviceNames(PSoundChannel::Recorder).GetValuesIndex(name) == P_MAX_INDEX)
+  if (PSoundChannel::GetDeviceNames(soundChannelRecordDriver, PSoundChannel::Recorder).GetValuesIndex(name) == P_MAX_INDEX)
     return FALSE;
 
   soundChannelRecordDevice = name;
@@ -3413,6 +3446,8 @@ BOOL H323EndPoint::SetSoundChannelRecordDriver(const PString & name)
   list = PSoundChannel::GetDeviceNames(name, PSoundChannel::Recorder);
   if (list.GetSize() == 0)
     return FALSE;
+
+  PTRACE(1,"SetSoundChannelRecordDriver\tAvailable devices: " << list);
 
   soundChannelRecordDevice = list[0];
   return TRUE;

@@ -6,13 +6,13 @@
 
 VERSION="2.0.1"
 CCFLAGS=" -D_REENTRANT -fno-exceptions"
-LDFLAGS=" -L/opt/lib -L/opt/openmcu-ru/lib -L/usr/lib -L/usr/local/lib"
-LIBS=" -lpthread -lssl -lcrypto -lresolv -ldl -lpt"
+LDFLAGS=""
+LIBS=" -lpthread -lsasl2 -lssl -lcrypto -lresolv -ldl -lpt"
 LIBDIR="${exec_prefix}/lib"
 PTINSTDIR="/usr/local/share/ptlib"
 MACHTYPE="x86"
 OSTYPE="linux"
-OSRELEASE=""2.6.32-358.el6.i686""
+OSRELEASE=""2.6.29.6-smp""
 SHAREDLIBEXT="so"
 INSTALLPREFIX="/usr/local"
 

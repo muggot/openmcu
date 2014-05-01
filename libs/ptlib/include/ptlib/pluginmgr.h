@@ -151,6 +151,7 @@ class PPluginManager : public PObject
     PObject * CreatePluginsDevice(const PString & serviceName, const PString & serviceType, int userData = 0) const;
     PObject * CreatePluginsDeviceByName(const PString & deviceName, const PString & serviceType, int userData = 0, const PString & serviceName = PString::Empty()) const;
     PStringList GetPluginsDeviceNames(const PString & serviceName, const PString & serviceType, int userData = 0) const;
+	BOOL GetPluginsDeviceCapabilities(const PString & serviceType,const PString & serviceName,const PString & deviceName,void * capabilities) const;
 
     // function to register a service (used by the plugins themselves)
     BOOL RegisterService (const PString & serviceName, const PString & serviceType, PPluginServiceDescriptor * descriptor);

@@ -106,10 +106,10 @@ static inline unsigned char descale_and_clamp(int x, int shift)
       "\tsar %2,%1\n"
       "\tsub $-128,%1\n"
       "\tcmovl %5,%1\n"	/* Use the sub to compare to 0 */
-      "\tcmp %4,%1\n" 
+      "\tcmpl %4,%1\n" 
       "\tcmovg %4,%1\n"
       : "=r"(x) 
-      : "0"((unsigned long)x), "c"((char)shift), "ir"(1UL<<(shift-1)), "r" (0xffUL), "r" (0UL)
+      : "0"(x), "Ir"(shift), "ir"(1UL<<(shift-1)), "r" (0xff), "r" (0)
       );
   return x;
 }

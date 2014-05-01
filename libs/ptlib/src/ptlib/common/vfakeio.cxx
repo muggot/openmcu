@@ -23,160 +23,10 @@
  *
  * Contributor(s): Derek J Smithies (derek@indranet.co.nz)
  *
- * $Log: vfakeio.cxx,v $
- * Revision 1.41  2007/05/19 09:33:29  rjongbloed
- * Fixed compiler warnings.
- *
- * Revision 1.40  2007/04/20 06:47:48  csoutheren
- * Really disable video code when video is turned off
- *
- * Revision 1.39  2007/04/18 23:49:51  csoutheren
- * Add usage of precompiled headers
- *
- * Revision 1.38  2007/04/13 07:13:14  rjongbloed
- * Major update of video subsystem:
- *   Abstracted video frame info (width, height etc) into separate class.
- *   Changed devices, converter and video file to use above.
- *   Enhanced video file hint detection for frame rate and more
- *     flexible formats.
- *   Fixed issue if need to convert both colour format and size, had to do
- *     colour format first or it didn't convert size.
- *   Win32 video output device can be selected by "MSWIN" alone.
- *
- * Revision 1.37  2006/07/06 01:20:48  csoutheren
- * Disable benign warnings on VC 2005
- *
- * Revision 1.36  2006/06/21 03:28:44  csoutheren
- * Various cleanups thanks for Frederic Heem
- *
- * Revision 1.35  2006/03/17 06:56:22  csoutheren
- * Exposed video fonts to external access
- *
- * Revision 1.34  2005/11/30 12:47:42  csoutheren
- * Removed tabs, reformatted some code, and changed tags for Doxygen
- *
- * Revision 1.33  2005/08/09 09:08:11  rjongbloed
- * Merged new video code from branch back to the trunk.
- *
- * Revision 1.32.6.3  2005/07/25 12:19:23  rjongbloed
- * Fixed correct device name for fake video
- *
- * Revision 1.32.6.2  2005/07/17 12:59:04  rjongbloed
- * Cleaned up pattern identifcation (enum) and max patterns (input channel).
- *
- * Revision 1.32.6.1  2005/07/17 09:27:08  rjongbloed
- * Major revisions of the PWLib video subsystem including:
- *   removal of F suffix on colour formats for vertical flipping, all done with existing bool
- *   working through use of RGB and BGR formats so now consistent
- *   cleaning up the plug in system to use virtuals instead of pointers to functions.
- *   rewrite of SDL to be a plug in compatible video output device.
- *   extensive enhancement of video test program
- *
- * Revision 1.32  2005/01/31 08:05:41  csoutheren
- * More patches for MacOSX, thanks to Hannes Friederich
- *
- * Revision 1.31  2005/01/04 07:44:03  csoutheren
- * More changes to implement the new configuration methodology, and also to
- * attack the global static problem
- *
- * Revision 1.30  2004/07/11 07:56:36  csoutheren
- * Applied jumbo VxWorks patch, thanks to Eize Slange
- *
- * Revision 1.29  2004/03/17 22:24:29  rjongbloed
- * Fixed MSVC warnings
- *
- * Revision 1.28  2004/03/16 10:10:47  csoutheren
- * Proper fix that does not generate warnings
- *
- * Revision 1.27  2004/03/16 08:27:14  csoutheren
- * Removed illegal characters
- *
- * Revision 1.26  2003/12/14 10:01:02  rjongbloed
- * Resolved issue with name space conflict os static and virtual forms of GetDeviceNames() function.
- *
- * Revision 1.25  2003/11/19 09:29:45  csoutheren
- * Added super hack to avoid problems with multiple plugins in a single file
- *
- * Revision 1.24  2003/11/19 04:29:46  csoutheren
- * Changed to support video output plugins
- *
- * Revision 1.23  2003/08/12 22:04:18  dereksmithies
- * Add fix from Philippe Massicotte to fix segfaults on large images. Thanks!
- *
- * Revision 1.22  2003/06/14 03:28:50  rjongbloed
- * Further MSVC warning fix up
- *
- * Revision 1.21  2003/06/14 02:59:34  rjongbloed
- * Fixed MSVC warning.
- *
- * Revision 1.20  2003/06/11 22:17:54  dereksmithies
- * Add fake video device which display text, on --videoinput 5
- *
- * Revision 1.19  2003/06/10 03:45:11  dereksmithies
- * Change so box on left moves all the way down left side of image.
- *
- * Revision 1.18  2003/06/10 00:36:57  dereksmithies
- * Formatting changes. Remove rounding errors.
- *
- * Revision 1.17  2003/06/03 04:21:49  dereksmithies
- * Add PTRACE statement, and tidy up format of one if statement.
- *
- * Revision 1.16  2003/03/17 07:46:49  robertj
- * Migrated vflip member variable and functions into PVideoDevice class.
- *
- * Revision 1.15  2002/09/23 07:17:24  robertj
- * Changes to allow winsock2 to be included.
- *
- * Revision 1.14  2002/01/28 21:22:10  dereks
- * Fix the method for returning the device name.
- *
- * Revision 1.13  2002/01/17 03:47:27  dereks
- * Fix latest addition to the fake images gallery.
- *
- * Revision 1.12  2002/01/16 08:02:06  robertj
- * MSVC compatibilty changes
- *
- * Revision 1.11  2002/01/16 03:49:23  dereks
- * Add new test image.
- *
- * Revision 1.10  2002/01/04 04:11:45  dereks
- * Add video flip code from Walter Whitlock, which flips code at the grabber.
- *
- * Revision 1.9  2001/11/28 04:39:25  robertj
- * Fixed MSVC warning
- *
- * Revision 1.8  2001/11/28 00:07:32  dereks
- * Locking added to PVideoChannel, allowing reader/writer to be changed mid call
- * Enabled adjustment of the video frame rate
- * New fictitous image, a blank grey area
- *
- * Revision 1.7  2001/03/12 03:54:11  dereks
- * Make setting frame rate consistent with that for real video device.
- *
- * Revision 1.6  2001/03/09 00:12:40  robertj
- * Fixed incorrect number of channels returned on fake video.
- *
- * Revision 1.5  2001/03/08 22:56:25  robertj
- * Fixed compatibility with new meaning of channelNumber variable, cannot be negative.
- *
- * Revision 1.4  2001/03/03 05:06:31  robertj
- * Major upgrade of video conversion and grabbing classes.
- *
- * Revision 1.3  2001/03/02 06:52:33  yurik
- * Got rid of unknown for WinCE pragma
- *
- * Revision 1.2  2000/12/19 23:58:14  robertj
- * Fixed MSVC compatibility issues.
- *
- * Revision 1.1  2000/12/19 22:20:26  dereks
- * Add video channel classes to connect to the PwLib PVideoInputDevice class.
- * Add PFakeVideoInput class to generate test images for video.
- *
- *
+ * $Revision: 25134 $
+ * $Author: shorne $
+ * $Date: 2011-02-20 01:53:16 -0600 (Sun, 20 Feb 2011) $
  */
-
-
-#define P_FORCE_STATIC_PLUGIN
 
 #include <ptlib.h>
 
@@ -184,29 +34,35 @@
 
 #include <ptlib/vconvert.h>
 
-#if defined(_WIN32) && !defined(P_FORCE_STATIC_PLUGIN)
-#error "vfakeio.cxx must be compiled without precompiled headers"
-#endif
 #include <ptlib/pluginmgr.h>
 #include <ptlib/pprocess.h>
 #include <ptlib/videoio.h>
 #include <ptclib/delaychan.h>
+#include <ptclib/random.h>
 
-#ifdef __MACOSX__
-namespace PWLibStupidOSXHacks {
-  int loadFakeVideoStuff;
-};
-#endif
+
+// Device names for fake output
 
 enum {
   eMovingBlocks,
   eMovingLine,
   eBouncingBoxes,
-  eBlankImage,
+  eSolidColour,
   eOriginalMovingBlocks,
   eText,
   eNTSCTest,
   eNumTestPatterns
+};
+
+static const char * const FakeDeviceNames[] = {
+  "Fake/MovingBlocks",
+  "Fake/MovingLine",
+  "Fake/BouncingBoxes",
+  "Fake/SolidColour",
+  "Fake/OriginalMovingBlocks",
+  "Fake/Text",
+  "Fake/NTSCTest",
+  "fake" // Always last
 };
 
 /****
@@ -1442,6 +1298,7 @@ const PVideoFont::LetterData * PVideoFont::GetLetterData(char ascii)
   return NULL;
 }
 
+
 /** This class defines a video input device that
     generates fictitous image data.
 */
@@ -1458,7 +1315,7 @@ class PVideoInputDevice_FakeVideo : public PVideoInputDevice
       */
     BOOL Open(
       const PString & deviceName,   /// Device name to open
-      BOOL startImmediate = TRUE    /// Immediately start device
+      BOOL startImmediate = true    /// Immediately start device
     );
 
     /**Determine of the device is currently open.
@@ -1487,6 +1344,13 @@ class PVideoInputDevice_FakeVideo : public PVideoInputDevice
 
     virtual PStringList GetDeviceNames() const
       { return GetInputDeviceNames(); }
+
+    /**Retrieve a list of Device Capabilities
+      */
+    static bool GetDeviceCapabilities(
+      const PString & /*deviceName*/, ///< Name of device
+      Capabilities * /*caps*/         ///< List of supported capabilities
+    ) { return false; }
 
     /**Get the maximum frame size in bytes.
 
@@ -1532,7 +1396,7 @@ class PVideoInputDevice_FakeVideo : public PVideoInputDevice
     
     /**Generate a static image, containing a constant field of grey.
      */
-    void GrabBlankImage(BYTE *resFrame);
+    void GrabSolidColour(BYTE *resFrame);
 
     /**Generate the original form of the moving blocks test frame.
      */
@@ -1594,7 +1458,7 @@ class PVideoInputDevice_FakeVideo : public PVideoInputDevice
     /**Get the minimum & maximum size of a frame on the device.
 
        Default behaviour returns the value 1 to UINT_MAX for both and returns
-       FALSE.
+       false.
     */
     virtual BOOL GetFrameSizeLimits(
       unsigned & minWidth,   /// Variable to receive minimum width
@@ -1615,16 +1479,18 @@ class PVideoInputDevice_FakeVideo : public PVideoInputDevice
          
     void ClearMapping() { return ; }
 
-    /**Try all known video formats & see which ones are accepted by the video driver
-     */
-    virtual BOOL TestAllFormats()
-      { return TRUE; }
-   
+
  protected:
-   unsigned grabCount;
-   PINDEX   videoFrameSize;
-   PINDEX   scanLineWidth;
-   PINDEX   bytesPerPixel; // 2==YUV420P, 3=RGB24, 4=RGB32
+    enum {
+      eRGB32,
+      eRGB24,
+      eYUV420P,
+      eYUV422
+    } m_internalColourFormat;
+
+   unsigned       m_grabCount;
+   PINDEX         m_videoFrameSize;
+   PINDEX         m_scanLineWidth;
    PAdaptiveDelay m_Pacing;
 
    PString textLine[PVideoFont::MAX_L_HEIGHT];
@@ -1641,40 +1507,48 @@ PVideoInputDevice_FakeVideo::PVideoInputDevice_FakeVideo()
   SetColourFormat("RGB24");
   channelNumber = 3; // Blank screen
 
-  grabCount = 0;
+  m_grabCount = 0;
   SetFrameRate(10);
 }
 
 
 
-BOOL PVideoInputDevice_FakeVideo::Open(const PString & /*devName*/, BOOL /*startImmediate*/)
+BOOL PVideoInputDevice_FakeVideo::Open(const PString & devName, BOOL /*startImmediate*/)
 {
-  deviceName = "fake";
-  return TRUE;    
+  PINDEX i;
+  for (i = 0; i < PARRAYSIZE(FakeDeviceNames)-1; ++i) {
+    if (devName *= FakeDeviceNames[i]) {
+      PVideoDevice::SetChannel(i);
+      break;
+    }
+  }
+
+  deviceName = FakeDeviceNames[i];
+  return true;
 }
 
 
 BOOL PVideoInputDevice_FakeVideo::IsOpen() 
 {
-  return TRUE;
+  return true;
 }
 
 
 BOOL PVideoInputDevice_FakeVideo::Close()
 {
-  return TRUE;
+  return true;
 }
 
 
 BOOL PVideoInputDevice_FakeVideo::Start()
 {
-  return TRUE;
+  return true;
 }
 
 
 BOOL PVideoInputDevice_FakeVideo::Stop()
 {
-  return TRUE;
+  return true;
 }
 
 
@@ -1686,11 +1560,7 @@ BOOL PVideoInputDevice_FakeVideo::IsCapturing()
 
 PStringList PVideoInputDevice_FakeVideo::GetInputDeviceNames()
 {
-  PStringList list;
-
-  list.AppendString("fake");
-
-  return list;
+  return PStringList(PARRAYSIZE(FakeDeviceNames), FakeDeviceNames);
 }
 
 
@@ -1708,6 +1578,9 @@ int PVideoInputDevice_FakeVideo::GetNumChannels()
 
 BOOL PVideoInputDevice_FakeVideo::SetChannel(int newChannel)
 {
+  if (newChannel < 0 || deviceName != FakeDeviceNames[PARRAYSIZE(FakeDeviceNames)-1])
+    return true; // No change for -1 or explicit channel in device name
+
   return PVideoDevice::SetChannel(newChannel);
 }
 
@@ -1715,16 +1588,18 @@ BOOL PVideoInputDevice_FakeVideo::SetChannel(int newChannel)
 BOOL PVideoInputDevice_FakeVideo::SetColourFormat(const PString & newFormat)
 {
   if (newFormat *= "RGB32")
-    bytesPerPixel = 4;
+    m_internalColourFormat = eRGB32;
   else if (newFormat *= "RGB24")
-    bytesPerPixel = 3;
+    m_internalColourFormat = eRGB24;
   else if (newFormat *= "YUV420P")
-    bytesPerPixel = 2;
+    m_internalColourFormat = eYUV420P;
+  else if ((newFormat *= "YUV422") || (newFormat *= "YUY2"))
+    m_internalColourFormat = eYUV422;
   else
-    return FALSE;
+    return false;
 
   if (!PVideoDevice::SetColourFormat(newFormat))
-    return FALSE;
+    return false;
 
   return SetFrameSize(frameWidth, frameHeight);
 }
@@ -1748,27 +1623,27 @@ BOOL PVideoInputDevice_FakeVideo::GetFrameSizeLimits(unsigned & minWidth,
 {
   minWidth  = 16;
   minHeight = 12;
-  maxWidth  = 1024;
-  maxHeight =  768;
+  maxWidth  = PVideoFrameInfo::MaxWidth;
+  maxHeight = PVideoFrameInfo::MaxHeight;
 
-  return TRUE;
+  return true;
 }
 
 
 BOOL PVideoInputDevice_FakeVideo::SetFrameSize(unsigned width, unsigned height)
 {
   if (!PVideoDevice::SetFrameSize(width, height))
-    return FALSE;
+    return false;
 
-  videoFrameSize = CalculateFrameBytes(frameWidth, frameHeight, colourFormat);
-  scanLineWidth = videoFrameSize/frameHeight;
-  return videoFrameSize > 0;
+  m_videoFrameSize = CalculateFrameBytes(frameWidth, frameHeight, colourFormat);
+  m_scanLineWidth = (frameHeight == 0) ? 0 : m_videoFrameSize/frameHeight;
+  return m_videoFrameSize > 0;
 }
 
 
 PINDEX PVideoInputDevice_FakeVideo::GetMaxFrameBytes()
 {
-  return GetMaxFrameBytesConverted(videoFrameSize);
+  return GetMaxFrameBytesConverted(m_videoFrameSize);
 }
 
 
@@ -1781,7 +1656,7 @@ BOOL PVideoInputDevice_FakeVideo::GetFrameData(BYTE * buffer, PINDEX * bytesRetu
  
 BOOL PVideoInputDevice_FakeVideo::GetFrameDataNoDelay(BYTE *destFrame, PINDEX * bytesReturned)
 {
-  grabCount++;
+  m_grabCount++;
 
   // Make sure are NUM_PATTERNS cases here.
   switch(channelNumber){       
@@ -1794,8 +1669,8 @@ BOOL PVideoInputDevice_FakeVideo::GetFrameDataNoDelay(BYTE *destFrame, PINDEX * 
      case eBouncingBoxes :
        GrabBouncingBoxes(destFrame);
        break;
-     case eBlankImage :
-       GrabBlankImage(destFrame);
+     case eSolidColour :
+       GrabSolidColour(destFrame);
        break;
      case eOriginalMovingBlocks :
        GrabOriginalMovingBlocksFrame(destFrame);
@@ -1807,83 +1682,28 @@ BOOL PVideoInputDevice_FakeVideo::GetFrameDataNoDelay(BYTE *destFrame, PINDEX * 
        GrabNTSCTestFrame(destFrame);
        break;
      default :
-       return FALSE;
+       return false;
   }
 
   if (NULL != converter) {
     if (!converter->Convert(destFrame, destFrame, bytesReturned))
-      return FALSE;
+      return false;
   }
 
   if (bytesReturned != NULL)
-    *bytesReturned = videoFrameSize;
+    *bytesReturned = m_videoFrameSize;
 
-  return TRUE;
+  return true;
 }
 
-
-void PVideoInputDevice_FakeVideo::FillRect(BYTE * frame,
-                   int xPos, int initialYPos,
-                   int rectWidth, int rectHeight,
-                   int r, int g,  int b)
-{
-// PTRACE(0,"x,y is"<<xPos<<" "<<yPos<<" and size is "<<rectWidth<<" "<<rectHeight);
-
-  //This routine fills a region of the video image with data. It is used as the central
-  //point because one only has to add other image formats here.
-
-  if (bytesPerPixel > 2) {
-    for (int y = 0; y < rectHeight; y++) {
-      BYTE * ptr = frame + (initialYPos+y)*scanLineWidth + xPos*bytesPerPixel;
-      for (int x = 0; x < rectWidth; x++) {
-        *ptr++ = (BYTE)r;
-        *ptr++ = (BYTE)g;
-        *ptr++ = (BYTE)b;
-        if (bytesPerPixel > 3)
-          *ptr++ = 0;
-      }
-    }
-    return;
-  }
-
-  int yPos = initialYPos;
-
-  int offset       = ( yPos * frameWidth ) + xPos;
-  int colourOffset = ( (yPos * frameWidth) >> 2) + (xPos >> 1);
-
-  int Y  =  ( 257 * r + 504 * g +  98 * b)/1000 + 16;
-  int Cb =  (-148 * r - 291 * g + 439 * b)/1000 + 128;
-  int Cr =  ( 439 * r - 368 * g -  71 * b)/1000 + 128;
-
-  unsigned char * Yptr  = frame + offset;
-  unsigned char * CbPtr = frame + (frameWidth * frameHeight) + colourOffset;
-  unsigned char * CrPtr = frame + (frameWidth * frameHeight) + (frameWidth * frameHeight/4)  + colourOffset;
-
-  int rr ;
-  int halfRectWidth = rectWidth >> 1;
-  int halfWidth     = frameWidth >> 1;
-  
-  for (rr = 0; rr < rectHeight;rr+=2) {
-    memset(Yptr, Y, rectWidth);
-    Yptr += frameWidth;
-    memset(Yptr, Y, rectWidth);
-    Yptr += frameWidth;
-
-    memset(CbPtr, Cb, halfRectWidth);
-    memset(CrPtr, Cr, halfRectWidth);
-
-    CbPtr += halfWidth;
-    CrPtr += halfWidth;
-  }
-}
 
 void PVideoInputDevice_FakeVideo::GrabBouncingBoxes(BYTE *resFrame)
 {
   FillRect(resFrame,
-     0, 0, frameWidth, frameHeight, //Fill the whole frame with the colour.
-     200,200,200); //a light grey colour.
+           0, 0, frameWidth, frameHeight, //Fill the whole frame with the colour.
+           200,200,200); //a light grey colour.
 
-  double t= (grabCount%50) -25 ;
+  double t= ((int)(m_grabCount%50)) -25 ;
   double h=  t*t*frameHeight*0.85/625;
   int    yBox = (int)h;
   yBox= (yBox>>1) * 2;  //yBox is even.
@@ -1894,10 +1714,10 @@ void PVideoInputDevice_FakeVideo::GrabBouncingBoxes(BYTE *resFrame)
   boxWidth = (boxWidth >>1) * 2;
 
   FillRect(resFrame,
-     frameWidth >> 2, yBox,  boxWidth, boxHeight,
+           frameWidth >> 2, yBox,  boxWidth, boxHeight,
            255, 0, 0); // Red Box.
 
-  t= (grabCount%40) -20 ;
+  t= ((int)(m_grabCount%40)) -20 ;
   h= t*t*frameHeight*0.85/400 ;
   yBox = (int)h;
   yBox= (yBox>>1) * 2;  //yBox is even.
@@ -1906,7 +1726,7 @@ void PVideoInputDevice_FakeVideo::GrabBouncingBoxes(BYTE *resFrame)
            frameWidth>>1, yBox, boxWidth, boxHeight,
            0, 255, 0); // Green
 
-  t= (grabCount%100) -50 ;
+  t= ((int)(m_grabCount%100)) -50 ;
   h= t*t*frameHeight*0.85/2500;      
   yBox = (int)h;
   yBox= (yBox>>1) * 2;  //yBox is even.
@@ -2054,8 +1874,8 @@ void PVideoInputDevice_FakeVideo::GrabMovingBlocksTestFrame(BYTE * resFrame)
     heights[hi] = hi * offset;
   heights[8] = frameHeight;
 
-  grabCount++;
-  colourIndex = (unsigned int)time(NULL);//time in seconds since last epoch.
+  m_grabCount++;
+  colourIndex = PRandom::Number();
   // Provides a difference if run on two ohphone sessions.
   colNo = (colourIndex / 10) % 7;   //Every 10 seconds, coloured background blocks move.
 
@@ -2108,17 +1928,19 @@ void PVideoInputDevice_FakeVideo::GrabMovingLineTestFrame(BYTE *resFrame)
   FillRect(resFrame, 0, hi, frameWidth, 2, 0, 0, 0);
 }
 
-void PVideoInputDevice_FakeVideo::GrabBlankImage(BYTE *resFrame)
+
+void PVideoInputDevice_FakeVideo::GrabSolidColour(BYTE *resFrame)
 {
   // Change colour every second, cycle is:
   // black, red, green, yellow, blue, magenta, cyan, white
-  int mask = grabCount/frameRate;
+  int mask = m_grabCount/frameRate;
   FillRect(resFrame,
            0, 0, frameWidth, frameHeight, //Fill the whole frame with the colour.
            (mask&1) ? 255 : 0, // red
            (mask&2) ? 255 : 0, // green
            (mask&4) ? 255 : 0);//blue
 }
+
 
 void PVideoInputDevice_FakeVideo::GrabOriginalMovingBlocksFrame(BYTE *frame)
 {
@@ -2158,7 +1980,7 @@ void PVideoInputDevice_FakeVideo::GrabTextVideoFrame(BYTE *resFrame)
   PINDEX i, j;
   static PTime startTime;
 
-  grabCount++;
+  m_grabCount++;
   FillRect(resFrame,
            0, 0, frameWidth, frameHeight, //Fill the whole frame with the colour.
            200, 200, 200); //a light grey colour.
@@ -2202,6 +2024,79 @@ void PVideoInputDevice_FakeVideo::GrabTextVideoFrame(BYTE *resFrame)
     }
 }
 
+
+static void FillRGBRect(BYTE * frame,
+                        int x, int y,
+                        int width, int height,
+                        int r, int g, int b,
+                        PINDEX scanLineWidth,
+                        PINDEX bytesPerPixel)
+{
+  for (int dy = 0; dy < height; dy++) {
+    BYTE * ptr = frame + (y+dy)*scanLineWidth + x*bytesPerPixel;
+    for (int dx = 0; dx < width; dx++) {
+      ptr[0] = (BYTE)r;
+      ptr[1] = (BYTE)g;
+      ptr[2] = (BYTE)b;
+      ptr += bytesPerPixel;
+    }
+  }
+}
+
+
+
+static void FillYUV422Rect(BYTE * frame,
+                           int x, int y,
+                           int width, int height,
+                           int r, int g, int b,
+                           PINDEX scanLineWidth)
+{
+  unsigned Y, Cb, Cr;
+  PColourConverter::RGBtoYUV(r, g, b, Y, Cb, Cr);
+
+  x &= 0xfffffffe; // Make sure is even
+
+  int halfRectWidth = width >> 1;
+  for (int dy = 0; dy < height; dy++) {
+    BYTE * ptr = frame + (y+dy)*scanLineWidth + x*2;
+    for (int dx = 0; dx < halfRectWidth; dx++) {
+      *ptr++ = (BYTE)Y;
+      *ptr++ = (BYTE)Cb;
+      *ptr++ = (BYTE)Y;
+      *ptr++ = (BYTE)Cr;
+    }
+  }
+}
+
+
+void PVideoInputDevice_FakeVideo::FillRect(BYTE * frame,
+                                           int x, int y,
+                                           int width, int height,
+                                           int r, int g,  int b)
+{
+  //This routine fills a region of the video image with data. It is used as the central
+  //point because one only has to add other image formats here.
+
+  switch (m_internalColourFormat) {
+    case eRGB32 :
+      FillRGBRect(frame, x, y, width, height, r, g, b, m_scanLineWidth, 4);
+      break;
+
+    case eRGB24 :
+      FillRGBRect(frame, x, y, width, height, r, g, b, m_scanLineWidth, 3);
+      break;
+
+    case eYUV420P :
+      PColourConverter::FillYUV420P(x, y, width, height, frameWidth, frameHeight, frame, r, g, b);
+      break;
+
+    case eYUV422 :
+      FillYUV422Rect(frame, x, y, width, height, r, g, b, m_scanLineWidth);
+      break;
+  }
+}
+
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -2228,7 +2123,7 @@ class PVideoOutputDevice_NULLOutput : public PVideoOutputDevice
       */
     virtual BOOL Open(
       const PString & deviceName,   /// Device name to open
-      BOOL startImmediate = TRUE    /// Immediately start device
+      BOOL startImmediate = true    /// Immediately start device
     );
 
     /**Start the video device I/O.
@@ -2262,12 +2157,17 @@ class PVideoOutputDevice_NULLOutput : public PVideoOutputDevice
       unsigned width,
       unsigned height,
       const BYTE * data,
-      BOOL endFrame = TRUE
+      BOOL endFrame = true
     );
 
     /**Indicate frame may be displayed.
       */
     virtual BOOL EndFrame();
+
+	/**Decide whether to disable Decode
+	  */
+	virtual BOOL DisableDecode();
+
 };
 
 PCREATE_VIDOUTPUT_PLUGIN(NULLOutput);
@@ -2284,35 +2184,33 @@ PVideoOutputDevice_NULLOutput::PVideoOutputDevice_NULLOutput()
 BOOL PVideoOutputDevice_NULLOutput::Open(const PString & /*deviceName*/,
                                   BOOL /*startImmediate*/)
 {
-  return TRUE;
+  return true;
 }
 
 BOOL PVideoOutputDevice_NULLOutput::Close()
 {
-  return TRUE;
+  return true;
 }
 
 BOOL PVideoOutputDevice_NULLOutput::Start()
 {
-  return TRUE;
+  return true;
 }
 
 BOOL PVideoOutputDevice_NULLOutput::Stop()
 {
-  return TRUE;
+  return true;
 }
 
 BOOL PVideoOutputDevice_NULLOutput::IsOpen()
 {
-  return TRUE;
+  return true;
 }
 
 
 PStringList PVideoOutputDevice_NULLOutput::GetOutputDeviceNames()
 {
-  PStringList list;
-  list += "NULL";
-  return list;
+  return PString("NULL");
 }
 
 
@@ -2327,14 +2225,21 @@ BOOL PVideoOutputDevice_NULLOutput::SetFrameData(unsigned /*x*/, unsigned /*y*/,
                                           const BYTE * /*data*/,
                                           BOOL /*endFrame*/)
 {
-  return TRUE;
+  return true;
 }
 
 
 BOOL PVideoOutputDevice_NULLOutput::EndFrame()
 {
-  return TRUE;
+  return true;
 }
+
+
+BOOL PVideoOutputDevice_NULLOutput::DisableDecode()
+{
+  return true; 
+}
+
 
 #endif // P_VIDEO
 

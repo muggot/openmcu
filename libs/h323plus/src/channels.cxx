@@ -864,6 +864,11 @@ void H323Channel::SendMiscCommand(unsigned command)
   connection.SendLogicalChannelMiscCommand(*this, command); 
 }
 
+void H323Channel::SendMiscIndication(unsigned command)
+{ 
+  connection.SendLogicalChannelMiscIndication(*this, command); 
+}
+
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -1295,7 +1300,7 @@ class CodecReadAnalyser
 #endif
 
 
-  void H323_RTPChannel::Transmit()
+void H323_RTPChannel::Transmit()
 {
   if (terminating) {
     PTRACE(3, "H323RTP\tTransmit thread terminated on start up");
@@ -1333,11 +1338,10 @@ class CodecReadAnalyser
   unsigned length;
   unsigned frameOffset = 0;
   unsigned frameCount = 0;
-  DWORD rtpTimestamp = rand();
-  DWORD nextTimestamp = 0;
+  DWORD rtpFirstTimestamp = rand();
+  DWORD rtpTimestamp = rtpFirstTimestamp;
+  PTimeInterval firstFrameTick = PTimer::Tick();
   frame.SetPayloadSize(0);
-  PTimeInterval now = PTimer::Tick();
-  PTimeInterval lastFrameTick = now;
 
 #if PTRACING
   DWORD lastDisplayedTimestamp = 0;
@@ -1351,28 +1355,8 @@ class CodecReadAnalyser
      That is for GSM codec say with a single frame, this function will take
      20 milliseconds to complete.
    */
-  while (codec->Read(frame.GetPayloadPtr()+frameOffset, length, frame)) {
-    // Calculate the timestamp and real time to take in processing
-    if(isAudio)
-    {
-     rtpTimestamp += codec->GetFrameRate();
-    }
-    else if(frame.GetMarker())
-    {
-     now = PTimer::Tick();
-     nextTimestamp = (now - lastFrameTick).GetInterval() * 90;
-    }
-
-#if PTRACING
-    if (rtpTimestamp - lastDisplayedTimestamp > RTP_TRACE_DISPLAY_RATE) {
-      PTRACE(9, "H323RTP\tTransmitter sent timestamp " << rtpTimestamp);
-      lastDisplayedTimestamp = rtpTimestamp;
-    }
-
-    if (codecReadAnalysis != NULL)
-      codecReadAnalysis->AddSample(rtpTimestamp);
-#endif
-
+  while (codec->Read(frame.GetPayloadPtr()+frameOffset, length, frame))
+  {
     if (paused)
       length = 0; // Act as though silent/no video
 
@@ -1451,8 +1435,8 @@ class CodecReadAnalyser
 
       if (!isAudio)
 //      { 
-//       if(!frame.GetMarker()) PThread::Sleep(2);
-       /*else*/ rtpTimestamp = nextTimestamp;
+       if(!frame.GetMarker()) PThread::Sleep(1);
+       /*else*/ //rtpTimestamp = nextTimestamp;
 //      }
 
       // Reset flag for in talk burst
@@ -1467,6 +1451,30 @@ class CodecReadAnalyser
 
     if (terminating)
       break;
+
+    // Calculate the timestamp and real time to take in processing
+    if(isAudio)
+    {
+      rtpTimestamp += codec->GetFrameRate();
+    }
+    else
+    { // video:
+      if(frame.GetMarker())
+      {
+        rtpTimestamp = rtpFirstTimestamp + ((PTimer::Tick() - firstFrameTick).GetInterval() * 90);
+      }
+    }
+
+#if PTRACING
+    if (rtpTimestamp - lastDisplayedTimestamp > RTP_TRACE_DISPLAY_RATE) {
+      PTRACE(9, "H323RTP\tTransmitter sent timestamp " << rtpTimestamp);
+      lastDisplayedTimestamp = rtpTimestamp;
+    }
+
+    if (codecReadAnalysis != NULL)
+      codecReadAnalysis->AddSample(rtpTimestamp);
+#endif
+
   }
 
 

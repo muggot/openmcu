@@ -427,6 +427,11 @@ bool PDevicePluginServiceDescriptor::ValidateDeviceName(const PString & deviceNa
   return false;
 }
 
+bool PDevicePluginServiceDescriptor::GetDeviceCapabilities(const PString & /*deviceName*/,
+                                                           void * /*capabilities*/) const
+{
+  return false;
+}
 
 PStringList PPluginManager::GetPluginsDeviceNames(const PString & serviceName,
                                                   const PString & serviceType,
@@ -476,6 +481,35 @@ PStringList PPluginManager::GetPluginsDeviceNames(const PString & serviceName,
   }
 
   return allDevices;
+}
+
+
+BOOL PPluginManager::GetPluginsDeviceCapabilities(const PString & serviceType,
+                                                      const PString & serviceName,
+                                                      const PString & deviceName,
+                                                      void * capabilities) const
+{
+  if (serviceType.IsEmpty() || deviceName.IsEmpty()) 
+    return false;
+
+  if (serviceName.IsEmpty() || serviceName == "*") {
+    PWaitAndSignal mutex(serviceListMutex);
+    for (PINDEX i = 0; i < serviceList.GetSize(); i++) {
+      const PPluginService & service = serviceList[i];
+      if (service.serviceType *= serviceType) { 
+        PDevicePluginServiceDescriptor * desc = (PDevicePluginServiceDescriptor *)service.descriptor;
+        if (desc != NULL && desc->ValidateDeviceName(deviceName, 0))
+          return desc->GetDeviceCapabilities(deviceName,capabilities);
+      }
+    }
+  }
+  else {
+    PDevicePluginServiceDescriptor * desc = (PDevicePluginServiceDescriptor *)GetServiceDescriptor(serviceName, serviceType);
+    if (desc != NULL && desc->ValidateDeviceName(deviceName, 0))
+      return desc->GetDeviceCapabilities(deviceName,capabilities);
+  }
+
+  return false;
 }
 
 

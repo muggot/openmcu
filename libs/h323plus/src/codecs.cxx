@@ -779,6 +779,12 @@ void H323VideoCodec::SendMiscCommand(unsigned command)
     logicalChannel->SendMiscCommand(command);
 }
 
+void H323VideoCodec::SendMiscIndication(unsigned command)
+{
+  if (logicalChannel != NULL)
+    logicalChannel->SendMiscIndication(command);
+}
+
 
 #endif // NO_H323_VIDEO
 
@@ -887,11 +893,13 @@ void H323AudioCodec::SetSilenceDetectionMode(SilenceDetectionMode mode,
 }
 
 
-BOOL H323AudioCodec::DetectSilence()
+BOOL H323AudioCodec::DetectSilence(unsigned channels, unsigned sampleRate)
 {
   // Can never have silence if NoSilenceDetection
   if (silenceDetectMode == NoSilenceDetection)
-    return FALSE;
+	  return FALSE;
+
+  PTRACE(6, "Codec\tSilence detection enabled");
 
   // Can never have average signal level that high, this indicates that the
   // hardware cannot do silence detection.
@@ -932,6 +940,7 @@ BOOL H323AudioCodec::DetectSilence()
     if (level > 1) {
       // Bootstrap condition, use first frame level as silence level
       levelThreshold = level/2;
+      if(levelThreshold>64) levelThreshold=64;
       PTRACE(4, "Codec\tSilence detection threshold initialised to: " << levelThreshold);
     }
     return TRUE; // inTalkBurst always FALSE here, so return silent
@@ -950,12 +959,14 @@ BOOL H323AudioCodec::DetectSilence()
   }
 
   // See if we have had enough frames to look at proportions of silence/signal
-  if ((signalFramesReceived + silenceFramesReceived) > adaptiveThresholdFrames) {
+  
+  unsigned atff = (unsigned)(((unsigned long)adaptiveThresholdFrames) * sampleRate * channels / 8000);
+  if ((signalFramesReceived + silenceFramesReceived) > atff) {
 
     /* Now we have had a period of time to look at some average values we can
        make some adjustments to the threshold. There are four cases:
      */
-    if (signalFramesReceived >= adaptiveThresholdFrames) {
+    if (signalFramesReceived >= atff) {
       /* If every frame was noisy, move threshold up. Don't want to move too
          fast so only go a quarter of the way to minimum signal value over the
          period. This avoids oscillations, and time will continue to make the
@@ -964,10 +975,11 @@ BOOL H323AudioCodec::DetectSilence()
       int delta = (signalMinimum - levelThreshold)/4;
       if (delta != 0) {
         levelThreshold += delta;
-        PTRACE(4, "Codec\tSilence detection threshold increased to: " << levelThreshold);
+         if(levelThreshold>64) levelThreshold=64;
+       PTRACE(4, "Codec\tSilence detection threshold increased to: " << levelThreshold);
       }
     }
-    else if (silenceFramesReceived >= adaptiveThresholdFrames) {
+    else if (silenceFramesReceived >= atff) {
       /* If every frame was silent, move threshold down. Again do not want to
          move too quickly, but we do want it to move faster down than up, so
          move to halfway to maximum value of the quiet period. As a rule the
@@ -1022,6 +1034,64 @@ H323FramedAudioCodec::H323FramedAudioCodec(const OpalMediaFormat & fmt, Directio
     sampleBuffer(samplesPerFrame*codecChannels)
 {
   bytesPerFrame = mediaFormat.GetFrameSize();
+  sampleRate = 8000;
+  currVolCoef = 1.0;
+  lastReadTime = time(0);
+  readPerSecond = 0;
+  agc = 0;
+}
+
+
+void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef)
+{
+  if(!level) return;
+
+  float max_vol = 17000.0;
+  float inc_vol = 0.05*8000.0/sampleRate;
+
+  unsigned samplesCount = samplesPerFrame*codecChannels;
+
+  const short * end = pcm + samplesCount;
+  short *buf = (short*)pcm;
+  int c_max_vol = 0, c_avg_vol = 0;
+  while (pcm != end) 
+  {
+    if (*pcm < 0) 
+    { if(-*pcm > c_max_vol) c_max_vol = -*pcm; c_avg_vol -= *pcm++; }
+    else 
+    { if( *pcm > c_max_vol) c_max_vol =  *pcm; c_avg_vol += *pcm++; }
+  }
+  c_avg_vol /= samplesPerFrame;
+
+  float & cvc = *currVolCoef;
+  float vc0= cvc;
+  
+  if(c_avg_vol > level)
+  {
+    if(c_max_vol*cvc >= 32768) // есть перегрузка
+      cvc = 32767.0 / c_max_vol;
+    else
+    if(c_max_vol*cvc < max_vol) // нужно увеличить усиление
+      cvc += inc_vol;
+  }
+  else // не должен срабатывать, но временно грубая защита от перегрузки:
+  {
+    if(c_max_vol*cvc >= 32768) // есть перегрузка
+      cvc = 32767.0 / c_max_vol;
+  }
+  PTRACE(6,"AGC\tavg_vol=" << c_avg_vol << " max_vol=" << c_max_vol << " vol_coef=" << vc0 << "->" << cvc << " inc_vol=" << inc_vol);
+
+  float delta0=(cvc-vc0)/samplesCount;
+
+  for(int i=0; i<samplesCount; i++) 
+  {
+    int v = buf[i];
+    v*=vc0;
+    if(v > 32767) buf[i]=32767;
+    else if(v < -32768) buf[i]=-32768;
+    else buf[i] = (short)v;
+    vc0+=delta0;
+  }
 }
 
 
@@ -1064,13 +1134,21 @@ BOOL H323FramedAudioCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
     return FALSE;
   }
 
-  if (DetectSilence()) {
+  sampleRate = GetMediaFormat().GetTimeUnits() * 1000;
+  PTRACE(6,"SR=" << sampleRate);
+
+  if (DetectSilence(sampleRate, codecChannels)) {
     length = 0;
     return TRUE;
   }
 
   // Default length is the frame size
   length = bytesPerFrame;
+//  PTRACE(6,"Read\tlength " << length);
+
+  if(agc)
+  AutoGainControl((const short*)sampleBuffer.GetPointer(), samplesPerFrame, codecChannels, sampleRate, agc, &currVolCoef);
+
   return EncodeFrame(buffer, length);
 }
 
@@ -1091,6 +1169,7 @@ BOOL H323FramedAudioCodec::Write(const BYTE * buffer,
   written = 0;
 
   unsigned bytesDecoded = samplesPerFrame*2*codecChannels;
+  PTRACE(6,"H323FramedAudioCodec\tWrite: codecChannels " << codecChannels << ", samplesPerFrame " << samplesPerFrame << ", bytesDecoded " << bytesDecoded);
 
   if (length != 0) {
     if (length > bytesPerFrame)
@@ -1169,6 +1248,11 @@ void H323FramedAudioCodec::AttachAEC(PAec * _aec)
   aec = _aec;
 }
 #endif
+
+void H323FramedAudioCodec::EnableAGC(int _agc)
+{
+  agc = _agc;
+}
 
 /////////////////////////////////////////////////////////////////////////////
 

@@ -700,6 +700,7 @@
 #undef P_VIDFILE
 #undef P_ODBC
 #undef P_SHMVIDEO
+#undef P_FFVDEV
 
 /////////////////////////////////////////////////
 //
@@ -712,6 +713,18 @@
 #undef P_PTHREADS_XPG6      
 #undef P_HAS_SEMAPHORES_XPG6
 #undef P_EXCEPTIONS
+
+
+/////////////////////////////////////////////////
+//
+// APP Share Input 
+//
+
+#if P_VIDEO
+  #ifndef _WIN32_WCE
+    #undef P_APPSHARE
+  #endif
+#endif
 
 /////////////////////////////////////////////////
 //

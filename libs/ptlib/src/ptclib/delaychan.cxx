@@ -83,7 +83,7 @@ BOOL PAdaptiveDelay::Delay(int frameTime)
   if (firstTime) {
     firstTime = FALSE;
     targetTime = PTime();   // targetTime is the time we want to delay to
-    return TRUE;
+    return FALSE;
   }
 
   // Set the new target

@@ -402,6 +402,7 @@ class H323Channel : public PObject
        Typically, used to indicate a problem in the received video stream.
     */
     void SendMiscCommand(unsigned command);
+    void SendMiscIndication(unsigned command);
   //@}
 
   /**@name Member variable access */
@@ -820,13 +821,13 @@ class H323_RTPChannel : public H323_RealTimeChannel
 	  const H245_ArrayOf_GenericInformation & alternate  ///< Alternate RTP ports
 	);
 
-    /** Read a DataFrame 
+    /** Read a DataFrame
       */
     virtual BOOL ReadFrame(DWORD & rtpTimestamp,     ///< TimeStamp
                                RTP_DataFrame & frame     ///< RTP data frame
         );
 
-    /** Write a DataFrame 
+    /** Write a DataFrame
       */
     virtual BOOL WriteFrame(RTP_DataFrame & frame     ///< RTP data frame
         );

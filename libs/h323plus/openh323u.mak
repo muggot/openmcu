@@ -189,10 +189,10 @@
 # Added auto inclusion of ptlib make rules
 #
 
-PWLIBDIR	= /opt/git/test2/libs/ptlib
-OPENH323DIR	= /opt/git/test2/libs/h323plus
+PWLIBDIR	= /usr/local/share/ptlib/
+OPENH323DIR	= /root/openmcu/h323plus
 STDCCFLAGS	+= 
-LDFLAGS		+=  -L/opt/lib -L/opt/openmcu-ru/lib -L/usr/lib -L/usr/local/lib
+LDFLAGS		+= 
 LDLIBS		+= 
 ENDLDLIBS	:=  $(ENDLDLIBS)
 

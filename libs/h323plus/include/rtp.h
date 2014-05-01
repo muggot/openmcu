@@ -630,7 +630,6 @@ class RTP_Session : public PObject
       RTP_DataFrame & frame   ///<  Frame to write to the RTP session
     ) = 0;
 
-
     /**Write a control frame from the RTP channel.
       */
     virtual BOOL WriteControl(
@@ -836,6 +835,10 @@ class RTP_Session : public PObject
       */
     DWORD GetPacketsLost() const { return packetsLost; }
 
+    /**Get total number transmitted packets lost in session (via RTCP).
+      */
+    DWORD GetPacketsLostTx() const { return packetsLostTx; }
+
     /**Get total number of packets received out of order in session.
       */
     DWORD GetPacketsOutOfOrder() const { return packetsOutOfOrder; }
@@ -958,6 +961,7 @@ class RTP_Session : public PObject
     DWORD octetsReceived;
     DWORD rtpcReceived;
     DWORD packetsLost;
+    DWORD packetsLostTx;
     DWORD packetsOutOfOrder;
     DWORD averageSendTime;
     DWORD maximumSendTime;

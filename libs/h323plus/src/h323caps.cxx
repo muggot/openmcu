@@ -619,6 +619,10 @@ BOOL H323Capability::IsUsable(const H323Connection &) const
   return TRUE;
 }
 
+void H323Capability::SetMediaFormatOptionInteger(const PString &name, int val)
+{
+ mediaFormat.SetOptionInteger(name, val);
+}
 
 const OpalMediaFormat & H323Capability::GetMediaFormat() const
 {

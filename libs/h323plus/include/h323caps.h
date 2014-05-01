@@ -566,6 +566,7 @@ class H323Capability : public PObject
       CapabilityDirection dir   ///< New direction code
     ) { capabilityDirection = dir; }
 
+    void SetMediaFormatOptionInteger(const PString & Name, int Val);
     /// Get unique capability number.
     virtual unsigned GetCapabilityNumber() const { return assignedCapabilityNumber; }
 
@@ -727,6 +728,12 @@ class H323GenericCapabilityInfo
     BOOL IsMatch(
       const H245_GenericCapability & param  ///< Non standard field in PDU received
     ) const;
+    
+    void SetMaxBitRate(unsigned bitrate)
+    {
+     maxBitRate = bitrate;
+    }
+    
   protected:
     virtual BOOL OnSendingGenericPDU(
       H245_GenericCapability & pdu,

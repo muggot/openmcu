@@ -196,6 +196,7 @@
 // Various item support
 //
 
+//#define H323_AEC 1
 #undef H323_AEC
 #undef H323_T38
 #undef H323_T120

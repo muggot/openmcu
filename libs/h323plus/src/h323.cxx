@@ -1620,6 +1620,12 @@ BOOL H323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
         return FALSE;
     }
 
+    if(endpoint.IsSingleLine()) if(endpoint.GetAllConnections().GetSize() > 1){
+      ClearCall(EndedByLocalBusy);
+      PTRACE(1,"H225\tLocal endpoint is BUSY (uncheck \"Single Line\" to allow multiple conversations)");
+      return false;
+    }
+
 if (!IsNonCallConnection) {
 
     /** Here is a spot where we should wait in case of Call Intrusion
@@ -4487,14 +4493,18 @@ BOOL H323Connection::OnStartLogicalChannel(H323Channel & channel)
 #ifndef NO_H323_AUDIO_CODECS
 BOOL H323Connection::OpenAudioChannel(BOOL isEncoding, unsigned bufferSize, H323AudioCodec & codec)
 {
-#ifdef H323_AEC
-  if (endpoint.AECEnabled() && (aec == NULL)) {
-    PTRACE(2, "H323\tCreating AEC instance.");
-	int rate = codec.GetMediaFormat().GetTimeUnits() * 1000;
-	aec = new PAec(rate);
-  }
-   codec.AttachAEC(aec);
-#endif
+# ifdef H323_AEC
+    if (endpoint.AECEnabled() && (aec == NULL))
+    {
+      PTRACE(2, "H323\tCreating AEC instance.");
+      int rate = codec.GetMediaFormat().GetTimeUnits() * 1000;
+      aec = new PAec(endpoint.AECAlgo());
+//      aec = new PAec(128,0x3f);
+//      aec = new PAec(rate,30);
+    }
+    codec.AttachAEC(aec);
+# endif
+  if(isEncoding) codec.EnableAGC(endpoint.agc);
 
   return endpoint.OpenAudioChannel(*this, isEncoding, bufferSize, codec);
 }
@@ -5507,6 +5517,16 @@ void H323Connection::SendLogicalChannelMiscCommand(H323Channel & channel,
   }
 }
 
+void H323Connection::SendLogicalChannelMiscIndication(H323Channel & channel,
+                                                   unsigned commandIdentifier)
+{
+  H323ControlPDU pdu;
+  H245_IndicationMessage & indication = pdu.Build(H245_IndicationMessage::e_miscellaneousIndication);
+  H245_MiscellaneousIndication & miscIndication = indication;
+  miscIndication.m_logicalChannelNumber = (unsigned)channel.GetNumber();
+  miscIndication.m_type.SetTag(commandIdentifier);
+  WriteControlPDU(pdu);
+}
 
 void H323Connection::SetEnforcedDurationLimit(unsigned seconds)
 {
