@@ -733,7 +733,7 @@ function format_mmbr_button(m,st)
   var kdb_width=39, w=PANEL_ICON_WIDTH, h=PANEL_ICON_HEIGHT, sp=5;
   var px1=2; var px2=px1+w+sp; var px3=px2+2+sp; var pxn=px3+kdb_width;
   var px_1=panel_width-SCROLLER_WIDTH-w; var px_2=px_1-w-sp; var px_3=px_2-w-sp; var px_4=px_3-w-sp;
-  var name_width=px_4-pxn-kdb_width;
+  var name_width=px_4-pxn;
   if(name_width<10) name_width=10;
 
   var dpre="<div class='mbrpos1' style='left:", dpre2="<div class='mbrpos11' style='left:";
