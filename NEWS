@@ -1,5 +1,22 @@
-OpenMCU-ru 3.47 (undetermined)
+OpenMCU-ru 3.49 (development)
   work in progress: http://openmcu.ru/wiki/en/history
+
+OpenMCU-ru 3.48 (2014-05-02)
+  * HTTPS (when using ptlib 2.6/2.10);
+  * Status page:
+    * sort;
+    * more detailed info about terminals;
+    * copying data as BBCode, HTML;
+  * page "Records":
+    * information about free space;
+  * redesigned menu, dial from users panel;
+  * redesigned html, css;
+  * favicon;
+  * localization added: Ukrainian, Japanese;
+  * auto start and stop recording;
+  * lost packets statistics;
+  * sound control (gain, auto adjust);
+  * using external libopus;
 
 OpenMCU-ru 3.46 (2013-12-17)
   * VP8, OPUS plugins;

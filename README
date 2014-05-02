@@ -31,7 +31,7 @@ based on H.323 and SIP protocols. Server runs on Linux, Windows and FreeBSD.
 OpenMCU-ru has the following features:
   * configuration and control via the web interface on port 1420
     (use for connecting: http://host:1420)
-  * supported interface languages: English, Russian
+  * supported interface languages: English, Russian, Ukrainian, Japanese
   * does not require codec hardware to operate
   * outgoing video is cached to reduce the load on the server
   * supported protocols: H.323, SIP

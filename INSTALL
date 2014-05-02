@@ -24,6 +24,7 @@ Required dependencies:
     or Libav >= 0.8 (http://libav.org/)
   * libvpx >= 1.0 (http://webm.googlecode.com/)
   * libx264 (http://www.videolan.org/developers/x264.html)
+  * libopus (http://www.opus-codec.org/)
 
 Optional dependencies (will be used if they are available in the system):
   * FreeType (http://freetype.org/)
