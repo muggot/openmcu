@@ -53,12 +53,15 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
 
   PString lang = MCUConfig("Parameters").GetString("Language").ToLower();
 
+  //PString jsInit="defaultProtocol="+PString(FreeMCU::Current().defaultProtocol)+";\n";
+  PString jsInit="defaultProtocol=sip;\n";
+
   PString html0(html_template_buffer); html0 = html0.Left(html0.Find("$BODY$"));
   html0.Replace("$LANG$",     lang,     TRUE, 0);
   html0.Replace("$PTITLE$",   ptitle,   TRUE, 0);
   html0.Replace("$TITLE$",    title,    TRUE, 0);
   html0.Replace("$QUOTE$",    quotekey, TRUE, 0);
-
+  html0.Replace("$INIT$",     jsInit,   TRUE, 0);
   html << html0;
 }
 
@@ -1990,7 +1993,21 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
         if(i!=0) message << ",";
         message << "\"" << split << "\"";
       }
-      message << ");\n"
+      message << ");\np.splitdata2={";
+      for (unsigned i=0;i<FreeMCU::vmcfg.vmconfs;i++)
+      {
+        PString split=FreeMCU::vmcfg.vmconf[i].splitcfg.Id;
+        split.Replace("\"","\\x22",TRUE,0);
+        message << "\"" << split << "\"" << ":[" << FreeMCU::vmcfg.vmconf[i].splitcfg.vidnum;
+        for(unsigned j=0;j<FreeMCU::vmcfg.vmconf[i].splitcfg.vidnum; j++)
+        {
+          VMPCfgOptions & vo=FreeMCU::vmcfg.vmconf[i].vmpcfg[j];
+          message << ",[" << vo.posx << "," << vo.posy << "," << vo.width << "," << vo.height << "," << vo.border << "," << vo.label_mask << "]";
+        }
+        message << "]";
+        if(i+1<FreeMCU::vmcfg.vmconfs) message << ",";
+      }
+      message << "};\n"
         << "p." << FreeMCU::Current().GetEndpoint().GetMemberListOptsJavascript(conference) << "\n"
         << "p." << FreeMCU::Current().GetEndpoint().GetConferenceOptsJavascript(conference) << "\n"
         << "p.tl=Array" << conference.GetTemplateList() << "\n"
@@ -2125,7 +2142,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   }
 
   html
-    << "<form method=\"post\"><input name='room' id='room' type=hidden>"
+    << "<form method=\"post\" onsubmit=\"javascript:{if(document.getElementById('newroom').value!='')location.href='?action=create&room='+encodeURIComponent(document.getElementById('newroom').value);return false;}\"><input name='room' id='room' type=hidden>"
     << "<table class=\"table table-striped table-bordered table-condensed\">"
 
     << "<tr>"

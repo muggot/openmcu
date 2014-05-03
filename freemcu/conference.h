@@ -763,6 +763,8 @@ class ConferenceMember : public PObject
       */
     ~ConferenceMember();
 
+    void ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState);
+
     /**
       * used to pre-emptively close a members connection
       */
@@ -990,17 +992,21 @@ class ConferenceMember : public PObject
     }
 
     BOOL autoDial;
-    BOOL muteIncoming;
+    unsigned muteMask;
     BOOL disableVAD;
     BOOL chosenVan; // allways visible, but can change place on frame, used in 5+1 layout
     int vad;
     unsigned long audioCounter;
     unsigned audioLevelIndicator;
     unsigned previousAudioLevel;
+    BYTE channelCheck;
 
 #if MCU_VIDEO
     MCUVideoMixer * videoMixer;
 #endif
+
+    float kManualGain, kOutputGain;
+    int kManualGainDB, kOutputGainDB;
 
   protected:
     unsigned videoMixerNumber;
@@ -1018,6 +1024,7 @@ class ConferenceMember : public PObject
 //    MCUH323Connection *h323con;
 //    PMutex h323conMutex;
     BufferListType bufferList;
+    float currVolCoef;
 
 #if MCU_VIDEO
     //PMutex videoMutex;
@@ -1273,12 +1280,9 @@ class Conference : public PObject
 #endif
 
     void AddMonitorEvent(ConferenceMonitorInfo * info);
-    
-    void AddOfflineMemberToNameList(PString & name)
-    {
-     ConferenceMember *zerop=NULL;
-     memberNameList.insert(MemberNameList::value_type(name,zerop));
-    }
+
+    void AddOfflineMemberToNameList(PString & name);
+
     void RemoveOfflineMemberFromNameList(PString & name)
     {
      memberNameList.erase(name);
@@ -1308,8 +1312,11 @@ class Conference : public PObject
     void SetForceScreenSplit(BOOL _forceScreenSplit) { forceScreenSplit = _forceScreenSplit; }
     BOOL GetForceScreenSplit() { return forceScreenSplit; }
 
+    BOOL RecorderCheckSpace();
     BOOL StartExternalRecorder();
     BOOL StopExternalRecorder();
+
+    BOOL lockedTemplate;
 
   protected:
     ConferenceManager & manager;

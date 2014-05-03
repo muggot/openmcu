@@ -91,7 +91,7 @@ PString Conference::SaveTemplate(PString tplName)
     {
       t << "  MEMBER "
         << (s->second->autoDial?"1":"0") << ", "
-        << (s->second->muteIncoming?"1":"0") << ", "
+        << s->second->muteMask << ", "
         << (s->second->disableVAD?"1":"0") << ", "
         << (s->second->chosenVan?"1":"0") << ", "
         << s->second->GetVideoMixerNumber() << ", "
@@ -251,7 +251,7 @@ void Conference::LoadTemplate(PString tpl)
           if(!offline) // online: just tune him up
           {
             r->second->autoDial     = memberAutoDial;
-            r->second->muteIncoming = (v[1]=="1");
+            r->second->muteMask     = v[1].AsInteger();
             r->second->disableVAD   = (v[2]=="1");
             r->second->chosenVan    = (v[3]=="1");
             FreeMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, r->second, v[4].AsInteger());
@@ -408,7 +408,7 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
       if(iterationMemberName == memberName)
       {
         member->autoDial     = (v[0] == "1");
-        member->muteIncoming = (v[1] == "1");
+        member->muteMask     = v[1].AsInteger();
         member->disableVAD   = (v[2] == "1");
         member->chosenVan    = (v[3] == "1");
         if(member->chosenVan) if(PutChosenVan()) member->SetFreezeVideo(FALSE);

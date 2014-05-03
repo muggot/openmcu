@@ -634,7 +634,8 @@ MCUSubtitles * MCUSimpleVideoMixer::RenderSubtitles(unsigned key, VideoMixPositi
     for(PINDEX i=0;i<slotCounter;i++)
     {
       if(i>0) if(bmps[i].x < bmps[i-1].x) pen_y+=(fontsizepix+1); //lf
-      int y=pen_y+fontsizepix-bmps[i].t-1;
+//      int y=pen_y+fontsizepix-bmps[i].t-1;
+      int y=pen_y+fontsizepix-bmps[i].t;
       int h=bmps[i].h;
       if((int)(y+h) > (int)(lh+(bb>>1))) h=fontsizepix+1+(bb>>1)-y; //allow to use 1/2 of bottom border
 

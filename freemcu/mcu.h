@@ -374,7 +374,7 @@ class FreeMCU : public FreeMCUProcessAncestor
     PString    vr_ffmpegPath, vr_ffmpegOpts, vr_ffmpegDir;
     PString    ffmpegCall;
     int        vr_framewidth, vr_frameheight, vr_framerate;
-    unsigned   vr_sampleRate, vr_audioChans;
+    unsigned   vr_sampleRate, vr_audioChans, vr_minimumSpaceMiB;
 
     int        h264DefaultLevelForSip;
 

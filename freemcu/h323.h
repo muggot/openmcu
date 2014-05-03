@@ -27,6 +27,7 @@ extern "C" {
 #define OTFC_MUTE_ALL                  2
 #define OTFC_REMOVE_FROM_VIDEOMIXERS   3
 #define OTFC_REFRESH_VIDEO_MIXERS      4
+#define OTFC_ADD_AND_INVITE            5
 #define OTFC_DROP_MEMBER               7
 #define OTFC_VAD_NORMAL                8
 #define OTFC_VAD_CHOSEN_VAN            9
@@ -61,6 +62,10 @@ extern "C" {
 #define OTFC_SET_MEMBER_VIDEO_MIXER   74
 #define OTFC_VIDEO_RECORDER_START     75
 #define OTFC_VIDEO_RECORDER_STOP      76
+#define OTFC_TOGGLE_TPL_LOCK          77
+#define OTFC_UNMUTE_ALL               78
+#define OTFC_AUDIO_GAIN_LEVEL_SET     79
+#define OTFC_OUTPUT_GAIN_SET          80
 
 ////////////////////////////////////////////////////
 
@@ -280,6 +285,9 @@ class MCUH323Connection : public H323Connection
     virtual BOOL OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
     virtual PString GetAudioTransmitCodecName() const { return audioTransmitCodecName; }
     virtual PString GetAudioReceiveCodecName() const  { return audioReceiveCodecName; }
+    virtual H323AudioCodec * GetAudioReceiveCodec() const  { return audioReceiveCodec; }
+    virtual H323AudioCodec * GetAudioTransmitCodec() const  { return audioTransmitCodec; }
+
     virtual PString GetRemoteName() const             { return remoteName; }
     virtual PString GetMemberName() const             { return memberName; }
 
@@ -442,6 +450,9 @@ class MCUH323Connection : public H323Connection
 
     BOOL isMCU;
 
+    H323AudioCodec *audioReceiveCodec;
+    H323AudioCodec *audioTransmitCodec;
+
     BOOL CheckVFU();
     PTime vfuLastTimeSend;         // time of the last send request
     PTime vfuLastTime;             // time of the last request
@@ -526,6 +537,9 @@ class H323Connection_ConferenceMember : public ConferenceMember
         conn->Unlock();
       }
     }
+
+    void SetChannelPauses(unsigned mask);
+    void UnsetChannelPauses(unsigned mask);
 
   protected:
     PStringStream iISequence; // input indication sequence

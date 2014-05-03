@@ -488,7 +488,6 @@ Conference::Conference(        ConferenceManager & _manager,
   fileRecorder = NULL;
   externalRecorder=NULL;
   forceScreenSplit = FreeMCU::Current().GetConferenceParam(number, ForceSplitVideoKey, TRUE);
-
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 
@@ -499,14 +498,39 @@ Conference::~Conference()
 #endif
 }
 
+BOOL Conference::RecorderCheckSpace()
+{
+  PDirectory pd(FreeMCU::Current().vr_ffmpegDir);
+  PInt64 t, f;
+  DWORD cs;
+  if(!pd.GetVolumeSpace(t, f, cs))
+  {
+    PTRACE(1,"EVRT\tRecorder space check failed");
+    return TRUE;
+  }
+  BOOL result = ((f>>20) >= FreeMCU::Current().vr_minimumSpaceMiB);
+  if(!result) FreeMCU::Current().HttpWriteEvent("<b><font color='red'>Insufficient disk space</font>: Video Recorder DISABLED</b>");
+  PTRACE_IF(1,!result,"EVRT\tInsufficient disk space: Video Recorder DISABLED");
+  return result;
+}
+
 BOOL Conference::StartExternalRecorder()
 {
   if(externalRecorder)
     return TRUE;
   if(!fileRecorder)
     return FALSE;
+  if(!RecorderCheckSpace())
+    return FALSE;
+  if(!PDirectory::Exists(FreeMCU::Current().vr_ffmpegDir))
+  {
+    PTRACE(1,"EVRT\tRecorder failed to start (check recorder directory)");
+    FreeMCU::Current().HttpWriteEventRoom("Recorder failed to start (check recorder directory)", number);
+    return FALSE;
+  }
   externalRecorder = new ExternalVideoRecorderThread(number);
-  PThread::Sleep(500);
+  // wait 1000ms to start recorder
+  for(int i = 0; i < 10; i++) if(externalRecorder->running) break; else PThread::Sleep(100);
   if(!externalRecorder->running)
   {
     externalRecorder = NULL;
@@ -525,7 +549,7 @@ BOOL Conference::StopExternalRecorder()
   if(!externalRecorder)
     return TRUE;
   externalRecorder->running = FALSE;
-  PThread::Sleep(500);
+  PThread::Sleep(1000);
   externalRecorder = NULL;
   PTRACE(1,"MCU\tConference: " << number <<", external video recorder stopped");
   FreeMCU::Current().HttpWriteEventRoom("external video recording stopped", number);
@@ -756,12 +780,16 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     msg="addmmbr(1";
     msg << "," << (long)memberToAdd->GetID()
         << ",\"" << username << "\""
-        << "," << memberToAdd->muteIncoming
+        << "," << memberToAdd->muteMask
         << "," << memberToAdd->disableVAD
         << "," << memberToAdd->chosenVan
         << "," << memberToAdd->GetAudioLevel()
         << "," << memberToAdd->GetVideoMixerNumber()
-        << ",\"" << memberToAddUrlId << "\"" << ")";
+        << ",\"" << memberToAddUrlId << "\""
+        << "," << dec << (unsigned)memberToAdd->channelCheck
+        << "," << memberToAdd->kManualGainDB
+        << "," << memberToAdd->kOutputGainDB
+        << ")";
     FreeMCU::Current().HttpWriteCmdRoom(msg,number);
   }
 /*  
@@ -819,7 +847,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
     msg="remmmbr(0";
     msg << ","  << (long)userid
         << ",\"" << username << "\""
-        << ","  << memberToRemove->muteIncoming
+        << ","  << memberToRemove->muteMask
         << "," << memberToRemove->disableVAD
         << ","  << memberToRemove->chosenVan
         << ","  << memberToRemove->GetAudioLevel()
@@ -916,7 +944,24 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDE
         else vmr=vmr->next;
       }
       if(!skip) // default behaviour
+      {
         r->second->ReadAndMixAudio((BYTE *)buffer, amount, (PINDEX)connectionList.size(), 0, sampleRate, channels);
+        if(member) if(member->kOutputGainDB)
+        {
+          float k = member->kOutputGain;
+          unsigned i = (amount >> 1);
+          char * pos = (char*)buffer;
+          while(i)
+          {
+            int c = (int)(k*(*(short*)pos));
+            if(c>32766) *(short*)pos = 32767;
+            else if(c<-32767) *(short*)pos = -32768;
+            else *(short*)pos = (short)c;
+            pos+=2;
+            i--;
+          }
+        }
+      }
     }
   }
 }
@@ -1116,6 +1161,16 @@ void Conference::FreezeVideo(ConferenceMemberId id)
   }
 }
 
+void Conference::AddOfflineMemberToNameList(PString & name)
+{
+  ConferenceMember *zerop=NULL;
+  memberNameList.insert(MemberNameList::value_type(name,zerop));
+  PString username(name);
+  username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
+  PString url=MCUURL(username).GetUrlId();
+  FreeMCU::Current().HttpWriteCmdRoom("addmmbr(0,0,'"+username+"',0,0,0,0,0,'"+url+"',0)",number);
+}
+
 BOOL Conference::PutChosenVan()
 {
   BOOL put=FALSE;
@@ -1171,8 +1226,12 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
 ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId _id, BOOL _isMCU)
   : conference(_conference), id(_id), isMCU(_isMCU)
 {
+  channelCheck=0;
   audioLevel = 0;
   audioCounter = 0; previousAudioLevel = 65535; audioLevelIndicator = 0;
+  currVolCoef = 1.0;
+  kManualGain = 1.0; kManualGainDB = 0;
+  kOutputGain = 1.0; kOutputGainDB = 0;
   terminalNumber = -1;
   memberIsJoined = FALSE;
 
@@ -1187,7 +1246,7 @@ ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId 
   rxFrameWidth = 0; rxFrameHeight = 0;
   vad = 0;
   autoDial = FALSE;
-  muteIncoming = FALSE;
+  muteMask = 0;
   disableVAD = FALSE;
   chosenVan = 0;
   videoMixerNumber = 0;
@@ -1196,12 +1255,35 @@ ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId 
 
 ConferenceMember::~ConferenceMember()
 {
-  muteIncoming = TRUE;
+  muteMask|=15;
 #if MCU_VIDEO
   delete videoMixer;
 #endif
 }   
 
+void ConferenceMember::ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState)
+{
+  if(bitState)
+  {
+    channelCheck|=bitMask;
+  }
+  else
+  {
+    channelCheck&=~bitMask;
+  }
+
+  PStringStream msg;
+  msg << "rtp_state(" << dec << (long)id << ", " << (unsigned)channelCheck << ")";
+  PTRACE(1,"channelCheck change: " << (bitState?"+":"-") << (unsigned)bitMask << ". Result: " << (unsigned)channelCheck << ", conference=" << conference << ", msg=" << msg);
+
+  if(!conference)
+  {
+    FreeMCU::Current().HttpWriteCmd(msg);
+    return;
+  }
+
+  FreeMCU::Current().HttpWriteCmdRoom(msg,conference->GetNumber());
+}
 
 BOOL ConferenceMember::AddToConference(Conference * _conference)
 {
@@ -1270,27 +1352,75 @@ void ConferenceMember::RemoveAllConnections()
   }
 }
 
+void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef, unsigned* signalLevel, float kManual)
+{
+  unsigned samplesCount = samplesPerFrame*codecChannels;
+  if(!samplesCount) return;
+
+  const short * end = pcm + samplesCount;
+  short *buf = (short*)pcm;
+  int c_max_vol = 0, c_avg_vol = 0;
+  while (pcm != end) 
+  {
+    if (*pcm < 0) 
+    { if(-*pcm > c_max_vol) c_max_vol = -*pcm; c_avg_vol -= *pcm++; }
+    else 
+    { if( *pcm > c_max_vol) c_max_vol =  *pcm; c_avg_vol += *pcm++; }
+  }
+  c_avg_vol /= samplesPerFrame;
+
+  if(!level)
+  {
+    *signalLevel = c_avg_vol;
+    return;
+  }
+
+  float   max_vol = (float)23170.0 * kManual;
+  float   overload = 32768 * kManual;
+  float   inc_vol = (float)0.05*(float)8000.0/sampleRate;
+  float & cvc = *currVolCoef;
+  float   vc0= cvc;
+  
+  unsigned wLevel;
+  if(kManual>10) wLevel = (unsigned)(level*10/kManual); else wLevel=level;
+
+  if((unsigned)c_avg_vol > wLevel)
+  {
+    if(c_max_vol*cvc >= overload) // есть перегрузка
+      cvc = overload / c_max_vol;
+    else
+    if(c_max_vol*cvc < max_vol) // нужно увеличить усиление
+      cvc += inc_vol;
+  }
+  else // не должен срабатывать, но временно грубая защита от перегрузки:
+  {
+    if(c_max_vol*cvc >= overload) // есть перегрузка
+      cvc = (float)overload / c_max_vol;
+  }
+  *signalLevel = (unsigned)((float)c_avg_vol*cvc);
+  PTRACE(6,"AGC\tavg" << c_avg_vol << " max" << c_max_vol << " vc" << vc0 << ">" << cvc);
+
+  float delta0=(cvc-vc0)/samplesCount;
+
+  for(unsigned i=0; i<samplesCount; i++) 
+  {
+    int v = buf[i];
+    v=(int)(v*vc0);
+    if(v > 32767) buf[i]=32767;
+    else if(v < -32768) buf[i]=-32768;
+    else buf[i] = (short)v;
+    vc0+=delta0;
+  }
+}
+
 void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-  if(muteIncoming) return;
+  if(!(channelCheck&1)) ChannelBrowserStateUpdate(1,TRUE);
+  if(muteMask&1) return;
   // calculate average signal level for this member
-  unsigned signalLevel = 0;
-  {
-    int sum = 0;
-    int integr = 0;
-    const short * pcm = (short *)buffer;
-    const short * end = pcm + (amount / 2);
-    while (pcm != end) {
-//    cout << *pcm << "\n";
-      integr +=*pcm;
-      if (*pcm < 0) sum -= *pcm++;
-      else          sum += *pcm++;
-    }
-//  cout << "audioInegr = " << integr << "\n";
-    signalLevel = sum/(amount/2);
-  }
+  unsigned signalLevel=0;
+  AutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 2000, &currVolCoef, &signalLevel, kManualGain);
   audioLevel = ((signalLevel * 2) + audioLevel) / 3;
-//  cout << "audioLevel = " << audioLevel << "\n";
 
   if (lock.Wait())
   { if (conference != NULL) conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
@@ -1481,8 +1611,12 @@ void ConferenceMember::OnExternalSendAudio(ConferenceMemberId source, const void
 
 void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
+  if(!(channelCheck&2)) ChannelBrowserStateUpdate(2,TRUE);
+
   // First, set the buffer to empty.
   memset(buffer, 0, amount);
+
+  if(muteMask&2) return;
 
   if (lock.Wait()) {
     if (conference != NULL)
@@ -1496,6 +1630,9 @@ void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRa
 // called whenever the connection needs a frame of video to send
 void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & amount)
 {
+  if(!(channelCheck&8)) ChannelBrowserStateUpdate(8,TRUE);
+//  if(muteMask&8) { memset(buffer,0,amount); return; }
+  if(muteMask&8) return;
   ++totalVideoFramesSent;
   if (!firstFrameSendTime.IsValid())
     firstFrameSendTime = PTime();
@@ -1513,6 +1650,8 @@ void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & 
 // called whenever the connection receives a frame of video
 void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PINDEX amount)
 {
+  if(!(channelCheck&4)) ChannelBrowserStateUpdate(4,TRUE);
+  if(muteMask&4) return;
   ++totalVideoFramesReceived;
   rxFrameWidth=width; rxFrameHeight=height;
   if (!firstFrameReceiveTime.IsValid())
