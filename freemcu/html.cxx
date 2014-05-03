@@ -51,10 +51,9 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
   if(html_template_size <= 0)
   { cout << "Can't load HTML template!\n"; PTRACE(1,"WebCtrl\tCan't read HTML template from file"); return; }
 
-  PString lang = MCUConfig("Parameters").GetString("Language").ToLower();
+  PString lang = MCUConfig("Parameters").GetString("Language", "").ToLower();
 
-  //PString jsInit="defaultProtocol="+PString(FreeMCU::Current().defaultProtocol)+";\n";
-  PString jsInit="defaultProtocol=sip;\n";
+  PString jsInit="defaultProtocol='"+MCUConfig("Parameters").GetString(DefaultProtocolKey, "sip")+"';\n";
 
   PString html0(html_template_buffer); html0 = html0.Left(html0.Find("$BODY$"));
   html0.Replace("$LANG$",     lang,     TRUE, 0);
@@ -259,6 +258,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << SelectField("Language", cfg.GetString("Language"), ",EN,RU");
   // MCU Server Id
   s << StringField("FreeMCU Server Id", cfg.GetString("FreeMCU Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 35);
+
+  s << SelectField(DefaultProtocolKey, cfg.GetString(DefaultProtocolKey, "sip"), "h323,sip");
 
 #if P_SSL
   s << SeparatorField("Security");

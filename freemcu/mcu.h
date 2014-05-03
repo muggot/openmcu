@@ -134,6 +134,7 @@ static const char DisableFastStartKey[]   = "Disable Fast-Start";
 static const char DisableH245TunnelingKey[]="Disable H.245 Tunneling";
 static const char RTPPortBaseKey[]        = "RTP Base Port";
 static const char RTPPortMaxKey[]         = "RTP Max Port";
+static const char DefaultProtocolKey[]    = "Default protocol for outgoing calls";
 
 static const char RejectDuplicateNameKey[] = "Reject duplicate name";
 
