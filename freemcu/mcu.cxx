@@ -380,17 +380,18 @@ BOOL FreeMCU::Initialise(const char * initMsg)
 #ifdef SYS_RESOURCE_DIR
 #  define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + r1), PHTTPSpace::Overwrite)
 #  define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + r1, mt1), PHTTPSpace::Overwrite)
+#  define WEBSERVER_LINK_MIME_CFG(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + r1, mt1), PHTTPSpace::Overwrite)
 #else
 #  define WEBSERVER_LINK(r1) httpNameSpace.AddResource(new PHTTPFile(r1), PHTTPSpace::Overwrite)
 #  define WEBSERVER_LINK_MIME(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, mt1), PHTTPSpace::Overwrite)
+#  define WEBSERVER_LINK_MIME_CFG(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, r1, mt1), PHTTPSpace::Overwrite)
 #endif
 #define WEBSERVER_LINK_LOGS(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SERVER_LOGS) + PATH_SEPARATOR + r1, mt1), PHTTPSpace::Overwrite)
   WEBSERVER_LINK_MIME("text/javascript"          , "control.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "status.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "locale_ru.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "locale_en.js");
-  WEBSERVER_LINK_MIME("image/gif"                , "i15_mic_on.gif");
-  WEBSERVER_LINK_MIME("image/gif"                , "i15_mic_off.gif");
+  WEBSERVER_LINK_MIME("text/css"                 , "main.css");
   WEBSERVER_LINK_MIME("image/gif"                , "i15_getNoVideo.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "vad_vad.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "vad_disable.gif");
@@ -408,14 +409,18 @@ BOOL FreeMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/gif"                , "i24_mix.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "i24_clr.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "i24_revert.gif");
-  WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.ico");
   WEBSERVER_LINK_MIME("image/png"                , "logo_text.png");
   WEBSERVER_LINK_MIME("image/png"                , "menu_left.png");
+  WEBSERVER_LINK_MIME("image/png"                , "s15_ch.png");
+  WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.ico");
+  WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.gif");
 #if USE_LIBJPEG
   WEBSERVER_LINK_MIME("image/jpeg"               , "logo.jpeg");
 #endif
   WEBSERVER_LINK_MIME("image/png"                , "i16_close_gray.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_close_red.png");
+  WEBSERVER_LINK_MIME("image/png"                , "i32_lock.png");
+  WEBSERVER_LINK_MIME("image/png"                , "i32_lockopen.png");
 
   for(PINDEX i=-1; i<rotationLevel; i++)
   {

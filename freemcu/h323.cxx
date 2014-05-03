@@ -472,7 +472,15 @@ PString JsQuoteScreen(PString s)
     if(c>31)
     { if     (c==0x22) r+="\\x22"; // "
       else if(c==0x5c) r+="\\x5c"; // backslash
+      else if(c=='<') r+="&lt;";
+      else if(c=='>') r+="&gt;";
       else r+=(char)c;
+    }
+    else
+    {
+      if(c==9) r+="&nbsp;|&nbsp;"; //tab
+      if(c==10) if(r.Right(1)!=" ") r+=" ";
+      if(c==13) if(r.Right(1)!=" ") r+=" ";
     }
   }
   r+="\"";
@@ -513,11 +521,11 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         ;
 
         PTimeInterval duration;
-        PString formatString, audioCodecR, audioCodecT, videoCodecR, videoCodecT;
+        PString formatString, audioCodecR, audioCodecT, videoCodecR, videoCodecT, ra;
         int codecCacheMode=-1, cacheUsersNumber=-1;
         MCUH323Connection * conn = NULL;
         H323Connection_ConferenceMember * connMember = NULL;
-        DWORD orx=0, otx=0, vorx=0, votx=0, prx=0, ptx=0, vprx=0, vptx=0;
+        DWORD orx=0, otx=0, vorx=0, votx=0, prx=0, ptx=0, vprx=0, vptx=0, plost=0, vplost=0, plostTx=0, vplostTx=0;
         if(name=="file recorder")
         {
           duration = now - member->GetStartTime();
@@ -541,25 +549,26 @@ PString MCUH323EndPoint::GetRoomStatusJS()
             { duration = now - conn->GetConnectionStartTime();
               audioCodecR = conn->GetAudioReceiveCodecName();
               audioCodecT = conn->GetAudioTransmitCodecName();
-              MCU_RTP_UDP *sess = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultAudioSessionID);
+              RTP_Session *sess=conn->GetSession(RTP_Session::DefaultAudioSessionID);
               if(sess != NULL)
-              {
-                orx = sess->GetOctetsReceived(); otx = sess->GetOctetsSent();
+              { orx = sess->GetOctetsReceived(); otx = sess->GetOctetsSent();
                 prx = sess->GetPacketsReceived(); ptx = sess->GetPacketsSent();
+                plost = sess->GetPacketsLost(); plostTx = sess->GetPacketsLostTx();
               }
-#             if MCU_VIDEO
+#             if OPENMCU_VIDEO
                 videoCodecR = conn->GetVideoReceiveCodecName() + "@" + connMember->GetVideoRxFrameSize();
                 videoCodecT = conn->GetVideoTransmitCodecName();
-                MCU_RTP_UDP* vSess = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultVideoSessionID);
+                RTP_Session* vSess=conn->GetSession(RTP_Session::DefaultVideoSessionID);
                 if(vSess != NULL)
                 { vorx=vSess->GetOctetsReceived(); votx=vSess->GetOctetsSent();
                   vprx=vSess->GetPacketsReceived(); vptx=vSess->GetPacketsSent();
-
+                  vplost = vSess->GetPacketsLost(); vplostTx = vSess->GetPacketsLostTx();
                 }
                 if(conn->GetVideoTransmitCodec()!=NULL)
                 { codecCacheMode=conn->GetVideoTransmitCodec()->cacheMode;
                   formatString=conn->GetVideoTransmitCodec()->formatString;
                 }
+                ra = conn->GetRemoteApplication();
 #             endif
               conn->Unlock();
             }
@@ -577,6 +586,8 @@ PString MCUH323EndPoint::GetRoomStatusJS()
           << "," << member->GetVideoTxFrameRate()                              // c[r][4][m][16]: video tx frame rate
           << "," << cacheUsersNumber                                           // c[r][4][m][17]: cache users number
           << "," << prx << "," << ptx << "," << vprx << "," << vptx            // c[r][4][m][18-21]: prx, ptx, vprx, vptx
+          << "," << JsQuoteScreen(ra)                                          // c[r][4][m][22]: remote application name
+          << "," << plost << "," << vplost << "," << plostTx << "," << vplostTx// c[r][4][m][23-26]: rx & tx_from_RTCP packets lost (audio, video)
           << ")";
         notFirstMember = TRUE;
       }
@@ -601,7 +612,6 @@ PString MCUH323EndPoint::GetRoomStatusJS()
   return str;
 }
 
-
 PString MCUH323EndPoint::GetRoomStatusJSStart()
 {
   PStringStream html;
@@ -612,9 +622,6 @@ PString MCUH323EndPoint::GetRoomStatusJSStart()
   EndPage(html,FreeMCU::Current().GetHtmlCopyright());
   return html;
 }
-
-
-
 
 PString MCUH323EndPoint::GetRoomStatus(const PString & block)
 { 

@@ -35,7 +35,7 @@ layouts.conf \
 ffserver.conf \
 freemcu.ini
 
-RESOURCE_FILES=i15_mic_on.gif \
+RESOURCE_FILES= \
 i24_clr.gif \
 vad_chosenvan.gif \
 i20_close.gif \
@@ -51,7 +51,6 @@ i15_inv.gif \
 i20_vad2.gif \
 i24_right.gif \
 launched.gif \
-i15_mic_off.gif \
 i20_vad.gif \
 i24_shuff.gif \
 i15_getNoVideo.gif \
@@ -67,6 +66,10 @@ locale_ru.js \
 locale_en.js \
 i16_close_gray.png \
 i16_close_red.png \
+main.css \
+i32_lock.png \
+i32_lockopen.png \
+s15_ch.png \
 
 OBJDIR	= ./obj
 OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdir $(SOURCES)))))
