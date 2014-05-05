@@ -277,6 +277,8 @@ void Conference::LoadTemplate(PString tpl)
     VMLDel(i);
   }
 
+  if(!lockedTemplate) return; // room not locked - don't touch member list
+
   PWaitAndSignal m(memberListMutex);
   MemberNameList theCopy(memberNameList);
   for(MemberNameList::iterator r = theCopy.begin(); r != theCopy.end(); ++r)

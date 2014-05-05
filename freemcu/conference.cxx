@@ -488,6 +488,7 @@ Conference::Conference(        ConferenceManager & _manager,
   fileRecorder = NULL;
   externalRecorder=NULL;
   forceScreenSplit = FreeMCU::Current().GetConferenceParam(number, ForceSplitVideoKey, TRUE);
+  lockedTemplate = FreeMCU::Current().GetConferenceParam(number, LockTemplateKey, FALSE);
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 

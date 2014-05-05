@@ -371,12 +371,14 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
   s << ColumnItem(JsLocale("window.l_name_auto_delete_empty"));
   s << ColumnItem(JsLocale("window.l_name_auto_record_not_empty"));
   s << ColumnItem(JsLocale("window.l_name_recall_last_template"));
+  s << ColumnItem("Template locks conference by default");
   s << ColumnItem(JsLocale("window.l_name_time_limit"));
   optionNames.AppendString(RoomAutoCreateKey);
   optionNames.AppendString(ForceSplitVideoKey);
   optionNames.AppendString(RoomAutoDeleteEmptyKey);
   optionNames.AppendString(RoomAutoRecordNotEmptyKey);
   optionNames.AppendString(RoomRecallLastTemplateKey);
+  optionNames.AppendString(LockTemplateKey);
   optionNames.AppendString(RoomTimeLimitKey);
 
   sectionPrefix = "Conference ";
@@ -417,6 +419,9 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
     // recall last template after room created
     if(name == "*") s << SelectItem(name, scfg.GetString(RoomRecallLastTemplateKey, "Disable"), "Enable,Disable");
     else            s << SelectItem(name, scfg.GetString(RoomRecallLastTemplateKey, ""), ",Enable,Disable");
+    // lock template
+    if(name == "*") s << SelectItem(name, scfg.GetString(LockTemplateKey, "Disable"), "Enable,Disable");
+    else            s << SelectItem(name, scfg.GetString(LockTemplateKey, ""), ",Enable,Disable");
     // time limit
     s << StringItemInteger(name, scfg.GetString(RoomTimeLimitKey, ""));
   }
@@ -1165,7 +1170,7 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
     s << StringItem("room101", "");
     s << StringItem("room101", "");
     s << StringItem("room101", "");
-    s << IntegerItem("room101", 60, 60, 3600);
+    s << IntegerItem("room101", 600, 60, 3600);
   }
   s << EndTable();
 

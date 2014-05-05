@@ -105,6 +105,7 @@ static const char RoomAutoRecordNotEmptyKey[]   = "Auto record not empty";
 static const char RoomAllowRecordKey[]          = "Allow record";
 static const char RoomRecallLastTemplateKey[]   = "Recall last template";
 static const char RoomTimeLimitKey[]            = "Room time limit";
+static const char LockTemplateKey[]             = "Template locks conference by default";
 
 static const char ReceivedVFUDelayKey[]         = "Received VFU delay";
 static const char SendVFUDelayKey[]             = "Send VFU delay";
