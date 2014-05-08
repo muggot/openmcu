@@ -46,8 +46,7 @@ dnl ########################################################################
 dnl install PREFIX
 
 if test "x$prefix" = "xNONE"; then
-  #INSTALLPREFIX="/usr/local"
-  INSTALLPREFIX="/opt"
+  INSTALLPREFIX="/usr/local"
 else
   INSTALLPREFIX="${prefix}"
 fi
