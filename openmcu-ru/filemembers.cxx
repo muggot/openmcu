@@ -308,10 +308,10 @@ const unsigned char wavHeader[44] =
 
 void ConferenceFileMember::WriteThread(PThread &, INT)
 {
-  unsigned sampleRate = FreeMCU::Current().vr_sampleRate;
+  unsigned sampleRate = OpenMCU::Current().vr_sampleRate;
   if(sampleRate < 2000 || sampleRate > 1000000) sampleRate = 16000;
 
-  unsigned channels = FreeMCU::Current().vr_audioChans;
+  unsigned channels = OpenMCU::Current().vr_audioChans;
   if(channels < 1 || channels > 8) channels = 1;
 
   PINDEX amountBytes = channels * 2 * sampleRate * AUDIO_EXPORT_PCM_BUFFER_SIZE_MS / 1000;
@@ -375,9 +375,9 @@ void ConferenceFileMember::WriteThread(PThread &, INT)
 
 void ConferenceFileMember::WriteThreadV(PThread &, INT)
 {
-  int width=FreeMCU::Current().vr_framewidth;
-  int height=FreeMCU::Current().vr_frameheight;
-  int framerate=FreeMCU::Current().vr_framerate;
+  int width=OpenMCU::Current().vr_framewidth;
+  int height=OpenMCU::Current().vr_frameheight;
+  int framerate=OpenMCU::Current().vr_framerate;
 
   if(width<176 || width>1920) { width=704; PTRACE(1,"WriteThreadV\tWrong frame width value changed to 4CIF width"); }
   if(height<144 || height>1152) { height=576; PTRACE(1,"WriteThreadV\tWrong frame height value changed to 4CIF height"); }
@@ -472,7 +472,7 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
 
 void ConferenceFileMember::VideoEncoderCacheThread(PThread &, INT)
 {
-  MCUH323EndPoint & ep = FreeMCU::Current().GetEndpoint();
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 //  const H323Capabilities &caps = ep.GetCapabilities();
   H323Capabilities caps;
   caps.AddCapabilities(0, 0, (const char **) ep.tvCaps);

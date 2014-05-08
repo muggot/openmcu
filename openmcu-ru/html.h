@@ -718,11 +718,11 @@ class SectionPConfigPage : public DefaultPConfigPage
 class JpegFrameHTTP : public PServiceHTTPString
 {
   public:
-    JpegFrameHTTP(FreeMCU & app, PHTTPAuthority & auth);
+    JpegFrameHTTP(OpenMCU & app, PHTTPAuthority & auth);
     BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
     PMutex mutex;
   private:
-    FreeMCU & app;
+    OpenMCU & app;
 };
 #endif
 
@@ -731,10 +731,10 @@ class JpegFrameHTTP : public PServiceHTTPString
 class InteractiveHTTP : public PServiceHTTPString
 {
   public:
-    InteractiveHTTP(FreeMCU & app, PHTTPAuthority & auth);
+    InteractiveHTTP(OpenMCU & app, PHTTPAuthority & auth);
     BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
   private:
-    FreeMCU & app;
+    OpenMCU & app;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -744,12 +744,12 @@ class MainStatusPage : public PServiceHTTPString
  // PCLASSINFO(MainStatusPage, PServiceHTTPString);
 
   public:
-    MainStatusPage(FreeMCU & app, PHTTPAuthority & auth);
+    MainStatusPage(OpenMCU & app, PHTTPAuthority & auth);
     virtual BOOL Post(PHTTPRequest & request, const PStringToString &, PHTML & msg);
     BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
 
   private:
-    FreeMCU & app;
+    OpenMCU & app;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -757,7 +757,7 @@ class MainStatusPage : public PServiceHTTPString
 class InvitePage : public PServiceHTTPString
 {
   public:
-    InvitePage(FreeMCU & app, PHTTPAuthority & auth);
+    InvitePage(OpenMCU & app, PHTTPAuthority & auth);
 
     virtual BOOL Post(
       PHTTPRequest & request,       // Information on this request.
@@ -766,7 +766,7 @@ class InvitePage : public PServiceHTTPString
     );
 
   private:
-    FreeMCU & app;
+    OpenMCU & app;
     PStringStream form;
 };
 
@@ -775,7 +775,7 @@ class InvitePage : public PServiceHTTPString
 class SelectRoomPage : public PServiceHTTPString
 {
   public:
-    SelectRoomPage(FreeMCU & app, PHTTPAuthority & auth);
+    SelectRoomPage(OpenMCU & app, PHTTPAuthority & auth);
 
     BOOL OnGET(
       PHTTPServer & server,
@@ -791,7 +791,7 @@ class SelectRoomPage : public PServiceHTTPString
     );
 
   private:
-    FreeMCU & app;
+    OpenMCU & app;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -799,12 +799,12 @@ class SelectRoomPage : public PServiceHTTPString
 class WelcomePage : public PServiceHTTPString
 {
   public:
-    WelcomePage(FreeMCU & app, PHTTPAuthority & auth);
+    WelcomePage(OpenMCU & app, PHTTPAuthority & auth);
     BOOL OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo & info, const PStringToString & data, const PHTTPConnectionInfo & connectInfo);
     BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
 
   private:
-    FreeMCU & app;
+    OpenMCU & app;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -812,11 +812,11 @@ class WelcomePage : public PServiceHTTPString
 class RecordsBrowserPage : public PServiceHTTPString
 {
   public:
-    RecordsBrowserPage(FreeMCU & app, PHTTPAuthority & auth);
+    RecordsBrowserPage(OpenMCU & app, PHTTPAuthority & auth);
     BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
 
   private:
-    FreeMCU & app;
+    OpenMCU & app;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

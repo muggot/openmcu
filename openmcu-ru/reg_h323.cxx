@@ -287,7 +287,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
   {
     if(registrar->FindAccount(ACCOUNT_TYPE_H323, srcUsername) && registrar->FindAccount(ACCOUNT_TYPE_H323, dstUsername))
       h323ToH323 = TRUE;
-    //PString processing_type = FreeMCU::Current().GetEndpointParamFromUrl("Processing", "");
+    //PString processing_type = OpenMCU::Current().GetEndpointParamFromUrl("Processing", "");
     PString processing_type = "transcoding";
     if(h323ToH323 && processing_type == "forwarding")
       return H323GatekeeperServer::OnAdmission(info);

@@ -105,7 +105,7 @@
 #ifndef SYS_CONFIG_DIR
 #  define SYS_CONFIG_DIR "."
 #endif
-#define CONFIG_PATH PString(SYS_CONFIG_DIR)+PATH_SEPARATOR+"freemcu.ini"
+#define CONFIG_PATH PString(SYS_CONFIG_DIR)+PATH_SEPARATOR+"openmcu.ini"
 
 
 #endif // _MCU_CONFIG_H

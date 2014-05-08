@@ -26,7 +26,7 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define MCUSIP_USER_AGENT_STR  FreeMCU::Current().GetName()+"/"+FreeMCU::Current().GetVersion()+" ("+SOFIA_SIP_NAME_VERSION+")"
+#define MCUSIP_USER_AGENT_STR  OpenMCU::Current().GetName()+"/"+OpenMCU::Current().GetVersion()+" ("+SOFIA_SIP_NAME_VERSION+")"
 
 enum SipSecureTypes
 {

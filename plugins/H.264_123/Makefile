@@ -69,7 +69,7 @@
 #
 
 VC_PLUGIN_DIR=codecs/video
-prefix=/opt/freemcu/lib/ptlib
+prefix=/opt/openmcu-ru/lib/ptlib
 exec_prefix=${prefix}
 target_os=linux-gnu
 DL_LIBS =
@@ -89,8 +89,8 @@ LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
 CFLAGS	       +=-g  -Os
 STDCCFLAGS	=-fPIC -D__STDC_CONSTANT_MACROS
-LDFLAGS	       +=-L/opt/freemcu/lib -lavcodec -lavutil
-CPPFLAGS       +=-I/opt/freemcu/include
+LDFLAGS	       +=-L/opt/openmcu-ru/lib -lavcodec -lavutil
+CPPFLAGS       +=-I/opt/openmcu-ru/include
 OPTCCFLAGS      =$(CPPFLAGS)
 LIBAVCODEC_CFLAGS=-I${prefix}/include
 

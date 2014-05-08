@@ -34,10 +34,10 @@
 
 #if P_SSL
 #include <ptclib/shttpsvc.h>
-typedef PSecureHTTPServiceProcess FreeMCUProcessAncestor;
+typedef PSecureHTTPServiceProcess OpenMCUProcessAncestor;
 #else
 #include <ptclib/httpsvc.h>
-typedef PHTTPServiceProcess FreeMCUProcessAncestor;
+typedef PHTTPServiceProcess OpenMCUProcessAncestor;
 #endif
 
 extern PHTTPServiceProcess::Info ProductInfo;
@@ -236,16 +236,16 @@ class PluginLoaderStartup2 : public PProcessStartup
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUH323EndPoint;
-class FreeMCUMonitor;
+class OpenMCUMonitor;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class FreeMCU : public FreeMCUProcessAncestor
+class OpenMCU : public OpenMCUProcessAncestor
 {
-  PCLASSINFO(FreeMCU, FreeMCUProcessAncestor)
+  PCLASSINFO(OpenMCU, OpenMCUProcessAncestor)
 
   public:
-    FreeMCU();
+    OpenMCU();
     void Main();
     BOOL OnStart();
     void OnStop();
@@ -253,7 +253,7 @@ class FreeMCU : public FreeMCUProcessAncestor
     void OnConfigChanged();
     BOOL Initialise(const char * initMsg);
 
-    static FreeMCU & Current() { return (FreeMCU &)PProcess::Current(); }
+    static OpenMCU & Current() { return (OpenMCU &)PProcess::Current(); }
 
     virtual ConferenceManager * CreateConferenceManager();
     virtual MCUH323EndPoint * CreateEndPoint(ConferenceManager & manager);

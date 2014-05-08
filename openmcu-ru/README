@@ -1,13 +1,12 @@
-Notes for FreeMCU
+Notes for OpenMCU-ru
 --------------------
-
-This project is a fork of the project openmcu-ru
+Homepage: http://www.openmcu.ru/
 
 
 1. Introduction
 ---------------
 
-FreeMCU is a simple Mutli Conference Unit using the H.323 and SIP protocol.
+OpenMCU-ru is a simple Mutli Conference Unit using the H.323 and SIP protocol.
 It is known to run on Linux, FreeBSD and Windows.
 
 2. Features
@@ -32,7 +31,7 @@ The code contains the following features:
 3. Operation
 ------------
 
-FreeMCU works by setting up a H.323 and SIP listener process, and then waiting for
+OpenMCU-ru works by setting up a H.323 and SIP listener process, and then waiting for
 incoming connections.
 You call the MCU using the format "room_name@server_name".
 
@@ -53,7 +52,7 @@ Requires:
   * libjpeg          - http://ijg.org
     or libjpeg-turbo - http://libjpeg-turbo.virtualgl.org
 
-FreeMCU contains the following required libraries in the repository:
+OpenMCU-ru contains the following required libraries in the repository:
   * H323Plus         - http://www.h323plus.org
   * PTLib            - http://www.opalvoip.org
   * Sofia-SIP        - http://www.sofia-sip.sourceforge.net

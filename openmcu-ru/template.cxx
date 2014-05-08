@@ -20,7 +20,7 @@ PString Conference::SaveTemplate(PString tplName)
       << "  {\n";
     MCUVideoMixer & m = *(vmr->mixer);
     unsigned n=m.GetPositionSet();
-    VMPCfgSplitOptions & o = FreeMCU::vmcfg.vmconf[n].splitcfg;
+    VMPCfgSplitOptions & o = OpenMCU::vmcfg.vmconf[n].splitcfg;
     PString newLayout=PString(n) + ", " + o.Id;
     t << "    LAYOUT " << newLayout << "\n";
     unsigned skipCounter=0;
@@ -241,10 +241,10 @@ void Conference::LoadTemplate(PString tpl)
             PString token;
             PString numberWithMixer=number;
             if(v[4]!="0") numberWithMixer+="/"+v[4];
-            if(FreeMCU::Current().GetEndpoint().Invite(numberWithMixer, memberAddress) != "")
+            if(OpenMCU::Current().GetEndpoint().Invite(numberWithMixer, memberAddress) != "")
             {
               PStringStream msg; msg << "Inviting " << memberAddress;
-              FreeMCU::Current().HttpWriteEventRoom(msg,number);
+              OpenMCU::Current().HttpWriteEventRoom(msg,number);
             }
           }
 */
@@ -254,7 +254,7 @@ void Conference::LoadTemplate(PString tpl)
             r->second->muteMask     = v[1].AsInteger();
             r->second->disableVAD   = (v[2]=="1");
             r->second->chosenVan    = (v[3]=="1");
-            FreeMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, r->second, v[4].AsInteger());
+            OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, r->second, v[4].AsInteger());
           }
           validatedMembers.AppendString(memberInternalName);
 
@@ -419,7 +419,7 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
 // That's why the following is commented and the next will just make member->videoMixerNumber set.
 // Right mixer will be attached to connection via userData value during making the call.
 
-//        FreeMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
+//        OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
         member->SetVideoMixerNumber(v[4].AsInteger());
 
         return;

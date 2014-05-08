@@ -52,7 +52,7 @@ PString GetFromIp(PString toAddr, PString toPort)
 
 BOOL MCUSipConnection::CreateTempSockets(PString localIP)
 {
-  unsigned localDataPort = FreeMCU::Current().GetEndpoint().GetRtpIpPortPair();
+  unsigned localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
   PQoS * dataQos = NULL;
   PQoS * ctrlQos = NULL;
   aDataSocket = new PUDPSocket(dataQos);
@@ -63,15 +63,15 @@ BOOL MCUSipConnection::CreateTempSockets(PString localIP)
   {
     aDataSocket->Close();
     aControlSocket->Close();
-    localDataPort = FreeMCU::Current().GetEndpoint().GetRtpIpPortPair();
+    localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
   }
   audio_rtp_port = localDataPort;
-  localDataPort = FreeMCU::Current().GetEndpoint().GetRtpIpPortPair();
+  localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
   while(!vDataSocket->Listen(localIP, 1, localDataPort) || !vControlSocket->Listen(localIP, 1, localDataPort+1))
   {
     vDataSocket->Close();
     vControlSocket->Close();
-    localDataPort = FreeMCU::Current().GetEndpoint().GetRtpIpPortPair();
+    localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
   }
   video_rtp_port = localDataPort;
   return TRUE;
@@ -270,12 +270,12 @@ PString MCUSipEndPoint::CreateSdpInvite(MCUSipConnection *sCon, PString local_ur
   PString local_user = url.GetUserName();
   PString local_host = url.GetHostName();
 
-  PString prefAudioCap = FreeMCU::Current().GetEndpointParamFromUrl("Audio codec", remote_url);
-  PString prefVideoCap = FreeMCU::Current().GetEndpointParamFromUrl("Video codec", remote_url);
+  PString prefAudioCap = OpenMCU::Current().GetEndpointParamFromUrl("Audio codec", remote_url);
+  PString prefVideoCap = OpenMCU::Current().GetEndpointParamFromUrl("Video codec", remote_url);
 
-  unsigned bandwidth = FreeMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", remote_url, 0);
+  unsigned bandwidth = OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", remote_url, 0);
 
-  PString rtp_proto = FreeMCU::Current().GetEndpointParamFromUrl("RTP proto", remote_url, "RTP");
+  PString rtp_proto = OpenMCU::Current().GetEndpointParamFromUrl("RTP proto", remote_url, "RTP");
   sCon->rtp_proto = rtp_proto;
 
   /*
@@ -288,15 +288,15 @@ PString MCUSipEndPoint::CreateSdpInvite(MCUSipConnection *sCon, PString local_ur
   */
   PStringArray tsCaps, tvCaps;
   unsigned dyn_pt = 96;
-  for(PINDEX i = 0; FreeMCU::Current().GetEndpoint().tsCaps[i]!=NULL; i++)
+  for(PINDEX i = 0; OpenMCU::Current().GetEndpoint().tsCaps[i]!=NULL; i++)
   {
-    PString capname = FreeMCU::Current().GetEndpoint().tsCaps[i];
+    PString capname = OpenMCU::Current().GetEndpoint().tsCaps[i];
     if(prefAudioCap != "" && prefAudioCap != capname) continue;
     tsCaps.AppendString(capname);
   }
-  for(PINDEX i = 0; FreeMCU::Current().GetEndpoint().tvCaps[i]!=NULL; i++)
+  for(PINDEX i = 0; OpenMCU::Current().GetEndpoint().tvCaps[i]!=NULL; i++)
   {
-    PString capname = FreeMCU::Current().GetEndpoint().tvCaps[i];
+    PString capname = OpenMCU::Current().GetEndpoint().tvCaps[i];
     if(prefVideoCap != "" && prefVideoCap != capname) continue;
     tvCaps.AppendString(capname);
   }
@@ -1016,8 +1016,8 @@ void MCUSipConnection::SelectCapability_H264(SipCapability &sc,PStringArray &tvC
 // if(profile == 0 || level == 0) return;
  if(level == 0)
  {
-   PTRACE(2,"SIP_CONNECTION\tH.264 level will set to " << FreeMCU::Current().h264DefaultLevelForSip);
-   level = FreeMCU::Current().h264DefaultLevelForSip;
+   PTRACE(2,"SIP_CONNECTION\tH.264 level will set to " << OpenMCU::Current().h264DefaultLevelForSip);
+   level = OpenMCU::Current().h264DefaultLevelForSip;
  }
  int l = 0;
  while(h241_to_x264_levels[l].idc != 0)
@@ -1514,13 +1514,13 @@ int MCUSipConnection::ProcessSDP(PString & sdp_txt, SipCapMapType & SipCaps, int
   }
 
   sdp_msg = "v=0\r\no=";
-  sdp_msg = sdp_msg + FreeMCU::Current().GetName() + " ";
+  sdp_msg = sdp_msg + OpenMCU::Current().GetName() + " ";
   sdp_seq++;
   sdp_msg = sdp_msg + PString(sdp_id) + " ";
   sdp_msg = sdp_msg + PString(sdp_seq);
   sdp_msg = sdp_msg + " IN IP4 ";
   sdp_msg = sdp_msg + local_ip + "\r\n";
-  sdp_msg = sdp_msg + "s="+FreeMCU::Current().GetName()+"\r\n";
+  sdp_msg = sdp_msg + "s="+OpenMCU::Current().GetName()+"\r\n";
   sdp_msg = sdp_msg + "c=IN IP4 ";
   sdp_msg = sdp_msg + local_ip + "\r\n";
   if(bandwidth_to > 64) sdp_msg = sdp_msg + "b=AS:" + PString(bandwidth_to) + "\r\n";
@@ -1555,7 +1555,7 @@ int MCUSipConnection::CreateSipData()
       roomname = sip->sip_to->a_url->url_user;
     }
     PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_from);
-    bandwidth_to = FreeMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
+    bandwidth_to = OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
   } else { // outgoing
     ProxyAccount *proxy = sep->FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(proxy)
@@ -1572,7 +1572,7 @@ int MCUSipConnection::CreateSipData()
       roomname = sip->sip_from->a_url->url_user;
     }
     PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_to);
-    bandwidth_to = FreeMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
+    bandwidth_to = OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
   }
   cseqNum = sip->sip_cseq->cs_seq+1;
   return 1;
@@ -1940,10 +1940,10 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
       }
     }
 
-    PString ep_port = FreeMCU::Current().GetEndpointParamFromUrl("Port", "sip:"+remote_user+"@"+remote_domain);
+    PString ep_port = OpenMCU::Current().GetEndpointParamFromUrl("Port", "sip:"+remote_user+"@"+remote_domain);
     if(ep_port != "") remote_port = ep_port;
 
-    PString ep_transport = FreeMCU::Current().GetEndpointParamFromUrl("Transport", "sip:"+remote_user+"@"+remote_domain);
+    PString ep_transport = OpenMCU::Current().GetEndpointParamFromUrl("Transport", "sip:"+remote_user+"@"+remote_domain);
     if(ep_transport != "") remote_transport = "transport="+ep_transport;
     if(remote_transport == "transport=tls" && remote_port == "5060")
       remote_port = "5061";
@@ -2422,7 +2422,7 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
 
-  Registrar *registrar = FreeMCU::Current().GetRegistrar();
+  Registrar *registrar = OpenMCU::Current().GetRegistrar();
   // add new incoming connection
   if(!sCon && request == sip_method_invite)
   {

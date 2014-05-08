@@ -9,9 +9,10 @@ else
 	AUTOMAKE=automake-${AM_VERSION}
 fi
 
-cd libs/libzrtp/ && ./bootstrap.sh
-
 echo "Generating build scripts..."
 $ACLOCAL
 $AUTOMAKE --add-missing --copy
 autoconf
+
+cd libs/libzrtp/ && ./bootstrap.sh
+

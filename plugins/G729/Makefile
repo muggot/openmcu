@@ -26,7 +26,7 @@
 #
 #
 AC_PLUGIN_DIR=codecs/audio
-PREFIX=/opt/freemcu/lib/ptlib
+PREFIX=/opt/openmcu-ru/lib/ptlib
 
 STDCCFLAGS += -fPIC
 

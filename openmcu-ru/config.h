@@ -22,21 +22,21 @@
 
 
 // specify the path executable files
-#define SYS_BIN_DIR "/opt/freemcu/bin"
+#define SYS_BIN_DIR "/opt/openmcu-ru/bin"
 // specify the path for .conf files
-#define SYS_CONFIG_DIR "/opt/freemcu/config"
+#define SYS_CONFIG_DIR "/opt/openmcu-ru/config"
 // specify the path for audio&video export via named pipes (linux, freebsd)
-#define SYS_PIPE_DIR "/opt/freemcu/pipe"
+#define SYS_PIPE_DIR "/opt/openmcu-ru/pipe"
 // specify the path for built-in web server resources
-#define SYS_RESOURCE_DIR "/opt/freemcu/resource"
+#define SYS_RESOURCE_DIR "/opt/openmcu-ru/resource"
 // specify server logs folder
-#define SERVER_LOGS "/opt/freemcu/log"
+#define SERVER_LOGS "/opt/openmcu-ru/log"
 // specify true font directory
-#define TRUETYPE_FONT_DIR "/opt/freemcu/font"
+#define TRUETYPE_FONT_DIR "/opt/openmcu-ru/font"
 // specify records directory
-#define RECORDS_DIR "/opt/freemcu/records"
+#define RECORDS_DIR "/opt/openmcu-ru/records"
 // specify certificates directory
-#define SYS_SSL_DIR "/opt/freemcu/ssl"
+#define SYS_SSL_DIR "/opt/openmcu-ru/ssl"
 
 // specify ffmpeg path
 #define FFMPEG_PATH	"/opt/bin/ffmpeg"
@@ -105,7 +105,7 @@
 #ifndef SYS_CONFIG_DIR
 #  define SYS_CONFIG_DIR "."
 #endif
-#define CONFIG_PATH PString(SYS_CONFIG_DIR)+PATH_SEPARATOR+"freemcu.ini"
+#define CONFIG_PATH PString(SYS_CONFIG_DIR)+PATH_SEPARATOR+"openmcu.ini"
 
 
 #endif // _MCU_CONFIG_H

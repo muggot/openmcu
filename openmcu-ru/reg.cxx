@@ -655,7 +655,7 @@ void Registrar::MainLoop()
       {
         regConn->state = CONN_IDLE;
         // refresh Address Book
-        FreeMCU::Current().ManagerRefreshAddressBook();
+        OpenMCU::Current().ManagerRefreshAddressBook();
       }
       regConn->Unlock();
     }
@@ -671,7 +671,7 @@ void Registrar::InitConfig()
   internal_room_prefix = "INTERNAL_CALL_";
 
   MCUConfig cfg("Registrar Parameters");
-  registrar_domain = cfg.GetString("Registrar domain", "freemcu");
+  registrar_domain = cfg.GetString("Registrar domain", "openmcu-ru");
 
   // general parameters
   allow_internal_calls = cfg.GetBoolean("Allow internal calls", TRUE);
@@ -837,7 +837,7 @@ void Registrar::Main()
     PIPSocket::Address address("*");
     WORD port = 1719;
     gk = new RegistrarGk(ep, this);
-    PString mcuName = FreeMCU::Current().GetName();
+    PString mcuName = OpenMCU::Current().GetName();
     gk->SetGatekeeperIdentifier(mcuName);
     H323Transactor *gkListener = gk->CreateListener(new H323TransportUDP(*ep, address, port, NULL));
     gkListener->StartChannel();

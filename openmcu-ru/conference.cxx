@@ -121,12 +121,12 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   // add monitor event
   monitor->AddMonitorEvent(new ConferenceStatusInfo(conference->GetID()));
   monitor->AddMonitorEvent(new ConferenceRecorderInfo(conference->GetID()));
-  int timeLimit = FreeMCU::Current().GetConferenceParam(conference->GetNumber(), RoomTimeLimitKey, 0);
+  int timeLimit = OpenMCU::Current().GetConferenceParam(conference->GetNumber(), RoomTimeLimitKey, 0);
   if(timeLimit > 0)
     monitor->AddMonitorEvent(new ConferenceTimeLimitInfo(conference->GetID(), PTime() + timeLimit*1000));
 
   // add file recorder member
-  if(!FreeMCU::Current().GetConferenceParam(conference->GetNumber(), RoomAllowRecordKey, TRUE))
+  if(!OpenMCU::Current().GetConferenceParam(conference->GetNumber(), RoomAllowRecordKey, TRUE))
     return;
 
   conference->fileRecorder = new ConferenceFileMember(conference, (const PString) "recorder" , PFile::WriteOnly);
@@ -149,7 +149,7 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   if(membersConf.Left(1)!="\n") membersConf="\n"+membersConf;
 
   // recall last template
-  if(!FreeMCU::Current().GetConferenceParam(conference->GetNumber(), RoomRecallLastTemplateKey, FALSE)) return;
+  if(!OpenMCU::Current().GetConferenceParam(conference->GetNumber(), RoomRecallLastTemplateKey, FALSE)) return;
 
   PINDEX dp=membersConf.Find("\nLAST_USED ");
   if(dp!=P_MAX_INDEX)
@@ -232,7 +232,7 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
 #  endif
 #endif
 
-  BOOL forceScreenSplit = FreeMCU::Current().GetConferenceParam(_number, ForceSplitVideoKey, TRUE);
+  BOOL forceScreenSplit = OpenMCU::Current().GetConferenceParam(_number, ForceSplitVideoKey, TRUE);
 
   if(!forceScreenSplit)
   {
@@ -247,7 +247,7 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
 
   return new Conference(*this, _guid, number, _name, _mcuNumber
 #if MCU_VIDEO
-                        ,FreeMCU::Current().CreateVideoMixer(forceScreenSplit)
+                        ,OpenMCU::Current().CreateVideoMixer(forceScreenSplit)
 #endif
                         ); 
 }
@@ -392,7 +392,7 @@ void ConferenceMonitor::RemoveForConference(const OpalGloballyUniqueID & guid)
 
 BOOL ConferenceTimeLimitInfo::Perform(Conference & conference)
 {
-  ConferenceManager & cm = FreeMCU::Current().GetEndpoint().GetConferenceManager();
+  ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
   cm.RemoveConference(conference.GetID());
   return FALSE;
 }
@@ -406,10 +406,10 @@ BOOL ConferenceRepeatingInfo::Perform(Conference & conference)
 BOOL ConferenceStatusInfo::Perform(Conference & conference)
 {
   // auto delete empty room
-  BOOL autoDeleteEmpty = FreeMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAutoDeleteEmptyKey, FALSE);
+  BOOL autoDeleteEmpty = OpenMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAutoDeleteEmptyKey, FALSE);
   if(autoDeleteEmpty && !conference.GetVisibleMemberCount())
   {
-    ConferenceManager & cm = FreeMCU::Current().GetEndpoint().GetConferenceManager();
+    ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
     cm.RemoveConference(conference.GetID());
     return TRUE; // delete monitor
   }
@@ -420,8 +420,8 @@ BOOL ConferenceStatusInfo::Perform(Conference & conference)
 BOOL ConferenceRecorderInfo::Perform(Conference & conference)
 {
   // external recorder
-  BOOL autoRecordNotEmpty = FreeMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAutoRecordNotEmptyKey, FALSE);
-  BOOL allowRecord = FreeMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAllowRecordKey, TRUE);
+  BOOL autoRecordNotEmpty = OpenMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAutoRecordNotEmptyKey, FALSE);
+  BOOL allowRecord = OpenMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAllowRecordKey, TRUE);
   if(autoRecordNotEmpty && allowRecord)
   {
     // stop recorder if room is empty
@@ -487,8 +487,8 @@ Conference::Conference(        ConferenceManager & _manager,
   vidmembernum = 0;
   fileRecorder = NULL;
   externalRecorder=NULL;
-  forceScreenSplit = FreeMCU::Current().GetConferenceParam(number, ForceSplitVideoKey, TRUE);
-  lockedTemplate = FreeMCU::Current().GetConferenceParam(number, LockTemplateKey, FALSE);
+  forceScreenSplit = OpenMCU::Current().GetConferenceParam(number, ForceSplitVideoKey, TRUE);
+  lockedTemplate = OpenMCU::Current().GetConferenceParam(number, LockTemplateKey, FALSE);
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 
@@ -501,7 +501,7 @@ Conference::~Conference()
 
 BOOL Conference::RecorderCheckSpace()
 {
-  PDirectory pd(FreeMCU::Current().vr_ffmpegDir);
+  PDirectory pd(OpenMCU::Current().vr_ffmpegDir);
   PInt64 t, f;
   DWORD cs;
   if(!pd.GetVolumeSpace(t, f, cs))
@@ -509,8 +509,8 @@ BOOL Conference::RecorderCheckSpace()
     PTRACE(1,"EVRT\tRecorder space check failed");
     return TRUE;
   }
-  BOOL result = ((f>>20) >= FreeMCU::Current().vr_minimumSpaceMiB);
-  if(!result) FreeMCU::Current().HttpWriteEvent("<b><font color='red'>Insufficient disk space</font>: Video Recorder DISABLED</b>");
+  BOOL result = ((f>>20) >= OpenMCU::Current().vr_minimumSpaceMiB);
+  if(!result) OpenMCU::Current().HttpWriteEvent("<b><font color='red'>Insufficient disk space</font>: Video Recorder DISABLED</b>");
   PTRACE_IF(1,!result,"EVRT\tInsufficient disk space: Video Recorder DISABLED");
   return result;
 }
@@ -523,10 +523,10 @@ BOOL Conference::StartExternalRecorder()
     return FALSE;
   if(!RecorderCheckSpace())
     return FALSE;
-  if(!PDirectory::Exists(FreeMCU::Current().vr_ffmpegDir))
+  if(!PDirectory::Exists(OpenMCU::Current().vr_ffmpegDir))
   {
     PTRACE(1,"EVRT\tRecorder failed to start (check recorder directory)");
-    FreeMCU::Current().HttpWriteEventRoom("Recorder failed to start (check recorder directory)", number);
+    OpenMCU::Current().HttpWriteEventRoom("Recorder failed to start (check recorder directory)", number);
     return FALSE;
   }
   externalRecorder = new ExternalVideoRecorderThread(number);
@@ -539,9 +539,9 @@ BOOL Conference::StartExternalRecorder()
     return FALSE;
   }
   PTRACE(1,"MCU\tConference: " << number <<", external video recorder started");
-  FreeMCU::Current().HttpWriteEventRoom("external video recording started", number);
-  FreeMCU::Current().HttpWriteCmdRoom(FreeMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
-  FreeMCU::Current().HttpWriteCmdRoom("build_page()", number);
+  OpenMCU::Current().HttpWriteEventRoom("external video recording started", number);
+  OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
+  OpenMCU::Current().HttpWriteCmdRoom("build_page()", number);
   return TRUE;
 }
 
@@ -553,9 +553,9 @@ BOOL Conference::StopExternalRecorder()
   PThread::Sleep(1000);
   externalRecorder = NULL;
   PTRACE(1,"MCU\tConference: " << number <<", external video recorder stopped");
-  FreeMCU::Current().HttpWriteEventRoom("external video recording stopped", number);
-  FreeMCU::Current().HttpWriteCmdRoom(FreeMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
-  FreeMCU::Current().HttpWriteCmdRoom("build_page()", number);
+  OpenMCU::Current().HttpWriteEventRoom("external video recording stopped", number);
+  OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
+  OpenMCU::Current().HttpWriteCmdRoom("build_page()", number);
   return TRUE;
 }
 
@@ -578,7 +578,7 @@ void Conference::AddMonitorEvent(ConferenceMonitorInfo * info)
 
 void Conference::RefreshAddressBook()
 {
-  PStringArray abook = FreeMCU::Current().GetRegistrar()->GetAddressBook();
+  PStringArray abook = OpenMCU::Current().GetRegistrar()->GetAddressBook();
   PStringStream msg;
   msg = "addressbook=Array(";
   for(PINDEX i = 0; i < abook.GetSize(); i++)
@@ -599,9 +599,9 @@ void Conference::RefreshAddressBook()
         << ")";
   }
   msg << ");";
-  FreeMCU::Current().HttpWriteCmdRoom(msg,number);
+  OpenMCU::Current().HttpWriteCmdRoom(msg,number);
   msg = "abook_refresh()";
-  FreeMCU::Current().HttpWriteCmdRoom(msg,number);
+  OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 }
 
 BOOL Conference::AddMember(ConferenceMember * memberToAdd)
@@ -630,7 +630,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
           PString username=memberToAdd->GetName(); username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
           PStringStream msg;
           msg << username << " REJECTED - DUPLICATE NAME";
-          FreeMCU::Current().HttpWriteEventRoom(msg, number);
+          OpenMCU::Current().HttpWriteEventRoom(msg, number);
           return FALSE;
         }
       }
@@ -650,7 +650,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
           username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
           PStringStream msg;
           msg << username << " DUPLICATE NAME, renamed to " << newName;
-          FreeMCU::Current().HttpWriteEventRoom(msg, number);
+          OpenMCU::Current().HttpWriteEventRoom(msg, number);
         }
       }
     }
@@ -796,7 +796,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         << "," << memberToAdd->kManualGainDB
         << "," << memberToAdd->kOutputGainDB
         << ")";
-    FreeMCU::Current().HttpWriteCmdRoom(msg,number);
+    OpenMCU::Current().HttpWriteCmdRoom(msg,number);
   }
 /*  
   else
@@ -808,7 +808,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 
 
   msg = "<font color=green><b>+</b>";
-  msg << memberToAdd->GetName() << "</font>"; FreeMCU::Current().HttpWriteEventRoom(msg,number);
+  msg << memberToAdd->GetName() << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
   return TRUE;
 }
 
@@ -848,7 +848,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
        memberNameList.insert(MemberNameList::value_type(username,zerop));
      }
 
-    PStringStream msg; msg << "<font color=red><b>-</b>" << username << "</font>"; FreeMCU::Current().HttpWriteEventRoom(msg,number);
+    PStringStream msg; msg << "<font color=red><b>-</b>" << username << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
     username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
     msg="remmmbr(0";
     msg << ","  << (long)userid
@@ -860,7 +860,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
         << ",\"" << MCUURL(memberToRemove->GetName()).GetUrlId() << "\"";
     if(s==memberNameList.end()) msg << ",1";
     msg << ")";
-    FreeMCU::Current().HttpWriteCmdRoom(msg,number);
+    OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 
 
     // remove this connection from the member list
@@ -980,7 +980,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, unsigned audio
     if (member->audioLevelIndicator < 64) member->audioLevelIndicator = 0;
     if((member->previousAudioLevel != member->audioLevelIndicator)||((member->audioLevelIndicator!=0) && ((member->audioCounter&255)==0))){
       PStringStream msg; msg << "audio(" << (long)member->GetID() << "," << member->audioLevelIndicator << ")";
-      FreeMCU::Current().HttpWriteCmdRoom(msg,number);
+      OpenMCU::Current().HttpWriteCmdRoom(msg,number);
       member->previousAudioLevel=member->audioLevelIndicator;
       member->audioLevelIndicator=audioLevel;
     }
@@ -1174,7 +1174,7 @@ void Conference::AddOfflineMemberToNameList(PString & name)
   PString username(name);
   username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
   PString url=MCUURL(username).GetUrlId();
-  FreeMCU::Current().HttpWriteCmdRoom("addmmbr(0,0,'"+username+"',0,0,0,0,0,'"+url+"',0)",number);
+  OpenMCU::Current().HttpWriteCmdRoom("addmmbr(0,0,'"+username+"',0,0,0,0,0,'"+url+"',0)",number);
 }
 
 BOOL Conference::PutChosenVan()
@@ -1221,8 +1221,8 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
     }
     FreezeVideo(NULL);
 
-    FreeMCU::Current().HttpWriteCmdRoom(FreeMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this),number);
-    FreeMCU::Current().HttpWriteCmdRoom("build_page()",number);
+    OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this),number);
+    OpenMCU::Current().HttpWriteCmdRoom("build_page()",number);
   }
 }
 
@@ -1284,11 +1284,11 @@ void ConferenceMember::ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState)
 
   if(!conference)
   {
-    FreeMCU::Current().HttpWriteCmd(msg);
+    OpenMCU::Current().HttpWriteCmd(msg);
     return;
   }
 
-  FreeMCU::Current().HttpWriteCmdRoom(msg,conference->GetNumber());
+  OpenMCU::Current().HttpWriteCmdRoom(msg,conference->GetNumber());
 }
 
 BOOL ConferenceMember::AddToConference(Conference * _conference)
@@ -1712,7 +1712,7 @@ void * ConferenceMember::OnExternalReadVideo(ConferenceMemberId id, int width, i
   if(found)
   MCUVideoMixer::ResizeYUV420P(nearestFs.data.GetPointer(), destFs.data.GetPointer(), nearestFs.width, nearestFs.height, width, height);
   else
-//  FreeMCU::Current().GetPreMediaFrame(destFs.data.GetPointer(), width, height, bytesReturned);
+//  OpenMCU::Current().GetPreMediaFrame(destFs.data.GetPointer(), width, height, bytesReturned);
   MCUVideoMixer::FillYUVFrame(destFs.data.GetPointer(), 0, 0, 0, width, height);
   destFs.valid = TRUE;
 

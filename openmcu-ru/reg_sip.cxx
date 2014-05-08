@@ -81,7 +81,7 @@ int Registrar::OnIncomingMsg(msg_t *msg)
   }
 
   // forwarding
-  //PString processing_type = FreeMCU::Current().GetEndpointParamFromUrl("Processing", "");
+  //PString processing_type = OpenMCU::Current().GetEndpointParamFromUrl("Processing", "");
   PString processing_type = "transcoding";
   if((sipToSip && processing_type == "forwarding") &&
      (cseq == sip_method_invite || cseq == sip_method_cancel || cseq == sip_method_bye || cseq == sip_method_ack))

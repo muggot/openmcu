@@ -14,17 +14,17 @@ extern "C" {
 
 PCREATE_SERVICE_MACRO(mcuinfo,P_EMPTY,P_EMPTY)
 {
-  return FreeMCU::Current().GetEndpoint().GetMonitorText();
+  return OpenMCU::Current().GetEndpoint().GetMonitorText();
 }
 
 PCREATE_SERVICE_MACRO_BLOCK(RoomStatus,P_EMPTY,P_EMPTY,block)
 {
-  return FreeMCU::Current().GetEndpoint().GetRoomStatus(block);
+  return OpenMCU::Current().GetEndpoint().GetRoomStatus(block);
 }
 
 PCREATE_SERVICE_MACRO_BLOCK(RoomList,P_EMPTY,P_EMPTY,block)
 {
-  return FreeMCU::Current().GetEndpoint().GetRoomList(block);
+  return OpenMCU::Current().GetEndpoint().GetRoomList(block);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -101,8 +101,8 @@ PString ErrorPage( //maybe ptlib could already create pages like this? for futur
     for(PINDEX i=0;i<text.GetSize();i++) p << "<p>" << text[i] << "</p>";
 
     p << "<hr><i>"
-      << FreeMCU::Current().GetName() << " "  << FreeMCU::Current().GetVersion(TRUE)
-      << " (" << FreeMCU::Current().GetOSName() << " " << FreeMCU::Current().GetOSVersion() << ") "
+      << OpenMCU::Current().GetName() << " "  << OpenMCU::Current().GetVersion(TRUE)
+      << " (" << OpenMCU::Current().GetOSName() << " " << OpenMCU::Current().GetOSVersion() << ") "
       << " Server at "
       << ip << " Port " << port
       << ". Generated " << now.AsString(PTime::RFC1123, PTime::GMT)
@@ -246,7 +246,7 @@ BOOL DefaultPConfigPage::OnPOST(PHTTPServer & server,
 GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  FreeMCU & mcu = FreeMCU::Current();
+  OpenMCU & mcu = OpenMCU::Current();
   cfg = MCUConfig(section);
 
   PStringStream html_begin, html_end, html_page, s;
@@ -257,7 +257,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // Language
   s << SelectField("Language", cfg.GetString("Language"), ",EN,RU");
   // MCU Server Id
-  s << StringField("FreeMCU Server Id", cfg.GetString("FreeMCU Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 35);
+  s << StringField("OpenMCU-ru Server Id", cfg.GetString("OpenMCU-ru Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 35);
 
   s << SelectField(DefaultProtocolKey, cfg.GetString(DefaultProtocolKey, "sip"), "h323,sip");
 
@@ -348,7 +348,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_general","window.l_info_param_general");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -429,7 +429,7 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_conference", "window.l_info_param_conference");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -461,7 +461,7 @@ RegistrarPConfigPage::RegistrarPConfigPage(PHTTPServiceProcess & app,const PStri
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_registrar","window.l_info_param_registrar");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -499,7 +499,7 @@ ControlCodesPConfigPage::ControlCodesPConfigPage(PHTTPServiceProcess & app,const
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, "Control Codes", "window.l_param_control_codes", "window.l_info_param_control_codes");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -534,7 +534,7 @@ RoomCodesPConfigPage::RoomCodesPConfigPage(PHTTPServiceProcess & app,const PStri
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, "Room Codes", "window.l_param_room_codes", "window.l_info_param_room_codes");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -580,7 +580,7 @@ ManagingUsersPConfigPage::ManagingUsersPConfigPage(PHTTPServiceProcess & app,con
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, "Managing Users", "window.l_param_managing_users", "window.l_info_param_managing_users");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -607,7 +607,7 @@ ManagingGroupsPConfigPage::ManagingGroupsPConfigPage(PHTTPServiceProcess & app,c
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, "Managing Groups", "window.l_param_managing_groups", "window.l_info_param_managing_groups");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -648,7 +648,7 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, "Video settings", "window.l_param_video", "window.l_info_param_video");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -658,7 +658,7 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  FreeMCU & mcu = FreeMCU::Current();
+  OpenMCU & mcu = OpenMCU::Current();
   cfg = MCUConfig(section);
 
   PStringStream html_begin, html_end, html_page, s;
@@ -705,7 +705,7 @@ RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & t
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, "Record", "window.l_param_record","window.l_info_param_record");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -716,7 +716,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  FreeMCU & mcu = FreeMCU::Current();
+  OpenMCU & mcu = OpenMCU::Current();
 
   firstEditRow = 2;
   rowBorders = TRUE;
@@ -910,7 +910,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_h323_endpoints", "window.l_info_param_h323_endpoints");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -921,7 +921,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  FreeMCU & mcu = FreeMCU::Current();
+  OpenMCU & mcu = OpenMCU::Current();
 
   firstEditRow = 2;
   rowBorders = TRUE;
@@ -1111,7 +1111,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_sip_endpoints", "window.l_info_param_sip_endpoints");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -1160,7 +1160,7 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
 
   BuildHTML("");
   BeginPage(html_begin, "SIP proxy-servers", "window.l_param_sip_proxy", "window.l_info_param_sip_proxy");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -1201,7 +1201,7 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
 
   BuildHTML("");
   BeginPage(html_begin, "Access Rules", "window.l_param_access_rules", "window.l_info_param_access_rules");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -1211,7 +1211,7 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
 H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  FreeMCU & mcu = FreeMCU::Current();
+  OpenMCU & mcu = OpenMCU::Current();
   cfg = MCUConfig(section);
 
   mcu.GetEndpoint().Initialise(cfg);
@@ -1240,7 +1240,7 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_h323", "window.l_info_param_h323");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -1250,7 +1250,7 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
 SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  FreeMCU & mcu = FreeMCU::Current();
+  OpenMCU & mcu = OpenMCU::Current();
   cfg = MCUConfig(section);
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
@@ -1298,7 +1298,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, "SIP settings", "window.l_param_sip", "window.l_info_param_sip");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -1393,7 +1393,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
     BeginPage(html_begin, "Video codecs(transmit)", "window.l_param_transmit_video", "window.l_info_param_transmit_video");
   else
     BeginPage(html_begin, section, "", "");
-  EndPage(html_end,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
 }
@@ -1470,7 +1470,7 @@ BOOL CodecsPConfigPage::OnPOST(PHTTPServer & server,
 
 ///////////////////////////////////////////////////////////////
 
-WelcomePage::WelcomePage(FreeMCU & _app, PHTTPAuthority & auth)
+WelcomePage::WelcomePage(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("welcome.html", "", "text/html; charset=utf-8", auth),
     app(_app)
 {}
@@ -1550,7 +1550,7 @@ BOOL WelcomePage::OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo
     server.Write((const char*)message,message.GetLength());
   }
   server.flush();
-  FreeMCU::Current().RemovePreMediaFrame();
+  OpenMCU::Current().RemovePreMediaFrame();
 #endif
   return FALSE;
 }
@@ -1574,29 +1574,29 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
     if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
   }
   PStringStream shtml;
-  BeginPage(shtml,"FreeMCU","window.l_welcome","window.l_info_welcome");
+  BeginPage(shtml,"OpenMCU-ru","window.l_welcome","window.l_info_welcome");
 
   PString timeFormat = "yyyyMMdd hhmmss z";
   PTime now;
-  PTimeInterval upTime = now - FreeMCU::Current().GetStartTime();
+  PTimeInterval upTime = now - OpenMCU::Current().GetStartTime();
 
   shtml << "<br><b>Monitor Text (<span style='cursor:pointer;text-decoration:underline' onclick='javascript:{if(document.selection){var range=document.body.createTextRange();range.moveToElementText(document.getElementById(\"monitorTextId\"));range.select();}else if(window.getSelection){var range=document.createRange();range.selectNode(document.getElementById(\"monitorTextId\"));window.getSelection().addRange(range);}}'>select all</span>)</b><div style='padding:5px;border:1px dotted #595;width:100%;height:auto;max-height:300px;overflow:auto'><pre style='margin:0px;padding:0px' id='monitorTextId'>"
 #  ifdef GIT_REVISION
 #    define _QUOTE_MACRO_VALUE1(x) #x
 #    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
-        << "FreeMCU REVISION " << _QUOTE_MACRO_VALUE(GIT_REVISION) << "\n"
+        << "OpenMCU-ru REVISION " << _QUOTE_MACRO_VALUE(GIT_REVISION) << "\n"
 #    undef _QUOTE_MACRO_VALUE
 #    undef _QUOTE_MACRO_VALUE1
 #  endif
 
-              << "Program: "          << FreeMCU::Current().GetProductName() << "\n"
-              << "Version: "          << FreeMCU::Current().GetVersion(TRUE) << "\n"
-              << "Manufacturer: "     << FreeMCU::Current().GetManufacturer() << "\n"
-              << "OS: "               << FreeMCU::Current().GetOSClass() << " " << FreeMCU::Current().GetOSName() << "\n"
-              << "OS Version: "       << FreeMCU::Current().GetOSVersion() << "\n"
-              << "Hardware: "         << FreeMCU::Current().GetOSHardware() << "\n"
-              << "Compilation date: " << FreeMCU::Current().GetCompilationDate().AsString(timeFormat, PTime::GMT) << "\n"
-              << "Start Date: "       << FreeMCU::Current().GetStartTime().AsString(timeFormat, PTime::GMT) << "\n"
+              << "Program: "          << OpenMCU::Current().GetProductName() << "\n"
+              << "Version: "          << OpenMCU::Current().GetVersion(TRUE) << "\n"
+              << "Manufacturer: "     << OpenMCU::Current().GetManufacturer() << "\n"
+              << "OS: "               << OpenMCU::Current().GetOSClass() << " " << OpenMCU::Current().GetOSName() << "\n"
+              << "OS Version: "       << OpenMCU::Current().GetOSVersion() << "\n"
+              << "Hardware: "         << OpenMCU::Current().GetOSHardware() << "\n"
+              << "Compilation date: " << OpenMCU::Current().GetCompilationDate().AsString(timeFormat, PTime::GMT) << "\n"
+              << "Start Date: "       << OpenMCU::Current().GetStartTime().AsString(timeFormat, PTime::GMT) << "\n"
               << "Current Date: "     << now.AsString(timeFormat, PTime::GMT) << "\n"
               << "Up time: "          << upTime << "\n"
               << "Peer Addr: "        << peerAddr << "\n"
@@ -1611,11 +1611,11 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
   shtml << "<br><form method=\"post\" enctype=\"multipart/form-data\"><h1>Prefatory Frame</h1>JPEG, max 500K:<br><img src=\"logo.jpeg\"><br>Change: <input name=\"image\" type=\"file\"><input type=\"submit\"></form>";
 #endif
 
-  EndPage(shtml,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: FreeMCU\r\n"
+      << "Server: OpenMCU-ru\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1632,7 +1632,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MainStatusPage::MainStatusPage(FreeMCU & _app, PHTTPAuthority & auth)
+MainStatusPage::MainStatusPage(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Status", "", "text/html; charset=utf-8", auth),
     app(_app)
 {
@@ -1660,7 +1660,7 @@ MainStatusPage::MainStatusPage(FreeMCU & _app, PHTTPAuthority & auth)
 
        << "<p>";
 
-         EndPage(html,FreeMCU::Current().GetHtmlCopyright());
+         EndPage(html,OpenMCU::Current().GetHtmlCopyright());
   string = html;
 }
 
@@ -1681,15 +1681,15 @@ BOOL MainStatusPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   PString body;
 
   if(data.Contains("start"))
-    body = FreeMCU::Current().GetEndpoint().GetRoomStatusJSStart();
+    body = OpenMCU::Current().GetEndpoint().GetRoomStatusJSStart();
   else
-    body = FreeMCU::Current().GetEndpoint().GetRoomStatusJS();
+    body = OpenMCU::Current().GetEndpoint().GetRoomStatusJS();
   PINDEX length = body.GetLength();
 
   PStringStream message;
   message << "HTTP/1.1 200 OK\r\n"
           << "Date: " << PTime().AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-          << "Server: FreeMCU\r\n"
+          << "Server: OpenMCU-ru\r\n"
           << "MIME-Version: 1.0\r\n"
           << "Cache-Control: no-cache, must-revalidate\r\n"
           << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1706,7 +1706,7 @@ BOOL MainStatusPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
 
 ///////////////////////////////////////////////////////////////
 
-InvitePage::InvitePage(FreeMCU & _app, PHTTPAuthority & auth)
+InvitePage::InvitePage(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Invite", "", "text/html; charset=utf-8", auth),
     app(_app)
 {
@@ -1715,7 +1715,7 @@ InvitePage::InvitePage(FreeMCU & _app, PHTTPAuthority & auth)
   BeginPage(html,"Invite","window.l_invite","window.l_info_invite");
 
   PString select = "<select class='input-large' onchange='changeSelect(this)'><option value=''></option>";
-  PStringArray abook = FreeMCU::Current().GetRegistrar()->GetAddressBook();
+  PStringArray abook = OpenMCU::Current().GetRegistrar()->GetAddressBook();
   for(PINDEX i = 0; i < abook.GetSize(); i++)
   {
     PString uri = abook[i].Tokenise(",")[0];
@@ -1740,7 +1740,7 @@ InvitePage::InvitePage(FreeMCU & _app, PHTTPAuthority & auth)
        << "</script>\n";
 
   html << form;
-  EndPage(html,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html,OpenMCU::Current().GetHtmlCopyright());
 
   string = html;
 }
@@ -1761,7 +1761,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
   if (room.IsEmpty() || address.IsEmpty()) {
     BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
     html << html_invite;
-    EndPage(html,FreeMCU::Current().GetHtmlCopyright()); msg = html;
+    EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
     return TRUE;
   }
 
@@ -1771,13 +1771,13 @@ BOOL InvitePage::Post(PHTTPRequest & request,
     PTRACE(2,"Conference\tCould not invite " << address);
     BeginPage(html,"Invite failed","window.l_invite_f","window.l_info_invite_f");
     html << html_invite;
-    EndPage(html,FreeMCU::Current().GetHtmlCopyright()); msg = html;
+    EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
     return TRUE;
   }
 
   BeginPage(html,"Invite succeeded","window.l_invite_s","window.l_info_invite_s");
   html << html_invite;
-  EndPage(html,FreeMCU::Current().GetHtmlCopyright()); msg = html;
+  EndPage(html,OpenMCU::Current().GetHtmlCopyright()); msg = html;
 
   return TRUE;
 }
@@ -1807,7 +1807,7 @@ void jpeg_term_destination(j_compress_ptr cinfo){
   jpegMixer->jpegTime=(long)time(0);
 }
 
-JpegFrameHTTP::JpegFrameHTTP(FreeMCU & _app, PHTTPAuthority & auth)
+JpegFrameHTTP::JpegFrameHTTP(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Jpeg", "", "image/jpeg", auth),
     app(_app)
 {
@@ -1853,8 +1853,8 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
       if(t1-(jpegMixer->jpegTime)>1)
       {
         if(width<1||height<1||width>2048||height>2048)
-        { width=FreeMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_width;
-          height=FreeMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_height;
+        { width=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_width;
+          height=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_height;
         }
         struct jpeg_compress_struct cinfo; struct jpeg_error_mgr jerr;
         JSAMPROW row_pointer[1];
@@ -1898,7 +1898,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
       PStringStream message;
       message << "HTTP/1.1 200 OK\r\n"
               << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-              << "Server: FreeMCU\r\n"
+              << "Server: OpenMCU-ru\r\n"
               << "MIME-Version: 1.0\r\n"
               << "Cache-Control: no-cache, must-revalidate\r\n"
               << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1922,7 +1922,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
 
 ///////////////////////////////////////////////////////////////
 
-InteractiveHTTP::InteractiveHTTP(FreeMCU & _app, PHTTPAuthority & auth)
+InteractiveHTTP::InteractiveHTTP(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Comm", "", "text/html; charset=utf-8", auth),
     app(_app)
 {
@@ -1952,7 +1952,7 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
 
   message << "HTTP/1.1 200 OK\r\n"
           << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-          << "Server: FreeMCU\r\n"
+          << "Server: OpenMCU-ru\r\n"
           << "MIME-Version: 1.0\r\n"
           << "Cache-Control: no-cache, must-revalidate\r\n"
           << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -1963,44 +1963,44 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
   server.flush();
 
   message="<html><body style='font-size:9px;font-family:Verdana,Arial;padding:0px;margin:1px;color:#000'><script>p=parent</script>\n";
-  message << FreeMCU::Current().HttpStartEventReading(idx,room);
+  message << OpenMCU::Current().HttpStartEventReading(idx,room);
 
 //PTRACE(1,"!!!!!\tsha1('123')=" << PMessageDigestSHA1::Encode("123")); // sha1 works!! I'll try with websocket in future
 
   if(room!="")
   {
-    FreeMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Wait();
-    ConferenceListType & conferenceList = FreeMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceList();
+    OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Wait();
+    ConferenceListType & conferenceList = OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceList();
     ConferenceListType::iterator r;
     for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
     if(r != conferenceList.end() )
     {
       Conference & conference = *(r->second);
       message << "<script>p.splitdata=Array(";
-      for (unsigned i=0;i<FreeMCU::vmcfg.vmconfs;i++)
+      for (unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
       {
-        PString split=FreeMCU::vmcfg.vmconf[i].splitcfg.Id;
+        PString split=OpenMCU::vmcfg.vmconf[i].splitcfg.Id;
         split.Replace("\"","\\x22",TRUE,0);
         if(i!=0) message << ",";
         message << "\"" << split << "\"";
       }
       message << ");\np.splitdata2={";
-      for (unsigned i=0;i<FreeMCU::vmcfg.vmconfs;i++)
+      for (unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
       {
-        PString split=FreeMCU::vmcfg.vmconf[i].splitcfg.Id;
+        PString split=OpenMCU::vmcfg.vmconf[i].splitcfg.Id;
         split.Replace("\"","\\x22",TRUE,0);
-        message << "\"" << split << "\"" << ":[" << FreeMCU::vmcfg.vmconf[i].splitcfg.vidnum;
-        for(unsigned j=0;j<FreeMCU::vmcfg.vmconf[i].splitcfg.vidnum; j++)
+        message << "\"" << split << "\"" << ":[" << OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum;
+        for(unsigned j=0;j<OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum; j++)
         {
-          VMPCfgOptions & vo=FreeMCU::vmcfg.vmconf[i].vmpcfg[j];
+          VMPCfgOptions & vo=OpenMCU::vmcfg.vmconf[i].vmpcfg[j];
           message << ",[" << vo.posx << "," << vo.posy << "," << vo.width << "," << vo.height << "," << vo.border << "," << vo.label_mask << "]";
         }
         message << "]";
-        if(i+1<FreeMCU::vmcfg.vmconfs) message << ",";
+        if(i+1<OpenMCU::vmcfg.vmconfs) message << ",";
       }
       message << "};\n"
-        << "p." << FreeMCU::Current().GetEndpoint().GetMemberListOptsJavascript(conference) << "\n"
-        << "p." << FreeMCU::Current().GetEndpoint().GetConferenceOptsJavascript(conference) << "\n"
+        << "p." << OpenMCU::Current().GetEndpoint().GetMemberListOptsJavascript(conference) << "\n"
+        << "p." << OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(conference) << "\n"
         << "p.tl=Array" << conference.GetTemplateList() << "\n"
         << "p.seltpl=\"" << conference.GetSelectedTemplateName() << "\"\n"
         << "p.build_page();\n"
@@ -2008,23 +2008,23 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
     }
     else
     { // no (no more) room -- redirect to /
-      FreeMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
+      OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
       message << "<script>top.location.href='/';</script>\n";
       server.Write((const char*)message,message.GetLength());
       server.flush();
       return FALSE;
     }
-    FreeMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
+    OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
   }
 
   while(server.Write((const char*)message,message.GetLength())) {
     server.flush();
     int count=0;
-    message = FreeMCU::Current().HttpGetEvents(idx,room);
+    message = OpenMCU::Current().HttpGetEvents(idx,room);
     while (message.GetLength()==0 && count < 20){
       count++;
       PThread::Sleep(100);
-      message = FreeMCU::Current().HttpGetEvents(idx,room);
+      message = OpenMCU::Current().HttpGetEvents(idx,room);
     }
     if(message.Find("<script>")==P_MAX_INDEX) message << "<script>p.alive()</script>\n";
   }
@@ -2033,7 +2033,7 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
 
 ///////////////////////////////////////////////////////////////
 
-SelectRoomPage::SelectRoomPage(FreeMCU & _app, PHTTPAuthority & auth)
+SelectRoomPage::SelectRoomPage(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Select", "", "text/html; charset=utf-8", auth),
     app(_app)
 {
@@ -2055,7 +2055,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
   }
 
-  MCUH323EndPoint & ep = FreeMCU::Current().GetEndpoint();
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
   ConferenceManager & cm = ep.GetConferenceManager();
 
   if(data.Contains("action") && !data("room").IsEmpty())
@@ -2129,7 +2129,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       }
       break;
     }
-    if(nextRoom.IsEmpty()) nextRoom = FreeMCU::Current().GetDefaultRoomName();
+    if(nextRoom.IsEmpty()) nextRoom = OpenMCU::Current().GetDefaultRoomName();
   }
 
   html
@@ -2158,7 +2158,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       Conference & conference = *(r->second);
       PString roomNumber = conference.GetNumber();
       BOOL controlled = conference.GetForceScreenSplit();
-      BOOL allowRecord = FreeMCU::Current().GetConferenceParam(roomNumber, RoomAllowRecordKey, TRUE);
+      BOOL allowRecord = OpenMCU::Current().GetConferenceParam(roomNumber, RoomAllowRecordKey, TRUE);
       BOOL moderated=FALSE; PString charModerated = "-";
       if(controlled) { charModerated = conference.IsModerated(); moderated=(charModerated=="+"); }
       PINDEX   visibleMemberCount = conference.GetVisibleMemberCount();
@@ -2202,12 +2202,12 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
 
   html << "</table></form>";
 
-  EndPage(html,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(html,OpenMCU::Current().GetHtmlCopyright());
   {
     PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: FreeMCU\r\n"
+      << "Server: OpenMCU-ru\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2230,7 +2230,7 @@ BOOL SelectRoomPage::Post(PHTTPRequest & request,
 {
   PString room = data("room");
   BOOL forceScreenSplit = FALSE;
-  ConferenceManager & cm = FreeMCU::Current().GetEndpoint().GetConferenceManager();
+  ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
   Conference *conference = cm.FindConferenceWithLock(room);
   if(conference)
   {
@@ -2238,7 +2238,7 @@ BOOL SelectRoomPage::Post(PHTTPRequest & request,
     cm.UnlockConference();
   }
   if(forceScreenSplit)
-    msg << FreeMCU::Current().GetEndpoint().SetRoomParams(data);
+    msg << OpenMCU::Current().GetEndpoint().SetRoomParams(data);
   else
     msg << ErrorPage(request.localAddr.AsString(),request.localPort,423,"Locked","Room Control feature is locked","<br/><br/>");
   return TRUE;
@@ -2246,7 +2246,7 @@ BOOL SelectRoomPage::Post(PHTTPRequest & request,
 
 ///////////////////////////////////////////////////////////////
 
-RecordsBrowserPage::RecordsBrowserPage(FreeMCU & _app, PHTTPAuthority & auth)
+RecordsBrowserPage::RecordsBrowserPage(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Records", "", "text/html; charset=utf-8", auth),
     app(_app)
 {}
@@ -2265,7 +2265,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   }
   if(data.Contains("getfile")) // just download
   {
-    PString filePathStr = FreeMCU::Current().vr_ffmpegDir + PATH_SEPARATOR + data("getfile");
+    PString filePathStr = OpenMCU::Current().vr_ffmpegDir + PATH_SEPARATOR + data("getfile");
     if(!PFile::Exists(filePathStr))
     { PHTTPRequest * request = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server);
       request->entityBody = connectInfo.GetEntityBody();
@@ -2275,7 +2275,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       PStringStream message; PTime now; message
         << "HTTP/1.1 404 Not Found\r\n"
         << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-        << "Server: FreeMCU\r\n"
+        << "Server: OpenMCU-ru\r\n"
         << "MIME-Version: 1.0\r\n"
         << "Cache-Control: no-cache, must-revalidate\r\n"
         << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2295,7 +2295,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       PStringStream message; PTime now; message
         << "HTTP/1.1 403 Forbidden\r\n"
         << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-        << "Server: FreeMCU\r\n"
+        << "Server: OpenMCU-ru\r\n"
         << "MIME-Version: 1.0\r\n"
         << "Cache-Control: no-cache, must-revalidate\r\n"
         << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2311,7 +2311,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: FreeMCU\r\n"
+      << "Server: OpenMCU-ru\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2347,7 +2347,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     return TRUE;
   }
 
-  PString dir=FreeMCU::Current().vr_ffmpegDir;
+  PString dir=OpenMCU::Current().vr_ffmpegDir;
   BOOL isDir=PFile::Exists(dir); if(isDir)
   { PFileInfo info;
     PFile::GetInfo(PFilePath(dir), info);
@@ -2371,7 +2371,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     PStringStream message; PTime now; message
       << "HTTP/1.1 404 Not Found\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: FreeMCU\r\n"
+      << "Server: OpenMCU-ru\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2401,7 +2401,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     wtd=data("deleteRecordConfirmed");
     if(wtd.Find('/')==P_MAX_INDEX) if(wtd.Find('\\')==P_MAX_INDEX)
     {
-      unlink(FreeMCU::Current().vr_ffmpegDir + PATH_SEPARATOR + wtd);
+      unlink(OpenMCU::Current().vr_ffmpegDir + PATH_SEPARATOR + wtd);
       shtml << "<div style='border:1px solid green'>"
       << wtd << " deleted"
       << "</div>";
@@ -2539,11 +2539,11 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
 
   } // if(fileList.GetSize()==0) ... else {
 
-  EndPage(shtml,FreeMCU::Current().GetHtmlCopyright());
+  EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: FreeMCU\r\n"
+      << "Server: OpenMCU-ru\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"

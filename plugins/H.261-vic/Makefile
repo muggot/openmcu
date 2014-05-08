@@ -1,5 +1,5 @@
 VC_PLUGIN_DIR=codecs/video
-prefix=/opt/freemcu/lib/ptlib
+prefix=/opt/openmcu-ru/lib/ptlib
 exec_prefix=${prefix}
 target_os=linux-gnu
 

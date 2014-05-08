@@ -1,13 +1,11 @@
 #
 # Makefile
 #
-# Make file for FreeMCU
-#
 
 PREFIX          = @INSTALLPREFIX@
 OSTYPE          = @OSTYPE@
 MACHTYPE	= @MACHTYPE@
-PROG		= freemcu
+PROG		= @PROG@
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx \
                    mcu_rtp.cxx reg.cxx reg_sip.cxx reg_h323.cxx
 
@@ -33,7 +31,7 @@ include $(PTLIBDIR)/make/ptbuildopts.mak
 CONFIG_FILES= \
 layouts.conf \
 ffserver.conf \
-freemcu.ini
+openmcu.ini
 
 RESOURCE_FILES= \
 i24_clr.gif \

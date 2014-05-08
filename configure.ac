@@ -1,24 +1,25 @@
 dnl #######################################################################
 dnl INIT
 
-AC_INIT([FreeMCU],[3.47.100],[FreeMCU])
+AC_INIT([OpenMCU-ru],[3.49.1],[OpenMCU-ru])
 AC_CANONICAL_TARGET()
 AM_INIT_AUTOMAKE()
 
 AC_PROG_CXX
 AC_LANG(C++)
 
-AC_SUBST(PROG, freemcu)
+AC_SUBST(PRODUCT, OpenMCU-ru)
+AC_SUBST(PROG, openmcu-ru)
 
 #AM_MAINTAINER_MODE
 
 dnl ########################################################################
-dnl FreeMCU version
+dnl OpenMCU-ru version
 
-MAJOR_VERSION=`cat freemcu/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
-MINOR_VERSION=`cat freemcu/version.h | grep MINOR_VERSION | cut -f3 -d' '`
-BUILD_NUMBER=`cat freemcu/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
-BUILD_TYPE=`cat freemcu/version.h | grep BUILD_TYPE | cut -f 3 -d ' ' | sed 's/BetaCode/-beta/' | sed 's/AlphaCode/-alpha/' | sed 's/ReleaseCode/\./'`
+MAJOR_VERSION=`cat openmcu-ru/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
+MINOR_VERSION=`cat openmcu-ru/version.h | grep MINOR_VERSION | cut -f3 -d' '`
+BUILD_NUMBER=`cat openmcu-ru/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
+BUILD_TYPE=`cat openmcu-ru/version.h | grep BUILD_TYPE | cut -f 3 -d ' ' | sed 's/BetaCode/-beta/' | sed 's/AlphaCode/-alpha/' | sed 's/ReleaseCode/\./'`
 MCU_VERSION=$MAJOR_VERSION.$MINOR_VERSION.$BUILD_NUMBER
 AC_SUBST(MAJOR_VERSION)
 AC_SUBST(MINOR_VERSION)
@@ -45,8 +46,8 @@ dnl ########################################################################
 dnl install PREFIX
 
 if test "x$prefix" = "xNONE"; then
-  INSTALLPREFIX="/usr/local"
-  #INSTALLPREFIX="/opt"
+  #INSTALLPREFIX="/usr/local"
+  INSTALLPREFIX="/opt"
 else
   INSTALLPREFIX="${prefix}"
 fi
@@ -224,7 +225,7 @@ else
 fi
 
 dnl ########################################################################
-dnl configuration freemcu
+dnl configuration openmcu-ru
 
 AC_ARG_WITH(separator,[  ])
 AC_ARG_WITH(config_prefix, [AS_HELP_STRING([--with-config-prefix],[config directory prefix],[40],[100])], [config_prefix=$withval])
@@ -232,7 +233,7 @@ AC_ARG_WITH(log_prefix, [AS_HELP_STRING([--with-log-prefix],[log directory prefi
 AC_ARG_WITH(pipe_prefix, [AS_HELP_STRING([--with-pipe-prefix],[pipe directory prefix],[40],[100])], [pipe_prefix=$withval])
 AC_ARG_WITH(records_prefix, [AS_HELP_STRING([--with-records-prefix],[records directory prefix],[40],[100])], [records_prefix=$withval])
 
-MCUDIR=freemcu
+MCUDIR=openmcu-ru
 MCU_DIR=${INSTALLPREFIX}/${MCUDIR}
 MCU_BIN_DIR=${MCU_DIR}/bin
 MCU_FONT_DIR=${MCU_DIR}/font
@@ -276,8 +277,8 @@ AC_SUBST(MCU_RECORDS_DIR)
 AC_SUBST(MCU_RESOURCE_DIR)
 AC_SUBST(MCU_SSL_DIR)
 
-AC_CONFIG_FILES(freemcu/Makefile)
-AC_CONFIG_FILES(freemcu/config.h)
+AC_CONFIG_FILES(openmcu-ru/Makefile)
+AC_CONFIG_FILES(openmcu-ru/config.h)
 
 dnl ########################################################################
 dnl configuration ptlib
@@ -978,7 +979,7 @@ dnl ########################################################################
 dnl Summary
 dnl ########################################################################
 echo ""
-echo "============== FreeMCU Build Configuration ================="
+echo "============== OpenMCU-ru Build Configuration ================="
 echo "                         OS Type  :  $target_os"
 echo "                    Machine Type  :  $target_cpu"
 echo "          Installing into prefix  :  $INSTALLPREFIX"
