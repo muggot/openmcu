@@ -70,6 +70,9 @@ main.css \
 i32_lock.png \
 i32_lockopen.png \
 s15_ch.png \
+i16_status_gray.png \
+i16_status_green.png \
+i16_status_red.png \
 
 OBJDIR	= ./obj
 OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdir $(SOURCES)))))

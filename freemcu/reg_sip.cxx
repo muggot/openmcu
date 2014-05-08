@@ -125,6 +125,13 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
   PString username = sip->sip_from->a_url->url_user;
   PString domain = sip->sip_from->a_url->url_host;
   PString host = GetSipFromHost(msg, 0);
+  PString display_name;
+  if(sip->sip_contact && sip->sip_contact->m_display && PString(sip->sip_contact->m_display) != "")
+    display_name = sip->sip_contact->m_display;
+  else if(sip->sip_from->a_display && PString(sip->sip_from->a_display) != "")
+    display_name = sip->sip_from->a_display;
+  else
+    display_name = sip->sip_from->a_url->url_user;
 
   unsigned response_code = 501; // default SIP_501_NOT_IMPLEMENTED
   PString sip_auth_str;
@@ -152,6 +159,7 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
   {
     regAccount->registered = TRUE;
     regAccount->domain = domain;
+    regAccount->display_name = display_name;
     regAccount->start_time = PTime();
     if(sip->sip_expires)
       regAccount->expires = sip->sip_expires->ex_delta;

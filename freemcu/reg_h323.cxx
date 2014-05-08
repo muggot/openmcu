@@ -120,6 +120,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
       if(!regAccount)
         regAccount = registrar->InsertAccountWithLock(ACCOUNT_TYPE_H323, username, "");
       regAccount->registered = TRUE;
+      regAccount->display_name = username;
       regAccount->start_time = PTime();
       regAccount->expires = expires;
       regAccount->host = host.AsString();

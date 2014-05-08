@@ -66,6 +66,7 @@ extern "C" {
 #define OTFC_UNMUTE_ALL               78
 #define OTFC_AUDIO_GAIN_LEVEL_SET     79
 #define OTFC_OUTPUT_GAIN_SET          80
+#define OTFC_REFRESH_ABOOK            90
 
 ////////////////////////////////////////////////////
 

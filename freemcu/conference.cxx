@@ -578,19 +578,24 @@ void Conference::AddMonitorEvent(ConferenceMonitorInfo * info)
 
 void Conference::RefreshAddressBook()
 {
-  PStringArray abook = FreeMCU::Current().addressBook;
+  PStringArray abook = FreeMCU::Current().GetRegistrar()->GetAddressBook();
   PStringStream msg;
   msg = "addressbook=Array(";
   for(PINDEX i = 0; i < abook.GetSize(); i++)
   {
+    PString username = abook[i].Tokenise(",")[0];
+    PString urlid = MCUURL(username).GetUrlId();
+    PString registered = abook[i].Tokenise(",")[1];
+    PString state = abook[i].Tokenise(",")[2];
     if(i>0) msg << ",";
-    PString username = abook[i];
     username.Replace("&","&amp;",TRUE,0);
     username.Replace("\"","&quot;",TRUE,0);
     msg << "Array("
         << "0"
-        << ",\"" << MCUURL(abook[i]).GetUrlId() << "\""
+        << ",\"" << urlid << "\""
         << ",\"" << username << "\""
+        << ",\"" << registered << "\""
+        << ",\"" << state << "\""
         << ")";
   }
   msg << ");";

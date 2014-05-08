@@ -405,7 +405,7 @@ class FreeMCU : public FreeMCUProcessAncestor
 
     Registrar *GetRegistrar() { return registrar; };
 
-    PStringArray addressBook;
+    void ManagerRefreshAddressBook();
 
   protected:
     int        currentLogLevel, currentTraceLevel;
@@ -450,6 +450,10 @@ class ExternalVideoRecorderThread : public PThread
     pid_t recordPid;
 #endif
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PString convert_cp1251_to_utf8(PString text);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

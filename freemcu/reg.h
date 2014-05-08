@@ -177,6 +177,45 @@ class Subscription
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class Abook
+{
+  public:
+    Abook(RegAccountTypes _account_type, PString _username)
+    {
+      account_type = _account_type;
+      username = _username;
+      if(account_type == ACCOUNT_TYPE_SIP)
+        port = 5060;
+      else if(account_type == ACCOUNT_TYPE_H323)
+        port = 1720;
+      address_book = FALSE;
+      registered = FALSE;
+      state = FALSE;
+    }
+    PString GetUrl()
+    {
+      PString url;
+      if(account_type == ACCOUNT_TYPE_SIP)
+        url = "sip:"+username+"@"+host;
+      else if(account_type == ACCOUNT_TYPE_H323)
+        url = "h323:"+username+"@"+host;
+      if(port != 0)
+        url += ":"+PString(port);
+      return url;
+    }
+
+    RegAccountTypes account_type;
+    PString username;
+    PString host;
+    unsigned port;
+    PString display_name;
+    BOOL address_book;
+    BOOL registered;
+    BOOL state;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class RegistrarAccount
 {
   public:
@@ -234,6 +273,7 @@ class RegistrarAccount
     PString password;
     PString scheme, nonce, algorithm;
     PString www_response, proxy_response;
+    PString display_name;
 
     PTime start_time;
     time_t expires;
@@ -311,6 +351,7 @@ class Registrar : public PThread
 
     const PString & GetRegistrarDomain() const { return registrar_domain; };
     const PString & GetInternalRoomPrefix() const { return internal_room_prefix; };
+    PStringArray GetAddressBook();
 
     void ConnectionCreated(const PString & callToken);
     void ConnectionEstablished(const PString & callToken);
@@ -381,6 +422,9 @@ class Registrar : public PThread
     void IncomingCallCancel(RegistrarConnection *regConn);
     void OutgoingCallCancel(RegistrarConnection *regConn);
 
+    Abook * InsertAbook(RegAccountTypes account_type, PString username);
+    Abook * FindAbook(RegAccountTypes account_type, PString username);
+
     Subscription * InsertSubWithLock(Registrar *_registrar, PString username_in, PString username_out);
     Subscription * InsertSub(Registrar *_registrar, PString username_in, PString username_out);
     Subscription * InsertSub(Subscription *subAccount);
@@ -393,6 +437,9 @@ class Registrar : public PThread
     RegistrarConnection * FindRegConnWithLock(PString callToken);
     RegistrarConnection * FindRegConn(PString callToken);
     RegistrarConnection * FindRegConnUsername(PString username);
+
+    typedef std::map<PString /* username */, Abook *> AbookMapType;
+    AbookMapType AbookMap;
 
     typedef std::map<PString /* username */, RegistrarAccount *> AccountMapType;
     AccountMapType AccountMap;

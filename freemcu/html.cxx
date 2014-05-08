@@ -813,19 +813,10 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   if(sect.GetSize() == 1)
     sect.AppendString(sectionPrefix+"empty");
 
-  mcu.addressBook.RemoveAll();
-
   for(PINDEX i = 0; i < sect.GetSize(); i++)
   {
     MCUConfig scfg(sect[i]);
     PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
-
-    // address book
-    if(name != "*" && scfg.GetBoolean("Address book"))
-    {
-      PString address = name+"@"+scfg.GetString("Host");
-      mcu.addressBook.AppendString(scfg.GetString("Display name override")+" [h323:"+address+"]");
-    }
 
     // account
     if(name == "*") s << NewRowInput(name, 10, TRUE); else s << NewRowInputAccount(name, 10);
@@ -1024,13 +1015,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   {
     MCUConfig scfg(sect[i]);
     PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
-
-    // address book
-    if(name != "*" && scfg.GetBoolean("Address book"))
-    {
-      PString address = name+"@"+scfg.GetString("Host");
-      mcu.addressBook.AppendString(scfg.GetString("Display name override")+" [sip:"+address+"]");
-    }
 
     // account
     if(name == "*") s << NewRowInput(name, 10, TRUE); else s << NewRowInputAccount(name, 10);
@@ -1731,9 +1715,10 @@ InvitePage::InvitePage(FreeMCU & _app, PHTTPAuthority & auth)
   BeginPage(html,"Invite","window.l_invite","window.l_info_invite");
 
   PString select = "<select class='input-large' onchange='changeSelect(this)'><option value=''></option>";
-  for(PINDEX i = 0; i < FreeMCU::Current().addressBook.GetSize(); i++)
+  PStringArray abook = FreeMCU::Current().GetRegistrar()->GetAddressBook();
+  for(PINDEX i = 0; i < abook.GetSize(); i++)
   {
-    PString uri = FreeMCU::Current().addressBook[i];
+    PString uri = abook[i].Tokenise(",")[0];
     select += "<option value='"+uri+"'>"+uri+"</option>";
   }
   select += "</select>";

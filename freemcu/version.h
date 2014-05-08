@@ -5,7 +5,7 @@
 #define MAJOR_VERSION 3
 #define MINOR_VERSION 47
 #define BUILD_TYPE    ReleaseCode
-#define BUILD_NUMBER  104
+#define BUILD_NUMBER  105
 
 
 #endif  // _MCU_VERSION_H

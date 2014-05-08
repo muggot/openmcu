@@ -66,6 +66,7 @@ var OTFC_TOGGLE_TPL_LOCK         = 77;
 var OTFC_UNMUTE_ALL              = 78;
 var OTFC_AUDIO_GAIN_LEVEL_SET    = 79;
 var OTFC_OUTPUT_GAIN_SET         = 80;
+var OTFC_REFRESH_ABOOK           = 90;
 
 var libyuv_flt_desc = Array('None', 'Bilin.', 'Box');
 
@@ -767,7 +768,7 @@ function format_mmbr_button(m,st)
   return s;
 }
 
-function format_mmbr_abook(m,st,num)
+function format_mmbr_abook(num,mmbr,state)
 {
   var bgcolors=Array('#F5F5F5','#E6E6FA');
   var state_color;
@@ -780,18 +781,21 @@ function format_mmbr_abook(m,st,num)
     "width:"+(panel_width)+"px;overflow:hidden;height:"+(height+2) +
     "px;text-align:left;background-color:"+bgcolor + "'>";
 
-  var uname=m[2]+"";
+  var uname=mmbr[2]+"";
   var name=get_addr_name(uname);
   var ip=get_addr_url_without_param(uname);
 
-  var invite = "", check = "";
-  if(!st) invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
-  else invite="<img id='adrbkpic"+num+"' src='i20_plus.gif' width='"+width+"' height='"+height+"' alt='Invite'>";
-  if(!st) check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
+  var invite = "", check = "", status = "";
+  if(state==0 || state==1) invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
+  if(state==0 || state==1) check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
+  if(state == 0) status = "<img id='adrbkpic"+num+"' src='i16_status_gray.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  if(state == 1) status = "<img id='adrbkpic"+num+"' src='i16_status_green.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  if(state == 2) status = "<img id='adrbkpic"+num+"' src='i16_status_red.png' width='"+width+"' height='"+height+"' alt='Invite'>";
 
   var posx_invite = 8;
   var posx_check  = posx_invite      + width + 16;
-  var posx_name   = posx_check       + width + 10;
+  var posx_status = posx_check       + width + 16;
+  var posx_name   = posx_status      + width + 10;
   var free        = (panel_width)    - posx_name - SCROLLER_WIDTH;
   var width_ip    = free/2           + SCROLLER_WIDTH;
   var width_name  = free/2           - SCROLLER_WIDTH - 10;
@@ -802,6 +806,7 @@ function format_mmbr_abook(m,st,num)
   var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
   s+=dpre+posx_invite+"px'><div style='width:"+width+"px;height:"+height+"px'>"+invite+"</div></div>";
   s+=dpre+posx_check+"px'><div style='width:"+width+"px;height:"+height+"px'>"+check+"</div></div>";
+  s+=dpre+posx_status+"px'><div style='width:"+width+"px;height:"+height+"px'>"+status+"</div></div>";
   s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'><nobr>"+name+"</nobr></div></div>";
   s+=dpre+posx_ip+"px'><div style='overflow:hidden;font-size:10px;width:"+width_ip+"px;'>"+ip+"</div></div>";
   s+='</div>';
@@ -894,6 +899,7 @@ function on_tab_abook(){
   document.getElementById('tab_abook').style.backgroundColor = "#E6E6FA";
   document.getElementById('additional_panel').style.display = "none";
   document.getElementById('additional_panel_abook').style.display = "block";
+  queue_otf_request(OTFC_REFRESH_ABOOK);
   abook_refresh();
 }
 
@@ -959,19 +965,21 @@ function abook_refresh(){
   var imr='';
   for(i=0;i<addressbook.length;i++)
   {
-    mmbr=addressbook[i];
+    mmbr = addressbook[i];
     var state = 0;
-    if(typeof members!=='undefined')
+    if(mmbr[4] == 1) state = 2;
+    else if(mmbr[4] == 0 && mmbr[3] == 1) state = 1;
+    if(state != 2 && typeof members!=='undefined')
     {
       for(j=0;j<members.length;j++)
       {
         if(members[j][8] == mmbr[1]) // urlid
         {
-          if(members[j][0]) { state = 1; break; }
+          if(members[j][0]) { state = 2; break; }
         }
       }
     }
-    imr+=format_mmbr_abook(mmbr,state,i);
+    imr+=format_mmbr_abook(i,mmbr,state);
   }
   result="<div style='width:"+panel_width+"px' id='right_pan_abook'>"+imr+"</div>";
 
