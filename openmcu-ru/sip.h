@@ -63,22 +63,25 @@ class ProxyAccount
     ProxyAccount()
     {
       registered = FALSE;
-      sip_www_str = sip_proxy_str = "";
+      start_time = PTime(0);
+      cseq = 100;
     }
     PString local_ip;
-    //PString local_port;
     PString roomname;
     PString username;
     PString domain;
     PString host;
     PString port;
+    PString transport;
     PString password;
-    PString expires;
-    PString sip_www_str, sip_proxy_str;
-    PString call_id; // for auth
-    int timeout;
+    unsigned expires;
+    PTime start_time;
     BOOL enable;
     BOOL registered;
+
+    PString sip_www_str, sip_proxy_str;
+    PString call_id; // for auth
+    unsigned cseq;
 };
 typedef std::map<PString, ProxyAccount *> ProxyAccountMapType;
 
@@ -385,7 +388,7 @@ class MCUSipEndPoint : public PThread
     sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);
     char * SdpText(PString text);
 
-    int SipRegister(ProxyAccount *, int unregister);
+    int SipRegister(ProxyAccount *, BOOL enable);
     PString GetRoomAccess(const sip_t *sip);
 
     void InitProxyAccounts();

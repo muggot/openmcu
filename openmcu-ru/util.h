@@ -23,8 +23,23 @@ void MCUTRACE(unsigned level, PString args);
 class MCUConfig: public PConfig
 {
  public:
+   MCUConfig()
+    : PConfig() { };
    MCUConfig(const PString & section)
-    : PConfig(CONFIG_PATH, section){};
+    : PConfig(CONFIG_PATH, section) { };
+
+   PStringList GetSectionsPrefix(PString prefix) const
+   {
+     PStringList sect = MCUConfig("Parameters").GetSections();
+     for(PINDEX i = 0; i < sect.GetSize(); )
+     {
+       if(sect[i].Left(prefix.GetLength()) != prefix)
+         sect.RemoveAt(i);
+       else
+        i++;
+     }
+     return sect;
+   }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

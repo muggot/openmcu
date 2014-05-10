@@ -391,7 +391,7 @@ class TablePConfigPage : public PConfigPage
          PString key = d.Tokenise("=")[0];
          if(key == "") continue;
 
-         PConfig scfg(sectionPrefix+key);
+         MCUConfig scfg(sectionPrefix+key);
          PString value;
          PINDEX valuePos = d.Find("=");
          if(valuePos != P_MAX_INDEX)
@@ -466,7 +466,7 @@ class TablePConfigPage : public PConfigPage
      return TRUE;
    }
  protected:
-   PConfig cfg;
+   MCUConfig cfg;
    BOOL deleteSection;
    PString separator;
    PString colStyle, rowStyle, rowFieldStyle, itemStyle, itemInfoStyle, itemInfoStyleRowSpan, textStyle, inputStyle, buttonStyle;
@@ -517,7 +517,7 @@ class DefaultPConfigPage : public PConfigPage
       const PHTTPConnectionInfo & connectInfo
     );
  protected:
-   PConfig cfg;
+   MCUConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -526,8 +526,6 @@ class GeneralPConfigPage : public TablePConfigPage
 {
   public:
     GeneralPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -536,8 +534,6 @@ class RegistrarPConfigPage : public TablePConfigPage
 {
   public:
     RegistrarPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -546,8 +542,6 @@ class ConferencePConfigPage : public TablePConfigPage
 {
   public:
     ConferencePConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -556,8 +550,6 @@ class ManagingUsersPConfigPage : public TablePConfigPage
 {
   public:
     ManagingUsersPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -566,8 +558,6 @@ class ManagingGroupsPConfigPage : public TablePConfigPage
 {
   public:
     ManagingGroupsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -576,8 +566,6 @@ class ControlCodesPConfigPage : public TablePConfigPage
 {
   public:
     ControlCodesPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -586,8 +574,6 @@ class RoomCodesPConfigPage : public TablePConfigPage
 {
   public:
     RoomCodesPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -604,8 +590,6 @@ class H323EndpointsPConfigPage : public TablePConfigPage
 {
  public:
    H323EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -614,8 +598,6 @@ class SIPPConfigPage : public TablePConfigPage
 {
  public:
    SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -624,8 +606,6 @@ class SipEndpointsPConfigPage : public TablePConfigPage
 {
  public:
    SipEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -634,8 +614,6 @@ class ProxySIPPConfigPage : public TablePConfigPage
 {
  public:
    ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -644,8 +622,6 @@ class RoomAccessSIPPConfigPage : public TablePConfigPage
 {
  public:
    RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -654,8 +630,6 @@ class VideoPConfigPage : public TablePConfigPage
 {
  public:
    VideoPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

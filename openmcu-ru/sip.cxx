@@ -2037,7 +2037,7 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, int unregister = 0)
+int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable = TRUE)
 {
     PTRACE(1, "MCUSIP\tSipRegister");
     if(agent == NULL)
@@ -2060,21 +2060,16 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, int unregister = 0)
     sip_contact->m_display = proxy->roomname;
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_REGISTER, ruri, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_REGISTER);
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, proxy->cseq++, SIP_METHOD_REGISTER);
 
     sip_call_id_t* sip_call_id = NULL;
-    if(proxy->call_id != "")
-    {
-      sip_call_id = sip_call_id_make(&home, proxy->call_id);
-      proxy->call_id = "";
-    } else {
+    if(proxy->call_id == "")
       sip_call_id = sip_call_id_create(&home, "0");
-    }
-
-    PString expires;
-    if(unregister)
-      expires = "0";
     else
+      sip_call_id = sip_call_id_make(&home, proxy->call_id);
+
+    PString expires = "0";
+    if(enable)
       expires = proxy->expires;
 
     sip_authorization_t *sip_auth=NULL;
@@ -2249,7 +2244,10 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
     ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(!proxy)
       return 0;
-    proxy->registered = TRUE;
+    if(sip->sip_expires)
+      proxy->expires = sip->sip_expires->ex_delta;
+    if(proxy->enable && proxy->expires != 0)
+      proxy->registered = TRUE;
   }
   if(cseq == sip_method_invite && status == 200)
   {
@@ -2527,16 +2525,18 @@ void MCUSipEndPoint::ProcessProxyAccount()
   for(it=ProxyAccountMap.begin(); it!=ProxyAccountMap.end(); it++)
   {
     ProxyAccount *proxy = it->second;
-    if(proxy->enable == 1 && proxy->timeout >= atoi(proxy->expires)*2)
+    PTime now;
+    if(proxy->enable && now > proxy->start_time + PTimeInterval(proxy->expires*1000))
     {
+      proxy->start_time = now;
       SipRegister(proxy);
-      proxy->timeout = 0;
     }
-    if(proxy->enable == 0 && proxy->registered)
+    if(!proxy->enable && proxy->registered)
     {
       proxy->registered = FALSE;
+      proxy->start_time = PTime(0);
+      SipRegister(proxy, FALSE);
     }
-    proxy->timeout++;
   }
 }
 
@@ -2560,49 +2560,45 @@ ProxyAccount * MCUSipEndPoint::FindProxyAccount(PString account)
 
 void MCUSipEndPoint::InitProxyAccounts()
 {
-  for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); )
+  PString sectionPrefix = "SIP Proxy Account ";
+  PStringList sect = MCUConfig("Parameters").GetSectionsPrefix(sectionPrefix);
+  for(PINDEX i = 0; i < sect.GetSize(); i++)
   {
-    if(it->second->enable && it->second->registered)
-      SipRegister(it->second, 1);
-    ProxyAccountMap.erase(it++);
-  }
+    MCUConfig scfg(sect[i]);
+    PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
+    PString host = MCUURL("sip:@"+scfg.GetString("Host")).GetHostName();
+    PString port = MCUURL("sip:@"+scfg.GetString("Host")).GetPort();
+    PString transport = MCUURL("sip:@"+scfg.GetString("Host")).GetSipProto();
+    PString username = MCUURL("sip:"+scfg.GetString("Account")).GetUserName();
+    PString domain = MCUURL("sip:"+scfg.GetString("Account")).GetHostName();
+    PString password = PHTTPPasswordField::Decrypt(scfg.GetString("Password"));
+    unsigned expires = scfg.GetInteger("Expires");
+    BOOL enable = scfg.GetBoolean("Register");
 
-  PStringList keys = MCUConfig("ProxyServers").GetKeys();
-  for(PINDEX i = 0; i < keys.GetSize(); i++)
-  {
-    PString tmp = MCUConfig("ProxyServers").GetString(keys[i]);
-    ProxyAccount *proxy = new ProxyAccount();
-    // room
-    proxy->roomname = keys[i];
-    // register
-    if(tmp.Tokenise(",")[0] == "TRUE") proxy->enable = 1;
-    else proxy->enable = 0;
-    // host
-    proxy->host = tmp.Tokenise(",")[1].Tokenise(":")[0];
-    // port
-    proxy->port = tmp.Tokenise(",")[1].Tokenise(":")[1];
-    if(proxy->port == "") proxy->port = "5060";
-    // username
-    proxy->username = tmp.Tokenise(",")[2].Tokenise("@")[0];
-    // domain
-    proxy->domain = tmp.Tokenise(",")[2].Tokenise("@")[1];
-    // password
-    proxy->password = PHTTPPasswordField::Decrypt(tmp.Tokenise(",")[3]);
-    // expires
-    proxy->expires = tmp.Tokenise(",")[4];
-    proxy->timeout = atoi(proxy->expires)*2;
-    if(atoi(proxy->expires) < 60) proxy->expires = "60";
-    if(atoi(proxy->expires) > 3600) proxy->expires = "3600";
-    // host & port check
-    if(proxy->domain == "") proxy->domain = proxy->host;
-    if(proxy->host == "") proxy->host = proxy->domain;
-    //
-    if(proxy->enable == 0 || proxy->domain == "" || proxy->username == "")
+    ProxyAccount *proxy = FindProxyAccount(username+"@"+domain);
+    if(!proxy)
+    {
+      proxy = new ProxyAccount();
+      proxy->username = username;
+      proxy->domain = domain;
+      InsertProxyAccount(proxy);
+    }
+    if(proxy->enable)
+    {
+      proxy->enable = enable;
       continue;
+    }
+    proxy->roomname = name;
+    proxy->host = host;
+    proxy->port = port;
+    proxy->username = username;
+    proxy->domain = domain;
+    proxy->password = password;
+    proxy->expires = expires;
+    proxy->enable = enable;
     proxy->local_ip = GetFromIp(proxy->host, proxy->port);
     if(proxy->local_ip == "" || FindListener(proxy->local_ip) == FALSE)
-      continue;
-    InsertProxyAccount(proxy);
+      proxy->enable = FALSE;
   }
 }
 

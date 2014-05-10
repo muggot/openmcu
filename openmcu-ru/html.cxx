@@ -382,14 +382,8 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
   optionNames.AppendString(RoomTimeLimitKey);
 
   sectionPrefix = "Conference ";
-  PStringList sect = cfg.GetSections();
-  for(PINDEX i = 0; i < sect.GetSize(); )
-  {
-    if(sect[i].Left(sectionPrefix.GetLength()) != sectionPrefix)
-      sect.RemoveAt(i);
-    else
-      i++;
-  }
+  PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
+
   //
   if(sect.GetStringsIndex(sectionPrefix+"*") == P_MAX_INDEX)
     sect.InsertAt(0, new PString(sectionPrefix+"*"));
@@ -634,7 +628,7 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 
   s << SeparatorField("H.263p");
   s << IntegerField("H.263p Max Bit Rate", cfg.GetInteger("H.263p Max Bit Rate", 0), 0, 4000, 12, "range 64..4000 kbit (for outgoing video, 0 disable)");
-  s << IntegerField("H.263p Tx Key Frame Period", cfg.GetInteger("H.263p Tx Key Frame Period", 125), 0, 600, 12, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
+  s << IntegerField("H.263p Tx Key Frame Period", cfg.GetInteger("H.263p Tx Key Frame Period", 12), 5, 600, 12, "range 5..600, default 12 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
   s << SeparatorField("H.264");
   s << IntegerField("H.264 Max Bit Rate", cfg.GetInteger("H.264 Max Bit Rate", 0), 0, 4000, 12, "range 64..4000 kbit (for outgoing video, 0 disable)");
@@ -722,7 +716,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   rowBorders = TRUE;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
-  sectionPrefix = "H323 Endpoint ";
 
   s << BeginTable();
 
@@ -761,14 +754,9 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   if(mcu.GetEndpoint().tvCaps != NULL)
   { PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { vCapsT += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; } }
 
-  PStringList sect = cfg.GetSections();
-  for(PINDEX i = 0; i < sect.GetSize(); )
-  {
-    if(sect[i].Left(sectionPrefix.GetLength()) != sectionPrefix)
-      sect.RemoveAt(i);
-    else
-      i++;
-  }
+  sectionPrefix = "H323 Endpoint ";
+  PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
+
   // bak
   if(sect.GetSize() == 0)
   {
@@ -927,7 +915,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   rowBorders = TRUE;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
-  sectionPrefix = "SIP Endpoint ";
 
   s << BeginTable();
   s << NewRowColumn(JsLocale("window.l_name_user")+"<br>("+JsLocale("window.l_name_account")+")", 220);
@@ -960,14 +947,9 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   if(mcu.GetEndpoint().tvCaps != NULL)
   { PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { vCaps += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; } }
 
-  PStringList sect = cfg.GetSections();
-  for(PINDEX i = 0; i < sect.GetSize(); )
-  {
-    if(sect[i].Left(sectionPrefix.GetLength()) != sectionPrefix)
-      sect.RemoveAt(i);
-    else
-      i++;
-  }
+  sectionPrefix = "SIP Endpoint ";
+  PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
+
   // bak
   if(sect.GetSize() == 0)
   {
@@ -1125,32 +1107,79 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+
   s << BeginTable();
   s << NewRowColumn(JsLocale("window.l_name_roomname"));
   s << ColumnItem(JsLocale("window.l_name_register"));
-  s << ColumnItem(JsLocale("window.l_name_address_sip_proxy"));
-  s << ColumnItem(JsLocale("window.l_name_user"));
+  s << ColumnItem(JsLocale("window.l_name_address_sip_proxy")+"\n<i>hostname or ip</i>");
+  s << ColumnItem(JsLocale("window.l_name_account")+"\n<i>username@domain</i>");
   s << ColumnItem(JsLocale("window.l_name_password"));
   s << ColumnItem(JsLocale("window.l_name_expires"));
 
-  PStringList keys = cfg.GetKeys();
-  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  optionNames.AppendString("Register");
+  optionNames.AppendString("Host");
+  optionNames.AppendString("Account");
+  optionNames.AppendString("Password");
+  optionNames.AppendString("Expires");
+
+  sectionPrefix = "SIP Proxy Account ";
+  PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
+
+  // bak
+  if(sect.GetSize() == 0)
   {
-    PString name = keys[i];
-    PString params = cfg.GetString(keys[i]);
-    s << NewRowInput(name);
-    if(params.Tokenise(",")[0] == "TRUE") s << BoolItem(name, 1);
-    else s << BoolItem(name, 0);
-    s << StringItem(name, params.Tokenise(",")[1]);
-    s << StringItem(name, params.Tokenise(",")[2]);
-    //s << StringItem(name, params.Tokenise(",")[3]);
-    s << PasswordItem(name, PHTTPPasswordField::Decrypt(params.Tokenise(",")[3]));
-    s << IntegerItem(name, atoi(params.Tokenise(",")[4]), 60, 3600);
+    MCUConfig bcfg("ProxyServers");
+    PStringList keys = bcfg.GetKeys();
+    for(PINDEX i = 0; i < keys.GetSize(); i++)
+    {
+      PString roomname = keys[i];
+      MCUConfig scfg(sectionPrefix+roomname);
+      PStringArray params = bcfg.GetString(keys[i]).Tokenise(",");
+      scfg.SetString("Register", params[0]);
+      scfg.SetString("Host", params[1]);
+      scfg.SetString("Account", params[2]);
+      scfg.SetString("Password", params[3]);
+      scfg.SetString("Expires", params[4]);
+      sect.AppendString(sectionPrefix+roomname);
+    }
+    bcfg.DeleteSection();
   }
-  if(keys.GetSize() == 0)
+
+  for(PINDEX i = 0; i < sect.GetSize(); i++)
+  {
+    MCUConfig scfg(sect[i]);
+    PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
+
+    PString host = scfg.GetString("Host");
+    if(host.Left(4) == "sip:") host.Replace("sip:","",TRUE,0);
+
+    PString account = scfg.GetString("Account");
+    if(account.Find("@") == P_MAX_INDEX && host != "")
+    {
+      account += "@"+MCUURL("sip:@"+host).GetHostName();
+      scfg.SetString("Account", account);
+    }
+
+    PString password = PHTTPPasswordField::Decrypt(scfg.GetString("Password"));
+    int expires = scfg.GetInteger("Expires");
+    if(expires < 60) expires = 60;
+    if(expires > 3600) expires = 3600;
+    BOOL enable = scfg.GetBoolean("Register", FALSE);
+
+    if(host == "" || account == "")
+      scfg.SetBoolean("Register", FALSE);
+
+    if(!enable) s << NewRowInput(name); else s << NewRowInput(name, 15, TRUE);
+    s << BoolItem(name, enable);
+    if(!enable) s << StringItem(name, host); else s << StringItem(name, host, 12, TRUE);
+    if(!enable) s << StringItem(name, account, 20); else s << StringItem(name, account, 20, TRUE);
+    if(!enable) s << PasswordItem(name, password); else s << PasswordItem(name, password, 12, TRUE);
+    if(!enable) s << StringItemInteger(name, expires); else s << StringItemInteger(name, expires, 12, TRUE);
+  }
+  if(sect.GetSize() == 0)
   {
     s << NewRowInput("room101");
-    s << BoolItem("room101", 0);
+    s << BoolItem("room101", FALSE);
     s << StringItem("room101", "");
     s << StringItem("room101", "");
     s << StringItem("room101", "");
@@ -1281,6 +1310,8 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   item += EndItemArray();
   item += InfoItem("");
   s << item;
+
+  //s << StringField(NATRouterIPKey, cfg.GetString(NATRouterIPKey));
 
 #if MCU_VIDEO
   mcu.h264DefaultLevelForSip = cfg.GetString(H264LevelForSIPKey, "9").AsInteger();
