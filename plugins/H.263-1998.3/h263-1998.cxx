@@ -333,7 +333,7 @@ void H263_Base_EncoderContext::SetTargetBitrate (unsigned rate)
 {
   m_targetBitRate = rate;
   _context->bit_rate = _context->rc_min_rate = _context->rc_max_rate = m_targetBitRate;
-  _context->rc_buffer_size = _context->bit_rate * 8; // DVD specs bufsize=1792Kb bitrate=224Kb
+  _context->rc_buffer_size = _context->bit_rate * 8 * 2; // DVD specs bufsize=1792Kb bitrate=224Kb
 
   _context->bit_rate_tolerance = m_targetBitRate/10;
   int tolerance_min =  _context->bit_rate*_context->time_base.num/_context->time_base.den + 1; // one frame bits
