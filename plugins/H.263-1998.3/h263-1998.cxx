@@ -284,7 +284,6 @@ bool H263_Base_EncoderContext::Open(const char *codec_name)
   // X-Lite does not like Custom Picture frequency clocks...
   _context->time_base.num = 100; 
   _context->time_base.den = 2997;
-  _context->gop_size      = 125;
 
   // avoid copying input/output
   _context->flags |= CODEC_FLAG_INPUT_PRESERVED; // we guarantee to preserve input for max_b_frames+1 frames
@@ -333,24 +332,13 @@ void H263_Base_EncoderContext::SetMaxKeyFramePeriod (unsigned period)
 void H263_Base_EncoderContext::SetTargetBitrate (unsigned rate)
 {
   m_targetBitRate = rate;
-  if(_width==SQCIF_WIDTH) m_targetBitRate = 96*1024;
-  else if(_width==QCIF_WIDTH) m_targetBitRate = 128*1024;
-  else if(_width==CIF_WIDTH) m_targetBitRate = 256*1024;
-  else if(_width==CIF4_WIDTH) m_targetBitRate = 512*1024;
-  else if(_width==CIF16_WIDTH) m_targetBitRate = 1024*1024;
-  if(rate < m_targetBitRate) m_targetBitRate = rate;
-  _context->bit_rate = (m_targetBitRate * 3) >> 2;        // average bit rate
-  _context->bit_rate_tolerance = m_targetBitRate << 2;
-  _context->rc_min_rate = 0;                              // minimum bitrate
-  _context->rc_max_rate = m_targetBitRate;                // maximum bitrate
-  _context->rc_buffer_size = rate * 2;
+  _context->bit_rate = _context->rc_min_rate = _context->rc_max_rate = m_targetBitRate;
+  _context->rc_buffer_size = _context->bit_rate * 8; // DVD specs bufsize=1792Kb bitrate=224Kb
 
-  /* ratecontrol qmin qmax limiting method
-     0-> clipping, 1-> use a nice continous function to limit qscale wthin qmin/qmax.
-  */
-  _context->rc_qsquish = 0;            // limit q by clipping 
-//  _context->rc_eq = (char*) "1";       // rate control equation
-
+  _context->bit_rate_tolerance = m_targetBitRate/10;
+  int tolerance_min =  _context->bit_rate*_context->time_base.num/_context->time_base.den + 1; // one frame bits
+  if(_context->bit_rate_tolerance < tolerance_min)
+    _context->bit_rate_tolerance = tolerance_min;
 }
 
 void H263_Base_EncoderContext::SetFrameWidth (unsigned width)
@@ -375,7 +363,7 @@ void H263_Base_EncoderContext::SetFrameHeight (unsigned height)
 void H263_Base_EncoderContext::SetTSTO (unsigned tsto)
 {
   // default libavcodec settings
-  _context->max_qdiff = 3;        // max q difference between frames
+  _context->max_qdiff = 3;                 // max q difference between frames
   _context->qcompress = 0.5;               // qscale factor between easy & hard scenes (0.0-1.0)
   _context->i_quant_factor = (float)-0.8;  // qscale factor between p and i frames
   _context->i_quant_offset = (float)0.0;   // qscale offset between p and i frames
