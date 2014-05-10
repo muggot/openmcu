@@ -122,16 +122,11 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
   PTRACE(1, "Registrar\tOnReceivedSipRegister");
   sip_t *sip = sip_object(msg);
 
-  PString username = sip->sip_from->a_url->url_user;
-  PString domain = sip->sip_from->a_url->url_host;
-  PString host = GetSipFromHost(msg, 0);
-  PString display_name;
-  if(sip->sip_contact && sip->sip_contact->m_display && PString(sip->sip_contact->m_display) != "")
-    display_name = sip->sip_contact->m_display;
-  else if(sip->sip_from->a_display && PString(sip->sip_from->a_display) != "")
-    display_name = sip->sip_from->a_display;
-  else
-    display_name = sip->sip_from->a_url->url_user;
+  MCUURL_SIP url(msg, 0);
+  PString username = url.GetUserName();
+  PString host = url.GetHostName();
+  PString domain = url.GetDomainName();
+  PString display_name = url.GetDisplayName();
 
   unsigned response_code = 501; // default SIP_501_NOT_IMPLEMENTED
   PString sip_auth_str;
@@ -140,7 +135,6 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
   if(!regAccount && !sip_require_password)
   {
     regAccount = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username, host);
-    regAccount->domain = domain;
   }
   if(!regAccount)
   {
@@ -159,8 +153,9 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
   {
     regAccount->registered = TRUE;
     regAccount->domain = domain;
-    regAccount->display_name = display_name;
     regAccount->start_time = PTime();
+    if(regAccount->display_name == "")
+      regAccount->display_name = display_name;
     if(sip->sip_expires)
       regAccount->expires = sip->sip_expires->ex_delta;
     else
@@ -236,7 +231,7 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
 
   PString ruri_str;
   if(regAccount_out->registered)
-    ruri_str = sep->CreateRuriStr(regAccount_out->msg_reg, 0);
+    ruri_str = MCUURL_SIP(regAccount_out->msg_reg, 0).GetUrl();
   else if(regAccount_out->host != "")
     ruri_str = regAccount_out->GetUrl();
   else
@@ -288,12 +283,13 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     return SipReqReply(msg, SIP_415_UNSUPPORTED_MEDIA);
 
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
-
   if(FindRegConn(callToken))
     return 0;
 
-  PString username_in = sip->sip_from->a_url->url_user;
-  PString host_in = GetSipFromHost(msg, 0);
+  MCUURL_SIP url(msg, 0);
+  PString username_in = url.GetUserName();
+  PString host_in = url.GetHostName();
+  PString display_name_in = url.GetDisplayName();
   PString username_out = sip->sip_to->a_url->url_user;
 
   int response_code = 404; // default SIP_404_NOT_FOUND
@@ -321,6 +317,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     // create temp acount with registered status
     regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username_in, host_in);
     regAccount_in->registered = TRUE;
+    regAccount_in->display_name = display_name_in;
     regAccount_in->start_time = PTime();
     regAccount_in->expires = 60;
   }
@@ -434,8 +431,6 @@ int Registrar::SipSendNotify(msg_t *msg_sub, int state)
   sip_t *sip_sub = sip_object(msg_sub);
   if(sip_sub == NULL) return 0;
 
-  PString sip_contact_str = "sip:"+PString(sip_sub->sip_to->a_url->url_user)+"@"+PString(sip_sub->sip_to->a_url->url_host);
-
   PString basic;
   if(state == SUB_STATE_OPEN)
     basic = "open";
@@ -445,6 +440,8 @@ int Registrar::SipSendNotify(msg_t *msg_sub, int state)
   PString state_rpid; // http://tools.ietf.org/search/rfc4480
   if(state == SUB_STATE_BUSY)
     state_rpid = "on-the-phone";
+
+  PString sip_contact_str = "sip:"+PString(sip_sub->sip_to->a_url->url_user)+"@"+PString(sip_sub->sip_to->a_url->url_host);
 
   PString sip_payload_str = "<?xml version='1.0' encoding='UTF-8'?>"
       "<presence xmlns='urn:ietf:params:xml:ns:pidf'"
@@ -472,8 +469,7 @@ int Registrar::SipSendNotify(msg_t *msg_sub, int state)
 
   sip_payload_str += "</presence>";
 
-  int direction = 0;
-  PString ruri_str = sep->CreateRuriStr(msg_sub, direction);
+  PString ruri_str = MCUURL_SIP(msg_sub, 0).GetUrl();
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
   sip_contact_t *sip_contact = sip_contact_create(GetHome(), (url_string_t *)(const char *)sip_contact_str, NULL);
@@ -664,7 +660,7 @@ int Registrar::SipForwardMessage(msg_t *msg)
   {
     PString ruri_str;
     if(regAccount_out->registered)
-      ruri_str = sep->CreateRuriStr(regAccount_out->msg_reg, 0);
+      ruri_str = MCUURL_SIP(regAccount_out->msg_reg, 0).GetUrl();
     else if(regAccount_out->host != "")
       ruri_str = regAccount_out->GetUrl();
     else
@@ -709,32 +705,6 @@ int Registrar::SipForwardMessage(msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString Registrar::GetSipFromHost(const msg_t *msg, int direction)
-{
-  // 0=incoming, 1=outgoing
-  PTRACE(1, "Registrar\tGetFromHost");
-  sip_t *sip = sip_object(msg);
-  su_home_t *home = msg_home(msg);
-
-  sip_addr_t *sip_from;
-  if(direction == 0)
-    sip_from = sip_from_dup(home, sip->sip_from);
-  else
-    sip_from = sip_to_dup(home, sip->sip_to);
-
-  PString host;
-  if(PString(sip->sip_via->v_host) != "0.0.0.0" && sip->sip_request)
-    host = sip->sip_via->v_host;
-//  if(sip->sip_contact && sip->sip_contact->m_url)
-//    host = sip->sip_contact->m_url->url_host;
-  else
-    host = sip_from->a_url->url_host;
-
-  return host;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int Subscription::LegOutCreate(RegistrarAccount *regAccount_out)
 {
   sip_t *sip = sip_object(msg_sub);
@@ -746,7 +716,7 @@ int Subscription::LegOutCreate(RegistrarAccount *regAccount_out)
 
   PString ruri_str;
   if(regAccount_out->registered)
-    ruri_str = registrar->GetSep()->CreateRuriStr(regAccount_out->msg_reg, 0);
+    ruri_str = MCUURL_SIP(regAccount_out->msg_reg, 0).GetUrl();
   else if(regAccount_out->host != "")
     ruri_str = regAccount_out->GetUrl();
   else

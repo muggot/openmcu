@@ -198,7 +198,7 @@ PString Registrar::GetAccountAddress(RegistrarAccount *regAccount)
   if(regAccount->account_type == ACCOUNT_TYPE_SIP)
   {
     if(regAccount->registered)
-      address = sep->CreateRuriStr(regAccount->msg_reg, 0);
+      address = MCUURL_SIP(regAccount->msg_reg, 0).GetUrl();
     else if(regAccount->host != "")
       address = regAccount->GetUrl();
     else
@@ -821,7 +821,6 @@ void Registrar::Main()
 {
   PThread::Sleep(1000);
 
-  cout << "Registrar initializes a SIP proxy server...\n";
   nta_agent_set_params(sep->GetAgent(),
                        NTATAG_SIP_T1(1000), // Initial retransmission interval (in milliseconds)
                        //NTATAG_SIP_T2(1000), // Maximum retransmission interval (in milliseconds)
@@ -833,7 +832,6 @@ void Registrar::Main()
   enable_gatekeeper = TRUE;
   if(enable_gatekeeper)
   {
-    cout << "Registrar initializes a gatekeeper...\n";
     PIPSocket::Address address("*");
     WORD port = 1719;
     gk = new RegistrarGk(ep, this);
@@ -843,12 +841,12 @@ void Registrar::Main()
     gkListener->StartChannel();
   }
 
-  cout << "Registrar initializes a list of terminals...\n";
   InitConfig();
   InitTerminals();
 
-  cout << "Registrar is initialized.\n";
+  MCUTRACE(0, "Registrar is initialized.");
   MainLoop();
 }
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

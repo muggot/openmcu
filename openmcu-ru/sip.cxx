@@ -50,6 +50,77 @@ PString GetFromIp(PString toAddr, PString toPort)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+MCUURL_SIP::MCUURL_SIP(const msg_t *msg, int direction)
+  : MCUURL()
+{
+  sip_t *sip = sip_object(msg);
+  su_home_t *home = msg_home(msg);
+  if(sip == NULL || home == NULL)
+    return;
+
+//  int direction = 0;
+//  if(!sip->sip_request)
+//    direction = 1;
+
+  sip_addr_t *sip_addr;
+  if(direction == 0)
+    sip_addr = sip_from_dup(home, sip->sip_from);
+  else
+    sip_addr = sip_to_dup(home, sip->sip_to);
+
+  // display name
+  if(sip_addr->a_display && PString(sip_addr->a_display) != "")
+    display_name = sip_addr->a_display;
+  else if(sip->sip_contact && sip->sip_contact->m_display && PString(sip->sip_contact->m_display) != "")
+    display_name = sip->sip_contact->m_display;
+  else
+    display_name = sip_addr->a_url->url_user;
+  display_name.Replace("\"","",TRUE,0);
+  display_name = PURL::UntranslateString(display_name, PURL::QueryTranslation);
+  // username
+  if(sip_addr->a_url->url_user && PString(sip_addr->a_url->url_user) != "")
+    username = sip_addr->a_url->url_user;
+  else if(sip->sip_contact && sip->sip_contact->m_url)
+    username = sip->sip_contact->m_url->url_user;
+  username.Replace("\"","",TRUE,0);
+  username = PURL::UntranslateString(username, PURL::QueryTranslation);
+  // hostname
+  if(PString(sip->sip_via->v_host) != "0.0.0.0" && sip->sip_request)
+    hostname = sip->sip_via->v_host;
+//  if(sip->sip_contact && sip->sip_contact->m_url && PString(sip->sip_contact->m_url->url_host) != "")
+//    hostname = sip->sip_contact->m_url->url_host;
+  else
+    hostname = sip_addr->a_url->url_host;
+  // domain
+  domain_name = sip_addr->a_url->url_host;
+  // port
+  if(sip->sip_via->v_port && sip->sip_request)
+    port = atoi(sip->sip_via->v_port);
+  else if(sip_addr->a_url->url_port)
+    port = atoi(sip_addr->a_url->url_port);
+//  else if(sip->sip_contact && sip->sip_contact->m_url->url_port)
+//    port = sip->sip_contact->m_url->url_port;
+  else
+    port = 5060;
+  // transport
+  if(PString(sip->sip_via->v_protocol).Find("UDP") != P_MAX_INDEX)
+    transport = "udp";
+  else if(PString(sip->sip_via->v_protocol).Find("TCP") != P_MAX_INDEX)
+    transport = "tcp";
+  else
+    transport = "*";
+  // remote application
+  if(sip->sip_user_agent && sip->sip_user_agent->g_string)
+    remote_application = sip->sip_user_agent->g_string;
+  else if(sip->sip_server && sip->sip_server->g_string)
+    remote_application = sip->sip_server->g_string;
+
+  url_scheme = "sip";
+  url_party = url_scheme+":"+username+"@"+hostname+":"+PString(port)+";transport="+transport;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUSipConnection::CreateTempSockets(PString localIP)
 {
   unsigned localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
@@ -94,36 +165,35 @@ void MCUSipLoggerFunc(void *logarg, char const *fmt, va_list ap)
   if(ret == -1 || data == NULL) return;
   PString trace = (const char *)data;
 #endif
-  cout << trace;
-  trace.Replace("   ","",TRUE,0);
-  if(trace.IsEmpty()) return;
-
+  if(trace == "" || trace == "   ")
+    return;
   if(trace.Left(4) == "send")
   {
-    logMsgBuf = "MCUSIP\tSend SIP message:\n";
-    logMsgBuf = logMsgBuf+trace;
+    logMsgBuf = "\n   "+trace;
     return;
   }
   else if(trace.Left(4) == "recv")
   {
-    logMsgBuf = "MCUSIP\tReceived SIP message:\n";
-    logMsgBuf = logMsgBuf+trace;
+    logMsgBuf = "\n   "+trace;
     return;
   }
   else if(trace.Find("---") != P_MAX_INDEX)
   {
-    if(logMsgBuf.IsEmpty()) return;
+    if(logMsgBuf.IsEmpty())
+      return;
     logMsgBuf = logMsgBuf+trace;
     PRegularExpression RegEx("cseq: [0-9]* (options|info|publish|subscribe|notify)", PRegularExpression::Extended|PRegularExpression::IgnoreCase);
-    if(logMsgBuf.FindRegEx(RegEx) == P_MAX_INDEX) PTRACE(1, logMsgBuf);
-    else PTRACE(6, logMsgBuf);
+    if(logMsgBuf.FindRegEx(RegEx) == P_MAX_INDEX)
+      PTRACE(1, logMsgBuf);
+    else
+      PTRACE(6, logMsgBuf);
+    MCUTRACE(0, logMsgBuf);
     logMsgBuf = "";
     return;
   }
   if(logMsgBuf.IsEmpty())
   {
-    trace.Replace("\n","",TRUE,0);
-    PTRACE(6, trace);
+    MCUTRACE(1, trace);
   }
   else if(trace.Find("\n") == P_MAX_INDEX && !logMsgBuf.IsEmpty())
   {
@@ -270,12 +340,12 @@ PString MCUSipEndPoint::CreateSdpInvite(MCUSipConnection *sCon, PString local_ur
   PString local_user = url.GetUserName();
   PString local_host = url.GetHostName();
 
-  PString prefAudioCap = OpenMCU::Current().GetEndpointParamFromUrl("Audio codec", remote_url);
-  PString prefVideoCap = OpenMCU::Current().GetEndpointParamFromUrl("Video codec", remote_url);
+  PString prefAudioCap = GetEndpointParamFromUrl("Audio codec", remote_url);
+  PString prefVideoCap = GetEndpointParamFromUrl("Video codec", remote_url);
 
-  unsigned bandwidth = OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", remote_url, 0);
+  unsigned bandwidth = GetEndpointParamFromUrl("Preferred bandwidth to MCU", remote_url, 0);
 
-  PString rtp_proto = OpenMCU::Current().GetEndpointParamFromUrl("RTP proto", remote_url, "RTP");
+  PString rtp_proto = GetEndpointParamFromUrl("RTP proto", remote_url, "RTP");
   sCon->rtp_proto = rtp_proto;
 
   /*
@@ -416,50 +486,6 @@ PString MCUSipEndPoint::CreateSdpInvite(MCUSipConnection *sCon, PString local_ur
 
   sCon->invite_sdp_txt = buffer;
   return sCon->invite_sdp_txt;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PString MCUSipEndPoint::CreateRuriStr(const msg_t *msg, int direction)
-{
-  // 0=incoming, 1=outgoing
-  PTRACE(1, "MCUSIP\tCreateRuriStr");
-  sip_t *sip = sip_object(msg);
-  su_home_t *home = msg_home(msg);
-  if(sip == NULL || home == NULL) return "";
-
-  sip_addr_t *sip_to;
-  if(direction == 0)
-    sip_to = sip_from_dup(home, sip->sip_from);
-  else
-    sip_to = sip_to_dup(home, sip->sip_to);
-
-  PString ruri = "sip:";
-
-  PString user;
-  if(sip_to->a_url->url_user)
-    user = sip_to->a_url->url_user;
-  if(user == "" && sip->sip_contact && sip->sip_contact->m_url)
-    user = sip->sip_contact->m_url->url_user;
-  ruri += user;
-
-  if(strcmp(sip->sip_via->v_host, "0.0.0.0") != 0 && sip->sip_request)
-    ruri = ruri+"@"+PString(sip->sip_via->v_host);
-  else
-    ruri = ruri+"@"+PString(sip_to->a_url->url_host);
-
-  if(sip->sip_via->v_port && sip->sip_request)
-    ruri = ruri+":"+sip->sip_via->v_port;
-  else if(sip_to->a_url->url_port)
-    ruri = ruri+":"+sip_to->a_url->url_port;
-//  else if(sip->sip_contact && sip->sip_contact->m_url->url_port)
-//    ruri = ruri+":"+sip->sip_contact->m_url->url_port;
-
-  if(PString(sip->sip_via->v_protocol).Find("UDP") != P_MAX_INDEX)
-    ruri += ";transport=udp";
-  else if(PString(sip->sip_via->v_protocol).Find("TCP") != P_MAX_INDEX)
-    ruri += ";transport=tcp";
-  return ruri;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1555,7 +1581,7 @@ int MCUSipConnection::CreateSipData()
       roomname = sip->sip_to->a_url->url_user;
     }
     PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_from);
-    bandwidth_to = OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
+    bandwidth_to = GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
   } else { // outgoing
     ProxyAccount *proxy = sep->FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(proxy)
@@ -1572,7 +1598,7 @@ int MCUSipConnection::CreateSipData()
       roomname = sip->sip_from->a_url->url_user;
     }
     PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_to);
-    bandwidth_to = OpenMCU::Current().GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
+    bandwidth_to = GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
   }
   cseqNum = sip->sip_cseq->cs_seq+1;
   return 1;
@@ -1583,7 +1609,6 @@ int MCUSipConnection::CreateSipData()
 int MCUSipConnection::ProcessInviteEvent()
 {
   PTRACE(1, "MCUSIP\tProcessInviteEvent");
-  su_home_t *home = msg_home(c_sip_msg);
   sip_t *sip = sip_object(c_sip_msg);
   if(sip == NULL || sip->sip_payload == NULL || sip->sip_payload->pl_data == NULL)
     return 415; // SIP_415_UNSUPPORTED_MEDIA
@@ -1594,28 +1619,11 @@ int MCUSipConnection::ProcessInviteEvent()
   if(CreateSipData() != 1)
     return 500; // SIP_500_INTERNAL_SERVER_ERROR
 
-  sip_addr_t *remote_addr_t;
-  if(direction == 0) remote_addr_t = sip_from_dup(home, sip->sip_from);
-  else remote_addr_t = sip_to_dup(home, sip->sip_to);
-
-  if(sip->sip_contact && sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") != 0)
-    remoteName = sip->sip_contact->m_display;
-  else if(remote_addr_t->a_display && strcmp(remote_addr_t->a_display, "") != 0)
-    remoteName = remote_addr_t->a_display;
-  else
-    remoteName = remote_addr_t->a_url->url_user;
-
-  remoteName.Replace("\"","",TRUE,0);
-  remoteName = PURL::UntranslateString(remoteName, PURL::QueryTranslation);
+  MCUURL_SIP url(c_sip_msg, direction);
+  remoteName = url.GetDisplayName();
   remotePartyName = remoteName;
-
-  remotePartyAddress = sep->CreateRuriStr(c_sip_msg, direction);
-  remotePartyAddress = PURL::UntranslateString(remotePartyAddress, PURL::QueryTranslation);
-
-  if(sip->sip_user_agent && sip->sip_user_agent->g_string)
-    remoteApplication = sip->sip_user_agent->g_string;
-  else if(sip->sip_server && sip->sip_server->g_string)
-    remoteApplication = sip->sip_server->g_string;
+  remotePartyAddress = url.GetUrl();
+  remoteApplication = url.GetRemoteApplication();
 
   // endpoint display name override
   PString override_name = GetEndpointParam("Display name override");
@@ -1773,7 +1781,7 @@ int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, 
     sip_from = sip_from_dup(home, sip->sip_from);
     sip_to = sip_to_dup(home, sip->sip_to);
   }
-  PString ruri_str = sep->CreateRuriStr(c_sip_msg, direction);
+  PString ruri_str = MCUURL_SIP(c_sip_msg, direction).GetUrl();
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
   sip_request_t *sip_rq = sip_request_create(home, method, method_name, ruri, NULL);
@@ -1940,10 +1948,10 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
       }
     }
 
-    PString ep_port = OpenMCU::Current().GetEndpointParamFromUrl("Port", "sip:"+remote_user+"@"+remote_domain);
+    PString ep_port = GetEndpointParamFromUrl("Port", "sip:"+remote_user+"@"+remote_domain);
     if(ep_port != "") remote_port = ep_port;
 
-    PString ep_transport = OpenMCU::Current().GetEndpointParamFromUrl("Transport", "sip:"+remote_user+"@"+remote_domain);
+    PString ep_transport = GetEndpointParamFromUrl("Transport", "sip:"+remote_user+"@"+remote_domain);
     if(ep_transport != "") remote_transport = "transport="+ep_transport;
     if(remote_transport == "transport=tls" && remote_port == "5060")
       remote_port = "5061";
@@ -2271,7 +2279,7 @@ int MCUSipEndPoint::SendACK(const msg_t *msg)
   sip_t *sip = sip_object(msg);
   if(sip == NULL) return 0;
 
-  PString ruri_str = CreateRuriStr(msg, 1);
+  PString ruri_str = MCUURL_SIP(msg, 1).GetUrl();
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
   sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_ACK, ruri, NULL);

@@ -2158,7 +2158,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       Conference & conference = *(r->second);
       PString roomNumber = conference.GetNumber();
       BOOL controlled = conference.GetForceScreenSplit();
-      BOOL allowRecord = OpenMCU::Current().GetConferenceParam(roomNumber, RoomAllowRecordKey, TRUE);
+      BOOL allowRecord = GetConferenceParam(roomNumber, RoomAllowRecordKey, TRUE);
       BOOL moderated=FALSE; PString charModerated = "-";
       if(controlled) { charModerated = conference.IsModerated(); moderated=(charModerated=="+"); }
       PINDEX   visibleMemberCount = conference.GetVisibleMemberCount();

@@ -398,7 +398,6 @@ class Registrar : public PThread
     BOOL h323_allow_unreg_mcu_calls;
     BOOL h323_allow_unreg_internal_calls;
 
-    PString GetSipFromHost(const msg_t *msg, int direction);
     BOOL MakeCall(RegistrarConnection *regConn, PString & username_in, PString & username_out);
     BOOL MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
     PString GetAccountAddress(RegistrarAccount *regAccount);

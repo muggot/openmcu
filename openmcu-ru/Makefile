@@ -7,7 +7,7 @@ OSTYPE          = linux
 MACHTYPE	= x86
 PROG		= openmcu-ru
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx \
-                   mcu_rtp.cxx reg.cxx reg_sip.cxx reg_h323.cxx
+                   mcu_rtp.cxx reg.cxx reg_sip.cxx reg_h323.cxx util.cxx
 
 CXX		= g++
 CFLAGS         += -g  -Os

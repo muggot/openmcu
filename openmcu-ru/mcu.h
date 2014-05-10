@@ -31,6 +31,7 @@
 #include "h323.h"
 #include "sip.h"
 #include "reg.h"
+#include "util.h"
 
 #if P_SSL
 #include <ptclib/shttpsvc.h>
@@ -148,41 +149,6 @@ static const PTEACypher::Key CypherKey = {
 
 static PString MCUControlCodes = "NO ACTION,"
                                  "new action";
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class MCUConfig: public PConfig
-{
- public:
-   MCUConfig(const PString & section)
-    : PConfig(CONFIG_PATH, section){};
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class MCUURL : public PURL
-{
-  public:
-    //MCUURL();
-    MCUURL(PString str);
-
-    void SetDisplayName(PString name) { displayName = name; }
-
-    const PString & GetDisplayName() const { return displayName; }
-    const PString & GetUrl() const { return partyUrl; }
-    const PString & GetUrlId() const { return urlId; }
-    const PString & GetMemberFormatName() const { return memberName; }
-    const PString GetPort() const { return PString(port); }
-    const PString & GetSipProto() const { return sipProto; }
-
-  protected:
-    PString partyUrl;
-    PString displayName;
-    PString URLScheme;
-    PString urlId;
-    PString memberName;
-    PString sipProto;
-};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -396,13 +362,6 @@ class OpenMCU : public OpenMCUProcessAncestor
     PFilePath  logFilename;
     BOOL       copyWebLogToLog;
 
-    PString GetEndpointParamFromUrl(PString param, PString url);
-    PString GetEndpointParamFromUrl(PString param, PString url, PString defaultValue);
-    int GetEndpointParamFromUrl(PString param, PString url, int defaultValue);
-
-    PString GetConferenceParam(PString room, PString param, PString defaultValue);
-    int GetConferenceParam(PString room, PString param, int defaultValue);
-
     Registrar *GetRegistrar() { return registrar; };
 
     void ManagerRefreshAddressBook();
@@ -450,10 +409,6 @@ class ExternalVideoRecorderThread : public PThread
     pid_t recordPid;
 #endif
 };
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PString convert_cp1251_to_utf8(PString text);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

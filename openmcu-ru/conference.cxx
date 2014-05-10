@@ -121,12 +121,12 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   // add monitor event
   monitor->AddMonitorEvent(new ConferenceStatusInfo(conference->GetID()));
   monitor->AddMonitorEvent(new ConferenceRecorderInfo(conference->GetID()));
-  int timeLimit = OpenMCU::Current().GetConferenceParam(conference->GetNumber(), RoomTimeLimitKey, 0);
+  int timeLimit = GetConferenceParam(conference->GetNumber(), RoomTimeLimitKey, 0);
   if(timeLimit > 0)
     monitor->AddMonitorEvent(new ConferenceTimeLimitInfo(conference->GetID(), PTime() + timeLimit*1000));
 
   // add file recorder member
-  if(!OpenMCU::Current().GetConferenceParam(conference->GetNumber(), RoomAllowRecordKey, TRUE))
+  if(!GetConferenceParam(conference->GetNumber(), RoomAllowRecordKey, TRUE))
     return;
 
   conference->fileRecorder = new ConferenceFileMember(conference, (const PString) "recorder" , PFile::WriteOnly);
@@ -149,7 +149,7 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   if(membersConf.Left(1)!="\n") membersConf="\n"+membersConf;
 
   // recall last template
-  if(!OpenMCU::Current().GetConferenceParam(conference->GetNumber(), RoomRecallLastTemplateKey, FALSE)) return;
+  if(!GetConferenceParam(conference->GetNumber(), RoomRecallLastTemplateKey, FALSE)) return;
 
   PINDEX dp=membersConf.Find("\nLAST_USED ");
   if(dp!=P_MAX_INDEX)
@@ -232,7 +232,7 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
 #  endif
 #endif
 
-  BOOL forceScreenSplit = OpenMCU::Current().GetConferenceParam(_number, ForceSplitVideoKey, TRUE);
+  BOOL forceScreenSplit = GetConferenceParam(_number, ForceSplitVideoKey, TRUE);
 
   if(!forceScreenSplit)
   {
@@ -406,7 +406,7 @@ BOOL ConferenceRepeatingInfo::Perform(Conference & conference)
 BOOL ConferenceStatusInfo::Perform(Conference & conference)
 {
   // auto delete empty room
-  BOOL autoDeleteEmpty = OpenMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAutoDeleteEmptyKey, FALSE);
+  BOOL autoDeleteEmpty = GetConferenceParam(conference.GetNumber(), RoomAutoDeleteEmptyKey, FALSE);
   if(autoDeleteEmpty && !conference.GetVisibleMemberCount())
   {
     ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
@@ -420,8 +420,8 @@ BOOL ConferenceStatusInfo::Perform(Conference & conference)
 BOOL ConferenceRecorderInfo::Perform(Conference & conference)
 {
   // external recorder
-  BOOL autoRecordNotEmpty = OpenMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAutoRecordNotEmptyKey, FALSE);
-  BOOL allowRecord = OpenMCU::Current().GetConferenceParam(conference.GetNumber(), RoomAllowRecordKey, TRUE);
+  BOOL autoRecordNotEmpty = GetConferenceParam(conference.GetNumber(), RoomAutoRecordNotEmptyKey, FALSE);
+  BOOL allowRecord = GetConferenceParam(conference.GetNumber(), RoomAllowRecordKey, TRUE);
   if(autoRecordNotEmpty && allowRecord)
   {
     // stop recorder if room is empty
@@ -486,9 +486,9 @@ Conference::Conference(        ConferenceManager & _manager,
   echoLevel = 0;
   vidmembernum = 0;
   fileRecorder = NULL;
-  externalRecorder=NULL;
-  forceScreenSplit = OpenMCU::Current().GetConferenceParam(number, ForceSplitVideoKey, TRUE);
-  lockedTemplate = OpenMCU::Current().GetConferenceParam(number, LockTemplateKey, FALSE);
+  externalRecorder = NULL;
+  forceScreenSplit = GetConferenceParam(number, ForceSplitVideoKey, TRUE);
+  lockedTemplate = GetConferenceParam(number, LockTemplateKey, FALSE);
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 

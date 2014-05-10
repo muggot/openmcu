@@ -2844,7 +2844,7 @@ PString MCUH323Connection::GetEndpointParam(PString param)
     if(pos != P_MAX_INDEX) url=url.Mid(pos+3);
     url = GetRemoteNumber()+"@"+url;
   }
-  return OpenMCU::Current().GetEndpointParamFromUrl(param, url);
+  return GetEndpointParamFromUrl(param, url);
 }
 
 #if MCU_VIDEO
@@ -2905,7 +2905,7 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     if(conference)
       forceScreenSplit = conference->GetForceScreenSplit();
     else
-      forceScreenSplit = OpenMCU::Current().GetConferenceParam(requestedRoom, ForceSplitVideoKey, TRUE);
+      forceScreenSplit = GetConferenceParam(requestedRoom, ForceSplitVideoKey, TRUE);
 
     if(forceScreenSplit)
     {

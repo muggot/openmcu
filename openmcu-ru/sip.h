@@ -23,6 +23,7 @@
 
 #include "h323.h"
 #include "mcu_rtp.h"
+#include "util.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -40,6 +41,19 @@ enum SipSecureTypes
 
 class MCUSipEndPoint;
 class MCUSipConnection;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUURL_SIP : public MCUURL
+{
+  public:
+    MCUURL_SIP(const msg_t *msg, int direction);
+    const PString & GetRemoteApplication() const { return remote_application; }
+    const PString & GetDomainName() const { return domain_name; }
+  protected:
+    PString domain_name;
+    PString remote_application;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -206,8 +220,7 @@ class MCUSipConnection : public MCUH323Connection
       }
     ~MCUSipConnection()
     {
-      PTRACE(1, "MCUSipConnection\tDestructor called,  remotePartyAddress: " << remotePartyAddress);
-      cout << "MCUSipConnection\tDestructor called, remotePartyAddress: " << remotePartyAddress << "\n";
+      MCUTRACE(1, "MCUSipConnection Destructor called,  remotePartyAddress: "+remotePartyAddress);
       if(c_sip_msg) msg_destroy(c_sip_msg);
       DeleteTempSockets();
     }
@@ -327,7 +340,6 @@ class MCUSipEndPoint : public PThread
     nta_agent_t *GetAgent() { return agent; };
     su_home_t *GetHome() { return &home; };
 
-    PString CreateRuriStr(const msg_t *msg, int direction);
     nta_outgoing_t * SipMakeCall(PString from, PString to, PString & call_id);
     int CreateIncomingConnection(const msg_t *msg);
     int CreateOutgoingConnection(const msg_t *msg);
