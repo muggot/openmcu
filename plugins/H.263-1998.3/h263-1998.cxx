@@ -332,13 +332,20 @@ void H263_Base_EncoderContext::SetMaxKeyFramePeriod (unsigned period)
 void H263_Base_EncoderContext::SetTargetBitrate (unsigned rate)
 {
   m_targetBitRate = rate;
-  _context->bit_rate = _context->rc_min_rate = _context->rc_max_rate = m_targetBitRate;
-  _context->rc_buffer_size = _context->bit_rate * 8 * 2; // DVD specs bufsize=1792Kb bitrate=224Kb
+  _context->rc_min_rate = 0;
+  _context->rc_max_rate = m_targetBitRate;
+  _context->bit_rate = (_context->rc_max_rate * 3) >> 2;
+  _context->rc_buffer_size = _context->rc_max_rate * 2;
 
   _context->bit_rate_tolerance = m_targetBitRate/10;
   int tolerance_min =  _context->bit_rate*_context->time_base.num/_context->time_base.den + 1; // one frame bits
   if(_context->bit_rate_tolerance < tolerance_min)
     _context->bit_rate_tolerance = tolerance_min;
+
+  // rate control equation
+  const char *rc_eq = "1";
+  _context->rc_eq = (const char *)malloc(strlen(rc_eq)+1);
+  memcpy((void *)_context->rc_eq, rc_eq, strlen(rc_eq)+1);
 }
 
 void H263_Base_EncoderContext::SetFrameWidth (unsigned width)
