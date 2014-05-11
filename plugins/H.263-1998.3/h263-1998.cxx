@@ -342,10 +342,11 @@ void H263_Base_EncoderContext::SetTargetBitrate (unsigned rate)
   if(_context->bit_rate_tolerance < tolerance_min)
     _context->bit_rate_tolerance = tolerance_min;
 
+  // limit q by clipping
+  _context->rc_qsquish = 0;
+
   // rate control equation
-  const char *rc_eq = "1";
-  _context->rc_eq = (const char *)malloc(strlen(rc_eq)+1);
-  memcpy((void *)_context->rc_eq, rc_eq, strlen(rc_eq)+1);
+  _context->rc_eq = strdup("1");
 }
 
 void H263_Base_EncoderContext::SetFrameWidth (unsigned width)
