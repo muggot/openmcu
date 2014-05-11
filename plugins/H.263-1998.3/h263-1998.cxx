@@ -334,7 +334,7 @@ void H263_Base_EncoderContext::SetTargetBitrate (unsigned rate)
   m_targetBitRate = rate;
   _context->rc_min_rate = 0;
   _context->rc_max_rate = m_targetBitRate;
-  _context->bit_rate = (_context->rc_max_rate * 3) >> 2;
+  _context->bit_rate = _context->rc_max_rate*7/8;
   _context->rc_buffer_size = _context->rc_max_rate * 2;
 
   _context->bit_rate_tolerance = m_targetBitRate/10;
