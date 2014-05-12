@@ -260,36 +260,9 @@ void Registrar::SubscriptionProcess()
 PString RegistrarAccount::GetAuthStr()
 {
   if(nonce == "")
-  {
-    PGloballyUniqueID id;
-    nonce = id.AsString();
-  }
+    nonce = PGloballyUniqueID().AsString();
   PString sip_auth_str = scheme+" "+"realm=\""+domain+"\",nonce=\""+nonce+"\",algorithm="+algorithm;
   return sip_auth_str;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Abook * Registrar::InsertAbook(RegAccountTypes account_type, PString username)
-{
-  PWaitAndSignal m(mutex);
-  Abook *abook = new Abook(account_type, username);
-  AbookMap.insert(AbookMapType::value_type(abook->username, abook));
-  return abook;
-}
-Abook * Registrar::FindAbook(RegAccountTypes account_type, PString username)
-{
-  Abook *abook = NULL;
-  PWaitAndSignal m(mutex);
-  for(AbookMapType::iterator it=AbookMap.begin(); it!=AbookMap.end(); ++it)
-  {
-    if(it->second->username == username && (account_type == ACCOUNT_TYPE_UNKNOWN || account_type == it->second->account_type))
-    {
-      abook = it->second;
-      break;
-    }
-  }
-  return abook;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -503,33 +476,16 @@ void Registrar::Leave(int account_type, PString callToken)
 
 PStringArray Registrar::GetAddressBook()
 {
+  PStringArray account_list;
   PWaitAndSignal m(mutex);
   for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
   {
     RegistrarAccount *regAccount = it->second;
-    if(!regAccount->registered)
-      continue;
-    regAccount->Lock();
-    Abook *abook = FindAbook(regAccount->account_type, regAccount->username);
-    if(!abook)
-    {
-      abook = InsertAbook(regAccount->account_type, regAccount->username);
-      abook->address_book = FALSE;
-      abook->display_name = regAccount->display_name;
-    }
-    abook->host = regAccount->host;
-    abook->port = regAccount->port;
-    abook->registered = regAccount->registered;
-    regAccount->Unlock();
-  }
-  PStringArray account_list;
-  for(AbookMapType::iterator it=AbookMap.begin(); it!=AbookMap.end(); ++it)
-  {
-    Abook *abook = it->second;
-    RegistrarConnection *regConn = FindRegConnUsername(abook->username);
+    BOOL state = FALSE;
+    RegistrarConnection *regConn = FindRegConnUsername(regAccount->username);
     if(regConn)
-      abook->state = TRUE;
-    account_list.AppendString(abook->display_name+" ["+abook->GetUrl()+"],"+PString(abook->registered)+","+PString(abook->state));
+      state = TRUE;
+    account_list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+PString(regAccount->enable)+","+PString(regAccount->registered)+","+PString(state));
   }
   return account_list;
 }
@@ -555,19 +511,10 @@ void Registrar::MainLoop()
     SubscriptionProcess();
     PTime now;
     // RegistrarAccount
-    for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); )
+    for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
     {
       RegistrarAccount *regAccount = it->second;
       regAccount->Lock();
-      // delete empty
-      if(!regAccount->enable && !regAccount->registered)
-      {
-        AccountMap.erase(it++);
-        delete regAccount;
-        continue;
-      } else {
-        ++it;
-      }
       // registrar
       if(regAccount->registered)
       {
@@ -679,7 +626,7 @@ void Registrar::InitConfig()
   // SIP parameters
   sip_require_password = cfg.GetBoolean("SIP proxy required password authorization", FALSE);
   sip_allow_unauth_mcu_calls = cfg.GetBoolean("SIP allow unauthorized MCU calls", TRUE);
-  sip_allow_unauth_internal_calls = cfg.GetBoolean("SIP allow SIP unauthorized internal calls", TRUE);
+  sip_allow_unauth_internal_calls = cfg.GetBoolean("SIP allow unauthorized internal calls", TRUE);
 
   // H.323 parameters
   h323_require_h235 = cfg.GetBoolean("H.323 gatekeeper required password authorization", FALSE);
@@ -700,8 +647,6 @@ void Registrar::InitTerminals()
   PStringToString h323Passwords;
 
   Lock();
-
-  AbookMap.clear();
 
   for(AccountMapType::iterator reg = AccountMap.begin(); reg != AccountMap.end(); ++reg)
   {
@@ -742,28 +687,14 @@ void Registrar::InitTerminals()
     if(username == "*" || username == "") continue;
 
     PConfig scfg(sect[i]);
-    PString display_name = scfg.GetString("Display name override");
     PString host = scfg.GetString("Host");
     unsigned port = scfg.GetInteger("Port");
-
-    BOOL address_book = scfg.GetBoolean("Address book", FALSE);
-    if(address_book)
-    {
-      Abook *abook = InsertAbook(account_type, username);
-      abook->address_book = TRUE;
-      abook->display_name = display_name;
-      abook->host = host;
-      abook->port = port;
-    }
-
-    BOOL enable = scfg.GetBoolean("Registrar", FALSE);
-    if(!enable)
-      continue;
 
     RegistrarAccount *regAccount = FindAccountWithLock(account_type, username);
     if(!regAccount)
       regAccount = InsertAccountWithLock(account_type, username, host);
-    regAccount->enable = enable;
+    regAccount->enable = scfg.GetBoolean("Registrar", FALSE);
+    regAccount->abook = scfg.GetBoolean("Address book", FALSE);
     regAccount->host = host;
     if(port != 0)
       regAccount->port = port;

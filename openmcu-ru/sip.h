@@ -62,9 +62,10 @@ class ProxyAccount
   public:
     ProxyAccount()
     {
-      registered = FALSE;
       start_time = PTime(0);
       cseq = 100;
+      status = 0;
+      register_attempts = 0;
     }
     PString local_ip;
     PString roomname;
@@ -77,7 +78,9 @@ class ProxyAccount
     unsigned expires;
     PTime start_time;
     BOOL enable;
-    BOOL registered;
+
+    int status;
+    int register_attempts;
 
     PString sip_www_str, sip_proxy_str;
     PString call_id; // for auth
@@ -388,7 +391,7 @@ class MCUSipEndPoint : public PThread
     sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);
     char * SdpText(PString text);
 
-    int SipRegister(ProxyAccount *, BOOL enable);
+    int SipRegister(ProxyAccount *, BOOL enable = TRUE);
     PString GetRoomAccess(const sip_t *sip);
 
     void InitProxyAccounts();

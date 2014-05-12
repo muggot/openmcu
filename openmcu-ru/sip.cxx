@@ -2037,7 +2037,7 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable = TRUE)
+int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 {
     PTRACE(1, "MCUSIP\tSipRegister");
     if(agent == NULL)
@@ -2179,8 +2179,16 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
     ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(!proxy)
       return 0;
-    MakeProxyAuth(proxy, sip);
 
+    proxy->register_attempts++;
+    if(proxy->register_attempts > 1)
+    {
+      proxy->status = 401;
+      nta_outgoing_destroy(orq);
+      return 0;
+    }
+
+    MakeProxyAuth(proxy, sip);
     proxy->call_id = sip->sip_call_id->i_id;
     SipRegister(proxy);
     nta_outgoing_destroy(orq);
@@ -2191,6 +2199,7 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
     ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(!proxy)
       return 0;
+
     MakeProxyAuth(proxy, sip);
 
     MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
@@ -2247,7 +2256,9 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
     if(sip->sip_expires)
       proxy->expires = sip->sip_expires->ex_delta;
     if(proxy->enable && proxy->expires != 0)
-      proxy->registered = TRUE;
+      proxy->status = 200;
+    if(proxy->enable && proxy->expires == 0)
+      proxy->status = 0;
   }
   if(cseq == sip_method_invite && status == 200)
   {
@@ -2528,12 +2539,15 @@ void MCUSipEndPoint::ProcessProxyAccount()
     PTime now;
     if(proxy->enable && now > proxy->start_time + PTimeInterval(proxy->expires*1000))
     {
+      proxy->status = 0;
+      proxy->register_attempts = 0;
       proxy->start_time = now;
       SipRegister(proxy);
     }
-    if(!proxy->enable && proxy->registered)
+    if(!proxy->enable && proxy->status == 200)
     {
-      proxy->registered = FALSE;
+      proxy->status = 0;
+      proxy->register_attempts = 0;
       proxy->start_time = PTime(0);
       SipRegister(proxy, FALSE);
     }

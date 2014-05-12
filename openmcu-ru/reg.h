@@ -177,45 +177,6 @@ class Subscription
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Abook
-{
-  public:
-    Abook(RegAccountTypes _account_type, PString _username)
-    {
-      account_type = _account_type;
-      username = _username;
-      if(account_type == ACCOUNT_TYPE_SIP)
-        port = 5060;
-      else if(account_type == ACCOUNT_TYPE_H323)
-        port = 1720;
-      address_book = FALSE;
-      registered = FALSE;
-      state = FALSE;
-    }
-    PString GetUrl()
-    {
-      PString url;
-      if(account_type == ACCOUNT_TYPE_SIP)
-        url = "sip:"+username+"@"+host;
-      else if(account_type == ACCOUNT_TYPE_H323)
-        url = "h323:"+username+"@"+host;
-      if(port != 0)
-        url += ":"+PString(port);
-      return url;
-    }
-
-    RegAccountTypes account_type;
-    PString username;
-    PString host;
-    unsigned port;
-    PString display_name;
-    BOOL address_book;
-    BOOL registered;
-    BOOL state;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 class RegistrarAccount
 {
   public:
@@ -239,12 +200,14 @@ class RegistrarAccount
       scheme = "Digest";
       algorithm = "MD5";
       expires = 0;
-      registered = FALSE;
       msg_reg = NULL;
       if(account_type == ACCOUNT_TYPE_SIP)
         port = 5060;
       else if(account_type == ACCOUNT_TYPE_H323)
         port = 1720;
+      enable = FALSE;
+      registered = FALSE;
+      abook = FALSE;
     }
     void Reset()
     {
@@ -284,6 +247,7 @@ class RegistrarAccount
 
     BOOL enable;
     BOOL registered;
+    BOOL abook;
 
     RegAccountTypes account_type;
 
@@ -413,16 +377,13 @@ class Registrar : public PThread
     int OnReceivedSipSubscribe(msg_t *msg);
     int OnReceivedSipMessage(msg_t *msg);
     void SubscriptionProcess();
-    BOOL SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
+    int SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
 
     // internal call process function
     void Leave(int account_type, PString callToken);
     void IncomingCallAccept(RegistrarConnection *regConn);
     void IncomingCallCancel(RegistrarConnection *regConn);
     void OutgoingCallCancel(RegistrarConnection *regConn);
-
-    Abook * InsertAbook(RegAccountTypes account_type, PString username);
-    Abook * FindAbook(RegAccountTypes account_type, PString username);
 
     Subscription * InsertSubWithLock(Registrar *_registrar, PString username_in, PString username_out);
     Subscription * InsertSub(Registrar *_registrar, PString username_in, PString username_out);
@@ -436,9 +397,6 @@ class Registrar : public PThread
     RegistrarConnection * FindRegConnWithLock(PString callToken);
     RegistrarConnection * FindRegConn(PString callToken);
     RegistrarConnection * FindRegConnUsername(PString username);
-
-    typedef std::map<PString /* username */, Abook *> AbookMapType;
-    AbookMapType AbookMap;
 
     typedef std::map<PString /* username */, RegistrarAccount *> AccountMapType;
     AccountMapType AccountMap;

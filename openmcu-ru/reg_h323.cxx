@@ -115,10 +115,14 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
     {
       PString username = H323GetAliasAddressString(info.rrq.m_terminalAlias[i]);
       RegistrarAccount *regAccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, username);
-      if(!regAccount && requireH235) // ??? или добавить все алиасы?
-        continue;
-      if(!regAccount)
+      if(!regAccount && !requireH235)
+      {
         regAccount = registrar->InsertAccountWithLock(ACCOUNT_TYPE_H323, username, "");
+      }
+      if(!regAccount || (regAccount && !regAccount->enable && requireH235))
+      {
+        continue;
+      }
       regAccount->registered = TRUE;
       regAccount->display_name = username;
       regAccount->start_time = PTime();
