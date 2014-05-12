@@ -709,60 +709,58 @@ function format_mmbr_button(m,st)
 
   var ip=get_addr_url_without_param(memberName);
   var uname=get_addr_name(memberName);
-  var mute, vad, kick, hide, kdb, kdb2, mixer=m[7], cmd=10, mute2, mute4, mute8, mixerb, levelb;
+  var mute, vad, kick, hide, kdb, kdb2, mixer=m[7], cmd=10, mute2, mute4, mute8, mixerb, levelb, remove, invite;
 
   if(mixer==-1) mixer='va';
   if(!(m[4]|m[5])) cmd=8; else if(m[5]) cmd=9;
   ip="<span style='color:"+((st==0)?"#576":"blue")+";font-size:10px'>"+ip+"</span>";
 
-  var kdb_width=36, w=15, h=15, sp=5;
+  var kdb_width=35, w=15, h=15, sp=5;
   var width=panel_width-4;
   var bwidth=20;
   var name_width=width-9*bwidth; if(name_width<10) name_width=10;
 
   var b1style="style='cursor:pointer;width:"+w+"px;height:"+h+"px;'";
-  var b2style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+kdb_width+"px;height:"+h+"px;font-size:10px;'";
-  var b3style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+kdb_width+"px;height:"+h+"px;font-size:11px;'";
-  var b4style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+w+"px;height:"+h+"px;'";
+  var b2style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+(kdb_width)+"px;height:"+(h-1)+"px;font-size:10px;'";
+  var b3style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+(kdb_width)+"px;height:"+(h-1)+"px;font-size:11px;'";
+  var b4style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+(w)+"px;height:"+(h-1)+"px;'";
   var namestyle="style='width:"+name_width+"px;height:"+h+"px;line-height:"+h+"px'";
-  if(st)
-  { // online:
-    mute   ="<div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",1)' class='mutespr3"+((m[3]&1)?"0":"1")+"' title='"+((m[3]&1)?"Unmute":"Mute")+"' id='mrpan_" +id+"'></div>";
-    mute2  ="<div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",2)' class='mutespr4"+((m[3]&2)?"0":"1")+"' title='"+((m[3]&2)?"Unmute":"Mute")+"' id='mrpan2_"+id+"'></div>";
-    mute4  ="<div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",4)' class='mutespr2"+((m[3]&4)?"0":"1")+"' title='"+((m[3]&4)?"Unmute":"Mute")+"' id='mrpan4_"+id+"'></div>";
-    mute8  ="<div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",8)' class='mutespr1"+((m[3]&8)?"0":"1")+"' title='"+((m[3]&8)?"Unmute":"Mute")+"' id='mrpan8_"+id+"'></div>";
-    vad    ="<img "+b1style+" src='vad_"+((cmd==8)?"vad":"")+((cmd==9)?"chosenvan":"")+((cmd==10)?"disable":"")+".gif' onclick='vadoptions(this,"+m[1]+")' alt='"+((cmd==8)?"Normal":"")+((cmd==9)?"Van":"")+((cmd==10)?"AD disabled":"")+"' id='vrpan_"+id+"'>";
-    kick   ="<img "+b1style+" src='i16_close_red.png' onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\");' onmouseover='prvnt=1' onmouseout='prvnt=0' alt='Drop'>";
-    hide   ="<img "+b1style+" src='i15_getNoVideo.gif' title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>";
-    kdb    ="<div "+b2style+" id='agl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+"  );return false;}'>"+nice_db(m[10])+"</div>";
-    kdbo   ="<div "+b2style+" id='ogl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+",1);return false;}'>"+nice_db(m[11])+"</div>";
-    mixerb ="<div "+b3style+" onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi'>#"+mixer+"</div>";
-    levelb ="<div "+b4style+" class='vlevel' id='srpan_"+id+"'>&nbsp;</div>";
-  }
-  else
-  { // offline:
-    mute   ="<img "+b1style+" onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i15_inv.gif' alt='Invite'>";
-    kick   ="<img "+b1style+" onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i16_close_gray.png' alt='Remove'>";
-  }
+
+  mute   ="<div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",1)' class='mutespr3"+((m[3]&1)?"0":"1")+"' title='"+((m[3]&1)?"Unmute":"Mute")+"' id='mrpan_" +id+"'></div>";
+  mute2  ="<div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",2)' class='mutespr4"+((m[3]&2)?"0":"1")+"' title='"+((m[3]&2)?"Unmute":"Mute")+"' id='mrpan2_"+id+"'></div>";
+  mute4  ="<div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",4)' class='mutespr2"+((m[3]&4)?"0":"1")+"' title='"+((m[3]&4)?"Unmute":"Mute")+"' id='mrpan4_"+id+"'></div>";
+  mute8  ="<div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",8)' class='mutespr1"+((m[3]&8)?"0":"1")+"' title='"+((m[3]&8)?"Unmute":"Mute")+"' id='mrpan8_"+id+"'></div>";
+  vad    ="<img "+b1style+" src='vad_"+((cmd==8)?"vad":"")+((cmd==9)?"chosenvan":"")+((cmd==10)?"disable":"")+".gif' onclick='vadoptions(this,"+m[1]+")' alt='"+((cmd==8)?"Normal":"")+((cmd==9)?"Van":"")+((cmd==10)?"AD disabled":"")+"' id='vrpan_"+id+"'>";
+  kick   ="<img "+b1style+" src='i16_close_red.png' onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\");' onmouseover='prvnt=1' onmouseout='prvnt=0' alt='Drop'>";
+  hide   ="<img "+b1style+" src='i15_getNoVideo.gif' title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>";
+  kdb    ="<div "+b2style+" id='agl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+"  );return false;}'>"+nice_db(m[10])+"</div>";
+  kdbo   ="<div "+b2style+" id='ogl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+",1);return false;}'>"+nice_db(m[11])+"</div>";
+  mixerb ="<div "+b3style+" onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi'>#"+mixer+"</div>";
+  levelb ="<div "+b4style+" class='vlevel' id='srpan_"+id+"'>&nbsp;</div>";
+  invite ="<img "+b1style+" onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i15_inv.gif' alt='Invite'>";
+  remove ="<img "+b1style+" onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i16_close_gray.png' alt='Remove'>";
 
   var dpre="<div class='mbrpos1' style='left:";
   var dpre2="<div class='mbrpos11' style='left:";
 
   s+=dpre+"2px'><div class='mmbrname' "+namestyle+">"+uname+"</div></div>";
   s+=dpre2+"2px'><div class='mmbrip' "+namestyle+">"+ip+"</div></div>";
-  s+=dpre+(width-2*bwidth)+"px'>"+kick+"</div>";
-  s+=dpre+(width-6*bwidth)+"px'>"+mute+"</div>";
-  if(st)
+  if(st) // online
   {
     s+=dpre+(width-9*bwidth)+"px'>"+levelb+"</div>";
     s+=dpre+(width-8*bwidth)+"px'>"+kdb+"</div>";
-    s+=dpre+(width-5*bwidth)+"px'>"+mute2+"</div>";
-    s+=dpre+(width-4*bwidth)+"px'>"+mute4+"</div>";
-    s+=dpre+(width-3*bwidth)+"px'>"+mute8+"</div>";
+    s+=dpre+(width-6*bwidth)+"px'>"+mute+"</div>";
+    s+=dpre+(width-5*bwidth)+"px'>"+mute4+"</div>";
+    s+=dpre+(width-4*bwidth)+"px'>"+vad+"</div>";
+    s+=dpre+(width-3*bwidth)+"px'>"+hide+"</div>";
+    s+=dpre+(width-2*bwidth)+"px'>"+kick+"</div>";
     s+=dpre2+(width-8*bwidth)+"px'>"+kdbo+"</div>";
-    s+=dpre2+(width-6*bwidth)+"px'>"+mixerb+"</div>";
-    s+=dpre2+(width-4*bwidth)+"px'>"+vad+"</div>";
-    s+=dpre2+(width-3*bwidth)+"px'>"+hide+"</div>";
+    s+=dpre2+(width-6*bwidth)+"px'>"+mute2+"</div>";
+    s+=dpre2+(width-5*bwidth)+"px'>"+mute8+"</div>";
+    s+=dpre2+(width-4*bwidth)+"px'>"+mixerb+"</div>";
+  } else { // offline
+    s+=dpre+(width-3*bwidth)+"px'>"+invite+"</div>";
+    s+=dpre+(width-2*bwidth)+"px'>"+remove+"</div>";
   }
   s+="</div>";
   return s;
@@ -1038,10 +1036,10 @@ function audio(id,vol)
     }
     try
     {
-      o.style.borderBottom=brd+'px '+dtd+' '+clr;
-      o.style.borderRight=brd+'px '+dtd+' '+clr;
-      o.style.paddingBottom=''+(2-brd)+'px';
-      o.style.paddingRight=''+(2-brd)+'px';
+//      o.style.borderBottom=brd+'px '+dtd+' '+clr;
+//      o.style.borderRight=brd+'px '+dtd+' '+clr;
+//      o.style.paddingBottom=''+(2-brd)+'px';
+//      o.style.paddingRight=''+(2-brd)+'px';
       o2.innerHTML=o2value;
     } catch(e) { dmsg('Audio visualisation failed'); return alive(); }
     break;
