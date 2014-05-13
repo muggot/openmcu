@@ -585,9 +585,8 @@ void Conference::RefreshAddressBook()
   {
     PString username = abook[i].Tokenise(",")[0];
     PString urlid = MCUURL(username).GetUrlId();
-    PString reg_enable = abook[i].Tokenise(",")[1];
-    PString registered = abook[i].Tokenise(",")[2];
-    PString state = abook[i].Tokenise(",")[3];
+    PString reg_state = abook[i].Tokenise(",")[1];
+    PString conn_state = abook[i].Tokenise(",")[2];
     if(i>0) msg << ",";
     username.Replace("&","&amp;",TRUE,0);
     username.Replace("\"","&quot;",TRUE,0);
@@ -595,9 +594,8 @@ void Conference::RefreshAddressBook()
         << "0"
         << ",\"" << urlid << "\""
         << ",\"" << username << "\""
-        << ",\"" << reg_enable << "\""
-        << ",\"" << registered << "\""
-        << ",\"" << state << "\""
+        << ",\"" << reg_state << "\""
+        << ",\"" << conn_state << "\""
         << ")";
   }
   msg << ");";

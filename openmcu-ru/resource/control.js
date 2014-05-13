@@ -766,7 +766,7 @@ function format_mmbr_button(m,st)
   return s;
 }
 
-function format_mmbr_abook(num,mmbr,reg_state,conn_state)
+function format_mmbr_abook(num,mmbr)
 {
   var bgcolors=Array('#F5F5F5','#E6E6FA');
   var state_color;
@@ -783,18 +783,20 @@ function format_mmbr_abook(num,mmbr,reg_state,conn_state)
   var name=get_addr_name(uname);
   var ip=get_addr_url_without_param(uname);
 
+  // mmbr[3] - registrar state. 1=unregistered, 2=registered
+  // mmbr[4] - connection state. 1=wait, 2=busy
+  var status = "";
+  if(mmbr[3] == 1)      status = "<img id='adrbkpic"+num+"' src='i16_status_gray.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  else if(mmbr[3] == 2) status = "<img id='adrbkpic"+num+"' src='i16_status_green.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+
   var invite = "", check = "";
-  if(conn_state == 0)
+  if(mmbr[4] == 0)
   {
     check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
     invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
   }
-  else if(conn_state == 1) invite = "<img id='adrbkpic"+num+"' src='i16_status_blue.png' width='"+width+"' height='"+height+"' alt='Invite'>";
-  else if(conn_state == 2) invite = "<img id='adrbkpic"+num+"' src='i16_status_red.png' width='"+width+"' height='"+height+"' alt='Invite'>";
-
-  var status = "";
-  if(reg_state == 1) status = "<img id='adrbkpic"+num+"' src='i16_status_gray.png' width='"+width+"' height='"+height+"' alt='Invite'>";
-  if(reg_state == 2) status = "<img id='adrbkpic"+num+"' src='i16_status_green.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  else if(mmbr[4] == 1) invite = "<img id='adrbkpic"+num+"' src='i16_status_blue.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  else if(mmbr[4] == 2) invite = "<img id='adrbkpic"+num+"' src='i16_status_red.png' width='"+width+"' height='"+height+"' alt='Invite'>";
 
   var posx_check  = 8;
   var posx_invite = posx_check      + width + 16;
@@ -970,13 +972,7 @@ function abook_refresh(){
   for(i=0;i<addressbook.length;i++)
   {
     mmbr = addressbook[i];
-    var reg_state = 0; // 0 - without register, 1 - unregister, 2 - registered
-    var conn_state = 0; // 0 - free, 1 - wait answer, 2 - busy
-    if(mmbr[3] == 1) reg_state = 1; // reg_enable
-    if(mmbr[4] == 1) reg_state = 2; // registered
-    if(mmbr[5] == 1) conn_state = 1; // wait answer
-    if(mmbr[5] == 2) conn_state = 2; // busy
-    imr+=format_mmbr_abook(i,mmbr,reg_state,conn_state);
+    imr+=format_mmbr_abook(i,mmbr);
   }
   result="<div style='width:"+panel_width+"px' id='right_pan_abook'>"+imr+"</div>";
 

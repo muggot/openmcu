@@ -481,16 +481,24 @@ void Registrar::RefreshAddressBook()
   for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
   {
     RegistrarAccount *regAccount = it->second;
-    int state = 0;
+    int reg_state = 0;
+    int conn_state = 0;
+
+    if(regAccount->registered)
+      reg_state = 2;
+    else if(regAccount->enable)
+      reg_state = 1;
+
     RegistrarConnection *regConn = FindRegConnUsername(regAccount->username);
     if(regConn)
     {
      if(regConn->state == CONN_WAIT || regConn->state == CONN_MCU_WAIT)
-      state = 1;
+       conn_state = 1;
      else if(regConn->state == CONN_ESTABLISHED || regConn->state == CONN_MCU_ESTABLISHED)
-      state = 2;
+       conn_state = 2;
     }
-    list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+PString(regAccount->enable)+","+PString(regAccount->registered)+","+PString(state));
+
+    list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+PString(reg_state)+","+PString(conn_state));
   }
   if(account_status_list != list)
   {
