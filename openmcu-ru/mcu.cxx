@@ -476,8 +476,7 @@ void OpenMCU::ManagerRefreshAddressBook()
   // refresh Address Book
   PWaitAndSignal m(manager->GetConferenceListMutex());
   ConferenceListType & conferenceList = manager->GetConferenceList();
-  ConferenceListType::iterator r;
-  for(r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
     if(r->second) r->second->RefreshAddressBook();
 }
 

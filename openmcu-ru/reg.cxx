@@ -355,7 +355,7 @@ RegistrarConnection * Registrar::InsertRegConnWithLock(PString callToken, PStrin
 RegistrarConnection * Registrar::InsertRegConn(RegistrarConnection *regConn)
 {
   PWaitAndSignal m(mutex);
-  RegistrarConnectionMap.insert(RegistrarConnectionMapType::value_type(regConn->callToken_in, regConn));
+  RegConnMap.insert(RegConnMapType::value_type(regConn->callToken_in, regConn));
   return regConn;
 }
 RegistrarConnection * Registrar::InsertRegConn(PString callToken, PString username_in, PString username_out)
@@ -375,7 +375,7 @@ RegistrarConnection *Registrar::FindRegConn(PString callToken)
 {
   RegistrarConnection *regConn = NULL;
   PWaitAndSignal m(mutex);
-  for(RegistrarConnectionMapType::iterator it=RegistrarConnectionMap.begin(); it!=RegistrarConnectionMap.end(); ++it)
+  for(RegConnMapType::iterator it=RegConnMap.begin(); it!=RegConnMap.end(); ++it)
   {
     if(it->second->callToken_in == callToken || it->second->callToken_out == callToken)
     {
@@ -389,7 +389,7 @@ RegistrarConnection *Registrar::FindRegConnUsername(PString username)
 {
   RegistrarConnection *regConn = NULL;
   PWaitAndSignal m(mutex);
-  for(RegistrarConnectionMapType::iterator it=RegistrarConnectionMap.begin(); it!=RegistrarConnectionMap.end(); ++it)
+  for(RegConnMapType::iterator it=RegConnMap.begin(); it!=RegConnMap.end(); ++it)
   {
     if(it->second->username_in == username || it->second->username_out == username)
     {
@@ -483,7 +483,7 @@ PStringArray Registrar::GetAddressBook()
     RegistrarAccount *regAccount = it->second;
     BOOL state = FALSE;
     RegistrarConnection *regConn = FindRegConnUsername(regAccount->username);
-    if(regConn)
+    if(regConn && regConn->state != CONN_IDLE)
       state = TRUE;
     account_list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+PString(regAccount->enable)+","+PString(regAccount->registered)+","+PString(state));
   }
@@ -523,15 +523,21 @@ void Registrar::MainLoop()
       }
       regAccount->Unlock();
     }
+    // compare RegConnMap for refresh address book
+    if(RegConnMapCopy != RegConnMap)
+    {
+      OpenMCU::Current().ManagerRefreshAddressBook();
+      RegConnMapCopy = RegConnMap;
+    }
     // RegistrarConnection
-    for(RegistrarConnectionMapType::iterator it=RegistrarConnectionMap.begin(); it!=RegistrarConnectionMap.end(); )
+    for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )
     {
       RegistrarConnection *regConn = it->second;
       regConn->Lock();
       // remove empty connection
       if(regConn->state == CONN_IDLE)
       {
-        RegistrarConnectionMap.erase(it++);
+        RegConnMap.erase(it++);
         delete regConn;
         continue;
       } else {
@@ -601,8 +607,6 @@ void Registrar::MainLoop()
       if(regConn->state == CONN_END)
       {
         regConn->state = CONN_IDLE;
-        // refresh Address Book
-        OpenMCU::Current().ManagerRefreshAddressBook();
       }
       regConn->Unlock();
     }
@@ -727,11 +731,11 @@ Registrar::~Registrar()
     delete regAccount;
     regAccount = NULL;
   }
-  for(RegistrarConnectionMapType::iterator it = RegistrarConnectionMap.begin(); it != RegistrarConnectionMap.end(); )
+  for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )
   {
     RegistrarConnection *regConn = it->second;
     regConn->Lock();
-    RegistrarConnectionMap.erase(it++);
+    RegConnMap.erase(it++);
     delete regConn;
     regConn = NULL;
   }

@@ -968,16 +968,6 @@ function abook_refresh(){
     if(mmbr[3] == 1) state = 1; // reg_enable
     if(mmbr[4] == 1) state = 2; // registered
     if(mmbr[5] == 1) state = 3; // state(busy)
-    if(state != 2 && typeof members!=='undefined')
-    {
-      for(j=0;j<members.length;j++)
-      {
-        if(members[j][8] == mmbr[1]) // urlid
-        {
-          if(members[j][0]) { state = 3; break; }
-        }
-      }
-    }
     imr+=format_mmbr_abook(i,mmbr,state);
   }
   result="<div style='width:"+panel_width+"px' id='right_pan_abook'>"+imr+"</div>";

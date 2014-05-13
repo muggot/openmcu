@@ -404,8 +404,9 @@ class Registrar : public PThread
     typedef std::map<PString /* username */, Subscription *> SubscriptionMapType;
     SubscriptionMapType SubscriptionMap;
 
-    typedef std::map<PString /* callToken */, RegistrarConnection *> RegistrarConnectionMapType;
-    RegistrarConnectionMapType RegistrarConnectionMap;
+    typedef std::map<PString /* callToken */, RegistrarConnection *> RegConnMapType;
+    RegConnMapType RegConnMap;
+    RegConnMapType RegConnMapCopy;
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
