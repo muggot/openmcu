@@ -474,20 +474,36 @@ void Registrar::Leave(int account_type, PString callToken)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PStringArray Registrar::GetAddressBook()
+void Registrar::RefreshAddressBook()
 {
-  PStringArray account_list;
+  PStringArray list;
   PWaitAndSignal m(mutex);
   for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
   {
     RegistrarAccount *regAccount = it->second;
-    BOOL state = FALSE;
+    int state = 0;
     RegistrarConnection *regConn = FindRegConnUsername(regAccount->username);
-    if(regConn && regConn->state != CONN_IDLE)
-      state = TRUE;
-    account_list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+PString(regAccount->enable)+","+PString(regAccount->registered)+","+PString(state));
+    if(regConn)
+    {
+     if(regConn->state == CONN_WAIT || regConn->state == CONN_MCU_WAIT)
+      state = 1;
+     else if(regConn->state == CONN_ESTABLISHED || regConn->state == CONN_MCU_ESTABLISHED)
+      state = 2;
+    }
+    list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+PString(regAccount->enable)+","+PString(regAccount->registered)+","+PString(state));
   }
-  return account_list;
+  if(account_status_list != list)
+  {
+    account_status_list = list;
+    OpenMCU::Current().ManagerRefreshAddressBook();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PStringArray Registrar::GetAddressBook()
+{
+  return account_status_list;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -509,6 +525,7 @@ void Registrar::MainLoop()
     mutex.Wait();
     // Subscribtion
     SubscriptionProcess();
+    RefreshAddressBook();
     PTime now;
     // RegistrarAccount
     for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
@@ -522,12 +539,6 @@ void Registrar::MainLoop()
           regAccount->registered = FALSE;
       }
       regAccount->Unlock();
-    }
-    // compare RegConnMap for refresh address book
-    if(RegConnMapCopy != RegConnMap)
-    {
-      OpenMCU::Current().ManagerRefreshAddressBook();
-      RegConnMapCopy = RegConnMap;
     }
     // RegistrarConnection
     for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )

@@ -784,11 +784,12 @@ function format_mmbr_abook(num,mmbr,state)
   var ip=get_addr_url_without_param(uname);
 
   var invite = "", check = "", status = "";
-  if(state!=3) invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
-  if(state!=3) check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
+  if(state <= 2) invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
+  if(state <= 2) check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
   if(state == 1) status = "<img id='adrbkpic"+num+"' src='i16_status_gray.png' width='"+width+"' height='"+height+"' alt='Invite'>";
   if(state == 2) status = "<img id='adrbkpic"+num+"' src='i16_status_green.png' width='"+width+"' height='"+height+"' alt='Invite'>";
-  if(state == 3) status = "<img id='adrbkpic"+num+"' src='i16_status_red.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  if(state == 3) status = "<img id='adrbkpic"+num+"' src='i16_status_blue.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  if(state == 4) status = "<img id='adrbkpic"+num+"' src='i16_status_red.png' width='"+width+"' height='"+height+"' alt='Invite'>";
 
   var posx_invite = 8;
   var posx_check  = posx_invite      + width + 16;
@@ -967,7 +968,8 @@ function abook_refresh(){
     var state = 0; // 0 - without register, 1 - unregister, 2 - registered, 3 - busy
     if(mmbr[3] == 1) state = 1; // reg_enable
     if(mmbr[4] == 1) state = 2; // registered
-    if(mmbr[5] == 1) state = 3; // state(busy)
+    if(mmbr[5] == 1) state = 3; // state(wait answer)
+    if(mmbr[5] == 2) state = 4; // state(busy)
     imr+=format_mmbr_abook(i,mmbr,state);
   }
   result="<div style='width:"+panel_width+"px' id='right_pan_abook'>"+imr+"</div>";

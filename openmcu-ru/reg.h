@@ -316,6 +316,7 @@ class Registrar : public PThread
     const PString & GetRegistrarDomain() const { return registrar_domain; };
     const PString & GetInternalRoomPrefix() const { return internal_room_prefix; };
     PStringArray GetAddressBook();
+    void RefreshAddressBook();
 
     void ConnectionCreated(const PString & callToken);
     void ConnectionEstablished(const PString & callToken);
@@ -407,6 +408,8 @@ class Registrar : public PThread
     typedef std::map<PString /* callToken */, RegistrarConnection *> RegConnMapType;
     RegConnMapType RegConnMap;
     RegConnMapType RegConnMapCopy;
+
+    PStringArray account_status_list;
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }

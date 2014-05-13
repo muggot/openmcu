@@ -291,7 +291,6 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   {
     // create temp acount with registered status
     regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username_in, host_in);
-    regAccount_in->registered = TRUE;
     regAccount_in->display_name = display_name_in;
     regAccount_in->start_time = PTime();
     regAccount_in->expires = 60;

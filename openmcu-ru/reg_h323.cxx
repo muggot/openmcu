@@ -43,7 +43,6 @@ H323Connection::AnswerCallResponse Registrar::OnIncomingMsg(PString remoteAccoun
   {
     // create temp acount with registered status
     regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_H323, username_in, host_in);
-    regAccount_in->registered = TRUE;
     regAccount_in->start_time = PTime();
     regAccount_in->expires = 60;
   }
