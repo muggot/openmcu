@@ -766,7 +766,7 @@ function format_mmbr_button(m,st)
   return s;
 }
 
-function format_mmbr_abook(num,mmbr,state)
+function format_mmbr_abook(num,mmbr,reg_state,conn_state)
 {
   var bgcolors=Array('#F5F5F5','#E6E6FA');
   var state_color;
@@ -783,17 +783,22 @@ function format_mmbr_abook(num,mmbr,state)
   var name=get_addr_name(uname);
   var ip=get_addr_url_without_param(uname);
 
-  var invite = "", check = "", status = "";
-  if(state <= 2) invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
-  if(state <= 2) check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
-  if(state == 1) status = "<img id='adrbkpic"+num+"' src='i16_status_gray.png' width='"+width+"' height='"+height+"' alt='Invite'>";
-  if(state == 2) status = "<img id='adrbkpic"+num+"' src='i16_status_green.png' width='"+width+"' height='"+height+"' alt='Invite'>";
-  if(state == 3) status = "<img id='adrbkpic"+num+"' src='i16_status_blue.png' width='"+width+"' height='"+height+"' alt='Invite'>";
-  if(state == 4) status = "<img id='adrbkpic"+num+"' src='i16_status_red.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  var invite = "", check = "";
+  if(conn_state == 0)
+  {
+    check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
+    invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
+  }
+  else if(conn_state == 1) invite = "<img id='adrbkpic"+num+"' src='i16_status_blue.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  else if(conn_state == 2) invite = "<img id='adrbkpic"+num+"' src='i16_status_red.png' width='"+width+"' height='"+height+"' alt='Invite'>";
 
-  var posx_invite = 8;
-  var posx_check  = posx_invite      + width + 16;
-  var posx_status = posx_check       + width + 16;
+  var status = "";
+  if(reg_state == 1) status = "<img id='adrbkpic"+num+"' src='i16_status_gray.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  if(reg_state == 2) status = "<img id='adrbkpic"+num+"' src='i16_status_green.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+
+  var posx_check  = 8;
+  var posx_invite = posx_check      + width + 16;
+  var posx_status = posx_invite       + width + 16;
   var posx_name   = posx_status      + width + 10;
   var free        = (panel_width)    - posx_name - SCROLLER_WIDTH;
   var width_ip    = free/2           + SCROLLER_WIDTH;
@@ -803,8 +808,8 @@ function format_mmbr_abook(num,mmbr,state)
   if(width_name<10){my_alert('Exception: maybe screen resolution too low?'); if(width_name<1)width_name=1;}
 
   var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
-  s+=dpre+posx_invite+"px'><div style='width:"+width+"px;height:"+height+"px'>"+invite+"</div></div>";
   s+=dpre+posx_check+"px'><div style='width:"+width+"px;height:"+height+"px'>"+check+"</div></div>";
+  s+=dpre+posx_invite+"px'><div style='width:"+width+"px;height:"+height+"px'>"+invite+"</div></div>";
   s+=dpre+posx_status+"px'><div style='width:"+width+"px;height:"+height+"px'>"+status+"</div></div>";
   s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'><nobr>"+name+"</nobr></div></div>";
   s+=dpre+posx_ip+"px'><div style='overflow:hidden;font-size:10px;width:"+width_ip+"px;'>"+ip+"</div></div>";
@@ -855,8 +860,8 @@ function additional_panel_abook(){
   var bwidth = 28;
   var dbutton="<div class='btn btn-small' style='border-width:1px;border-radius:0px;padding:2px 0px 2px 0px;height:"+(height+1)+"px;line-height:"+(height+1)+"px;text-align:center;cursor:pointer;";
   var s="<form onsubmit='return false' id='additional_panel_abook' style='display:none;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>";
-  s+=dpre+"2px;'>"+dbutton+"width:"+bwidth+"px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif' /></div></div>";
-  s+=dpre+"34px;'>"+dbutton+"width:"+bwidth+"px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;' /></div></div>";
+  s+=dpre+"2px;'>"+dbutton+"width:"+bwidth+"px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;' /></div></div>";
+  s+=dpre+"34px;'>"+dbutton+"width:"+bwidth+"px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif' /></div></div>";
 
   var proto_posx = 69;
   var proto_width = 50;
@@ -965,12 +970,13 @@ function abook_refresh(){
   for(i=0;i<addressbook.length;i++)
   {
     mmbr = addressbook[i];
-    var state = 0; // 0 - without register, 1 - unregister, 2 - registered, 3 - busy
-    if(mmbr[3] == 1) state = 1; // reg_enable
-    if(mmbr[4] == 1) state = 2; // registered
-    if(mmbr[5] == 1) state = 3; // state(wait answer)
-    if(mmbr[5] == 2) state = 4; // state(busy)
-    imr+=format_mmbr_abook(i,mmbr,state);
+    var reg_state = 0; // 0 - without register, 1 - unregister, 2 - registered
+    var conn_state = 0; // 0 - free, 1 - wait answer, 2 - busy
+    if(mmbr[3] == 1) reg_state = 1; // reg_enable
+    if(mmbr[4] == 1) reg_state = 2; // registered
+    if(mmbr[5] == 1) conn_state = 1; // wait answer
+    if(mmbr[5] == 2) conn_state = 2; // busy
+    imr+=format_mmbr_abook(i,mmbr,reg_state,conn_state);
   }
   result="<div style='width:"+panel_width+"px' id='right_pan_abook'>"+imr+"</div>";
 
