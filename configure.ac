@@ -436,6 +436,9 @@ AC_SUBST(USE_FREETYPE, 0)
 if test "${libfreetype}" = "yes"; then
   AC_CHECK_HEADERS(freetype2/freetype/config/ftheader.h, USE_FREETYPE=1, USE_FREETYPE=0, [-])
   if test ${USE_FREETYPE} = 0 ; then
+    AC_CHECK_HEADERS(freetype2/config/ftheader.h, USE_FREETYPE=1, USE_FREETYPE=0, [-])
+  fi
+  if test ${USE_FREETYPE} = 0 ; then
     AC_MSG_ERROR(freetype headers not found!)
   fi
   AC_CHECK_LIB(freetype, FT_Library_Version, USE_FREETYPE=1, USE_FREETYPE=0)
