@@ -1064,7 +1064,7 @@ function members_sort_name_asc_func(i, j)
     return 0;
 }
 
-function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc,gl,og)
+function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og)
 {
   if(typeof members==='undefined') return alive();
   var j=members.length;
@@ -1082,11 +1082,11 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc,gl,og)
     { // нормальный:
       if(online)
       {
-        if((members[i][1] == id) || (members[i][8] == urlid)) members.splice(i,1);
+        if((members[i][1] == id) || (members[i][8] == membername_id)) members.splice(i,1);
       }
       else
       { // offline: skip id check
-        if(members[i][8] == urlid) members.splice(i,1);
+        if(members[i][8] == membername_id) members.splice(i,1);
       }
     }
     else
@@ -1097,7 +1097,7 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc,gl,og)
   j=members.length;
   dmsg('l2='+j);
 
-  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,urlid,cc,gl,og);
+  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og);
   members.sort(members_sort_name_asc_func);
   alive();
   members_refresh();
@@ -1124,14 +1124,14 @@ function chmix(id,mx){
   alive();
 }
 
-function remmmbr(st,id,name,mute,dvad,cvan,al,urlid,clear){
+function remmmbr(st,id,name,mute,dvad,cvan,al,membername_id,clear){
   if(typeof clear=='undefined') clear=false;
   if(typeof members==='undefined') return alive();
   var found=0; var j=members.length;
   for(var i=j-1;i>=0;i--)
   if((members[i][2]==name)||(members[i][1]==id))
   if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
-  if(!clear)members[j]=Array(st,0,name,mute,dvad,cvan,al,0,urlid);
+  if(!clear)members[j]=Array(st,0,name,mute,dvad,cvan,al,0,membername_id);
   alive();
   members_refresh();
   top_panel();
