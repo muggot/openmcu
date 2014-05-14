@@ -88,23 +88,10 @@ PString GetEndpointParamFromUrl(PString param, PString addr)
   else
     return "";
 
-  PStringList sect = MCUConfig("Parameters").GetSections();
-  if(sect.GetStringsIndex(sectionPrefix+user) != P_MAX_INDEX)
-  {
-    section = sectionPrefix+user;
-  }
+  value = MCUConfig(sectionPrefix+user).GetString(param);
+  if(value == "")
+    value = MCUConfig(sectionPrefix+"*").GetString(param);
 
-  if(section != "")
-  {
-    MCUConfig scfg(section);
-    value = scfg.GetString(param);
-  }
-  if(value == "" && sect.GetStringsIndex(sectionPrefix+"*") != P_MAX_INDEX) section = sectionPrefix+"*";
-  if(section != "")
-  {
-    MCUConfig scfg(section);
-    value = scfg.GetString(param);
-  }
   return value;
 }
 
@@ -169,23 +156,10 @@ PString GetConferenceParam(PString room, PString param, PString defaultValue)
   PString value;
   PString sectionPrefix = "Conference ";
 
-  PStringList sect = MCUConfig("Parameters").GetSections();
-  if(sect.GetStringsIndex(sectionPrefix+room) != P_MAX_INDEX)
-  {
-    section = sectionPrefix+room;
-  }
+  value = MCUConfig(sectionPrefix+room).GetString(param);
+  if(value == "")
+    value = MCUConfig(sectionPrefix+"*").GetString(param);
 
-  if(section != "")
-  {
-    MCUConfig scfg(section);
-    value = scfg.GetString(param);
-  }
-  if(value == "" && sect.GetStringsIndex(sectionPrefix+"*") != P_MAX_INDEX) section = sectionPrefix+"*";
-  if(section != "")
-  {
-    MCUConfig scfg(section);
-    value = scfg.GetString(param);
-  }
   if(value == "")
   {
     if(param == ForceSplitVideoKey)

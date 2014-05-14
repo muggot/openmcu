@@ -40,6 +40,13 @@ class MCUConfig: public PConfig
      }
      return sect;
    }
+   BOOL HasSection(PString section) const
+   {
+     PStringList sect = MCUConfig("Parameters").GetSections();
+     if(sect.GetStringsIndex(section) != P_MAX_INDEX)
+       return TRUE;
+     return FALSE;
+   }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
