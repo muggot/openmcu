@@ -604,6 +604,42 @@ void Conference::RefreshAddressBook()
   OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 }
 
+ConferenceMember * Conference::FindMemberName(PString memberName)
+{
+  PWaitAndSignal m(memberListMutex);
+  MemberNameList::iterator it = memberNameList.find(memberName);
+  if(it != memberNameList.end())
+    return it->second;
+  return NULL;
+}
+
+ConferenceMember * Conference::FindMemberNameId(PString memberName)
+{
+  PString url_id = MCUURL(memberName).GetUrlId();
+  PWaitAndSignal m(memberListMutex);
+  for(MemberNameList::iterator it = memberNameList.begin(); it != memberNameList.end(); ++it)
+  {
+    if(MCUURL(it->first).GetUrlId() == url_id)
+      return it->second;
+  }
+  return NULL;
+}
+
+void Conference::InsertMemberName(ConferenceMember *member)
+{
+  PString memberNameId = MCUURL(member->GetName()).GetUrl();
+  PWaitAndSignal m(memberListMutex);
+  for(MemberNameList::iterator it = memberNameList.begin(); it != memberNameList.end(); ++it)
+  {
+    if(MCUURL(it->first).GetUrlId() == memberNameId && it->second == NULL)
+    {
+      memberNameList.erase(it);
+      break;
+    }
+  }
+  memberNameList.insert(MemberNameList::value_type(member->GetName(), member));
+}
+
 BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 {
 
@@ -619,102 +655,80 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   PWaitAndSignal m(memberListMutex);
 
   // check for duplicate name or very fast reconnect
+  PString memberName = memberToAdd->GetName();
+  for(PINDEX i = 0; FindMemberName(memberToAdd->GetName()) != NULL; i++)
   {
-    Conference::MemberNameList::const_iterator s = memberNameList.find(memberToAdd->GetName());
     if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
     {
-      if(s != memberNameList.end())
-      {
-        if(s->second != NULL)
-        {
-          PString username=memberToAdd->GetName(); username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
-          PStringStream msg;
-          msg << username << " REJECTED - DUPLICATE NAME";
-          OpenMCU::Current().HttpWriteEventRoom(msg, number);
-          return FALSE;
-        }
-      }
-    } else {
-      while (s != memberNameList.end())
-      {
-        if(s->second == NULL) break;
-        {
-          PString username=memberToAdd->GetName();
-          PString newName=username;
-          PINDEX hashPos = newName.Find(" ##");
-          if(hashPos == P_MAX_INDEX) newName += " ##2";
-          else newName = newName.Left(hashPos+3) + PString(newName.Mid(hashPos+3).AsInteger() + 1);
-          memberToAdd->SetName(newName);
-          s = memberNameList.find(memberToAdd->GetName());
-
-          username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
-          PStringStream msg;
-          msg << username << " DUPLICATE NAME, renamed to " << newName;
-          OpenMCU::Current().HttpWriteEventRoom(msg, number);
-        }
-      }
+      PString username = memberToAdd->GetName();
+      username.Replace("&","&amp;",TRUE,0);
+      username.Replace("\"","&quot;",TRUE,0);
+      PStringStream msg;
+      msg << username << " REJECTED - DUPLICATE NAME";
+      OpenMCU::Current().HttpWriteEventRoom(msg, number);
+      return FALSE;
     }
+    memberToAdd->SetName(memberName+" ##"+PString(i+2));
   }
 
   // add the member to the conference
-  if (!memberToAdd->AddToConference(this))
+  if(!memberToAdd->AddToConference(this))
     return FALSE;
 
-  {
-    PTRACE(3, "Conference\tAdding member " << memberToAdd->GetName() << " " << memberToAdd->GetTitle() << " to conference " << guid);
-    cout << "Adding member " << memberToAdd->GetName() << " " << memberToAdd->GetTitle() << " to conference " << guid << endl;
+  PTRACE(3, "Conference\tAdding member: " << memberToAdd->GetName() << " to conference: " << guid);
+  cout << "Conference\tAdding member: " << memberToAdd->GetName() << " to conference: " << guid;
 
-    std::map<void *, ConferenceMember *>::const_iterator r;
-
-    ConferenceMemberId mid = memberToAdd->GetID();
-
-    r = memberList.find(mid);
-    if(r != memberList.end()) return FALSE;
+  ConferenceMemberId mid = memberToAdd->GetID();
+  MemberList::iterator r = memberList.find(mid);
+  if(r != memberList.end())
+    return FALSE;
 
 #if MCU_VIDEO
-//    if(!UseSameVideoForAllMembers()) memberToAdd->videoStatus = 1;
-
-    if (moderated==FALSE
+  if(moderated==FALSE
 #  if ENABLE_TEST_ROOMS
-      || number=="testroom"
+     || number=="testroom"
 #  endif
     )
+  {
+    if(UseSameVideoForAllMembers() && memberToAdd->IsVisible())
     {
-      if (UseSameVideoForAllMembers() && memberToAdd->IsVisible())
-      {
-        videoMixerListMutex.Wait();
-        if (!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd)) memberToAdd->SetFreezeVideo(TRUE);
-        videoMixerListMutex.Signal();
-//          memberToAdd->videoStatus = 1;
-        PTRACE(3, "Conference\tUseSameVideoForAllMembers ");
-      }
+      videoMixerListMutex.Wait();
+      if(!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd))
+        memberToAdd->SetFreezeVideo(TRUE);
+      videoMixerListMutex.Signal();
+      PTRACE(3, "Conference\tUseSameVideoForAllMembers ");
     }
-    else memberToAdd->SetFreezeVideo(TRUE);
-
+  }
+  else
+    memberToAdd->SetFreezeVideo(TRUE);
 #endif
 
-    // add this member to the conference member list
-    memberList.insert(MemberList::value_type(memberToAdd->GetID(), memberToAdd));
+  // add this member to the conference member list
+  memberList.insert(MemberList::value_type(memberToAdd->GetID(), memberToAdd));
 
-    int tid = terminalNumberMap.GetNumber(memberToAdd->GetID());
-    memberToAdd->SetTerminalNumber(tid);
+  // for H.323
+  int tid = terminalNumberMap.GetNumber(memberToAdd->GetID());
+  memberToAdd->SetTerminalNumber(tid);
 
-    // make sure each member has a connection created for the new member
-    // make sure the new member has a connection created for each existing member
-    PINDEX visibleMembers = 0;
-    for(r = memberList.begin(); r != memberList.end(); r++)
+  // make sure each member has a connection created for the new member
+  // make sure the new member has a connection created for each existing member
+  PINDEX visibleMembers = 0;
+  for(MemberList::iterator r = memberList.begin(); r != memberList.end(); r++)
+  {
+    ConferenceMember * conn = r->second;
+    if(conn != memberToAdd)
     {
-      ConferenceMember * conn = r->second;
-      if (conn != memberToAdd) {
-        conn->AddConnection(memberToAdd);
-        memberToAdd->AddConnection(conn);
+      conn->AddConnection(memberToAdd);
+      memberToAdd->AddConnection(conn);
 #if MCU_VIDEO
-        if (moderated==FALSE
+      if(moderated==FALSE
 #  if ENABLE_TEST_ROOMS
          || number == "testroom"
 #  endif
         )
-        if (!UseSameVideoForAllMembers()) {
+      {
+        if(!UseSameVideoForAllMembers())
+        {
           if (conn->IsVisible())
           {
             memberToAdd->AddVideoSource(conn->GetID(), *conn);
@@ -726,17 +740,17 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         }
 #endif
       }
-      if (conn->IsVisible())
-        ++visibleMembers;
     }
+    if(conn->IsVisible())
+      ++visibleMembers;
+  }
 
-    // update the statistics
-    if (memberToAdd->IsVisible()) {
-      maxMemberCount = PMAX(maxMemberCount, visibleMembers);
-
-      // trigger H245 thread for join message
-//      new NotifyH245Thread(*this, TRUE, memberToAdd);
-    }
+  // update the statistics
+  if(memberToAdd->IsVisible())
+  {
+    maxMemberCount = PMAX(maxMemberCount, visibleMembers);
+    // trigger H245 thread for join message
+    //new NotifyH245Thread(*this, TRUE, memberToAdd);
   }
 
   // notify that member is joined
@@ -745,7 +759,9 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // call the callback function
   OnMemberJoining(memberToAdd);
 
-  if (memberToAdd->IsMCU() && !mcuMonitorRunning) {
+  // monitor
+  if(memberToAdd->IsMCU() && !mcuMonitorRunning)
+  {
     manager.AddMonitorEvent(new ConferenceMCUCheckInfo(GetID(), 1000));
     mcuMonitorRunning = TRUE;
   }
@@ -753,32 +769,11 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   PStringStream msg;
 
   // add this member to the conference member name list
-  PString memberToAddUrlId = MCUURL(memberToAdd->GetName()).GetUrlId();
-  if(memberToAdd!=memberToAdd->GetID())
+  if(memberToAdd != memberToAdd->GetID())
   {
-//    PWaitAndSignal m(memberListMutex);
-    if(memberToAdd->GetName().Find(" ##") == P_MAX_INDEX)
-    {
-      // поиск по UrlId
-      BOOL found = FALSE;
-      Conference::MemberNameList theCopy(memberNameList);
-      for (Conference::MemberNameList::iterator s=theCopy.begin(), e=theCopy.end(); s!=e; ++s)
-      {
-        PString memberName = s->first;
-        if(MCUURL(memberName).GetUrlId() == memberToAddUrlId)
-        {
-          if(s->second == NULL)
-          {
-            memberNameList.erase(memberName);
-            if(!found) confTpl.Replace(memberName,memberToAdd->GetName(),TRUE,0);
-            found = TRUE;
-          }
-        }
-      }
-    } else {
-      memberNameList.erase(memberToAdd->GetName());
-    }
-    memberNameList.insert(MemberNameList::value_type(memberToAdd->GetName(),memberToAdd));
+    PString memberToAddUrlId = MCUURL(memberToAdd->GetName()).GetUrlId();
+
+    InsertMemberName(memberToAdd);
 
     PullMemberOptionsFromTemplate(memberToAdd, confTpl);
 
@@ -798,14 +793,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
   }
-/*  
-  else
-  {
-   serviceMemberNameList.erase(memberToAdd->GetName());
-   serviceMemberNameList.insert(MemberNameList::value_type(memberToAdd->GetName(),memberToAdd));
-  }
-*/  
-
 
   msg = "<font color=green><b>+</b>";
   msg << memberToAdd->GetName() << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);

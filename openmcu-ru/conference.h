@@ -1140,6 +1140,12 @@ class Conference : public PObject
     MemberNameList & GetServiceMemberNameList() 
     { return serviceMemberNameList; }
 
+    ConferenceMember *FindMemberName(PString memberName);
+
+    ConferenceMember *FindMemberNameId(PString memberName);
+
+    void InsertMemberName(ConferenceMember *member);
+
     int GetMemberCount() const
     { PWaitAndSignal m(memberListMutex); return (int)memberList.size(); }
 
