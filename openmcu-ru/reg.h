@@ -326,7 +326,7 @@ class Registrar : public PThread
     BOOL MakeCall(PString room, PString to, PString & callToken);
 
     int OnIncomingMsg(msg_t *msg);
-    H323Connection::AnswerCallResponse OnIncomingMsg(PString remoteAccount, PString & requestedRoom, PString callToken, OpalGloballyUniqueID callIdentifier);
+    H323Connection::AnswerCallResponse OnIncomingMsg(PString memberName, PString & requestedRoom, PString callToken, OpalGloballyUniqueID callIdentifier);
 
     nta_agent_t *GetAgent() { return sep->GetAgent(); };
     su_home_t *GetHome() { return sep->GetHome(); };
@@ -362,6 +362,7 @@ class Registrar : public PThread
     BOOL h323_require_h235;
     BOOL h323_allow_unreg_mcu_calls;
     BOOL h323_allow_unreg_internal_calls;
+    unsigned h323_time_to_live;
 
     BOOL MakeCall(RegistrarConnection *regConn, PString & username_in, PString & username_out);
     BOOL MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);

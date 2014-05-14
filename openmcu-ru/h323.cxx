@@ -2617,10 +2617,9 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
   if (requestedRoom.IsEmpty())
     return AnswerCallDenied;
 
-  MCUURL url(remotePartyName);
-  PString account = GetRemoteNumber()+"@"+url.GetHostName();
+  SetRemoteName(setupPDU);
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
-  return registrar->OnIncomingMsg(account, requestedRoom, callToken, callIdentifier);
+  return registrar->OnIncomingMsg(memberName, requestedRoom, callToken, callIdentifier);
 }
 
 BOOL MCUH323Connection::CheckVFU()

@@ -655,7 +655,12 @@ void Registrar::InitConfig()
   h323_require_h235 = cfg.GetBoolean("H.323 gatekeeper required password authorization", FALSE);
   h323_allow_unreg_mcu_calls = cfg.GetBoolean("H.323 allow unregistered MCU calls", TRUE);
   h323_allow_unreg_internal_calls = cfg.GetBoolean("H.323 allow unregistered internal calls", TRUE);
-  if(gk) gk->SetRequireH235(h323_require_h235);
+  h323_time_to_live = cfg.GetInteger("H.323 gatekeeper default TTL(Time To Live)", 3600);
+  if(gk)
+  {
+    gk->SetRequireH235(h323_require_h235);
+    gk->SetTimeToLive(h323_time_to_live);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

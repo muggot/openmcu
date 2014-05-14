@@ -6,10 +6,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-H323Connection::AnswerCallResponse Registrar::OnIncomingMsg(PString remoteAccount, PString & requestedRoom, PString callToken, OpalGloballyUniqueID callIdentifier)
+H323Connection::AnswerCallResponse Registrar::OnIncomingMsg(PString memberName, PString & requestedRoom, PString callToken, OpalGloballyUniqueID callIdentifier)
 {
   PTRACE(1, "Registrar\tOnIncomingCallH323");
-  MCUURL url(remoteAccount);
+  MCUURL url(memberName);
   if(url.GetUserName() == "" || url.GetHostName() == "")
     return H323Connection::AnswerCallDenied;
 
@@ -18,6 +18,7 @@ H323Connection::AnswerCallResponse Registrar::OnIncomingMsg(PString remoteAccoun
 
   PString username_in = url.GetUserName();
   PString host_in = url.GetHostName();
+  PString display_name_in = url.GetDisplayName();
   PString username_out = requestedRoom;
   //PString host_out = "";
 
@@ -43,6 +44,7 @@ H323Connection::AnswerCallResponse Registrar::OnIncomingMsg(PString remoteAccoun
   {
     // create temp acount with registered status
     regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_H323, username_in, host_in);
+    regAccount_in->display_name = display_name_in;
     regAccount_in->start_time = PTime();
     regAccount_in->expires = 60;
   }
@@ -105,8 +107,13 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   srcAddress.GetIpAddress(host);
 
   unsigned expires = GetTimeToLive();
-  if(info.rrq.HasOptionalField(H225_RegistrationRequest::e_timeToLive) && expires > info.rrq.m_timeToLive)
-    expires = info.rrq.m_timeToLive;
+  if(!info.rcf.HasOptionalField(H225_RegistrationRequest::e_timeToLive))
+  {
+    info.rcf.IncludeOptionalField(H225_RegistrationRequest::e_timeToLive);
+    info.rcf.m_timeToLive = expires;
+  }
+  if(expires > info.rcf.m_timeToLive)
+   expires = info.rcf.m_timeToLive;
 
   if(info.rrq.HasOptionalField(H225_RegistrationRequest::e_terminalAlias))
   {
