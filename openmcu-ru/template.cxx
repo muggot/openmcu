@@ -179,29 +179,17 @@ void Conference::LoadTemplate(PString tpl)
           else if(value=="2") { mixer->SetPositionType(vmpN, 2); }
           else if(value=="3") { mixer->SetPositionType(vmpN, 3); }
           else
-          { PINDEX commaPosition = value.Find(',');
+          {
+            PINDEX commaPosition = value.Find(',');
             if(commaPosition != P_MAX_INDEX)
-            { PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
+            {
+              PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
               PWaitAndSignal m(memberListMutex);
-              MemberNameList::iterator s;
-              for(s = memberNameList.begin(); s != memberNameList.end(); ++s)
+              ConferenceMember *member = FindMemberNameId(name);
+              if(member && mixer!=NULL)
               {
-                if(s->second!=NULL) // online
-                {
-                  if(MCUURL(name).GetUrlId() == MCUURL(s->first).GetUrlId())
-                    break;
-                }
-              }
-              if(s!=memberNameList.end())
-              {
-                if(s->second!=NULL) // online
-                {
-                  if(mixer!=NULL)
-                  {
-                    mixer->PositionSetup(vmpN, 1, s->second);
-                    s->second->SetFreezeVideo(FALSE);
-                  }
-                }
+                mixer->PositionSetup(vmpN, 1, member);
+                member->SetFreezeVideo(FALSE);
               }
             }
           }
@@ -219,42 +207,31 @@ void Conference::LoadTemplate(PString tpl)
           PString memberAddress = MCUURL(memberInternalName).GetUrl();
 
           PWaitAndSignal m(memberListMutex);
-          MemberNameList::const_iterator r;
-          for(r = memberNameList.begin(); r != memberNameList.end(); ++r)
+          ConferenceMember *member = FindMemberNameId(memberInternalName);
+          if(member)
           {
-            if(r->second!=NULL) // online
+            member->autoDial     = memberAutoDial;
+            member->muteMask     = v[1].AsInteger();
+            member->disableVAD   = (v[2]=="1");
+            member->chosenVan    = (v[3]=="1");
+            OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
+          }
+          else
+          {
+            memberNameList.insert(MemberNameList::value_type(memberInternalName, (ConferenceMember*)NULL));
+/*
+            if(offline && memberAutoDial) // finally: offline and have to be called
             {
-              if(MCUURL(memberInternalName).GetUrlId() == MCUURL(r->first).GetUrlId())
+              PString token;
+              PString numberWithMixer=number;
+              if(v[4]!="0") numberWithMixer+="/"+v[4];
+              if(OpenMCU::Current().GetEndpoint().Invite(numberWithMixer, memberAddress) != "")
               {
-                memberInternalName = r->first;
-                break;
+                PStringStream msg; msg << "Inviting " << memberAddress;
+                OpenMCU::Current().HttpWriteEventRoom(msg,number);
               }
             }
-          }
-          BOOL offline = (r == memberNameList.end());
-
-          if(offline) memberNameList.insert(MemberNameList::value_type(memberInternalName, (ConferenceMember*)NULL));
-          else offline = (r->second == NULL);
-/*
-          if(offline && memberAutoDial) // finally: offline and have to be called
-          {
-            PString token;
-            PString numberWithMixer=number;
-            if(v[4]!="0") numberWithMixer+="/"+v[4];
-            if(OpenMCU::Current().GetEndpoint().Invite(numberWithMixer, memberAddress) != "")
-            {
-              PStringStream msg; msg << "Inviting " << memberAddress;
-              OpenMCU::Current().HttpWriteEventRoom(msg,number);
-            }
-          }
 */
-          if(!offline) // online: just tune him up
-          {
-            r->second->autoDial     = memberAutoDial;
-            r->second->muteMask     = v[1].AsInteger();
-            r->second->disableVAD   = (v[2]=="1");
-            r->second->chosenVan    = (v[3]=="1");
-            OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, r->second, v[4].AsInteger());
           }
           validatedMembers.AppendString(memberInternalName);
 
