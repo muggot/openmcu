@@ -1035,7 +1035,7 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
       << ",0"
       << ",0"
       << ",0"
-      << ",\"" << MCUURL(s->first).GetUrlId() << "\""
+      << ",\"" << MCUURL(s->first).GetMemberNameId() << "\""
       << ")";
     i++;
   } else {          //   active member
@@ -1048,7 +1048,7 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
       << "," << member->chosenVan                       // [i][ 5] = chosen van
       << "," << member->GetAudioLevel()                 // [i][ 6] = audiolevel (peak)
       << "," << member->GetVideoMixerNumber()           // [i][ 7] = number of mixer member receiving
-      << ",\"" << MCUURL(s->first).GetUrlId() << "\""   // [i][ 8] = URL
+      << ",\"" << MCUURL(s->first).GetMemberNameId() << "\""   // [i][ 8] = memberName id
       << "," << (unsigned short)member->channelCheck    // [i][ 9] = RTP channels checking bit mask 0000vVaA
       << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
       << "," << member->kOutputGainDB                   // [i][11] = Output audio gain, integer: -20..60

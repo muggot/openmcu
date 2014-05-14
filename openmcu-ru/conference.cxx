@@ -583,17 +583,17 @@ void Conference::RefreshAddressBook()
   msg = "addressbook=Array(";
   for(PINDEX i = 0; i < abook.GetSize(); i++)
   {
-    PString username = abook[i].Tokenise(",")[0];
-    PString urlid = MCUURL(username).GetUrlId();
+    PString memberName = abook[i].Tokenise(",")[0];
+    PString memberNameId = MCUURL(memberName).GetMemberNameId();
     PString reg_state = abook[i].Tokenise(",")[1];
     PString conn_state = abook[i].Tokenise(",")[2];
     if(i>0) msg << ",";
-    username.Replace("&","&amp;",TRUE,0);
-    username.Replace("\"","&quot;",TRUE,0);
+    memberName.Replace("&","&amp;",TRUE,0);
+    memberName.Replace("\"","&quot;",TRUE,0);
     msg << "Array("
         << "0"
-        << ",\"" << urlid << "\""
-        << ",\"" << username << "\""
+        << ",\"" << memberNameId << "\""
+        << ",\"" << memberName << "\""
         << ",\"" << reg_state << "\""
         << ",\"" << conn_state << "\""
         << ")";
@@ -615,11 +615,11 @@ ConferenceMember * Conference::FindMemberName(PString memberName)
 
 ConferenceMember * Conference::FindMemberNameId(PString memberName)
 {
-  PString url_id = MCUURL(memberName).GetUrlId();
+  PString memberNameId = MCUURL(memberName).GetMemberNameId();
   PWaitAndSignal m(memberListMutex);
   for(MemberNameList::iterator it = memberNameList.begin(); it != memberNameList.end(); ++it)
   {
-    if(MCUURL(it->first).GetUrlId() == url_id)
+    if(MCUURL(it->first).GetMemberNameId() == memberNameId)
       return it->second;
   }
   return NULL;
@@ -627,11 +627,11 @@ ConferenceMember * Conference::FindMemberNameId(PString memberName)
 
 void Conference::InsertMemberName(ConferenceMember *member)
 {
-  PString memberNameId = MCUURL(member->GetName()).GetUrl();
+  PString memberNameId = MCUURL(member->GetName()).GetMemberNameId();
   PWaitAndSignal m(memberListMutex);
   for(MemberNameList::iterator it = memberNameList.begin(); it != memberNameList.end(); ++it)
   {
-    if(MCUURL(it->first).GetUrlId() == memberNameId && it->second == NULL)
+    if(MCUURL(it->first).GetMemberNameId() == memberNameId && it->second == NULL)
     {
       memberNameList.erase(it);
       break;
@@ -771,7 +771,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // add this member to the conference member name list
   if(memberToAdd != memberToAdd->GetID())
   {
-    PString memberToAddUrlId = MCUURL(memberToAdd->GetName()).GetUrlId();
+    PString memberNameId = MCUURL(memberToAdd->GetName()).GetMemberNameId();
 
     InsertMemberName(memberToAdd);
 
@@ -786,7 +786,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         << "," << memberToAdd->chosenVan
         << "," << memberToAdd->GetAudioLevel()
         << "," << memberToAdd->GetVideoMixerNumber()
-        << ",\"" << memberToAddUrlId << "\""
+        << ",\"" << memberNameId << "\""
         << "," << dec << (unsigned)memberToAdd->channelCheck
         << "," << memberToAdd->kManualGainDB
         << "," << memberToAdd->kOutputGainDB
@@ -844,7 +844,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
         << "," << memberToRemove->disableVAD
         << ","  << memberToRemove->chosenVan
         << ","  << memberToRemove->GetAudioLevel()
-        << ",\"" << MCUURL(memberToRemove->GetName()).GetUrlId() << "\"";
+        << ",\"" << MCUURL(memberToRemove->GetName()).GetMemberNameId() << "\"";
     if(s==memberNameList.end()) msg << ",1";
     msg << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
@@ -1160,8 +1160,8 @@ void Conference::AddOfflineMemberToNameList(PString & name)
   memberNameList.insert(MemberNameList::value_type(name,zerop));
   PString username(name);
   username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
-  PString url=MCUURL(username).GetUrlId();
-  OpenMCU::Current().HttpWriteCmdRoom("addmmbr(0,0,'"+username+"',0,0,0,0,0,'"+url+"',0)",number);
+  PString id = MCUURL(username).GetMemberNameId();
+  OpenMCU::Current().HttpWriteCmdRoom("addmmbr(0,0,'"+username+"',0,0,0,0,0,'"+id+"',0)",number);
 }
 
 BOOL Conference::PutChosenVan()

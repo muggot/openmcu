@@ -63,8 +63,8 @@ class MCUURL : public PURL
     virtual const PString & GetUrl() const { return url_party; }
     virtual const PString & GetSipProto() const { return transport; }
     virtual const PString GetPort() const { return PString(port); }
-    virtual const PString GetMemberFormatName() const { return display_name+" ["+url_party+"]"; }
-    virtual const PString GetUrlId() const
+    virtual const PString GetMemberName() const { return display_name+" ["+url_party+"]"; }
+    virtual const PString GetMemberNameId() const
     {
       if(url_scheme == "sip")
        return username+"@"+hostname;
