@@ -70,6 +70,7 @@ i32_lockopen.png \
 s15_ch.png \
 i16_status_gray.png \
 i16_status_green.png \
+i16_status_blue.png \
 i16_status_red.png \
 
 OBJDIR	= ./obj

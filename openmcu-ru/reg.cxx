@@ -134,7 +134,7 @@ BOOL Registrar::MakeCall(PString roomname, PString to, PString & callToken)
 
   if(callToken != "")
   {
-    regConn = InsertRegConnWithLock("", roomname, username_out);
+    regConn = InsertRegConnWithLock(callToken, roomname, username_out);
     regConn->account_type_out = account_type;
     regConn->callToken_out = callToken;
     regConn->roomname = roomname;
