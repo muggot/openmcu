@@ -309,6 +309,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   // MCU call if !regAccount_out
   if(!regAccount_out)
   {
+    regConn->account_type_in = regAccount_in->account_type;
     regConn->state = CONN_MCU_WAIT;
     response_code = -1; // MCU call
   } else {

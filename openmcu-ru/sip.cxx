@@ -2165,119 +2165,109 @@ PString MCUSipEndPoint::MakeAuthStr(PString username, PString password, PString 
 
 int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
 {
-  if(sip->sip_status == NULL) return 0;
   msg_t *msg = nta_outgoing_getresponse(orq);
-  if(msg == NULL) return 0;
+  msg_t *msg_orq = nta_outgoing_getrequest(orq);
+  sip_t *sip_orq = sip_object(msg_orq);
+  if(msg == NULL || msg_orq == NULL) return 0;
+  if(sip->sip_status == NULL) return 0;
 
-  int status = 0, cseq = 0;
+  int status = 0, request = 0;
   if(sip->sip_status)  status = sip->sip_status->st_status;
-  if(sip->sip_cseq)    cseq = sip->sip_cseq->cs_method;
+  if(sip->sip_cseq)    request = sip->sip_cseq->cs_method;
   PString callToken = "sip:"+PString(sip->sip_to->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
 
-  if(cseq == sip_method_register && (status == 401 || status == 407))
+  if(request == sip_method_register)
   {
     ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(!proxy)
-      return 0;
-
-    proxy->register_attempts++;
-    if(proxy->register_attempts > 1)
     {
-      proxy->status = 401;
       nta_outgoing_destroy(orq);
       return 0;
     }
 
-    MakeProxyAuth(proxy, sip);
-    proxy->call_id = sip->sip_call_id->i_id;
-    SipRegister(proxy);
-    nta_outgoing_destroy(orq);
-    return 0;
-  }
-  if(cseq == sip_method_invite && (status == 401 || status == 407))
-  {
-    ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
-    if(!proxy)
-      return 0;
+    proxy->status = sip->sip_status->st_status;
+    proxy->status_phrase = sip->sip_status->st_phrase;
 
-    MakeProxyAuth(proxy, sip);
-
-    MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
-    if(!sCon) // connection not exist
-      return 0;
-
-    sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)sip->sip_to->a_url);
-    sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)
-  	  ("sip:"+proxy->username+"@"+proxy->local_ip), NULL);
-    sip_contact->m_display = proxy->roomname;
-
-    sip_request_t *sip_rq = sip_request_create(&home, sip->sip_cseq->cs_method,
-		                               sip->sip_cseq->cs_method_name, (url_string_t *)sip_to->a_url, NULL);
-    sip_cseq_t *sip_cseq = sip_cseq_create(&home, sip->sip_cseq->cs_seq+1,
-			                       sip->sip_cseq->cs_method, sip->sip_cseq->cs_method_name);
-
-    // temp invite data
-    sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sCon->invite_sdp_txt);
-
-    sip_authorization_t *sip_auth=NULL, *sip_proxy_auth=NULL;
-    if(status == 401)
-      sip_auth = sip_authorization_make(&home, proxy->sip_www_str);
-    else if(status == 407)
-      sip_proxy_auth = sip_proxy_authorization_make(&home, proxy->sip_proxy_str);
-
-    msg_t *sip_msg = nta_msg_create(agent, 0);
-    nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, nta_response_cb1_wrap, (nta_outgoing_magic_t *)this,
-			(url_string_t *)sip->sip_to->a_url,
-			sip_msg,
-			SIPTAG_REQUEST(sip_rq),
-			SIPTAG_FROM(sip->sip_from),
-			SIPTAG_TO(sip_to),
-			SIPTAG_CSEQ(sip_cseq),
-			SIPTAG_CALL_ID(sip->sip_call_id),
-			SIPTAG_CONTACT(sip_contact),
-			SIPTAG_AUTHORIZATION(sip_auth),
-			SIPTAG_PROXY_AUTHORIZATION(sip_proxy_auth),
-			SIPTAG_PAYLOAD(sip_payload),
-			SIPTAG_CONTENT_TYPE_STR("application/sdp"),
-			SIPTAG_ALLOW_STR("INVITE, ACK, BYE, CANCEL, OPTIONS, SUBSCRIBE, INFO"),
-			SIPTAG_SERVER_STR((const char*)(MCUSIP_USER_AGENT_STR)),
-			TAG_END());
-    if(a_orq == NULL)
-      sCon->LeaveMCU(TRUE);
-
-    nta_outgoing_destroy(orq);
-    return 0;
-  }
-  if(cseq == sip_method_register && status == 200)
-  {
-    ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
-    if(!proxy)
-      return 0;
-    if(sip->sip_expires)
-      proxy->expires = sip->sip_expires->ex_delta;
-    if(proxy->enable && proxy->expires != 0)
-      proxy->status = 200;
-    if(proxy->enable && proxy->expires == 0)
-      proxy->status = 0;
-  }
-  if(cseq == sip_method_invite && status == 200)
-  {
-    SendACK(msg);
-
-    CreateOutgoingConnection(msg);
-
-    nta_outgoing_destroy(orq);
-    return 0;
-  }
-  if(status >= 300)
-  {
-    MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
-    if(sCon)
+    if(status == 200)
     {
-      sCon->LeaveMCU(TRUE);
+      //if(sip->sip_expires)
+      //  proxy->expires = sip->sip_expires->ex_delta;
+      if(proxy->expires == 0)
+        proxy->status = 0;
+      nta_outgoing_destroy(orq);
+      return 0;
     }
-    nta_outgoing_destroy(orq);
   }
+  if(request == sip_method_invite)
+  {
+    if(status == 200)
+    {
+      SendACK(msg);
+      CreateOutgoingConnection(msg);
+      nta_outgoing_destroy(orq);
+      return 0;
+    }
+    if(status > 299 && status != 401 && status != 407)
+    {
+      MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
+      if(sCon)
+        sCon->LeaveMCU(TRUE);
+      nta_outgoing_destroy(orq);
+      return 0;
+    }
+  }
+
+  if(status == 401 || status == 407)
+  {
+    // check authorization attempts
+    if(sip_orq->sip_authorization || sip_orq->sip_proxy_authorization)
+    {
+      nta_outgoing_destroy(orq);
+      return 0;
+    }
+
+    ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
+    if(!proxy)
+    {
+      nta_outgoing_destroy(orq);
+      return 0;
+    }
+
+    // remove via header
+    msg_header_remove(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_orq->sip_via);
+
+    // cseq increment
+    int cseq = sip_orq->sip_cseq->cs_seq+1;
+    if(request == sip_method_register)
+      cseq = proxy->cseq++;
+    sip_cseq_t *sip_cseq = sip_cseq_create(&home, cseq, sip_orq->sip_cseq->cs_method, sip_orq->sip_cseq->cs_method_name);
+    msg_header_replace(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_orq->sip_cseq, (msg_header_t *)sip_cseq);
+
+    // call id
+    if(request == sip_method_register)
+      proxy->call_id = sip_orq->sip_call_id->i_id;
+
+    // authorization
+    MakeProxyAuth(proxy, sip);
+    if(status == 401)
+    {
+      sip_authorization_t *sip_auth = sip_authorization_make(&home, proxy->sip_www_str);
+      msg_header_insert(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_auth);
+    }
+    else if(status == 407)
+    {
+      sip_authorization_t *sip_proxy_auth = sip_proxy_authorization_make(&home, proxy->sip_proxy_str);
+      msg_header_insert(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_proxy_auth);
+    }
+
+    nta_outgoing_mcreate(agent, nta_response_cb1_wrap, (nta_outgoing_magic_t *)this,
+ 			 (url_string_t *)sip_orq->sip_to->a_url,
+			 msg_orq,
+          		 TAG_END());
+    nta_outgoing_destroy(orq);
+    return 0;
+  }
+
   return 0;
 }
 
@@ -2540,14 +2530,12 @@ void MCUSipEndPoint::ProcessProxyAccount()
     if(proxy->enable && now > proxy->start_time + PTimeInterval(proxy->expires*1000))
     {
       proxy->status = 0;
-      proxy->register_attempts = 0;
       proxy->start_time = now;
       SipRegister(proxy);
     }
     if(!proxy->enable && proxy->status == 200)
     {
       proxy->status = 0;
-      proxy->register_attempts = 0;
       proxy->start_time = PTime(0);
       SipRegister(proxy, FALSE);
     }
@@ -2566,7 +2554,8 @@ void MCUSipEndPoint::InsertProxyAccount(ProxyAccount *proxy)
 ProxyAccount * MCUSipEndPoint::FindProxyAccount(PString account)
 {
   ProxyAccountMapType::iterator it = ProxyAccountMap.find(account);
-  if(it != ProxyAccountMap.end()) return it->second;
+  if(it != ProxyAccountMap.end())
+    return it->second;
   return NULL;
 }
 
@@ -2730,7 +2719,8 @@ void MCUSipEndPoint::MainLoop()
     {
       for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); )
       {
-        if(it->second->enable) SipRegister(it->second, 1);
+        if(it->second->status == 200)
+          SipRegister(it->second, FALSE);
         ProxyAccountMap.erase(it++);
       }
       su_root_sleep(root,500);

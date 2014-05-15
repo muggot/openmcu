@@ -64,9 +64,11 @@ H323Connection::AnswerCallResponse Registrar::OnIncomingMsg(PString memberName, 
   }
 
   regConn = InsertRegConnWithLock(callToken, username_in, username_out);
+
   // MCU call if !regAccount_out
   if(!regAccount_out)
   {
+    regConn->account_type_in = regAccount_in->account_type;
     regConn->roomname = requestedRoom;
     regConn->state = CONN_MCU_WAIT;
     response = H323Connection::AnswerCallNow;

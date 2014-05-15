@@ -65,7 +65,6 @@ class ProxyAccount
       start_time = PTime(0);
       cseq = 100;
       status = 0;
-      register_attempts = 0;
     }
     PString local_ip;
     PString roomname;
@@ -80,7 +79,7 @@ class ProxyAccount
     BOOL enable;
 
     int status;
-    int register_attempts;
+    PString status_phrase;
 
     PString sip_www_str, sip_proxy_str;
     PString call_id; // for auth

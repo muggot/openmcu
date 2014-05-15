@@ -70,6 +70,8 @@ class RegistrarConnection
     }
     void Init()
     {
+      account_type_in = ACCOUNT_TYPE_UNKNOWN;
+      account_type_out = ACCOUNT_TYPE_UNKNOWN;
       msg_invite = NULL;
       orq_invite_out = NULL;
       state = CONN_IDLE;

@@ -96,17 +96,21 @@ BOOL Registrar::MakeCall(PString roomname, PString to, PString & callToken)
       account_type = ACCOUNT_TYPE_SIP;
     else if(urlTo.GetScheme() == "h323")
       account_type = ACCOUNT_TYPE_H323;
+    else
+      return FALSE;
   }
+
   regAccount_out = FindAccountWithLock(account_type, username_out);
   if(regAccount_out)
   {
     address = GetAccountAddress(regAccount_out);
     username_out = regAccount_out->username;
     regAccount_out->Unlock();
-  } else { // MCU call if !regAccount_out
+  } else {
     username_out = address;
     address = MCUURL(to).GetUrl();
   }
+
   MCUURL url(address);
   if(url.GetScheme() == "sip")
   {
@@ -123,13 +127,18 @@ BOOL Registrar::MakeCall(PString roomname, PString to, PString & callToken)
     void *userData = new PString(roomname);
     ep->MakeCall(address, callToken, userData);
   }
+  else
+  {
+    return FALSE;
+  }
 
   if(callToken != "")
   {
-    regConn = InsertRegConnWithLock(callToken, roomname, username_out);
-    regConn->state = CONN_MCU_WAIT;
-    regConn->roomname = roomname;
+    regConn = InsertRegConnWithLock("", roomname, username_out);
+    regConn->account_type_out = account_type;
     regConn->callToken_out = callToken;
+    regConn->roomname = roomname;
+    regConn->state = CONN_MCU_WAIT;
     regConn->Unlock();
   }
 
@@ -565,10 +574,20 @@ void Registrar::MainLoop()
       // MCU call answer limit
       if(regConn->state == CONN_MCU_WAIT)
       {
-        if(!ep->HasConnection(regConn->callToken_in))
+        if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
         {
-          if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
-            regConn->state = CONN_IDLE;
+          OutgoingCallCancel(regConn);
+          regConn->state = CONN_END;
+        }
+      }
+      // internal call answer limit
+      if(regConn->state == CONN_WAIT)
+      {
+        if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
+        {
+          IncomingCallCancel(regConn);
+          OutgoingCallCancel(regConn);
+          regConn->state = CONN_END;
         }
       }
       // make internal call
@@ -580,16 +599,6 @@ void Registrar::MainLoop()
           {
             regConn->state = CONN_CANCEL_IN;
           }
-        }
-      }
-      // internal call waiting
-      if(regConn->state == CONN_WAIT)
-      {
-        if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
-        {
-          IncomingCallCancel(regConn);
-          OutgoingCallCancel(regConn);
-          regConn->state = CONN_END;
         }
       }
       // accept incoming
