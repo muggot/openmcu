@@ -121,6 +121,21 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, int direction)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void ProxyAccount::SetStatus(const sip_t *sip)
+{
+  status = sip->sip_status->st_status;
+  status_phrase = sip->sip_status->st_phrase;
+  if(sip->sip_expires && sip->sip_expires->ex_delta == 0)
+  {
+    status = 0;
+    status_phrase = "Registration canceled";
+  }
+  PString msg = "<font color=blue>"+roomname+" - "+username+"@"+domain+" status: "+status_phrase+"</font>";
+  OpenMCU::Current().HttpWriteEvent(msg);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUSipConnection::CreateTempSockets(PString localIP)
 {
   unsigned localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
@@ -2185,15 +2200,10 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
       return 0;
     }
 
-    proxy->status = sip->sip_status->st_status;
-    proxy->status_phrase = sip->sip_status->st_phrase;
+    proxy->SetStatus(sip);
 
-    if(status == 200)
+    if(status != 401 && status != 407)
     {
-      //if(sip->sip_expires)
-      //  proxy->expires = sip->sip_expires->ex_delta;
-      if(proxy->expires == 0)
-        proxy->status = 0;
       nta_outgoing_destroy(orq);
       return 0;
     }
@@ -2592,16 +2602,23 @@ void MCUSipEndPoint::InitProxyAccounts()
       continue;
     }
     proxy->roomname = name;
-    proxy->host = host;
-    proxy->port = port;
     proxy->username = username;
     proxy->domain = domain;
+    proxy->host = host;
+    proxy->port = port;
+    proxy->transport = transport;
     proxy->password = password;
     proxy->expires = expires;
     proxy->enable = enable;
+    //
     proxy->local_ip = GetFromIp(proxy->host, proxy->port);
     if(proxy->local_ip == "" || FindListener(proxy->local_ip) == FALSE)
       proxy->enable = FALSE;
+    //
+    proxy->start_time = PTime(0);
+    proxy->sip_www_str = "";
+    proxy->sip_proxy_str = "";
+    proxy->call_id = "";
   }
 }
 

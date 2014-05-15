@@ -66,7 +66,7 @@ class ProxyAccount
       cseq = 100;
       status = 0;
     }
-    PString local_ip;
+    void SetStatus(const sip_t *sip);
     PString roomname;
     PString username;
     PString domain;
@@ -74,15 +74,17 @@ class ProxyAccount
     PString port;
     PString transport;
     PString password;
+    PString local_ip;
     unsigned expires;
-    PTime start_time;
     BOOL enable;
 
+    PTime start_time;
     int status;
     PString status_phrase;
 
-    PString sip_www_str, sip_proxy_str;
-    PString call_id; // for auth
+    PString sip_www_str;
+    PString sip_proxy_str;
+    PString call_id;
     unsigned cseq;
 };
 typedef std::map<PString, ProxyAccount *> ProxyAccountMapType;
