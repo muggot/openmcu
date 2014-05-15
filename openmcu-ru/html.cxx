@@ -452,6 +452,7 @@ RegistrarPConfigPage::RegistrarPConfigPage(PHTTPServiceProcess & app,const PStri
   s << BoolField("H.323 allow unregistered MCU calls", cfg.GetBoolean("H.323 allow unregistered MCU calls", TRUE));
   s << BoolField("H.323 allow unregistered internal calls", cfg.GetBoolean("H.323 allow unregistered internal calls", TRUE));
   s << SelectField("H.323 gatekeeper default TTL(Time To Live)", cfg.GetString("H.323 gatekeeper default TTL(Time To Live)", "3600"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
+  s << SelectField("H.323 to H323 media", cfg.GetString("H.323 to H323 media", "transcoding"), "transcoding,bypass");
 
   s << EndTable();
   BuildHTML("");

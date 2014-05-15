@@ -277,7 +277,6 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
   H323TransportAddress srcHost;
   PString              dstUsername;
   H323TransportAddress dstHost;
-  BOOL                 h323ToH323 = FALSE;
 
   srcUsername = GetAdmissionSrcUsername(info);
   if(!info.IsBehindNAT() && info.arq.HasOptionalField(H225_AdmissionRequest::e_srcCallSignalAddress))
@@ -297,11 +296,10 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
 
   if(srcUsername != "" && dstUsername != "")
   {
+    BOOL h323_to_h323 = FALSE;
     if(registrar->FindAccount(ACCOUNT_TYPE_H323, srcUsername) && registrar->FindAccount(ACCOUNT_TYPE_H323, dstUsername))
-      h323ToH323 = TRUE;
-    //PString processing_type = OpenMCU::Current().GetEndpointParamFromUrl("Processing", "");
-    PString processing_type = "transcoding";
-    if(h323ToH323 && processing_type == "forwarding")
+      h323_to_h323 = TRUE;
+    if(h323_to_h323 && h323_to_h323_media == "bypass")
       return H323GatekeeperServer::OnAdmission(info);
   }
 

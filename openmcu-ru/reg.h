@@ -271,9 +271,12 @@ class RegistrarGk : public H323GatekeeperServer
 
     void SetRequireH235(BOOL _requireH235) { requireH235 = _requireH235; }
     void SetPasswords(PStringToString _passwords) { passwords = _passwords; }
+    void SetH323ToH323Media(PString & media) { h323_to_h323_media = media; }
+
     BOOL IsGatekeeperRouted() const { return isGatekeeperRouted; }
 
   protected:
+
     PString GetAdmissionSrcUsername(H323GatekeeperARQ & info);
     PString GetAdmissionDstUsername(H323GatekeeperARQ & info);
     BOOL AdmissionPolicyCheck(H323GatekeeperARQ & info);
@@ -295,6 +298,7 @@ class RegistrarGk : public H323GatekeeperServer
 //    virtual void AddCall(H323GatekeeperCall *) { }
 
     Registrar *registrar;
+    PString h323_to_h323_media;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
