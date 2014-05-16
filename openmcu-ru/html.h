@@ -364,20 +364,19 @@ class TablePConfigPage : public PConfigPage
      {
        if(deleteSection)
          cfg.DeleteSection();
-       if(!cfg.GetBoolean("RESTORE DEFAULTS", FALSE))
+       for(PINDEX i = 0; i < dataArray.GetSize(); i++)
        {
-         for(PINDEX i = 0; i < dataArray.GetSize(); i++)
-         {
-           PString d = dataArray[i];
-           PString key = d.Tokenise("=")[0];
-           if(key == "") continue;
-           PString value;
-           PINDEX valuePos = d.Find("=");
-           if(valuePos != P_MAX_INDEX)
-             value = d.Right(d.GetSize()-valuePos-2);
-           cfg.SetString(key, value);
-         }
+         PString d = dataArray[i];
+         PString key = d.Tokenise("=")[0];
+         if(key == "") continue;
+         PString value;
+         PINDEX valuePos = d.Find("=");
+         if(valuePos != P_MAX_INDEX)
+           value = d.Right(d.GetSize()-valuePos-2);
+         cfg.SetString(key, value);
        }
+       if(cfg.GetBoolean("RESTORE DEFAULTS", FALSE))
+         cfg.DeleteSection();
      } else {
        PStringList sect = cfg.GetSections();
        for(PINDEX i = 0; i < sect.GetSize(); i++)
