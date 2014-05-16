@@ -316,7 +316,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
     BOOL h323_to_h323 = FALSE;
     if(registrar->FindAccount(ACCOUNT_TYPE_H323, srcUsername) && registrar->FindAccount(ACCOUNT_TYPE_H323, dstUsername))
       h323_to_h323 = TRUE;
-    if(h323_to_h323 && h323_to_h323_media == "bypass")
+    if(h323_to_h323 && h323_to_h323_media == "direct")
       return H323GatekeeperServer::OnAdmission(info);
   }
 
