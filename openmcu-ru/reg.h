@@ -183,12 +183,10 @@ class RegistrarAccount
 {
   public:
     RegistrarAccount() { Init(); }
-    RegistrarAccount(RegAccountTypes _account_type, PString _username, PString _host)
+    RegistrarAccount(RegAccountTypes _account_type, PString _username)
     {
-      username = _username;
-      host = _host;
-      domain = _host;
       account_type = _account_type;
+      username = _username;
       Init();
     }
     ~RegistrarAccount()
@@ -199,17 +197,18 @@ class RegistrarAccount
     }
     void Init()
     {
+      domain = "openmcu-ru";
       scheme = "Digest";
       algorithm = "MD5";
-      expires = 0;
-      msg_reg = NULL;
       if(account_type == ACCOUNT_TYPE_SIP)
         port = 5060;
       else if(account_type == ACCOUNT_TYPE_H323)
         port = 1720;
+      expires = 0;
       enable = FALSE;
       registered = FALSE;
       abook = FALSE;
+      msg_reg = NULL;
     }
     void Reset()
     {
@@ -219,11 +218,19 @@ class RegistrarAccount
     {
       PString url;
       if(account_type == ACCOUNT_TYPE_SIP)
+      {
         url = "sip:"+username+"@"+host;
+        if(port != 0)
+          url += ":"+PString(port);
+        if(transport != "")
+          url += ";transport="+transport;
+      }
       else if(account_type == ACCOUNT_TYPE_H323)
+      {
         url = "h323:"+username+"@"+host;
-      if(port != 0)
-        url += ":"+PString(port);
+        if(port != 0)
+          url += ":"+PString(port);
+      }
       return url;
     }
 
@@ -231,14 +238,16 @@ class RegistrarAccount
     void Unlock()    { mutex.Signal(); }
     PMutex & GetMutex() { return mutex; }
 
+    PString display_name;
     PString username;
-    PString domain;
     PString host;
+    PString domain;
     unsigned port;
+    PString transport;
+
     PString password;
     PString scheme, nonce, algorithm;
     PString www_response, proxy_response;
-    PString display_name;
 
     PTime start_time;
     time_t expires;
@@ -321,8 +330,9 @@ class Registrar : public PThread
 
     const PString & GetRegistrarDomain() const { return registrar_domain; };
     const PString & GetInternalRoomPrefix() const { return internal_room_prefix; };
-    PStringArray GetAddressBook();
-    void RefreshAddressBook();
+
+    void RefreshAccountList();
+    PStringArray GetAccountList();
 
     void ConnectionCreated(const PString & callToken);
     void ConnectionEstablished(const PString & callToken);
@@ -342,9 +352,9 @@ class Registrar : public PThread
     int SipReqReply(const msg_t *msg, unsigned method, const char *method_name, PString sip_auth_str);
     int SipReqReply(const msg_t *msg, unsigned method, PString sip_auth_str);
 
-    RegistrarAccount * InsertAccountWithLock(RegAccountTypes account_type, PString username, PString host);
+    RegistrarAccount * InsertAccountWithLock(RegAccountTypes account_type, PString username);
     RegistrarAccount * InsertAccount(RegistrarAccount *regAccount);
-    RegistrarAccount * InsertAccount(RegAccountTypes account_type, PString username, PString host);
+    RegistrarAccount * InsertAccount(RegAccountTypes account_type, PString username);
     RegistrarAccount * FindAccountWithLock(RegAccountTypes account_type, PString username);
     RegistrarAccount * FindAccount(RegAccountTypes account_type, PString username);
 

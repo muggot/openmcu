@@ -114,7 +114,6 @@ int Registrar::OnIncomingMsg(msg_t *msg)
 // request == "MESSAGE"
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int Registrar::OnReceivedSipRegister(const msg_t *msg)
@@ -124,14 +123,11 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
 
   MCUURL_SIP url(msg, 0);
   PString username = url.GetUserName();
-  PString host = url.GetHostName();
-  PString domain = url.GetDomainName();
-  PString display_name = url.GetDisplayName();
 
   RegistrarAccount *regAccount = FindAccountWithLock(ACCOUNT_TYPE_SIP, username);
   if(!regAccount && !sip_require_password)
   {
-    regAccount = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username, host);
+    regAccount = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username);
   }
 
   int response_code = SipPolicyCheck(msg, regAccount, NULL);
@@ -141,18 +137,23 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
   }
 
   {
-    //regAccount->Reset();
-    regAccount->registered = TRUE;
-    regAccount->domain = domain;
-    regAccount->start_time = PTime();
+    // update account data
+    regAccount->host = url.GetHostName();
+    regAccount->port = atoi(url.GetPort());
+    regAccount->transport = url.GetSipProto();
     if(regAccount->display_name == "")
-      regAccount->display_name = display_name;
+      regAccount->display_name = url.GetDisplayName();
+    // TTL
+    regAccount->registered = TRUE;
+    regAccount->start_time = PTime();
     if(sip->sip_expires)
       regAccount->expires = sip->sip_expires->ex_delta;
     else
       regAccount->expires = 600;
+    // store register message
     msg_destroy(regAccount->msg_reg);
     regAccount->msg_reg = msg_dup(msg);
+
     response_code = 200;
     goto return_response;
   }
@@ -262,17 +263,12 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   PTRACE(1, "Registrar\tOnReceivedSipInvite");
   sip_t *sip = sip_object(msg);
 
-  if(sip->sip_payload == NULL)
-    return SipReqReply(msg, SIP_415_UNSUPPORTED_MEDIA);
-
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
   if(FindRegConn(callToken))
     return 0;
 
   MCUURL_SIP url(msg, 0);
   PString username_in = url.GetUserName();
-  PString host_in = url.GetHostName();
-  PString display_name_in = url.GetDisplayName();
   PString username_out = sip->sip_to->a_url->url_user;
 
   RegistrarAccount *regAccount_in = NULL;
@@ -289,11 +285,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   if((!regAccount_in && sip_allow_unauth_mcu_calls && !regAccount_out) ||
      (!regAccount_in && sip_allow_unauth_internal_calls && regAccount_out))
   {
-    // create temp acount with registered status
-    regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username_in, host_in);
-    regAccount_in->display_name = display_name_in;
-    regAccount_in->start_time = PTime();
-    regAccount_in->expires = 60;
+    regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
   }
 
   int response_code = SipPolicyCheck(msg, regAccount_in, regAccount_out);

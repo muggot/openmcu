@@ -578,7 +578,7 @@ void Conference::AddMonitorEvent(ConferenceMonitorInfo * info)
 
 void Conference::RefreshAddressBook()
 {
-  PStringArray abook = OpenMCU::Current().GetRegistrar()->GetAddressBook();
+  PStringArray abook = OpenMCU::Current().GetRegistrar()->GetAccountList();
   PStringStream msg;
   msg = "addressbook=Array(";
   for(PINDEX i = 0; i < abook.GetSize(); i++)

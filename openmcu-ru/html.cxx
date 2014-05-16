@@ -1747,20 +1747,10 @@ InvitePage::InvitePage(OpenMCU & _app, PHTTPAuthority & auth)
 
   BeginPage(html,"Invite","window.l_invite","window.l_info_invite");
 
-  PString select = "<select class='input-large' onchange='changeSelect(this)'><option value=''></option>";
-  PStringArray abook = OpenMCU::Current().GetRegistrar()->GetAddressBook();
-  for(PINDEX i = 0; i < abook.GetSize(); i++)
-  {
-    PString uri = abook[i].Tokenise(",")[0];
-    select += "<option value='"+uri+"'>"+uri+"</option>";
-  }
-  select += "</select>";
-
   form << "<p>"
     << "<form method=\"POST\" class=\"well form-inline\">"
     << "<input type=\"text\" class=\"input-small\" placeholder=\"" << app.GetDefaultRoomName() << "\" name=\"room\" value=\"" << app.GetDefaultRoomName() << "\"> "
     << "<input id='address' type=\"text\" class=\"input-large\" placeholder=\"Address\" name=\"address\">"
-    << "&nbsp;"+select
     << "<script language='javascript'><!--\ndocument.forms[0].address.focus(); //--></script>"
     << "&nbsp;&nbsp;<input class=\"input-small\" type=\"submit\" class=\"btn\" value=\"Invite\">"
     << "</form>";

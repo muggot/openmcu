@@ -276,9 +276,9 @@ PString RegistrarAccount::GetAuthStr()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RegistrarAccount * Registrar::InsertAccountWithLock(RegAccountTypes account_type, PString username, PString host)
+RegistrarAccount * Registrar::InsertAccountWithLock(RegAccountTypes account_type, PString username)
 {
-  RegistrarAccount *regAccount = new RegistrarAccount(account_type, username, host);
+  RegistrarAccount *regAccount = new RegistrarAccount(account_type, username);
   regAccount->Lock();
   return InsertAccount(regAccount);
 }
@@ -288,9 +288,9 @@ RegistrarAccount * Registrar::InsertAccount(RegistrarAccount *regAccount)
   AccountMap.insert(AccountMapType::value_type(regAccount->username, regAccount));
   return regAccount;
 }
-RegistrarAccount * Registrar::InsertAccount(RegAccountTypes account_type, PString username, PString host)
+RegistrarAccount * Registrar::InsertAccount(RegAccountTypes account_type, PString username)
 {
-  RegistrarAccount *regAccount = new RegistrarAccount(account_type, username, host);
+  RegistrarAccount *regAccount = new RegistrarAccount(account_type, username);
   return InsertAccount(regAccount);
 }
 RegistrarAccount * Registrar::FindAccountWithLock(RegAccountTypes account_type, PString username)
@@ -483,7 +483,7 @@ void Registrar::Leave(int account_type, PString callToken)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::RefreshAddressBook()
+void Registrar::RefreshAccountList()
 {
   PStringArray list;
   PWaitAndSignal m(mutex);
@@ -518,7 +518,7 @@ void Registrar::RefreshAddressBook()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PStringArray Registrar::GetAddressBook()
+PStringArray Registrar::GetAccountList()
 {
   return account_status_list;
 }
@@ -542,7 +542,7 @@ void Registrar::MainLoop()
     mutex.Wait();
     // Subscribtion
     SubscriptionProcess();
-    RefreshAddressBook();
+    RefreshAccountList();
     PTime now;
     // RegistrarAccount
     for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
@@ -731,7 +731,7 @@ void Registrar::InitTerminals()
 
     RegistrarAccount *regAccount = FindAccountWithLock(account_type, username);
     if(!regAccount)
-      regAccount = InsertAccountWithLock(account_type, username, host);
+      regAccount = InsertAccountWithLock(account_type, username);
     regAccount->enable = scfg.GetBoolean("Registrar", FALSE);
     regAccount->abook = scfg.GetBoolean("Address book", FALSE);
     regAccount->host = host;

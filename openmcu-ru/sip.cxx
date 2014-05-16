@@ -2436,6 +2436,9 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   if(sip->sip_status)  status = sip->sip_status->st_status;
   if(sip->sip_cseq)    cseq = sip->sip_cseq->cs_method;
 
+  if(request == sip_method_invite && sip->sip_payload == NULL)
+    return ReqReply(msg, SIP_415_UNSUPPORTED_MEDIA);
+
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
 

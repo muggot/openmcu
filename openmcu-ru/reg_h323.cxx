@@ -17,10 +17,7 @@ H323Connection::AnswerCallResponse Registrar::OnIncomingMsg(PString memberName, 
     return H323Connection::AnswerCallDenied;
 
   PString username_in = url.GetUserName();
-  PString host_in = url.GetHostName();
-  PString display_name_in = url.GetDisplayName();
   PString username_out = requestedRoom;
-  //PString host_out = "";
 
   H323Connection::AnswerCallResponse response = H323Connection::AnswerCallDenied; // default response
 
@@ -42,11 +39,7 @@ H323Connection::AnswerCallResponse Registrar::OnIncomingMsg(PString memberName, 
   if((!regAccount_in && h323_allow_unreg_mcu_calls && !regAccount_out) ||
      (!regAccount_in && h323_allow_unreg_internal_calls && regAccount_out))
   {
-    // create temp acount with registered status
-    regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_H323, username_in, host_in);
-    regAccount_in->display_name = display_name_in;
-    regAccount_in->start_time = PTime();
-    regAccount_in->expires = 60;
+    regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_H323, username_in);
   }
   if(!regAccount_in)
   {
@@ -125,19 +118,22 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
       RegistrarAccount *regAccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, username);
       if(!regAccount && !requireH235)
       {
-        regAccount = registrar->InsertAccountWithLock(ACCOUNT_TYPE_H323, username, "");
+        regAccount = registrar->InsertAccountWithLock(ACCOUNT_TYPE_H323, username);
       }
       if(!regAccount || (regAccount && !regAccount->enable && requireH235))
       {
         continue;
       }
-      regAccount->registered = TRUE;
-      regAccount->display_name = username;
-      regAccount->start_time = PTime();
-      regAccount->expires = expires;
+      // update account data
       regAccount->host = host.AsString();
       if(port != 0)
         regAccount->port = port;
+      if(regAccount->display_name == "")
+        regAccount->display_name = username;
+      // regsiter TTL
+      regAccount->registered = TRUE;
+      regAccount->start_time = PTime();
+      regAccount->expires = expires;
       regAccount->Unlock();
     }
   }
