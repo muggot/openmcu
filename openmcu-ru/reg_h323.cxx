@@ -110,33 +110,54 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   if(expires > info.rcf.m_timeToLive)
    expires = info.rcf.m_timeToLive;
 
-  if(info.rrq.HasOptionalField(H225_RegistrationRequest::e_terminalAlias))
+  if(!info.rrq.HasOptionalField(H225_RegistrationRequest::e_terminalAlias))
+    return H323GatekeeperRequest::Reject;
+
+  PString username;
+  PString display_name;
+  for(PINDEX i = 0; i < info.rrq.m_terminalAlias.GetSize(); i++)
   {
-    for(PINDEX i = 0; i < info.rrq.m_terminalAlias.GetSize(); i++)
-    {
-      PString username = H323GetAliasAddressString(info.rrq.m_terminalAlias[i]);
-      RegistrarAccount *regAccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, username);
-      if(!regAccount && !requireH235)
-      {
-        regAccount = registrar->InsertAccountWithLock(ACCOUNT_TYPE_H323, username);
-      }
-      if(!regAccount || (regAccount && !regAccount->enable && requireH235))
-      {
-        continue;
-      }
-      // update account data
-      regAccount->host = host.AsString();
-      if(port != 0)
-        regAccount->port = port;
-      if(regAccount->display_name == "")
-        regAccount->display_name = username;
-      // regsiter TTL
-      regAccount->registered = TRUE;
-      regAccount->start_time = PTime();
-      regAccount->expires = expires;
-      regAccount->Unlock();
-    }
+    if(username == "" && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_dialedDigits) // E.164
+      username = H323GetAliasAddressString(info.rrq.m_terminalAlias[i]);
+    if(display_name == "" && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_h323_ID)
+      display_name = H323GetAliasAddressString(info.rrq.m_terminalAlias[i]);
   }
+
+  if(username == "")
+  {
+    if(info.rrq.m_terminalAlias.GetSize() == 1)
+      username = H323GetAliasAddressString(info.rrq.m_terminalAlias[0]);
+    else if(info.rrq.m_terminalAlias.GetSize() > 1)
+      username = H323GetAliasAddressString(info.rrq.m_terminalAlias[1]);
+  }
+
+  if(display_name == "")
+    display_name = H323GetAliasAddressString(info.rrq.m_terminalAlias[0]);
+
+  if(username == "")
+    return H323GatekeeperRequest::Reject;
+
+  // check account
+  RegistrarAccount *regAccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, username);
+  if(!regAccount && !requireH235)
+    regAccount = registrar->InsertAccountWithLock(ACCOUNT_TYPE_H323, username);
+
+  if(!regAccount || (regAccount && !regAccount->enable && requireH235))
+    return H323GatekeeperRequest::Reject;
+
+  // update account data
+  regAccount->host = host.AsString();
+  if(port != 0)
+    regAccount->port = port;
+  if(regAccount->display_name == "")
+    regAccount->display_name = display_name;
+
+  // regsiter TTL
+  regAccount->registered = TRUE;
+  regAccount->start_time = PTime();
+  regAccount->expires = expires;
+  regAccount->Unlock();
+
   return response;
 }
 
