@@ -208,56 +208,6 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out, PString message)
-{
-  PTRACE(1, "MCUSIP\tServerSendMessage");
-  sip_t *sip_reg_out = sip_object(regAccount_out->msg_reg);
-
-  PString ruri_str;
-  if(regAccount_out->registered)
-    ruri_str = MCUURL_SIP(regAccount_out->msg_reg, 0).GetUrl();
-  else if(regAccount_out->host != "")
-    ruri_str = regAccount_out->GetUrl();
-  else
-    return FALSE;
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
-
-  PString url_from = "sip:"+regAccount_in->username+"@"+regAccount_out->domain;
-  sip_addr_t *sip_from = sip_from_create(GetHome(), (url_string_t *)(const char *)url_from);
-  sip_from_tag(GetHome(), sip_from, nta_agent_newtag(GetHome(), "tag=%s", GetAgent()));
-
-  PString url_to = "sip:"+regAccount_out->username+"@"+regAccount_out->domain;
-  sip_addr_t *sip_to = sip_to_create(GetHome(), (url_string_t *)(const char *)url_to);
-
-  sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), 1, SIP_METHOD_MESSAGE);
-  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_MESSAGE, ruri, NULL);
-  sip_call_id_t* sip_call_id = sip_call_id_create(GetHome(), "");
-
-  sip_route_t* sip_route = NULL;
-  if(sip_reg_out)
-    sip_route = sip_route_reverse(GetHome(), sip_reg_out->sip_record_route);
-
-  msg_t *msg_req = nta_msg_create(GetAgent(), 0);
-  nta_outgoing_mcreate(GetAgent(), NULL, NULL,
-			ruri,
-			msg_req,
-			NTATAG_STATELESS(1),
-			SIPTAG_FROM(sip_from),
-			SIPTAG_TO(sip_to),
-			//SIPTAG_CONTACT(sip_contact),
-			SIPTAG_ROUTE(sip_route),
- 			SIPTAG_REQUEST(sip_rq),
-			SIPTAG_CSEQ(sip_cseq),
-			SIPTAG_CALL_ID(sip_call_id),
-			SIPTAG_CONTENT_TYPE_STR("text/plain"),
-                        SIPTAG_PAYLOAD_STR(message),
-			SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
-			TAG_END());
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int Registrar::OnReceivedSipInvite(const msg_t *msg)
 {
   PTRACE(1, "Registrar\tOnReceivedSipInvite");
@@ -382,85 +332,6 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipSendNotify(msg_t *msg_sub, int state)
-{
-  PTRACE(1, "MCUSIP\tSipSendNotify");
-  sip_t *sip_sub = sip_object(msg_sub);
-  if(sip_sub == NULL) return 0;
-
-  PString basic;
-  if(state == SUB_STATE_OPEN)
-    basic = "open";
-  else
-    basic = "closed";
-
-  PString state_rpid; // http://tools.ietf.org/search/rfc4480
-  if(state == SUB_STATE_BUSY)
-    state_rpid = "on-the-phone";
-
-  PString sip_contact_str = "sip:"+PString(sip_sub->sip_to->a_url->url_user)+"@"+PString(sip_sub->sip_to->a_url->url_host);
-
-  PString sip_payload_str = "<?xml version='1.0' encoding='UTF-8'?>"
-      "<presence xmlns='urn:ietf:params:xml:ns:pidf'"
-//      " xmlns:ep='urn:ietf:params:xml:ns:pidf:status:rpid-status'"
-//      " xmlns:et='urn:ietf:params:xml:ns:pidf:rpid-tuple'"
-//      " xmlns:ci='urn:ietf:params:xml:ns:pidf:cipid'"
-      " xmlns:dm='urn:ietf:params:xml:ns:pidf:data-model'"
-      " xmlns:rpid='urn:ietf:params:xml:ns:pidf:rpid'"
-      " entity='"+sip_contact_str+"'>"
-      "<tuple id='sg89ae'>"
-        "<status>"
-          "<basic>"+basic+"</basic>"
-//          "<st:state>"+state+"</st:state>"
-//          "<ep:activities><ep:activity>"+state+"</ep:activity></ep:activities>"
-        "</status>"
-      "</tuple>";
-//      "<ci:display-name></ci:display-name>"
-
-  if(state_rpid != "")
-    sip_payload_str +=
-      "<dm:person id='sg89aep'>"
-        "<rpid:activities><rpid:"+state_rpid+"/></rpid:activities>"
-//        "<dm:note>Idle</dm:note>"
-      "</dm:person>";
-
-  sip_payload_str += "</presence>";
-
-  PString ruri_str = MCUURL_SIP(msg_sub, 0).GetUrl();
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
-
-  sip_contact_t *sip_contact = sip_contact_create(GetHome(), (url_string_t *)(const char *)sip_contact_str, NULL);
-
-  // cseq increment for incoming sub request
-  sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), sip_sub->sip_cseq->cs_seq+1, SIP_METHOD_NOTIFY);
-  msg_header_insert(msg_sub, (msg_pub_t *)sip_sub, (msg_header_t *)sip_cseq);
-
-  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_NOTIFY, ruri, NULL);
-  sip_route_t* sip_route = sip_route_reverse(GetHome(), sip_sub->sip_record_route);
-
-  msg_t *msg_req = nta_msg_create(GetAgent(), 0);
-  nta_outgoing_mcreate(GetAgent(), NULL, NULL,
-			ruri,
-			msg_req,
-			NTATAG_STATELESS(1),
-			SIPTAG_FROM(sip_sub->sip_to),
-			SIPTAG_TO(sip_sub->sip_from),
-			SIPTAG_CONTACT(sip_contact),
-			SIPTAG_ROUTE(sip_route),
- 			SIPTAG_REQUEST(sip_rq),
-			SIPTAG_CSEQ(sip_cseq),
-			SIPTAG_CALL_ID(sip_sub->sip_call_id),
-			SIPTAG_EVENT_STR("presence"),
-                        SIPTAG_CONTENT_TYPE_STR("application/pidf+xml"),
-                        SIPTAG_PAYLOAD_STR(sip_payload_str),
-                        SIPTAG_SUBSCRIPTION_STATE_STR("active"), // active;expires=xxx
-			SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
-			TAG_END());
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int Registrar::SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out)
 {
   PTRACE(1, "Registrar\tSipPolicyCheck");
@@ -510,9 +381,11 @@ int Registrar::SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in,
   }
   if(request == sip_method_invite)
   {
-    if(!regAccount_out && sip_allow_unauth_mcu_calls)
-      return 1;
+    if(regAccount_out && regAccount_out->host == "")
+      return 404; // SIP_404_NOT_FOUND
     if(regAccount_out && sip_allow_unauth_internal_calls)
+      return 1;
+    if(!regAccount_out && sip_allow_unauth_mcu_calls)
       return 1;
     if(regAccount_in->password == "")
       return 1;
@@ -520,7 +393,7 @@ int Registrar::SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in,
   }
   if(request == sip_method_message)
   {
-    if(!regAccount_out || (regAccount_out && !regAccount_out->registered))
+    if(!regAccount_out || (regAccount_out && !regAccount_out->registered) || (regAccount_out && regAccount_out->host == ""))
       return 404; // SIP_404_NOT_FOUND
     if(regAccount_in->password == "")
       return 1;
@@ -537,6 +410,126 @@ int Registrar::SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in,
     return 1;
   }
   return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int Registrar::SipSendNotify(msg_t *msg_sub, int state)
+{
+  PTRACE(1, "MCUSIP\tSipSendNotify");
+  sip_t *sip_sub = sip_object(msg_sub);
+  if(sip_sub == NULL) return 0;
+
+  PString basic;
+  if(state == SUB_STATE_OPEN)
+    basic = "open";
+  else
+    basic = "closed";
+
+  PString state_rpid; // http://tools.ietf.org/search/rfc4480
+  if(state == SUB_STATE_BUSY)
+    state_rpid = "on-the-phone";
+
+  PString sip_contact_str = "sip:"+PString(sip_sub->sip_to->a_url->url_user)+"@"+PString(sip_sub->sip_to->a_url->url_host);
+
+  PString sip_payload_str = "<?xml version='1.0' encoding='UTF-8'?>"
+      "<presence xmlns='urn:ietf:params:xml:ns:pidf'"
+//      " xmlns:ep='urn:ietf:params:xml:ns:pidf:status:rpid-status'"
+//      " xmlns:et='urn:ietf:params:xml:ns:pidf:rpid-tuple'"
+//      " xmlns:ci='urn:ietf:params:xml:ns:pidf:cipid'"
+      " xmlns:dm='urn:ietf:params:xml:ns:pidf:data-model'"
+      " xmlns:rpid='urn:ietf:params:xml:ns:pidf:rpid'"
+      " entity='"+sip_contact_str+"'>"
+      "<tuple id='sg89ae'>"
+        "<status>"
+          "<basic>"+basic+"</basic>"
+//          "<st:state>"+state+"</st:state>"
+//          "<ep:activities><ep:activity>"+state+"</ep:activity></ep:activities>"
+        "</status>"
+      "</tuple>";
+//      "<ci:display-name></ci:display-name>"
+
+  if(state_rpid != "")
+    sip_payload_str +=
+      "<dm:person id='sg89aep'>"
+        "<rpid:activities><rpid:"+state_rpid+"/></rpid:activities>"
+//        "<dm:note>Idle</dm:note>"
+      "</dm:person>";
+
+  sip_payload_str += "</presence>";
+
+  url_string_t *ruri = (url_string_t *)(const char *)MCUURL_SIP(msg_sub, 0).GetUrl();;
+  sip_contact_t *sip_contact = sip_contact_create(GetHome(), (url_string_t *)(const char *)sip_contact_str, NULL);
+
+  // cseq increment for incoming sub request
+  sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), sip_sub->sip_cseq->cs_seq+1, SIP_METHOD_NOTIFY);
+  msg_header_insert(msg_sub, (msg_pub_t *)sip_sub, (msg_header_t *)sip_cseq);
+
+  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_NOTIFY, ruri, NULL);
+  sip_route_t* sip_route = sip_route_reverse(GetHome(), sip_sub->sip_record_route);
+
+  msg_t *msg_req = nta_msg_create(GetAgent(), 0);
+  nta_outgoing_mcreate(GetAgent(), NULL, NULL,
+			ruri,
+			msg_req,
+			NTATAG_STATELESS(1),
+			SIPTAG_FROM(sip_sub->sip_to),
+			SIPTAG_TO(sip_sub->sip_from),
+			SIPTAG_CONTACT(sip_contact),
+			SIPTAG_ROUTE(sip_route),
+ 			SIPTAG_REQUEST(sip_rq),
+			SIPTAG_CSEQ(sip_cseq),
+			SIPTAG_CALL_ID(sip_sub->sip_call_id),
+			SIPTAG_EVENT_STR("presence"),
+                        SIPTAG_CONTENT_TYPE_STR("application/pidf+xml"),
+                        SIPTAG_PAYLOAD_STR(sip_payload_str),
+                        SIPTAG_SUBSCRIPTION_STATE_STR("active"), // active;expires=xxx
+			SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
+			TAG_END());
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out, PString message)
+{
+  PTRACE(1, "MCUSIP\tServerSendMessage");
+  sip_t *sip_reg_out = sip_object(regAccount_out->msg_reg);
+
+  url_string_t *ruri = (url_string_t *)(const char *)regAccount_out->GetUrl();
+
+  PString url_from = "sip:"+regAccount_in->username+"@"+regAccount_out->domain;
+  sip_addr_t *sip_from = sip_from_create(GetHome(), (url_string_t *)(const char *)url_from);
+  sip_from_tag(GetHome(), sip_from, nta_agent_newtag(GetHome(), "tag=%s", GetAgent()));
+
+  PString url_to = "sip:"+regAccount_out->username+"@"+regAccount_out->domain;
+  sip_addr_t *sip_to = sip_to_create(GetHome(), (url_string_t *)(const char *)url_to);
+
+  sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), 1, SIP_METHOD_MESSAGE);
+  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_MESSAGE, ruri, NULL);
+  sip_call_id_t* sip_call_id = sip_call_id_create(GetHome(), "");
+
+  sip_route_t* sip_route = NULL;
+  if(sip_reg_out)
+    sip_route = sip_route_reverse(GetHome(), sip_reg_out->sip_record_route);
+
+  msg_t *msg_req = nta_msg_create(GetAgent(), 0);
+  nta_outgoing_mcreate(GetAgent(), NULL, NULL,
+			ruri,
+			msg_req,
+			NTATAG_STATELESS(1),
+			SIPTAG_FROM(sip_from),
+			SIPTAG_TO(sip_to),
+			//SIPTAG_CONTACT(sip_contact),
+			SIPTAG_ROUTE(sip_route),
+ 			SIPTAG_REQUEST(sip_rq),
+			SIPTAG_CSEQ(sip_cseq),
+			SIPTAG_CALL_ID(sip_call_id),
+			SIPTAG_CONTENT_TYPE_STR("text/plain"),
+                        SIPTAG_PAYLOAD_STR(message),
+			SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
+			TAG_END());
+  return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -638,14 +631,7 @@ int Registrar::SipForwardMessage(msg_t *msg)
   }
 
   {
-    PString ruri_str;
-    if(regAccount_out->registered)
-      ruri_str = MCUURL_SIP(regAccount_out->msg_reg, 0).GetUrl();
-    else if(regAccount_out->host != "")
-      ruri_str = regAccount_out->GetUrl();
-    else
-      goto return_response;
-    url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
+    url_string_t *ruri = (url_string_t *)(const char *)regAccount_out->GetUrl();
     // create reply message
     msg_t *msg_reply = msg_dup(msg);
     sip_t *c_sip = sip_object(msg_reply);
@@ -694,14 +680,7 @@ int Subscription::LegOutCreate(RegistrarAccount *regAccount_out)
   PString username_out = sip->sip_to->a_url->url_user;
   PString domain_out = regAccount_out->domain;
 
-  PString ruri_str;
-  if(regAccount_out->registered)
-    ruri_str = MCUURL_SIP(regAccount_out->msg_reg, 0).GetUrl();
-  else if(regAccount_out->host != "")
-    ruri_str = regAccount_out->GetUrl();
-  else
-    return 0;
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
+  url_string_t *ruri = (url_string_t *)(const char *)regAccount_out->GetUrl();
 
   sip_addr_t *sip_from = sip_from_create(registrar->GetHome(), (url_string_t *)(const char *)
       ("sip:"+username_in+"@"+domain_out));

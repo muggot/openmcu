@@ -198,12 +198,9 @@ class RegistrarAccount
     void Init()
     {
       domain = "openmcu-ru";
+      port = 0;
       scheme = "Digest";
       algorithm = "MD5";
-      if(account_type == ACCOUNT_TYPE_SIP)
-        port = 5060;
-      else if(account_type == ACCOUNT_TYPE_H323)
-        port = 1720;
       expires = 0;
       enable = FALSE;
       registered = FALSE;
@@ -220,15 +217,15 @@ class RegistrarAccount
       if(account_type == ACCOUNT_TYPE_SIP)
       {
         url = "sip:"+username+"@"+host;
-        if(port != 0)
+        if(port != 0 && port != 5060)
           url += ":"+PString(port);
-        if(transport != "")
+        if(transport != "" && transport != "*")
           url += ";transport="+transport;
       }
       else if(account_type == ACCOUNT_TYPE_H323)
       {
         url = "h323:"+username+"@"+host;
-        if(port != 0)
+        if(port != 0 && port != 1720)
           url += ":"+PString(port);
       }
       return url;
@@ -382,7 +379,6 @@ class Registrar : public PThread
 
     BOOL MakeCall(RegistrarConnection *regConn, PString & username_in, PString & username_out);
     BOOL MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
-    PString GetAccountAddress(RegistrarAccount *regAccount);
 
     int SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out, PString message);
     //int H323SendMessage(RegistrarAccount *regAccount_out, PString message);

@@ -100,15 +100,11 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, int direction)
     port = atoi(sip_addr->a_url->url_port);
 //  else if(sip->sip_contact && sip->sip_contact->m_url->url_port)
 //    port = sip->sip_contact->m_url->url_port;
-  else
-    port = 5060;
   // transport
   if(PString(sip->sip_via->v_protocol).Find("UDP") != P_MAX_INDEX)
     transport = "udp";
   else if(PString(sip->sip_via->v_protocol).Find("TCP") != P_MAX_INDEX)
     transport = "tcp";
-  else
-    transport = "*";
   // remote application
   if(sip->sip_user_agent && sip->sip_user_agent->g_string)
     remote_application = sip->sip_user_agent->g_string;
@@ -116,7 +112,11 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, int direction)
     remote_application = sip->sip_server->g_string;
 
   url_scheme = "sip";
-  url_party = url_scheme+":"+username+"@"+hostname+":"+PString(port)+";transport="+transport;
+  url_party = url_scheme+":"+username+"@"+hostname;
+  if(port != 0)
+    url_party += ":"+PString(port);
+  if(transport != "" && transport != "*")
+    url_party += ";transport="+transport;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -1043,9 +1043,9 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+"SIP "+JsLocale("window.l_name_port")+StringItemInteger(name, scfg.GetString("Port"), 10)+"</tr>";
       // transport
       if(name == "*")
-        s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString("Transport"), "*,udp,tcp", 100)+"</tr>";
+        s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString("Transport"), ",udp,tcp", 100)+"</tr>";
       else
-        s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString("Transport"), ",*,udp,tcp", 100)+"</tr>";
+        s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString("Transport"), ",udp,tcp", 100)+"</tr>";
       // RTP protocol
       if(name == "*")
         s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString("RTP proto"), "RTP,ZRTP,SRTP,SRTP/RTP", 100)+"</tr>";

@@ -103,7 +103,7 @@ BOOL Registrar::MakeCall(PString roomname, PString to, PString & callToken)
   regAccount_out = FindAccountWithLock(account_type, username_out);
   if(regAccount_out)
   {
-    address = GetAccountAddress(regAccount_out);
+    address = regAccount_out->GetUrl();
     username_out = regAccount_out->username;
     regAccount_out->Unlock();
   } else {
@@ -170,9 +170,7 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
   regConn->account_type_in = regAccount_in->account_type;
   regConn->account_type_out = regAccount_out->account_type;
 
-  PString address = GetAccountAddress(regAccount_out);
-  if(address == "")
-    return FALSE;
+  PString address = regAccount_out->GetUrl();
 
   if(regAccount_out->account_type == ACCOUNT_TYPE_SIP)
   {
@@ -197,27 +195,6 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
     }
   }
   return FALSE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PString Registrar::GetAccountAddress(RegistrarAccount *regAccount)
-{
-  PString address;
-  if(regAccount->account_type == ACCOUNT_TYPE_SIP)
-  {
-    if(regAccount->registered)
-      address = MCUURL_SIP(regAccount->msg_reg, 0).GetUrl();
-    else if(regAccount->host != "")
-      address = regAccount->GetUrl();
-    else
-      return "";
-  }
-  else if(regAccount->account_type == ACCOUNT_TYPE_H323)
-  {
-    address = regAccount->GetUrl();
-  }
-  return address;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
