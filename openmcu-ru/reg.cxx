@@ -484,7 +484,10 @@ void Registrar::RefreshAccountList()
        conn_state = 2;
     }
 
-    list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+PString(reg_state)+","+PString(conn_state));
+    list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+
+                      PString(reg_state)+","+
+                      PString(conn_state)+","+
+                      PString(regAccount->abook_enable));
   }
   if(account_status_list != list)
   {
@@ -710,7 +713,7 @@ void Registrar::InitTerminals()
     if(!regAccount)
       regAccount = InsertAccountWithLock(account_type, username);
     regAccount->enable = scfg.GetBoolean("Registrar", FALSE);
-    regAccount->abook = scfg.GetBoolean("Address book", FALSE);
+    regAccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
     regAccount->host = host;
     if(port != 0)
       regAccount->port = port;

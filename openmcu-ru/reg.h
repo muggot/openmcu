@@ -204,7 +204,7 @@ class RegistrarAccount
       expires = 0;
       enable = FALSE;
       registered = FALSE;
-      abook = FALSE;
+      abook_enable = FALSE;
       msg_reg = NULL;
     }
     void Reset()
@@ -255,7 +255,7 @@ class RegistrarAccount
 
     BOOL enable;
     BOOL registered;
-    BOOL abook;
+    BOOL abook_enable;
 
     RegAccountTypes account_type;
 

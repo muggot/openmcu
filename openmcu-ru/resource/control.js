@@ -855,6 +855,20 @@ function get_default_proto()
   return 'h323';
 }
 
+var addressbook_show_all = 0;
+function addressbook_view()
+{
+  if(addressbook_show_all == 0)
+  {
+    addressbook_show_all = 1;
+    document.getElementById("addressbook_view_button").style.border="1px inset";
+  } else {
+    addressbook_show_all = 0;
+    document.getElementById("addressbook_view_button").style.border="";
+  }
+  abook_refresh();
+}
+
 function additional_panel_abook(){
   var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
   var height = PANEL_ICON_HEIGHT; // 15
@@ -864,8 +878,9 @@ function additional_panel_abook(){
   var s="<form onsubmit='return false' id='additional_panel_abook' style='display:none;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>";
   s+=dpre+"2px;'>"+dbutton+"width:"+bwidth+"px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;' /></div></div>";
   s+=dpre+"34px;'>"+dbutton+"width:"+bwidth+"px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif' /></div></div>";
+  s+=dpre+"66px;'>"+dbutton+"width:"+bwidth+"px;' onclick='addressbook_view()' id='addressbook_view_button'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i20_plus.gif' /></div></div>";
 
-  var proto_posx = 69;
+  var proto_posx = 101;
   var proto_width = 50;
   var input_posx = proto_posx+proto_width;
   var input_width = panel_width-input_posx-5-32;
@@ -972,6 +987,16 @@ function abook_refresh(){
   for(i=0;i<addressbook.length;i++)
   {
     mmbr = addressbook[i];
+    if(addressbook_show_all == 0)
+    {
+      // mmbr[3] - registrar state. 1=unregistered, 2=registered
+      // mmbr[4] - connection state. 1=wait, 2=busy
+      // mmbr[5] - 1=address book enable
+      var reg_state = mmbr[3];
+      var abook_enable = mmbr[5];
+      if(abook_enable == 0 && reg_state != 2)
+        continue;
+    }
     imr+=format_mmbr_abook(i,mmbr);
   }
   result="<div style='width:"+panel_width+"px' id='right_pan_abook'>"+imr+"</div>";

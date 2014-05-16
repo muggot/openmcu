@@ -587,6 +587,7 @@ void Conference::RefreshAddressBook()
     PString memberNameId = MCUURL(memberName).GetMemberNameId();
     PString reg_state = abook[i].Tokenise(",")[1];
     PString conn_state = abook[i].Tokenise(",")[2];
+    PString abook_enable = abook[i].Tokenise(",")[3];
     if(i>0) msg << ",";
     memberName.Replace("&","&amp;",TRUE,0);
     memberName.Replace("\"","&quot;",TRUE,0);
@@ -596,6 +597,7 @@ void Conference::RefreshAddressBook()
         << ",\"" << memberName << "\""
         << ",\"" << reg_state << "\""
         << ",\"" << conn_state << "\""
+        << ",\"" << abook_enable << "\""
         << ")";
   }
   msg << ");";
