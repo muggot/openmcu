@@ -426,6 +426,8 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/png"                , "i16_status_green.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_status_blue.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_status_red.png");
+  WEBSERVER_LINK_MIME("image/png"                , "i16_minus.png");
+  WEBSERVER_LINK_MIME("image/png"                , "i16_plus.png");
 
   for(PINDEX i=-1; i<rotationLevel; i++)
   {

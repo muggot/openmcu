@@ -72,6 +72,8 @@ i16_status_gray.png \
 i16_status_green.png \
 i16_status_blue.png \
 i16_status_red.png \
+i16_minus.png \
+i16_plus.png \
 
 OBJDIR	= ./obj
 OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdir $(SOURCES)))))

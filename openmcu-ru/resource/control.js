@@ -861,10 +861,10 @@ function addressbook_view()
   if(addressbook_show_all == 0)
   {
     addressbook_show_all = 1;
-    document.getElementById("addressbook_view_button").style.border="1px inset";
+    document.getElementById("addressbook_view_button").src="i16_minus.png";
   } else {
     addressbook_show_all = 0;
-    document.getElementById("addressbook_view_button").style.border="";
+    document.getElementById("addressbook_view_button").src="i16_plus.png";
   }
   abook_refresh();
 }
@@ -878,7 +878,7 @@ function additional_panel_abook(){
   var s="<form onsubmit='return false' id='additional_panel_abook' style='display:none;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>";
   s+=dpre+"2px;'>"+dbutton+"width:"+bwidth+"px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;' /></div></div>";
   s+=dpre+"34px;'>"+dbutton+"width:"+bwidth+"px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif' /></div></div>";
-  s+=dpre+"66px;'>"+dbutton+"width:"+bwidth+"px;' onclick='addressbook_view()' id='addressbook_view_button'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i20_plus.gif' /></div></div>";
+  s+=dpre+"66px;'>"+dbutton+"width:"+bwidth+"px;' onclick='addressbook_view()'><img style='opacity:1;' src='i16_plus.png' id='addressbook_view_button'/></div></div>";
 
   var proto_posx = 101;
   var proto_width = 50;
