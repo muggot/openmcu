@@ -262,7 +262,7 @@ RegistrarAccount * Registrar::InsertAccountWithLock(RegAccountTypes account_type
 RegistrarAccount * Registrar::InsertAccount(RegistrarAccount *regAccount)
 {
   PWaitAndSignal m(mutex);
-  AccountMap.insert(AccountMapType::value_type(regAccount->username, regAccount));
+  AccountMap.insert(AccountMapType::value_type(PString(regAccount->account_type)+":"+regAccount->username, regAccount));
   return regAccount;
 }
 RegistrarAccount * Registrar::InsertAccount(RegAccountTypes account_type, PString username)
