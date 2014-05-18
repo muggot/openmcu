@@ -131,11 +131,21 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
       username = H323GetAliasAddressString(info.rrq.m_terminalAlias[1]);
   }
 
-  if(display_name == "")
-    display_name = H323GetAliasAddressString(info.rrq.m_terminalAlias[0]);
-
   if(username == "")
     return H323GatekeeperRequest::Reject;
+
+  if(display_name == "")
+    display_name = username;
+
+//  PString remote_application = H323GetApplicationInfo(info.rrq.m_endpointVendor);
+  PString remote_application = info.rrq.m_endpointVendor.m_productId.AsString()+" "+
+                               info.rrq.m_endpointVendor.m_versionId.AsString();
+
+  if(remote_application.Find("MyPhone") != P_MAX_INDEX || remote_application.Find("Polycom ViaVideo Release 8.0") != P_MAX_INDEX)
+  {
+    username = convert_ucs2_to_utf8(username);
+    display_name = convert_ucs2_to_utf8(display_name);
+  }
 
   // check account
   RegistrarAccount *regAccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, username);
@@ -151,6 +161,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
     regAccount->port = port;
   if(regAccount->display_name == "")
     regAccount->display_name = display_name;
+  regAccount->remote_application = remote_application;
 
   // regsiter TTL
   regAccount->registered = TRUE;

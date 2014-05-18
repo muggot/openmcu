@@ -235,23 +235,25 @@ class RegistrarAccount
     void Unlock()    { mutex.Signal(); }
     PMutex & GetMutex() { return mutex; }
 
+    PString GetAuthStr();
+
     PString display_name;
     PString username;
     PString host;
     PString domain;
     unsigned port;
     PString transport;
-
     PString password;
+
+    PString remote_application;
+
     PString scheme, nonce, algorithm;
     PString www_response, proxy_response;
 
     PTime start_time;
     time_t expires;
 
-    OpalGloballyUniqueID h323CallIdentifier;
-
-    PString GetAuthStr();
+    OpalGloballyUniqueID h323CallIdentifier; // h323 incoming call
 
     BOOL enable;
     BOOL registered;

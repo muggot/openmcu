@@ -484,10 +484,26 @@ void Registrar::RefreshAccountList()
        conn_state = 2;
     }
 
+    PString remote_application = regAccount->remote_application;
+    PString reg_info;
+    if(regAccount->registered)
+    {
+      reg_info = regAccount->start_time.AsString("hh:mm:ss dd.MM.yyyy");
+    }
+    PString conn_info;
+    if(conn_state == 2)
+    {
+      conn_info = regConn->start_time.AsString("hh:mm:ss dd.MM.yyyy");
+    }
+
     list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+
                       PString(reg_state)+","+
                       PString(conn_state)+","+
-                      PString(regAccount->abook_enable));
+                      PString(regAccount->abook_enable)+","+
+                      remote_application+","+
+                      reg_info+","+
+                      conn_info
+                     );
   }
   if(account_status_list != list)
   {

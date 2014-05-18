@@ -7,7 +7,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString convert_cp1251_to_utf8(PString text);
+PString convert_cp1251_to_utf8(PString str);
+PString convert_ucs2_to_utf8(PString str);
 
 PString GetEndpointParamFromUrl(PString param, PString url);
 PString GetEndpointParamFromUrl(PString param, PString url, PString defaultValue);

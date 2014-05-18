@@ -143,6 +143,7 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
     regAccount->transport = url.GetSipProto();
     if(regAccount->display_name == "")
       regAccount->display_name = url.GetDisplayName();
+    regAccount->remote_application = url.GetRemoteApplication();
     // TTL
     regAccount->registered = TRUE;
     regAccount->start_time = PTime();

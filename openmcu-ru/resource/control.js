@@ -774,9 +774,16 @@ function format_mmbr_abook(num,mmbr)
 
   var height = PANEL_ICON_HEIGHT; //15
   var width = PANEL_ICON_WIDTH; // 15
+
+  var info = "";
+  if(mmbr[6] != "") { info += mmbr[6]; }
+  if(mmbr[7] != "") { if(info != "") info += "&#10;"; info += window.l_name_registered+": "+mmbr[7]; }
+  if(mmbr[8] != "") { if(info != "") info += "&#10;"; info += window.l_name_connected+": "+mmbr[8]; }
+
   var s=
-    "<div style='margin-left:2px;padding:2px 0px 2px 0px;" +
-    "width:"+(panel_width)+"px;overflow:hidden;height:"+(height+2) +
+    "<div title='"+info+"' "+
+    "style='margin-left:2px;padding:2px 0px 2px 0px;"+
+    "width:"+(panel_width)+"px;overflow:hidden;height:"+(height+2)+
     "px;text-align:left;background-color:"+bgcolor + "'>";
 
   var uname=mmbr[2]+"";

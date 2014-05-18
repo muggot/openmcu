@@ -187,6 +187,9 @@ window.l_name_register                             = 'Регистрироват
 window.l_name_address_sip_proxy                    = 'Адрес SIP-прокси';
 window.l_name_expires                              = 'Продолжительность регистрации';
 
+window.l_name_registered                           = 'Зарегистрирован';
+window.l_name_connected                            = 'Подключен';
+
 window.l_name_codec                                = 'Кодек';
 window.l_name_audio                                = 'Аудио';
 window.l_name_video                                = 'Видео';

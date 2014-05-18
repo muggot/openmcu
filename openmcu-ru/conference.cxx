@@ -588,6 +588,9 @@ void Conference::RefreshAddressBook()
     PString reg_state = abook[i].Tokenise(",")[1];
     PString conn_state = abook[i].Tokenise(",")[2];
     PString abook_enable = abook[i].Tokenise(",")[3];
+    PString remote_application = abook[i].Tokenise(",")[4];
+    PString reg_info = abook[i].Tokenise(",")[5];
+    PString conn_info = abook[i].Tokenise(",")[6];
     if(i>0) msg << ",";
     memberName.Replace("&","&amp;",TRUE,0);
     memberName.Replace("\"","&quot;",TRUE,0);
@@ -598,6 +601,9 @@ void Conference::RefreshAddressBook()
         << ",\"" << reg_state << "\""
         << ",\"" << conn_state << "\""
         << ",\"" << abook_enable << "\""
+        << ",\"" << remote_application << "\""
+        << ",\"" << reg_info << "\""
+        << ",\"" << conn_info << "\""
         << ")";
   }
   msg << ");";

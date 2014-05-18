@@ -176,7 +176,7 @@ PString GetConferenceParam(PString room, PString param, PString defaultValue)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString convert_cp1251_to_utf8(PString text)
+PString convert_cp1251_to_utf8(PString str)
 {
   static const int table[128] = { // cp1251 -> utf8 translation based on http://www.linux.org.ru/forum/development/3968525
     0x82D0,0x83D0,  0x9A80E2,0x93D1,  0x9E80E2,0xA680E2,0xA080E2,0xA180E2,0xAC82E2,0xB080E2,0x89D0,0xB980E2,0x8AD0,0x8CD0,0x8BD0,0x8FD0,
@@ -189,29 +189,62 @@ PString convert_cp1251_to_utf8(PString text)
     0x80D1,0x81D1,  0x82D1,  0x83D1,  0x84D1,  0x85D1,  0x86D1,  0x87D1,  0x88D1,  0x89D1,  0x8AD1,0x8BD1,  0x8CD1,0x8DD1,0x8ED1,0x8FD1
   };
 
-  PStringStream text_utf;
-  for(PINDEX i=0;i<text.GetLength();i++)
+  PStringStream utf8;
+  for(PINDEX i = 0; i < str.GetLength(); i++)
   {
-    unsigned int charcode=(BYTE)text[i];
+    unsigned int charcode=(BYTE)str[i];
     if(charcode&128)
     {
       if((charcode=table[charcode&127]))
       {
-        text_utf << (char)charcode << (char)(charcode >> 8);
-        if(charcode >>= 16) text_utf << (char)charcode;
+        utf8 << (char)charcode << (char)(charcode >> 8);
+        if(charcode >>= 16) utf8 << (char)charcode;
       }
     } else {
-      text_utf << (char)charcode;
+      utf8 << (char)charcode;
     }
   }
-  if(text_utf != text)
+  if(str != utf8)
   {
-    PTRACE(1, "Converted (cp1251->utf8): " << text << " -> " << text_utf);
-    return text_utf;
+    PTRACE(1, "Converted cp1251->utf8: " << str << " -> " << utf8);
+    return utf8;
   } else {
-    return text;
+    return str;
   }
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PString convert_ucs2_to_utf8(PString str)
+{
+  PStringStream utf8;
+  for(PINDEX i = 0; i < str.GetLength(); i++)
+  {
+    unsigned int charcode = (BYTE)str[i];
+    if(charcode == 0xc3)
+    {
+      charcode = (BYTE)str[++i];
+      if(charcode >= 128 && charcode <= 191)
+      {
+        if(charcode < 176)
+          utf8 << (char)0xd0 << (char)(charcode+16);
+        else
+          utf8 << (char)0xd1 << (char)(charcode-48);
+      }
+    }
+    else
+    {
+      utf8 << (char)charcode;
+    }
+  }
+  if(str != utf8)
+  {
+    PTRACE(1, "Converted ucs2->utf8: " << str << " -> " << utf8);
+    return utf8;
+  } else {
+    return str;
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
