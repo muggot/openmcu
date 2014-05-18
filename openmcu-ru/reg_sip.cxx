@@ -6,9 +6,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::OnIncomingMsg(msg_t *msg)
+int Registrar::OnReceivedMsg(msg_t *msg)
 {
-  PTRACE(1, "Registrar\tOnIncomingMessage");
+  PTRACE(1, "Registrar\tOnReceivedMessage");
   if(sep->terminating)
     return TRUE;
 
@@ -21,9 +21,6 @@ int Registrar::OnIncomingMsg(msg_t *msg)
 
   PString username = sip->sip_from->a_url->url_user;
   PString username_out = sip->sip_to->a_url->url_user;
-  BOOL sipToSip = FALSE;
-  if(username != username_out && FindAccount(ACCOUNT_TYPE_SIP, username) && FindAccount(ACCOUNT_TYPE_SIP, username_out))
-    sipToSip = TRUE;
 
   int request = 0, status = 0, cseq = 0;
   if(sip->sip_request) request = sip->sip_request->rq_method;
@@ -70,23 +67,11 @@ int Registrar::OnIncomingMsg(msg_t *msg)
 //    SipReqReply(msg, SIP_481_NO_TRANSACTION);
 //    return TRUE;
 //  }
-//  if(request == sip_method_subscribe || request == sip_method_notify || cseq == sip_method_notify || cseq == sip_method_subscribe)
-//    return SipForwardMessage(msg);
 
   // message dialog
   if(request == sip_method_message)
   {
     OnReceivedSipMessage(msg);
-    return TRUE;
-  }
-
-  // forwarding
-  //PString processing_type = OpenMCU::Current().GetEndpointParamFromUrl("Processing", "");
-  PString processing_type = "transcoding";
-  if((sipToSip && processing_type == "forwarding") &&
-     (cseq == sip_method_invite || cseq == sip_method_cancel || cseq == sip_method_bye || cseq == sip_method_ack))
-  {
-    SipForwardMessage(msg);
     return TRUE;
   }
 
@@ -245,20 +230,48 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     goto return_response;
   }
 
-  regConn = InsertRegConnWithLock(callToken, username_in, username_out);
-  msg_destroy(regConn->msg_invite);
-  regConn->msg_invite = msg_dup(msg);
-
-  // MCU call if !regAccount_out
-  if(!regAccount_out)
   {
-    regConn->account_type_in = regAccount_in->account_type;
-    regConn->state = CONN_MCU_WAIT;
-    response_code = -1; // MCU call
-  } else {
-    regConn->roomname = internal_room_prefix + OpalGloballyUniqueID().AsString();
-    regConn->state = CONN_WAIT;
-    response_code = 100; // SIP_100_TRYING
+    if(!regAccount_out) // MCU call if !regAccount_out
+    {
+      // create MCU sip connection
+      MCUSipConnection *sCon = new MCUSipConnection(sep, ep, callToken);
+      sCon->direction = 0;
+      sCon->c_sip_msg = msg_dup(msg);
+      // create registrar connection
+      regConn = InsertRegConnWithLock(callToken, username_in, username_out);
+      msg_destroy(regConn->msg_invite);
+      regConn->msg_invite = msg_dup(msg);
+      regConn->account_type_in = regAccount_in->account_type;
+      regConn->state = CONN_MCU_WAIT;
+      response_code = -1; // MCU call
+      goto return_response;
+    }
+    else
+    {
+      if(regAccount_out->account_type == ACCOUNT_TYPE_SIP && (regAccount_in->sip_to_sip_processing == "forwarding" || regAccount_out->sip_to_sip_processing == "forwarding"))
+      {
+        SipReqReply(msg, 100);
+        SipReqReply(msg, 180);
+        SipReqReply(msg, 302, "", regAccount_out->GetUrl());
+        response_code = 0; // EMPTY
+        goto return_response;
+      }
+      else
+      {
+        // create MCU sip connection
+        MCUSipConnection *sCon = new MCUSipConnection(sep, ep, callToken);
+        sCon->direction = 0;
+        sCon->c_sip_msg = msg_dup(msg);
+        // create registrar connection
+        regConn = InsertRegConnWithLock(callToken, username_in, username_out);
+        msg_destroy(regConn->msg_invite);
+        regConn->msg_invite = msg_dup(msg);
+        regConn->roomname = internal_room_prefix + OpalGloballyUniqueID().AsString();
+        regConn->state = CONN_WAIT;
+        response_code = 100; // SIP_100_TRYING
+        goto return_response;
+      }
+    }
   }
 
   return_response:
@@ -535,48 +548,53 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipReqReply(const msg_t *msg, unsigned method, PString sip_auth_str)
+int Registrar::SipReqReply(const msg_t *msg, unsigned method, PString auth_str, PString contact)
 {
   const char *method_name = NULL;
   method_name = sip_status_phrase(method);
   if(method_name == NULL)
     return 0;
-  return SipReqReply(msg, method, method_name, sip_auth_str);
+  return SipReqReply(msg, method, method_name, auth_str, contact);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipReqReply(const msg_t *msg, unsigned method, const char *method_name, PString sip_auth_str)
+int Registrar::SipReqReply(const msg_t *msg, unsigned method, const char *method_name, PString auth_str, PString contact)
 {
   //PTRACE(1, "Registrar\tSipReqReply");
   sip_t *sip = sip_object(msg);
   if(sip == NULL || sip->sip_request == NULL) return 0;
 
   sip_authorization_t *sip_www_auth=NULL, *sip_proxy_auth=NULL;
-  if(sip_auth_str != "")
+  if(auth_str != "")
   {
     if(method == 401)
-      sip_www_auth = sip_authorization_make(sep->GetHome(), sip_auth_str);
+      sip_www_auth = sip_authorization_make(sep->GetHome(), auth_str);
     else if(method == 407)
-      sip_proxy_auth = sip_authorization_make(sep->GetHome(), sip_auth_str);
+      sip_proxy_auth = sip_authorization_make(sep->GetHome(), auth_str);
+  }
+
+  sip_contact_t *sip_contact = NULL;
+  if(contact != "")
+  {
+    sip_contact = sip_contact_create(sep->GetHome(), (url_string_t *)(const char *)contact, NULL);
   }
 
   const char *event = NULL;
   const char *allow_events = NULL;
-  sip_contact_t *sip_contact = NULL;
   if(sip->sip_request->rq_method == sip_method_register)
   {
     event = "registration";
     allow_events = "presence";
-    sip_contact = sip->sip_contact;
+    if(sip_contact == NULL) sip_contact = sip->sip_contact;
   }
   PString allow = "SUBSCRIBE, INVITE, ACK, BYE, CANCEL, OPTIONS, INFO";
 
   sip_expires_t *sip_expires = NULL;
-  if(sip->sip_request->rq_method == sip_method_register ||
-     sip->sip_request->rq_method == sip_method_subscribe ||
-     sip->sip_request->rq_method == sip_method_publish)
+  if(sip->sip_request->rq_method == sip_method_register || sip->sip_request->rq_method == sip_method_subscribe)
+  {
     sip_expires = sip->sip_expires;
+  }
 
   msg_t *msg_reply = msg_dup(msg);
   nta_msg_treply(sep->GetAgent(), msg_reply, method, method_name,
@@ -592,154 +610,6 @@ int Registrar::SipReqReply(const msg_t *msg, unsigned method, const char *method
                    SIPTAG_SERVER_STR((const char*)(MCUSIP_USER_AGENT_STR)),
                    TAG_END());
   return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int Registrar::SipForwardMessage(msg_t *msg)
-{
-  sip_t *sip = sip_object(msg);
-
-  PString username_in = sip->sip_from->a_url->url_user;
-  PString username_out = sip->sip_to->a_url->url_user;
-
-  unsigned response_code = 404; // default SIP_404_NOT_FOUND
-  PString sip_auth_str;
-
-  RegistrarAccount *regAccount_in = NULL;
-  RegistrarAccount *regAccount_out = NULL;
-
-  regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
-  if(!regAccount_in)
-  {
-    response_code = 403; // SIP_403_FORBIDDEN
-    goto return_response;
-  }
-
-  regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_out);
-  if(!regAccount_out) // || (regAccount_out && !regAccount_in->registered))
-  {
-    response_code = 404; // SIP_404_NOT_FOUND
-    goto return_response;
-  }
-
-  // authorization
-  if(!SipPolicyCheck(msg, regAccount_in, regAccount_out))
-  {
-    sip_auth_str = regAccount_in->GetAuthStr();
-    response_code = 407; // SIP_407_PROXY_AUTH_REQUIRED
-    goto return_response;
-  }
-
-  {
-    url_string_t *ruri = (url_string_t *)(const char *)regAccount_out->GetUrl();
-    // create reply message
-    msg_t *msg_reply = msg_dup(msg);
-    sip_t *c_sip = sip_object(msg_reply);
-    // remove authorization headers
-    if(c_sip->sip_authorization)
-      msg_header_remove(msg_reply, (msg_pub_t *)c_sip, (msg_header_t *)c_sip->sip_authorization);
-    if(c_sip->sip_proxy_authorization)
-      msg_header_remove(msg_reply, (msg_pub_t *)c_sip, (msg_header_t *)c_sip->sip_proxy_authorization);
-/*
-    // add route header
-    if(processing_type == "route signaling")
-    {
-      PString route_url = "sip:"+PString(sip->sip_to->a_url->url_host);
-      if(sip->sip_to->a_url->url_port)
-        route_url += sip->sip_to->a_url->url_port;
-      sip_record_route_t* sip_record_route = sip_record_route_create(GetHome(), url_make(GetHome(), route_url), NULL);
-      msg_header_insert(msg_reply, (msg_pub_t *)c_sip, (msg_header_t *)sip_record_route);
-    }
-*/
-    //
-    nta_msg_tsend(sep->GetAgent(),
-                  msg_reply,
-                  ruri,
-                  SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
-                  TAG_END());
-    response_code = 0; // EMPTY
-    goto return_response;
-  }
-
-  return_response:
-    if(regAccount_in) regAccount_in->Unlock();
-    if(regAccount_out) regAccount_out->Unlock();
-    if(response_code != 0)
-      return SipReqReply(msg, response_code, sip_auth_str);
-    return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int Subscription::LegOutCreate(RegistrarAccount *regAccount_out)
-{
-  sip_t *sip = sip_object(msg_sub);
-  if(sip == NULL) return 0;
-
-  PString username_in = sip->sip_from->a_url->url_user;
-  PString username_out = sip->sip_to->a_url->url_user;
-  PString domain_out = regAccount_out->domain;
-
-  url_string_t *ruri = (url_string_t *)(const char *)regAccount_out->GetUrl();
-
-  sip_addr_t *sip_from = sip_from_create(registrar->GetHome(), (url_string_t *)(const char *)
-      ("sip:"+username_in+"@"+domain_out));
-  sip_from_tag(registrar->GetHome(), sip_from, nta_agent_newtag(registrar->GetHome(), "tag=%s", registrar->GetAgent()));
-  sip_addr_t *sip_to = sip_from_create(registrar->GetHome(), (url_string_t *)(const char *)
-      ("sip:"+username_out+"@"+domain_out));
-  sip_contact_t *sip_contact = sip_contact_create(registrar->GetHome(), (url_string_t *)(const char *)
-      ("sip:"+username_in+"@"+domain_out), NULL);
-
-  sip_call_id_t* sip_call_id = sip_call_id_create(registrar->GetHome(), "");
-
-  leg_sub_out = nta_leg_tcreate(registrar->GetAgent(), wrap_sub_request_out_cb, (nta_leg_magic_t *)this,
-                        SIPTAG_FROM(sip_from),
-                        SIPTAG_TO(sip_to),
-			SIPTAG_CALL_ID(sip_call_id),
-                        SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
-                        TAG_END());
-  if(leg_sub_out == NULL)
-    return 0;
-  orq_sub_out = nta_outgoing_tcreate(leg_sub_out, wrap_sub_response_out_cb, (nta_outgoing_magic_t *)this,
-			ruri,
-			SIP_METHOD_SUBSCRIBE,
-			ruri,
-                        SIPTAG_CONTACT(sip_contact),
-                        SIPTAG_CSEQ(sip->sip_cseq),
-    		        SIPTAG_EVENT_STR("presence"),
-    		        SIPTAG_ACCEPT_STR("application/pidf+xml"),
-    		        SIPTAG_EXPIRES(sip->sip_expires),
-    		        //SIPTAG_ALLOW_STR("INVITE,ACK,OPTIONS,BYE,CANCEL,SUBSCRIBE,NOTIFY,REFER,MESSAGE,INFO,PING,PRACK"),
-			SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
-			TAG_END());
-  return 1;
-}
-
-int Subscription::sub_request_out_cb(nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip_not)
-{
-  msg_t *msg_not = nta_incoming_getrequest(irq);
-  if(sip_not->sip_request && sip_not->sip_request->rq_method == sip_method_notify)
-  {
-    PString pay_not = sip_not->sip_payload->pl_data;
-    if(pay_not.Find(">busy<") != P_MAX_INDEX || pay_not.Find("on-the-phone") != P_MAX_INDEX)
-      state_new = SUB_STATE_BUSY;
-    else if(pay_not.Find(">unreachable<") != P_MAX_INDEX)
-      state_new = SUB_STATE_CLOSED;
-    else if(pay_not.Find(">close<") != P_MAX_INDEX || pay_not.Find(">closed<") != P_MAX_INDEX)
-      state_new = SUB_STATE_CLOSED;
-    else
-      state_new = SUB_STATE_OPEN;
-  }
-  registrar->SipReqReply(msg_not, SIP_200_OK);
-  return 200; // nta: timer J fired, terminate 200 response
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int Subscription::sub_response_out_cb(nta_outgoing_t *orq, const sip_t *sip)
-{
-  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

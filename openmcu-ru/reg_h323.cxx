@@ -6,9 +6,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-H323Connection::AnswerCallResponse Registrar::OnIncomingMsg(PString memberName, PString & requestedRoom, PString callToken, OpalGloballyUniqueID callIdentifier)
+H323Connection::AnswerCallResponse Registrar::OnReceivedMsg(PString memberName, PString & requestedRoom, PString callToken, OpalGloballyUniqueID callIdentifier)
 {
-  PTRACE(1, "Registrar\tOnIncomingCallH323");
+  PTRACE(1, "Registrar\tOnReceivedCallH323");
   MCUURL url(memberName);
   if(url.GetUserName() == "" || url.GetHostName() == "")
     return H323Connection::AnswerCallDenied;

@@ -2443,29 +2443,12 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
 
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
-  // add new incoming connection
-  if(!sCon && request == sip_method_invite)
+  if(!sCon || !sCon->IsEstablished())
   {
-    sCon = new MCUSipConnection(this, ep, callToken);
-    sCon->direction = 0;
-    sCon->c_sip_msg = msg_dup(msg);
-    sCon = NULL;
-  }
-  if(!sCon || (sCon && !sCon->IsEstablished()))
-  {
-    if(registrar->OnIncomingMsg(msg))
+    if(registrar->OnReceivedMsg(msg))
       return 0;
   }
-/*
-  // add new incoming connection
-  if(!sCon && request == sip_method_invite)
-  {
-    sCon = new MCUSipConnection(this, ep, callToken);
-    sCon->direction = 0;
-    sCon->c_sip_msg = msg_dup(msg);
-    InsertSipConn(callToken, sCon);
-  }
-*/
+
   // repeated OK, must be processed in the invite callback
   if(cseq == sip_method_invite && status == 200)
   {

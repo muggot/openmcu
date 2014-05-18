@@ -736,6 +736,8 @@ void Registrar::InitTerminals()
     regAccount->domain = registrar_domain;
     regAccount->password = scfg.GetString("Password");
     regAccount->display_name = scfg.GetString("Display name override");
+    regAccount->sip_to_sip_processing = scfg.GetString("");
+    regAccount->h323_to_h323_processing = scfg.GetString("");
     if(account_type == ACCOUNT_TYPE_H323)
       h323Passwords.Insert(PString(username), new PString(regAccount->password));
     regAccount->Unlock();

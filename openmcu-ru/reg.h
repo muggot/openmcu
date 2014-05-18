@@ -125,23 +125,17 @@ class Subscription
     }
     ~Subscription()
     {
-      if(orq_sub_out) { nta_outgoing_destroy(orq_sub_out); orq_sub_out = NULL; }
-      if(leg_sub_out) { nta_leg_destroy(leg_sub_out); leg_sub_out = NULL; }
       if(msg_sub) { msg_destroy(msg_sub); msg_sub = NULL; }
     }
     void Init()
     {
       state = state_new = SUB_STATE_CLOSED;
       msg_sub = NULL;
-      leg_sub_out = NULL;
-      orq_sub_out = NULL;
       start_time = PTime();
       expires = 0;
     }
     void Reset()
     {
-      if(orq_sub_out) { nta_outgoing_destroy(orq_sub_out); orq_sub_out = NULL; }
-      if(leg_sub_out) { nta_leg_destroy(leg_sub_out); leg_sub_out = NULL; }
       state = state_new = SUB_STATE_CLOSED;
     }
 
@@ -160,17 +154,6 @@ class Subscription
     RegSubscriptionStates state_new;
 
     msg_t *msg_sub;
-    nta_leg_t *leg_sub_out;
-    nta_outgoing_t *orq_sub_out;
-    int LegOutCreate(RegistrarAccount *regAccount_out);
-
-    static int wrap_sub_request_out_cb(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip)
-    { return ((Subscription *)context)->sub_request_out_cb(leg, irq, sip); }
-    int sub_request_out_cb(nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip);
-
-    static int wrap_sub_response_out_cb(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip)
-    { return ((Subscription *)context)->sub_response_out_cb(orq, sip); }
-    int sub_response_out_cb(nta_outgoing_t *orq, const sip_t *sip);
 
   protected:
     PMutex mutex;
@@ -246,6 +229,9 @@ class RegistrarAccount
     PString password;
 
     PString remote_application;
+
+    PString sip_to_sip_processing;
+    PString h323_to_h323_processing;
 
     PString scheme, nonce, algorithm;
     PString www_response, proxy_response;
@@ -343,16 +329,16 @@ class Registrar : public PThread
 
     BOOL MakeCall(PString room, PString to, PString & callToken);
 
-    int OnIncomingMsg(msg_t *msg);
-    H323Connection::AnswerCallResponse OnIncomingMsg(PString memberName, PString & requestedRoom, PString callToken, OpalGloballyUniqueID callIdentifier);
+    int OnReceivedMsg(msg_t *msg);
+    H323Connection::AnswerCallResponse OnReceivedMsg(PString memberName, PString & requestedRoom, PString callToken, OpalGloballyUniqueID callIdentifier);
 
     nta_agent_t *GetAgent() { return sep->GetAgent(); };
     su_home_t *GetHome() { return sep->GetHome(); };
     MCUSipEndPoint *GetSep() { return sep; };
 
     int SipSendNotify(msg_t *msg_sub, int state);
-    int SipReqReply(const msg_t *msg, unsigned method, const char *method_name, PString sip_auth_str);
-    int SipReqReply(const msg_t *msg, unsigned method, PString sip_auth_str);
+    int SipReqReply(const msg_t *msg, unsigned method, const char *method_name, PString auth_str = "", PString contact = "");
+    int SipReqReply(const msg_t *msg, unsigned method, PString auth_str = "", PString contact = "");
 
     RegistrarAccount * InsertAccountWithLock(RegAccountTypes account_type, PString username);
     RegistrarAccount * InsertAccount(RegistrarAccount *regAccount);
@@ -387,8 +373,6 @@ class Registrar : public PThread
 
     int SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out, PString message);
     //int H323SendMessage(RegistrarAccount *regAccount_out, PString message);
-
-    int SipForwardMessage(msg_t *msg);
 
     // internal function
     int OnReceivedSipRegister(const msg_t *msg);
