@@ -735,7 +735,7 @@ void Registrar::InitTerminals()
       regAccount->port = port;
     regAccount->domain = registrar_domain;
     regAccount->password = scfg.GetString("Password");
-    regAccount->display_name = scfg.GetString("Display name override");
+    regAccount->display_name = scfg.GetString("Display name");
     regAccount->sip_to_sip_processing = scfg.GetString("");
     regAccount->h323_to_h323_processing = scfg.GetString("");
     if(account_type == ACCOUNT_TYPE_H323)

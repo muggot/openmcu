@@ -172,10 +172,10 @@ window.l_name_auto_record_not_empty    = 'Автоматическая запи�
 window.l_name_recall_last_template     = 'Создать с последним шаблоном';
 window.l_name_time_limit               = 'Ограничение по времени';
 
-window.l_name_display_name_override                = 'Отображаемое имя';
-window.l_name_preferred_frame_rate_from_mcu        = 'Частота кадров от MCU';
-window.l_name_preferred_bandwidth_from_mcu         = 'Битрейт от MCU, Kbit/s';
-window.l_name_preferred_bandwidth_to_mcu           = 'Битрейт к MCU, Kbit/s';
+window.l_name_display_name                         = 'Отображаемое имя';
+window.l_name_frame_rate_from_mcu                  = 'Частота кадров от MCU';
+window.l_name_bandwidth_from_mcu                   = 'Битрейт от MCU, Kbit/s';
+window.l_name_bandwidth_to_mcu                     = 'Битрейт к MCU, Kbit/s';
 window.l_name_transport                            = 'Транспорт';
 window.l_name_port                                 = 'порт';
 

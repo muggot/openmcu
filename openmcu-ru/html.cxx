@@ -736,14 +736,14 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
   optionNames.AppendString("Password");
-  optionNames.AppendString("Display name override");
+  optionNames.AppendString("Display name");
 
   optionNames.AppendString("Host");
   optionNames.AppendString("Port");
 
-  optionNames.AppendString("Preferred frame rate from MCU");
-  optionNames.AppendString("Preferred bandwidth from MCU");
-  optionNames.AppendString("Preferred bandwidth to MCU");
+  optionNames.AppendString("Frame rate from MCU");
+  optionNames.AppendString("Bandwidth from MCU");
+  optionNames.AppendString("Bandwidth to MCU");
   optionNames.AppendString(ReceivedVFUDelayKey);
 
   optionNames.AppendString("Audio codec(receive)");
@@ -765,7 +765,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   sectionPrefix = "H323 Endpoint ";
   PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
 
-  // bak
+  // bak, temporarily
   if(sect.GetSize() == 0)
   {
     MCUConfig bcfg("H323 Endpoints");
@@ -792,10 +792,10 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       scfg.SetString("Host", host);
       scfg.SetString("Port", params[1]);
       scfg.SetString("Address book", params[2]);
-      scfg.SetString("Display name override", params[3]);
-      scfg.SetString("Preferred frame rate from MCU", params[4]);
-      scfg.SetString("Preferred bandwidth from MCU", params[5]);
-      scfg.SetString("Preferred bandwidth to MCU", params[6]);
+      scfg.SetString("Display name", params[3]);
+      scfg.SetString("Frame rate from MCU", params[4]);
+      scfg.SetString("Bandwidth from MCU", params[5]);
+      scfg.SetString("Bandwidth to MCU", params[6]);
       scfg.SetString("Audio codec(receive)", params[8]);
       scfg.SetString("Video codec(receive)", params[9]);
       scfg.SetString("Audio codec(transmit)", params[10]);
@@ -813,6 +813,12 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   {
     MCUConfig scfg(sect[i]);
     PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
+
+    // options rename, temporarily
+    if(scfg.GetString("Display name override") != "") { scfg.SetString("Display name", scfg.GetString("Display name override")); scfg.SetString("Display name override", ""); }
+    if(scfg.GetString("Preferred frame rate from MCU") != "") { scfg.SetString("Frame rate from MCU", scfg.GetString("Preferred frame rate from MCU")); scfg.SetString("Preferred frame rate from MCU", ""); }
+    if(scfg.GetString("Preferred bandwidth from MCU") != "") { scfg.SetString("Bandwidth from MCU", scfg.GetString("Preferred bandwidth from MCU")); scfg.SetString("Preferred bandwidth from MCU", ""); }
+    if(scfg.GetString("Preferred bandwidth to MCU") != "") { scfg.SetString("Bandwidth to MCU", scfg.GetString("Preferred bandwidth to MCU")); scfg.SetString("Preferred bandwidth to MCU", ""); }
 
     // account
     if(name == "*") s << NewRowInput(name, 10, TRUE); else s << NewRowInputAccount(name, 10);
@@ -839,7 +845,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += rowArray+JsLocale("window.l_name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString("Password"))+"</tr>";
       // display name
-      s2 += rowArray+JsLocale("window.l_name_display_name_override")+StringItem(name, scfg.GetString("Display name override"))+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString("Display name"))+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -865,11 +871,11 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_preferred_frame_rate_from_mcu")+StringItemInteger(name, scfg.GetString("Preferred frame rate from MCU"), 4)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+StringItemInteger(name, scfg.GetString("Frame rate from MCU"), 4)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_preferred_bandwidth_from_mcu")+StringItemInteger(name, scfg.GetString("Preferred bandwidth from MCU"), 4)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+StringItemInteger(name, scfg.GetString("Bandwidth from MCU"), 4)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_preferred_bandwidth_to_mcu")+StringItemInteger(name, scfg.GetString("Preferred bandwidth to MCU"), 4)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+StringItemInteger(name, scfg.GetString("Bandwidth to MCU"), 4)+"</tr>";
       // VFU delay
       if(name == "*")
         s2 += rowArray+"Received VFU delay (Video Fast Update)"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), "0,1,2,3,4,5,6,7,8,9,10", 60)+"</tr>";
@@ -932,16 +938,16 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
   optionNames.AppendString("Password");
-  optionNames.AppendString("Display name override");
+  optionNames.AppendString("Display name");
 
   optionNames.AppendString("Host");
   optionNames.AppendString("Port");
   optionNames.AppendString("Transport");
   optionNames.AppendString("RTP proto");
 
-  optionNames.AppendString("Preferred frame rate from MCU");
-  optionNames.AppendString("Preferred bandwidth from MCU");
-  optionNames.AppendString("Preferred bandwidth to MCU");
+  optionNames.AppendString("Frame rate from MCU");
+  optionNames.AppendString("Bandwidth from MCU");
+  optionNames.AppendString("Bandwidth to MCU");
   optionNames.AppendString(ReceivedVFUDelayKey);
 
   optionNames.AppendString("Audio codec");
@@ -984,10 +990,10 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       scfg.SetString("Port", params[1]);
       scfg.SetString("Transport", params[0].Tokenise("=")[1]);
       scfg.SetString("Address book", params[2]);
-      scfg.SetString("Display name override", params[3]);
-      scfg.SetString("Preferred frame rate from MCU", params[4]);
-      scfg.SetString("Preferred bandwidth from MCU", params[5]);
-      scfg.SetString("Preferred bandwidth to MCU", params[6]);
+      scfg.SetString("Display name", params[3]);
+      scfg.SetString("Frame rate from MCU", params[4]);
+      scfg.SetString("Bandwidth from MCU", params[5]);
+      scfg.SetString("Bandwidth to MCU", params[6]);
       scfg.SetString("Audio codec", params[8]);
       scfg.SetString("Video codec", params[9]);
       sect.AppendString(sectionPrefix+account);
@@ -1003,6 +1009,12 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   {
     MCUConfig scfg(sect[i]);
     PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
+
+    // options rename, temporarily
+    if(scfg.GetString("Display name override") != "") { scfg.SetString("Display name", scfg.GetString("Display name override")); scfg.SetString("Display name override", ""); }
+    if(scfg.GetString("Preferred frame rate from MCU") != "") { scfg.SetString("Frame rate from MCU", scfg.GetString("Preferred frame rate from MCU")); scfg.SetString("Preferred frame rate from MCU", ""); }
+    if(scfg.GetString("Preferred bandwidth from MCU") != "") { scfg.SetString("Bandwidth from MCU", scfg.GetString("Preferred bandwidth from MCU")); scfg.SetString("Preferred bandwidth from MCU", ""); }
+    if(scfg.GetString("Preferred bandwidth to MCU") != "") { scfg.SetString("Bandwidth to MCU", scfg.GetString("Preferred bandwidth to MCU")); scfg.SetString("Preferred bandwidth to MCU", ""); }
 
     // account
     if(name == "*") s << NewRowInput(name, 10, TRUE); else s << NewRowInputAccount(name, 10);
@@ -1029,7 +1041,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+JsLocale("window.l_name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString("Password"))+"</tr>";
       // display name
-      s2 += rowArray+JsLocale("window.l_name_display_name_override")+StringItem(name, scfg.GetString("Display name override"))+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString("Display name"))+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1062,11 +1074,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_preferred_frame_rate_from_mcu")+StringItemInteger(name, scfg.GetString("Preferred frame rate from MCU"), 4)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+StringItemInteger(name, scfg.GetString("Frame rate from MCU"), 4)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_preferred_bandwidth_from_mcu")+StringItemInteger(name, scfg.GetString("Preferred bandwidth from MCU"), 4)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+StringItemInteger(name, scfg.GetString("Bandwidth from MCU"), 4)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_preferred_bandwidth_to_mcu")+StringItemInteger(name, scfg.GetString("Preferred bandwidth to MCU"), 4)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+StringItemInteger(name, scfg.GetString("Bandwidth to MCU"), 4)+"</tr>";
       // VFU delay
       if(name == "*")
         s2 += rowArray+"Received VFU delay (Video Fast Update)"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), "0,1,2,3,4,5,6,7,8,9,10", 60)+"</tr>";

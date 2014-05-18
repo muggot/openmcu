@@ -2462,7 +2462,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
   // set endpoint capability
   PString prefAudioCap = GetEndpointParam("Audio codec(receive)");
   PString prefVideoCap = GetEndpointParam("Video codec(receive)");
-  unsigned bandwidthTo = GetEndpointParam("Preferred bandwidth to MCU", 0);
+  unsigned bandwidthTo = GetEndpointParam("Bandwidth to MCU", 0);
   if(prefAudioCap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive audio: " << prefAudioCap); }
   if(prefVideoCap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive video: " << prefVideoCap); }
   if(bandwidthTo != 0) { PTRACE(1, "MCUH323Connection\tSet endpoint bandwidth to mcu: " << bandwidthTo); }
@@ -2800,7 +2800,7 @@ void MCUH323Connection::SetEndpointPrefVideoParams()
   if(codec == NULL) return;
   OpalMediaFormat & mf = codec->GetWritableMediaFormat();
 
-  unsigned fr = GetEndpointParam("Preferred frame rate from MCU", 0);
+  unsigned fr = GetEndpointParam("Frame rate from MCU", 0);
   if(fr != 0)
   {
     if(fr > MAX_FRAME_RATE) fr = MAX_FRAME_RATE;
@@ -2809,7 +2809,7 @@ void MCUH323Connection::SetEndpointPrefVideoParams()
     mf.SetOptionInteger("Frame Time", 90000/fr);
   }
 
-  unsigned bwFrom = GetEndpointParam("Preferred bandwidth from MCU", 0);
+  unsigned bwFrom = GetEndpointParam("Bandwidth from MCU", 0);
   if(bwFrom != 0)
   {
     if(bwFrom < 64) bwFrom = 64;
@@ -3371,10 +3371,10 @@ PString MCUH323Connection::GetRemoteNumber()
 void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
 {
   // endpoint display name override
-  PString overrideName = GetEndpointParam("Display name override");
+  PString overrideName = GetEndpointParam("Display name");
   if(overrideName != "")
   {
-    PTRACE(1, "MCUH323Connection\tSet endpoint display name override: " << overrideName);
+    PTRACE(1, "MCUH323Connection\tSet endpoint display name: " << overrideName);
     remoteName = overrideName;
     remotePartyName = overrideName;
   }

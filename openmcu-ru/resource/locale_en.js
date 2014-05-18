@@ -165,10 +165,10 @@ window.l_name_auto_record_not_empty    = 'Auto record';
 window.l_name_recall_last_template     = 'Recall last template';
 window.l_name_time_limit               = 'Time limit';
 
-window.l_name_display_name_override                = 'Display name override';
-window.l_name_preferred_frame_rate_from_mcu        = 'Frame rate from MCU';
-window.l_name_preferred_bandwidth_from_mcu         = 'Bandwidth from MCU, Kbit/s';
-window.l_name_preferred_bandwidth_to_mcu           = 'Bandwidth to MCU, Kbit/s';
+window.l_name_display_name                         = 'Display name override';
+window.l_name_frame_rate_from_mcu                  = 'Frame rate from MCU';
+window.l_name_bandwidth_from_mcu                   = 'Bandwidth from MCU, Kbit/s';
+window.l_name_bandwidth_to_mcu                     = 'Bandwidth to MCU, Kbit/s';
 window.l_name_transport                            = 'Transport';
 window.l_name_port                                 = 'port';
 

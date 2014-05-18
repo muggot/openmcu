@@ -494,7 +494,6 @@ RegistrarGk::RegistrarGk(MCUH323EndPoint *ep, Registrar *_registrar)
   makeCallPreGrantedARQ = FALSE;
   isGatekeeperRouted = FALSE;
   aliasCanBeHostName = TRUE;
-  //requireH235 = FALSE;
   disengageOnHearbeatFail = TRUE;
 
   identifierBase = time(NULL);

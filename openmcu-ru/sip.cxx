@@ -358,7 +358,7 @@ PString MCUSipEndPoint::CreateSdpInvite(MCUSipConnection *sCon, PString local_ur
   PString prefAudioCap = GetEndpointParamFromUrl("Audio codec", remote_url);
   PString prefVideoCap = GetEndpointParamFromUrl("Video codec", remote_url);
 
-  unsigned bandwidth = GetEndpointParamFromUrl("Preferred bandwidth to MCU", remote_url, 0);
+  unsigned bandwidth = GetEndpointParamFromUrl("Bandwidth to MCU", remote_url, 0);
 
   PString rtp_proto = GetEndpointParamFromUrl("RTP proto", remote_url, "RTP");
   sCon->rtp_proto = rtp_proto;
@@ -1596,7 +1596,7 @@ int MCUSipConnection::CreateSipData()
       roomname = sip->sip_to->a_url->url_user;
     }
     PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_from);
-    bandwidth_to = GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
+    bandwidth_to = GetEndpointParamFromUrl("Bandwidth to MCU", url, 0);
   } else { // outgoing
     ProxyAccount *proxy = sep->FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(proxy)
@@ -1613,7 +1613,7 @@ int MCUSipConnection::CreateSipData()
       roomname = sip->sip_from->a_url->url_user;
     }
     PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_to);
-    bandwidth_to = GetEndpointParamFromUrl("Preferred bandwidth to MCU", url, 0);
+    bandwidth_to = GetEndpointParamFromUrl("Bandwidth to MCU", url, 0);
   }
   cseqNum = sip->sip_cseq->cs_seq+1;
   return 1;
@@ -1641,10 +1641,10 @@ int MCUSipConnection::ProcessInviteEvent()
   remoteApplication = url.GetRemoteApplication();
 
   // endpoint display name override
-  PString override_name = GetEndpointParam("Display name override");
+  PString override_name = GetEndpointParam("Display name");
   if(override_name != "")
   {
-    PTRACE(1, "MCUSipConnection\tSet endpoint display name override: " << override_name);
+    PTRACE(1, "MCUSipConnection\tSet endpoint display name: " << override_name);
     remotePartyName = override_name;
     remoteName = override_name;
   }
