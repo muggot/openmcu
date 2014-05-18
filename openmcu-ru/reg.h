@@ -289,6 +289,9 @@ class RegistrarGk : public H323GatekeeperServer
     PString GetAdmissionDstUsername(H323GatekeeperARQ & info);
     BOOL AdmissionPolicyCheck(H323GatekeeperARQ & info);
 
+    H323GatekeeperRequest::Response OnAdmissionMCU(H323GatekeeperARQ & info);
+    H323GatekeeperRequest::Response OnAdmissionDirect(H323GatekeeperARQ & info);
+
 //    virtual H323GatekeeperRequest::Response OnDiscovery(H323GatekeeperGRQ & request);
     virtual H323GatekeeperRequest::Response OnRegistration(H323GatekeeperRRQ & request);
     virtual H323GatekeeperRequest::Response OnUnregistration(H323GatekeeperURQ & request);

@@ -297,39 +297,90 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
 
   PWaitAndSignal m(mutex);
 
-  // security
   if(AdmissionPolicyCheck(info) == FALSE)
     return H323GatekeeperRequest::Reject;
 
-  PString              srcUsername;
-  H323TransportAddress srcHost;
-  PString              dstUsername;
-  H323TransportAddress dstHost;
+  PString srcUsername = GetAdmissionSrcUsername(info);
+  PString dstUsername = GetAdmissionDstUsername(info);
 
-  srcUsername = GetAdmissionSrcUsername(info);
-  if(!info.IsBehindNAT() && info.arq.HasOptionalField(H225_AdmissionRequest::e_srcCallSignalAddress))
-    srcHost = info.arq.m_srcCallSignalAddress;
-  else
-    srcHost = info.GetReplyAddress();
-
-  dstUsername = GetAdmissionDstUsername(info);
-  if(info.arq.HasOptionalField(H225_AdmissionRequest::e_destCallSignalAddress))
-    dstHost = info.arq.m_destCallSignalAddress;
-
-  if(srcUsername == dstUsername)
+  if(srcUsername == "" || srcUsername == dstUsername)
   {
     info.SetRejectReason(H225_AdmissionRejectReason::e_undefinedReason);
     return H323GatekeeperRequest::Reject;
   }
 
-  if(srcUsername != "" && dstUsername != "")
+  if(dstUsername != "")
   {
     BOOL h323_to_h323 = FALSE;
     if(registrar->FindAccount(ACCOUNT_TYPE_H323, srcUsername) && registrar->FindAccount(ACCOUNT_TYPE_H323, dstUsername))
       h323_to_h323 = TRUE;
     if(h323_to_h323 && h323_to_h323_media == "direct")
-      return H323GatekeeperServer::OnAdmission(info);
+      return OnAdmissionDirect(info);
   }
+
+  return OnAdmissionMCU(info);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+H323GatekeeperRequest::Response RegistrarGk::OnAdmissionDirect(H323GatekeeperARQ & info)
+{
+  H323GatekeeperRequest::Response ret = H323GatekeeperServer::OnAdmission(info);
+  if(ret == H323GatekeeperRequest::Confirm)
+    return ret;
+
+  PString dstUsername = GetAdmissionDstUsername(info);
+
+  RegistrarAccount *regAccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstUsername);
+  if(!regAccount_out)
+    return H323GatekeeperRequest::Reject;
+
+  PString host = regAccount_out->host;
+  unsigned port = regAccount_out->port;
+
+  regAccount_out->Unlock();
+
+  if(host == "" || port == 0)
+    return H323GatekeeperRequest::Reject;
+
+  // append destination aliases
+  if(info.arq.HasOptionalField(H225_AdmissionRequest::e_destinationInfo))
+  {
+    PStringArray dstAliases(dstUsername);
+    H323SetAliasAddresses(dstAliases, info.acf.m_destinationInfo);
+    if(info.acf.m_destinationInfo.GetSize())
+      info.acf.IncludeOptionalField(H225_AdmissionConfirm::e_destinationInfo);
+  }
+
+  // append destination address
+  H323TransportAddressArray taa;
+  H323TransportAddress dstHost(host, port);
+  taa.AppendString(dstHost);
+  taa[0].SetPDU(info.acf.m_destCallSignalAddress);
+
+  // use bandwidth of request
+  unsigned requestedBandwidth = info.arq.m_bandWidth;
+  info.acf.m_bandWidth = requestedBandwidth;
+
+  return H323GatekeeperRequest::Confirm;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+H323GatekeeperRequest::Response RegistrarGk::OnAdmissionMCU(H323GatekeeperARQ & info)
+{
+  PString              srcUsername = GetAdmissionSrcUsername(info);
+  H323TransportAddress srcHost;
+  PString              dstUsername = GetAdmissionDstUsername(info);
+  H323TransportAddress dstHost;
+
+  if(!info.IsBehindNAT() && info.arq.HasOptionalField(H225_AdmissionRequest::e_srcCallSignalAddress))
+    srcHost = info.arq.m_srcCallSignalAddress;
+  else
+    srcHost = info.GetReplyAddress();
+
+  if(info.arq.HasOptionalField(H225_AdmissionRequest::e_destCallSignalAddress))
+    dstHost = info.arq.m_destCallSignalAddress;
 
   // append destination aliases
   if(info.arq.HasOptionalField(H225_AdmissionRequest::e_destinationInfo))
