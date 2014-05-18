@@ -303,13 +303,13 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
   PString srcUsername = GetAdmissionSrcUsername(info);
   PString dstUsername = GetAdmissionDstUsername(info);
 
-  if(srcUsername == "" || srcUsername == dstUsername)
+  if(srcUsername == dstUsername)
   {
     info.SetRejectReason(H225_AdmissionRejectReason::e_undefinedReason);
     return H323GatekeeperRequest::Reject;
   }
 
-  if(dstUsername != "")
+  if(srcUsername != "" && dstUsername != "")
   {
     BOOL h323_to_h323 = FALSE;
     if(registrar->FindAccount(ACCOUNT_TYPE_H323, srcUsername) && registrar->FindAccount(ACCOUNT_TYPE_H323, dstUsername))
