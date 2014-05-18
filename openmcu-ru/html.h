@@ -27,9 +27,9 @@ class TablePConfigPage : public PConfigPage
      rowFieldStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;width:300px;'>";
      itemStyle = "<td align='left' valign='top' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
      itemInfoStyle = "<td rowspan='%ROWSPAN%' align='left' valign='top' style='background-color:"+itemInfoColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
-     textStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
-     inputStyle = "margin-top:5px;margin-bottom:5px;padding-left:5px;padding-right:5px;";
-     buttonStyle = "margin-top:5px;margin-bottom:5px;margin-left:1px;margin-right:1px;width:24px;";
+     textStyle = "margin-top:2px;margin-bottom:2px;padding-left:5px;padding-right:5px;";
+     inputStyle = "margin-top:2px;margin-bottom:2px;padding-left:5px;padding-right:5px;border-radius:0px;";
+     buttonStyle = "margin-top:2px;margin-bottom:2px;margin-left:1px;margin-right:1px;width:24px;border-radius:0px;";
      rowBorders = FALSE;
      rowBordersStyle = "3px ridge;";
      rowArray = "<tr valign='middle'><td align='left' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;'>";
@@ -195,7 +195,7 @@ class TablePConfigPage : public PConfigPage
      PString id = PString(rand());
      PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
      s += itemStyle+"<input name='"+name+"' value='FALSE' type='hidden' style='"+inputStyle+"'>"
-                    "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"margin-top:12px;margin-bottom:12px;margin-left:3px;'";
+                    "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"margin-top:9px;margin-bottom:9px;margin-left:3px;'";
      if(value) s +=" checked='yes'";
      if(!readonly) s += "></input></td>"; else s += " readonly></input></td>";
      return s;

@@ -829,7 +829,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
@@ -855,7 +854,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
         s2 += rowArray+JsLocale("window.l_name_host")+StringItemIp(name, scfg.GetString("Host"), 10)+"</tr>";
       // port
       s2 += rowArray+"H.323 "+JsLocale("window.l_name_port")+StringItemInteger(name, scfg.GetString("Port"), 10)+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
@@ -1021,7 +1019,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
@@ -1088,7 +1085,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += NewItemArray(name, 25);
       s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, aCodec, aCaps)+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, vCodec, vCaps)+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";

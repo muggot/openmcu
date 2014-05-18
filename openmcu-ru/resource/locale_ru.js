@@ -174,8 +174,8 @@ window.l_name_time_limit               = 'Ограничение по време
 
 window.l_name_display_name_override                = 'Отображаемое имя';
 window.l_name_preferred_frame_rate_from_mcu        = 'Частота кадров от MCU';
-window.l_name_preferred_bandwidth_from_mcu         = 'Пропускная способность от MCU';
-window.l_name_preferred_bandwidth_to_mcu           = 'Пропускная способность к MCU';
+window.l_name_preferred_bandwidth_from_mcu         = 'Битрейт от MCU, Kbit/s';
+window.l_name_preferred_bandwidth_to_mcu           = 'Битрейт к MCU, Kbit/s';
 window.l_name_transport                            = 'Транспорт';
 window.l_name_port                                 = 'порт';
 
