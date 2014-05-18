@@ -257,8 +257,8 @@ class TablePConfigPage : public PConfigPage
             "<table id='table1' cellspacing='8'><tbody>"
             "<script type='text/javascript'>"
             "  var wh = window.innerHeight || window.clientHeight || 600;"
-            "  var ih = 0; if(document.getElementById('quote_info')) ih = document.getElementById('quote_info').offsetHeight;"
-            "  document.getElementById('table_config_page').style.height = String(wh-ih-255)+'px';"
+            "  var ih = 0; if(document.getElementById('quote_info')) ih = 15+document.getElementById('quote_info').offsetHeight;"
+            "  document.getElementById('table_config_page').style.height = String(wh-ih-225)+'px';"
             "</script>";
    }
    PString EndTable()
@@ -485,7 +485,7 @@ class TablePConfigPage : public PConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void BeginPage (PStringStream &html, const char *ptitle, const char *title, const char *quotekey);
+void BeginPage (PStringStream &html, PString ptitle, PString title, PString quotekey);
 void EndPage (PStringStream &html, PString copyr);
 
 PString ErrorPage( //maybe ptlib could provide pages like this? for future: dig http server part

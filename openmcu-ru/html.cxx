@@ -34,7 +34,7 @@ char * html_template_buffer;
 char * html_quote_buffer;
 PMutex html_mutex;
 
-void BeginPage (PStringStream &html, const char *ptitle, const char *title, const char *quotekey)
+void BeginPage (PStringStream &html, PString ptitle, PString title, PString quotekey)
 { PWaitAndSignal m(html_mutex);
   if(html_template_size <= 0) // count on zero initialization
   { FILE *fs;
@@ -59,7 +59,11 @@ void BeginPage (PStringStream &html, const char *ptitle, const char *title, cons
   html0.Replace("$LANG$",     lang,     TRUE, 0);
   html0.Replace("$PTITLE$",   ptitle,   TRUE, 0);
   html0.Replace("$TITLE$",    title,    TRUE, 0);
-  html0.Replace("$QUOTE$",    quotekey, TRUE, 0);
+  if(quotekey != "")
+    html0.Replace("$QUOTE$", "<div class='quote' id='quote_info'><script type='text/javascript'>document.write("+quotekey+");</script></div>", TRUE, 0);
+  else
+    html0.Replace("$QUOTE$", "", TRUE, 0);
+
   html0.Replace("$INIT$",     jsInit,   TRUE, 0);
   html << html0;
 }
@@ -901,7 +905,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 
   s << EndTable();
   BuildHTML("");
-  BeginPage(html_begin, section, "window.l_param_h323_endpoints", "window.l_info_param_h323_endpoints");
+  BeginPage(html_begin, section, "window.l_param_h323_endpoints", "");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
@@ -1096,7 +1100,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   s << EndTable();
 
   BuildHTML("");
-  BeginPage(html_begin, section, "window.l_param_sip_endpoints", "window.l_info_param_sip_endpoints");
+  BeginPage(html_begin, section, "window.l_param_sip_endpoints", "");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
