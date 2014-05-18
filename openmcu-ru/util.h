@@ -67,12 +67,12 @@ class MCUURL : public PURL
     virtual const PString GetMemberName() const { return display_name+" ["+url_party+"]"; }
     virtual const PString GetMemberNameId() const
     {
-      if(url_scheme == "sip")
-       return username+"@"+hostname;
-      else if(url_scheme == "h323")
-        return display_name+"@"+hostname;
+      PString id = url_scheme+":";
+      if(username != "")
+        id += username;
       else
-        return username+"@"+hostname;
+        id += hostname;
+      return id;
     }
 
   protected:
