@@ -27,9 +27,10 @@ class TablePConfigPage : public PConfigPage
      rowFieldStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;width:300px;'>";
      itemStyle = "<td align='left' valign='top' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
      itemInfoStyle = "<td rowspan='%ROWSPAN%' align='left' valign='top' style='background-color:"+itemInfoColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
-     textStyle = "margin-top:2px;margin-bottom:2px;padding-left:5px;padding-right:5px;";
-     inputStyle = "margin-top:2px;margin-bottom:2px;padding-left:5px;padding-right:5px;border-radius:0px;";
-     buttonStyle = "margin-top:2px;margin-bottom:2px;margin-left:1px;margin-right:1px;width:24px;border-radius:0px;";
+     textStyle = "margin:2px 0px 2px 0px;padding:0px 3px 0px 3px;";
+     inputStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:20px;";
+     selectStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:26px;";
+     buttonStyle = "margin:2px 1px 2px 1px;width:24px;border-radius:0px;";
      rowBorders = FALSE;
      rowBordersStyle = "3px ridge;";
      rowArray = "<tr valign='middle'><td align='left' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;'>";
@@ -205,7 +206,7 @@ class TablePConfigPage : public PConfigPage
      PString id = PString(rand());
      PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
      PStringArray data = values.Tokenise(",");
-     s += itemStyle+"<select name='"+name+"' width='"+PString(width)+"' style='width:"+PString(width)+"px;"+inputStyle+"'>";
+     s += itemStyle+"<select name='"+name+"' width='"+PString(width)+"' style='width:"+PString(width)+"px;"+selectStyle+"'>";
      for(PINDEX i = 0; i < data.GetSize(); i++)
      {
        if(data[i] == value)
@@ -468,7 +469,7 @@ class TablePConfigPage : public PConfigPage
    MCUConfig cfg;
    BOOL deleteSection;
    PString separator;
-   PString colStyle, rowStyle, rowFieldStyle, itemStyle, itemInfoStyle, itemInfoStyleRowSpan, textStyle, inputStyle, buttonStyle;
+   PString colStyle, rowStyle, rowFieldStyle, itemStyle, itemInfoStyle, itemInfoStyleRowSpan, textStyle, inputStyle, buttonStyle, selectStyle;
    PString rowArray;
    PStringArray dataArray;
    PString columnColor, rowColor, itemColor, itemInfoColor;

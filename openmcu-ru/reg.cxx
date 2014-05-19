@@ -536,11 +536,12 @@ void Registrar::MainLoop()
       return;
     }
     mutex.Wait();
-    // Subscribtion
+    //
     SubscriptionProcess();
+    //
     RefreshAccountList();
     PTime now;
-    // RegistrarAccount
+    //
     for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
     {
       RegistrarAccount *regAccount = it->second;
@@ -553,7 +554,7 @@ void Registrar::MainLoop()
       }
       regAccount->Unlock();
     }
-    // RegistrarConnection
+    //
     for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )
     {
       RegistrarConnection *regConn = it->second;
@@ -659,12 +660,10 @@ void Registrar::InitConfig()
   h323_allow_unreg_mcu_calls = cfg.GetBoolean("H.323 allow unregistered MCU calls", TRUE);
   h323_allow_unreg_internal_calls = cfg.GetBoolean("H.323 allow unregistered internal calls", TRUE);
   h323_time_to_live = cfg.GetInteger("H.323 gatekeeper default TTL(Time To Live)", 3600);
-  PString h323_to_h323_media = cfg.GetString("H.323 to H323 media", "transcoding");
   if(gk)
   {
     gk->SetRequireH235(h323_require_h235);
     gk->SetTimeToLive(h323_time_to_live);
-    gk->SetH323ToH323Media(h323_to_h323_media);
   }
 }
 
@@ -704,38 +703,48 @@ void Registrar::InitTerminals()
   PStringList sect = cfg.GetSections();
   for(PINDEX i = 0; i < sect.GetSize(); i++)
   {
-    RegAccountTypes account_type;
+    RegAccountTypes account_type = ACCOUNT_TYPE_UNKNOWN;
+    PString username;
+    MCUConfig scfg(sect[i]);
+    MCUConfig gcfg;
     if(sect[i].Left(sipSectionPrefix.GetLength()) == sipSectionPrefix)
+    {
       account_type = ACCOUNT_TYPE_SIP;
+      username = sect[i].Right(sect[i].GetLength()-sipSectionPrefix.GetLength());
+      gcfg = MCUConfig(sipSectionPrefix+"*");
+    }
     else if(sect[i].Left(h323SectionPrefix.GetLength()) == h323SectionPrefix)
+    {
       account_type = ACCOUNT_TYPE_H323;
-    else
+      username = sect[i].Right(sect[i].GetLength()-h323SectionPrefix.GetLength());
+      gcfg = MCUConfig(h323SectionPrefix+"*");
+    }
+
+    if(username == "*" || username == "")
       continue;
 
-    PString username;
-    if(account_type == ACCOUNT_TYPE_SIP)
-      username = sect[i].Right(sect[i].GetLength()-sipSectionPrefix.GetLength());
-    else if(account_type == ACCOUNT_TYPE_H323)
-      username = sect[i].Right(sect[i].GetLength()-h323SectionPrefix.GetLength());
-    if(username == "*" || username == "") continue;
-
-    PConfig scfg(sect[i]);
-    PString host = scfg.GetString("Host");
     unsigned port = scfg.GetInteger("Port");
+    if(port == 0) port = gcfg.GetInteger("Port");
+
+    PString sip_call_processing = scfg.GetString("SIP call processing");
+    if(sip_call_processing == "") sip_call_processing = gcfg.GetString("SIP call processing", "redirect");
+
+    PString h323_call_processing = scfg.GetString("H.323 call processing");
+    if(h323_call_processing == "") h323_call_processing = gcfg.GetString("H.323 call processing", "direct");
 
     RegistrarAccount *regAccount = FindAccountWithLock(account_type, username);
     if(!regAccount)
       regAccount = InsertAccountWithLock(account_type, username);
     regAccount->enable = scfg.GetBoolean("Registrar", FALSE);
     regAccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
-    regAccount->host = host;
+    regAccount->host = scfg.GetString("Host");
     if(port != 0)
       regAccount->port = port;
     regAccount->domain = registrar_domain;
     regAccount->password = scfg.GetString("Password");
     regAccount->display_name = scfg.GetString("Display name");
-    regAccount->sip_to_sip_processing = scfg.GetString("");
-    regAccount->h323_to_h323_processing = scfg.GetString("");
+    regAccount->sip_call_processing = sip_call_processing;
+    regAccount->h323_call_processing = h323_call_processing;
     if(account_type == ACCOUNT_TYPE_H323)
       h323Passwords.Insert(PString(username), new PString(regAccount->password));
     regAccount->Unlock();

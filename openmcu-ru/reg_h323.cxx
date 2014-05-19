@@ -167,6 +167,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   regAccount->registered = TRUE;
   regAccount->start_time = PTime();
   regAccount->expires = expires;
+
   regAccount->Unlock();
 
   return response;
@@ -177,7 +178,9 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
 H323GatekeeperRequest::Response RegistrarGk::OnUnregistration(H323GatekeeperURQ & info)
 {
   H323GatekeeperRequest::Response response = H323GatekeeperServer::OnUnregistration(info);
-  mutex.Wait();
+
+  PWaitAndSignal wait(mutex);
+
   if(info.urq.HasOptionalField(H225_UnregistrationRequest::e_endpointAlias))
   {
     for(PINDEX i = 0; i < info.urq.m_endpointAlias.GetSize(); i++)
@@ -191,7 +194,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnUnregistration(H323GatekeeperURQ 
       }
     }
   }
-  mutex.Signal();
+
   return response;
 }
 
@@ -311,11 +314,25 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
 
   if(srcUsername != "" && dstUsername != "")
   {
-    BOOL h323_to_h323 = FALSE;
-    if(registrar->FindAccount(ACCOUNT_TYPE_H323, srcUsername) && registrar->FindAccount(ACCOUNT_TYPE_H323, dstUsername))
-      h323_to_h323 = TRUE;
-    if(h323_to_h323 && h323_to_h323_media == "direct")
-      return OnAdmissionDirect(info);
+    BOOL direct = FALSE;
+    PString host;
+    unsigned port = 0;
+    RegistrarAccount *regAccount_in = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
+    RegistrarAccount *regAccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstUsername);
+    if(regAccount_in && regAccount_out && regAccount_out->account_type == ACCOUNT_TYPE_H323 &&
+       regAccount_out->host != "" && regAccount_out->port != 0 &&
+       regAccount_in->h323_call_processing != "full" && regAccount_out->h323_call_processing != "full"
+      )
+    {
+      host = regAccount_out->host;
+      port = regAccount_out->port;
+      direct = TRUE;
+    }
+    if(regAccount_in) regAccount_in->Unlock();
+    if(regAccount_out) regAccount_out->Unlock();
+
+    if(direct)
+      return OnAdmissionDirect(info, dstUsername, host, port);
   }
 
   return OnAdmissionMCU(info);
@@ -323,30 +340,17 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-H323GatekeeperRequest::Response RegistrarGk::OnAdmissionDirect(H323GatekeeperARQ & info)
+H323GatekeeperRequest::Response RegistrarGk::OnAdmissionDirect(H323GatekeeperARQ & info, PString username, PString host, unsigned port)
 {
+  // for registered endpoint use default
   H323GatekeeperRequest::Response ret = H323GatekeeperServer::OnAdmission(info);
   if(ret == H323GatekeeperRequest::Confirm)
     return ret;
 
-  PString dstUsername = GetAdmissionDstUsername(info);
-
-  RegistrarAccount *regAccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstUsername);
-  if(!regAccount_out)
-    return H323GatekeeperRequest::Reject;
-
-  PString host = regAccount_out->host;
-  unsigned port = regAccount_out->port;
-
-  regAccount_out->Unlock();
-
-  if(host == "" || port == 0)
-    return H323GatekeeperRequest::Reject;
-
   // append destination aliases
   if(info.arq.HasOptionalField(H225_AdmissionRequest::e_destinationInfo))
   {
-    PStringArray dstAliases(dstUsername);
+    PStringArray dstAliases(username);
     H323SetAliasAddresses(dstAliases, info.acf.m_destinationInfo);
     if(info.acf.m_destinationInfo.GetSize())
       info.acf.IncludeOptionalField(H225_AdmissionConfirm::e_destinationInfo);
@@ -430,10 +434,9 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmissionMCU(H323GatekeeperARQ & 
   }
 
   // set call identifier for security check incoming call
-  RegistrarAccount *regAccount = NULL;
   if(srcUsername != "")
   {
-    regAccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
+    RegistrarAccount *regAccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
     if(regAccount)
     {
       regAccount->h323CallIdentifier = info.arq.m_callIdentifier.m_guid;

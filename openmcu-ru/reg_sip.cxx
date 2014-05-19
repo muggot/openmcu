@@ -248,7 +248,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     }
     else
     {
-      if(regAccount_out->account_type == ACCOUNT_TYPE_SIP && (regAccount_in->sip_to_sip_processing == "forwarding" || regAccount_out->sip_to_sip_processing == "forwarding"))
+      if(regAccount_out->account_type == ACCOUNT_TYPE_SIP && regAccount_in->sip_call_processing != "full" && regAccount_out->sip_call_processing != "full")
       {
         SipReqReply(msg, 100);
         SipReqReply(msg, 180);
@@ -550,20 +550,14 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
 
 int Registrar::SipReqReply(const msg_t *msg, unsigned method, PString auth_str, PString contact)
 {
-  const char *method_name = NULL;
-  method_name = sip_status_phrase(method);
-  if(method_name == NULL)
-    return 0;
-  return SipReqReply(msg, method, method_name, auth_str, contact);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int Registrar::SipReqReply(const msg_t *msg, unsigned method, const char *method_name, PString auth_str, PString contact)
-{
   //PTRACE(1, "Registrar\tSipReqReply");
   sip_t *sip = sip_object(msg);
-  if(sip == NULL || sip->sip_request == NULL) return 0;
+  if(!sip || !sip->sip_request)
+    return 0;
+
+  const char *method_name = sip_status_phrase(method);
+  if(method_name == NULL)
+    return 0;
 
   sip_authorization_t *sip_www_auth=NULL, *sip_proxy_auth=NULL;
   if(auth_str != "")
@@ -586,7 +580,7 @@ int Registrar::SipReqReply(const msg_t *msg, unsigned method, const char *method
   {
     event = "registration";
     allow_events = "presence";
-    if(sip_contact == NULL) sip_contact = sip->sip_contact;
+    if(!sip_contact) sip_contact = sip->sip_contact;
   }
   PString allow = "SUBSCRIBE, INVITE, ACK, BYE, CANCEL, OPTIONS, INFO";
 
