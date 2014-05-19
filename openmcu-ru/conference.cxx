@@ -633,9 +633,9 @@ ConferenceMember * Conference::FindMemberNameId(PString memberName)
   return NULL;
 }
 
-void Conference::InsertMemberName(ConferenceMember *member)
+void Conference::InsertMemberName(PString memberName, ConferenceMember *member)
 {
-  PString memberNameId = MCUURL(member->GetName()).GetMemberNameId();
+  PString memberNameId = MCUURL(memberName).GetMemberNameId();
   PWaitAndSignal m(memberListMutex);
   for(MemberNameList::iterator it = memberNameList.begin(); it != memberNameList.end(); ++it)
   {
@@ -645,7 +645,7 @@ void Conference::InsertMemberName(ConferenceMember *member)
       break;
     }
   }
-  memberNameList.insert(MemberNameList::value_type(member->GetName(), member));
+  memberNameList.insert(MemberNameList::value_type(memberName, member));
 }
 
 BOOL Conference::AddMember(ConferenceMember * memberToAdd)
@@ -781,7 +781,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   {
     PString memberNameId = MCUURL(memberToAdd->GetName()).GetMemberNameId();
 
-    InsertMemberName(memberToAdd);
+    InsertMemberName(memberToAdd->GetName(), memberToAdd);
 
     PullMemberOptionsFromTemplate(memberToAdd, confTpl);
 

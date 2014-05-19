@@ -1144,7 +1144,7 @@ class Conference : public PObject
 
     ConferenceMember *FindMemberNameId(PString memberName);
 
-    void InsertMemberName(ConferenceMember *member);
+    void InsertMemberName(PString memberName, ConferenceMember *member);
 
     int GetMemberCount() const
     { PWaitAndSignal m(memberListMutex); return (int)memberList.size(); }
