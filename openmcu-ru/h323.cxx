@@ -2006,7 +2006,8 @@ PString MCUH323EndPoint::Invite(PString room, PString toAddress)
 {
   MCUURL url(toAddress);
   PString address = url.GetUrl();
-  if(url.GetUserName() == "" && url.GetHostName() == "") return FALSE;
+  if(url.GetUserName() == "" && url.GetHostName() == "")
+    return "";
 
   if(!OpenMCU::Current().AreLoopbackCallsAllowed())
   {
@@ -2016,7 +2017,7 @@ PString MCUH323EndPoint::Invite(PString room, PString toAddress)
       if(sep->FindListener(address))
       {
         PTRACE(1,"Conference\tInviteMember Loopback call rejected, address=" << address);
-        return FALSE;
+        return "";
       }
     }
     else if(url.GetScheme() == "h323")
@@ -2029,7 +2030,7 @@ PString MCUH323EndPoint::Invite(PString room, PString toAddress)
         if(taa[i].Find("ip$"+hostport) == 0)
         {
           PTRACE(1,"Conference\tInviteMember Loopback call rejected (" << taa[i] << "), address=" << address);
-          return FALSE;
+          return "";
         }
       }
     }

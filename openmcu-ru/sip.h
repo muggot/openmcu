@@ -227,7 +227,7 @@ class MCUSipConnection : public MCUH323Connection
       }
     ~MCUSipConnection()
     {
-      MCUTRACE(1, "MCUSipConnection Destructor called,  remotePartyAddress: "+remotePartyAddress);
+      MCUTRACE(1, "MCUSipConnection destructor, callToken: "+callToken+" remotePartyAddress: "+remotePartyAddress);
       if(c_sip_msg) msg_destroy(c_sip_msg);
       DeleteTempSockets();
     }

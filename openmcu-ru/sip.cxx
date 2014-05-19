@@ -1930,7 +1930,9 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
     if(agent == NULL) return NULL;
 
     MCUURL url_to(to);
-    if(url_to.GetHostName() == "") return NULL;
+    if(url_to.GetHostName() == "")
+      return NULL;
+
     PString remote_user = url_to.GetUserName();
     PString remote_domain = url_to.GetHostName();
     PString remote_host = remote_domain;
@@ -2025,9 +2027,6 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
     }
 
     sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sCon->invite_sdp_txt);
-    sip_authorization_t *sip_proxy_auth = NULL;
-    if(proxy && proxy->sip_proxy_str != "")
-      sip_proxy_auth = sip_proxy_authorization_make(&home, proxy->sip_proxy_str);
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *orq = nta_outgoing_mcreate(agent, nta_response_cb1_wrap, (nta_outgoing_magic_t *)this,
@@ -2039,7 +2038,6 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip_call_id),
 			SIPTAG_CONTACT(sip_contact),
-			SIPTAG_PROXY_AUTHORIZATION(sip_proxy_auth),
 			SIPTAG_PAYLOAD(sip_payload),
 			SIPTAG_CONTENT_TYPE_STR("application/sdp"),
 			SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
@@ -2078,7 +2076,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, proxy->cseq++, SIP_METHOD_REGISTER);
 
     sip_call_id_t* sip_call_id = NULL;
-    if(proxy->call_id == "")
+    if(proxy->call_id == "" || !enable) // If the same Call-ID is used between register and unregister, asterisk keeps returning 401 with a new challenge
       sip_call_id = sip_call_id_create(&home, "0");
     else
       sip_call_id = sip_call_id_make(&home, proxy->call_id);
@@ -2086,10 +2084,6 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
     PString expires = "0";
     if(enable)
       expires = proxy->expires;
-
-    sip_authorization_t *sip_auth=NULL;
-    if(proxy->sip_www_str != "")
-      sip_auth = sip_authorization_make(&home, proxy->sip_www_str);
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, nta_response_cb1_wrap, (nta_outgoing_magic_t *)this,
@@ -2101,7 +2095,6 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip_call_id),
 			SIPTAG_CONTACT(sip_contact),
-			SIPTAG_AUTHORIZATION(sip_auth),
 			SIPTAG_EXPIRES_STR((const char*)expires),
 			SIPTAG_ALLOW_STR("INVITE, ACK, BYE, CANCEL, OPTIONS, SUBSCRIBE, INFO"),
 			SIPTAG_SERVER_STR((const char*)(MCUSIP_USER_AGENT_STR)),
