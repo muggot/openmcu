@@ -66,7 +66,7 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedMsg(PString memberName, 
     regConn->state = CONN_MCU_WAIT;
     response = H323Connection::AnswerCallNow;
   } else {
-    regConn->roomname = internal_room_prefix + OpalGloballyUniqueID().AsString();
+    regConn->roomname = MCU_INTERNAL_CALL_PREFIX + OpalGloballyUniqueID().AsString();
     requestedRoom = regConn->roomname;
     regConn->state = CONN_WAIT;
     response = H323Connection::AnswerCallPending;

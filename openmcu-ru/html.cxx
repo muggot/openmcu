@@ -2145,6 +2145,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     {
       PString room0 = r->second->GetNumber().Trim();
       if(room0.IsEmpty()) continue;
+      if(room0.Left(MCU_INTERNAL_CALL_PREFIX.GetLength()) == MCU_INTERNAL_CALL_PREFIX) continue; // todo: use much more fast boolean check to determine int. call
       PINDEX lastCharPos=room0.GetLength()-1;
       PINDEX i, d1=-1, d2=-1;
       for (i=lastCharPos; i>=0; i--)

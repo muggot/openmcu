@@ -139,8 +139,7 @@ PString GetConferenceParam(PString room, PString param, PString defaultValue)
   }
 #endif
   // internal rooms
-  PString internalRoomPrefix = OpenMCU::Current().GetRegistrar()->GetInternalRoomPrefix();
-  if(internalRoomPrefix != "" && room.Left(internalRoomPrefix.GetLength()) == internalRoomPrefix)
+  if(room.Left(MCU_INTERNAL_CALL_PREFIX.GetLength()) == MCU_INTERNAL_CALL_PREFIX)
   {
     if(param == ForceSplitVideoKey)
       return "Disable";

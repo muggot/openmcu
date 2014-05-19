@@ -643,8 +643,6 @@ void Registrar::MainLoop()
 
 void Registrar::InitConfig()
 {
-  internal_room_prefix = "INTERNAL_CALL_";
-
   MCUConfig cfg("Registrar Parameters");
   registrar_domain = cfg.GetString("Registrar domain", "openmcu-ru");
 

@@ -317,7 +317,6 @@ class Registrar : public PThread
     int restart;
 
     const PString & GetRegistrarDomain() const { return registrar_domain; };
-    const PString & GetInternalRoomPrefix() const { return internal_room_prefix; };
 
     void RefreshAccountList();
     PStringArray GetAccountList();
@@ -356,7 +355,6 @@ class Registrar : public PThread
     RegistrarGk *gk;
 
     PString registrar_domain;
-    PString internal_room_prefix;
 
     BOOL allow_internal_calls;
     BOOL sip_require_password;

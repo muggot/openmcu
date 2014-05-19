@@ -266,7 +266,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
         regConn = InsertRegConnWithLock(callToken, username_in, username_out);
         msg_destroy(regConn->msg_invite);
         regConn->msg_invite = msg_dup(msg);
-        regConn->roomname = internal_room_prefix + OpalGloballyUniqueID().AsString();
+        regConn->roomname = MCU_INTERNAL_CALL_PREFIX + OpalGloballyUniqueID().AsString();
         regConn->state = CONN_WAIT;
         response_code = 100; // SIP_100_TRYING
         goto return_response;
