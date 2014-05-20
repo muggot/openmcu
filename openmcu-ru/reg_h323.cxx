@@ -315,6 +315,12 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
   PString srcUsername = GetAdmissionSrcUsername(info);
   PString dstUsername = GetAdmissionDstUsername(info);
 
+  if(dstUsername == "" && info.arq.HasOptionalField(H225_AdmissionRequest::e_destCallSignalAddress))
+  {
+    H323TransportAddress dstHost(info.arq.m_destCallSignalAddress);
+    return OnAdmissionDirect(info, dstUsername, dstHost);
+  }
+
   if(srcUsername == dstUsername)
   {
     info.SetRejectReason(H225_AdmissionRejectReason::e_undefinedReason);
@@ -324,8 +330,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
   if(srcUsername != "" && dstUsername != "")
   {
     BOOL direct = FALSE;
-    PString host;
-    unsigned port = 0;
+    H323TransportAddress dstHost;
     RegistrarAccount *regAccount_in = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
     RegistrarAccount *regAccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstUsername);
     if(regAccount_in && regAccount_out && regAccount_out->account_type == ACCOUNT_TYPE_H323 &&
@@ -333,15 +338,14 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
        regAccount_in->h323_call_processing != "full" && regAccount_out->h323_call_processing != "full"
       )
     {
-      host = regAccount_out->host;
-      port = regAccount_out->port;
+      dstHost = H323TransportAddress(regAccount_out->host, regAccount_out->port);
       direct = TRUE;
     }
     if(regAccount_in) regAccount_in->Unlock();
     if(regAccount_out) regAccount_out->Unlock();
 
     if(direct)
-      return OnAdmissionDirect(info, dstUsername, host, port);
+      return OnAdmissionDirect(info, dstUsername, dstHost);
   }
 
   return OnAdmissionMCU(info);
@@ -349,7 +353,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-H323GatekeeperRequest::Response RegistrarGk::OnAdmissionDirect(H323GatekeeperARQ & info, PString username, PString host, unsigned port)
+H323GatekeeperRequest::Response RegistrarGk::OnAdmissionDirect(H323GatekeeperARQ & info, PString dstUsername, H323TransportAddress dstHost)
 {
   // for registered endpoint use default
   H323GatekeeperRequest::Response ret = H323GatekeeperServer::OnAdmission(info);
@@ -359,7 +363,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmissionDirect(H323GatekeeperARQ
   // append destination aliases
   if(info.arq.HasOptionalField(H225_AdmissionRequest::e_destinationInfo))
   {
-    PStringArray dstAliases(username);
+    PStringArray dstAliases(dstUsername);
     H323SetAliasAddresses(dstAliases, info.acf.m_destinationInfo);
     if(info.acf.m_destinationInfo.GetSize())
       info.acf.IncludeOptionalField(H225_AdmissionConfirm::e_destinationInfo);
@@ -367,7 +371,6 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmissionDirect(H323GatekeeperARQ
 
   // append destination address
   H323TransportAddressArray taa;
-  H323TransportAddress dstHost(host, port);
   taa.AppendString(dstHost);
   taa[0].SetPDU(info.acf.m_destCallSignalAddress);
 
@@ -382,18 +385,8 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmissionDirect(H323GatekeeperARQ
 
 H323GatekeeperRequest::Response RegistrarGk::OnAdmissionMCU(H323GatekeeperARQ & info)
 {
-  PString              srcUsername = GetAdmissionSrcUsername(info);
-  H323TransportAddress srcHost;
-  PString              dstUsername = GetAdmissionDstUsername(info);
-  H323TransportAddress dstHost;
-
-  if(!info.IsBehindNAT() && info.arq.HasOptionalField(H225_AdmissionRequest::e_srcCallSignalAddress))
-    srcHost = info.arq.m_srcCallSignalAddress;
-  else
-    srcHost = info.GetReplyAddress();
-
-  if(info.arq.HasOptionalField(H225_AdmissionRequest::e_destCallSignalAddress))
-    dstHost = info.arq.m_destCallSignalAddress;
+  PString srcUsername = GetAdmissionSrcUsername(info);
+  PString dstUsername = GetAdmissionDstUsername(info);
 
   // append destination aliases
   if(info.arq.HasOptionalField(H225_AdmissionRequest::e_destinationInfo))
