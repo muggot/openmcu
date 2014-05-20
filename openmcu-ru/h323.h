@@ -373,6 +373,9 @@ class MCUH323Connection : public H323Connection
     //  the OnWelcomeStateChanged callback immediately.
     void ChangeWelcomeState(int newState);
 
+    const PString & GetRequestedRoom() const { return requestedRoom; };
+    void SetRequestedRoom(PString room) { requestedRoom = room; };
+
   protected:
 
     virtual void OnCreated();

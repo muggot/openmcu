@@ -2619,7 +2619,7 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
 
   SetRemoteName(setupPDU);
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
-  return registrar->OnReceivedMsg(memberName, requestedRoom, callToken, callIdentifier);
+  return registrar->OnReceivedH323Invite(this);
 }
 
 BOOL MCUH323Connection::CheckVFU()

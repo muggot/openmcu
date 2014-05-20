@@ -6,18 +6,18 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-H323Connection::AnswerCallResponse Registrar::OnReceivedMsg(PString memberName, PString & requestedRoom, PString callToken, OpalGloballyUniqueID callIdentifier)
+H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connection *conn)
 {
-  PTRACE(1, "Registrar\tOnReceivedCallH323");
-  MCUURL url(memberName);
+  PTRACE(1, "Registrar\tOnReceivedH323Invite");
+  MCUURL url(conn->GetMemberName());
   if(url.GetUserName() == "" || url.GetHostName() == "")
     return H323Connection::AnswerCallDenied;
 
-  if(FindRegConn(callToken))
+  if(FindRegConn(conn->GetCallToken()))
     return H323Connection::AnswerCallDenied;
 
   PString username_in = url.GetUserName();
-  PString username_out = requestedRoom;
+  PString username_out = conn->GetRequestedRoom();
 
   H323Connection::AnswerCallResponse response = H323Connection::AnswerCallDenied; // default response
 
@@ -49,7 +49,7 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedMsg(PString memberName, 
 
   if((!regAccount_out && !h323_allow_unreg_mcu_calls) || (regAccount_out && !h323_allow_unreg_internal_calls))
   {
-    if(regAccount_in->h323CallIdentifier != callIdentifier)
+    if(regAccount_in->h323CallIdentifier != conn->GetCallIdentifier())
     {
       response = H323Connection::AnswerCallDenied;
       goto return_response;
@@ -62,20 +62,21 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedMsg(PString memberName, 
     regAccount_in->host = url.GetHostName();
     if(regAccount_in->display_name == "")
       regAccount_in->display_name = url.GetDisplayName();
+    regAccount_in->remote_application = conn->GetRemoteApplication();
   }
 
-  regConn = InsertRegConnWithLock(callToken, username_in, username_out);
+  regConn = InsertRegConnWithLock(conn->GetCallToken(), username_in, username_out);
 
   // MCU call if !regAccount_out
   if(!regAccount_out)
   {
     regConn->account_type_in = regAccount_in->account_type;
-    regConn->roomname = requestedRoom;
+    regConn->roomname = conn->GetRequestedRoom();
     regConn->state = CONN_MCU_WAIT;
     response = H323Connection::AnswerCallNow;
   } else {
     regConn->roomname = MCU_INTERNAL_CALL_PREFIX + OpalGloballyUniqueID().AsString();
-    requestedRoom = regConn->roomname;
+    conn->SetRequestedRoom(regConn->roomname);
     regConn->state = CONN_WAIT;
     response = H323Connection::AnswerCallPending;
   }

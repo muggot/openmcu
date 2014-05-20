@@ -327,7 +327,7 @@ class Registrar : public PThread
     BOOL MakeCall(PString room, PString to, PString & callToken);
 
     int OnReceivedMsg(msg_t *msg);
-    H323Connection::AnswerCallResponse OnReceivedMsg(PString memberName, PString & requestedRoom, PString callToken, OpalGloballyUniqueID callIdentifier);
+    H323Connection::AnswerCallResponse OnReceivedH323Invite(MCUH323Connection *conn);
 
     nta_agent_t *GetAgent() { return sep->GetAgent(); };
     su_home_t *GetHome() { return sep->GetHome(); };
