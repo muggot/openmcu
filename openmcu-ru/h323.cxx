@@ -2002,10 +2002,9 @@ PString MCUH323EndPoint::GetMonitorText()
   return output;
 }
 
-PString MCUH323EndPoint::Invite(PString room, PString toAddress)
+PString MCUH323EndPoint::Invite(PString room, PString address)
 {
-  MCUURL url(toAddress);
-  PString address = url.GetUrl();
+  MCUURL url(address);
   if(url.GetUserName() == "" && url.GetHostName() == "")
     return "";
 
@@ -2038,7 +2037,7 @@ PString MCUH323EndPoint::Invite(PString room, PString toAddress)
 
   PString callToken;
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
-  registrar->MakeCall(room, toAddress, callToken);
+  registrar->MakeCall(room, address, callToken);
 
   PStringStream msg;
   msg << "Inviting: " << address;

@@ -576,7 +576,7 @@ function on_invite_abook_input(obj)
   {
     if(document.getElementById('divInvProto').innerHTML=='sip')
     {
-      if(addr.indexOf('@')==-1) addr='sip:@'+addr;
+      if(addr.indexOf('@')==-1) addr='sip:'+addr;
       else addr='sip:'+addr;
     }
     else addr='h323:'+addr;
@@ -592,7 +592,7 @@ function dial_from_ml(obj)
   {
     if(document.getElementById('divInvProtoML').innerHTML=='sip')
     {
-      if(addr.indexOf('@')==-1) addr='sip:@'+addr;
+      if(addr.indexOf('@')==-1) addr='sip:'+addr;
       else addr='sip:'+addr;
     }
     else addr='h323:'+addr;

@@ -74,70 +74,60 @@ void Registrar::SetRequestedRoom(const PString & callToken, PString & requestedR
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL Registrar::MakeCall(PString roomname, PString to, PString & callToken)
+BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
 {
-  PString username_out;
-  PString address;
-  RegAccountTypes account_type = ACCOUNT_TYPE_UNKNOWN;
-
-  RegistrarAccount *regAccount_out = NULL;
-  RegistrarConnection *regConn = NULL;
-
-  if(to.Find("@") == P_MAX_INDEX)
-  {
-    username_out = to;
-  } else {
-    MCUURL urlTo(to);
-    if(urlTo.GetUserName() != "")
-      username_out = urlTo.GetUserName();
-    else
-      username_out = urlTo.GetHostName();
-    if(urlTo.GetScheme() == "sip")
-      account_type = ACCOUNT_TYPE_SIP;
-    else if(urlTo.GetScheme() == "h323")
-      account_type = ACCOUNT_TYPE_H323;
-    else
-      return FALSE;
-  }
-
-  regAccount_out = FindAccountWithLock(account_type, username_out);
-  if(regAccount_out)
-  {
-    address = regAccount_out->GetUrl();
-    username_out = regAccount_out->username;
-    regAccount_out->Unlock();
-  } else {
-    username_out = address;
-    address = MCUURL(to).GetUrl();
-  }
+  // the default protocol H.323
+  // correct formats - proto:username, proto:username@, proto:ip, proto:@ip
+  // wrong formats - proto:@username, proto:ip@
 
   MCUURL url(address);
+
+  RegAccountTypes account_type = ACCOUNT_TYPE_UNKNOWN;
   if(url.GetScheme() == "sip")
+    account_type = ACCOUNT_TYPE_SIP;
+  else if(url.GetScheme() == "h323")
+    account_type = ACCOUNT_TYPE_H323;
+  else
+    return FALSE;
+
+  PString username_out;
+  if(url.GetUserName() != "")
+    username_out = url.GetUserName();
+  else if(url.GetHostName() != "")
+    username_out = url.GetHostName();
+  else
+    return FALSE;
+
+  RegistrarAccount *regAccount_out = FindAccountWithLock(account_type, username_out);
+  if(regAccount_out)
+  {
+    // update address from account
+    address = regAccount_out->GetUrl();
+    regAccount_out->Unlock();
+  }
+  // initial username, can be empty
+  username_out = MCUURL(address).GetUserName();
+
+  if(account_type == ACCOUNT_TYPE_SIP)
   {
     PGloballyUniqueID id;
     callToken = id.AsString();
-    PString *cmd = new PString("invite:"+roomname+","+address+","+callToken);
+    PString *cmd = new PString("invite:"+room+","+address+","+callToken);
     sep->SipQueue.Push(cmd);
-    callToken = "sip:"+url.GetUserName()+":"+callToken;
+    callToken = "sip:"+username_out+":"+callToken;
   }
-  else if(url.GetScheme() == "h323")
+  else if(account_type == ACCOUNT_TYPE_H323)
   {
-    if(url.GetHostName() == "")
-      address = url.GetUserName();
-    void *userData = new PString(roomname);
+    void *userData = new PString(room);
     ep->MakeCall(address, callToken, userData);
-  }
-  else
-  {
-    return FALSE;
   }
 
   if(callToken != "")
   {
-    regConn = InsertRegConnWithLock(callToken, roomname, username_out);
+    RegistrarConnection *regConn = InsertRegConnWithLock(callToken, room, username_out);
     regConn->account_type_out = account_type;
     regConn->callToken_out = callToken;
-    regConn->roomname = roomname;
+    regConn->roomname = room;
     regConn->state = CONN_MCU_WAIT;
     regConn->Unlock();
   }
