@@ -29,7 +29,7 @@ class TablePConfigPage : public PConfigPage
      itemInfoStyle = "<td rowspan='%ROWSPAN%' align='left' valign='top' style='background-color:"+itemInfoColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
      textStyle = "margin:2px 0px 2px 0px;padding:0px 3px 0px 3px;";
      inputStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:20px;";
-     selectStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:26px;";
+     selectStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:20px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
      buttonStyle = "margin:2px 1px 2px 1px;width:24px;border-radius:0px;";
      rowBorders = FALSE;
      rowBordersStyle = "3px ridge;";
@@ -42,15 +42,15 @@ class TablePConfigPage : public PConfigPage
      PString s = "<tr><td align='left' colspan='3' style='background-color:white;padding:0px;'><p style='text-align:center;"+textStyle+"'><b>"+name+"</b></p></td>";
      return s;
    }
-   PString StringField(PString name, PString value, int sizeInput=12, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString StringField(PString name, PString value, int width=90, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
-     return NewRowField(name) + StringItem(name, value, sizeInput) + InfoItem(info, rowSpan);
+     return NewRowField(name) + StringItem(name, value, width) + InfoItem(info, rowSpan);
    }
-   PString PasswordField(PString name, PString value, int sizeInput=12, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString PasswordField(PString name, PString value, int width=90, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
-     return NewRowField(name) + PasswordItem(name, value, sizeInput) + InfoItem(info, rowSpan);
+     return NewRowField(name) + PasswordItem(name, value, width) + InfoItem(info, rowSpan);
    }
-   PString IntegerField(PString name, int value, int min=-2147483647, int max=2147483647, int sizeInput=15, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString IntegerField(PString name, int value, int min=-2147483647, int max=2147483647, int width=90, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
      return NewRowField(name) + IntegerItem(name, value, min, max) + InfoItem(info, rowSpan);
    }
@@ -58,21 +58,21 @@ class TablePConfigPage : public PConfigPage
    {
      return NewRowField(name) + BoolItem(name, value) + InfoItem(info, rowSpan);
    }
-   PString SelectField(PString name, PString value, PString values, int width=120, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString SelectField(PString name, PString value, PString values, int width=90, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
      return NewRowField(name) + SelectItem(name, value, values, width) + InfoItem(info, rowSpan);
    }
-   PString ArrayField(PString name, PString values, int size=12, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString ArrayField(PString name, PString values, int width=90, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
    {
      PStringArray data = values.Tokenise(separator);
      PString s = NewRowText(name);
      s += NewItemArray(name);
      if(data.GetSize() == 0)
      {
-       s += StringItemArray(name, "", size);
+       s += StringItemArray(name, "", width);
      } else {
        for(PINDEX i = 0; i < data.GetSize(); i++)
-         s += StringItemArray(name, data[i], size);
+         s += StringItemArray(name, data[i], width);
      }
      s += EndItemArray();
      s += InfoItem(info, rowSpan);
@@ -90,7 +90,7 @@ class TablePConfigPage : public PConfigPage
      return s;
    }
    /////////////////////////////////////////////////////////////////////////////////////////////////
-   PString NewRowColumn(PString name, int width=250)
+   PString NewRowColumn(PString name, int width=210)
    {
      PString s = Row();
      return s+colStyle+"width:"+PString(width)+"px'><p style='"+textStyle+";width:"+PString(width)+"px'>"+name+"</p>";
@@ -111,16 +111,18 @@ class TablePConfigPage : public PConfigPage
      if(buttons() != "") s += rowStyle+buttons()+"</td>";
      return s;
    }
-   PString NewRowInputAccount(PString name, int size=15, int readonly=FALSE)
+   PString NewRowInputAccount(PString name, int width=90, int readonly=FALSE)
    {
-     return NewRowInput(name, size, readonly, "FilterAccount(this)");
+     if(width == 0) width = 90;
+     return NewRowInput(name, width, readonly, "FilterAccount(this)");
    }
-   PString NewRowInput(PString name, int size=15, int readonly=FALSE, PString filter="")
+   PString NewRowInput(PString name, int width=90, int readonly=FALSE, PString filter="")
    {
+     if(width == 0) width = 90;
      PString value = name;
      if(name == "empty") value = "";
      PString s = Row();
-     s += rowStyle+"<input onkeyup='"+filter+"' onchange='"+filter+"' type='text' name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
+     s += rowStyle+"<input onkeyup='"+filter+"' onchange='"+filter+"' type='text' name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
      if(!readonly) s += "></input>"; else s += "readonly></input>";
      if(!readonly) s += buttons();
      s += "</td>";
@@ -129,8 +131,9 @@ class TablePConfigPage : public PConfigPage
    PString EndRow() { return "</tr>"; }
 
    /////////////////////////////////////////////////////////////////////////////////////////////////
-   PString ColumnItem(PString name, int width=120)
+   PString ColumnItem(PString name, int width=90)
    {
+     if(width == 0) width = 90;
      return colStyle+"width:"+PString(width)+"px'><p style='"+textStyle+"'>"+name+"</p>";
    }
    PString ColumnItem(PString name, PString optionName)
@@ -150,44 +153,47 @@ class TablePConfigPage : public PConfigPage
      }
      return s;
    }
-   PString StringItemIp(PString name, PString value, int size=12, int readonly=FALSE)
+   PString StringItemIp(PString name, PString value, int width=90, int readonly=FALSE)
    {
-     return StringItem(name, value, size, readonly, "FilterIp(this)");
+     return StringItem(name, value, width, readonly, "FilterIp(this)");
    }
-   PString StringItemInteger(PString name, PString value, int size=12, int readonly=FALSE)
+   PString StringItemInteger(PString name, PString value, int width=90, int readonly=FALSE)
    {
-     return StringItem(name, value, size, readonly, "FilterInteger(this)");
+     return StringItem(name, value, width, readonly, "FilterInteger(this)");
    }
-   PString StringItemAccount(PString name, PString value, int size=12, int readonly=FALSE)
+   PString StringItemAccount(PString name, PString value, int width=90, int readonly=FALSE)
    {
-     return StringItem(name, value, size, readonly, "FilterAccount(this)");
+     return StringItem(name, value, width, readonly, "FilterAccount(this)");
    }
-   PString StringItem(PString name, PString value, int size=12, int readonly=FALSE, PString filter="")
+   PString StringItem(PString name, PString value, int width=90, int readonly=FALSE, PString filter="")
    {
+     if(width == 0) width = 90;
      PString id = PString(rand());
      PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
-     s += itemStyle+"<input onkeyup='"+filter+"' onchange='"+filter+"' type='text' name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
+     s += itemStyle+"<input onkeyup='"+filter+"' onchange='"+filter+"' type='text' name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
-   PString PasswordItem(PString name, PString value, int size=12, int readonly=FALSE)
+   PString PasswordItem(PString name, PString value, int width=90, int readonly=FALSE)
    {
+     if(width == 0) width = 90;
      if(passwordDecrypt(value) == value)
        value = passwordCrypt(value);
      PString id = PString(rand());
      PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
-     s += itemStyle+"<input type='password' name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'";
+     s += itemStyle+"<input type='password' name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      passwordFields.SetAt(id, value);
      return s;
    }
-   PString IntegerItem(PString name, int value, int min=-2147483647, int max=2147483647, int size=12, int readonly=FALSE)
+   PString IntegerItem(PString name, int value, int min=-2147483647, int max=2147483647, int width=90, int readonly=FALSE)
    {
+     if(width == 0) width = 90;
      PString id = PString(rand());
      PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
      s += itemStyle+"<input name='MIN' value='"+PString(min)+"' type='hidden'>"
                     "<input name='MAX' value='"+PString(max)+"' type='hidden'>"
-                    "<input onkeyup='FilterInteger(this)' onchange='FilterInteger(this)' type=number name='"+name+"' size='"+PString(size)+"' min='"+PString(min)+"' max='"+PString(max)+"' value='"+PString(value)+"' style='"+inputStyle+"'";
+                    "<input onkeyup='FilterInteger(this)' onchange='FilterInteger(this)' type=number name='"+name+"' min='"+PString(min)+"' max='"+PString(max)+"' value='"+PString(value)+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
@@ -201,12 +207,13 @@ class TablePConfigPage : public PConfigPage
      if(!readonly) s += "></input></td>"; else s += " readonly></input></td>";
      return s;
    }
-   PString SelectItem(PString name, PString value, PString values, int width=120)
+   PString SelectItem(PString name, PString value, PString values, int width=90)
    {
+     if(width == 0) width = 90;
      PString id = PString(rand());
      PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
      PStringArray data = values.Tokenise(",");
-     s += itemStyle+"<select name='"+name+"' width='"+PString(width)+"' style='width:"+PString(width)+"px;"+selectStyle+"'>";
+     s += itemStyle+"<select name='"+name+"' style='width:"+PString(width)+"px;"+selectStyle+"'>";
      for(PINDEX i = 0; i < data.GetSize(); i++)
      {
        if(data[i] == value)
@@ -232,17 +239,18 @@ class TablePConfigPage : public PConfigPage
      return s;
    }
 
-   PString NewItemArray(PString name, PString width="0")
+   PString NewItemArray(PString name, int width=0)
    {
-     return "<td height='100%' width='"+width+"%'><table id='"+name+"' cellspacing='0' width='100%' height='100%'><tbody>";
+     return "<td height='100%' width='"+PString(width)+"%'><table id='"+name+"' cellspacing='0' width='100%' height='100%'><tbody>";
    }
    PString EndItemArray()
    {
      return "<tr></tr></tbody></table></td>";
    }
-   PString StringItemArray(PString name, PString value, int size=12)
+   PString StringItemArray(PString name, PString value, int width=90)
    {
-     PString s = rowArray+"<input type=text name='"+name+"' size='"+PString(size)+"' value='"+value+"' style='"+inputStyle+"'></input>";
+     if(width == 0) width = 90;
+     PString s = rowArray+"<input type=text name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'></input>";
      s += "<input type=button value='↑' onClick='rowUp(this,0)' style='"+buttonStyle+"'>";
      s += "<input type=button value='↓' onClick='rowDown(this)' style='"+buttonStyle+"'>";
      s += "<input type=button value='+' onClick='rowClone(this)' style='"+buttonStyle+"'>";
