@@ -56,6 +56,14 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedMsg(PString memberName, 
     }
   }
 
+  // update account data ???
+  if(!regAccount_in->registered)
+  {
+    regAccount_in->host = url.GetHostName();
+    if(regAccount_in->display_name == "")
+      regAccount_in->display_name = url.GetDisplayName();
+  }
+
   regConn = InsertRegConnWithLock(callToken, username_in, username_out);
 
   // MCU call if !regAccount_out

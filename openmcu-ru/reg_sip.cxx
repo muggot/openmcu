@@ -230,6 +230,17 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     goto return_response;
   }
 
+  // update account data ???
+  if(!regAccount_in->registered)
+  {
+    regAccount_in->host = url.GetHostName();
+    regAccount_in->port = atoi(url.GetPort());
+    regAccount_in->transport = url.GetSipProto();
+    if(regAccount_in->display_name == "")
+      regAccount_in->display_name = url.GetDisplayName();
+    regAccount_in->remote_application = url.GetRemoteApplication();
+  }
+
   {
     if(!regAccount_out) // MCU call if !regAccount_out
     {
