@@ -2002,11 +2002,14 @@ PString MCUH323EndPoint::GetMonitorText()
   return output;
 }
 
-PString MCUH323EndPoint::Invite(PString room, PString address)
+PString MCUH323EndPoint::Invite(PString room, PString memberName)
 {
-  MCUURL url(address);
+  MCUURL url(memberName);
   if(url.GetUserName() == "" && url.GetHostName() == "")
     return "";
+
+  // get url from memberName
+  PString address = url.GetUrl();
 
   if(!OpenMCU::Current().AreLoopbackCallsAllowed())
   {

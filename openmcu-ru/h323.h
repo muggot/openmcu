@@ -124,7 +124,7 @@ class MCUH323EndPoint : public H323EndPoint
     ConferenceManager & GetConferenceManager()
     { return conferenceManager; }
 
-    PString Invite(PString room, PString address);
+    PString Invite(PString room, PString memberName);
 
 #if MCU_VIDEO
     unsigned GetVideoTxQuality() const
