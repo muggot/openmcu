@@ -48,22 +48,19 @@ if COMPILER_NO_STATIC
 	install -m 644 @H323PLUS_LIBDIR@/@H323PLUS_SO_FILE@ $(DESTDIR)@MCU_LIB_DIR@
 endif
 if COMPILER_USE_LIBSOFIA
-	install -m 644 @LIBSOFIA_DIR@/libsofia-sip-ua/.libs/libsofia-sip-ua.so.0.6.0 $(DESTDIR)@MCU_LIB_DIR@
-	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so.0.6.0 $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so.0
-	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so.0.6.0 $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so
+	cp -P @LIBSOFIA_DIR@/libsofia-sip-ua/.libs/libsofia-sip-ua.so* $(DESTDIR)@MCU_LIB_DIR@
 endif
 if COMPILER_USE_LIBYUV
-	install -m 644 @LIBYUV_DIR@/libyuv.so $(DESTDIR)@MCU_LIB_DIR@
+	cp -P @LIBYUV_DIR@/libyuv.so* $(DESTDIR)@MCU_LIB_DIR@
 endif
 if COMPILER_USE_LIBOPUS
-	install -m 644 @LIBOPUS_DIR@/.libs/libopus.so.0.5.0 $(DESTDIR)@MCU_LIB_DIR@
-	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libopus.so.0.5.0 $(DESTDIR)@MCU_LIB_DIR@/libopus.so.0
-	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libopus.so.0.5.0 $(DESTDIR)@MCU_LIB_DIR@/libopus.so
+	cp -P @LIBOPUS_DIR@/.libs/libopus.so* $(DESTDIR)@MCU_LIB_DIR@
 endif
 if COMPILER_USE_LIBSPEEX
-	install -m 644 @LIBSPEEX_DIR@/libspeex/.libs/libspeex.so.1.5.0 $(DESTDIR)@MCU_LIB_DIR@
-	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libspeex.so.1.5.0 $(DESTDIR)@MCU_LIB_DIR@/libspeex.so.1
-	ln -sf $(DESTDIR)@MCU_LIB_DIR@/libspeex.so.1.5.0 $(DESTDIR)@MCU_LIB_DIR@/libspeex.so
+	cp -P @LIBSPEEX_DIR@/libspeex/.libs/libspeex.so* $(DESTDIR)@MCU_LIB_DIR@
+endif
+if COMPILER_USE_LIBZRTP
+	cp -P @LIBZRTP_DIR@/.libs/libzrtp.so* $(DESTDIR)@MCU_LIB_DIR@
 endif
 
 ####################################################################################################
@@ -74,26 +71,23 @@ uninstall:
 		do ($(MAKE) uninstall -C $$dir) || exit $$?; \
 	done )
 if COMPILER_NO_STATIC
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/@PTLIB_SO_FILE@ 
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/@PTLIB_SO_FILE@
 	rm -f $(DESTDIR)@MCU_LIB_DIR@/@H323PLUS_SO_FILE@
 endif
 if COMPILER_USE_LIBSOFIA
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so.0.6.0
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so.0
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libsofia-sip-ua.so*
 endif
 if COMPILER_USE_LIBYUV
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/libyuv.so
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libyuv.so*
 endif
 if COMPILER_USE_LIBOPUS
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/libopus.so.0.5.0
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/libopus.so.0
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/libopus.so
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libopus.so*
 endif
 if COMPILER_USE_LIBSPEEX
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/libspeex.so.1.5.0
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/libspeex.so.1
-	rm -f $(DESTDIR)@MCU_LIB_DIR@/libspeex.so
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libspeex.so*
+endif
+if COMPILER_USE_LIBZRTP
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libzrtp.so*
 endif
 
 ####################################################################################################

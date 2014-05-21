@@ -41,17 +41,17 @@ libzrtp_include_HEADERS = \
 					$(top_srcdir)/third_party/bgaes/sha1.h \
 					$(top_srcdir)/third_party/bgaes/sha2.h
 
-lib_LIBRARIES = libzrtp.a
+lib_LTLIBRARIES = libzrtp.la
 
-libzrtp_a_CPPFLAGS = \
+libzrtp_la_CPPFLAGS = \
 			-I$(top_srcdir)/include \
 			-I$(top_srcdir)/. \
 			-I$(top_srcdir)/third_party/bgaes \
 			-I$(top_srcdir)/third_party/bnlib
 
-libzrtp_a_LIBADD = $(top_srcdir)/third_party/bnlib/libbn.a
+libzrtp_la_LIBADD = $(top_srcdir)/third_party/bnlib/libbn.a
 
-libzrtp_a_SOURCES = $(top_srcdir)/src/zrtp.c \
+libzrtp_la_SOURCES = $(top_srcdir)/src/zrtp.c \
 					$(top_srcdir)/src/zrtp_crc.c \
 					$(top_srcdir)/src/zrtp_crypto_aes.c \
 					$(top_srcdir)/src/zrtp_crypto_atl.c \
@@ -98,9 +98,9 @@ cache_test_CPPFLAGS = 	-I$(top_srcdir)/include \
 
 cache_test_SOURCES = $(top_srcdir)/test/cmockery/cmockery.c \
 					 $(top_srcdir)/test/cache_test.c
-cache_test_LDADD   = libzrtp.a  $(top_srcdir)/third_party/bnlib/libbn.a -lpthread
+cache_test_LDADD = libzrtp.a $(top_srcdir)/third_party/bnlib/libbn.a -lpthread
 
-SUBDIRS =  third_party/bnlib
+SUBDIRS = third_party/bnlib
 
 if HAVE_DOXYGEN
 doc: .stamp-doc
@@ -111,5 +111,4 @@ endif
 
 uninstall:
 	rm -rf $(prefix)/include/libzrtp
-	rm -f $(prefix)/lib/libzrtp.a
 

@@ -46,7 +46,8 @@ dnl ########################################################################
 dnl install PREFIX
 
 if test "x$prefix" = "xNONE"; then
-  INSTALLPREFIX="/usr/local"
+  #INSTALLPREFIX="/usr/local"
+  INSTALLPREFIX="/opt"
 else
   INSTALLPREFIX="${prefix}"
 fi
@@ -422,8 +423,8 @@ AC_SUBST(LIBZRTP_DIR, ${top_srcdir}/libs/libzrtp)
 
 if test "${libzrtp}" = "yes"; then
   AC_CONFIG_SUBDIRS(libs/libzrtp)
-  MCU_SFLAGS="$MCU_SFLAGS -Wl,--start-group ../libs/libzrtp/libzrtp.a ../libs/libzrtp/third_party/bnlib/libbn.a -Wl,--end-group"
   MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libzrtp/include -I../libs/libzrtp/third_party/bnlib -I../libs/libzrtp/third_party/bgaes"
+  MCU_LDLIBS="$MCU_LDLIBS -lzrtp"
   USE_LIBZRTP=1
   COMPILE_LIBZRTP=1
 fi
