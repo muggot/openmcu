@@ -276,7 +276,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << SeparatorField();
   s << IntegerField(HttpPortKey, cfg.GetInteger(HttpPortKey, DefaultHTTPPort), 1, 32767);
   // RTP Port Setup
-  s << IntegerField(RTPPortBaseKey, cfg.GetInteger(RTPPortBaseKey, 0), 0, 65535, 10, "0 = auto, Example: base=5000, max=6000");
+  s << IntegerField(RTPPortBaseKey, cfg.GetInteger(RTPPortBaseKey, 0), 0, 65535, 0, "0 = auto, Example: base=5000, max=6000");
   s << IntegerField(RTPPortMaxKey, cfg.GetInteger(RTPPortMaxKey, 0), 0, 65535);
 
   s << SeparatorField("Log setup");
@@ -333,13 +333,13 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   }
 
   s << StringField(RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 250, dirInfo);
-  s << StringField(RecorderFfmpegPathKey, mcu.vr_ffmpegPath, 250, pathInfo, FALSE, 7);
-  s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 250, "", FALSE, 0);
-  s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920, 0, "", FALSE, 0);
-  s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152, 0, "", FALSE, 0);
-  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 0, "", FALSE, 0);
-  s << IntegerField(RecorderSampleRateKey, mcu.vr_sampleRate, 8000, 192000, 0, "", FALSE,0);
-  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8", 0, "", FALSE, 0);
+  s << StringField(RecorderFfmpegPathKey, mcu.vr_ffmpegPath, 250, pathInfo, 7);
+  s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 250, "", 0);
+  s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920, 0, "", 0);
+  s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152, 0, "", 0);
+  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 0, "", 0);
+  s << IntegerField(RecorderSampleRateKey, mcu.vr_sampleRate, 8000, 192000, 0, "", 0);
+  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8", 0, "", 0);
 
 
   // get WAV file played to a user when they enter a conference
@@ -421,7 +421,7 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
     if(name == "*") s << SelectItem(name, scfg.GetString(LockTemplateKey, "Disable"), "Enable,Disable");
     else            s << SelectItem(name, scfg.GetString(LockTemplateKey, ""), ",Enable,Disable");
     // time limit
-    s << StringItemInteger(name, scfg.GetString(RoomTimeLimitKey, ""));
+    s << IntegerItem(name, scfg.GetString(RoomTimeLimitKey, ""));
   }
 
   s << EndTable();
@@ -629,11 +629,11 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 
   s << SeparatorField("H.263");
   s << IntegerField("H.263 Max Bit Rate", cfg.GetInteger("H.263 Max Bit Rate", 0), 0, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
-  s << IntegerField("H.263 Tx Key Frame Period", cfg.GetInteger("H.263 Tx Key Frame Period", 125), 0, 600, 0, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
+  s << IntegerField("H.263 Tx Key Frame Period", cfg.GetInteger("H.263 Tx Key Frame Period", 12), 0, 600, 0, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
   s << SeparatorField("H.263p");
   s << IntegerField("H.263p Max Bit Rate", cfg.GetInteger("H.263p Max Bit Rate", 0), 0, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
-  s << IntegerField("H.263p Tx Key Frame Period", cfg.GetInteger("H.263p Tx Key Frame Period", 12), 5, 600, 0, "range 5..600, default 12 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
+  s << IntegerField("H.263p Tx Key Frame Period", cfg.GetInteger("H.263p Tx Key Frame Period", 12), 0, 600, 0, "range 0..600, default 12 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
   s << SeparatorField("H.264");
   s << IntegerField("H.264 Max Bit Rate", cfg.GetInteger("H.264 Max Bit Rate", 0), 0, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
@@ -647,63 +647,6 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, "Video settings", "window.l_param_video", "window.l_info_param_video");
-  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
-  html_page << html_begin << s << html_end;
-  string = html_page;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-RecordPConfigPage::RecordPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : TablePConfigPage(app,title,section,auth)
-{
-  OpenMCU & mcu = OpenMCU::Current();
-  cfg = MCUConfig(section);
-
-  PStringStream html_begin, html_end, html_page, s;
-  s << BeginTable();
-
-  // video recorder setup
-  PString pathInfo, dirInfo;
-  pathInfo =
-      "<b>%V</b> - input video stream<br><b>%A</b> - input audio stream<br><br><b>%F</b> - frame size<br>"
-      "<b>%R</b> - video frame rate<br><br><b>%S</b> - audio sample rate<br><b>%C</b> - number of channels for audio<br><br>";
-
-  if(!PFile::Exists(mcu.vr_ffmpegPath)) pathInfo += "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
-  else
-  { PFileInfo info;
-    PFilePath path(mcu.vr_ffmpegPath);
-    PFile::GetInfo(path, info);
-    if(!(info.type & 3)) pathInfo += "<b><font color=red>Warning: ffmpeg neither file, nor symlink!</font></b>";
-    else if(!(info.permissions & 0111)) pathInfo += "<b><font color=red>ffmpeg permissions check failed</font></b>";
-    else
-    {
-      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) if(!PFile::Exists(mcu.vr_ffmpegDir)) { PDirectory::Create(mcu.vr_ffmpegDir,0700); PThread::Sleep(50); }
-      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) dirInfo += "<b><font color=red>Directory does not exist: "+mcu.vr_ffmpegDir+"</font></b>";
-      else
-      { PFileInfo info;
-        PFilePath path(mcu.vr_ffmpegDir);
-        PFile::GetInfo(path, info);
-        if(!(info.type & 6)) dirInfo += "<b><font color=red>Warning: output directory neither directory, nor symlink!</font></b>";
-        else if(!(info.permissions & 0222)) dirInfo += "<b><font color=red>output directory permissions check failed</font></b>";
-        else pathInfo += "<b><font color=green>Looks good.</font> Execution script preview:</b><br><tt>"+mcu.ffmpegCall+"</tt>";
-      }
-    }
-  }
-
-  s << BoolField("RESTORE DEFAULTS", FALSE);
-  s << StringField(RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 35, dirInfo);
-  s << StringField(RecorderFfmpegPathKey, mcu.vr_ffmpegPath, 35, pathInfo, FALSE, 7);
-  s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 35, "", FALSE, 0);
-  s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920, 35,"",FALSE,0);
-  s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152, 35,"",FALSE,0);
-  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 35,"",FALSE,0);
-  s << IntegerField(RecorderSampleRateKey, mcu.vr_sampleRate,8000,192000,35,"",FALSE,0);
-  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8",120,"",FALSE,0);
-
-  s << EndTable();
-  BuildHTML("");
-  BeginPage(html_begin, "Record", "window.l_param_record","window.l_info_param_record");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
@@ -852,10 +795,10 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       if(name == "*") s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, "", 0, TRUE)+"</tr>";
       else            s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString("Display name"))+"</tr>";
       //
-      if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+StringItemIp(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_host")+StringItemIp(name, scfg.GetString("Host"))+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, "", 0, TRUE)+"</tr>";
+      else            s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, scfg.GetString("Host"))+"</tr>";
       //
-      s2 += rowArray+"H.323 "+JsLocale("window.l_name_port")+StringItemInteger(name, scfg.GetString("Port"))+"</tr>";
+      s2 += rowArray+"H.323 "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString("Port"))+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       //
@@ -867,11 +810,11 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+StringItemInteger(name, scfg.GetString("Frame rate from MCU"), 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString("Frame rate from MCU"), 40)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+StringItemInteger(name, scfg.GetString("Bandwidth from MCU"), 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString("Bandwidth from MCU"), 40)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+StringItemInteger(name, scfg.GetString("Bandwidth to MCU"), 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString("Bandwidth to MCU"), 40)+"</tr>";
       // VFU delay
       if(name == "*")
         s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), "0,1,2,3,4,5,6,7,8,9,10", 40)+"</tr>";
@@ -1054,10 +997,10 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       if(name == "*") s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, "", 0, TRUE)+"</tr>";
       else            s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString("Display name"))+"</tr>";
       //
-      if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+StringItemIp(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_host")+StringItemIp(name, scfg.GetString("Host"))+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, "", 0, TRUE)+"</tr>";
+      else            s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, scfg.GetString("Host"))+"</tr>";
       //
-      s2 += rowArray+"SIP "+JsLocale("window.l_name_port")+StringItemInteger(name, scfg.GetString("Port"))+"</tr>";
+      s2 += rowArray+"SIP "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString("Port"))+"</tr>";
       //
       if(name == "*") s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString("Transport"), ",udp,tcp")+"</tr>";
       else            s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString("Transport"), ",udp,tcp")+"</tr>";
@@ -1073,11 +1016,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+StringItemInteger(name, scfg.GetString("Frame rate from MCU"), 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString("Frame rate from MCU"), 40)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+StringItemInteger(name, scfg.GetString("Bandwidth from MCU"), 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString("Bandwidth from MCU"), 40)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+StringItemInteger(name, scfg.GetString("Bandwidth to MCU"), 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString("Bandwidth to MCU"), 40)+"</tr>";
       // VFU delay
       if(name == "*")
         s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), "0,1,2,3,4,5,6,7,8,9,10", 40)+"</tr>";
@@ -1191,8 +1134,8 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
     s << BoolItem(name, enable);
     if(!enable) s << StringItem(name, host, 150); else s << StringItem(name, host, 150, TRUE);
     if(!enable) s << StringItem(name, account, 150); else s << StringItem(name, account, 150, TRUE);
-    if(!enable) s << PasswordItem(name, password); else s << PasswordItem(name, password, 0, TRUE);
-    if(!enable) s << StringItemInteger(name, expires); else s << StringItemInteger(name, expires, 0, TRUE);
+    if(!enable) s << PasswordItem(name, password, 120); else s << PasswordItem(name, password, 120, TRUE);
+    if(!enable) s << SelectItem(name, expires, "60,120,180,240,300,600,1200,1800,2400,3000,3600", 120); else s << SelectItem(name, expires, expires /* readonly */, 120);
   }
   if(sect.GetSize() == 0)
   {
@@ -1201,7 +1144,7 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
     s << StringItem("room101", "");
     s << StringItem("room101", "");
     s << StringItem("room101", "");
-    s << IntegerItem("room101", 600, 60, 3600);
+    s << SelectItem("room101", "600", "60,120,180,240,300,600,1200,1800,2400,3000,3600");
   }
   s << EndTable();
 

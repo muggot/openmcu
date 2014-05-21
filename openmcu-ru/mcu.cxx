@@ -309,9 +309,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   httpNameSpace.AddResource(new VideoPConfigPage(*this, "VideoParameters", "Video", authSettings), PHTTPSpace::Overwrite);
 #endif
 
-  // Create the config page - record
-  //httpNameSpace.AddResource(new RecordPConfigPage(*this, "RecordParameters", "Parameters", authSettings), PHTTPSpace::Overwrite);
-
   // Create the config page - sip room acccess
   httpNameSpace.AddResource(new RoomAccessSIPPConfigPage(*this, "RoomAccess", "RoomAccess", authSettings), PHTTPSpace::Overwrite);
 

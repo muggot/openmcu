@@ -42,27 +42,27 @@ class TablePConfigPage : public PConfigPage
      PString s = "<tr><td align='left' colspan='3' style='background-color:white;padding:0px;'><p style='text-align:center;"+textStyle+"'><b>"+name+"</b></p></td>";
      return s;
    }
-   PString StringField(PString name, PString value, int width=90, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString StringField(PString name, PString value, int width=90, PString info="", PINDEX rowSpan=1)
    {
      return NewRowField(name) + StringItem(name, value, width) + InfoItem(info, rowSpan);
    }
-   PString PasswordField(PString name, PString value, int width=90, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString PasswordField(PString name, PString value, int width=90, PString info="", PINDEX rowSpan=1)
    {
      return NewRowField(name) + PasswordItem(name, value, width) + InfoItem(info, rowSpan);
    }
-   PString IntegerField(PString name, int value, int min=-2147483647, int max=2147483647, int width=90, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString IntegerField(PString name, int value, int min, int max, int width=90, PString info="", PINDEX rowSpan=1)
    {
-     return NewRowField(name) + IntegerItem(name, value, min, max) + InfoItem(info, rowSpan);
+     return NewRowField(name) + IntegerItem(name, value, min, max, width) + InfoItem(info, rowSpan);
    }
-   PString BoolField(PString name, BOOL value, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString BoolField(PString name, BOOL value, PString info="", PINDEX rowSpan=1)
    {
      return NewRowField(name) + BoolItem(name, value) + InfoItem(info, rowSpan);
    }
-   PString SelectField(PString name, PString value, PString values, int width=90, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString SelectField(PString name, PString value, PString values, int width=90, PString info="", PINDEX rowSpan=1)
    {
      return NewRowField(name) + SelectItem(name, value, values, width) + InfoItem(info, rowSpan);
    }
-   PString ArrayField(PString name, PString values, int width=90, PString info="", int readonly=FALSE, PINDEX rowSpan=1)
+   PString ArrayField(PString name, PString values, int width=90, PString info="", PINDEX rowSpan=1)
    {
      PStringArray data = values.Tokenise(separator);
      PString s = NewRowText(name);
@@ -153,18 +153,6 @@ class TablePConfigPage : public PConfigPage
      }
      return s;
    }
-   PString StringItemIp(PString name, PString value, int width=90, int readonly=FALSE)
-   {
-     return StringItem(name, value, width, readonly, "FilterIp(this)");
-   }
-   PString StringItemInteger(PString name, PString value, int width=90, int readonly=FALSE)
-   {
-     return StringItem(name, value, width, readonly, "FilterInteger(this)");
-   }
-   PString StringItemAccount(PString name, PString value, int width=90, int readonly=FALSE)
-   {
-     return StringItem(name, value, width, readonly, "FilterAccount(this)");
-   }
    PString StringItem(PString name, PString value, int width=90, int readonly=FALSE, PString filter="")
    {
      if(width == 0) width = 90;
@@ -186,16 +174,21 @@ class TablePConfigPage : public PConfigPage
      passwordFields.SetAt(id, value);
      return s;
    }
-   PString IntegerItem(PString name, int value, int min=-2147483647, int max=2147483647, int width=90, int readonly=FALSE)
+   PString IntegerItem(PString name, PString value, int width=90, int readonly=FALSE)
    {
-     if(width == 0) width = 90;
-     PString id = PString(rand());
-     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
-     s += itemStyle+"<input name='MIN' value='"+PString(min)+"' type='hidden'>"
-                    "<input name='MAX' value='"+PString(max)+"' type='hidden'>"
-                    "<input onkeyup='FilterInteger(this)' onchange='FilterInteger(this)' type=number name='"+name+"' min='"+PString(min)+"' max='"+PString(max)+"' value='"+PString(value)+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
-     if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
-     return s;
+     return StringItem(name, value, width, readonly, "FilterInteger(this)");
+   }
+   PString IntegerItem(PString name, int value, int min, int max, int width=90, int readonly=FALSE)
+   {
+     return StringItem(name, value, width, readonly, "FilterInteger(this,"+PString(min)+","+PString(max)+")");
+   }
+   PString IpItem(PString name, PString value, int width=90, int readonly=FALSE)
+   {
+     return StringItem(name, value, width, readonly, "FilterIp(this)");
+   }
+   PString AccountItem(PString name, PString value, int width=90, int readonly=FALSE)
+   {
+     return StringItem(name, value, width, readonly, "FilterAccount(this)");
    }
    PString BoolItem(PString name, BOOL value, int readonly=FALSE)
    {
@@ -284,9 +277,9 @@ class TablePConfigPage : public PConfigPage
    PString Filters()
    {
      return "<script type='text/javascript'>"
-            "function FilterInteger(obj){ obj.value = obj.value.replace(/[^0-9]/g,''); }"
             "function FilterIp(obj)     { obj.value = obj.value.replace(/[^0-9\\.]/g,''); }"
             "function FilterAccount(obj){ obj.value = obj.value.replace(/[^A-Za-z0-9-_\\.]/g,''); }"
+            "function FilterInteger(obj, min, max) { obj.value = obj.value.replace(/[^0-9]/g,''); if(obj.value < min) obj.value = min; if(obj.value > max) obj.value = max; }"
             "</script>";
    }
    PString buttons()
@@ -425,7 +418,6 @@ class TablePConfigPage : public PConfigPage
      PStringArray entityData = connectInfo.GetEntityBody().Tokenise("&");
      PString TableItemId = "";
      PINDEX num = 0;
-     int integerMin=-2147483647, integerMax=2147483647, integerIndex=-1;
      PString curKey = "";
      for(PINDEX i = 0; i < entityData.GetSize(); i++)
      {
@@ -440,8 +432,6 @@ class TablePConfigPage : public PConfigPage
        if((i+1) < entityData.GetSize()) valueNext = PURL::UntranslateString(entityData[i+1].Tokenise("=")[1], PURL::QueryTranslation);
        if(value == "FALSE" && valueNext == "TRUE") continue;
        if(key == "submit") continue;
-       if(key == "MIN") { integerMin = atoi(value); continue; }
-       if(key == "MAX") { integerMax = atoi(value); integerIndex=i+1; continue; }
        if(key == "TableItemId") { TableItemId = value; continue; }
 
        if(num == 1) curKey = key;
@@ -453,20 +443,12 @@ class TablePConfigPage : public PConfigPage
        } else {
          if(passwordFields.GetAt(TableItemId) == NULL) value.Replace(separator," ",TRUE);
          if(num != 1) dataArray[asize-1] += separator;
-         if(integerIndex == i)
+         if(passwordFields.GetAt(TableItemId) != NULL)
          {
-           int tmp = atoi(value);
-           if(tmp < integerMin) tmp = integerMin;
-           if(tmp > integerMax) tmp = integerMax;
-           dataArray[asize-1] += PString(tmp);
-         } else {
-           if(passwordFields.GetAt(TableItemId) != NULL)
-           {
-             if(passwordFields(TableItemId) != value)
-               value = passwordCrypt(value);
-           }
-           dataArray[asize-1] += value;
+           if(passwordFields(TableItemId) != value)
+             value = passwordCrypt(value);
          }
+         dataArray[asize-1] += value;
        }
        num++;
      }
@@ -638,14 +620,6 @@ class VideoPConfigPage : public TablePConfigPage
 {
  public:
    VideoPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class RecordPConfigPage : public TablePConfigPage
-{
- public:
-   RecordPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
