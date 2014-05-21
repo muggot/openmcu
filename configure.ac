@@ -406,8 +406,9 @@ if test "${libsrtp}" = "yes"; then
   fi
   if test ${USE_LIBSRTP} = 0 ; then
     AC_CONFIG_SUBDIRS(libs/srtp)
-    MCU_SFLAGS="$MCU_SFLAGS -Wl,--start-group ../libs/srtp/libsrtp.a -Wl,--end-group"
     MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/srtp/include -I../libs/srtp/crypto/include"
+    MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/srtp";
+    MCU_LDLIBS="$MCU_LDLIBS -lsrtp"
     USE_LIBSRTP=1
     COMPILE_LIBSRTP=1
   fi
@@ -424,6 +425,7 @@ AC_SUBST(LIBZRTP_DIR, ${top_srcdir}/libs/libzrtp)
 if test "${libzrtp}" = "yes"; then
   AC_CONFIG_SUBDIRS(libs/libzrtp)
   MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libzrtp/include -I../libs/libzrtp/third_party/bnlib -I../libs/libzrtp/third_party/bgaes"
+  MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libzrtp/.libs";
   MCU_LDLIBS="$MCU_LDLIBS -lzrtp"
   USE_LIBZRTP=1
   COMPILE_LIBZRTP=1

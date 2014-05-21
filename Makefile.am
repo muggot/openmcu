@@ -59,6 +59,9 @@ endif
 if COMPILER_USE_LIBSPEEX
 	cp -P @LIBSPEEX_DIR@/libspeex/.libs/libspeex.so* $(DESTDIR)@MCU_LIB_DIR@
 endif
+if COMPILER_USE_LIBSRTP
+	cp -P @LIBSRTP_DIR@/libsrtp.so* $(DESTDIR)@MCU_LIB_DIR@
+endif
 if COMPILER_USE_LIBZRTP
 	cp -P @LIBZRTP_DIR@/.libs/libzrtp.so* $(DESTDIR)@MCU_LIB_DIR@
 endif
@@ -85,6 +88,9 @@ if COMPILER_USE_LIBOPUS
 endif
 if COMPILER_USE_LIBSPEEX
 	rm -f $(DESTDIR)@MCU_LIB_DIR@/libspeex.so*
+endif
+if COMPILER_USE_LIBSRTP
+	rm -f $(DESTDIR)@MCU_LIB_DIR@/libsrtp.so*
 endif
 if COMPILER_USE_LIBZRTP
 	rm -f $(DESTDIR)@MCU_LIB_DIR@/libzrtp.so*
