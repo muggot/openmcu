@@ -2299,6 +2299,9 @@ void MCUH323Connection::OnEstablished()
 {
   H323Connection::OnEstablished();
 
+  if(requestedRoom == "")
+    requestedRoom = OpenMCU::Current().GetDefaultRoomName();
+
   JoinConference(requestedRoom);
 
   if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
