@@ -153,12 +153,13 @@ class TablePConfigPage : public PConfigPage
      }
      return s;
    }
-   PString StringItem(PString name, PString value, int width=90, int readonly=FALSE, PString filter="")
+   PString StringItem(PString name, PString value, int width=90, int readonly=FALSE, PString onkeyup="", PString onchange="")
    {
      if(width == 0) width = 90;
+     if(onchange == "") onchange = onkeyup;
      PString id = PString(rand());
      PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
-     s += itemStyle+"<input onkeyup='"+filter+"' onchange='"+filter+"' type='text' name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
+     s += itemStyle+"<input onkeyup='"+onkeyup+"' onchange='"+onchange+"' type='text' name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
@@ -174,13 +175,10 @@ class TablePConfigPage : public PConfigPage
      passwordFields.SetAt(id, value);
      return s;
    }
-   PString IntegerItem(PString name, PString value, int width=90, int readonly=FALSE)
+   PString IntegerItem(PString name, PString value, int min=-2147483647, int max=2147483647, int width=90, int readonly=FALSE)
    {
-     return StringItem(name, value, width, readonly, "FilterInteger(this)");
-   }
-   PString IntegerItem(PString name, int value, int min, int max, int width=90, int readonly=FALSE)
-   {
-     return StringItem(name, value, width, readonly, "FilterInteger(this,"+PString(min)+","+PString(max)+")");
+     if(min == 0 && max == 0) { min = -2147483647; max = 2147483647; }
+     return StringItem(name, value, width, readonly, "FilterInteger(this)", "FilterMinMax(this,"+PString(min)+","+PString(max)+")");
    }
    PString IpItem(PString name, PString value, int width=90, int readonly=FALSE)
    {
@@ -279,7 +277,8 @@ class TablePConfigPage : public PConfigPage
      return "<script type='text/javascript'>"
             "function FilterIp(obj)     { obj.value = obj.value.replace(/[^0-9\\.]/g,''); }"
             "function FilterAccount(obj){ obj.value = obj.value.replace(/[^A-Za-z0-9-_\\.]/g,''); }"
-            "function FilterInteger(obj, min, max) { obj.value = obj.value.replace(/[^0-9]/g,''); if(obj.value < min) obj.value = min; if(obj.value > max) obj.value = max; }"
+            "function FilterInteger(obj) { obj.value = obj.value.replace(/[^0-9]/g,''); }"
+            "function FilterMinMax(obj, min, max) { FilterInteger(obj); if(obj.value == '') return; if(obj.value < min) obj.value = min; else if(obj.value > max) obj.value = max; }"
             "</script>";
    }
    PString buttons()
