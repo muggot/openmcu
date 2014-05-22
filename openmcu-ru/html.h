@@ -157,7 +157,9 @@ class TablePConfigPage : public PConfigPage
    {
      if(width == 0) width = 90;
      if(onchange == "") onchange = onkeyup;
-     PString s = itemStyle+"<input onkeyup='"+onkeyup+"' onchange='"+onchange+"' type='text' name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
+     PString id = PString(rand());
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
+     s += itemStyle+"<input onkeyup='"+onkeyup+"' onchange='"+onchange+"' type='text' name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
@@ -194,7 +196,9 @@ class TablePConfigPage : public PConfigPage
    }
    PString BoolItem(PString name, BOOL value, int readonly=FALSE)
    {
-     PString s = itemStyle+"<input name='"+name+"' value='FALSE' type='hidden' style='"+inputStyle+"'>"
+     PString id = PString(rand());
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
+     s += itemStyle+"<input name='"+name+"' value='FALSE' type='hidden' style='"+inputStyle+"'>"
                     "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"margin-top:9px;margin-bottom:9px;margin-left:3px;'";
      if(value) s +=" checked='yes'";
      if(!readonly) s += "></input></td>"; else s += " readonly></input></td>";
@@ -204,7 +208,9 @@ class TablePConfigPage : public PConfigPage
    {
      if(width == 0) width = 90;
      PStringArray data = values.Tokenise(",");
-     PString s = itemStyle+"<select name='"+name+"' style='width:"+PString(width)+"px;"+selectStyle+"'>";
+     PString id = PString(rand());
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
+     s += itemStyle+"<select name='"+name+"' style='width:"+PString(width)+"px;"+selectStyle+"'>";
      for(PINDEX i = 0; i < data.GetSize(); i++)
      {
        if(data[i] == value)
@@ -217,7 +223,9 @@ class TablePConfigPage : public PConfigPage
    }
    PString EmptyInputItem(PString name, BOOL hidden=FALSE)
    {
-     PString s = "<td style='height:100%;background-color:"+itemColor+";border-right:inherit;'><input name='"+name+"' type='hidden'>";
+     PString id = PString(rand());
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
+     s += "<td style='height:100%;background-color:"+itemColor+";border-right:inherit;'><input name='"+name+"' type='hidden'>";
      if(hidden) s += "</input>";
      else s += "&nbsp</input>";
      return s;
