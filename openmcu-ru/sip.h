@@ -27,7 +27,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define MCUSIP_USER_AGENT_STR  OpenMCU::Current().GetName()+"/"+OpenMCU::Current().GetVersion()+" ("+SOFIA_SIP_NAME_VERSION+")"
+#define SIP_USER_AGENT       OpenMCU::Current().GetName()+"/"+OpenMCU::Current().GetVersion()+" ("+SOFIA_SIP_NAME_VERSION+")"
+#define SIP_MAX_FORWARDS     "70"
 
 enum SipSecureTypes
 {

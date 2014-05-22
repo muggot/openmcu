@@ -205,8 +205,7 @@ void Registrar::SubscriptionProcess()
       ++it;
     }
 
-    RegistrarAccount *regAccount_out = NULL;
-    regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, subAccount->username_out);
+    RegistrarAccount *regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, subAccount->username_out);
     if(!regAccount_out)
       regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_H323, subAccount->username_out);
 
@@ -219,6 +218,7 @@ void Registrar::SubscriptionProcess()
     } else {
       subAccount->state_new = SUB_STATE_CLOSED;
     }
+
     // send notify
     if(subAccount->state != subAccount->state_new)
     {

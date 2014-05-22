@@ -483,7 +483,10 @@ int Registrar::SipSendNotify(msg_t *msg_sub, int state)
 
   sip_payload_str += "</presence>";
 
-  url_string_t *ruri = (url_string_t *)(const char *)MCUURL_SIP(msg_sub, 0).GetUrl();;
+  // do not use GetUrl() directly, "nta outgoing create: invalid URI"
+  PString ruri_str = MCUURL_SIP(msg_sub, 0).GetUrl();
+  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
+
   sip_contact_t *sip_contact = sip_contact_create(GetHome(), (url_string_t *)(const char *)sip_contact_str, NULL);
 
   // cseq increment for incoming sub request
@@ -509,7 +512,7 @@ int Registrar::SipSendNotify(msg_t *msg_sub, int state)
                         SIPTAG_CONTENT_TYPE_STR("application/pidf+xml"),
                         SIPTAG_PAYLOAD_STR(sip_payload_str),
                         SIPTAG_SUBSCRIPTION_STATE_STR("active"), // active;expires=xxx
-			SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
+			SIPTAG_SERVER_STR(SIP_USER_AGENT),
 			TAG_END());
   return 1;
 }
@@ -521,7 +524,9 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
   PTRACE(1, "MCUSIP\tServerSendMessage");
   sip_t *sip_reg_out = sip_object(regAccount_out->msg_reg);
 
-  url_string_t *ruri = (url_string_t *)(const char *)regAccount_out->GetUrl();
+  // do not use GetUrl() directly, "nta outgoing create: invalid URI"
+  PString ruri_str = regAccount_out->GetUrl();
+  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
   PString url_from = "sip:"+regAccount_in->username+"@"+regAccount_out->domain;
   sip_addr_t *sip_from = sip_from_create(GetHome(), (url_string_t *)(const char *)url_from);
@@ -552,7 +557,7 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
 			SIPTAG_CALL_ID(sip_call_id),
 			SIPTAG_CONTENT_TYPE_STR("text/plain"),
                         SIPTAG_PAYLOAD_STR(message),
-			SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
+			SIPTAG_SERVER_STR(SIP_USER_AGENT),
 			TAG_END());
   return 1;
 }
@@ -612,7 +617,7 @@ int Registrar::SipReqReply(const msg_t *msg, unsigned method, PString auth_str, 
   		   SIPTAG_ALLOW_STR(allow),
                    //SIPTAG_CONTENT_TYPE_STR(content_str),
                    //SIPTAG_PAYLOAD(sip_payload),
-                   SIPTAG_SERVER_STR((const char*)(MCUSIP_USER_AGENT_STR)),
+                   SIPTAG_SERVER_STR(SIP_USER_AGENT),
                    TAG_END());
   return 1;
 }

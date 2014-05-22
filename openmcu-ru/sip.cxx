@@ -1796,6 +1796,7 @@ int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, 
     sip_from = sip_from_dup(home, sip->sip_from);
     sip_to = sip_to_dup(home, sip->sip_to);
   }
+  // do not use GetUrl() directly, "nta outgoing create: invalid URI"
   PString ruri_str = MCUURL_SIP(c_sip_msg, direction).GetUrl();
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
@@ -1816,7 +1817,7 @@ int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, 
 			SIPTAG_TO(sip_to),
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip->sip_call_id),
-			SIPTAG_SERVER_STR((const char*)(MCUSIP_USER_AGENT_STR)),
+			SIPTAG_SERVER_STR(SIP_USER_AGENT),
 			TAG_END());
   if(a_orq == NULL)
     return 0;
@@ -2038,9 +2039,10 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip_call_id),
 			SIPTAG_CONTACT(sip_contact),
+			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
 			SIPTAG_PAYLOAD(sip_payload),
 			SIPTAG_CONTENT_TYPE_STR("application/sdp"),
-			SIPTAG_SERVER_STR(MCUSIP_USER_AGENT_STR),
+			SIPTAG_SERVER_STR(SIP_USER_AGENT),
 			TAG_END());
     if(orq == NULL)
       sCon->LeaveMCU(TRUE);
@@ -2097,7 +2099,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 			SIPTAG_CONTACT(sip_contact),
 			SIPTAG_EXPIRES_STR((const char*)expires),
 			SIPTAG_ALLOW_STR("INVITE, ACK, BYE, CANCEL, OPTIONS, SUBSCRIBE, INFO"),
-			SIPTAG_SERVER_STR((const char*)(MCUSIP_USER_AGENT_STR)),
+			SIPTAG_SERVER_STR(SIP_USER_AGENT),
 			TAG_END());
     if(a_orq == NULL)
       return 0;
@@ -2281,6 +2283,7 @@ int MCUSipEndPoint::SendACK(const msg_t *msg)
   sip_t *sip = sip_object(msg);
   if(sip == NULL) return 0;
 
+  // do not use GetUrl() directly, "nta outgoing create: invalid URI"
   PString ruri_str = MCUURL_SIP(msg, 1).GetUrl();
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
@@ -2298,7 +2301,8 @@ int MCUSipEndPoint::SendACK(const msg_t *msg)
 			SIPTAG_TO(sip->sip_to),
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip->sip_call_id),
-			SIPTAG_SERVER_STR((const char*)(MCUSIP_USER_AGENT_STR)),
+			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
+			SIPTAG_SERVER_STR(SIP_USER_AGENT),
 			TAG_END());
   return 1;
 }
@@ -2330,7 +2334,7 @@ int MCUSipEndPoint::ReqReply(const msg_t *msg, unsigned method, const char *meth
                    SIPTAG_CONTENT_TYPE_STR(content_str),
                    SIPTAG_PAYLOAD(sip_payload),
                    SIPTAG_ALLOW_STR("INVITE, ACK, BYE, CANCEL, OPTIONS, INFO"),
-                   SIPTAG_SERVER_STR((const char*)(MCUSIP_USER_AGENT_STR)),
+                   SIPTAG_SERVER_STR(SIP_USER_AGENT),
                    TAG_END());
   return 0;
 }
