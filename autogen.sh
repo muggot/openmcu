@@ -5,5 +5,5 @@ aclocal
 autoconf
 automake --add-missing --copy
 
-cd libs/libzrtp/ && ./bootstrap.sh > /dev/null 2>&1
+cd libs/libzrtp/ && ./bootstrap.sh
 
