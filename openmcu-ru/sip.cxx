@@ -1817,6 +1817,7 @@ int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, 
 			SIPTAG_TO(sip_to),
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip->sip_call_id),
+			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
 			SIPTAG_SERVER_STR(SIP_USER_AGENT),
 			TAG_END());
   if(a_orq == NULL)
