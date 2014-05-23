@@ -12807,7 +12807,7 @@ else
   CPU_ARM_FALSE=
 fi
 
- if test x"${inline_optimization:0:3}" = x"ARM"; then
+ if test x"${inline_optimization}" = x"ARM"; then
   OPUS_ARM_INLINE_ASM_TRUE=
   OPUS_ARM_INLINE_ASM_FALSE='#'
 else
@@ -12815,7 +12815,7 @@ else
   OPUS_ARM_INLINE_ASM_FALSE=
 fi
 
- if test x"${asm_optimization:0:3}" = x"ARM"; then
+ if test x"${asm_optimization}" = x"ARM"; then
   OPUS_ARM_EXTERNAL_ASM_TRUE=
   OPUS_ARM_EXTERNAL_ASM_FALSE='#'
 else
