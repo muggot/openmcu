@@ -1179,6 +1179,8 @@ int OpenMCUSipConnection::ProcessInviteEvent()
  else remote_addr_t = sip_to_dup(home, sip->sip_to);
 
  requestedRoom = roomName;
+ if(requestedRoom == "")
+   requestedRoom = OpenMCU::Current().GetDefaultRoomName();
 
  if(sip->sip_contact && sip->sip_contact->m_display && strcmp(sip->sip_contact->m_display, "") != 0)
    remoteName = sip->sip_contact->m_display;
