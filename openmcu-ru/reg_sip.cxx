@@ -175,9 +175,6 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   PTRACE(1, "Registrar\tOnReceivedSipInvite");
   sip_t *sip = sip_object(msg);
 
-  if(!sip->sip_payload || !sip->sip_payload->pl_data)
-    sep->SipReqReply(msg, 415); // SIP_415_UNSUPPORTED_MEDIA
-
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
   if(FindRegConn(callToken))
     sep->SipReqReply(msg, 500); // SIP_500_INTERNAL_SERVER_ERROR

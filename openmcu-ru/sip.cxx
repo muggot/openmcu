@@ -2363,9 +2363,6 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   PTRACE(1, "MCUSIP\tCreateIncomingConnection");
   sip_t *sip = sip_object(msg);
 
-  if(!sip->sip_payload || !sip->sip_payload->pl_data)
-    return SipReqReply(msg, 415); // SIP_415_UNSUPPORTED_MEDIA
-
   if(GetRoomAccess(sip) == "DENY")
     return SipReqReply(msg, 403); // SIP_403_FORBIDDEN
 
@@ -2414,8 +2411,17 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   if(sip->sip_status)  status = sip->sip_status->st_status;
   if(sip->sip_cseq)    cseq = sip->sip_cseq->cs_method;
 
-  if(request == sip_method_invite && sip->sip_payload == NULL)
+  // wrong RequestURI
+  if(sip->sip_request && !FindListener(sip->sip_request->rq_url->url_host))
+  {
+    return SipReqReply(msg, 400); // SIP_400_BAD_REQUEST
+  }
+
+  // empty payload header for invite
+  if(request == sip_method_invite && (!sip->sip_payload || !sip->sip_payload->pl_data))
+  {
     return SipReqReply(msg, 415); // SIP_415_UNSUPPORTED_MEDIA
+  }
 
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
