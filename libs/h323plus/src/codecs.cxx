@@ -1079,7 +1079,7 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
     if(c_max_vol*cvc >= 32768) // есть перегрузка
       cvc = 32767.0 / c_max_vol;
   }
-  PTRACE(6,"AGC\tavg_vol=" << c_avg_vol << " max_vol=" << c_max_vol << " vol_coef=" << vc0 << "->" << cvc << " inc_vol=" << inc_vol);
+  PTRACE(9,"AGC\tavg_vol=" << c_avg_vol << " max_vol=" << c_max_vol << " vol_coef=" << vc0 << "->" << cvc << " inc_vol=" << inc_vol);
 
   float delta0=(cvc-vc0)/samplesCount;
 
@@ -1135,7 +1135,7 @@ BOOL H323FramedAudioCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
   }
 
   sampleRate = GetMediaFormat().GetTimeUnits() * 1000;
-  PTRACE(6,"SR=" << sampleRate);
+  PTRACE(9,"SR=" << sampleRate);
 
   if (DetectSilence(sampleRate, codecChannels)) {
     length = 0;
@@ -1169,7 +1169,7 @@ BOOL H323FramedAudioCodec::Write(const BYTE * buffer,
   written = 0;
 
   unsigned bytesDecoded = samplesPerFrame*2*codecChannels;
-  PTRACE(6,"H323FramedAudioCodec\tWrite: codecChannels " << codecChannels << ", samplesPerFrame " << samplesPerFrame << ", bytesDecoded " << bytesDecoded);
+  PTRACE(9,"H323FramedAudioCodec\tWrite: codecChannels " << codecChannels << ", samplesPerFrame " << samplesPerFrame << ", bytesDecoded " << bytesDecoded);
 
   if (length != 0) {
     if (length > bytesPerFrame)

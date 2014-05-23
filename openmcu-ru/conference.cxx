@@ -1399,7 +1399,7 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
       cvc = (float)overload / c_max_vol;
   }
   *signalLevel = (unsigned)((float)c_avg_vol*cvc);
-  PTRACE(6,"AGC\tavg" << c_avg_vol << " max" << c_max_vol << " vc" << vc0 << ">" << cvc);
+  PTRACE(9,"AGC\tavg" << c_avg_vol << " max" << c_max_vol << " vc" << vc0 << ">" << cvc);
 
   float delta0=(cvc-vc0)/samplesCount;
 
