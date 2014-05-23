@@ -60,6 +60,7 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
   if(!regAccount_in->registered)
   {
     regAccount_in->host = url.GetHostName();
+    regAccount_in->domain = regAccount_in->host;
     if(regAccount_in->display_name == "")
       regAccount_in->display_name = url.GetDisplayName();
     regAccount_in->remote_application = conn->GetRemoteApplication();
@@ -166,6 +167,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
 
   // update account data
   regAccount->host = host.AsString();
+  regAccount->domain = regAccount->host;
   if(port != 0)
     regAccount->port = port;
   if(regAccount->display_name == "")

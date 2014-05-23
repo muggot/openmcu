@@ -20,6 +20,8 @@
 #include <sofia-sip/nta_tport.h>
 #include <sofia-sip/tport.h>
 #include <sofia-sip/sdp.h>
+#include <sofia-sip/msg_addr.h>
+#include <sofia-sip/sres_sip.h>
 
 #include "h323.h"
 #include "mcu_rtp.h"
@@ -29,6 +31,10 @@
 
 #define SIP_USER_AGENT       OpenMCU::Current().GetName()+"/"+OpenMCU::Current().GetVersion()+" ("+SOFIA_SIP_NAME_VERSION+")"
 #define SIP_MAX_FORWARDS     "70"
+#define SIP_ALLOW_METHODS_REGISTER    "SUBSCRIBE"
+#define SIP_ALLOW_METHODS_OPTIONS     "INVITE,BYE,ACK,CANCEL,OPTIONS,SUBSCRIBE,MESSAGE,INFO"
+
+PString GetFromIp(PString toAddr, PString toPort);
 
 enum SipSecureTypes
 {
@@ -36,6 +42,12 @@ enum SipSecureTypes
   SECURE_TYPE_ZRTP,
   SECURE_TYPE_SRTP,
   SECURE_TYPE_DTLS_SRTP
+};
+
+enum Direction
+{
+  DIRECTION_INBOUND,
+  DIRECTION_OUTBOUND
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -48,7 +60,7 @@ class MCUSipConnection;
 class MCUURL_SIP : public MCUURL
 {
   public:
-    MCUURL_SIP(const msg_t *msg, int direction);
+    MCUURL_SIP(const msg_t *msg, Direction dir = DIRECTION_INBOUND);
     const PString & GetRemoteApplication() const { return remote_application; }
     const PString & GetDomainName() const { return domain_name; }
   protected:
@@ -75,7 +87,6 @@ class ProxyAccount
     PString port;
     PString transport;
     PString password;
-    PString local_ip;
     unsigned expires;
     BOOL enable;
 
@@ -219,9 +230,8 @@ class MCUSipConnection : public MCUH323Connection
        inpBytes = 0;
        connectedTime = PTime();
        c_sip_msg = NULL;
-       contact_t = NULL;
        cseqNum = 100;
-       direction = 0;
+       direction = DIRECTION_INBOUND;
        bandwidth_to = 0;
        aDataSocket = aControlSocket = vDataSocket = vControlSocket = NULL; // temp rtp sockets
        audio_rtp_port = video_rtp_port = 0;
@@ -271,29 +281,31 @@ class MCUSipConnection : public MCUH323Connection
     void LeaveMCU(BOOL remove);
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     int SendBYE();
+    int SendACK();
     int SendVFU();
     void ReceivedVFU();
     int SendRequest(sip_method_t method, const char *method_name, msg_t *sip_msg);
-    int CreateSipData();
     void ReceivedDTMF(PString payload);
-    BOOL HadAnsweredCall() { return (direction=0); }
+    BOOL HadAnsweredCall() { return (direction=DIRECTION_INBOUND); }
 
     virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
     int noInpTimeout;
     int inpBytes;
 
-    sip_contact_t *contact_t;
-    PString local_ip, roomname;
+    Direction direction;
+    PString local_user, local_ip;
+    PString ruri_str;
+    PString contact_str;
     msg_t *c_sip_msg;
-    PString sdp_msg;
-    int direction; // 0=incoming, 1=outgoing
     int cseqNum;
+
+    PString sdp_invite_str;
+    PString sdp_ok_str;
 
     // preffered endpoints parameters
     unsigned bandwidth_to;
     PString pref_audio_cap, pref_video_cap;
 
-    PString invite_sdp_txt;
     PString key_audio80;
     PString key_audio32;
     PString key_video80;
@@ -327,14 +339,15 @@ class MCUSipEndPoint : public PThread
     MCUSipEndPoint(MCUH323EndPoint *_ep)
       :PThread(10000,NoAutoDeleteThread,NormalPriority,"SIP Listener:%0x"), ep(_ep)
     {
-      terminating = 0;
       restart = 1;
+      terminating = 0;
     }
     ~MCUSipEndPoint()
     {
     }
     void Main();
     void Initialise();
+
     int terminating;
     int restart;
 
@@ -351,8 +364,7 @@ class MCUSipEndPoint : public PThread
     nta_outgoing_t * SipMakeCall(PString from, PString to, PString & call_id);
     int CreateIncomingConnection(const msg_t *msg);
     int CreateOutgoingConnection(const msg_t *msg);
-    int ReqReply(const msg_t *msg, unsigned method, const char *method_name=NULL, MCUSipConnection *sCon=NULL);
-    int SendACK(const msg_t *msg);
+    int SipReqReply(const msg_t *msg, unsigned status, const char *auth_str = "", const char *contact_str = "", const char *content_str = "", const char *payload_str = "");
 
     BOOL MakeProxyAuth(ProxyAccount *proxy, const sip_t *sip);
     PString MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce);

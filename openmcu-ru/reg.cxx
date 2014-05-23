@@ -194,6 +194,7 @@ void Registrar::SubscriptionProcess()
   PTime now;
   for(SubscriptionMapType::iterator it=SubscriptionMap.begin(); it!=SubscriptionMap.end(); )
   {
+    RegSubscriptionStates state_new;
     Subscription *subAccount = it->second;
     subAccount->Lock();
     if(now > subAccount->start_time + PTimeInterval(subAccount->expires*1000))
@@ -211,20 +212,20 @@ void Registrar::SubscriptionProcess()
 
     if(regAccount_out && regAccount_out->registered)
     {
-      subAccount->state_new = SUB_STATE_OPEN;
+      state_new = SUB_STATE_OPEN;
       RegistrarConnection *regConn = FindRegConnUsername(subAccount->username_out);
       if(regConn)
-        subAccount->state_new = SUB_STATE_BUSY;
+        state_new = SUB_STATE_BUSY;
     } else {
-      subAccount->state_new = SUB_STATE_CLOSED;
+      state_new = SUB_STATE_CLOSED;
     }
 
     // send notify
-    if(subAccount->state != subAccount->state_new)
+    if(subAccount->state != state_new)
     {
-      subAccount->state = subAccount->state_new;
+      subAccount->state = state_new;
       if(subAccount->msg_sub) // SIP
-        SipSendNotify(subAccount->msg_sub, subAccount->state);
+        SipSendNotify(subAccount->msg_sub, subAccount);
     }
     if(subAccount) subAccount->Unlock();
     if(regAccount_out) regAccount_out->Unlock();
@@ -401,7 +402,7 @@ void Registrar::IncomingCallCancel(RegistrarConnection *regConn)
 {
   if(regConn->account_type_in == ACCOUNT_TYPE_SIP)
   {
-    SipReqReply(regConn->msg_invite, SIP_603_DECLINE);
+    sep->SipReqReply(regConn->msg_invite, 603); // SIP_603_DECLINE
   }
   Leave(regConn->account_type_in, regConn->callToken_in);
 /*
@@ -784,16 +785,6 @@ Registrar::~Registrar()
 
 void Registrar::Main()
 {
-  PThread::Sleep(1000);
-
-  nta_agent_set_params(sep->GetAgent(),
-                       NTATAG_SIP_T1(1000), // Initial retransmission interval (in milliseconds)
-                       //NTATAG_SIP_T2(1000), // Maximum retransmission interval (in milliseconds)
-                       NTATAG_SIP_T1X64(3000), // Transaction timeout (defaults to T1 * 64)
-                       //NTATAG_TIMER_C(2999), // two invite requests ???
-                       //NTATAG_UA(1), // If true, NTA acts as User Agent Server or Client by default
-                       TAG_NULL());
-
   enable_gatekeeper = TRUE;
   if(enable_gatekeeper)
   {
@@ -806,10 +797,6 @@ void Registrar::Main()
     gkListener->StartChannel();
   }
 
-  InitConfig();
-  InitTerminals();
-
-  MCUTRACE(0, "Registrar is initialized.");
   MainLoop();
 }
 

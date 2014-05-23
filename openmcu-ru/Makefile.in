@@ -112,7 +112,7 @@ install:
 	install -m 644 ../COPYING $(DESTDIR)@MCU_DIR@
 	install -m 644 ../NEWS $(DESTDIR)@MCU_DIR@
 	install -m 644 ../README $(DESTDIR)@MCU_DIR@
-	ln -sf $(DESTDIR)@MCU_BIN_DIR@/$(PROG) /usr/local/bin/$(PROG)
+#	ln -sf $(DESTDIR)@MCU_BIN_DIR@/$(PROG) /usr/local/bin/$(PROG)
 #	install -m 644 ssl/agent.pem $(DESTDIR)@MCU_SSL_DIR@
 #	install -m 644 ssl/cafile.pem $(DESTDIR)@MCU_SSL_DIR@
 
@@ -126,7 +126,7 @@ uninstall:
 	rm -f $(DESTDIR)@MCU_DIR@/NEWS
 	rm -f $(DESTDIR)@MCU_DIR@/README
 	rm -f $(DESTDIR)@MCU_BIN_DIR@/$(PROG)
-	rm -f /usr/bin/$(PROG)
+#	rm -f /usr/local/bin/$(PROG)
 
 clean:
 	rm -rf $(OBJDIR)

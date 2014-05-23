@@ -50,7 +50,7 @@ PString GetFromIp(PString toAddr, PString toPort)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUURL_SIP::MCUURL_SIP(const msg_t *msg, int direction)
+MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Direction dir)
   : MCUURL()
 {
   sip_t *sip = sip_object(msg);
@@ -58,15 +58,9 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, int direction)
   if(sip == NULL || home == NULL)
     return;
 
-//  int direction = 0;
-//  if(!sip->sip_request)
-//    direction = 1;
-
   sip_addr_t *sip_addr;
-  if(direction == 0)
-    sip_addr = sip_from_dup(home, sip->sip_from);
-  else
-    sip_addr = sip_to_dup(home, sip->sip_to);
+  if(dir == DIRECTION_INBOUND) sip_addr = sip->sip_from;
+  else                         sip_addr = sip->sip_to;
 
   // display name
   if(sip_addr->a_display && PString(sip_addr->a_display) != "")
@@ -77,39 +71,72 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, int direction)
     display_name = sip_addr->a_url->url_user;
   display_name.Replace("\"","",TRUE,0);
   display_name = PURL::UntranslateString(display_name, PURL::QueryTranslation);
+
   // username
-  if(sip_addr->a_url->url_user && PString(sip_addr->a_url->url_user) != "")
-    username = sip_addr->a_url->url_user;
-  else if(sip->sip_contact && sip->sip_contact->m_url)
+  if(sip->sip_contact && sip->sip_contact->m_url && PString(sip->sip_contact->m_url->url_user) != "")
     username = sip->sip_contact->m_url->url_user;
+  else if(sip_addr->a_url->url_user && PString(sip_addr->a_url->url_user) != "")
+    username = sip_addr->a_url->url_user;
   username.Replace("\"","",TRUE,0);
   username = PURL::UntranslateString(username, PURL::QueryTranslation);
-  // hostname
-  if(PString(sip->sip_via->v_host) != "0.0.0.0" && sip->sip_request)
-    hostname = sip->sip_via->v_host;
-//  if(sip->sip_contact && sip->sip_contact->m_url && PString(sip->sip_contact->m_url->url_host) != "")
-//    hostname = sip->sip_contact->m_url->url_host;
-  else
-    hostname = sip_addr->a_url->url_host;
+
   // domain
   domain_name = sip_addr->a_url->url_host;
-  // port
-  if(sip->sip_via->v_port && sip->sip_request)
-    port = atoi(sip->sip_via->v_port);
-  else if(sip_addr->a_url->url_port)
-    port = atoi(sip_addr->a_url->url_port);
-//  else if(sip->sip_contact && sip->sip_contact->m_url->url_port)
-//    port = sip->sip_contact->m_url->url_port;
-  // transport
-  if(PString(sip->sip_via->v_protocol).Find("UDP") != P_MAX_INDEX)
-    transport = "udp";
-  else if(PString(sip->sip_via->v_protocol).Find("TCP") != P_MAX_INDEX)
-    transport = "tcp";
+
   // remote application
   if(sip->sip_user_agent && sip->sip_user_agent->g_string)
     remote_application = sip->sip_user_agent->g_string;
   else if(sip->sip_server && sip->sip_server->g_string)
     remote_application = sip->sip_server->g_string;
+
+  // get hostname,port,transport from su_addrinfo_t
+/*
+  su_addrinfo_t *addrinfo = msg_addrinfo((msg_t *)msg);
+  if(addrinfo->ai_addr)
+  {
+    char ip[80] = {0};
+    getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, ip, (socklen_t)sizeof(ip), NULL, 0, NI_NUMERICHOST);
+    hostname = ip;
+    port = ntohs(((struct sockaddr_in *)addrinfo->ai_addr)->sin_port);
+    if(addrinfo->ai_protocol == TPPROTO_UDP)
+      transport = "udp";
+    else if(addrinfo->ai_protocol == TPPROTO_TCP)
+      transport = "tcp";
+    else if(addrinfo->ai_protocol == TPPROTO_TLS)
+      transport = "tls";
+  }
+*/
+
+  // hostname
+  if(hostname == "")
+  {
+    if(sip->sip_request && PString(sip->sip_via->v_host) != "0.0.0.0")
+      hostname = sip->sip_via->v_host;
+    //if(sip->sip_contact && sip->sip_contact->m_url && PString(sip->sip_contact->m_url->url_host) != "")
+    //  hostname = sip->sip_contact->m_url->url_host;
+    else
+      hostname = sip_addr->a_url->url_host;
+  }
+
+  // port
+  if(port == 0)
+  {
+    if(sip->sip_via->v_port && sip->sip_request)
+      port = atoi(sip->sip_via->v_port);
+    else if(sip_addr->a_url->url_port)
+      port = atoi(sip_addr->a_url->url_port);
+    //else if(sip->sip_contact && sip->sip_contact->m_url->url_port)
+    //  port = sip->sip_contact->m_url->url_port;
+  }
+
+  // transport
+  if(transport == "")
+  {
+    if(PString(sip->sip_via->v_protocol).Find("UDP") != P_MAX_INDEX)
+      transport = "udp";
+    else if(PString(sip->sip_via->v_protocol).Find("TCP") != P_MAX_INDEX)
+      transport = "tcp";
+  }
 
   url_scheme = "sip";
   url_party = url_scheme+":"+username+"@"+hostname;
@@ -499,8 +526,8 @@ PString MCUSipEndPoint::CreateSdpInvite(MCUSipConnection *sCon, PString local_ur
   su_home_check(sess_home);
   su_home_unref(sess_home);
 
-  sCon->invite_sdp_txt = buffer;
-  return sCon->invite_sdp_txt;
+  sCon->sdp_invite_str = buffer;
+  return sCon->sdp_invite_str;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -520,11 +547,11 @@ SipRTP_UDP *MCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
     PIPSocket::Address lIP(local_ip);
     PIPSocket::Address rIP(sc->remote_ip);
     unsigned port_base, port_max;
-    if(direction == 1 && !sc->media && audio_rtp_port)
+    if(direction == DIRECTION_OUTBOUND && !sc->media && audio_rtp_port)
     {
       port_base = port_max = audio_rtp_port;
       audio_rtp_port = 0;
-    } else if(direction == 1 && sc->media && video_rtp_port) {
+    } else if(direction == DIRECTION_OUTBOUND && sc->media && video_rtp_port) {
       port_base = port_max = video_rtp_port;
       video_rtp_port = 0;
     } else {
@@ -573,7 +600,7 @@ SipRTP_UDP *MCUSipConnection::CreateRTPSession(int pt, SipCapability *sc)
           sc->sdp = sc->sdp + "a=fmtp:" + PString(pt) + " " + fmtp + "\r\n";
       }
     }
-    sdp_msg += sc->sdp;
+    sdp_ok_str += sc->sdp;
   }
   return session;
 }
@@ -1299,12 +1326,8 @@ int MCUSipConnection::ProcessSDP(PString & sdp_txt, SipCapMapType & SipCaps, int
 
   for(sdp_session_t *sdp = sess; sdp != NULL; sdp = sdp->sdp_next)
   {
-    if(!sdp->sdp_origin || !sdp->sdp_connection)
-    { PTRACE(1, "MCUSIP\tSDP parsing warning: origin or connection line is missing"); continue; }
-    if(sess->sdp_connection->c_addrtype != sdp_addr_ip4)
-    { PTRACE(1, "MCUSIP\tSDP parsing warning: unknown connection address type"); continue; }
-    if(!sess->sdp_connection->c_address)
-    { PTRACE(1, "MCUSIP\tSDP parsing warning: empty connection address"); continue; }
+    if(!sdp->sdp_origin)
+    { PTRACE(1, "MCUSIP\tSDP parsing error: sdp origin line is missing"); continue; }
 
     for(sdp_media_t *m = sdp->sdp_media; m != NULL; m = m->m_next)
     {
@@ -1320,15 +1343,24 @@ int MCUSipConnection::ProcessSDP(PString & sdp_txt, SipCapMapType & SipCaps, int
       else if(rtp_proto == "DTLS-SRTP" && m_proto_name != "RTP/SAVPF")
         continue;
 
+      PString address;
+      if(m->m_connections && m->m_connections->c_addrtype == sdp_addr_ip4 && m->m_connections->c_address)
+        address = m->m_connections->c_address;
+      else if(sdp->sdp_connection && sdp->sdp_connection->c_addrtype == sdp_addr_ip4 && sdp->sdp_connection->c_address)
+        address = sdp->sdp_connection->c_address;
+      else
+      { PTRACE(1, "MCUSIP\tSDP parsing error: incorrect or missing connection line, skip media"); continue; }
+
       int port;
       if(m->m_port) port = m->m_port;
-      else continue;
+      else
+      { PTRACE(1, "MCUSIP\tSDP parsing error: missing port, skip media"); continue; }
 
       int media;
       if(m->m_type == sdp_media_audio)      media = 0;
       else if(m->m_type == sdp_media_video) media = 1;
-      else continue;
-
+      else
+      { PTRACE(1, "MCUSIP\tSDP parsing error: unknown media type, skip media"); continue; }
 
       int mode = 3; // inactive, recvonly, sendonly, sendrecv
       if(m->m_mode == 1)      mode = 2;
@@ -1336,7 +1368,8 @@ int MCUSipConnection::ProcessSDP(PString & sdp_txt, SipCapMapType & SipCaps, int
       else if(m->m_mode == 3) mode = 3;
 
       int bw = 0;
-      if(m->m_bandwidths) bw = m->m_bandwidths->b_value;
+      if(m->m_bandwidths)          bw = m->m_bandwidths->b_value;
+      else if(sdp->sdp_bandwidths) bw = sdp->sdp_bandwidths->b_value;
 
       SipSecureTypes secure_type = SECURE_TYPE_NONE;
       PString srtp_type, srtp_key, srtp_param, zrtp_hash, dtls_fp, dtls_fp_type;
@@ -1397,8 +1430,7 @@ int MCUSipConnection::ProcessSDP(PString & sdp_txt, SipCapMapType & SipCaps, int
         if(rm->rm_rate) sc->clock = rm->rm_rate;
         if(rm->rm_fmtp) sc->parm = rm->rm_fmtp;
         //sc->cnum
-        if(sdp->sdp_connection->c_address) sc->remote_ip = sdp->sdp_connection->c_address;
-        if(sdp->sdp_bandwidths)            sc->bandwidth = sdp->sdp_bandwidths->b_value;
+        sc->remote_ip = address;
         if(sdp->sdp_origin->o_username)    sc->sess_username = sdp->sdp_origin->o_username;
         if(sdp->sdp_origin->o_id)          sc->sess_id = sdp->sdp_origin->o_id;
         if(sdp->sdp_origin->o_version)     sc->sess_ver = sdp->sdp_origin->o_version;
@@ -1554,68 +1586,18 @@ int MCUSipConnection::ProcessSDP(PString & sdp_txt, SipCapMapType & SipCaps, int
     if(it != SipCaps.end()) it->second->Print();
   }
 
-  sdp_msg = "v=0\r\no=";
-  sdp_msg = sdp_msg + OpenMCU::Current().GetName() + " ";
+  sdp_ok_str = "v=0\r\no=";
+  sdp_ok_str += OpenMCU::Current().GetName() + " ";
   sdp_seq++;
-  sdp_msg = sdp_msg + PString(sdp_id) + " ";
-  sdp_msg = sdp_msg + PString(sdp_seq);
-  sdp_msg = sdp_msg + " IN IP4 ";
-  sdp_msg = sdp_msg + local_ip + "\r\n";
-  sdp_msg = sdp_msg + "s="+OpenMCU::Current().GetName()+"\r\n";
-  sdp_msg = sdp_msg + "c=IN IP4 ";
-  sdp_msg = sdp_msg + local_ip + "\r\n";
-  if(bandwidth_to > 64) sdp_msg = sdp_msg + "b=AS:" + PString(bandwidth_to) + "\r\n";
-  sdp_msg = sdp_msg + "t=0 0\r\n";
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int MCUSipConnection::CreateSipData()
-{
-  PTRACE(1, "MCUSIP\tCreateSipData");
-  su_home_t *home = msg_home(c_sip_msg);
-  sip_t *sip = sip_object(c_sip_msg);
-  if(sip == NULL)
-    return 0;
-
-  if(direction == 0) //incoming
-  {
-    ProxyAccount *proxy = sep->FindProxyAccount((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
-    if(proxy)
-    {
-      contact_t = sip_contact_create(home, (url_string_t *)(const char *)("sip:"+proxy->username+"@"+proxy->local_ip), NULL);
-      local_ip = proxy->local_ip;
-      roomname = proxy->roomname;
-    } else {
-      PString local_port = "5060";
-      if(sip->sip_to->a_url->url_port) local_port = sip->sip_to->a_url->url_port;
-      contact_t = sip_contact_create(home, (url_string_t *)(const char *)
-	  ("sip:"+(PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_to->a_url->url_host+":"+local_port), NULL);
-      local_ip = sip->sip_to->a_url->url_host;
-      roomname = sip->sip_to->a_url->url_user;
-    }
-    PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_from);
-    bandwidth_to = GetEndpointParamFromUrl("Bandwidth to MCU", url, 0);
-  } else { // outgoing
-    ProxyAccount *proxy = sep->FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
-    if(proxy)
-    {
-      contact_t = sip_contact_create(home, (url_string_t *)(const char *)("sip:"+proxy->username+"@"+proxy->local_ip), NULL);
-      local_ip = proxy->local_ip;
-      roomname = proxy->roomname;
-    } else {
-      PString local_port = "5060";
-      if(sip->sip_from->a_url->url_port) local_port = sip->sip_from->a_url->url_port;
-      contact_t = sip_contact_create(home, (url_string_t *)(const char *)
-	  ("sip:"+(PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host+":"+local_port), NULL);
-      local_ip = sip->sip_from->a_url->url_host;
-      roomname = sip->sip_from->a_url->url_user;
-    }
-    PString url = sip_header_as_string(home, (sip_header_t const *)sip->sip_to);
-    bandwidth_to = GetEndpointParamFromUrl("Bandwidth to MCU", url, 0);
-  }
-  cseqNum = sip->sip_cseq->cs_seq+1;
+  sdp_ok_str += PString(sdp_id) + " ";
+  sdp_ok_str += PString(sdp_seq);
+  sdp_ok_str += " IN IP4 ";
+  sdp_ok_str += local_ip + "\r\n";
+  sdp_ok_str += "s="+OpenMCU::Current().GetName()+"\r\n";
+  sdp_ok_str += "c=IN IP4 ";
+  sdp_ok_str += local_ip + "\r\n";
+  if(bandwidth_to > 64) sdp_ok_str += "b=AS:" + PString(bandwidth_to) + "\r\n";
+  sdp_ok_str += "t=0 0\r\n";
   return 1;
 }
 
@@ -1625,14 +1607,19 @@ int MCUSipConnection::ProcessInviteEvent()
 {
   PTRACE(1, "MCUSIP\tProcessInviteEvent");
   sip_t *sip = sip_object(c_sip_msg);
-  if(sip == NULL || sip->sip_payload == NULL || sip->sip_payload->pl_data == NULL)
-    return 415; // SIP_415_UNSUPPORTED_MEDIA
+
+  if(direction == DIRECTION_INBOUND)
+  {
+    ProxyAccount *proxy = sep->FindProxyAccount((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
+    if(proxy)
+      local_user = proxy->roomname;
+  }
+
+  // save cseq
+  cseqNum = sip->sip_cseq->cs_seq+1;
 
   sdp_s = sip->sip_payload->pl_data;
   PStringArray sdp_sa = sdp_s.Lines();
-
-  if(CreateSipData() != 1)
-    return 500; // SIP_500_INTERNAL_SERVER_ERROR
 
   MCUURL_SIP url(c_sip_msg, direction);
   remoteName = url.GetDisplayName();
@@ -1641,16 +1628,18 @@ int MCUSipConnection::ProcessInviteEvent()
   remoteApplication = url.GetRemoteApplication();
 
   // endpoint display name override
-  PString override_name = GetEndpointParam("Display name");
-  if(override_name != "")
+  PString dname = GetEndpointParam("Display name");
+  if(dname != "")
   {
-    PTRACE(1, "MCUSipConnection\tSet endpoint display name: " << override_name);
-    remotePartyName = override_name;
-    remoteName = override_name;
+    PTRACE(1, "MCUSipConnection\tSet endpoint display name: " << dname);
+    remoteName = remotePartyName = dname;
   }
 
   // set endpoint member name
   SetMemberName();
+
+  // outgoing bandwidth
+  bandwidth_to = GetEndpointParamFromUrl("Bandwidth to MCU", ruri_str, 0);
 
   // for incoming, outgoing set in CreateSdpInvite
   if(rtp_proto == "")
@@ -1669,7 +1658,7 @@ int MCUSipConnection::ProcessInviteEvent()
     return 415; // SIP_415_UNSUPPORTED_MEDIA
 
   // join conference
-  requestedRoom = roomname;
+  requestedRoom = local_user;
   SetRequestedRoom(); // override requested room from registrar
   connectionState = EstablishedConnection;
   OnEstablished();
@@ -1678,7 +1667,7 @@ int MCUSipConnection::ProcessInviteEvent()
 
   // create logical channels
   CreateLogicalChannels();
-//  if(direction == 1) // for incoming connection start channels after ACK
+//  if(direction == DIRECTION_OUTBOUND) // for incoming connection start channels after ACK
 //  {
     StartReceiveChannels(); // start receive logical channels
     StartTransmitChannels(); // start transmit logical channels
@@ -1693,15 +1682,12 @@ int MCUSipConnection::ProcessReInviteEvent()
 {
   PTRACE(1, "MCUSIP\tProcessReInviteEvent");
   sip_t *sip = sip_object(c_sip_msg);
-  if(sip == NULL || sip->sip_payload == NULL || sip->sip_payload->pl_data == NULL)
-    return 415; // SIP_415_UNSUPPORTED_MEDIA
 
   PString sdp_txt = sip->sip_payload->pl_data;
   SipCapMapType NewSipCapMap;
 
   int cur_scap = scap;
   int cur_vcap = vcap;
-  PString cur_sdp_msg = sdp_msg;
 
   if(!ProcessSDP(sdp_txt, NewSipCapMap, 1))
     return 415; // SIP_415_UNSUPPORTED_MEDIA
@@ -1719,7 +1705,7 @@ int MCUSipConnection::ProcessReInviteEvent()
     SipCapability *new_sc = cir->second;
 
     sflag = new_sc->CmpSipCaps(*cur_sc);
-    if(!sflag) sdp_msg += new_sc->sdp;
+    if(!sflag) sdp_ok_str += new_sc->sdp;
   }
   else if(scap < 0 && cur_scap < 0) sflag = 0;
   if(sflag && cur_scap>=0)
@@ -1741,7 +1727,7 @@ int MCUSipConnection::ProcessReInviteEvent()
     SipCapability *new_sc = cir->second;
 
     vflag = new_sc->CmpSipCaps(*cur_sc);
-    if(!vflag) sdp_msg += new_sc->sdp;
+    if(!vflag) sdp_ok_str += new_sc->sdp;
   }
   else if(vcap < 0 && cur_vcap < 0)
   {
@@ -1784,20 +1770,18 @@ int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, 
   PTRACE(1, "MCUSIP\tSendRequest");
   sip_t *sip = sip_object(c_sip_msg);
   su_home_t *home = msg_home(c_sip_msg);
-  if(!sip || !home) return 0;
 
   // Send request
   sip_addr_t *sip_from, *sip_to;
-  if(direction == 0)
+  if(direction == DIRECTION_INBOUND)
   {
-    sip_from = sip_to_dup(home, sip->sip_to);
-    sip_to = sip_from_dup(home, sip->sip_from);
+    sip_from = sip->sip_to;
+    sip_to = sip->sip_from;
   } else {
-    sip_from = sip_from_dup(home, sip->sip_from);
-    sip_to = sip_to_dup(home, sip->sip_to);
+    sip_from = sip->sip_from;
+    sip_to = sip->sip_to;
   }
-  // do not use GetUrl() directly, "nta outgoing create: invalid URI"
-  PString ruri_str = MCUURL_SIP(c_sip_msg, direction).GetUrl();
+
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
   sip_request_t *sip_rq = sip_request_create(home, method, method_name, ruri, NULL);
@@ -1812,7 +1796,7 @@ int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, 
 			NTATAG_STATELESS(1),
  			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_ROUTE(sip_route),
-                        SIPTAG_CONTACT(contact_t),
+                        SIPTAG_CONTACT_STR(contact_str),
 			SIPTAG_FROM(sip_from),
 			SIPTAG_TO(sip_to),
 			SIPTAG_CSEQ(sip_cseq),
@@ -1847,6 +1831,14 @@ int MCUSipConnection::SendVFU()
                         SIPTAG_PAYLOAD(sip_payload),
                         TAG_END());
   return SendRequest(SIP_METHOD_INFO, msg_req);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int MCUSipConnection::SendACK()
+{
+  PTRACE(1, "MCUSIP\tSendACK");
+  return SendRequest(SIP_METHOD_ACK);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1929,17 +1921,14 @@ PString MCUSipEndPoint::GetRoomAccess(const sip_t *sip)
 nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & call_id)
 {
     PTRACE(1, "MCUSIP\tSipMakeCall from:" << from << " to:" << to);
-    if(agent == NULL) return NULL;
 
     MCUURL url_to(to);
-    if(url_to.GetHostName() == "")
-      return NULL;
-
+    if(url_to.GetHostName() == "") return NULL;
     PString remote_user = url_to.GetUserName();
     PString remote_domain = url_to.GetHostName();
     PString remote_host = remote_domain;
     PString remote_port = url_to.GetPort();
-    PString remote_transport = "transport="+url_to.GetSipProto();
+    PString remote_transport = url_to.GetSipProto();
 
     if(from.Left(4) != "sip:") from = "sip:"+from;
     if(from.Find("@") == P_MAX_INDEX) from = from+"@";
@@ -1948,61 +1937,45 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
     PString local_domain = url_from.GetHostName();
     PString local_dname = url_from.GetDisplayName();
     PString local_ip;
-    ProxyAccount *proxy = NULL;
-    ProxyAccountMapType::iterator it;
-    for(it=ProxyAccountMap.begin(); it!=ProxyAccountMap.end(); it++)
+
+    for(ProxyAccountMapType::iterator it=ProxyAccountMap.begin(); it!=ProxyAccountMap.end(); it++)
     {
-      proxy = it->second;
+      ProxyAccount *proxy = it->second;
       if((proxy->domain == remote_domain || proxy->host == remote_host) && proxy->roomname == local_user && proxy->enable == 1)
       {
         local_user = proxy->username;
         local_domain = proxy->domain;
         local_dname = proxy->roomname;
-        local_ip = proxy->local_ip;
         remote_host = proxy->host;
         remote_port = proxy->port;
         break;
-      } else {
-        proxy = NULL;
       }
     }
 
-    PString ep_port = GetEndpointParamFromUrl("Port", "sip:"+remote_user+"@"+remote_domain);
-    if(ep_port != "") remote_port = ep_port;
-
-    PString ep_transport = GetEndpointParamFromUrl("Transport", "sip:"+remote_user+"@"+remote_domain);
-    if(ep_transport != "") remote_transport = "transport="+ep_transport;
+    remote_port = GetEndpointParamFromUrl("Port", "sip:"+remote_user+"@"+remote_domain, remote_port);
+    remote_transport = GetEndpointParamFromUrl("Transport", "sip:"+remote_user+"@"+remote_domain, remote_transport);
     if(remote_transport == "transport=tls" && remote_port == "5060")
       remote_port = "5061";
 
-    if(local_ip == "")
-    {
-      local_ip = GetFromIp(remote_host, remote_port);
-      if(local_ip == "") return NULL;
-    }
+    local_ip = GetFromIp(remote_host, remote_port);
+    if(local_ip == "" || FindListener(local_ip) == FALSE)
+      return NULL;
 
     if(local_domain == "")
       local_domain = local_ip;
     if(local_dname == "")
       local_dname = local_user;
-    if(FindListener(local_ip) == FALSE)
-      return NULL;
 
     // ruri
-    PString ruri_str = "sip:"+remote_user+"@"+remote_host+":"+remote_port+";"+remote_transport;
+    PString ruri_str = "sip:"+remote_user+"@"+remote_host+":"+remote_port+";transport="+remote_transport;
     url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
-    sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
-	("sip:"+local_user+"@"+local_domain));
-    sip_from->a_display = local_dname;
+    sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)("sip:"+local_user+"@"+local_domain));
     sip_from_tag(&home, sip_from, nta_agent_newtag(&home, "tag=%s", agent));
 
-    sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)(const char *)
-	("sip:"+remote_user+"@"+remote_domain));
+    sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)(const char *)("sip:"+remote_user+"@"+remote_domain));
 
-    sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)
-	("sip:"+local_user+"@"+local_ip), NULL);
-    sip_contact->m_display = local_dname;
+    sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)("sip:"+local_user+"@"+local_ip), NULL);
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, ruri, NULL);
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_INVITE);
@@ -2022,13 +1995,15 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
     if(!sCon)
     {
       sCon = new MCUSipConnection(this, ep, callToken);
-      sCon->direction = 1;
-      PString local_url = "sip:"+local_user+"@"+local_ip;
-      PString remote_url = "sip:"+remote_user+"@"+remote_domain;
-      CreateSdpInvite(sCon, local_url, remote_url);
+      sCon->direction = DIRECTION_OUTBOUND;
+      sCon->local_user = local_user;
+      sCon->local_ip = local_ip;
+      sCon->ruri_str = ruri_str;
+      sCon->contact_str = "sip:"+sCon->local_user+"@"+sCon->local_ip;
+      CreateSdpInvite(sCon, sCon->contact_str, sCon->ruri_str);
     }
 
-    sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sCon->invite_sdp_txt);
+    sip_payload_t *sip_payload = sip_payload_make(&home, (const char *)sCon->sdp_invite_str);
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *orq = nta_outgoing_mcreate(agent, nta_response_cb1_wrap, (nta_outgoing_magic_t *)this,
@@ -2043,6 +2018,7 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
 			SIPTAG_PAYLOAD(sip_payload),
 			SIPTAG_CONTENT_TYPE_STR("application/sdp"),
+			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
 			SIPTAG_SERVER_STR(SIP_USER_AGENT),
 			TAG_END());
     if(orq == NULL)
@@ -2056,7 +2032,9 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
 int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 {
     PTRACE(1, "MCUSIP\tSipRegister");
-    if(agent == NULL)
+
+    PString local_ip = GetFromIp(proxy->host, proxy->port);
+    if(local_ip == "" || FindListener(local_ip) == FALSE)
       return 0;
 
     // ruri
@@ -2072,7 +2050,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 	("sip:"+proxy->username+"@"+proxy->domain));
 
     sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)
-	("sip:"+proxy->username+"@"+proxy->local_ip), NULL);
+	("sip:"+proxy->username+"@"+local_ip), NULL);
     sip_contact->m_display = proxy->roomname;
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_REGISTER, ruri, NULL);
@@ -2099,7 +2077,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 			SIPTAG_CALL_ID(sip_call_id),
 			SIPTAG_CONTACT(sip_contact),
 			SIPTAG_EXPIRES_STR((const char*)expires),
-			SIPTAG_ALLOW_STR("INVITE, ACK, BYE, CANCEL, OPTIONS, SUBSCRIBE, INFO"),
+			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
 			SIPTAG_SERVER_STR(SIP_USER_AGENT),
 			TAG_END());
     if(a_orq == NULL)
@@ -2179,8 +2157,7 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
   msg_t *msg = nta_outgoing_getresponse(orq);
   msg_t *msg_orq = nta_outgoing_getrequest(orq);
   sip_t *sip_orq = sip_object(msg_orq);
-  if(msg == NULL || msg_orq == NULL) return 0;
-  if(sip->sip_status == NULL) return 0;
+  if(!msg || !msg_orq) return 0;
 
   int status = 0, request = 0;
   if(sip->sip_status)  status = sip->sip_status->st_status;
@@ -2208,8 +2185,9 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
   {
     if(status == 200)
     {
-      SendACK(msg);
-      CreateOutgoingConnection(msg);
+      MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
+      if(sCon)
+        CreateOutgoingConnection(msg);
       nta_outgoing_destroy(orq);
       return 0;
     }
@@ -2279,65 +2257,68 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipEndPoint::SendACK(const msg_t *msg)
+int MCUSipEndPoint::SipReqReply(const msg_t *msg, unsigned status, const char *auth_str, const char *contact_str, const char *content_str, const char *payload_str)
 {
+  PTRACE(1, "MCUSipEndPoint\tSipReqReply");
   sip_t *sip = sip_object(msg);
-  if(sip == NULL) return 0;
 
-  // do not use GetUrl() directly, "nta outgoing create: invalid URI"
-  PString ruri_str = MCUURL_SIP(msg, 1).GetUrl();
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
+  const char *status_phrase = sip_status_phrase(status);
+  if(status_phrase == NULL) return 0;
 
-  sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_ACK, ruri, NULL);
-  sip_cseq_t *sip_cseq = sip_cseq_create(&home, sip->sip_cseq->cs_seq, SIP_METHOD_ACK);
-  sip_route_t* sip_route = sip_route_reverse(&home, sip->sip_record_route);
-  msg_t *sip_msg = nta_msg_create(agent, 0);
-  nta_outgoing_mcreate(agent, NULL, NULL,
-			ruri,
-			sip_msg,
-			NTATAG_STATELESS(1),
-			SIPTAG_REQUEST(sip_rq),
-			SIPTAG_ROUTE(sip_route),
-			SIPTAG_FROM(sip->sip_from),
-			SIPTAG_TO(sip->sip_to),
-			SIPTAG_CSEQ(sip_cseq),
-			SIPTAG_CALL_ID(sip->sip_call_id),
-			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
-			SIPTAG_SERVER_STR(SIP_USER_AGENT),
-			TAG_END());
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int MCUSipEndPoint::ReqReply(const msg_t *msg, unsigned method, const char *method_name, MCUSipConnection *sCon)
-{
-  PTRACE(1, "MCUSIP\tReqReply");
-  sip_t *sip = sip_object(msg);
-  if(sip == NULL || sip->sip_request == NULL) return 0;
-
-  if(method_name == NULL)
-    method_name = sip_status_phrase(method);
-
-  sip_contact_t *sip_contact = NULL;
-  const char *content_str = NULL;
-  sip_payload_t *sip_payload = NULL;
-  if(sCon != NULL)
+  sip_authorization_t *sip_www_auth = NULL;
+  sip_authorization_t *sip_proxy_auth = NULL;
+  if(auth_str)
   {
-    content_str = "application/sdp";
-    sip_payload = sip_payload_make(&home, (const char *)sCon->sdp_msg);
-    sip_contact = sCon->contact_t;
+    if(status == 401)      sip_www_auth = sip_authorization_make(&home, auth_str);
+    else if(status == 407) sip_proxy_auth = sip_authorization_make(&home, auth_str);
   }
 
+  const char *event_str = NULL;
+  const char *allow_events_str = NULL;
+  const char *allow_str = NULL;
+  sip_expires_t *sip_expires = NULL;
+  if(status == 200 && sip->sip_request->rq_method == sip_method_register)
+  {
+    event_str = "registration";
+    allow_events_str = "presence";
+    allow_str = SIP_ALLOW_METHODS_REGISTER;
+    sip_expires = sip->sip_expires;
+  }
+  if(status == 200 && sip->sip_request->rq_method == sip_method_options)
+  {
+    allow_str = SIP_ALLOW_METHODS_OPTIONS;
+  }
+  if(status == 200 && sip->sip_request->rq_method == sip_method_subscribe)
+  {
+    sip_expires = sip->sip_expires;
+  }
+
+  sip_contact_t *sip_contact = NULL;
+  if(contact_str)
+    sip_contact = sip_contact_make(&home, contact_str);
+
+  sip_content_type_t *sip_content = NULL;
+  if(content_str)
+    sip_content = sip_content_type_make(&home, content_str);
+
+  sip_payload_t *sip_payload = NULL;
+  if(payload_str)
+    sip_payload = sip_payload_make(&home, payload_str);
+
   msg_t *msg_reply = msg_dup(msg);
-  nta_msg_treply(agent, msg_reply, method, method_name,
+  nta_msg_treply(agent, msg_reply, status, status_phrase,
                    SIPTAG_CONTACT(sip_contact),
-                   SIPTAG_CONTENT_TYPE_STR(content_str),
+                   SIPTAG_CONTENT_TYPE(sip_content),
                    SIPTAG_PAYLOAD(sip_payload),
-                   SIPTAG_ALLOW_STR("INVITE, ACK, BYE, CANCEL, OPTIONS, INFO"),
+  		   SIPTAG_EVENT_STR(event_str),
+  		   SIPTAG_ALLOW_EVENTS_STR(allow_events_str),
+  		   SIPTAG_ALLOW_STR(allow_str),
+		   SIPTAG_EXPIRES(sip_expires),
+  		   SIPTAG_WWW_AUTHENTICATE(sip_www_auth),
+		   SIPTAG_PROXY_AUTHENTICATE(sip_proxy_auth),
                    SIPTAG_SERVER_STR(SIP_USER_AGENT),
                    TAG_END());
-  return 0;
+  return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2353,7 +2334,6 @@ int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg)
 {
   PTRACE(1, "MCUSIP\tCreateOutgoingConnection");
   sip_t *sip = sip_object(msg);
-  if(!sip) return 0;
 
   if(sip->sip_payload==NULL || sip->sip_payload->pl_data==NULL)
     return 0;
@@ -2365,6 +2345,7 @@ int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg)
     return 0;
 
   sCon->c_sip_msg = msg_dup(msg);
+  sCon->SendACK();
   sCon->DeleteTempSockets();
 
   int ret = sCon->ProcessInviteEvent();
@@ -2381,13 +2362,12 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
 {
   PTRACE(1, "MCUSIP\tCreateIncomingConnection");
   sip_t *sip = sip_object(msg);
-  if(sip == NULL) return 0;
 
-  if(sip->sip_payload==NULL || (sip->sip_payload!=NULL && sip->sip_payload->pl_data==NULL))
-    return ReqReply(msg, SIP_415_UNSUPPORTED_MEDIA);
+  if(!sip->sip_payload || !sip->sip_payload->pl_data)
+    return SipReqReply(msg, 415); // SIP_415_UNSUPPORTED_MEDIA
 
   if(GetRoomAccess(sip) == "DENY")
-    return ReqReply(msg, SIP_403_FORBIDDEN);
+    return SipReqReply(msg, 403); // SIP_403_FORBIDDEN
 
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
 
@@ -2398,12 +2378,12 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   if(sCon->IsConnected())  // connection already exist, process reinvite
   {
     PTRACE(1, "MCUSIP\tSIP REINVITE");
-    sCon->direction = 0;
+    sCon->direction = DIRECTION_INBOUND;
     sCon->c_sip_msg = msg_dup(msg);
     int ret = sCon->ProcessReInviteEvent();
     if(ret != 1)
-      return ReqReply(msg, ret);
-    ReqReply(msg, SIP_200_OK, sCon);
+      return SipReqReply(msg, ret);
+    SipReqReply(msg, 200, NULL, sCon->contact_str, "application/sdp", sCon->sdp_ok_str);
     sCon->StartReceiveChannels(); // start receive logical channels
     sCon->StartTransmitChannels(); // start transmit logical channels
     return 0;
@@ -2414,11 +2394,11 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   int ret = sCon->ProcessInviteEvent();
   if(ret != 1)
   {
-    ReqReply(msg, ret);
+    SipReqReply(msg, ret);
     sCon->LeaveMCU(TRUE); // leave conference and delete connection
     return 0;
   }
-  ReqReply(msg, SIP_200_OK, sCon);
+  SipReqReply(msg, 200, NULL, sCon->contact_str, "application/sdp", sCon->sdp_ok_str);
   return 0;
 }
 
@@ -2426,7 +2406,7 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
 
 int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *sip)
 {
-  if(terminating || restart)
+  if(terminating == 1)
     return 0;
 
   int request = 0, status = 0, cseq = 0;
@@ -2435,14 +2415,14 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   if(sip->sip_cseq)    cseq = sip->sip_cseq->cs_method;
 
   if(request == sip_method_invite && sip->sip_payload == NULL)
-    return ReqReply(msg, SIP_415_UNSUPPORTED_MEDIA);
+    return SipReqReply(msg, 415); // SIP_415_UNSUPPORTED_MEDIA
 
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
 
-  Registrar *registrar = OpenMCU::Current().GetRegistrar();
   if(!sCon || !sCon->IsEstablished())
   {
+    Registrar *registrar = OpenMCU::Current().GetRegistrar();
     if(registrar->OnReceivedMsg(msg))
       return 0;
   }
@@ -2450,7 +2430,8 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   // repeated OK, must be processed in the invite callback
   if(cseq == sip_method_invite && status == 200)
   {
-    SendACK(msg);
+    if(sCon)
+      sCon->SendACK();
     return 0;
   }
 
@@ -2461,7 +2442,7 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   if(request == sip_method_ack)
   {
     if(!sCon)
-      return ReqReply(msg, SIP_200_OK); // SIP_481_NO_TRANSACTION
+      return SipReqReply(msg, 200); // SIP_481_NO_TRANSACTION
     PTRACE(1, "MCUSIP\tNew SIP ACK accepted");
     // replace to_tag
     sip_t *c_sip = sip_object(sCon->c_sip_msg);
@@ -2473,21 +2454,21 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   if(request == sip_method_bye)
   {
     if(!sCon)
-      return ReqReply(msg, SIP_200_OK);
+      return SipReqReply(msg, 200);
     sCon->LeaveMCU(TRUE); // leave conference and delete connection
-    return ReqReply(msg, SIP_200_OK);
+    return SipReqReply(msg, 200);
   }
   if(request == sip_method_cancel)
   {
     if(!sCon)
-      return ReqReply(msg, SIP_200_OK);
+      return SipReqReply(msg, 200);
     sCon->LeaveMCU(TRUE); // leave conference and delete connection
-    return ReqReply(msg, SIP_200_OK);
+    return SipReqReply(msg, 200);
   }
   if(request == sip_method_info)
   {
     if(!sCon)
-      return ReqReply(msg, SIP_200_OK);
+      return SipReqReply(msg, 200);
     if(sip->sip_payload && sip->sip_payload->pl_data && sip->sip_content_type)
     {
       PString type = PString(sip->sip_content_type->c_type);
@@ -2496,17 +2477,17 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
         sCon->ReceivedVFU();
       else if (type.Find("application/dtmf-relay") != P_MAX_INDEX)
         sCon->ReceivedDTMF(data);
-      return ReqReply(msg, SIP_200_OK);
+      return SipReqReply(msg, 200);
     }
-    return ReqReply(msg, SIP_501_NOT_IMPLEMENTED);
+    return SipReqReply(msg, 501); // SIP_501_NOT_IMPLEMENTED
   }
   if(request == sip_method_options)
   {
-    return ReqReply(msg, SIP_200_OK);
+    return SipReqReply(msg, 200);
   }
   if(request != 0)
   {
-    return ReqReply(msg, SIP_501_NOT_IMPLEMENTED);
+    return SipReqReply(msg, 501); // SIP_501_NOT_IMPLEMENTED
   }
 
   return 0;
@@ -2594,10 +2575,6 @@ void MCUSipEndPoint::InitProxyAccounts()
     proxy->password = password;
     proxy->expires = expires;
     proxy->enable = enable;
-    //
-    proxy->local_ip = GetFromIp(proxy->host, proxy->port);
-    if(proxy->local_ip == "" || FindListener(proxy->local_ip) == FALSE)
-      proxy->enable = FALSE;
     //
     proxy->start_time = PTime(0);
     proxy->sip_www_str = "";
@@ -2750,6 +2727,15 @@ void MCUSipEndPoint::Main()
   agent = nta_agent_create(root, (url_string_t *)-1, ProcessSipEventWrap_cb, (nta_agent_magic_t *)this,
                            NTATAG_UDP_MTU(64000),
                            TAG_NULL());
+
+  nta_agent_set_params(agent,
+                           NTATAG_SIP_T1(1000), // Initial retransmission interval (in milliseconds)
+                           //NTATAG_SIP_T2(1000), // Maximum retransmission interval (in milliseconds)
+                           NTATAG_SIP_T1X64(3000), // Transaction timeout (defaults to T1 * 64)
+                           //NTATAG_TIMER_C(2999), // two invite requests ???
+                           //NTATAG_UA(1), // If true, NTA acts as User Agent Server or Client by default
+                           TAG_NULL());
+
   sip_rtp_init();
   if(agent != NULL)
   {

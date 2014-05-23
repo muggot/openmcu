@@ -112,7 +112,7 @@ install:
 	install -m 644 ../COPYING $(DESTDIR)/opt/openmcu-ru
 	install -m 644 ../NEWS $(DESTDIR)/opt/openmcu-ru
 	install -m 644 ../README $(DESTDIR)/opt/openmcu-ru
-	ln -sf $(DESTDIR)/opt/openmcu-ru/bin/$(PROG) /usr/local/bin/$(PROG)
+#	ln -sf $(DESTDIR)/opt/openmcu-ru/bin/$(PROG) /usr/local/bin/$(PROG)
 #	install -m 644 ssl/agent.pem $(DESTDIR)/opt/openmcu-ru/ssl
 #	install -m 644 ssl/cafile.pem $(DESTDIR)/opt/openmcu-ru/ssl
 
@@ -126,7 +126,7 @@ uninstall:
 	rm -f $(DESTDIR)/opt/openmcu-ru/NEWS
 	rm -f $(DESTDIR)/opt/openmcu-ru/README
 	rm -f $(DESTDIR)/opt/openmcu-ru/bin/$(PROG)
-	rm -f /usr/bin/$(PROG)
+#	rm -f /usr/local/bin/$(PROG)
 
 clean:
 	rm -rf $(OBJDIR)

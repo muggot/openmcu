@@ -63,8 +63,6 @@ class RegistrarConnection
     }
     ~RegistrarConnection()
     {
-      //PTRACE(1, "RegistrarConnection Destructor: " << username_in << "->" << username_out);
-      //cout << "RegistrarConnection Destructor: " << username_in << "->" << username_out << "\n";
       if(orq_invite_out) { nta_outgoing_destroy(orq_invite_out); orq_invite_out = NULL; }
       if(msg_invite) { msg_destroy(msg_invite); msg_invite = NULL; }
     }
@@ -129,14 +127,15 @@ class Subscription
     }
     void Init()
     {
-      state = state_new = SUB_STATE_CLOSED;
+      state = SUB_STATE_CLOSED;
       msg_sub = NULL;
       start_time = PTime();
       expires = 0;
+      cseq = 100;
     }
     void Reset()
     {
-      state = state_new = SUB_STATE_CLOSED;
+      state = SUB_STATE_CLOSED;
     }
 
     void Lock()      { mutex.Wait(); }
@@ -146,12 +145,14 @@ class Subscription
     PString username_in;
     PString username_out;
     PString username_pair;
+    PString ruri_str;
+    PString contact_str;
+    int cseq;
 
     PTime start_time;
     time_t expires;
 
     RegSubscriptionStates state;
-    RegSubscriptionStates state_new;
 
     msg_t *msg_sub;
 
@@ -174,8 +175,6 @@ class RegistrarAccount
     }
     ~RegistrarAccount()
     {
-      //PTRACE(1, "RegistrarAccount Destructor: " << username+"@"+host);
-      //cout << "RegistrarAccount Destructor: " << username+"@"+host << "\n";
       if(msg_reg) { msg_destroy(msg_reg); msg_reg = NULL; }
     }
     void Init()
@@ -213,6 +212,10 @@ class RegistrarAccount
       }
       return url;
     }
+    PString GetContact()
+    {
+      return contact_str;
+    }
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
@@ -228,6 +231,7 @@ class RegistrarAccount
     PString transport;
     PString password;
 
+    PString contact_str;
     PString remote_application;
 
     PString sip_call_processing;
@@ -305,8 +309,8 @@ class Registrar : public PThread
       PThread(10000,NoAutoDeleteThread,NormalPriority,"Registrar:%0x"),
       ep(_ep), sep(_sep)
     {
+      restart = 1;
       terminating = 0;
-      restart = 0;
       gk = NULL;
     }
     ~Registrar();
@@ -333,8 +337,7 @@ class Registrar : public PThread
     su_home_t *GetHome() { return sep->GetHome(); };
     MCUSipEndPoint *GetSep() { return sep; };
 
-    int SipSendNotify(msg_t *msg_sub, int state);
-    int SipReqReply(const msg_t *msg, unsigned method, PString auth_str = "", PString contact = "");
+    int SipSendNotify(msg_t *msg_sub, Subscription *subAccount);
 
     RegistrarAccount * InsertAccountWithLock(RegAccountTypes account_type, PString username);
     RegistrarAccount * InsertAccount(RegistrarAccount *regAccount);
