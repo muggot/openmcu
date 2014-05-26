@@ -1486,10 +1486,6 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
     if(sc) sc->Print();
   }
 
-  // create sdp for OK
-  if(direction == DIRECTION_INBOUND)
-    CreateSdpOk();
-
   return 1;
 }
 
@@ -1620,6 +1616,10 @@ int MCUSipConnection::ProcessInviteEvent()
     StartTransmitChannels(); // start transmit logical channels
 //  }
 
+  // create sdp for OK
+  if(direction == DIRECTION_INBOUND)
+    CreateSdpOk();
+
   return 1;
 }
 
@@ -1694,6 +1694,10 @@ int MCUSipConnection::ProcessReInviteEvent()
     CreateMediaChannel(vcap,0);
     CreateMediaChannel(vcap,1);
   }
+
+  // create sdp for OK
+  if(direction == DIRECTION_INBOUND)
+    CreateSdpOk();
 
   return 1;
 }
