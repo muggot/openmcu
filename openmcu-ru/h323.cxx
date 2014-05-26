@@ -256,42 +256,58 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
      }
    }
 
-   unsigned rsConfig=1, tsConfig=1, rvConfig=1, tvConfig=1;
+   unsigned rsConfig=1, tsConfig=1, rvConfig=1, tvConfig=1, saConfig=1, svConfig=1;
    if(MCUConfig("RECEIVE_SOUND").GetKeys().GetSize() == 0) rsConfig = 0;
    if(MCUConfig("TRANSMIT_SOUND").GetKeys().GetSize() == 0) tsConfig = 0;
    if(MCUConfig("RECEIVE_VIDEO").GetKeys().GetSize() == 0) rvConfig = 0;
    if(MCUConfig("TRANSMIT_VIDEO").GetKeys().GetSize() == 0) tvConfig = 0;
+   if(MCUConfig("SIP Audio").GetKeys().GetSize() == 0) saConfig = 0;
+   if(MCUConfig("SIP Video").GetKeys().GetSize() == 0) svConfig = 0;
 
    for(PINDEX i = 0; i < capabilities.GetSize(); i++)
    {
      H323Capability *cap = &capabilities[i];
+     PString capname = cap->GetFormatName();
+
+     // H.323
      if(rsConfig == 0 && cap->GetMainType() == 0)
      {
-       if(cap->GetFormatName().Right(4) == "{sw}")
-         MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName(), 1);
+       if(capname.Right(4) == "{sw}")
+         MCUConfig("RECEIVE_SOUND").SetBoolean(capname, TRUE);
        else
-         MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName()+"{sw}", 1);
+         MCUConfig("RECEIVE_SOUND").SetBoolean(capname+"{sw}", TRUE);
      }
      if(tsConfig == 0 && cap->GetMainType() == 0)
-       MCUConfig("TRANSMIT_SOUND").SetBoolean(cap->GetFormatName(), 1);
+       MCUConfig("TRANSMIT_SOUND").SetBoolean(capname, TRUE);
      if(rvConfig == 0 && cap->GetMainType() == 1)
-       MCUConfig("RECEIVE_VIDEO").SetBoolean(cap->GetFormatName(), 1);
+       MCUConfig("RECEIVE_VIDEO").SetBoolean(capname, TRUE);
      if(tvConfig == 0 && cap->GetMainType() == 1)
-       MCUConfig("TRANSMIT_VIDEO").SetBoolean(cap->GetFormatName(), 1);
+       MCUConfig("TRANSMIT_VIDEO").SetBoolean(capname, TRUE);
 
      if(rsConfig == 1 && cap->GetMainType() == 0)
      {
-       if(cap->GetFormatName().Right(4) == "{sw}" && MCUConfig("RECEIVE_SOUND").HasKey(cap->GetFormatName()) == 0)
-         MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName(), 1);
-       if(cap->GetFormatName().Right(4) != "{sw}" && MCUConfig("RECEIVE_SOUND").HasKey(cap->GetFormatName()+"{sw}") == 0)
-         MCUConfig("RECEIVE_SOUND").SetBoolean(cap->GetFormatName()+"{sw}", 1);
+       if(capname.Right(4) == "{sw}" && !MCUConfig("RECEIVE_SOUND").HasKey(capname))
+         MCUConfig("RECEIVE_SOUND").SetBoolean(capname, TRUE);
+       if(capname.Right(4) != "{sw}" && !MCUConfig("RECEIVE_SOUND").HasKey(capname+"{sw}"))
+         MCUConfig("RECEIVE_SOUND").SetBoolean(capname+"{sw}", TRUE);
      }
-     if(tsConfig == 1 && cap->GetMainType() == 0 && MCUConfig("TRANSMIT_SOUND").HasKey(cap->GetFormatName()) == 0)
-       MCUConfig("TRANSMIT_SOUND").SetBoolean(cap->GetFormatName(), 1);
-     if(rvConfig == 1 && cap->GetMainType() == 1 && MCUConfig("RECEIVE_VIDEO").HasKey(cap->GetFormatName()) == 0)
-       MCUConfig("RECEIVE_VIDEO").SetBoolean(cap->GetFormatName(), 1);
-     if(tvConfig == 1 && cap->GetMainType() == 1 && MCUConfig("TRANSMIT_VIDEO").HasKey(cap->GetFormatName()) == 0)
-       MCUConfig("TRANSMIT_VIDEO").SetBoolean(cap->GetFormatName(), 1);
+     if(tsConfig == 1 && cap->GetMainType() == 0 && !MCUConfig("TRANSMIT_SOUND").HasKey(capname))
+       MCUConfig("TRANSMIT_SOUND").SetBoolean(capname, TRUE);
+     if(rvConfig == 1 && cap->GetMainType() == 1 && !MCUConfig("RECEIVE_VIDEO").HasKey(capname))
+       MCUConfig("RECEIVE_VIDEO").SetBoolean(capname, TRUE);
+     if(tvConfig == 1 && cap->GetMainType() == 1 && !MCUConfig("TRANSMIT_VIDEO").HasKey(capname))
+       MCUConfig("TRANSMIT_VIDEO").SetBoolean(capname, TRUE);
+
+     // SIP
+     if(capname.Right(4) != "{sw}") capname += "{sw}";
+     if(saConfig == 0 && cap->GetMainType() == 0)
+       MCUConfig("SIP Audio").SetBoolean(capname, TRUE);
+     if(svConfig == 0 && cap->GetMainType() == 1)
+       MCUConfig("SIP Video").SetBoolean(capname, TRUE);
+     if(saConfig == 1 && cap->GetMainType() == 0 && !MCUConfig("SIP Audio").HasKey(capname))
+       MCUConfig("SIP Audio").SetBoolean(capname, TRUE);
+     if(svConfig == 1 && cap->GetMainType() == 1 && !MCUConfig("SIP Video").HasKey(capname))
+       MCUConfig("SIP Video").SetBoolean(capname, TRUE);
    }
 
    capabilities.RemoveAll();

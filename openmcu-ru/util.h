@@ -19,6 +19,8 @@ int GetConferenceParam(PString room, PString param, int defaultValue);
 
 void MCUTRACE(unsigned level, PString args);
 
+char * PStringToChar(PString str);
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUConfig: public PConfig

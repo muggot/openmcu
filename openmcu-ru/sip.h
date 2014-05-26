@@ -34,7 +34,17 @@
 #define SIP_ALLOW_METHODS_REGISTER    "SUBSCRIBE"
 #define SIP_ALLOW_METHODS_OPTIONS     "INVITE,BYE,ACK,CANCEL,OPTIONS,SUBSCRIBE,MESSAGE,INFO"
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUSipEndPoint;
+class MCUSipConnection;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString GetFromIp(PString toAddr, PString toPort);
+BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rate, PString & fmtp);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 enum SipSecureTypes
 {
@@ -49,11 +59,6 @@ enum Direction
   DIRECTION_INBOUND,
   DIRECTION_OUTBOUND
 };
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class MCUSipEndPoint;
-class MCUSipConnection;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -106,9 +111,28 @@ typedef std::map<PString, ProxyAccount *> ProxyAccountMapType;
 class SipCapability
 {
   public:
-    SipCapability(int _pt = 0, int _m = 0, int _mm = 0, int _p = 0, int _bw = 0)
-      : payload(_pt), media(_m), mode(_mm), port(_p), bandwidth(_bw)
+    SipCapability(PString _capname)
     {
+      capname = _capname;
+      Init();
+      GetSipCapabilityParams(capname, format, payload, clock, fmtp);
+    }
+    SipCapability()
+    {
+      Init();
+    }
+    ~SipCapability()
+    {
+      delete cap;
+      cap = NULL;
+    }
+    void Init()
+    {
+      payload = -1;
+      media = 0;
+      mode = 3;
+      remote_port = 0;
+      bandwidth = 0;
       clock = 0;
       cnum = 0;
       cap = NULL;
@@ -119,45 +143,40 @@ class SipCapability
     void Print();
     int CmpSipCaps(SipCapability &c)
     {
+      if(capname != c.capname) return 1;
+      if(format != c.format) return 1;
       if(payload != c.payload) return 1;
       if(media != c.media) return 1;
       if(mode != c.mode) return 1;
-      if(port != c.port) return 1;
-      if(bandwidth != c.bandwidth) return 1;
       if(clock != c.clock) return 1;
       if(cnum != c.cnum) return 1;
-      if(format != c.format) return 1;
-      if(parm != c.parm) return 1;
+      //if(remote_ip != c.remote_ip) return 1; // do not check, may be 0.0.0.0 on reinvite
+      if(remote_port != c.remote_port) return 1;
+      if(bandwidth != c.bandwidth) return 1;
+      if(fmtp != c.fmtp) return 1;
       if(secure_type != c.secure_type) return 1;
       if(srtp_remote_type != c.srtp_remote_type) return 1;
       if(srtp_remote_key != c.srtp_remote_key) return 1;
       if(srtp_remote_param != c.srtp_remote_param) return 1;
-      sdp = c.sdp;
       inpChan = c.inpChan;
       outChan = c.outChan;
       return 0;
     }
 
+    PString capname; // H.323 capability name
+    PString format; // SIP format name
     int payload; // payload type
-    int media; // media type 0 - audio, 1 - video, 2 - other
     int mode; // 0-inactive, 1-recvonly, 2-sendonly, 3-sendrecv
-    int port; // remote rtp port number
-    int lport; // local rtp port
-    int bandwidth;
+    int media; // media type 0 - audio, 1 - video, 2 - other
     int clock; // rtp clock
+    PString remote_ip;
+    int remote_port;
+    int bandwidth; // bandwidth from MCU
     int cnum; // channels numbers
-    PString format; // codec name
-    PString parm; // parameters string
-    PString h323; // found h323 capability name
-    PString sdp; // sdp section
+    PString fmtp; // parameters
     H323Capability *cap;
     H323_RTPChannel *inpChan;
     H323_RTPChannel *outChan;
-
-    PString remote_ip;
-    PString sess_id;
-    PString sess_ver;
-    PString sess_username;
 
     SipSecureTypes secure_type;
     PString srtp_remote_type;
@@ -170,7 +189,6 @@ class SipCapability
     PString dtls_fp;
     PString dtls_fp_type;
 };
-
 typedef std::map<int, SipCapability *> SipCapMapType;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -213,29 +231,7 @@ class H323toSipQueue
 class MCUSipConnection : public MCUH323Connection
 {
   public:
-    MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken)
-      :MCUH323Connection(*_ep, 0, NULL), sep(_sep)
-      {
-       callToken = _callToken;
-       OnCreated();
-       remoteName = "";
-       remotePartyName = "";
-       remoteApplication = "SIP terminal";
-       requestedRoom = "room101";
-       scap = -1;
-       vcap = -1;
-       sdp_seq = 0;
-       sdp_id = (unsigned int)time(NULL);
-       noInpTimeout = 0;
-       inpBytes = 0;
-       connectedTime = PTime();
-       c_sip_msg = NULL;
-       cseqNum = 100;
-       direction = DIRECTION_INBOUND;
-       bandwidth_to = 0;
-       aDataSocket = aControlSocket = vDataSocket = vControlSocket = NULL; // temp rtp sockets
-       audio_rtp_port = video_rtp_port = 0;
-      }
+    MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken, Direction _direction, PString _luri_str, PString _ruri_str);
     ~MCUSipConnection()
     {
       MCUTRACE(1, "MCUSipConnection destructor, callToken: "+callToken+" remotePartyAddress: "+remotePartyAddress);
@@ -254,32 +250,35 @@ class MCUSipConnection : public MCUH323Connection
 
     int ProcessInviteEvent();
     int ProcessReInviteEvent();
-    int ProcessSDP(PString & sdp_txt, SipCapMapType & caps, int reinvite);
-    sdp_parser_t *SdpParser(PString sdp_txt);
+    int ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps);
+
     void StartTransmitChannels();
     void StartReceiveChannels();
     void StartChannel(int pt, int dir);
-    void CreateLogicalChannels();
-    int CreateVideoChannel(int pt, int dir);
-    int CreateAudioChannel(int pt, int dir);
-    SipRTP_UDP *CreateRTPSession(int pt, SipCapability *sc);
-    void FindCapability_H263(SipCapability &c,PStringArray &keys, const char * _H323Name, const char * _SIPName);
-    void SelectCapability_H261(SipCapability &c,PStringArray &tvCaps);
-    void SelectCapability_H263(SipCapability &c,PStringArray &tvCaps);
-    void SelectCapability_H263p(SipCapability &c,PStringArray &tvCaps);
-    void SelectCapability_H264(SipCapability &c,PStringArray &tvCaps);
-    void SelectCapability_VP8(SipCapability &c,PStringArray &tvCaps);
-    void SelectCapability_SPEEX(SipCapability &c,PStringArray &tsCaps);
-    void SelectCapability_OPUS(SipCapability &c,PStringArray &tsCaps);
     void StopChannel(int pt, int dir);
     void StopTransmitChannels();
     void StopReceiveChannels();
     void DeleteMediaChannels(int pt);
     void DeleteChannels();
+    void CreateLogicalChannels();
+    int CreateMediaChannel(int pt, int dir);
+    SipRTP_UDP *CreateRTPSession(SipCapability *sc);
+
+    void FindCapability_H263(SipCapability &c,PStringArray &keys, const char * _H323Name, const char * _SIPName);
+    void SelectCapability_H261(SipCapability & sc);
+    void SelectCapability_H263(SipCapability & sc);
+    void SelectCapability_H263p(SipCapability & sc);
+    void SelectCapability_H264(SipCapability & sc);
+    void SelectCapability_VP8(SipCapability & sc);
+    void SelectCapability_SPEEX(SipCapability & sc);
+    void SelectCapability_OPUS(SipCapability & sc);
+    virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
+
     void CleanUpOnCallEnd();
     void LeaveMCU();
     void LeaveMCU(BOOL remove);
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
+
     int SendBYE();
     int SendACK();
     int SendVFU();
@@ -288,47 +287,56 @@ class MCUSipConnection : public MCUH323Connection
     void ReceivedDTMF(PString payload);
     BOOL HadAnsweredCall() { return (direction=DIRECTION_INBOUND); }
 
-    virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
-    int noInpTimeout;
-    int inpBytes;
+    PString sdp_o_username;
+    unsigned int sdp_o_id;
+    unsigned int sdp_o_ver;
 
     Direction direction;
-    PString local_user, local_ip;
+    PString local_user;
+    PString local_ip;
     PString ruri_str;
     PString contact_str;
+    PString display_name;
     msg_t *c_sip_msg;
-    int cseqNum;
+    int cseq_num;
 
     PString sdp_invite_str;
     PString sdp_ok_str;
 
-    // preffered endpoints parameters
-    unsigned bandwidth_to;
-    PString pref_audio_cap, pref_video_cap;
+    int scap; // selected audio capability payload type
+    int vcap; // selected video capability payload type
+
+    PString pref_audio_cap;
+    PString pref_video_cap;
+    PString rtp_proto;
+    unsigned remote_bw; // bandwidth to MCU
 
     PString key_audio80;
     PString key_audio32;
     PString key_video80;
     PString key_video32;
-    PString rtp_proto;
 
     // temp rtp sockets for outgoing invite
     PUDPSocket *aDataSocket, *aControlSocket;
     PUDPSocket *vDataSocket, *vControlSocket;
-
     unsigned audio_rtp_port, video_rtp_port;
 
   protected:
-    SipCapMapType SipCapMap;
-    void InsertSipCap(SipCapability *sc);
-    SipCapability *FindSipCap(int payload);
+    sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, PString name, int pt, int rate, PString fmtp);
+    sdp_media_t *CreateSdpMedia(su_home_t *sess_home, sdp_media_e m_type, sdp_proto_e m_proto);
+    sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);
+    sdp_parser_t *SdpParser(PString sdp_str);
 
+    PString CreateSdpStr();
+    int CreateSdpOk();
+    int CreateSdpInvite();
+
+    void RefreshLocalSipCaps();
+    BOOL MergeSipCaps(SipCapMapType & BaseCaps, SipCapMapType & RemoteCaps);
+
+    SipCapMapType LocalSipCaps;
+    SipCapMapType RemoteSipCaps;
     MCUSipEndPoint *sep;
-    PString sdp_s; // sdp for SIP_200_OK
-    int scap; // selected audio capability payload type
-    int vcap; // selected video capability payload type
-    unsigned int sdp_seq;
-    unsigned int sdp_id;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -373,6 +381,8 @@ class MCUSipEndPoint : public PThread
     void InsertProxyAccount(ProxyAccount *proxy);
     ProxyAccount *FindProxyAccount(PString account);
 
+    SipCapMapType & GetBaseSipCaps() { return BaseSipCaps; }
+
   protected:
     void MainLoop();
     MCUH323EndPoint *ep;
@@ -398,17 +408,13 @@ class MCUSipEndPoint : public PThread
     { return ((MCUSipEndPoint *)context)->ProcessSipEvent_request1(leg, irq, sip); }
     int ProcessSipEvent_request1(nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip);
 
-    PString CreateSdpInvite(MCUSipConnection *sCon, PString local_url, PString remote_url);
-    BOOL GetCapabilityParams(PString & capname, unsigned & pt, PString & name, unsigned & rate, PString & fmtp);
-    sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, PString & capname, unsigned & dyn_pt);
-    sdp_media_t *CreateSdpMedia(su_home_t *sess_home, PStringArray & caps, sdp_media_e m_type, sdp_proto_e m_proto, unsigned m_port, unsigned & dyn_pt);
-    sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);
-    char * SdpText(PString text);
-
     int SipRegister(ProxyAccount *, BOOL enable = TRUE);
     PString GetRoomAccess(const sip_t *sip);
 
     void InitProxyAccounts();
+
+    void CreateBaseSipCaps();
+    SipCapMapType BaseSipCaps;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

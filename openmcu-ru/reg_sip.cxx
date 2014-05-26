@@ -183,6 +183,13 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   PString username_in = url.GetUserName();
   PString username_out = sip->sip_to->a_url->url_user;
 
+  PString local_user = sip->sip_to->a_url->url_user;
+  PString local_ip = GetFromIp(url.GetHostName(), url.GetPort());
+  if(local_ip == "")
+    sep->SipReqReply(msg, 500); // SIP_500_INTERNAL_SERVER_ERROR
+  PString contact_str = "sip:"+local_user+"@"+local_ip;
+  PString ruri_str = url.GetUrl();
+
   if(username_in == username_out)
     sep->SipReqReply(msg, 486); // SIP_486_BUSY_HERE
 
@@ -232,12 +239,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     }
 
     // create MCU sip connection
-    MCUSipConnection *sCon = new MCUSipConnection(sep, ep, callToken);
-    sCon->direction = DIRECTION_INBOUND;
-    sCon->local_user = sip->sip_to->a_url->url_user;
-    sCon->local_ip = GetFromIp(url.GetHostName(), url.GetPort());
-    sCon->ruri_str = url.GetUrl();
-    sCon->contact_str = "sip:"+sCon->local_user+"@"+sCon->local_ip;
+    MCUSipConnection *sCon = new MCUSipConnection(sep, ep, callToken, DIRECTION_INBOUND, contact_str, ruri_str);
     sCon->c_sip_msg = msg_dup(msg);
 
     // create registrar connection

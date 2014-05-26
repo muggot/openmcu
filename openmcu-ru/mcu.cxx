@@ -327,11 +327,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // Create the config page - transmit video codecs
   httpNameSpace.AddResource(new CodecsPConfigPage(*this, "TransmitVideoCodecs", "TRANSMIT_VIDEO", authSettings), PHTTPSpace::Overwrite);
 
-  // Create the config page - sip sound codecs
-  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "SipSoundCodecs", "TRANSMIT_SOUND", authSettings), PHTTPSpace::Overwrite);
+  // Create the config page - sip audio codecs
+  httpNameSpace.AddResource(new SIPCodecsPConfigPage(*this, "SipSoundCodecs", "SIP Audio", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - sip video codecs
-  httpNameSpace.AddResource(new CodecsPConfigPage(*this, "SipVideoCodecs", "TRANSMIT_VIDEO", authSettings), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new SIPCodecsPConfigPage(*this, "SipVideoCodecs", "SIP Video", authSettings), PHTTPSpace::Overwrite);
 
   // Create the status page
   httpNameSpace.AddResource(new MainStatusPage(*this, authConference), PHTTPSpace::Overwrite);

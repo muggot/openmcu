@@ -644,6 +644,14 @@ class VideoPConfigPage : public TablePConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class SIPCodecsPConfigPage : public TablePConfigPage
+{
+ public:
+   SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class CodecsPConfigPage : public TablePConfigPage
 {
   public:

@@ -1333,6 +1333,64 @@ BOOL SectionPConfigPage::OnPOST(PHTTPServer & server,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+
+  PStringStream html_begin, html_end, html_page, s;
+  buttonUp = buttonDown = 1;
+  s << BeginTable();
+  s << NewRowColumn("");
+  s << ColumnItem("", 30);
+  s << ColumnItem("", 80);
+  s << ColumnItem("Parameters");
+  s << ColumnItem("Default parameters", 350);
+
+  PStringList keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    PString name = keys[i];
+    if(name.Right(4) != "{sw}") name += "{sw}";
+
+    PString info, fmtp;
+    H323Capability *cap = H323Capability::Create(name);
+    if(cap)
+    {
+      const OpalMediaFormat & mf = cap->GetMediaFormat();
+      if(cap->GetMainType() == H323Capability::e_Video)
+        info += PString(mf.GetOptionInteger("Frame Width"))+"x"+PString(mf.GetOptionInteger("Frame Height"));
+      else
+        info += PString(mf.GetTimeUnits()*1000)+"Hz";
+      for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
+       if(mf.GetOption(j).GetFMTPName() != "")
+         fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+    }
+    else
+      info = JsLocale("window.l_not_found");
+
+    PStringArray params = cfg.GetString(keys[i]).Tokenise(separator);
+    s << NewRowInput(name, 140);
+    if(info == JsLocale("window.l_not_found")) s << BoolItem(name, FALSE, TRUE);
+    else if(params[0].ToLower() == "true")     s << BoolItem(name, TRUE);
+    else                                       s << BoolItem(name, FALSE);
+    s << InfoItem(info);
+    s << StringItem(name, params[1], 200);
+    s << InfoItem(fmtp);
+  }
+  s << EndTable();
+
+  BuildHTML("");
+  if(section == "SIP Audio")
+    BeginPage(html_begin, "SIP Audio", "SIP Audio", "");
+  else if(section == "SIP Video")
+    BeginPage(html_begin, "SIP Video", "SIP Video", "");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  string = html_page;
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
@@ -1369,7 +1427,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
     s << InfoItem(info);
     s << InfoItem(fmtpInfo);
     if(cap && (title == "SipSoundCodecs" || title == "SipVideoCodecs"))
-      s <<  StringItem("fmtp:"+keys[i], MCUConfig("CODEC_OPTIONS").GetString(keys[i]), 200);
+      s <<  StringItem("fmtp:"+keys[i], MCUConfig("SIP fmtp remote").GetString(keys[i]), 200);
     s << EndRow();
   }
 
@@ -1410,7 +1468,7 @@ BOOL CodecsPConfigPage::Post(PHTTPRequest & request,
   {
     PINDEX fmtpPos = fmtpArray[i].Find("=");
     if(fmtpPos != P_MAX_INDEX && fmtpArray[i].GetSize() > fmtpPos)
-      MCUConfig("CODEC_OPTIONS").SetString(fmtpArray[i].Tokenise("=")[0], fmtpArray[i].Right(fmtpArray[i].GetSize()-fmtpPos-2));
+      MCUConfig("SIP fmtp remote").SetString(fmtpArray[i].Tokenise("=")[0], fmtpArray[i].Right(fmtpArray[i].GetSize()-fmtpPos-2));
   }
 
   process.OnContinue();

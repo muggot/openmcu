@@ -684,7 +684,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     return FALSE;
 
   PTRACE(3, "Conference\tAdding member: " << memberToAdd->GetName() << " to conference: " << guid);
-  cout << "Conference\tAdding member: " << memberToAdd->GetName() << " to conference: " << guid;
+  cout << "Conference Adding member: " << memberToAdd->GetName() << " to conference: " << guid << "\n";
 
   ConferenceMemberId mid = memberToAdd->GetID();
   MemberList::iterator r = memberList.find(mid);
