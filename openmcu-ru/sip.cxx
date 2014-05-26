@@ -319,14 +319,18 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
   direction = _direction;
   contact_str = _luri_str;
   ruri_str = _ruri_str;
+
   MCUURL url(contact_str);
   local_user = url.GetUserName();
   local_ip = url.GetHostName();
 
+  if(local_user == "") local_user = OpenMCU::Current().GetDefaultRoomName();
+  if(local_user == "") local_user = "room101";
+  requestedRoom = local_user;
+
   remoteName = "";
   remotePartyName = "";
   remoteApplication = "SIP terminal";
-  requestedRoom = "room101";
 
   scap = -1;
   vcap = -1;
@@ -336,13 +340,12 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
 
   // endpoint parameters
   pref_audio_cap = GetEndpointParamFromUrl("Audio codec", ruri_str);
+  if(pref_audio_cap != "" && pref_audio_cap.Right(4) != "{sw}")
+    pref_audio_cap += "{sw}";
   pref_video_cap = GetEndpointParamFromUrl("Video codec", ruri_str);
   rtp_proto = GetEndpointParamFromUrl("RTP proto", ruri_str, "RTP");
   remote_bw = GetEndpointParamFromUrl("Bandwidth to MCU", ruri_str, 0);
   display_name = GetEndpointParamFromUrl("Display name", ruri_str);
-
-  if(pref_audio_cap != "" && pref_audio_cap.Right(4) != "{sw}")
-    pref_audio_cap += "{sw}";
 
   if(direction == DIRECTION_INBOUND)
   {
@@ -356,6 +359,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
     // create sdp for invite
     CreateSdpInvite();
   }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1482,6 +1486,10 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
     if(sc) sc->Print();
   }
 
+  // create sdp for OK
+  if(direction == DIRECTION_INBOUND)
+    CreateSdpOk();
+
   return 1;
 }
 
@@ -1612,10 +1620,6 @@ int MCUSipConnection::ProcessInviteEvent()
     StartTransmitChannels(); // start transmit logical channels
 //  }
 
-  // create sdp string for OK
-  if(direction == DIRECTION_INBOUND)
-    CreateSdpOk();
-
   return 1;
 }
 
@@ -1690,9 +1694,6 @@ int MCUSipConnection::ProcessReInviteEvent()
     CreateMediaChannel(vcap,0);
     CreateMediaChannel(vcap,1);
   }
-
-  // create sdp string
-  CreateSdpOk();
 
   return 1;
 }
