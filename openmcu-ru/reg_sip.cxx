@@ -177,7 +177,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
 
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
   if(FindRegConn(callToken))
-    sep->SipReqReply(msg, 500); // SIP_500_INTERNAL_SERVER_ERROR
+    return 1;
 
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username_in = url.GetUserName();

@@ -239,18 +239,14 @@ class MCUSipConnection : public MCUH323Connection
       DeleteTempSockets();
     }
 
-    BOOL CreateTempSockets(PString local_ip);
-    void DeleteTempSockets()
-    {
-      if(aDataSocket) { aDataSocket->Close(); delete aDataSocket; aDataSocket = NULL; }
-      if(aControlSocket) { aControlSocket->Close(); delete aControlSocket; aControlSocket = NULL; }
-      if(vDataSocket) { vDataSocket->Close(); delete vDataSocket; vDataSocket = NULL; }
-      if(vControlSocket) { vControlSocket->Close(); delete vControlSocket; vControlSocket = NULL; }
-    }
+    BOOL CreateTempSockets();
+    void DeleteTempSockets();
 
     int ProcessInviteEvent();
     int ProcessReInviteEvent();
+    int ProcessACK(const msg_t *msg);
     int ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps);
+    void UpdateLocalContact();
 
     void StartTransmitChannels();
     void StartReceiveChannels();
@@ -292,7 +288,6 @@ class MCUSipConnection : public MCUH323Connection
     unsigned int sdp_o_ver;
 
     Direction direction;
-    PString local_user;
     PString local_ip;
     PString ruri_str;
     PString contact_str;
@@ -320,6 +315,10 @@ class MCUSipConnection : public MCUH323Connection
     PUDPSocket *aDataSocket, *aControlSocket;
     PUDPSocket *vDataSocket, *vControlSocket;
     unsigned audio_rtp_port, video_rtp_port;
+
+    BOOL IsAwaitingSignalConnect() { return connectionState == AwaitingSignalConnect; };
+    BOOL IsConnected() const { return connectionState == EstablishedConnection; }
+    BOOL IsEstablished() const { return connectionState == EstablishedConnection; }
 
   protected:
     sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, PString name, int pt, int rate, PString fmtp);

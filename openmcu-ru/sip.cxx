@@ -313,20 +313,19 @@ void SipCapability::Print()
 MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken, Direction _direction, PString _luri_str, PString _ruri_str)
   :MCUH323Connection(*_ep, 0, NULL), sep(_sep)
 {
+  connectionState = NoConnectionActive;
   callToken = _callToken;
   OnCreated();
 
   direction = _direction;
-  contact_str = _luri_str;
   ruri_str = _ruri_str;
 
-  MCUURL url(contact_str);
-  local_user = url.GetUserName();
+  MCUURL url(_luri_str);
+  requestedRoom = url.GetUserName();
   local_ip = url.GetHostName();
 
-  if(local_user == "") local_user = OpenMCU::Current().GetDefaultRoomName();
-  if(local_user == "") local_user = "room101";
-  requestedRoom = local_user;
+  if(requestedRoom == "") requestedRoom = OpenMCU::Current().GetDefaultRoomName();
+  if(requestedRoom == "") requestedRoom = "room101";
 
   remoteName = "";
   remotePartyName = "";
@@ -354,17 +353,25 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
   }
   else if(direction == DIRECTION_OUTBOUND)
   {
+    // waiting OK signal
+    connectionState = AwaitingSignalConnect;
     // create temp sockets
-    CreateTempSockets(local_ip);
+    CreateTempSockets();
     // create sdp for invite
     CreateSdpInvite();
   }
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSipConnection::CreateTempSockets(PString localIP)
+void MCUSipConnection::UpdateLocalContact()
+{
+  contact_str = "sip:"+requestedRoom+"@"+local_ip;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSipConnection::CreateTempSockets()
 {
   unsigned localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
   PQoS * dataQos = NULL;
@@ -373,7 +380,7 @@ BOOL MCUSipConnection::CreateTempSockets(PString localIP)
   aControlSocket = new PUDPSocket(ctrlQos);
   vDataSocket = new PUDPSocket(dataQos);
   vControlSocket = new PUDPSocket(ctrlQos);
-  while(!aDataSocket->Listen(localIP, 1, localDataPort) || !aControlSocket->Listen(localIP, 1, localDataPort+1))
+  while(!aDataSocket->Listen(local_ip, 1, localDataPort) || !aControlSocket->Listen(local_ip, 1, localDataPort+1))
   {
     aDataSocket->Close();
     aControlSocket->Close();
@@ -381,7 +388,7 @@ BOOL MCUSipConnection::CreateTempSockets(PString localIP)
   }
   audio_rtp_port = localDataPort;
   localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
-  while(!vDataSocket->Listen(localIP, 1, localDataPort) || !vControlSocket->Listen(localIP, 1, localDataPort+1))
+  while(!vDataSocket->Listen(local_ip, 1, localDataPort) || !vControlSocket->Listen(local_ip, 1, localDataPort+1))
   {
     vDataSocket->Close();
     vControlSocket->Close();
@@ -389,6 +396,16 @@ BOOL MCUSipConnection::CreateTempSockets(PString localIP)
   }
   video_rtp_port = localDataPort;
   return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::DeleteTempSockets()
+{
+  if(aDataSocket) { aDataSocket->Close(); delete aDataSocket; aDataSocket = NULL; }
+  if(aControlSocket) { aControlSocket->Close(); delete aControlSocket; aControlSocket = NULL; }
+  if(vDataSocket) { vDataSocket->Close(); delete vDataSocket; vDataSocket = NULL; }
+  if(vControlSocket) { vControlSocket->Close(); delete vControlSocket; vControlSocket = NULL; }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -560,7 +577,7 @@ PString MCUSipConnection::CreateSdpStr()
   sess->sdp_connection = c;
   sess->sdp_subject = "Talk";
 
-  o->o_username = PStringToChar(local_user);
+  o->o_username = PStringToChar(requestedRoom);
   o->o_id = rand();
   o->o_version = 1;
   o->o_address = c;
@@ -1569,6 +1586,24 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+int MCUSipConnection::ProcessACK(const msg_t *msg)
+{
+  PTRACE(1, "MCUSIP\tProcessACK");
+  sip_t *sip = sip_object(msg);
+  // replace to_tag
+  sip_t *c_sip = sip_object(c_sip_msg);
+  msg_header_insert(c_sip_msg, (msg_pub_t *)c_sip, (msg_header_t *)sip->sip_to);
+
+  // for incoming connection start channels after ACK
+  StartReceiveChannels(); // start receive logical channels
+  StartTransmitChannels(); // start transmit logical channels
+
+  connectionState = EstablishedConnection;
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int MCUSipConnection::ProcessInviteEvent()
 {
   PTRACE(1, "MCUSIP\tProcessInviteEvent");
@@ -1580,8 +1615,11 @@ int MCUSipConnection::ProcessInviteEvent()
   if(direction == DIRECTION_INBOUND)
   {
     ProxyAccount *proxy = sep->FindProxyAccount((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
-    if(proxy) local_user = proxy->roomname;
+    if(proxy) requestedRoom = proxy->roomname;
   }
+
+  //
+  UpdateLocalContact();
 
   MCUURL_SIP url(c_sip_msg, direction);
   remoteName = url.GetDisplayName();
@@ -1600,9 +1638,7 @@ int MCUSipConnection::ProcessInviteEvent()
     return 415; // SIP_415_UNSUPPORTED_MEDIA
 
   // join conference
-  requestedRoom = local_user;
   SetRequestedRoom(); // override requested room from registrar
-  connectionState = EstablishedConnection;
   OnEstablished();
   if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
     return 600;
@@ -1610,15 +1646,21 @@ int MCUSipConnection::ProcessInviteEvent()
   // create logical channels
   CreateLogicalChannels();
 
-//  if(direction == DIRECTION_OUTBOUND) // for incoming connection start channels after ACK
-//  {
+  if(direction == DIRECTION_INBOUND)
+  {
+    // waiting ACK signal
+    connectionState = AwaitingSignalConnect;
+    // create sdp for OK
+    CreateSdpOk();
+  }
+  else if(direction == DIRECTION_OUTBOUND)
+  {
+    // is connected
+    connectionState = EstablishedConnection;
+    // for incoming connection start channels after ACK
     StartReceiveChannels(); // start receive logical channels
     StartTransmitChannels(); // start transmit logical channels
-//  }
-
-  // create sdp for OK
-  if(direction == DIRECTION_INBOUND)
-    CreateSdpOk();
+  }
 
   return 1;
 }
@@ -1629,6 +1671,9 @@ int MCUSipConnection::ProcessReInviteEvent()
 {
   PTRACE(1, "MCUSIP\tProcessReInviteEvent");
   sip_t *sip = sip_object(c_sip_msg);
+
+  // waiting ACK signal
+  connectionState = AwaitingSignalConnect;
 
   PString sdp_str = sip->sip_payload->pl_data;
   SipCapMapType SipCaps;
@@ -2275,7 +2320,7 @@ int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg)
   PString callToken = "sip:"+PString(sip->sip_to->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
 
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
-  if(!sCon || (sCon && sCon->IsConnected())) // repeated OK
+  if(!sCon || sCon->IsConnected()) // repeated OK
     return 0;
 
   sCon->c_sip_msg = msg_dup(msg);
@@ -2315,8 +2360,6 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
     if(ret != 1)
       return SipReqReply(msg, ret);
     SipReqReply(msg, 200, NULL, sCon->contact_str, "application/sdp", sCon->sdp_ok_str);
-    sCon->StartReceiveChannels(); // start receive logical channels
-    sCon->StartTransmitChannels(); // start transmit logical channels
     return 0;
   }
 
@@ -2360,7 +2403,13 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
 
-  if(!sCon || !sCon->IsEstablished())
+  // repeated requests INVITE, waiting ACK signal
+  if(request == sip_method_invite && sCon && sCon->IsAwaitingSignalConnect())
+  {
+    return 0;
+  }
+
+  if(!sCon || !sCon->IsConnected())
   {
     Registrar *registrar = OpenMCU::Current().GetRegistrar();
     if(registrar->OnReceivedMsg(msg))
@@ -2383,12 +2432,7 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   {
     if(!sCon)
       return SipReqReply(msg, 200); // SIP_481_NO_TRANSACTION
-    PTRACE(1, "MCUSIP\tNew SIP ACK accepted");
-    // replace to_tag
-    sip_t *c_sip = sip_object(sCon->c_sip_msg);
-    msg_header_insert(sCon->c_sip_msg, (msg_pub_t *)c_sip, (msg_header_t *)sip->sip_to);
-    //sCon->StartReceiveChannels(); // start receive logical channels
-    //sCon->StartTransmitChannels(); // start transmit logical channels
+    sCon->ProcessACK(msg);
     return 0;
   }
   if(request == sip_method_bye)
