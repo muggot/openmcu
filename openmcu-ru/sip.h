@@ -231,10 +231,11 @@ class H323toSipQueue
 class MCUSipConnection : public MCUH323Connection
 {
   public:
-    MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken, Direction _direction, PString _luri_str, PString _ruri_str);
+    MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, Direction _direction, PString _callToken, const msg_t *msg);
+    MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, Direction _direction, PString _callToken);
     ~MCUSipConnection()
     {
-      MCUTRACE(1, "MCUSipConnection destructor, callToken: "+callToken+" remotePartyAddress: "+remotePartyAddress);
+      MCUTRACE(1, "MCUSipConnection destructor, callToken: "+callToken+" contact: "+contact_str+" ruri: "+ruri_str);
       if(c_sip_msg) msg_destroy(c_sip_msg);
       DeleteTempSockets();
     }
@@ -288,10 +289,11 @@ class MCUSipConnection : public MCUH323Connection
     unsigned int sdp_o_ver;
 
     Direction direction;
+    PString local_user;
     PString local_ip;
+    PString display_name;
     PString ruri_str;
     PString contact_str;
-    PString display_name;
     msg_t *c_sip_msg;
     int cseq_num;
 

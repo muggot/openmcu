@@ -330,7 +330,10 @@ class Registrar : public PThread
 
     BOOL MakeCall(PString room, PString to, PString & callToken);
 
-    int OnReceivedMsg(msg_t *msg);
+    int OnReceivedSipRegister(const msg_t *msg);
+    int OnReceivedSipInvite(const msg_t *msg);
+    int OnReceivedSipSubscribe(msg_t *msg);
+    int OnReceivedSipMessage(msg_t *msg);
     H323Connection::AnswerCallResponse OnReceivedH323Invite(MCUH323Connection *conn);
 
     nta_agent_t *GetAgent() { return sep->GetAgent(); };
@@ -377,10 +380,6 @@ class Registrar : public PThread
     //int H323SendMessage(RegistrarAccount *regAccount_out, PString message);
 
     // internal function
-    int OnReceivedSipRegister(const msg_t *msg);
-    int OnReceivedSipInvite(const msg_t *msg);
-    int OnReceivedSipSubscribe(msg_t *msg);
-    int OnReceivedSipMessage(msg_t *msg);
     void SubscriptionProcess();
     int SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
 

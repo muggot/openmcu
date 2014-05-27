@@ -6,72 +6,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::OnReceivedMsg(msg_t *msg)
-{
-  PTRACE(1, "Registrar\tOnReceivedMessage");
-  sip_t *sip = sip_object(msg);
-  if(!sip) return FALSE;
-
-  PString username = sip->sip_from->a_url->url_user;
-  PString username_out = sip->sip_to->a_url->url_user;
-
-  int request = 0, status = 0, cseq = 0;
-  if(sip->sip_request) request = sip->sip_request->rq_method;
-  if(sip->sip_status)  status = sip->sip_status->st_status;
-  if(sip->sip_cseq)    cseq = sip->sip_cseq->cs_method;
-
-  // register
-  if(request == sip_method_register)
-  {
-    OnReceivedSipRegister(msg);
-    return TRUE;
-  }
-  // publish
-  if(request == sip_method_publish)
-  {
-    sep->SipReqReply(msg, 200);
-    return TRUE;
-  }
-
-  // subscribe dialog, notify receive in callback function
-  if(request == sip_method_subscribe)
-  {
-    OnReceivedSipSubscribe(msg);
-    return TRUE;
-  }
-  // notify only receive in subscribe callback function
-//  if(request == sip_method_notify)
-//  {
-//    sep->SipReqReply(msg, 481); // SIP_481_NO_TRANSACTION
-//    return TRUE;
-//  }
-
-  // message dialog
-  if(request == sip_method_message)
-  {
-    OnReceivedSipMessage(msg);
-    return TRUE;
-  }
-
-  // invite
-  if(request == sip_method_invite)
-  {
-    OnReceivedSipInvite(msg);
-    return TRUE;
-  }
-
-  if(request == sip_method_refer ||
-     request == sip_method_update)
-  {
-    sep->SipReqReply(msg, 501); // SIP_501_NOT_IMPLEMENTED
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int Registrar::OnReceivedSipRegister(const msg_t *msg)
 {
   PTRACE(1, "Registrar\tOnReceivedSipRegister");
@@ -183,13 +117,6 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   PString username_in = url.GetUserName();
   PString username_out = sip->sip_to->a_url->url_user;
 
-  PString local_user = sip->sip_to->a_url->url_user;
-  PString local_ip = GetFromIp(url.GetHostName(), url.GetPort());
-  if(local_ip == "")
-    sep->SipReqReply(msg, 500); // SIP_500_INTERNAL_SERVER_ERROR
-  PString contact_str = "sip:"+local_user+"@"+local_ip;
-  PString ruri_str = url.GetUrl();
-
   if(username_in == username_out)
     sep->SipReqReply(msg, 486); // SIP_486_BUSY_HERE
 
@@ -239,8 +166,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     }
 
     // create MCU sip connection
-    MCUSipConnection *sCon = new MCUSipConnection(sep, ep, callToken, DIRECTION_INBOUND, contact_str, ruri_str);
-    sCon->c_sip_msg = msg_dup(msg);
+    new MCUSipConnection(sep, ep, DIRECTION_INBOUND, callToken, msg);
 
     // create registrar connection
     regConn = InsertRegConnWithLock(callToken, username_in, username_out);
