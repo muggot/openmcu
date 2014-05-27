@@ -1142,25 +1142,12 @@ void MCUSipConnection::SelectCapability_H264(SipCapability & sc)
   else if(pref_video_cap == "")
   {
     PStringArray keys = sc.fmtp.Tokenise(";");
-    for(int kn = 0; kn < keys.GetSize(); kn++) 
+    for(int kn = 0; kn < keys.GetSize(); kn++)
     {
-      if(keys[kn].Find("profile-level-id=") == 0)
-      {
-        int p = (keys[kn].Tokenise("=")[1]).AsInteger(16);
-        profile = (p>>16); level = (p&255);
-      }
-      else if(keys[kn].Find("max-mbps=") == 0) 
-      {
-        max_mbps = (keys[kn].Tokenise("=")[1]).AsInteger();
-      }
-      else if(keys[kn].Find("max-fs=") == 0) 
-      {
-        max_fs = (keys[kn].Tokenise("=")[1]).AsInteger();
-      }
-      else if(keys[kn].Find("max-br=") == 0) 
-      {
-        max_br = (keys[kn].Tokenise("=")[1]).AsInteger();
-      }
+      if(keys[kn].Find("profile-level-id=") == 0) { int p = (keys[kn].Tokenise("=")[1]).AsInteger(16); profile = (p>>16); level = (p&255); }
+      else if(keys[kn].Find("max-mbps=") == 0)    { max_mbps = (keys[kn].Tokenise("=")[1]).AsInteger(); }
+      else if(keys[kn].Find("max-fs=") == 0)      { max_fs = (keys[kn].Tokenise("=")[1]).AsInteger(); }
+      else if(keys[kn].Find("max-br=") == 0)      { max_br = (keys[kn].Tokenise("=")[1]).AsInteger(); }
     }
     // if(profile == 0 || level == 0) return;
     if(level == 0)
@@ -1268,10 +1255,16 @@ void MCUSipConnection::SelectCapability_SPEEX(SipCapability & sc)
   else if(sc.clock == 32000 && FindSipCap(LocalSipCaps, "Speex_32K{sw}")) capname = "Speex_32K{sw}";
   else return;
 
+  PString fmtp = sc.fmtp;
+  // replace fmtp from codec parameters
+  SipCapability *local_sc = FindSipCap(LocalSipCaps, capname);
+  if(local_sc && local_sc->fmtp_override != "")
+    fmtp = local_sc->fmtp_override;
+
   int vbr = -1;
   int mode = -1;
 
-  PStringArray keys = sc.fmtp.Tokenise(";");
+  PStringArray keys = fmtp.Tokenise(";");
   for(int kn = 0; kn < keys.GetSize(); kn++)
   {
     if(keys[kn].Find("vbr=") == 0)
@@ -1307,12 +1300,18 @@ void MCUSipConnection::SelectCapability_OPUS(SipCapability & sc)
   else if(sc.clock == 48000 && FindSipCap(LocalSipCaps, "OPUS_48K{sw}")) capname = "OPUS_48K{sw}";
   else return;
 
+  PString fmtp = sc.fmtp;
+  // replace fmtp from codec parameters
+  SipCapability *local_sc = FindSipCap(LocalSipCaps, capname);
+  if(local_sc && local_sc->fmtp_override != "")
+    fmtp = local_sc->fmtp_override;
+
   int cbr = -1;
   int maxaveragebitrate = -1;
   int useinbandfec = -1;
   int usedtx = -1;
 
-  PStringArray keys = sc.fmtp.Tokenise(";");
+  PStringArray keys = fmtp.Tokenise(";");
   for(int kn = 0; kn < keys.GetSize(); kn++)
   {
     if(keys[kn].Find("cbr=") == 0)
@@ -2641,7 +2640,8 @@ void MCUSipEndPoint::CreateBaseSipCaps()
 
     PStringArray params = cfg.GetString(keys[i]).Tokenise(",");
     if(params[0].ToLower() != "true") continue;
-    PString remote_fmtp = params[1];
+    PString fmtp = params[1];
+    PString fmtp_override = params[2];
 
     PString capname = keys[i];
     if(capname.Right(4) != "{sw}") capname += "{sw}";
@@ -2660,7 +2660,8 @@ void MCUSipEndPoint::CreateBaseSipCaps()
     tmp_caps.AppendString(sc->format+PString(sc->clock)+sc->fmtp);
 
     sc->media = 0;
-    if(remote_fmtp != "") sc->fmtp = remote_fmtp;
+    if(fmtp != "") sc->fmtp = fmtp;
+    if(fmtp_override != "") sc->fmtp_override = fmtp_override;
     BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
   }
 
@@ -2672,7 +2673,8 @@ void MCUSipEndPoint::CreateBaseSipCaps()
 
     PStringArray params = cfg.GetString(keys[i]).Tokenise(",");
     if(params[0].ToLower() != "true") continue;
-    PString remote_fmtp = params[1];
+    PString fmtp = params[1];
+    PString fmtp_override = params[2];
 
     PString capname = keys[i];
     if(capname.Right(4) != "{sw}") capname += "{sw}";
@@ -2691,7 +2693,8 @@ void MCUSipEndPoint::CreateBaseSipCaps()
     tmp_caps.AppendString(sc->format+PString(sc->clock)+sc->fmtp);
 
     sc->media = 1;
-    if(remote_fmtp != "") sc->fmtp = remote_fmtp;
+    if(fmtp != "") sc->fmtp = fmtp;
+    if(fmtp_override != "") sc->fmtp_override = fmtp_override;
     BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
   }
 }

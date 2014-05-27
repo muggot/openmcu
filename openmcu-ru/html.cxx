@@ -1344,8 +1344,10 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
   s << NewRowColumn("");
   s << ColumnItem("", 30);
   s << ColumnItem("", 80);
-  s << ColumnItem("Parameters");
-  s << ColumnItem("Default parameters", 350);
+  s << ColumnItem(JsLocale("window.l_name_parameters_for_sending"));
+  if(section == "SIP Audio")
+    s << ColumnItem(JsLocale("window.l_name_codec_parameters"));
+  s << ColumnItem(JsLocale("window.l_name_default_parameters"), 350);
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -1375,7 +1377,24 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
     else if(params[0].ToLower() == "true")     s << BoolItem(name, TRUE);
     else                                       s << BoolItem(name, FALSE);
     s << InfoItem(info);
-    s << StringItem(name, params[1], 200);
+    if(section == "SIP Audio")
+    {
+      // parameters for sending
+      if(name.Left(4).ToLower() == "opus" || name.Left(5).ToLower() == "speex")
+        s << StringItem(name, params[1], 200);
+      else
+        s << EmptyInputItem(name);
+      // codec parameters
+      if(name.Left(4).ToLower() == "opus" || name.Left(5).ToLower() == "speex")
+        s << StringItem(name, params[2], 200);
+      else
+        s << EmptyInputItem(name);
+    }
+    else if(section == "SIP Video")
+    {
+      // parameters for sending
+      s << StringItem(name, params[1], 200);
+    }
     s << InfoItem(fmtp);
   }
   s << EndTable();

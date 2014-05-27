@@ -174,6 +174,7 @@ class SipCapability
     int bandwidth; // bandwidth from MCU
     int cnum; // channels numbers
     PString fmtp; // parameters
+    PString fmtp_override; // override received parameters
     H323Capability *cap;
     H323_RTPChannel *inpChan;
     H323_RTPChannel *outChan;

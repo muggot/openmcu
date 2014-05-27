@@ -202,6 +202,10 @@ window.l_name_video_codec_receive                  = 'Видео кодек(пр
 window.l_name_audio_codec_transmit                 = 'Аудио кодек(передача)';
 window.l_name_video_codec_transmit                 = 'Видео кодек(передача)';
 
+window.l_name_parameters_for_sending               = "Параметры для отправки";
+window.l_name_codec_parameters                     = "Параметры кодека<br>(переопределить полученные)";
+window.l_name_default_parameters                   = "Параметры по умолчанию";
+
 window.l_room_invite_all_inactive_members          = 'Позвонить всем неактивным участникам?';
 window.l_room_drop_all_active_members              = 'Отключить всех активных участников?';
 window.l_room_remove_all_inactive_members          = 'Удалить всех неактивных участников из списка?';
