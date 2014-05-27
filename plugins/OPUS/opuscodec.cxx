@@ -23,9 +23,14 @@
  *
  */
 
+#include <iostream>
+#include <string>
 
-#define PTRACE(level,category,text)
 #define CODEC_LOG "OPUS"
+#define TRACE_LEVEL 1
+
+#define PTRACE(level,category,args) \
+    if(level <= TRACE_LEVEL) std::cout << args << std::endl;
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,10 +49,10 @@
 
 PLUGINCODEC_LICENSE(
     "Andrey Burbovskiy",                                         // source code author
-    "0.3",                                                       // source code version
+    "0.4",                                                       // source code version
     "andrewb@yandex.ru",                                         // source code email
     "http://openmcu.ru/",                                        // source code URL
-    "Copyright (C) 2013 by Andrey Burbovskiy for OpenMCU-ru",    // source code copyright
+    "Copyright (C) 2014 by Andrey Burbovskiy for OpenMCU-ru",    // source code copyright
     "MPL 1.0",                                                   // source code license
     PluginCodec_License_MPL,                                     // source code license
 
@@ -96,6 +101,9 @@ class Encoder : public PluginCodec<CODEC>
     unsigned m_encoderMode;
     unsigned m_encoderChannels;
     unsigned m_forceChannels;
+    unsigned m_useinbandfec;
+    unsigned m_usedtx;
+    unsigned m_maxaveragebitrate;
     unsigned m_cbr;
     int error;
     int data_len;
@@ -103,6 +111,7 @@ class Encoder : public PluginCodec<CODEC>
   public:
     Encoder(const PluginCodec_Definition * defn)
       : PluginCodec<CODEC>(defn)
+      , m_state(NULL)
       , m_samplesPerFrame(m_definition->parm.audio.samplesPerFrame)
       , m_bytesPerFrame(m_definition->parm.audio.bytesPerFrame)
       , m_sampleRate(m_definition->sampleRate)
@@ -110,6 +119,10 @@ class Encoder : public PluginCodec<CODEC>
       , m_encoderMode(OPUS_APPLICATION_VOIP)
       , m_encoderChannels(1)
       , m_forceChannels(0)
+      , m_useinbandfec(0)
+      , m_usedtx(0)
+      , m_maxaveragebitrate(0)
+      , m_cbr(0)
     {
     }
 
@@ -121,6 +134,14 @@ class Encoder : public PluginCodec<CODEC>
     virtual bool Construct()
     {
       GetInitOptions();
+      return OnChangedOptions();
+    }
+
+    virtual bool OnChangedOptions()
+    {
+      opus_encoder_destroy(m_state);
+      m_state = NULL;
+
       int size = opus_encoder_get_size(m_encoderChannels);
       m_state = (OpusEncoder*)malloc(size);
       if (m_state == NULL)
@@ -132,17 +153,21 @@ class Encoder : public PluginCodec<CODEC>
         return false;
       }
 
+      PTRACE(1, CODEC_LOG, "Codec created: \"" << m_definition->sourceFormat << "\" -> \"" << m_definition->destFormat << '"');
+
       if (m_forceChannels > 0) {
         error = opus_encoder_ctl(m_state, OPUS_SET_FORCE_CHANNELS(m_forceChannels));
         if (error != OPUS_OK)
-          PTRACE(1, CODEC_LOG, "Error force: " << opus_strerror(error));
+          PTRACE(1, CODEC_LOG, "OPUS_SET_FORCE_CHANNELS error: " << opus_strerror(error));
       }
 
+      opus_encoder_ctl(m_state, OPUS_SET_INBAND_FEC(m_useinbandfec));
+      opus_encoder_ctl(m_state, OPUS_SET_DTX(m_usedtx));
+      opus_encoder_ctl(m_state, OPUS_SET_BITRATE(m_maxaveragebitrate));
       opus_encoder_ctl(m_state, OPUS_SET_VBR(m_cbr==0?1:0));
 
       return true;
     }
-
 
     virtual void GetInitOptions()
     {
@@ -159,6 +184,15 @@ class Encoder : public PluginCodec<CODEC>
           else if (strcmp((*options)->m_value, "AUDIO") == 0)
             m_encoderMode = OPUS_APPLICATION_AUDIO;
         }
+        if (strcmp((*options)->m_name, "useinbandfec") == 0) {
+          m_useinbandfec = atoi((*options)->m_value);
+        }
+        if (strcmp((*options)->m_name, "usedtx") == 0) {
+          m_usedtx = atoi((*options)->m_value);
+        }
+        if (strcmp((*options)->m_name, "maxaveragebitrate") == 0) {
+          m_maxaveragebitrate = atoi((*options)->m_value);
+        }
         if (strcmp((*options)->m_name, "cbr") == 0) {
           m_cbr = atoi((*options)->m_value);
         }
@@ -167,21 +201,40 @@ class Encoder : public PluginCodec<CODEC>
 
     virtual bool SetOption(const char * optionName, const char * optionValue)
     {
+      if (strcasecmp(optionName, "Encoder Channels") == 0) {
+        if (m_encoderChannels != atoi(optionValue))
+        {
+          m_encoderChannels = atoi(optionValue);
+          m_optionsSame = false; // need restart
+        }
+        return true;
+      }
+      if (strcasecmp(optionName, "Force Channels") == 0) {
+        m_forceChannels = atoi(optionValue);
+        error = opus_encoder_ctl(m_state, OPUS_SET_FORCE_CHANNELS(m_forceChannels));
+        return true;
+      }
       if (strcasecmp(optionName, "useinbandfec") == 0) {
-        error = opus_encoder_ctl(m_state, OPUS_SET_INBAND_FEC(atoi(optionValue)));
+        m_useinbandfec = atoi(optionValue);
+        error = opus_encoder_ctl(m_state, OPUS_SET_INBAND_FEC(m_useinbandfec));
         return true;
       }
       if (strcasecmp(optionName, "usedtx") == 0) {
-        error = opus_encoder_ctl(m_state, OPUS_SET_DTX(atoi(optionValue)));
+        m_usedtx = atoi(optionValue);
+        error = opus_encoder_ctl(m_state, OPUS_SET_DTX(m_usedtx));
         return true;
       }
       if (strcasecmp(optionName, "cbr") == 0) {
-        error = opus_encoder_ctl(m_state, OPUS_SET_VBR(atoi(optionValue)==0?1:0));
+        m_cbr = atoi(optionValue);
+        error = opus_encoder_ctl(m_state, OPUS_SET_VBR(m_cbr==0?1:0));
         return true;
       }
       if (strcasecmp(optionName, "maxaveragebitrate") == 0) {
         if(atoi(optionValue) >= 500 && atoi(optionValue) <= 512000)
-          error = opus_encoder_ctl(m_state, OPUS_SET_BITRATE(atoi(optionValue)));
+        {
+          m_maxaveragebitrate = atoi(optionValue);
+          error = opus_encoder_ctl(m_state, OPUS_SET_BITRATE(m_maxaveragebitrate));
+        }
         return true;
       }
       return PluginCodec<CODEC>::SetOption(optionName, optionValue);
@@ -197,6 +250,9 @@ class Encoder : public PluginCodec<CODEC>
         return false;
 
       if (toLen < 3)
+        return false;
+
+      if (!m_state)
         return false;
 
       data_len = opus_encode(m_state, (const opus_int16 *)fromPtr, m_samplesPerFrame, (unsigned char *)toPtr, m_bytesPerFrame);
@@ -227,6 +283,7 @@ class Decoder : public PluginCodec<CODEC>
   public:
     Decoder(const PluginCodec_Definition * defn)
       : PluginCodec<CODEC>(defn)
+      , m_state(NULL)
       , m_samplesPerFrame(m_definition->parm.audio.samplesPerFrame)
       , m_bytesPerFrame(m_definition->parm.audio.bytesPerFrame)
       , m_sampleRate(m_definition->sampleRate)
@@ -243,6 +300,14 @@ class Decoder : public PluginCodec<CODEC>
     virtual bool Construct()
     {
       GetInitOptions();
+      return OnChangedOptions();
+    }
+
+    virtual bool OnChangedOptions()
+    {
+      opus_decoder_destroy(m_state);
+      m_state = NULL;
+
       int size = opus_decoder_get_size(m_decoderChannels);
       m_state = (OpusDecoder*)malloc(size);
       if (m_state == NULL)
@@ -253,6 +318,7 @@ class Decoder : public PluginCodec<CODEC>
         PTRACE(1, CODEC_LOG, "opus_decoder_init error: " << error << " " << opus_strerror(error));
         return false;
       }
+      PTRACE(1, CODEC_LOG, "Codec created: \"" << m_definition->sourceFormat << "\" -> \"" << m_definition->destFormat << '"');
       return true;
     }
 
@@ -262,6 +328,18 @@ class Decoder : public PluginCodec<CODEC>
         if (strcmp((*options)->m_name, "Decoder Channels") == 0) {
           m_decoderChannels = atoi((*options)->m_value);
         }
+      }
+    }
+
+    virtual bool SetOption(const char * optionName, const char * optionValue)
+    {
+      if (strcasecmp(optionName, "Decoder Channels") == 0) {
+        if (m_decoderChannels != atoi(optionValue))
+        {
+          m_decoderChannels = atoi(optionValue);
+          m_optionsSame = false; // need restart
+        }
+        return true;
       }
     }
 
@@ -275,6 +353,9 @@ class Decoder : public PluginCodec<CODEC>
         return false;
 
       if (fromLen < 3)
+        return false;
+
+      if (!m_state)
         return false;
 
       frame_size = opus_decode(m_state, (const unsigned char *)fromPtr, fromLen, (opus_int16 *)toPtr, m_bytesPerFrame, 0);
