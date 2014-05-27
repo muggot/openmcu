@@ -225,10 +225,6 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
   if(!cap)
     return FALSE;
 
-  const OpalMediaFormat & mf = cap->GetMediaFormat();
-  if(mf.GetOptionInteger("Encoder Channels") == 2 || mf.GetOptionInteger("Decoder Channels") == 2)
-    return FALSE;
-
   name = capname.ToLower();
   if(name.Find("ulaw") != P_MAX_INDEX)         { name = "pcmu"; }
   else if(name.Find("alaw") != P_MAX_INDEX)    { name = "pcma"; }
@@ -246,6 +242,7 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
     name = name.Left(name.Find("-")).Left(name.Find("_"));
   }
 
+  const OpalMediaFormat & mf = cap->GetMediaFormat();
   rate = mf.GetTimeUnits()*1000;
 
   // only for audio use the default fmtp
@@ -517,14 +514,15 @@ int MCUSipConnection::CreateSdpInvite()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-sdp_rtpmap_t * MCUSipConnection::CreateSdpRtpmap(su_home_t *sess_home, PString name, int pt, int rate, PString fmtp)
+sdp_rtpmap_t * MCUSipConnection::CreateSdpRtpmap(su_home_t *sess_home, SipCapability *sc)
 {
   sdp_rtpmap_t *rm = (sdp_rtpmap_t *)su_salloc(sess_home, sizeof(*rm));
   rm->rm_predef = 0;
-  rm->rm_pt = pt;
-  rm->rm_encoding = PStringToChar(name);
-  rm->rm_rate = rate;
-  if(fmtp != "") rm->rm_fmtp = PStringToChar(fmtp);
+  rm->rm_pt = sc->payload;
+  rm->rm_encoding = PStringToChar(sc->format);
+  rm->rm_rate = sc->clock;
+  if(sc->fmtp != "") rm->rm_fmtp = PStringToChar(sc->fmtp);
+  if(sc->params != "") rm->rm_params = PStringToChar(sc->params);
   return rm;
 }
 
@@ -554,7 +552,7 @@ sdp_media_t * MCUSipConnection::CreateSdpMedia(su_home_t *sess_home, sdp_media_e
     if(m->m_mode == 0)
       m->m_mode = sc->mode;
 
-    sdp_rtpmap_t *rm_new = CreateSdpRtpmap(sess_home, sc->format, sc->payload, sc->clock, sc->fmtp);
+    sdp_rtpmap_t *rm_new = CreateSdpRtpmap(sess_home, sc);
     if(!rm_new)
       continue;
 
@@ -1295,10 +1293,16 @@ void MCUSipConnection::SelectCapability_SPEEX(SipCapability & sc)
 void MCUSipConnection::SelectCapability_OPUS(SipCapability & sc)
 {
   PString capname;
-  if(sc.clock == 8000 && FindSipCap(LocalSipCaps, "OPUS_8K{sw}"))        capname = "OPUS_8K{sw}";
-  else if(sc.clock == 16000 && FindSipCap(LocalSipCaps, "OPUS_16K{sw}")) capname = "OPUS_16K{sw}";
-  else if(sc.clock == 48000 && FindSipCap(LocalSipCaps, "OPUS_48K{sw}")) capname = "OPUS_48K{sw}";
-  else return;
+  if(sc.clock == 8000 && FindSipCap(LocalSipCaps, "OPUS_8K{sw}"))
+    capname = "OPUS_8K{sw}";
+  else if(sc.clock == 16000 && FindSipCap(LocalSipCaps, "OPUS_16K{sw}"))
+    capname = "OPUS_16K{sw}";
+  else if(sc.clock == 48000 && sc.params != "2" && FindSipCap(LocalSipCaps, "OPUS_48K{sw}"))
+    capname = "OPUS_48K{sw}";
+  else if(sc.clock == 48000 && sc.params == "2" && FindSipCap(LocalSipCaps, "OPUS_48K2{sw}"))
+    capname = "OPUS_48K2{sw}";
+  else
+    return;
 
   PString fmtp = sc.fmtp;
   // replace fmtp from codec parameters
@@ -1499,7 +1503,7 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
         sc->clock = rm->rm_rate;
         sc->bandwidth = bw;
         if(rm->rm_fmtp) { sc->fmtp = rm->rm_fmtp; sc->fmtp.Replace(" ","",TRUE,0); }
-        //sc->cnum
+        if(rm->rm_params) sc->params = rm->rm_params;
         //
         sc->remote_ip = address;
         sc->remote_port = remote_port;
@@ -2627,18 +2631,16 @@ void MCUSipEndPoint::CreateBaseSipCaps()
 {
   int dyn_pt = 96;
   PStringArray tmp_caps;
-  MCUConfig cfg;
   PStringList keys;
 
   BaseSipCaps.clear();
 
-  cfg = MCUConfig("SIP Audio");
-  keys = cfg.GetKeys();
+  keys = MCUConfig("SIP Audio").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     if(dyn_pt >= 127) continue;
 
-    PStringArray params = cfg.GetString(keys[i]).Tokenise(",");
+    PStringArray params = MCUConfig("SIP Audio").GetString(keys[i]).Tokenise(",");
     if(params[0].ToLower() != "true") continue;
     PString fmtp = params[1];
     PString fmtp_override = params[2];
@@ -2662,16 +2664,16 @@ void MCUSipEndPoint::CreateBaseSipCaps()
     sc->media = 0;
     if(fmtp != "") sc->fmtp = fmtp;
     if(fmtp_override != "") sc->fmtp_override = fmtp_override;
+    if(capname == "OPUS_48K2") sc->params = "2";
     BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
   }
 
-  cfg = MCUConfig("SIP Video");
-  keys = cfg.GetKeys();
+  keys = MCUConfig("SIP Video").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     if(dyn_pt >= 127) continue;
 
-    PStringArray params = cfg.GetString(keys[i]).Tokenise(",");
+    PStringArray params = MCUConfig("SIP Video").GetString(keys[i]).Tokenise(",");
     if(params[0].ToLower() != "true") continue;
     PString fmtp = params[1];
     PString fmtp_override = params[2];

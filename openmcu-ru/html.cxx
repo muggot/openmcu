@@ -860,7 +860,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  OpenMCU & mcu = OpenMCU::Current();
 
   firstEditRow = 2;
   rowBorders = TRUE;
@@ -894,10 +893,19 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString("Video codec");
 
   PString aCaps = ",Disabled", vCaps = ",Disabled";
-  if(mcu.GetEndpoint().tsCaps != NULL)
-  { PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { aCaps += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; } }
-  if(mcu.GetEndpoint().tvCaps != NULL)
-  { PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { vCaps += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; } }
+  PStringList keys = MCUConfig("SIP Audio").GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    PStringArray params = MCUConfig("SIP Audio").GetString(keys[i]).Tokenise(",");
+    if(params[0].ToLower() == "true") aCaps += ","+keys[i];
+  }
+  keys = MCUConfig("SIP Video").GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    PStringArray params = MCUConfig("SIP Video").GetString(keys[i]).Tokenise(",");
+    if(params[0].ToLower() == "true") vCaps += ","+keys[i];
+  }
+
 
   sectionPrefix = "SIP Endpoint ";
   PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);

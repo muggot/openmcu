@@ -134,7 +134,6 @@ class SipCapability
       remote_port = 0;
       bandwidth = 0;
       clock = 0;
-      cnum = 0;
       cap = NULL;
       inpChan = NULL;
       outChan = NULL;
@@ -149,11 +148,11 @@ class SipCapability
       if(media != c.media) return 1;
       if(mode != c.mode) return 1;
       if(clock != c.clock) return 1;
-      if(cnum != c.cnum) return 1;
       //if(remote_ip != c.remote_ip) return 1; // do not check, may be 0.0.0.0 on reinvite
       if(remote_port != c.remote_port) return 1;
       if(bandwidth != c.bandwidth) return 1;
       if(fmtp != c.fmtp) return 1;
+      if(params != c.params) return 1;
       if(secure_type != c.secure_type) return 1;
       if(srtp_remote_type != c.srtp_remote_type) return 1;
       if(srtp_remote_key != c.srtp_remote_key) return 1;
@@ -172,9 +171,9 @@ class SipCapability
     PString remote_ip;
     int remote_port;
     int bandwidth; // bandwidth from MCU
-    int cnum; // channels numbers
     PString fmtp; // parameters
     PString fmtp_override; // override received parameters
+    PString params;
     H323Capability *cap;
     H323_RTPChannel *inpChan;
     H323_RTPChannel *outChan;
@@ -324,7 +323,7 @@ class MCUSipConnection : public MCUH323Connection
     BOOL IsEstablished() const { return connectionState == EstablishedConnection; }
 
   protected:
-    sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, PString name, int pt, int rate, PString fmtp);
+    sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, SipCapability *sc);
     sdp_media_t *CreateSdpMedia(su_home_t *sess_home, sdp_media_e m_type, sdp_proto_e m_proto);
     sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);
     sdp_parser_t *SdpParser(PString sdp_str);
