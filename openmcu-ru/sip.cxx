@@ -344,6 +344,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   cseq_num = 100;
   aDataSocket = aControlSocket = vDataSocket = vControlSocket = NULL;
   audio_rtp_port = video_rtp_port = 0;
+  c_sip_msg = NULL;
 
   su_home_t *home = msg_home(msg);
   sip_t *sip = sip_object(msg);
@@ -351,13 +352,11 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   {
     ruri_str = MCUURL_SIP(msg).GetUrl();
     contact_str = url_as_string(home, sip->sip_request->rq_url);
-    c_sip_msg = msg_dup(msg);
   }
   else if(direction == DIRECTION_OUTBOUND)
   {
     ruri_str = url_as_string(home, sip->sip_request->rq_url);
     contact_str = url_as_string(home, sip->sip_contact->m_url);
-    c_sip_msg = NULL;
   }
 
   MCUURL url(contact_str);
@@ -380,7 +379,8 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
 
   if(direction == DIRECTION_INBOUND)
   {
-    //
+    // waiting ACK signal
+    connectionState = AwaitingSignalConnect;
   }
   else if(direction == DIRECTION_OUTBOUND)
   {
@@ -1641,19 +1641,28 @@ int MCUSipConnection::ProcessACK(const msg_t *msg)
   StartReceiveChannels(); // start receive logical channels
   StartTransmitChannels(); // start transmit logical channels
 
+  // is connected
   connectionState = EstablishedConnection;
+
   return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::ProcessInviteEvent()
+int MCUSipConnection::ProcessInviteEvent(const msg_t *msg)
 {
   PTRACE(1, "MCUSIP\tProcessInviteEvent");
+
+  msg_destroy(c_sip_msg);
+  c_sip_msg = msg_dup(msg);
   sip_t *sip = sip_object(c_sip_msg);
 
   // save cseq
-  cseq_num = sip->sip_cseq->cs_seq+1;
+  cseq_num = sip->sip_cseq->cs_seq;
+
+  PString sdp_str = sip->sip_payload->pl_data;
+  if(!ProcessSDP(sdp_str, RemoteSipCaps))
+    return 415; // SIP_415_UNSUPPORTED_MEDIA
 
   if(direction == DIRECTION_INBOUND)
   {
@@ -1666,40 +1675,36 @@ int MCUSipConnection::ProcessInviteEvent()
   remotePartyName = remoteName;
   remotePartyAddress = url.GetUrl();
   remoteApplication = url.GetRemoteApplication();
-
   if(display_name != "")
     remoteName = remotePartyName = display_name;
 
   // set endpoint member name
   SetMemberName();
-
-  PString sdp_str = sip->sip_payload->pl_data;
-  if(!ProcessSDP(sdp_str, RemoteSipCaps))
-    return 415; // SIP_415_UNSUPPORTED_MEDIA
-
+  // override requested room from registrar
+  SetRequestedRoom();
   // join conference
-  SetRequestedRoom(); // override requested room from registrar
   OnEstablished();
   if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
     return 600;
 
-  // create logical channels
-  CreateLogicalChannels();
-
   if(direction == DIRECTION_INBOUND)
   {
-    // waiting ACK signal
-    connectionState = AwaitingSignalConnect;
+    // create logical channels
+    CreateLogicalChannels();
     // create sdp for OK
     CreateSdpOk();
   }
   else if(direction == DIRECTION_OUTBOUND)
   {
-    // is connected
-    connectionState = EstablishedConnection;
+    DeleteTempSockets();
+    // create logical channels
+    CreateLogicalChannels();
     // for incoming connection start channels after ACK
     StartReceiveChannels(); // start receive logical channels
     StartTransmitChannels(); // start transmit logical channels
+    // is connected
+    connectionState = EstablishedConnection;
+    SendACK();
   }
 
   return 1;
@@ -1707,13 +1712,21 @@ int MCUSipConnection::ProcessInviteEvent()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::ProcessReInviteEvent()
+int MCUSipConnection::ProcessReInviteEvent(const msg_t *msg)
 {
   PTRACE(1, "MCUSIP\tProcessReInviteEvent");
-  sip_t *sip = sip_object(c_sip_msg);
 
+  // re-Invite always direction inbound
+  direction = DIRECTION_INBOUND;
   // waiting ACK signal
   connectionState = AwaitingSignalConnect;
+
+  msg_destroy(c_sip_msg);
+  c_sip_msg = msg_dup(msg);
+  sip_t *sip = sip_object(c_sip_msg);
+
+  // update cseq
+  cseq_num = sip->sip_cseq->cs_seq;
 
   PString sdp_str = sip->sip_payload->pl_data;
   SipCapMapType SipCaps;
@@ -1789,6 +1802,24 @@ int MCUSipConnection::ProcessReInviteEvent()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+int MCUSipConnection::ProcessInfo(const msg_t *msg)
+{
+  PTRACE(1, "MCUSIP\tOnReceivedInfo");
+  sip_t *sip = sip_object(c_sip_msg);
+  if(!sip->sip_payload || !sip->sip_payload->pl_data || !sip->sip_content_type)
+    return 0;
+
+  PString type = PString(sip->sip_content_type->c_type);
+  PString data = PString(sip->sip_payload->pl_data);
+  if(type.Find("application/media_control") != P_MAX_INDEX && data.Find("picture_fast_update") != P_MAX_INDEX)
+    ReceivedVFU();
+  else if (type.Find("application/dtmf-relay") != P_MAX_INDEX)
+    ReceivedDTMF(data);
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, msg_t *req_msg=NULL)
 {
   PTRACE(1, "MCUSIP\tSendRequest");
@@ -1806,10 +1837,14 @@ int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, 
     sip_to = sip->sip_to;
   }
 
+  int _cseq_num;
+  if(method == sip_method_ack) _cseq_num = sip->sip_cseq->cs_seq;
+  else _cseq_num = ++cseq_num;
+
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
   sip_request_t *sip_rq = sip_request_create(home, method, method_name, ruri, NULL);
-  sip_cseq_t *sip_cseq = sip_cseq_create(home, cseq_num++, method, method_name);
+  sip_cseq_t *sip_cseq = sip_cseq_create(home, _cseq_num, method, method_name);
   sip_route_t* sip_route = sip_route_reverse(home, sip->sip_record_route);
 
   if(req_msg == NULL)
@@ -2366,13 +2401,10 @@ int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg)
   if(!sCon || sCon->IsConnected()) // repeated OK
     return 0;
 
-  sCon->c_sip_msg = msg_dup(msg);
-  sCon->SendACK();
-  sCon->DeleteTempSockets();
-
-  int ret = sCon->ProcessInviteEvent();
+  int ret = sCon->ProcessInviteEvent(msg);
   if(ret != 1)
   {
+    sCon->SendBYE();
     sCon->LeaveMCU(TRUE); // leave conference and delete connection
   }
   return 0;
@@ -2397,9 +2429,7 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   if(sCon->IsConnected())  // connection already exist, process reinvite
   {
     PTRACE(1, "MCUSIP\tSIP REINVITE");
-    sCon->direction = DIRECTION_INBOUND;
-    sCon->c_sip_msg = msg_dup(msg);
-    int ret = sCon->ProcessReInviteEvent();
+    int ret = sCon->ProcessReInviteEvent(msg);
     if(ret != 1)
       return SipReqReply(msg, ret);
     SipReqReply(msg, 200, NULL, sCon->contact_str, "application/sdp", sCon->sdp_ok_str);
@@ -2408,7 +2438,7 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
 
   PTRACE(1, "MCUSIP\tSIP INVITE");
 
-  int ret = sCon->ProcessInviteEvent();
+  int ret = sCon->ProcessInviteEvent(msg);
   if(ret != 1)
   {
     SipReqReply(msg, ret);
@@ -2443,10 +2473,12 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
     return SipReqReply(msg, 415); // SIP_415_UNSUPPORTED_MEDIA
   }
 
-  PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
+  PString callToken;
+  if(request) callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
+  else        callToken = "sip:"+PString(sip->sip_to->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
 
-  // repeated requests INVITE, waiting ACK signal
+  // repeated INVITE, waiting ACK signal
   if(request == sip_method_invite && sCon && sCon->IsAwaitingSignalConnect())
   {
     return 0;
@@ -2495,17 +2527,8 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   {
     if(!sCon)
       return SipReqReply(msg, 200);
-    if(sip->sip_payload && sip->sip_payload->pl_data && sip->sip_content_type)
-    {
-      PString type = PString(sip->sip_content_type->c_type);
-      PString data = PString(sip->sip_payload->pl_data);
-      if(type.Find("application/media_control") != P_MAX_INDEX && data.Find("to_encoder") != P_MAX_INDEX && data.Find("picture_fast_update") != P_MAX_INDEX)
-        sCon->ReceivedVFU();
-      else if (type.Find("application/dtmf-relay") != P_MAX_INDEX)
-        sCon->ReceivedDTMF(data);
-      return SipReqReply(msg, 200);
-    }
-    return SipReqReply(msg, 501); // SIP_501_NOT_IMPLEMENTED
+    sCon->ProcessInfo(msg);
+    return SipReqReply(msg, 200);
   }
   if(request == sip_method_message)
   {

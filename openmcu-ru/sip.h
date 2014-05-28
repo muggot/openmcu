@@ -243,10 +243,11 @@ class MCUSipConnection : public MCUH323Connection
     BOOL CreateTempSockets();
     void DeleteTempSockets();
 
-    int ProcessInviteEvent();
-    int ProcessReInviteEvent();
+    int ProcessInviteEvent(const msg_t *msg);
+    int ProcessReInviteEvent(const msg_t *msg);
     int ProcessACK(const msg_t *msg);
     int ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps);
+    int ProcessInfo(const msg_t *msg);
     void UpdateLocalContact();
 
     void StartTransmitChannels();
@@ -284,21 +285,34 @@ class MCUSipConnection : public MCUH323Connection
     void ReceivedDTMF(PString payload);
     BOOL HadAnsweredCall() { return (direction=DIRECTION_INBOUND); }
 
-    PString sdp_o_username;
-    unsigned int sdp_o_id;
-    unsigned int sdp_o_ver;
+    BOOL IsAwaitingSignalConnect() { return connectionState == AwaitingSignalConnect; };
+    BOOL IsConnected() const { return connectionState == EstablishedConnection; }
+    BOOL IsEstablished() const { return connectionState == EstablishedConnection; }
+
+    PString sdp_invite_str;
+    PString sdp_ok_str;
+    PString ruri_str;
+    PString contact_str;
+
+  protected:
+    sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, SipCapability *sc);
+    sdp_media_t *CreateSdpMedia(su_home_t *sess_home, sdp_media_e m_type, sdp_proto_e m_proto);
+    sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);
+    sdp_parser_t *SdpParser(PString sdp_str);
+
+    PString CreateSdpStr();
+    int CreateSdpOk();
+    int CreateSdpInvite();
+
+    void RefreshLocalSipCaps();
+    BOOL MergeSipCaps(SipCapMapType & BaseCaps, SipCapMapType & RemoteCaps);
 
     Direction direction;
     PString local_user;
     PString local_ip;
     PString display_name;
-    PString ruri_str;
-    PString contact_str;
     msg_t *c_sip_msg;
     int cseq_num;
-
-    PString sdp_invite_str;
-    PString sdp_ok_str;
 
     int scap; // selected audio capability payload type
     int vcap; // selected video capability payload type
@@ -318,22 +332,9 @@ class MCUSipConnection : public MCUH323Connection
     PUDPSocket *vDataSocket, *vControlSocket;
     unsigned audio_rtp_port, video_rtp_port;
 
-    BOOL IsAwaitingSignalConnect() { return connectionState == AwaitingSignalConnect; };
-    BOOL IsConnected() const { return connectionState == EstablishedConnection; }
-    BOOL IsEstablished() const { return connectionState == EstablishedConnection; }
-
-  protected:
-    sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, SipCapability *sc);
-    sdp_media_t *CreateSdpMedia(su_home_t *sess_home, sdp_media_e m_type, sdp_proto_e m_proto);
-    sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);
-    sdp_parser_t *SdpParser(PString sdp_str);
-
-    PString CreateSdpStr();
-    int CreateSdpOk();
-    int CreateSdpInvite();
-
-    void RefreshLocalSipCaps();
-    BOOL MergeSipCaps(SipCapMapType & BaseCaps, SipCapMapType & RemoteCaps);
+    PString sdp_o_username;
+    unsigned int sdp_o_id;
+    unsigned int sdp_o_ver;
 
     SipCapMapType LocalSipCaps;
     SipCapMapType RemoteSipCaps;
