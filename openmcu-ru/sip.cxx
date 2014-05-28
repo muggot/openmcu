@@ -1632,6 +1632,9 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
 int MCUSipConnection::ProcessACK(const msg_t *msg)
 {
   PTRACE(1, "MCUSIP\tProcessACK");
+  if(!c_sip_msg)
+    return 0;
+
   sip_t *sip = sip_object(msg);
   // replace to_tag
   sip_t *c_sip = sip_object(c_sip_msg);
@@ -1805,7 +1808,7 @@ int MCUSipConnection::ProcessReInviteEvent(const msg_t *msg)
 int MCUSipConnection::ProcessInfo(const msg_t *msg)
 {
   PTRACE(1, "MCUSIP\tOnReceivedInfo");
-  sip_t *sip = sip_object(c_sip_msg);
+  sip_t *sip = sip_object(msg);
   if(!sip->sip_payload || !sip->sip_payload->pl_data || !sip->sip_content_type)
     return 0;
 
@@ -1823,6 +1826,9 @@ int MCUSipConnection::ProcessInfo(const msg_t *msg)
 int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, msg_t *req_msg=NULL)
 {
   PTRACE(1, "MCUSIP\tSendRequest");
+  if(!c_sip_msg)
+    return 0;
+
   sip_t *sip = sip_object(c_sip_msg);
   su_home_t *home = msg_home(c_sip_msg);
 
