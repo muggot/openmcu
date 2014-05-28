@@ -172,7 +172,7 @@ class SipCapability
     int remote_port;
     int bandwidth; // bandwidth from MCU
     PString fmtp; // parameters
-    PString fmtp_override; // override received parameters
+    PString local_fmtp; // override received parameters
     PString params;
     H323Capability *cap;
     H323_RTPChannel *inpChan;

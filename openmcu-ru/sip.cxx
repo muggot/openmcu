@@ -1256,8 +1256,8 @@ void MCUSipConnection::SelectCapability_SPEEX(SipCapability & sc)
   PString fmtp = sc.fmtp;
   // replace fmtp from codec parameters
   SipCapability *local_sc = FindSipCap(LocalSipCaps, capname);
-  if(local_sc && local_sc->fmtp_override != "")
-    fmtp = local_sc->fmtp_override;
+  if(local_sc && local_sc->local_fmtp != "")
+    fmtp = local_sc->local_fmtp;
 
   int vbr = -1;
   int mode = -1;
@@ -1307,8 +1307,8 @@ void MCUSipConnection::SelectCapability_OPUS(SipCapability & sc)
   PString fmtp = sc.fmtp;
   // replace fmtp from codec parameters
   SipCapability *local_sc = FindSipCap(LocalSipCaps, capname);
-  if(local_sc && local_sc->fmtp_override != "")
-    fmtp = local_sc->fmtp_override;
+  if(local_sc && local_sc->local_fmtp != "")
+    fmtp = local_sc->local_fmtp;
 
   int cbr = -1;
   int maxaveragebitrate = -1;
@@ -2639,14 +2639,13 @@ void MCUSipEndPoint::CreateBaseSipCaps()
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     if(dyn_pt >= 127) continue;
-
-    PStringArray params = MCUConfig("SIP Audio").GetString(keys[i]).Tokenise(",");
-    if(params[0].ToLower() != "true") continue;
-    PString fmtp = params[1];
-    PString fmtp_override = params[2];
+    if(keys[i].Right(4) == "fmtp") continue;
+    if(MCUConfig("SIP Audio").GetBoolean(keys[i]) == FALSE) continue;
 
     PString capname = keys[i];
     if(capname.Right(4) != "{sw}") capname += "{sw}";
+    PString fmtp = MCUConfig("SIP Audio").GetString(capname+"_fmtp");
+    PString local_fmtp = MCUConfig("SIP Audio").GetString(capname+"_local_fmtp");
 
     SipCapability *sc = new SipCapability(capname);
     if(sc->format == "") { delete sc; sc = NULL; continue; }
@@ -2663,7 +2662,7 @@ void MCUSipEndPoint::CreateBaseSipCaps()
 
     sc->media = 0;
     if(fmtp != "") sc->fmtp = fmtp;
-    if(fmtp_override != "") sc->fmtp_override = fmtp_override;
+    if(local_fmtp != "") sc->local_fmtp = local_fmtp;
     if(capname == "OPUS_48K2") sc->params = "2";
     BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
   }
@@ -2672,14 +2671,12 @@ void MCUSipEndPoint::CreateBaseSipCaps()
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     if(dyn_pt >= 127) continue;
-
-    PStringArray params = MCUConfig("SIP Video").GetString(keys[i]).Tokenise(",");
-    if(params[0].ToLower() != "true") continue;
-    PString fmtp = params[1];
-    PString fmtp_override = params[2];
+    if(keys[i].Right(4) == "fmtp") continue;
+    if(MCUConfig("SIP Video").GetBoolean(keys[i]) == FALSE) continue;
 
     PString capname = keys[i];
     if(capname.Right(4) != "{sw}") capname += "{sw}";
+    PString fmtp = MCUConfig("SIP Video").GetString(capname+"_fmtp");
 
     SipCapability *sc = new SipCapability(capname);
     if(sc->format == "") { delete sc; sc = NULL; continue; }
@@ -2696,7 +2693,6 @@ void MCUSipEndPoint::CreateBaseSipCaps()
 
     sc->media = 1;
     if(fmtp != "") sc->fmtp = fmtp;
-    if(fmtp_override != "") sc->fmtp_override = fmtp_override;
     BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
   }
 }
