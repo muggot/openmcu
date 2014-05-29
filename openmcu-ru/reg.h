@@ -79,6 +79,7 @@ class RegistrarConnection
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
+    int TryLock()    { if(!mutex.Wait(20)) return 0; return 1; }
     PMutex & GetMutex() { return mutex; }
 
     PString username_in;
@@ -140,6 +141,7 @@ class Subscription
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
+    int TryLock()    { if(!mutex.Wait(20)) return 0; return 1; }
     PMutex & GetMutex() { return mutex; }
 
     PString username_in;
@@ -219,6 +221,7 @@ class RegistrarAccount
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
+    int TryLock()    { if(!mutex.Wait(20)) return 0; return 1; }
     PMutex & GetMutex() { return mutex; }
 
     PString GetAuthStr();

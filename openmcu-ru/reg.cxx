@@ -190,9 +190,11 @@ void Registrar::SubscriptionProcess()
   PTime now;
   for(SubscriptionMapType::iterator it=SubscriptionMap.begin(); it!=SubscriptionMap.end(); )
   {
-    RegSubscriptionStates state_new;
     Subscription *subAccount = it->second;
-    subAccount->Lock();
+    if(!subAccount->TryLock())
+      continue;
+
+    RegSubscriptionStates state_new;
     if(now > subAccount->start_time + PTimeInterval(subAccount->expires*1000))
     {
       SubscriptionMap.erase(it++);
@@ -510,6 +512,7 @@ PStringArray Registrar::GetAccountList()
 
 void Registrar::MainLoop()
 {
+  PTime time_sub;
   while(1)
   {
     if(restart)
@@ -522,17 +525,21 @@ void Registrar::MainLoop()
     {
       return;
     }
-    mutex.Wait();
-    //
-    SubscriptionProcess();
-    //
-    RefreshAccountList();
+    Lock();
     PTime now;
     //
+    if((PTime()-time_sub).GetMilliSeconds() > 1000)
+    {
+      time_sub = now;
+      SubscriptionProcess();
+      RefreshAccountList();
+    }
+    // account
     for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
     {
       RegistrarAccount *regAccount = it->second;
-      regAccount->Lock();
+      if(!regAccount->TryLock())
+        continue;
       // registrar
       if(regAccount->registered)
       {
@@ -541,11 +548,12 @@ void Registrar::MainLoop()
       }
       regAccount->Unlock();
     }
-    //
+    // connections
     for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )
     {
       RegistrarConnection *regConn = it->second;
-      regConn->Lock();
+      if(!regConn->TryLock())
+        continue;
       // remove empty connection
       if(regConn->state == CONN_IDLE)
       {
@@ -622,8 +630,11 @@ void Registrar::MainLoop()
       }
       regConn->Unlock();
     }
-    mutex.Signal();
-    PThread::Sleep(500);
+    Unlock();
+
+    int wait = 250 - PTimeInterval(PTime() - now).GetMilliSeconds();
+    if(wait < 100) wait = 100;
+    PThread::Sleep(wait);
   }
 }
 
@@ -666,11 +677,9 @@ void Registrar::InitTerminals()
   PStringToString h323Passwords;
 
   Lock();
-
   for(AccountMapType::iterator reg = AccountMap.begin(); reg != AccountMap.end(); ++reg)
   {
     RegistrarAccount *regAccount = reg->second;
-    regAccount->Lock();
     if(regAccount->account_type == ACCOUNT_TYPE_SIP)
     {
       regAccount->enable = MCUConfig(sipSectionPrefix+regAccount->username).GetBoolean("Registrar", FALSE);
@@ -683,7 +692,6 @@ void Registrar::InitTerminals()
       if(!regAccount->enable && h323_require_h235)
         regAccount->registered = FALSE;
     }
-    regAccount->Unlock();
   }
   Unlock();
 
