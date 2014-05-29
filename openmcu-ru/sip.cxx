@@ -467,6 +467,9 @@ void MCUSipConnection::DeleteTempSockets()
 
 void MCUSipConnection::RefreshLocalSipCaps()
 {
+  PString video_pt = GetEndpointParamFromUrl("Video payload type", ruri_str);
+  PString video_fmtp = GetEndpointParamFromUrl("Video fmtp", ruri_str);
+
   LocalSipCaps.clear();
   for(SipCapMapType::iterator it = sep->GetBaseSipCaps().begin(); it != sep->GetBaseSipCaps().end(); it++)
   {
@@ -478,6 +481,11 @@ void MCUSipConnection::RefreshLocalSipCaps()
       continue;
 
     SipCapability *local_sc = new SipCapability(*base_sc);
+    if(video_fmtp != "" && local_sc->format == "h264")
+      local_sc->fmtp = video_fmtp;
+    if(video_pt != "" && local_sc->format == "h264")
+      local_sc->payload = video_pt.AsInteger();
+
     LocalSipCaps.insert(SipCapMapType::value_type(LocalSipCaps.size(), local_sc));
   }
 }

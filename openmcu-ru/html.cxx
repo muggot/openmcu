@@ -891,6 +891,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 
   optionNames.AppendString("Audio codec");
   optionNames.AppendString("Video codec");
+  optionNames.AppendString("Video payload type");
+  optionNames.AppendString("Video fmtp");
 
   PString aCaps = ",Disabled", vCaps = ",Disabled";
   PStringList keys = MCUConfig("SIP Audio").GetKeys();
@@ -1046,12 +1048,15 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString vCodec = scfg.GetString("Video codec");
       if(aCodec != "" && aCaps.Find(aCodec) == P_MAX_INDEX) aCaps = aCodec+","+aCaps;
       if(vCodec != "" && vCaps.Find(vCodec) == P_MAX_INDEX) vCaps = vCodec+","+vCaps;
+      PString video_pt = scfg.GetString("Video payload type");
+      PString select_pt; for(int i = 96; i < 128; i++) select_pt += ","+PString(i);
+      PString video_fmtp = scfg.GetString("Video fmtp");
       PString s2;
       s2 += NewItemArray(name, 25);
       s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, aCodec, aCaps)+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, vCodec, vCaps)+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += rowArray+(JsLocale("window.l_name_video")+" payload type")+SelectItem(name, video_pt, select_pt)+"</tr>";
+      s2 += rowArray+(JsLocale("window.l_name_video")+" fmtp")+StringItem(name, video_fmtp)+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
