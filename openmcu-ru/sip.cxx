@@ -481,9 +481,9 @@ void MCUSipConnection::RefreshLocalSipCaps()
       continue;
 
     SipCapability *local_sc = new SipCapability(*base_sc);
-    if(video_fmtp != "" && local_sc->format == "h264")
+    if(base_sc->media == 1 && video_fmtp != "")
       local_sc->fmtp = video_fmtp;
-    if(video_pt != "" && local_sc->format == "h264")
+    if(base_sc->media == 1 && video_pt != "")
       local_sc->payload = video_pt.AsInteger();
 
     LocalSipCaps.insert(SipCapMapType::value_type(LocalSipCaps.size(), local_sc));
@@ -2711,7 +2711,7 @@ void MCUSipEndPoint::CreateBaseSipCaps()
   keys = MCUConfig("SIP Audio").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    if(keys[i].Right(4) == "fmtp") continue;
+    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
     if(MCUConfig("SIP Audio").GetBoolean(keys[i]) == FALSE) continue;
 
     PString capname = keys[i];
@@ -2732,20 +2732,16 @@ void MCUSipEndPoint::CreateBaseSipCaps()
   keys = MCUConfig("SIP Video").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    if(keys[i].Right(4) == "fmtp") continue;
+    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
     if(MCUConfig("SIP Video").GetBoolean(keys[i]) == FALSE) continue;
 
     PString capname = keys[i];
     if(capname.Right(4) != "{sw}") capname += "{sw}";
-    PString fmtp = MCUConfig("SIP Video").GetString(capname+"_fmtp");
-    PString payload = MCUConfig("SIP Video").GetString(capname+"_payload");
 
     SipCapability *sc = new SipCapability(capname);
     if(sc->format == "") { delete sc; sc = NULL; continue; }
 
     sc->media = 1;
-    if(fmtp != "") sc->fmtp = fmtp;
-    if(payload != "") sc->payload = payload.AsInteger();
     BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
   }
 }

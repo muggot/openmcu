@@ -1357,11 +1357,11 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
   s << NewRowColumn("");
   s << ColumnItem("", 30);
   s << ColumnItem("", 80);
-  if(section == "SIP Video")
-    s << ColumnItem("Payload", 50);
-  s << ColumnItem(JsLocale("window.l_name_parameters_for_sending"));
   if(section == "SIP Audio")
+  {
+    s << ColumnItem(JsLocale("window.l_name_parameters_for_sending"));
     s << ColumnItem(JsLocale("window.l_name_codec_parameters"));
+  }
   s << ColumnItem(JsLocale("window.l_name_default_parameters"), 350);
 
   PStringList keys = cfg.GetKeys();
@@ -1412,25 +1412,6 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
       }
       else
         s << EmptyTextItem();
-    }
-    else if(section == "SIP Video")
-    {
-      PString fname;
-      // payload
-      if(name.Left(5).ToLower() == "h.264")
-      {
-        fname = name+"_payload";
-        PString select;
-        for(int i = 96; i < 128; i++) select += ","+PString(i);
-        s << "<input name='"+fname+"' value='"+fname+"' type='hidden'>";
-        s << SelectItem(fname, cfg.GetString(fname), select, 50);
-      }
-      else
-        s << EmptyTextItem();
-      // parameters for sending
-      fname = name+"_fmtp";
-      s << "<input name='"+fname+"' value='"+fname+"' type='hidden'>";
-      s << StringItem(fname, cfg.GetString(fname), 200);
     }
     s << InfoItem(fmtp);
   }
