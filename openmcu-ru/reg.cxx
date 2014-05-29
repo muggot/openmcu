@@ -1,7 +1,4 @@
 
-#include <ptlib.h>
-#include <ptclib/guid.h>
-
 #include "mcu.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -110,11 +107,10 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
 
   if(account_type == ACCOUNT_TYPE_SIP)
   {
-    PGloballyUniqueID id;
-    callToken = id.AsString();
-    PString *cmd = new PString("invite:"+room+","+address+","+callToken);
+    PString call_id_str = PGloballyUniqueID().AsString();
+    PString *cmd = new PString("invite:"+room+","+address+","+call_id_str);
     sep->SipQueue.Push(cmd);
-    callToken = "sip:"+username_out+":"+callToken;
+    callToken = "sip:"+call_id_str;
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
@@ -164,12 +160,12 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
 
   if(regAccount_out->account_type == ACCOUNT_TYPE_SIP)
   {
-    PString call_id;
-    nta_outgoing_t *orq = sep->SipMakeCall(regConn->username_in, address, call_id);
+    PString callToken;
+    nta_outgoing_t *orq = sep->SipMakeCall(regConn->username_in, address, callToken);
     if(orq)
     {
       regConn->orq_invite_out = orq;
-      regConn->callToken_out = "sip:"+regAccount_out->username+":"+call_id;
+      regConn->callToken_out = callToken;
       return TRUE;
     }
   }

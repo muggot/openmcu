@@ -1,5 +1,4 @@
 
-#include <ptlib.h>
 #include <sys/types.h>
 #ifdef _WIN32
 #  include <winsock2.h>
@@ -240,6 +239,7 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
   else if(name.Find("h.263p") != P_MAX_INDEX)  { name = "h263-1998"; }
   else
   {
+    name.Replace("{sw}","",TRUE,0);
     name.Replace(".","",TRUE,0);
     name = name.Left(name.Find("-")).Left(name.Find("_"));
   }
@@ -265,9 +265,18 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
   else if(name == "g729")   { pt = 18; }
   else if(name == "h261")   { pt = 31; }
   else if(name == "h263")   { pt = 34; }
-  else                      { pt = 128; }
+  else                      { pt = -1; }
 
   return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PString GetSipCallToken(const msg_t *msg, Direction direction)
+{
+  sip_t *sip = sip_object(msg);
+  PString callToken = "sip:"+PString(sip->sip_call_id->i_id);
+  return callToken;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -520,6 +529,7 @@ int MCUSipConnection::CreateSdpInvite()
 {
   RefreshLocalSipCaps(); // update from base
   sdp_invite_str = CreateSdpStr();
+  RefreshLocalSipCaps(); // update from base
   return 1;
 }
 
@@ -550,6 +560,7 @@ sdp_media_t * MCUSipConnection::CreateSdpMedia(su_home_t *sess_home, sdp_media_e
   else if(m_type == sdp_media_video)
     m->m_port = video_rtp_port;
 
+  int dyn_pt = 96;
   sdp_rtpmap_t *rm = NULL; // rtpmap iterator
   for(SipCapMapType::iterator it = LocalSipCaps.begin(); it != LocalSipCaps.end(); it++)
   {
@@ -563,6 +574,19 @@ sdp_media_t * MCUSipConnection::CreateSdpMedia(su_home_t *sess_home, sdp_media_e
     if(m->m_mode == 0)
       m->m_mode = sc->mode;
 
+    // check payload number
+    for(SipCapMapType::iterator it = LocalSipCaps.begin(); it != LocalSipCaps.end(); it++)
+    {
+      if(dyn_pt == it->second->payload)
+        dyn_pt++;
+      if(sc->payload == -1 && it->second->payload != -1 && it->second->format == sc->format && it->second->clock == sc->clock && it->second->fmtp == sc->fmtp && it->second->params == sc->params)
+        sc->payload = it->second->payload;
+    }
+    if(sc->payload == -1)
+      sc->payload = dyn_pt++;
+    if(sc->payload > 127)
+      continue;
+
     sdp_rtpmap_t *rm_new = CreateSdpRtpmap(sess_home, sc);
     if(!rm_new)
       continue;
@@ -571,10 +595,16 @@ sdp_media_t * MCUSipConnection::CreateSdpMedia(su_home_t *sess_home, sdp_media_e
     sdp_rtpmap_t *rm_find = sdp_rtpmap_find_matching(m->m_rtpmaps, rm_new);
     if(rm_find)
     {
-      if(sc->fmtp == "")         { continue; }
-      else if(!rm_find->rm_fmtp) { rm_find->rm_fmtp = PStringToChar(sc->fmtp); continue; }
+      if(sc->fmtp == "")
+        continue;
+      else if(!rm_find->rm_fmtp)
+      {
+        rm_find->rm_fmtp = PStringToChar(sc->fmtp);
+        continue;
+      }
     }
 
+    // srtp
     if(direction == DIRECTION_INBOUND)
     {
       if(sc->secure_type == SECURE_TYPE_SRTP && m->m_proto != sdp_proto_srtp)
@@ -1993,7 +2023,7 @@ PString MCUSipEndPoint::GetRoomAccess(const sip_t *sip)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & call_id)
+nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 {
     PTRACE(1, "MCUSIP\tSipMakeCall from:" << from << " to:" << to);
 
@@ -2056,14 +2086,13 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, ruri, NULL);
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, 100, SIP_METHOD_INVITE);
 
-    sip_call_id_t* sip_call_id = NULL;
-    if(call_id != "")
-    {
-      sip_call_id = sip_call_id_make(&home, call_id);
-    } else {
-      sip_call_id = sip_call_id_create(&home, "1");
-      call_id = sip_call_id->i_id;
-    }
+    // check callToken data
+    PString call_id_str;
+    if(callToken == "")
+      call_id_str = PGloballyUniqueID().AsString();
+    else
+      call_id_str = callToken;
+    sip_call_id_t* sip_call_id = sip_call_id_make(&home, call_id_str);
 
     msg_t *msg = nta_msg_create(agent, 0);
     sip_t *sip = sip_object(msg);
@@ -2077,7 +2106,7 @@ nta_outgoing_t * MCUSipEndPoint::SipMakeCall(PString from, PString to, PString &
                 TAG_END());
 
     // create connection
-    PString callToken = "sip:"+PString(sip_to->a_url->url_user)+":"+PString(sip_call_id->i_id);
+    callToken = GetSipCallToken(msg, DIRECTION_OUTBOUND);
     MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
     if(!sCon)
     {
@@ -2235,7 +2264,7 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
   int status = 0, request = 0;
   if(sip->sip_status)  status = sip->sip_status->st_status;
   if(sip->sip_cseq)    request = sip->sip_cseq->cs_method;
-  PString callToken = "sip:"+PString(sip->sip_to->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
+  PString callToken = GetSipCallToken(msg_orq, DIRECTION_OUTBOUND);
 
   if(request == sip_method_register)
   {
@@ -2411,7 +2440,7 @@ int MCUSipEndPoint::CreateOutgoingConnection(const msg_t *msg)
   if(sip->sip_payload==NULL || sip->sip_payload->pl_data==NULL)
     return 0;
 
-  PString callToken = "sip:"+PString(sip->sip_to->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
+  PString callToken = GetSipCallToken(msg, DIRECTION_OUTBOUND);
 
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
   if(!sCon || sCon->IsConnected()) // repeated OK
@@ -2436,7 +2465,7 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   if(GetRoomAccess(sip) == "DENY")
     return SipReqReply(msg, 403); // SIP_403_FORBIDDEN
 
-  PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
+  PString callToken = GetSipCallToken(msg, DIRECTION_INBOUND);
 
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
   if(!sCon)
@@ -2488,9 +2517,7 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
     return SipReqReply(msg, 415); // SIP_415_UNSUPPORTED_MEDIA
   }
 
-  PString callToken;
-  if(request) callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
-  else        callToken = "sip:"+PString(sip->sip_to->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
+  PString callToken = GetSipCallToken(msg, DIRECTION_INBOUND);
   MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
 
   // repeated INVITE, waiting ACK signal
@@ -2670,16 +2697,12 @@ void MCUSipEndPoint::InitProxyAccounts()
 
 void MCUSipEndPoint::CreateBaseSipCaps()
 {
-  int dyn_pt = 96;
-  PStringArray tmp_caps;
   PStringList keys;
-
   BaseSipCaps.clear();
 
   keys = MCUConfig("SIP Audio").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    if(dyn_pt >= 127) continue;
     if(keys[i].Right(4) == "fmtp") continue;
     if(MCUConfig("SIP Audio").GetBoolean(keys[i]) == FALSE) continue;
 
@@ -2691,49 +2714,30 @@ void MCUSipEndPoint::CreateBaseSipCaps()
     SipCapability *sc = new SipCapability(capname);
     if(sc->format == "") { delete sc; sc = NULL; continue; }
 
-    // duplication check
-    if(sc->payload == 128)
-    {
-      if(tmp_caps.GetStringsIndex(sc->format+PString(sc->clock)+sc->fmtp) == P_MAX_INDEX)
-        sc->payload = dyn_pt++;
-      else
-        sc->payload = dyn_pt;
-    }
-    tmp_caps.AppendString(sc->format+PString(sc->clock)+sc->fmtp);
-
     sc->media = 0;
     if(fmtp != "") sc->fmtp = fmtp;
     if(local_fmtp != "") sc->local_fmtp = local_fmtp;
-    if(capname == "OPUS_48K2") sc->params = "2";
+    if(capname == "OPUS_48K2{sw}") sc->params = "2";
     BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
   }
 
   keys = MCUConfig("SIP Video").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    if(dyn_pt >= 127) continue;
     if(keys[i].Right(4) == "fmtp") continue;
     if(MCUConfig("SIP Video").GetBoolean(keys[i]) == FALSE) continue;
 
     PString capname = keys[i];
     if(capname.Right(4) != "{sw}") capname += "{sw}";
     PString fmtp = MCUConfig("SIP Video").GetString(capname+"_fmtp");
+    PString payload = MCUConfig("SIP Video").GetString(capname+"_payload");
 
     SipCapability *sc = new SipCapability(capname);
     if(sc->format == "") { delete sc; sc = NULL; continue; }
 
-    // duplication check
-    if(sc->payload == 128)
-    {
-      if(tmp_caps.GetStringsIndex(sc->format+PString(sc->clock)+sc->fmtp) == P_MAX_INDEX)
-        sc->payload = dyn_pt++;
-      else
-        sc->payload = dyn_pt;
-    }
-    tmp_caps.AppendString(sc->format+PString(sc->clock)+sc->fmtp);
-
     sc->media = 1;
     if(fmtp != "") sc->fmtp = fmtp;
+    if(payload != "") sc->payload = payload.AsInteger();
     BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
   }
 }

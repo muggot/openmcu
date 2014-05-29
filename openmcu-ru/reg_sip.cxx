@@ -1,7 +1,4 @@
 
-#include <ptlib.h>
-#include <ptclib/guid.h>
-
 #include "mcu.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -109,7 +106,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   PTRACE(1, "Registrar\tOnReceivedSipInvite");
   sip_t *sip = sip_object(msg);
 
-  PString callToken = "sip:"+PString(sip->sip_from->a_url->url_user)+":"+PString(sip->sip_call_id->i_id);
+  PString callToken = GetSipCallToken(msg, DIRECTION_INBOUND);
   if(FindRegConn(callToken))
     return 1;
 

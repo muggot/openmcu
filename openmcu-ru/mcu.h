@@ -8,6 +8,7 @@
 
 #include <ptlib.h>
 #include <ptclib/httpsvc.h>
+#include <ptclib/guid.h>
 
 #ifdef _WIN32
 #include <h323pluginmgr.h>

@@ -896,13 +896,13 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   PStringList keys = MCUConfig("SIP Audio").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    if(keys[i].Right(4) == "fmtp") continue;
+    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
     if(MCUConfig("SIP Audio").GetBoolean(keys[i])) aCaps += ","+keys[i];
   }
   keys = MCUConfig("SIP Video").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    if(keys[i].Right(4) == "fmtp") continue;
+    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
     if(MCUConfig("SIP Video").GetBoolean(keys[i])) vCaps += ","+keys[i];
   }
 
@@ -1352,6 +1352,8 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
   s << NewRowColumn("");
   s << ColumnItem("", 30);
   s << ColumnItem("", 80);
+  if(section == "SIP Video")
+    s << ColumnItem("Payload", 50);
   s << ColumnItem(JsLocale("window.l_name_parameters_for_sending"));
   if(section == "SIP Audio")
     s << ColumnItem(JsLocale("window.l_name_codec_parameters"));
@@ -1361,7 +1363,7 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     PString name = keys[i];
-    if(name.Right(4) == "fmtp") continue;
+    if(name.Right(4) == "fmtp" || name.Right(7) == "payload") continue;
     if(name.Right(4) != "{sw}") name += "{sw}";
 
     PString info, fmtp;
@@ -1395,9 +1397,7 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
         s << StringItem(fname, cfg.GetString(fname), 200);
       }
       else
-      {
         s << EmptyTextItem();
-      }
       // codec parameters
       if(name.Left(4).ToLower() == "opus" || name.Left(5).ToLower() == "speex")
       {
@@ -1406,14 +1406,24 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
         s << StringItem(fname, cfg.GetString(fname), 200);
       }
       else
-      {
         s << EmptyTextItem();
-      }
     }
     else if(section == "SIP Video")
     {
+      PString fname;
+      // payload
+      if(name.Left(5).ToLower() == "h.264")
+      {
+        fname = name+"_payload";
+        PString select;
+        for(int i = 96; i < 128; i++) select += ","+PString(i);
+        s << "<input name='"+fname+"' value='"+fname+"' type='hidden'>";
+        s << SelectItem(fname, cfg.GetString(fname), select, 50);
+      }
+      else
+        s << EmptyTextItem();
       // parameters for sending
-      PString fname = name+"_fmtp";
+      fname = name+"_fmtp";
       s << "<input name='"+fname+"' value='"+fname+"' type='hidden'>";
       s << StringItem(fname, cfg.GetString(fname), 200);
     }

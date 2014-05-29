@@ -41,11 +41,6 @@ class MCUSipConnection;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString GetFromIp(PString toAddr, PString toPort);
-BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rate, PString & fmtp);
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 enum SipSecureTypes
 {
   SECURE_TYPE_NONE,
@@ -59,6 +54,12 @@ enum Direction
   DIRECTION_INBOUND,
   DIRECTION_OUTBOUND
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PString GetFromIp(PString toAddr, PString toPort);
+BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rate, PString & fmtp);
+PString GetSipCallToken(const msg_t *msg, Direction direction);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -366,7 +367,7 @@ class MCUSipEndPoint : public PThread
     nta_agent_t *GetAgent() { return agent; };
     su_home_t *GetHome() { return &home; };
 
-    nta_outgoing_t * SipMakeCall(PString from, PString to, PString & call_id);
+    nta_outgoing_t * SipMakeCall(PString from, PString to, PString & callToken);
     int CreateIncomingConnection(const msg_t *msg);
     int CreateOutgoingConnection(const msg_t *msg);
     int SipReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL, const char *auth_str=NULL, const char *contact_str=NULL, const char *content_str=NULL, const char *payload_str=NULL);
