@@ -247,26 +247,6 @@ PString convert_ucs2_to_utf8(PString str)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUTRACE(unsigned level, PString args)
-{
-  if(args.GetLength() < 2)
-    return;
-  if(args.Right(1) == "\n")
-    args = args.Left(args.GetLength()-1);
-
-  if(level > 0)
-  {
-    PTRACE(level, args);
-  }
-  if(level <= 3)
-  {
-    PTime uptime = PTime() - (OpenMCU::Current().GetStartTime()-PTime(0));
-    cout << uptime.AsString("mm:ss.uuu") << ": " << args << "\n";
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 char * PStringToChar(PString str)
 {
   if(str.GetLength() == 0)

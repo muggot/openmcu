@@ -233,12 +233,7 @@ class MCUSipConnection : public MCUH323Connection
   public:
     MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, Direction _direction, PString _callToken, const msg_t *msg);
     MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, Direction _direction, PString _callToken);
-    ~MCUSipConnection()
-    {
-      MCUTRACE(1, "MCUSipConnection destructor, callToken: "+callToken+" contact: "+contact_str+" ruri: "+ruri_str);
-      if(c_sip_msg) msg_destroy(c_sip_msg);
-      DeleteTempSockets();
-    }
+    ~MCUSipConnection();
 
     BOOL CreateTempSockets();
     void DeleteTempSockets();
@@ -374,7 +369,7 @@ class MCUSipEndPoint : public PThread
     nta_outgoing_t * SipMakeCall(PString from, PString to, PString & call_id);
     int CreateIncomingConnection(const msg_t *msg);
     int CreateOutgoingConnection(const msg_t *msg);
-    int SipReqReply(const msg_t *msg, unsigned status, const char *auth_str = "", const char *contact_str = "", const char *content_str = "", const char *payload_str = "");
+    int SipReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL, const char *auth_str=NULL, const char *contact_str=NULL, const char *content_str=NULL, const char *payload_str=NULL);
 
     BOOL MakeProxyAuth(ProxyAccount *proxy, const sip_t *sip);
     PString MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce);

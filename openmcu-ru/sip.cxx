@@ -178,8 +178,10 @@ void MCUSipLoggerFunc(void *logarg, char const *fmt, va_list ap)
   if(ret == -1 || data == NULL) return;
   PString trace = (const char *)data;
 #endif
-  if(trace == "" || trace == "   ")
-    return;
+  if(trace.GetLength() < 2) return;
+  if(trace == "   ") return;
+  if(trace.Right(1) == "\n" && trace.Right(2) != "-\n") trace = trace.Left(trace.GetLength()-1);
+
   if(trace.Left(4) == "send")
   {
     logMsgBuf = "\n   "+trace;
@@ -395,6 +397,15 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   // add to the list of connections
   OnCreated();
   MCUTRACE(1, "MCUSipConnection constructor, callToken: "+callToken+" contact: "+contact_str+" ruri: "+ruri_str);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUSipConnection::~MCUSipConnection()
+{
+  MCUTRACE(1, "MCUSipConnection destructor, callToken: "+callToken+" contact: "+contact_str+" ruri: "+ruri_str);
+  if(c_sip_msg) msg_destroy(c_sip_msg);
+  DeleteTempSockets();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1635,10 +1646,8 @@ int MCUSipConnection::ProcessACK(const msg_t *msg)
   if(!c_sip_msg)
     return 0;
 
-  sip_t *sip = sip_object(msg);
-  // replace to_tag
-  sip_t *c_sip = sip_object(c_sip_msg);
-  msg_header_insert(c_sip_msg, (msg_pub_t *)c_sip, (msg_header_t *)sip->sip_to);
+  if(connectionState != AwaitingSignalConnect)
+    return 0;
 
   // for incoming connection start channels after ACK
   StartReceiveChannels(); // start receive logical channels
@@ -1696,6 +1705,7 @@ int MCUSipConnection::ProcessInviteEvent(const msg_t *msg)
     CreateLogicalChannels();
     // create sdp for OK
     CreateSdpOk();
+    sep->SipReqReply(c_sip_msg, 200, NULL, NULL, contact_str, "application/sdp", sdp_ok_str);
   }
   else if(direction == DIRECTION_OUTBOUND)
   {
@@ -1797,8 +1807,8 @@ int MCUSipConnection::ProcessReInviteEvent(const msg_t *msg)
   }
 
   // create sdp for OK
-  if(direction == DIRECTION_INBOUND)
-    CreateSdpOk();
+  CreateSdpOk();
+  sep->SipReqReply(c_sip_msg, 200, NULL, NULL, contact_str, "application/sdp", sdp_ok_str);
 
   return 1;
 }
@@ -2320,12 +2330,12 @@ int MCUSipEndPoint::nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipEndPoint::SipReqReply(const msg_t *msg, unsigned status, const char *auth_str, const char *contact_str, const char *content_str, const char *payload_str)
+int MCUSipEndPoint::SipReqReply(const msg_t *msg, unsigned status, const char *status_phrase, const char *auth_str, const char *contact_str, const char *content_str, const char *payload_str)
 {
   PTRACE(1, "MCUSipEndPoint\tSipReqReply");
   sip_t *sip = sip_object(msg);
 
-  const char *status_phrase = sip_status_phrase(status);
+  if(status_phrase == NULL) status_phrase = sip_status_phrase(status);
   if(status_phrase == NULL) return 0;
 
   sip_authorization_t *sip_www_auth = NULL;
@@ -2432,13 +2442,13 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   if(!sCon)
     return 0;
 
-  if(sCon->IsConnected())  // connection already exist, process reinvite
+  // connection already exist, process reinvite
+  if(sCon->IsConnected())
   {
     PTRACE(1, "MCUSIP\tSIP REINVITE");
     int ret = sCon->ProcessReInviteEvent(msg);
     if(ret != 1)
       return SipReqReply(msg, ret);
-    SipReqReply(msg, 200, NULL, sCon->contact_str, "application/sdp", sCon->sdp_ok_str);
     return 0;
   }
 
@@ -2451,7 +2461,6 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
     sCon->LeaveMCU(TRUE); // leave conference and delete connection
     return 0;
   }
-  SipReqReply(msg, 200, NULL, sCon->contact_str, "application/sdp", sCon->sdp_ok_str);
   return 0;
 }
 
@@ -2502,10 +2511,13 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   }
   if(request == sip_method_invite)
   {
+    // add to_tag in sip_to header
+    if(!sip->sip_to->a_tag)
+      msg_header_add_param(&home, (msg_common_t *)sip->sip_to, nta_agent_newtag(&home, "tag=%s", agent));
+    // redirect to the registrar
     if(!sCon || !sCon->IsConnected())
-    {
       return registrar->OnReceivedSipInvite(msg);
-    }
+    // default connection or re-Invite
     return CreateIncomingConnection(msg);
   }
   if(request == sip_method_ack)

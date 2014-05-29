@@ -7,6 +7,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#define MCUTRACE(level, args) \
+  if(level > 0) { PTrace::Begin(level, __FILE__, __LINE__) << args << PTrace::End; } \
+  if(level <= 3) { PTimeInterval uptime = PTime() - OpenMCU::Current().GetStartTime(); cout << setw(8) << uptime << " " << args << endl; }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString convert_cp1251_to_utf8(PString str);
 PString convert_ucs2_to_utf8(PString str);
 
@@ -16,8 +22,6 @@ int GetEndpointParamFromUrl(PString param, PString url, int defaultValue);
 
 PString GetConferenceParam(PString room, PString param, PString defaultValue);
 int GetConferenceParam(PString room, PString param, int defaultValue);
-
-void MCUTRACE(unsigned level, PString args);
 
 char * PStringToChar(PString str);
 

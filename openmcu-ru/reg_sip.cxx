@@ -58,7 +58,7 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
     if(response_code == 0)
       return 0;
     else
-      return sep->SipReqReply(msg, response_code, regAccount->GetAuthStr(), contact_str);
+      return sep->SipReqReply(msg, response_code, NULL, regAccount->GetAuthStr(), contact_str);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -99,7 +99,7 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
     if(response_code == 0)
       return 0;
     else
-      return sep->SipReqReply(msg, response_code, regAccount_in->GetAuthStr());
+      return sep->SipReqReply(msg, response_code, NULL, regAccount_in->GetAuthStr());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -160,7 +160,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     {
       sep->SipReqReply(msg, 100);
       sep->SipReqReply(msg, 180);
-      sep->SipReqReply(msg, 302, NULL, regAccount_out->GetUrl());
+      sep->SipReqReply(msg, 302, NULL, NULL, regAccount_out->GetUrl());
       response_code = 0; // EMPTY
       goto return_response;
     }
@@ -199,7 +199,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     else if(response_code == -1)
       sep->CreateIncomingConnection(msg); // MCU call
     else
-      sep->SipReqReply(msg, response_code, regAccount_in->GetAuthStr());
+      sep->SipReqReply(msg, response_code, NULL, regAccount_in->GetAuthStr());
     return 1;
 }
 
@@ -256,7 +256,7 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
     if(response_code == 0)
       return 0;
     else
-      return sep->SipReqReply(msg, response_code, regAccount_in->GetAuthStr(), contact_str);
+      return sep->SipReqReply(msg, response_code, NULL, regAccount_in->GetAuthStr(), contact_str);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
