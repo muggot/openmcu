@@ -481,10 +481,13 @@ void MCUSipConnection::RefreshLocalSipCaps()
       continue;
 
     SipCapability *local_sc = new SipCapability(*base_sc);
-    if(base_sc->media == 1 && video_fmtp != "")
-      local_sc->fmtp = video_fmtp;
-    if(base_sc->media == 1 && video_pt != "")
-      local_sc->payload = video_pt.AsInteger();
+    if(base_sc->media == 1 && pref_video_cap != "")
+    {
+      if(video_fmtp != "")
+        local_sc->fmtp = video_fmtp;
+      if(video_pt != "")
+        local_sc->payload = video_pt.AsInteger();
+    }
 
     LocalSipCaps.insert(SipCapMapType::value_type(LocalSipCaps.size(), local_sc));
   }
