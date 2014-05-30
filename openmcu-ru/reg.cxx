@@ -95,7 +95,11 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
   else
     return FALSE;
 
-  RegistrarAccount *regAccount_out = FindAccountWithLock(account_type, username_out);
+  RegistrarAccount *regAccount_out = NULL;
+  RegistrarConnection *regConn = NULL;
+  PWaitAndSignal m(mutex);
+
+  regAccount_out = FindAccountWithLock(account_type, username_out);
   if(regAccount_out)
   {
     // update address from account
@@ -120,7 +124,7 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
 
   if(callToken != "")
   {
-    RegistrarConnection *regConn = InsertRegConnWithLock(callToken, room, username_out);
+    regConn = InsertRegConnWithLock(callToken, room, username_out);
     regConn->account_type_out = account_type;
     regConn->callToken_out = callToken;
     regConn->roomname = room;
@@ -137,8 +141,12 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
 
 BOOL Registrar::MakeCall(RegistrarConnection *regConn, PString & username_in, PString & username_out)
 {
-  RegistrarAccount *regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_in);
-  RegistrarAccount *regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
+  RegistrarAccount *regAccount_in = NULL;
+  RegistrarAccount *regAccount_out = NULL;
+  PWaitAndSignal m(mutex);
+
+  regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_in);
+  regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
   BOOL ret = MakeCall(regConn, regAccount_in, regAccount_out);
 
   if(regAccount_in) regAccount_in->Unlock();
@@ -187,6 +195,8 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
 
 void Registrar::SubscriptionProcess()
 {
+  PWaitAndSignal m(mutex);
+
   PTime now;
   for(SubscriptionMapType::iterator it=SubscriptionMap.begin(); it!=SubscriptionMap.end(); )
   {
@@ -451,8 +461,9 @@ void Registrar::Leave(int account_type, PString callToken)
 
 void Registrar::RefreshAccountList()
 {
-  PStringArray list;
   PWaitAndSignal m(mutex);
+
+  PStringArray list;
   for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
   {
     RegistrarAccount *regAccount = it->second;
@@ -525,6 +536,7 @@ void Registrar::MainLoop()
     {
       return;
     }
+    //
     Lock();
     PTime now;
     //

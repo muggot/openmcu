@@ -13,7 +13,10 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
   PString username = url.GetUserName();
   PString contact_str;
 
-  RegistrarAccount *regAccount = FindAccountWithLock(ACCOUNT_TYPE_SIP, username);
+  RegistrarAccount *regAccount = NULL;
+  PWaitAndSignal m(mutex);
+
+  regAccount = FindAccountWithLock(ACCOUNT_TYPE_SIP, username);
   if(!regAccount && !sip_require_password)
   {
     regAccount = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username);
@@ -73,6 +76,8 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
 
   RegistrarAccount *regAccount_in = NULL;
   RegistrarAccount *regAccount_out = NULL;
+  PWaitAndSignal m(mutex);
+
   regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
   regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_out);
 
@@ -120,9 +125,9 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   RegistrarAccount *regAccount_in = NULL;
   RegistrarAccount *regAccount_out = NULL;
   RegistrarConnection *regConn = NULL;
+  PWaitAndSignal m(mutex);
 
   regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
-
   if(allow_internal_calls)
   {
     regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
@@ -210,14 +215,15 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
   if(!sip->sip_event || (sip->sip_event && PString(sip->sip_event->o_type) != "presence"))
     return sep->SipReqReply(msg, 406); // SIP_406_NOT_ACCEPTABLE
 
-  RegistrarAccount *regAccount_in = NULL;
-  Subscription *subAccount = NULL;
-
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username_in = url.GetUserName();
   PString username_out = sip->sip_to->a_url->url_user;
   PString username_pair = username_in+"@"+username_out;
   PString contact_str = "sip:"+PString(sip->sip_to->a_url->url_user)+"@"+PString(sip->sip_to->a_url->url_host);
+
+  RegistrarAccount *regAccount_in = NULL;
+  Subscription *subAccount = NULL;
+  PWaitAndSignal m(mutex);
 
   regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
 

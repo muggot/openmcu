@@ -21,6 +21,7 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
   RegistrarAccount *regAccount_in = NULL;
   RegistrarAccount *regAccount_out = NULL;
   RegistrarConnection *regConn = NULL;
+  PWaitAndSignal m(mutex);
 
   regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_H323, username_in);
 
