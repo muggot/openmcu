@@ -2170,7 +2170,7 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
     PString remote_host = url_to.GetHostName();
     PString remote_domain = remote_host;
     PString remote_port = url_to.GetPort();
-    PString remote_transport = url_to.GetSipProto();
+    PString remote_transport = url_to.GetTransport();
 
     if(from.Left(4) != "sip:") from = "sip:"+from;
     if(from.Find("@") == P_MAX_INDEX) from = from+"@";
@@ -2481,37 +2481,59 @@ int MCUSipEndPoint::response_cb1(nta_outgoing_t *orq, const sip_t *sip)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipEndPoint::SendRequest(const msg_t *msg, sip_method_t method, const char *method_name)
+int MCUSipEndPoint::SendAckBye(const msg_t *msg)
 {
-  PTRACE(1, "MCUSIP\tSendRequest");
+  PTRACE(1, "MCUSIP\tSendAckBye");
   sip_t *sip = sip_object(msg);
+  if(!sip || !sip->sip_status) return 0;
 
   MCUURL_SIP url(msg, DIRECTION_OUTBOUND);
   PString ruri_str = url.GetUrl();
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
-
-  sip_request_t *sip_rq = sip_request_create(&home, method, method_name, ruri, NULL);
-  sip_cseq_t *sip_cseq = sip_cseq_create(&home, sip->sip_cseq->cs_seq, method, method_name);
   sip_route_t* sip_route = sip_route_reverse(&home, sip->sip_record_route);
 
-  msg_t *req_msg = nta_msg_create(agent, 0);
-  nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, NULL, NULL,
-			ruri,
-			req_msg,
+  msg_t *msg_req = nta_msg_create(agent, 0);
+  sip_t *sip_req = sip_object(msg_req);
+  sip_add_tl(msg_req, sip_req,
 			NTATAG_STATELESS(1),
-			NTATAG_BRANCH_KEY(sip->sip_via->v_branch),
- 			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_ROUTE(sip_route),
 			SIPTAG_FROM(sip->sip_from),
 			SIPTAG_TO(sip->sip_to),
-			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip->sip_call_id),
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
-			SIPTAG_SERVER_STR(SIP_USER_AGENT),
 			TAG_END());
-  if(a_orq == NULL)
-    return 0;
-  nta_outgoing_destroy(a_orq);
+
+  // ACK
+  sip_request_t *sip_rq_ack = sip_request_create(&home, SIP_METHOD_ACK, ruri, NULL);
+  sip_cseq_t *sip_cseq_ack = sip_cseq_create(&home, sip->sip_cseq->cs_seq, SIP_METHOD_ACK);
+  msg_t *msg_ack = msg_dup(msg_req);
+  nta_outgoing_t *orq_ack = nta_outgoing_mcreate(agent, NULL, NULL,
+			ruri,
+			msg_ack,
+			NTATAG_BRANCH_KEY(sip->sip_via->v_branch),
+ 			SIPTAG_REQUEST(sip_rq_ack),
+			SIPTAG_CSEQ(sip_cseq_ack),
+			TAG_END());
+  if(orq_ack)
+    nta_outgoing_destroy(orq_ack);
+
+  // BYE
+  if(sip->sip_cseq->cs_method == sip_method_invite && sip->sip_status->st_status == 200)
+  {
+    sip_request_t *sip_rq_bye = sip_request_create(&home, SIP_METHOD_BYE, ruri, NULL);
+    sip_cseq_t *sip_cseq_bye = sip_cseq_create(&home, 0x7fffffff, SIP_METHOD_BYE);
+    msg_t *msg_bye = msg_dup(msg_req);
+    nta_outgoing_t *orq_bye = nta_outgoing_mcreate(agent, NULL, NULL,
+			ruri,
+			msg_bye,
+ 			SIPTAG_REQUEST(sip_rq_bye),
+			SIPTAG_CSEQ(sip_cseq_bye),
+			TAG_END());
+    if(orq_bye)
+      nta_outgoing_destroy(orq_bye);
+  }
+
+  msg_destroy(msg_req);
   return 0;
 }
 
@@ -2639,13 +2661,9 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   if(sip->sip_status)  status = sip->sip_status->st_status;
   if(sip->sip_cseq)    cseq = sip->sip_cseq->cs_method;
 
-  // repeated 603 decline, outside call leg
-  if(cseq == sip_method_invite && status == 603)
-    return SendRequest(msg, SIP_METHOD_ACK);
-
-  // repeated 200 ok, outside call leg
-  if(cseq == sip_method_invite && status == 200)
-    return SendRequest(msg, SIP_METHOD_ACK);
+  // repeated responses 200/603, outside call leg
+  if(cseq == sip_method_invite && (status == 200 || status == 603))
+    return SendAckBye(msg);
 
   // processing requests only
   if(!sip->sip_request)
@@ -2789,7 +2807,7 @@ void MCUSipEndPoint::InitProxyAccounts()
     if(address.Left(4) != "sip:") address = "sip:"+address;
     PString host = MCUURL(address).GetHostName();
     PString port = MCUURL(address).GetPort();
-    PString transport = MCUURL(address).GetSipProto();
+    PString transport = MCUURL(address).GetTransport();
     PString password = PHTTPPasswordField::Decrypt(scfg.GetString("Password"));
     unsigned expires = scfg.GetInteger("Expires");
 
@@ -2880,7 +2898,7 @@ void MCUSipEndPoint::InitListener()
   {
     PString listener = sipListenerArray[i];
     MCUURL url(listener);
-    PString transport = url.GetSipProto();
+    PString transport = url.GetTransport();
     if(transport != "tls")
       nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)listener), TAG_NULL());
 /*

@@ -68,16 +68,14 @@ class MCUURL : public PURL
 
     virtual const PString & GetDisplayName() const { return display_name; }
     virtual const PString & GetUrl() const { return url_party; }
-    virtual const PString & GetSipProto() const { return transport; }
     virtual const PString GetPort() const { return PString(port); }
+    virtual const PString & GetTransport() const { return transport; }
     virtual const PString GetMemberName() const { return display_name+" ["+url_party+"]"; }
     virtual const PString GetMemberNameId() const
     {
       PString id = url_scheme+":";
-      if(username != "")
-        id += username;
-      else
-        id += hostname;
+      if(username != "") id += username;
+      else               id += hostname;
       return id;
     }
 

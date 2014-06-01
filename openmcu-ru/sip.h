@@ -378,7 +378,7 @@ class MCUSipEndPoint : public PThread
 
     int CreateIncomingConnection(const msg_t *msg);
     int SipReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL, const char *auth_str=NULL, const char *contact_str=NULL, const char *content_str=NULL, const char *payload_str=NULL);
-    int SendRequest(const msg_t *msg, sip_method_t method, const char *method_name);
+    int SendAckBye(const msg_t *msg);
     BOOL SipMakeCall(PString from, PString to, PString & callToken);
 
     BOOL MakeMsgAuth(msg_t *msg_orq, const msg_t *msg);
