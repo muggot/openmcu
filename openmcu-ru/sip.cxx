@@ -294,7 +294,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   remoteName = "";
   remotePartyName = "";
   remoteApplication = "SIP terminal";
-  requestedRoom = "room101";
+  requestedRoom = OpenMCU::Current().GetDefaultRoomName();
   scap = -1;
   vcap = -1;
   connectedTime = PTime();
@@ -356,8 +356,8 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   MCUURL url(contact_str);
   local_user = url.GetUserName();
   local_ip = url.GetHostName();
-  if(local_user == "") local_user = OpenMCU::Current().GetDefaultRoomName();
-  if(local_user == "") local_user = "room101";
+  if(local_user == "")
+    local_user = OpenMCU::Current().GetDefaultRoomName();
   contact_str = "sip:"+local_user+"@"+local_ip;
   requestedRoom = local_user;
 
@@ -380,12 +380,8 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   }
   else if(direction == DIRECTION_OUTBOUND)
   {
-    // waiting OK signal
-    connectionState = AwaitingSignalConnect;
     // create temp rtp sockets
     CreateTempSockets();
-    // create sdp for invite
-    CreateSdpInvite();
   }
 
   // add to the list of connections
@@ -1431,13 +1427,13 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
   if(!sess)
   {
     PTRACE(1, "MCUSIP\tSDP parsing error: " << sdp_parsing_error(parser));
-    return 0;
+    return 415;
   }
   // -2 if c= line is missing. -1 if some SDP line is missing. (c=, o=, s=, t=)
   if(sdp_sanity_check(parser) != 0)
   {
     PTRACE(1, "MCUSIP\tSDP parsing error: sanity check");
-    return 0;
+    return 415;
   }
 
   RemoteCaps.clear();
@@ -1577,7 +1573,7 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
   if(scap < 0 && vcap < 0)
   {
     PTRACE(1, "MCUSIP\tSDP parsing error: compatible codecs not found");
-    return 0;
+    return 415;
   }
 
   if(scap != -1)
@@ -1591,7 +1587,7 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
     if(sc) sc->Print();
   }
 
-  return 1;
+  return 0;
 }
 
 BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & RemoteCaps)
@@ -1674,25 +1670,16 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::ProcessInviteEvent(const msg_t *msg)
+int MCUSipConnection::ProcessConnect()
 {
-  PTRACE(1, "MCUSIP\tProcessInviteEvent");
-
-  msg_destroy(c_sip_msg);
-  c_sip_msg = msg_dup(msg);
-  msg_addr_copy(c_sip_msg, msg);
+  PTRACE(1, "MCUSIP\tProcessConnect");
   sip_t *sip = sip_object(c_sip_msg);
-
-  PString sdp_str = sip->sip_payload->pl_data;
-  if(!ProcessSDP(sdp_str, RemoteSipCaps))
-    return 415; // SIP_415_UNSUPPORTED_MEDIA
 
   if(direction == DIRECTION_INBOUND)
   {
     ProxyAccount *proxy = sep->FindProxyAccount((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
     if(proxy) requestedRoom = proxy->roomname;
   }
-
   MCUURL_SIP url(c_sip_msg, direction);
   remoteName = url.GetDisplayName();
   remotePartyName = remoteName;
@@ -1707,29 +1694,55 @@ int MCUSipConnection::ProcessInviteEvent(const msg_t *msg)
   SetRequestedRoom();
   // join conference
   OnEstablished();
-  if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
+  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
     return 600;
+
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int MCUSipConnection::ProcessInvite(const msg_t *msg)
+{
+  PTRACE(1, "MCUSIP\tProcessInviteEvent");
+
+  msg_destroy(c_sip_msg);
+  c_sip_msg = msg_dup(msg);
+  msg_addr_copy(c_sip_msg, msg);
+  sip_t *sip = sip_object(c_sip_msg);
+  int response_code = 0;
+
+  PString sdp_str = sip->sip_payload->pl_data;
+  response_code = ProcessSDP(sdp_str, RemoteSipCaps);
+  if(response_code)
+    return response_code;
+
+  response_code = ProcessConnect();
+  if(response_code)
+    return response_code;
 
   if(direction == DIRECTION_INBOUND)
   {
     // create logical channels
     CreateLogicalChannels();
+    // add to_tag in sip_to header
+    // added here because CANCEL request does not contain to_tag
+    if(!sip->sip_to->a_tag)
+      msg_header_add_param(msg_home(c_sip_msg), (msg_common_t *)sip->sip_to, nta_agent_newtag(msg_home(c_sip_msg), "tag=%s", sep->GetAgent()));
+    if(!nta_leg_get_tag(leg))
+      nta_leg_tag(leg, sip->sip_to->a_tag);
     // create sdp for OK
     CreateSdpOk();
+    ReqReply(c_sip_msg, SIP_200_OK);
   }
   else if(direction == DIRECTION_OUTBOUND)
   {
-    // add rtag to call leg from response
-    nta_leg_rtag(leg, sip->sip_to->a_tag);
-    //
     DeleteTempSockets();
     // create logical channels
     CreateLogicalChannels();
     // for incoming connection start channels after ACK
     StartReceiveChannels(); // start receive logical channels
     StartTransmitChannels(); // start transmit logical channels
-    // is connected
-    connectionState = EstablishedConnection;
   }
 
   return 0;
@@ -1737,14 +1750,9 @@ int MCUSipConnection::ProcessInviteEvent(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::ProcessReInviteEvent(const msg_t *msg)
+int MCUSipConnection::ProcessReInvite(const msg_t *msg)
 {
-  PTRACE(1, "MCUSIP\tProcessReInviteEvent");
-
-  // re-Invite always direction inbound
-  direction = DIRECTION_INBOUND;
-  // waiting ACK signal
-  connectionState = AwaitingSignalConnect;
+  PTRACE(1, "MCUSIP\tProcessReInvite");
 
   msg_destroy(c_sip_msg);
   c_sip_msg = msg_dup(msg);
@@ -1757,8 +1765,9 @@ int MCUSipConnection::ProcessReInviteEvent(const msg_t *msg)
   int cur_scap = scap;
   int cur_vcap = vcap;
 
-  if(!ProcessSDP(sdp_str, SipCaps))
-    return 415; // SIP_415_UNSUPPORTED_MEDIA
+  int response_code = ProcessSDP(sdp_str, SipCaps);
+  if(response_code)
+    return response_code;
 
   int sflag = 1; // 0 - no changes
   if(scap >= 0 && cur_scap >= 0)
@@ -1816,9 +1825,6 @@ int MCUSipConnection::ProcessReInviteEvent(const msg_t *msg)
     CreateMediaChannel(vcap,1);
   }
 
-  // create sdp for OK
-  CreateSdpOk();
-
   return 0;
 }
 
@@ -1865,10 +1871,12 @@ int MCUSipConnection::ProcessInfo(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::ProcessBye()
+int MCUSipConnection::ProcessShutdown(CallEndReason reason)
 {
-  connectionState = ShuttingDownConnection;
-  LeaveMCU(TRUE); // leave conference and delete connection
+  if(reason != EndedByLocalUser)
+    connectionState = ShuttingDownConnection;
+  // leave conference and delete connection
+  LeaveMCU(TRUE);
   return 1;
 }
 
@@ -1961,6 +1969,13 @@ void MCUSipConnection::LeaveMCU(BOOL remove)
 
 int MCUSipConnection::SendInvite()
 {
+  // outgoing Invite direction outbound
+  direction = DIRECTION_OUTBOUND;
+  // waiting OK signal
+  connectionState = AwaitingSignalConnect;
+  // create sdp for invite
+  CreateSdpInvite();
+
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
   sip_contact_t *sip_contact = sip_contact_create(sep->GetHome(), (url_string_t *)(const char *)contact_str, NULL);
   sip_payload_t *sip_payload = sip_payload_make(sep->GetHome(), (const char *)sdp_invite_str);
@@ -2007,21 +2022,23 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
   if(!sep->FindListener(sip->sip_request->rq_url->url_host))
     return 400; // SIP_400_BAD_REQUEST
 
-  // waiting ACK signal
-  //if(request == invite && sCon->IsAwaitingSignalConnect())
-    //return 0;
-
   if(request == sip_method_invite)
   {
     nta_incoming_treply(irq, SIP_100_TRYING,
                         TAG_END());
-    // re-Invite
-    int response_code = ProcessReInviteEvent(msg);
-    if(response_code != 0)
+    // incoming re-Invite direction inbound
+    direction = DIRECTION_INBOUND;
+    // waiting ACK signal
+    connectionState = AwaitingSignalConnect;
+    // re-Invite processing
+    int response_code = ProcessReInvite(msg);
+    if(response_code)
     {
       LeaveMCU(TRUE);
       return response_code;
     }
+    // create sdp for OK
+    CreateSdpOk();
     ReqReply(msg, SIP_200_OK);
     return 200;
   }
@@ -2032,13 +2049,11 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
   }
   if(request == sip_method_bye)
   {
-    // leave conference and delete connection
-    ProcessBye();
+    ProcessShutdown();
   }
   if(request == sip_method_cancel)
   {
-    // leave conference and delete connection
-    ProcessBye();
+    ProcessShutdown();
   }
   if(request == sip_method_info)
   {
@@ -2065,10 +2080,20 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
   if(status == 200)
   {
     // repeated OK
-    if(IsConnected())
+    if(connectionState == EstablishedConnection)
       return 0;
-    int response_code = ProcessInviteEvent(msg);
-    if(response_code != 0)
+    // is connected
+    connectionState = EstablishedConnection;
+    // add rtag to call leg from response
+    if(!nta_leg_get_rtag(leg))
+      nta_leg_rtag(leg, sip->sip_to->a_tag);
+    // processing OK
+    int response_code = 0;
+    if(!conference)
+      response_code = ProcessInvite(msg);
+    else
+      response_code = ProcessReInvite(msg);
+    if(response_code)
       LeaveMCU(TRUE);
     else
       SendACK();
@@ -2077,7 +2102,7 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
   }
   if(status > 299 && status != 401 && status != 407)
   {
-    LeaveMCU(TRUE);
+    ProcessShutdown();
     nta_outgoing_destroy(orq);
     return 0;
   }
@@ -2639,14 +2664,14 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   if(!sCon)
     return SipReqReply(msg, SIP_500_INTERNAL_SERVER_ERROR);
 
-  int response_code = sCon->ProcessInviteEvent(msg);
-  if(response_code != 0)
+  int response_code = sCon->ProcessInvite(msg);
+  if(response_code)
   {
-    sCon->LeaveMCU(TRUE); // leave conference and delete connection
+    sCon->LeaveMCU(TRUE);
     SipReqReply(msg, response_code);
     return 0;
   }
-  return sCon->ReqReply(msg, 200);
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2690,21 +2715,12 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
     // existing connection, repeated INVITE, possibly there is a bug
     if(sCon)
       return 0;
-    // add to_tag in sip_to header
-    if(!sip->sip_to->a_tag)
-      msg_header_add_param(&home, (msg_common_t *)sip->sip_to, nta_agent_newtag(&home, "tag=%s", agent));
     // redirect to the registrar
     return registrar->OnReceivedSipInvite(msg);
   }
   if(request == sip_method_cancel)
   {
-    PString callToken = GetSipCallToken(msg);
-    MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
-    // connection does not exist
-    if(!sCon)
-      return SipReqReply(msg, 481); // SIP_481_NO_TRANSACTION
-    sCon->LeaveMCU(TRUE); // leave conference and delete connection
-    return SipReqReply(msg, 200);
+    return SipReqReply(msg, 481); // SIP_481_NO_TRANSACTION
   }
 
   if(request == sip_method_bye)

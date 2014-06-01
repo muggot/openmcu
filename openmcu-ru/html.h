@@ -42,15 +42,19 @@ class TablePConfigPage : public PConfigPage
      PString s = "<tr><td align='left' colspan='3' style='background-color:white;padding:0px;'><p style='text-align:center;"+textStyle+"'><b>"+name+"</b></p></td>";
      return s;
    }
-   PString StringField(PString name, PString value, int width=90, PString info="", PINDEX rowSpan=1)
+   PString StringField(PString name, PString value, int width=0, PString info="", PINDEX rowSpan=1)
    {
      return NewRowField(name) + StringItem(name, value, width) + InfoItem(info, rowSpan);
    }
-   PString PasswordField(PString name, PString value, int width=90, PString info="", PINDEX rowSpan=1)
+   PString AccountField(PString name, PString value, int width=0, PString info="", PINDEX rowSpan=1)
+   {
+     return NewRowField(name) + AccountItem(name, value, width) + InfoItem(info, rowSpan);
+   }
+   PString PasswordField(PString name, PString value, int width=0, PString info="", PINDEX rowSpan=1)
    {
      return NewRowField(name) + PasswordItem(name, value, width) + InfoItem(info, rowSpan);
    }
-   PString IntegerField(PString name, int value, int min, int max, int width=90, PString info="", PINDEX rowSpan=1)
+   PString IntegerField(PString name, int value, int min, int max, int width=0, PString info="", PINDEX rowSpan=1)
    {
      return NewRowField(name) + IntegerItem(name, value, min, max, width) + InfoItem(info, rowSpan);
    }
@@ -58,11 +62,11 @@ class TablePConfigPage : public PConfigPage
    {
      return NewRowField(name) + BoolItem(name, value) + InfoItem(info, rowSpan);
    }
-   PString SelectField(PString name, PString value, PString values, int width=90, PString info="", PINDEX rowSpan=1)
+   PString SelectField(PString name, PString value, PString values, int width=0, PString info="", PINDEX rowSpan=1)
    {
      return NewRowField(name) + SelectItem(name, value, values, width) + InfoItem(info, rowSpan);
    }
-   PString ArrayField(PString name, PString values, int width=90, PString info="", PINDEX rowSpan=1)
+   PString ArrayField(PString name, PString values, int width=0, PString info="", PINDEX rowSpan=1)
    {
      PStringArray data = values.Tokenise(separator);
      PString s = NewRowText(name);

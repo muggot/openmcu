@@ -183,7 +183,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     {
       regConn->roomname = MCU_INTERNAL_CALL_PREFIX + OpalGloballyUniqueID().AsString();
       regConn->state = CONN_WAIT;
-      response_code = 100; // SIP_100_TRYING
+      response_code = 180; // SIP_180_RINGING
       goto return_response;
     }
   }

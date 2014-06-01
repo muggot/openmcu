@@ -239,10 +239,11 @@ class MCUSipConnection : public MCUH323Connection
     BOOL CreateTempSockets();
     void DeleteTempSockets();
 
-    int ProcessInviteEvent(const msg_t *msg);
-    int ProcessReInviteEvent(const msg_t *msg);
+    int ProcessConnect();
+    int ProcessInvite(const msg_t *msg);
+    int ProcessReInvite(const msg_t *msg);
     int ProcessAck();
-    int ProcessBye();
+    int ProcessShutdown(CallEndReason reason = EndedByRemoteUser);
     int ProcessInfo(const msg_t *msg);
     int ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps);
 

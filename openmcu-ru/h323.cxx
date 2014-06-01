@@ -2259,8 +2259,8 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
     delete (PString *)userData;
   }
 
-  if(requestedRoom == "") requestedRoom = OpenMCU::Current().GetDefaultRoomName();
-  if(requestedRoom == "") requestedRoom = "room101";
+  if(requestedRoom == "")
+    requestedRoom = OpenMCU::Current().GetDefaultRoomName();
 
   localPartyName = requestedRoom;
   localDisplayName = OpenMCU::Current().GetName()+" / "+localPartyName;
@@ -2315,8 +2315,8 @@ void MCUH323Connection::OnEstablished()
 {
   H323Connection::OnEstablished();
 
-  if(requestedRoom == "") requestedRoom = OpenMCU::Current().GetDefaultRoomName();
-  if(requestedRoom == "") requestedRoom = "room101";
+  if(requestedRoom == "")
+    requestedRoom = OpenMCU::Current().GetDefaultRoomName();
 
   JoinConference(requestedRoom);
 

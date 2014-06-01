@@ -298,7 +298,9 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
 
   s << SeparatorField("Room setup");
   // Default room
-  s << StringField(DefaultRoomKey, cfg.GetString(DefaultRoomKey, DefaultRoom));
+  if(cfg.GetString(DefaultRoomKey) == "")
+    cfg.SetString(DefaultRoomKey, DefaultRoom);
+  s << AccountField(DefaultRoomKey, cfg.GetString(DefaultRoomKey, DefaultRoom));
   // reject duplicate name
   s << BoolField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, FALSE));
   // allow/disallow self-invite:
@@ -392,7 +394,7 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
   if(sect.GetStringsIndex(sectionPrefix+"*") == P_MAX_INDEX)
     sect.InsertAt(0, new PString(sectionPrefix+"*"));
   if(sect.GetSize() == 1)
-    sect.AppendString(sectionPrefix+"room101");
+    sect.AppendString(sectionPrefix+OpenMCU::Current().GetDefaultRoomName());
 
   for(PINDEX i = 0; i < sect.GetSize(); i++)
   {
@@ -527,7 +529,7 @@ RoomCodesPConfigPage::RoomCodesPConfigPage(PHTTPServiceProcess & app,const PStri
   if(keys.GetSize() == 0)
   {
     s << NewRowInput("1");
-    s << StringItem("1", "room101");
+    s << StringItem("1", OpenMCU::Current().GetDefaultRoomName());
   }
 
   s << EndTable();
@@ -1200,7 +1202,7 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
   if(keys.GetStringsIndex("*") == P_MAX_INDEX)
     keys.InsertAt(0, new PString("*"));
   if(keys.GetSize() == 1)
-    keys.AppendString("room101");
+    keys.AppendString(OpenMCU::Current().GetDefaultRoomName());
 
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
