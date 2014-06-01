@@ -272,7 +272,6 @@ class MCUSipConnection : public MCUH323Connection
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     void CleanUpOnCallEnd();
     void LeaveMCU();
-    void LeaveMCU(BOOL remove);
 
     int SendBYE();
     int SendACK();
@@ -299,6 +298,8 @@ class MCUSipConnection : public MCUH323Connection
     static int wrap_invite_response_cb(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip)
     { return ((MCUSipConnection *)context)->invite_response_cb(orq, sip); }
     int invite_response_cb(nta_outgoing_t *orq, const sip_t *sip);
+
+    void LeaveMCU(BOOL remove);
 
     sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, SipCapability *sc);
     sdp_media_t *CreateSdpMedia(su_home_t *sess_home, sdp_media_e m_type, sdp_proto_e m_proto);
@@ -411,6 +412,9 @@ class MCUSipEndPoint : public PThread
 
     MCUSipConnection * FindConnectionWithLock(const PString & callToken)
     { return (MCUSipConnection *)ep->FindConnectionWithLock(callToken); }
+
+    MCUSipConnection * HasConnection(const PString & callToken)
+    { return (MCUSipConnection *)ep->HasConnection(callToken); }
 
     MCUSipConnection * FindConnectionWithoutLock(const PString & callToken)
     { return (MCUSipConnection *)ep->FindConnectionWithoutLock(callToken); }

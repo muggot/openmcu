@@ -1873,7 +1873,7 @@ int MCUSipConnection::ProcessInfo(const msg_t *msg)
 
 int MCUSipConnection::ProcessShutdown(CallEndReason reason)
 {
-  if(reason != EndedByLocalUser)
+  if(reason == EndedByRemoteUser)
     connectionState = ShuttingDownConnection;
   // leave conference and delete connection
   LeaveMCU(TRUE);
@@ -1953,7 +1953,6 @@ void MCUSipConnection::LeaveMCU()
 {
   PString *bye = new PString("bye:"+callToken);
   sep->SipQueue.Push(bye);
-  LeaveMCU(FALSE);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2270,16 +2269,19 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 
     // create connection
     callToken = GetSipCallToken(msg);
-    MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
-    if(!sCon)
+    // existing connection, possibly there is a bug
+    if(HasConnection(callToken))
+      return FALSE;
+
+    MCUSipConnection *sCon = new MCUSipConnection(this, ep, DIRECTION_OUTBOUND, callToken, msg);
+    sCon->Lock();
+    if(sCon->SendInvite() == FALSE)
     {
-      sCon = new MCUSipConnection(this, ep, DIRECTION_OUTBOUND, callToken, msg);
-    }
-    if(!sCon->SendInvite())
-    {
-      sCon->LeaveMCU(TRUE);
+      sCon->LeaveMCU();
+      sCon->Unlock();
       return FALSE;
     }
+    sCon->Unlock();
     return TRUE;
 }
 
@@ -2660,17 +2662,17 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   //nta_leg_t *leg = nta_leg_by_call_id(agent, sip->sip_call_id->i_id);
   //MCUSipConnection *sCon = (MCUSipConnection *)nta_leg_magic(leg, NULL);
   PString callToken = GetSipCallToken(msg);
-  MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
+  MCUSipConnection *sCon = FindConnectionWithLock(callToken);
   if(!sCon)
     return SipReqReply(msg, SIP_500_INTERNAL_SERVER_ERROR);
 
   int response_code = sCon->ProcessInvite(msg);
   if(response_code)
   {
-    sCon->LeaveMCU(TRUE);
     SipReqReply(msg, response_code);
-    return 0;
+    sCon->LeaveMCU();
   }
+  sCon->Unlock();
   return 0;
 }
 
@@ -2711,9 +2713,8 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
       return SipReqReply(msg, 481); // SIP_481_NO_TRANSACTION
     // find connection
     PString callToken = GetSipCallToken(msg);
-    MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
     // existing connection, repeated INVITE, possibly there is a bug
-    if(sCon)
+    if(HasConnection(callToken))
       return 0;
     // redirect to the registrar
     return registrar->OnReceivedSipInvite(msg);
@@ -2971,13 +2972,11 @@ void MCUSipEndPoint::ProcessSipQueue()
     if(cmd->Left(4) == "bye:")
     {
       PString callToken = cmd->Right(cmd->GetLength()-4);
-      MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
+      MCUSipConnection *sCon = FindConnectionWithLock(callToken);
       if(sCon)
       {
-        sCon->StopTransmitChannels();
-        sCon->StopReceiveChannels();
-        sCon->DeleteChannels();
-        sCon->LeaveMCU(TRUE); // leave conference and delete connection
+        sCon->ProcessShutdown(MCUSipConnection::EndedByLocalUser);
+        sCon->Unlock();
       }
     }
     if(cmd->Left(7) == "invite:")
@@ -2991,10 +2990,11 @@ void MCUSipEndPoint::ProcessSipQueue()
     if(cmd->Left(12) == "fast_update:")
     {
       PString callToken = cmd->Right(cmd->GetLength()-12);
-      MCUSipConnection *sCon = FindConnectionWithoutLock(callToken);
+      MCUSipConnection *sCon = FindConnectionWithLock(callToken);
       if(sCon)
       {
         sCon->SendVFU();
+        sCon->Unlock();
       }
     }
     delete cmd;
