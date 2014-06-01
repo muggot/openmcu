@@ -58,8 +58,8 @@ enum Direction
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString GetFromIp(PString toAddr, PString toPort);
+PString GetSipCallToken(const msg_t *msg);
 BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rate, PString & fmtp);
-PString GetSipCallToken(const msg_t *msg, Direction direction);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -241,10 +241,10 @@ class MCUSipConnection : public MCUH323Connection
 
     int ProcessInviteEvent(const msg_t *msg);
     int ProcessReInviteEvent(const msg_t *msg);
-    int ProcessACK(const msg_t *msg);
-    int ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps);
+    int ProcessAck();
+    int ProcessBye();
     int ProcessInfo(const msg_t *msg);
-    void UpdateLocalContact();
+    int ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps);
 
     void StartTransmitChannels();
     void StartReceiveChannels();
@@ -266,31 +266,39 @@ class MCUSipConnection : public MCUH323Connection
     void SelectCapability_VP8(SipCapability & sc);
     void SelectCapability_SPEEX(SipCapability & sc);
     void SelectCapability_OPUS(SipCapability & sc);
-    virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
 
+    virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
+    virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     void CleanUpOnCallEnd();
     void LeaveMCU();
     void LeaveMCU(BOOL remove);
-    virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
 
     int SendBYE();
     int SendACK();
     int SendVFU();
+    int SendRequest(sip_method_t method, const char *method_name);
+    int SendInvite();
+    int ReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL);
+
     void ReceivedVFU();
-    int SendRequest(sip_method_t method, const char *method_name, msg_t *sip_msg);
     void ReceivedDTMF(PString payload);
+
     BOOL HadAnsweredCall() { return (direction=DIRECTION_INBOUND); }
 
     BOOL IsAwaitingSignalConnect() { return connectionState == AwaitingSignalConnect; };
     BOOL IsConnected() const { return connectionState == EstablishedConnection; }
     BOOL IsEstablished() const { return connectionState == EstablishedConnection; }
 
-    PString sdp_invite_str;
-    PString sdp_ok_str;
-    PString ruri_str;
-    PString contact_str;
-
   protected:
+
+    static int wrap_invite_request_cb(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip)
+    { return ((MCUSipConnection *)context)->invite_request_cb(leg, irq, sip); }
+    int invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip);
+
+    static int wrap_invite_response_cb(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip)
+    { return ((MCUSipConnection *)context)->invite_response_cb(orq, sip); }
+    int invite_response_cb(nta_outgoing_t *orq, const sip_t *sip);
+
     sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, SipCapability *sc);
     sdp_media_t *CreateSdpMedia(su_home_t *sess_home, sdp_media_e m_type, sdp_proto_e m_proto);
     sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);
@@ -303,12 +311,19 @@ class MCUSipConnection : public MCUH323Connection
     void RefreshLocalSipCaps();
     BOOL MergeSipCaps(SipCapMapType & BaseCaps, SipCapMapType & RemoteCaps);
 
+    nta_leg_t *leg;
+    nta_outgoing_t *orq_invite;
+    msg_t *c_sip_msg;
+
+    PString sdp_invite_str;
+    PString sdp_ok_str;
+    PString ruri_str;
+    PString contact_str;
+
     Direction direction;
     PString local_user;
     PString local_ip;
     PString display_name;
-    msg_t *c_sip_msg;
-    int cseq_num;
 
     int scap; // selected audio capability payload type
     int vcap; // selected video capability payload type
@@ -334,6 +349,7 @@ class MCUSipConnection : public MCUH323Connection
 
     SipCapMapType LocalSipCaps;
     SipCapMapType RemoteSipCaps;
+
     MCUSipEndPoint *sep;
 };
 
@@ -347,42 +363,46 @@ class MCUSipEndPoint : public PThread
     {
       restart = 1;
       terminating = 0;
+      init_config = 0;
+      init_proxy_accounts = 0;
+      init_caps = 0;
     }
-    ~MCUSipEndPoint()
-    {
-    }
-    void Main();
-    void Initialise();
-
     int terminating;
     int restart;
-
-    H323toSipQueue SipQueue;
-    void ProcessSipQueue();
-    void ProcessProxyAccount();
-
-    PStringArray sipListenerArray;
-    BOOL FindListener(PString addr);
+    int init_config;
+    int init_proxy_accounts;
+    int init_caps;
 
     nta_agent_t *GetAgent() { return agent; };
     su_home_t *GetHome() { return &home; };
 
-    nta_outgoing_t * SipMakeCall(PString from, PString to, PString & callToken);
     int CreateIncomingConnection(const msg_t *msg);
-    int CreateOutgoingConnection(const msg_t *msg);
     int SipReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL, const char *auth_str=NULL, const char *contact_str=NULL, const char *content_str=NULL, const char *payload_str=NULL);
+    int SendRequest(const msg_t *msg, sip_method_t method, const char *method_name);
+    BOOL SipMakeCall(PString from, PString to, PString & callToken);
 
-    BOOL MakeProxyAuth(ProxyAccount *proxy, const sip_t *sip);
+    BOOL MakeMsgAuth(msg_t *msg_orq, const msg_t *msg);
     PString MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce);
-
-    ProxyAccountMapType ProxyAccountMap;
-    void InsertProxyAccount(ProxyAccount *proxy);
     ProxyAccount *FindProxyAccount(PString account);
 
     SipCapMapType & GetBaseSipCaps() { return BaseSipCaps; }
 
+    PStringArray sipListenerArray;
+    BOOL FindListener(PString addr);
+
+    H323toSipQueue SipQueue;
+
+    void Lock()      { mutex.Wait(); }
+    void Unlock()    { mutex.Signal(); }
+    PMutex & GetMutex() { return mutex; }
+
   protected:
+    void Main();
     void MainLoop();
+    void Terminating();
+    void InitListener();
+    void InitProxyAccounts();
+
     MCUH323EndPoint *ep;
     su_home_t home;
     su_root_t *root;
@@ -398,21 +418,24 @@ class MCUSipEndPoint : public PThread
     { return ((MCUSipEndPoint *)context)->ProcessSipEvent_cb(agent, msg, sip); }
     int ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *sip);
 
-    static int nta_response_cb1_wrap(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip)
-    { return ((MCUSipEndPoint *)context)->nta_response_cb1(orq, sip); }
-    int nta_response_cb1(nta_outgoing_t *orq, const sip_t *sip);
-
-    static int ProcessSipEventWrap_request1(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip)
-    { return ((MCUSipEndPoint *)context)->ProcessSipEvent_request1(leg, irq, sip); }
-    int ProcessSipEvent_request1(nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip);
+    static int wrap_response_cb1(nta_outgoing_magic_t *context, nta_outgoing_t *orq, const sip_t *sip)
+    { return ((MCUSipEndPoint *)context)->response_cb1(orq, sip); }
+    int response_cb1(nta_outgoing_t *orq, const sip_t *sip);
 
     int SipRegister(ProxyAccount *, BOOL enable = TRUE);
     PString GetRoomAccess(const sip_t *sip);
 
-    void InitProxyAccounts();
+    BOOL MakeProxyAuth(ProxyAccount *proxy, const sip_t *sip);
 
     void CreateBaseSipCaps();
+
+    void ProcessSipQueue();
+    void ProcessProxyAccount();
+
     SipCapMapType BaseSipCaps;
+    ProxyAccountMapType ProxyAccountMap;
+
+    PMutex mutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

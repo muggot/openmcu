@@ -49,6 +49,7 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
     // store register message
     msg_destroy(regAccount->msg_reg);
     regAccount->msg_reg = msg_dup(msg);
+    msg_addr_copy(regAccount->msg_reg, msg);
 
     response_code = 200;
     goto return_response;
@@ -111,7 +112,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   PTRACE(1, "Registrar\tOnReceivedSipInvite");
   sip_t *sip = sip_object(msg);
 
-  PString callToken = GetSipCallToken(msg, DIRECTION_INBOUND);
+  PString callToken = GetSipCallToken(msg);
   if(FindRegConn(callToken))
     return 1;
 
@@ -174,6 +175,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     regConn = InsertRegConnWithLock(callToken, username_in, username_out);
     msg_destroy(regConn->msg_invite);
     regConn->msg_invite = msg_dup(msg);
+    msg_addr_copy(regConn->msg_invite, msg);
 
      // MCU call if !regAccount_out
     if(!regAccount_out)
@@ -248,6 +250,7 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
     //
     msg_destroy(subAccount->msg_sub);
     subAccount->msg_sub = msg_dup(msg);
+    msg_addr_copy(subAccount->msg_sub, msg);
     //
     response_code = 202; // SIP_202_ACCEPTED
     goto return_response;

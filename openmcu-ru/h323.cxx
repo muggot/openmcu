@@ -2161,17 +2161,17 @@ PString MCUH323EndPoint::IncomingConferenceRequest(H323Connection & connection,
   return PString::Empty();
 }
 
+void MCUH323EndPoint::SetConnectionActive(MCUH323Connection * conn)
+{
+  connectionsMutex.Wait();
+  connectionsActive.SetAt(conn->GetCallToken(), conn);
+  connectionsMutex.Signal();
+}
+
 void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
 {
   if(conn->GetCallToken() == "")
     return;
-
-  if(conn->GetCallToken().Left(4) == "sip:")
-  {
-    connectionsMutex.Wait();
-    connectionsActive.SetAt(conn->GetCallToken(), conn);
-    connectionsMutex.Signal();
-  }
   monitor->AddMonitorEvent(new ConnectionRTPTimeoutInfo(conn->GetCallToken()));
 }
 

@@ -90,10 +90,13 @@ class TablePConfigPage : public PConfigPage
      return s;
    }
    /////////////////////////////////////////////////////////////////////////////////////////////////
-   PString NewRowColumn(PString name, int width=210)
+   PString NewRowColumn(PString name, int width=0)
    {
+     PString w;
+     if(width == 0) w = "auto";
+     else           w = PString(width)+"px";
      PString s = Row();
-     return s+colStyle+"width:"+PString(width)+"px'><p style='"+textStyle+";width:"+PString(width)+"px'>"+name+"</p>";
+     return s+colStyle+"width:"+w+"'><p style='"+textStyle+";width:"+w+"'>"+name+"</p>";
    }
    PString NewRowText(PString name)
    {
@@ -111,12 +114,12 @@ class TablePConfigPage : public PConfigPage
      if(buttons() != "") s += rowStyle+buttons()+"</td>";
      return s;
    }
-   PString NewRowInputAccount(PString name, int width=90, int readonly=FALSE)
+   PString NewRowInputAccount(PString name, int width=0, int readonly=FALSE)
    {
      if(width == 0) width = 90;
      return NewRowInput(name, width, readonly, "FilterAccount(this)");
    }
-   PString NewRowInput(PString name, int width=90, int readonly=FALSE, PString filter="")
+   PString NewRowInput(PString name, int width=0, int readonly=FALSE, PString filter="")
    {
      if(width == 0) width = 90;
      PString value = name;
@@ -131,7 +134,7 @@ class TablePConfigPage : public PConfigPage
    PString EndRow() { return "</tr>"; }
 
    /////////////////////////////////////////////////////////////////////////////////////////////////
-   PString ColumnItem(PString name, int width=90)
+   PString ColumnItem(PString name, int width=0)
    {
      if(width == 0) width = 90;
      return colStyle+"width:"+PString(width)+"px'><p style='"+textStyle+"'>"+name+"</p>";
@@ -153,7 +156,7 @@ class TablePConfigPage : public PConfigPage
      }
      return s;
    }
-   PString StringItem(PString name, PString value, int width=90, int readonly=FALSE, PString onkeyup="", PString onchange="")
+   PString StringItem(PString name, PString value, int width=0, int readonly=FALSE, PString onkeyup="", PString onchange="")
    {
      if(width == 0) width = 90;
      if(onchange == "") onchange = onkeyup;
@@ -163,7 +166,7 @@ class TablePConfigPage : public PConfigPage
      if(!readonly) s += "></input></td>"; else s += "readonly></input></td>";
      return s;
    }
-   PString PasswordItem(PString name, PString value, int width=90, int readonly=FALSE)
+   PString PasswordItem(PString name, PString value, int width=0, int readonly=FALSE)
    {
      if(width == 0) width = 90;
      if(passwordDecrypt(value) == value)
@@ -175,7 +178,7 @@ class TablePConfigPage : public PConfigPage
      passwordFields.SetAt(id, value);
      return s;
    }
-   PString IntegerItem(PString name, PString value, int min=-2147483647, int max=2147483647, int width=90, int readonly=FALSE)
+   PString IntegerItem(PString name, PString value, int min=-2147483647, int max=2147483647, int width=0, int readonly=FALSE)
    {
      if(width == 0) width = 90;
      if(min == 0 && max == 0) { min = -2147483647; max = 2147483647; }
@@ -186,11 +189,11 @@ class TablePConfigPage : public PConfigPage
      integerFields.SetAt(id, PString(min)+","+PString(max));
      return s;
    }
-   PString IpItem(PString name, PString value, int width=90, int readonly=FALSE)
+   PString IpItem(PString name, PString value, int width=0, int readonly=FALSE)
    {
      return StringItem(name, value, width, readonly, "FilterIp(this)");
    }
-   PString AccountItem(PString name, PString value, int width=90, int readonly=FALSE)
+   PString AccountItem(PString name, PString value, int width=0, int readonly=FALSE)
    {
      return StringItem(name, value, width, readonly, "FilterAccount(this)");
    }
@@ -204,7 +207,7 @@ class TablePConfigPage : public PConfigPage
      if(!readonly) s += "></input></td>"; else s += " readonly></input></td>";
      return s;
    }
-   PString SelectItem(PString name, PString value, PString values, int width=90)
+   PString SelectItem(PString name, PString value, PString values, int width=0)
    {
      if(width == 0) width = 90;
      PStringArray data = values.Tokenise(",");
@@ -244,7 +247,7 @@ class TablePConfigPage : public PConfigPage
    {
      return "<tr></tr></tbody></table></td>";
    }
-   PString StringItemArray(PString name, PString value, int width=90)
+   PString StringItemArray(PString name, PString value, int width=0)
    {
      if(width == 0) width = 90;
      PString s = rowArray+"<input type=text name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'></input>";
@@ -544,6 +547,12 @@ class RegistrarPConfigPage : public TablePConfigPage
 {
   public:
     RegistrarPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
+    {
+      BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
+      OpenMCU::Current().GetRegistrar()->init_config = 1;
+      return ret;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -598,16 +607,28 @@ class H323PConfigPage : public TablePConfigPage
 
 class H323EndpointsPConfigPage : public TablePConfigPage
 {
- public:
-   H323EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  public:
+    H323EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
+    {
+      BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
+      OpenMCU::Current().GetRegistrar()->init_accounts = 1;
+      return ret;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class SIPPConfigPage : public TablePConfigPage
 {
- public:
-   SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  public:
+    SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
+    {
+      BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
+      OpenMCU::Current().GetSipEndpoint()->init_config = 1;
+      return ret;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -616,14 +637,26 @@ class SipEndpointsPConfigPage : public TablePConfigPage
 {
  public:
    SipEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
+    {
+      BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
+      OpenMCU::Current().GetRegistrar()->init_accounts = 1;
+      return ret;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class ProxySIPPConfigPage : public TablePConfigPage
 {
- public:
-   ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  public:
+    ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
+    {
+      BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
+      OpenMCU::Current().GetSipEndpoint()->init_proxy_accounts = 1;
+      return ret;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -646,8 +679,14 @@ class VideoPConfigPage : public TablePConfigPage
 
 class SIPCodecsPConfigPage : public TablePConfigPage
 {
- public:
-   SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  public:
+    SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
+    {
+      BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
+      OpenMCU::Current().GetSipEndpoint()->init_caps = 1;
+      return ret;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

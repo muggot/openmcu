@@ -63,7 +63,6 @@ class RegistrarConnection
     }
     ~RegistrarConnection()
     {
-      if(orq_invite_out) { nta_outgoing_destroy(orq_invite_out); orq_invite_out = NULL; }
       if(msg_invite) { msg_destroy(msg_invite); msg_invite = NULL; }
     }
     void Init()
@@ -71,7 +70,6 @@ class RegistrarConnection
       account_type_in = ACCOUNT_TYPE_UNKNOWN;
       account_type_out = ACCOUNT_TYPE_UNKNOWN;
       msg_invite = NULL;
-      orq_invite_out = NULL;
       state = CONN_IDLE;
       start_time = PTime();
       accept_timeout = 20; // 20 sec connection accept timeout
@@ -95,7 +93,6 @@ class RegistrarConnection
     RegConnectionStates state;
 
     msg_t *msg_invite;
-    nta_outgoing_t *orq_invite_out;
 
     time_t accept_timeout;
     PTime start_time;
@@ -314,12 +311,14 @@ class Registrar : public PThread
     {
       restart = 1;
       terminating = 0;
+      init_config = 0;
+      init_accounts = 0;
       gk = NULL;
     }
-    ~Registrar();
-
     int terminating;
     int restart;
+    int init_config;
+    int init_accounts;
 
     const PString & GetRegistrarDomain() const { return registrar_domain; };
 
@@ -356,10 +355,11 @@ class Registrar : public PThread
     PMutex & GetMutex() { return mutex; }
 
   protected:
-    void InitConfig();
-    void InitTerminals();
     void Main();
     void MainLoop();
+    void Terminating();
+    void InitConfig();
+    void InitAccounts();
     MCUH323EndPoint *ep;
     MCUSipEndPoint *sep;
     RegistrarGk *gk;

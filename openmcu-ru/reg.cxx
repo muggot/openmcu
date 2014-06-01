@@ -114,7 +114,7 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
     PString call_id_str = PGloballyUniqueID().AsString();
     PString *cmd = new PString("invite:"+room+","+address+","+call_id_str);
     sep->SipQueue.Push(cmd);
-    callToken = "sip:"+call_id_str;
+    callToken = call_id_str;
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
@@ -169,10 +169,8 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
   if(regAccount_out->account_type == ACCOUNT_TYPE_SIP)
   {
     PString callToken;
-    nta_outgoing_t *orq = sep->SipMakeCall(regConn->username_in, address, callToken);
-    if(orq)
+    if(sep->SipMakeCall(regConn->username_in, address, callToken))
     {
-      regConn->orq_invite_out = orq;
       regConn->callToken_out = callToken;
       return TRUE;
     }
@@ -408,37 +406,16 @@ void Registrar::IncomingCallAccept(RegistrarConnection *regConn)
 
 void Registrar::IncomingCallCancel(RegistrarConnection *regConn)
 {
-  if(regConn->account_type_in == ACCOUNT_TYPE_SIP)
-  {
-    sep->SipReqReply(regConn->msg_invite, 603); // SIP_603_DECLINE
-  }
-  Leave(regConn->account_type_in, regConn->callToken_in);
-/*
-  else if(regConn->account_type_in == ACCOUNT_TYPE_H323)
-  {
-    MCUH323Connection *conn = (MCUH323Connection *)ep->FindConnectionWithLock(regConn->callToken_in);
-    if(conn)
-    {
-      //conn->AnsweringCall(H323Connection::AnswerCallDenied);
-      conn->LeaveMCU();
-      conn->Unlock();
-    }
-  }
-*/
+  if(regConn->callToken_in != "")
+    Leave(regConn->account_type_in, regConn->callToken_in);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Registrar::OutgoingCallCancel(RegistrarConnection *regConn)
 {
-  if(regConn->orq_invite_out)
-  {
-    nta_outgoing_cancel(regConn->orq_invite_out);
-  }
   if(regConn->callToken_out != "")
-  {
     Leave(regConn->account_type_out, regConn->callToken_out);
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -526,15 +503,26 @@ void Registrar::MainLoop()
   PTime time_sub;
   while(1)
   {
+    if(terminating)
+    {
+      Terminating();
+      return;
+    }
     if(restart)
     {
       restart = 0;
-      InitConfig();
-      InitTerminals();
+      init_config = 1;
+      init_accounts = 1;
     }
-    if(terminating)
+    if(init_config)
     {
-      return;
+      init_config = 0;
+      InitConfig();
+    }
+    if(init_accounts)
+    {
+      init_accounts = 0;
+      InitAccounts();
     }
     //
     Lock();
@@ -679,7 +667,7 @@ void Registrar::InitConfig()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::InitTerminals()
+void Registrar::InitAccounts()
 {
   MCUConfig cfg("Registrar Parameters");
 
@@ -762,29 +750,13 @@ void Registrar::InitTerminals()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Registrar::~Registrar()
+void Registrar::Terminating()
 {
-  Lock();
+  PWaitAndSignal m(mutex);
   if(gk)
   {
     delete gk;
     gk = NULL;
-  }
-  for(AccountMapType::iterator it = AccountMap.begin(); it != AccountMap.end(); )
-  {
-    RegistrarAccount *regAccount = it->second;
-    regAccount->Lock();
-    AccountMap.erase(it++);
-    delete regAccount;
-    regAccount = NULL;
-  }
-  for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )
-  {
-    RegistrarConnection *regConn = it->second;
-    regConn->Lock();
-    RegConnMap.erase(it++);
-    delete regConn;
-    regConn = NULL;
   }
   for(SubscriptionMapType::iterator it = SubscriptionMap.begin(); it != SubscriptionMap.end(); )
   {
@@ -794,7 +766,22 @@ Registrar::~Registrar()
     delete subAccount;
     subAccount = NULL;
   }
-  Unlock();
+  for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )
+  {
+    RegistrarConnection *regConn = it->second;
+    regConn->Lock();
+    RegConnMap.erase(it++);
+    delete regConn;
+    regConn = NULL;
+  }
+  for(AccountMapType::iterator it = AccountMap.begin(); it != AccountMap.end(); )
+  {
+    RegistrarAccount *regAccount = it->second;
+    regAccount->Lock();
+    AccountMap.erase(it++);
+    delete regAccount;
+    regAccount = NULL;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -458,12 +458,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
     }
   }
 
-  // restart threads
+  // start threads
   registrar->Resume();
-  registrar->restart = 1;
   sipendpoint->Resume();
-  sipendpoint->restart = 1;
-
 
   PSYSTEMLOG(Info, "Service " << GetName() << ' ' << initMsg);
   return TRUE;

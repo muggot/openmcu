@@ -1083,22 +1083,23 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
 
   s << BeginTable();
-  s << NewRowColumn(JsLocale("window.l_name_roomname"));
+  s << NewRowColumn(JsLocale("window.l_name_account")+"<br><i>username@domain</i>");
   s << ColumnItem(JsLocale("window.l_name_register"));
-  s << ColumnItem(JsLocale("window.l_name_address_sip_proxy")+"\n<i>hostname or ip</i>");
-  s << ColumnItem(JsLocale("window.l_name_account")+"\n<i>username@domain</i>");
+  s << ColumnItem(JsLocale("window.l_name_roomname"));
+  s << ColumnItem(JsLocale("window.l_name_address_sip_proxy")+"<br><i>hostname or ip</i>");
   s << ColumnItem(JsLocale("window.l_name_password"));
   s << ColumnItem(JsLocale("window.l_name_expires"));
 
-  optionNames.AppendString("Register");
-  optionNames.AppendString("Host");
-  optionNames.AppendString("Account");
+  optionNames.AppendString("Enable");
+  optionNames.AppendString("Room");
+  optionNames.AppendString("Address");
   optionNames.AppendString("Password");
   optionNames.AppendString("Expires");
 
   sectionPrefix = "SIP Proxy Account ";
   PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
 
+  /////////////////////////////////////////
   // bak
   if(sect.GetSize() == 0)
   {
@@ -1114,50 +1115,62 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
       scfg.SetString("Account", params[2]);
       scfg.SetString("Password", params[3]);
       scfg.SetString("Expires", params[4]);
-      sect.AppendString(sectionPrefix+roomname);
     }
     bcfg.DeleteSection();
   }
+  sect = cfg.GetSectionsPrefix(sectionPrefix);
+  // bak2
+  for(PINDEX i = 0; i < sect.GetSize(); i++)
+  {
+    MCUConfig bcfg(sect[i]);
+    if(bcfg.HasKey("Enable")) continue;
+    PString roomname = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
+    MCUConfig scfg(sectionPrefix+bcfg.GetString("Account"));
+    scfg.SetBoolean("Enable", bcfg.GetBoolean("Register"));
+    scfg.SetString("Room", roomname);
+    scfg.SetString("Address", bcfg.GetString("Host"));
+    scfg.SetString("Password", bcfg.GetString("Password"));
+    scfg.SetString("Expires", bcfg.GetString("Expires"));
+    bcfg.DeleteSection();
+  }
+  sect = cfg.GetSectionsPrefix(sectionPrefix);
+  /////////////////////////////////////////
 
   for(PINDEX i = 0; i < sect.GetSize(); i++)
   {
     MCUConfig scfg(sect[i]);
     PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
 
-    PString host = scfg.GetString("Host");
-    if(host.Left(4) == "sip:") host.Replace("sip:","",TRUE,0);
-
-    PString account = scfg.GetString("Account");
-    if(account.Find("@") == P_MAX_INDEX && host != "")
-    {
-      account += "@"+MCUURL("sip:@"+host).GetHostName();
-      scfg.SetString("Account", account);
-    }
-
+    PString roomname = scfg.GetString("Room");
+    PString address = scfg.GetString("Address");
     PString password = PHTTPPasswordField::Decrypt(scfg.GetString("Password"));
     int expires = scfg.GetInteger("Expires");
-    if(expires < 60) expires = 60;
-    if(expires > 3600) expires = 3600;
-    BOOL enable = scfg.GetBoolean("Register", FALSE);
 
-    if(host == "" || account == "")
-      scfg.SetBoolean("Register", FALSE);
+    if(address == "" || roomname == "")
+      scfg.SetBoolean("Enable", FALSE);
+    BOOL enable = scfg.GetBoolean("Enable", FALSE);
 
-    if(!enable) s << NewRowInput(name); else s << NewRowInput(name, 0, TRUE);
+    if(!enable) s << NewRowInput(name, 150);
+    else        s << NewRowInput(name, 150, TRUE);
     s << BoolItem(name, enable);
-    if(!enable) s << StringItem(name, host, 150); else s << StringItem(name, host, 150, TRUE);
-    if(!enable) s << StringItem(name, account, 150); else s << StringItem(name, account, 150, TRUE);
-    if(!enable) s << PasswordItem(name, password, 120); else s << PasswordItem(name, password, 120, TRUE);
-    if(!enable) s << SelectItem(name, expires, "60,120,180,240,300,600,1200,1800,2400,3000,3600", 120); else s << SelectItem(name, expires, expires /* readonly */, 120);
+    if(!enable) s << StringItem(name, roomname, 120);
+    else        s << StringItem(name, roomname, 120, TRUE);
+    if(!enable) s << StringItem(name, address, 120);
+    else        s << StringItem(name, address, 120, TRUE);
+    if(!enable) s << PasswordItem(name, password, 120);
+    else        s << PasswordItem(name, password, 120, TRUE);
+    if(!enable) s << SelectItem(name, expires, "60,120,180,240,300,600,1200,1800,2400,3000,3600", 120);
+    else        s << SelectItem(name, expires, expires /* readonly */, 120);
   }
   if(sect.GetSize() == 0)
   {
-    s << NewRowInput("room101");
-    s << BoolItem("room101", FALSE);
-    s << StringItem("room101", "");
-    s << StringItem("room101", "");
-    s << StringItem("room101", "");
-    s << SelectItem("room101", "600", "60,120,180,240,300,600,1200,1800,2400,3000,3600");
+    PString name = "empty";
+    s << NewRowInput(name, 150);
+    s << BoolItem(name, FALSE);
+    s << StringItem(name, OpenMCU::Current().GetDefaultRoomName(), 120);
+    s << StringItem(name, "", 120);
+    s << StringItem(name, "", 120);
+    s << SelectItem(name, "600", "60,120,180,240,300,600,1200,1800,2400,3000,3600", 120);
   }
   s << EndTable();
 
