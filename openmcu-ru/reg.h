@@ -131,10 +131,6 @@ class Subscription
       expires = 0;
       cseq = 100;
     }
-    void Reset()
-    {
-      state = SUB_STATE_CLOSED;
-    }
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
@@ -187,10 +183,6 @@ class RegistrarAccount
       registered = FALSE;
       abook_enable = FALSE;
       msg_reg = NULL;
-    }
-    void Reset()
-    {
-      //if(msg_reg) { msg_destroy(msg_reg); msg_reg = NULL; }
     }
     PString GetUrl()
     {

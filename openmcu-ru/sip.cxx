@@ -1732,7 +1732,7 @@ int MCUSipConnection::ProcessInviteEvent(const msg_t *msg)
     connectionState = EstablishedConnection;
   }
 
-  return 1;
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1799,7 +1799,7 @@ int MCUSipConnection::ProcessReInviteEvent(const msg_t *msg)
   if(!sflag && !vflag) // nothing changed
   {
     // sending old sdp
-    return 1;
+    return 0;
   }
 
   // update remote sip caps
@@ -1819,7 +1819,7 @@ int MCUSipConnection::ProcessReInviteEvent(const msg_t *msg)
   // create sdp for OK
   CreateSdpOk();
 
-  return 1;
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2016,11 +2016,11 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
     nta_incoming_treply(irq, SIP_100_TRYING,
                         TAG_END());
     // re-Invite
-    int ret = ProcessReInviteEvent(msg);
-    if(ret != 1)
+    int response_code = ProcessReInviteEvent(msg);
+    if(response_code != 0)
     {
       LeaveMCU(TRUE);
-      return ret;
+      return response_code;
     }
     ReqReply(msg, SIP_200_OK);
     return 200;
@@ -2067,11 +2067,11 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
     // repeated OK
     if(IsConnected())
       return 0;
-    int ret = ProcessInviteEvent(msg);
-    if(ret == 1)
-      SendACK();
-    else
+    int response_code = ProcessInviteEvent(msg);
+    if(response_code != 0)
       LeaveMCU(TRUE);
+    else
+      SendACK();
     nta_outgoing_destroy(orq);
     return 0;
   }
@@ -2639,11 +2639,11 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   if(!sCon)
     return SipReqReply(msg, SIP_500_INTERNAL_SERVER_ERROR);
 
-  int ret = sCon->ProcessInviteEvent(msg);
-  if(ret != 1)
+  int response_code = sCon->ProcessInviteEvent(msg);
+  if(response_code != 0)
   {
     sCon->LeaveMCU(TRUE); // leave conference and delete connection
-    SipReqReply(msg, ret);
+    SipReqReply(msg, response_code);
     return 0;
   }
   return sCon->ReqReply(msg, 200);

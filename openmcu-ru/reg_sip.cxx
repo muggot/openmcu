@@ -22,7 +22,7 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
     regAccount = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username);
 
   int response_code = SipPolicyCheck(msg, regAccount, NULL);
-  if(response_code != 1)
+  if(response_code)
     goto return_response;
 
   {
@@ -83,7 +83,7 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
   regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_out);
 
   int response_code = SipPolicyCheck(msg, regAccount_in, regAccount_out);
-  if(response_code != 1)
+  if(response_code)
     goto return_response;
 
   {
@@ -137,7 +137,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
 
   int response_code = SipPolicyCheck(msg, regAccount_in, regAccount_out);
-  if(response_code != 1)
+  if(response_code)
     goto return_response;
 
   // update account data ???
@@ -227,13 +227,14 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
   regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
 
   int response_code = SipPolicyCheck(msg, regAccount_in, NULL);
-  if(response_code != 1)
+  if(response_code)
     goto return_response;
 
   {
     subAccount = FindSubWithLock(username_pair);
-    if(subAccount) subAccount->Reset();
-    else           subAccount = InsertSubWithLock(this, username_in, username_out);
+    if(!subAccount)
+      subAccount = InsertSubWithLock(this, username_in, username_out);
+    subAccount->state = SUB_STATE_CLOSED;
     //
     subAccount->ruri_str = url.GetUrl();
     subAccount->contact_str = contact_str = "sip:"+PString(sip->sip_to->a_url->url_user)+"@"+PString(sip->sip_to->a_url->url_host);
@@ -284,7 +285,7 @@ int Registrar::SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in,
     sip_authorization_t *sip_auth = sip_authorization_make(msg_home(msg), sip_auth_str);
     regAccount_in->www_response = msg_params_find(sip_auth->au_params, "response=");
     if(regAccount_in->www_response == reg_response)
-      return 1;
+      return 0;
   }
   else if(sip->sip_proxy_authorization)
   {
@@ -295,7 +296,7 @@ int Registrar::SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in,
     sip_authorization_t *sip_auth = sip_authorization_make(msg_home(msg), sip_auth_str);
     regAccount_in->proxy_response = msg_params_find(sip_auth->au_params, "response=");
     if(regAccount_in->proxy_response == reg_response)
-      return 1;
+      return 0;
   }
 
   if(request == sip_method_register)
@@ -303,9 +304,9 @@ int Registrar::SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in,
     if(!regAccount_in->enable && sip_require_password)
       return 403; // SIP_403_FORBIDDEN
     if(!sip_require_password)
-      return 1;
+      return 0;
     if(regAccount_in->password == "")
-      return 1;
+      return 0;
     return 401; // SIP_401_UNAUTHORIZED
   }
   if(request == sip_method_invite)
@@ -313,11 +314,11 @@ int Registrar::SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in,
     if(regAccount_out && regAccount_out->host == "")
       return 404; // SIP_404_NOT_FOUND
     if(regAccount_out && sip_allow_unauth_internal_calls)
-      return 1;
+      return 0;
     if(!regAccount_out && sip_allow_unauth_mcu_calls)
-      return 1;
+      return 0;
     if(regAccount_in->password == "")
-      return 1;
+      return 0;
     return 407; // SIP_407_PROXY_AUTH_REQUIRED
   }
   if(request == sip_method_message)
@@ -325,19 +326,16 @@ int Registrar::SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in,
     if(!regAccount_out || (regAccount_out && !regAccount_out->registered) || (regAccount_out && regAccount_out->host == ""))
       return 404; // SIP_404_NOT_FOUND
     if(regAccount_in->password == "")
-      return 1;
+      return 0;
     return 407; // SIP_407_PROXY_AUTH_REQUIRED
   }
   if(request == sip_method_subscribe)
   {
     if(regAccount_in->password == "")
-      return 1;
+      return 0;
     return 407; // SIP_407_PROXY_AUTH_REQUIRED
   }
-  if(request == sip_method_cancel || request == sip_method_ack)
-  {
-    return 1;
-  }
+
   return 0;
 }
 
