@@ -388,14 +388,69 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   ep.SetConnectionActive(this);
   OnCreated();
 
-  MCUTRACE(1, "MCUSipConnection constructor, callToken: "+callToken+" contact: "+contact_str+" ruri: "+ruri_str);
+  MCUTRACE(1, "MCUSipConnection constructor, callToken: " << callToken << " contact: " << contact_str << " ruri: " << ruri_str);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUSipConnection::~MCUSipConnection()
 {
-  MCUTRACE(1, "MCUSipConnection destructor, callToken: "+callToken+" contact: "+contact_str+" ruri: "+ruri_str);
+  MCUTRACE(1, "MCUSipConnection destructor, callToken: " << callToken << " contact: " << contact_str << " ruri: " << ruri_str);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int MCUSipConnection::ProcessShutdown(CallEndReason reason)
+{
+  callEndReason = reason;
+  // leave conference and delete connection
+  MCUH323Connection::LeaveMCU();
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::LeaveMCU()
+{
+  PTRACE(1, "MCUSipConnection LeaveMCU, callToken: " << callToken);
+  PString *bye = new PString("bye:"+callToken);
+  sep->SipQueue.Push(bye);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::CleanUpOnCallEnd()
+{
+  PTRACE(1, "MCUSipConnection CleanUpOnCallEnd, callToken: " << callToken << " reason: " << callEndReason);
+
+  if(callEndReason == EndedByLocalUser)
+  {
+    if(connectionState == EstablishedConnection)
+    {
+      SendRequest(SIP_METHOD_BYE);
+    }
+    else if(connectionState == AwaitingSignalConnect)
+    {
+      if(direction == DIRECTION_INBOUND)
+        ReqReply(c_sip_msg, SIP_603_DECLINE);
+      else if(direction == DIRECTION_OUTBOUND)
+        nta_outgoing_cancel(orq_invite);
+    }
+  }
+
+  connectionState = ShuttingDownConnection;
+
+  DeleteTempSockets();
+  if(orq_invite) nta_outgoing_destroy(orq_invite);
+  if(leg) nta_leg_destroy(leg);
+  if(c_sip_msg) msg_destroy(c_sip_msg);
+
+  StopTransmitChannels();
+  StopReceiveChannels();
+  DeleteChannels();
+  videoReceiveCodecName = videoTransmitCodecName = "none";
+  videoReceiveCodec = NULL;
+  videoTransmitCodec = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -936,19 +991,6 @@ void MCUSipConnection::DeleteChannels()
 {
   DeleteMediaChannels(scap);
   DeleteMediaChannels(vcap);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::CleanUpOnCallEnd()
-{
-  PTRACE(1, "MCUSIP\tCleanUpOnCallEnd");
-  StopTransmitChannels();
-  StopReceiveChannels();
-  DeleteChannels();
-  videoReceiveCodecName = videoTransmitCodecName = "none";
-  videoReceiveCodec = NULL;
-  videoTransmitCodec = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1856,34 +1898,6 @@ int MCUSipConnection::ProcessInfo(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::ProcessShutdown(CallEndReason reason)
-{
-  if(reason == EndedByRemoteUser)
-    connectionState = ShuttingDownConnection;
-
-  if(IsConnected())
-  {
-    SendRequest(SIP_METHOD_BYE);
-  }
-  else if(IsAwaitingSignalConnect())
-  {
-    if(direction == DIRECTION_INBOUND)
-      ReqReply(c_sip_msg, SIP_603_DECLINE);
-    else if(direction == DIRECTION_OUTBOUND)
-      nta_outgoing_cancel(orq_invite);
-  }
-  DeleteTempSockets();
-  if(orq_invite) nta_outgoing_destroy(orq_invite);
-  if(leg) nta_leg_destroy(leg);
-  if(c_sip_msg) msg_destroy(c_sip_msg);
-
-  // leave conference and delete connection
-  MCUH323Connection::LeaveMCU();
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name)
 {
   PTRACE(1, "MCUSIP\tSendRequest, request: " << method_name);
@@ -1947,14 +1961,6 @@ int MCUSipConnection::SendACK()
 {
   PTRACE(1, "MCUSIP\tSendACK");
   return SendRequest(SIP_METHOD_ACK);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::LeaveMCU()
-{
-  PString *bye = new PString("bye:"+callToken);
-  sep->SipQueue.Push(bye);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
