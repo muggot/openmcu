@@ -84,8 +84,10 @@ class ProxyAccount
       start_time = PTime(0);
       cseq = 100;
       status = 0;
+      default_expires = 600;
+      proxy_expires = 600;
     }
-    void SetStatus(const sip_t *sip);
+    void SetStatus(const msg_t *msg);
     PString roomname;
     PString username;
     PString domain;
@@ -93,7 +95,8 @@ class ProxyAccount
     PString port;
     PString transport;
     PString password;
-    unsigned expires;
+    unsigned default_expires;
+    unsigned proxy_expires;
     BOOL enable;
 
     PTime start_time;
@@ -425,7 +428,7 @@ class MCUSipEndPoint : public PThread
     { return ((MCUSipEndPoint *)context)->response_cb1(orq, sip); }
     int response_cb1(nta_outgoing_t *orq, const sip_t *sip);
 
-    int SipRegister(ProxyAccount *, BOOL enable = TRUE);
+    int SipRegister(ProxyAccount *, BOOL enable);
     PString GetRoomAccess(const sip_t *sip);
 
     BOOL MakeProxyAuth(ProxyAccount *proxy, const sip_t *sip);

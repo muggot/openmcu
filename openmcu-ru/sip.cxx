@@ -114,17 +114,28 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Direction dir)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ProxyAccount::SetStatus(const sip_t *sip)
+void ProxyAccount::SetStatus(const msg_t *msg)
 {
-  status = sip->sip_status->st_status;
-  status_phrase = sip->sip_status->st_phrase;
-  if(sip->sip_expires && sip->sip_expires->ex_delta == 0)
+  sip_t *sip = sip_object(msg);
+  if(sip)
   {
-    status = 0;
-    status_phrase = "Registration canceled";
+    status = sip->sip_status->st_status;
+    status_phrase = sip->sip_status->st_phrase;
+    if(sip->sip_expires)
+    {
+      if(sip->sip_expires->ex_delta != 0)
+      {
+        proxy_expires = sip->sip_expires->ex_delta;
+      }
+      else
+      {
+        status = 0;
+        status_phrase = "Registration canceled";
+      }
+    }
   }
-  PString msg = "<font color=blue>"+roomname+" - "+username+"@"+domain+" status: "+status_phrase+"</font>";
-  OpenMCU::Current().HttpWriteEvent(msg);
+  PString event = "<font color=blue>"+roomname+" - "+username+"@"+domain+" status: "+status_phrase+"</font>";
+  OpenMCU::Current().HttpWriteEvent(event);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2329,7 +2340,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 
     PString expires = "0";
     if(enable)
-      expires = proxy->expires;
+      expires = proxy->default_expires;
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, wrap_response_cb1, (nta_outgoing_magic_t *)this,
@@ -2486,7 +2497,7 @@ int MCUSipEndPoint::response_cb1(nta_outgoing_t *orq, const sip_t *sip)
       return 0;
     }
 
-    proxy->SetStatus(sip);
+    proxy->SetStatus(msg);
 
     if(status != 401 && status != 407)
     {
@@ -2785,16 +2796,21 @@ void MCUSipEndPoint::ProcessProxyAccount()
   {
     ProxyAccount *proxy = it->second;
     PTime now;
-    if(proxy->enable && now > proxy->start_time + PTimeInterval(proxy->expires*1000))
+    if(proxy->enable && now > proxy->start_time + PTimeInterval(proxy->proxy_expires*1000))
     {
       proxy->status = 0;
+      proxy->status_phrase = "Registration ...";
       proxy->start_time = now;
-      SipRegister(proxy);
+      proxy->proxy_expires = proxy->default_expires;
+      proxy->SetStatus(NULL);
+      SipRegister(proxy, TRUE);
     }
     if(!proxy->enable && proxy->status == 200)
     {
       proxy->status = 0;
+      proxy->status_phrase = "Unregister ...";
       proxy->start_time = PTime(0);
+      proxy->SetStatus(NULL);
       SipRegister(proxy, FALSE);
     }
   }
@@ -2859,7 +2875,8 @@ void MCUSipEndPoint::InitProxyAccounts()
     proxy->port = port;
     proxy->transport = transport;
     proxy->password = password;
-    proxy->expires = expires;
+    proxy->default_expires = expires;
+    proxy->proxy_expires = expires;
     //
     proxy->start_time = PTime(0);
     proxy->sip_www_str = "";
