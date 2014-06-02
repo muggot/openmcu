@@ -299,8 +299,6 @@ class MCUSipConnection : public MCUH323Connection
     { return ((MCUSipConnection *)context)->invite_response_cb(orq, sip); }
     int invite_response_cb(nta_outgoing_t *orq, const sip_t *sip);
 
-    void LeaveMCU(BOOL remove);
-
     sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, SipCapability *sc);
     sdp_media_t *CreateSdpMedia(su_home_t *sess_home, sdp_media_e m_type, sdp_proto_e m_proto);
     sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);

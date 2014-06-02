@@ -395,21 +395,6 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
 
 MCUSipConnection::~MCUSipConnection()
 {
-  if(IsConnected())
-  {
-    SendRequest(SIP_METHOD_BYE);
-  }
-  else if(IsAwaitingSignalConnect())
-  {
-    if(direction == DIRECTION_INBOUND)
-      ReqReply(c_sip_msg, SIP_603_DECLINE);
-    else if(direction == DIRECTION_OUTBOUND)
-      nta_outgoing_cancel(orq_invite);
-  }
-  DeleteTempSockets();
-  if(orq_invite) nta_outgoing_destroy(orq_invite);
-  if(leg) nta_leg_destroy(leg);
-  if(c_sip_msg) msg_destroy(c_sip_msg);
   MCUTRACE(1, "MCUSipConnection destructor, callToken: "+callToken+" contact: "+contact_str+" ruri: "+ruri_str);
 }
 
@@ -1875,8 +1860,25 @@ int MCUSipConnection::ProcessShutdown(CallEndReason reason)
 {
   if(reason == EndedByRemoteUser)
     connectionState = ShuttingDownConnection;
+
+  if(IsConnected())
+  {
+    SendRequest(SIP_METHOD_BYE);
+  }
+  else if(IsAwaitingSignalConnect())
+  {
+    if(direction == DIRECTION_INBOUND)
+      ReqReply(c_sip_msg, SIP_603_DECLINE);
+    else if(direction == DIRECTION_OUTBOUND)
+      nta_outgoing_cancel(orq_invite);
+  }
+  DeleteTempSockets();
+  if(orq_invite) nta_outgoing_destroy(orq_invite);
+  if(leg) nta_leg_destroy(leg);
+  if(c_sip_msg) msg_destroy(c_sip_msg);
+
   // leave conference and delete connection
-  LeaveMCU(TRUE);
+  MCUH323Connection::LeaveMCU();
   return 1;
 }
 
@@ -1957,15 +1959,6 @@ void MCUSipConnection::LeaveMCU()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::LeaveMCU(BOOL remove)
-{
-  PTRACE(1, "MCUSIP\tLeave " << callToken << " remove=" << remove);
-  if(remove == FALSE) return;
-  MCUH323Connection::LeaveMCU();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 int MCUSipConnection::SendInvite()
 {
   // outgoing Invite direction outbound
@@ -2033,7 +2026,7 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
     int response_code = ProcessReInvite(msg);
     if(response_code)
     {
-      LeaveMCU(TRUE);
+      ProcessShutdown(EndedByLocalUser);
       return response_code;
     }
     // create sdp for OK
@@ -2067,14 +2060,23 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
 
 int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
 {
+  // note that the message is not copied
   msg_t *msg = nta_outgoing_getresponse(orq);
+  // note that the request message is not copied
   msg_t *msg_orq = nta_outgoing_getrequest(orq);
-  sip_t *sip_orq = sip_object(msg_orq);
   if(!msg || !msg_orq) return 0;
 
   int status = 0, request = 0;
   if(sip->sip_status)  status = sip->sip_status->st_status;
   if(sip->sip_cseq)    request = sip->sip_cseq->cs_method;
+
+  // destroy a request object
+  // marks it as disposable, the object is freed after a timeout.
+  if(status >= 200)
+  {
+    nta_outgoing_destroy(orq);
+    orq_invite = NULL;
+  }
 
   if(status == 200)
   {
@@ -2093,31 +2095,30 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
     else
       response_code = ProcessReInvite(msg);
     if(response_code)
-      LeaveMCU(TRUE);
+      ProcessShutdown(EndedByLocalUser);
     else
       SendACK();
-    nta_outgoing_destroy(orq);
     return 0;
   }
   if(status > 299 && status != 401 && status != 407)
   {
     ProcessShutdown();
-    nta_outgoing_destroy(orq);
     return 0;
   }
   if(status == 401 || status == 407)
   {
     // add authorization header
-    if(sep->MakeMsgAuth(msg_orq, msg) == FALSE)
+    msg_t *msg_new = msg_dup(msg_orq);
+    if(sep->MakeMsgAuth(msg_new, msg) == FALSE)
     {
-      nta_outgoing_destroy(orq);
+      msg_destroy(msg_new);
+      ProcessShutdown();
       return 0;
     }
-    nta_outgoing_mcreate(sep->GetAgent(), wrap_invite_response_cb, (nta_outgoing_magic_t *)this,
- 			 (url_string_t *)sip_orq->sip_to->a_url,
-			 msg_orq,
+    orq_invite = nta_outgoing_mcreate(sep->GetAgent(), wrap_invite_response_cb, (nta_outgoing_magic_t *)this,
+ 			 NULL,
+			 msg_new,
           		 TAG_END());
-    nta_outgoing_destroy(orq);
     return 0;
   }
 
