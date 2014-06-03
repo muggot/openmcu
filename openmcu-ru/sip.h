@@ -103,8 +103,6 @@ class ProxyAccount
     int status;
     PString status_phrase;
 
-    PString sip_www_str;
-    PString sip_proxy_str;
     PString call_id;
     unsigned cseq;
 };
@@ -380,7 +378,7 @@ class MCUSipEndPoint : public PThread
     su_home_t *GetHome() { return &home; };
 
     int CreateIncomingConnection(const msg_t *msg);
-    int SipReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL, const char *auth_str=NULL, const char *contact_str=NULL, const char *content_str=NULL, const char *payload_str=NULL);
+    int SipReqReply(const msg_t *msg, msg_t *msg_reply, unsigned status, const char *status_phrase=NULL);
     int SendAckBye(const msg_t *msg);
     BOOL SipMakeCall(PString from, PString to, PString & callToken);
 
@@ -430,8 +428,6 @@ class MCUSipEndPoint : public PThread
 
     int SipRegister(ProxyAccount *, BOOL enable);
     PString GetRoomAccess(const sip_t *sip);
-
-    BOOL MakeProxyAuth(ProxyAccount *proxy, const sip_t *sip);
 
     void CreateBaseSipCaps();
 

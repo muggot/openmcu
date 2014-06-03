@@ -261,6 +261,8 @@ class RegistrarGk : public H323GatekeeperServer
 
     void SetRequireH235(BOOL _requireH235) { requireH235 = _requireH235; }
     void SetPasswords(PStringToString _passwords) { passwords = _passwords; }
+    void SetMinTimeToLive(int _minTimeToLive) { minTimeToLive = _minTimeToLive; }
+    void SetMaxTimeToLive(int _maxTimeToLive) { maxTimeToLive = _maxTimeToLive; }
 
     BOOL IsGatekeeperRouted() const { return isGatekeeperRouted; }
 
@@ -288,6 +290,9 @@ class RegistrarGk : public H323GatekeeperServer
 //    virtual H323GatekeeperCall * CreateCall(const OpalGloballyUniqueID & callIdentifier, H323GatekeeperCall::Direction direction);
     /** Called whenever a new call is started */
 //    virtual void AddCall(H323GatekeeperCall *) { }
+
+    unsigned minTimeToLive;
+    unsigned maxTimeToLive;
 
     Registrar *registrar;
 };
@@ -366,7 +371,10 @@ class Registrar : public PThread
     BOOL h323_require_h235;
     BOOL h323_allow_unreg_mcu_calls;
     BOOL h323_allow_unreg_internal_calls;
-    unsigned h323_time_to_live;
+    int sip_reg_min_expires;
+    int sip_reg_max_expires;
+    int h323_min_time_to_live;
+    int h323_max_time_to_live;
 
     BOOL MakeCall(RegistrarConnection *regConn, PString & username_in, PString & username_out);
     BOOL MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
@@ -376,7 +384,7 @@ class Registrar : public PThread
 
     // internal function
     void SubscriptionProcess();
-    int SipPolicyCheck(const msg_t *msg, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
+    int SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
 
     // internal call process function
     void Leave(int account_type, PString callToken);

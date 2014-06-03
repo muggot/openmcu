@@ -649,19 +649,24 @@ void Registrar::InitConfig()
   allow_internal_calls = cfg.GetBoolean("Allow internal calls", TRUE);
 
   // SIP parameters
-  sip_require_password = cfg.GetBoolean("SIP proxy required password authorization", FALSE);
+  sip_require_password = cfg.GetBoolean("SIP registrar required password authorization", FALSE);
   sip_allow_unauth_mcu_calls = cfg.GetBoolean("SIP allow unauthorized MCU calls", TRUE);
   sip_allow_unauth_internal_calls = cfg.GetBoolean("SIP allow unauthorized internal calls", TRUE);
+  sip_reg_min_expires = cfg.GetInteger("SIP registrar minimum expiration", 60);
+  sip_reg_max_expires = cfg.GetInteger("SIP registrar maximum expiration", 600);
 
   // H.323 parameters
   h323_require_h235 = cfg.GetBoolean("H.323 gatekeeper required password authorization", FALSE);
   h323_allow_unreg_mcu_calls = cfg.GetBoolean("H.323 allow unregistered MCU calls", TRUE);
   h323_allow_unreg_internal_calls = cfg.GetBoolean("H.323 allow unregistered internal calls", TRUE);
-  h323_time_to_live = cfg.GetInteger("H.323 gatekeeper default TTL(Time To Live)", 3600);
+  h323_min_time_to_live = cfg.GetInteger("H.323 gatekeeper minimum Time To Live", 60);
+  h323_max_time_to_live = cfg.GetInteger("H.323 gatekeeper maximum Time To Live", 600);
   if(gk)
   {
     gk->SetRequireH235(h323_require_h235);
-    gk->SetTimeToLive(h323_time_to_live);
+    gk->SetMinTimeToLive(h323_min_time_to_live);
+    gk->SetMaxTimeToLive(h323_max_time_to_live);
+    gk->SetTimeToLive(h323_max_time_to_live);
   }
 }
 

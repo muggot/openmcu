@@ -109,14 +109,16 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   srcAddress = info.GetReplyAddress();
   srcAddress.GetIpAddress(host);
 
-  unsigned expires = GetTimeToLive();
   if(!info.rcf.HasOptionalField(H225_RegistrationRequest::e_timeToLive))
   {
     info.rcf.IncludeOptionalField(H225_RegistrationRequest::e_timeToLive);
-    info.rcf.m_timeToLive = expires;
+    info.rcf.m_timeToLive = defaultTimeToLive;
   }
-  if(expires > info.rcf.m_timeToLive)
-   expires = info.rcf.m_timeToLive;
+  if(info.rcf.m_timeToLive < minTimeToLive)
+    info.rcf.m_timeToLive = minTimeToLive;
+  if(info.rcf.m_timeToLive > maxTimeToLive)
+    info.rcf.m_timeToLive = maxTimeToLive;
+  unsigned expires = info.rcf.m_timeToLive;
 
   if(!info.rrq.HasOptionalField(H225_RegistrationRequest::e_terminalAlias))
     return H323GatekeeperRequest::Reject;
@@ -483,12 +485,14 @@ RegistrarGk::RegistrarGk(MCUH323EndPoint *ep, Registrar *_registrar)
   : H323GatekeeperServer(*ep), registrar(_registrar)
 {
   requireH235 = TRUE;
+  minTimeToLive = 60;
+  maxTimeToLive = 600;
+  defaultTimeToLive = 600;        // zero disables
 
   totalBandwidth = UINT_MAX;      // Unlimited total bandwidth
   usedBandwidth = 0;              // None used so far
   defaultBandwidth = 2560;        // Enough for bidirectional G.711 and 64k H.261
   maximumBandwidth = 200000;      // 10baseX LAN bandwidth
-  defaultTimeToLive = 3600;       // One hour, zero disables
   defaultInfoResponseRate = 60;   // One minute, zero disables
   overwriteOnSameSignalAddress = TRUE;
   canHaveDuplicateAlias = FALSE;

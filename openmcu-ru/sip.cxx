@@ -62,23 +62,23 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Direction dir)
   if(dir == DIRECTION_INBOUND) sip_addr = sip->sip_from;
   else                         sip_addr = sip->sip_to;
 
+  // username
+  if(sip_addr->a_url->url_user && PString(sip_addr->a_url->url_user) != "")
+    username = sip_addr->a_url->url_user;
+  else if(sip->sip_contact && sip->sip_contact->m_url && PString(sip->sip_contact->m_url->url_user) != "")
+    username = sip->sip_contact->m_url->url_user;
+  username.Replace("\"","",TRUE,0);
+  username = PURL::UntranslateString(username, PURL::QueryTranslation);
+
   // display name
   if(sip_addr->a_display && PString(sip_addr->a_display) != "")
     display_name = sip_addr->a_display;
   else if(sip->sip_contact && sip->sip_contact->m_display && PString(sip->sip_contact->m_display) != "")
     display_name = sip->sip_contact->m_display;
   else
-    display_name = sip_addr->a_url->url_user;
+    display_name = username;
   display_name.Replace("\"","",TRUE,0);
   display_name = PURL::UntranslateString(display_name, PURL::QueryTranslation);
-
-  // username
-  if(sip->sip_contact && sip->sip_contact->m_url && PString(sip->sip_contact->m_url->url_user) != "")
-    username = sip->sip_contact->m_url->url_user;
-  else if(sip_addr->a_url->url_user && PString(sip_addr->a_url->url_user) != "")
-    username = sip_addr->a_url->url_user;
-  username.Replace("\"","",TRUE,0);
-  username = PURL::UntranslateString(username, PURL::QueryTranslation);
 
   // domain
   domain_name = sip_addr->a_url->url_host;
@@ -2011,12 +2011,30 @@ int MCUSipConnection::ReqReply(const msg_t *msg, unsigned status, const char *st
   sip_t *sip = sip_object(msg);
   if(sip->sip_request->rq_method == sip_method_invite && status == 200)
   {
-    return sep->SipReqReply(msg, status, status_phrase, NULL, contact_str, "application/sdp", sdp_ok_str);
+    nta_incoming_t *irq = nta_incoming_find(sep->GetAgent(), sip, sip->sip_via);
+    if(irq)
+    {
+      nta_incoming_treply(irq, status, status_phrase,
+                   SIPTAG_CONTACT_STR(contact_str),
+                   SIPTAG_CONTENT_TYPE_STR("application/sdp"),
+                   SIPTAG_PAYLOAD_STR(sdp_ok_str),
+                   SIPTAG_SERVER_STR(SIP_USER_AGENT),
+                   TAG_END());
+      return 0;
+    }
+    else
+    {
+      msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
+      sip_add_tl(msg_reply, sip_object(msg_reply),
+                   SIPTAG_CONTACT_STR(contact_str),
+                   SIPTAG_CONTENT_TYPE_STR("application/sdp"),
+                   SIPTAG_PAYLOAD_STR(sdp_ok_str),
+                   TAG_END());
+      sep->SipReqReply(msg, msg_reply, status, status_phrase);
+      return 0;
+    }
   }
-  else
-  {
-    return sep->SipReqReply(msg, status, status_phrase);
-  }
+  sep->SipReqReply(msg, NULL, status, status_phrase);
   return 0;
 }
 
@@ -2054,7 +2072,7 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
   if(request == sip_method_ack)
   {
     ProcessAck();
-    ReqReply(msg, SIP_200_OK);
+    //sep->SipReqReply(msg, SIP_200_OK);
   }
   if(request == sip_method_bye)
   {
@@ -2394,56 +2412,33 @@ BOOL MCUSipEndPoint::MakeMsgAuth(msg_t *msg_orq, const msg_t *msg)
   if(request == sip_method_register)
     proxy->call_id = sip_orq->sip_call_id->i_id;
 
-  // authorization
-  MakeProxyAuth(proxy, sip);
-  if(status == 401)
+  // add headers
+  if(status == 401 && sip->sip_www_authenticate && sip->sip_www_authenticate->au_scheme && sip->sip_www_authenticate->au_params)
   {
-    sip_authorization_t *sip_auth = sip_authorization_make(&home, proxy->sip_www_str);
+    const char *realm = msg_params_find(sip->sip_www_authenticate->au_params, "realm=");
+    const char *nonce = msg_params_find(sip->sip_www_authenticate->au_params, "nonce=");
+    const char *scheme = sip->sip_www_authenticate->au_scheme;
+    if(scheme == NULL || realm == NULL || nonce == NULL)
+      return FALSE;
+    PString uri = "sip:"+PString(realm); uri.Replace("\"","",true,0);
+    PString sip_auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, scheme, realm, nonce);
+    sip_authorization_t *sip_auth = sip_authorization_make(&home, sip_auth_str);
     msg_header_insert(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_auth);
   }
-  else if(status == 407)
+  else if(status == 407 && sip->sip_proxy_authenticate && sip->sip_proxy_authenticate->au_scheme && sip->sip_proxy_authenticate->au_params)
   {
-    sip_authorization_t *sip_proxy_auth = sip_proxy_authorization_make(&home, proxy->sip_proxy_str);
+    const char *realm = msg_params_find(sip->sip_proxy_authenticate->au_params, "realm=");
+    const char *nonce = msg_params_find(sip->sip_proxy_authenticate->au_params, "nonce=");
+    const char *scheme = sip->sip_proxy_authenticate->au_scheme;
+    if(scheme == NULL || realm == NULL || nonce == NULL)
+      return FALSE;
+    PString uri = "sip:"+PString(realm); uri.Replace("\"","",true,0);
+    PString sip_auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, scheme, realm, nonce);
+    sip_authorization_t *sip_proxy_auth = sip_proxy_authorization_make(&home, sip_auth_str);
     msg_header_insert(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_proxy_auth);
-  }
-
-  return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BOOL MCUSipEndPoint::MakeProxyAuth(ProxyAccount *proxy, const sip_t *sip)
-{
-  PTRACE(1, "MCUSIP\tMakeProxyAuth");
-
-  const char *realm = NULL;
-  const char *nonce = NULL;
-  const char *scheme = NULL;
-  if(sip->sip_www_authenticate && sip->sip_www_authenticate->au_scheme && sip->sip_www_authenticate->au_params)
-  {
-    realm = msg_params_find(sip->sip_www_authenticate->au_params, "realm=");
-    nonce = msg_params_find(sip->sip_www_authenticate->au_params, "nonce=");
-    scheme = sip->sip_www_authenticate->au_scheme;
-  }
-  else if(sip->sip_proxy_authenticate && sip->sip_proxy_authenticate->au_scheme && sip->sip_proxy_authenticate->au_params)
-  {
-    realm = msg_params_find(sip->sip_proxy_authenticate->au_params, "realm=");
-    nonce = msg_params_find(sip->sip_proxy_authenticate->au_params, "nonce=");
-    scheme = sip->sip_proxy_authenticate->au_scheme;
   }
   else
     return FALSE;
-
-  if(scheme == NULL || realm == NULL || nonce == NULL)
-    return FALSE;
-
-  PString uri = "sip:"+PString(realm); uri.Replace("\"","",true,0);
-  PString sip_auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, scheme, realm, nonce);
-
-  if(sip->sip_www_authenticate)
-    proxy->sip_www_str = sip_auth_str;
-  else if(sip->sip_proxy_authenticate)
-    proxy->sip_proxy_str = sip_auth_str;
 
   return TRUE;
 }
@@ -2584,7 +2579,7 @@ int MCUSipEndPoint::SendAckBye(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipEndPoint::SipReqReply(const msg_t *msg, unsigned status, const char *status_phrase, const char *auth_str, const char *contact_str, const char *content_str, const char *payload_str)
+int MCUSipEndPoint::SipReqReply(const msg_t *msg, msg_t *msg_reply, unsigned status, const char *status_phrase)
 {
   PTRACE(1, "MCUSipEndPoint\tSipReqReply");
   sip_t *sip = sip_object(msg);
@@ -2593,78 +2588,23 @@ int MCUSipEndPoint::SipReqReply(const msg_t *msg, unsigned status, const char *s
   if(status_phrase == NULL) status_phrase = sip_status_phrase(status);
   if(status_phrase == NULL) return 0;
 
-  sip_authorization_t *sip_www_auth = NULL;
-  sip_authorization_t *sip_proxy_auth = NULL;
-  if(auth_str)
-  {
-    if(status == 401)      sip_www_auth = sip_authorization_make(&home, auth_str);
-    else if(status == 407) sip_proxy_auth = sip_authorization_make(&home, auth_str);
-  }
-
-  const char *event_str = NULL;
-  const char *allow_events_str = NULL;
   const char *allow_str = NULL;
-  sip_expires_t *sip_expires = NULL;
   if(status == 200 && sip->sip_request->rq_method == sip_method_register)
   {
-    event_str = "registration";
-    allow_events_str = "presence";
     allow_str = SIP_ALLOW_METHODS_REGISTER;
-    sip_expires = sip->sip_expires;
   }
   if(status == 200 && sip->sip_request->rq_method == sip_method_options)
   {
     allow_str = SIP_ALLOW_METHODS_OPTIONS;
   }
-  if(status == 200 && sip->sip_request->rq_method == sip_method_subscribe)
-  {
-    sip_expires = sip->sip_expires;
-  }
 
-  sip_contact_t *sip_contact = NULL;
-  if(contact_str)
-    sip_contact = sip_contact_make(&home, contact_str);
-
-  sip_content_type_t *sip_content = NULL;
-  sip_payload_t *sip_payload = NULL;
-  if(payload_str)
-  {
-    sip_content = sip_content_type_make(&home, content_str);
-    sip_payload = sip_payload_make(&home, payload_str);
-  }
-
-  nta_incoming_t *irq = nta_incoming_find(agent, sip, sip->sip_via);
-  if(irq)
-  {
-    nta_incoming_treply(irq, status, status_phrase,
-                   SIPTAG_CONTACT(sip_contact),
-                   SIPTAG_CONTENT_TYPE(sip_content),
-                   SIPTAG_PAYLOAD(sip_payload),
-  		   SIPTAG_EVENT_STR(event_str),
-  		   SIPTAG_ALLOW_EVENTS_STR(allow_events_str),
+  msg_t *msg_req = msg_dup(msg);
+  if(msg_reply == NULL)
+    msg_reply = nta_msg_create(agent, 0);
+  nta_msg_mreply(agent, msg_reply, sip_object(msg_reply), status, status_phrase, msg_req,
   		   SIPTAG_ALLOW_STR(allow_str),
-		   SIPTAG_EXPIRES(sip_expires),
-  		   SIPTAG_WWW_AUTHENTICATE(sip_www_auth),
-		   SIPTAG_PROXY_AUTHENTICATE(sip_proxy_auth),
                    SIPTAG_SERVER_STR(SIP_USER_AGENT),
                    TAG_END());
-  }
-  else
-  {
-    msg_t *msg_reply = msg_dup(msg);
-    nta_msg_treply(agent, msg_reply, status, status_phrase,
-                   SIPTAG_CONTACT(sip_contact),
-                   SIPTAG_CONTENT_TYPE(sip_content),
-                   SIPTAG_PAYLOAD(sip_payload),
-  		   SIPTAG_EVENT_STR(event_str),
-  		   SIPTAG_ALLOW_EVENTS_STR(allow_events_str),
-  		   SIPTAG_ALLOW_STR(allow_str),
-		   SIPTAG_EXPIRES(sip_expires),
-  		   SIPTAG_WWW_AUTHENTICATE(sip_www_auth),
-		   SIPTAG_PROXY_AUTHENTICATE(sip_proxy_auth),
-                   SIPTAG_SERVER_STR(SIP_USER_AGENT),
-                   TAG_END());
-  }
   return 0;
 }
 
@@ -2675,19 +2615,19 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   PTRACE(1, "MCUSIP\tCreateIncomingConnection");
   //sip_t *sip = sip_object(msg);
   //if(GetRoomAccess(sip) == "DENY")
-    //return SipReqReply(msg, SIP_403_FORBIDDEN);
+    //return SipReqReply(msg, NULL, SIP_403_FORBIDDEN);
 
   //nta_leg_t *leg = nta_leg_by_call_id(agent, sip->sip_call_id->i_id);
   //MCUSipConnection *sCon = (MCUSipConnection *)nta_leg_magic(leg, NULL);
   PString callToken = GetSipCallToken(msg);
   MCUSipConnection *sCon = FindConnectionWithLock(callToken);
   if(!sCon)
-    return SipReqReply(msg, SIP_500_INTERNAL_SERVER_ERROR);
+    return SipReqReply(msg, NULL, SIP_500_INTERNAL_SERVER_ERROR);
 
   int response_code = sCon->ProcessInvite(msg);
   if(response_code)
   {
-    SipReqReply(msg, response_code);
+    SipReqReply(msg, NULL, response_code);
     sCon->LeaveMCU();
   }
   sCon->Unlock();
@@ -2716,19 +2656,19 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
 
   // wrong RequestURI
   if(!FindListener(sip->sip_request->rq_url->url_host))
-    return SipReqReply(msg, 400); // SIP_400_BAD_REQUEST
+    return SipReqReply(msg, NULL, SIP_400_BAD_REQUEST);
 
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
 
   if(request == sip_method_invite)
   {
-    SipReqReply(msg, SIP_100_TRYING);
+    SipReqReply(msg, NULL, SIP_100_TRYING);
     // empty payload header for invite
     if(!sip->sip_payload || !sip->sip_payload->pl_data)
-      return SipReqReply(msg, 415); // SIP_415_UNSUPPORTED_MEDIA
+      return SipReqReply(msg, NULL, 415); // SIP_415_UNSUPPORTED_MEDIA
     // reinvite request outside call leg
     if(sip->sip_to->a_tag)
-      return SipReqReply(msg, 481); // SIP_481_NO_TRANSACTION
+      return SipReqReply(msg, NULL, 481); // SIP_481_NO_TRANSACTION
     // find connection
     PString callToken = GetSipCallToken(msg);
     // existing connection, repeated INVITE, possibly there is a bug
@@ -2739,13 +2679,13 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   }
   if(request == sip_method_cancel)
   {
-    return SipReqReply(msg, 481); // SIP_481_NO_TRANSACTION
+    return SipReqReply(msg, NULL, 481); // SIP_481_NO_TRANSACTION
   }
 
   if(request == sip_method_bye)
   {
     // bye outside call leg
-    return SipReqReply(msg, 481); // SIP_481_NO_TRANSACTION
+    return SipReqReply(msg, NULL, 481); // SIP_481_NO_TRANSACTION
   }
   if(request == sip_method_register)
   {
@@ -2761,27 +2701,27 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   }
   if(request == sip_method_ack)
   {
-    return SipReqReply(msg, 200);
+    return SipReqReply(msg, NULL, 200);
   }
   if(request == sip_method_notify)
   {
-    return SipReqReply(msg, 200);
+    return SipReqReply(msg, NULL, 200);
   }
   if(request == sip_method_info)
   {
-    return SipReqReply(msg, 200);
+    return SipReqReply(msg, NULL, 200);
   }
   if(request == sip_method_options)
   {
-    return SipReqReply(msg, 200);
+    return SipReqReply(msg, NULL, 200);
   }
   if(request == sip_method_publish)
   {
-    return SipReqReply(msg, 200);
+    return SipReqReply(msg, NULL, 200);
   }
   if(request != 0)
   {
-    return SipReqReply(msg, 501); // SIP_501_NOT_IMPLEMENTED
+    return SipReqReply(msg, NULL, 501); // SIP_501_NOT_IMPLEMENTED
   }
 
   return 0;
@@ -2879,8 +2819,6 @@ void MCUSipEndPoint::InitProxyAccounts()
     proxy->proxy_expires = expires;
     //
     proxy->start_time = PTime(0);
-    proxy->sip_www_str = "";
-    proxy->sip_proxy_str = "";
     proxy->call_id = "";
   }
 }
