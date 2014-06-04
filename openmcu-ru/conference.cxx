@@ -585,12 +585,14 @@ void Conference::RefreshAddressBook()
   {
     PString memberName = abook[i].Tokenise(",")[0];
     PString memberNameId = MCUURL(memberName).GetMemberNameId();
-    PString reg_state = abook[i].Tokenise(",")[1];
-    PString conn_state = abook[i].Tokenise(",")[2];
-    PString abook_enable = abook[i].Tokenise(",")[3];
-    PString remote_application = abook[i].Tokenise(",")[4];
-    PString reg_info = abook[i].Tokenise(",")[5];
+    PString abook_enable = abook[i].Tokenise(",")[1];
+    PString remote_application = abook[i].Tokenise(",")[2];
+    PString reg_state = abook[i].Tokenise(",")[3];
+    PString reg_info = abook[i].Tokenise(",")[4];
+    PString conn_state = abook[i].Tokenise(",")[5];
     PString conn_info = abook[i].Tokenise(",")[6];
+    PString ping_state = abook[i].Tokenise(",")[7];
+    PString ping_info = abook[i].Tokenise(",")[8];
     if(i>0) msg << ",";
     memberName.Replace("&","&amp;",TRUE,0);
     memberName.Replace("\"","&quot;",TRUE,0);
@@ -598,12 +600,14 @@ void Conference::RefreshAddressBook()
         << "0"
         << ",\"" << memberNameId << "\""
         << ",\"" << memberName << "\""
-        << ",\"" << reg_state << "\""
-        << ",\"" << conn_state << "\""
         << ",\"" << abook_enable << "\""
         << ",\"" << remote_application << "\""
+        << ",\"" << reg_state << "\""
         << ",\"" << reg_info << "\""
+        << ",\"" << conn_state << "\""
         << ",\"" << conn_info << "\""
+        << ",\"" << ping_state << "\""
+        << ",\"" << ping_info << "\""
         << ")";
   }
   msg << ");";

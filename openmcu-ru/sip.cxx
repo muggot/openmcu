@@ -2646,9 +2646,15 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   if(sip->sip_status)  status = sip->sip_status->st_status;
   if(sip->sip_cseq)    cseq = sip->sip_cseq->cs_method;
 
+  Registrar *registrar = OpenMCU::Current().GetRegistrar();
+
   // repeated responses 200/603, outside call leg
   if(cseq == sip_method_invite && (status == 200 || status == 603))
     return SendAckBye(msg);
+
+  // keep alive
+  if(cseq == sip_method_options && status)
+    return registrar->OnReceivedSipOptionsResponse(msg);
 
   // processing requests only
   if(!sip->sip_request)
@@ -2657,8 +2663,6 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
   // wrong RequestURI
   if(!FindListener(sip->sip_request->rq_url->url_host))
     return SipReqReply(msg, NULL, SIP_400_BAD_REQUEST);
-
-  Registrar *registrar = OpenMCU::Current().GetRegistrar();
 
   if(request == sip_method_invite)
   {
@@ -3029,7 +3033,7 @@ void MCUSipEndPoint::Main()
   root = su_root_create(NULL);
   if(root == NULL) return;
 
-  su_log_set_level(NULL, 9);
+  su_log_set_level(NULL, 6);
   setenv("TPORT_LOG", "1", 1);
   su_log_redirect(NULL, MCUSipLoggerFunc, NULL);
 

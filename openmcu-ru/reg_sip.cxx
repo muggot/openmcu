@@ -275,6 +275,26 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+int Registrar::OnReceivedSipOptionsResponse(const msg_t *msg)
+{
+  RegistrarAccount *regAccount = NULL;
+  PWaitAndSignal m(mutex);
+
+  sip_t *sip = sip_object(msg);
+  PString username = sip->sip_to->a_url->url_user;
+
+  regAccount = FindAccountWithLock(ACCOUNT_TYPE_SIP, username);
+  if(regAccount)
+  {
+    regAccount->keep_alive_time_response = PTime();
+    regAccount->Unlock();
+  }
+
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out)
 {
   PTRACE(1, "Registrar\tSipPolicyCheck");
@@ -485,6 +505,57 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
                         SIPTAG_PAYLOAD_STR(message),
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
 			SIPTAG_SERVER_STR(SIP_USER_AGENT),
+			TAG_END());
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int Registrar::SipSendPing(RegistrarAccount *regAccount)
+{
+//  PTRACE(1, "MCUSIP\tServerSendOptions");
+
+  if(regAccount->host == "" || regAccount->port == 0)
+    return FALSE;
+
+  //PString local_ip = GetFromIp(regAccount->host, regAccount->port);
+  //if(local_ip == "")
+    //return FALSE;
+
+  // do not use GetUrl() directly, "nta outgoing create: invalid URI"
+  PString ruri_str = regAccount->GetUrl();
+  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
+
+  PString url_from = "sip:keepalive@"+regAccount->domain;
+  sip_addr_t *sip_from = sip_from_create(GetHome(), (url_string_t *)(const char *)url_from);
+  sip_from_tag(GetHome(), sip_from, nta_agent_newtag(GetHome(), "tag=%s", GetAgent()));
+
+  PString url_to = "sip:"+regAccount->username+"@"+regAccount->domain;
+  sip_addr_t *sip_to = sip_to_create(GetHome(), (url_string_t *)(const char *)url_to);
+
+  sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), su_randint(0, 0x7fffffff), SIP_METHOD_OPTIONS);
+  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_OPTIONS, ruri, NULL);
+  sip_call_id_t* sip_call_id = sip_call_id_make(GetHome(), PGloballyUniqueID().AsString());
+
+  sip_route_t* sip_route = NULL;
+  if(regAccount->registered)
+  {
+    sip_t *sip = sip_object(regAccount->msg_reg);
+    if(sip && sip->sip_record_route)
+      sip_route = sip_route_reverse(GetHome(), sip->sip_record_route);
+  }
+
+  msg_t *msg_req = nta_msg_create(GetAgent(), 0);
+  nta_outgoing_mcreate(GetAgent(), NULL, NULL,
+			ruri,
+			msg_req,
+			NTATAG_STATELESS(1),
+			SIPTAG_FROM(sip_from),
+			SIPTAG_TO(sip_to),
+			SIPTAG_ROUTE(sip_route),
+ 			SIPTAG_REQUEST(sip_rq),
+			SIPTAG_CSEQ(sip_cseq),
+			SIPTAG_CALL_ID(sip_call_id),
 			TAG_END());
   return 1;
 }

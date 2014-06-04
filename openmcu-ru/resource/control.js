@@ -775,9 +775,17 @@ function format_mmbr_abook(num,mmbr)
   var height = PANEL_ICON_HEIGHT; //15
   var width = PANEL_ICON_WIDTH; // 15
 
+  // mmbr[3] - address book enable
+  // mmbr[4] - remote application
+  // mmbr[5] - registrar state. 1=unregistered, 2=registered
+  // mmbr[6] - reg info
+  // mmbr[7] - connection state. 1=wait, 2=busy
+  // mmbr[8] - conn info
+  // mmbr[9] - ping state. 0=disable, 1=online, 2=offline
+  // mmbr[10] - ping info
   var info = "";
-  if(mmbr[6] != "") { info += mmbr[6]; }
-  if(mmbr[7] != "") { if(info != "") info += "&#10;"; info += window.l_name_registered+": "+mmbr[7]; }
+  if(mmbr[4] != "") { info += mmbr[4]; }
+  if(mmbr[6] != "") { if(info != "") info += "&#10;"; info += window.l_name_registered+": "+mmbr[6]; }
   if(mmbr[8] != "") { if(info != "") info += "&#10;"; info += window.l_name_connected+": "+mmbr[8]; }
 
   var s=
@@ -790,20 +798,18 @@ function format_mmbr_abook(num,mmbr)
   var name=get_addr_name(uname);
   var ip=get_addr_url_without_param(uname);
 
-  // mmbr[3] - registrar state. 1=unregistered, 2=registered
-  // mmbr[4] - connection state. 1=wait, 2=busy
   var status = "";
-  if(mmbr[3] == 1)      status = "<img id='adrbkpic"+num+"' src='i16_status_gray.png' width='"+width+"' height='"+height+"' alt='Invite'>";
-  else if(mmbr[3] == 2) status = "<img id='adrbkpic"+num+"' src='i16_status_green.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  if(mmbr[5] == 1)      status = "<img id='adrbkpic"+num+"' src='i16_status_gray.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  else if(mmbr[5] == 2) status = "<img id='adrbkpic"+num+"' src='i16_status_green.png' width='"+width+"' height='"+height+"' alt='Invite'>";
 
   var invite = "", check = "";
-  if(mmbr[4] == 0)
+  if(mmbr[7] == 0)
   {
     check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
     invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
   }
-  else if(mmbr[4] == 1) invite = "<img id='adrbkpic"+num+"' src='i16_status_blue.png' width='"+width+"' height='"+height+"' alt='Invite'>";
-  else if(mmbr[4] == 2) invite = "<img id='adrbkpic"+num+"' src='i16_status_red.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  else if(mmbr[7] == 1) invite = "<img id='adrbkpic"+num+"' src='i16_status_blue.png' width='"+width+"' height='"+height+"' alt='Invite'>";
+  else if(mmbr[7] == 2) invite = "<img id='adrbkpic"+num+"' src='i16_status_red.png' width='"+width+"' height='"+height+"' alt='Invite'>";
 
   var posx_check  = 8;
   var posx_invite = posx_check      + width + 16;
@@ -996,11 +1002,10 @@ function abook_refresh(){
     mmbr = addressbook[i];
     if(addressbook_show_all == 0)
     {
-      // mmbr[3] - registrar state. 1=unregistered, 2=registered
-      // mmbr[4] - connection state. 1=wait, 2=busy
-      // mmbr[5] - 1=address book enable
-      var reg_state = mmbr[3];
-      var abook_enable = mmbr[5];
+      // mmbr[3] - 1=address book enable
+      // mmbr[5] - registrar state. 1=unregistered, 2=registered
+      var abook_enable = mmbr[3];
+      var reg_state = mmbr[5];
       if(abook_enable == 0 && reg_state != 2)
         continue;
     }

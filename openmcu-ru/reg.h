@@ -182,6 +182,10 @@ class RegistrarAccount
       enable = FALSE;
       registered = FALSE;
       abook_enable = FALSE;
+      keep_alive_enable = FALSE;
+      keep_alive_interval = 60;
+      keep_alive_time_request = PTime(3600);
+      keep_alive_time_response = PTime(0);
       msg_reg = NULL;
     }
     PString GetUrl()
@@ -234,6 +238,11 @@ class RegistrarAccount
 
     PTime start_time;
     time_t expires;
+
+    BOOL keep_alive_enable;
+    time_t keep_alive_interval;
+    PTime keep_alive_time_request;
+    PTime keep_alive_time_response;
 
     OpalGloballyUniqueID h323CallIdentifier; // h323 incoming call
 
@@ -319,7 +328,7 @@ class Registrar : public PThread
 
     const PString & GetRegistrarDomain() const { return registrar_domain; };
 
-    void RefreshAccountList();
+    void RefreshAccountStatusList();
     PStringArray GetAccountList();
 
     void ConnectionCreated(const PString & callToken);
@@ -333,13 +342,12 @@ class Registrar : public PThread
     int OnReceivedSipInvite(const msg_t *msg);
     int OnReceivedSipSubscribe(msg_t *msg);
     int OnReceivedSipMessage(msg_t *msg);
+    int OnReceivedSipOptionsResponse(const msg_t *msg);
     H323Connection::AnswerCallResponse OnReceivedH323Invite(MCUH323Connection *conn);
 
     nta_agent_t *GetAgent() { return sep->GetAgent(); };
     su_home_t *GetHome() { return sep->GetHome(); };
     MCUSipEndPoint *GetSep() { return sep; };
-
-    int SipSendNotify(msg_t *msg_sub, Subscription *subAccount);
 
     RegistrarAccount * InsertAccountWithLock(RegAccountTypes account_type, PString username);
     RegistrarAccount * InsertAccount(RegistrarAccount *regAccount);
@@ -379,11 +387,15 @@ class Registrar : public PThread
     BOOL MakeCall(RegistrarConnection *regConn, PString & username_in, PString & username_out);
     BOOL MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
 
+    int SipSendNotify(msg_t *msg_sub, Subscription *subAccount);
     int SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out, PString message);
-    //int H323SendMessage(RegistrarAccount *regAccount_out, PString message);
+    int SipSendPing(RegistrarAccount *regAccount);
 
-    // internal function
-    void SubscriptionProcess();
+    void ProcessAccountList();
+    void ProcessSubscriptionList();
+    void ProcessConnectionList();
+    void ProcessKeepAlive();
+
     int SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
 
     // internal call process function

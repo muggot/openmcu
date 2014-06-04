@@ -22,6 +22,7 @@
 #include <sofia-sip/sdp.h>
 #include <sofia-sip/msg_addr.h>
 #include <sofia-sip/sres_sip.h>
+#include <sofia-sip/su_uniqueid.h>
 
 #include "h323.h"
 #include "mcu_rtp.h"

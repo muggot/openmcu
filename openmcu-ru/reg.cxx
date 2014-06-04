@@ -191,55 +191,6 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::SubscriptionProcess()
-{
-  PWaitAndSignal m(mutex);
-
-  PTime now;
-  for(SubscriptionMapType::iterator it=SubscriptionMap.begin(); it!=SubscriptionMap.end(); )
-  {
-    Subscription *subAccount = it->second;
-    if(!subAccount->TryLock())
-      continue;
-
-    RegSubscriptionStates state_new;
-    if(now > subAccount->start_time + PTimeInterval(subAccount->expires*1000))
-    {
-      SubscriptionMap.erase(it++);
-      delete subAccount;
-      continue;
-    } else {
-      ++it;
-    }
-
-    RegistrarAccount *regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, subAccount->username_out);
-    if(!regAccount_out)
-      regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_H323, subAccount->username_out);
-
-    if(regAccount_out && regAccount_out->registered)
-    {
-      state_new = SUB_STATE_OPEN;
-      RegistrarConnection *regConn = FindRegConnUsername(subAccount->username_out);
-      if(regConn)
-        state_new = SUB_STATE_BUSY;
-    } else {
-      state_new = SUB_STATE_CLOSED;
-    }
-
-    // send notify
-    if(subAccount->state != state_new)
-    {
-      subAccount->state = state_new;
-      if(subAccount->msg_sub) // SIP
-        SipSendNotify(subAccount->msg_sub, subAccount);
-    }
-    if(subAccount) subAccount->Unlock();
-    if(regAccount_out) regAccount_out->Unlock();
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PString RegistrarAccount::GetAuthStr()
 {
   if(nonce == "")
@@ -436,16 +387,201 @@ void Registrar::Leave(int account_type, PString callToken)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::RefreshAccountList()
+void Registrar::ProcessSubscriptionList()
 {
   PWaitAndSignal m(mutex);
+  PTime now;
 
+  for(SubscriptionMapType::iterator it=SubscriptionMap.begin(); it!=SubscriptionMap.end(); )
+  {
+    Subscription *subAccount = it->second;
+    if(!subAccount->TryLock())
+      continue;
+
+    RegSubscriptionStates state_new;
+    if(now > subAccount->start_time + PTimeInterval(subAccount->expires*1000))
+    {
+      SubscriptionMap.erase(it++);
+      delete subAccount;
+      continue;
+    } else {
+      ++it;
+    }
+
+    RegistrarAccount *regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, subAccount->username_out);
+    if(!regAccount_out)
+      regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_H323, subAccount->username_out);
+
+    if(regAccount_out && regAccount_out->registered)
+    {
+      state_new = SUB_STATE_OPEN;
+      RegistrarConnection *regConn = FindRegConnUsername(subAccount->username_out);
+      if(regConn)
+        state_new = SUB_STATE_BUSY;
+    } else {
+      state_new = SUB_STATE_CLOSED;
+    }
+
+    // send notify
+    if(subAccount->state != state_new)
+    {
+      subAccount->state = state_new;
+      if(subAccount->msg_sub) // SIP
+        SipSendNotify(subAccount->msg_sub, subAccount);
+    }
+    if(subAccount) subAccount->Unlock();
+    if(regAccount_out) regAccount_out->Unlock();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::ProcessKeepAlive()
+{
+  PWaitAndSignal m(mutex);
+  PTime now;
+
+  for(AccountMapType::iterator it = AccountMap.begin(); it != AccountMap.end(); ++it)
+  {
+    RegistrarAccount *regAccount = it->second;
+    if(regAccount->account_type != ACCOUNT_TYPE_SIP)
+      continue;
+    if(!regAccount->TryLock())
+      continue;
+    if(regAccount->keep_alive_enable && now > regAccount->keep_alive_time_request+PTimeInterval(regAccount->keep_alive_interval*1000))
+    {
+      regAccount->keep_alive_time_request = now;
+      SipSendPing(regAccount);
+    }
+    regAccount->Unlock();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::ProcessAccountList()
+{
+  PWaitAndSignal m(mutex);
+  PTime now;
+
+  for(AccountMapType::iterator it = AccountMap.begin(); it != AccountMap.end(); ++it)
+  {
+    RegistrarAccount *regAccount = it->second;
+    if(!regAccount->TryLock())
+      continue;
+    // expires
+    if(regAccount->registered)
+    {
+      if(now > regAccount->start_time + PTimeInterval(regAccount->expires*1000))
+        regAccount->registered = FALSE;
+    }
+    regAccount->Unlock();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::ProcessConnectionList()
+{
+  PWaitAndSignal m(mutex);
+  PTime now;
+
+  for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )
+  {
+    RegistrarConnection *regConn = it->second;
+    if(!regConn->TryLock())
+      continue;
+    // remove empty connection
+    if(regConn->state == CONN_IDLE)
+    {
+      RegConnMap.erase(it++);
+      delete regConn;
+      continue;
+    } else {
+      ++it;
+    }
+    // MCU call answer limit
+    if(regConn->state == CONN_MCU_WAIT)
+    {
+      if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
+      {
+        OutgoingCallCancel(regConn);
+        regConn->state = CONN_END;
+      }
+    }
+    // internal call answer limit
+    if(regConn->state == CONN_WAIT)
+    {
+      if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
+      {
+        IncomingCallCancel(regConn);
+        OutgoingCallCancel(regConn);
+        regConn->state = CONN_END;
+      }
+    }
+    // make internal call
+    if(regConn->state == CONN_WAIT)
+    {
+      if(regConn->callToken_out == "")
+      {
+        if(!MakeCall(regConn, regConn->username_in, regConn->username_out))
+        {
+          regConn->state = CONN_CANCEL_IN;
+        }
+      }
+    }
+    // accept incoming
+    if(regConn->state == CONN_ACCEPT_IN)
+    {
+      IncomingCallAccept(regConn);
+      regConn->state = CONN_ESTABLISHED;
+    }
+    // cancel incoming
+    if(regConn->state == CONN_CANCEL_IN)
+    {
+      IncomingCallCancel(regConn);
+      regConn->state = CONN_END;
+    }
+    // cancel outgoing
+    if(regConn->state == CONN_CANCEL_OUT)
+    {
+      OutgoingCallCancel(regConn);
+      regConn->state = CONN_END;
+    }
+    // leave incoming
+    if(regConn->state == CONN_LEAVE_IN)
+    {
+      Leave(regConn->account_type_in, regConn->callToken_in);
+      regConn->state = CONN_END;
+    }
+    // leave outgoing
+    if(regConn->state == CONN_LEAVE_OUT)
+    {
+      Leave(regConn->account_type_out, regConn->callToken_out);
+      regConn->state = CONN_END;
+    }
+    // internal call end
+    if(regConn->state == CONN_END)
+    {
+      regConn->state = CONN_IDLE;
+    }
+    regConn->Unlock();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::RefreshAccountStatusList()
+{
+  PWaitAndSignal m(mutex);
   PStringArray list;
+
   for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
   {
     RegistrarAccount *regAccount = it->second;
     int reg_state = 0;
     int conn_state = 0;
+    int ping_state = 0;
 
     if(regAccount->registered)
       reg_state = 2;
@@ -461,25 +597,34 @@ void Registrar::RefreshAccountList()
        conn_state = 2;
     }
 
-    PString remote_application = regAccount->remote_application;
-    PString reg_info;
-    if(regAccount->registered)
+    if(regAccount->keep_alive_enable)
     {
-      reg_info = regAccount->start_time.AsString("hh:mm:ss dd.MM.yyyy");
-    }
-    PString conn_info;
-    if(conn_state == 2)
-    {
-      conn_info = regConn->start_time.AsString("hh:mm:ss dd.MM.yyyy");
+      if(regAccount->keep_alive_time_response > regAccount->keep_alive_time_request-PTimeInterval(regAccount->keep_alive_interval*1000-2000))
+        ping_state = 1;
+      else
+        ping_state = 2;
     }
 
+    PString remote_application = regAccount->remote_application;
+    PString reg_info;
+    PString conn_info;
+    PString ping_info;
+    if(reg_state == 2)
+      reg_info = regAccount->start_time.AsString("hh:mm:ss dd.MM.yyyy");
+    if(conn_state == 2)
+      conn_info = regConn->start_time.AsString("hh:mm:ss dd.MM.yyyy");
+    if(ping_state == 2)
+      ping_info = regAccount->keep_alive_time_response.AsString("hh:mm:ss dd.MM.yyyy");
+
     list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+
-                      PString(reg_state)+","+
-                      PString(conn_state)+","+
                       PString(regAccount->abook_enable)+","+
                       remote_application+","+
+                      PString(reg_state)+","+
                       reg_info+","+
-                      conn_info
+                      PString(conn_state)+","+
+                      conn_info+","+
+                      PString(ping_state)+","+
+                      ping_info
                      );
   }
   if(account_status_list != list)
@@ -501,6 +646,10 @@ PStringArray Registrar::GetAccountList()
 void Registrar::MainLoop()
 {
   PTime time_sub;
+  PTime time_abook;
+  PTime time_account;
+  PTime time_conn;
+  PTime time_ping;
   while(1)
   {
     if(terminating)
@@ -525,115 +674,40 @@ void Registrar::MainLoop()
       InitAccounts();
     }
     //
-    Lock();
     PTime now;
-    //
-    if((PTime()-time_sub).GetMilliSeconds() > 1000)
+    // accounts
+    if((now-time_account).GetMilliSeconds() > 1000)
     {
-      time_sub = now;
-      SubscriptionProcess();
-      RefreshAccountList();
-    }
-    // account
-    for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
-    {
-      RegistrarAccount *regAccount = it->second;
-      if(!regAccount->TryLock())
-        continue;
-      // registrar
-      if(regAccount->registered)
-      {
-        if(now > regAccount->start_time + PTimeInterval(regAccount->expires*1000))
-          regAccount->registered = FALSE;
-      }
-      regAccount->Unlock();
+      time_account = now;
+      ProcessAccountList();
     }
     // connections
-    for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )
+    if((now-time_conn).GetMilliSeconds() > 250)
     {
-      RegistrarConnection *regConn = it->second;
-      if(!regConn->TryLock())
-        continue;
-      // remove empty connection
-      if(regConn->state == CONN_IDLE)
-      {
-        RegConnMap.erase(it++);
-        delete regConn;
-        continue;
-      } else {
-        ++it;
-      }
-      // MCU call answer limit
-      if(regConn->state == CONN_MCU_WAIT)
-      {
-        if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
-        {
-          OutgoingCallCancel(regConn);
-          regConn->state = CONN_END;
-        }
-      }
-      // internal call answer limit
-      if(regConn->state == CONN_WAIT)
-      {
-        if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
-        {
-          IncomingCallCancel(regConn);
-          OutgoingCallCancel(regConn);
-          regConn->state = CONN_END;
-        }
-      }
-      // make internal call
-      if(regConn->state == CONN_WAIT)
-      {
-        if(regConn->callToken_out == "")
-        {
-          if(!MakeCall(regConn, regConn->username_in, regConn->username_out))
-          {
-            regConn->state = CONN_CANCEL_IN;
-          }
-        }
-      }
-      // accept incoming
-      if(regConn->state == CONN_ACCEPT_IN)
-      {
-        IncomingCallAccept(regConn);
-        regConn->state = CONN_ESTABLISHED;
-      }
-      // cancel incoming
-      if(regConn->state == CONN_CANCEL_IN)
-      {
-        IncomingCallCancel(regConn);
-        regConn->state = CONN_END;
-      }
-      // cancel outgoing
-      if(regConn->state == CONN_CANCEL_OUT)
-      {
-        OutgoingCallCancel(regConn);
-        regConn->state = CONN_END;
-      }
-      // leave incoming
-      if(regConn->state == CONN_LEAVE_IN)
-      {
-        Leave(regConn->account_type_in, regConn->callToken_in);
-        regConn->state = CONN_END;
-      }
-      // leave outgoing
-      if(regConn->state == CONN_LEAVE_OUT)
-      {
-        Leave(regConn->account_type_out, regConn->callToken_out);
-        regConn->state = CONN_END;
-      }
-      // internal call end
-      if(regConn->state == CONN_END)
-      {
-        regConn->state = CONN_IDLE;
-      }
-      regConn->Unlock();
+      time_conn = now;
+      ProcessConnectionList();
     }
-    Unlock();
+    // subscriptions
+    if((now-time_sub).GetMilliSeconds() > 1000)
+    {
+      time_sub = now;
+      ProcessSubscriptionList();
+    }
+    // address book
+    if((now-time_abook).GetMilliSeconds() > 1000)
+    {
+      time_abook = now;
+      RefreshAccountStatusList();
+    }
+    // keep alive
+    if((now-time_ping).GetMilliSeconds() > 1000)
+    {
+      time_ping = now;
+      ProcessKeepAlive();
+    }
 
-    int wait = 250 - PTimeInterval(PTime() - now).GetMilliSeconds();
-    if(wait < 100) wait = 100;
+    int wait = 100 - PTimeInterval(PTime() - now).GetMilliSeconds();
+    if(wait < 30) wait = 30;
     PThread::Sleep(wait);
   }
 }
@@ -745,8 +819,13 @@ void Registrar::InitAccounts()
     regAccount->display_name = scfg.GetString("Display name");
     regAccount->sip_call_processing = sip_call_processing;
     regAccount->h323_call_processing = h323_call_processing;
-    if(account_type == ACCOUNT_TYPE_H323)
+    if(account_type == ACCOUNT_TYPE_SIP)
+    {
+    }
+    else if(account_type == ACCOUNT_TYPE_H323)
+    {
       h323Passwords.Insert(PString(username), new PString(regAccount->password));
+    }
     regAccount->Unlock();
   }
   // set gatekeeper parameters
