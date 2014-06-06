@@ -180,6 +180,7 @@ window.l_name_expires                              = 'Expires';
 
 window.l_name_registered                           = 'Registered';
 window.l_name_connected                            = 'Connected';
+window.l_name_last_ping_response                   = 'Last response';
 
 window.l_name_codec                                = 'Codec';
 window.l_name_audio                                = 'Audio';

@@ -887,6 +887,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
   optionNames.AppendString("Password");
+  optionNames.AppendString("Ping interval");
   optionNames.AppendString("SIP call processing");
 
   optionNames.AppendString("Display name");
@@ -988,24 +989,18 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString("Ping interval", ""), ",20,30,40,50,60,120,180,240,300,600")+"</tr>";
       s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
       PString s2;
       s2 += NewItemArray(name);
-      //
       s2 += rowArray+JsLocale("window.l_name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
-      //
       s2 += rowArray+JsLocale("window.l_name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
-      //
       s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString("Password"))+"</tr>";
-      //
+      s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString("Ping interval", ""), ",20,30,40,50,60,120,180,240,300,600")+"</tr>";
       s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
-      //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;

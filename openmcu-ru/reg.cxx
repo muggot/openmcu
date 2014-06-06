@@ -800,12 +800,6 @@ void Registrar::InitAccounts()
     unsigned port = scfg.GetInteger("Port");
     if(port == 0) port = gcfg.GetInteger("Port");
 
-    PString sip_call_processing = scfg.GetString("SIP call processing");
-    if(sip_call_processing == "") sip_call_processing = gcfg.GetString("SIP call processing", "redirect");
-
-    PString h323_call_processing = scfg.GetString("H.323 call processing");
-    if(h323_call_processing == "") h323_call_processing = gcfg.GetString("H.323 call processing", "direct");
-
     RegistrarAccount *regAccount = FindAccountWithLock(account_type, username);
     if(!regAccount)
       regAccount = InsertAccountWithLock(account_type, username);
@@ -817,13 +811,28 @@ void Registrar::InitAccounts()
     regAccount->domain = registrar_domain;
     regAccount->password = scfg.GetString("Password");
     regAccount->display_name = scfg.GetString("Display name");
-    regAccount->sip_call_processing = sip_call_processing;
-    regAccount->h323_call_processing = h323_call_processing;
     if(account_type == ACCOUNT_TYPE_SIP)
     {
+      regAccount->keep_alive_interval = scfg.GetString("Ping interval").AsInteger();
+      if(regAccount->keep_alive_interval == 0)
+        regAccount->keep_alive_interval = gcfg.GetString("Ping interval").AsInteger();
+      if(regAccount->keep_alive_interval != 0)
+        regAccount->keep_alive_enable = TRUE;
+      else
+        regAccount->keep_alive_enable = FALSE;
+
+      PString sip_call_processing = scfg.GetString("SIP call processing");
+      if(sip_call_processing == "")
+        sip_call_processing = gcfg.GetString("SIP call processing", "redirect");
+      regAccount->sip_call_processing = sip_call_processing;
     }
     else if(account_type == ACCOUNT_TYPE_H323)
     {
+      PString h323_call_processing = scfg.GetString("H.323 call processing");
+      if(h323_call_processing == "")
+        h323_call_processing = gcfg.GetString("H.323 call processing", "direct");
+      regAccount->h323_call_processing = h323_call_processing;
+
       h323Passwords.Insert(PString(username), new PString(regAccount->password));
     }
     regAccount->Unlock();

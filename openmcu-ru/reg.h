@@ -183,7 +183,7 @@ class RegistrarAccount
       registered = FALSE;
       abook_enable = FALSE;
       keep_alive_enable = FALSE;
-      keep_alive_interval = 60;
+      keep_alive_interval = 0;
       keep_alive_time_request = PTime(3600);
       keep_alive_time_response = PTime(0);
       msg_reg = NULL;

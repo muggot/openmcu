@@ -50,7 +50,7 @@ window.l_param_video = 'Видео';
 window.l_param_record = 'Запись';
 window.l_param_h323 = 'H323 параметры';
 window.l_param_sip = 'SIP параметры';
-window.l_param_sip_proxy = 'Учетные записи SIP';
+window.l_param_sip_proxy = 'Учетные записи';
 window.l_param_access_rules = 'Правила доступа';
 window.l_param_receive_sound = 'Аудио кодеки (прием)';
 window.l_param_transmit_sound = 'Аудио кодеки (отправка)';
@@ -187,6 +187,7 @@ window.l_name_expires                              = 'Продолжительн
 
 window.l_name_registered                           = 'Зарегистрирован';
 window.l_name_connected                            = 'Подключен';
+window.l_name_last_ping_response                   = 'Последний отклик';
 
 window.l_name_codec                                = 'Кодек';
 window.l_name_audio                                = 'Аудио';
