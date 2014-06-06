@@ -2107,11 +2107,12 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
 
   // destroy a request object
   // marks it as disposable, the object is freed after a timeout.
-  if(status >= 200)
-  {
-    nta_outgoing_destroy(orq);
-    orq_invite = NULL;
-  }
+  //if(status >= 200)
+  //{
+  //  nta_outgoing_destroy(orq);
+  //  orq_invite = NULL;
+  //}
+  // destroy it at end of the connection
 
   if(status == 200)
   {
@@ -2135,11 +2136,6 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
       SendACK();
     return 0;
   }
-  if(status > 299 && status != 401 && status != 407)
-  {
-    ProcessShutdown();
-    return 0;
-  }
   if(status == 401 || status == 407)
   {
     // add authorization header
@@ -2154,6 +2150,11 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
  			 NULL,
 			 msg_new,
           		 TAG_END());
+    return 0;
+  }
+  if(status > 299)
+  {
+    ProcessShutdown();
     return 0;
   }
 
@@ -2648,9 +2649,9 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
 
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
 
-  // repeated responses 200/603, outside call leg
+  // repeated responses 200/603 outside call leg
   if(cseq == sip_method_invite && (status == 200 || status == 603))
-    return SendAckBye(msg);
+    return 0; // SendAckBye(msg);
 
   // keep alive
   if(cseq == sip_method_options && status)
@@ -2669,13 +2670,12 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
     SipReqReply(msg, NULL, SIP_100_TRYING);
     // empty payload header for invite
     if(!sip->sip_payload || !sip->sip_payload->pl_data)
-      return SipReqReply(msg, NULL, 415); // SIP_415_UNSUPPORTED_MEDIA
+      return SipReqReply(msg, NULL, SIP_415_UNSUPPORTED_MEDIA);
     // reinvite request outside call leg
     if(sip->sip_to->a_tag)
-      return SipReqReply(msg, NULL, 481); // SIP_481_NO_TRANSACTION
-    // find connection
-    PString callToken = GetSipCallToken(msg);
+      return SipReqReply(msg, NULL, SIP_481_NO_TRANSACTION);
     // existing connection, repeated INVITE, possibly there is a bug
+    PString callToken = GetSipCallToken(msg);
     if(HasConnection(callToken))
       return 0;
     // redirect to the registrar
