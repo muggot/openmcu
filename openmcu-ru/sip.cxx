@@ -1917,10 +1917,14 @@ int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name)
   sip_contact_t *sip_contact = sip_contact_create(sep->GetHome(), (url_string_t *)(const char *)contact_str, NULL);
 
   sip_route_t* sip_route = NULL;
+  const char *via_branch_key = NULL;
   if(c_sip_msg)
   {
     sip_t *sip = sip_object(c_sip_msg);
     sip_route = sip_route_reverse(sep->GetHome(), sip->sip_record_route);
+
+    if(method == sip_method_ack)
+      via_branch_key = sip->sip_via->v_branch;
   }
 
   sip_content_type_t *sip_content = NULL;
@@ -1936,6 +1940,7 @@ int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name)
                         method, method_name,
                         ruri,
    		        NTATAG_STATELESS(1),
+                        NTATAG_BRANCH_KEY(via_branch_key),
 			SIPTAG_ROUTE(sip_route),
                         SIPTAG_CONTACT(sip_contact),
                         SIPTAG_CONTENT_TYPE(sip_content),
