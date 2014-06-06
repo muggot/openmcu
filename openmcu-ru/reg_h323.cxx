@@ -333,8 +333,17 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
   {
     BOOL direct = FALSE;
     H323TransportAddress dstHost;
+    //
+    PString dstPrefix = dstUsername;
+    if(dstUsername.Find("*") != P_MAX_INDEX)
+    {
+      dstPrefix = dstPrefix.Left(dstPrefix.Find("*"));
+      dstUsername = dstUsername.Right(dstUsername.GetLength()-dstPrefix.GetLength()-1);
+    }
+    //
     RegistrarAccount *regAccount_in = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
-    RegistrarAccount *regAccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstUsername);
+    //RegistrarAccount *regAccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstUsername);
+    RegistrarAccount *regAccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstPrefix);
     if(regAccount_in && regAccount_out && regAccount_out->account_type == ACCOUNT_TYPE_H323 &&
        regAccount_out->host != "" && regAccount_out->port != 0 &&
        regAccount_in->h323_call_processing != "full" && regAccount_out->h323_call_processing != "full"
