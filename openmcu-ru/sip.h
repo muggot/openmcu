@@ -177,6 +177,7 @@ class SipCapability
     PString fmtp; // parameters
     PString local_fmtp; // override received parameters
     PString params;
+    PStringToString attr;
     H323Capability *cap;
     H323_RTPChannel *inpChan;
     H323_RTPChannel *outChan;
@@ -193,6 +194,9 @@ class SipCapability
     PString dtls_fp_type;
 };
 typedef std::map<int, SipCapability *> SipCapMapType;
+
+SipCapability * FindSipCap(SipCapMapType & SipCapMap, int payload);
+SipCapability * FindSipCap(SipCapMapType & SipCapMap, PString capname);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -235,7 +239,7 @@ class MCUSipConnection : public MCUH323Connection
 {
   public:
     MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, Direction _direction, PString _callToken, const msg_t *msg);
-    MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, Direction _direction, PString _callToken);
+    MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken);
     ~MCUSipConnection();
 
     BOOL CreateTempSockets();
@@ -278,8 +282,8 @@ class MCUSipConnection : public MCUH323Connection
     int SendBYE();
     int SendACK();
     int SendVFU();
-    int SendRequest(sip_method_t method, const char *method_name);
     int SendInvite();
+    nta_outgoing_t * SendRequest(sip_method_t method, const char *method_name);
     int ReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL);
 
     void ReceivedVFU();
@@ -321,6 +325,8 @@ class MCUSipConnection : public MCUH323Connection
     PString sdp_ok_str;
     PString ruri_str;
     PString contact_str;
+    PString www_auth_str;
+    PString proxy_auth_str;
 
     Direction direction;
     PString local_user;
@@ -384,6 +390,7 @@ class MCUSipEndPoint : public PThread
     BOOL SipMakeCall(PString from, PString to, PString & callToken);
 
     BOOL MakeMsgAuth(msg_t *msg_orq, const msg_t *msg);
+    BOOL MakeAuthStrings(const msg_t *msg, PString & www_auth_str, PString & proxy_auth_str);
     PString MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce);
     ProxyAccount *FindProxyAccount(PString account);
 

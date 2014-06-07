@@ -296,11 +296,11 @@ void SipCapability::Print()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, Direction _direction, PString _callToken)
+MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken)
   :MCUH323Connection(*_ep, 0, NULL), sep(_sep)
 {
   connectionState = NoConnectionActive;
-  direction = _direction;
+  direction = DIRECTION_INBOUND;
   callToken = _callToken;
   remoteName = "";
   remotePartyName = "";
@@ -312,9 +312,13 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   c_sip_msg = NULL;
   leg = NULL;
   orq_invite = NULL;
+  rtp_proto = "RTP";
 
-  MCUTRACE(1, "MCUSipConnection constructor, callToken: "+callToken+" contact: "+contact_str+" ruri: "+ruri_str);
+  // add to the list of connections
+  ep.SetConnectionActive(this);
   OnCreated();
+
+  MCUTRACE(1, "MCUSipConnection constructor, callToken: "+callToken);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -847,7 +851,7 @@ int MCUSipConnection::CreateMediaChannel(int pt, int dir)
   H323Capability * cap = sc->cap;
   if(!cap) return 0;
 
-  if(sc->remote_ip == "" || sc->remote_port == 0)
+  if(sc->remote_ip == "" || sc->remote_ip == "0.0.0.0" || sc->remote_port == 0)
     return 0;
 
   SipRTP_UDP *session = NULL;
@@ -1502,12 +1506,12 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
       else
       { PTRACE(1, "MCUSIP\tSDP parsing error: incorrect or missing connection line, skip media"); continue; }
 
-      int remote_port;
+      int remote_port = 0;
       if(m->m_port) remote_port = m->m_port;
       else
-      { PTRACE(1, "MCUSIP\tSDP parsing error: missing port, skip media"); continue; }
+      { PTRACE(1, "MCUSIP\tSDP parsing warning: missing port"); }
 
-      int media;
+      int media = 0;
       if(m->m_type == sdp_media_audio)      media = 0;
       else if(m->m_type == sdp_media_video) media = 1;
       else
@@ -1598,7 +1602,11 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
         sc->zrtp_hash = zrtp_hash;
         sc->dtls_fp_type = dtls_fp_type;
         sc->dtls_fp = dtls_fp;
-        //
+        // attributes
+        for(sdp_attribute_t *a = m->m_attributes; a != NULL; a = a->a_next)
+        {
+          sc->attr.SetAt(a->a_name, a->a_value);
+        }
         RemoteCaps.insert(SipCapMapType::value_type(RemoteCaps.size(), sc));
       }
     }
@@ -1909,55 +1917,77 @@ int MCUSipConnection::ProcessInfo(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name)
+nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *method_name)
 {
   PTRACE(1, "MCUSIP\tSendRequest, request: " << method_name);
 
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
-  sip_contact_t *sip_contact = sip_contact_create(sep->GetHome(), (url_string_t *)(const char *)contact_str, NULL);
-
+  int stateless = 1;
+  nta_response_f *callback = NULL;
+  nta_outgoing_magic_t *magic = NULL;
+  const char *via_branch_key = NULL;
   sip_cseq_t *sip_cseq = NULL;
   sip_route_t* sip_route = NULL;
-  const char *via_branch_key = NULL;
-  if(c_sip_msg)
-  {
-    sip_t *sip = sip_object(c_sip_msg);
-    sip_route = sip_route_reverse(sep->GetHome(), sip->sip_record_route);
-
-    if(method == sip_method_ack)
-    {
-      via_branch_key = sip->sip_via->v_branch;
-      sip_cseq = sip_cseq_create(sep->GetHome(), sip->sip_cseq->cs_seq, method, method_name);
-    }
-  }
-
+  sip_contact_t *sip_contact = NULL;
   sip_content_type_t *sip_content = NULL;
   sip_payload_t *sip_payload = NULL;
+  sip_authorization_t *sip_auth = NULL;
+  sip_authorization_t *sip_proxy_auth = NULL;
+
+  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
+  sip_contact = sip_contact_create(sep->GetHome(), (url_string_t *)(const char *)contact_str, NULL);
+
+  sip_t *c_sip = sip_object(c_sip_msg);
+  if(c_sip)
+  {
+    sip_route = sip_route_reverse(sep->GetHome(), c_sip->sip_record_route);
+    if(method == sip_method_ack)
+    {
+      via_branch_key = c_sip->sip_via->v_branch;
+      sip_cseq = sip_cseq_create(sep->GetHome(), c_sip->sip_cseq->cs_seq, method, method_name);
+    }
+  }
+  if(method == sip_method_invite)
+  {
+    callback = wrap_invite_response_cb;
+    magic = (nta_outgoing_magic_t *)this;
+    stateless = 0;
+    sip_content = sip_content_type_make(sep->GetHome(), "application/sdp");
+    sip_payload = sip_payload_format(sep->GetHome(), (const char *)sdp_invite_str);
+  }
   if(method == sip_method_info)
   {
     sip_content = sip_content_type_make(sep->GetHome(), "application/media_control+xml");
     sip_payload = sip_payload_format(sep->GetHome(), "<media_control><vc_primitive><to_encoder><picture_fast_update/></to_encoder></vc_primitive></media_control>");
   }
 
-  nta_outgoing_t *a_orq = nta_outgoing_tcreate(leg, NULL, NULL,
+  if(www_auth_str != "")
+    sip_auth = sip_authorization_make(sep->GetHome(), www_auth_str);
+
+  if(proxy_auth_str != "")
+    sip_proxy_auth = sip_proxy_authorization_make(sep->GetHome(), proxy_auth_str);
+
+  nta_outgoing_t *a_orq = nta_outgoing_tcreate(leg, callback, magic,
                         ruri,
                         method, method_name,
                         ruri,
-   		        NTATAG_STATELESS(1),
+   		        NTATAG_STATELESS(stateless),
 			SIPTAG_CSEQ(sip_cseq),
                         NTATAG_BRANCH_KEY(via_branch_key),
 			SIPTAG_ROUTE(sip_route),
                         SIPTAG_CONTACT(sip_contact),
                         SIPTAG_CONTENT_TYPE(sip_content),
                         SIPTAG_PAYLOAD(sip_payload),
+			SIPTAG_AUTHORIZATION(sip_auth),
+			SIPTAG_PROXY_AUTHORIZATION(sip_proxy_auth),
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
 			SIPTAG_SERVER_STR(SIP_USER_AGENT),
                         TAG_END());
-
-  if(a_orq == NULL)
-    return 0;
-  nta_outgoing_destroy(a_orq);
-  return 1;
+  if(stateless == 1)
+  {
+    nta_outgoing_destroy(a_orq);
+    a_orq = NULL;
+  }
+  return a_orq;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1965,15 +1995,17 @@ int MCUSipConnection::SendRequest(sip_method_t method, const char *method_name)
 int MCUSipConnection::SendBYE()
 {
   PTRACE(1, "MCUSIP\tSendBYE");
-  return SendRequest(SIP_METHOD_BYE);
+  SendRequest(SIP_METHOD_BYE);
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int MCUSipConnection::SendVFU()
 {
-  PTRACE(1, "MCUSIP\tSendFastUpdatePicture");
-  return SendRequest(SIP_METHOD_INFO);
+  PTRACE(1, "MCUSIP\tSendVFU");
+  SendRequest(SIP_METHOD_INFO);
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1981,7 +2013,8 @@ int MCUSipConnection::SendVFU()
 int MCUSipConnection::SendACK()
 {
   PTRACE(1, "MCUSIP\tSendACK");
-  return SendRequest(SIP_METHOD_ACK);
+  SendRequest(SIP_METHOD_ACK);
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1995,22 +2028,13 @@ int MCUSipConnection::SendInvite()
   // create sdp for invite
   CreateSdpInvite();
 
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
-  sip_contact_t *sip_contact = sip_contact_create(sep->GetHome(), (url_string_t *)(const char *)contact_str, NULL);
-  sip_payload_t *sip_payload = sip_payload_make(sep->GetHome(), (const char *)sdp_invite_str);
+  if(orq_invite)
+    nta_outgoing_destroy(orq_invite);
 
-  orq_invite = nta_outgoing_tcreate(leg, wrap_invite_response_cb, (nta_outgoing_magic_t *)this,
-			ruri,
-			SIP_METHOD_INVITE,
-			ruri,
-                        SIPTAG_CONTACT(sip_contact),
-			SIPTAG_CONTENT_TYPE_STR("application/sdp"),
-			SIPTAG_PAYLOAD(sip_payload),
-			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
-			SIPTAG_SERVER_STR(SIP_USER_AGENT),
-			TAG_END());
+  orq_invite = SendRequest(SIP_METHOD_INVITE);
   if(orq_invite == NULL)
     return FALSE;
+
   return TRUE;
 }
 
@@ -2144,22 +2168,28 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
       ProcessShutdown(EndedByLocalUser);
     else
       SendACK();
+
     return 0;
   }
   if(status == 401 || status == 407)
   {
-    // add authorization header
-    msg_t *msg_new = msg_dup(msg_orq);
-    if(sep->MakeMsgAuth(msg_new, msg) == FALSE)
+    sip_t *sip_orq = sip_object(msg_orq);
+    // check authorization attempts
+    if(sip_orq->sip_authorization || sip_orq->sip_proxy_authorization)
     {
-      msg_destroy(msg_new);
       ProcessShutdown();
       return 0;
     }
-    orq_invite = nta_outgoing_mcreate(sep->GetAgent(), wrap_invite_response_cb, (nta_outgoing_magic_t *)this,
- 			 NULL,
-			 msg_new,
-          		 TAG_END());
+    if(sep->MakeAuthStrings(msg, www_auth_str, proxy_auth_str) == FALSE)
+    {
+      ProcessShutdown();
+      return 0;
+    }
+    if(SendInvite() == FALSE)
+    {
+      ProcessShutdown();
+      return 0;
+    }
     return 0;
   }
   if(status > 299)
@@ -2366,6 +2396,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
       sip_call_id = sip_call_id_create(&home, "0");
     else
       sip_call_id = sip_call_id_make(&home, proxy->call_id);
+    proxy->call_id = sip_call_id->i_id;
 
     PString expires = "0";
     if(enable)
@@ -2388,6 +2419,46 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
     if(a_orq == NULL)
       return 0;
     return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSipEndPoint::MakeAuthStrings(const msg_t *msg, PString & www_auth_str, PString & proxy_auth_str)
+{
+  sip_t *sip = sip_object(msg);
+
+  int status = 0, request = 0;
+  if(sip->sip_status)  status = sip->sip_status->st_status;
+  if(sip->sip_cseq)    request = sip->sip_cseq->cs_method;
+
+  ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
+  if(!proxy)
+    return FALSE;
+
+  if(status == 401 && sip->sip_www_authenticate && sip->sip_www_authenticate->au_scheme && sip->sip_www_authenticate->au_params)
+  {
+    const char *realm = msg_params_find(sip->sip_www_authenticate->au_params, "realm=");
+    const char *nonce = msg_params_find(sip->sip_www_authenticate->au_params, "nonce=");
+    const char *scheme = sip->sip_www_authenticate->au_scheme;
+    if(scheme == NULL || realm == NULL || nonce == NULL)
+      return FALSE;
+    PString uri = "sip:"+PString(realm); uri.Replace("\"","",true,0);
+    www_auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, scheme, realm, nonce);
+  }
+  else if(status == 407 && sip->sip_proxy_authenticate && sip->sip_proxy_authenticate->au_scheme && sip->sip_proxy_authenticate->au_params)
+  {
+    const char *realm = msg_params_find(sip->sip_proxy_authenticate->au_params, "realm=");
+    const char *nonce = msg_params_find(sip->sip_proxy_authenticate->au_params, "nonce=");
+    const char *scheme = sip->sip_proxy_authenticate->au_scheme;
+    if(scheme == NULL || realm == NULL || nonce == NULL)
+      return FALSE;
+    PString uri = "sip:"+PString(realm); uri.Replace("\"","",true,0);
+    proxy_auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, scheme, realm, nonce);
+  }
+  else
+    return FALSE;
+
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2419,33 +2490,20 @@ BOOL MCUSipEndPoint::MakeMsgAuth(msg_t *msg_orq, const msg_t *msg)
   sip_cseq_t *sip_cseq = sip_cseq_create(&home, cseq, sip_orq->sip_cseq->cs_method, sip_orq->sip_cseq->cs_method_name);
   msg_header_replace(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_orq->sip_cseq, (msg_header_t *)sip_cseq);
 
-  // call id
-  if(request == sip_method_register)
-    proxy->call_id = sip_orq->sip_call_id->i_id;
+  PString www_auth_str;
+  PString proxy_auth_str;
+  if(MakeAuthStrings(msg, www_auth_str, proxy_auth_str) == FALSE)
+    return FALSE;
 
   // add headers
-  if(status == 401 && sip->sip_www_authenticate && sip->sip_www_authenticate->au_scheme && sip->sip_www_authenticate->au_params)
+  if(www_auth_str != "")
   {
-    const char *realm = msg_params_find(sip->sip_www_authenticate->au_params, "realm=");
-    const char *nonce = msg_params_find(sip->sip_www_authenticate->au_params, "nonce=");
-    const char *scheme = sip->sip_www_authenticate->au_scheme;
-    if(scheme == NULL || realm == NULL || nonce == NULL)
-      return FALSE;
-    PString uri = "sip:"+PString(realm); uri.Replace("\"","",true,0);
-    PString sip_auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, scheme, realm, nonce);
-    sip_authorization_t *sip_auth = sip_authorization_make(&home, sip_auth_str);
+    sip_authorization_t *sip_auth = sip_authorization_make(&home, www_auth_str);
     msg_header_insert(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_auth);
   }
-  else if(status == 407 && sip->sip_proxy_authenticate && sip->sip_proxy_authenticate->au_scheme && sip->sip_proxy_authenticate->au_params)
+  else if(proxy_auth_str != "")
   {
-    const char *realm = msg_params_find(sip->sip_proxy_authenticate->au_params, "realm=");
-    const char *nonce = msg_params_find(sip->sip_proxy_authenticate->au_params, "nonce=");
-    const char *scheme = sip->sip_proxy_authenticate->au_scheme;
-    if(scheme == NULL || realm == NULL || nonce == NULL)
-      return FALSE;
-    PString uri = "sip:"+PString(realm); uri.Replace("\"","",true,0);
-    PString sip_auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, scheme, realm, nonce);
-    sip_authorization_t *sip_proxy_auth = sip_proxy_authorization_make(&home, sip_auth_str);
+    sip_authorization_t *sip_proxy_auth = sip_proxy_authorization_make(&home, proxy_auth_str);
     msg_header_insert(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_proxy_auth);
   }
   else
@@ -3043,7 +3101,7 @@ void MCUSipEndPoint::Main()
   root = su_root_create(NULL);
   if(root == NULL) return;
 
-  su_log_set_level(NULL, 6);
+  su_log_set_level(NULL, 9);
   setenv("TPORT_LOG", "1", 1);
   su_log_redirect(NULL, MCUSipLoggerFunc, NULL);
 
