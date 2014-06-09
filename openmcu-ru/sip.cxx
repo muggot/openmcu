@@ -302,6 +302,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
   connectionState = NoConnectionActive;
   direction = DIRECTION_INBOUND;
   callToken = _callToken;
+  trace_section = "SIP Connection "+callToken+": ";
   remoteName = "";
   remotePartyName = "";
   remoteApplication = "SIP terminal";
@@ -318,7 +319,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
   ep.SetConnectionActive(this);
   OnCreated();
 
-  MCUTRACE(1, "MCUSipConnection constructor, callToken: "+callToken);
+  MCUTRACE(1, trace_section << "constructor");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -329,6 +330,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   connectionState = NoConnectionActive;
   direction = _direction;
   callToken = _callToken;
+  trace_section = "SIP Connection "+callToken+": ";
   remoteName = "";
   remotePartyName = "";
   remoteApplication = "SIP terminal";
@@ -403,14 +405,14 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   ep.SetConnectionActive(this);
   OnCreated();
 
-  MCUTRACE(1, "MCUSipConnection constructor, callToken: " << callToken << " contact: " << contact_str << " ruri: " << ruri_str);
+  MCUTRACE(1, trace_section << "constructor contact: " << contact_str << " ruri: " << ruri_str);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUSipConnection::~MCUSipConnection()
 {
-  MCUTRACE(1, "MCUSipConnection destructor, callToken: " << callToken << " contact: " << contact_str << " ruri: " << ruri_str);
+  MCUTRACE(1, trace_section << "destructor contact: " << contact_str << " ruri: " << ruri_str);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -427,7 +429,7 @@ int MCUSipConnection::ProcessShutdown(CallEndReason reason)
 
 void MCUSipConnection::LeaveMCU()
 {
-  PTRACE(1, "MCUSipConnection LeaveMCU, callToken: " << callToken);
+  PTRACE(1, trace_section << "LeaveMCU");
   PString *bye = new PString("bye:"+callToken);
   sep->SipQueue.Push(bye);
 }
@@ -436,7 +438,7 @@ void MCUSipConnection::LeaveMCU()
 
 void MCUSipConnection::CleanUpOnCallEnd()
 {
-  PTRACE(1, "MCUSipConnection CleanUpOnCallEnd, callToken: " << callToken << " reason: " << callEndReason);
+  PTRACE(1, trace_section << "CleanUpOnCallEnd reason: " << callEndReason);
 
   if(callEndReason == EndedByLocalUser)
   {
@@ -1235,7 +1237,7 @@ void MCUSipConnection::SelectCapability_H264(SipCapability & sc)
     // if(profile == 0 || level == 0) return;
     if(level == 0)
     {
-      PTRACE(2,"SIP_CONNECTION\tH.264 level will set to " << OpenMCU::Current().h264DefaultLevelForSip);
+      PTRACE(2, trace_section << "H.264 level will set to " << OpenMCU::Current().h264DefaultLevelForSip);
       level = OpenMCU::Current().h264DefaultLevelForSip;
     }
     int l = 0;
@@ -1493,18 +1495,18 @@ sdp_parser_t *MCUSipConnection::SdpParser(PString sdp_str)
 
 int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
 {
-  PTRACE(1, "MCUSIP\tProcessSDP");
+  PTRACE(1, trace_section << "ProcessSDP");
   sdp_parser_t *parser = SdpParser(sdp_str);
   sdp_session_t *sess = sdp_session(parser);
   if(!sess)
   {
-    PTRACE(1, "MCUSIP\tSDP parsing error: " << sdp_parsing_error(parser));
+    PTRACE(1, trace_section << "SDP parsing error: " << sdp_parsing_error(parser));
     return 415;
   }
   // -2 if c= line is missing. -1 if some SDP line is missing. (c=, o=, s=, t=)
   if(sdp_sanity_check(parser) != 0)
   {
-    PTRACE(1, "MCUSIP\tSDP parsing error: sanity check");
+    PTRACE(1, trace_section << "SDP parsing error: sanity check");
     return 415;
   }
 
@@ -1512,7 +1514,7 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
   for(sdp_session_t *sdp = sess; sdp != NULL; sdp = sdp->sdp_next)
   {
     if(!sdp->sdp_origin)
-    { PTRACE(1, "MCUSIP\tSDP parsing error: sdp origin line is missing"); continue; }
+    { PTRACE(1, trace_section << "SDP parsing error: sdp origin line is missing"); continue; }
 
     for(sdp_media_t *m = sdp->sdp_media; m != NULL; m = m->m_next)
     {
@@ -1534,18 +1536,18 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
       else if(sdp->sdp_connection && sdp->sdp_connection->c_addrtype == sdp_addr_ip4 && sdp->sdp_connection->c_address)
         address = sdp->sdp_connection->c_address;
       else
-      { PTRACE(1, "MCUSIP\tSDP parsing error: incorrect or missing connection line, skip media"); continue; }
+      { PTRACE(1, trace_section << "SDP parsing error: incorrect or missing connection line, skip media"); continue; }
 
       int remote_port = 0;
       if(m->m_port) remote_port = m->m_port;
       else
-      { PTRACE(1, "MCUSIP\tSDP parsing warning: missing port"); }
+      { PTRACE(1, trace_section << "SDP parsing warning: missing port"); }
 
       int media = 0;
       if(m->m_type == sdp_media_audio)      media = 0;
       else if(m->m_type == sdp_media_video) media = 1;
       else
-      { PTRACE(1, "MCUSIP\tSDP parsing error: unknown media type, skip media"); continue; }
+      { PTRACE(1, trace_section << "SDP parsing error: unknown media type, skip media"); continue; }
 
       int mode = 3; // inactive, recvonly, sendonly, sendrecv
       if(m->m_mode == 1)      mode = 2;
@@ -1572,7 +1574,7 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
         sdp_attribute_t *a = sdp_attribute_find(m->m_attributes, "crypto");
         if(!a || !a->a_value)
         {
-          PTRACE(1, "MCUSIP\tSDP parsing warning: RTP/SAVP crypto attribute is not present, skip media");
+          PTRACE(1, trace_section << "SDP parsing warning: RTP/SAVP crypto attribute is not present, skip media");
           continue;
         }
         secure_type = SECURE_TYPE_SRTP;
@@ -1597,7 +1599,7 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
         sdp_attribute_t *a = sdp_attribute_find(m->m_attributes, "fingerprint");
         if(!a || !a->a_value)
         {
-          PTRACE(1, "MCUSIP\tSDP parsing warning: RTP/SAVPF fingerprint attribute is not present, skip media");
+          PTRACE(1, trace_section << "SDP parsing warning: RTP/SAVPF fingerprint attribute is not present, skip media");
           continue;
         }
         secure_type = SECURE_TYPE_DTLS_SRTP;
@@ -1648,7 +1650,7 @@ int MCUSipConnection::ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps)
 
   if(scap < 0 && vcap < 0)
   {
-    PTRACE(1, "MCUSIP\tSDP parsing error: compatible codecs not found");
+    PTRACE(1, trace_section << "SDP parsing error: compatible codecs not found");
     return 415;
   }
 
@@ -1749,7 +1751,7 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
 
 int MCUSipConnection::ProcessConnect()
 {
-  PTRACE(1, "MCUSIP\tProcessConnect");
+  PTRACE(1, trace_section << "ProcessConnect");
   sip_t *sip = sip_object(c_sip_msg);
 
   if(direction == DIRECTION_INBOUND)
@@ -1781,7 +1783,7 @@ int MCUSipConnection::ProcessConnect()
 
 int MCUSipConnection::ProcessInvite(const msg_t *msg)
 {
-  PTRACE(1, "MCUSIP\tProcessInviteEvent");
+  PTRACE(1, trace_section << "ProcessInviteEvent");
 
   msg_destroy(c_sip_msg);
   c_sip_msg = msg_dup(msg);
@@ -1829,7 +1831,7 @@ int MCUSipConnection::ProcessInvite(const msg_t *msg)
 
 int MCUSipConnection::ProcessReInvite(const msg_t *msg)
 {
-  PTRACE(1, "MCUSIP\tProcessReInvite");
+  PTRACE(1, trace_section << "ProcessReInvite");
 
   msg_destroy(c_sip_msg);
   c_sip_msg = msg_dup(msg);
@@ -1909,7 +1911,7 @@ int MCUSipConnection::ProcessReInvite(const msg_t *msg)
 
 int MCUSipConnection::ProcessAck()
 {
-  PTRACE(1, "MCUSIP\tProcessACK");
+  PTRACE(1, trace_section << "ProcessACK");
   if(!c_sip_msg)
     return 0;
 
@@ -1932,7 +1934,7 @@ int MCUSipConnection::ProcessAck()
 
 int MCUSipConnection::ProcessInfo(const msg_t *msg)
 {
-  PTRACE(1, "MCUSIP\tOnReceivedInfo");
+  PTRACE(1, trace_section << "OnReceivedInfo");
   sip_t *sip = sip_object(msg);
   if(!sip->sip_payload || !sip->sip_payload->pl_data || !sip->sip_content_type)
     return 0;
@@ -1950,7 +1952,7 @@ int MCUSipConnection::ProcessInfo(const msg_t *msg)
 
 nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *method_name)
 {
-  PTRACE(1, "MCUSIP\tSendRequest, request: " << method_name);
+  PTRACE(1, trace_section << "SendRequest request: " << method_name);
 
   int stateless = 1;
   nta_response_f *callback = NULL;
@@ -2025,7 +2027,7 @@ nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *
 
 int MCUSipConnection::SendBYE()
 {
-  PTRACE(1, "MCUSIP\tSendBYE");
+  PTRACE(1, trace_section << "SendBYE");
   SendRequest(SIP_METHOD_BYE);
   return 0;
 }
@@ -2034,7 +2036,7 @@ int MCUSipConnection::SendBYE()
 
 int MCUSipConnection::SendVFU()
 {
-  PTRACE(1, "MCUSIP\tSendVFU");
+  PTRACE(1, trace_section << "SendVFU");
   SendRequest(SIP_METHOD_INFO);
   return 0;
 }
@@ -2043,7 +2045,7 @@ int MCUSipConnection::SendVFU()
 
 int MCUSipConnection::SendACK()
 {
-  PTRACE(1, "MCUSIP\tSendACK");
+  PTRACE(1, trace_section << "SendACK");
   SendRequest(SIP_METHOD_ACK);
   return 0;
 }
@@ -2681,7 +2683,7 @@ int MCUSipEndPoint::SendAckBye(const msg_t *msg)
 
 int MCUSipEndPoint::SipReqReply(const msg_t *msg, msg_t *msg_reply, unsigned status, const char *status_phrase)
 {
-  PTRACE(1, "MCUSipEndPoint\tSipReqReply");
+  PTRACE(1, "MCUSIP\tSipReqReply");
   sip_t *sip = sip_object(msg);
   if(sip == NULL) return 0;
 

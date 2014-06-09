@@ -356,6 +356,8 @@ class MCUSipConnection : public MCUH323Connection
     unsigned int sdp_o_id;
     unsigned int sdp_o_ver;
 
+    PString trace_section;
+
     SipCapMapType LocalSipCaps;
     SipCapMapType RemoteSipCaps;
 

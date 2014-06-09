@@ -50,6 +50,7 @@ MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep,
 {
   connectionState = NoConnectionActive;
   callToken = _callToken;
+  trace_section = "RTSP Connection "+callToken+": ";
   scap = -1;
   vcap = -1;
   connectedTime = PTime();
@@ -60,21 +61,21 @@ MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep,
   cseq = 1;
   rtsp_thread = NULL;
 
-  MCUTRACE(1, "RTSP Connection: constructor callToken: " << callToken);
+  MCUTRACE(1, trace_section << "constructor");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCURtspConnection::~MCURtspConnection()
 {
-  MCUTRACE(1, "RTSP Connection: destructor callToken: " << callToken);
+  MCUTRACE(1, trace_section << "destructor");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int MCURtspConnection::ProcessShutdown(CallEndReason reason)
 {
-  PTRACE(1, "RTSP Connection: shutdown connection callToken" << callToken);
+  PTRACE(1, trace_section << "shutdown connection");
   callEndReason = reason;
   // leave conference and delete connection
   MCUH323Connection::LeaveMCU();
@@ -85,7 +86,7 @@ int MCURtspConnection::ProcessShutdown(CallEndReason reason)
 
 void MCURtspConnection::LeaveMCU()
 {
-  PTRACE(1, "RTSP Connection: LeaveMCU callToken: " << callToken);
+  PTRACE(1, trace_section << "LeaveMCU");
   MCUH323Connection::LeaveMCU();
 }
 
@@ -93,7 +94,7 @@ void MCURtspConnection::LeaveMCU()
 
 void MCURtspConnection::CleanUpOnCallEnd()
 {
-  PTRACE(1, "RTSP Connection: CleanUpOnCallEnd callToken: " << callToken << " reason: " << callEndReason);
+  PTRACE(1, trace_section << "CleanUpOnCallEnd reason: " << callEndReason);
 
   if(connectionState == EstablishedConnection)
     SendTeardown();
@@ -121,6 +122,7 @@ void MCURtspConnection::CleanUpOnCallEnd()
 
 int MCURtspConnection::Connect(PString room, PString _ruri_str)
 {
+  PTRACE(1, trace_section << "Connect room: " << room << " ruri: " << _ruri_str);
   requestedRoom = room;
   ruri_str = _ruri_str;
   remotePartyAddress = ruri_str;
@@ -195,7 +197,7 @@ int MCURtspConnection::SendSetup(int pt)
   SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
   if(sc->attr.GetAt("control") == NULL)
   {
-    PTRACE(1, "RTSP Connection: capability attribute \"control\" not found");
+    PTRACE(1, trace_section << "capability attribute \"control\" not found");
     ProcessShutdown();
     return 0;
   }
@@ -292,12 +294,12 @@ int MCURtspConnection::OnPlayResponse(msg_t *msg)
   if(scap > 0)
   {
     SipCapability *sc = FindSipCap(RemoteSipCaps, scap);
-    MCUTRACE(1, "RTSP Connection: audio " << sc->capname << " " << sc->remote_ip << ":" << sc->remote_port);
+    MCUTRACE(1, trace_section << "audio " << sc->capname << " " << sc->remote_ip << ":" << sc->remote_port);
   }
   if(vcap > 0)
   {
     SipCapability *sc = FindSipCap(RemoteSipCaps, vcap);
-    MCUTRACE(1, "RTSP Connection: video " << sc->capname << " " << sc->remote_ip << ":" << sc->remote_port);
+    MCUTRACE(1, trace_section << "video " << sc->capname << " " << sc->remote_ip << ":" << sc->remote_port);
   }
 
   rtsp_state = RTSP_PLAYING;
@@ -345,7 +347,7 @@ int MCURtspConnection::OnSetupResponse(msg_t *msg)
 
   if(rtsp_session_str == "" || sc->remote_port == 0)
   {
-    PTRACE(1, "RTSP Connection: missing session string or remote port");
+    PTRACE(1, trace_section << "missing session string or remote port");
     ProcessShutdown();
     return 0;
   }
@@ -419,7 +421,7 @@ int MCURtspConnection::OnReceived(msg_t *msg)
       int response_code = OnDescribeResponse(msg);
       if(response_code)
       {
-        PTRACE(1, "RTSP Connection: error " << response_code);
+        PTRACE(1, trace_section << "error " << response_code);
         ProcessShutdown();
         return 0;
       }
@@ -445,7 +447,7 @@ int MCURtspConnection::OnReceived(msg_t *msg)
       int response_code = OnPlayResponse(msg);
       if(response_code)
       {
-        PTRACE(1, "RTSP Connection: error " << response_code);
+        PTRACE(1, trace_section << "error " << response_code);
         ProcessShutdown();
         return 0;
       }
@@ -453,7 +455,7 @@ int MCURtspConnection::OnReceived(msg_t *msg)
     }
   }
 
-  PTRACE(1, "RTSP Connection: error");
+  PTRACE(1, trace_section << "error");
   ProcessShutdown();
   return 0;
 }
@@ -468,13 +470,13 @@ int MCURtspConnection::SendRequest(int socket_fd, char *request)
     // If failed connection
     if(errno != EAGAIN)
     {
-      MCUTRACE(1, "RTSP Connection: error sending request " << errno);
+      MCUTRACE(1, trace_section << "error sending request " << errno);
       ProcessShutdown();
     }
     return 0;
   }
 
-  MCUTRACE(1, "RTSP Connection: send " << len << " bytes\n" << request);
+  MCUTRACE(1, trace_section << "send " << len << " bytes\n" << request);
   return len;
 }
 
@@ -491,7 +493,7 @@ int MCURtspConnection::RecvData(int socket_fd, char *buffer, int buffer_size)
     // If failed connection
     if((errno != EAGAIN && errno != EWOULDBLOCK) || !len)
     {
-      MCUTRACE(1, "RTSP Connection: error receiving data [" << len << "," << errno << "]." << strerror(errno));
+      MCUTRACE(1, trace_section << "error receiving data [" << len << "," << errno << "]." << strerror(errno));
       ProcessShutdown();
     }
     // exit
@@ -500,7 +502,7 @@ int MCURtspConnection::RecvData(int socket_fd, char *buffer, int buffer_size)
   // Finalize as string
   buffer[len] = 0;
 
-  MCUTRACE(1, "RTSP Connection: recv " << len << " bytes\n" << buffer);
+  MCUTRACE(1, trace_section << "recv " << len << " bytes\n" << buffer);
   return len;
 }
 
@@ -541,7 +543,7 @@ int MCURtspConnection::CreateSocket()
   // Connect
   if(connect(socket_fd, sendAddr, size) < 0)
   {
-    MCUTRACE(1, "RTSP Connection Failed connect to socket " << ip << ":" << port);
+    MCUTRACE(1, trace_section << "Failed connect to socket " << ip << ":" << port);
     free(sendAddr);
     return 0;
   }
@@ -574,7 +576,7 @@ void MCURtspConnection::RtspListener(PThread &, INT)
     sip_t *sip = sip_object(msg);
     if(!sip)
     {
-      MCUTRACE(1, "RTSP Connection Failed parse message");
+      MCUTRACE(1, trace_section << "Failed parse message");
       msg_destroy(msg);
       msg = NULL;
       continue;
