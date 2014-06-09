@@ -25,6 +25,8 @@ int GetConferenceParam(PString room, PString param, int defaultValue);
 
 char * PStringToChar(PString str);
 
+int PTimedMutexTryLock(PMutex & mutex, const PTimeInterval & timeout, PString info="");
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUConfig: public PConfig

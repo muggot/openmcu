@@ -77,8 +77,8 @@ class RegistrarConnection
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
-    int TryLock()    { if(!mutex.Wait(20)) return 0; return 1; }
-    PMutex & GetMutex() { return mutex; }
+    int TryLock()    { return PTimedMutexTryLock(mutex, 20, "Warning! Can not lock RegistrarConnection: "+callToken_in); }
+    PTimedMutex & GetMutex() { return mutex; }
 
     PString username_in;
     PString username_out;
@@ -98,7 +98,7 @@ class RegistrarConnection
     PTime start_time;
 
   protected:
-    PMutex mutex;
+    PTimedMutex mutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -134,8 +134,8 @@ class Subscription
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
-    int TryLock()    { if(!mutex.Wait(20)) return 0; return 1; }
-    PMutex & GetMutex() { return mutex; }
+    int TryLock()    { return PTimedMutexTryLock(mutex, 20, "Warning! Can not lock Subscription: "+username_pair); }
+    PTimedMutex & GetMutex() { return mutex; }
 
     PString username_in;
     PString username_out;
@@ -152,7 +152,7 @@ class Subscription
     msg_t *msg_sub;
 
   protected:
-    PMutex mutex;
+    PTimedMutex mutex;
     Registrar *registrar;
 };
 
@@ -214,8 +214,8 @@ class RegistrarAccount
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
-    int TryLock()    { if(!mutex.Wait(20)) return 0; return 1; }
-    PMutex & GetMutex() { return mutex; }
+    int TryLock()    { return PTimedMutexTryLock(mutex, 20, "Warning! Can not lock RegistrarAccount: "+username); }
+    PTimedMutex & GetMutex() { return mutex; }
 
     PString GetAuthStr();
 
@@ -255,7 +255,7 @@ class RegistrarAccount
     msg_t *msg_reg;
 
   protected:
-    PMutex mutex;
+    PTimedMutex mutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

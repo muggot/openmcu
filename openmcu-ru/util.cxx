@@ -34,6 +34,8 @@ MCUURL::MCUURL(PString str)
   if(url_party.Left(4) == "sip:") url_scheme = "sip";
   else if(url_party.Left(4) == "sips:") url_scheme = "sip";
   else if(url_party.Left(5) == "h323:") url_scheme = "h323";
+  else if(url_party.Left(5) == "rtsp:") url_scheme = "rtsp";
+  else if(url_party.Left(5) == "http:") url_scheme = "http";
   else { url_party = "h323:"+url_party; url_scheme = "h323"; }
 
   Parse((const char *)url_party, url_scheme);
@@ -254,6 +256,24 @@ char * PStringToChar(PString str)
   char *data = (char *)malloc((str.GetLength()+1) * sizeof(char));
   strcpy(data, str);
   return data;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int PTimedMutexTryLock(PTimedMutex & mutex, const PTimeInterval & timeout, PString info)
+{
+#ifdef _WIN32
+  mutex.Wait();
+  return 1;
+#else
+  if(!mutex.Wait(timeout))
+  {
+    if(info != "")
+      MCUTRACE(0, info);
+    return 0;
+  }
+  return 1;
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
