@@ -84,6 +84,8 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
     account_type = ACCOUNT_TYPE_SIP;
   else if(url.GetScheme() == "h323")
     account_type = ACCOUNT_TYPE_H323;
+  else if(url.GetScheme() == "rtsp")
+    account_type = ACCOUNT_TYPE_RTSP;
   else
     return FALSE;
 
@@ -120,6 +122,16 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
   {
     void *userData = new PString(room);
     ep->MakeCall(address, callToken, userData);
+  }
+  else if(account_type == ACCOUNT_TYPE_RTSP)
+  {
+    PString callToken = PGloballyUniqueID().AsString();
+    MCURtspConnection *rCon = new MCURtspConnection(sep, ep, callToken);
+    if(rCon->Connect(room, address) == 0)
+    {
+      rCon->LeaveMCU();
+      return FALSE;
+    }
   }
 
   if(callToken != "")

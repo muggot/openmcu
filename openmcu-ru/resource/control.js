@@ -571,15 +571,15 @@ function on_invite_abook_input(obj)
 {
   if(!document.getElementById("invite_input")) return;
   var addr = document.getElementById("invite_input").value; if(addr=="") return;
-  var setProto = (addr.substr(0,5).toLowerCase()=='h323:') || (addr.substr(0,4).toLowerCase()=='sip:');
+  var setProto = (addr.substr(0,5).toLowerCase()=='h323:') || (addr.substr(0,5).toLowerCase()=='rtsp:') || (addr.substr(0,4).toLowerCase()=='sip:');
   if(!setProto)
   {
-    if(document.getElementById('divInvProto').innerHTML=='sip')
-    {
-      if(addr.indexOf('@')==-1) addr='sip:'+addr;
-      else addr='sip:'+addr;
-    }
-    else addr='h323:'+addr;
+    if(document.getElementById('divInvProto').innerHTML=='h323')
+      addr='h323:'+addr;
+    else if(document.getElementById('divInvProto').innerHTML=='rtsp')
+      addr='rtsp://'+addr;
+    else if(document.getElementById('divInvProto').innerHTML=='sip')
+      addr='sip:'+addr;
   }
   inviteoffline(obj,addr);
 }
@@ -587,15 +587,15 @@ function dial_from_ml(obj)
 {
   if(!document.getElementById("invite_input_ml")) return;
   var addr = document.getElementById("invite_input_ml").value; if(addr=="") return;
-  var setProto = (addr.substr(0,5).toLowerCase()=='h323:') || (addr.substr(0,4).toLowerCase()=='sip:');
+  var setProto = (addr.substr(0,5).toLowerCase()=='h323:') || (addr.substr(0,5).toLowerCase()=='rtsp:') || (addr.substr(0,4).toLowerCase()=='sip:');
   if(!setProto)
   {
-    if(document.getElementById('divInvProtoML').innerHTML=='sip')
-    {
-      if(addr.indexOf('@')==-1) addr='sip:'+addr;
-      else addr='sip:'+addr;
-    }
-    else addr='h323:'+addr;
+    if(document.getElementById('divInvProtoML').innerHTML=='h323')
+      addr='h323:'+addr;
+    else if(document.getElementById('divInvProtoML').innerHTML=='rtsp')
+      addr='rtsp://'+addr;
+    else if(document.getElementById('divInvProtoML').innerHTML=='sip')
+      addr='sip:'+addr;
   }
   inviteoffline(obj,addr);
 }
@@ -861,7 +861,7 @@ function additional_panel(){
   var input_width = panel_width-input_posx-5-32;
   if(input_width < 25) input_width=25;
   if(input_width > 200) input_width=200;
-  s+=dpre+"166px'><div id='divInvProtoML' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;' onclick='javascript:{if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";else this.innerHTML=\"sip\";document.getElementById(\"invite_input_ml\").focus();}'>"+get_default_proto()+"</div></div>";
+  s+=dpre+"166px'><div id='divInvProtoML' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;' onclick='javascript:{if(this.innerHTML==\"h323\")this.innerHTML=\"rtsp\";else if(this.innerHTML==\"rtsp\")this.innerHTML=\"sip\";else if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";document.getElementById(\"invite_input_ml\").focus();}'>"+get_default_proto()+"</div></div>";
   s+=dpre+input_posx+"px'><input id='invite_input_ml' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"mlinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_ml(document.getElementById(\"mlinv\"));mlgctr1=1;}}' /></div>"
   s+=dpre+(input_posx+input_width)+"px'>"+dbutton+"width:"+(2*width)+"px' onclick='dial_from_ml(document.getElementById(\"mlinv\"));mlgctr1=1;'><img id='mlinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='Invite' /></div></div>"
   s+="</form>";
@@ -906,7 +906,7 @@ function additional_panel_abook(){
   var input_width = panel_width-input_posx-5-32;
   if(input_width < 25) input_width=25;
   if(input_width > 200) input_width=200;
-  s+=dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;' onclick='javascript:{if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";else this.innerHTML=\"sip\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>";
+  s+=dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;' onclick='javascript:{if(this.innerHTML==\"h323\")this.innerHTML=\"rtsp\";else if(this.innerHTML==\"rtsp\")this.innerHTML=\"sip\";else if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>";
   s+=dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"mlinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_ml(document.getElementById(\"mlinv\"));mlgctr1=1;}}' /></div>";
   s+=dpre+(input_posx+input_width)+"px'>"+dbutton+"width:"+(2*width)+"px' onclick='on_invite_abook_input(this);abgctr1=1;'><img id='adrbkpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='Invite' /></div></div>";
   s+="</form>";

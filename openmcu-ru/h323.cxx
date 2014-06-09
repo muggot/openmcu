@@ -3450,7 +3450,13 @@ void MCUH323Connection::SetMemberName()
   if(remotePartyAddress.Left(4) == "sip:")
   {
     address = remotePartyAddress;
-  } else {
+  }
+  else if(remotePartyAddress.Left(5) == "rtsp:")
+  {
+    address = remotePartyAddress;
+  }
+  else
+  {
     PString alias, host, port;
     if(remotePartyAddress.Left(4) == "url:" && ep.IsRegisteredWithGatekeeper())
     {

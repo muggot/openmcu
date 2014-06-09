@@ -14,7 +14,8 @@ enum RegAccountTypes
 {
   ACCOUNT_TYPE_UNKNOWN,
   ACCOUNT_TYPE_SIP,
-  ACCOUNT_TYPE_H323
+  ACCOUNT_TYPE_H323,
+  ACCOUNT_TYPE_RTSP
 };
 
 enum RegConnectionStates
