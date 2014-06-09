@@ -58,6 +58,7 @@ MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep,
   rtsp_state = RTSP_NONE;
   rtsp_terminating = 0;
   cseq = 1;
+  rtsp_thread = NULL;
 
   MCUTRACE(1, "RTSP Connection: constructor callToken: " << callToken);
 }
