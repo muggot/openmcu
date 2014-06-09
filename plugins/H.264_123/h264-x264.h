@@ -63,7 +63,8 @@ extern "C" {
 #else
   #include LIBAVCODEC_HEADER
 #endif
-#include "libavutil/mem.h"
+  #include "libavutil/mem.h"
+  #include "libavutil/base64.h"
 };
 
 #define FHD_WIDTH 1600
@@ -126,7 +127,13 @@ class H264DecoderContext
   public:
     H264DecoderContext();
     ~H264DecoderContext();
+
     int DecodeFrames(const u_char * src, unsigned & srcLen, u_char * dst, unsigned & dstLen, unsigned int & flags);
+
+    void SetSpropParameter(const char *value);
+
+    void Lock() { _mutex.Wait(); }
+    void Unlock() { _mutex.Signal(); }
 
   protected:
     CriticalSection _mutex;
@@ -144,7 +151,6 @@ class H264DecoderContext
     int _skippedFrameCounter;
     int _lastSQN;
     int _lostFrameCounter;
-
 };
 
 static int valid_for_protocol    ( const struct PluginCodec_Definition *, void *, const char *,
@@ -168,6 +174,8 @@ static int encoder_set_options   ( const struct PluginCodec_Definition *, void *
                                    void * parm, unsigned * parmLen);
 static int encoder_get_output_data_size ( const PluginCodec_Definition *, void *, const char *,
                                    void *, unsigned *);
+static int decoder_set_options   ( const struct PluginCodec_Definition *, void * _context, const char *, 
+                                   void * parm, unsigned * parmLen);
 
 static void * create_decoder     ( const struct PluginCodec_Definition *);
 static void destroy_decoder      ( const struct PluginCodec_Definition *, void * _context);
@@ -224,6 +232,7 @@ static PluginCodec_ControlDefn EncoderControls[] = {
 static PluginCodec_ControlDefn DecoderControls[] = {
   { PLUGINCODEC_CONTROL_GET_CODEC_OPTIONS,     get_codec_options },
   { PLUGINCODEC_CONTROL_GET_OUTPUT_DATA_SIZE,  decoder_get_output_data_size },
+  { PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS,     decoder_set_options },
   { NULL }
 };
 
@@ -243,7 +252,6 @@ static const char sdpH264[]       = { "h264" };
 static struct PluginCodec_Option const mediaPacketization =
   { PluginCodec_StringOption,  "Media Packetization",  0, PluginCodec_EqualMerge, "0.0.8.241.0.0.0.0" };
 
-///
 static struct PluginCodec_Option const tsto =
   { PluginCodec_IntegerOption,  PLUGINCODEC_OPTION_TEMPORAL_SPATIAL_TRADE_OFF,  0, PluginCodec_AlwaysMerge, "31" };
 
@@ -252,7 +260,12 @@ static struct PluginCodec_Option const encodingThreads =
 
 static struct PluginCodec_Option const encodingQuality =
   { PluginCodec_IntegerOption,  "Encoding Quality",  0, PluginCodec_AlwaysMerge, "31" };
-///
+
+static struct PluginCodec_Option const profileLevelId =
+  { PluginCodec_StringOption, "profile-level-id", 0, PluginCodec_EqualMerge, "" };
+
+static struct PluginCodec_Option const spropParameterSets =
+  { PluginCodec_StringOption, "sprop-parameter-sets", 0, PluginCodec_EqualMerge, "" };
 
 // MEGA MACRO to set options
 #define DECLARE_GENERIC_OPTIONS(prefix) \
@@ -261,6 +274,8 @@ static struct PluginCodec_Option const * const prefix##_OptionTable[] = { \
   &tsto, \
   &encodingThreads, \
   &encodingQuality, \
+  &profileLevelId, \
+  &spropParameterSets, \
   NULL \
 }; \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \

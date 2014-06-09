@@ -271,6 +271,7 @@ class MCUSipConnection : public MCUH323Connection
     void SelectCapability_H263p(SipCapability & sc);
     void SelectCapability_H264(SipCapability & sc);
     void SelectCapability_VP8(SipCapability & sc);
+    void SelectCapability_MPEG4(SipCapability & sc);
     void SelectCapability_SPEEX(SipCapability & sc);
     void SelectCapability_OPUS(SipCapability & sc);
 

@@ -1215,6 +1215,7 @@ void MCUSipConnection::SelectCapability_H264(SipCapability & sc)
 {
   int profile = 0, level = 0;
   int max_mbps = 0, max_fs = 0, max_br = 0;
+  PString sprop;
 
   if(pref_video_cap != "" && pref_video_cap.Left(5) == "H.264")
   {
@@ -1229,6 +1230,7 @@ void MCUSipConnection::SelectCapability_H264(SipCapability & sc)
       else if(keys[kn].Find("max-mbps=") == 0)    { max_mbps = (keys[kn].Tokenise("=")[1]).AsInteger(); }
       else if(keys[kn].Find("max-fs=") == 0)      { max_fs = (keys[kn].Tokenise("=")[1]).AsInteger(); }
       else if(keys[kn].Find("max-br=") == 0)      { max_br = (keys[kn].Tokenise("=")[1]).AsInteger(); }
+      else if(keys[kn].Find("sprop-parameter-sets=") == 0) { sprop = keys[kn].Right(keys[kn].GetLength() - PString("sprop-parameter-sets=").GetLength()); }
     }
     // if(profile == 0 || level == 0) return;
     if(level == 0)
@@ -1269,6 +1271,7 @@ void MCUSipConnection::SelectCapability_H264(SipCapability & sc)
     if(max_mbps) wf.SetOptionInteger("Generic Parameter 3", max_mbps);
     if(max_fs) wf.SetOptionInteger("Generic Parameter 4", max_fs);
     if(max_br) wf.SetOptionInteger("Generic Parameter 6", max_br);
+    if(sprop != "") wf.SetOptionString("sprop-parameter-sets", sprop);
     if(sc.bandwidth) wf.SetOptionInteger("Max Bit Rate", sc.bandwidth*1000);
   }
 }
@@ -1322,6 +1325,33 @@ void MCUSipConnection::SelectCapability_VP8(SipCapability & sc)
     if(width) wf.SetOptionInteger("Frame Width", width);
     if(height) wf.SetOptionInteger("Frame Height", height);
     if(remoteApplication.ToLower().Find("linphone") != P_MAX_INDEX) wf.SetOptionEnum("Picture ID Size", 0);
+    if(sc.bandwidth) wf.SetOptionInteger("Max Bit Rate", sc.bandwidth*1000);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::SelectCapability_MPEG4(SipCapability & sc)
+{
+  int profile_level_id = 0;
+  PString config;
+
+  PStringArray keys = sc.fmtp.Tokenise(";");
+  for(int kn = 0; kn < keys.GetSize(); kn++)
+  {
+    if(keys[kn].Find("profile-level-id=") == 0) { profile_level_id = keys[kn].Tokenise("=")[1].AsInteger(); }
+    else if(keys[kn].Find("config=") == 0)      { config = keys[kn].Tokenise("=")[1]; }
+  }
+
+  if(!sc.cap)
+  {
+    sc.cap = H323Capability::Create("MPEG4-CIF{sw}");
+  }
+  if(sc.cap)
+  {
+    OpalMediaFormat & wf = sc.cap->GetWritableMediaFormat();
+    if(profile_level_id) wf.SetOptionInteger("profile-level-id", profile_level_id);
+    if(config != "") wf.SetOptionString("config", config);
     if(sc.bandwidth) wf.SetOptionInteger("Max Bit Rate", sc.bandwidth*1000);
   }
 }
@@ -1702,6 +1732,7 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
       else if(remote_sc->format == "h263-1998") SelectCapability_H263p(*remote_sc);
       else if(remote_sc->format == "h264") SelectCapability_H264(*remote_sc);
       else if(remote_sc->format == "vp8") SelectCapability_VP8(*remote_sc);
+      else if(remote_sc->format == "mp4v-es") SelectCapability_MPEG4(*remote_sc);
     }
     if(remote_sc->cap)
     {

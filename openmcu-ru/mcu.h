@@ -31,6 +31,7 @@
 #include "filemembers.h"
 #include "h323.h"
 #include "sip.h"
+#include "rtsp.h"
 #include "reg.h"
 #include "util.h"
 

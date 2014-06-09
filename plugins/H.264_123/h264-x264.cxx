@@ -257,6 +257,66 @@ H264DecoderContext::~H264DecoderContext()
  if (_rxH264Frame) delete _rxH264Frame;
 }
 
+void H264DecoderContext::SetSpropParameter(const char *value)
+{
+  // from libavformat/rtpdec_h264.c
+  _context->extradata_size = 0;
+  av_freep(&_context->extradata);
+
+  uint8_t start_sequence[] = { 0, 0, 0, 1 };
+
+  while(*value)
+  {
+    char base64packet[1024];
+    uint8_t decoded_packet[1024];
+    int packet_size;
+    char *dst = base64packet;
+
+    while(*value && *value != ',' && (dst - base64packet) < sizeof(base64packet) - 1)
+    {
+      if(*value == '"') { value++; continue; }
+      *dst++ = *value++;
+    }
+    *dst++ = '\0';
+
+    if(*value == ',')
+      value++;
+
+    packet_size = av_base64_decode(decoded_packet, base64packet, sizeof(decoded_packet));
+    if(packet_size > 0)
+    {
+      uint8_t *dest = (uint8_t *)av_malloc(packet_size + sizeof(start_sequence) +
+                                          _context->extradata_size +
+                                          FF_INPUT_BUFFER_PADDING_SIZE);
+      if(!dest)
+      {
+        av_log(_context, AV_LOG_ERROR, "Decoder unable to allocate memory for extradata!\n");
+        return;
+      }
+      if(_context->extradata_size)
+      {
+        memcpy(dest, _context->extradata, _context->extradata_size);
+        av_free(_context->extradata);
+      }
+
+      memcpy(dest + _context->extradata_size, start_sequence, sizeof(start_sequence));
+      memcpy(dest + _context->extradata_size + sizeof(start_sequence), decoded_packet, packet_size);
+      memset(dest + _context->extradata_size + sizeof(start_sequence) + packet_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+
+      _context->extradata = dest;
+      _context->extradata_size += sizeof(start_sequence) + packet_size;
+    }
+  }
+  av_log(_context, AV_LOG_INFO, "Decoder extradata set to %p (size: %d)!\n", _context->extradata, _context->extradata_size);
+
+  avcodec_close(_context);
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
+  avcodec_open2(_context, _codec, NULL);
+#else
+  avcodec_open(_context, _codec);
+#endif
+}
+
 int H264DecoderContext::DecodeFrames(const u_char * src, unsigned & srcLen, u_char * dst, unsigned & dstLen, unsigned int & flags)
 {
   // create RTP frame from source buffer
@@ -783,6 +843,32 @@ static int encoder_get_output_data_size(const PluginCodec_Definition *, void *, 
 }
 /////////////////////////////////////////////////////////////////////////////
 
+static int decoder_set_options(const struct PluginCodec_Definition *, void * _context, const char *, void * parm, unsigned * parmLen)
+{
+  H264DecoderContext * context = (H264DecoderContext *)_context;
+
+  if(parm == NULL || parmLen == NULL || *parmLen != sizeof(const char **))
+    return 0;
+
+  context->Lock();
+
+  const char ** options = (const char **)parm;
+  for(int i = 0; options[i] != NULL; i += 2)
+  {
+    if(STRCMPI(options[i], "sprop-parameter-sets") == 0)
+    {
+      std::string s(options[i+1]);
+      if(s[0] == '"')          s.erase(0,1);
+      if(s[s.size()-1] == '"') s.erase(s.size()-1);
+      if(strcasecmp(s.c_str(), "") != 0)
+        context->SetSpropParameter(s.c_str());
+    }
+  }
+
+  context->Unlock();
+  return 1;
+}
+
 static void * create_decoder(const struct PluginCodec_Definition *)
 {
   return new H264DecoderContext;
@@ -802,15 +888,7 @@ static int codec_decoder(const struct PluginCodec_Definition *,
                                        unsigned * toLen,
                                    unsigned int * flag)
 {
-
- const unsigned char *src = (const unsigned char *) from;
-/* 
-  for(int i=0;i<*fromLen;i++)
-  {
-   printf("%02x ",src[i]);
-  }
-   printf("\n");
-*/
+  const unsigned char *src = (const unsigned char *) from;
 
   H264DecoderContext * context = (H264DecoderContext *)_context;
   return context->DecodeFrames((const u_char *)from, *fromLen, (u_char *)to, *toLen, *flag);
