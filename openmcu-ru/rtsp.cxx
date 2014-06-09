@@ -218,7 +218,7 @@ int MCURtspConnection::SendSetup(int pt)
   	   "SETUP %s RTSP/1.0\r\n"
 	   "CSeq: %d SETUP\r\n"
 	   "%s"
-           "Transport: RTP/AVP;unicast;client_port=%d-%d\r\n"
+           "Transport: RTP/AVP/UDP;unicast;client_port=%d-%d\r\n"
 	   "User-Agent: %s\r\n",
 	   (const char *)control, cseq++, (const char *)session_header, rtp_port, rtp_port+1, (const char *)(SIP_USER_AGENT));
   strcat(request,"\r\n");
@@ -314,7 +314,7 @@ int MCURtspConnection::OnSetupResponse(msg_t *msg)
   for(sip_unknown_t *sip_un = sip->sip_unknown; sip_un != NULL; sip_un = sip_un->un_next)
   {
     if(PString(sip_un->un_name) == "Session")
-      rtsp_session_str = sip_un->un_value;
+      rtsp_session_str = PString(sip_un->un_value).Tokenise(";")[0];
     if(PString(sip_un->un_name) == "Transport")
       transport_str = sip_un->un_value;
   }
