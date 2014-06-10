@@ -25,7 +25,7 @@ int GetConferenceParam(PString room, PString param, int defaultValue);
 
 char * PStringToChar(PString str);
 
-int PTimedMutexTryLock(PMutex & mutex, const PTimeInterval & timeout, PString info="");
+int PTimedMutexTryLock(PTimedMutex & mutex, const PTimeInterval & timeout, PString info="");
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
