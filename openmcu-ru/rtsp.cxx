@@ -373,7 +373,7 @@ int MCURtspConnection::OnDescribeResponse(msg_t *msg)
     return 415;
 
   PString sdp_str = sip->sip_payload->pl_data;
-  int response_code = ProcessSDP(sdp_str, RemoteSipCaps);
+  int response_code = ProcessSDP(LocalSipCaps, RemoteSipCaps, sdp_str);
   if(response_code)
     return response_code;
 

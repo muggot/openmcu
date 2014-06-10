@@ -182,6 +182,8 @@ class SipCapability
     H323_RTPChannel *inpChan;
     H323_RTPChannel *outChan;
 
+    BOOL preferred_cap; // из настроек терминала
+
     SipSecureTypes secure_type;
     PString srtp_remote_type;
     PString srtp_remote_key;
@@ -251,7 +253,7 @@ class MCUSipConnection : public MCUH323Connection
     int ProcessAck();
     int ProcessShutdown(CallEndReason reason = EndedByRemoteUser);
     int ProcessInfo(const msg_t *msg);
-    int ProcessSDP(PString & sdp_str, SipCapMapType & RemoteCaps);
+    int ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & RemoteCaps, PString & sdp_str);
 
     void StartTransmitChannels();
     void StartReceiveChannels();
@@ -265,15 +267,15 @@ class MCUSipConnection : public MCUH323Connection
     int CreateMediaChannel(int pt, int dir);
     SipRTP_UDP *CreateRTPSession(SipCapability *sc);
 
-    void FindCapability_H263(SipCapability &c,PStringArray &keys, const char * _H323Name, const char * _SIPName);
-    void SelectCapability_H261(SipCapability & sc);
-    void SelectCapability_H263(SipCapability & sc);
-    void SelectCapability_H263p(SipCapability & sc);
-    void SelectCapability_H264(SipCapability & sc);
-    void SelectCapability_VP8(SipCapability & sc);
-    void SelectCapability_MPEG4(SipCapability & sc);
-    void SelectCapability_SPEEX(SipCapability & sc);
-    void SelectCapability_OPUS(SipCapability & sc);
+    void FindCapability_H263(SipCapability *sc, PStringArray &keys, const char * _H323Name, const char * _SIPName);
+    void SelectCapability_H261(SipCapMapType & LocalCaps, SipCapability *sc);
+    void SelectCapability_H263(SipCapMapType & LocalCaps, SipCapability *sc);
+    void SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapability *sc);
+    void SelectCapability_H264(SipCapMapType & LocalCaps, SipCapability *sc);
+    void SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapability *sc);
+    void SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapability *sc);
+    void SelectCapability_SPEEX(SipCapMapType & LocalCaps, SipCapability *sc);
+    void SelectCapability_OPUS(SipCapMapType & LocalCaps, SipCapability *sc);
 
     virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
@@ -307,11 +309,11 @@ class MCUSipConnection : public MCUH323Connection
     int invite_response_cb(nta_outgoing_t *orq, const sip_t *sip);
 
     sdp_rtpmap_t *CreateSdpRtpmap(su_home_t *sess_home, SipCapability *sc);
-    sdp_media_t *CreateSdpMedia(su_home_t *sess_home, sdp_media_e m_type, sdp_proto_e m_proto);
+    sdp_media_t *CreateSdpMedia(SipCapMapType & LocalCaps, su_home_t *sess_home, sdp_media_e m_type, sdp_proto_e m_proto);
     sdp_attribute_t *CreateSdpAttr(su_home_t *sess_home, PString m_name, PString m_value);
     sdp_parser_t *SdpParser(PString sdp_str);
 
-    PString CreateSdpStr();
+    PString CreateSdpStr(SipCapMapType & LocalCaps);
     int CreateSdpOk();
     int CreateSdpInvite();
 
@@ -337,8 +339,6 @@ class MCUSipConnection : public MCUH323Connection
     int scap; // selected audio capability payload type
     int vcap; // selected video capability payload type
 
-    PString pref_audio_cap;
-    PString pref_video_cap;
     PString rtp_proto;
     unsigned remote_bw; // bandwidth to MCU
 
