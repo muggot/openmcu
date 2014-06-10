@@ -330,6 +330,9 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
   orq_invite = NULL;
   rtp_proto = "RTP";
 
+  // create local capability list
+  RefreshLocalSipCaps();
+
   // add to the list of connections
   ep.SetConnectionActive(this);
   OnCreated();
