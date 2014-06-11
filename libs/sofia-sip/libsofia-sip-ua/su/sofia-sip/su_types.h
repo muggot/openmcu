@@ -94,7 +94,11 @@ typedef SU_S16_T int16_t;
 /** 8-bit unsigned integer */
 typedef SU_U8_T  uint8_t;
 /** 8-bit signed integer */
+#  ifdef _WIN32 // temp. fix for VS2010
+     typedef signed char int8_t;
+#  else
 typedef SU_S8_T  int8_t;
+#  endif
 
 /** At least 64-bit integer */
 typedef SU_LEAST64_T int_least64_t;
@@ -103,7 +107,11 @@ typedef SU_LEAST32_T int_least32_t;
 /** At least 16-bit integer */
 typedef SU_LEAST16_T int_least16_t;
 /** At least 8-bit integer */
+#  ifdef _WIN32 //temp. fix for VS2010
+     typedef signed char int_least8_t;
+#  else
 typedef SU_LEAST8_T int_least8_t;
+#  endif
 #endif
 
 #if !SU_HAVE_STDINT && !SU_HAVE_INTTYPES && !SU_HAVE_WIN32

@@ -1,4 +1,6 @@
 
+#include <ptlib.h>
+
 #include "mcu.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -52,8 +54,8 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
     }
     // add headers
     sip_add_tl(msg_reply, sip_object(msg_reply),
-		   SIPTAG_CONTACT_STR(regAccount->contact_str),
-		   SIPTAG_EXPIRES_STR(PString(regAccount->expires)),
+		   SIPTAG_CONTACT_STR((const char*)regAccount->contact_str),
+		   SIPTAG_EXPIRES_STR((const char*)PString(regAccount->expires)),
   		   SIPTAG_EVENT_STR("registration"),
   		   SIPTAG_ALLOW_EVENTS_STR("presence"),
                    TAG_END());
@@ -166,7 +168,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
       sep->SipReqReply(msg, NULL, 180);
       // add headers
       sip_add_tl(msg_reply, sip_object(msg_reply),
-		   SIPTAG_CONTACT_STR(regAccount_out->GetUrl()),
+		   SIPTAG_CONTACT_STR((const char*)regAccount_out->GetUrl()),
                    TAG_END());
       response_code = 302;
       goto return_response;
@@ -257,8 +259,8 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
     msg_addr_copy(subAccount->msg_sub, msg);
     // add headers
     sip_add_tl(msg_reply, sip_object(msg_reply),
-		   SIPTAG_CONTACT_STR(subAccount->contact_str),
-		   SIPTAG_EXPIRES_STR(PString(subAccount->expires)),
+		   SIPTAG_CONTACT_STR((const char*)subAccount->contact_str),
+		   SIPTAG_EXPIRES_STR((const char*)PString(subAccount->expires)),
                    TAG_END());
     response_code = 202; // SIP_202_ACCEPTED
     goto return_response;
@@ -448,17 +450,17 @@ int Registrar::SipSendNotify(msg_t *msg_sub, Subscription *subAccount)
 			NTATAG_STATELESS(1),
 			SIPTAG_FROM(sip_sub->sip_to),
 			SIPTAG_TO(sip_sub->sip_from),
-			SIPTAG_CONTACT_STR(subAccount->contact_str),
+			SIPTAG_CONTACT_STR((const char*)subAccount->contact_str),
 			SIPTAG_ROUTE(sip_route),
  			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip_sub->sip_call_id),
 			SIPTAG_EVENT_STR("presence"),
                         SIPTAG_CONTENT_TYPE_STR("application/pidf+xml"),
-                        SIPTAG_PAYLOAD_STR(sip_payload_str),
+                        SIPTAG_PAYLOAD_STR((const char*)sip_payload_str),
                         SIPTAG_SUBSCRIPTION_STATE_STR("active"), // active;expires=xxx
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
-			SIPTAG_SERVER_STR(SIP_USER_AGENT),
+			SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
 			TAG_END());
   return 1;
 }
@@ -502,9 +504,9 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip_call_id),
 			SIPTAG_CONTENT_TYPE_STR("text/plain"),
-                        SIPTAG_PAYLOAD_STR(message),
+                        SIPTAG_PAYLOAD_STR((const char*)message),
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
-			SIPTAG_SERVER_STR(SIP_USER_AGENT),
+			SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
 			TAG_END());
   return 1;
 }

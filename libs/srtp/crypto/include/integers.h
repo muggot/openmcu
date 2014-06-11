@@ -100,7 +100,9 @@ typedef unsigned int		uint32_t;
 
 
 #ifdef NO_64BIT_MATH
+#  ifndef _WIN32
 typedef double uint64_t;
+#  endif
 /* assert that sizeof(double) == 8 */
 extern uint64_t make64(uint32_t high, uint32_t low);
 extern uint32_t high32(uint64_t value);

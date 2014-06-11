@@ -124,7 +124,11 @@ octet_string_hex_string(const void *s, int length) {
   return bit_string;
 }
 
+#ifdef _WIN32
+__inline int
+#else
 inline int
+#endif
 hex_char_to_nibble(uint8_t c) {
   switch(c) {
   case ('0'): return 0x0;

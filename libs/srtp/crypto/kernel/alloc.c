@@ -88,7 +88,7 @@ crypto_free(void *ptr) {
 }
 
 
-#elif defined(HAVE_STDLIB_H)
+#elif defined(HAVE_STDLIB_H) || defined(_WIN32)
 
 void *
 crypto_alloc(size_t size) {

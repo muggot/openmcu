@@ -1,16 +1,14 @@
 /*
- * ut_sim.c
+ * getopt.h
  *
- * an unreliable transport simulator
- * (for testing replay databases and suchlike)
- * 
- * David A. McGrew
- * Cisco Systems, Inc.
+ * interface to a minimal implementation of the getopt() function,
+ * written so that test applications that use that function can run on
+ * non-POSIX platforms
+ *
  */
-
 /*
  *	
- * Copyright (c) 2001-2006, Cisco Systems, Inc.
+ * Copyright (c) 2001-2006 Cisco Systems, Inc.
  * All rights reserved.
  * 
  * Redistribution and use in source and binary forms, with or without
@@ -44,65 +42,19 @@
  *
  */
 
+#ifndef GETOPT_S_H
+#define GETOPT_S_H
 
-#include "ut_sim.h"
-
-#ifdef _WIN32
-#  include <stdlib.h>
-#endif
-
+/* 
+ * getopt_s(), optarg_s, and optind_s are small, locally defined
+ * versions of the POSIX standard getopt() interface.
+ */
+ 
 int
-ut_compar(const void *a, const void *b) {
-  return rand() > (RAND_MAX/2) ? -1 : 1;
-}
+getopt_s(int argc, char * const argv[], const char *optstring);
 
-void
-ut_init(ut_connection *utc) {
-  int i;
-  utc->index = 0;
+extern char *optarg_s;    /* defined in getopt.c */
 
-  for (i=0; i < UT_BUF; i++)
-    utc->buffer[i] = i;
-  
-  qsort(utc->buffer, UT_BUF, sizeof(uint32_t), ut_compar);
+extern int optind_s;      /* defined in getopt.c */
 
-  utc->index = UT_BUF - 1;
-}
-
-uint32_t
-ut_next_index(ut_connection *utc) {
-  uint32_t tmp;
-
-  tmp = utc->buffer[0];
-  utc->index++;
-  utc->buffer[0] = utc->index;
-
-  qsort(utc->buffer, UT_BUF, sizeof(uint32_t), ut_compar);
-  
-  return tmp;
-}
-
-
-
-#ifdef UT_TEST
-
-#include <stdio.h>
-
-int
-main() {
-  uint32_t i, irecvd, idiff;
-  ut_connection utc;
-
-  ut_init(&utc);
-
-  for (i=0; i < 1000; i++) {
-    irecvd = ut_next_index(&utc);
-    idiff = i - irecvd;
-    printf("%lu\t%lu\t%d\n", i, irecvd, idiff);
-  }
-  
-  return 0;
-}
-
-
-#endif
+#endif /* GETOPT_S_H */

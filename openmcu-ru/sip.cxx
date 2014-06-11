@@ -1,4 +1,5 @@
 
+#include <ptlib.h>
 #include <sys/types.h>
 #ifdef _WIN32
 #  include <winsock2.h>
@@ -385,7 +386,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
                         SIPTAG_FROM(sip_from),
                         SIPTAG_TO(sip_to),
 			SIPTAG_CALL_ID(sip->sip_call_id),
-                        SIPTAG_SERVER_STR(SIP_USER_AGENT),
+                        SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
                         TAG_END());
 
   MCUURL url(contact_str);
@@ -2019,7 +2020,7 @@ nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *
 			SIPTAG_AUTHORIZATION(sip_auth),
 			SIPTAG_PROXY_AUTHORIZATION(sip_proxy_auth),
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
-			SIPTAG_SERVER_STR(SIP_USER_AGENT),
+			SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
                         TAG_END());
   if(stateless == 1)
   {
@@ -2088,10 +2089,10 @@ int MCUSipConnection::ReqReply(const msg_t *msg, unsigned status, const char *st
     if(irq)
     {
       nta_incoming_treply(irq, status, status_phrase,
-                   SIPTAG_CONTACT_STR(contact_str),
+                   SIPTAG_CONTACT_STR((const char*)contact_str),
                    SIPTAG_CONTENT_TYPE_STR("application/sdp"),
-                   SIPTAG_PAYLOAD_STR(sdp_ok_str),
-                   SIPTAG_SERVER_STR(SIP_USER_AGENT),
+                   SIPTAG_PAYLOAD_STR((const char*)sdp_ok_str),
+                   SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
                    TAG_END());
       return 0;
     }
@@ -2099,9 +2100,9 @@ int MCUSipConnection::ReqReply(const msg_t *msg, unsigned status, const char *st
     {
       msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
       sip_add_tl(msg_reply, sip_object(msg_reply),
-                   SIPTAG_CONTACT_STR(contact_str),
+                   SIPTAG_CONTACT_STR((const char*)contact_str),
                    SIPTAG_CONTENT_TYPE_STR("application/sdp"),
-                   SIPTAG_PAYLOAD_STR(sdp_ok_str),
+                   SIPTAG_PAYLOAD_STR((const char*)sdp_ok_str),
                    TAG_END());
       sep->SipReqReply(msg, msg_reply, status, status_phrase);
       return 0;
@@ -2453,7 +2454,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 			SIPTAG_CONTACT(sip_contact),
 			SIPTAG_EXPIRES_STR((const char*)expires),
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
-			SIPTAG_SERVER_STR(SIP_USER_AGENT),
+			SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
 			TAG_END());
     if(a_orq == NULL)
       return 0;
@@ -2711,7 +2712,7 @@ int MCUSipEndPoint::SipReqReply(const msg_t *msg, msg_t *msg_reply, unsigned sta
     msg_reply = nta_msg_create(agent, 0);
   nta_msg_mreply(agent, msg_reply, sip_object(msg_reply), status, status_phrase, msg_req,
   		   SIPTAG_ALLOW_STR(allow_str),
-                   SIPTAG_SERVER_STR(SIP_USER_AGENT),
+                   SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
                    TAG_END());
   return 0;
 }

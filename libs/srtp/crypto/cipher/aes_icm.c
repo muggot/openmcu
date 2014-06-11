@@ -283,7 +283,11 @@ aes_icm_set_iv(aes_icm_ctx_t *c, void *iv) {
  * this is an internal, hopefully inlined function
  */
   
+#ifdef _WIN32
+__inline void
+#else
 inline void
+#endif
 aes_icm_advance_ismacryp(aes_icm_ctx_t *c, uint8_t forIsmacryp) {
   /* fill buffer with new keystream */
   v128_copy(&c->keystream_buffer, &c->counter);
@@ -308,7 +312,11 @@ aes_icm_advance_ismacryp(aes_icm_ctx_t *c, uint8_t forIsmacryp) {
   }
 }
 
+#ifdef _WIN32
+__inline void aes_icm_advance(aes_icm_ctx_t *c) {
+#else
 inline void aes_icm_advance(aes_icm_ctx_t *c) {
+#endif
   aes_icm_advance_ismacryp(c, 0);
 }
 

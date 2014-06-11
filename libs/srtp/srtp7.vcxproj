@@ -1,0 +1,141 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectName>libSRTP</ProjectName>
+    <ProjectGuid>{7E1E1308-F82E-4DD3-B25C-CD12756A1DD9}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</IntDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <InlineFunctionExpansion>Default</InlineFunctionExpansion>
+      <AdditionalIncludeDirectories>C:\dev\foo\srtp;$(SolutionDir);.\include;.\crypto\include;..\..\OpenSSL\openssl-0.9.7i\inc32;C:Library\OpenSSL\openssl-0.9.8\inc32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>Ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>Library\OpenSSL\openssl-0.9.8\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>.\include;.\crypto\include;..\..\OpenSSL\openssl-0.9.7i\inc32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <ObjectFileName>$(IntDir)</ObjectFileName>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="test\getopt.c" />
+    <ClCompile Include="srtp\srtp.c" />
+    <ClCompile Include="test\srtp_driver.c" />
+    <ClCompile Include="crypto\kernel\alloc.c" />
+    <ClCompile Include="crypto\kernel\crypto_kernel.c" />
+    <ClCompile Include="crypto\rng\ctr_prng.c" />
+    <ClCompile Include="crypto\kernel\err.c" />
+    <ClCompile Include="crypto\kernel\key.c" />
+    <ClCompile Include="crypto\rng\prng.c" />
+    <ClCompile Include="crypto\rng\rand_source.c" />
+    <ClCompile Include="crypto\cipher\aes.c" />
+    <ClCompile Include="crypto\cipher\aes_cbc.c" />
+    <ClCompile Include="crypto\cipher\aes_icm.c" />
+    <ClCompile Include="crypto\cipher\cipher.c" />
+    <ClCompile Include="crypto\cipher\null_cipher.c" />
+    <ClCompile Include="crypto\hash\auth.c" />
+    <ClCompile Include="crypto\hash\hmac.c" />
+    <ClCompile Include="crypto\hash\null_auth.c" />
+    <ClCompile Include="crypto\hash\sha1.c" />
+    <ClCompile Include="crypto\replay\rdb.c" />
+    <ClCompile Include="crypto\replay\rdbx.c" />
+    <ClCompile Include="crypto\replay\ut_sim.c" />
+    <ClCompile Include="crypto\math\datatypes.c" />
+    <ClCompile Include="crypto\math\stat.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="crypto\include\aes.h" />
+    <ClInclude Include="crypto\include\aes_cbc.h" />
+    <ClInclude Include="crypto\include\aes_icm.h" />
+    <ClInclude Include="crypto\include\alloc.h" />
+    <ClInclude Include="crypto\include\auth.h" />
+    <ClInclude Include="crypto\include\cipher.h" />
+    <ClInclude Include="crypto\include\config.h" />
+    <ClInclude Include="crypto\include\crypto.h" />
+    <ClInclude Include="crypto\include\crypto_kernel.h" />
+    <ClInclude Include="crypto\include\crypto_math.h" />
+    <ClInclude Include="crypto\include\crypto_types.h" />
+    <ClInclude Include="crypto\include\cryptoalg.h" />
+    <ClInclude Include="crypto\include\datatypes.h" />
+    <ClInclude Include="crypto\include\err.h" />
+    <ClInclude Include="crypto\include\gf2_8.h" />
+    <ClInclude Include="crypto\include\hmac.h" />
+    <ClInclude Include="crypto\include\integers.h" />
+    <ClInclude Include="crypto\include\kernel_compat.h" />
+    <ClInclude Include="crypto\include\key.h" />
+    <ClInclude Include="crypto\include\null_auth.h" />
+    <ClInclude Include="crypto\include\null_cipher.h" />
+    <ClInclude Include="crypto\include\prng.h" />
+    <ClInclude Include="crypto\include\rand_source.h" />
+    <ClInclude Include="crypto\include\rdb.h" />
+    <ClInclude Include="crypto\include\rdbx.h" />
+    <ClInclude Include="include\rtp.h" />
+    <ClInclude Include="crypto\include\sha1.h" />
+    <ClInclude Include="include\srtp.h" />
+    <ClInclude Include="crypto\include\stat.h" />
+    <ClInclude Include="include\ut_sim.h" />
+    <ClInclude Include="crypto\include\xfm.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

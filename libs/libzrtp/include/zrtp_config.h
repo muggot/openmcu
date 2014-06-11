@@ -228,7 +228,11 @@
 
 #ifdef ZRTP_HAVE_INT8_T
 #	if ZRTP_HAVE_INT8_T == 0
+#ifndef _WIN32
 		typedef char				int8_t;
+#else
+		typedef signed char			int8_t;
+#endif
 #	endif
 #endif
 
