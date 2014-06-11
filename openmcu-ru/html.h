@@ -211,19 +211,20 @@ class TablePConfigPage : public PConfigPage
      if(!readonly) s += "></input></td>"; else s += " readonly></input></td>";
      return s;
    }
-   PString SelectItem(PString name, PString value, PString values, int width=0)
+   PString SelectItem(PString name, PString value, PString values, int width=0, int hidden=FALSE, PString id="", PString onchange="")
    {
      if(width == 0) width = 90;
+     if(id == "") id = PString(rand());
+     PString visibility = "visible";
+     if(hidden) visibility = "hidden";
      PStringArray data = values.Tokenise(",");
-     PString id = PString(rand());
-     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>";
-     s += itemStyle+"<select name='"+name+"' style='width:"+PString(width)+"px;"+selectStyle+"'>";
+
+     PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>"
+                 +itemStyle+"<select id='"+id+"' name='"+name+"' onchange='"+onchange+"' style='visibility:"+visibility+";width:"+PString(width)+"px;"+selectStyle+"'>";
      for(PINDEX i = 0; i < data.GetSize(); i++)
      {
-       if(data[i] == value)
-         s += "<option selected value='"+data[i]+"'>"+data[i]+"</option>";
-       else
-         s += "<option value='"+data[i]+"'>"+data[i]+"</option>";
+       if(data[i] == value) s += "<option selected value='"+data[i]+"'>"+data[i]+"</option>";
+       else                 s += "<option value='"+data[i]+"'>"+data[i]+"</option>";
      }
      s +="</select>";
      return s;
@@ -279,6 +280,7 @@ class TablePConfigPage : public PConfigPage
      PString s = "<tr></tr></tbody></table></div><p><input id='button_accept' name='submit' value='Accept' type='submit'><input id='button_reset' name='reset' value='Reset' type='reset'></p></form>";
      s += jsRowDown() + jsRowUp() + jsRowClone()+ jsRowDelete();
      s += Filters();
+     s += "<script type='text/javascript'>\n"+javascript+"</script>\n";
      return s;
    }
    PString JsLocale(PString locale)
@@ -493,6 +495,7 @@ class TablePConfigPage : public PConfigPage
    int firstEditRow, firstDeleteRow;
    int buttonUp, buttonDown, buttonClone, buttonDelete;
    PStringToString passwordFields, integerFields;
+   PString javascript;
 
    PStringArray optionNames;
    PString sectionPrefix;

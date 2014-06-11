@@ -1063,8 +1063,17 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, aCodec, aCaps)+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, vCodec, vCaps)+"</tr>";
-      s2 += rowArray+"Resolution"+SelectItem(name, scfg.GetString("Video resolution"), ",176x144,352x288,704x576,640x480,1024x768")+"</tr>";
+      //
+      PString res_id = PGloballyUniqueID().AsString();
+      PString video_onchange = "if(this.value==\"MP4V-ES\") document.getElementById(\""+res_id+"\").style.visibility=\"visible\";else document.getElementById(\""+res_id+"\").style.visibility=\"hidden\";";
+      s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, vCodec, vCaps, 0, FALSE, "", video_onchange)+"</tr>";
+      //
+      PString res_onchange = "";
+      PString res_select = ",176x144,352x288,704x576,640x480,1024x768";
+      BOOL hidden = FALSE;
+      if(vCodec != "MP4V-ES") hidden = TRUE;
+      s2 += rowArray+(JsLocale("window.l_name_video_resolution"))+SelectItem(name, scfg.GetString("Video resolution"), res_select, 0, hidden, res_id)+"</tr>";
+      //
       s2 += rowArray+(JsLocale("window.l_name_video")+" payload type")+SelectItem(name, video_pt, select_pt)+"</tr>";
       s2 += rowArray+(JsLocale("window.l_name_video")+" fmtp")+StringItem(name, video_fmtp)+"</tr>";
       s2 += EndItemArray();

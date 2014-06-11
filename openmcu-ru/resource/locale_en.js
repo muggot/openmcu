@@ -195,6 +195,7 @@ window.l_name_audio_codec_receive                  = 'Audio codec(receive)';
 window.l_name_video_codec_receive                  = 'Video codec(receive)';
 window.l_name_audio_codec_transmit                 = 'Audio codec(transmit)';
 window.l_name_video_codec_transmit                 = 'Video codec(transmit)';
+window.l_name_video_resolution                     = 'Video resolution';
 
 window.l_name_parameters_for_sending               = "Parameters for sending";
 window.l_name_codec_parameters                     = "Codec parameters<br>(override received)";
