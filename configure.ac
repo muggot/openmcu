@@ -1,7 +1,7 @@
 dnl #######################################################################
 dnl INIT
 
-AC_INIT([OpenMCU-ru],[3.49.1],[OpenMCU-ru])
+AC_INIT([OpenMCU-ru],[3.49],[OpenMCU-ru])
 AC_CANONICAL_TARGET()
 AM_INIT_AUTOMAKE()
 
@@ -627,6 +627,7 @@ dnl configuration plugins
 h261=yes
 h263=yes
 h264=yes
+mpeg4=yes
 vp8=yes
 g722=yes
 g7231=yes
@@ -641,6 +642,7 @@ AC_ARG_ENABLE(separator, [    ])
 AC_ARG_ENABLE(h261, [AS_HELP_STRING([--disable-h261],[Disable H.261 support (default enabled)],[40],[100])], [h261="$enableval"])
 AC_ARG_ENABLE(h263, [AS_HELP_STRING([--disable-h263],[Disable H.263 support (default enabled)],[40],[100])], [h263="$enableval"])
 AC_ARG_ENABLE(h264, [AS_HELP_STRING([--disable-h264],[Disable H.264 support (default enabled)],[40],[100])], [h264="$enableval"])
+AC_ARG_ENABLE(mpeg4, [AS_HELP_STRING([--disable-mpeg4],[Disable MPEG4 support (default enabled)],[40],[100])], [mpeg4="$enableval"])
 AC_ARG_ENABLE(vp8, [AS_HELP_STRING([--disable-vp8],[Disable VP8 support (default enabled)],[40],[100])], [vp8="$enableval"])
 AC_ARG_ENABLE(g722, [AS_HELP_STRING([--disable-g722],[Disable G.722 support (default enabled)],[40],[100])], [g722="$enableval"])
 AC_ARG_ENABLE(g7231, [AS_HELP_STRING([--disable-g7231],[Disable G.723.1 support (default enabled)],[40],[100])], [g7231="$enableval"])
@@ -655,7 +657,7 @@ vp8_ffmpeg=yes
 AC_ARG_ENABLE(separator, [    ])
 AC_ARG_ENABLE(vp8_ffmpeg, [AS_HELP_STRING([--disable-vp8-ffmpeg],[Disable VP8 ffmpeg decoding (default enabled)],[40],[100])], [vp8_ffmpeg="$enableval"])
 
-PLUGINS="h261 h263 h264 vp8 g722 g7231 g726 g729 ilbc silk opus"
+PLUGINS="h261 h263 h264 mpeg4 vp8 g722 g7231 g726 g729 ilbc silk opus"
 AC_SUBST(PLUGINS)
 
 PLUGIN_H261_DIR=${top_srcdir}/plugins/H.261-vic
@@ -677,6 +679,13 @@ AC_SUBST(PLUGIN_H264_DIR)
 if test "${h264}" = "yes"; then
     AC_CONFIG_FILES(plugins/H.264_123/Makefile)
     PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_H264_DIR} "
+fi
+
+PLUGIN_MPEG4_DIR=${top_srcdir}/plugins/MPEG4
+AC_SUBST(PLUGIN_MPEG4_DIR)
+if test "${mpeg4}" = "yes"; then
+    AC_CONFIG_FILES(plugins/MPEG4/Makefile)
+    PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_MPEG4_DIR} "
 fi
 
 PLUGIN_VP8_DIR=${top_srcdir}/plugins/VP8-WebM
@@ -1018,6 +1027,11 @@ if test "x${h261}" = "xyes" ; then
 echo "              H.261 Video Plugin  :  enabled"
 else
 echo "              H.261 Video Plugin  :  disabled"
+fi
+if test "x${mpeg}" = "xyes" ; then
+echo "              MPEG4 Video Plugin  :  enabled"
+else
+echo "              MPEG4 Video Plugin  :  disabled"
 fi
 
 if test "x${opus}" = "xyes" ; then

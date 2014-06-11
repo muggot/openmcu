@@ -903,6 +903,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 
   optionNames.AppendString("Audio codec");
   optionNames.AppendString("Video codec");
+  optionNames.AppendString("Video resolution");
   optionNames.AppendString("Video payload type");
   optionNames.AppendString("Video fmtp");
 
@@ -917,7 +918,9 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
-    if(MCUConfig("SIP Video").GetBoolean(keys[i])) vCaps += ","+keys[i];
+    PString capname = keys[i];
+    if(capname == "MP4V-ES{sw}") capname = "MP4V-ES";
+    if(MCUConfig("SIP Video").GetBoolean(keys[i])) vCaps += ","+capname;
   }
 
 
@@ -1061,9 +1064,9 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += NewItemArray(name, 25);
       s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, aCodec, aCaps)+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, vCodec, vCaps)+"</tr>";
+      s2 += rowArray+"Resolution"+SelectItem(name, scfg.GetString("Video resolution"), ",176x144,352x288,704x576,640x480,1024x768")+"</tr>";
       s2 += rowArray+(JsLocale("window.l_name_video")+" payload type")+SelectItem(name, video_pt, select_pt)+"</tr>";
       s2 += rowArray+(JsLocale("window.l_name_video")+" fmtp")+StringItem(name, video_fmtp)+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }

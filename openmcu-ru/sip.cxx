@@ -216,6 +216,7 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
   else if(name.Find("729-") != P_MAX_INDEX)    return FALSE;
   else if(name.Find("729a") != P_MAX_INDEX)    { name = "g729"; fmtp = "annexb=no;"; }
   else if(name.Find("h.263p") != P_MAX_INDEX)  { name = "h263-1998"; }
+  else if(name.Find("mp4v-es") != P_MAX_INDEX) { name = "mp4v-es"; }
   else
   {
     name.Replace("{sw}","",TRUE,0);
@@ -531,10 +532,13 @@ void MCUSipConnection::DeleteTempSockets()
 
 void MCUSipConnection::RefreshLocalSipCaps()
 {
-  PString pref_audio_cap = GetEndpointParamFromUrl("Audio codec", ruri_str);
-  if(pref_audio_cap != "" && pref_audio_cap.Right(4) != "{sw}")
-    pref_audio_cap += "{sw}";
-  PString pref_video_cap = GetEndpointParamFromUrl("Video codec", ruri_str);
+  PString audio_capname = GetEndpointParamFromUrl("Audio codec", ruri_str);
+  if(audio_capname != "" && audio_capname.Right(4) != "{sw}")
+    audio_capname += "{sw}";
+  PString video_capname = GetEndpointParamFromUrl("Video codec", ruri_str);
+  if(video_capname != "" && video_capname.Right(4) != "{sw}")
+    video_capname += "{sw}";
+  PString video_resolution = GetEndpointParamFromUrl("Video resolution", ruri_str);
   PString video_pt = GetEndpointParamFromUrl("Video payload type", ruri_str);
   PString video_fmtp = GetEndpointParamFromUrl("Video fmtp", ruri_str);
 
@@ -543,21 +547,26 @@ void MCUSipConnection::RefreshLocalSipCaps()
   {
     SipCapability *base_sc = it->second;
 
-    if(base_sc->media == 0 && pref_audio_cap != "" && pref_audio_cap != base_sc->capname)
+    if(base_sc->media == 0 && audio_capname != "" && audio_capname != base_sc->capname)
       continue;
-    if(base_sc->media == 1 && pref_video_cap != "" && pref_video_cap != base_sc->capname)
+    if(base_sc->media == 1 && video_capname != "" && video_capname != base_sc->capname)
       continue;
 
     SipCapability *local_sc = new SipCapability(*base_sc);
-    if(base_sc->media == 1 && pref_video_cap != "")
+    if(base_sc->media == 1 && video_capname != "")
     {
       local_sc->preferred_cap = TRUE;
+      if(video_resolution != "")
+      {
+        local_sc->video_width = video_resolution.Tokenise("x")[0].AsInteger();
+        local_sc->video_height = video_resolution.Tokenise("x")[1].AsInteger();
+      }
       if(video_fmtp != "")
         local_sc->fmtp = video_fmtp;
       if(video_pt != "")
         local_sc->payload = video_pt.AsInteger();
     }
-    if(base_sc->media == 0 && pref_audio_cap != "")
+    if(base_sc->media == 0 && audio_capname != "")
     {
       local_sc->preferred_cap = TRUE;
     }
@@ -1340,30 +1349,110 @@ void MCUSipConnection::SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapabi
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+static struct mpeg4_profile_level {
+  unsigned profile_level;
+  const char* profile_name;
+  unsigned profile;
+  unsigned level;
+  unsigned frame_size;
+  unsigned bitrate;
+  unsigned width;
+  unsigned height;
+} const mpeg4_profile_levels[] = {
+  {   1, "Simple",                     1, 1, 99,    64000,    176,  144  },
+  {   2, "Simple",                     1, 2, 792,   128000,   352,  288  },
+  {   3, "Simple",                     1, 3, 792,   384000,   352,  288  },
+  {   4, "Simple",                     1, 4, 1200,  4000000,  640,  480  },
+  {   5, "Simple",                     1, 5, 1620,  8000000,  704,  576  },
+  {   8, "Simple",                     1, 0, 99,    64000,    176,  144  },
+  {   9, "Simple",                     1, 0, 99,    128000,   176,  144  },
+  {  17, "Simple Scalable",            2, 1, 495,   128000,   352,  288  },
+  {  18, "Simple Scalable",            2, 2, 792,   256000,   352,  288  },
+  {  33, "Core",                       3, 1, 198,   384000,   176,  144  },
+  {  34, "Core",                       3, 2, 792,   2000000,  352,  288  },
+  {  50, "Main",                       4, 2, 1188,  2000000,  352,  288  },
+  {  51, "Main",                       4, 3, 3240,  15000000, 1024, 768  },
+  {  52, "Main",                       4, 4, 16320, 38400000, 1600, 1200 },
+  {  66, "N-Bit",                      5, 2, 792,   2000000,  352,  288  },
+  { 145, "Advanced Real Time Simple",  6, 1, 99,    64000,    176,  144  },
+  { 146, "Advanced Real Time Simple",  6, 2, 396,   128000,   352,  288  },
+  { 147, "Advanced Real Time Simple",  6, 3, 396,   384000,   352,  288  },
+  { 148, "Advanced Real Time Simple",  6, 4, 396,   2000000,  352,  288  },
+  { 161, "Core Scalable",              7, 1, 792,   768000,   352,  288  },
+  { 162, "Core Scalable",              7, 2, 990,   1500000,  352,  288  },
+  { 163, "Core Scalable",              7, 3, 4032,  4000000,  1280, 720  },
+  { 177, "Advanced Coding Efficiency", 8, 1, 792,   384000,   352,  288  },
+  { 178, "Advanced Coding Efficiency", 8, 2, 1188,  2000000,  352,  288  },
+  { 179, "Advanced Coding Efficiency", 8, 3, 3240,  15000000, 1024, 768  },
+  { 180, "Advanced Coding Efficiency", 8, 4, 16320, 38400000, 1920, 1088 },
+  { 193, "Advanced Core",              9, 1, 198,   384000,   176,  144  },
+  { 194, "Advanced Core",              9, 2, 792,   2000000,  352,  288  },
+  { 240, "Advanced Simple",           10, 0, 99,    128000,   176,  144  },
+  { 241, "Advanced Simple",           10, 1, 99,    128000,   176,  144  },
+  { 242, "Advanced Simple",           10, 2, 396,   384000,   352,  288  },
+  { 243, "Advanced Simple",           10, 3, 396,   768000,   352,  288  },
+  { 244, "Advanced Simple",           10, 4, 792,   3000000,  352,  288  },
+  { 245, "Advanced Simple",           10, 5, 1620,  8000000,  704,  576  },
+  { 0 }
+};
+
 void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  int profile_level_id = 0;
+  unsigned profile_level_id = 0, profile = 0, level = 0, width = 0, height = 0;;
   PString config;
 
-  PStringArray keys = sc->fmtp.Tokenise(";");
-  for(int kn = 0; kn < keys.GetSize(); kn++)
+  if(!sc->cap)
   {
-    if(keys[kn].Find("profile-level-id=") == 0) { profile_level_id = keys[kn].Tokenise("=")[1].AsInteger(); }
-    else if(keys[kn].Find("config=") == 0) { config = keys[kn].Tokenise("=")[1]; }
+    sc->cap = H323Capability::Create("MP4V-ES{sw}");
+    if(!sc->cap)
+      return;
   }
 
-  if(!sc->cap && FindSipCap(LocalCaps, "MPEG4-CIF{sw}"))
+  SipCapability *local_sc = FindSipCap(LocalCaps, "MP4V-ES{sw}");
+  if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+
+  if(sc->video_width && sc->video_height)
   {
-    sc->cap = H323Capability::Create("MPEG4-CIF{sw}");
+    for(int i = 0; mpeg4_profile_levels[i].profile_level != 0; ++i)
+    {
+      if(sc->video_width != mpeg4_profile_levels[i].width && sc->video_height != mpeg4_profile_levels[i].height)
+        continue;
+      profile = mpeg4_profile_levels[i].profile;
+      level = mpeg4_profile_levels[i].level;
+      width = sc->video_width;
+      height = sc->video_height;
+      break;
+    }
+  }
+  else
+  {
+    PStringArray keys = sc->fmtp.Tokenise(";");
+    for(int kn = 0; kn < keys.GetSize(); kn++)
+    {
+      if(keys[kn].Find("profile-level-id=") == 0) { profile_level_id = keys[kn].Tokenise("=")[1].AsInteger(); }
+      else if(keys[kn].Find("config=") == 0) { config = keys[kn].Tokenise("=")[1]; }
+    }
+    if(profile_level_id == 0) profile_level_id = 3;
+
+    for(int i = 0; mpeg4_profile_levels[i].profile_level != 0; ++i)
+    {
+      if(profile_level_id != mpeg4_profile_levels[i].profile_level)
+        continue;
+      profile = mpeg4_profile_levels[i].profile;
+      level = mpeg4_profile_levels[i].level;
+      width = mpeg4_profile_levels[i].width;
+      height = mpeg4_profile_levels[i].height;
+      break;
+    }
   }
 
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
-    if(sc->preferred_cap == FALSE)
-    {
-      if(profile_level_id) wf.SetOptionInteger("profile-level-id", profile_level_id);
-    }
+    if(profile) wf.SetOptionInteger("profile", profile);
+    if(level) wf.SetOptionInteger("level", level);
+    if(width) wf.SetOptionInteger("Frame Width", width);
+    if(height) wf.SetOptionInteger("Frame Height", height);
     if(config != "") wf.SetOptionString("config", config);
     if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
   }
