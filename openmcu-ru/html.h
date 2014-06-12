@@ -211,16 +211,13 @@ class TablePConfigPage : public PConfigPage
      if(!readonly) s += "></input></td>"; else s += " readonly></input></td>";
      return s;
    }
-   PString SelectItem(PString name, PString value, PString values, int width=0, int hidden=FALSE, PString id="", PString onchange="")
+   PString SelectItem(PString name, PString value, PString values, int width=0, PString id="", PString onchange="")
    {
      if(width == 0) width = 90;
      if(id == "") id = PString(rand());
-     PString visibility = "visible";
-     if(hidden) visibility = "hidden";
      PStringArray data = values.Tokenise(",");
-
      PString s = "<input name='TableItemId' value='"+id+"' type='hidden'>"
-                 +itemStyle+"<select id='"+id+"' name='"+name+"' onchange='"+onchange+"' style='visibility:"+visibility+";width:"+PString(width)+"px;"+selectStyle+"'>";
+                 +itemStyle+"<select id='"+id+"' name='"+name+"' onchange='"+onchange+"' style='width:"+PString(width)+"px;"+selectStyle+"'>";
      for(PINDEX i = 0; i < data.GetSize(); i++)
      {
        if(data[i] == value) s += "<option selected value='"+data[i]+"'>"+data[i]+"</option>";

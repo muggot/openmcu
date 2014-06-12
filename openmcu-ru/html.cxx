@@ -907,12 +907,12 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString("Video payload type");
   optionNames.AppendString("Video fmtp");
 
-  PString aCaps = ",Disabled", vCaps = ",Disabled";
+  PString a_caps = ",Disabled", v_caps = ",Disabled";
   PStringList keys = MCUConfig("SIP Audio").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
-    if(MCUConfig("SIP Audio").GetBoolean(keys[i])) aCaps += ","+keys[i];
+    if(MCUConfig("SIP Audio").GetBoolean(keys[i])) a_caps += ","+keys[i];
   }
   keys = MCUConfig("SIP Video").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -920,7 +920,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
     PString capname = keys[i];
     if(capname == "MP4V-ES{sw}") capname = "MP4V-ES";
-    if(MCUConfig("SIP Video").GetBoolean(keys[i])) vCaps += ","+capname;
+    if(MCUConfig("SIP Video").GetBoolean(keys[i])) v_caps += ","+capname;
   }
 
 
@@ -1053,26 +1053,25 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     }
     // codecs
     {
-      PString aCodec = scfg.GetString("Audio codec");
-      PString vCodec = scfg.GetString("Video codec");
-      if(aCodec != "" && aCaps.Find(aCodec) == P_MAX_INDEX) aCaps = aCodec+","+aCaps;
-      if(vCodec != "" && vCaps.Find(vCodec) == P_MAX_INDEX) vCaps = vCodec+","+vCaps;
+      PString a_codec = scfg.GetString("Audio codec");
+      PString v_codec = scfg.GetString("Video codec");
+      if(a_codec != "" && a_caps.Find(a_codec) == P_MAX_INDEX) a_caps = a_codec+","+a_caps;
+      if(v_codec != "" && v_caps.Find(v_codec) == P_MAX_INDEX) v_caps = v_codec+","+v_caps;
       PString video_pt = scfg.GetString("Video payload type");
       PString select_pt; for(int i = 96; i < 128; i++) select_pt += ","+PString(i);
       PString video_fmtp = scfg.GetString("Video fmtp");
       PString s2;
       s2 += NewItemArray(name, 25);
-      s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, aCodec, aCaps)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
       //
+      PString video_id = PGloballyUniqueID().AsString();
       PString res_id = PGloballyUniqueID().AsString();
-      PString video_onchange = "if(this.value==\"MP4V-ES\") document.getElementById(\""+res_id+"\").style.visibility=\"visible\";else document.getElementById(\""+res_id+"\").style.visibility=\"hidden\";";
-      s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, vCodec, vCaps, 0, FALSE, "", video_onchange)+"</tr>";
+      PString res_value = scfg.GetString("Video resolution");
+      PString video_onchange = "video_res_toggle(\""+res_id+"\", this.value);";
+      javascript += "video_res_toggle('"+res_id+"', '"+v_codec+"');\n";
+      s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
       //
-      PString res_onchange = "";
-      PString res_select = ",176x144,352x288,704x576,640x480,1024x768";
-      BOOL hidden = FALSE;
-      if(vCodec != "MP4V-ES") hidden = TRUE;
-      s2 += rowArray+(JsLocale("window.l_name_video_resolution"))+SelectItem(name, scfg.GetString("Video resolution"), res_select, 0, hidden, res_id)+"</tr>";
+      s2 += rowArray+(JsLocale("window.l_name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
       //
       s2 += rowArray+(JsLocale("window.l_name_video")+" payload type")+SelectItem(name, video_pt, select_pt)+"</tr>";
       s2 += rowArray+(JsLocale("window.l_name_video")+" fmtp")+StringItem(name, video_fmtp)+"</tr>";
@@ -1081,7 +1080,26 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     }
     //
   }
+
+  javascript += "function video_res_toggle(id, codec) {\n"
+                "  var sel = document.getElementById(id);\n"
+                "  var value = sel.value;\n"
+                "  var res = Array();\n"
+                "  if(codec=='H261')      res = Array('','176x144','352x288');\n"
+                "  if(codec=='H263')      res = Array('','176x144','352x288','704x576');\n"
+                "  if(codec=='H263-1998') res = Array('','176x144','352x288','704x576');\n"
+                "  if(codec=='H264')      res = Array('','176x144','352x288','704x576','1280x1024','1600x1200','1280x720');\n"
+                "  if(codec=='MP4V-ES')   res = Array('','176x144','352x288','704x576','640x480','1024x768');\n"
+                "  if(codec=='VP8')       res = Array('','176x144','352x288','704x576','320x240','640x480','1024x768','424x240','640x360','852x480','1280x720','1364x768','1920x1080');\n"
+                "  sel.options.length = 0;\n"
+                "  for(var i=0; i<res.length; i++) {\n"
+                "    sel.options[sel.options.length] = new Option(res[i],res[i]);\n"
+                "  }\n"
+                "  sel.value = value;\n"
+                "}\n";
+
   s << EndTable();
+
 
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_sip_endpoints", "");
