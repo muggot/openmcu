@@ -127,6 +127,9 @@ class MCUH323EndPoint : public H323EndPoint
     PString Invite(PString room, PString memberName);
     void SetConnectionActive(MCUH323Connection * conn);
 
+    BOOL CheckCapability(const PString & formatName);
+    void AddCapabilitiesMCU();
+
 #if MCU_VIDEO
     unsigned GetVideoTxQuality() const
     { return videoTxQuality; }

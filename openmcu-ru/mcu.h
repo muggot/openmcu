@@ -117,8 +117,6 @@ static const char LockTemplateKey[]             = "Template locks conference by 
 static const char ReceivedVFUDelayKey[]         = "Received VFU delay";
 static const char SendVFUDelayKey[]             = "Send VFU delay";
 
-static const char H264LevelForSIPKey[]        = "H.264 Default Level for SIP";
-
 static PString DefaultConnectingWAVFile = PString(SYS_RESOURCE_DIR)+"/connecting.wav";
 static PString DefaultEnteringWAVFile   = PString(SYS_RESOURCE_DIR)+"/entering.wav";
 static PString DefaultLeavingWAVFile    = PString(SYS_RESOURCE_DIR)+"/leaving.wav";
@@ -349,8 +347,6 @@ class OpenMCU : public OpenMCUProcessAncestor
     PString    ffmpegCall;
     int        vr_framewidth, vr_frameheight, vr_framerate;
     unsigned   vr_sampleRate, vr_audioChans, vr_minimumSpaceMiB;
-
-    int        h264DefaultLevelForSip;
 
     PFilePath GetLeavingWAVFile() const
     { return leavingWAVFile; }

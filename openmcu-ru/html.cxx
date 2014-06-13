@@ -665,6 +665,25 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 
 ///////////////////////////////////////////////////////////////
 
+// bak 13.06.2014, restore resolution from capability
+// remove it when not needed
+PString H264ResolutionRestore(PString & capname)
+{
+  for(int i = 0; h264_profile_levels[i].level != 0; ++i)
+  {
+    if(capname != PString(h264_profile_levels[i].capname)+"{sw}")
+      continue;
+    unsigned macroblocks = h264_profile_levels[i].max_fs;
+    for(int j = 0; h264_resolutions[j].macroblocks != 0; ++j)
+    {
+      if(macroblocks < h264_resolutions[j].macroblocks)
+        continue;
+      return PString(h264_resolutions[j].width)+"x"+PString(h264_resolutions[j].height);
+    }
+  }
+  return "";
+}
+
 H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
@@ -699,20 +718,26 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString(ReceivedVFUDelayKey);
 
   optionNames.AppendString("Audio codec(receive)");
-  optionNames.AppendString("Video codec(receive)");
   optionNames.AppendString("Audio codec(transmit)");
+  optionNames.AppendString("Video codec(receive)");
+  optionNames.AppendString("Video resolution(receive)");
   optionNames.AppendString("Video codec(transmit)");
+  optionNames.AppendString("Video resolution(transmit)");
 
-
-  PString aCapsR = ",Disabled", vCapsR = ",Disabled", aCapsT = ",Disabled", vCapsT = ",Disabled";
+  MCUH323EndPoint & ep = mcu.GetEndpoint();
+  PString ra_caps = ",Disabled", rv_caps = ",Disabled", ta_caps = ",Disabled", tv_caps = ",Disabled";
   if(mcu.GetEndpoint().rsCaps != NULL)
-  { PINDEX rsNum = 0; while(mcu.GetEndpoint().rsCaps[rsNum]!=NULL) { aCapsR += ","+PString(mcu.GetEndpoint().rsCaps[rsNum]); rsNum++; } }
+  { for(PINDEX i=0; mcu.GetEndpoint().rsCaps[i]!=NULL; i++)
+    { PString capname = mcu.GetEndpoint().rsCaps[i]; if(!ep.CheckCapability(capname)) continue; ra_caps += ","+capname; } }
   if(mcu.GetEndpoint().rvCaps != NULL)
-  { PINDEX rvNum = 0; while(mcu.GetEndpoint().rvCaps[rvNum]!=NULL) { vCapsR += ","+PString(mcu.GetEndpoint().rvCaps[rvNum]); rvNum++; } }
+  { for(PINDEX i=0; mcu.GetEndpoint().rvCaps[i]!=NULL; i++)
+    { PString capname = mcu.GetEndpoint().rvCaps[i]; if(!ep.CheckCapability(capname)) continue; rv_caps += ","+capname; } }
   if(mcu.GetEndpoint().tsCaps != NULL)
-  { PINDEX tsNum = 0; while(mcu.GetEndpoint().tsCaps[tsNum]!=NULL) { aCapsT += ","+PString(mcu.GetEndpoint().tsCaps[tsNum]); tsNum++; } }
+  { for(PINDEX i=0; mcu.GetEndpoint().tsCaps[i]!=NULL; i++)
+    { PString capname = mcu.GetEndpoint().tsCaps[i]; if(!ep.CheckCapability(capname)) continue; ta_caps += ","+capname; } }
   if(mcu.GetEndpoint().tvCaps != NULL)
-  { PINDEX tvNum = 0; while(mcu.GetEndpoint().tvCaps[tvNum]!=NULL) { vCapsT += ","+PString(mcu.GetEndpoint().tvCaps[tvNum]); tvNum++; } }
+  { for(PINDEX i=0; mcu.GetEndpoint().tvCaps[i]!=NULL; i++)
+    { PString capname = mcu.GetEndpoint().tvCaps[i]; if(!ep.CheckCapability(capname)) continue; tv_caps += ","+capname; } }
 
   sectionPrefix = "H323 Endpoint ";
   PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
@@ -836,28 +861,74 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     }
     // codecs
     {
-      PString aCodecR = scfg.GetString("Audio codec(receive)");
-      PString vCodecR = scfg.GetString("Video codec(receive)");
-      PString aCodecT = scfg.GetString("Audio codec(transmit)");
-      PString vCodecT = scfg.GetString("Video codec(transmit)");
-      PString _aCapsR = aCapsR, _vCapsR = vCapsR, _aCapsT = aCapsT, _vCapsT = vCapsT;
-      if(aCodecR != "" && _aCapsR.Find(aCodecR) == P_MAX_INDEX) _aCapsR = aCodecR+","+_aCapsR;
-      if(vCodecR != "" && _vCapsR.Find(vCodecR) == P_MAX_INDEX) _vCapsR = vCodecR+","+_vCapsR;
-      if(aCodecT != "" && _aCapsT.Find(aCodecT) == P_MAX_INDEX) _aCapsT = aCodecT+","+_aCapsT;
-      if(vCodecT != "" && _vCapsT.Find(vCodecT) == P_MAX_INDEX) _vCapsT = vCodecT+","+_vCapsT;
+      PString ra_codec = scfg.GetString("Audio codec(receive)");
+      PString ta_codec = scfg.GetString("Audio codec(transmit)");
+      PString rv_codec = scfg.GetString("Video codec(receive)");
+      PString tv_codec = scfg.GetString("Video codec(transmit)");
+      // bak 13.06.2014, restore resolution from capability
+      if(ep.CheckCapability("H.264") && rv_codec.Left(5) == "H.264" && rv_codec != "H.264{sw}")
+      {
+        if(scfg.GetString("Video resolution(receive)") == "")
+          scfg.SetString("Video resolution(receive)", H264ResolutionRestore(rv_codec));
+        rv_codec = "H.264{sw}"; scfg.SetString("Video codec(receive)", rv_codec);
+      }
+      if(ep.CheckCapability("H.264") && tv_codec.Left(5) == "H.264" && tv_codec != "H.264{sw}")
+      {
+        if(scfg.GetString("Video resolution(transmit)") == "")
+          scfg.SetString("Video resolution(transmit)", H264ResolutionRestore(tv_codec));
+        tv_codec = "H.264{sw}"; scfg.SetString("Video codec(transmit)", tv_codec);
+      }
+      //
+      if(ra_codec != "" && ra_caps.Find(ra_codec) == P_MAX_INDEX) ra_caps = ra_codec+","+ra_caps;
+      if(ta_codec != "" && ta_caps.Find(ta_codec) == P_MAX_INDEX) ta_caps = ta_codec+","+ta_caps;
+      if(rv_codec != "" && rv_caps.Find(rv_codec) == P_MAX_INDEX) rv_caps = rv_codec+","+rv_caps;
+      if(tv_codec != "" && tv_caps.Find(tv_codec) == P_MAX_INDEX) tv_caps = tv_codec+","+tv_caps;
+
       PString s2;
       s2 += NewItemArray(name, 25);
-      s2 += rowArray+JsLocale("window.l_name_audio_receive")+SelectItem(name, aCodecR, _aCapsR)+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_video_receive")+SelectItem(name, vCodecR, _vCapsR)+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_audio_transmit")+SelectItem(name, aCodecT, _aCapsT)+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_video_transmit")+SelectItem(name, vCodecT, _vCapsT)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_audio_receive")+SelectItem(name, ra_codec, ra_caps)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_audio_transmit")+SelectItem(name, ta_codec, ta_caps)+"</tr>";
+      //
+      PString rv_id = rand();
+      PString rres_id = rand();
+      PString rres_value = scfg.GetString("Video resolution(receive)");
+      PString rv_onchange = "video_res_toggle(\""+rres_id+"\", this.value);";
+      javascript += "video_res_toggle('"+rres_id+"', '"+rv_codec+"');\n";
+      s2 += rowArray+JsLocale("window.l_name_video_receive")+SelectItem(name, rv_codec, rv_caps, 0, rv_id, rv_onchange)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_video_resolution")+SelectItem(name, rres_value, rres_value, 0, rres_id)+"</tr>";
+      //
+      PString tv_id = rand();
+      PString tres_id = rand();
+      PString tres_value = scfg.GetString("Video resolution(transmit)");
+      PString tv_onchange = "video_res_toggle(\""+tres_id+"\", this.value);";
+      javascript += "video_res_toggle('"+tres_id+"', '"+tv_codec+"');\n";
+      s2 += rowArray+JsLocale("window.l_name_video_transmit")+SelectItem(name, tv_codec, tv_caps, 0, tv_id, tv_onchange)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_video_resolution")+SelectItem(name, tres_value, tres_value, 0, tres_id)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
     //
   }
 
+  javascript += "function video_res_toggle(id, codec) {\n"
+                "  var sel = document.getElementById(id);\n"
+                "  var value = sel.value;\n"
+                "  var res = Array();\n"
+                "  if(codec=='H.261{sw}')     res = Array('','176x144','352x288');\n"
+                "  if(codec=='H.263{sw}')     res = Array('','176x144','352x288','704x576');\n"
+                "  if(codec=='H.263p{sw}')    res = Array('','176x144','352x288','704x576');\n"
+                "  if(codec=='H.264{sw}')     res = Array('','176x144','352x288','704x576','1280x720','1366x768','1920x1080');\n"
+                "  if(codec=='MP4V-ES{sw}')   res = Array('','176x144','352x288','704x576','640x480','1024x768','1280x720');\n"
+                "  if(codec=='VP8{sw}')       res = Array('','176x144','352x288','704x576','320x240','640x480','1024x768','424x240','640x360','852x480','1280x720','1364x768','1920x1080');\n"
+                "  sel.options.length = 0;\n"
+                "  for(var i=0; i<res.length; i++) {\n"
+                "    sel.options[sel.options.length] = new Option(res[i],res[i]);\n"
+                "  }\n"
+                "  sel.value = value;\n"
+                "}\n";
+
   s << EndTable();
+
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_h323_endpoints", "");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
@@ -871,6 +942,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
   firstEditRow = 2;
   rowBorders = TRUE;
@@ -911,15 +983,20 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   PStringList keys = MCUConfig("SIP Audio").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
+    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
+      continue;
+    if(!ep.CheckCapability(keys[i]))
+      continue;
     if(MCUConfig("SIP Audio").GetBoolean(keys[i])) a_caps += ","+keys[i];
   }
   keys = MCUConfig("SIP Video").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
+    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
+      continue;
+    if(!ep.CheckCapability(keys[i]))
+      continue;
     PString capname = keys[i];
-    if(capname == "MP4V-ES{sw}") capname = "MP4V-ES";
     if(MCUConfig("SIP Video").GetBoolean(keys[i])) v_caps += ","+capname;
   }
 
@@ -1055,17 +1132,24 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     {
       PString a_codec = scfg.GetString("Audio codec");
       PString v_codec = scfg.GetString("Video codec");
+      // bak 13.06.2014, restore resolution from capability
+      if(ep.CheckCapability("H.264") && v_codec.Left(5) == "H.264" && v_codec != "H.264{sw}")
+      {
+        if(scfg.GetString("Video resolution") == "")
+          scfg.SetString("Video resolution", H264ResolutionRestore(v_codec));
+        v_codec = "H.264{sw}"; scfg.SetString("Video codec(transmit)", v_codec);
+      }
+      //
       if(a_codec != "" && a_caps.Find(a_codec) == P_MAX_INDEX) a_caps = a_codec+","+a_caps;
       if(v_codec != "" && v_caps.Find(v_codec) == P_MAX_INDEX) v_caps = v_codec+","+v_caps;
-      PString video_pt = scfg.GetString("Video payload type");
-      PString select_pt; for(int i = 96; i < 128; i++) select_pt += ","+PString(i);
-      PString video_fmtp = scfg.GetString("Video fmtp");
+
       PString s2;
       s2 += NewItemArray(name, 25);
+      //
       s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
       //
-      PString video_id = PGloballyUniqueID().AsString();
-      PString res_id = PGloballyUniqueID().AsString();
+      PString video_id = rand();
+      PString res_id = rand();
       PString res_value = scfg.GetString("Video resolution");
       PString video_onchange = "video_res_toggle(\""+res_id+"\", this.value);";
       javascript += "video_res_toggle('"+res_id+"', '"+v_codec+"');\n";
@@ -1073,8 +1157,10 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+(JsLocale("window.l_name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
       //
-      s2 += rowArray+(JsLocale("window.l_name_video")+" payload type")+SelectItem(name, video_pt, select_pt)+"</tr>";
-      s2 += rowArray+(JsLocale("window.l_name_video")+" fmtp")+StringItem(name, video_fmtp)+"</tr>";
+      PString select_pt; for(int i = 96; i < 128; i++) select_pt += ","+PString(i);
+      s2 += rowArray+(JsLocale("window.l_name_video")+" payload type")+SelectItem(name, scfg.GetString("Video payload type"), select_pt)+"</tr>";
+      //
+      s2 += rowArray+(JsLocale("window.l_name_video")+" fmtp")+StringItem(name, scfg.GetString("Video fmtp"))+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1085,12 +1171,12 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
                 "  var sel = document.getElementById(id);\n"
                 "  var value = sel.value;\n"
                 "  var res = Array();\n"
-                "  if(codec=='H261')      res = Array('','176x144','352x288');\n"
-                "  if(codec=='H263')      res = Array('','176x144','352x288','704x576');\n"
-                "  if(codec=='H263-1998') res = Array('','176x144','352x288','704x576');\n"
-                "  if(codec=='H264')      res = Array('','176x144','352x288','704x576','1280x1024','1600x1200','1280x720');\n"
-                "  if(codec=='MP4V-ES')   res = Array('','176x144','352x288','704x576','640x480','1024x768');\n"
-                "  if(codec=='VP8')       res = Array('','176x144','352x288','704x576','320x240','640x480','1024x768','424x240','640x360','852x480','1280x720','1364x768','1920x1080');\n"
+                "  if(codec=='H.261{sw}')     res = Array('','176x144','352x288');\n"
+                "  if(codec=='H.263{sw}')     res = Array('','176x144','352x288','704x576');\n"
+                "  if(codec=='H.263p{sw}')    res = Array('','176x144','352x288','704x576');\n"
+                "  if(codec=='H.264{sw}')     res = Array('','176x144','352x288','704x576','1280x720','1366x768','1920x1080');\n"
+                "  if(codec=='MP4V-ES{sw}')   res = Array('','176x144','352x288','704x576','640x480','1024x768','1280x720');\n"
+                "  if(codec=='VP8{sw}')       res = Array('','176x144','352x288','704x576','320x240','640x480','1024x768','424x240','640x360','852x480','1280x720','1364x768','1920x1080');\n"
                 "  sel.options.length = 0;\n"
                 "  for(var i=0; i<res.length; i++) {\n"
                 "    sel.options[sel.options.length] = new Option(res[i],res[i]);\n"
@@ -1335,17 +1421,6 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   s << item;
 
   //s << StringField(NATRouterIPKey, cfg.GetString(NATRouterIPKey));
-
-#if MCU_VIDEO
-  mcu.h264DefaultLevelForSip = cfg.GetString(H264LevelForSIPKey, "9").AsInteger();
-  if(mcu.h264DefaultLevelForSip < 9) mcu.h264DefaultLevelForSip=9;
-  else if(mcu.h264DefaultLevelForSip>13 && mcu.h264DefaultLevelForSip<20) mcu.h264DefaultLevelForSip=13;
-  else if(mcu.h264DefaultLevelForSip>22 && mcu.h264DefaultLevelForSip<30) mcu.h264DefaultLevelForSip=22;
-  else if(mcu.h264DefaultLevelForSip>32 && mcu.h264DefaultLevelForSip<40) mcu.h264DefaultLevelForSip=32;
-  else if(mcu.h264DefaultLevelForSip>42 && mcu.h264DefaultLevelForSip<50) mcu.h264DefaultLevelForSip=42;
-  else if(mcu.h264DefaultLevelForSip>51) mcu.h264DefaultLevelForSip=51;
-  s << SelectField(H264LevelForSIPKey, PString(mcu.h264DefaultLevelForSip), "9,10,11,12,13,20,21,22,30,31,32,40,41,42,50,51");
-#endif
 
   mcu.GetSipEndpoint()->sipListenerArray = sipListener;
 

@@ -439,14 +439,25 @@ class TablePConfigPage : public PConfigPage
        if(valuePos != P_MAX_INDEX)
          value = item.Right(item.GetSize()-valuePos-2);
 
+       PString keyNext;
        PString valueNext;
-       if((i+1) < entityData.GetSize()) valueNext = PURL::UntranslateString(entityData[i+1].Tokenise("=")[1], PURL::QueryTranslation);
+       if((i+1) < entityData.GetSize())
+       {
+         PString itemNext = PURL::UntranslateString(entityData[i+1], PURL::QueryTranslation);
+         keyNext = itemNext.Tokenise("=")[0];
+         valueNext = itemNext.Tokenise("=")[1];
+       }
        if(value == "FALSE" && valueNext == "TRUE") continue;
        if(key == "submit") continue;
-       if(key == "TableItemId") { TableItemId = value; continue; }
+       if(key == "TableItemId")
+       {
+         TableItemId = value;
+         if(keyNext == "TableItemId") // подряд два ID если пустой select
+           dataArray[dataArray.GetSize()-1] += ",";
+         continue;
+       }
 
        if(num == 1) curKey = key;
-       PINDEX asize = dataArray.GetSize();
        if(key != curKey)
        {
          num = 0;
@@ -455,7 +466,7 @@ class TablePConfigPage : public PConfigPage
          // filter separator
          if(passwordFields.GetAt(TableItemId) == NULL) value.Replace(separator," ",TRUE);
          // append separator
-         if(num != 1) dataArray[asize-1] += separator;
+         if(num != 1) dataArray[dataArray.GetSize()-1] += separator;
          // password fields
          if(passwordFields.GetAt(TableItemId) != NULL)
          {
@@ -474,7 +485,7 @@ class TablePConfigPage : public PConfigPage
            }
          }
          //
-         dataArray[asize-1] += value;
+         dataArray[dataArray.GetSize()-1] += value;
        }
        num++;
      }

@@ -1205,94 +1205,75 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const struct h241_to_x264_level {
-    int h241;
-    int idc;
-} h241_to_x264_levels[]=
-{
-    { 15, 9 },
-    { 19,10 },
-    { 22,11 },
-    { 29,12 },
-    { 36,13 },
-    { 43,20 },
-    { 50,21 },
-    { 57,22 },
-    { 64,30 },
-    { 71,31 },
-    { 78,32 },
-    { 85,40 },
-    { 92,41 },
-    { 99,42 },
-    { 106,50},
-    { 113,51},
-    { 0 }
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void MCUSipConnection::SelectCapability_H264(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  int profile = 0, level = 0;
-  int max_mbps = 0, max_fs = 0, max_br = 0;
+  unsigned profile = 0, level = 0;
+  unsigned max_fs = 0, max_mbps = 0, max_br = 0;
   PString sprop;
-
-  PStringArray keys = sc->fmtp.Tokenise(";");
-  for(int kn = 0; kn < keys.GetSize(); kn++)
-  {
-    if(keys[kn].Find("profile-level-id=") == 0) { int p = (keys[kn].Tokenise("=")[1]).AsInteger(16); profile = (p>>16); level = (p&255); }
-    else if(keys[kn].Find("max-mbps=") == 0)    { max_mbps = (keys[kn].Tokenise("=")[1]).AsInteger(); }
-    else if(keys[kn].Find("max-fs=") == 0)      { max_fs = (keys[kn].Tokenise("=")[1]).AsInteger(); }
-    else if(keys[kn].Find("max-br=") == 0)      { max_br = (keys[kn].Tokenise("=")[1]).AsInteger(); }
-    else if(keys[kn].Find("sprop-parameter-sets=") == 0) { sprop = keys[kn].Right(keys[kn].GetLength() - PString("sprop-parameter-sets=").GetLength()); }
-  }
 
   if(!sc->cap)
   {
-    // if(profile == 0 || level == 0) return;
-    if(level == 0)
-    {
-      PTRACE(2, trace_section << "H.264 level will set to " << OpenMCU::Current().h264DefaultLevelForSip);
-      level = OpenMCU::Current().h264DefaultLevelForSip;
-    }
-    int l = 0;
-    while(h241_to_x264_levels[l].idc != 0)
-    {
-      if(level == h241_to_x264_levels[l].idc) { level = h241_to_x264_levels[l].h241; break; }
-      l++;
-    }
-    profile = 64;
-
-    int cl = 0;
-    for(SipCapMapType::iterator it = LocalCaps.begin(); it != LocalCaps.end(); it++)
-    {
-      if(it->second->capname.Find("H.264")==0)
-      {
-        H323Capability *cap = H323Capability::Create(it->second->capname);
-        if(cap)
-        {
-          const OpalMediaFormat & mf = cap->GetMediaFormat();
-          int flevel = mf.GetOptionInteger("Generic Parameter 42");
-          if(flevel > cl && flevel <= level)
-          { cl = flevel; if(sc->cap) delete sc->cap; sc->cap = cap; }
-          else
-          { delete cap; }
-          if(flevel == level) break;
-        }
-      }
-    }
+    if(FindSipCap(LocalCaps, "H.264{sw}"))
+      sc->cap = H323Capability::Create("H.264{sw}");
+//    if(!sc->cap)
+//      return;
+  }
+  if(sc->cap)
+  {
+    SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+    if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
   }
 
+  if(sc->video_width && sc->video_height)
+  {
+    unsigned macroblocks = GetVideoMacroBlocks(sc->video_width, sc->video_height);
+    for(int i = 0; h264_profile_levels[i].level != 0; ++i)
+    {
+      if(macroblocks > h264_profile_levels[i].max_fs)
+        continue;
+      level = h264_profile_levels[i].level_h241;
+      max_fs = (macroblocks/256)+1;
+      //max_mbps = h264_profile_levels[i].max_mbps/500;
+      //max_br = h264_profile_levels[i].max_br/25000;
+      break;
+    }
+  }
+  else if(!sc->cap || sc->cap->GetFormatName() == "H.264{sw}")
+  {
+    PStringArray keys = sc->fmtp.Tokenise(";");
+    for(int kn = 0; kn < keys.GetSize(); kn++)
+    {
+      if(keys[kn].Find("profile-level-id=") == 0) { int p = (keys[kn].Tokenise("=")[1]).AsInteger(16); profile = (p>>16); level = (p&255); }
+      else if(keys[kn].Find("max-mbps=") == 0)    { max_mbps = (keys[kn].Tokenise("=")[1]).AsInteger(); }
+      else if(keys[kn].Find("max-fs=") == 0)      { max_fs = (keys[kn].Tokenise("=")[1]).AsInteger(); }
+      else if(keys[kn].Find("max-br=") == 0)      { max_br = (keys[kn].Tokenise("=")[1]).AsInteger(); }
+      else if(keys[kn].Find("sprop-parameter-sets=") == 0) { sprop = keys[kn].Right(keys[kn].GetLength() - PString("sprop-parameter-sets=").GetLength()); }
+    }
+    if(level == 0) level = 12; // default level
+
+    PString capname;
+    for(int i = 0; h264_profile_levels[i].level != 0; ++i)
+    {
+      if(level > h264_profile_levels[i].level && h264_profile_levels[i+1].level != 0)
+        continue;
+      level = h264_profile_levels[i].level_h241;
+      //max_mbps = h264_profile_levels[i].max_mbps/500;
+      //max_br = h264_profile_levels[i].max_br/25000;
+      capname = PString(h264_profile_levels[i].capname)+"{sw}";
+      break;
+    }
+    if(!sc->cap && capname != "")
+      sc->cap = H323Capability::Create(capname);
+  }
+
+  profile = 64;
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
-    if(sc->preferred_cap == FALSE)
-    {
-      if(level) wf.SetOptionInteger("Generic Parameter 42", level);
-      if(max_mbps) wf.SetOptionInteger("Generic Parameter 3", max_mbps);
-      if(max_fs) wf.SetOptionInteger("Generic Parameter 4", max_fs);
-      if(max_br) wf.SetOptionInteger("Generic Parameter 6", max_br);
-    }
+    if(level) wf.SetOptionInteger("Generic Parameter 42", level);
+    if(max_mbps) wf.SetOptionInteger("Generic Parameter 3", max_mbps);
+    if(max_fs) wf.SetOptionInteger("Generic Parameter 4", max_fs);
+    if(max_br) wf.SetOptionInteger("Generic Parameter 6", max_br);
     if(sprop != "") wf.SetOptionString("sprop-parameter-sets", sprop);
     if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
   }
@@ -1349,53 +1330,6 @@ void MCUSipConnection::SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapabi
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-static struct mpeg4_profile_level {
-  unsigned profile_level;
-  const char* profile_name;
-  unsigned profile;
-  unsigned level;
-  unsigned frame_size;
-  unsigned bitrate;
-  unsigned width;
-  unsigned height;
-} const mpeg4_profile_levels[] = {
-  {   1, "Simple",                     1, 1, 99,    64000,    176,  144  },
-  {   2, "Simple",                     1, 2, 792,   128000,   352,  288  },
-  {   3, "Simple",                     1, 3, 792,   384000,   352,  288  },
-  {   4, "Simple",                     1, 4, 1200,  4000000,  640,  480  },
-  {   5, "Simple",                     1, 5, 1620,  8000000,  704,  576  },
-  {   8, "Simple",                     1, 0, 99,    64000,    176,  144  },
-  {   9, "Simple",                     1, 0, 99,    128000,   176,  144  },
-  {  17, "Simple Scalable",            2, 1, 495,   128000,   352,  288  },
-  {  18, "Simple Scalable",            2, 2, 792,   256000,   352,  288  },
-  {  33, "Core",                       3, 1, 198,   384000,   176,  144  },
-  {  34, "Core",                       3, 2, 792,   2000000,  352,  288  },
-  {  50, "Main",                       4, 2, 1188,  2000000,  352,  288  },
-  {  51, "Main",                       4, 3, 3240,  15000000, 1024, 768  },
-  {  52, "Main",                       4, 4, 16320, 38400000, 1600, 1200 },
-  {  66, "N-Bit",                      5, 2, 792,   2000000,  352,  288  },
-  { 145, "Advanced Real Time Simple",  6, 1, 99,    64000,    176,  144  },
-  { 146, "Advanced Real Time Simple",  6, 2, 396,   128000,   352,  288  },
-  { 147, "Advanced Real Time Simple",  6, 3, 396,   384000,   352,  288  },
-  { 148, "Advanced Real Time Simple",  6, 4, 396,   2000000,  352,  288  },
-  { 161, "Core Scalable",              7, 1, 792,   768000,   352,  288  },
-  { 162, "Core Scalable",              7, 2, 990,   1500000,  352,  288  },
-  { 163, "Core Scalable",              7, 3, 4032,  4000000,  1280, 720  },
-  { 177, "Advanced Coding Efficiency", 8, 1, 792,   384000,   352,  288  },
-  { 178, "Advanced Coding Efficiency", 8, 2, 1188,  2000000,  352,  288  },
-  { 179, "Advanced Coding Efficiency", 8, 3, 3240,  15000000, 1024, 768  },
-  { 180, "Advanced Coding Efficiency", 8, 4, 16320, 38400000, 1920, 1088 },
-  { 193, "Advanced Core",              9, 1, 198,   384000,   176,  144  },
-  { 194, "Advanced Core",              9, 2, 792,   2000000,  352,  288  },
-  { 240, "Advanced Simple",           10, 0, 99,    128000,   176,  144  },
-  { 241, "Advanced Simple",           10, 1, 99,    128000,   176,  144  },
-  { 242, "Advanced Simple",           10, 2, 396,   384000,   352,  288  },
-  { 243, "Advanced Simple",           10, 3, 396,   768000,   352,  288  },
-  { 244, "Advanced Simple",           10, 4, 792,   3000000,  352,  288  },
-  { 245, "Advanced Simple",           10, 5, 1620,  8000000,  704,  576  },
-  { 0 }
-};
-
 void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapability *sc)
 {
   unsigned profile_level_id = 0, profile = 0, level = 0, width = 0, height = 0;;
@@ -1403,12 +1337,13 @@ void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapa
 
   if(!sc->cap)
   {
-    sc->cap = H323Capability::Create("MP4V-ES{sw}");
+    if(FindSipCap(LocalCaps, "MP4V-ES{sw}"))
+      sc->cap = H323Capability::Create("MP4V-ES{sw}");
     if(!sc->cap)
       return;
   }
 
-  SipCapability *local_sc = FindSipCap(LocalCaps, "MP4V-ES{sw}");
+  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
   if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
 
   if(sc->video_width && sc->video_height)
@@ -1424,7 +1359,7 @@ void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapa
       break;
     }
   }
-  else
+  else if(sc->cap->GetFormatName() == "MP4V-ES{sw}")
   {
     PStringArray keys = sc->fmtp.Tokenise(";");
     for(int kn = 0; kn < keys.GetSize(); kn++)

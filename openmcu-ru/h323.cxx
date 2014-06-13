@@ -242,7 +242,7 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
      //AddAllCapabilities(0, 0, "*");
      PTRACE(3, "H323\tAdd all capabilities");
      H323CapabilityFactory::KeyList_T stdCaps = H323CapabilityFactory::GetKeyList();
-     for (H323CapabilityFactory::KeyList_T::const_iterator r = stdCaps.begin(); r != stdCaps.end(); ++r)
+     for(H323CapabilityFactory::KeyList_T::const_iterator r = stdCaps.begin(); r != stdCaps.end(); ++r)
      {
         PString capName(*r);
         OpalMediaFormat mediaFormat(capName);
@@ -350,6 +350,8 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
      if(MCUConfig("RECEIVE_VIDEO").GetBoolean(keys[i]) != 1) continue;
+     if(CheckCapability("H.264") && keys[i].Left(5) == "H.264" && keys[i] != "H.264{sw}")
+       continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      rvCaps[j]=&(listCaps[64*capsNum]);
@@ -360,6 +362,8 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
      if(MCUConfig("TRANSMIT_VIDEO").GetBoolean(keys[i]) != 1) continue;
+     if(CheckCapability("H.264") && keys[i].Left(5) == "H.264" && keys[i] != "H.264{sw}")
+       continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      tvCaps[j]=&(listCaps[64*capsNum]);
@@ -381,6 +385,7 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    cout << "\n";
    AddCapabilities(0,0,(const char **)rsCaps);
    AddCapabilities(0,1,(const char **)rvCaps);
+   AddCapabilitiesMCU();
    cout << capabilities;
 
 #if 0 //  old MCU options
@@ -428,6 +433,37 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   }
 
   PTRACE(2, "MCU\tCodecs (in preference order):\n" << setprecision(2) << GetCapabilities());;
+}
+
+void MCUH323EndPoint::AddCapabilitiesMCU()
+{
+  // add fake H.264 capabilities, need only for H.323
+  H323Capability *dcap = capabilities.FindCapability("H.264{sw}");
+  if(dcap)
+  {
+    unsigned dlevel = dcap->GetMediaFormat().GetOptionInteger("Generic Parameter 42");
+    for(int i = 0; h264_profile_levels[i].level != 0; ++i)
+    {
+      if(dlevel == h264_profile_levels[i].level_h241) // skip default capability
+        continue;
+      H323Capability *new_cap = (H323Capability *)dcap->Clone();
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      wf.SetOptionInteger("Generic Parameter 42", h264_profile_levels[i].level_h241);
+      AddCapability(new_cap);
+    }
+  }
+}
+
+BOOL MCUH323EndPoint::CheckCapability(const PString & formatName)
+{
+  H323CapabilityFactory::KeyList_T stdCaps = H323CapabilityFactory::GetKeyList();
+  for(H323CapabilityFactory::KeyList_T::const_iterator r = stdCaps.begin(); r != stdCaps.end(); ++r)
+  {
+    PString capname(*r);
+    if(capname == formatName || capname == formatName+"{sw}" || capname+"{sw}" == formatName)
+      return TRUE;
+  }
+  return FALSE;
 }
 
 H323Connection * MCUH323EndPoint::CreateConnection(
@@ -2482,30 +2518,60 @@ void MCUH323Connection::OnSetLocalCapabilities()
 {
   PTRACE(1, "MCUH323Connection\tOnSetLocalCapabilities");
   // set endpoint capability
-  PString prefAudioCap = GetEndpointParam("Audio codec(receive)");
-  PString prefVideoCap = GetEndpointParam("Video codec(receive)");
-  unsigned bandwidthTo = GetEndpointParam("Bandwidth to MCU", 0);
-  if(prefAudioCap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive audio: " << prefAudioCap); }
-  if(prefVideoCap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive video: " << prefVideoCap); }
-  if(bandwidthTo != 0) { PTRACE(1, "MCUH323Connection\tSet endpoint bandwidth to mcu: " << bandwidthTo); }
+  PString audio_cap = GetEndpointParam("Audio codec(receive)");
+  PString video_cap = GetEndpointParam("Video codec(receive)");
+  PString video_res = GetEndpointParam("Video resolution(receive)");
+  unsigned bandwidth_to = GetEndpointParam("Bandwidth to MCU", 0);
+  if(audio_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive audio: " << audio_cap); }
+  if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive video: " << video_cap << " " << video_res); }
+  if(bandwidth_to != 0) { PTRACE(1, "MCUH323Connection\tSet endpoint bandwidth to mcu: " << bandwidth_to); }
 
-  if(prefAudioCap.ToLower().Find("ulaw") != P_MAX_INDEX || prefAudioCap.ToLower().Find("alaw") != P_MAX_INDEX)
-    prefAudioCap = prefAudioCap.Left(prefAudioCap.GetLength()-4);
+  if(audio_cap.ToLower().Find("ulaw") != P_MAX_INDEX || audio_cap.ToLower().Find("alaw") != P_MAX_INDEX)
+    audio_cap = audio_cap.Left(audio_cap.GetLength()-4);
+
+  int level = 29; // default h241 level
+  if(video_cap == "H.264{sw}")
+  {
+    unsigned width = video_res.Tokenise("x")[0].AsInteger();
+    unsigned height = video_res.Tokenise("x")[1].AsInteger();
+    unsigned macroblocks = GetVideoMacroBlocks(width, height);
+    if(macroblocks)
+    {
+      for(int i = 0; h264_profile_levels[i].level != 0; ++i)
+      {
+        if(macroblocks > h264_profile_levels[i].max_fs)
+          continue;
+        level = h264_profile_levels[i].level_h241;
+        break;
+      }
+    }
+  }
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {
-    PString capName = localCapabilities[i].GetFormatName();
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Audio && prefAudioCap != "" && capName != prefAudioCap)
+    PString capname = localCapabilities[i].GetFormatName();
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Audio && audio_cap != "" && capname != audio_cap)
     { localCapabilities.Remove(&localCapabilities[i]); continue; }
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Video && prefVideoCap != "" && capName != prefVideoCap)
-    { localCapabilities.Remove(&localCapabilities[i]); continue; }
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Video && video_cap != "")
+    {
+      if(capname != video_cap)
+      { localCapabilities.Remove(&localCapabilities[i]); continue; }
+      else if(capname == "H.264{sw}")
+      {
+        const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
+        if(level != mf.GetOptionInteger("Generic Parameter 42"))
+        { localCapabilities.Remove(&localCapabilities[i]); continue; }
+        // set video group
+        localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
+      }
+    }
     if(localCapabilities[i].GetMainType() == H323Capability::e_Video)
     {
-      if(bandwidthTo != 0)
+      if(bandwidth_to != 0)
       {
-        if(bandwidthTo < 64) bandwidthTo = 64;
-        if(bandwidthTo > 4000) bandwidthTo = 4000;
-        localCapabilities[i].GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidthTo*1000);
+        if(bandwidth_to < 64) bandwidth_to = 64;
+        if(bandwidth_to > 4000) bandwidth_to = 4000;
+        localCapabilities[i].GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidth_to*1000);
       }
     }
     i++;
@@ -2515,74 +2581,73 @@ void MCUH323Connection::OnSetLocalCapabilities()
 
 BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteCaps, const H245_MultiplexCapability * muxCap, H245_TerminalCapabilitySetReject & rejectPDU)
 {
-  PString prefAudioCap = GetEndpointParam("Audio codec(transmit)");
-  PString prefVideoCap = GetEndpointParam("Video codec(transmit)");
-  if(prefAudioCap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit audio: " << prefAudioCap); }
-  if(prefVideoCap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit video: " << prefVideoCap); }
+  PString audio_cap = GetEndpointParam("Audio codec(transmit)");
+  PString video_cap = GetEndpointParam("Video codec(transmit)");
+  PString video_res = GetEndpointParam("Video resolution(transmit)");
+  if(audio_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit audio: " << audio_cap); }
+  if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit video: " << video_cap << " " << video_res); }
 
-  BOOL prefVideoCodecAgreed = FALSE;
-  unsigned bandwidthFrom = 0;
+  unsigned bandwidth_from = 0;
+  BOOL video_codec_agreed = FALSE;
 
   H323Capabilities _remoteCaps;
   for(PINDEX i = 0; i < remoteCaps.GetSize(); i++)
   {
-    PString capName = remoteCaps[i].GetFormatName();
+    PString capname = remoteCaps[i].GetFormatName();
     if(remoteCaps[i].GetMainType() == H323Capability::e_Video)
     {
-      if(prefVideoCap == "")
+      if(video_cap == "")
       {
         _remoteCaps.Copy(remoteCaps[i]);
-        //_remoteCaps.SetCapability(0, remoteCaps[i].GetMainType(), (H323Capability*)remoteCaps[i].Clone());
-      } else {
-        if(bandwidthFrom == 0)
-          bandwidthFrom = remoteCaps[i].GetMediaFormat().GetOptionInteger("Max Bit Rate");
-        if(prefVideoCap.Left(4) == capName.Left(4))
-          prefVideoCodecAgreed = TRUE;
+      }
+      else
+      {
+        if(bandwidth_from == 0)
+          bandwidth_from = remoteCaps[i].GetMediaFormat().GetOptionInteger("Max Bit Rate");
+        if(video_cap.Left(4) == capname.Left(4))
+          video_codec_agreed = TRUE;
       }
     }
     else if(remoteCaps[i].GetMainType() == H323Capability::e_Audio)
     {
-      if(prefAudioCap == "" || (prefAudioCap != "" && capName == prefAudioCap))
+      if(audio_cap == "" || (audio_cap != "" && capname == audio_cap))
         _remoteCaps.Copy(remoteCaps[i]);
-        //_remoteCaps.SetCapability(0, 0, (H323Capability*)remoteCaps[i].Clone());
     }
     else
     {
       _remoteCaps.Copy(remoteCaps[i]);
-      //_remoteCaps.SetCapability(0, remoteCaps[i].GetMainType(), (H323Capability*)remoteCaps[i].Clone());
     }
   }
   // replace video capability with default parameters
-  if(prefVideoCap != "" && prefVideoCodecAgreed)
+  if(video_cap != "" && video_codec_agreed)
   {
-    H323Capability *newCap = H323Capability::Create(prefVideoCap);
-    if(newCap)
+    H323Capability *new_cap = H323Capability::Create(video_cap);
+    if(new_cap)
     {
-      OpalMediaFormat & wf = newCap->GetWritableMediaFormat();
-      if(prefVideoCap.Find("H.264") != P_MAX_INDEX)
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      if(video_cap.Find("H.264") != P_MAX_INDEX)
       {
-        unsigned h264BaseLevel = wf.GetOptionInteger("Generic Parameter 42");
-        unsigned h264MaxFs = 0;
-        if(h264BaseLevel == 15) h264MaxFs = 99;
-        else if(h264BaseLevel == 22) h264MaxFs = 396;
-        else if(h264BaseLevel == 29) h264MaxFs = 396;
-        else if(h264BaseLevel == 36) h264MaxFs = 396;
-        else if(h264BaseLevel == 43) h264MaxFs = 396;
-        else if(h264BaseLevel == 50) h264MaxFs = 792;
-        else if(h264BaseLevel == 57) h264MaxFs = 1620;
-        else if(h264BaseLevel == 64) h264MaxFs = 1620;
-        else if(h264BaseLevel == 71) h264MaxFs = 3600;
-        else if(h264BaseLevel == 78) h264MaxFs = 5120;
-        else if(h264BaseLevel == 85) h264MaxFs = 8192;
-        else if(h264BaseLevel == 92) h264MaxFs = 8192;
-        else if(h264BaseLevel == 99) h264MaxFs = 8704;
-        else if(h264BaseLevel == 106) h264MaxFs = 22080;
-        else if(h264BaseLevel == 113) h264MaxFs = 36864;
-        if(h264MaxFs != 0) wf.SetOptionInteger("Generic Parameter 4", (h264MaxFs/256)+1);
+        unsigned width = video_res.Tokenise("x")[0].AsInteger();
+        unsigned height = video_res.Tokenise("x")[1].AsInteger();
+        unsigned macroblocks = GetVideoMacroBlocks(width, height);
+        unsigned level = 0;
+        if(macroblocks == 0)
+          level = wf.GetOptionInteger("Generic Parameter 42");
+        for(int i = 0; h264_profile_levels[i].level != 0; ++i)
+        {
+          if(macroblocks && macroblocks > h264_profile_levels[i].max_fs)
+            continue;
+          if(level && level != h264_profile_levels[i].level_h241)
+            continue;
+          wf.SetOptionInteger("Generic Parameter 42", h264_profile_levels[i].level_h241);
+          wf.SetOptionInteger("Generic Parameter 3", h264_profile_levels[i].max_mbps/500);
+          wf.SetOptionInteger("Generic Parameter 4", (h264_profile_levels[i].max_fs/256)+1);
+          wf.SetOptionInteger("Generic Parameter 6", h264_profile_levels[i].max_br/25000);
+          break;
+        }
       }
-      wf.SetOptionInteger("Max Bit Rate", bandwidthFrom);
-      _remoteCaps.Add(newCap);
-      //_remoteCaps.SetCapability(0, 1, newCap);
+      wf.SetOptionInteger("Max Bit Rate", bandwidth_from);
+      _remoteCaps.Add(new_cap);
     }
   }
   //cout << "OnReceivedCapabilitySet\n" << remoteCaps << "\n";
