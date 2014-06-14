@@ -336,6 +336,9 @@ void H263_Base_EncoderContext::SetTargetBitrate (unsigned rate)
   _context->rc_max_rate = m_targetBitRate;
   _context->bit_rate = _context->rc_max_rate*7/8;
   _context->rc_buffer_size = _context->rc_max_rate * 2;
+  // rc buffer underflow
+  if(_context->rc_buffer_size < _width*_height*16)
+    _context->rc_buffer_size = _width*_height*16;
 
   _context->bit_rate_tolerance = m_targetBitRate/10;
   int tolerance_min =  _context->bit_rate*_context->time_base.num/_context->time_base.den + 1; // one frame bits
