@@ -2529,22 +2529,14 @@ void MCUH323Connection::OnSetLocalCapabilities()
   if(audio_cap.ToLower().Find("ulaw") != P_MAX_INDEX || audio_cap.ToLower().Find("alaw") != P_MAX_INDEX)
     audio_cap = audio_cap.Left(audio_cap.GetLength()-4);
 
-  int level = 29; // default h241 level
+  unsigned level_h241 = 29; // default h241 level
   if(video_cap == "H.264{sw}")
   {
     unsigned width = video_res.Tokenise("x")[0].AsInteger();
     unsigned height = video_res.Tokenise("x")[1].AsInteger();
-    unsigned macroblocks = GetVideoMacroBlocks(width, height);
-    if(macroblocks)
-    {
-      for(int i = 0; h264_profile_levels[i].level != 0; ++i)
-      {
-        if(macroblocks > h264_profile_levels[i].max_fs)
-          continue;
-        level = h264_profile_levels[i].level_h241;
-        break;
-      }
-    }
+    unsigned max_fs = GetVideoMacroBlocks(width, height);
+    unsigned level = 0;
+    GetParamsH264(level, level_h241, max_fs);
   }
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
@@ -2559,7 +2551,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
       else if(capname == "H.264{sw}")
       {
         const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
-        if(level != mf.GetOptionInteger("Generic Parameter 42"))
+        if(level_h241 != (unsigned)mf.GetOptionInteger("Generic Parameter 42"))
         { localCapabilities.Remove(&localCapabilities[i]); continue; }
         // set video group
         localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
@@ -2629,22 +2621,15 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
       {
         unsigned width = video_res.Tokenise("x")[0].AsInteger();
         unsigned height = video_res.Tokenise("x")[1].AsInteger();
-        unsigned macroblocks = GetVideoMacroBlocks(width, height);
-        unsigned level = 0;
-        if(macroblocks == 0)
-          level = wf.GetOptionInteger("Generic Parameter 42");
-        for(int i = 0; h264_profile_levels[i].level != 0; ++i)
-        {
-          if(macroblocks && macroblocks > h264_profile_levels[i].max_fs)
-            continue;
-          if(level && level != h264_profile_levels[i].level_h241)
-            continue;
-          wf.SetOptionInteger("Generic Parameter 42", h264_profile_levels[i].level_h241);
-          wf.SetOptionInteger("Generic Parameter 3", h264_profile_levels[i].max_mbps/500);
-          wf.SetOptionInteger("Generic Parameter 4", (h264_profile_levels[i].max_fs/256)+1);
-          wf.SetOptionInteger("Generic Parameter 6", h264_profile_levels[i].max_br/25000);
-          break;
-        }
+        unsigned max_fs = GetVideoMacroBlocks(width, height);
+        unsigned level = 0, level_h241 = 0, max_mbps = 0, max_br = 0;
+        if(max_fs == 0)
+          level_h241 = wf.GetOptionInteger("Generic Parameter 42");
+        GetParamsH264(level, level_h241, max_fs, max_mbps, max_br);
+        wf.SetOptionInteger("Generic Parameter 42", level_h241);
+        wf.SetOptionInteger("Generic Parameter 4", (max_fs/256)+1);
+        wf.SetOptionInteger("Generic Parameter 3", max_mbps/500);
+        wf.SetOptionInteger("Generic Parameter 6", max_br/25000);
       }
       wf.SetOptionInteger("Max Bit Rate", bandwidth_from);
       _remoteCaps.Add(new_cap);

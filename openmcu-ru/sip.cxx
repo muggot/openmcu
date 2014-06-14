@@ -1207,8 +1207,9 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
 
 void MCUSipConnection::SelectCapability_H264(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  unsigned profile = 0, level = 0;
+  unsigned profile = 0, level = 0, level_h241 = 0;
   unsigned max_fs = 0, max_mbps = 0, max_br = 0;
+  unsigned width = 0, height = 0;
   PString sprop;
 
   if(!sc->cap)
@@ -1226,17 +1227,10 @@ void MCUSipConnection::SelectCapability_H264(SipCapMapType & LocalCaps, SipCapab
 
   if(sc->video_width && sc->video_height)
   {
-    unsigned macroblocks = GetVideoMacroBlocks(sc->video_width, sc->video_height);
-    for(int i = 0; h264_profile_levels[i].level != 0; ++i)
-    {
-      if(macroblocks > h264_profile_levels[i].max_fs)
-        continue;
-      level = h264_profile_levels[i].level_h241;
-      max_fs = (macroblocks/256)+1;
-      //max_mbps = h264_profile_levels[i].max_mbps/500;
-      //max_br = h264_profile_levels[i].max_br/25000;
-      break;
-    }
+    max_fs = GetVideoMacroBlocks(sc->video_width, sc->video_height);
+    GetParamsH264(level, level_h241, max_fs, max_mbps, max_br);
+    width = sc->video_width;
+    height = sc->video_height;
   }
   else if(!sc->cap || sc->cap->GetFormatName() == "H.264{sw}")
   {
@@ -1252,29 +1246,26 @@ void MCUSipConnection::SelectCapability_H264(SipCapMapType & LocalCaps, SipCapab
     if(level == 0) level = 12; // default level
 
     PString capname;
-    for(int i = 0; h264_profile_levels[i].level != 0; ++i)
-    {
-      if(level > h264_profile_levels[i].level && h264_profile_levels[i+1].level != 0)
-        continue;
-      level = h264_profile_levels[i].level_h241;
-      //max_mbps = h264_profile_levels[i].max_mbps/500;
-      //max_br = h264_profile_levels[i].max_br/25000;
-      capname = PString(h264_profile_levels[i].capname)+"{sw}";
-      break;
-    }
+    GetParamsH264(level, level_h241, max_fs, max_mbps, max_br, capname);
     if(!sc->cap && capname != "")
-      sc->cap = H323Capability::Create(capname);
+      sc->cap = H323Capability::Create(capname+"{sw}");
   }
 
   profile = 64;
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
-    if(level) wf.SetOptionInteger("Generic Parameter 42", level);
-    if(max_mbps) wf.SetOptionInteger("Generic Parameter 3", max_mbps);
-    if(max_fs) wf.SetOptionInteger("Generic Parameter 4", max_fs);
-    if(max_br) wf.SetOptionInteger("Generic Parameter 6", max_br);
+    if(level_h241) wf.SetOptionInteger("Generic Parameter 42", level_h241);
+    if(max_fs) wf.SetOptionInteger("Generic Parameter 4", (max_fs/256)+1);
+    if(max_mbps) wf.SetOptionInteger("Generic Parameter 3", max_mbps/500);
+    if(max_br) wf.SetOptionInteger("Generic Parameter 6", max_br/25000);
     if(sprop != "") wf.SetOptionString("sprop-parameter-sets", sprop);
+    if(width && height)
+    {
+      wf.SetOptionInteger("Custom Resolution", 1);
+      wf.SetOptionInteger("Frame Width", width);
+      wf.SetOptionInteger("Frame Height", height);
+    }
     if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
   }
 }
@@ -1332,7 +1323,7 @@ void MCUSipConnection::SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapabi
 
 void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  unsigned profile_level_id = 0, profile = 0, level = 0, width = 0, height = 0;;
+  unsigned profile_level = 0, profile = 0, level = 0, max_fs = 0, width = 0, height = 0;;
   PString config;
 
   if(!sc->cap)
@@ -1348,37 +1339,21 @@ void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapa
 
   if(sc->video_width && sc->video_height)
   {
-    for(int i = 0; mpeg4_profile_levels[i].profile_level != 0; ++i)
-    {
-      if(sc->video_width != mpeg4_profile_levels[i].width && sc->video_height != mpeg4_profile_levels[i].height)
-        continue;
-      profile = mpeg4_profile_levels[i].profile;
-      level = mpeg4_profile_levels[i].level;
-      width = sc->video_width;
-      height = sc->video_height;
-      break;
-    }
+    max_fs = GetVideoMacroBlocks(sc->video_width, sc->video_height);
+    GetParamsMpeg4(profile_level, profile, level, max_fs);
+    width = sc->video_width;
+    height = sc->video_height;
   }
   else if(sc->cap->GetFormatName() == "MP4V-ES{sw}")
   {
     PStringArray keys = sc->fmtp.Tokenise(";");
     for(int kn = 0; kn < keys.GetSize(); kn++)
     {
-      if(keys[kn].Find("profile-level-id=") == 0) { profile_level_id = keys[kn].Tokenise("=")[1].AsInteger(); }
+      if(keys[kn].Find("profile-level-id=") == 0) { profile_level = keys[kn].Tokenise("=")[1].AsInteger(); }
       else if(keys[kn].Find("config=") == 0) { config = keys[kn].Tokenise("=")[1]; }
     }
-    if(profile_level_id == 0) profile_level_id = 3;
-
-    for(int i = 0; mpeg4_profile_levels[i].profile_level != 0; ++i)
-    {
-      if(profile_level_id != mpeg4_profile_levels[i].profile_level)
-        continue;
-      profile = mpeg4_profile_levels[i].profile;
-      level = mpeg4_profile_levels[i].level;
-      width = mpeg4_profile_levels[i].width;
-      height = mpeg4_profile_levels[i].height;
-      break;
-    }
+    if(profile_level == 0) profile_level = 3;
+    GetParamsMpeg4(profile_level, profile, level, max_fs, width, height);
   }
 
   if(sc->cap)

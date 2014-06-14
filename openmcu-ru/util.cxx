@@ -277,3 +277,72 @@ int PTimedMutexTryLock(PTimedMutex & mutex, const PTimeInterval & timeout, PStri
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+unsigned GetVideoMacroBlocks(unsigned width, unsigned height)
+{
+  if(width == 0 || height == 0) return 0;
+  return ((width+15)/16) * ((height+15)/16);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs)
+{
+  unsigned width = 0, height = 0;
+  return GetParamsMpeg4(profile_level, profile, level, max_fs, width, height);
+}
+BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs, unsigned & width, unsigned & height)
+{
+  for(int i = 0; mpeg4_profile_levels[i].level != 0; ++i)
+  {
+    // from profile_level
+    if(profile_level != mpeg4_profile_levels[i].profile_level && mpeg4_profile_levels[i+1].level != 0)
+      continue;
+    // from max_fs
+    if(max_fs && max_fs > mpeg4_profile_levels[i].max_fs && mpeg4_profile_levels[i+1].level != 0)
+      continue;
+    if(!profile) profile = mpeg4_profile_levels[i].profile;
+    if(!level) level = mpeg4_profile_levels[i].level;
+    if(!max_fs) max_fs = mpeg4_profile_levels[i].max_fs;
+    if(!width) width = mpeg4_profile_levels[i].width;
+    if(!height) height = mpeg4_profile_levels[i].height;
+    return TRUE;
+  }
+  return FALSE;
+}
+
+BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs)
+{
+  unsigned max_mbps = 0, max_br = 0;
+  return GetParamsH264(level, level_h241, max_fs, max_mbps, max_br);
+}
+BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br)
+{
+  PString capname;
+  return GetParamsH264(level, level_h241, max_fs, max_mbps, max_br, capname);
+}
+BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br, PString & capname)
+{
+  for(int i = 0; h264_profile_levels[i].level != 0; ++i)
+  {
+    // from level
+    if(level && level > h264_profile_levels[i].level && h264_profile_levels[i+1].level != 0)
+      continue;
+    // from level h241
+    if(level_h241 && level_h241 > h264_profile_levels[i].level_h241 && h264_profile_levels[i+1].level != 0)
+      continue;
+    // from max_fs
+    if(max_fs && max_fs > h264_profile_levels[i].max_fs && h264_profile_levels[i+1].level != 0)
+      continue;
+    if(!level) level = h264_profile_levels[i].level;
+    if(!level_h241) level = h264_profile_levels[i].level_h241;
+    if(!max_fs) max_fs = h264_profile_levels[i].max_fs;
+    if(!max_mbps) max_mbps = h264_profile_levels[i].max_mbps;
+    if(!max_br) max_br = h264_profile_levels[i].max_br;
+    if(capname == "") capname = h264_profile_levels[i].capname;
+    return TRUE;
+  }
+  return FALSE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////

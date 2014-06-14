@@ -90,6 +90,13 @@ class MCUURL : public PURL
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+unsigned GetVideoMacroBlocks(unsigned width, unsigned height);
+BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs);
+BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs, unsigned & width, unsigned & height);
+BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs);
+BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br);
+BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br, PString & capname);
+
 static struct mpeg4_profile_level {
   unsigned profile_level;
   const char* profile_name;
@@ -103,31 +110,31 @@ static struct mpeg4_profile_level {
   {   1, "Simple",                     1, 1, 99,    64000,    176,  144  },
   {   2, "Simple",                     1, 2, 792,   128000,   352,  288  },
   {   3, "Simple",                     1, 3, 792,   384000,   352,  288  },
-  {   4, "Simple",                     1, 4, 1200,  4000000,  640,  480  },
+  {   4, "Simple",                     1, 4, 1200,  4000000,  352,  288  },
   {   5, "Simple",                     1, 5, 1620,  8000000,  704,  576  },
   {   8, "Simple",                     1, 0, 99,    64000,    176,  144  },
   {   9, "Simple",                     1, 0, 99,    128000,   176,  144  },
-  {  17, "Simple Scalable",            2, 1, 495,   128000,   352,  288  },
-  {  18, "Simple Scalable",            2, 2, 792,   256000,   352,  288  },
-  {  33, "Core",                       3, 1, 198,   384000,   176,  144  },
-  {  34, "Core",                       3, 2, 792,   2000000,  352,  288  },
-  {  50, "Main",                       4, 2, 1188,  2000000,  352,  288  },
-  {  51, "Main",                       4, 3, 3240,  15000000, 1024, 768  },
-  {  52, "Main",                       4, 4, 16320, 38400000, 1600, 1200 },
-  {  66, "N-Bit",                      5, 2, 792,   2000000,  352,  288  },
+//  {  17, "Simple Scalable",            2, 1, 495,   128000,   0,    0    },
+//  {  18, "Simple Scalable",            2, 2, 792,   256000,   0,    0    },
+//  {  33, "Core",                       3, 1, 198,   384000,   0,    0    },
+//  {  34, "Core",                       3, 2, 792,   2000000,  0,    0    },
+//  {  50, "Main",                       4, 2, 1188,  2000000,  0,    0    },
+//  {  51, "Main",                       4, 3, 3240,  15000000, 0,    0    },
+//  {  52, "Main",                       4, 4, 16320, 38400000, 0,    0    },
+//  {  66, "N-Bit",                      5, 2, 792,   2000000,  0,    0    },
   { 145, "Advanced Real Time Simple",  6, 1, 99,    64000,    176,  144  },
   { 146, "Advanced Real Time Simple",  6, 2, 396,   128000,   352,  288  },
   { 147, "Advanced Real Time Simple",  6, 3, 396,   384000,   352,  288  },
   { 148, "Advanced Real Time Simple",  6, 4, 396,   2000000,  352,  288  },
-  { 161, "Core Scalable",              7, 1, 792,   768000,   352,  288  },
-  { 162, "Core Scalable",              7, 2, 990,   1500000,  352,  288  },
-  { 163, "Core Scalable",              7, 3, 4032,  4000000,  1280, 720  },
-  { 177, "Advanced Coding Efficiency", 8, 1, 792,   384000,   352,  288  },
-  { 178, "Advanced Coding Efficiency", 8, 2, 1188,  2000000,  352,  288  },
-  { 179, "Advanced Coding Efficiency", 8, 3, 3240,  15000000, 1024, 768  },
-  { 180, "Advanced Coding Efficiency", 8, 4, 16320, 38400000, 1920, 1088 },
-  { 193, "Advanced Core",              9, 1, 198,   384000,   176,  144  },
-  { 194, "Advanced Core",              9, 2, 792,   2000000,  352,  288  },
+//  { 161, "Core Scalable",              7, 1, 792,   768000,   0,    0    },
+//  { 162, "Core Scalable",              7, 2, 990,   1500000,  0,    0    },
+//  { 163, "Core Scalable",              7, 3, 4032,  4000000,  0,    0    },
+//  { 177, "Advanced Coding Efficiency", 8, 1, 792,   384000,   0,    0    },
+//  { 178, "Advanced Coding Efficiency", 8, 2, 1188,  2000000,  0,    0    },
+//  { 179, "Advanced Coding Efficiency", 8, 3, 3240,  15000000, 0,    0    },
+//  { 180, "Advanced Coding Efficiency", 8, 4, 16320, 38400000, 0,    0    },
+//  { 193, "Advanced Core",              9, 1, 198,   384000,   0,    0    },
+//  { 194, "Advanced Core",              9, 2, 792,   2000000,  0,    0    },
   { 240, "Advanced Simple",           10, 0, 99,    128000,   176,  144  },
   { 241, "Advanced Simple",           10, 1, 99,    128000,   176,  144  },
   { 242, "Advanced Simple",           10, 2, 396,   384000,   352,  288  },
@@ -195,12 +202,6 @@ const static struct h264_resolution {
   {  128,   96,   48 }, //  4:3                  0,01 mp
   { 0 }
 };
-
-static inline unsigned GetVideoMacroBlocks(unsigned width, unsigned height)
-{
-  if(width == 0 || height == 0) return 0;
-  return ((width+15)/16) * ((height+15)/16);
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

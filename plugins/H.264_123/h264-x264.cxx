@@ -736,6 +736,8 @@ static int encoder_set_options(
 
   context->Lock();
 
+  int custom_resolution = 0;
+
   if (parm != NULL) {
     const char ** options = (const char **)parm;
     int i;
@@ -770,6 +772,8 @@ static int encoder_set_options(
          context->maxFs = atoi(options[i+1]) * 256;
       if (STRCMPI(options[i], "Generic Parameter 6") == 0)
          context->maxBr = atoi(options[i+1]) * 25000;
+      if (STRCMPI(options[i], "Custom Resolution") == 0)
+         custom_resolution = atoi(options[i+1]);
     }
 
     unsigned profile = context->contextProfile;
@@ -787,11 +791,14 @@ static int encoder_set_options(
 
     TRACE(4, "H264\tCap\tProfile and Level: " << profile << ";" << context->constraints << ";" << level);
 
-    if (!adjust_to_level (context->width, context->height, context->frameTime, context->targetBitrate, level, context->maxMbps, context->maxFs, context->cpb, context->maxBr)) {
-      context->Unlock();
-      return 0;
+    if(!custom_resolution)
+    {
+      if(!adjust_to_level(context->width, context->height, context->frameTime, context->targetBitrate, level, context->maxMbps, context->maxFs, context->cpb, context->maxBr))
+      {
+        context->Unlock();
+        return 0;
+      }
     }
-
 
     cout << "Profile/level: " << profile << "/" << level << "\n";
     cout << "Size: " << context->width << "x" << context->height << "\n";

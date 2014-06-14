@@ -267,6 +267,9 @@ static struct PluginCodec_Option const profileLevelId =
 static struct PluginCodec_Option const spropParameterSets =
   { PluginCodec_StringOption, "sprop-parameter-sets", 0, PluginCodec_EqualMerge, "" };
 
+static struct PluginCodec_Option const customResolution =
+  { PluginCodec_IntegerOption, "Custom Resolution", 0, PluginCodec_NoMerge, 0 };
+
 // MEGA MACRO to set options
 #define DECLARE_GENERIC_OPTIONS(prefix) \
 static struct PluginCodec_Option const * const prefix##_OptionTable[] = { \
@@ -276,6 +279,7 @@ static struct PluginCodec_Option const * const prefix##_OptionTable[] = { \
   &encodingQuality, \
   &profileLevelId, \
   &spropParameterSets, \
+  &customResolution, \
   NULL \
 }; \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \
@@ -399,6 +403,16 @@ static struct PluginCodec_H323GenericCodecData prefix##_h323GenericData[] = { \
 #define H264_LEVEL51          113      // 720P 30fps ? Need to confirm
 #define H264_LEVEL51_MBPS     2400000
 
+
+static const char     H264_Desc[]          = { "H.264" };
+static const char     H264_MediaFmt[]      = { "H.264" };
+static unsigned int   H264_FrameHeight     = CIF_HEIGHT;
+static unsigned int   H264_FrameWidth      = CIF_WIDTH;
+static unsigned int   H264_Profile         = H264_PROFILE_BASE;
+static unsigned int   H264_Level           = H264_LEVEL12;
+static unsigned int   H264_MaxBitRate      = H264_LEVEL12_MBPS;
+static unsigned int   H264_VideoType       = PluginCodec_MediaTypeVideo;
+DECLARE_GENERIC_OPTIONS(H264)
 
 static const char     H264SQCIF_Desc[]          = { "H.264-SQCIF" };
 static const char     H264SQCIF_MediaFmt[]      = { "H.264-SQCIF" };                             
@@ -526,18 +540,19 @@ DECLARE_GENERIC_OPTIONS(H264FHD)
 
 static struct PluginCodec_Definition h264CodecDefn[] = {
 #ifdef H323_H264_TEST
-  DECLARE_H323PARAM(H264SQCIF),
-  DECLARE_H323PARAM(H264QCIF),
-  DECLARE_H323PARAM(H264QCIF2),
-  DECLARE_H323PARAM(H264CIF),
-  DECLARE_H323PARAM(H264CIF2),
-  DECLARE_H323PARAM(H264CIF3),
-  DECLARE_H323PARAM(H264CIF4),
-  DECLARE_H323PARAM(H264CIF42),
-  DECLARE_H323PARAM(H264CIF43),
-  DECLARE_H323PARAM(H264SD),
-  DECLARE_H323PARAM(H264HD),
-  DECLARE_H323PARAM(H264FHD)
+  DECLARE_H323PARAM(H264),
+//  DECLARE_H323PARAM(H264SQCIF),
+//  DECLARE_H323PARAM(H264QCIF),
+//  DECLARE_H323PARAM(H264QCIF2),
+//  DECLARE_H323PARAM(H264CIF),
+//  DECLARE_H323PARAM(H264CIF2),
+//  DECLARE_H323PARAM(H264CIF3),
+//  DECLARE_H323PARAM(H264CIF4),
+//  DECLARE_H323PARAM(H264CIF42),
+//  DECLARE_H323PARAM(H264CIF43),
+//  DECLARE_H323PARAM(H264SD),
+//  DECLARE_H323PARAM(H264HD),
+//  DECLARE_H323PARAM(H264FHD)
 #endif
 };
 
