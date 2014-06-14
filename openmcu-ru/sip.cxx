@@ -1141,27 +1141,67 @@ void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapab
 
 void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  int f=0; // annex f
+  int f = 0; // annex f
+  unsigned width = 0, height = 0;
 
   PStringArray keys = sc->fmtp.Tokenise(";");
   for(int kn=0; kn<keys.GetSize(); kn++)
   { if(keys[kn] == "F=1") { sc->fmtp = "F=1;"; f=1; break; } }
 
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263-16CIF{sw}"))
-    FindCapability_H263(sc,keys,"H.263-16CIF{sw}","CIF16");
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263-4CIF{sw}"))
-    FindCapability_H263(sc,keys,"H.263-4CIF{sw}","CIF4");
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263-CIF{sw}"))
-    FindCapability_H263(sc,keys,"H.263-CIF{sw}","CIF");
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263-QCIF{sw}"))
-    FindCapability_H263(sc,keys,"H.263-QCIF{sw}","QCIF");
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263-SQCIF{sw}"))
-    FindCapability_H263(sc,keys,"H.263-SQCIF{sw}","SQCIF");
+  if(!sc->cap)
+  {
+    if(FindSipCap(LocalCaps, "H.263{sw}"))
+      sc->cap = H323Capability::Create("H.263{sw}");
+  }
+  if(sc->cap)
+  {
+    SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+    if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+  }
+
+  if(sc->video_width && sc->video_height)
+  {
+    width = sc->video_width;
+    height = sc->video_height;
+  }
+  else if(sc->cap && sc->cap->GetFormatName() == "H.263{sw}")
+  {
+    for(int kn=0; kn<keys.GetSize(); kn++)
+    {
+      if(keys[kn].Find("SQCIF=")==0 || keys[kn].Find("QCIF=")==0 || keys[kn].Find("CIF=")==0 || keys[kn].Find("CIF4=")==0 || keys[kn].Find("CIF16=")==0)
+      {
+        OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat(); 
+        PString mpiname = keys[kn].Tokenise("=")[0];
+        int mpi = keys[kn].Tokenise("=")[1].AsInteger();
+        wf.SetOptionInteger(mpiname+" MPI", mpi);
+        GetParamsH263(mpiname, width, height);
+        break;
+      }
+    }
+  }
+  else if(!sc->cap) // совместимость со старыми capability
+  {
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263-16CIF{sw}"))
+      FindCapability_H263(sc,keys,"H.263-16CIF{sw}","CIF16");
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263-4CIF{sw}"))
+      FindCapability_H263(sc,keys,"H.263-4CIF{sw}","CIF4");
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263-CIF{sw}"))
+      FindCapability_H263(sc,keys,"H.263-CIF{sw}","CIF");
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263-QCIF{sw}"))
+      FindCapability_H263(sc,keys,"H.263-QCIF{sw}","QCIF");
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263-SQCIF{sw}"))
+      FindCapability_H263(sc,keys,"H.263-SQCIF{sw}","SQCIF");
+  }
 
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
     if(f) wf.SetOptionBoolean("_advancedPrediction", f);
+    if(width && height)
+    {
+      wf.SetOptionInteger("Frame Width", width);
+      wf.SetOptionInteger("Frame Height", height);
+    }
     if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
   }
 }
@@ -1170,7 +1210,8 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
 
 void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  int f=0,d=0,e=0,g=0; // annexes
+  int f = 0, d = 0, e = 0, g = 0; // annexes
+  unsigned width = 0, height = 0;
 
   PStringArray keys = sc->fmtp.Tokenise(";");
   for(int kn=0; kn<keys.GetSize(); kn++)
@@ -1181,16 +1222,50 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
     else if(keys[kn] == "G=1") { sc->fmtp += "G=1;"; g=1; }
   }
 
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263p-16CIF{sw}"))
-    FindCapability_H263(sc,keys,"H.263p-16CIF{sw}","CIF16");
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263p-4CIF{sw}"))
-    FindCapability_H263(sc,keys,"H.263p-4CIF{sw}","CIF4");
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263p-CIF{sw}"))
-    FindCapability_H263(sc,keys,"H.263p-CIF{sw}","CIF");
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263p-QCIF{sw}"))
-    FindCapability_H263(sc,keys,"H.263p-QCIF{sw}","QCIF");
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263p-SQCIF{sw}"))
-    FindCapability_H263(sc,keys,"H.263p-SQCIF{sw}","SQCIF");
+  if(!sc->cap)
+  {
+    if(FindSipCap(LocalCaps, "H.263p{sw}"))
+      sc->cap = H323Capability::Create("H.263p{sw}");
+  }
+  if(sc->cap)
+  {
+    SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+    if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+  }
+
+  if(sc->video_width && sc->video_height)
+  {
+    width = sc->video_width;
+    height = sc->video_height;
+  }
+  else if(sc->cap && sc->cap->GetFormatName() == "H.263p{sw}")
+  {
+    for(int kn=0; kn<keys.GetSize(); kn++)
+    {
+      if(keys[kn].Find("SQCIF=")==0 || keys[kn].Find("QCIF=")==0 || keys[kn].Find("CIF=")==0 || keys[kn].Find("CIF4=")==0 || keys[kn].Find("CIF16=")==0)
+      {
+        OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat(); 
+        PString mpiname = keys[kn].Tokenise("=")[0];
+        int mpi = keys[kn].Tokenise("=")[1].AsInteger();
+        wf.SetOptionInteger(mpiname+" MPI", mpi);
+        GetParamsH263(mpiname, width, height);
+        break;
+      }
+    }
+  }
+  else if(!sc->cap) // совместимость со старыми capability
+  {
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263p-16CIF{sw}"))
+      FindCapability_H263(sc,keys,"H.263p-16CIF{sw}","CIF16");
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263p-4CIF{sw}"))
+      FindCapability_H263(sc,keys,"H.263p-4CIF{sw}","CIF4");
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263p-CIF{sw}"))
+      FindCapability_H263(sc,keys,"H.263p-CIF{sw}","CIF");
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263p-QCIF{sw}"))
+      FindCapability_H263(sc,keys,"H.263p-QCIF{sw}","QCIF");
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263p-SQCIF{sw}"))
+      FindCapability_H263(sc,keys,"H.263p-SQCIF{sw}","SQCIF");
+  }
 
   if(sc->cap)
   {
@@ -1199,6 +1274,11 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
     if(d) wf.SetOptionBoolean("_unrestrictedVector", d);
     if(e) wf.SetOptionBoolean("_arithmeticCoding", e);
     if(g) wf.SetOptionBoolean("_pbFrames", g);
+    if(width && height)
+    {
+      wf.SetOptionInteger("Frame Width", width);
+      wf.SetOptionInteger("Frame Height", height);
+    }
     if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
   }
 }

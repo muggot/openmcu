@@ -96,6 +96,20 @@ BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & lev
 BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs);
 BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br);
 BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br, PString & capname);
+BOOL GetParamsH263(PString & mpiname, unsigned & width, unsigned & height);
+
+static struct h263_resolution {
+  const char *mpiname;
+  unsigned width;
+  unsigned height;
+} const h263_resolutions[] = {
+  { "SQCIF", 128,  96   },
+  { "QCIF",  176,  144  },
+  { "CIF",   352,  288  },
+  { "CIF4",  704,  576  },
+  { "CIF16", 1408, 1152 },
+  { NULL }
+};
 
 static struct mpeg4_profile_level {
   unsigned profile_level;

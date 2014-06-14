@@ -350,8 +350,10 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
      if(MCUConfig("RECEIVE_VIDEO").GetBoolean(keys[i]) != 1) continue;
-     if(CheckCapability("H.264") && keys[i].Left(5) == "H.264" && keys[i] != "H.264{sw}")
-       continue;
+     if(keys[i].Find("H.264-") == 0 && CheckCapability("H.264")) continue;
+     if(keys[i].Find("H.263-") == 0 && CheckCapability("H.263")) continue;
+     if(keys[i].Find("H.263p-") == 0 && CheckCapability("H.263p")) continue;
+     if(keys[i].Find("H.261-") == 0 && CheckCapability("H.261")) continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      rvCaps[j]=&(listCaps[64*capsNum]);
@@ -362,8 +364,10 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
      if(MCUConfig("TRANSMIT_VIDEO").GetBoolean(keys[i]) != 1) continue;
-     if(CheckCapability("H.264") && keys[i].Left(5) == "H.264" && keys[i] != "H.264{sw}")
-       continue;
+     if(keys[i].Find("H.264-") == 0 && CheckCapability("H.264")) continue;
+     if(keys[i].Find("H.263-") == 0 && CheckCapability("H.263")) continue;
+     if(keys[i].Find("H.263p-") == 0 && CheckCapability("H.263p")) continue;
+     if(keys[i].Find("H.261-") == 0 && CheckCapability("H.261")) continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      tvCaps[j]=&(listCaps[64*capsNum]);
@@ -385,6 +389,7 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    cout << "\n";
    AddCapabilities(0,0,(const char **)rsCaps);
    AddCapabilities(0,1,(const char **)rvCaps);
+
    AddCapabilitiesMCU();
    cout << capabilities;
 
@@ -437,8 +442,9 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
 
 void MCUH323EndPoint::AddCapabilitiesMCU()
 {
+  H323Capability *dcap = NULL;
   // add fake H.264 capabilities, need only for H.323
-  H323Capability *dcap = capabilities.FindCapability("H.264{sw}");
+  dcap = capabilities.FindCapability("H.264{sw}");
   if(dcap)
   {
     unsigned dlevel = dcap->GetMediaFormat().GetOptionInteger("Generic Parameter 42");
@@ -452,17 +458,83 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
       AddCapability(new_cap);
     }
   }
+  // add fake H.263p capabilities, need only for H.323
+  dcap = capabilities.FindCapability("H.263p{sw}");
+  if(dcap)
+  {
+    unsigned dwidth = dcap->GetMediaFormat().GetOptionInteger("Frame Width");
+    unsigned dheight = dcap->GetMediaFormat().GetOptionInteger("Frame Height");
+    for(int i = 0; h263_resolutions[i].width != 0; ++i)
+    {
+      if(dwidth == h263_resolutions[i].width && dheight == h263_resolutions[i].height) // skip default capability
+        continue;
+      H323Capability *new_cap = (H323Capability *)dcap->Clone();
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      wf.SetOptionInteger("Frame Width", h263_resolutions[i].width);
+      wf.SetOptionInteger("Frame Height", h263_resolutions[i].height);
+      wf.SetOptionInteger("SQCIF MPI", 0);
+      wf.SetOptionInteger("QCIF MPI", 0);
+      wf.SetOptionInteger("CIF MPI", 0);
+      wf.SetOptionInteger("CIF4 MPI", 0);
+      wf.SetOptionInteger("CIF16 MPI", 0);
+      wf.SetOptionInteger(PString(h263_resolutions[i].mpiname)+" MPI", 1);
+      AddCapability(new_cap);
+    }
+  }
+  // add fake H.263 capabilities, need only for H.323
+  dcap = capabilities.FindCapability("H.263{sw}");
+  if(dcap)
+  {
+    unsigned dwidth = dcap->GetMediaFormat().GetOptionInteger("Frame Width");
+    unsigned dheight = dcap->GetMediaFormat().GetOptionInteger("Frame Height");
+    for(int i = 0; h263_resolutions[i].width != 0; ++i)
+    {
+      if(dwidth == h263_resolutions[i].width && dheight == h263_resolutions[i].height) // skip default capability
+        continue;
+      H323Capability *new_cap = (H323Capability *)dcap->Clone();
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      wf.SetOptionInteger("Frame Width", h263_resolutions[i].width);
+      wf.SetOptionInteger("Frame Height", h263_resolutions[i].height);
+      wf.SetOptionInteger("SQCIF MPI", 0);
+      wf.SetOptionInteger("QCIF MPI", 0);
+      wf.SetOptionInteger("CIF MPI", 0);
+      wf.SetOptionInteger("CIF4 MPI", 0);
+      wf.SetOptionInteger("CIF16 MPI", 0);
+      wf.SetOptionInteger(PString(h263_resolutions[i].mpiname)+" MPI", 1);
+      AddCapability(new_cap);
+    }
+  }
+  // add fake H.261 capabilities, need only for H.323
+  dcap = capabilities.FindCapability("H.261{sw}");
+  if(dcap)
+  {
+    unsigned dwidth = dcap->GetMediaFormat().GetOptionInteger("Frame Width");
+    unsigned dheight = dcap->GetMediaFormat().GetOptionInteger("Frame Height");
+    for(int i = 0; h263_resolutions[i].width != 0; ++i)
+    {
+      if(dwidth == h263_resolutions[i].width && dheight == h263_resolutions[i].height) // skip default capability
+        continue;
+      if(PString(h263_resolutions[i].mpiname) == "CIF4" || PString(h263_resolutions[i].mpiname) == "CIF16")
+        continue;
+      H323Capability *new_cap = (H323Capability *)dcap->Clone();
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      wf.SetOptionInteger("Frame Width", h263_resolutions[i].width);
+      wf.SetOptionInteger("Frame Height", h263_resolutions[i].height);
+      wf.SetOptionInteger("SQCIF MPI", 0);
+      wf.SetOptionInteger("QCIF MPI", 0);
+      wf.SetOptionInteger("CIF MPI", 0);
+      wf.SetOptionInteger("CIF4 MPI", 0);
+      wf.SetOptionInteger("CIF16 MPI", 0);
+      wf.SetOptionInteger(PString(h263_resolutions[i].mpiname)+" MPI", 1);
+      AddCapability(new_cap);
+    }
+  }
 }
 
 BOOL MCUH323EndPoint::CheckCapability(const PString & formatName)
 {
-  H323CapabilityFactory::KeyList_T stdCaps = H323CapabilityFactory::GetKeyList();
-  for(H323CapabilityFactory::KeyList_T::const_iterator r = stdCaps.begin(); r != stdCaps.end(); ++r)
-  {
-    PString capname(*r);
-    if(capname == formatName || capname == formatName+"{sw}" || capname+"{sw}" == formatName)
-      return TRUE;
-  }
+  if(H323CapabilityFactory::IsSingleton(formatName) || H323CapabilityFactory::IsSingleton(formatName+"{sw}"))
+    return TRUE;
   return FALSE;
 }
 
@@ -2536,8 +2608,16 @@ void MCUH323Connection::OnSetLocalCapabilities()
     unsigned max_fs = GetVideoMacroBlocks(width, height);
     unsigned level = 0;
     GetParamsH264(level, level_h241, max_fs);
+    if(level_h241 == 0) level_h241 = 29; // default h241 level
   }
-  if(level_h241 == 0) level_h241 = 29; // default h241 level
+
+  PString mpiname;
+  if(video_cap == "H.261{sw}" || video_cap == "H.263{sw}" || video_cap == "H.263p{sw}")
+  {
+    if(width && height)
+      GetParamsH263(mpiname, width, height);
+    if(mpiname == "") mpiname = "CIF"; // default
+  }
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {
@@ -2552,6 +2632,14 @@ void MCUH323Connection::OnSetLocalCapabilities()
       {
         const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
         if(level_h241 != (unsigned)mf.GetOptionInteger("Generic Parameter 42"))
+        { localCapabilities.Remove(&localCapabilities[i]); continue; }
+        // set video group
+        localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
+      }
+      else if(video_cap == "H.261{sw}" || video_cap == "H.263{sw}" || video_cap == "H.263p{sw}")
+      {
+        const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
+        if(mf.GetOptionInteger(mpiname+" MPI") == 0)
         { localCapabilities.Remove(&localCapabilities[i]); continue; }
         // set video group
         localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
@@ -2615,7 +2703,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
     if(new_cap)
     {
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      if(video_cap.Find("H.264") != P_MAX_INDEX)
+      if(video_cap.Find("H.264") == 0)
       {
         unsigned max_fs = GetVideoMacroBlocks(width, height);
         unsigned level = 0, level_h241 = 0, max_mbps = 0, max_br = 0;
@@ -2631,6 +2719,22 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
           wf.SetOptionInteger("Custom Resolution", 1);
           wf.SetOptionInteger("Frame Width", width);
           wf.SetOptionInteger("Frame Height", height);
+        }
+      }
+      else if(video_cap == "H.261{sw}" || video_cap == "H.263{sw}" || video_cap == "H.263p{sw}")
+      {
+        if(width && height)
+        {
+          PString mpiname;
+          GetParamsH263(mpiname, width, height);
+          wf.SetOptionInteger("Frame Width", width);
+          wf.SetOptionInteger("Frame Height", height);
+          wf.SetOptionInteger("SQCIF MPI", 0);
+          wf.SetOptionInteger("QCIF MPI", 0);
+          wf.SetOptionInteger("CIF MPI", 0);
+          wf.SetOptionInteger("CIF4 MPI", 0);
+          wf.SetOptionInteger("CIF16 MPI", 0);
+          wf.SetOptionInteger(mpiname+" MPI", 1);
         }
       }
       wf.SetOptionInteger("Max Bit Rate", bandwidth_from);

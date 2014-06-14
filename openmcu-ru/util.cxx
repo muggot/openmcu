@@ -286,6 +286,24 @@ unsigned GetVideoMacroBlocks(unsigned width, unsigned height)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL GetParamsH263(PString & mpiname, unsigned & width, unsigned & height)
+{
+  for(int i = 0; h263_resolutions[i].width != 0; ++i)
+  {
+    // from mpiname
+    if(mpiname != "" && mpiname != h263_resolutions[i].mpiname)
+      continue;
+    // from width && height
+    if(width && height && width != h263_resolutions[i].width && height != h263_resolutions[i].height)
+      continue;
+    mpiname = h263_resolutions[i].mpiname;
+    width = h263_resolutions[i].width;
+    height = h263_resolutions[i].height;
+    return TRUE;
+  }
+  return FALSE;
+}
+
 BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs)
 {
   unsigned width = 0, height = 0;
@@ -296,7 +314,7 @@ BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & lev
   for(int i = 0; mpeg4_profile_levels[i].level != 0; ++i)
   {
     // from profile_level
-    if(profile_level != mpeg4_profile_levels[i].profile_level && mpeg4_profile_levels[i+1].level != 0)
+    if(profile_level && profile_level != mpeg4_profile_levels[i].profile_level && mpeg4_profile_levels[i+1].level != 0)
       continue;
     // from max_fs
     if(max_fs && max_fs > mpeg4_profile_levels[i].max_fs && mpeg4_profile_levels[i+1].level != 0)
