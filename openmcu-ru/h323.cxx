@@ -2529,7 +2529,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
   if(audio_cap.ToLower().Find("ulaw") != P_MAX_INDEX || audio_cap.ToLower().Find("alaw") != P_MAX_INDEX)
     audio_cap = audio_cap.Left(audio_cap.GetLength()-4);
 
-  unsigned level_h241 = 29; // default h241 level
+  unsigned level_h241 = 0;
   if(video_cap == "H.264{sw}")
   {
     unsigned width = video_res.Tokenise("x")[0].AsInteger();
@@ -2538,6 +2538,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
     unsigned level = 0;
     GetParamsH264(level, level_h241, max_fs);
   }
+  if(level_h241 == 0) level_h241 = 29; // default h241 level
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {
