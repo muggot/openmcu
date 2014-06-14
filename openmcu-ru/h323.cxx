@@ -2630,6 +2630,12 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
         wf.SetOptionInteger("Generic Parameter 4", (max_fs/256)+1);
         wf.SetOptionInteger("Generic Parameter 3", max_mbps/500);
         wf.SetOptionInteger("Generic Parameter 6", max_br/25000);
+        if(width && height)
+        {
+          wf.SetOptionInteger("Custom Resolution", 1);
+          wf.SetOptionInteger("Frame Width", width);
+          wf.SetOptionInteger("Frame Height", height);
+        }
       }
       wf.SetOptionInteger("Max Bit Rate", bandwidth_from);
       _remoteCaps.Add(new_cap);

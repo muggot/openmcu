@@ -694,6 +694,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   rowBorders = TRUE;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+  javascript += js_video_receive_res_toggle + js_video_transmit_res_toggle;
 
   s << BeginTable();
 
@@ -892,16 +893,16 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString rv_id = rand();
       PString rres_id = rand();
       PString rres_value = scfg.GetString("Video resolution(receive)");
-      PString rv_onchange = "video_res_toggle(\""+rres_id+"\", this.value);";
-      javascript += "video_res_toggle('"+rres_id+"', '"+rv_codec+"');\n";
+      PString rv_onchange = "video_receive_res_toggle(\""+rres_id+"\", this.value);";
+      javascript += "video_receive_res_toggle('"+rres_id+"', '"+rv_codec+"');\n";
       s2 += rowArray+JsLocale("window.l_name_video_receive")+SelectItem(name, rv_codec, rv_caps, 0, rv_id, rv_onchange)+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_video_resolution")+SelectItem(name, rres_value, rres_value, 0, rres_id)+"</tr>";
       //
       PString tv_id = rand();
       PString tres_id = rand();
       PString tres_value = scfg.GetString("Video resolution(transmit)");
-      PString tv_onchange = "video_res_toggle(\""+tres_id+"\", this.value);";
-      javascript += "video_res_toggle('"+tres_id+"', '"+tv_codec+"');\n";
+      PString tv_onchange = "video_transmit_res_toggle(\""+tres_id+"\", this.value);";
+      javascript += "video_transmit_res_toggle('"+tres_id+"', '"+tv_codec+"');\n";
       s2 += rowArray+JsLocale("window.l_name_video_transmit")+SelectItem(name, tv_codec, tv_caps, 0, tv_id, tv_onchange)+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_video_resolution")+SelectItem(name, tres_value, tres_value, 0, tres_id)+"</tr>";
       s2 += EndItemArray();
@@ -909,23 +910,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     }
     //
   }
-
-  javascript += "function video_res_toggle(id, codec) {\n"
-                "  var sel = document.getElementById(id);\n"
-                "  var value = sel.value;\n"
-                "  var res = Array();\n"
-                "  if(codec=='H.261{sw}')     res = Array('','176x144','352x288');\n"
-                "  if(codec=='H.263{sw}')     res = Array('','176x144','352x288','704x576');\n"
-                "  if(codec=='H.263p{sw}')    res = Array('','176x144','352x288','704x576');\n"
-                "  if(codec=='H.264{sw}')     res = Array('','176x144','352x288','704x576','1280x720','1366x768','1920x1080');\n"
-                "  if(codec=='MP4V-ES{sw}')   res = Array('','176x144','352x288','704x576','640x480','1024x768','1280x720');\n"
-                "  if(codec=='VP8{sw}')       res = Array('','176x144','352x288','704x576','320x240','640x480','1024x768','424x240','640x360','852x480','1280x720','1364x768','1920x1080');\n"
-                "  sel.options.length = 0;\n"
-                "  for(var i=0; i<res.length; i++) {\n"
-                "    sel.options[sel.options.length] = new Option(res[i],res[i]);\n"
-                "  }\n"
-                "  sel.value = value;\n"
-                "}\n";
 
   s << EndTable();
 
@@ -948,6 +932,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   rowBorders = TRUE;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+  javascript += js_video_transmit_res_toggle;
 
   s << BeginTable();
   s << NewRowColumn(JsLocale("window.l_name_user")+"<br>("+JsLocale("window.l_name_account")+")", 210);
@@ -1151,8 +1136,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString video_id = rand();
       PString res_id = rand();
       PString res_value = scfg.GetString("Video resolution");
-      PString video_onchange = "video_res_toggle(\""+res_id+"\", this.value);";
-      javascript += "video_res_toggle('"+res_id+"', '"+v_codec+"');\n";
+      PString video_onchange = "video_transmit_res_toggle(\""+res_id+"\", this.value);";
+      javascript += "video_transmit_res_toggle('"+res_id+"', '"+v_codec+"');\n";
       s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
       //
       s2 += rowArray+(JsLocale("window.l_name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
@@ -1167,25 +1152,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     //
   }
 
-  javascript += "function video_res_toggle(id, codec) {\n"
-                "  var sel = document.getElementById(id);\n"
-                "  var value = sel.value;\n"
-                "  var res = Array();\n"
-                "  if(codec=='H.261{sw}')     res = Array('','128x96','176x144','352x288');\n"
-                "  if(codec=='H.263{sw}')     res = Array('','128x96','176x144','352x288','704x576');\n"
-                "  if(codec=='H.263p{sw}')    res = Array('','128x96','176x144','352x288','704x576');\n"
-                "  if(codec=='H.264{sw}')     res = Array('','128x96','176x144','320x240','352x288','640x360','640x480','704x576','800x600','854x480','1024x768','1280x720','1280x1024','1366x768','1920x1080');\n"
-                "  if(codec=='MP4V-ES{sw}')   res = Array('','176x144','320x240','352x288','640x360','640x480','704x576','800x600','854x480','1024x768','1280x720','1280x1024','1366x768','1920x1080');\n"
-                "  if(codec=='VP8{sw}')       res = Array('','176x144','320x240','352x288','640x360','640x480','704x576','800x600','852x480','1024x768','1280x720','1280x1024','1364x768','1920x1080');\n"
-                "  sel.options.length = 0;\n"
-                "  for(var i=0; i<res.length; i++) {\n"
-                "    sel.options[sel.options.length] = new Option(res[i],res[i]);\n"
-                "  }\n"
-                "  sel.value = value;\n"
-                "}\n";
-
   s << EndTable();
-
 
   BuildHTML("");
   BeginPage(html_begin, section, "window.l_param_sip_endpoints", "");

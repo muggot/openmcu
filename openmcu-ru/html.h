@@ -8,33 +8,120 @@
 
 class TablePConfigPage : public PConfigPage
 {
- public:
-   TablePConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-     : PConfigPage(app,title,section,auth)
-   {
-     cfg = MCUConfig(section);
-     deleteSection = TRUE;
-     columnColor = "#d9e5e3";
-     rowColor = "#d9e5e3";
-     itemColor = "#f7f4d8";
-     itemInfoColor = "#f7f4d8";
-     separator = ",";
-     firstEditRow = 1;
-     firstDeleteRow = 1;
-     buttonUp = buttonDown = buttonClone = buttonDelete = 0;
-     colStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-right:inherit;";
-     rowStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
-     rowFieldStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;width:300px;'>";
-     itemStyle = "<td align='left' valign='top' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
-     itemInfoStyle = "<td rowspan='%ROWSPAN%' align='left' valign='top' style='background-color:"+itemInfoColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
-     textStyle = "margin:2px 0px 2px 0px;padding:0px 3px 0px 3px;";
-     inputStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:20px;";
-     selectStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:20px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
-     buttonStyle = "margin:2px 1px 2px 1px;width:24px;border-radius:0px;";
-     rowBorders = FALSE;
-     rowBordersStyle = "3px ridge;";
-     rowArray = "<tr valign='middle'><td align='left' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;'>";
-   }
+  public:
+    TablePConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+      : PConfigPage(app,title,section,auth)
+    {
+      cfg = MCUConfig(section);
+      deleteSection = TRUE;
+      columnColor = "#d9e5e3";
+      rowColor = "#d9e5e3";
+      itemColor = "#f7f4d8";
+      itemInfoColor = "#f7f4d8";
+      separator = ",";
+      firstEditRow = 1;
+      firstDeleteRow = 1;
+      buttonUp = buttonDown = buttonClone = buttonDelete = 0;
+      colStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-right:inherit;";
+      rowStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
+      rowFieldStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;width:300px;'>";
+      itemStyle = "<td align='left' valign='top' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
+      itemInfoStyle = "<td rowspan='%ROWSPAN%' align='left' valign='top' style='background-color:"+itemInfoColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
+      textStyle = "margin:2px 0px 2px 0px;padding:0px 3px 0px 3px;";
+      inputStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:20px;";
+      selectStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:20px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
+      buttonStyle = "margin:2px 1px 2px 1px;width:24px;border-radius:0px;";
+      rowBorders = FALSE;
+      rowBordersStyle = "3px ridge;";
+      rowArray = "<tr valign='middle'><td align='left' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;'>";
+
+      js_filters =
+        "function FilterIp(obj)     { obj.value = obj.value.replace(/[^0-9\\.]/g,''); }"
+        "function FilterAccount(obj){ obj.value = obj.value.replace(/[^A-Za-z0-9-_\\.]/g,''); }"
+        "function FilterInteger(obj) { obj.value = obj.value.replace(/[^0-9]/g,''); }"
+        "function FilterMinMax(obj, min, max) { FilterInteger(obj); if(obj.value == '') return; if(obj.value < min) obj.value = min; else if(obj.value > max) obj.value = max; }"
+        ;
+      js_row_up =
+        "function rowUp(obj,topRow)\n"
+        "{\n"
+        "  var table = obj.parentNode.parentNode.parentNode;\n"
+        "  var rowNum=obj.parentNode.parentNode.sectionRowIndex;\n"
+        "  if(rowNum>topRow) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum],table.rows[rowNum-1]);\n"
+        "}\n";
+      js_row_down =
+        "function rowDown(obj)\n"
+        "{\n"
+        "  var table = obj.parentNode.parentNode.parentNode;\n"
+        "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
+        "  var rows = obj.parentNode.parentNode.parentNode.childNodes.length;\n"
+        "  if(rowNum!=rows-2) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum+1],table.rows[rowNum]);\n"
+        "}\n";
+      js_row_clone =
+        "function rowClone(obj)\n"
+        "{\n"
+        "  var table = obj.parentNode.parentNode.parentNode.parentNode;\n"
+        "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
+        "  var node = table.rows[rowNum].cloneNode(true);\n"
+        "  if(table.id == 'table1')\n"
+        "  {\n"
+        "    var seconds = new Date().getTime();\n"
+        "    node.cells[0].childNodes[0].name = seconds\n"
+        "  }\n"
+        "  table.rows[rowNum].parentNode.insertBefore(node, table.rows[rowNum+1]);\n"
+        "}\n";
+      js_row_delete =
+        "function rowDelete(obj,firstDeleteRow)\n"
+        "{\n"
+        "  var table = obj.parentNode.parentNode.parentNode.parentNode;\n"
+        "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
+        "  if(table.id == 'table1')\n"
+        "  {\n"
+        "    if(rowNum < firstDeleteRow)\n"
+        "      return;\n"
+        "    table.deleteRow(rowNum);\n"
+        "  } else {\n"
+        "    var table2 = obj.parentNode.parentNode.parentNode;\n"
+        "    var rows = table2.childNodes.length;\n"
+        "    if(rows < 3)\n"
+        "      return;\n"
+        "    table2.deleteRow(rowNum);\n"
+        "  }\n"
+        "}\n";
+      js_video_receive_res_toggle =
+        "function video_receive_res_toggle(id, codec) {\n"
+        "  var sel = document.getElementById(id);\n"
+        "  var value = sel.value;\n"
+        "  var res = Array();\n"
+        "  if(codec=='H.261{sw}')     res = Array('','128x96','176x144','352x288');\n"
+        "  if(codec=='H.263{sw}')     res = Array('','128x96','176x144','352x288','704x576');\n"
+        "  if(codec=='H.263p{sw}')    res = Array('','128x96','176x144','352x288','704x576');\n"
+        "  if(codec=='H.264{sw}')     res = Array('','128x96','176x144','352x288','704x576','1280x720','1366x768','1920x1080');\n"
+        "  if(codec=='MP4V-ES{sw}')   res = Array('','176x144','320x240','352x288','640x360','640x480','704x576','800x600','854x480','1024x768','1280x720','1280x1024','1366x768','1920x1080');\n"
+        "  if(codec=='VP8{sw}')       res = Array('','176x144','320x240','352x288','640x360','640x480','704x576','800x600','852x480','1024x768','1280x720','1280x1024','1364x768','1920x1080');\n"
+        "  sel.options.length = 0;\n"
+        "  for(var i=0; i<res.length; i++) {\n"
+        "    sel.options[sel.options.length] = new Option(res[i],res[i]);\n"
+        "  }\n"
+        "  sel.value = value;\n"
+        "}\n";
+      js_video_transmit_res_toggle =
+        "function video_transmit_res_toggle(id, codec) {\n"
+        "  var sel = document.getElementById(id);\n"
+        "  var value = sel.value;\n"
+        "  var res = Array();\n"
+        "  if(codec=='H.261{sw}')     res = Array('','128x96','176x144','352x288');\n"
+        "  if(codec=='H.263{sw}')     res = Array('','128x96','176x144','352x288','704x576');\n"
+        "  if(codec=='H.263p{sw}')    res = Array('','128x96','176x144','352x288','704x576');\n"
+        "  if(codec=='H.264{sw}')     res = Array('','128x96','176x144','320x240','352x288','640x360','640x480','704x576','800x600','854x480','1024x768','1280x720','1280x1024','1366x768','1920x1080');\n"
+        "  if(codec=='MP4V-ES{sw}')   res = Array('','176x144','320x240','352x288','640x360','640x480','704x576','800x600','854x480','1024x768','1280x720','1280x1024','1366x768','1920x1080');\n"
+        "  if(codec=='VP8{sw}')       res = Array('','176x144','320x240','352x288','640x360','640x480','704x576','800x600','852x480','1024x768','1280x720','1280x1024','1364x768','1920x1080');\n"
+        "  sel.options.length = 0;\n"
+        "  for(var i=0; i<res.length; i++) {\n"
+        "    sel.options[sel.options.length] = new Option(res[i],res[i]);\n"
+        "  }\n"
+        "  sel.value = value;\n"
+        "}\n";
+    }
 
    /////////////////////////////////////////////////////////////////////////////////////////////////
    PString SeparatorField(PString name="")
@@ -275,23 +362,17 @@ class TablePConfigPage : public PConfigPage
    PString EndTable()
    {
      PString s = "<tr></tr></tbody></table></div><p><input id='button_accept' name='submit' value='Accept' type='submit'><input id='button_reset' name='reset' value='Reset' type='reset'></p></form>";
-     s += jsRowDown() + jsRowUp() + jsRowClone()+ jsRowDelete();
-     s += Filters();
+     if(buttonUp) javascript += js_row_up;
+     if(buttonDown) javascript += js_row_down;
+     if(buttonClone) javascript += js_row_clone;
+     if(buttonDelete) javascript += js_row_delete;
+     javascript += js_filters;
      s += "<script type='text/javascript'>\n"+javascript+"</script>\n";
      return s;
    }
    PString JsLocale(PString locale)
    {
      return "<script type='text/javascript'>document.write("+locale+");</script>";
-   }
-   PString Filters()
-   {
-     return "<script type='text/javascript'>"
-            "function FilterIp(obj)     { obj.value = obj.value.replace(/[^0-9\\.]/g,''); }"
-            "function FilterAccount(obj){ obj.value = obj.value.replace(/[^A-Za-z0-9-_\\.]/g,''); }"
-            "function FilterInteger(obj) { obj.value = obj.value.replace(/[^0-9]/g,''); }"
-            "function FilterMinMax(obj, min, max) { FilterInteger(obj); if(obj.value == '') return; if(obj.value < min) obj.value = min; else if(obj.value > max) obj.value = max; }"
-            "</script>";
    }
    PString buttons()
    {
@@ -302,57 +383,6 @@ class TablePConfigPage : public PConfigPage
      if(buttonDelete) s += "<input type=button value='-' onClick='rowDelete(this,"+PString(firstDeleteRow)+")' style='"+buttonStyle+"'>";
      return s;
    }
-   PString jsRowUp() { return "<script type='text/javascript'>\n"
-                     "function rowUp(obj,topRow)\n"
-                     "{\n"
-                     "  var table = obj.parentNode.parentNode.parentNode;\n"
-                     "  var rowNum=obj.parentNode.parentNode.sectionRowIndex;\n"
-                     "  if(rowNum>topRow) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum],table.rows[rowNum-1]);\n"
-                     "}\n"
-                     "</script>\n"; }
-   PString jsRowDown() { return "<script type='text/javascript'>\n"
-                     "function rowDown(obj)\n"
-                     "{\n"
-                     "  var table = obj.parentNode.parentNode.parentNode;\n"
-                     "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
-                     "  var rows = obj.parentNode.parentNode.parentNode.childNodes.length;\n"
-                     "  if(rowNum!=rows-2) table.rows[rowNum].parentNode.insertBefore(table.rows[rowNum+1],table.rows[rowNum]);\n"
-                     "}\n"
-                     "</script>\n"; }
-   PString jsRowClone() { return "<script type='text/javascript'>\n"
-                     "function rowClone(obj)\n"
-                     "{\n"
-                     "  var table = obj.parentNode.parentNode.parentNode.parentNode;\n"
-                     "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
-                     "  var node = table.rows[rowNum].cloneNode(true);\n"
-                     "  if(table.id == 'table1')\n"
-                     "  {\n"
-                     "    var seconds = new Date().getTime();\n"
-                     "    node.cells[0].childNodes[0].name = seconds\n"
-                     "  }\n"
-                     "  table.rows[rowNum].parentNode.insertBefore(node, table.rows[rowNum+1]);\n"
-                     "}\n"
-                     "</script>\n"; }
-   PString jsRowDelete() { return "<script type='text/javascript'>\n"
-                     "function rowDelete(obj,firstDeleteRow)\n"
-                     "{\n"
-                     "  var table = obj.parentNode.parentNode.parentNode.parentNode;\n"
-                     "  var rowNum = obj.parentNode.parentNode.sectionRowIndex;\n"
-                     "  if(table.id == 'table1')\n"
-                     "  {\n"
-                     "    if(rowNum < firstDeleteRow)\n"
-                     "      return;\n"
-                     "    table.deleteRow(rowNum);\n"
-                     "  } else {\n"
-                     "    var table2 = obj.parentNode.parentNode.parentNode;\n"
-                     "    var rows = table2.childNodes.length;\n"
-                     "    if(rows < 3)\n"
-                     "      return;\n"
-                     "    table2.deleteRow(rowNum);\n"
-                     "  }\n"
-                     "}\n"
-                     "</script>\n"; }
-
    PString passwordCrypt(PString pass)
    {
      PTEACypher crypt(CypherKey);
@@ -492,6 +522,7 @@ class TablePConfigPage : public PConfigPage
      PHTTPConfig::OnPOST(server, url, info, data, connectInfo);
      return TRUE;
    }
+
  protected:
    MCUConfig cfg;
    BOOL deleteSection;
@@ -510,6 +541,10 @@ class TablePConfigPage : public PConfigPage
 
    BOOL rowBorders;
    PString rowBordersStyle;
+
+   PString js_filters;
+   PString js_row_up, js_row_down, js_row_clone, js_row_delete;
+   PString js_video_receive_res_toggle, js_video_transmit_res_toggle;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

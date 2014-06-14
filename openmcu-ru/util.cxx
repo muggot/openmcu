@@ -335,7 +335,7 @@ BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, u
     if(max_fs && max_fs > h264_profile_levels[i].max_fs && h264_profile_levels[i+1].level != 0)
       continue;
     if(!level) level = h264_profile_levels[i].level;
-    if(!level_h241) level = h264_profile_levels[i].level_h241;
+    if(!level_h241) level_h241 = h264_profile_levels[i].level_h241;
     if(!max_fs) max_fs = h264_profile_levels[i].max_fs;
     if(!max_mbps) max_mbps = h264_profile_levels[i].max_mbps;
     if(!max_br) max_br = h264_profile_levels[i].max_br;
