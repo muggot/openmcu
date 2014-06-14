@@ -898,61 +898,6 @@ static PluginCodec_ControlDefn DecoderControls[] = {
   { NULL }
 };
 
-static struct PluginCodec_Option const minRxFrameWidth =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MIN_RX_FRAME_WIDTH,  true, PluginCodec_NoMerge, "176", NULL, NULL, 0, "176", "352" };
-static struct PluginCodec_Option const minRxFrameHeight =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MIN_RX_FRAME_HEIGHT, true, PluginCodec_NoMerge, "144", NULL, NULL, 0, "144", "288"  };
-static struct PluginCodec_Option const maxRxFrameWidth =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MAX_RX_FRAME_WIDTH,  true, PluginCodec_NoMerge, "352", NULL, NULL, 0, "176", "352"  };
-static struct PluginCodec_Option const maxRxFrameHeight =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MAX_RX_FRAME_HEIGHT, true, PluginCodec_NoMerge, "288", NULL, NULL, 0, "144", "288"  };
-
-static struct PluginCodec_Option const minRxFrameWidthQCIF =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MIN_RX_FRAME_WIDTH,  true, PluginCodec_NoMerge, "176", NULL, NULL, 0, "176", "176" };
-static struct PluginCodec_Option const minRxFrameHeightQCIF =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MIN_RX_FRAME_HEIGHT, true, PluginCodec_NoMerge, "144", NULL, NULL, 0, "144", "144"  };
-static struct PluginCodec_Option const maxRxFrameWidthQCIF =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MAX_RX_FRAME_WIDTH,  true, PluginCodec_NoMerge, "176", NULL, NULL, 0, "176", "176"  };
-static struct PluginCodec_Option const maxRxFrameHeightQCIF =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MAX_RX_FRAME_HEIGHT, true, PluginCodec_NoMerge, "144", NULL, NULL, 0, "144", "144"  };
-
-static struct PluginCodec_Option const minRxFrameWidthCIF =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MIN_RX_FRAME_WIDTH,  true, PluginCodec_NoMerge, "352", NULL, NULL, 0, "352", "352" };
-static struct PluginCodec_Option const minRxFrameHeightCIF =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MIN_RX_FRAME_HEIGHT, true, PluginCodec_NoMerge, "288", NULL, NULL, 0, "288", "288"  };
-static struct PluginCodec_Option const maxRxFrameWidthCIF =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MAX_RX_FRAME_WIDTH,  true, PluginCodec_NoMerge, "352", NULL, NULL, 0, "352", "352"  };
-static struct PluginCodec_Option const maxRxFrameHeightCIF =
-  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MAX_RX_FRAME_HEIGHT, true, PluginCodec_NoMerge, "288", NULL, NULL, 0, "288", "288"  };
-
-static struct PluginCodec_Option const qcifMPI =
-{
-  PluginCodec_IntegerOption,            // Option type
-  QCIF_MPI,                             // User visible name
-  false,                                // User Read/Only flag
-  PluginCodec_MaxMerge,                 // Merge mode
-  "1",                                  // Initial value
-  "QCIF",                               // FMTP option name
-  STRINGIZE(PLUGINCODEC_MPI_DISABLED),  // FMTP default value
-  0,                                    // H.245 generic capability code and bit mask
-  "1",                                  // Minimum value
-  STRINGIZE(PLUGINCODEC_MPI_DISABLED)   // Maximum value
-};
-
-static struct PluginCodec_Option const cifMPI =
-{
-  PluginCodec_IntegerOption,            // Option type
-  CIF_MPI,                              // User visible name
-  false,                                // User Read/Only flag
-  PluginCodec_MaxMerge,                 // Merge mode
-  "1",                                  // Initial value
-  "CIF",                                // FMTP option name
-  STRINGIZE(PLUGINCODEC_MPI_DISABLED),  // FMTP default value
-  0,                                    // H.245 generic capability code and bit mask
-  "1",                                  // Minimum value
-  STRINGIZE(PLUGINCODEC_MPI_DISABLED)   // Maximum value
-};
-
 /* The annex below is turned off and set to read/only because this
    implementation does not support them. It's presence here is so that if
    someone out there does a different implementation of the codec and copies
@@ -970,263 +915,144 @@ static struct PluginCodec_Option const annexD =
   "0"                                   // FMTP default value
 };
 
-static struct PluginCodec_Option const * const qcifOptionTable[] = {
-  &qcifMPI,
-  &annexD,
-  &minRxFrameWidthQCIF,
-  &minRxFrameHeightQCIF,
-  &maxRxFrameWidthQCIF,
-  &maxRxFrameHeightQCIF,
-  NULL
+#define DECLARE_OPTIONS(prefix) \
+static struct PluginCodec_Option const prefix##_sqcifMPI = \
+  { PluginCodec_IntegerOption, "SQCIF MPI", false, PluginCodec_MaxMerge, prefix##_SQCIF_MPI, "SQCIF", "0", 0, "0", "4" }; \
+static struct PluginCodec_Option const prefix##_qcifMPI = \
+  { PluginCodec_IntegerOption, "QCIF MPI", false, PluginCodec_MaxMerge, prefix##_QCIF_MPI, "QCIF", "0", 0, "0", "4" }; \
+static struct PluginCodec_Option const prefix##_cifMPI = \
+  { PluginCodec_IntegerOption, "CIF MPI",  false, PluginCodec_MaxMerge, prefix##_CIF_MPI, "CIF",  "0", 0, "0", "4" }; \
+static struct PluginCodec_Option const prefix##_cif4MPI = \
+  { PluginCodec_IntegerOption, "CIF4 MPI",  false, PluginCodec_MaxMerge, prefix##_CIF4_MPI, "CIF4", "0", 0, "0", "4" }; \
+static struct PluginCodec_Option const prefix##_cif16MPI = \
+  { PluginCodec_IntegerOption, "CIF16 MPI", false, PluginCodec_MaxMerge, prefix##_CIF16_MPI, "CIF16", "0", 0, "0", "4" }; \
+static struct PluginCodec_Option const prefix##_minRxFrameWidth = \
+  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MIN_RX_FRAME_WIDTH,  true, PluginCodec_NoMerge, prefix##_MinMaxFrameWidth, NULL, NULL, 0, prefix##_MinMaxFrameWidth, prefix##_MinMaxFrameWidth }; \
+static struct PluginCodec_Option const prefix##_minRxFrameHeight = \
+  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MIN_RX_FRAME_HEIGHT, true, PluginCodec_NoMerge, prefix##_MinMaxFrameHeight, NULL, NULL, 0, prefix##_MinMaxFrameHeight, prefix##_MinMaxFrameHeight }; \
+static struct PluginCodec_Option const prefix##_maxRxFrameWidth = \
+  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MAX_RX_FRAME_WIDTH,  true, PluginCodec_NoMerge, prefix##_MinMaxFrameWidth, NULL, NULL, 0, prefix##_MinMaxFrameWidth, prefix##_MinMaxFrameWidth }; \
+static struct PluginCodec_Option const prefix##_maxRxFrameHeight = \
+  { PluginCodec_IntegerOption, PLUGINCODEC_OPTION_MAX_RX_FRAME_HEIGHT, true, PluginCodec_NoMerge, prefix##_MinMaxFrameHeight, NULL, NULL, 0, prefix##_MinMaxFrameHeight, prefix##_MinMaxFrameHeight }; \
+ \
+static struct PluginCodec_Option const * const prefix##_OptionTable[] = { \
+  &prefix##_sqcifMPI, \
+  &prefix##_qcifMPI, \
+  &prefix##_cifMPI, \
+  &prefix##_cif4MPI, \
+  &prefix##_cif16MPI, \
+  &annexD, \
+  &prefix##_minRxFrameWidth, \
+  &prefix##_minRxFrameHeight, \
+  &prefix##_maxRxFrameWidth, \
+  &prefix##_maxRxFrameHeight, \
+  NULL \
+}; \
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+#define DECLARE_PARAM(prefix) \
+{ \
+  /* encoder */ \
+  PLUGIN_CODEC_VERSION_OPTIONS,	      /* codec API version */ \
+  &licenseInfo,                       /* license information */ \
+  PluginCodec_MediaTypeVideo |        /* audio codec */ \
+  PluginCodec_RTPTypeExplicit,        /* specified RTP type */ \
+  prefix##_MediaFmt,                  /* text decription */ \
+  YUV420PDesc,                        /* source format */ \
+  prefix##_MediaFmt,                  /* destination format */ \
+  prefix##_OptionTable,		      /* user data */ \
+  H261_CLOCKRATE,                     /* samples per second */ \
+  H261_BITRATE,	                      /* raw bits per second */ \
+  20000,                              /* nanoseconds per frame */ \
+  prefix##_FrameWidth,		      /* bytes per frame */ \
+  prefix##_FrameHeight,               /* samples per frame */ \
+  10,                                 /* recommended number of frames per packet */ \
+  60,                                 /* maximum number of frames per packet  */ \
+  RTP_RFC2032_PAYLOAD,                /* IANA RTP payload code */ \
+  sdpH261,                            /* RTP payload name */ \
+  create_encoder,                     /* create codec function */ \
+  destroy_encoder,                    /* destroy codec */ \
+  codec_encoder,                      /* encode/decode */ \
+  EncoderControls,                    /* codec controls */ \
+  PluginCodec_H323VideoCodec_h261,    /* h323CapabilityType */ \
+  NULL                                /* h323CapabilityData */ \
+}, \
+{  \
+  /* decoder */ \
+  PLUGIN_CODEC_VERSION_OPTIONS,	      /* codec API version */ \
+  &licenseInfo,                       /* license information */ \
+  PluginCodec_MediaTypeVideo |        /* audio codec */ \
+  PluginCodec_RTPTypeExplicit,        /* specified RTP type */ \
+  prefix##_MediaFmt,                  /* text decription */ \
+  prefix##_MediaFmt,                  /* source format */ \
+  YUV420PDesc,                        /* destination format */ \
+  prefix##_OptionTable,		      /* user data */ \
+  H261_CLOCKRATE,                     /* samples per second */ \
+  H261_BITRATE, 	              /* raw bits per second */ \
+  20000,                              /* nanoseconds per frame */ \
+  prefix##_FrameWidth,		      /* bytes per frame */ \
+  prefix##_FrameHeight,               /* samples per frame */ \
+  10,                                 /* recommended number of frames per packet */ \
+  60,                                 /* maximum number of frames per packet  */ \
+  RTP_RFC2032_PAYLOAD,                /* IANA RTP payload code */ \
+  sdpH261,                            /* RTP payload name */ \
+  create_decoder,                     /* create codec function */ \
+  destroy_decoder,                    /* destroy codec */ \
+  codec_decoder,                      /* encode/decode */ \
+  DecoderControls,                    /* codec controls */ \
+  PluginCodec_H323VideoCodec_h261,    /* h323CapabilityType */ \
+  NULL                                /* h323CapabilityData */ \
+} \
+
+/////////////////////////////////////////////////////////////////////////////
+
+static const char *   H261_MediaFmt             = "H.261";
+static const char *   H261_SQCIF_MPI            = "0";
+static const char *   H261_QCIF_MPI             = "0";
+static const char *   H261_CIF_MPI              = "1";
+static const char *   H261_CIF4_MPI             = "0";
+static const char *   H261_CIF16_MPI            = "0";
+static const char *   H261_MinMaxFrameWidth  = "352";
+static const char *   H261_MinMaxFrameHeight = "288";
+static unsigned int   H261_FrameWidth           = 352;
+static unsigned int   H261_FrameHeight          = 288;
+DECLARE_OPTIONS(H261)
+
+static const char *   H261_QCIF_MediaFmt        = "H.261-QCIF";
+static const char *   H261_QCIF_SQCIF_MPI       = "0";
+static const char *   H261_QCIF_QCIF_MPI        = "1";
+static const char *   H261_QCIF_CIF_MPI         = "0";
+static const char *   H261_QCIF_CIF4_MPI        = "0";
+static const char *   H261_QCIF_CIF16_MPI       = "0";
+static const char *   H261_QCIF_MinMaxFrameWidth  = "176";
+static const char *   H261_QCIF_MinMaxFrameHeight = "144";
+static unsigned int   H261_QCIF_FrameWidth      = 176;
+static unsigned int   H261_QCIF_FrameHeight     = 144;
+DECLARE_OPTIONS(H261_QCIF)
+
+static const char *   H261_CIF_MediaFmt         = "H.261-CIF";
+static const char *   H261_CIF_SQCIF_MPI        = "0";
+static const char *   H261_CIF_QCIF_MPI         = "0";
+static const char *   H261_CIF_CIF_MPI          = "1";
+static const char *   H261_CIF_CIF4_MPI         = "0";
+static const char *   H261_CIF_CIF16_MPI        = "0";
+static const char *   H261_CIF_MinMaxFrameWidth  = "352";
+static const char *   H261_CIF_MinMaxFrameHeight = "288";
+static unsigned int   H261_CIF_FrameWidth       = 352;
+static unsigned int   H261_CIF_FrameHeight      = 288;
+DECLARE_OPTIONS(H261_CIF)
+
+/////////////////////////////////////////////////////////////////////////////
+
+static struct PluginCodec_Definition CodecDefn[] = {
+  DECLARE_PARAM(H261),
+//  DECLARE_PARAM(H261_QCIF),
+//  DECLARE_PARAM(H261_CIF),
 };
 
-static struct PluginCodec_Option const * const cifOptionTable[] = {
-  &cifMPI,
-  &annexD,
-  &minRxFrameWidthCIF,
-  &minRxFrameHeightCIF,
-  &maxRxFrameWidthCIF,
-  &maxRxFrameHeightCIF,
-  NULL
-};
-
-static struct PluginCodec_Option const * const xcifOptionTable[] = {
-  &qcifMPI,
-  &cifMPI,
-  &annexD,
-  &minRxFrameWidth,
-  &minRxFrameHeight,
-  &maxRxFrameWidth,
-  &maxRxFrameHeight,
-  NULL
-};
-
-
-static struct PluginCodec_Definition h261CodecDefn[] =
-{
-  { 
-    // CIF only encoder
-    PLUGIN_CODEC_VERSION_OPTIONS,       // codec API version
-    &licenseInfo,                       // license information
-
-    PluginCodec_MediaTypeVideo |        // audio codec
-    PluginCodec_RTPTypeExplicit,        // specified RTP type
-
-    h261CIFDesc,                        // text decription
-    YUV420PDesc,                        // source format
-    h261CIFDesc,                        // destination format
-
-    cifOptionTable,                     // user data 
-
-    H261_CLOCKRATE,                     // samples per second
-    H261_BITRATE,                       // raw bits per second
-    20000,                              // nanoseconds per frame
-
-    {{
-      CIF_WIDTH,                          // frame width
-      CIF_HEIGHT,                         // frame height
-      10,                                 // recommended frame rate
-      60,                                 // maximum frame rate
-    }},
-    
-    RTP_RFC2032_PAYLOAD,                // IANA RTP payload code
-    sdpH261,                            // RTP payload name
-
-    create_encoder,                     // create codec function
-    destroy_encoder,                    // destroy codec
-    codec_encoder,                      // encode/decode
-    h323EncoderControls,                // codec controls
-
-    PluginCodec_H323VideoCodec_h261,    // h323CapabilityType 
-    NULL                                // h323CapabilityData
-  },
-  { 
-    // CIF only decoder
-    PLUGIN_CODEC_VERSION_OPTIONS,       // codec API version
-    &licenseInfo,                       // license information
-
-    PluginCodec_MediaTypeVideo |        // audio codec
-    PluginCodec_RTPTypeExplicit,        // specified RTP type
-
-    h261CIFDesc,                        // text decription
-    h261CIFDesc,                        // source format
-    YUV420PDesc,                        // destination format
-
-    cifOptionTable,                     // user data 
-
-    H261_CLOCKRATE,                     // samples per second
-    H261_BITRATE,                       // raw bits per second
-    20000,                              // nanoseconds per frame
-
-    {{
-      CIF_WIDTH,                        // frame width
-      CIF_HEIGHT,                       // frame height
-      10,                               // recommended frame rate
-      60,                               // maximum frame rate
-    }},
-    
-    RTP_RFC2032_PAYLOAD,                // IANA RTP payload code
-    sdpH261,                            // RTP payload name
-
-    create_decoder,                     // create codec function
-    destroy_decoder,                    // destroy codec
-    codec_decoder,                      // encode/decode
-    h323DecoderControls,                // codec controls
-
-    PluginCodec_H323VideoCodec_h261,    // h323CapabilityType 
-    NULL                                // h323CapabilityData
-  },
-
-  { 
-    // QCIF only encoder
-    PLUGIN_CODEC_VERSION_OPTIONS,       // codec API version
-    &licenseInfo,                       // license information
-
-    PluginCodec_MediaTypeVideo |        // audio codec
-    PluginCodec_RTPTypeExplicit,        // specified RTP type
-
-    h261QCIFDesc,                       // text decription
-    YUV420PDesc,                        // source format
-    h261QCIFDesc,                       // destination format
-
-    qcifOptionTable,                    // user data 
-
-    H261_CLOCKRATE,                     // samples per second
-    H261_BITRATE,                       // raw bits per second
-    20000,                              // nanoseconds per frame
-
-    {{
-      QCIF_WIDTH,                         // frame width
-      QCIF_HEIGHT,                        // frame height
-      10,                                 // recommended frame rate
-      60,                                 // maximum frame rate
-    }},
-    
-    RTP_RFC2032_PAYLOAD,                // IANA RTP payload code
-    sdpH261,                            // RTP payload name
-
-    create_encoder,                     // create codec function
-    destroy_encoder,                    // destroy codec
-    codec_encoder,                      // encode/decode
-    h323EncoderControls,                // codec controls
-
-    PluginCodec_H323VideoCodec_h261,    // h323CapabilityType 
-    NULL                                // h323CapabilityData
-  },
-  { 
-    // QCIF only decoder
-    PLUGIN_CODEC_VERSION_OPTIONS,       // codec API version
-    &licenseInfo,                       // license information
-
-    PluginCodec_MediaTypeVideo |        // audio codec
-    PluginCodec_RTPTypeExplicit,        // specified RTP type
-
-    h261QCIFDesc,                       // text decription
-    h261QCIFDesc,                       // source format
-    YUV420PDesc,                        // destination format
-
-    qcifOptionTable,                    // user data 
-
-    H261_CLOCKRATE,                     // samples per second
-    H261_BITRATE,                       // raw bits per second
-    20000,                              // nanoseconds per frame
-
-    {{
-      QCIF_WIDTH,                       // frame width
-      QCIF_HEIGHT,                      // frame height
-      10,                               // recommended frame rate
-      60,                               // maximum frame rate
-    }},
-    
-    RTP_RFC2032_PAYLOAD,                // IANA RTP payload code
-    sdpH261,                            // RTP payload name
-
-    create_decoder,                     // create codec function
-    destroy_decoder,                    // destroy codec
-    codec_decoder,                      // encode/decode
-    h323DecoderControls,                // codec controls
-
-    PluginCodec_H323VideoCodec_h261,    // h323CapabilityType 
-    NULL                                // h323CapabilityData
-  },
-/*
-  { 
-    // 720p only encoder (only CIF)
-    PLUGIN_CODEC_VERSION_OPTIONS,       // codec API version
-    &licenseInfo,                       // license information
-
-    PluginCodec_MediaTypeVideo |        // video codec
-    PluginCodec_MediaTypeExtVideo |     // content
-    PluginCodec_RTPTypeExplicit,        // specified RTP type
-
-    h261720Desc,                        // text decription
-    YUV420PDesc,                        // source format
-    h261720Desc,                        // destination format
-
-    cifOptionTable,                     // user data 
-
-    H261_CLOCKRATE,                     // samples per second
-    H261_BITRATE,                       // raw bits per second
-    20000,                              // nanoseconds per frame
-
-    {{
-      CIF_WIDTH,                          // frame width
-      CIF_HEIGHT,                         // frame height
-      10,                                 // recommended frame rate
-      60,                                 // maximum frame rate
-    }},
-    
-    RTP_RFC2032_PAYLOAD,                // IANA RTP payload code
-    sdpH261,                            // RTP payload name
-
-    create_encoder,                     // create codec function
-    destroy_encoder,                    // destroy codec
-    codec_encoder,                      // encode/decode
-    h323EncoderControls,                // codec controls
-
-    PluginCodec_H323VideoCodec_h261,    // h323CapabilityType 
-    NULL                                // h323CapabilityData
-  },
-  { 
-    // 720p only decoder
-    PLUGIN_CODEC_VERSION_OPTIONS,       // codec API version
-    &licenseInfo,                       // license information
-
-    PluginCodec_MediaTypeVideo |        // audio codec
-    PluginCodec_MediaTypeExtVideo |     // content
-    PluginCodec_RTPTypeExplicit,        // specified RTP type
-
-    h261720Desc,                        // text decription
-    h261720Desc,                        // source format
-    YUV420PDesc,                        // destination format
-
-    cifOptionTable,                     // user data 
-
-    H261_CLOCKRATE,                     // samples per second
-    H261_BITRATE,                       // raw bits per second
-    20000,                              // nanoseconds per frame
-
-    {{
-      CIF_WIDTH,                        // frame width
-      CIF_HEIGHT,                       // frame height
-      10,                               // recommended frame rate
-      60,                               // maximum frame rate
-    }},
-    
-    RTP_RFC2032_PAYLOAD,                // IANA RTP payload code
-    sdpH261,                            // RTP payload name
-
-    create_decoder,                     // create codec function
-    destroy_decoder,                    // destroy codec
-    codec_decoder,                      // encode/decode
-    h323DecoderControls,                // codec controls
-
-    PluginCodec_H323VideoCodec_h261,    // h323CapabilityType 
-    NULL                                // h323CapabilityData
-  }
-*/
-};
-
+/////////////////////////////////////////////////////////////////////////////
 
 extern "C" {
   PLUGIN_CODEC_IMPLEMENT(VIC_H261)
@@ -1254,8 +1080,8 @@ extern "C" {
     Trace::SetLevelUserPlane(0);
 #endif
 
-    *count = sizeof(h261CodecDefn) / sizeof(struct PluginCodec_Definition);
-    return h261CodecDefn;
+    *count = sizeof(CodecDefn) / sizeof(struct PluginCodec_Definition);
+    return CodecDefn;
   }
 
 };

@@ -514,7 +514,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
     {
       if(dwidth == h263_resolutions[i].width && dheight == h263_resolutions[i].height) // skip default capability
         continue;
-      if(PString(h263_resolutions[i].mpiname) == "CIF4" || PString(h263_resolutions[i].mpiname) == "CIF16")
+      if(PString(h263_resolutions[i].mpiname) != "QCIF" && PString(h263_resolutions[i].mpiname) != "CIF")
         continue;
       H323Capability *new_cap = (H323Capability *)dcap->Clone();
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();

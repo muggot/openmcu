@@ -1123,16 +1123,56 @@ void MCUSipConnection::FindCapability_H263(SipCapability *sc, PStringArray &keys
 
 void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapability *sc)
 {
+  unsigned width = 0, height = 0;
   PStringArray keys = sc->fmtp.Tokenise(";");
 
-  if(!sc->cap && FindSipCap(LocalCaps, "H.261-CIF{sw}"))
-    FindCapability_H263(sc,keys,"H.261-CIF{sw}","CIF");
-  if(!sc->cap && FindSipCap(LocalCaps, "H.263-CIF{sw}"))
-    FindCapability_H263(sc,keys,"H.261-QCIF{sw}","QCIF");
+  if(!sc->cap)
+  {
+    if(FindSipCap(LocalCaps, "H.261{sw}"))
+      sc->cap = H323Capability::Create("H.261{sw}");
+  }
+  if(sc->cap)
+  {
+    SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+    if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+  }
+
+  if(sc->video_width && sc->video_height)
+  {
+    width = sc->video_width;
+    height = sc->video_height;
+  }
+  else if(sc->cap && sc->cap->GetFormatName() == "H.261{sw}")
+  {
+    for(int kn=0; kn<keys.GetSize(); kn++)
+    {
+      if(keys[kn].Find("QCIF=")==0 || keys[kn].Find("CIF=")==0)
+      {
+        OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat(); 
+        PString mpiname = keys[kn].Tokenise("=")[0];
+        int mpi = keys[kn].Tokenise("=")[1].AsInteger();
+        wf.SetOptionInteger(mpiname+" MPI", mpi);
+        GetParamsH263(mpiname, width, height);
+        break;
+      }
+    }
+  }
+  else if(!sc->cap) // совместимость со старыми capability
+  {
+    if(!sc->cap && FindSipCap(LocalCaps, "H.261-CIF{sw}"))
+      FindCapability_H263(sc,keys,"H.261-CIF{sw}","CIF");
+    if(!sc->cap && FindSipCap(LocalCaps, "H.263-CIF{sw}"))
+      FindCapability_H263(sc,keys,"H.261-QCIF{sw}","QCIF");
+  }
 
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
+    if(width && height)
+    {
+      wf.SetOptionInteger("Frame Width", width);
+      wf.SetOptionInteger("Frame Height", height);
+    }
     if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
   }
 }
