@@ -231,7 +231,7 @@ class Encoder : public PluginVideoEncoder<CODEC>, public FFMPEGCodec
 
     virtual bool Construct()
     {
-      return InitEncoder(CODEC_ID_MPEG4);
+      return InitEncoder("mpeg4");
     }
 
     void SetEncoderOptions(unsigned frameTime, unsigned maxBitRate, unsigned maxRTPSize, unsigned tsto, unsigned keyFramePeriod)
