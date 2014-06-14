@@ -1123,7 +1123,9 @@ void MCUSipConnection::FindCapability_H263(SipCapability *sc, PStringArray &keys
 
 void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  unsigned width = 0, height = 0;
+  unsigned width = 0, height = 0, mpi = 1;
+  PString mpiname;
+
   PStringArray keys = sc->fmtp.Tokenise(";");
 
   if(!sc->cap)
@@ -1141,6 +1143,7 @@ void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapab
   {
     width = sc->video_width;
     height = sc->video_height;
+    GetParamsH263(mpiname, width, height);
   }
   else if(sc->cap && sc->cap->GetFormatName() == "H.261{sw}")
   {
@@ -1148,10 +1151,8 @@ void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapab
     {
       if(keys[kn].Find("QCIF=")==0 || keys[kn].Find("CIF=")==0)
       {
-        OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat(); 
-        PString mpiname = keys[kn].Tokenise("=")[0];
-        int mpi = keys[kn].Tokenise("=")[1].AsInteger();
-        wf.SetOptionInteger(mpiname+" MPI", mpi);
+        mpiname = keys[kn].Tokenise("=")[0];
+        mpi = keys[kn].Tokenise("=")[1].AsInteger();
         GetParamsH263(mpiname, width, height);
         break;
       }
@@ -1161,17 +1162,27 @@ void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapab
   {
     if(!sc->cap && FindSipCap(LocalCaps, "H.261-CIF{sw}"))
       FindCapability_H263(sc,keys,"H.261-CIF{sw}","CIF");
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263-CIF{sw}"))
+    if(!sc->cap && FindSipCap(LocalCaps, "H.261-CIF{sw}"))
       FindCapability_H263(sc,keys,"H.261-QCIF{sw}","QCIF");
   }
 
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
+    if(mpiname != "") wf.SetOptionInteger(mpiname+" MPI", mpi);
     if(width && height)
     {
       wf.SetOptionInteger("Frame Width", width);
       wf.SetOptionInteger("Frame Height", height);
+    }
+    if(mpiname != "")
+    {
+      wf.SetOptionInteger("SQCIF MPI", 0);
+      wf.SetOptionInteger("QCIF MPI", 0);
+      wf.SetOptionInteger("CIF MPI", 0);
+      wf.SetOptionInteger("CIF4 MPI", 0);
+      wf.SetOptionInteger("CIF16 MPI", 0);
+      wf.SetOptionInteger(mpiname+" MPI", mpi);
     }
     if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
   }
@@ -1182,7 +1193,8 @@ void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapab
 void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapability *sc)
 {
   int f = 0; // annex f
-  unsigned width = 0, height = 0;
+  unsigned width = 0, height = 0, mpi = 1;
+  PString mpiname;
 
   PStringArray keys = sc->fmtp.Tokenise(";");
   for(int kn=0; kn<keys.GetSize(); kn++)
@@ -1203,6 +1215,7 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
   {
     width = sc->video_width;
     height = sc->video_height;
+    GetParamsH263(mpiname, width, height);
   }
   else if(sc->cap && sc->cap->GetFormatName() == "H.263{sw}")
   {
@@ -1210,10 +1223,8 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
     {
       if(keys[kn].Find("SQCIF=")==0 || keys[kn].Find("QCIF=")==0 || keys[kn].Find("CIF=")==0 || keys[kn].Find("CIF4=")==0 || keys[kn].Find("CIF16=")==0)
       {
-        OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat(); 
-        PString mpiname = keys[kn].Tokenise("=")[0];
-        int mpi = keys[kn].Tokenise("=")[1].AsInteger();
-        wf.SetOptionInteger(mpiname+" MPI", mpi);
+        mpiname = keys[kn].Tokenise("=")[0];
+        mpi = keys[kn].Tokenise("=")[1].AsInteger();
         GetParamsH263(mpiname, width, height);
         break;
       }
@@ -1242,6 +1253,15 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
       wf.SetOptionInteger("Frame Width", width);
       wf.SetOptionInteger("Frame Height", height);
     }
+    if(mpiname != "")
+    {
+      wf.SetOptionInteger("SQCIF MPI", 0);
+      wf.SetOptionInteger("QCIF MPI", 0);
+      wf.SetOptionInteger("CIF MPI", 0);
+      wf.SetOptionInteger("CIF4 MPI", 0);
+      wf.SetOptionInteger("CIF16 MPI", 0);
+      wf.SetOptionInteger(mpiname+" MPI", mpi);
+    }
     if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
   }
 }
@@ -1251,7 +1271,8 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
 void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapability *sc)
 {
   int f = 0, d = 0, e = 0, g = 0; // annexes
-  unsigned width = 0, height = 0;
+  unsigned width = 0, height = 0, mpi = 1;
+  PString mpiname;
 
   PStringArray keys = sc->fmtp.Tokenise(";");
   for(int kn=0; kn<keys.GetSize(); kn++)
@@ -1277,6 +1298,7 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
   {
     width = sc->video_width;
     height = sc->video_height;
+    GetParamsH263(mpiname, width, height);
   }
   else if(sc->cap && sc->cap->GetFormatName() == "H.263p{sw}")
   {
@@ -1284,10 +1306,8 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
     {
       if(keys[kn].Find("SQCIF=")==0 || keys[kn].Find("QCIF=")==0 || keys[kn].Find("CIF=")==0 || keys[kn].Find("CIF4=")==0 || keys[kn].Find("CIF16=")==0)
       {
-        OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat(); 
-        PString mpiname = keys[kn].Tokenise("=")[0];
-        int mpi = keys[kn].Tokenise("=")[1].AsInteger();
-        wf.SetOptionInteger(mpiname+" MPI", mpi);
+        mpiname = keys[kn].Tokenise("=")[0];
+        mpi = keys[kn].Tokenise("=")[1].AsInteger();
         GetParamsH263(mpiname, width, height);
         break;
       }
@@ -1318,6 +1338,15 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
     {
       wf.SetOptionInteger("Frame Width", width);
       wf.SetOptionInteger("Frame Height", height);
+    }
+    if(mpiname != "")
+    {
+      wf.SetOptionInteger("SQCIF MPI", 0);
+      wf.SetOptionInteger("QCIF MPI", 0);
+      wf.SetOptionInteger("CIF MPI", 0);
+      wf.SetOptionInteger("CIF4 MPI", 0);
+      wf.SetOptionInteger("CIF16 MPI", 0);
+      wf.SetOptionInteger(mpiname+" MPI", mpi);
     }
     if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
   }

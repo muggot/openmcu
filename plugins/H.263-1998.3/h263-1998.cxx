@@ -1940,6 +1940,8 @@ static struct PluginCodec_Option const * const prefix##_OptionTable[] = { \
   &prefix##_cifMPI, \
   &prefix##_cif4MPI, \
   &prefix##_cif16MPI, \
+  &mediaPacketization2190, \
+  &annexF, \
   &tsto, \
   &txkeyFramePeriod, \
   &encodingQuality, \
