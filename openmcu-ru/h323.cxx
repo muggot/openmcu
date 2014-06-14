@@ -2517,23 +2517,22 @@ void MCUH323Connection::SetupCacheConnection(PString & format, Conference * conf
 void MCUH323Connection::OnSetLocalCapabilities()
 {
   PTRACE(1, "MCUH323Connection\tOnSetLocalCapabilities");
-  // set endpoint capability
   PString audio_cap = GetEndpointParam("Audio codec(receive)");
+  if(audio_cap.Left(5) == "G.711" && audio_cap.Right(4) == "{sw}") { audio_cap.Replace("{sw}","",TRUE,0); }
   PString video_cap = GetEndpointParam("Video codec(receive)");
   PString video_res = GetEndpointParam("Video resolution(receive)");
+  unsigned width = video_res.Tokenise("x")[0].AsInteger();
+  unsigned height = video_res.Tokenise("x")[1].AsInteger();
   unsigned bandwidth_to = GetEndpointParam("Bandwidth to MCU", 0);
+  if(bandwidth_to) { if(bandwidth_to < 64) bandwidth_to = 64; if(bandwidth_to > 4000) bandwidth_to = 4000; }
+
   if(audio_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive audio: " << audio_cap); }
   if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive video: " << video_cap << " " << video_res); }
   if(bandwidth_to != 0) { PTRACE(1, "MCUH323Connection\tSet endpoint bandwidth to mcu: " << bandwidth_to); }
 
-  if(audio_cap.ToLower().Find("ulaw") != P_MAX_INDEX || audio_cap.ToLower().Find("alaw") != P_MAX_INDEX)
-    audio_cap = audio_cap.Left(audio_cap.GetLength()-4);
-
   unsigned level_h241 = 0;
   if(video_cap == "H.264{sw}")
   {
-    unsigned width = video_res.Tokenise("x")[0].AsInteger();
-    unsigned height = video_res.Tokenise("x")[1].AsInteger();
     unsigned max_fs = GetVideoMacroBlocks(width, height);
     unsigned level = 0;
     GetParamsH264(level, level_h241, max_fs);
@@ -2558,14 +2557,9 @@ void MCUH323Connection::OnSetLocalCapabilities()
         localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
       }
     }
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Video)
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Video && bandwidth_to)
     {
-      if(bandwidth_to != 0)
-      {
-        if(bandwidth_to < 64) bandwidth_to = 64;
-        if(bandwidth_to > 4000) bandwidth_to = 4000;
-        localCapabilities[i].GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidth_to*1000);
-      }
+      localCapabilities[i].GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidth_to*1000);
     }
     i++;
   }
@@ -2577,6 +2571,9 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
   PString audio_cap = GetEndpointParam("Audio codec(transmit)");
   PString video_cap = GetEndpointParam("Video codec(transmit)");
   PString video_res = GetEndpointParam("Video resolution(transmit)");
+  unsigned width = video_res.Tokenise("x")[0].AsInteger();
+  unsigned height = video_res.Tokenise("x")[1].AsInteger();
+
   if(audio_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit audio: " << audio_cap); }
   if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit video: " << video_cap << " " << video_res); }
 
@@ -2595,11 +2592,11 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
       }
       else
       {
-        if(bandwidth_from == 0)
-          bandwidth_from = remoteCaps[i].GetMediaFormat().GetOptionInteger("Max Bit Rate");
         if(video_cap.Left(4) == capname.Left(4))
           video_codec_agreed = TRUE;
       }
+      if(bandwidth_from == 0)
+        bandwidth_from = remoteCaps[i].GetMediaFormat().GetOptionInteger("Max Bit Rate");
     }
     else if(remoteCaps[i].GetMainType() == H323Capability::e_Audio)
     {
@@ -2620,8 +2617,6 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       if(video_cap.Find("H.264") != P_MAX_INDEX)
       {
-        unsigned width = video_res.Tokenise("x")[0].AsInteger();
-        unsigned height = video_res.Tokenise("x")[1].AsInteger();
         unsigned max_fs = GetVideoMacroBlocks(width, height);
         unsigned level = 0, level_h241 = 0, max_mbps = 0, max_br = 0;
         if(max_fs == 0)
