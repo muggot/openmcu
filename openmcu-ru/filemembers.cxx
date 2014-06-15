@@ -473,66 +473,63 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
 void ConferenceFileMember::VideoEncoderCacheThread(PThread &, INT)
 {
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-//  const H323Capabilities &caps = ep.GetCapabilities();
-  H323Capabilities caps;
-  caps.AddCapabilities(0, 0, (const char **) ep.tvCaps);
-  H323Capability * cap = caps.FindCapability(vformat);
-  OpalMediaFormat & wf = cap->GetWritableMediaFormat(); 
+
+  H323Capability * cap = H323Capability::Create(vformat+"{sw}");
+  if(!cap) cap = H323Capability::Create(vformat);
+  if(!cap) return;
+  OpalMediaFormat & wf = cap->GetWritableMediaFormat();
   wf = vformat;
 
-  if(cap!=NULL)
+  status = 1;
+  cout << "Starting cache thread " << vformat << "\n";
+  PTRACE(3,"Cache\tStarting cache thread " << vformat);
+  codec = (H323VideoCodec *) cap->CreateCodec(H323Codec::Encoder);
+  codec->cacheMode = 1; // caching codec
+  con = new MCUH323Connection(ep,0,NULL);
+  con->videoMixerNumber=videoMixerNumber;
+  con->SetupCacheConnection(vformat,conference,this);
+  con->OpenVideoChannel(TRUE,*codec);
+
+  if(codec->CheckCacheRTP())
   {
-    status = 1;
-    cout << "Starting cache thread " << vformat << "\n";
-    PTRACE(3,"Cache\tStarting cache thread " << vformat);
-    codec = (H323VideoCodec *) cap->CreateCodec(H323Codec::Encoder);
-    codec->cacheMode = 1; // caching codec
-    con = new MCUH323Connection(ep,0,NULL);
-    con->videoMixerNumber=videoMixerNumber;
-    con->SetupCacheConnection(vformat,conference,this);
-    con->OpenVideoChannel(TRUE,*codec);
-
-    if(codec->CheckCacheRTP())
-    {
-      PTRACE(3,"Cache\t" << vformat << " already exists, nothing to do, stopping thread");
-      if(conference!=NULL) conference->RemoveMember(this);
-      delete(con); con=NULL;
-      delete(codec); codec=NULL;
-      caps.RemoveAll();
-      return;
-    }
-
-    codec->NewCacheRTP();
-    RTP_DataFrame frame;
-    unsigned length = 0;
-    // from here we are ready to call codec->Read in cicle
-    while (running) 
-    {
-      while(running && codec->GetCacheUsersNumber() == 0)
-      {
-        if(status == 1 )  
-        {
-          status = 0;
-          totalVideoFramesSent=0;
-          PTRACE(3,"MCU\tDown to sleep " << codec->formatString);
-          cout << "Down to sleep " << codec->formatString << "\n";
-        }
-        PThread::Sleep(1000); 
-      }
-      if(running && status == 0)
-      { 
-        status = 1; 
-        PTRACE(3,"MCU\tWake up " << codec->formatString); 
-        cout << "Wake up " << codec->formatString << "\n"; 
-        con->RestartGrabber();
-        firstFrameSendTime=PTime();
-      }
-      if(running) codec->Read(NULL,length,frame);
-    }
-    // must destroy videograbber and videochanell here? fix it
+    PTRACE(3,"Cache\t" << vformat << " already exists, nothing to do, stopping thread");
+    if(conference!=NULL) conference->RemoveMember(this);
     delete(con); con=NULL;
-    codec->DeleteCacheRTP();
     delete(codec); codec=NULL;
-    caps.RemoveAll();
+    delete(cap); cap=NULL;
+    return;
   }
+  codec->NewCacheRTP();
+
+  unsigned length = 0;
+  RTP_DataFrame frame;
+  // from here we are ready to call codec->Read in cicle
+  while(running)
+  {
+    while(running && codec->GetCacheUsersNumber() == 0)
+    {
+      if(status == 1)
+      {
+        status = 0;
+        totalVideoFramesSent=0;
+        PTRACE(3,"MCU\tDown to sleep " << codec->formatString);
+        cout << "Down to sleep " << codec->formatString << "\n";
+      }
+      PThread::Sleep(1000);
+    }
+    if(running && status == 0)
+    {
+      status = 1; 
+      PTRACE(3,"MCU\tWake up " << codec->formatString); 
+      cout << "Wake up " << codec->formatString << "\n"; 
+      con->RestartGrabber();
+      firstFrameSendTime=PTime();
+    }
+    if(running) codec->Read(NULL,length,frame);
+  }
+  // must destroy videograbber and videochanell here? fix it
+  delete(con); con=NULL;
+  codec->DeleteCacheRTP();
+  delete(codec); codec=NULL;
+  delete(cap); cap=NULL;
 }
