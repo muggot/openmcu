@@ -350,10 +350,11 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
      if(MCUConfig("RECEIVE_VIDEO").GetBoolean(keys[i]) != 1) continue;
-     if(keys[i].Find("H.264-") == 0 && CheckCapability("H.264")) continue;
+     if(keys[i].Find("H.261-") == 0 && CheckCapability("H.261")) continue;
      if(keys[i].Find("H.263-") == 0 && CheckCapability("H.263")) continue;
      if(keys[i].Find("H.263p-") == 0 && CheckCapability("H.263p")) continue;
-     if(keys[i].Find("H.261-") == 0 && CheckCapability("H.261")) continue;
+     if(keys[i].Find("H.264-") == 0 && CheckCapability("H.264")) continue;
+     //if(keys[i].Find("VP8-") == 0 && CheckCapability("VP8")) continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      rvCaps[j]=&(listCaps[64*capsNum]);
@@ -364,10 +365,11 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
      if(MCUConfig("TRANSMIT_VIDEO").GetBoolean(keys[i]) != 1) continue;
-     if(keys[i].Find("H.264-") == 0 && CheckCapability("H.264")) continue;
+     if(keys[i].Find("H.261-") == 0 && CheckCapability("H.261")) continue;
      if(keys[i].Find("H.263-") == 0 && CheckCapability("H.263")) continue;
      if(keys[i].Find("H.263p-") == 0 && CheckCapability("H.263p")) continue;
-     if(keys[i].Find("H.261-") == 0 && CheckCapability("H.261")) continue;
+     if(keys[i].Find("H.264-") == 0 && CheckCapability("H.264")) continue;
+     //if(keys[i].Find("VP8-") == 0 && CheckCapability("VP8")) continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      tvCaps[j]=&(listCaps[64*capsNum]);
@@ -455,6 +457,24 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
       AddCapability(new_cap);
     }
   }
+  // add fake VP8 capabilities, need only for H.323
+/*
+  if(CheckCapability("VP8{sw}"))
+  {
+    for(int i = 0; vp8_resolutions[i].width != 0; ++i)
+    {
+      if(vp8_resolutions[i].width == 352) // skip default capability
+        continue;
+      H323Capability *new_cap = H323Capability::Create("VP8{sw}");
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      wf.SetOptionInteger("Frame Width", vp8_resolutions[i].width);
+      wf.SetOptionInteger("Frame Height", vp8_resolutions[i].height);
+      wf.SetOptionInteger("Generic Parameter 1", vp8_resolutions[i].width);
+      wf.SetOptionInteger("Generic Parameter 2", vp8_resolutions[i].height);
+      AddCapability(new_cap);
+    }
+  }
+*/
   // add fake H.263p capabilities, need only for H.323
   if(CheckCapability("H.263p{sw}"))
   {
@@ -523,6 +543,22 @@ BOOL MCUH323EndPoint::CheckCapability(const PString & formatName)
 {
   if(H323CapabilityFactory::IsSingleton(formatName) || H323CapabilityFactory::IsSingleton(formatName+"{sw}"))
     return TRUE;
+  return FALSE;
+}
+
+BOOL MCUH323EndPoint::SkipCapability(const PString & formatName)
+{
+  if(!CheckCapability(formatName))
+    return TRUE;
+  if(  (formatName.Find("H.261-") == 0 && CheckCapability("H.261"))
+     ||(formatName.Find("H.263-") == 0 && CheckCapability("H.263"))
+     ||(formatName.Find("H.263p-") == 0 && CheckCapability("H.263p"))
+     ||(formatName.Find("H.264-") == 0 && CheckCapability("H.264"))
+     ||(formatName.Find("VP8-") == 0 && CheckCapability("VP8"))
+    )
+  {
+    return TRUE;
+  }
   return FALSE;
 }
 

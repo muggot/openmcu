@@ -985,9 +985,12 @@ class VP8DecoderRFC : public VP8Decoder
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// Xak
-///////////////////////////////////////////////////////////////////////////////
+
 #define OpalPluginCodec_Identifer_VP8       "1.3.6.1.4.1.17091.1.9"
+#define VP8_MediaFmt                        "VP8"
+#define VP8_WIDTH                           "352"
+#define VP8_HEIGHT                          "288"
+#define VP8_TARGETBITRATE                   "64000"
 
 #define OpalPluginCodec_Identifer_VP8_QCIF  "1.3.6.1.4.1.17091.1.9.0"
 #define VP8_QCIF_MediaFmt                   "VP8-QCIF"
@@ -1046,14 +1049,16 @@ class VP8DecoderRFC : public VP8Decoder
 #define VP8PLUGIN_CODEC(prefix) \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \
 { \
-    NULL \
+  {{1},1, PluginCodec_H323GenericParameterDefinition::PluginCodec_GenericParameter_unsignedMin,{atoi(prefix##_WIDTH)}}, \
+  {{1},2, PluginCodec_H323GenericParameterDefinition::PluginCodec_GenericParameter_unsignedMin,{atoi(prefix##_HEIGHT)}}, \
+  NULL \
 }; \
 static struct PluginCodec_H323GenericCodecData prefix##_Cap = \
 { \
-    OpalPluginCodec_Identifer_##prefix, \
-    0, \
-    0, \
-    prefix##_h323params \
+  OpalPluginCodec_Identifer_##prefix, \
+  0, \
+  2, \
+  prefix##_h323params \
 }; \
 static struct PluginCodec_Option const prefix##_FrameWidth = \
 { \
@@ -1187,6 +1192,7 @@ class prefix##_Format : public VP8Format \
 }; \
 static prefix##_Format prefix##_MediaFormatInfo;
 
+VP8PLUGIN_CODEC(VP8);
 VP8PLUGIN_CODEC(VP8_QCIF);
 VP8PLUGIN_CODEC(VP8_CIF);
 VP8PLUGIN_CODEC(VP8_4CIF);
@@ -1198,15 +1204,10 @@ VP8PLUGIN_CODEC(VP8_768P);
 VP8PLUGIN_CODEC(VP8_1080P);
 
 ///////////////////////////////////////////////////////////////////////////////
-//
-///////////////////////////////////////////////////////////////////////////////
-
-
-///////////////////////////////////////////////////////////////////////////////
 
 static struct PluginCodec_Definition VP8CodecDefinition[] =
 {
-  // Xak
+  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
   PLUGINCODEC_VIDEO_CODEC_CXX(VP8_QCIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
   PLUGINCODEC_VIDEO_CODEC_CXX(VP8_CIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
   PLUGINCODEC_VIDEO_CODEC_CXX(VP8_4CIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),

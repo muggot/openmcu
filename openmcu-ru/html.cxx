@@ -698,6 +698,16 @@ void VideoResolutionRestore(PString & capname, PString & res)
     if(name == "4CIF") { res = "704x576"; return; }
     if(name == "16CIF") { res = "1408x1152"; return; }
   }
+  else if(capname.Find("VP8")==0)
+  {
+    for(int i = 0; vp8_resolutions[i].width != 0; ++i)
+    {
+      if(capname != PString(vp8_resolutions[i].capname)+"{sw}")
+        continue;
+      res = PString(vp8_resolutions[i].width)+"x"+PString(vp8_resolutions[i].height);
+      capname = "VP8{sw}";
+    }
+  }
 }
 
 H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
@@ -1013,6 +1023,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       continue;
     if(!ep.CheckCapability(keys[i]))
       continue;
+    if(ep.SkipCapability(keys[i]))
+      continue;
     PString capname = keys[i];
     if(MCUConfig("SIP Video").GetBoolean(keys[i])) v_caps += ","+capname;
   }
@@ -1150,10 +1162,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString a_codec = scfg.GetString("Audio codec");
       PString v_codec = scfg.GetString("Video codec");
       // bak 13.06.2014, restore resolution from capability
-      if(   (ep.CheckCapability("H.263") && v_codec.Find("H.263-")==0 && v_codec != "H.263{sw}")
-         || (ep.CheckCapability("H.263p") && v_codec.Find("H.263p-")==0 && v_codec != "H.263p{sw}")
-         || (ep.CheckCapability("H.264") && v_codec.Find("H.264-")==0 && v_codec != "H.264{sw}")
-        )
+      if(ep.SkipCapability(v_codec))
       {
         PString res;
         VideoResolutionRestore(v_codec, res);

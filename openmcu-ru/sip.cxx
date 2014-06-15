@@ -1374,7 +1374,7 @@ void MCUSipConnection::SelectCapability_H264(SipCapMapType & LocalCaps, SipCapab
     if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
   }
 
-  if(sc->video_width && sc->video_height)
+  if(sc->cap && sc->video_width && sc->video_height)
   {
     max_fs = GetVideoMacroBlocks(sc->video_width, sc->video_height);
     GetParamsH264(level, level_h241, max_fs, max_mbps, max_br);
@@ -1425,43 +1425,39 @@ void MCUSipConnection::SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapabi
 {
   int width = 0, height = 0;
 
-  PStringArray keys = sc->fmtp.Tokenise(";");
-  for(int kn = 0; kn < keys.GetSize(); kn++)
+  if(!sc->cap)
   {
-    if(keys[kn].Find("width=") == 0)       width = (keys[kn].Tokenise("=")[1]).AsInteger();
-    else if(keys[kn].Find("height=") == 0) height = (keys[kn].Tokenise("=")[1]).AsInteger();
+    if(FindSipCap(LocalCaps, "VP8{sw}"))
+      sc->cap = H323Capability::Create("VP8{sw}");
+    if(!sc->cap)
+      return;
   }
 
-  if(!sc->cap && width && height)
+  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+
+  if(sc->video_width && sc->video_height)
   {
-    for(SipCapMapType::iterator it = LocalCaps.begin(); it != LocalCaps.end(); it++)
-    {
-      if(it->second->capname.Find("VP8") == 0)
-      {
-        sc->cap = H323Capability::Create(it->second->capname);
-        if(sc->cap)
-        {
-          const OpalMediaFormat & mf = sc->cap->GetMediaFormat();
-          if(width == mf.GetOptionInteger("Frame Width") && height == mf.GetOptionInteger("Frame Height"))
-            break;
-          else
-          { delete sc->cap; sc->cap = NULL; }
-        }
-      }
-    }
+    width = sc->video_width;
+    height = sc->video_height;
   }
-  if(!sc->cap && FindSipCap(LocalCaps, "VP8-CIF{sw}"))
+  else
   {
-    sc->cap = H323Capability::Create("VP8-CIF{sw}");
+    PStringArray keys = sc->fmtp.Tokenise(";");
+    for(int kn = 0; kn < keys.GetSize(); kn++)
+    {
+      if(keys[kn].Find("width=") == 0)       width = (keys[kn].Tokenise("=")[1]).AsInteger();
+      else if(keys[kn].Find("height=") == 0) height = (keys[kn].Tokenise("=")[1]).AsInteger();
+    }
   }
 
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
-    if(sc->preferred_cap == FALSE)
+    if(width && height)
     {
-      if(width) wf.SetOptionInteger("Frame Width", width);
-      if(height) wf.SetOptionInteger("Frame Height", height);
+      wf.SetOptionInteger("Frame Width", width);
+      wf.SetOptionInteger("Frame Height", height);
     }
     if(remoteApplication.ToLower().Find("linphone") != P_MAX_INDEX) wf.SetOptionEnum("Picture ID Size", 0);
     if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);

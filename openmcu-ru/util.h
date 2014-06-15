@@ -98,6 +98,27 @@ BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, u
 BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br, PString & capname);
 BOOL GetParamsH263(PString & mpiname, unsigned & width, unsigned & height);
 
+static struct vp8_resolution {
+  const char *capname;
+  unsigned width;
+  unsigned height;
+} const vp8_resolutions[] = {
+  { "VP8-QCIF",  176,  144  },
+  { NULL,        320,  240  },
+  { "VP8-CIF",   352,  288  },
+  { "VP8-360P",  640,  360  },
+  { NULL,        640,  480  },
+  { "VP8-4CIF",  704,  576  },
+  { NULL,        800,  600  },
+  { "VP8-480P",  852,  480  },
+  { NULL,        1024, 768  },
+  { "VP8-720P",  1280, 720  },
+  { NULL,        1280, 1024 },
+  { "VP8-768P",  1364, 768  },
+  { "VP8-1080P", 1920, 1080 },
+  { NULL }
+};
+
 static struct h263_resolution {
   const char *mpiname;
   unsigned width;

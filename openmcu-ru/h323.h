@@ -128,6 +128,7 @@ class MCUH323EndPoint : public H323EndPoint
     void SetConnectionActive(MCUH323Connection * conn);
 
     BOOL CheckCapability(const PString & formatName);
+    BOOL SkipCapability(const PString & formatName);
     void AddCapabilitiesMCU();
 
 #if MCU_VIDEO
