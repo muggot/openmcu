@@ -396,12 +396,12 @@ static int MyDecodeAudio(const struct PluginCodec_Definition * codec,
 static struct PluginCodec_Option const OptionInitialMode =
 {
   PluginCodec_IntegerOption,          // PluginCodec_OptionTypes
-  G7222InitialModeName,     // Generic (human readable) option name
+  G7222InitialModeName,               // Generic (human readable) option name
   false,                              // User Read/Only flag
   PluginCodec_MinMerge,               // Merge mode
   STRINGIZE(G7222_MODE_INITIAL_VALUE),// Initial value
-  G7222InitialModeFMTPName,       // SIP/SDP FMTP name
-  "0",                                // SIP/SDP FMTP default value (option not included in FMTP if have this value)
+  G7222InitialModeFMTPName,           // SIP/SDP FMTP name
+  STRINGIZE(G7222_MODE_INITIAL_VALUE),// SIP/SDP FMTP default value (option not included in FMTP if have this value)
   G7222_H245_REQUEST_MODE,            // H.245 generic capability code and bit mask
   "0",                                // Minimum value
   STRINGIZE(G7222_MAX_MODES)          // Maximum value
@@ -440,13 +440,13 @@ static struct PluginCodec_Option const OptionTxFramesPerPacket =
 
 static struct PluginCodec_Option const OptionOctetAlign =
 {
-  PluginCodec_IntegerOption,          // Option type
+  PluginCodec_BoolOption,             // Option type
   G7222AlignmentOptionName,           // User visible name
   true,                               // User Read/Only flag
   PluginCodec_EqualMerge,             // Merge mode
   "1",                                // Initial value
   G7222AlignmentFMTPName,             // FMTP option name
-  NULL,                               // FMTP default value
+  "0",                                // FMTP default value
   G7222_H245_OCTET_ALIGNED            // H.245 generic capability code and bit mask
 };
 
