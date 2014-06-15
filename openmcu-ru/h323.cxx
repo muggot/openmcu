@@ -442,33 +442,27 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
 
 void MCUH323EndPoint::AddCapabilitiesMCU()
 {
-  H323Capability *dcap = NULL;
   // add fake H.264 capabilities, need only for H.323
-  dcap = capabilities.FindCapability("H.264{sw}");
-  if(dcap)
+  if(CheckCapability("H.264{sw}"))
   {
-    unsigned dlevel = dcap->GetMediaFormat().GetOptionInteger("Generic Parameter 42");
     for(int i = 0; h264_profile_levels[i].level != 0; ++i)
     {
-      if(dlevel == h264_profile_levels[i].level_h241) // skip default capability
+      if(h264_profile_levels[i].level_h241 == 29) // skip default capability
         continue;
-      H323Capability *new_cap = (H323Capability *)dcap->Clone();
+      H323Capability *new_cap = H323Capability::Create("H.264{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       wf.SetOptionInteger("Generic Parameter 42", h264_profile_levels[i].level_h241);
       AddCapability(new_cap);
     }
   }
   // add fake H.263p capabilities, need only for H.323
-  dcap = capabilities.FindCapability("H.263p{sw}");
-  if(dcap)
+  if(CheckCapability("H.263p{sw}"))
   {
-    unsigned dwidth = dcap->GetMediaFormat().GetOptionInteger("Frame Width");
-    unsigned dheight = dcap->GetMediaFormat().GetOptionInteger("Frame Height");
     for(int i = 0; h263_resolutions[i].width != 0; ++i)
     {
-      if(dwidth == h263_resolutions[i].width && dheight == h263_resolutions[i].height) // skip default capability
+      if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
         continue;
-      H323Capability *new_cap = (H323Capability *)dcap->Clone();
+      H323Capability *new_cap = H323Capability::Create("H.263p{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       wf.SetOptionInteger("Frame Width", h263_resolutions[i].width);
       wf.SetOptionInteger("Frame Height", h263_resolutions[i].height);
@@ -482,16 +476,13 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
     }
   }
   // add fake H.263 capabilities, need only for H.323
-  dcap = capabilities.FindCapability("H.263{sw}");
-  if(dcap)
+  if(CheckCapability("H.263{sw}"))
   {
-    unsigned dwidth = dcap->GetMediaFormat().GetOptionInteger("Frame Width");
-    unsigned dheight = dcap->GetMediaFormat().GetOptionInteger("Frame Height");
     for(int i = 0; h263_resolutions[i].width != 0; ++i)
     {
-      if(dwidth == h263_resolutions[i].width && dheight == h263_resolutions[i].height) // skip default capability
+      if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
         continue;
-      H323Capability *new_cap = (H323Capability *)dcap->Clone();
+      H323Capability *new_cap = H323Capability::Create("H.263{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       wf.SetOptionInteger("Frame Width", h263_resolutions[i].width);
       wf.SetOptionInteger("Frame Height", h263_resolutions[i].height);
@@ -505,18 +496,15 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
     }
   }
   // add fake H.261 capabilities, need only for H.323
-  dcap = capabilities.FindCapability("H.261{sw}");
-  if(dcap)
+  if(CheckCapability("H.261{sw}"))
   {
-    unsigned dwidth = dcap->GetMediaFormat().GetOptionInteger("Frame Width");
-    unsigned dheight = dcap->GetMediaFormat().GetOptionInteger("Frame Height");
     for(int i = 0; h263_resolutions[i].width != 0; ++i)
     {
-      if(dwidth == h263_resolutions[i].width && dheight == h263_resolutions[i].height) // skip default capability
+      if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
         continue;
-      if(PString(h263_resolutions[i].mpiname) != "QCIF" && PString(h263_resolutions[i].mpiname) != "CIF")
+      if(PString(h263_resolutions[i].mpiname) != "QCIF")
         continue;
-      H323Capability *new_cap = (H323Capability *)dcap->Clone();
+      H323Capability *new_cap = H323Capability::Create("H.261{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       wf.SetOptionInteger("Frame Width", h263_resolutions[i].width);
       wf.SetOptionInteger("Frame Height", h263_resolutions[i].height);
