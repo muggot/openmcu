@@ -667,21 +667,37 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 
 // bak 13.06.2014, restore resolution from capability
 // remove it when not needed
-PString H264ResolutionRestore(PString & capname)
+void VideoResolutionRestore(PString & capname, PString & res)
 {
-  for(int i = 0; h264_profile_levels[i].level != 0; ++i)
+  if(capname.Find("H.264")==0)
   {
-    if(capname != PString(h264_profile_levels[i].capname)+"{sw}")
-      continue;
-    unsigned macroblocks = h264_profile_levels[i].max_fs;
-    for(int j = 0; h264_resolutions[j].macroblocks != 0; ++j)
+    for(int i = 0; h264_profile_levels[i].level != 0; ++i)
     {
-      if(macroblocks < h264_resolutions[j].macroblocks)
+      if(capname != PString(h264_profile_levels[i].capname)+"{sw}")
         continue;
-      return PString(h264_resolutions[j].width)+"x"+PString(h264_resolutions[j].height);
+      unsigned macroblocks = h264_profile_levels[i].max_fs;
+      for(int j = 0; h264_resolutions[j].macroblocks != 0; ++j)
+      {
+        if(macroblocks < h264_resolutions[j].macroblocks)
+          continue;
+        res = PString(h264_resolutions[j].width)+"x"+PString(h264_resolutions[j].height);
+        capname = "H.264{sw}";
+        return;
+      }
     }
   }
-  return "";
+  else if(capname.Find("H.261")==0 || capname.Find("H.263")==0)
+  {
+    PString name = capname;
+    name.Replace("{sw}","",TRUE,0);
+    capname = name.Tokenise("-")[0]+"{sw}";
+    name = name.Tokenise("-")[1];
+    if(name == "SQCIF") { res = "128x96"; return; }
+    if(name == "QCIF") { res = "176x144"; return; }
+    if(name == "CIF") { res = "352x288"; return; }
+    if(name == "4CIF") { res = "704x576"; return; }
+    if(name == "16CIF") { res = "1408x1152"; return; }
+  }
 }
 
 H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
@@ -811,6 +827,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+"H.323 call processing"+SelectItem(name, scfg.GetString("H.323 call processing", "direct"), "full,direct")+"</tr>";
       s2 += EndItemArray();
       s << s2;
@@ -821,6 +838,8 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += rowArray+JsLocale("window.l_name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString("Password"))+"</tr>";
       s2 += rowArray+"H.323 call processing"+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
+      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -857,6 +876,9 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
         s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), "0,1,2,3,4,5,6,7,8,9,10", 40)+"</tr>";
       else
         s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0,1,2,3,4,5,6,7,8,9,10", 40)+"</tr>";
+      //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -867,19 +889,29 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString rv_codec = scfg.GetString("Video codec(receive)");
       PString tv_codec = scfg.GetString("Video codec(transmit)");
       // bak 13.06.2014, restore resolution from capability
-      if(ep.CheckCapability("H.264") && rv_codec.Left(5) == "H.264" && rv_codec != "H.264{sw}")
+      if(   (ep.CheckCapability("H.263") && rv_codec.Find("H.263-")==0 && rv_codec != "H.263{sw}")
+         || (ep.CheckCapability("H.263p") && rv_codec.Find("H.263p-")==0 && rv_codec != "H.263p{sw}")
+         || (ep.CheckCapability("H.264") && rv_codec.Find("H.264-")==0 && rv_codec != "H.264{sw}")
+        )
       {
+        PString res;
+        VideoResolutionRestore(rv_codec, res);
+        scfg.SetString("Video codec(receive)", rv_codec);
         if(scfg.GetString("Video resolution(receive)") == "")
-          scfg.SetString("Video resolution(receive)", H264ResolutionRestore(rv_codec));
-        rv_codec = "H.264{sw}"; scfg.SetString("Video codec(receive)", rv_codec);
+          scfg.SetString("Video resolution(receive)", res);
       }
-      if(ep.CheckCapability("H.264") && tv_codec.Left(5) == "H.264" && tv_codec != "H.264{sw}")
+      if(   (ep.CheckCapability("H.263") && tv_codec.Find("H.263-")==0 && tv_codec != "H.263{sw}")
+         || (ep.CheckCapability("H.263p") && tv_codec.Find("H.263p-")==0 && tv_codec != "H.263p{sw}")
+         || (ep.CheckCapability("H.264") && tv_codec.Find("H.264-")==0 && tv_codec != "H.264{sw}")
+        )
       {
+        PString res;
+        VideoResolutionRestore(tv_codec, res);
+        scfg.SetString("Video codec(transmit)", tv_codec);
         if(scfg.GetString("Video resolution(transmit)") == "")
-          scfg.SetString("Video resolution(transmit)", H264ResolutionRestore(tv_codec));
-        tv_codec = "H.264{sw}"; scfg.SetString("Video codec(transmit)", tv_codec);
+          scfg.SetString("Video resolution(transmit)", res);
       }
-      //
+      ////////////////////////////////////////////////////
       if(ra_codec != "" && ra_caps.Find(ra_codec) == P_MAX_INDEX) ra_caps = ra_codec+","+ra_caps;
       if(ta_codec != "" && ta_caps.Find(ta_codec) == P_MAX_INDEX) ta_caps = ta_codec+","+ta_caps;
       if(rv_codec != "" && rv_caps.Find(rv_codec) == P_MAX_INDEX) rv_caps = rv_codec+","+rv_caps;
@@ -1118,13 +1150,18 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString a_codec = scfg.GetString("Audio codec");
       PString v_codec = scfg.GetString("Video codec");
       // bak 13.06.2014, restore resolution from capability
-      if(ep.CheckCapability("H.264") && v_codec.Left(5) == "H.264" && v_codec != "H.264{sw}")
+      if(   (ep.CheckCapability("H.263") && v_codec.Find("H.263-")==0 && v_codec != "H.263{sw}")
+         || (ep.CheckCapability("H.263p") && v_codec.Find("H.263p-")==0 && v_codec != "H.263p{sw}")
+         || (ep.CheckCapability("H.264") && v_codec.Find("H.264-")==0 && v_codec != "H.264{sw}")
+        )
       {
+        PString res;
+        VideoResolutionRestore(v_codec, res);
+        scfg.SetString("Video codec", v_codec);
         if(scfg.GetString("Video resolution") == "")
-          scfg.SetString("Video resolution", H264ResolutionRestore(v_codec));
-        v_codec = "H.264{sw}"; scfg.SetString("Video codec(transmit)", v_codec);
+          scfg.SetString("Video resolution", res);
       }
-      //
+      ////////////////////////////////////////////////////
       if(a_codec != "" && a_caps.Find(a_codec) == P_MAX_INDEX) a_caps = a_codec+","+a_caps;
       if(v_codec != "" && v_caps.Find(v_codec) == P_MAX_INDEX) v_caps = v_codec+","+v_caps;
 
@@ -1443,7 +1480,7 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
   cfg = MCUConfig(section);
 
   PStringStream html_begin, html_end, html_page, s;
-  buttonUp = buttonDown = 1;
+  buttonUp = buttonDown = buttonDelete = 1;
   s << BeginTable();
   s << NewRowColumn("");
   s << ColumnItem("", 30);
@@ -1524,7 +1561,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
 {
   cfg = MCUConfig(section);
 
-  buttonUp = buttonDown = 1;
+  buttonUp = buttonDown = buttonDelete = 1;
   firstEditRow = firstDeleteRow = 0;
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();

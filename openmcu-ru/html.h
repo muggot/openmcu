@@ -27,10 +27,10 @@ class TablePConfigPage : public PConfigPage
       rowFieldStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;width:300px;'>";
       itemStyle = "<td align='left' valign='top' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
       itemInfoStyle = "<td rowspan='%ROWSPAN%' align='left' valign='top' style='background-color:"+itemInfoColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
-      textStyle = "margin:2px 0px 2px 0px;padding:0px 3px 0px 3px;";
-      inputStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:20px;";
-      selectStyle = "margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;height:20px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
-      buttonStyle = "margin:2px 1px 2px 1px;width:24px;border-radius:0px;";
+      textStyle = "font-size:13px;margin:2px 0px 2px 0px;padding:0px 3px 0px 3px;";
+      inputStyle = "font-size:12px;height:18px;margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;";
+      selectStyle = "font-size:12px;height:18px;margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
+      buttonStyle = "font-size:12px;height:auto;width:14px;margin:2px 1px 2px 1px;border-radius:0px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
       rowBorders = FALSE;
       rowBordersStyle = "3px ridge;";
       rowArray = "<tr valign='middle'><td align='left' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;'>";
