@@ -1704,8 +1704,16 @@ int MCUSipConnection::ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & Remo
       else if(m->m_mode == 3) mode = 3;
 
       int bw = 0;
-      if(m->m_bandwidths)          bw = m->m_bandwidths->b_value/1000;
-      else if(sdp->sdp_bandwidths) bw = sdp->sdp_bandwidths->b_value;
+      if(m->m_bandwidths)
+      {
+        bw = m->m_bandwidths->b_value;
+        if(PString(m->m_bandwidths->b_modifier_name) != "AS") bw = bw/1000;
+      }
+      else if(sdp->sdp_bandwidths)
+      {
+        bw = sdp->sdp_bandwidths->b_value;
+        if(PString(sdp->sdp_bandwidths->b_modifier_name) != "AS") bw = bw/1000;
+      }
 
       SipSecureTypes secure_type = SECURE_TYPE_NONE;
       PString srtp_type, srtp_key, srtp_param, zrtp_hash, dtls_fp, dtls_fp_type;
