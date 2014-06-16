@@ -1354,7 +1354,7 @@ class H323PluginFramedAudioCodec : public H323FramedAudioCodec
         return FALSE;
       unsigned int fromLen = codec->parm.audio.samplesPerFrame*2*codecChannels;
       toLen                = codec->parm.audio.bytesPerFrame;
-      PTRACE(6, "PluginFramedAudioCodec\tfromLen" << fromLen);
+      PTRACE(9, "PluginFramedAudioCodec\tfromLen" << fromLen);
       unsigned flags = 0;
       return (codec->codecFunction)(codec, context, 
                                  (const unsigned char *)sampleBuffer.GetPointer(), &fromLen,
