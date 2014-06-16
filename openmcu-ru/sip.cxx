@@ -205,9 +205,25 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
   if(!cap)
     return FALSE;
 
+  const OpalMediaFormat & mf = cap->GetMediaFormat();
+  rate = mf.GetTimeUnits()*1000;
+  // only for audio use the default fmtp
+  if(fmtp == "" && rate != 90000)
+  {
+    for (PINDEX i = 0; i < mf.GetOptionCount(); i++)
+    {
+      if(mf.GetOption(i).GetFMTPName() != "" && mf.GetOption(i).GetFMTPDefault() != mf.GetOption(i).AsString())
+        fmtp += mf.GetOption(i).GetFMTPName()+"="+mf.GetOption(i).AsString()+";";
+    }
+  }
+  delete cap;
+
   name = capname.ToLower();
   if(name.Find("ulaw") != P_MAX_INDEX)         { name = "pcmu"; }
   else if(name.Find("alaw") != P_MAX_INDEX)    { name = "pcma"; }
+  else if(name.Find("722.1c") != P_MAX_INDEX)  { name = "siren14"; }
+  else if(name.Find("722.1") != P_MAX_INDEX)   { name = "g7221"; }
+  else if(name.Find("722.2") != P_MAX_INDEX)   { name = "amr-wb"; }
   else if(name.Find("723") != P_MAX_INDEX)     { name = "g723"; }
   else if(name.Find("726-16") != P_MAX_INDEX)  { name = "g726-16"; }
   else if(name.Find("726-24") != P_MAX_INDEX)  { name = "g726-24"; }
@@ -222,19 +238,6 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
     name.Replace("{sw}","",TRUE,0);
     name.Replace(".","",TRUE,0);
     name = name.Left(name.Find("-")).Left(name.Find("_"));
-  }
-
-  const OpalMediaFormat & mf = cap->GetMediaFormat();
-  rate = mf.GetTimeUnits()*1000;
-
-  // only for audio use the default fmtp
-  if(fmtp == "" && rate != 90000)
-  {
-    for (PINDEX i = 0; i < mf.GetOptionCount(); i++)
-    {
-      if(mf.GetOption(i).GetFMTPName() != "" && mf.GetOption(i).GetFMTPDefault() != mf.GetOption(i).AsString())
-        fmtp += mf.GetOption(i).GetFMTPName()+"="+mf.GetOption(i).AsString()+";";
-    }
   }
 
   if     (name == "pcmu")   { pt = 0; }
@@ -293,7 +296,7 @@ void CheckPreferSipCap(SipCapMapType & SipCapMap, SipCapability *sc)
     if(it->second->preferred_cap && it->second->format == sc->format)
     {
       sc->cap = H323Capability::Create(it->second->capname);
-      sc->preferred_cap = TRUE;
+      if(sc->cap) sc->preferred_cap = TRUE;
       return;
     }
   }
@@ -1608,6 +1611,80 @@ void MCUSipConnection::SelectCapability_OPUS(SipCapMapType & LocalCaps, SipCapab
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUSipConnection::SelectCapability_G7221(SipCapMapType & LocalCaps, SipCapability *sc)
+{
+  int bitrate = 0;
+  PStringArray keys = sc->fmtp.Tokenise(";");
+  for(int kn = 0; kn < keys.GetSize(); kn++)
+  {
+    if(keys[kn].Find("bitrate=") == 0)
+      bitrate = (keys[kn].Tokenise("=")[1]).AsInteger();
+  }
+
+  PString capname;
+  if(bitrate == 24000 && FindSipCap(LocalCaps, "G.722.1-24K{sw}"))
+    capname = "G.722.1-24K{sw}";
+  else if(bitrate == 32000 && FindSipCap(LocalCaps, "G.722.1-32K{sw}"))
+    capname = "G.722.1-32K{sw}";
+  else
+    return;
+
+  sc->cap = H323Capability::Create(capname);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::SelectCapability_G7221C(SipCapMapType & LocalCaps, SipCapability *sc)
+{
+  int bitrate = 0;
+  PStringArray keys = sc->fmtp.Tokenise(";");
+  for(int kn = 0; kn < keys.GetSize(); kn++)
+  {
+    if(keys[kn].Find("bitrate=") == 0)
+      bitrate = (keys[kn].Tokenise("=")[1]).AsInteger();
+  }
+
+  PString capname;
+  if(bitrate == 24000 && FindSipCap(LocalCaps, "G.722.1C-24K{sw}"))
+    capname = "G.722.1C-24K{sw}";
+  else if(bitrate == 32000 && FindSipCap(LocalCaps, "G.722.1C-32K{sw}"))
+    capname = "G.722.1C-32K{sw}";
+  else if(bitrate == 48000 && FindSipCap(LocalCaps, "G.722.1C-48K{sw}"))
+    capname = "G.722.1C-48K{sw}";
+  else
+    return;
+
+  sc->cap = H323Capability::Create(capname);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::SelectCapability_G7222(SipCapMapType & LocalCaps, SipCapability *sc)
+{
+  PString capname;
+  if(sc->clock == 16000 && FindSipCap(LocalCaps, "G.722.2{sw}"))
+    capname = "G.722.2{sw}";
+  else
+    return;
+
+  int octet_align = -1;
+  PStringArray keys = sc->fmtp.Tokenise(";");
+  for(int kn = 0; kn < keys.GetSize(); kn++)
+  {
+    if(keys[kn].Find("octet-align=") == 0)
+      octet_align = (keys[kn].Tokenise("=")[1]).AsInteger();
+  }
+
+  sc->cap = H323Capability::Create(capname);
+  if(sc->cap)
+  {
+    OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
+    if(octet_align > -1) wf.SetOptionInteger("Octet Aligned", octet_align);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 sdp_parser_t *MCUSipConnection::SdpParser(PString sdp_str)
 {
   // RTP/SAVPF parse
@@ -1883,6 +1960,15 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
       // OPUS
       else if(remote_sc->format == "opus")
       { SelectCapability_OPUS(LocalCaps, remote_sc); }
+      // G.722.1
+      else if(remote_sc->format == "g7221" && remote_sc->clock == 16000)
+      { SelectCapability_G7221(LocalCaps, remote_sc); }
+      // G.722.1C
+      else if(remote_sc->format == "siren14" && remote_sc->clock == 32000)
+      { SelectCapability_G7221C(LocalCaps, remote_sc); }
+      // G.722.2
+      else if(remote_sc->format == "amr-wb" && remote_sc->clock == 16000)
+      { SelectCapability_G7222(LocalCaps, remote_sc); }
     }
     else if(remote_sc->media == 1)
     {
@@ -1894,8 +1980,8 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
       else if(remote_sc->format == "h263") SelectCapability_H263(LocalCaps, remote_sc);
       else if(remote_sc->format == "h263-1998") SelectCapability_H263p(LocalCaps, remote_sc);
       else if(remote_sc->format == "h264") SelectCapability_H264(LocalCaps, remote_sc);
-      else if(remote_sc->format == "vp8") SelectCapability_VP8(LocalCaps, remote_sc);
       else if(remote_sc->format == "mp4v-es") SelectCapability_MPEG4(LocalCaps, remote_sc);
+      else if(remote_sc->format == "vp8") SelectCapability_VP8(LocalCaps, remote_sc);
     }
     if(remote_sc->cap)
     {
