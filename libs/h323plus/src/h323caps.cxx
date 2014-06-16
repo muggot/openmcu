@@ -3559,6 +3559,29 @@ H323Capability * H323Capabilities::FindCapability(const H245_Capability & cap) c
 #       undef _MY_CAP_SEARCHER
       }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+      // OpalPluginCodec_Identifer_G7221
+      if(c.Find("standard 0.0.7.7221.1.0") != P_MAX_INDEX)
+      {
+        int bitrate = 0;
+        if(c.Find("maxBitRate = 24000") != P_MAX_INDEX) bitrate = 24000;
+        else if(c.Find("maxBitRate = 32000") != P_MAX_INDEX) bitrate = 32000;
+
+        for(PINDEX i = 0; i < table.GetSize(); i++)
+        {
+          H323Capability & capability = table[i];
+          if(capability.GetMainType() == H323Capability::e_Audio && capability.GetFormatName().Find("G.722.1-")==0)
+          {
+            int _bitrate = capability.GetMediaFormat().GetBandwidth();
+            if(_bitrate == bitrate)
+            {
+              PTRACE(3, "H323\tFound capability*: " << capability);
+              return &capability;
+            }
+          }
+        }
+        return NULL;
+      }
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
       const H245_AudioCapability & audio = cap;
       return FindCapability(H323Capability::e_Audio, audio, NULL);
     }
