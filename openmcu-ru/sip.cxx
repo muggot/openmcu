@@ -221,7 +221,6 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
   name = capname.ToLower();
   if(name.Find("ulaw") != P_MAX_INDEX)         { name = "pcmu"; }
   else if(name.Find("alaw") != P_MAX_INDEX)    { name = "pcma"; }
-  else if(name.Find("722.1c") != P_MAX_INDEX)  { name = "siren14"; }
   else if(name.Find("722.1") != P_MAX_INDEX)   { name = "g7221"; }
   else if(name.Find("722.2") != P_MAX_INDEX)   { name = "amr-wb"; }
   else if(name.Find("723") != P_MAX_INDEX)     { name = "g723"; }
@@ -1622,38 +1621,22 @@ void MCUSipConnection::SelectCapability_G7221(SipCapMapType & LocalCaps, SipCapa
   }
 
   PString capname;
-  if(bitrate == 24000 && FindSipCap(LocalCaps, "G.722.1-24K{sw}"))
+  if(sc->clock == 16000 && bitrate == 24000 && FindSipCap(LocalCaps, "G.722.1-24K{sw}"))
     capname = "G.722.1-24K{sw}";
-  else if(bitrate == 32000 && FindSipCap(LocalCaps, "G.722.1-32K{sw}"))
+  else if(sc->clock == 16000 && bitrate == 32000 && FindSipCap(LocalCaps, "G.722.1-32K{sw}"))
     capname = "G.722.1-32K{sw}";
-  else
-    return;
-
-  sc->cap = H323Capability::Create(capname);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::SelectCapability_G7221C(SipCapMapType & LocalCaps, SipCapability *sc)
-{
-  int bitrate = 0;
-  PStringArray keys = sc->fmtp.Tokenise(";");
-  for(int kn = 0; kn < keys.GetSize(); kn++)
-  {
-    if(keys[kn].Find("bitrate=") == 0)
-      bitrate = (keys[kn].Tokenise("=")[1]).AsInteger();
-  }
-
-  PString capname;
-  if(bitrate == 24000 && FindSipCap(LocalCaps, "G.722.1C-24K{sw}"))
+  else if(sc->clock == 32000 && bitrate == 24000 && FindSipCap(LocalCaps, "G.722.1C-24K{sw}"))
     capname = "G.722.1C-24K{sw}";
-  else if(bitrate == 32000 && FindSipCap(LocalCaps, "G.722.1C-32K{sw}"))
+  else if(sc->clock == 32000 && bitrate == 32000 && FindSipCap(LocalCaps, "G.722.1C-32K{sw}"))
     capname = "G.722.1C-32K{sw}";
-  else if(bitrate == 48000 && FindSipCap(LocalCaps, "G.722.1C-48K{sw}"))
+  else if(sc->clock == 32000 && bitrate == 48000 && FindSipCap(LocalCaps, "G.722.1C-48K{sw}"))
     capname = "G.722.1C-48K{sw}";
   else
     return;
 
+  SipCapability *local_sc = FindSipCap(LocalCaps, capname);
+  local_sc->fmtp = sc->fmtp;
+  local_sc->local_fmtp = sc->fmtp;
   sc->cap = H323Capability::Create(capname);
 }
 
@@ -1961,11 +1944,11 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
       else if(remote_sc->format == "opus")
       { SelectCapability_OPUS(LocalCaps, remote_sc); }
       // G.722.1
-      else if(remote_sc->format == "g7221" && remote_sc->clock == 16000)
+      else if(remote_sc->format == "g7221")
       { SelectCapability_G7221(LocalCaps, remote_sc); }
-      // G.722.1C
-      else if(remote_sc->format == "siren14" && remote_sc->clock == 32000)
-      { SelectCapability_G7221C(LocalCaps, remote_sc); }
+      // SIREN14
+      //else if(remote_sc->format == "siren14" && remote_sc->clock == 32000)
+      //{ SelectCapability_G7221C(LocalCaps, remote_sc); }
       // G.722.2
       else if(remote_sc->format == "amr-wb" && remote_sc->clock == 16000)
       { SelectCapability_G7222(LocalCaps, remote_sc); }

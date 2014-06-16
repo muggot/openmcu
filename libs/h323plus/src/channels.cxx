@@ -1523,11 +1523,12 @@ void H323_RTPChannel::Receive()
      return;
   }
 
-  BOOL allowRtpPayloadChange = codec->GetMediaFormat().GetDefaultSessionID() == OpalMediaFormat::DefaultAudioSessionID;
+  BOOL allowRtpPayloadChange = FALSE;
+  // Fault after "Resetting expected payload type to PCMU"
+  //BOOL allowRtpPayloadChange = codec->GetMediaFormat().GetDefaultSessionID() == OpalMediaFormat::DefaultAudioSessionID;
 
   RTP_DataFrame frame;
   while (ReadFrame(rtpTimestamp, frame)) {
-//  while (rtpSession.ReadBufferedData(rtpTimestamp, frame)) {
 
     filterMutex.Wait();
     for (PINDEX i = 0; i < filters.GetSize(); i++)

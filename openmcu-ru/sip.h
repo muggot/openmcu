@@ -281,7 +281,6 @@ class MCUSipConnection : public MCUH323Connection
     void SelectCapability_SPEEX(SipCapMapType & LocalCaps, SipCapability *sc);
     void SelectCapability_OPUS(SipCapMapType & LocalCaps, SipCapability *sc);
     void SelectCapability_G7221(SipCapMapType & LocalCaps, SipCapability *sc);
-    void SelectCapability_G7221C(SipCapMapType & LocalCaps, SipCapability *sc);
     void SelectCapability_G7222(SipCapMapType & LocalCaps, SipCapability *sc);
 
     virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
