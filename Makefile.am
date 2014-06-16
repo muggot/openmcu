@@ -31,6 +31,9 @@ endif
 if COMPILER_USE_LIBOPUS
 	($(MAKE) $(MAKEFLAGS)     -C @LIBOPUS_DIR@) || exit $$?
 endif
+if COMPILER_USE_LIBG7221
+	($(MAKE) $(MAKEFLAGS)     -C @LIBG7221_DIR@) || exit $$?
+endif
 	($(MAKE) $(MAKEFLAGS)     -C @MCUDIR@ @MCUBUILDOPTS@) || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) $(MAKEFLAGS) -C $$dir) || exit $$?; \
@@ -113,6 +116,9 @@ if COMPILER_USE_LIBOPUS
 endif
 if COMPILER_USE_LIBSPEEX
 	($(MAKE) clean -C @LIBSPEEX_DIR@) || exit $$?
+endif
+if COMPILER_USE_LIBG7221
+	($(MAKE) clean -C @LIBG7221_DIR@) || exit $$?
 endif
 	($(MAKE) clean -C @PTLIBDIR@) || exit $$?
 	($(MAKE) clean -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?

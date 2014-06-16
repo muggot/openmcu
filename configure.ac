@@ -720,13 +720,16 @@ if test "${g722}" = "yes"; then
     PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_G722_DIR} "
 fi
 
-PLUGIN_G7221_DIR=${top_srcdir}/plugins/G722.1
-AC_SUBST(PLUGIN_G7221_DIR)
+AC_SUBST(COMPILE_LIBG722_1, 0)
+AC_SUBST(LIBG7221_DIR, ${top_srcdir}/plugins/G722.1/libg722_1)
+AC_SUBST(PLUGIN_G7221_DIR, ${top_srcdir}/plugins/G722.1)
 if test "${g7221}" = "yes"; then
     AC_CONFIG_FILES(plugins/G722.1/Makefile)
     AC_CONFIG_SUBDIRS(plugins/G722.1/libg722_1)
     PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_G7221_DIR} "
+    COMPILE_LIBG7221=1
 fi
+AM_CONDITIONAL(COMPILER_USE_LIBG7221, [test ${COMPILE_LIBG7221} = 1])
 
 PLUGIN_G7222_DIR=${top_srcdir}/plugins/G722.2
 AC_SUBST(PLUGIN_G7222_DIR)
