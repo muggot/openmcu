@@ -986,7 +986,7 @@ class VP8DecoderRFC : public VP8Decoder
 
 ///////////////////////////////////////////////////////////////////////////////
 
-#define OpalPluginCodec_Identifer_VP8       "1.3.6.1.4.1.17091.1.9"
+#define OpalPluginCodec_Identifer_VP8       "1.3.6.1.4.1.17091.1.9.1"
 #define VP8_MediaFmt                        "VP8"
 #define VP8_WIDTH                           "352"
 #define VP8_HEIGHT                          "288"
@@ -1208,16 +1208,16 @@ VP8PLUGIN_CODEC(VP8_1080P);
 static struct PluginCodec_Definition VP8CodecDefinition[] =
 {
   PLUGINCODEC_VIDEO_CODEC_CXX(VP8_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_QCIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_CIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_4CIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_240P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_360P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_480P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_720P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_768P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_1080P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  //
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_QCIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_CIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_4CIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_240P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_360P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_480P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_720P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_768P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_1080P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//
 //  PLUGINCODEC_VIDEO_CODEC_CXX(VP8MediaFormatInfoRFC, VP8EncoderRFC, VP8DecoderRFC),
 };
 

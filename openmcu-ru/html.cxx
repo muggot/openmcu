@@ -755,16 +755,16 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   PString ra_caps = ",Disabled", rv_caps = ",Disabled", ta_caps = ",Disabled", tv_caps = ",Disabled";
   if(mcu.GetEndpoint().rsCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().rsCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().rsCaps[i]; if(!ep.CheckCapability(capname)) continue; ra_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().rsCaps[i]; if(ep.SkipCapability(capname)) continue; ra_caps += ","+capname; } }
   if(mcu.GetEndpoint().rvCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().rvCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().rvCaps[i]; if(!ep.CheckCapability(capname)) continue; rv_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().rvCaps[i]; if(ep.SkipCapability(capname)) continue; rv_caps += ","+capname; } }
   if(mcu.GetEndpoint().tsCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().tsCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().tsCaps[i]; if(!ep.CheckCapability(capname)) continue; ta_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().tsCaps[i]; if(ep.SkipCapability(capname)) continue; ta_caps += ","+capname; } }
   if(mcu.GetEndpoint().tvCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().tvCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().tvCaps[i]; if(!ep.CheckCapability(capname)) continue; tv_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().tvCaps[i]; if(ep.SkipCapability(capname)) continue; tv_caps += ","+capname; } }
 
   sectionPrefix = "H323 Endpoint ";
   PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
@@ -899,10 +899,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString rv_codec = scfg.GetString("Video codec(receive)");
       PString tv_codec = scfg.GetString("Video codec(transmit)");
       // bak 13.06.2014, restore resolution from capability
-      if(   (ep.CheckCapability("H.263") && rv_codec.Find("H.263-")==0 && rv_codec != "H.263{sw}")
-         || (ep.CheckCapability("H.263p") && rv_codec.Find("H.263p-")==0 && rv_codec != "H.263p{sw}")
-         || (ep.CheckCapability("H.264") && rv_codec.Find("H.264-")==0 && rv_codec != "H.264{sw}")
-        )
+      if(ep.SkipCapability(rv_codec))
       {
         PString res;
         VideoResolutionRestore(rv_codec, res);
@@ -910,10 +907,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
         if(scfg.GetString("Video resolution(receive)") == "")
           scfg.SetString("Video resolution(receive)", res);
       }
-      if(   (ep.CheckCapability("H.263") && tv_codec.Find("H.263-")==0 && tv_codec != "H.263{sw}")
-         || (ep.CheckCapability("H.263p") && tv_codec.Find("H.263p-")==0 && tv_codec != "H.263p{sw}")
-         || (ep.CheckCapability("H.264") && tv_codec.Find("H.264-")==0 && tv_codec != "H.264{sw}")
-        )
+      if(ep.SkipCapability(tv_codec))
       {
         PString res;
         VideoResolutionRestore(tv_codec, res);
@@ -1487,6 +1481,7 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonDelete = 1;
@@ -1507,6 +1502,9 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
     PString name = keys[i];
     if(name.Right(4) == "fmtp" || name.Right(7) == "payload") continue;
     if(name.Right(4) != "{sw}") name += "{sw}";
+
+    if(ep.SkipCapability(name))
+      continue;
 
     PString info, fmtp;
     H323Capability *cap = H323Capability::Create(name);
@@ -1569,6 +1567,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
   buttonUp = buttonDown = buttonDelete = 1;
   firstEditRow = firstDeleteRow = 0;
@@ -1578,6 +1577,9 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
+    if(ep.SkipCapability(keys[i]))
+      continue;
+
     PString info, fmtpInfo;
     H323Capability *cap = H323Capability::Create(keys[i]);
     if(cap == NULL && keys[i].Find("{sw}") == P_MAX_INDEX)
