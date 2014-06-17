@@ -9,9 +9,6 @@
 #define new PNEW
 
 ///////////////////////////////////////////////////////////////
-// This really isn't the default count only a counter
-// for sending aliases and prefixes to the gatekeeper
-int OpenMCU::defaultRoomCount = 5;
 
 VideoMixConfigurator OpenMCU::vmcfg;
 

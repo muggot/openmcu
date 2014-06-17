@@ -126,11 +126,9 @@ static const char EnteringWAVFileKey[]    = "Entering WAV File";
 static const char LeavingWAVFileKey[]     = "Leaving WAV File";
 
 static const char InterfaceKey[]          = "H.323 Listener";
-static const char LocalUserNameKey[]      = "Local User Name";
 static const char GatekeeperUserNameKey[] = "Gatekeeper Username";
 static const char GatekeeperAliasKey[]    = "Gatekeeper Room Names";
 static const char GatekeeperPasswordKey[] = "Gatekeeper Password";
-static const char GatekeeperPrefixesKey[] = "Gatekeeper Prefixes";
 static const char GatekeeperModeKey[]     = "Gatekeeper Mode";
 static const char GatekeeperKey[]         = "Gatekeeper";
 static const char DisableCodecsKey[]      = "Disable codecs - deprecated, use capability.conf instead!";
@@ -339,8 +337,6 @@ class OpenMCU : public OpenMCUProcessAncestor
     static H323PluginCodecManager * plugmgr;
     static PluginLoaderStartup2 pluginLoader;
 #endif
-
-    static int defaultRoomCount;
 
     // video recorder
     PString    vr_ffmpegPath, vr_ffmpegOpts, vr_ffmpegDir;

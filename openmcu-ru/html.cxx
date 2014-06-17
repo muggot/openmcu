@@ -1380,8 +1380,7 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
   s << StringField(GatekeeperKey, cfg.GetString(GatekeeperKey));
   s << StringField(GatekeeperUserNameKey, cfg.GetString(GatekeeperUserNameKey, "MCU"));
   s << StringField(GatekeeperPasswordKey, PHTTPPasswordField::Decrypt(cfg.GetString(GatekeeperPasswordKey)));
-  s << StringField(GatekeeperAliasKey, cfg.GetString(GatekeeperAliasKey,"MCU*"));
-  s << ArrayField(GatekeeperPrefixesKey, cfg.GetString(GatekeeperPrefixesKey));
+  s << ArrayField(GatekeeperAliasKey, cfg.GetString(GatekeeperAliasKey,"MCU"), 150);
 
   s << EndTable();
   BuildHTML("");

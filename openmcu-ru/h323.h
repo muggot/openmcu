@@ -149,12 +149,6 @@ class MCUH323EndPoint : public H323EndPoint
     void OnConnectionCreated(MCUH323Connection * conn);
 
   protected:
-    PString gkAlias;
-    PStringList PrefixList;
-    PStringList AliasList;
-
-
-  protected:
     ConferenceManager & conferenceManager;
     ConnectionMonitor * monitor;
 };

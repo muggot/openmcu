@@ -19,20 +19,6 @@
 
 #endif  // MCU_VIDEO
 
-static const char * GKModeLabels[] = { 
-   "No gatekeeper", 
-   "Find gatekeeper", 
-   "Use gatekeeper", 
-};
-
-enum {
-  Gatekeeper_None,
-  Gatekeeper_Find,
-  Gatekeeper_Explicit
-};
-
-#define GKMODE_LABEL_COUNT   (sizeof(GKModeLabels)/sizeof(char *))
-
 #define new PNEW
 
 
@@ -94,8 +80,6 @@ MCUH323EndPoint::MCUH323EndPoint(ConferenceManager & _conferenceManager)
 	terminalType = e_MCUWithAudioMP;
 #endif
 
-   gkAlias = PString();
-
 #ifdef _WIN32
   // MFC applications are not at all plugin friendly
   // You need to manually add the plugins
@@ -147,9 +131,6 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
     PSYSTEMLOG(Fatal, "Main\tCould not open H.323 Listener");
   }
 
-  AliasList.RemoveAll();
-  localAliasNames.RemoveAll();
-
   // NAT Router IP
   PString nat_ip = cfg.GetString(NATRouterIPKey);
   if (nat_ip.Trim().IsEmpty()) {
@@ -180,55 +161,43 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   DisableFastStart(disableFastStart);
   DisableH245Tunneling(disableH245Tunneling);
 
-  // Gatekeeper mode
-  PStringArray labels(GKMODE_LABEL_COUNT, GKModeLabels); 
-  PINDEX idx = labels.GetStringsIndex(cfg.GetString(GatekeeperModeKey, labels[0]));  
-  PINDEX gkMode = (idx == P_MAX_INDEX) ? 0 : idx;
-
-  // Gatekeeper
-  PString gkName = cfg.GetString(GatekeeperKey);
-
   // MCU Server Id
   PString serverId = MCUConfig("Parameters").GetString("OpenMCU-ru Server Id",OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
-  if (gkMode == Gatekeeper_None ) {
-    // Local alias name for H.323 endpoint
-    //SetLocalUserName(cfg.GetString(LocalUserNameKey, OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion()));
-    SetLocalUserName(serverId);
-  } else {
-    SetLocalUserName(serverId);
-  }
+  // SetLocalUserName make localAliasNames.RemoveAll() !!!
+  SetLocalUserName(serverId);
 
   // Gatekeeper UserName
   PString gkUserName = cfg.GetString(GatekeeperUserNameKey,"MCU");
-  localAliasNames.AppendString(gkUserName);
+  AddAliasName(gkUserName);
 
   // Gatekeeper password
   PString gkPassword = PHTTPPasswordField::Decrypt(cfg.GetString(GatekeeperPasswordKey));
   SetGatekeeperPassword(gkPassword);
 
   // Gatekeeper Alias
-  gkAlias = cfg.GetString(GatekeeperAliasKey,"MCU*");
-
-  for (PINDEX k=0; k< OpenMCU::defaultRoomCount; k++) {
-	  PString alias = gkAlias;
-	  alias.Replace("*",k);
-	  AddAliasName(alias);   // Add the alias to the endpoint aliaslist
-      AliasList.AppendString(alias);  
+  PStringArray aliasesArray = cfg.GetString(GatekeeperAliasKey).Tokenise(",");
+  for(PINDEX i = 0; i < aliasesArray.GetSize(); i++)
+  {
+    PString alias = aliasesArray[i];
+    AddAliasName(alias); // Add the alias to the endpoint aliaslist
   }
 
-  PStringArray gkArray = cfg.GetString(GatekeeperPrefixesKey).Tokenise(",");
-  for (int i = 0; i < gkArray.GetSize(); i++)
+  // check gatekeeper
+  PString gkMode = cfg.GetString(GatekeeperModeKey, "No gatekeeper");
+  if(gkMode == "Find gatekeeper")
   {
-    if(gkArray[i] != "")
-    {
-      PString prefix = gkArray[i];
-      PrefixList.AppendString(prefix);
-      for (PINDEX k=0; k < OpenMCU::defaultRoomCount; k++)
-      {
-	PString alias = prefix + PString(k);
-	AliasList.AppendString(alias);
-      }
-    }
+    if(!DiscoverGatekeeper(new H323TransportUDP(*this)))
+      PSYSTEMLOG(Error, "No gatekeeper found");
+    else
+      PSYSTEMLOG(Info, "Found Gatekeeper: " << gatekeeper);
+  }
+  else if(gkMode == "Use gatekeeper")
+  {
+    PString gkName = cfg.GetString(GatekeeperKey);
+    if(!SetGatekeeper(gkName, new H323TransportUDP(*this)))
+      PSYSTEMLOG(Error, "Error registering with gatekeeper at \"" << gkName << '"');
+    else
+      PSYSTEMLOG(Info, "Registered with Gatekeeper: " << gkName);
   }
 
    // Setup capabilities
@@ -406,25 +375,6 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   endpoint.videoBitRate = videoBitRate;
 #endif
 
-
-  switch (gkMode) {
-    default:
-    case Gatekeeper_None:
-      break;
-
-    case Gatekeeper_Find:
-      if (!DiscoverGatekeeper(new H323TransportUDP(*this)))
-        PSYSTEMLOG(Error, "No gatekeeper found");
-	  else
-		PSYSTEMLOG(Info, "Found Gatekeeper: " << gatekeeper);
-      break;
-
-    case Gatekeeper_Explicit:
-      if (!SetGatekeeper(gkName, new H323TransportUDP(*this)))
-        PSYSTEMLOG(Error, "Error registering with gatekeeper at \"" << gkName << '"');
-	  else
-		PSYSTEMLOG(Info, "Registered with Gatekeeper: " << gkName);
-  }
 
   PTRACE(2, "MCU\tCodecs (in preference order):\n" << setprecision(2) << GetCapabilities());;
 }

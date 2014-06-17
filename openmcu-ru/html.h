@@ -362,10 +362,7 @@ class TablePConfigPage : public PConfigPage
    PString EndTable()
    {
      PString s = "<tr></tr></tbody></table></div><p><input id='button_accept' name='submit' value='Accept' type='submit'><input id='button_reset' name='reset' value='Reset' type='reset'></p></form>";
-     if(buttonUp) javascript += js_row_up;
-     if(buttonDown) javascript += js_row_down;
-     if(buttonClone) javascript += js_row_clone;
-     if(buttonDelete) javascript += js_row_delete;
+     javascript += js_row_up + js_row_down + js_row_clone + js_row_delete;
      javascript += js_filters;
      s += "<script type='text/javascript'>\n"+javascript+"</script>\n";
      return s;
