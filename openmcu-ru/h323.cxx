@@ -182,6 +182,9 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
     AddAliasName(alias); // Add the alias to the endpoint aliaslist
   }
 
+  // Gatekeeper Time To Live
+  registrationTimeToLive = cfg.GetString(GatekeeperTTLKey);
+
   // check gatekeeper
   PString gkMode = cfg.GetString(GatekeeperModeKey, "No gatekeeper");
   if(gkMode == "Find gatekeeper")
@@ -474,12 +477,16 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
   }
 }
 
+///////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323EndPoint::CheckCapability(const PString & formatName)
 {
   if(H323CapabilityFactory::IsSingleton(formatName) || H323CapabilityFactory::IsSingleton(formatName+"{sw}"))
     return TRUE;
   return FALSE;
 }
+
+///////////////////////////////////////////////////////////////////////////
 
 BOOL MCUH323EndPoint::SkipCapability(const PString & formatName)
 {
@@ -497,15 +504,37 @@ BOOL MCUH323EndPoint::SkipCapability(const PString & formatName)
   return FALSE;
 }
 
-H323Connection * MCUH323EndPoint::CreateConnection(
-      unsigned callReference,
-      void * userData,
-      H323Transport *,
-      H323SignalPDU *)
+///////////////////////////////////////////////////////////////////////////
 
+void MCUH323EndPoint::OnRegistrationRequest()
+{
+  PString event = "<font color=blue>Gatekeeper client: send request</font>";
+  OpenMCU::Current().HttpWriteEvent(event);
+}
+void MCUH323EndPoint::OnRegistrationConfirm(const H323TransportAddress & /* rasAddress */)
+{
+  PString event = "<font color=blue>Gatekeeper client: request confirm</font>";
+  OpenMCU::Current().HttpWriteEvent(event);
+}
+void MCUH323EndPoint::OnRegistrationReject()
+{
+  PString event = "<font color=blue>Gatekeeper client: request reject</font>";
+  OpenMCU::Current().HttpWriteEvent(event);
+}
+void MCUH323EndPoint::OnUnRegisterRequest()
+{
+  PString event = "<font color=blue>Gatekeeper client: unregistration received</font>";
+  OpenMCU::Current().HttpWriteEvent(event);
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+H323Connection * MCUH323EndPoint::CreateConnection(unsigned callReference, void * userData, H323Transport *, H323SignalPDU *)
 {
   return new MCUH323Connection(*this, callReference, userData);
 }
+
+///////////////////////////////////////////////////////////////////////////
 
 void MCUH323EndPoint::TranslateTCPAddress(PIPSocket::Address &localAddr, const PIPSocket::Address &remoteAddr)
 {

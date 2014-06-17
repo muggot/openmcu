@@ -88,12 +88,12 @@ class MCUH323EndPoint : public H323EndPoint
     // overrides from H323EndPoint
     virtual H323Connection * CreateConnection(unsigned callReference,void * userData,H323Transport * transport,H323SignalPDU * setupPDU);
     virtual void TranslateTCPAddress(PIPSocket::Address &localAddr, const PIPSocket::Address &remoteAddr);
-    H323Connection * FindConnectionWithoutLock(
-      const PString & token     ///< Token to identify connection
-    )
-    {
-     return FindConnectionWithoutLocks(token);
-    }
+    H323Connection * FindConnectionWithoutLock(const PString & token) { return FindConnectionWithoutLocks(token); }
+
+    virtual void OnRegistrationRequest();
+    virtual void OnRegistrationConfirm(const H323TransportAddress & rasAddress);
+    virtual void OnRegistrationReject();
+    virtual void OnUnRegisterRequest();
 
     BOOL behind_masq;
     PIPSocket::Address *masqAddressPtr;

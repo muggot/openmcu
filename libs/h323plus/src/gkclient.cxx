@@ -1001,6 +1001,8 @@ BOOL H323Gatekeeper::RegistrationRequest(BOOL autoReg)
   // After doing full register, do lightweight reregisters from now on
   discoveryComplete = FALSE;
 
+  endpoint.OnRegistrationRequest();
+
   Request request(rrq.m_requestSeqNum, pdu);
   if (MakeRequest(request))
     return TRUE;

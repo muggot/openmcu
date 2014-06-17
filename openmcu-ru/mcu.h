@@ -128,6 +128,7 @@ static const char LeavingWAVFileKey[]     = "Leaving WAV File";
 static const char InterfaceKey[]          = "H.323 Listener";
 static const char GatekeeperUserNameKey[] = "Gatekeeper Username";
 static const char GatekeeperAliasKey[]    = "Gatekeeper Room Names";
+static const char GatekeeperTTLKey[]      = "Gatekeeper registration TTL(Time To Live)";
 static const char GatekeeperPasswordKey[] = "Gatekeeper Password";
 static const char GatekeeperModeKey[]     = "Gatekeeper Mode";
 static const char GatekeeperKey[]         = "Gatekeeper";

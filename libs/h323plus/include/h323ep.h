@@ -799,9 +799,14 @@ class H323EndPoint : public PObject
       */
     virtual void  OnRegistrationReject();
 
-	/**Called when Unregistered by Gatekeeper 
-	 */
-	virtual void OnUnRegisterRequest(); 
+    /**Called when send registration request
+      */
+    virtual void OnRegistrationRequest() { };
+
+    /**Called when Unregistered by Gatekeeper
+      */
+    virtual void OnUnRegisterRequest();
+
   //@}
 
   /**@name Connection management */
