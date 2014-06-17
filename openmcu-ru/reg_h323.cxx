@@ -486,8 +486,24 @@ unsigned RegistrarGk::AllocateBandwidth(unsigned newBandwidth, unsigned oldBandw
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+H323Transactor * RegistrarGk::CreateListener(H323Transport * transport)
+{
+  gkListener = H323GatekeeperServer::CreateListener(transport);
+  if(gkListener)
+    gkListener->StartChannel();
+
+  return gkListener;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 RegistrarGk::~RegistrarGk()
 {
+  if(gkListener)
+  {
+    delete gkListener;
+    gkListener = NULL;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -495,6 +511,8 @@ RegistrarGk::~RegistrarGk()
 RegistrarGk::RegistrarGk(MCUH323EndPoint *ep, Registrar *_registrar)
   : H323GatekeeperServer(*ep), registrar(_registrar)
 {
+  gkListener = NULL;
+
   requireH235 = TRUE;
   minTimeToLive = 60;
   maxTimeToLive = 600;

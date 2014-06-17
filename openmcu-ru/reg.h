@@ -274,6 +274,8 @@ class RegistrarGk : public H323GatekeeperServer
     void SetMinTimeToLive(int _minTimeToLive) { minTimeToLive = _minTimeToLive; }
     void SetMaxTimeToLive(int _maxTimeToLive) { maxTimeToLive = _maxTimeToLive; }
 
+    virtual H323Transactor * CreateListener(H323Transport * transport);
+
     BOOL IsGatekeeperRouted() const { return isGatekeeperRouted; }
 
   protected:
@@ -304,6 +306,7 @@ class RegistrarGk : public H323GatekeeperServer
     unsigned minTimeToLive;
     unsigned maxTimeToLive;
 
+    H323Transactor *gkListener;
     Registrar *registrar;
 };
 
@@ -320,7 +323,7 @@ class Registrar : public PThread
       terminating = 0;
       init_config = 0;
       init_accounts = 0;
-      gk = NULL;
+      registrarGk = NULL;
     }
     int terminating;
     int restart;
@@ -368,7 +371,7 @@ class Registrar : public PThread
     void InitAccounts();
     MCUH323EndPoint *ep;
     MCUSipEndPoint *sep;
-    RegistrarGk *gk;
+    RegistrarGk *registrarGk;
 
     PString registrar_domain;
 

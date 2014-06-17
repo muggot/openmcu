@@ -123,8 +123,7 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   SetAECEnabled(FALSE);
 #endif
 
-///////////////////////////////////////////
-// Listeners
+  // Listeners
   PString defaultInterface = "*:1720";
   H323TransportAddressArray interfaces;
   PStringArray interfacesArray = cfg.GetString(InterfaceKey).Tokenise(",");
@@ -151,8 +150,7 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   AliasList.RemoveAll();
   localAliasNames.RemoveAll();
 
-///////////////////////////////////////////
-// NAT Router IP
+  // NAT Router IP
   PString nat_ip = cfg.GetString(NATRouterIPKey);
   if (nat_ip.Trim().IsEmpty()) {
     behind_masq = FALSE;
@@ -169,28 +167,25 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
     nat_lag_ip.Replace(" ","", TRUE, 0);
   }
 
-///////////////////////////////////////////
-// RTP Port Setup
+  // RTP Port Setup
   unsigned rtpPortBase = MCUConfig("Parameters").GetInteger(RTPPortBaseKey, 0);
   unsigned rtpPortMax = MCUConfig("Parameters").GetInteger(RTPPortMaxKey, 0);
   if((rtpPortBase>65532)||(rtpPortBase==0)) rtpPortBase=5000;
   if(rtpPortMax<=rtpPortBase) rtpPortMax=PMIN(rtpPortBase+5000,65532);
   SetRtpIpPorts(rtpPortBase, rtpPortMax);
 
-///////////////////////////////////////////
-// Enable/Disable Fast Start & H.245 Tunneling
+  // Enable/Disable Fast Start & H.245 Tunneling
   BOOL disableFastStart = cfg.GetBoolean(DisableFastStartKey, TRUE);
   BOOL disableH245Tunneling = cfg.GetBoolean(DisableH245TunnelingKey, FALSE);
   DisableFastStart(disableFastStart);
   DisableH245Tunneling(disableH245Tunneling);
 
-//////////////////////////////////////////////////////
-// Gatekeeper mode
+  // Gatekeeper mode
   PStringArray labels(GKMODE_LABEL_COUNT, GKModeLabels); 
   PINDEX idx = labels.GetStringsIndex(cfg.GetString(GatekeeperModeKey, labels[0]));  
   PINDEX gkMode = (idx == P_MAX_INDEX) ? 0 : idx;
 
-  // Gatekeeper 
+  // Gatekeeper
   PString gkName = cfg.GetString(GatekeeperKey);
 
   // MCU Server Id

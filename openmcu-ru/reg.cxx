@@ -731,10 +731,26 @@ void Registrar::MainLoop()
 void Registrar::InitConfig()
 {
   MCUConfig cfg("Registrar Parameters");
-  registrar_domain = cfg.GetString("Registrar domain", "openmcu-ru");
 
   // general parameters
+  registrar_domain = cfg.GetString("Registrar domain", "openmcu-ru");
   allow_internal_calls = cfg.GetBoolean("Allow internal calls", TRUE);
+
+  enable_gatekeeper = cfg.GetBoolean("H.323 gatekeeper enable", TRUE);
+  if(enable_gatekeeper && registrarGk == NULL)
+  {
+    PIPSocket::Address address("*");
+    WORD port = 1719;
+    registrarGk = new RegistrarGk(ep, this);
+    PString mcuName = OpenMCU::Current().GetName();
+    registrarGk->SetGatekeeperIdentifier(mcuName);
+    registrarGk->CreateListener(new H323TransportUDP(*ep, address, port, NULL));
+  }
+  if(!enable_gatekeeper && registrarGk != NULL)
+  {
+    delete registrarGk;
+    registrarGk = NULL;
+  }
 
   // SIP parameters
   sip_require_password = cfg.GetBoolean("SIP registrar required password authorization", FALSE);
@@ -749,12 +765,12 @@ void Registrar::InitConfig()
   h323_allow_unreg_internal_calls = cfg.GetBoolean("H.323 allow unregistered internal calls", TRUE);
   h323_min_time_to_live = cfg.GetInteger("H.323 gatekeeper minimum Time To Live", 60);
   h323_max_time_to_live = cfg.GetInteger("H.323 gatekeeper maximum Time To Live", 600);
-  if(gk)
+  if(registrarGk)
   {
-    gk->SetRequireH235(h323_require_h235);
-    gk->SetMinTimeToLive(h323_min_time_to_live);
-    gk->SetMaxTimeToLive(h323_max_time_to_live);
-    gk->SetTimeToLive(h323_max_time_to_live);
+    registrarGk->SetRequireH235(h323_require_h235);
+    registrarGk->SetMinTimeToLive(h323_min_time_to_live);
+    registrarGk->SetMaxTimeToLive(h323_max_time_to_live);
+    registrarGk->SetTimeToLive(h323_max_time_to_live);
   }
 }
 
@@ -852,7 +868,7 @@ void Registrar::InitAccounts()
     regAccount->Unlock();
   }
   // set gatekeeper parameters
-  if(gk) gk->SetPasswords(h323Passwords);
+  if(registrarGk) registrarGk->SetPasswords(h323Passwords);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -860,10 +876,10 @@ void Registrar::InitAccounts()
 void Registrar::Terminating()
 {
   PWaitAndSignal m(mutex);
-  if(gk)
+  if(registrarGk)
   {
-    delete gk;
-    gk = NULL;
+    delete registrarGk;
+    registrarGk = NULL;
   }
   for(SubscriptionMapType::iterator it = SubscriptionMap.begin(); it != SubscriptionMap.end(); )
   {
@@ -895,20 +911,7 @@ void Registrar::Terminating()
 
 void Registrar::Main()
 {
-  enable_gatekeeper = TRUE;
-  if(enable_gatekeeper)
-  {
-    PIPSocket::Address address("*");
-    WORD port = 1719;
-    gk = new RegistrarGk(ep, this);
-    PString mcuName = OpenMCU::Current().GetName();
-    gk->SetGatekeeperIdentifier(mcuName);
-    H323Transactor *gkListener = gk->CreateListener(new H323TransportUDP(*ep, address, port, NULL));
-    gkListener->StartChannel();
-  }
-
   MainLoop();
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

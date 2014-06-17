@@ -462,6 +462,7 @@ RegistrarPConfigPage::RegistrarPConfigPage(PHTTPServiceProcess & app,const PStri
   s << SelectField("SIP registrar maximum expiration", cfg.GetString("SIP registrar maximum expiration", "600"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
 
   s << SeparatorField("H.323");
+  s << BoolField("H.323 gatekeeper enable", cfg.GetBoolean("H.323 gatekeeper enable", TRUE));
   s << BoolField("H.323 gatekeeper required password authorization", cfg.GetBoolean("H.323 gatekeeper required password authorization", FALSE));
   s << BoolField("H.323 allow unregistered MCU calls", cfg.GetBoolean("H.323 allow unregistered MCU calls", TRUE));
   s << BoolField("H.323 allow unregistered internal calls", cfg.GetBoolean("H.323 allow unregistered internal calls", TRUE));
