@@ -615,10 +615,9 @@ MCUURL::MCUURL(PString str)
 
   memberName = displayName+" ["+partyUrl+"]";
 
-  if(URLScheme == "sip")
-    urlId = username+"@"+hostname;
-  else if(URLScheme == "h323")
-    urlId = displayName+"@"+hostname;
+  urlId = URLScheme+":";
+  if(username != "") urlId += username;
+  else               urlId += displayName+"@"+hostname;
 
   if(URLScheme == "sip")
   {

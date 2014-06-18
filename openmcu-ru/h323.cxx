@@ -3172,6 +3172,8 @@ PString OpenMCUH323Connection::GetRemoteNumber()
     else if(remoteAliasNames.GetSize() > 1)
       number = remoteAliasNames[1];
   }
+  if(number == "")
+    number = "undefined";
   return number;
 }
 
@@ -3303,11 +3305,8 @@ void OpenMCUH323Connection::SetMemberName()
 
     alias = GetRemoteNumber();
 
-    PRegularExpression RegEx("[^0-9]");
-    if(alias.FindRegEx(RegEx) != P_MAX_INDEX) alias = "";
-
-    if(remoteApplication.Find("MyPhone") != P_MAX_INDEX && remoteName == alias) // ???
-      alias = "";
+    PRegularExpression RegEx("[^A-Za-z0-9._-]");
+    if(alias.FindRegEx(RegEx) != P_MAX_INDEX) alias = "invalid_name";
 
     address = "h323:"+alias+"@"+host;
   }

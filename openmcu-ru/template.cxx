@@ -388,7 +388,7 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
       PINDEX cp=p.Find(',');
       if(cp==P_MAX_INDEX) continue;
       PString vmpMemberName=p.Mid(cp+1,P_MAX_INDEX).LeftTrim();
-      if(vmpMemberName==memberName)
+      if(MCUURL(vmpMemberName).GetUrlId() == MCUURL(memberName).GetUrlId())
       {
         if(mixerCounter>0)
         {
@@ -408,7 +408,7 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
       if(v.GetSize()>4) for(int i=0; i<=4;i++) v[i]=v[i].Trim();
       PString iterationMemberName = v[5].LeftTrim();
       for (PINDEX j=6; j<v.GetSize(); j++) iterationMemberName+=","+v[j];
-      if(iterationMemberName == memberName)
+      if(MCUURL(iterationMemberName).GetUrlId() == MCUURL(memberName).GetUrlId())
       {
         member->autoDial     = (v[0] == "1");
         member->muteMask     = v[1].AsInteger();
