@@ -38,6 +38,19 @@ MCUURL::MCUURL(PString str)
   else if(url_party.Left(5) == "http:") url_scheme = "http";
   else { url_party = "h323:"+url_party; url_scheme = "h323"; }
 
+  if(url_scheme == "sip" || url_scheme == "h323")
+  {
+    // добавить "@" для парсинга
+    if(url_party.Find("@") == P_MAX_INDEX)
+    {
+      // если не указан порт
+      if(url_party.FindLast(":") == url_scheme.GetLength())
+        url_party += "@";
+      else
+        url_party.Replace(url_scheme+":",url_scheme+":@",TRUE,0);
+    }
+  }
+
   Parse((const char *)url_party, url_scheme);
   // parse old H.323 scheme
   if(url_scheme == "h323" && url_party.Left(5) != "h323" && url_party.Find("@") == P_MAX_INDEX &&

@@ -109,9 +109,11 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
     // update address from account
     address = regAccount_out->GetUrl();
     regAccount_out->Unlock();
+    // update url
+    url = MCUURL(address);
   }
-  // initial username, can be empty
-  username_out = MCUURL(address).GetUserName();
+  // initial username_out, can be empty
+  username_out = url.GetUserName();
 
   if(account_type == ACCOUNT_TYPE_SIP)
   {
@@ -122,6 +124,15 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
+    // убрать "@", если регистрация на gatekeeper
+    if(ep->GetGatekeeper())
+    {
+      if(url.GetUserName() == "")
+        address = url.GetHostName()+":"+url.GetPort();
+      else
+        address = url.GetUserName();
+      PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << address);
+    }
     void *userData = new PString(room);
     ep->MakeCall(address, callToken, userData);
   }
