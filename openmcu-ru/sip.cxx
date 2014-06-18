@@ -1174,8 +1174,8 @@ void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapab
     if(mpiname != "") wf.SetOptionInteger(mpiname+" MPI", mpi);
     if(width && height)
     {
-      wf.SetOptionInteger("Frame Width", width);
-      wf.SetOptionInteger("Frame Height", height);
+      wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
     }
     if(mpiname != "")
     {
@@ -1186,7 +1186,7 @@ void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapab
       wf.SetOptionInteger("CIF16 MPI", 0);
       wf.SetOptionInteger(mpiname+" MPI", mpi);
     }
-    if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
+    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 
@@ -1252,8 +1252,8 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
     if(f) wf.SetOptionBoolean("_advancedPrediction", f);
     if(width && height)
     {
-      wf.SetOptionInteger("Frame Width", width);
-      wf.SetOptionInteger("Frame Height", height);
+      wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
     }
     if(mpiname != "")
     {
@@ -1264,7 +1264,7 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
       wf.SetOptionInteger("CIF16 MPI", 0);
       wf.SetOptionInteger(mpiname+" MPI", mpi);
     }
-    if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
+    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 
@@ -1338,8 +1338,8 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
     if(g) wf.SetOptionBoolean("_pbFrames", g);
     if(width && height)
     {
-      wf.SetOptionInteger("Frame Width", width);
-      wf.SetOptionInteger("Frame Height", height);
+      wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
     }
     if(mpiname != "")
     {
@@ -1350,7 +1350,7 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
       wf.SetOptionInteger("CIF16 MPI", 0);
       wf.SetOptionInteger(mpiname+" MPI", mpi);
     }
-    if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
+    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 
@@ -1414,10 +1414,10 @@ void MCUSipConnection::SelectCapability_H264(SipCapMapType & LocalCaps, SipCapab
     if(width && height)
     {
       wf.SetOptionInteger("Custom Resolution", 1);
-      wf.SetOptionInteger("Frame Width", width);
-      wf.SetOptionInteger("Frame Height", height);
+      wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
     }
-    if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
+    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 
@@ -1458,11 +1458,11 @@ void MCUSipConnection::SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapabi
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
     if(width && height)
     {
-      wf.SetOptionInteger("Frame Width", width);
-      wf.SetOptionInteger("Frame Height", height);
+      wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
     }
     if(remoteApplication.ToLower().Find("linphone") != P_MAX_INDEX) wf.SetOptionEnum("Picture ID Size", 0);
-    if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
+    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 
@@ -1508,10 +1508,10 @@ void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapa
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
     if(profile) wf.SetOptionInteger("profile", profile);
     if(level) wf.SetOptionInteger("level", level);
-    if(width) wf.SetOptionInteger("Frame Width", width);
-    if(height) wf.SetOptionInteger("Frame Height", height);
+    if(width) wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+    if(height) wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
     if(config != "") wf.SetOptionString("config", config);
-    if(sc->bandwidth) wf.SetOptionInteger("Max Bit Rate", sc->bandwidth*1000);
+    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 

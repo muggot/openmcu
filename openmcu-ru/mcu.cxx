@@ -184,7 +184,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
 #if MCU_VIDEO
   endpoint->enableVideo = cfg.GetBoolean("Enable video", TRUE);
-  endpoint->videoRate = MCUConfig("Video").GetInteger("Video frame rate", DefaultVideoFrameRate);
+  endpoint->videoFrameRate = MCUConfig("Video").GetInteger("Video frame rate", DefaultVideoFrameRate);
   endpoint->videoTxQuality = cfg.GetInteger("Video quality", DefaultVideoQuality);
 #if USE_LIBYUV
   scaleFilter=libyuv::LIBYUV_FILTER;

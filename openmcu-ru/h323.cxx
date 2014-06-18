@@ -70,14 +70,18 @@ H323PluginCodecManager * OpenMCU::plugmgr=NULL;
 MCUH323EndPoint::MCUH323EndPoint(ConferenceManager & _conferenceManager)
   : conferenceManager(_conferenceManager)
 {
-  monitor  = new ConnectionMonitor(*this);
+  connectionMonitor = new ConnectionMonitor(*this);
+
+  gatekeeperRequestTimeout = PTimeInterval(1000);
+  gatekeeperRequestRetries = 2;
+  gatekeeperMonitor = NULL;
 
 #if MCU_VIDEO
-	terminalType = e_MCUWithAVMP;
+  terminalType = e_MCUWithAVMP;
   enableVideo  = TRUE;
-  videoRate    = 10;
+  videoFrameRate = 10;
 #else
-	terminalType = e_MCUWithAudioMP;
+  terminalType = e_MCUWithAudioMP;
 #endif
 
 #ifdef _WIN32
@@ -90,9 +94,22 @@ MCUH323EndPoint::MCUH323EndPoint(ConferenceManager & _conferenceManager)
 
 MCUH323EndPoint::~MCUH323EndPoint()
 {
-  monitor->running = FALSE;
-  monitor->WaitForTermination();
-  delete monitor;
+  if(gatekeeperMonitor)
+  {
+    gatekeeperMonitor->terminate = TRUE;
+    gatekeeperMonitor->WaitForTermination();
+    delete gatekeeperMonitor;
+    gatekeeperMonitor = NULL;
+  }
+
+  if(connectionMonitor)
+  {
+    connectionMonitor->running = FALSE;
+    connectionMonitor->WaitForTermination();
+    delete connectionMonitor;
+    connectionMonitor = NULL;
+  }
+
 #ifdef _WIN32
   // You need to manually remove the plugins
   OpenMCU::Current().RemovePluginMgr();
@@ -185,22 +202,22 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   // Gatekeeper Time To Live
   registrationTimeToLive = cfg.GetString(GatekeeperTTLKey);
 
-  // check gatekeeper
-  PString gkMode = cfg.GetString(GatekeeperModeKey, "No gatekeeper");
-  if(gkMode == "Find gatekeeper")
+  // GatekeeperMonitor
+  PString gk_mode = cfg.GetString(GatekeeperModeKey, "No gatekeeper");
+  if(gk_mode == "No gatekeeper")
   {
-    if(!DiscoverGatekeeper(new H323TransportUDP(*this)))
-      PSYSTEMLOG(Error, "No gatekeeper found");
-    else
-      PSYSTEMLOG(Info, "Found Gatekeeper: " << gatekeeper);
+    if(gatekeeperMonitor)
+    {
+      gatekeeperMonitor->terminate = TRUE;
+      gatekeeperMonitor->WaitForTermination();
+      delete gatekeeperMonitor;
+      gatekeeperMonitor = NULL;
+    }
   }
-  else if(gkMode == "Use gatekeeper")
+  else
   {
-    PString gkName = cfg.GetString(GatekeeperKey);
-    if(!SetGatekeeper(gkName, new H323TransportUDP(*this)))
-      PSYSTEMLOG(Error, "Error registering with gatekeeper at \"" << gkName << '"');
-    else
-      PSYSTEMLOG(Info, "Registered with Gatekeeper: " << gkName);
+    if(!gatekeeperMonitor)
+      gatekeeperMonitor = new GatekeeperMonitor(*this, gk_mode);
   }
 
    // Setup capabilities
@@ -354,31 +371,6 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    AddCapabilitiesMCU();
    cout << capabilities;
 
-#if 0 //  old MCU options
-  int videoTxQual = 10;
-  if (args.HasOption("videotxquality")) 
-      videoTxQual = args.GetOptionString("videotxquality").AsInteger();
-  endpoint.videoTxQuality = PMAX(1, PMIN(31, videoTxQual));
-
-  int videoF = 2;
-  if (args.HasOption("videofill")) 
-    videoF = args.GetOptionString("videofill").AsInteger();
-  endpoint.videoFill = PMAX(1, PMIN(99, videoF));
-
-  int videoFPS = 10;
-  if (args.HasOption("videotxfps")) 
-    videoFPS = args.GetOptionString("videotxfps").AsInteger();
-  endpoint.videoFramesPS = PMAX(1,PMIN(100,videoFPS));
-
-  int videoBitRate = 0; //disable setting videoBitRate.
-  if (args.HasOption("videobitrate")) {
-    videoBitRate = args.GetOptionString("videobitrate").AsInteger();
-    videoBitRate = 1024 * PMAX(16, PMIN(2048, videoBitRate));
-  }
-  endpoint.videoBitRate = videoBitRate;
-#endif
-
-
   PTRACE(2, "MCU\tCodecs (in preference order):\n" << setprecision(2) << GetCapabilities());;
 }
 
@@ -393,8 +385,8 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
         continue;
       H323Capability *new_cap = H323Capability::Create("VP8{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      wf.SetOptionInteger("Frame Width", vp8_resolutions[i].width);
-      wf.SetOptionInteger("Frame Height", vp8_resolutions[i].height);
+      wf.SetOptionInteger(OPTION_FRAME_WIDTH, vp8_resolutions[i].width);
+      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, vp8_resolutions[i].height);
       wf.SetOptionInteger("Generic Parameter 1", vp8_resolutions[i].width);
       wf.SetOptionInteger("Generic Parameter 2", vp8_resolutions[i].height);
       AddCapability(new_cap);
@@ -422,8 +414,8 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
         continue;
       H323Capability *new_cap = H323Capability::Create("H.263p{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      wf.SetOptionInteger("Frame Width", h263_resolutions[i].width);
-      wf.SetOptionInteger("Frame Height", h263_resolutions[i].height);
+      wf.SetOptionInteger(OPTION_FRAME_WIDTH, h263_resolutions[i].width);
+      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, h263_resolutions[i].height);
       wf.SetOptionInteger("SQCIF MPI", 0);
       wf.SetOptionInteger("QCIF MPI", 0);
       wf.SetOptionInteger("CIF MPI", 0);
@@ -442,8 +434,8 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
         continue;
       H323Capability *new_cap = H323Capability::Create("H.263{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      wf.SetOptionInteger("Frame Width", h263_resolutions[i].width);
-      wf.SetOptionInteger("Frame Height", h263_resolutions[i].height);
+      wf.SetOptionInteger(OPTION_FRAME_WIDTH, h263_resolutions[i].width);
+      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, h263_resolutions[i].height);
       wf.SetOptionInteger("SQCIF MPI", 0);
       wf.SetOptionInteger("QCIF MPI", 0);
       wf.SetOptionInteger("CIF MPI", 0);
@@ -464,8 +456,8 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
         continue;
       H323Capability *new_cap = H323Capability::Create("H.261{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      wf.SetOptionInteger("Frame Width", h263_resolutions[i].width);
-      wf.SetOptionInteger("Frame Height", h263_resolutions[i].height);
+      wf.SetOptionInteger(OPTION_FRAME_WIDTH, h263_resolutions[i].width);
+      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, h263_resolutions[i].height);
       wf.SetOptionInteger("SQCIF MPI", 0);
       wf.SetOptionInteger("QCIF MPI", 0);
       wf.SetOptionInteger("CIF MPI", 0);
@@ -502,29 +494,6 @@ BOOL MCUH323EndPoint::SkipCapability(const PString & formatName)
     return TRUE;
   }
   return FALSE;
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-void MCUH323EndPoint::OnRegistrationRequest()
-{
-  PString event = "<font color=blue>Gatekeeper client: send request</font>";
-  OpenMCU::Current().HttpWriteEvent(event);
-}
-void MCUH323EndPoint::OnRegistrationConfirm(const H323TransportAddress & /* rasAddress */)
-{
-  PString event = "<font color=blue>Gatekeeper client: request confirm</font>";
-  OpenMCU::Current().HttpWriteEvent(event);
-}
-void MCUH323EndPoint::OnRegistrationReject()
-{
-  PString event = "<font color=blue>Gatekeeper client: request reject</font>";
-  OpenMCU::Current().HttpWriteEvent(event);
-}
-void MCUH323EndPoint::OnUnRegisterRequest()
-{
-  PString event = "<font color=blue>Gatekeeper client: unregistration received</font>";
-  OpenMCU::Current().HttpWriteEvent(event);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -2268,12 +2237,12 @@ void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
 {
   if(conn->GetCallToken() == "")
     return;
-  monitor->AddMonitorEvent(new ConnectionRTPTimeoutInfo(conn->GetCallToken()));
+  connectionMonitor->AddMonitorEvent(new ConnectionRTPTimeoutInfo(conn->GetCallToken()));
 }
 
 void MCUH323EndPoint::OnConnectionCleared(H323Connection & connection, const PString & token)
 {
-  monitor->RemoveForConnection(token);
+  connectionMonitor->RemoveForConnection(token);
   H323EndPoint::OnConnectionCleared(connection, token);
 }
 
@@ -2647,7 +2616,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
     }
     if(localCapabilities[i].GetMainType() == H323Capability::e_Video && bandwidth_to)
     {
-      localCapabilities[i].GetWritableMediaFormat().SetOptionInteger("Max Bit Rate", bandwidth_to*1000);
+      localCapabilities[i].GetWritableMediaFormat().SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth_to*1000);
     }
     i++;
   }
@@ -2684,7 +2653,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
           video_codec_agreed = TRUE;
       }
       if(bandwidth_from == 0)
-        bandwidth_from = remoteCaps[i].GetMediaFormat().GetOptionInteger("Max Bit Rate");
+        bandwidth_from = remoteCaps[i].GetMediaFormat().GetOptionInteger(OPTION_MAX_BIT_RATE);
     }
     else if(remoteCaps[i].GetMainType() == H323Capability::e_Audio)
     {
@@ -2709,8 +2678,8 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
         {
           PString mpiname;
           GetParamsH263(mpiname, width, height);
-          wf.SetOptionInteger("Frame Width", width);
-          wf.SetOptionInteger("Frame Height", height);
+          wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+          wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
           wf.SetOptionInteger("SQCIF MPI", 0);
           wf.SetOptionInteger("QCIF MPI", 0);
           wf.SetOptionInteger("CIF MPI", 0);
@@ -2733,8 +2702,8 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
         if(width && height)
         {
           wf.SetOptionInteger("Custom Resolution", 1);
-          wf.SetOptionInteger("Frame Width", width);
-          wf.SetOptionInteger("Frame Height", height);
+          wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+          wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
         }
       }
       else if(video_cap == "VP8{sw}")
@@ -2743,11 +2712,11 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
         {
           wf.SetOptionInteger("Generic Parameter 1", width);
           wf.SetOptionInteger("Generic Parameter 2", height);
-          wf.SetOptionInteger("Frame Width", width);
-          wf.SetOptionInteger("Frame Height", height);
+          wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+          wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
         }
       }
-      wf.SetOptionInteger("Max Bit Rate", bandwidth_from);
+      wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth_from);
       _remoteCaps.Add(new_cap);
     }
   }
@@ -2953,8 +2922,8 @@ void MCUH323Connection::SetEndpointDefaultVideoParams()
   unsigned fr = ep.GetVideoFrameRate();
   if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
   codec->SetTargetFrameTimeMs(1000/fr);
-  mf.SetOptionInteger("Frame Rate", fr);
-  mf.SetOptionInteger("Frame Time", 90000/fr);
+  mf.SetOptionInteger(OPTION_FRAME_RATE, fr);
+  mf.SetOptionInteger(OPTION_FRAME_TIME, 90000/fr);
 
   mf.SetOptionInteger("Encoding Quality", DefaultVideoQuality);
 
@@ -2968,7 +2937,7 @@ void MCUH323Connection::SetEndpointDefaultVideoParams()
         continue;
       PString option = keys[i].Right(keys[i].GetSize()-pos-2);
       int value = MCUConfig("Video").GetInteger(keys[i], 0);
-      if(option == "Max Bit Rate")
+      if(option == OPTION_MAX_BIT_RATE)
       {
         value = value*1000;
         if(value == 0 || value > mf.GetOptionInteger(option))
@@ -2993,8 +2962,8 @@ void MCUH323Connection::SetEndpointPrefVideoParams()
   {
     if(fr > MAX_FRAME_RATE) fr = MAX_FRAME_RATE;
     codec->SetTargetFrameTimeMs(1000/fr);
-    mf.SetOptionInteger("Frame Rate", fr);
-    mf.SetOptionInteger("Frame Time", 90000/fr);
+    mf.SetOptionInteger(OPTION_FRAME_RATE, fr);
+    mf.SetOptionInteger(OPTION_FRAME_TIME, 90000/fr);
   }
 
   unsigned bwFrom = GetEndpointParam("Bandwidth from MCU", 0);
@@ -3002,7 +2971,7 @@ void MCUH323Connection::SetEndpointPrefVideoParams()
   {
     if(bwFrom < 64) bwFrom = 64;
     if(bwFrom > 4000) bwFrom = 4000;
-    mf.SetOptionInteger("Max Bit Rate", bwFrom*1000);
+    mf.SetOptionInteger(OPTION_MAX_BIT_RATE, bwFrom*1000);
   }
 }
 
@@ -3076,17 +3045,14 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     // get frame time from codec
     OpalMediaFormat & mf = codec.GetWritableMediaFormat();
     unsigned fr;
-    if(mf.GetOptionInteger("Frame Time") != 0)
-      fr = 90000/mf.GetOptionInteger("Frame Time");
+    if(mf.GetOptionInteger(OPTION_FRAME_TIME) != 0)
+      fr = 90000/mf.GetOptionInteger(OPTION_FRAME_TIME);
     else
       fr = ep.GetVideoFrameRate();
 
     // update format string
     PString formatWH = codec.formatString.Left(codec.formatString.FindLast(":"));
-    codec.formatString = formatWH+":"+PString(mf.GetOptionInteger(OpalVideoFormat::MaxBitRateOption))+"x";
-
-    // SetTxQualityLevel not send the value in encoder
-    //codec.SetTxQualityLevel(ep.GetVideoTxQuality());
+    codec.formatString = formatWH+":"+PString(mf.GetOptionInteger(OPTION_MAX_BIT_RATE))+"x";
 
     BOOL forceScreenSplit;
     if(conference)
@@ -4179,3 +4145,74 @@ BOOL ConnectionRTPTimeoutInfo::Perform(H323Connection & conn)
 
 ///////////////////////////////////////////////////////////////////////////
 
+void GatekeeperMonitor::Main()
+{
+  for(;;)
+  {
+    if(terminate)
+      break;
+
+    if(ep.GetListeners().IsEmpty())
+    {
+      PThread::Sleep(500);
+      continue;
+    }
+
+    // после отмены регистрации следующая попытка будет через Time To Live
+    if(ep.GetGatekeeper() && !ep.IsRegisteredWithGatekeeper())
+      ep.RemoveGatekeeper();
+
+    PTime now;
+    PStringStream event;
+    if(gk_mode == "Find gatekeeper")
+    {
+      if(!ep.GetGatekeeper() && now > nextRetryTime)
+      {
+        if(ep.DiscoverGatekeeper(new H323TransportUDP(ep)))
+        {
+          event << "GatekeeperMonitor: Found gatekeeper " << *ep.GetGatekeeper();
+        }
+        else
+        {
+          nextRetryTime = now + 10000;
+          event << "GatekeeperMonitor: No gatekeeper found";
+        }
+      }
+    }
+    else if(gk_mode == "Use gatekeeper")
+    {
+      if(!ep.GetGatekeeper() && now > nextRetryTime)
+      {
+        PString gk_name = MCUConfig("H323 Parameters").GetString(GatekeeperKey);
+        if(ep.SetGatekeeper(gk_name, new H323TransportUDP(ep)))
+        {
+          event << "GatekeeperMonitor: Registered with gatekeeper " << *ep.GetGatekeeper();
+        }
+        else
+        {
+          nextRetryTime = now + 10000;
+          event << "GatekeeperMonitor: Error registering with gatekeeper " << gk_name;
+        }
+      }
+    }
+
+    if(event != "")
+    {
+      MCUTRACE(1, event);
+      OpenMCU::Current().HttpWriteEvent("<font color=blue>"+event+"</font>");
+    }
+
+    PThread::Sleep(1000);
+  }
+
+  if(ep.GetGatekeeper())
+  {
+    PStringStream event;
+    event << "GatekeeperMonitor: Remove gatekeeper " << *ep.GetGatekeeper();
+    MCUTRACE(1, event);
+    OpenMCU::Current().HttpWriteEvent("<font color=blue>"+event+"</font>");
+    ep.RemoveGatekeeper();
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////

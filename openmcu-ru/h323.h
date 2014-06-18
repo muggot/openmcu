@@ -70,6 +70,7 @@ extern "C" {
 
 ////////////////////////////////////////////////////
 
+class GatekeeperMonitor;
 class ConnectionMonitor;
 class ConnectionMonitorInfo;
 
@@ -89,11 +90,6 @@ class MCUH323EndPoint : public H323EndPoint
     virtual H323Connection * CreateConnection(unsigned callReference,void * userData,H323Transport * transport,H323SignalPDU * setupPDU);
     virtual void TranslateTCPAddress(PIPSocket::Address &localAddr, const PIPSocket::Address &remoteAddr);
     H323Connection * FindConnectionWithoutLock(const PString & token) { return FindConnectionWithoutLocks(token); }
-
-    virtual void OnRegistrationRequest();
-    virtual void OnRegistrationConfirm(const H323TransportAddress & rasAddress);
-    virtual void OnRegistrationReject();
-    virtual void OnUnRegisterRequest();
 
     BOOL behind_masq;
     PIPSocket::Address *masqAddressPtr;
@@ -136,21 +132,20 @@ class MCUH323EndPoint : public H323EndPoint
     { return videoTxQuality; }
 
     unsigned GetVideoFrameRate() const
-    { return videoRate; }
+    { return videoFrameRate; }
 
     BOOL enableVideo;
-    unsigned videoRate;
+    unsigned videoFrameRate;
     unsigned videoTxQuality;
 #endif
-
-//    void CleanUpConnections(){ H323Endpoint::CleanUpConnections(); };
 
     virtual void OnConnectionCleared(H323Connection & connection, const PString & token);
     void OnConnectionCreated(MCUH323Connection * conn);
 
   protected:
     ConferenceManager & conferenceManager;
-    ConnectionMonitor * monitor;
+    ConnectionMonitor * connectionMonitor;
+    GatekeeperMonitor * gatekeeperMonitor;
 };
 
 ////////////////////////////////////////////////////
@@ -848,6 +843,28 @@ class ConnectionMonitor : public PThread
     MCUH323EndPoint & ep;
     PMutex mutex;
     MonitorInfoList monitorList;
+};
+
+////////////////////////////////////////////////////
+
+class GatekeeperMonitor : public PThread
+{
+  PCLASSINFO(GatekeeperMonitor, PThread);
+  public:
+    GatekeeperMonitor(MCUH323EndPoint & _ep, PString & _gk_mode)
+      : PThread(10000, NoAutoDeleteThread), ep(_ep), gk_mode(_gk_mode)
+    {
+      terminate = FALSE;
+      Resume();
+    }
+
+    void Main();
+    BOOL terminate;
+
+  protected:
+    PTime nextRetryTime;
+    MCUH323EndPoint & ep;
+    PString gk_mode;
 };
 
 ////////////////////////////////////////////////////

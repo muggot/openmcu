@@ -143,6 +143,12 @@ static const char DefaultProtocolKey[]    = "Default protocol for outgoing calls
 
 static const char RejectDuplicateNameKey[] = "Reject duplicate name";
 
+static const char OPTION_FRAME_TIME[] = "Frame Time";
+static const char OPTION_FRAME_RATE[] = "Frame Rate";
+static const char OPTION_FRAME_WIDTH[] = "Frame Width";
+static const char OPTION_FRAME_HEIGHT[] = "Frame Height";
+static const char OPTION_MAX_BIT_RATE[] = "Max Bit Rate";
+
 static const PTEACypher::Key CypherKey = {
   {
     103,  60, 222,  17, 128, 157,  31, 137,

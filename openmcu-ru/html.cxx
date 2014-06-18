@@ -883,10 +883,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       // bandwidth to MCU
       s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString("Bandwidth to MCU"), 64, 4000, 40)+"</tr>";
       // VFU delay
-      if(name == "*")
-        s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), "0,1,2,3,4,5,6,7,8,9,10", 40)+"</tr>";
-      else
-        s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0,1,2,3,4,5,6,7,8,9,10", 40)+"</tr>";
+      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",1,2,3,4,5,6,7,8,9,10", 40)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
@@ -1381,7 +1378,7 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
   s << StringField(GatekeeperKey, cfg.GetString(GatekeeperKey));
   s << StringField(GatekeeperUserNameKey, cfg.GetString(GatekeeperUserNameKey, "MCU"));
   s << StringField(GatekeeperPasswordKey, PHTTPPasswordField::Decrypt(cfg.GetString(GatekeeperPasswordKey)));
-  s << ArrayField(GatekeeperAliasKey, cfg.GetString(GatekeeperAliasKey,"MCU"), 150);
+  s << ArrayField(GatekeeperAliasKey, cfg.GetString(GatekeeperAliasKey), 150);
 
   s << EndTable();
   BuildHTML("");
@@ -1513,7 +1510,7 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
     {
       const OpalMediaFormat & mf = cap->GetMediaFormat();
       if(cap->GetMainType() == H323Capability::e_Video)
-        info += PString(mf.GetOptionInteger("Frame Width"))+"x"+PString(mf.GetOptionInteger("Frame Height"));
+        info += PString(mf.GetOptionInteger(OPTION_FRAME_WIDTH))+"x"+PString(mf.GetOptionInteger(OPTION_FRAME_HEIGHT));
       else
         info += PString(mf.GetTimeUnits()*1000)+"Hz";
       for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
@@ -1589,7 +1586,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
     {
       const OpalMediaFormat & mf = cap->GetMediaFormat();
       if(cap->GetMainType() == H323Capability::e_Video)
-        info += PString(mf.GetOptionInteger("Frame Width"))+"x"+PString(mf.GetOptionInteger("Frame Height"));
+        info += PString(mf.GetOptionInteger(OPTION_FRAME_WIDTH))+"x"+PString(mf.GetOptionInteger(OPTION_FRAME_HEIGHT));
       else
         info += PString(mf.GetTimeUnits()*1000)+"Hz";
       //info += PString(mf.GetBandwidth())+"bit/s";
