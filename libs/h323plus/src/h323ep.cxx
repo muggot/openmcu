@@ -2249,6 +2249,13 @@ BOOL H323EndPoint::ParsePartyName(const PString & _remoteParty,
 {
   PString remoteParty = _remoteParty;
 
+  // Support [address]##[Alias] dialing
+  PINDEX hash = _remoteParty.Find("##");
+  if (hash != P_MAX_INDEX) {
+    remoteParty = "h323:" + _remoteParty.Mid(hash+2) + "@" + _remoteParty.Left(hash);
+    PTRACE(4, "H323\tConverted " << _remoteParty << " to " << remoteParty);
+  }
+
   // convert the remote party string to a URL, with a default URL of "h323:"
   PURL url(remoteParty, "h323");
 
@@ -2263,14 +2270,32 @@ BOOL H323EndPoint::ParsePartyName(const PString & _remoteParty,
 
   // get the various parts of the name
   PString hostOnly = PString();
-  if ((gatekeeper != NULL) && (remoteParty.Find('@') != P_MAX_INDEX)) {
-	  alias = "url:" + remoteParty;
+  if(remoteParty.Find('@') != P_MAX_INDEX)
+  {
+    alias = url.GetUserName();
+    hostOnly = remoteParty.Mid(remoteParty.Find('@')+1);
+  } else {
+    alias = url.GetUserName();
+    hostOnly = url.GetHostName();
+  }
+  address = hostOnly;
+/*
+  // get the various parts of the name
+  PString hostOnly = PString();
+  if (remoteParty.Find('@') != P_MAX_INDEX) {
+    if (gatekeeper != NULL)
+      alias = url.AsString();
+    else {
+      alias = remoteParty.Left(remoteParty.Find('@'));
+      hostOnly = remoteParty.Mid(remoteParty.Find('@')+1);
+    }
   } else {
      alias = url.GetUserName();
      hostOnly = url.GetHostName();
-  } 
+  }
   address = hostOnly;
-  
+*/
+
   // make sure the address contains the port, if not default
   if (!address && (url.GetPort() != 0))
     address.sprintf(":%u", url.GetPort());

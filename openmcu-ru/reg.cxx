@@ -124,12 +124,13 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
-    // убрать "@", если регистрация на gatekeeper
     if(ep->GetGatekeeper())
     {
+      // убрать "@", если регистрация на gatekeeper
+      // после изменений в h323plus скорее всего не требуется
       if(url.GetUserName() == "")
-        address = url.GetHostName()+":"+url.GetPort();
-      else
+        address = address.Mid(address.Find('@')+1);
+      else if(url.GetHostName() == "")
         address = url.GetUserName();
       PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << address);
     }
