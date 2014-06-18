@@ -132,6 +132,7 @@ static const char GatekeeperTTLKey[]      = "Gatekeeper registration TTL(Time To
 static const char GatekeeperPasswordKey[] = "Gatekeeper Password";
 static const char GatekeeperModeKey[]     = "Gatekeeper Mode";
 static const char GatekeeperKey[]         = "Gatekeeper";
+static const char GatekeeperRetryIntervalKey[]    = "Gatekeeper request retry interval";
 static const char DisableCodecsKey[]      = "Disable codecs - deprecated, use capability.conf instead!";
 static const char NATRouterIPKey[]        = "NAT Router IP";
 static const char NATTreatAsGlobalKey[]   = "Treat as global for NAT";

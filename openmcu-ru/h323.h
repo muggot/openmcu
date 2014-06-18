@@ -851,9 +851,11 @@ class GatekeeperMonitor : public PThread
 {
   PCLASSINFO(GatekeeperMonitor, PThread);
   public:
-    GatekeeperMonitor(MCUH323EndPoint & _ep, PString & _gk_mode)
-      : PThread(10000, NoAutoDeleteThread), ep(_ep), gk_mode(_gk_mode)
+    GatekeeperMonitor(MCUH323EndPoint & _ep, PString & _mode, PTimeInterval _interval)
+      : PThread(10000, NoAutoDeleteThread), ep(_ep)
     {
+      mode = _mode;
+      retryInterval = _interval;
       terminate = FALSE;
       Resume();
     }
@@ -863,8 +865,9 @@ class GatekeeperMonitor : public PThread
 
   protected:
     PTime nextRetryTime;
+    PTimeInterval retryInterval;
     MCUH323EndPoint & ep;
-    PString gk_mode;
+    PString mode;
 };
 
 ////////////////////////////////////////////////////

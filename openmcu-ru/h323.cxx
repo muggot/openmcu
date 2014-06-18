@@ -203,8 +203,8 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   registrationTimeToLive = cfg.GetString(GatekeeperTTLKey);
 
   // GatekeeperMonitor
-  PString gk_mode = cfg.GetString(GatekeeperModeKey, "No gatekeeper");
-  if(gk_mode == "No gatekeeper")
+  PString gkMode = cfg.GetString(GatekeeperModeKey, "No gatekeeper");
+  if(gkMode == "No gatekeeper")
   {
     if(gatekeeperMonitor)
     {
@@ -216,8 +216,9 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   }
   else
   {
+    unsigned gkRetryInterval = cfg.GetInteger(GatekeeperRetryIntervalKey, 30);
     if(!gatekeeperMonitor)
-      gatekeeperMonitor = new GatekeeperMonitor(*this, gk_mode);
+      gatekeeperMonitor = new GatekeeperMonitor(*this, gkMode, gkRetryInterval*1000);
   }
 
    // Setup capabilities
@@ -4164,7 +4165,7 @@ void GatekeeperMonitor::Main()
 
     PTime now;
     PStringStream event;
-    if(gk_mode == "Find gatekeeper")
+    if(mode == "Find gatekeeper")
     {
       if(!ep.GetGatekeeper() && now > nextRetryTime)
       {
@@ -4174,24 +4175,24 @@ void GatekeeperMonitor::Main()
         }
         else
         {
-          nextRetryTime = now + 10000;
+          nextRetryTime = now + retryInterval;
           event << "GatekeeperMonitor: No gatekeeper found";
         }
       }
     }
-    else if(gk_mode == "Use gatekeeper")
+    else if(mode == "Use gatekeeper")
     {
       if(!ep.GetGatekeeper() && now > nextRetryTime)
       {
-        PString gk_name = MCUConfig("H323 Parameters").GetString(GatekeeperKey);
-        if(ep.SetGatekeeper(gk_name, new H323TransportUDP(ep)))
+        PString address = MCUConfig("H323 Parameters").GetString(GatekeeperKey);
+        if(ep.SetGatekeeper(address, new H323TransportUDP(ep)))
         {
           event << "GatekeeperMonitor: Registered with gatekeeper " << *ep.GetGatekeeper();
         }
         else
         {
-          nextRetryTime = now + 10000;
-          event << "GatekeeperMonitor: Error registering with gatekeeper " << gk_name;
+          nextRetryTime = now + retryInterval;
+          event << "GatekeeperMonitor: Error registering with gatekeeper " << address;
         }
       }
     }

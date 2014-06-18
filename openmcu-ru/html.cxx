@@ -1375,6 +1375,7 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
   PString labels = "No gatekeeper,Find gatekeeper,Use gatekeeper";
   s << SelectField(GatekeeperModeKey, cfg.GetString(GatekeeperModeKey, labels[0]), labels, 150);
   s << SelectField(GatekeeperTTLKey, cfg.GetString(GatekeeperTTLKey), ",60,120,180,240,300,600,1200,1800,2400,3000,3600");
+  s << SelectField(GatekeeperRetryIntervalKey, cfg.GetString(GatekeeperRetryIntervalKey, "30"), "10,20,30,40,50,60,120,180,240,300");
   s << StringField(GatekeeperKey, cfg.GetString(GatekeeperKey));
   s << StringField(GatekeeperUserNameKey, cfg.GetString(GatekeeperUserNameKey, "MCU"));
   s << StringField(GatekeeperPasswordKey, PHTTPPasswordField::Decrypt(cfg.GetString(GatekeeperPasswordKey)));
