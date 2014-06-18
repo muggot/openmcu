@@ -3245,6 +3245,7 @@ BOOL MCUSipEndPoint::FindListener(PString addr)
 {
   if(agent == NULL) return FALSE;
   if(addr.Left(4) != "sip:") addr = "sip:"+addr;
+  if(addr.Find("@") == P_MAX_INDEX) addr.Replace("sip:","sip:@",TRUE,0);
   MCUURL url(addr);
   for(tport_t *tp = nta_agent_tports(agent); tp != NULL; tp = tport_next(tp))
   {
