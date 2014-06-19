@@ -110,6 +110,8 @@ PString GetEndpointParamFromUrl(PString param, PString addr)
 
   value = MCUConfig(sectionPrefix+user).GetString(param);
   if(value == "")
+    value = MCUConfig(sectionPrefix+host).GetString(param);
+  if(value == "")
     value = MCUConfig(sectionPrefix+"*").GetString(param);
 
   return value;
