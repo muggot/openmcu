@@ -124,18 +124,24 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
+    H323Transport * transport = NULL;
     if(ep->GetGatekeeper())
     {
-      // убрать "@", если регистрация на gatekeeper
-      // после изменений в h323plus скорее всего не требуется
-      if(url.GetUserName() == "")
-        address = address.Mid(address.Find('@')+1);
-      else if(url.GetHostName() == "")
+      PString gk_host = ep->GetGatekeeperHostName();
+      if(url.GetHostName() == "" || gk_host == url.GetHostName())
+      {
         address = url.GetUserName();
-      PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << address);
+        PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << address);
+      }
+      else
+      {
+        H323TransportAddress taddr(url.GetHostName()+":"+url.GetPort());
+        transport = taddr.CreateTransport(*ep);
+        transport->SetRemoteAddress(taddr);
+      }
     }
     void *userData = new PString(room);
-    ep->MakeCall(address, callToken, userData);
+    ep->MakeCall(address, transport, callToken, userData);
   }
   else if(account_type == ACCOUNT_TYPE_RTSP)
   {

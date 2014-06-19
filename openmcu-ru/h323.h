@@ -120,6 +120,7 @@ class MCUH323EndPoint : public H323EndPoint
     ConferenceManager & GetConferenceManager()
     { return conferenceManager; }
 
+    PString GetGatekeeperHostName();
     PString Invite(PString room, PString memberName);
     void SetConnectionActive(MCUH323Connection * conn);
 
@@ -369,6 +370,8 @@ class MCUH323Connection : public H323Connection
 
     const PString & GetRequestedRoom() const { return requestedRoom; };
     void SetRequestedRoom(PString room) { requestedRoom = room; };
+
+    void SetGatekeeperEnable(BOOL enable) { gatekeeperEnable = enable; }
 
   protected:
 

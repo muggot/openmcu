@@ -499,9 +499,26 @@ BOOL MCUH323EndPoint::SkipCapability(const PString & formatName)
 
 ///////////////////////////////////////////////////////////////////////////
 
-H323Connection * MCUH323EndPoint::CreateConnection(unsigned callReference, void * userData, H323Transport *, H323SignalPDU *)
+PString MCUH323EndPoint::GetGatekeeperHostName()
 {
-  return new MCUH323Connection(*this, callReference, userData);
+  PString host;
+  if(gatekeeper)
+    host = gatekeeper->GetTransport().GetRemoteAddress().GetHostName();
+  return host;
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+H323Connection * MCUH323EndPoint::CreateConnection(unsigned callReference, void * userData, H323Transport * transport, H323SignalPDU *)
+{
+  MCUH323Connection *conn = new MCUH323Connection(*this, callReference, userData);
+  if(gatekeeper)
+  {
+    PString remote_host = transport->GetRemoteAddress().GetHostName();
+    if(remote_host != "*" && remote_host != GetGatekeeperHostName())
+      conn->SetGatekeeperEnable(FALSE);
+  }
+  return conn;
 }
 
 ///////////////////////////////////////////////////////////////////////////

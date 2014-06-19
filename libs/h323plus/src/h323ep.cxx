@@ -2290,8 +2290,8 @@ BOOL H323EndPoint::ParsePartyName(const PString & _remoteParty,
       hostOnly = remoteParty.Mid(remoteParty.Find('@')+1);
     }
   } else {
-     alias = url.GetUserName();
-     hostOnly = url.GetHostName();
+    alias = url.GetUserName();
+    hostOnly = url.GetHostName();
   }
   address = hostOnly;
 */
