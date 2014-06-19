@@ -2196,13 +2196,21 @@ nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *
   sip_authorization_t *sip_auth = NULL;
   sip_authorization_t *sip_proxy_auth = NULL;
 
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
+  url_string_t *route_ruri = (url_string_t *)(const char *)ruri_str;
+  url_string_t *request_ruri = route_ruri;
   sip_contact = sip_contact_create(sep->GetHome(), (url_string_t *)(const char *)contact_str, NULL);
 
   sip_t *c_sip = sip_object(c_sip_msg);
   if(c_sip)
   {
-    sip_route = sip_route_reverse(sep->GetHome(), c_sip->sip_record_route);
+    // in-dialog requests should always use URI from contact header
+    request_ruri = (url_string_t *)c_sip->sip_contact->m_url;
+    // route
+    if(direction == DIRECTION_INBOUND)
+      sip_route = c_sip->sip_record_route;
+    else
+      sip_route = sip_route_reverse(sep->GetHome(), c_sip->sip_record_route);
+    // ACK branch and cseq from invite request
     if(method == sip_method_ack)
     {
       via_branch_key = c_sip->sip_via->v_branch;
@@ -2230,9 +2238,9 @@ nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *
     sip_proxy_auth = sip_proxy_authorization_make(sep->GetHome(), proxy_auth_str);
 
   nta_outgoing_t *a_orq = nta_outgoing_tcreate(leg, callback, magic,
-                        ruri,
+                        route_ruri,
                         method, method_name,
-                        ruri,
+                        request_ruri,
    		        NTATAG_STATELESS(stateless),
 			SIPTAG_CSEQ(sip_cseq),
                         NTATAG_BRANCH_KEY(via_branch_key),
@@ -2415,7 +2423,10 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
   {
     // repeated OK
     if(connectionState == EstablishedConnection)
+    {
+      SendACK();
       return 0;
+    }
     // is connected
     connectionState = EstablishedConnection;
     // add rtag to call leg from response
