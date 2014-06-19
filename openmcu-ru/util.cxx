@@ -100,6 +100,11 @@ PString GetEndpointParamFromUrl(PString param, PString addr)
     sectionPrefix = "H323 Endpoint ";
   else if(url.GetScheme() == "sip")
     sectionPrefix = "SIP Endpoint ";
+  else if(url.GetScheme() == "rtsp")
+  {
+    sectionPrefix = "RTSP Endpoint ";
+    user = url.GetUrl();
+  }
   else
     return "";
 

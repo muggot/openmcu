@@ -57,6 +57,7 @@ static const char LogLevelKey[]           = "Log Level";
 static const char TraceLevelKey[]         = "Trace level";
 static const char TraceRotateKey[]        = "Rotate trace files at startup";
 static const char UserNameKey[]           = "Username";
+static const char DisplayNameKey[]        = "Display name";
 static const char PasswordKey[]           = "Password";
 static const char HttpPortKey[]           = "HTTP Port";
 static const char HttpLinkEventBufferKey[]= "Room control event buffer size";

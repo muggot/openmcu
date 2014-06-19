@@ -666,6 +666,14 @@ class H323EndpointsPConfigPage : public TablePConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class RtspEndpointsPConfigPage : public TablePConfigPage
+{
+ public:
+   RtspEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class SIPPConfigPage : public TablePConfigPage
 {
   public:

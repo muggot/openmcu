@@ -956,6 +956,50 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 
 ///////////////////////////////////////////////////////////////
 
+RtspEndpointsPConfigPage::RtspEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+
+  firstEditRow = 1;
+  PStringStream html_begin, html_end, html_page, s;
+  buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+
+  s << BeginTable();
+  s << NewRowColumn(JsLocale("window.l_name_address"));
+  //s << ColumnItem(JsLocale("window.l_name_password"));
+  s << ColumnItem(JsLocale("window.l_name_display_name"));
+
+  //optionNames.AppendString(PasswordKey);
+  optionNames.AppendString(DisplayNameKey);
+
+  sectionPrefix = "RTSP Endpoint ";
+  PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
+
+  if(sect.GetSize() == 0)
+    sect.AppendString(sectionPrefix+"empty");
+
+  for(PINDEX i = 0; i < sect.GetSize(); i++)
+  {
+    MCUConfig scfg(sect[i]);
+    PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
+
+    s << NewRowInput(name, 200);
+    //s << StringItem(name, PasswordKey, 120);
+    s << StringItem(name, scfg.GetString(DisplayNameKey), 120);
+
+  }
+  s << EndTable();
+
+  BuildHTML("");
+  BeginPage(html_begin, section, "window.l_param_rtsp_endpoints", "");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  string = html_page;
+}
+
+///////////////////////////////////////////////////////////////
+
 SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {

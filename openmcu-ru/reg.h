@@ -206,6 +206,10 @@ class RegistrarAccount
         if(port != 0 && port != 1720)
           url += ":"+PString(port);
       }
+      else if(account_type == ACCOUNT_TYPE_RTSP)
+      {
+        url = username;
+      }
       return url;
     }
     PString GetContact()

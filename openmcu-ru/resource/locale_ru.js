@@ -46,6 +46,7 @@ window.l_param_control_codes = 'Коды управления';
 window.l_param_room_codes = 'Коды комнат';
 window.l_param_h323_endpoints = 'H.323 терминалы';
 window.l_param_sip_endpoints = 'SIP терминалы';
+window.l_param_rtsp_endpoints = 'RTSP терминалы';
 window.l_param_video = 'Видео';
 window.l_param_record = 'Запись';
 window.l_param_h323 = 'H323 параметры';

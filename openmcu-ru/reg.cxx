@@ -798,8 +798,9 @@ void Registrar::InitAccounts()
 {
   MCUConfig cfg("Registrar Parameters");
 
-  PString sipSectionPrefix = "SIP Endpoint ";
   PString h323SectionPrefix = "H323 Endpoint ";
+  PString rtspSectionPrefix = "RTSP Endpoint ";
+  PString sipSectionPrefix = "SIP Endpoint ";
 
   PStringToString h323Passwords;
 
@@ -840,6 +841,12 @@ void Registrar::InitAccounts()
       account_type = ACCOUNT_TYPE_H323;
       username = sect[i].Right(sect[i].GetLength()-h323SectionPrefix.GetLength());
       gcfg = MCUConfig(h323SectionPrefix+"*");
+    }
+    else if(sect[i].Left(h323SectionPrefix.GetLength()) == rtspSectionPrefix)
+    {
+      account_type = ACCOUNT_TYPE_RTSP;
+      username = sect[i].Right(sect[i].GetLength()-rtspSectionPrefix.GetLength());
+      gcfg = MCUConfig(rtspSectionPrefix+"*");
     }
 
     if(username == "*" || username == "")
@@ -882,6 +889,10 @@ void Registrar::InitAccounts()
       regAccount->h323_call_processing = h323_call_processing;
 
       h323Passwords.Insert(PString(username), new PString(regAccount->password));
+    }
+    else if(account_type == ACCOUNT_TYPE_RTSP)
+    {
+      regAccount->abook_enable = TRUE;
     }
     regAccount->Unlock();
   }

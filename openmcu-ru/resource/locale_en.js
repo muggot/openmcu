@@ -46,6 +46,7 @@ window.l_param_control_codes = 'Control codes';
 window.l_param_room_codes = 'Room codes';
 window.l_param_h323_endpoints = 'H.323 Endpoints';
 window.l_param_sip_endpoints = 'SIP Endpoints';
+window.l_param_rtsp_endpoints = 'RTSP Endpoints';
 window.l_param_video = 'Video';
 window.l_param_record = 'Record';
 window.l_param_h323 = 'H323 parameters';

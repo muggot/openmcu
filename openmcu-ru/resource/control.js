@@ -800,10 +800,6 @@ function format_mmbr_abook(num,mmbr)
   var name=get_addr_name(uname);
   var ip=get_addr_url_without_param(uname);
 
-  var status = "";
-  if(reg_state == 1)      status = "<img src='i16_status_gray.png' width='"+width+"' height='"+height+"'>";
-  else if(reg_state == 2) status = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
-
   var invite = "", check = "";
   if(conn_state == 0)
   {
@@ -813,9 +809,13 @@ function format_mmbr_abook(num,mmbr)
   else if(conn_state == 1) invite = "<img src='i16_status_blue.png' width='"+width+"' height='"+height+"'>";
   else if(conn_state == 2) invite = "<img src='i16_status_red.png' width='"+width+"' height='"+height+"'>";
 
-  var ping_icon = "<img src='i16_status_gray.png' width='"+width+"' height='"+height+"'>";
+  var ping_icon = "";
   if(ping_state == 1)      ping_icon = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
   else if(ping_state == 2) ping_icon = "<img src='i16_status_red.png' width='"+width+"' height='"+height+"'>";
+
+  var reg_icon = "";
+  if(reg_state == 1)       reg_icon = "<img src='i16_status_gray.png' width='"+width+"' height='"+height+"'>";
+  else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
 
   var posx_check  = 8;
   var posx_invite = posx_check       + width + 16;
@@ -831,8 +831,8 @@ function format_mmbr_abook(num,mmbr)
   var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
   s+=dpre+posx_check+"px'><div style='width:"+width+"px;height:"+height+"px'>"+check+"</div></div>";
   s+=dpre+posx_invite+"px'><div style='width:"+width+"px;height:"+height+"px'>"+invite+"</div></div>";
-  s+=dpre+(posx_status-8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+status+"</div></div>";
-  s+=dpre+(posx_status+8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+ping_icon+"</div></div>";
+  s+=dpre+(posx_status-8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+ping_icon+"</div></div>";
+  s+=dpre+(posx_status+8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+reg_icon+"</div></div>";
   s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'><nobr>"+name+"</nobr></div></div>";
   s+=dpre+posx_ip+"px'><div style='overflow:hidden;font-size:10px;width:"+width_ip+"px;'>"+ip+"</div></div>";
   s+='</div>';

@@ -301,6 +301,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // Create the config page - sip endpoints
   httpNameSpace.AddResource(new SipEndpointsPConfigPage(*this, "SipEndpointsParameters", "SIP Endpoints", authSettings), PHTTPSpace::Overwrite);
 
+  // Create the config page - rtsp endpoints
+  httpNameSpace.AddResource(new RtspEndpointsPConfigPage(*this, "RtspEndpointsParameters", "RTSP Endpoints", authSettings), PHTTPSpace::Overwrite);
+
   // Create the config page - video
 #if MCU_VIDEO
   httpNameSpace.AddResource(new VideoPConfigPage(*this, "VideoParameters", "Video", authSettings), PHTTPSpace::Overwrite);

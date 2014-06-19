@@ -155,7 +155,6 @@ int MCURtspConnection::Connect(PString room, PString _ruri_str)
   if(display_name != "")
     remoteName = remotePartyName = display_name;
 
-
   if(CreateSocket() == 0)
     return 0;
 
