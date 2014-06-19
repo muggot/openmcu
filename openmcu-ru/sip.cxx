@@ -3120,6 +3120,7 @@ void MCUSipEndPoint::InitProxyAccounts()
     PString roomname = scfg.GetString("Room");
     PString address = scfg.GetString("Address");
     if(address.Left(4) != "sip:") address = "sip:"+address;
+    if(address.Find("@") == P_MAX_INDEX) address.Replace("sip:","sip:@",TRUE,0);
     PString host = MCUURL(address).GetHostName();
     PString port = MCUURL(address).GetPort();
     PString transport = MCUURL(address).GetTransport();
@@ -3130,17 +3131,17 @@ void MCUSipEndPoint::InitProxyAccounts()
     if(domain == "") enable = FALSE;
 
     ProxyAccount *proxy = FindProxyAccount(username+"@"+domain);
+    if(proxy && proxy->enable)
+    {
+      proxy->enable = enable;
+      continue;
+    }
     if(!proxy)
     {
       proxy = new ProxyAccount();
       proxy->username = username;
       proxy->domain = domain;
       ProxyAccountMap.insert(ProxyAccountMapType::value_type(proxy->username+"@"+proxy->domain, proxy));
-    }
-    if(proxy->enable)
-    {
-      proxy->enable = enable;
-      continue;
     }
     proxy->username = username;
     proxy->domain = domain;
@@ -3257,6 +3258,7 @@ BOOL MCUSipEndPoint::FindListener(PString addr)
     if(host == url.GetHostName() && port == url.GetPort())
       return TRUE;
   }
+  PTRACE(1, "MCUSIP\tSIP tport not found: " << addr);
   return FALSE;
 }
 
