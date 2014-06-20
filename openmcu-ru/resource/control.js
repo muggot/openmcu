@@ -987,6 +987,12 @@ function members_refresh()
  return true;
 }
 
+function abr()
+{
+  abook_refresh();
+  alive();
+}
+
 function abook_refresh(){
   if(typeof addressbook==='undefined') return true;
   var tab_height = 23;

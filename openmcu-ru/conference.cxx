@@ -610,9 +610,7 @@ void Conference::RefreshAddressBook()
         << ",\"" << ping_info << "\""
         << ")";
   }
-  msg << ");";
-  OpenMCU::Current().HttpWriteCmdRoom(msg,number);
-  msg = "abook_refresh()";
+  msg << ");p.abr()";
   OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 }
 
