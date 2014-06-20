@@ -2403,9 +2403,9 @@ void MCUH323Connection::OnEstablished()
 
   JoinConference(requestedRoom);
 
-  if(!conference || !conferenceMember || (conferenceMember && !conferenceMember->IsJoined()))
+  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
   {
-    if(callToken.Left(4) != "sip:")
+    if(remotePartyAddress.Left(4) != "sip:")
       LeaveMCU();
   }
 
@@ -2783,13 +2783,15 @@ BOOL MCUH323Connection::OnReceivedSignalConnect(const H323SignalPDU & pdu)
   return ret;
 }
 
-H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString & /*caller*/,
-                                                                  const H323SignalPDU & setupPDU,
-                                                                  H323SignalPDU & /*connectPDU*/)
+H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString & /*caller*/, const H323SignalPDU & setupPDU, H323SignalPDU & /*connectPDU*/)
 {
   requestedRoom = ep.IncomingConferenceRequest(*this, setupPDU, videoMixerNumber);
 
-  if (requestedRoom.IsEmpty())
+  // remove prefix from requested room, maybe bug on the terminal
+  // RealPresence "url_ID "h323:room101""
+  requestedRoom.Replace("h323:","",TRUE,0);
+
+  if(requestedRoom.IsEmpty())
     return AnswerCallDenied;
 
   SetRemoteName(setupPDU);

@@ -2007,6 +2007,8 @@ int MCUSipConnection::ProcessConnect()
   SetMemberName();
   // override requested room from registrar
   SetRequestedRoom();
+  // remove prefix from requested room, maybe bug on the terminal
+  requestedRoom.Replace("sip:","",TRUE,0);
   // join conference
   OnEstablished();
   if(!conference || !conferenceMember || !conferenceMember->IsJoined())
