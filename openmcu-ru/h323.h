@@ -455,13 +455,11 @@ class MCUH323Connection : public H323Connection
     H323AudioCodec *audioTransmitCodec;
 
     BOOL CheckVFU();
-    PTime vfuLastTimeSend;         // time of the last send request
-    PTime vfuLastTime;             // time of the last request
-    PTime vfuIntervalTime;         // time of the first request for interval
-    PTimeInterval vfuDelayTime;
-    PTimeInterval vfuLimitTime;    // interval
+    PTime vfuSendTime;             // время отправки запроса от MCU
+    PTime vfuBeginTime;            // время первого запроса за интервал
+    unsigned int vfuInterval;      // interval sec
     unsigned int vfuLimit;         // limit requests for interval
-    unsigned int vfuLimitCount;    // count requests for interval
+    unsigned int vfuCount;         // count requests for interval
     unsigned int vfuTotalCount;    // count total requests
 
 #if MCU_VIDEO

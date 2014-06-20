@@ -1077,9 +1077,9 @@ void MCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsi
   if(command == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
   {
     PTime now;
-    if(now < vfuLastTimeSend + PTimeInterval(1000))
+    if(now < vfuSendTime + PTimeInterval(1000))
       return;
-    vfuLastTimeSend = now;
+    vfuSendTime = now;
 
     PString *cmd = new PString("fast_update:"+callToken);
     sep->SipQueue.Push(cmd);

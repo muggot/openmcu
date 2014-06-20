@@ -883,7 +883,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       // bandwidth to MCU
       s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString("Bandwidth to MCU"), 64, 4000, 40)+"</tr>";
       // VFU delay
-      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",1,2,3,4,5,6,7,8,9,10", 40)+"</tr>";
+      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,10/5,10/10", 40)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";

@@ -2353,13 +2353,11 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
     localAliasNames.AppendString(localPartyName);
   }
 
-  vfuLastTimeSend = PTime(0);
-  vfuLastTime = PTime(0);
-  vfuIntervalTime = PTime(0);
-  vfuDelayTime = PTimeInterval(0);
-  vfuLimitTime = PTimeInterval(10000);
-  vfuLimit = 10;
-  vfuLimitCount = 0;
+  vfuSendTime = PTime(0);
+  vfuBeginTime = PTime(0);
+  vfuInterval = 0;
+  vfuLimit = 0;
+  vfuCount = 0;
   vfuTotalCount = 0;
 
   audioReceiveCodecName = audioTransmitCodecName = "none";
@@ -2801,30 +2799,37 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
 
 BOOL MCUH323Connection::CheckVFU()
 {
+  PString delay = GetEndpointParam(ReceivedVFUDelayKey, "");
+  if(delay == "")
+    return TRUE;
+  if(delay == "0/0")
+    return FALSE;
+
+  vfuLimit = delay.Tokenise("/")[0].AsInteger();
+  vfuInterval = delay.Tokenise("/")[1].AsInteger();
+  if(vfuLimit == 0 || vfuInterval == 0)
+    return TRUE;
+
   PTime now;
   vfuTotalCount++;
-  // only show warning if the number of received VFU requests(vfuLimitCount) for a certain interval(vfuLimitTime)
-  // more than vfuLimit
-  if(now < vfuIntervalTime + vfuLimitTime)
+  if(now < vfuBeginTime + PTimeInterval(vfuInterval*1000))
   {
-    vfuLimitCount++;
+    vfuCount++;
   } else {
-    if(vfuLimitCount > vfuLimit)
+    if(vfuCount > vfuLimit)
     {
-      PTRACE(6, "RTP\ttoo many VFU requests from \""+remotePartyAddress+"\", received "+PString(vfuLimitCount)+" requests per 10 seconds");
-      PString msg = "<font color=red>Warning: too many VFU requests from \""+remoteName+"\", received "+PString(vfuLimitCount)+" requests per 10 seconds</font>";
-      OpenMCU::Current().HttpWriteEventRoom(msg, requestedRoom);
+      // only show warning if the number of received VFU requests(vfuCount) for a certain interval(vfuInterval) more than vfuLimit
+      PString username = MCUURL(memberName).GetUrl();
+      PString event = "too many VFU from \""+username+"\", limit "+PString(vfuLimit)+"/"+PString(vfuInterval)+", received "+PString(vfuCount);
+      PTRACE(6, "RTP\t" << event);
+      OpenMCU::Current().HttpWriteEventRoom("<font color=red>"+event+"</font>", requestedRoom);
     }
-    vfuIntervalTime = now;
-    vfuLimitCount = 1;
+    vfuBeginTime = now;
+    vfuCount = 1;
   }
   // skip requests
-  vfuDelayTime = PTimeInterval(GetEndpointParam(ReceivedVFUDelayKey, 0)*1000);
-  if(now < vfuLastTime + vfuDelayTime)
-  {
+  if(vfuCount > vfuLimit)
     return FALSE;
-  }
-  vfuLastTime = now;
 
   return TRUE;
 }
@@ -2844,9 +2849,9 @@ void MCUH323Connection::SendLogicalChannelMiscCommand(H323Channel & channel, uns
   if(command == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
   {
     PTime now;
-    if(now < vfuLastTimeSend + PTimeInterval(1000))
+    if(now < vfuSendTime + PTimeInterval(1000))
       return;
-    vfuLastTimeSend = now;
+    vfuSendTime = now;
   }
 
   H323Connection::SendLogicalChannelMiscCommand(channel, command);
