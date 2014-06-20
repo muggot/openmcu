@@ -56,6 +56,13 @@ enum Direction
   DIRECTION_OUTBOUND
 };
 
+enum AuthTypes
+{
+  AUTH_NONE,
+  AUTH_WWW,
+  AUTH_PROXY
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString GetFromIp(PString toAddr, PString toPort);
@@ -304,6 +311,13 @@ class MCUSipConnection : public MCUH323Connection
     BOOL IsConnected() const { return connectionState == EstablishedConnection; }
     BOOL IsEstablished() const { return connectionState == EstablishedConnection; }
 
+    AuthTypes auth_type;
+    PString auth_username;
+    PString auth_password;
+    PString auth_scheme;
+    PString auth_realm;
+    PString auth_nonce;
+
   protected:
 
     static int wrap_invite_request_cb(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip)
@@ -334,8 +348,6 @@ class MCUSipConnection : public MCUH323Connection
     PString sdp_ok_str;
     PString ruri_str;
     PString contact_str;
-    PString www_auth_str;
-    PString proxy_auth_str;
 
     Direction direction;
     PString local_user;
@@ -399,8 +411,8 @@ class MCUSipEndPoint : public PThread
     BOOL SipMakeCall(PString from, PString to, PString & callToken);
 
     BOOL MakeMsgAuth(msg_t *msg_orq, const msg_t *msg);
-    BOOL MakeAuthStrings(const msg_t *msg, PString & www_auth_str, PString & proxy_auth_str);
     PString MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce);
+    BOOL ParseAuthMsg(const msg_t *msg, AuthTypes & auth_type, PString & auth_scheme, PString & auth_realm, PString & auth_nonce);
     ProxyAccount *FindProxyAccount(PString account);
 
     SipCapMapType & GetBaseSipCaps() { return BaseSipCaps; }

@@ -668,8 +668,14 @@ class H323EndpointsPConfigPage : public TablePConfigPage
 
 class RtspEndpointsPConfigPage : public TablePConfigPage
 {
- public:
-   RtspEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  public:
+    RtspEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
+    {
+      BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
+      OpenMCU::Current().GetRegistrar()->init_accounts = 1;
+      return ret;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -690,8 +696,8 @@ class SIPPConfigPage : public TablePConfigPage
 
 class SipEndpointsPConfigPage : public TablePConfigPage
 {
- public:
-   SipEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+  public:
+    SipEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
     virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
     {
       BOOL ret = TablePConfigPage::Post(request, data, replyMessage);

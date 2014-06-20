@@ -967,10 +967,12 @@ RtspEndpointsPConfigPage::RtspEndpointsPConfigPage(PHTTPServiceProcess & app,con
 
   s << BeginTable();
   s << NewRowColumn(JsLocale("window.l_name_address"));
-  //s << ColumnItem(JsLocale("window.l_name_password"));
+  s << ColumnItem(JsLocale("window.l_name_user"));
+  s << ColumnItem(JsLocale("window.l_name_password"));
   s << ColumnItem(JsLocale("window.l_name_display_name"));
 
-  //optionNames.AppendString(PasswordKey);
+  optionNames.AppendString(UserNameKey);
+  optionNames.AppendString(PasswordKey);
   optionNames.AppendString(DisplayNameKey);
 
   sectionPrefix = "RTSP Endpoint ";
@@ -985,7 +987,8 @@ RtspEndpointsPConfigPage::RtspEndpointsPConfigPage(PHTTPServiceProcess & app,con
     PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
 
     s << NewRowInput(name, 200);
-    //s << StringItem(name, PasswordKey, 120);
+    s << StringItem(name, scfg.GetString(UserNameKey), 120);
+    s << StringItem(name, scfg.GetString(PasswordKey), 120);
     s << StringItem(name, scfg.GetString(DisplayNameKey), 120);
 
   }

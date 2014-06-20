@@ -329,10 +329,13 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
   scap = -1;
   vcap = -1;
   connectedTime = PTime();
+  aDataSocket = aControlSocket = vDataSocket = vControlSocket = NULL;
+  audio_rtp_port = video_rtp_port = 0;
   c_sip_msg = NULL;
   leg = NULL;
   orq_invite = NULL;
   rtp_proto = "RTP";
+  auth_type = AUTH_NONE;
 
   // create local capability list
   RefreshLocalSipCaps();
@@ -356,6 +359,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   remoteName = "";
   remotePartyName = "";
   remoteApplication = "SIP terminal";
+  requestedRoom = OpenMCU::Current().GetDefaultRoomName();
   scap = -1;
   vcap = -1;
   connectedTime = PTime();
@@ -364,6 +368,8 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   c_sip_msg = NULL;
   leg = NULL;
   orq_invite = NULL;
+  rtp_proto = "RTP";
+  auth_type = AUTH_NONE;
 
   su_home_t *home = msg_home(msg);
   sip_t *sip = sip_object(msg);
@@ -2231,11 +2237,16 @@ nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *
     sip_payload = sip_payload_format(sep->GetHome(), "<media_control><vc_primitive><to_encoder><picture_fast_update/></to_encoder></vc_primitive></media_control>");
   }
 
-  if(www_auth_str != "")
-    sip_auth = sip_authorization_make(sep->GetHome(), www_auth_str);
 
-  if(proxy_auth_str != "")
-    sip_proxy_auth = sip_proxy_authorization_make(sep->GetHome(), proxy_auth_str);
+  if(auth_type != AUTH_NONE)
+  {
+    PString uri = "sip:"+PString(auth_realm); uri.Replace("\"","",true,0);
+    PString auth_str = sep->MakeAuthStr(auth_username, auth_password, uri, method_name, auth_scheme, auth_realm, auth_nonce);
+    if(auth_type == AUTH_WWW)
+      sip_auth = sip_authorization_make(sep->GetHome(), auth_str);
+    else if(auth_type == AUTH_PROXY)
+      sip_proxy_auth = sip_proxy_authorization_make(sep->GetHome(), auth_str);
+  }
 
   nta_outgoing_t *a_orq = nta_outgoing_tcreate(leg, callback, magic,
                         route_ruri,
@@ -2304,7 +2315,12 @@ int MCUSipConnection::SendInvite()
 
   orq_invite = SendRequest(SIP_METHOD_INVITE);
   if(orq_invite == NULL)
+  {
+    PTRACE(1, trace_section << "error");
+    // use LeaveMCU(), calling this function can be outside
+    LeaveMCU();
     return FALSE;
+  }
 
   return TRUE;
 }
@@ -2366,6 +2382,7 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
     int response_code = ProcessReInvite(msg);
     if(response_code)
     {
+      PTRACE(1, trace_section << "error " << response_code);
       ProcessShutdown(EndedByLocalUser);
       return response_code;
     }
@@ -2427,8 +2444,6 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
       SendACK();
       return 0;
     }
-    // is connected
-    connectionState = EstablishedConnection;
     // add rtag to call leg from response
     if(!nta_leg_get_rtag(leg))
       nta_leg_rtag(leg, sip->sip_to->a_tag);
@@ -2439,31 +2454,32 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
     else
       response_code = ProcessReInvite(msg);
     if(response_code)
+    {
+      PTRACE(1, trace_section << "error " << response_code);
       ProcessShutdown(EndedByLocalUser);
-    else
-      SendACK();
-
+      return 0;
+    }
+    // is connected
+    connectionState = EstablishedConnection;
+    // send ACK
+    SendACK();
     return 0;
   }
   if(status == 401 || status == 407)
   {
-    sip_t *sip_orq = sip_object(msg_orq);
-    // check authorization attempts
-    if(sip_orq->sip_authorization || sip_orq->sip_proxy_authorization)
+    if(auth_type != AUTH_NONE || auth_username == "" || auth_password == "")
     {
+      PTRACE(1, trace_section << "error");
       ProcessShutdown();
       return 0;
     }
-    if(sep->MakeAuthStrings(msg, www_auth_str, proxy_auth_str) == FALSE)
+    if(sep->ParseAuthMsg(msg, auth_type, auth_scheme, auth_realm, auth_nonce) == FALSE)
     {
+      PTRACE(1, trace_section << "error");
       ProcessShutdown();
       return 0;
     }
-    if(SendInvite() == FALSE)
-    {
-      ProcessShutdown();
-      return 0;
-    }
+    SendInvite();
     return 0;
   }
   if(status > 299)
@@ -2554,6 +2570,8 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
     PString local_domain = url_from.GetHostName();
     PString local_dname = url_from.GetDisplayName();
     PString local_ip;
+    PString auth_username;
+    PString auth_password;
 
     for(ProxyAccountMapType::iterator it=ProxyAccountMap.begin(); it!=ProxyAccountMap.end(); it++)
     {
@@ -2565,6 +2583,8 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
         local_dname = proxy->roomname;
         remote_host = proxy->host;
         remote_port = proxy->port;
+        auth_username = proxy->username;
+        auth_password = proxy->password;
         break;
       }
     }
@@ -2618,22 +2638,19 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 		SIPTAG_CONTACT(sip_contact),
                 TAG_END());
 
-    // create connection
-    callToken = GetSipCallToken(msg);
     // existing connection, possibly there is a bug
+    callToken = GetSipCallToken(msg);
     if(HasConnection(callToken))
       return FALSE;
 
+    // create connection
     MCUSipConnection *sCon = new MCUSipConnection(this, ep, DIRECTION_OUTBOUND, callToken, msg);
     sCon->Lock();
-    if(sCon->SendInvite() == FALSE)
-    {
-      sCon->LeaveMCU();
-      sCon->Unlock();
-      return FALSE;
-    }
+    sCon->auth_username = auth_username;
+    sCon->auth_password = auth_password;
+    BOOL ret = sCon->SendInvite();
     sCon->Unlock();
-    return TRUE;
+    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2697,37 +2714,30 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSipEndPoint::MakeAuthStrings(const msg_t *msg, PString & www_auth_str, PString & proxy_auth_str)
+BOOL MCUSipEndPoint::ParseAuthMsg(const msg_t *msg, AuthTypes & auth_type, PString & auth_scheme, PString & auth_realm, PString & auth_nonce)
 {
   sip_t *sip = sip_object(msg);
 
-  int status = 0, request = 0;
-  if(sip->sip_status)  status = sip->sip_status->st_status;
-  if(sip->sip_cseq)    request = sip->sip_cseq->cs_method;
-
-  ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
-  if(!proxy)
-    return FALSE;
+  int status = 0;
+  if(sip->sip_status) status = sip->sip_status->st_status;
 
   if(status == 401 && sip->sip_www_authenticate && sip->sip_www_authenticate->au_scheme && sip->sip_www_authenticate->au_params)
   {
-    const char *realm = msg_params_find(sip->sip_www_authenticate->au_params, "realm=");
-    const char *nonce = msg_params_find(sip->sip_www_authenticate->au_params, "nonce=");
-    const char *scheme = sip->sip_www_authenticate->au_scheme;
-    if(scheme == NULL || realm == NULL || nonce == NULL)
+    auth_type = AUTH_WWW;
+    auth_scheme = sip->sip_www_authenticate->au_scheme;
+    auth_realm = msg_params_find(sip->sip_www_authenticate->au_params, "realm=");
+    auth_nonce = msg_params_find(sip->sip_www_authenticate->au_params, "nonce=");
+    if(auth_scheme == "" || auth_realm == "" || auth_nonce == "")
       return FALSE;
-    PString uri = "sip:"+PString(realm); uri.Replace("\"","",true,0);
-    www_auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, scheme, realm, nonce);
   }
   else if(status == 407 && sip->sip_proxy_authenticate && sip->sip_proxy_authenticate->au_scheme && sip->sip_proxy_authenticate->au_params)
   {
-    const char *realm = msg_params_find(sip->sip_proxy_authenticate->au_params, "realm=");
-    const char *nonce = msg_params_find(sip->sip_proxy_authenticate->au_params, "nonce=");
-    const char *scheme = sip->sip_proxy_authenticate->au_scheme;
-    if(scheme == NULL || realm == NULL || nonce == NULL)
+    auth_type = AUTH_PROXY;
+    auth_scheme = sip->sip_proxy_authenticate->au_scheme;
+    auth_realm = msg_params_find(sip->sip_proxy_authenticate->au_params, "realm=");
+    auth_nonce = msg_params_find(sip->sip_proxy_authenticate->au_params, "nonce=");
+    if(auth_scheme == "" || auth_realm == "" || auth_nonce == "")
       return FALSE;
-    PString uri = "sip:"+PString(realm); uri.Replace("\"","",true,0);
-    proxy_auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, scheme, realm, nonce);
   }
   else
     return FALSE;
@@ -2764,20 +2774,23 @@ BOOL MCUSipEndPoint::MakeMsgAuth(msg_t *msg_orq, const msg_t *msg)
   sip_cseq_t *sip_cseq = sip_cseq_create(&home, cseq, sip_orq->sip_cseq->cs_method, sip_orq->sip_cseq->cs_method_name);
   msg_header_replace(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_orq->sip_cseq, (msg_header_t *)sip_cseq);
 
-  PString www_auth_str;
-  PString proxy_auth_str;
-  if(MakeAuthStrings(msg, www_auth_str, proxy_auth_str) == FALSE)
+  AuthTypes auth_type = AUTH_NONE;
+  PString auth_scheme, auth_realm, auth_nonce;
+  if(ParseAuthMsg(msg, auth_type, auth_scheme, auth_realm, auth_nonce) == FALSE)
     return FALSE;
 
+  PString uri = "sip:"+PString(auth_realm); uri.Replace("\"","",true,0);
+  PString auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, auth_scheme, auth_realm, auth_nonce);
+
   // add headers
-  if(www_auth_str != "")
+  if(auth_type == AUTH_WWW)
   {
-    sip_authorization_t *sip_auth = sip_authorization_make(&home, www_auth_str);
+    sip_authorization_t *sip_auth = sip_authorization_make(&home, auth_str);
     msg_header_insert(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_auth);
   }
-  else if(proxy_auth_str != "")
+  else if(auth_type == AUTH_PROXY)
   {
-    sip_authorization_t *sip_proxy_auth = sip_proxy_authorization_make(&home, proxy_auth_str);
+    sip_authorization_t *sip_proxy_auth = sip_proxy_authorization_make(&home, auth_str);
     msg_header_insert(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_proxy_auth);
   }
   else
@@ -2791,7 +2804,7 @@ BOOL MCUSipEndPoint::MakeMsgAuth(msg_t *msg_orq, const msg_t *msg)
 PString MCUSipEndPoint::MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce)
 {
     PTRACE(1, "MCUSIP\tMakeAuthStr");
-    const char *sip_auth_str=NULL;
+    const char *auth_str=NULL;
 
     auth_response_t ar[1] = {{ sizeof(ar) }};
     auth_hexmd5_t ha1, hresponse;
@@ -2802,7 +2815,7 @@ PString MCUSipEndPoint::MakeAuthStr(PString username, PString password, PString 
     //auth_digest_ha1(ha1, username, realm, password);
     auth_digest_a1(ar, ha1, password);
     auth_digest_response(ar, hresponse, ha1, method, NULL, 0);
-    sip_auth_str = su_sprintf(&home, "%s %s\"%s\", %s%s, %s%s, %s\"%s\", %s\"%s\", %s",
+    auth_str = su_sprintf(&home, "%s %s\"%s\", %s%s, %s%s, %s\"%s\", %s\"%s\", %s",
 			    scheme,
 			    "username=", ar->ar_username,
 			    "realm=", realm,
@@ -2810,7 +2823,7 @@ PString MCUSipEndPoint::MakeAuthStr(PString username, PString password, PString 
 			    "response=", hresponse,
 			    "uri=", ar->ar_uri,
 			    "algorithm=MD5");
-    return sip_auth_str;
+    return auth_str;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

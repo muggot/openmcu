@@ -138,22 +138,22 @@ int MCURtspConnection::Connect(PString room, PString _ruri_str)
 {
   PTRACE(1, trace_section << "Connect room: " << room << " ruri: " << _ruri_str);
   requestedRoom = room;
+
   ruri_str = _ruri_str;
   remotePartyAddress = ruri_str;
 
   ruri_str.Replace("rtsp:","http:",TRUE,0);
   MCUURL url(ruri_str);
-  remotePartyName = remoteName = url.GetPathStr();
-  username = url.GetUserName();
-  password = url.GetPassword();
 
   PString rtsp_port = url.GetPort();
   if(rtsp_port == "80") rtsp_port = "554";
   ruri_str = "rtsp://"+url.GetHostName()+":"+rtsp_port+url.GetPathStr();
 
-  display_name = GetEndpointParamFromUrl("Display name", ruri_str);
-  if(display_name != "")
-    remoteName = remotePartyName = display_name;
+  display_name = GetEndpointParamFromUrl(DisplayNameKey, _ruri_str, url.GetPathStr());
+  remotePartyName = remoteName = display_name;
+
+  auth_username = GetEndpointParamFromUrl(UserNameKey, _ruri_str, url.GetUserName());
+  auth_password = GetEndpointParamFromUrl(PasswordKey, _ruri_str, url.GetPassword());
 
   if(CreateSocket() == 0)
     return 0;
@@ -171,12 +171,10 @@ int MCURtspConnection::SendOptions()
   char request[1024];
   snprintf(request, 1024,
   	   "OPTIONS %s RTSP/1.0\r\n"
-	   "CSeq: %d OPTIONS\r\n"
-	   "User-Agent: %s\r\n",
-	   (const char *)ruri_str, cseq++, (const char *)(SIP_USER_AGENT));
-  strcat(request,"\r\n");
+	   "CSeq: %d OPTIONS\r\n",
+	   (const char *)ruri_str, cseq++);
 
-  if(SendRequest(socket_fd, request) == 0)
+  if(SendRequest(socket_fd, request, "OPTIONS") == 0)
     return 0;
 
   return 1;
@@ -191,12 +189,10 @@ int MCURtspConnection::SendPlay()
   	   "PLAY %s RTSP/1.0\r\n"
 	   "CSeq: %d PLAY\r\n"
            "Session: %s\r\n"
-           "Range: npt=0.000-\r\n"
-	   "User-Agent: %s\r\n",
-	   (const char *)ruri_str, cseq++, (const char *)rtsp_session_str, (const char *)(SIP_USER_AGENT));
-  strcat(request,"\r\n");
+           "Range: npt=0.000-\r\n",
+	   (const char *)ruri_str, cseq++, (const char *)rtsp_session_str);
 
-  if(SendRequest(socket_fd, request) == 0)
+  if(SendRequest(socket_fd, request, "PLAY") == 0)
     return 0;
 
   rtsp_state = RTSP_PLAY;
@@ -233,12 +229,10 @@ int MCURtspConnection::SendSetup(int pt)
   	   "SETUP %s RTSP/1.0\r\n"
 	   "CSeq: %d SETUP\r\n"
 	   "%s"
-           "Transport: RTP/AVP/UDP;unicast;client_port=%d-%d\r\n"
-	   "User-Agent: %s\r\n",
-	   (const char *)control, cseq++, (const char *)session_header, rtp_port, rtp_port+1, (const char *)(SIP_USER_AGENT));
-  strcat(request,"\r\n");
+           "Transport: RTP/AVP/UDP;unicast;client_port=%d-%d\r\n",
+	   (const char *)control, cseq++, (const char *)session_header, rtp_port, rtp_port+1);
 
-  if(SendRequest(socket_fd, request) == 0)
+  if(SendRequest(socket_fd, request, "SETUP") == 0)
     return 0;
 
   return 1;
@@ -252,12 +246,10 @@ int MCURtspConnection::SendTeardown()
   snprintf(request, 1024,
   	   "TEARDOWN %s RTSP/1.0\r\n"
 	   "CSeq: %d TEARDOWN\r\n"
-	   "Session: %s\r\n"
-	   "User-Agent: %s\r\n",
-	   (const char *)ruri_str, cseq++, (const char *)rtsp_session_str, (const char *)(SIP_USER_AGENT));
-  strcat(request,"\r\n");
+	   "Session: %s\r\n",
+	   (const char *)ruri_str, cseq++, (const char *)rtsp_session_str);
 
-  if(SendRequest(socket_fd, request) == 0)
+  if(SendRequest(socket_fd, request, "TEARDOWN") == 0)
     return 0;
 
   return 1;
@@ -271,12 +263,10 @@ int MCURtspConnection::SendDescribe()
   snprintf(request,1024,
   	   "DESCRIBE %s RTSP/1.0\r\n"
 	   "CSeq: %d DESCRIBE\r\n"
-	   "Accept: application/sdp\r\n"
-	   "User-Agent: %s\r\n",
-	   (const char *)ruri_str, cseq++, (const char *)(SIP_USER_AGENT));
-  strcat(request,"\r\n");
+	   "Accept: application/sdp\r\n",
+	   (const char *)ruri_str, cseq++);
 
-  if(SendRequest(socket_fd, request) == 0)
+  if(SendRequest(socket_fd, request, "DESCRIBE") == 0)
      return 0;
 
   rtsp_state = RTSP_DESCRIBE;
@@ -440,10 +430,23 @@ int MCURtspConnection::OnReceived(msg_t *msg)
       }
       return 0;
     }
-    //else if(status == 401)
-    //{
-    //  return 0;
-    //}
+    else if(status == 401)
+    {
+      if(auth_type != AUTH_NONE || auth_username == "" || auth_password == "")
+      {
+        PTRACE(1, trace_section << "error");
+        ProcessShutdown();
+        return 0;
+      }
+      if(sep->ParseAuthMsg(msg, auth_type, auth_scheme, auth_realm, auth_nonce) == FALSE)
+      {
+        PTRACE(1, trace_section << "error");
+        ProcessShutdown();
+        return 0;
+      }
+      SendDescribe();
+      return 0;
+    }
   }
   if(cs_method_name == "SETUP" && (rtsp_state == RTSP_SETUP_AUDIO || rtsp_state == RTSP_SETUP_VIDEO))
   {
@@ -475,8 +478,16 @@ int MCURtspConnection::OnReceived(msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::SendRequest(int socket_fd, char *request)
+int MCURtspConnection::SendRequest(int socket_fd, char *request, PString method_name)
 {
+  if(auth_type != AUTH_NONE && method_name != "OPTIONS")
+  {
+    PString auth_str = sep->MakeAuthStr(auth_username, auth_password, ruri_str, method_name, auth_scheme, auth_realm, auth_nonce);
+    strcat(request, (const char *)PString("Authorization: "+auth_str+"\r\n"));
+  }
+  strcat(request, (const char *)PString("User-Agent: "+SIP_USER_AGENT+"\r\n"));
+  strcat(request, "\r\n");
+
   int len = strlen(request);
   if(send(socket_fd, request, len, 0) == -1)
   {

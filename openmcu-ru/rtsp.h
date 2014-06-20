@@ -31,19 +31,12 @@ class MCURtspConnection : public MCUSipConnection
 
     RtspStates rtsp_state;
 
-    PString sdp_ok_str;
-    PString ruri_str;
-
-    PString local_user;
-    PString local_password;
-    PString local_ip;
-
     int SendSetup(int pt);
     int SendPlay();
     int SendOptions();
     int SendTeardown();
-    int SendRequest(int fd, char *request);
     int SendDescribe();
+    int SendRequest(int fd, char *request, PString method_name);
     int RecvData(int fd, char *buffer, int bufferSize);
 
     int OnReceived(msg_t *msg);
@@ -55,9 +48,6 @@ class MCURtspConnection : public MCUSipConnection
     int cseq;
     int rtsp_terminating;
     PString rtsp_session_str;
-    PString nonce;
-    PString username;
-    PString password;
 
     int CreateSocket();
     PThread *rtsp_thread;

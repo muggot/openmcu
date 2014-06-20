@@ -103,12 +103,19 @@ PString GetEndpointParamFromUrl(PString param, PString addr)
   else if(url.GetScheme() == "rtsp")
   {
     sectionPrefix = "RTSP Endpoint ";
-    user = url.GetUrl();
+    user = addr;
+    value = MCUConfig(sectionPrefix+user).GetString(param);
+    if(value != "")
+      return value;
+    user.Replace("rtsp://","",TRUE,0);
+    value = MCUConfig(sectionPrefix+user).GetString(param);
+    return value;
   }
   else
     return "";
 
-  value = MCUConfig(sectionPrefix+user).GetString(param);
+  if(value == "")
+    value = MCUConfig(sectionPrefix+user).GetString(param);
   if(value == "")
     value = MCUConfig(sectionPrefix+host).GetString(param);
   if(value == "")

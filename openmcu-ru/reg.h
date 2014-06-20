@@ -208,7 +208,9 @@ class RegistrarAccount
       }
       else if(account_type == ACCOUNT_TYPE_RTSP)
       {
-        url = username;
+        if(username.Left(7) != "rtsp://")
+          url += "rtsp://";
+        url += username;
       }
       return url;
     }
