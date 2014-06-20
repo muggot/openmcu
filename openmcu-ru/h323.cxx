@@ -3524,7 +3524,7 @@ void MCUH323Connection::OnWelcomeWaveEnded()
 PString MCUH323Connection::GetRemoteNumber()
 {
   PString number;
-  if(remotePartyAddress.Left(4) == "url:" && ep.IsRegisteredWithGatekeeper())
+  if(ep.IsRegisteredWithGatekeeper() && remotePartyAddress.Left(4) == "url:")
   {
     PURL url(remotePartyAddress.Right(remotePartyAddress.GetLength()-4), "h323");
     number = url.GetUserName();
@@ -3537,8 +3537,8 @@ PString MCUH323Connection::GetRemoteNumber()
     else if(remoteAliasNames.GetSize() > 1)
       number = remoteAliasNames[1];
   }
-  if(number == "")
-    number = "undefined";
+  if(number == "") number = remoteName;
+  if(number == "") number = "undefined";
   return number;
 }
 
