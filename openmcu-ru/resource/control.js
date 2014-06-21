@@ -539,7 +539,7 @@ function on_abook_check_all(obj){
   var checked = obj.checked;
   for(i=0;i<addressbook.length;i++)
   {
-    var check_box = document.getElementById("abook_check_"+i);
+    var check_box = document.getElementById("abook_check_"+addressbook[i][1]);
     if(check_box)
       check_box.checked = checked;
   }
@@ -556,12 +556,12 @@ function invite_checked_abook(obj){
     check_box.checked =false;
   for(i=0;i<addressbook.length;i++)
   {
-    check_box = document.getElementById("abook_check_"+i);
+    check_box = document.getElementById("abook_check_"+addressbook[i][1]);
     if(check_box)
     {
       if(check_box.checked)
       {
-        inviteoffline(document.getElementById('adrbkpic'+i),encodeURIComponent(addressbook[i][2]),1);
+        inviteoffline(document.getElementById('abook_inv_'+addressbook[i][1]),encodeURIComponent(addressbook[i][2]),1);
         check_box.checked = false;
       }
     }
@@ -803,8 +803,12 @@ function format_mmbr_abook(num,mmbr)
   var invite = "", check = "";
   if(conn_state == 0)
   {
-    check="<input id='abook_check_"+num+"' onclick='on_abook_check(this)' type='checkbox' width="+width+" height="+height+" style='margin:2px;'>";
-    invite="<img id='adrbkpic"+num+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
+    var checked = "";
+    check_box = document.getElementById("abook_check_"+mmbr[1]);
+    if(check_box && check_box.checked) checked = "checked";
+
+    check="<input id='abook_check_"+mmbr[1]+"' onclick='on_abook_check(this)' type='checkbox' "+checked+" width="+width+" height="+height+" style='margin:2px;'>";
+    invite="<img id='abook_inv_"+mmbr[1]+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
   }
   else if(conn_state == 1) invite = "<img src='i16_status_blue.png' width='"+width+"' height='"+height+"'>";
   else if(conn_state == 2) invite = "<img src='i16_status_red.png' width='"+width+"' height='"+height+"'>";
