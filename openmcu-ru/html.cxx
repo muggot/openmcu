@@ -877,13 +877,13 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString("Frame rate from MCU"), 1, MAX_FRAME_RATE, 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString("Frame rate from MCU"), 1, MAX_FRAME_RATE, 60)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString("Bandwidth from MCU"), 64, 4000, 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString("Bandwidth from MCU"), 64, 4000, 60)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString("Bandwidth to MCU"), 64, 4000, 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString("Bandwidth to MCU"), 64, 4000, 60)+"</tr>";
       // VFU delay
-      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,10/5,10/10", 40)+"</tr>";
+      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 60)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
@@ -1180,16 +1180,13 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString("Frame rate from MCU"), 1, MAX_FRAME_RATE, 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString("Frame rate from MCU"), 1, MAX_FRAME_RATE, 60)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString("Bandwidth from MCU"), 64, 4000, 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString("Bandwidth from MCU"), 64, 4000, 60)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString("Bandwidth to MCU"), 64, 4000, 40)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString("Bandwidth to MCU"), 64, 4000, 60)+"</tr>";
       // VFU delay
-      if(name == "*")
-        s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), "0,1,2,3,4,5,6,7,8,9,10", 40)+"</tr>";
-      else
-        s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0,1,2,3,4,5,6,7,8,9,10", 40)+"</tr>";
+      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 60)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       //
