@@ -899,6 +899,18 @@ int MCUSipConnection::CreateMediaChannel(int pt, int dir)
   if(sc->remote_ip == "" || sc->remote_ip == "0.0.0.0" || sc->remote_port == 0)
     return 0;
 
+  // При исходящем вызове payload случайный, терминал может указать в ответе другой payload.
+  // Для исходящего потока использовать payload полученный от терминала, для входящего исходный payload.
+  if(direction == DIRECTION_OUTBOUND && dir == 0)
+  {
+    SipCapability *local_sc = FindSipCap(LocalSipCaps, sc->capname);
+    if(local_sc && local_sc->payload > 0 && local_sc->payload != pt)
+    {
+      pt = local_sc->payload;
+      MCUTRACE(1, trace_section << "change payload type " << sc->capname << " " << sc->payload << "->" << local_sc->payload);
+    }
+  }
+
   SipRTP_UDP *session = NULL;
   if(sc->secure_type == SECURE_TYPE_NONE)
   {

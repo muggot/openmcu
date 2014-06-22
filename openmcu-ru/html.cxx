@@ -1042,7 +1042,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString("Audio codec");
   optionNames.AppendString("Video codec");
   optionNames.AppendString("Video resolution");
-  optionNames.AppendString("Video payload type");
+  //optionNames.AppendString("Video payload type");
   optionNames.AppendString("Video fmtp");
 
   PString a_caps = ",Disabled", v_caps = ",Disabled";
@@ -1227,10 +1227,12 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+(JsLocale("window.l_name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
       //
-      PString select_pt; for(int i = 96; i < 128; i++) select_pt += ","+PString(i);
-      s2 += rowArray+(JsLocale("window.l_name_video")+" payload type")+SelectItem(name, scfg.GetString("Video payload type"), select_pt)+"</tr>";
+      //PString select_pt; for(int i = 96; i < 128; i++) select_pt += ","+PString(i);
+      //s2 += rowArray+(JsLocale("window.l_name_video")+" payload type")+SelectItem(name, scfg.GetString("Video payload type"), select_pt)+"</tr>";
       //
       s2 += rowArray+(JsLocale("window.l_name_video")+" fmtp")+StringItem(name, scfg.GetString("Video fmtp"))+"</tr>";
+      //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }

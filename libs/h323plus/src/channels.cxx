@@ -1514,18 +1514,18 @@ void H323_RTPChannel::Receive()
   DWORD lastDisplayedTimestamp = 0;
 #endif
 
-  // keep track of consecutive payload type mismatches
-  int consecutiveMismatches = 0;
-
   rtpPayloadType = GetRTPPayloadType();
   if (rtpPayloadType == RTP_DataFrame::IllegalPayloadType) {
      PTRACE(1, "H323RTP\tTransmit " << mediaFormat << " thread ended (illegal payload type)");
      return;
   }
 
-  BOOL allowRtpPayloadChange = FALSE;
-  // Fault after "Resetting expected payload type to PCMU"
+  // keep track of consecutive payload type mismatches
+  int consecutiveMismatches = 0;
+
   //BOOL allowRtpPayloadChange = codec->GetMediaFormat().GetDefaultSessionID() == OpalMediaFormat::DefaultAudioSessionID;
+  // Allow change payload type for audio and video
+  BOOL allowRtpPayloadChange = TRUE;
 
   RTP_DataFrame frame;
   while (ReadFrame(rtpTimestamp, frame)) {
