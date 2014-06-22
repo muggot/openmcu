@@ -16,9 +16,9 @@ CPPFLAGS       += -I./libg722_1/src
 OPTCCFLAGS      = $(CPPFLAGS)
 EXTRACFLAGS     =
 
-SRCS   := g7221.c
+SRCS   := g7221.cxx
 
-vpath	%.c .
+vpath	%.cxx .
 vpath	%.o   $(OBJDIR)
 
 $(OBJDIR)/%.o : %.c

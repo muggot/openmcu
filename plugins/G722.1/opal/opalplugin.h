@@ -35,9 +35,9 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * $Revision: 30580 $
- * $Author: rjongbloed $
- * $Date: 2013-09-30 11:20:54 +1000 (Mon, 30 Sep 2013) $
+ * $Revision$
+ * $Author$
+ * $Date$
  */
 
 #ifndef OPAL_CODEC_OPALPLUGIN_H
@@ -150,7 +150,6 @@ enum PluginCodec_Flags {
   PluginCodec_MediaTypeVideo         = 0x0001,
   PluginCodec_MediaTypeAudioStreamed = 0x0002,
   PluginCodec_MediaTypeFax           = 0x0003,
-  PluginCodec_MediaTypeKnown         = 0x000f, // Indicates use OPAL known media format
 
   PluginCodec_InputTypeMask          = 0x0010,
   PluginCodec_InputTypeRaw           = 0x0000, // Note video is always RTP
@@ -160,7 +159,7 @@ enum PluginCodec_Flags {
   PluginCodec_OutputTypeRaw          = 0x0000, // Note video is always RTP
   PluginCodec_OutputTypeRTP          = 0x0020,
 
-  PluginCodec_RTPTypeMask            = 0x0040, // Payload type number
+  PluginCodec_RTPTypeMask            = 0x0040,
   PluginCodec_RTPTypeDynamic         = 0x0000,
   PluginCodec_RTPTypeExplicit        = 0x0040,
 
@@ -179,19 +178,19 @@ enum PluginCodec_Flags {
   PluginCodec_MediaExtensionMask     = 0x0400,
   PluginCodec_MediaTypeExtVideo      = 0x0400,
 
-  PluginCodec_ComfortNoiseMask       = 0x0800,  // PluginCodec_MediaTypeAudio only
+  PluginCodec_ComfortNoiseMask       = 0x0800,  // Audio only
   PluginCodec_ComfortNoise           = 0x0800,
 
-  PluginCodec_ErrorConcealmentMask   = 0x0800,  // PluginCodec_MediaTypeVideo only
+  PluginCodec_ErrorConcealmentMask   = 0x0800,  // Video only
   PluginCodec_ErrorConcealment       = 0x0800,
 
-  PluginCodec_EmptyPayloadMask       = 0x1000,  // PluginCodec_MediaTypeAudio/PluginCodec_MediaTypeVideo only
+  PluginCodec_EmptyPayloadMask       = 0x1000,
   PluginCodec_EmptyPayload           = 0x1000,
 
-  PluginCodec_OtherPayloadMask       = 0x2000,  // PluginCodec_MediaTypeAudio only
+  PluginCodec_OtherPayloadMask       = 0x2000,
   PluginCodec_OtherPayload           = 0x2000,
 
-  PluginCodec_BitsPerSamplePos       = 12,      // PluginCodec_MediaTypeAudioStreamed only
+  PluginCodec_BitsPerSamplePos       = 12,
   PluginCodec_BitsPerSampleMask      = 0xf000,
 
   PluginCodec_ChannelsPos            = 16,
@@ -312,8 +311,6 @@ struct PluginCodec_Option {
 #define PLUGINCODEC_OPTION_NEEDS_JITTER               "Needs Jitter"
 #define PLUGINCODEC_OPTION_CLOCK_RATE                 "Clock Rate"
 #define PLUGINCODEC_OPTION_CHANNELS                   "Channels"
-#define PLUGINCODEC_OPTION_RTP_CLOCK_RATE             "RTP Clock Rate"
-#define PLUGINCODEC_OPTION_RTP_CHANNELS               "RTP Channels"
 #define PLUGINCODEC_OPTION_FRAME_TIME                 "Frame Time"
 #define PLUGINCODEC_OPTION_MAX_FRAME_SIZE             "Max Frame Size"
 #define PLUGINCODEC_OPTION_MAX_TX_PACKET_SIZE         "Max Tx Packet Size"   /* Really max PAYLOAD size */
@@ -330,7 +327,6 @@ struct PluginCodec_Option {
 #define PLUGINCODEC_OPTION_MAX_RX_FRAME_HEIGHT        "Max Rx Frame Height"
 #define PLUGINCODEC_OPTION_TEMPORAL_SPATIAL_TRADE_OFF "Temporal Spatial Trade Off"
 #define PLUGINCODEC_OPTION_TX_KEY_FRAME_PERIOD        "Tx Key Frame Period"
-#define PLUGINCODEC_OPTION_VOICE_ACTIVITY_DETECT      "VAD"
 
 #define PLUGINCODEC_OPTION_PROTOCOL      "Protocol"
 #define PLUGINCODEC_OPTION_PROTOCOL_H323 "H.323"
@@ -575,6 +571,8 @@ typedef unsigned (* PluginCodec_GetAPIVersionFunction)();
                                 Description, \
                                 SampleRate, \
                                 BitsPerSecond, \
+                                PLUGINCODEC_VIDEO_CLOCK, \
+                                BitsPerSecond, \
                                 1000000/PLUGINCODEC_MAX_FRAME_RATE, \
                                 MaxWidth, \
                                 MaxHeight, \
@@ -785,8 +783,6 @@ enum {
 // Audio Capabilities
 // AMR (as defined in H.245v13 Annex I)
 #define OpalPluginCodec_Identifer_AMR             "0.0.8.245.1.1.1"
-#define PLUGINCODEC_OPTION_OCTET_ALIGNED          "Octet Aligned"
-
 
 // AMR-NB\WB  (as defined in H.245v13 Annex R)
 #define OpalPluginCodec_Identifer_AMR_NB          "0.0.8.245.1.1.9"
@@ -805,22 +801,14 @@ enum {
 
 // Video Capabilities
 
-#define PLUGINCODEC_OPTION_PROFILE                    "Profile"
-#define PLUGINCODEC_OPTION_SIMPLE_PROFILE             "Simple"
-#define PLUGINCODEC_OPTION_LEVEL                      "Level"
-
 // H264 (as defined in H.241)
 #define OpalPluginCodec_Identifer_H264_Aligned        "0.0.8.241.0.0.0.0"
 #define OpalPluginCodec_Identifer_H264_NonInterleaved "0.0.8.241.0.0.0.1"
 #define OpalPluginCodec_Identifer_H264_Interleaved    "0.0.8.241.0.0.0.2"
 #define OpalPluginCodec_Identifer_H264_Generic        "0.0.8.241.0.0.1"
-#define PLUGINCODEC_OPTION_MAX_NALU_SIZE              "Max NALU Size"
-#define PLUGINCODEC_OPTION_H264_PACKET_MODE           "Packetization Mode"
 
 // ISO/IEC 14496-2 MPEG4 part 2 (as defined in H.245v13 Annex E)
-#define OpalPluginCodec_Identifer_MPEG4               "0.0.8.245.1.0.0"
-#define PLUGINCODEC_OPTION_MPEG4_ADV_SIMPLE_PROFILE   "Advanced Simple"
-#define PLUGINCODEC_OPTION_MPEG4_DECODER_CONFIG       "DCI"
+#define OpalPluginCodec_Identifer_MPEG4           "0.0.8.245.1.0.0"
 
 
 /////////////////

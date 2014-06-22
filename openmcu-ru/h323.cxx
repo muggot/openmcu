@@ -2599,40 +2599,44 @@ void MCUH323Connection::OnSetLocalCapabilities()
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {
     PString capname = localCapabilities[i].GetFormatName();
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Audio && audio_cap != "" && capname != audio_cap)
-    { localCapabilities.Remove(&localCapabilities[i]); continue; }
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Video && video_cap != "")
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Audio && audio_cap != "")
+    {
+      if(capname != audio_cap)
+      { localCapabilities.Remove(&localCapabilities[i]); continue; }
+    }
+    else if(localCapabilities[i].GetMainType() == H323Capability::e_Video && video_cap != "")
     {
       if(capname != video_cap)
       { localCapabilities.Remove(&localCapabilities[i]); continue; }
-      else if(video_cap == "H.261{sw}" || video_cap == "H.263{sw}" || video_cap == "H.263p{sw}")
+      else if(capname == "H.261{sw}" || capname == "H.263{sw}" || capname == "H.263p{sw}")
       {
         const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
-        if(mf.GetOptionInteger(mpiname+" MPI") == 0)
+        unsigned cap_mpi = mf.GetOptionInteger(mpiname+" MPI");
+        if(cap_mpi == 0)
         { localCapabilities.Remove(&localCapabilities[i]); continue; }
-        // set video group
-        localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
       }
       else if(capname == "H.264{sw}")
       {
         const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
-        if(level_h241 != (unsigned)mf.GetOptionInteger("Generic Parameter 42"))
+        unsigned cap_level_h241 = mf.GetOptionInteger("Generic Parameter 42");
+        if(level_h241 != cap_level_h241)
         { localCapabilities.Remove(&localCapabilities[i]); continue; }
-        // set video group
-        localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
       }
       else if(capname == "VP8{sw}")
       {
         const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
-        if(width != (unsigned)mf.GetOptionInteger("Generic Parameter 1") && height != (unsigned)mf.GetOptionInteger("Generic Parameter 2"))
+        unsigned cap_width = mf.GetOptionInteger("Generic Parameter 1");
+        unsigned cap_height = mf.GetOptionInteger("Generic Parameter 2");
+        if(width != cap_width && height != cap_height)
         { localCapabilities.Remove(&localCapabilities[i]); continue; }
-        // set video group
-        localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
       }
+      // set video group
+      localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
     }
     if(localCapabilities[i].GetMainType() == H323Capability::e_Video && bandwidth_to)
     {
-      localCapabilities[i].GetWritableMediaFormat().SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth_to*1000);
+      OpalMediaFormat & wf = localCapabilities[i].GetWritableMediaFormat();
+      wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth_to*1000);
     }
     i++;
   }
@@ -2651,37 +2655,58 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
   if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit video: " << video_cap << " " << video_res); }
 
   unsigned bandwidth_from = 0;
+  BOOL audio_codec_agreed = FALSE;
   BOOL video_codec_agreed = FALSE;
 
   H323Capabilities _remoteCaps;
   for(PINDEX i = 0; i < remoteCaps.GetSize(); i++)
   {
     PString capname = remoteCaps[i].GetFormatName();
-    if(remoteCaps[i].GetMainType() == H323Capability::e_Video)
+    if(remoteCaps[i].GetMainType() == H323Capability::e_Audio)
+    {
+      if(audio_cap == "")
+        _remoteCaps.Copy(remoteCaps[i]);
+      else if(audio_cap == capname)
+        audio_codec_agreed = TRUE;
+    }
+    else if(remoteCaps[i].GetMainType() == H323Capability::e_Video)
     {
       if(video_cap == "")
-      {
         _remoteCaps.Copy(remoteCaps[i]);
-      }
-      else
-      {
-        if(video_cap.Left(4) == capname.Left(4))
-          video_codec_agreed = TRUE;
-      }
+      else if(video_cap.Left(4) == capname.Left(4))
+        video_codec_agreed = TRUE;
+
       if(bandwidth_from == 0)
         bandwidth_from = remoteCaps[i].GetMediaFormat().GetOptionInteger(OPTION_MAX_BIT_RATE);
-    }
-    else if(remoteCaps[i].GetMainType() == H323Capability::e_Audio)
-    {
-      if(audio_cap == "" || (audio_cap != "" && capname == audio_cap))
-        _remoteCaps.Copy(remoteCaps[i]);
     }
     else
     {
       _remoteCaps.Copy(remoteCaps[i]);
     }
   }
-  // replace video capability with default parameters
+
+  // create custom audio capability
+  if(audio_cap != "" && audio_codec_agreed)
+  {
+    H323Capability *new_cap = H323Capability::Create(audio_cap);
+    if(new_cap)
+    {
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      if(audio_cap.Find("G.722.1C-") == 0)
+      {
+        // ITU‑T Rec. G.722.1 (05/2005)
+        unsigned supportedExtendedModes = wf.GetOptionInteger("Generic Parameter 2");
+        if(supportedExtendedModes == 64)
+          wf.SetOptionInteger("Generic Parameter 2", 64); // 24K
+        else if(supportedExtendedModes == 96)
+          wf.SetOptionInteger("Generic Parameter 2", 32); // 32K
+        else if(supportedExtendedModes == 112)
+          wf.SetOptionInteger("Generic Parameter 2", 16); // 48K
+      }
+      _remoteCaps.Add(new_cap);
+    }
+  }
+  // create custom video capability
   if(video_cap != "" && video_codec_agreed)
   {
     H323Capability *new_cap = H323Capability::Create(video_cap);
