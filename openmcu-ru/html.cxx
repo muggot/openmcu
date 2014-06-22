@@ -637,24 +637,24 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 #if MCU_VIDEO
   s << BoolField("Enable video", cfg.GetBoolean("Enable video", TRUE));
 #endif
-  s << IntegerField("Video frame rate", cfg.GetInteger("Video frame rate", DefaultVideoFrameRate), 1, MAX_FRAME_RATE, 0, "range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)");
+  s << IntegerField("Video frame rate", cfg.GetString("Video frame rate", DefaultVideoFrameRate), 1, MAX_FRAME_RATE, 0, "range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)");
 
   s << SeparatorField("H.263");
-  s << IntegerField("H.263 Max Bit Rate", cfg.GetInteger("H.263 Max Bit Rate", 0), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
-  s << IntegerField("H.263 Tx Key Frame Period", cfg.GetInteger("H.263 Tx Key Frame Period", 12), 0, 600, 0, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
+  s << IntegerField("H.263 Max Bit Rate", cfg.GetString("H.263 Max Bit Rate"), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.263 Tx Key Frame Period", cfg.GetString("H.263 Tx Key Frame Period"), 0, 600, 0, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
   s << SeparatorField("H.263p");
-  s << IntegerField("H.263p Max Bit Rate", cfg.GetInteger("H.263p Max Bit Rate", 0), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
-  s << IntegerField("H.263p Tx Key Frame Period", cfg.GetInteger("H.263p Tx Key Frame Period", 12), 0, 600, 0, "range 0..600, default 12 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
+  s << IntegerField("H.263p Max Bit Rate", cfg.GetString("H.263p Max Bit Rate"), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.263p Tx Key Frame Period", cfg.GetString("H.263p Tx Key Frame Period"), 0, 600, 0, "range 0..600, default 12 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
   s << SeparatorField("H.264");
-  s << IntegerField("H.264 Max Bit Rate", cfg.GetInteger("H.264 Max Bit Rate", 0), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
-  s << IntegerField("H.264 Encoding Threads", cfg.GetInteger("H.264 Encoding Threads", 0), 0, 64, 0, "range 0..64 (0 auto)");
+  s << IntegerField("H.264 Max Bit Rate", cfg.GetString("H.264 Max Bit Rate"), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.264 Encoding Threads", cfg.GetString("H.264 Encoding Threads"), 0, 64, 0, "range 0..64 (0 auto)");
 
   s << SeparatorField("VP8");
-  s << IntegerField("VP8 Max Bit Rate", cfg.GetInteger("VP8 Max Bit Rate", 0), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
-  s << IntegerField("VP8 Encoding Threads", cfg.GetInteger("VP8 Encoding Threads", 0), 0, 64, 0, "range 0..64 (0 default)");
-  s << IntegerField("VP8 Encoding CPU Used", cfg.GetInteger("VP8 Encoding CPU Used", 0), 0, 16, 0, "range: 0..16 (Values greater than 0 will increase encoder speed at the expense of quality)");
+  s << IntegerField("VP8 Max Bit Rate", cfg.GetString("VP8 Max Bit Rate"), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("VP8 Encoding Threads", cfg.GetString("VP8 Encoding Threads"), 0, 64, 0, "range 0..64 (0 default)");
+  s << IntegerField("VP8 Encoding CPU Used", cfg.GetString("VP8 Encoding CPU Used"), 0, 16, 0, "range: 0..16 (Values greater than 0 will increase encoder speed at the expense of quality)");
 
   s << EndTable();
   BuildHTML("");

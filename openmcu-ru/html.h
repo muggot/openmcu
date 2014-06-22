@@ -141,7 +141,7 @@ class TablePConfigPage : public PConfigPage
    {
      return NewRowField(name) + PasswordItem(name, value, width) + InfoItem(info, rowSpan);
    }
-   PString IntegerField(PString name, int value, int min, int max, int width=0, PString info="", PINDEX rowSpan=1)
+   PString IntegerField(PString name, PString value, int min, int max, int width=0, PString info="", PINDEX rowSpan=1)
    {
      return NewRowField(name) + IntegerItem(name, value, min, max, width) + InfoItem(info, rowSpan);
    }
