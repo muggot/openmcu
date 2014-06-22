@@ -20,7 +20,6 @@
 #define TRACE_LEVEL 1
 #define PTRACE(level,category,args) \
     if(level <= TRACE_LEVEL) std::cout << category << " " << args << std::endl;
-#define CODEC_LOG "G7221"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -74,6 +73,7 @@ class Encoder : public PluginCodec<CODEC>
 {
   protected:
     g722_1_encode_state_t *m_state;
+    const char *codec_log;
     unsigned m_sampleRate;
     unsigned m_bitsPerSec;
 
@@ -81,6 +81,7 @@ class Encoder : public PluginCodec<CODEC>
     Encoder(const PluginCodec_Definition * defn)
       : PluginCodec<CODEC>(defn)
       , m_state(NULL)
+      , codec_log(m_definition->descr)
       , m_bitsPerSec(m_definition->bitsPerSec)
       , m_sampleRate(m_definition->sampleRate)
     {
@@ -97,7 +98,7 @@ class Encoder : public PluginCodec<CODEC>
       m_state = g722_1_encode_init(NULL, m_bitsPerSec, m_sampleRate);
       if(m_state == NULL)
       {
-        PTRACE(1, CODEC_LOG, "error: g722_1_encode_init(m_state, " << m_bitsPerSec << ", " <<  m_sampleRate << ")");
+        PTRACE(1, codec_log, "error: g722_1_encode_init(m_state, " << m_bitsPerSec << ", " <<  m_sampleRate << ")");
         return false;
       }
       return true;
@@ -110,7 +111,7 @@ class Encoder : public PluginCodec<CODEC>
         m_bitsPerSec = atoi(optionValue);
         if(g722_1_encode_set_rate(m_state, m_bitsPerSec) == -1)
         {
-          PTRACE(1, CODEC_LOG, "error: g722_1_encode_set_rate(m_state, " << m_bitsPerSec << ")");
+          PTRACE(1, codec_log, "error: g722_1_encode_set_rate(m_state, " << m_bitsPerSec << ")");
           return false;
         }
         return true;
@@ -134,6 +135,7 @@ class Decoder : public PluginCodec<CODEC>
 {
   protected:
     g722_1_decode_state_t *m_state;
+    const char *codec_log;
     unsigned m_sampleRate;
     unsigned m_bitsPerSec;
 
@@ -141,6 +143,7 @@ class Decoder : public PluginCodec<CODEC>
     Decoder(const PluginCodec_Definition * defn)
       : PluginCodec<CODEC>(defn)
       , m_state(NULL)
+      , codec_log(m_definition->descr)
       , m_bitsPerSec(m_definition->bitsPerSec)
       , m_sampleRate(m_definition->sampleRate)
     {
@@ -157,7 +160,7 @@ class Decoder : public PluginCodec<CODEC>
       m_state = g722_1_decode_init(NULL, m_bitsPerSec, m_sampleRate);
       if(m_state == NULL)
       {
-        PTRACE(1, CODEC_LOG, "error: g722_1_decode_init(m_state, " << m_bitsPerSec << ", " <<  m_sampleRate << ")");
+        PTRACE(1, codec_log, "error: g722_1_decode_init(m_state, " << m_bitsPerSec << ", " <<  m_sampleRate << ")");
         return false;
       }
       return true;
@@ -170,7 +173,7 @@ class Decoder : public PluginCodec<CODEC>
         m_bitsPerSec = atoi(optionValue);
         if(g722_1_decode_set_rate(m_state, m_bitsPerSec) == -1)
         {
-          PTRACE(1, CODEC_LOG, "error: g722_1_decode_set_rate(m_state, " << m_bitsPerSec << ")");
+          PTRACE(1, codec_log, "error: g722_1_decode_set_rate(m_state, " << m_bitsPerSec << ")");
           return false;
         }
         return true;
@@ -183,6 +186,12 @@ class Decoder : public PluginCodec<CODEC>
     {
       if(m_state == NULL)
         return false;
+
+      if(fromLen != m_state->bytes_per_frame)
+      {
+        PTRACE(1, codec_log, "decoder received " << fromLen << " bytes, ignoring frame");
+        return false;
+      }
 
       toLen = g722_1_decode(m_state, (int16_t *)toPtr, (const uint8_t *)fromPtr, fromLen);
       toLen = toLen*2;
