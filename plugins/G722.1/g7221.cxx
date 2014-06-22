@@ -187,7 +187,7 @@ class Decoder : public PluginCodec<CODEC>
       if(m_state == NULL)
         return false;
 
-      if(fromLen != m_state->bytes_per_frame)
+      if(fromLen != m_state->bytes_per_frame && fromLen != m_state->bytes_per_frame*2)
       {
         PTRACE(1, codec_log, "decoder received " << fromLen << " bytes, ignoring frame");
         return false;
