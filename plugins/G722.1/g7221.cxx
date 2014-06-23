@@ -106,13 +106,25 @@ class Encoder : public PluginCodec<CODEC>
 
     virtual bool SetOption(const char * optionName, const char * optionValue)
     {
-      if(strcmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0 && atoi(optionValue) != m_bitsPerSec)
+      if(strcmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0)
       {
-        m_bitsPerSec = atoi(optionValue);
-        if(g722_1_encode_set_rate(m_state, m_bitsPerSec) == -1)
+        return true;
+      }
+      if(strcmp(optionName, "Generic Parameter 2") == 0)
+      {
+        unsigned value = atoi(optionValue);
+        unsigned bitsPerSec = m_bitsPerSec;
+        if(value == 64)                      bitsPerSec = 24000;
+        else if(value == 96 || value == 32)  bitsPerSec = 32000;
+        else if(value == 112 || value == 16) bitsPerSec = 48000;
+        if(bitsPerSec != m_bitsPerSec)
         {
-          PTRACE(1, codec_log, "error: g722_1_encode_set_rate(m_state, " << m_bitsPerSec << ")");
-          return false;
+          if(g722_1_encode_set_rate(m_state, bitsPerSec) == -1)
+          {
+            PTRACE(1, codec_log, "error: g722_1_encode_set_rate(m_state, " << bitsPerSec << ")");
+            return false;
+          }
+          m_bitsPerSec = bitsPerSec;
         }
         return true;
       }
@@ -168,13 +180,25 @@ class Decoder : public PluginCodec<CODEC>
 
     virtual bool SetOption(const char * optionName, const char * optionValue)
     {
-      if(strcmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0 && atoi(optionValue) != m_bitsPerSec)
+      if(strcmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0)
       {
-        m_bitsPerSec = atoi(optionValue);
-        if(g722_1_decode_set_rate(m_state, m_bitsPerSec) == -1)
+        return true;
+      }
+      if(strcmp(optionName, "Generic Parameter 2") == 0)
+      {
+        unsigned value = atoi(optionValue);
+        unsigned bitsPerSec = m_bitsPerSec;
+        if(value == 64)                      bitsPerSec = 24000;
+        else if(value == 96 || value == 32)  bitsPerSec = 32000;
+        else if(value == 112 || value == 16) bitsPerSec = 48000;
+        if(bitsPerSec != m_bitsPerSec)
         {
-          PTRACE(1, codec_log, "error: g722_1_decode_set_rate(m_state, " << m_bitsPerSec << ")");
-          return false;
+          if(g722_1_decode_set_rate(m_state, bitsPerSec) == -1)
+          {
+            PTRACE(1, codec_log, "error: g722_1_decode_set_rate(m_state, " << bitsPerSec << ")");
+            return false;
+          }
+          m_bitsPerSec = bitsPerSec;
         }
         return true;
       }
