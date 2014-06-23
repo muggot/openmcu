@@ -772,6 +772,27 @@ static BOOL CallCodecControl(PluginCodec_Definition * codec,
   return FALSE;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+
+#if PTRACING
+static int PluginLogFunction(unsigned level, const char * file, unsigned line, const char * section, const char * log)
+{
+  if(level > PTrace::GetLevel())
+    return false;
+
+  if(log == NULL)
+    return true;
+
+  if(section == NULL)
+    section = "Plugin";
+
+  PTrace::Begin(level, file, line) << section << '\t' << log << PTrace::End;
+  return true;
+}
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+
 static void PopulateMediaFormatOptions(PluginCodec_Definition * _encoderCodec, OpalMediaFormat & format)
 {
   char ** _options = NULL;
@@ -1314,13 +1335,13 @@ class H323PluginFramedAudioCodec : public H323FramedAudioCodec
   public:
     H323PluginFramedAudioCodec(const OpalMediaFormat & fmtName, Direction direction, PluginCodec_Definition * _codec)
       : H323FramedAudioCodec(fmtName, direction), codec(_codec)
-//    { if (codec != NULL && codec->createCodec != NULL) context = (*codec->createCodec)(codec); else context = NULL; }
-    { // patch by Xak. PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS function for audio plugin
+    {
       if (codec != NULL && codec->createCodec != NULL)
         context = (*codec->createCodec)(codec);
       else
         context = NULL;
-      if (context) {
+      if (context)
+      {
         PluginCodec_ControlDefn * ctl = GetCodecControl(codec, SET_CODEC_OPTIONS_CONTROL);
         if (ctl != NULL) {
           PStringArray list;
@@ -2259,7 +2280,7 @@ BOOL H323PluginVideoCodec::Write(const BYTE * buffer, unsigned length, const RTP
   PVideoChannel *videoOut = (PVideoChannel *)rawDataChannel;
 
   if(h->width!=(unsigned int)frameWidth || h->height!=(unsigned int)frameHeight ||
-	  h->width!=videoOut->GetRenderWidth() || h->height!=videoOut->GetRenderHeight()) 
+	  h->width!=(unsigned)videoOut->GetRenderWidth() || h->height!=(unsigned)videoOut->GetRenderHeight()) 
   {
 	  SetFrameSize(h->width,h->height);
 	  videoOut->SetRenderFrameSize(frameWidth, frameHeight);
@@ -3409,6 +3430,12 @@ H323Codec * H323PluginCapabilityInfo::CreateCodec(const OpalMediaFormat & mediaF
 
   PluginCodec_Definition * codec = (direction == H323Codec::Encoder) ? encoderCodec : decoderCodec;
 
+#if PTRACING
+  int retVal;
+  unsigned parmLen = sizeof(PluginCodec_LogFunction);
+  CallCodecControl(codec, NULL, PLUGINCODEC_CONTROL_SET_LOG_FUNCTION, (void *)PluginLogFunction, &parmLen, retVal);
+#endif
+
   switch (codec->flags & PluginCodec_MediaTypeMask) {
 
     case PluginCodec_MediaTypeAudio:
@@ -3494,9 +3521,7 @@ H323CodecPluginNonStandardAudioCapability::H323CodecPluginNonStandardAudioCapabi
                                   data, dataLen), 
    H323PluginCapabilityInfo(_encoderCodec, _decoderCodec)
 {
-  // patch by Xak. PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS function for audio plugin
   PopulateMediaFormatOptions(encoderCodec,GetWritableMediaFormat());
-  //
   PluginCodec_H323NonStandardCodecData * nonStdData = (PluginCodec_H323NonStandardCodecData *)_encoderCodec->h323CapabilityData;
   if (nonStdData->objectId != NULL) {
     oid = PString(nonStdData->objectId);
@@ -3516,9 +3541,7 @@ H323CodecPluginNonStandardAudioCapability::H323CodecPluginNonStandardAudioCapabi
                                   data, dataLen), 
    H323PluginCapabilityInfo(_encoderCodec, _decoderCodec)
 {
-  // patch by Xak. PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS function for audio plugin
   PopulateMediaFormatOptions(encoderCodec,GetWritableMediaFormat());
-  //
   PluginCodec_H323NonStandardCodecData * nonStdData = (PluginCodec_H323NonStandardCodecData *)_encoderCodec->h323CapabilityData;
   if (nonStdData->objectId != NULL) {
     oid = PString(nonStdData->objectId);
@@ -3541,9 +3564,7 @@ H323CodecPluginGenericAudioCapability::H323CodecPluginGenericAudioCapability(
       H323PluginCapabilityInfo((PluginCodec_Definition *)_encoderCodec,
                    (PluginCodec_Definition *) _decoderCodec)
 {
-  // patch by Xak. PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS function for audio plugin
   PopulateMediaFormatOptions(encoderCodec,GetWritableMediaFormat());
-  //
   PopulateMediaFormatFromGenericData(GetWritableMediaFormat(), data);
   rtpPayloadType = (RTP_DataFrame::PayloadTypes)(((_encoderCodec->flags & PluginCodec_RTPTypeMask) == PluginCodec_RTPTypeDynamic) ? RTP_DataFrame::DynamicBase : _encoderCodec->rtpPayload);
 }

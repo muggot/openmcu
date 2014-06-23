@@ -271,6 +271,34 @@ enum PluginCodec_ReturnCoderFlags {
 
 struct PluginCodec_Definition;
 
+// Control function names
+
+#define PLUGINCODEC_CONTROL_VALID_FOR_PROTOCOL    "valid_for_protocol"
+#define PLUGINCODEC_CONTROL_GET_CODEC_OPTIONS     "get_codec_options"
+#define PLUGINCODEC_CONTROL_FREE_CODEC_OPTIONS    "free_codec_options"
+#define PLUGINCODEC_CONTROL_GET_OUTPUT_DATA_SIZE  "get_output_data_size"
+#define PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS     "set_codec_options"
+#define PLUGINCODEC_CONTROL_GET_ACTIVE_OPTIONS    "get_active_options"
+#define PLUGINCODEC_CONTROL_TO_NORMALISED_OPTIONS "to_normalised_options"
+#define PLUGINCODEC_CONTROL_TO_CUSTOMISED_OPTIONS "to_customised_options"
+#define PLUGINCODEC_CONTROL_SET_INSTANCE_ID       "set_instance_id"
+#define PLUGINCODEC_CONTROL_SET_LOG_FUNCTION      "set_log_function"
+#define PLUGINCODEC_CONTROL_GET_STATISTICS        "get_statistics"
+#define PLUGINCODEC_CONTROL_TERMINATE_CODEC       "terminate_codec"
+
+
+/* Log function, plug in gets a pointer to this function which allows
+   it to use the standard OPAL logging system. The function returns 0 if
+   no logging was performed due to the log level. Note if log == NULL
+   then this return state is all that happens, so this may be executed
+   first to prevent lengthy logs that would not result in any output. */
+typedef int (*PluginCodec_LogFunction)(unsigned level,
+                                       const char * file,
+                                       unsigned line,
+                                       const char * section,
+                                       const char * log);
+
+
 struct PluginCodec_ControlDefn {
   const char * name;
   int (*control)(const struct PluginCodec_Definition * codec, void * context, 
