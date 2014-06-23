@@ -13,22 +13,12 @@
  *
  */
 
-#include <iostream>
-#include <string>
-
-#define PLUGINCODEC_TRACING 0
-#define TRACE_LEVEL 1
-#define PTRACE(level,category,args) \
-    if(level <= TRACE_LEVEL) std::cout << category << " " << args << std::endl;
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "opal/opalplugin.hpp"
-#include "opal/plugin-config.h"
+#include "../common/opalplugin.hpp"
 
 #include "g722_1.h"
+
+
+PLUGINCODEC_CONTROL_LOG_FUNCTION_DEF
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -73,7 +63,7 @@ class Encoder : public PluginCodec<CODEC>
 {
   protected:
     g722_1_encode_state_t *m_state;
-    const char *codec_log;
+    const char *m_description;
     unsigned m_sampleRate;
     unsigned m_bitsPerSec;
 
@@ -81,7 +71,7 @@ class Encoder : public PluginCodec<CODEC>
     Encoder(const PluginCodec_Definition * defn)
       : PluginCodec<CODEC>(defn)
       , m_state(NULL)
-      , codec_log(m_definition->descr)
+      , m_description(m_definition->descr)
       , m_bitsPerSec(m_definition->bitsPerSec)
       , m_sampleRate(m_definition->sampleRate)
     {
@@ -98,7 +88,7 @@ class Encoder : public PluginCodec<CODEC>
       m_state = g722_1_encode_init(NULL, m_bitsPerSec, m_sampleRate);
       if(m_state == NULL)
       {
-        PTRACE(1, codec_log, "error: g722_1_encode_init(m_state, " << m_bitsPerSec << ", " <<  m_sampleRate << ")");
+        PTRACE(1, m_description, "error: g722_1_encode_init(m_state, " << m_bitsPerSec << ", " <<  m_sampleRate << ")");
         return false;
       }
       return true;
@@ -121,7 +111,7 @@ class Encoder : public PluginCodec<CODEC>
         {
           if(g722_1_encode_set_rate(m_state, bitsPerSec) == -1)
           {
-            PTRACE(1, codec_log, "error: g722_1_encode_set_rate(m_state, " << bitsPerSec << ")");
+            PTRACE(1, m_description, "error: g722_1_encode_set_rate(m_state, " << bitsPerSec << ")");
             return false;
           }
           m_bitsPerSec = bitsPerSec;
@@ -147,7 +137,7 @@ class Decoder : public PluginCodec<CODEC>
 {
   protected:
     g722_1_decode_state_t *m_state;
-    const char *codec_log;
+    const char *m_description;
     unsigned m_sampleRate;
     unsigned m_bitsPerSec;
 
@@ -155,7 +145,7 @@ class Decoder : public PluginCodec<CODEC>
     Decoder(const PluginCodec_Definition * defn)
       : PluginCodec<CODEC>(defn)
       , m_state(NULL)
-      , codec_log(m_definition->descr)
+      , m_description(m_definition->descr)
       , m_bitsPerSec(m_definition->bitsPerSec)
       , m_sampleRate(m_definition->sampleRate)
     {
@@ -172,7 +162,7 @@ class Decoder : public PluginCodec<CODEC>
       m_state = g722_1_decode_init(NULL, m_bitsPerSec, m_sampleRate);
       if(m_state == NULL)
       {
-        PTRACE(1, codec_log, "error: g722_1_decode_init(m_state, " << m_bitsPerSec << ", " <<  m_sampleRate << ")");
+        PTRACE(1, m_description, "error: g722_1_decode_init(m_state, " << m_bitsPerSec << ", " <<  m_sampleRate << ")");
         return false;
       }
       return true;
@@ -195,7 +185,7 @@ class Decoder : public PluginCodec<CODEC>
         {
           if(g722_1_decode_set_rate(m_state, bitsPerSec) == -1)
           {
-            PTRACE(1, codec_log, "error: g722_1_decode_set_rate(m_state, " << bitsPerSec << ")");
+            PTRACE(1, m_description, "error: g722_1_decode_set_rate(m_state, " << bitsPerSec << ")");
             return false;
           }
           m_bitsPerSec = bitsPerSec;
@@ -213,7 +203,7 @@ class Decoder : public PluginCodec<CODEC>
 
       if(fromLen != m_state->bytes_per_frame && fromLen != m_state->bytes_per_frame*2)
       {
-        PTRACE(1, codec_log, "decoder received " << fromLen << " bytes, ignoring frame");
+        PTRACE(1, m_description, "decoder received " << fromLen << " bytes, ignoring frame");
         return false;
       }
 
@@ -373,6 +363,8 @@ PLUGIN_CODEC(G7221_32K);
 PLUGIN_CODEC(G7221C_24K);
 PLUGIN_CODEC(G7221C_32K);
 PLUGIN_CODEC(G7221C_48K);
+
+DECLARE_CONTROLS_TABLE(Encoder, Decoder);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

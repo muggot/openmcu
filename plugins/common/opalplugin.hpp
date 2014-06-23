@@ -920,26 +920,6 @@ class PluginCodec : public PluginCodec_Utilities
       return codec != NULL && codec->Terminate();
     }
 
-    static struct PluginCodec_ControlDefn * GetControls()
-    {
-      static PluginCodec_ControlDefn ControlsTable[] = {
-        { PLUGINCODEC_CONTROL_GET_OUTPUT_DATA_SIZE,  PluginCodec::GetOutputDataSize_s },
-        { PLUGINCODEC_CONTROL_TO_NORMALISED_OPTIONS, PluginCodec::ToNormalised_s },
-        { PLUGINCODEC_CONTROL_TO_CUSTOMISED_OPTIONS, PluginCodec::ToCustomised_s },
-        { PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS,     PluginCodec::SetOptions_s },
-        { PLUGINCODEC_CONTROL_GET_ACTIVE_OPTIONS,    PluginCodec::GetActiveOptions_s },
-        { PLUGINCODEC_CONTROL_GET_CODEC_OPTIONS,     PluginCodec::GetOptions_s },
-        { PLUGINCODEC_CONTROL_FREE_CODEC_OPTIONS,    PluginCodec::FreeOptions_s },
-        { PLUGINCODEC_CONTROL_VALID_FOR_PROTOCOL,    PluginCodec::ValidForProtocol_s },
-        { PLUGINCODEC_CONTROL_SET_INSTANCE_ID,       PluginCodec::SetInstanceID_s },
-        { PLUGINCODEC_CONTROL_GET_STATISTICS,        PluginCodec::GetStatistics_s },
-        { PLUGINCODEC_CONTROL_TERMINATE_CODEC,       PluginCodec::Terminate_s },
-//        PLUGINCODEC_CONTROL_LOG_FUNCTION_INC
-        { NULL }
-      };
-      return ControlsTable;
-    }
-
   protected:
     const PluginCodec_Definition * m_definition;
 
@@ -1138,34 +1118,55 @@ class PluginVideoDecoder : public PluginVideoCodec<NAME>
 
 /////////////////////////////////////////////////////////////////////////////
 
-/// Declare an audio codec using C++ support classes
-#define PLUGINCODEC_AUDIO_CODEC_CXX(MediaFormat,     /**< PluginCodec_VideoFormat instance */ \
-                                    EncoderClass,    /**< Encoder class name */ \
-                                    DecoderClass     /**< Decoder class name */ \
-                                    ) \
-             PLUGINCODEC_CODEC_PAIR(MediaFormat.GetFormatName(), \
-                                    MediaFormat.GetPayloadName(), \
-                                    MediaFormat.GetDescription(), \
-                                    MediaFormat.GetSampleRate(), \
-                                    MediaFormat.GetMaxBandwidth(), \
-                                    MediaFormat.GetFrameTime(), \
-                                    MediaFormat.GetSamplesPerFrame(), \
-                                    MediaFormat.GetBytesPerFrame(), \
-                                    MediaFormat.GetRecommendedFramesPerPacket(), \
-                                    MediaFormat.GetMaxFramesPerPacket(), \
-                                    MediaFormat.GetPayloadType(), \
-                                    MediaFormat.GetH323CapabilityType(), \
-                                    MediaFormat.GetH323CapabilityData(), \
-                                    EncoderClass::Create_s<EncoderClass>, \
-                                    EncoderClass::Destroy_s, \
-                                    EncoderClass::Transcode_s, \
-                                    DecoderClass::Create_s<DecoderClass>, \
-                                    DecoderClass::Destroy_s, \
-                                    DecoderClass::Transcode_s, \
-                                    DecoderClass::GetControls(), /* Note doesn't matter if encoder or decoder */ \
-                                    MediaFormat.GetFlags(), \
-                                    PLUGINCODEC_RAW_AUDIO, \
-                                    &MediaFormat)
+#define DECLARE_CONTROLS_TABLE(EncoderClass, DecoderClass) \
+static struct PluginCodec_ControlDefn EncoderControlsTable[] = \
+{ \
+  { PLUGINCODEC_CONTROL_GET_OUTPUT_DATA_SIZE,  EncoderClass::GetOutputDataSize_s }, \
+  { PLUGINCODEC_CONTROL_TO_NORMALISED_OPTIONS, EncoderClass::ToNormalised_s }, \
+  { PLUGINCODEC_CONTROL_TO_CUSTOMISED_OPTIONS, EncoderClass::ToCustomised_s }, \
+  { PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS,     EncoderClass::SetOptions_s }, \
+  { PLUGINCODEC_CONTROL_GET_ACTIVE_OPTIONS,    EncoderClass::GetActiveOptions_s }, \
+  { PLUGINCODEC_CONTROL_GET_CODEC_OPTIONS,     EncoderClass::GetOptions_s }, \
+  { PLUGINCODEC_CONTROL_FREE_CODEC_OPTIONS,    EncoderClass::FreeOptions_s }, \
+  { PLUGINCODEC_CONTROL_VALID_FOR_PROTOCOL,    EncoderClass::ValidForProtocol_s }, \
+  { PLUGINCODEC_CONTROL_SET_INSTANCE_ID,       EncoderClass::SetInstanceID_s }, \
+  { PLUGINCODEC_CONTROL_GET_STATISTICS,        EncoderClass::GetStatistics_s }, \
+  { PLUGINCODEC_CONTROL_TERMINATE_CODEC,       EncoderClass::Terminate_s }, \
+  PLUGINCODEC_CONTROL_LOG_FUNCTION_INC \
+  { NULL } \
+}; \
+static struct PluginCodec_ControlDefn DecoderControlsTable[] = \
+{ \
+  { PLUGINCODEC_CONTROL_GET_OUTPUT_DATA_SIZE,  DecoderClass::GetOutputDataSize_s }, \
+  { PLUGINCODEC_CONTROL_TO_NORMALISED_OPTIONS, DecoderClass::ToNormalised_s }, \
+  { PLUGINCODEC_CONTROL_TO_CUSTOMISED_OPTIONS, DecoderClass::ToCustomised_s }, \
+  { PLUGINCODEC_CONTROL_SET_CODEC_OPTIONS,     DecoderClass::SetOptions_s }, \
+  { PLUGINCODEC_CONTROL_GET_ACTIVE_OPTIONS,    DecoderClass::GetActiveOptions_s }, \
+  { PLUGINCODEC_CONTROL_GET_CODEC_OPTIONS,     DecoderClass::GetOptions_s }, \
+  { PLUGINCODEC_CONTROL_FREE_CODEC_OPTIONS,    DecoderClass::FreeOptions_s }, \
+  { PLUGINCODEC_CONTROL_VALID_FOR_PROTOCOL,    DecoderClass::ValidForProtocol_s }, \
+  { PLUGINCODEC_CONTROL_SET_INSTANCE_ID,       DecoderClass::SetInstanceID_s }, \
+  { PLUGINCODEC_CONTROL_GET_STATISTICS,        DecoderClass::GetStatistics_s }, \
+  { PLUGINCODEC_CONTROL_TERMINATE_CODEC,       DecoderClass::Terminate_s }, \
+  PLUGINCODEC_CONTROL_LOG_FUNCTION_INC \
+  { NULL } \
+};
+
+/////////////////////////////////////////////////////////////////////////////
+
+#define PLUGINCODEC_AUDIO_CODEC_CXX(MediaFormat, EncoderClass, DecoderClass) \
+{ \
+  PLUGIN_CODEC_VERSION, &MyLicenseInfo, MediaFormat.GetFlags(), MediaFormat.GetDescription(), PLUGINCODEC_RAW_AUDIO, MediaFormat.GetFormatName(), &MediaFormat, \
+  MediaFormat.GetSampleRate(), MediaFormat.GetMaxBandwidth(), MediaFormat.GetFrameTime(), {{ MediaFormat.GetSamplesPerFrame(),MediaFormat.GetBytesPerFrame(),MediaFormat.GetRecommendedFramesPerPacket(),MediaFormat.GetMaxFramesPerPacket() }}, MediaFormat.GetPayloadType(), MediaFormat.GetPayloadName(), \
+  EncoderClass::Create_s<EncoderClass>, EncoderClass::Destroy_s, EncoderClass::Transcode_s, EncoderControlsTable, MediaFormat.GetH323CapabilityType(), MediaFormat.GetH323CapabilityData() \
+}, \
+{ \
+  PLUGIN_CODEC_VERSION, &MyLicenseInfo, MediaFormat.GetFlags(), MediaFormat.GetDescription(), MediaFormat.GetFormatName(), PLUGINCODEC_RAW_AUDIO, &MediaFormat, \
+  MediaFormat.GetSampleRate(), MediaFormat.GetMaxBandwidth(), MediaFormat.GetFrameTime(), {{ MediaFormat.GetSamplesPerFrame(),MediaFormat.GetBytesPerFrame(),MediaFormat.GetRecommendedFramesPerPacket(),MediaFormat.GetMaxFramesPerPacket() }}, MediaFormat.GetPayloadType(), MediaFormat.GetPayloadName(), \
+  DecoderClass::Create_s<DecoderClass>, DecoderClass::Destroy_s, DecoderClass::Transcode_s, DecoderControlsTable, MediaFormat.GetH323CapabilityType(), MediaFormat.GetH323CapabilityData() \
+}
+
+/////////////////////////////////////////////////////////////////////////////
 
 /// Declare a video codec using C++ support classes
 #define PLUGINCODEC_VIDEO_CODEC_CXX(MediaFormat,     /**< PluginCodec_VideoFormat instance */ \

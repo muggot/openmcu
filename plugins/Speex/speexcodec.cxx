@@ -1,45 +1,30 @@
 /*
- * Speex audio codec Plugin codec for OPAL
+ * Speex audio codec Plugin codec for OpenH323/OPAL
  *
- * Copyright (C) 2013 by Andrey Burbovskiy, OpenMCU-ru Team, All Rights Reserved
+ * Copyright (C) 2013 OpenMCU-ru Team, All Rights Reserved
  *
- * The contents of this file are subject to the Mozilla Public License
- * Version 1.0 (the "License"); you may not use this file except in
- * compliance with the License. You may obtain a copy of the License at
- * http://www.mozilla.org/MPL/
- *
- * Software distributed under the License is distributed on an "AS IS"
- * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
- * the License for the specific language governing rights and limitations
- * under the License.
+ * Software distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied.
  *
  * The Original Code is OPAL Library.
- *
  * The Initial Developer of the Original Code is Vox Lucida Pty Ltd
- *
- * Added with funding from Requestec, Inc.
  *
  * Contributor(s):  Andrey Burbovskiy (andrewb@yandex.ru)
  *
  */
 
-#define PTRACE(level,category,text)
-#define CODEC_LOG "SPEEX"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "codec/opalplugin.hpp"
-#include "codec/plugin-config.h"
+#include "../common/opalplugin.hpp"
 
 #include <speex/speex.h>
+
+
+PLUGINCODEC_CONTROL_LOG_FUNCTION_DEF
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PLUGINCODEC_LICENSE(
     "Andrey Burbovskiy",                                         // source code author
-    "0.1",                                                       // source code version
+    "0.2",                                                       // source code version
     "andrewb@yandex.ru",                                         // source code email
     "http://openmcu.ru/",                                        // source code URL
     "Copyright (C) 2013 by Andrey Burbovskiy for OpenMCU-ru",    // source code copyright
@@ -66,13 +51,7 @@ class AudioFormat : public PluginCodec_AudioFormat<CODEC>
     typedef PluginCodec_AudioFormat<CODEC> BaseClass;
 
   public:
-    AudioFormat(const char * formatName,
-    		const char * payloadName,
-    		const char * description,
-    		unsigned     samplesPerFrame,
-    		unsigned     bytesPerFrame,
-    		unsigned     sampleRate,
-    		OptionsTable options)
+    AudioFormat(const char * formatName, const char * payloadName, const char * description, unsigned samplesPerFrame, unsigned bytesPerFrame, unsigned sampleRate, OptionsTable options)
       : BaseClass(formatName, payloadName, description, samplesPerFrame, bytesPerFrame, sampleRate, options)
     {
     }
@@ -85,27 +64,28 @@ class Encoder : public PluginCodec<CODEC>
   protected:
     SpeexBits speexBits;
     void     *m_state;
+    const char *m_description;
     unsigned m_samplesPerFrame;
     unsigned m_bytesPerFrame;
     unsigned m_sampleRate;
-    unsigned m_signalSampleSize;
     unsigned m_vbr;
     unsigned m_mode;
-    int      ret;
 
   public:
     Encoder(const PluginCodec_Definition * defn)
       : PluginCodec<CODEC>(defn)
+      , m_state(NULL)
+      , m_description(m_definition->descr)
       , m_samplesPerFrame(m_definition->parm.audio.samplesPerFrame)
       , m_bytesPerFrame(m_definition->parm.audio.bytesPerFrame)
       , m_sampleRate(m_definition->sampleRate)
-      , m_signalSampleSize(sizeof(short))
     {
     }
 
     ~Encoder()
     {
-      speex_encoder_destroy(m_state); 
+      if(m_state != NULL)
+        speex_encoder_destroy(m_state);
     }
 
     virtual bool Construct()
@@ -148,27 +128,20 @@ class Encoder : public PluginCodec<CODEC>
         int tmp = 0;
         if(strcmp(optionValue, "on") == 0)
           tmp = 1;
-        ret = speex_encoder_ctl(m_state, SPEEX_SET_VBR, &tmp);
+        speex_encoder_ctl(m_state, SPEEX_SET_VBR, &tmp);
         return true;
       }
       if (strcasecmp(optionName, "mode") == 0)
       {
         int tmp = atoi(optionValue);
-        ret = speex_encoder_ctl(m_state, SPEEX_SET_MODE, &tmp);
+        speex_encoder_ctl(m_state, SPEEX_SET_MODE, &tmp);
         return true;
       }
       return PluginCodec<CODEC>::SetOption(optionName, optionValue);
     }
 
-    virtual bool Transcode(const void * fromPtr,
-                             unsigned & fromLen,
-                                 void * toPtr,
-                             unsigned & toLen,
-                             unsigned & flags)
+    virtual bool Transcode(const void * fromPtr, unsigned & fromLen, void * toPtr, unsigned & toLen, unsigned & flags)
     {
-      if (fromLen < m_samplesPerFrame*m_signalSampleSize)
-        return false;
-
       speex_bits_init(&speexBits);
 
       speex_encode_int(m_state, (spx_int16_t *)fromPtr, &speexBits);
@@ -188,26 +161,26 @@ class Decoder : public PluginCodec<CODEC>
   protected:
     SpeexBits speexBits;
     void     *m_state;
+    const char *m_description;
     unsigned m_samplesPerFrame;
     unsigned m_bytesPerFrame;
     unsigned m_sampleRate;
-    unsigned m_signalSampleSize;
-    unsigned m_decoderChannels;
-    int ret;
+    unsigned m_channels;
 
   public:
     Decoder(const PluginCodec_Definition * defn)
       : PluginCodec<CODEC>(defn)
+      , m_description(m_definition->descr)
       , m_samplesPerFrame(m_definition->parm.audio.samplesPerFrame)
       , m_bytesPerFrame(m_definition->parm.audio.bytesPerFrame)
       , m_sampleRate(m_definition->sampleRate)
-      , m_signalSampleSize(sizeof(short))
     {
     }
 
     ~Decoder()
     {
-      speex_decoder_destroy(m_state); 
+      if(m_state != NULL)
+        speex_decoder_destroy(m_state);
     }
 
     virtual bool Construct()
@@ -221,28 +194,32 @@ class Decoder : public PluginCodec<CODEC>
       return true;
     }
 
-    virtual bool Transcode(const void * fromPtr,
-                             unsigned & fromLen,
-                                 void * toPtr,
-                             unsigned & toLen,
-                             unsigned & flags)
+    virtual bool Transcode(const void * fromPtr, unsigned & fromLen, void * toPtr, unsigned & toLen, unsigned & flags)
     {
-      if (toLen < m_samplesPerFrame*m_signalSampleSize)
+      if(toLen < m_samplesPerFrame*2)
+      {
+        PTRACE(1, m_description, "decoder eror: toLen too small, " << toLen << " bytes");
         return false;
+      }
 
       speex_bits_init(&speexBits);
 
-      if (flags&PluginCodec_CoderSilenceFrame) {
-        ret = speex_decode_int(m_state, NULL, (spx_int16_t *)toPtr);
+      int status;
+      if(flags&PluginCodec_CoderSilenceFrame)
+      {
+        status = speex_decode_int(m_state, NULL, (spx_int16_t *)toPtr);
       } else {
         speex_bits_read_from(&speexBits, (char *)fromPtr, fromLen);
-        ret = speex_decode_int(m_state, &speexBits, (spx_int16_t *)toPtr);
+        status = speex_decode_int(m_state, &speexBits, (spx_int16_t *)toPtr);
       }
 
       speex_bits_destroy(&speexBits);
 
-      if(ret != 0)
+      if(status != 0)
+      {
+        PTRACE(1, m_description, "decoder error: " << status);
         return false;
+      }
 
       return true;
     }
@@ -358,6 +335,8 @@ static nameprefix##prefix##_AudioFormat nameprefix##prefix##_AudioFormatInfo;
 PLUGIN_CODEC(,SPEEX_8K, XIPH);
 PLUGIN_CODEC(,SPEEX_16K, XIPH);
 PLUGIN_CODEC(,SPEEX_32K, XIPH);
+
+DECLARE_CONTROLS_TABLE(Encoder, Decoder);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
