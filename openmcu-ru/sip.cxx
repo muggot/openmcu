@@ -242,7 +242,7 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
   if     (name == "pcmu")   { pt = 0; }
   else if(name == "pcma")   { pt = 8; }
   else if(name == "g723")   { pt = 4; }
-  else if(name == "g722")   { pt = 9; }
+  else if(name == "g722")   { pt = 9; rate = 8000; }
   else if(name == "g728")   { pt = 15; }
   else if(name == "g729")   { pt = 18; }
   else if(name == "h261")   { pt = 31; }
@@ -638,7 +638,7 @@ sdp_rtpmap_t * MCUSipConnection::CreateSdpRtpmap(su_home_t *sess_home, SipCapabi
   sdp_rtpmap_t *rm = (sdp_rtpmap_t *)su_salloc(sess_home, sizeof(*rm));
   rm->rm_predef = 0;
   rm->rm_pt = sc->payload;
-  rm->rm_encoding = PStringToChar(sc->format);
+  rm->rm_encoding = PStringToChar(sc->format.ToUpper());
   rm->rm_rate = sc->clock;
   if(sc->fmtp != "") rm->rm_fmtp = PStringToChar(sc->fmtp);
   if(sc->params != "") rm->rm_params = PStringToChar(sc->params);
