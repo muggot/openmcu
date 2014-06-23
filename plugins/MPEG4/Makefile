@@ -52,10 +52,10 @@ OPTCCFLAGS      =$(CPPFLAGS)
 LIBAVCODEC_CFLAGS=-I${prefix}/include -I.
 EXTRACCFLAGS    =  $(LIBAVCODEC_CFLAGS) -I$(PLUGINDIR) -DLIB_DIR='"$(prefix)"' -DVC_PLUGIN_DIR='"$(VC_PLUGIN_DIR)"' -DLICENCE_MPL -D__STDC_CONSTANT_MACROS
 
-vpath	%.cxx $(SHAREDDIR):opal
+vpath	%.cxx $(SHAREDDIR):../common
 vpath	%.o   $(OBJDIR)
 
-SRCS    = mpeg4.cxx common/ffmpeg.cxx
+SRCS    = mpeg4.cxx ../common/ffmpeg.cxx
 
 $(OBJDIR)/%.o : %.cxx
 	@mkdir -p $(OBJDIR) >/dev/null 2>&1
