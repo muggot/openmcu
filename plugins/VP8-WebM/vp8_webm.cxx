@@ -42,10 +42,10 @@
 #endif
 
 #ifndef PLUGIN_CODEC_DLL_EXPORTS
-#include "plugin-config.h"
+  #include "../common/plugin_config.h"
 #endif
 
-#include <codec/opalplugin.hpp>
+#include "../common/opalplugin.hpp"
 
 #include <vector>
 
@@ -70,11 +70,9 @@ extern "C" {
 # include "libavutil/mem.h"
 #endif
 
-#define MY_CODEC_LOG "VP8"
-class VP8_CODEC { };
-
 PLUGINCODEC_CONTROL_LOG_FUNCTION_DEF
 
+///////////////////////////////////////////////////////////////////////////////
 
 PLUGINCODEC_LICENSE(
   "Andrey Burbovskiy, "                                         // source code author
@@ -230,10 +228,12 @@ static struct PluginCodec_Option const * OptionTableRFC[] = {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class VP8Format : public PluginCodec_VideoFormat<VP8_CODEC>
+class CODEC { };
+
+class VP8Format : public PluginCodec_VideoFormat<CODEC>
 {
   private:
-    typedef PluginCodec_VideoFormat<VP8_CODEC> BaseClass;
+    typedef PluginCodec_VideoFormat<CODEC> BaseClass;
 
   protected:
     bool m_partition;
@@ -313,7 +313,7 @@ static bool IsError(vpx_codec_err_t err, const char * fn)
   if (err == VPX_CODEC_OK)
     return false;
 
-  PTRACE(1, MY_CODEC_LOG, "Error " << err << " in " << fn << " - " << vpx_codec_err_to_string(err));
+  PTRACE(1, "VP8", "Error " << err << " in " << fn << " - " << vpx_codec_err_to_string(err));
   return true;
 }
 
@@ -333,12 +333,13 @@ enum Orientation {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
+class VP8Encoder : public PluginVideoEncoder<CODEC>
 {
   private:
-    typedef PluginVideoEncoder<VP8_CODEC> BaseClass;
+    typedef PluginVideoEncoder<CODEC> BaseClass;
 
   protected:
+    const char               * m_description;
     vpx_codec_enc_cfg_t        m_config;
     unsigned                   m_initFlags;
     vpx_codec_ctx_t            m_codec;
@@ -352,6 +353,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
   public:
     VP8Encoder(const PluginCodec_Definition * defn)
       : BaseClass(defn)
+      , m_description(m_definition->descr)
       , m_initFlags(0)
       , m_iterator(NULL)
       , m_packet(NULL)
@@ -389,7 +391,7 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
       if (!OnChangedOptions())
         return false;
 
-      PTRACE(4, MY_CODEC_LOG, "Encoder opened: " << vpx_codec_version_str() << ", revision $Revision$");
+      PTRACE(4, m_description, "Encoder opened: " << vpx_codec_version_str());
       return true;
     }
 
@@ -408,8 +410,8 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
       if (strcasecmp(optionName, PLUGINCODEC_OPTION_MAX_BIT_RATE) == 0)
         return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
 
-      //if (strcasecmp(optionName, PLUGINCODEC_OPTION_TARGET_BIT_RATE) == 0)
-      //  return SetOptionUnsigned(m_maxBitRate, optionValue, 1, m_definition->bitsPerSec);
+      if (strcasecmp(optionName, PLUGINCODEC_OPTION_TARGET_BIT_RATE) == 0)
+        return true; // 64000 !!!
 
       if (strcasecmp(optionName, SpatialResampling.m_name) == 0)
         return SetOptionBoolean(m_config.rc_resize_allowed, optionValue);
@@ -468,19 +470,14 @@ class VP8Encoder : public PluginVideoEncoder<VP8_CODEC>
     }
 
 
-    virtual bool Transcode(const void * fromPtr,
-                             unsigned & fromLen,
-                                 void * toPtr,
-                             unsigned & toLen,
-                             unsigned & flags)
+    virtual bool Transcode(const void * fromPtr, unsigned & fromLen, void * toPtr, unsigned & toLen, unsigned & flags)
     {
       while (NeedEncode()) {
         PluginCodec_RTP srcRTP(fromPtr, fromLen);
         PluginCodec_Video_FrameHeader * video = srcRTP.GetVideoHeader();
 
         if (m_width != video->width || m_height != video->height) {
-          PTRACE(4, MY_CODEC_LOG, "Changing resolution from " <<
-                 m_width << 'x' << m_height << " to " << video->width << 'x' << video->height);
+          PTRACE(4, m_description, "Changing resolution from " << m_width << 'x' << m_height << " to " << video->width << 'x' << video->height);
           m_width = video->width;
           m_height = video->height;
           OnChangedOptions();
@@ -567,7 +564,7 @@ class VP8EncoderRFC : public VP8Encoder
           return true;
         }
 
-        PTRACE(2, MY_CODEC_LOG, "Unknown picture ID size: \"" << optionValue << '"');
+        PTRACE(2, m_description, "Unknown picture ID size: \"" << optionValue << '"');
         return false;
       }
 
@@ -621,12 +618,13 @@ class VP8EncoderRFC : public VP8Encoder
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
+class VP8Decoder : public PluginVideoDecoder<CODEC>
 {
   private:
-    typedef PluginVideoDecoder<VP8_CODEC> BaseClass;
+    typedef PluginVideoDecoder<CODEC> BaseClass;
 
   protected:
+    const char               * m_description;
     vpx_codec_iface_t  * m_iface;
     vpx_codec_ctx_t      m_codec;
     vpx_codec_flags_t    m_flags;
@@ -637,6 +635,7 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
   public:
     VP8Decoder(const PluginCodec_Definition * defn)
       : BaseClass(defn)
+      , m_description(m_definition->descr)
       , m_iface(vpx_codec_vp8_dx())
       , m_flags(0)
       , m_iterator(NULL)
@@ -663,16 +662,12 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
       if (IS_ERROR(vpx_codec_dec_init, (&m_codec, m_iface, NULL, m_flags)))
         return false;
 
-      PTRACE(4, MY_CODEC_LOG, "Decoder opened: " << vpx_codec_version_str() << ", revision $Revision$");
+      PTRACE(4, m_description, "Decoder opened: " << vpx_codec_version_str());
       return true;
     }
 
 
-    virtual bool Transcode(const void * fromPtr,
-                             unsigned & fromLen,
-                                 void * toPtr,
-                             unsigned & toLen,
-                             unsigned & flags)
+    virtual bool Transcode(const void * fromPtr, unsigned & fromLen, void * toPtr, unsigned & toLen, unsigned & flags)
     {
       vpx_image_t * image;
 
@@ -737,7 +732,7 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
       }
 
       if (image->fmt != VPX_IMG_FMT_I420) {
-        PTRACE(1, MY_CODEC_LOG, "Unsupported image format from decoder.");
+        PTRACE(1, m_description, "Unsupported image format from decoder.");
         return false;
       }
 
@@ -770,12 +765,13 @@ class VP8Decoder : public PluginVideoDecoder<VP8_CODEC>
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if FFMPEG_DECODER
-class VP8DecoderFFmpeg : public PluginVideoDecoder<VP8_CODEC>
+class VP8DecoderFFmpeg : public PluginVideoDecoder<CODEC>
 {
   private:
-    typedef PluginVideoDecoder<VP8_CODEC> BaseClass;
+    typedef PluginVideoDecoder<CODEC> BaseClass;
 
   protected:
+    const char          *m_description;
     AVCodec             *m_codec;
     AVCodecContext      *m_context;
     AVFrame             *m_outputFrame;
@@ -786,6 +782,7 @@ class VP8DecoderFFmpeg : public PluginVideoDecoder<VP8_CODEC>
   public:
     VP8DecoderFFmpeg(const PluginCodec_Definition * defn)
       : BaseClass(defn)
+      , m_description(m_definition->descr)
       , m_intraFrame(false)
     {
       memset(&m_codec, 0, sizeof(m_codec));
@@ -805,8 +802,9 @@ class VP8DecoderFFmpeg : public PluginVideoDecoder<VP8_CODEC>
     virtual bool Construct()
     {
       m_codec = avcodec_find_decoder_by_name("vp8");
-      if (m_codec == NULL)
+      if(m_codec == NULL)
       {
+        PTRACE(1, m_description, "Codec not found");
         return false;
       }
 
@@ -815,18 +813,18 @@ class VP8DecoderFFmpeg : public PluginVideoDecoder<VP8_CODEC>
 #else
       m_context = avcodec_alloc_context();
 #endif
-      if (m_context == NULL)
+      if(m_context == NULL)
       {
+        PTRACE(1, m_description, "Failed to allocate context");
         return false;
       }
 
       m_outputFrame = avcodec_alloc_frame();
-      if (m_outputFrame == NULL)
+      if(m_outputFrame == NULL)
       {
+        PTRACE(1, m_description, "Failed to allocate frame");
         return false;
       }
-
-      av_init_packet(&m_pkt);
 
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
       if (avcodec_open2(m_context, m_codec, NULL) < 0)
@@ -834,18 +832,17 @@ class VP8DecoderFFmpeg : public PluginVideoDecoder<VP8_CODEC>
       if (avcodec_open(m_context, m_codec) < 0)
 #endif
       {
+        PTRACE(1, m_description, "Failed to open codec");
         return false;
       }
+
+      av_init_packet(&m_pkt);
 
       return true;
     }
 
 
-    virtual bool Transcode(const void * fromPtr,
-                             unsigned & fromLen,
-                                 void * toPtr,
-                             unsigned & toLen,
-                             unsigned & flags)
+    virtual bool Transcode(const void * fromPtr, unsigned & fromLen, void * toPtr, unsigned & toLen, unsigned & flags)
     {
       flags = m_intraFrame ? PluginCodec_ReturnCoderIFrame : 0;
 
@@ -871,60 +868,14 @@ class VP8DecoderFFmpeg : public PluginVideoDecoder<VP8_CODEC>
       }
       m_fullFrame.clear();
 
+
       PluginCodec_RTP dstRTP(toPtr, toLen);
-      toLen = 0;
-
-      int frameBytes = (m_context->width * m_context->height * 3) / 2;
-      PluginCodec_Video_FrameHeader * header = (PluginCodec_Video_FrameHeader *)dstRTP.GetPayloadPtr();
-      header->x = header->y = 0;
-      header->width = m_context->width;
-      header->height = m_context->height;
-
-      int size = m_context->width * m_context->height;
-      if (m_outputFrame->data[1] == m_outputFrame->data[0] + size
-        && m_outputFrame->data[2] == m_outputFrame->data[1] + (size >> 2))
-      {
-         memcpy(OPAL_VIDEO_FRAME_DATA_PTR(header), m_outputFrame->data[0], frameBytes);
-      } else {
-        unsigned char *dstData = OPAL_VIDEO_FRAME_DATA_PTR(header);
-        for (int i=0; i<3; i ++)
-        {
-          unsigned char *srcData = m_outputFrame->data[i];
-          int dst_stride = i ? m_context->width >> 1 : m_context->width;
-          int src_stride = m_outputFrame->linesize[i];
-          int h = i ? m_context->height >> 1 : m_context->height;
-
-          if (src_stride==dst_stride)
-          {
-            memcpy(dstData, srcData, dst_stride*h);
-            dstData += dst_stride*h;
-          } else {
-            while (h--)
-            {
-              memcpy(dstData, srcData, dst_stride);
-              dstData += dst_stride;
-              srcData += src_stride;
-            }
-          }
-        }
-      }
-
-      dstRTP.SetPayloadSize(sizeof(PluginCodec_Video_FrameHeader) + frameBytes);
-      dstRTP.SetTimestamp(srcRTP.GetTimestamp());
-      dstRTP.SetMarker(1);
-      toLen = dstRTP.GetPacketSize();
-
-      flags |= PluginCodec_ReturnCoderLastFrame;
-
+      toLen = OutputImage(m_outputFrame->data, m_outputFrame->linesize, m_context->width, m_context->height, dstRTP, flags);
       return true;
     }
 
-
     void Accumulate(const unsigned char * fragmentPtr, size_t fragmentLen)
     {
-      if (fragmentLen == 0)
-        return;
-
       size_t size = m_fullFrame.size();
       m_fullFrame.reserve(size+fragmentLen*2);
       m_fullFrame.resize(size+fragmentLen);
@@ -956,11 +907,16 @@ class VP8DecoderRFC : public VP8Decoder
 
     virtual bool Unpacketise(const PluginCodec_RTP & rtp)
     {
-      if (rtp.GetPayloadSize() == 0)
+      size_t fragmentLen = rtp.GetPayloadSize();
+
+      if(fragmentLen == 0)
         return true;
 
-      if (rtp.GetPayloadSize() < 3)
+      if(fragmentLen < 12)
+      {
+        PTRACE(3, m_description, "RTP packet far too small.");
         return false;
+      }
 
       size_t headerSize = 1;
       if ((rtp[0]&0x80) != 0) { // Check X bit
@@ -979,12 +935,21 @@ class VP8DecoderRFC : public VP8Decoder
           ++headerSize;         // Allow for T/K byte
       }
 
-      Accumulate(rtp.GetPayloadPtr()+headerSize, rtp.GetPayloadSize()-headerSize);
+      if(fragmentLen <= headerSize)
+      {
+        PTRACE(3, m_description, "RTP packet too small.");
+        return false;
+      }
+
+      Accumulate(rtp.GetPayloadPtr()+headerSize, fragmentLen-headerSize);
       return true;
     }
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+
+static const char   PayloadName[]                     = "VP8";
+static unsigned int PayloadType                       = 0;
 
 #define OpalPluginCodec_Identifer_VP8       "1.3.6.1.4.1.17091.1.9.1"
 #define VP8_MediaFmt                        "VP8"
@@ -1146,7 +1111,7 @@ class prefix##_Format : public VP8Format \
 { \
   public: \
     prefix##_Format() \
-      : VP8Format(prefix##_MediaFmt, "VP8", "VP8 Video Codec (RFC)", prefix##_OptionTable) \
+      : VP8Format(prefix##_MediaFmt, PayloadName, prefix##_MediaFmt, prefix##_OptionTable) \
     { \
       m_h323CapabilityType = PluginCodec_H323Codec_generic; \
       m_h323CapabilityData = (struct PluginCodec_H323GenericCodecData *)&prefix##_Cap; \
@@ -1192,6 +1157,8 @@ class prefix##_Format : public VP8Format \
 }; \
 static prefix##_Format prefix##_MediaFormatInfo;
 
+///////////////////////////////////////////////////////////////////////////////
+
 VP8PLUGIN_CODEC(VP8);
 VP8PLUGIN_CODEC(VP8_QCIF);
 VP8PLUGIN_CODEC(VP8_CIF);
@@ -1202,6 +1169,8 @@ VP8PLUGIN_CODEC(VP8_480P);
 VP8PLUGIN_CODEC(VP8_720P);
 VP8PLUGIN_CODEC(VP8_768P);
 VP8PLUGIN_CODEC(VP8_1080P);
+
+DECLARE_CONTROLS_TABLE(VP8EncoderRFC, VP8DecoderRFC);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -1221,7 +1190,6 @@ static struct PluginCodec_Definition VP8CodecDefinition[] =
 //  PLUGINCODEC_VIDEO_CODEC_CXX(VP8MediaFormatInfoRFC, VP8EncoderRFC, VP8DecoderRFC),
 };
 
-PLUGIN_CODEC_IMPLEMENT_CXX(VP8_CODEC, VP8CodecDefinition);
-
+PLUGIN_CODEC_IMPLEMENT_CXX(CODEC, VP8CodecDefinition);
 
 /////////////////////////////////////////////////////////////////////////////

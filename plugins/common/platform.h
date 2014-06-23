@@ -64,7 +64,7 @@
 #elif defined(_WIN32)
   #include "stdint.h"
 #else
-  #include "plugin-config.h"
+  #include "plugin_config.h"
 
   #if defined HAVE_STDINT_H
     #include <stdint.h>

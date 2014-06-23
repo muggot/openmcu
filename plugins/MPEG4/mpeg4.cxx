@@ -1,5 +1,4 @@
 /*
- *
  * MPEG4 Plugin codec for OpenMCU-ru
  *
  * Copyright (C) 2014 by Andrey Burbovskiy, OpenMCU-ru Team, All Rights Reserved
@@ -55,34 +54,23 @@ extern "C"
   #include "libavutil/mem.h"
 }
 
-#include <iostream>
-#include <string>
 #include <vector>
 #include <deque>
 
-#include "opal/opalplugin.hpp"
-#include "opal/utils.h"
-#include "opal/ffmpeg.h"
-
-#ifndef PLUGIN_CODEC_DLL_EXPORTS
-  #include "opal/plugin-config.h"
-#endif
-
-#define CODEC_LOG "MPEG4"
-PLUGINCODEC_CONTROL_LOG_FUNCTION_DEF
-
-#ifdef PLUGINCODEC_TRACING
-  #undef PLUGINCODEC_TRACING
-#endif
-#define PLUGINCODEC_TRACING 0
+#include "../common/opalplugin.hpp"
+#include "../common/ffmpeg.h"
+#include "../common/utils.h"
 
 const unsigned MaxBitRate = 4000000;
+
+
+PLUGINCODEC_CONTROL_LOG_FUNCTION_DEF
 
 ///////////////////////////////////////////////////////////////////////////////
 
 PLUGINCODEC_LICENSE(
   "Andrey Burbovskiy",                                          // source code author
-  "1.0",                                                        // source code version
+  "1.1",                                                        // source code version
   "andrewb@yandex.ru",                                          // source code email
   "http://www.openmcu.ru",                                      // source code URL
   "Copyright (C) 2014 by OpenMCU-ru Team",                      // source code copyright
@@ -104,13 +92,13 @@ PLUGINCODEC_LICENSE(
 
 class CODEC { };
 
-class Format : public PluginCodec_VideoFormat<CODEC>
+class VideoFormat : public PluginCodec_VideoFormat<CODEC>
 {
   private:
     typedef PluginCodec_VideoFormat<CODEC> BaseClass;
 
   public:
-    Format(const char * formatName, const char * payloadName, const char * description, OptionsTable options)
+    VideoFormat(const char * formatName, const char * payloadName, const char * description, OptionsTable options)
       : BaseClass(formatName, payloadName, description, MaxBitRate, options)
     {
     }
@@ -211,6 +199,7 @@ class Encoder : public PluginVideoEncoder<CODEC>, public FFMPEGCodec
     typedef PluginVideoEncoder<CODEC> BaseClass;
 
   protected:
+    const char *m_description;
     unsigned m_profileLevel;
     unsigned m_profile;
     unsigned m_level;
@@ -218,7 +207,8 @@ class Encoder : public PluginVideoEncoder<CODEC>, public FFMPEGCodec
   public:
     Encoder(const PluginCodec_Definition * defn)
       : BaseClass(defn)
-      , FFMPEGCodec(CODEC_LOG, new MPEG4_EncodedFrame)
+      , FFMPEGCodec(m_definition->descr, new MPEG4_EncodedFrame)
+      , m_description(m_definition->descr)
       , m_profileLevel(1)
       , m_profile(1)
       , m_level(1)
@@ -348,12 +338,14 @@ class Decoder : public PluginVideoDecoder<CODEC>
     AVCodecContext      *m_context;
     AVFrame             *m_outputFrame;
     AVPacket             m_pkt;
+    const char          *m_description;
     std::vector<uint8_t> m_fullFrame;
     bool                 m_intraFrame;
 
   public:
     Decoder(const PluginCodec_Definition * defn)
       : BaseClass(defn)
+      , m_description(m_definition->descr)
       , m_intraFrame(false)
     {
       memset(&m_codec, 0, sizeof(m_codec));
@@ -369,12 +361,12 @@ class Decoder : public PluginVideoDecoder<CODEC>
       if(m_outputFrame != NULL) av_free(m_outputFrame);
     }
 
-
     virtual bool Construct()
     {
       m_codec = avcodec_find_decoder_by_name("mpeg4");
       if(m_codec == NULL)
       {
+        PTRACE(1, m_description, "Codec not found");
         return false;
       }
 
@@ -385,12 +377,14 @@ class Decoder : public PluginVideoDecoder<CODEC>
 #endif
       if(m_context == NULL)
       {
+        PTRACE(1, m_description, "Failed to allocate context");
         return false;
       }
 
       m_outputFrame = avcodec_alloc_frame();
       if(m_outputFrame == NULL)
       {
+        PTRACE(1, m_description, "Failed to allocate frame");
         return false;
       }
 
@@ -403,6 +397,7 @@ class Decoder : public PluginVideoDecoder<CODEC>
 #endif
       if(result < 0)
       {
+        PTRACE(1, m_description, "Failed to open codec");
         return false;
       }
 
@@ -436,11 +431,13 @@ class Decoder : public PluginVideoDecoder<CODEC>
       if(!m_context->extradata)
       {
         av_log(m_context, AV_LOG_ERROR, "Decoder unable to allocate memory for extradata!\n");
+        PTRACE(1, m_description, "Decoder unable to allocate memory for extradata!");
         return;
       }
       m_context->extradata_size = len;
       ff_hex_to_data(m_context->extradata, value);
       av_log(m_context, AV_LOG_INFO, "Decoder extradata set to %p (size: %d)!\n", m_context->extradata, m_context->extradata_size);
+      PTRACE(1, m_description, "Decoder extradata set to " << m_context->extradata << " size: " << m_context->extradata_size);
     }
 
     virtual bool Transcode(const void * fromPtr, unsigned & fromLen, void * toPtr, unsigned & toLen, unsigned & flags)
@@ -498,12 +495,16 @@ class Decoder : public PluginVideoDecoder<CODEC>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define MPEG4_MediaFmt                   "MP4V-ES"
-#define MPEG4_PROFILE                    "1"
-#define MPEG4_LEVEL                      "3"
-#define MPEG4_WIDTH                      "352"
-#define MPEG4_HEIGHT                     "288"
+static const char   PayloadName[]                     = "MP4V-ES";
+static unsigned int PayloadType                       = 0;
 
+static const char   MPEG4_MediaFmt[]                  = "MP4V-ES";
+static const char   MPEG4_PROFILE[]                   = "1";
+static const char   MPEG4_LEVEL[]                     = "3";
+static const char   MPEG4_WIDTH[]                     = "352";
+static const char   MPEG4_HEIGHT[]                    = "288";
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define MPEG4PLUGIN_CODEC(prefix) \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \
@@ -576,19 +577,24 @@ static struct PluginCodec_Option const * prefix##_OptionTable[] = \
   &prefix##_DecoderConfig, \
   NULL \
 }; \
-class prefix##_Format : public Format \
+class prefix##_VideoFormat : public VideoFormat \
 { \
   public: \
-    prefix##_Format() \
-      : Format(prefix##_MediaFmt, "MPEG4", "MPEG4 Video Codec", prefix##_OptionTable) \
+    prefix##_VideoFormat() \
+      : VideoFormat(prefix##_MediaFmt, PayloadName, prefix##_MediaFmt, prefix##_OptionTable) \
     { \
+      m_payloadType = PayloadType; \
       m_h323CapabilityType = PluginCodec_H323Codec_generic; \
       m_h323CapabilityData = (struct PluginCodec_H323GenericCodecData *)&prefix##_Cap; \
     } \
 }; \
-static prefix##_Format prefix##_MediaFormatInfo;
+static prefix##_VideoFormat prefix##_MediaFormatInfo;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MPEG4PLUGIN_CODEC(MPEG4);
+
+DECLARE_CONTROLS_TABLE(Encoder, Decoder);
 
 ///////////////////////////////////////////////////////////////////////////////
 

@@ -62,7 +62,6 @@ class AudioFormat : public PluginCodec_AudioFormat<CODEC>
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-#include <iostream>
 
 class Encoder : public PluginCodec<CODEC>
 {

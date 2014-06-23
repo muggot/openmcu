@@ -50,7 +50,7 @@ extern "C"
 }
 
 #include "platform.h"
-#include "opal/opalplugin.hpp"
+#include "opalplugin.hpp"
 
 /////////////////////////////////////////////////////////////////
 

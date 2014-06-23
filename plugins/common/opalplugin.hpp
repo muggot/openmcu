@@ -1168,34 +1168,19 @@ static struct PluginCodec_ControlDefn DecoderControlsTable[] = \
 
 /////////////////////////////////////////////////////////////////////////////
 
-/// Declare a video codec using C++ support classes
-#define PLUGINCODEC_VIDEO_CODEC_CXX(MediaFormat,     /**< PluginCodec_VideoFormat instance */ \
-                                    EncoderClass,    /**< Encoder class name */ \
-                                    DecoderClass     /**< Decoder class name */ \
-                                    ) \
-             PLUGINCODEC_CODEC_PAIR(MediaFormat.GetFormatName(), \
-                                    MediaFormat.GetPayloadName(), \
-                                    MediaFormat.GetDescription(), \
-                                    PLUGINCODEC_VIDEO_CLOCK, \
-                                    MediaFormat.GetMaxBandwidth(), \
-                                    1000000/PLUGINCODEC_MAX_FRAME_RATE, \
-                                    MediaFormat.GetMaxWidth(), \
-                                    MediaFormat.GetMaxHeight(), \
-                                    0,PLUGINCODEC_MAX_FRAME_RATE, \
-                                    MediaFormat.GetPayloadType(), \
-                                    MediaFormat.GetH323CapabilityType(), \
-                                    MediaFormat.GetH323CapabilityData(), \
-                                    EncoderClass::Create_s<EncoderClass>, \
-                                    EncoderClass::Destroy_s, \
-                                    EncoderClass::Transcode_s, \
-                                    DecoderClass::Create_s<DecoderClass>, \
-                                    DecoderClass::Destroy_s, \
-                                    DecoderClass::Transcode_s, \
-                                    DecoderClass::GetControls(), /* Note doesn't matter if encoder or decoder */ \
-                                    MediaFormat.GetFlags(), \
-                                    PLUGINCODEC_RAW_VIDEO, \
-                                    &MediaFormat)
+#define PLUGINCODEC_VIDEO_CODEC_CXX(MediaFormat, EncoderClass, DecoderClass) \
+{ \
+  PLUGIN_CODEC_VERSION, &MyLicenseInfo, MediaFormat.GetFlags(), MediaFormat.GetDescription(), PLUGINCODEC_RAW_VIDEO, MediaFormat.GetFormatName(), &MediaFormat, \
+  PLUGINCODEC_VIDEO_CLOCK, MediaFormat.GetMaxBandwidth(), 1000000/PLUGINCODEC_MAX_FRAME_RATE, {{ MediaFormat.GetMaxWidth(),MediaFormat.GetMaxHeight(),0,PLUGINCODEC_MAX_FRAME_RATE }}, MediaFormat.GetPayloadType(), MediaFormat.GetPayloadName(), \
+  EncoderClass::Create_s<EncoderClass>, EncoderClass::Destroy_s, EncoderClass::Transcode_s, EncoderControlsTable, MediaFormat.GetH323CapabilityType(), MediaFormat.GetH323CapabilityData() \
+}, \
+{ \
+  PLUGIN_CODEC_VERSION, &MyLicenseInfo, MediaFormat.GetFlags(), MediaFormat.GetDescription(), MediaFormat.GetFormatName(), PLUGINCODEC_RAW_VIDEO, &MediaFormat, \
+  PLUGINCODEC_VIDEO_CLOCK, MediaFormat.GetMaxBandwidth(), 1000000/PLUGINCODEC_MAX_FRAME_RATE, {{ MediaFormat.GetMaxWidth(),MediaFormat.GetMaxHeight(),0,PLUGINCODEC_MAX_FRAME_RATE }}, MediaFormat.GetPayloadType(), MediaFormat.GetPayloadName(), \
+  DecoderClass::Create_s<DecoderClass>, DecoderClass::Destroy_s, DecoderClass::Transcode_s, DecoderControlsTable, MediaFormat.GetH323CapabilityType(), MediaFormat.GetH323CapabilityData() \
+}
 
+/////////////////////////////////////////////////////////////////////////////
 
 #define PLUGIN_CODEC_IMPLEMENT_CXX(NAME, table) \
   extern "C" { \
