@@ -29,7 +29,7 @@ DL_LIBS =-ldl
 
 BASENAME	=h263-1998
 SONAME		=$(BASENAME)
-COMMONDIR	=../common
+COMMONDIR	=./opal
 PLUGINDIR	=./opal
 OBJDIR 		=./obj
 
