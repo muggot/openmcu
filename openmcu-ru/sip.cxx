@@ -1125,90 +1125,42 @@ void MCUSipConnection::ReceivedDTMF(PString sdp)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::FindCapability_H263(SipCapability *sc, PStringArray &keys, const char * _H323Name, const char * _SIPName)
-{
-  PString H323Name(_H323Name);
-  PString SIPName(_SIPName);
-  for(int kn=0; kn<keys.GetSize(); kn++)
-  {
-    if(keys[kn].Find(SIPName + "=")==0)
-    {
-      sc->cap = H323Capability::Create(H323Name);
-      if(sc->cap == NULL) return;
-      OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat(); 
-      int mpi = (keys[kn].Mid(SIPName.GetLength()+1)).AsInteger();
-      wf.SetOptionInteger(SIPName + " MPI",mpi);
-      return;
-    }
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  unsigned width = 0, height = 0, mpi = 1;
-  PString mpiname;
-
   PStringArray keys = sc->fmtp.Tokenise(";");
+  PString mpiname;
 
   if(!sc->cap)
   {
     if(FindSipCap(LocalCaps, "H.261{sw}"))
       sc->cap = H323Capability::Create("H.261{sw}");
-  }
-  if(sc->cap)
-  {
-    SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
-    if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+    if(!sc->cap)
+      return;
   }
 
-  if(sc->video_width && sc->video_height)
-  {
-    width = sc->video_width;
-    height = sc->video_height;
-    GetParamsH263(mpiname, width, height);
-  }
-  else if(sc->cap && sc->cap->GetFormatName() == "H.261{sw}")
+  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  if(local_sc->video_width) sc->video_width = local_sc->video_width;
+  if(local_sc->video_height) sc->video_height = local_sc->video_height;
+  if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
+  if(local_sc->bandwidth) sc->bandwidth = local_sc->bandwidth;
+
+  if(sc->video_width == 0 && sc->video_height == 0)
   {
     for(int kn=0; kn<keys.GetSize(); kn++)
     {
       if(keys[kn].Find("QCIF=")==0 || keys[kn].Find("CIF=")==0)
       {
         mpiname = keys[kn].Tokenise("=")[0];
-        mpi = keys[kn].Tokenise("=")[1].AsInteger();
-        GetParamsH263(mpiname, width, height);
+        GetParamsH263(mpiname, sc->video_width, sc->video_height);
         break;
       }
     }
-  }
-  else if(!sc->cap) // совместимость со старыми capability
-  {
-    if(!sc->cap && FindSipCap(LocalCaps, "H.261-CIF{sw}"))
-      FindCapability_H263(sc,keys,"H.261-CIF{sw}","CIF");
-    if(!sc->cap && FindSipCap(LocalCaps, "H.261-CIF{sw}"))
-      FindCapability_H263(sc,keys,"H.261-QCIF{sw}","QCIF");
   }
 
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
-    if(mpiname != "") wf.SetOptionInteger(mpiname+" MPI", mpi);
-    if(width && height)
-    {
-      wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
-      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
-    }
-    if(mpiname != "")
-    {
-      wf.SetOptionInteger("SQCIF MPI", 0);
-      wf.SetOptionInteger("QCIF MPI", 0);
-      wf.SetOptionInteger("CIF MPI", 0);
-      wf.SetOptionInteger("CIF4 MPI", 0);
-      wf.SetOptionInteger("CIF16 MPI", 0);
-      wf.SetOptionInteger(mpiname+" MPI", mpi);
-    }
-    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
+    SetFormatParams(wf, sc->video_width, sc->video_height, sc->video_frame_rate, sc->bandwidth);
   }
 }
 
@@ -1216,11 +1168,10 @@ void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapab
 
 void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapability *sc)
 {
+  PStringArray keys = sc->fmtp.Tokenise(";");
   int f = 0; // annex f
-  unsigned width = 0, height = 0, mpi = 1;
   PString mpiname;
 
-  PStringArray keys = sc->fmtp.Tokenise(";");
   for(int kn=0; kn<keys.GetSize(); kn++)
   { if(keys[kn] == "F=1") { sc->fmtp = "F=1;"; f=1; break; } }
 
@@ -1228,65 +1179,34 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
   {
     if(FindSipCap(LocalCaps, "H.263{sw}"))
       sc->cap = H323Capability::Create("H.263{sw}");
-  }
-  if(sc->cap)
-  {
-    SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
-    if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+    if(!sc->cap)
+      return;
   }
 
-  if(sc->video_width && sc->video_height)
-  {
-    width = sc->video_width;
-    height = sc->video_height;
-    GetParamsH263(mpiname, width, height);
-  }
-  else if(sc->cap && sc->cap->GetFormatName() == "H.263{sw}")
+  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  if(local_sc->video_width) sc->video_width = local_sc->video_width;
+  if(local_sc->video_height) sc->video_height = local_sc->video_height;
+  if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
+  if(local_sc->bandwidth) sc->bandwidth = local_sc->bandwidth;
+
+  if(sc->video_width == 0 && sc->video_height == 0)
   {
     for(int kn=0; kn<keys.GetSize(); kn++)
     {
       if(keys[kn].Find("SQCIF=")==0 || keys[kn].Find("QCIF=")==0 || keys[kn].Find("CIF=")==0 || keys[kn].Find("CIF4=")==0 || keys[kn].Find("CIF16=")==0)
       {
         mpiname = keys[kn].Tokenise("=")[0];
-        mpi = keys[kn].Tokenise("=")[1].AsInteger();
-        GetParamsH263(mpiname, width, height);
+        GetParamsH263(mpiname, sc->video_width, sc->video_height);
         break;
       }
     }
-  }
-  else if(!sc->cap) // совместимость со старыми capability
-  {
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263-16CIF{sw}"))
-      FindCapability_H263(sc,keys,"H.263-16CIF{sw}","CIF16");
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263-4CIF{sw}"))
-      FindCapability_H263(sc,keys,"H.263-4CIF{sw}","CIF4");
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263-CIF{sw}"))
-      FindCapability_H263(sc,keys,"H.263-CIF{sw}","CIF");
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263-QCIF{sw}"))
-      FindCapability_H263(sc,keys,"H.263-QCIF{sw}","QCIF");
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263-SQCIF{sw}"))
-      FindCapability_H263(sc,keys,"H.263-SQCIF{sw}","SQCIF");
   }
 
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
+    SetFormatParams(wf, sc->video_width, sc->video_height, sc->video_frame_rate, sc->bandwidth);
     if(f) wf.SetOptionBoolean("_advancedPrediction", f);
-    if(width && height)
-    {
-      wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
-      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
-    }
-    if(mpiname != "")
-    {
-      wf.SetOptionInteger("SQCIF MPI", 0);
-      wf.SetOptionInteger("QCIF MPI", 0);
-      wf.SetOptionInteger("CIF MPI", 0);
-      wf.SetOptionInteger("CIF4 MPI", 0);
-      wf.SetOptionInteger("CIF16 MPI", 0);
-      wf.SetOptionInteger(mpiname+" MPI", mpi);
-    }
-    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 
@@ -1294,11 +1214,10 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
 
 void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapability *sc)
 {
+  PStringArray keys = sc->fmtp.Tokenise(";");
   int f = 0, d = 0, e = 0, g = 0; // annexes
-  unsigned width = 0, height = 0, mpi = 1;
   PString mpiname;
 
-  PStringArray keys = sc->fmtp.Tokenise(";");
   for(int kn=0; kn<keys.GetSize(); kn++)
   {
     if(keys[kn] == "F=1") { sc->fmtp += "F=1;"; f=1; }
@@ -1311,68 +1230,37 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
   {
     if(FindSipCap(LocalCaps, "H.263p{sw}"))
       sc->cap = H323Capability::Create("H.263p{sw}");
-  }
-  if(sc->cap)
-  {
-    SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
-    if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+    if(!sc->cap)
+      return;
   }
 
-  if(sc->video_width && sc->video_height)
-  {
-    width = sc->video_width;
-    height = sc->video_height;
-    GetParamsH263(mpiname, width, height);
-  }
-  else if(sc->cap && sc->cap->GetFormatName() == "H.263p{sw}")
+  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  if(local_sc->video_width) sc->video_width = local_sc->video_width;
+  if(local_sc->video_height) sc->video_height = local_sc->video_height;
+  if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
+  if(local_sc->bandwidth) sc->bandwidth = local_sc->bandwidth;
+
+  if(sc->video_width == 0 && sc->video_height == 0)
   {
     for(int kn=0; kn<keys.GetSize(); kn++)
     {
       if(keys[kn].Find("SQCIF=")==0 || keys[kn].Find("QCIF=")==0 || keys[kn].Find("CIF=")==0 || keys[kn].Find("CIF4=")==0 || keys[kn].Find("CIF16=")==0)
       {
         mpiname = keys[kn].Tokenise("=")[0];
-        mpi = keys[kn].Tokenise("=")[1].AsInteger();
-        GetParamsH263(mpiname, width, height);
+        GetParamsH263(mpiname, sc->video_width, sc->video_height);
         break;
       }
     }
-  }
-  else if(!sc->cap) // совместимость со старыми capability
-  {
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263p-16CIF{sw}"))
-      FindCapability_H263(sc,keys,"H.263p-16CIF{sw}","CIF16");
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263p-4CIF{sw}"))
-      FindCapability_H263(sc,keys,"H.263p-4CIF{sw}","CIF4");
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263p-CIF{sw}"))
-      FindCapability_H263(sc,keys,"H.263p-CIF{sw}","CIF");
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263p-QCIF{sw}"))
-      FindCapability_H263(sc,keys,"H.263p-QCIF{sw}","QCIF");
-    if(!sc->cap && FindSipCap(LocalCaps, "H.263p-SQCIF{sw}"))
-      FindCapability_H263(sc,keys,"H.263p-SQCIF{sw}","SQCIF");
   }
 
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
+    SetFormatParams(wf, sc->video_width, sc->video_height, sc->video_frame_rate, sc->bandwidth);
     if(f) wf.SetOptionBoolean("_advancedPrediction", f);
     if(d) wf.SetOptionBoolean("_unrestrictedVector", d);
     if(e) wf.SetOptionBoolean("_arithmeticCoding", e);
     if(g) wf.SetOptionBoolean("_pbFrames", g);
-    if(width && height)
-    {
-      wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
-      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
-    }
-    if(mpiname != "")
-    {
-      wf.SetOptionInteger("SQCIF MPI", 0);
-      wf.SetOptionInteger("QCIF MPI", 0);
-      wf.SetOptionInteger("CIF MPI", 0);
-      wf.SetOptionInteger("CIF4 MPI", 0);
-      wf.SetOptionInteger("CIF16 MPI", 0);
-      wf.SetOptionInteger(mpiname+" MPI", mpi);
-    }
-    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 
@@ -1380,66 +1268,47 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
 
 void MCUSipConnection::SelectCapability_H264(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  unsigned profile = 0, level = 0, level_h241 = 0;
-  unsigned max_fs = 0, max_mbps = 0, max_br = 0;
-  unsigned width = 0, height = 0;
+  PStringArray keys = sc->fmtp.Tokenise(";");
+  unsigned profile = 0, level = 0, level_h241 = 0, max_fs = 0, max_mbps = 0, max_br = 0;
   PString sprop;
+
+  for(int kn = 0; kn < keys.GetSize(); kn++)
+  {
+    if(keys[kn].Find("sprop-parameter-sets=") == 0) { sprop = keys[kn].Right(keys[kn].GetLength() - PString("sprop-parameter-sets=").GetLength()); }
+  }
 
   if(!sc->cap)
   {
     if(FindSipCap(LocalCaps, "H.264{sw}"))
       sc->cap = H323Capability::Create("H.264{sw}");
-//    if(!sc->cap)
-//      return;
-  }
-  if(sc->cap)
-  {
-    SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
-    if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+    if(!sc->cap)
+      return;
   }
 
-  if(sc->cap && sc->video_width && sc->video_height)
+  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  if(local_sc->video_width) sc->video_width = local_sc->video_width;
+  if(local_sc->video_height) sc->video_height = local_sc->video_height;
+  if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
+  if(local_sc->bandwidth) sc->bandwidth = local_sc->bandwidth;
+
+  if(sc->video_width == 0 && sc->video_height == 0)
   {
-    max_fs = GetVideoMacroBlocks(sc->video_width, sc->video_height);
-    GetParamsH264(level, level_h241, max_fs, max_mbps, max_br);
-    width = sc->video_width;
-    height = sc->video_height;
-  }
-  else if(!sc->cap || sc->cap->GetFormatName() == "H.264{sw}")
-  {
-    PStringArray keys = sc->fmtp.Tokenise(";");
     for(int kn = 0; kn < keys.GetSize(); kn++)
     {
       if(keys[kn].Find("profile-level-id=") == 0) { int p = (keys[kn].Tokenise("=")[1]).AsInteger(16); profile = (p>>16); level = (p&255); }
       else if(keys[kn].Find("max-mbps=") == 0)    { max_mbps = (keys[kn].Tokenise("=")[1]).AsInteger(); }
       else if(keys[kn].Find("max-fs=") == 0)      { max_fs = (keys[kn].Tokenise("=")[1]).AsInteger(); }
       else if(keys[kn].Find("max-br=") == 0)      { max_br = (keys[kn].Tokenise("=")[1]).AsInteger(); }
-      else if(keys[kn].Find("sprop-parameter-sets=") == 0) { sprop = keys[kn].Right(keys[kn].GetLength() - PString("sprop-parameter-sets=").GetLength()); }
     }
     if(level == 0) level = 12; // default level
-
-    PString capname;
-    GetParamsH264(level, level_h241, max_fs, max_mbps, max_br, capname);
-    if(!sc->cap && capname != "")
-      sc->cap = H323Capability::Create(capname+"{sw}");
+    GetParamsH264(level, level_h241, max_fs, max_mbps, max_br, sc->video_width, sc->video_height);
   }
 
-  profile = 64;
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
-    if(level_h241) wf.SetOptionInteger("Generic Parameter 42", level_h241);
-    if(max_fs) wf.SetOptionInteger("Generic Parameter 4", (max_fs/256)+1);
-    if(max_mbps) wf.SetOptionInteger("Generic Parameter 3", max_mbps/500);
-    if(max_br) wf.SetOptionInteger("Generic Parameter 6", max_br/25000);
+    SetFormatParams(wf, sc->video_width, sc->video_height, sc->video_frame_rate, sc->bandwidth);
     if(sprop != "") wf.SetOptionString("sprop-parameter-sets", sprop);
-    if(width && height)
-    {
-      wf.SetOptionInteger("Custom Resolution", 1);
-      wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
-      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
-    }
-    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 
@@ -1447,7 +1316,7 @@ void MCUSipConnection::SelectCapability_H264(SipCapMapType & LocalCaps, SipCapab
 
 void MCUSipConnection::SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  int width = 0, height = 0;
+  PStringArray keys = sc->fmtp.Tokenise(";");
 
   if(!sc->cap)
   {
@@ -1458,33 +1327,25 @@ void MCUSipConnection::SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapabi
   }
 
   SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
-  if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+  if(local_sc->video_width) sc->video_width = local_sc->video_width;
+  if(local_sc->video_height) sc->video_height = local_sc->video_height;
+  if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
+  if(local_sc->bandwidth) sc->bandwidth = local_sc->bandwidth;
 
-  if(sc->video_width && sc->video_height)
+  if(sc->video_width == 0 && sc->video_height == 0)
   {
-    width = sc->video_width;
-    height = sc->video_height;
-  }
-  else
-  {
-    PStringArray keys = sc->fmtp.Tokenise(";");
     for(int kn = 0; kn < keys.GetSize(); kn++)
     {
-      if(keys[kn].Find("width=") == 0)       width = (keys[kn].Tokenise("=")[1]).AsInteger();
-      else if(keys[kn].Find("height=") == 0) height = (keys[kn].Tokenise("=")[1]).AsInteger();
+      if(keys[kn].Find("width=") == 0)       sc->video_width = (keys[kn].Tokenise("=")[1]).AsInteger();
+      else if(keys[kn].Find("height=") == 0) sc->video_height = (keys[kn].Tokenise("=")[1]).AsInteger();
     }
   }
 
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
-    if(width && height)
-    {
-      wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
-      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
-    }
+    SetFormatParams(wf, sc->video_width, sc->video_height, sc->video_frame_rate, sc->bandwidth);
     if(remoteApplication.ToLower().Find("linphone") != P_MAX_INDEX) wf.SetOptionEnum("Picture ID Size", 0);
-    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 
@@ -1492,8 +1353,14 @@ void MCUSipConnection::SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapabi
 
 void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapability *sc)
 {
-  unsigned profile_level = 0, profile = 0, level = 0, max_fs = 0, width = 0, height = 0;;
+  PStringArray keys = sc->fmtp.Tokenise(";");
+  unsigned profile_level = 0, profile = 0, level = 0, max_fs = 0;
   PString config;
+
+  for(int kn = 0; kn < keys.GetSize(); kn++)
+  {
+    if(keys[kn].Find("config=") == 0) { config = keys[kn].Tokenise("=")[1]; }
+  }
 
   if(!sc->cap)
   {
@@ -1504,36 +1371,26 @@ void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapa
   }
 
   SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
-  if(local_sc) { sc->video_width = local_sc->video_width; sc->video_height = local_sc->video_height; }
+  if(local_sc->video_width) sc->video_width = local_sc->video_width;
+  if(local_sc->video_height) sc->video_height = local_sc->video_height;
+  if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
+  if(local_sc->bandwidth) sc->bandwidth = local_sc->bandwidth;
 
-  if(sc->video_width && sc->video_height)
+  if(sc->video_width == 0 && sc->video_height == 0)
   {
-    max_fs = GetVideoMacroBlocks(sc->video_width, sc->video_height);
-    GetParamsMpeg4(profile_level, profile, level, max_fs);
-    width = sc->video_width;
-    height = sc->video_height;
-  }
-  else if(sc->cap->GetFormatName() == "MP4V-ES{sw}")
-  {
-    PStringArray keys = sc->fmtp.Tokenise(";");
     for(int kn = 0; kn < keys.GetSize(); kn++)
     {
       if(keys[kn].Find("profile-level-id=") == 0) { profile_level = keys[kn].Tokenise("=")[1].AsInteger(); }
-      else if(keys[kn].Find("config=") == 0) { config = keys[kn].Tokenise("=")[1]; }
     }
     if(profile_level == 0) profile_level = 3;
-    GetParamsMpeg4(profile_level, profile, level, max_fs, width, height);
+    GetParamsMpeg4(profile_level, profile, level, max_fs, sc->video_width, sc->video_height);
   }
 
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
-    if(profile) wf.SetOptionInteger("profile", profile);
-    if(level) wf.SetOptionInteger("level", level);
-    if(width) wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
-    if(height) wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
+    SetFormatParams(wf, sc->video_width, sc->video_height, sc->video_frame_rate, sc->bandwidth);
     if(config != "") wf.SetOptionString("config", config);
-    if(sc->bandwidth) wf.SetOptionInteger(OPTION_MAX_BIT_RATE, sc->bandwidth*1000);
   }
 }
 
@@ -1988,20 +1845,8 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
     if(remote_sc->cap)
     {
       remote_sc->capname = remote_sc->cap->GetFormatName();
-      if(remote_sc->media == 0)
-      {
-        scap = remote_sc->payload;
-      }
-      else if(remote_sc->media == 1)
-      {
-        vcap = remote_sc->payload;
-        // set video params
-        SipCapability *local_sc = FindSipCap(LocalCaps, remote_sc->capname);
-        if(local_sc->video_frame_rate != 0) remote_sc->video_frame_rate = local_sc->video_frame_rate;
-        if(local_sc->bandwidth != 0) remote_sc->bandwidth = local_sc->bandwidth;
-        OpalMediaFormat & wf = remote_sc->cap->GetWritableMediaFormat();
-        SetFormatParams(wf, 0, 0, remote_sc->video_frame_rate, remote_sc->bandwidth);
-      }
+      if(remote_sc->media == 0)      scap = remote_sc->payload;
+      else if(remote_sc->media == 1) vcap = remote_sc->payload;
     }
   }
 

@@ -93,12 +93,12 @@ class MCUURL : public PURL
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 unsigned GetVideoMacroBlocks(unsigned width, unsigned height);
-BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs);
-BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs, unsigned & width, unsigned & height);
+BOOL GetParamsH263(PString & mpiname, unsigned & width, unsigned & height);
 BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs);
 BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br);
-BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br, PString & capname);
-BOOL GetParamsH263(PString & mpiname, unsigned & width, unsigned & height);
+BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br, unsigned & width, unsigned & height);
+BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs);
+BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs, unsigned & width, unsigned & height);
 
 void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height);
 void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height, unsigned frame_rate, unsigned bandwidth);

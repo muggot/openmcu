@@ -280,7 +280,6 @@ class MCUSipConnection : public MCUH323Connection
     int CreateMediaChannel(int pt, int dir);
     SipRTP_UDP *CreateRTPSession(SipCapability *sc);
 
-    void FindCapability_H263(SipCapability *sc, PStringArray &keys, const char * _H323Name, const char * _SIPName);
     void SelectCapability_H261(SipCapMapType & LocalCaps, SipCapability *sc);
     void SelectCapability_H263(SipCapMapType & LocalCaps, SipCapability *sc);
     void SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapability *sc);
