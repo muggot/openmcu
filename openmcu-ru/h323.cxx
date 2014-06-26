@@ -2551,27 +2551,6 @@ void MCUH323Connection::OnSetLocalCapabilities()
   if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive video: " << video_cap << " " << video_res); }
   if(bandwidth_to != 0) { PTRACE(1, "MCUH323Connection\tSet endpoint bandwidth to mcu: " << bandwidth_to); }
 
-  PString mpiname;
-  unsigned level_h241 = 0;
-  if(video_cap == "H.261{sw}" || video_cap == "H.263{sw}" || video_cap == "H.263p{sw}")
-  {
-    if(width && height)
-      GetParamsH263(mpiname, width, height);
-    if(mpiname == "") mpiname = "CIF"; // default
-  }
-  else if(video_cap == "H.264{sw}")
-  {
-    unsigned max_fs = GetVideoMacroBlocks(width, height);
-    unsigned level = 0;
-    GetParamsH264(level, level_h241, max_fs);
-    if(level_h241 == 0) level_h241 = 29; // default
-  }
-  else if(video_cap == "VP8{sw}")
-  {
-    if(!width) width = 352; // default
-    if(!height) height = 288; // default
-  }
-
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {
     PString capname = localCapabilities[i].GetFormatName();
@@ -2583,33 +2562,44 @@ void MCUH323Connection::OnSetLocalCapabilities()
     else if(localCapabilities[i].GetMainType() == H323Capability::e_Video && video_cap != "")
     {
       if(capname != video_cap)
-      { localCapabilities.Remove(&localCapabilities[i]); continue; }
-      else if(capname == "H.261{sw}" || capname == "H.263{sw}" || capname == "H.263p{sw}")
       {
-        const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
-        unsigned cap_mpi = mf.GetOptionInteger(mpiname+" MPI");
-        if(cap_mpi == 0)
-        { localCapabilities.Remove(&localCapabilities[i]); continue; }
+        localCapabilities.Remove(&localCapabilities[i]);
+        continue;
       }
-      else if(capname == "H.264{sw}")
+      else if(width != 0 && height != 0)
       {
-        const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
-        unsigned cap_level_h241 = mf.GetOptionInteger("Generic Parameter 42");
-        if(level_h241 != cap_level_h241)
-        { localCapabilities.Remove(&localCapabilities[i]); continue; }
-      }
-      else if(capname == "VP8{sw}")
-      {
-        const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
-        unsigned cap_width = mf.GetOptionInteger("Generic Parameter 1");
-        unsigned cap_height = mf.GetOptionInteger("Generic Parameter 2");
-        if(width != cap_width && height != cap_height)
-        { localCapabilities.Remove(&localCapabilities[i]); continue; }
+        if(capname == "H.261{sw}" || capname == "H.263{sw}" || capname == "H.263p{sw}")
+        {
+          PString mpiname;
+          GetParamsH263(mpiname, width, height);
+          const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
+          unsigned cap_mpi = mf.GetOptionInteger(mpiname+" MPI");
+          if(cap_mpi == 0)
+          { localCapabilities.Remove(&localCapabilities[i]); continue; }
+        }
+        else if(capname == "H.264{sw}")
+        {
+          unsigned level = 0, level_h241 = 0, max_fs = 0;
+          max_fs = GetVideoMacroBlocks(width, height);
+          GetParamsH264(level, level_h241, max_fs);
+          const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
+          unsigned cap_level_h241 = mf.GetOptionInteger("Generic Parameter 42");
+          if(level_h241 != cap_level_h241)
+          { localCapabilities.Remove(&localCapabilities[i]); continue; }
+        }
+        else if(capname == "VP8{sw}")
+        {
+          const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
+          unsigned cap_width = mf.GetOptionInteger("Generic Parameter 1");
+          unsigned cap_height = mf.GetOptionInteger("Generic Parameter 2");
+          if(width != cap_width && height != cap_height)
+          { localCapabilities.Remove(&localCapabilities[i]); continue; }
+        }
       }
       // set video group
       localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
     }
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Video && bandwidth_to)
+    if(localCapabilities[i].GetMainType() == H323Capability::e_Video && bandwidth_to != 0)
     {
       OpalMediaFormat & wf = localCapabilities[i].GetWritableMediaFormat();
       wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth_to*1000);
