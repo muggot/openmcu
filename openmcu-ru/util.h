@@ -27,6 +27,8 @@ char * PStringToChar(PString str);
 
 int PTimedMutexTryLock(PTimedMutex & mutex, const PTimeInterval & timeout, PString info="");
 
+BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap);
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUConfig: public PConfig
@@ -97,6 +99,14 @@ BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs);
 BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br);
 BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br, PString & capname);
 BOOL GetParamsH263(PString & mpiname, unsigned & width, unsigned & height);
+
+void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height);
+void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height, unsigned frame_rate, unsigned bandwidth);
+void SetFormatParamsH261(OpalMediaFormat & wf, unsigned width, unsigned height);
+void SetFormatParamsH263(OpalMediaFormat & wf, unsigned width, unsigned height);
+void SetFormatParamsH264(OpalMediaFormat & wf, unsigned width, unsigned height);
+void SetFormatParamsMPEG4(OpalMediaFormat & wf, unsigned width, unsigned height);
+void SetFormatParamsVP8(OpalMediaFormat & wf, unsigned width, unsigned height);
 
 static struct vp8_resolution {
   const char *capname;

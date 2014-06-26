@@ -391,3 +391,159 @@ BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, u
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParamsH261(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  SetFormatParamsH263(wf, width, height);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParamsH263(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  if(width != 0 && height != 0)
+  {
+    PString mpiname;
+    GetParamsH263(mpiname, width, height);
+    if(mpiname != "")
+    {
+      wf.SetOptionInteger("SQCIF MPI", 0);
+      wf.SetOptionInteger("QCIF MPI", 0);
+      wf.SetOptionInteger("CIF MPI", 0);
+      wf.SetOptionInteger("CIF4 MPI", 0);
+      wf.SetOptionInteger("CIF16 MPI", 0);
+      wf.SetOptionInteger(mpiname+" MPI", 1);
+    }
+    wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+    wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParamsH264(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  unsigned level = 0, level_h241 = 0, max_fs = 0, max_mbps = 0, max_br = 0;
+  max_fs = GetVideoMacroBlocks(width, height);
+  if(max_fs == 0)
+    level_h241 = wf.GetOptionInteger("Generic Parameter 42");
+  GetParamsH264(level, level_h241, max_fs, max_mbps, max_br);
+  wf.SetOptionInteger("Generic Parameter 42", level_h241);
+  wf.SetOptionInteger("Generic Parameter 4", (max_fs/256)+1);
+  wf.SetOptionInteger("Generic Parameter 3", max_mbps/500);
+  wf.SetOptionInteger("Generic Parameter 6", max_br/25000);
+  if(width && height)
+  {
+    wf.SetOptionInteger("Custom Resolution", 1);
+    wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+    wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParamsMPEG4(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  if(width != 0 && height != 0)
+  {
+    unsigned profile_level = 0, profile = 0, level = 0, max_fs = 0;
+    max_fs = GetVideoMacroBlocks(width, height);
+    GetParamsMpeg4(profile_level, profile, level, max_fs);
+    wf.SetOptionInteger("profile", profile);
+    wf.SetOptionInteger("level", level);
+    wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+    wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParamsVP8(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  if(width != 0 && height != 0)
+  {
+    wf.SetOptionInteger("Generic Parameter 1", width);
+    wf.SetOptionInteger("Generic Parameter 2", height);
+    wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+    wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  unsigned frame_rate = 0, bandwidth = 0;
+  SetFormatParams(wf, width, height, frame_rate, bandwidth);
+}
+
+void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height, unsigned frame_rate, unsigned bandwidth)
+{
+  if(wf.Find("H.261") == 0)
+    SetFormatParamsH261(wf, width, height);
+  else if(wf.Find("H.263") == 0)
+    SetFormatParamsH263(wf, width, height);
+  else if(wf.Find("H.264") == 0)
+    SetFormatParamsH264(wf, width, height);
+  else if(wf.Find("MP4V-ES") == 0)
+    SetFormatParamsMPEG4(wf, width, height);
+  else if(wf.Find("VP8") == 0)
+    SetFormatParamsVP8(wf, width, height);
+
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+
+  if(frame_rate != 0)
+    wf.SetOptionInteger(OPTION_FRAME_TIME, 90000/frame_rate);
+  else
+    wf.SetOptionInteger(OPTION_FRAME_TIME, 90000/ep.GetVideoFrameRate());
+
+  if(bandwidth != 0)
+    wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth*1000);
+  else
+    wf.SetOptionInteger(OPTION_MAX_BIT_RATE, 256*1000);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap)
+{
+  H323VideoCodec *codec = (H323VideoCodec *)(cap->CreateCodec(H323Codec::Encoder));
+  if(codec == NULL)
+    return FALSE;
+
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+  ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
+  Conference *conf = manager.MakeAndLockConference(requestedRoom); // creating conference if needed
+  manager.UnlockConference();
+
+  const OpalMediaFormat & mf = cap->GetMediaFormat();
+
+  // frame rate
+  unsigned frame_rate;
+  if(mf.GetOptionInteger(OPTION_FRAME_TIME) != 0)
+    frame_rate = 90000/mf.GetOptionInteger(OPTION_FRAME_TIME);
+  else
+    frame_rate = ep.GetVideoFrameRate();
+  codec->SetTargetFrameTimeMs(1000/frame_rate);
+
+  // bandwidth
+  unsigned bandwidth = mf.GetOptionInteger(OPTION_MAX_BIT_RATE);
+
+  // update format string
+  int videoMixerNumber = 0;
+  PString formatWH = codec->formatString.Left(codec->formatString.FindLast(":"));
+  codec->formatString = formatWH+":"+PString(bandwidth)+"x";
+  codec->formatString += PString(frame_rate) + "_" + requestedRoom + "/" + PString(videoMixerNumber);
+
+  if(!codec->CheckCacheRTP())
+  {
+    new ConferenceFileMember(conf, codec->GetMediaFormat(), PFile::WriteOnly, videoMixerNumber);
+    while(!codec->CheckCacheRTP()) { PThread::Sleep(100); }
+  }
+
+  PTRACE(1, "MCU\tOpenVideoCache(" << codec->formatString << ")");
+  delete codec;
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////

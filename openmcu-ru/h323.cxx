@@ -386,10 +386,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
         continue;
       H323Capability *new_cap = H323Capability::Create("VP8{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      wf.SetOptionInteger(OPTION_FRAME_WIDTH, vp8_resolutions[i].width);
-      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, vp8_resolutions[i].height);
-      wf.SetOptionInteger("Generic Parameter 1", vp8_resolutions[i].width);
-      wf.SetOptionInteger("Generic Parameter 2", vp8_resolutions[i].height);
+      SetFormatParams(wf, vp8_resolutions[i].width, vp8_resolutions[i].height);
       AddCapability(new_cap);
     }
   }
@@ -415,14 +412,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
         continue;
       H323Capability *new_cap = H323Capability::Create("H.263p{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      wf.SetOptionInteger(OPTION_FRAME_WIDTH, h263_resolutions[i].width);
-      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, h263_resolutions[i].height);
-      wf.SetOptionInteger("SQCIF MPI", 0);
-      wf.SetOptionInteger("QCIF MPI", 0);
-      wf.SetOptionInteger("CIF MPI", 0);
-      wf.SetOptionInteger("CIF4 MPI", 0);
-      wf.SetOptionInteger("CIF16 MPI", 0);
-      wf.SetOptionInteger(PString(h263_resolutions[i].mpiname)+" MPI", 1);
+      SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
       AddCapability(new_cap);
     }
   }
@@ -435,14 +425,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
         continue;
       H323Capability *new_cap = H323Capability::Create("H.263{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      wf.SetOptionInteger(OPTION_FRAME_WIDTH, h263_resolutions[i].width);
-      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, h263_resolutions[i].height);
-      wf.SetOptionInteger("SQCIF MPI", 0);
-      wf.SetOptionInteger("QCIF MPI", 0);
-      wf.SetOptionInteger("CIF MPI", 0);
-      wf.SetOptionInteger("CIF4 MPI", 0);
-      wf.SetOptionInteger("CIF16 MPI", 0);
-      wf.SetOptionInteger(PString(h263_resolutions[i].mpiname)+" MPI", 1);
+      SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
       AddCapability(new_cap);
     }
   }
@@ -457,14 +440,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
         continue;
       H323Capability *new_cap = H323Capability::Create("H.261{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      wf.SetOptionInteger(OPTION_FRAME_WIDTH, h263_resolutions[i].width);
-      wf.SetOptionInteger(OPTION_FRAME_HEIGHT, h263_resolutions[i].height);
-      wf.SetOptionInteger("SQCIF MPI", 0);
-      wf.SetOptionInteger("QCIF MPI", 0);
-      wf.SetOptionInteger("CIF MPI", 0);
-      wf.SetOptionInteger("CIF4 MPI", 0);
-      wf.SetOptionInteger("CIF16 MPI", 0);
-      wf.SetOptionInteger(PString(h263_resolutions[i].mpiname)+" MPI", 1);
+      SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
       AddCapability(new_cap);
     }
   }
@@ -2713,51 +2689,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
     if(new_cap)
     {
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      if(video_cap == "H.261{sw}" || video_cap == "H.263{sw}" || video_cap == "H.263p{sw}")
-      {
-        if(width && height)
-        {
-          PString mpiname;
-          GetParamsH263(mpiname, width, height);
-          wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
-          wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
-          wf.SetOptionInteger("SQCIF MPI", 0);
-          wf.SetOptionInteger("QCIF MPI", 0);
-          wf.SetOptionInteger("CIF MPI", 0);
-          wf.SetOptionInteger("CIF4 MPI", 0);
-          wf.SetOptionInteger("CIF16 MPI", 0);
-          wf.SetOptionInteger(mpiname+" MPI", 1);
-        }
-      }
-      else if(video_cap.Find("H.264") == 0)
-      {
-        unsigned max_fs = GetVideoMacroBlocks(width, height);
-        unsigned level = 0, level_h241 = 0, max_mbps = 0, max_br = 0;
-        if(max_fs == 0)
-          level_h241 = wf.GetOptionInteger("Generic Parameter 42");
-        GetParamsH264(level, level_h241, max_fs, max_mbps, max_br);
-        wf.SetOptionInteger("Generic Parameter 42", level_h241);
-        wf.SetOptionInteger("Generic Parameter 4", (max_fs/256)+1);
-        wf.SetOptionInteger("Generic Parameter 3", max_mbps/500);
-        wf.SetOptionInteger("Generic Parameter 6", max_br/25000);
-        if(width && height)
-        {
-          wf.SetOptionInteger("Custom Resolution", 1);
-          wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
-          wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
-        }
-      }
-      else if(video_cap == "VP8{sw}")
-      {
-        if(width && height)
-        {
-          wf.SetOptionInteger("Generic Parameter 1", width);
-          wf.SetOptionInteger("Generic Parameter 2", height);
-          wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
-          wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
-        }
-      }
-      wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth_from);
+      SetFormatParams(wf, width, height, 0, bandwidth_from);
       _remoteCaps.Add(new_cap);
     }
   }
