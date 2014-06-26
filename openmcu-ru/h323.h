@@ -307,7 +307,6 @@ class MCUH323Connection : public H323Connection
     void SetRemoteName(const H323SignalPDU & pdu);
     void SetMemberName();
     void SetEndpointDefaultVideoParams();
-    void SetEndpointPrefVideoParams();
     PString GetRemoteNumber();
     PString dtmfBuffer;
 

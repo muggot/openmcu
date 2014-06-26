@@ -280,7 +280,7 @@ SipCapability * FindSipCap(SipCapMapType & SipCapMap, PString capname)
 {
   for(SipCapMapType::iterator it = SipCapMap.begin(); it != SipCapMap.end(); it++)
   {
-    if(it->second->capname == capname)
+    if(it->second->capname == capname || it->second->capname == capname+"{sw}")
       return it->second;
   }
   return NULL;
@@ -547,8 +547,9 @@ void MCUSipConnection::RefreshLocalSipCaps()
   if(video_capname != "" && video_capname.Right(4) != "{sw}")
     video_capname += "{sw}";
   PString video_resolution = GetEndpointParamFromUrl("Video resolution", ruri_str);
-  PString video_pt = GetEndpointParamFromUrl("Video payload type", ruri_str);
   PString video_fmtp = GetEndpointParamFromUrl("Video fmtp", ruri_str);
+  unsigned frame_rate = GetEndpointParamFromUrl("Frame rate from MCU", ruri_str, 0);
+  unsigned bandwidth = GetEndpointParamFromUrl("Bandwidth from MCU", ruri_str, 0);
 
   LocalSipCaps.clear();
   for(SipCapMapType::iterator it = sep->GetBaseSipCaps().begin(); it != sep->GetBaseSipCaps().end(); it++)
@@ -561,18 +562,21 @@ void MCUSipConnection::RefreshLocalSipCaps()
       continue;
 
     SipCapability *local_sc = new SipCapability(*base_sc);
-    if(base_sc->media == 1 && video_capname != "")
+    if(base_sc->media == 1)
     {
-      local_sc->preferred_cap = TRUE;
-      if(video_resolution != "")
+      if(video_capname != "")
       {
-        local_sc->video_width = video_resolution.Tokenise("x")[0].AsInteger();
-        local_sc->video_height = video_resolution.Tokenise("x")[1].AsInteger();
+        local_sc->preferred_cap = TRUE;
+        if(video_resolution != "")
+        {
+          local_sc->video_width = video_resolution.Tokenise("x")[0].AsInteger();
+          local_sc->video_height = video_resolution.Tokenise("x")[1].AsInteger();
+        }
+        if(video_fmtp != "")
+          local_sc->fmtp = video_fmtp;
       }
-      if(video_fmtp != "")
-        local_sc->fmtp = video_fmtp;
-      if(video_pt != "")
-        local_sc->payload = video_pt.AsInteger();
+      local_sc->video_frame_rate = frame_rate;
+      local_sc->bandwidth = bandwidth;
     }
     if(base_sc->media == 0 && audio_capname != "")
     {
@@ -1964,9 +1968,6 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
       // G.722.1
       else if(remote_sc->format == "g7221")
       { SelectCapability_G7221(LocalCaps, remote_sc); }
-      // SIREN14
-      //else if(remote_sc->format == "siren14" && remote_sc->clock == 32000)
-      //{ SelectCapability_G7221C(LocalCaps, remote_sc); }
       // G.722.2
       else if(remote_sc->format == "amr-wb" && remote_sc->clock == 16000)
       { SelectCapability_G7222(LocalCaps, remote_sc); }
@@ -1986,9 +1987,21 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
     }
     if(remote_sc->cap)
     {
-      if(remote_sc->media == 0)      scap = remote_sc->payload;
-      else if(remote_sc->media == 1) vcap = remote_sc->payload;
       remote_sc->capname = remote_sc->cap->GetFormatName();
+      if(remote_sc->media == 0)
+      {
+        scap = remote_sc->payload;
+      }
+      else if(remote_sc->media == 1)
+      {
+        vcap = remote_sc->payload;
+        // set video params
+        SipCapability *local_sc = FindSipCap(LocalCaps, remote_sc->capname);
+        if(local_sc->video_frame_rate != 0) remote_sc->video_frame_rate = local_sc->video_frame_rate;
+        if(local_sc->bandwidth != 0) remote_sc->bandwidth = local_sc->bandwidth;
+        OpalMediaFormat & wf = remote_sc->cap->GetWritableMediaFormat();
+        SetFormatParams(wf, 0, 0, remote_sc->video_frame_rate, remote_sc->bandwidth);
+      }
     }
   }
 

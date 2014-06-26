@@ -150,6 +150,7 @@ class SipCapability
       secure_type = SECURE_TYPE_NONE;
       video_width = 0;
       video_height = 0;
+      video_frame_rate = 0;
     }
     void Print();
     int CmpSipCaps(SipCapability &c)
@@ -187,6 +188,7 @@ class SipCapability
     PString local_fmtp; // override received parameters
     unsigned video_width;
     unsigned video_height;
+    unsigned video_frame_rate;
     PString params;
     PStringToString attr;
     H323Capability *cap;

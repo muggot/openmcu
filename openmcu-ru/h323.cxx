@@ -2623,14 +2623,15 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
 {
   PString audio_cap = GetEndpointParam("Audio codec(transmit)");
   PString video_cap = GetEndpointParam("Video codec(transmit)");
+  unsigned frame_rate = GetEndpointParam("Frame rate from MCU", 0);
+  unsigned bandwidth = GetEndpointParam("Bandwidth from MCU", 0);
   PString video_res = GetEndpointParam("Video resolution(transmit)");
   unsigned width = video_res.Tokenise("x")[0].AsInteger();
   unsigned height = video_res.Tokenise("x")[1].AsInteger();
 
   if(audio_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit audio: " << audio_cap); }
-  if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit video: " << video_cap << " " << video_res); }
+  if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit video: " << video_cap << " " << video_res << " " << frame_rate << " " << bandwidth); }
 
-  unsigned bandwidth_from = 0;
   BOOL audio_codec_agreed = FALSE;
   BOOL video_codec_agreed = FALSE;
 
@@ -2648,12 +2649,18 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
     else if(remoteCaps[i].GetMainType() == H323Capability::e_Video)
     {
       if(video_cap == "")
+      {
+        OpalMediaFormat & wf = remoteCaps[i].GetWritableMediaFormat();
+        SetFormatParams(wf, 0, 0, frame_rate, bandwidth);
         _remoteCaps.Copy(remoteCaps[i]);
+      }
       else if(video_cap.Left(4) == capname.Left(4))
+      {
         video_codec_agreed = TRUE;
+      }
 
-      if(bandwidth_from == 0)
-        bandwidth_from = remoteCaps[i].GetMediaFormat().GetOptionInteger(OPTION_MAX_BIT_RATE);
+      if(bandwidth == 0)
+        bandwidth = remoteCaps[i].GetMediaFormat().GetOptionInteger(OPTION_MAX_BIT_RATE);
     }
     else
     {
@@ -2689,7 +2696,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
     if(new_cap)
     {
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      SetFormatParams(wf, width, height, 0, bandwidth_from);
+      SetFormatParams(wf, width, height, frame_rate, bandwidth);
       _remoteCaps.Add(new_cap);
     }
   }
@@ -2896,16 +2903,12 @@ void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
 
 void MCUH323Connection::SetEndpointDefaultVideoParams()
 {
+  if(GetRemotePartyAddress() == "")
+    return;
+
   H323VideoCodec *codec = GetVideoTransmitCodec();
   if(codec == NULL) return;
   OpalMediaFormat & mf = codec->GetWritableMediaFormat();
-
-  // default & video parameters
-  unsigned fr = ep.GetVideoFrameRate();
-  if(fr < 1 || fr > MAX_FRAME_RATE) fr = DefaultVideoFrameRate;
-  codec->SetTargetFrameTimeMs(1000/fr);
-  mf.SetOptionInteger(OPTION_FRAME_RATE, fr);
-  mf.SetOptionInteger(OPTION_FRAME_TIME, 90000/fr);
 
   mf.SetOptionInteger("Encoding Quality", DefaultVideoQuality);
 
@@ -2929,31 +2932,6 @@ void MCUH323Connection::SetEndpointDefaultVideoParams()
       }
       mf.SetOptionInteger(option, value);
     }
-  }
-}
-
-void MCUH323Connection::SetEndpointPrefVideoParams()
-{
-  if(GetRemotePartyAddress() == "") return;
-  H323VideoCodec *codec = GetVideoTransmitCodec();
-  if(codec == NULL) return;
-  OpalMediaFormat & mf = codec->GetWritableMediaFormat();
-
-  unsigned fr = GetEndpointParam("Frame rate from MCU", 0);
-  if(fr != 0)
-  {
-    if(fr > MAX_FRAME_RATE) fr = MAX_FRAME_RATE;
-    codec->SetTargetFrameTimeMs(1000/fr);
-    mf.SetOptionInteger(OPTION_FRAME_RATE, fr);
-    mf.SetOptionInteger(OPTION_FRAME_TIME, 90000/fr);
-  }
-
-  unsigned bwFrom = GetEndpointParam("Bandwidth from MCU", 0);
-  if(bwFrom != 0)
-  {
-    if(bwFrom < 64) bwFrom = 64;
-    if(bwFrom > 4000) bwFrom = 4000;
-    mf.SetOptionInteger(OPTION_MAX_BIT_RATE, bwFrom*1000);
   }
 }
 
@@ -3018,19 +2996,18 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
       return FALSE;
     }
 
-    if(GetRemotePartyAddress() != "")
-    {
-      SetEndpointDefaultVideoParams();
-      SetEndpointPrefVideoParams();
-    }
+    SetEndpointDefaultVideoParams();
 
     // get frame time from codec
-    OpalMediaFormat & mf = codec.GetWritableMediaFormat();
+    const OpalMediaFormat & mf = codec.GetMediaFormat();
     unsigned fr;
     if(mf.GetOptionInteger(OPTION_FRAME_TIME) != 0)
       fr = 90000/mf.GetOptionInteger(OPTION_FRAME_TIME);
+    else if(mf.GetOptionInteger(OPTION_FRAME_RATE) != 0)
+      fr = mf.GetOptionInteger(OPTION_FRAME_RATE);
     else
       fr = ep.GetVideoFrameRate();
+    codec.SetTargetFrameTimeMs(1000/fr); // ???
 
     // update format string
     PString formatWH = codec.formatString.Left(codec.formatString.FindLast(":"));
