@@ -2622,8 +2622,8 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
   if(audio_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit audio: " << audio_cap); }
   if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit video: " << video_cap << " " << video_res << " " << frame_rate << " " << bandwidth); }
 
-  BOOL audio_codec_agreed = FALSE;
-  BOOL video_codec_agreed = FALSE;
+  BOOL custom_audio_codec = FALSE;
+  BOOL custom_video_codec = FALSE;
 
   H323Capabilities _remoteCaps;
   for(PINDEX i = 0; i < remoteCaps.GetSize(); i++)
@@ -2634,10 +2634,16 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
       if(audio_cap == "")
         _remoteCaps.Copy(remoteCaps[i]);
       else if(audio_cap == capname)
-        audio_codec_agreed = TRUE;
+        custom_audio_codec = TRUE;
     }
     else if(remoteCaps[i].GetMainType() == H323Capability::e_Video)
     {
+      if(bandwidth == 0)
+      {
+        bandwidth = remoteCaps[i].GetMediaFormat().GetOptionInteger(OPTION_MAX_BIT_RATE);
+        bandwidth = bandwidth/1000;
+      }
+
       if(video_cap == "")
       {
         OpalMediaFormat & wf = remoteCaps[i].GetWritableMediaFormat();
@@ -2646,11 +2652,18 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
       }
       else if(video_cap.Left(4) == capname.Left(4))
       {
-        video_codec_agreed = TRUE;
+        if(width == 0 && height == 0)
+        {
+          OpalMediaFormat & wf = remoteCaps[i].GetWritableMediaFormat();
+          SetFormatParams(wf, 0, 0, frame_rate, bandwidth);
+          _remoteCaps.Copy(remoteCaps[i]);
+        }
+        else
+        {
+          custom_video_codec = TRUE;
+        }
       }
 
-      if(bandwidth == 0)
-        bandwidth = remoteCaps[i].GetMediaFormat().GetOptionInteger(OPTION_MAX_BIT_RATE);
     }
     else
     {
@@ -2659,7 +2672,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
   }
 
   // create custom audio capability
-  if(audio_cap != "" && audio_codec_agreed)
+  if(custom_audio_codec)
   {
     H323Capability *new_cap = H323Capability::Create(audio_cap);
     if(new_cap)
@@ -2680,7 +2693,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
     }
   }
   // create custom video capability
-  if(video_cap != "" && video_codec_agreed)
+  if(custom_video_codec)
   {
     H323Capability *new_cap = H323Capability::Create(video_cap);
     if(new_cap)
