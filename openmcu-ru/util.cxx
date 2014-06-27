@@ -71,23 +71,7 @@ MCUURL::MCUURL(PString str)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int GetEndpointParamFromUrl(PString param, PString addr, int defaultValue)
-{
-  PString value = GetEndpointParamFromUrl(param, addr);
-  if(value == "")
-    return defaultValue;
-  return value.AsInteger();
-}
-
-PString GetEndpointParamFromUrl(PString param, PString addr, PString defaultValue)
-{
-  PString value = GetEndpointParamFromUrl(param, addr);
-  if(value == "")
-    return defaultValue;
-  return value;
-}
-
-PString GetEndpointParamFromUrl(PString param, PString addr)
+PString GetEndpointParam(PString param, PString addr)
 {
   PString user, host;
   PString sectionPrefix, section;
@@ -121,6 +105,29 @@ PString GetEndpointParamFromUrl(PString param, PString addr)
   if(value == "")
     value = MCUConfig(sectionPrefix+"*").GetString(param);
 
+  return value;
+}
+
+PString GetEndpointParamFromUrl(PString param, PString addr)
+{
+  PString value = GetEndpointParam(param, addr);
+  MCUTRACE(1, "GetEndpointParam (" << addr << ") \"" << param << "\" = " << value);
+  return value;
+}
+
+int GetEndpointParamFromUrl(PString param, PString addr, int defaultValue)
+{
+  PString value = GetEndpointParamFromUrl(param, addr);
+  if(value == "")
+    return defaultValue;
+  return value.AsInteger();
+}
+
+PString GetEndpointParamFromUrl(PString param, PString addr, PString defaultValue)
+{
+  PString value = GetEndpointParamFromUrl(param, addr);
+  if(value == "")
+    return defaultValue;
   return value;
 }
 
