@@ -2631,6 +2631,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
     PString capname = remoteCaps[i].GetFormatName();
     if(remoteCaps[i].GetMainType() == H323Capability::e_Audio)
     {
+      // для аудио всегда создавать новый audio_cap
       if(audio_cap == "")
         _remoteCaps.Copy(remoteCaps[i]);
       else if(audio_cap == capname)
@@ -2647,11 +2648,14 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
       if(video_cap == "")
       {
         OpalMediaFormat & wf = remoteCaps[i].GetWritableMediaFormat();
+        // обязательно применить заданные frame_rate,bandwidth
         SetFormatParams(wf, 0, 0, frame_rate, bandwidth);
         _remoteCaps.Copy(remoteCaps[i]);
       }
       else if(video_cap.Left(4) == capname.Left(4))
       {
+        // создать новый video_cap только если задано разрешение,
+        // иначе только применить заданные frame_rate,bandwidth
         if(width == 0 && height == 0)
         {
           OpalMediaFormat & wf = remoteCaps[i].GetWritableMediaFormat();
