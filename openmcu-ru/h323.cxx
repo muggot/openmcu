@@ -2547,10 +2547,6 @@ void MCUH323Connection::OnSetLocalCapabilities()
   unsigned bandwidth_to = GetEndpointParam("Bandwidth to MCU", 0);
   if(bandwidth_to) { if(bandwidth_to < 64) bandwidth_to = 64; if(bandwidth_to > 4000) bandwidth_to = 4000; }
 
-  if(audio_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive audio: " << audio_cap); }
-  if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom receive video: " << video_cap << " " << video_res); }
-  if(bandwidth_to != 0) { PTRACE(1, "MCUH323Connection\tSet endpoint bandwidth to mcu: " << bandwidth_to); }
-
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {
     PString capname = localCapabilities[i].GetFormatName();
@@ -2618,9 +2614,6 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
   PString video_res = GetEndpointParam("Video resolution(transmit)");
   unsigned width = video_res.Tokenise("x")[0].AsInteger();
   unsigned height = video_res.Tokenise("x")[1].AsInteger();
-
-  if(audio_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit audio: " << audio_cap); }
-  if(video_cap != "") { PTRACE(1, "MCUH323Connection\tSet endpoint custom transmit video: " << video_cap << " " << video_res << " " << frame_rate << " " << bandwidth); }
 
   BOOL custom_audio_codec = FALSE;
   BOOL custom_video_codec = FALSE;
