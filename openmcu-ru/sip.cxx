@@ -390,6 +390,28 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
     sip_to = sip->sip_to;
   }
 
+  // local IP
+  PString sip_remote_host = MCUURL(ruri_str).GetHostName();
+  PString sip_remote_port = MCUURL(ruri_str).GetPort();
+  local_ip = GetFromIp(sip_remote_host, sip_remote_port);
+
+  // nat IP
+  nat_ip = GetEndpointParamFromUrl(NATRouterIPKey, ruri_str, local_ip);
+  remoteIsNAT = FALSE; // always disabled
+
+  // endpoint parameters
+  rtp_proto = GetEndpointParamFromUrl("RTP proto", ruri_str, "RTP");
+  remote_bw = GetEndpointParamFromUrl("Bandwidth to MCU", ruri_str, 0);
+  display_name = GetEndpointParamFromUrl("Display name", ruri_str);
+
+  // local contact
+  MCUURL url(contact_str);
+  local_user = url.GetUserName();
+  if(local_user == "")
+    local_user = OpenMCU::Current().GetDefaultRoomName();
+  contact_str = "sip:"+local_user+"@"+nat_ip;
+  requestedRoom = local_user;
+
   // create call leg
   leg = nta_leg_tcreate(sep->GetAgent(), wrap_invite_request_cb, (nta_leg_magic_t *)this,
                         SIPTAG_FROM(sip_from),
@@ -397,19 +419,6 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
 			SIPTAG_CALL_ID(sip->sip_call_id),
                         SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
                         TAG_END());
-
-  MCUURL url(contact_str);
-  local_user = url.GetUserName();
-  local_ip = url.GetHostName();
-  if(local_user == "")
-    local_user = OpenMCU::Current().GetDefaultRoomName();
-  contact_str = "sip:"+local_user+"@"+local_ip;
-  requestedRoom = local_user;
-
-  // endpoint parameters
-  rtp_proto = GetEndpointParamFromUrl("RTP proto", ruri_str, "RTP");
-  remote_bw = GetEndpointParamFromUrl("Bandwidth to MCU", ruri_str, 0);
-  display_name = GetEndpointParamFromUrl("Display name", ruri_str);
 
   if(direction == DIRECTION_INBOUND)
   {
@@ -767,7 +776,7 @@ PString MCUSipConnection::CreateSdpStr(SipCapMapType & LocalCaps)
 
   c->c_nettype = sdp_net_in;
   c->c_addrtype = sdp_addr_ip4;
-  c->c_address = PStringToChar(local_ip);
+  c->c_address = PStringToChar(nat_ip);
 
   if(remote_bw)
   {
@@ -2238,10 +2247,6 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
   msg_t *msg = nta_incoming_getrequest(irq);
   int request = sip->sip_request->rq_method;
 
-  // wrong RequestURI
-  if(!sep->FindListener(sip->sip_request->rq_url->url_host))
-    return 400; // SIP_400_BAD_REQUEST
-
   if(request == sip_method_invite)
   {
     nta_incoming_treply(irq, SIP_100_TRYING,
@@ -2889,7 +2894,10 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
     return 0;
 
   // wrong RequestURI
-  if(!FindListener(sip->sip_request->rq_url->url_host))
+  PString ruri_str = MCUURL_SIP(msg).GetUrl();
+  PString nat_ip = GetEndpointParamFromUrl(NATRouterIPKey, ruri_str);
+  PString local_ip = sip->sip_request->rq_url->url_host;
+  if((nat_ip == "" && FindListener(local_ip) == FALSE) || (nat_ip != "" && nat_ip != local_ip))
     return SipReqReply(msg, NULL, SIP_400_BAD_REQUEST);
 
   if(request == sip_method_invite)

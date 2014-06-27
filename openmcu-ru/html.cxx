@@ -1033,6 +1033,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString("Port");
   optionNames.AppendString("Transport");
   optionNames.AppendString("RTP proto");
+  optionNames.AppendString(NATRouterIPKey);
 
   optionNames.AppendString("Frame rate from MCU");
   optionNames.AppendString("Bandwidth from MCU");
@@ -1139,6 +1140,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString("Ping interval", ""), ",20,30,40,50,60,120,180,240,300,600")+"</tr>";
       s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
@@ -1149,7 +1151,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString("Password"))+"</tr>";
       s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString("Ping interval", ""), ",20,30,40,50,60,120,180,240,300,600")+"</tr>";
       s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
-      //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1171,6 +1173,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       if(name == "*") s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString("RTP proto"), "RTP,ZRTP,SRTP,SRTP/RTP")+"</tr>";
       else            s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString("RTP proto"), ",RTP,ZRTP,SRTP,SRTP/RTP")+"</tr>";
+      //
+      s2 += rowArray+PString(NATRouterIPKey)+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;

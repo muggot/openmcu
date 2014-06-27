@@ -353,6 +353,7 @@ class MCUSipConnection : public MCUH323Connection
     Direction direction;
     PString local_user;
     PString local_ip;
+    PString nat_ip;
     PString display_name;
 
     int scap; // selected audio capability payload type
