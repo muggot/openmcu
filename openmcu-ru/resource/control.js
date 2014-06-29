@@ -1001,8 +1001,8 @@ function abook_refresh(){
   if(typeof addressbook==='undefined') return true;
   var tab_height = 23;
   var addpanel_height = 27;
-  if(document.getElementById('tab_panel')) tab_height = document.getElementById('tab_panel').offsetHeight;
-  if(document.getElementById('additional_panel_abook')) addpanel_height = document.getElementById('additional_panel_abook').offsetHeight;
+  //if(document.getElementById('tab_panel')) tab_height = document.getElementById('tab_panel').offsetHeight;
+  //if(document.getElementById('additional_panel_abook')) addpanel_height = document.getElementById('additional_panel_abook').offsetHeight;
 
   var p_height=200;
   if(typeof total_height!='undefined') p_height=total_height-tab_height-addpanel_height-4;
