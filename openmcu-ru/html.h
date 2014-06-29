@@ -298,6 +298,28 @@ class TablePConfigPage : public PConfigPage
      if(!readonly) s += "></input></td>"; else s += " readonly></input></td>";
      return s;
    }
+   PString BoolAndStringItem(PString name, BOOL value1, PString value2, int width=0, int readonly=FALSE, PString onkeyup="", PString onchange="")
+   {
+     if(width == 0) width = 90;
+     width -= 19; // checkbox width
+     if(onchange == "") onchange = onkeyup;
+     PString id1 = PString(rand());
+     PString id2 = PString(rand());
+
+     PString s = itemStyle;
+     s += "<input name='TableItemId' value='"+id1+"' type='hidden'>";
+     s += "<input name='"+name+"' value='FALSE' type='hidden' style='"+inputStyle+"'>"
+          "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"margin:0px 3px 0px 3px;'";
+     if(value1) s +=" checked='yes'";
+     if(readonly) s += " readonly></input>"; else s += "></input>";
+
+     s += "<input name='TableItemId' value='"+id2+"' type='hidden'>";
+     s += "<input onkeyup='"+onkeyup+"' onchange='"+onchange+"' type='text' name='"+name+"' value='"+value2+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
+     if(readonly) s += " readonly></input>"; else s += "></input>";
+
+     s += "</td>";
+     return s;
+   }
    PString SelectItem(PString name, PString value, PString values, int width=0, PString id="", PString onchange="")
    {
      if(width == 0) width = 90;

@@ -1024,16 +1024,17 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
+  optionNames.AppendString("Display name");
   optionNames.AppendString("Password");
   optionNames.AppendString("Ping interval");
   optionNames.AppendString("SIP call processing");
 
-  optionNames.AppendString("Display name");
   optionNames.AppendString("Host");
   optionNames.AppendString("Port");
   optionNames.AppendString("Transport");
   optionNames.AppendString("RTP proto");
   optionNames.AppendString(NATRouterIPKey);
+  optionNames.AppendString(NATStunServerKey);
 
   optionNames.AppendString("Frame rate from MCU");
   optionNames.AppendString("Bandwidth from MCU");
@@ -1138,9 +1139,9 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString("Ping interval", ""), ",20,30,40,50,60,120,180,240,300,600")+"</tr>";
       s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
@@ -1148,10 +1149,10 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += NewItemArray(name);
       s2 += rowArray+JsLocale("window.l_name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString("Display name"))+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString("Password"))+"</tr>";
       s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString("Ping interval", ""), ",20,30,40,50,60,120,180,240,300,600")+"</tr>";
       s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1160,21 +1161,18 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      if(name == "*") s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString("Display name"))+"</tr>";
-      //
       if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, "", 0, TRUE)+"</tr>";
       else            s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, scfg.GetString("Host"))+"</tr>";
       //
       s2 += rowArray+"SIP "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString("Port"), 1, 65535)+"</tr>";
       //
-      if(name == "*") s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString("Transport"), ",udp,tcp")+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString("Transport"), ",udp,tcp")+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString("Transport"), ",udp,tcp")+"</tr>";
       //
-      if(name == "*") s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString("RTP proto"), "RTP,ZRTP,SRTP,SRTP/RTP")+"</tr>";
-      else            s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString("RTP proto"), ",RTP,ZRTP,SRTP,SRTP/RTP")+"</tr>";
+      s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString("RTP proto"), ",RTP,ZRTP,SRTP,SRTP/RTP")+"</tr>";
       //
       s2 += rowArray+PString(NATRouterIPKey)+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
+      //
+      s2 += rowArray+PString(NATStunServerKey)+StringItem(name, scfg.GetString(NATStunServerKey))+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;

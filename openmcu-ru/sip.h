@@ -6,7 +6,9 @@
 
 #include <map>
 #include <ptlib.h>
+#include <ptclib/pstun.h>
 #include <time.h>
+
 #include <sofia-sip/su.h>
 #include <sofia-sip/nta.h>
 #include <sofia-sip/nta_stateless.h>
@@ -50,10 +52,10 @@ enum SipSecureTypes
   SECURE_TYPE_DTLS_SRTP
 };
 
-enum Direction
+enum Directions
 {
-  DIRECTION_INBOUND,
-  DIRECTION_OUTBOUND
+  DIRECTION_INBOUND = 0,
+  DIRECTION_OUTBOUND = 1
 };
 
 enum AuthTypes
@@ -61,6 +63,13 @@ enum AuthTypes
   AUTH_NONE,
   AUTH_WWW,
   AUTH_PROXY
+};
+
+enum MediaTypes
+{
+  MEDIA_TYPE_UNKNOWN,
+  MEDIA_TYPE_AUDIO,
+  MEDIA_TYPE_VIDEO,
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -74,7 +83,7 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
 class MCUURL_SIP : public MCUURL
 {
   public:
-    MCUURL_SIP(const msg_t *msg, Direction dir = DIRECTION_INBOUND);
+    MCUURL_SIP(const msg_t *msg, Directions dir = DIRECTION_INBOUND);
     const PString & GetRemoteApplication() const { return remote_application; }
     const PString & GetDomainName() const { return domain_name; }
   protected:
@@ -139,7 +148,7 @@ class SipCapability
     void Init()
     {
       payload = -1;
-      media = 0;
+      media = MEDIA_TYPE_UNKNOWN;
       mode = 3;
       remote_port = 0;
       bandwidth = 0;
@@ -157,8 +166,8 @@ class SipCapability
     {
       if(capname != c.capname) return 1;
       if(format != c.format) return 1;
-      if(payload != c.payload) return 1;
       if(media != c.media) return 1;
+      if(payload != c.payload) return 1;
       if(mode != c.mode) return 1;
       if(clock != c.clock) return 1;
       //if(remote_ip != c.remote_ip) return 1; // do not check, may be 0.0.0.0 on reinvite
@@ -179,7 +188,7 @@ class SipCapability
     PString format; // SIP format name
     int payload; // payload type
     int mode; // 0-inactive, 1-recvonly, 2-sendonly, 3-sendrecv
-    int media; // media type 0 - audio, 1 - video, 2 - other
+    MediaTypes media;
     int clock; // rtp clock
     PString remote_ip;
     int remote_port;
@@ -253,31 +262,34 @@ class H323toSipQueue
 class MCUSipConnection : public MCUH323Connection
 {
   public:
-    MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, Direction _direction, PString _callToken, const msg_t *msg);
     MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken);
     ~MCUSipConnection();
 
-    BOOL CreateTempSockets();
-    void DeleteTempSockets();
+    BOOL Init(Directions _direction, const msg_t *msg);
 
     int ProcessConnect();
     int ProcessInvite(const msg_t *msg);
     int ProcessReInvite(const msg_t *msg);
     int ProcessAck();
     int ProcessShutdown(CallEndReason reason = EndedByRemoteUser);
-    int ProcessInfo(const msg_t *msg);
     int ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & RemoteCaps, PString & sdp_str);
+
+    int ProcessInfo(const msg_t *msg);
+    void OnReceivedVFU();
+    void OnReceivedDTMF(PString payload);
 
     void StartTransmitChannels();
     void StartReceiveChannels();
-    void StartChannel(int pt, int dir);
-    void StopChannel(int pt, int dir);
+    void StartChannel(int pt, int rtp_dir);
+    void StopChannel(int pt, int rtp_dir);
     void StopTransmitChannels();
     void StopReceiveChannels();
     void DeleteMediaChannels(int pt);
     void DeleteChannels();
     void CreateLogicalChannels();
-    int CreateMediaChannel(int pt, int dir);
+    int CreateMediaChannel(int pt, int rtp_dir);
+    BOOL CreateDefaultRTPSessions();
+    SipRTP_UDP *CreateRTPSession(MediaTypes media);
     SipRTP_UDP *CreateRTPSession(SipCapability *sc);
 
     void SelectCapability_H261(SipCapMapType & LocalCaps, SipCapability *sc);
@@ -302,9 +314,6 @@ class MCUSipConnection : public MCUH323Connection
     int SendInvite();
     nta_outgoing_t * SendRequest(sip_method_t method, const char *method_name);
     int ReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL);
-
-    void ReceivedVFU();
-    void ReceivedDTMF(PString payload);
 
     BOOL HadAnsweredCall() { return (direction=DIRECTION_INBOUND); }
 
@@ -338,7 +347,7 @@ class MCUSipConnection : public MCUH323Connection
     int CreateSdpOk();
     int CreateSdpInvite();
 
-    void RefreshLocalSipCaps();
+    void CreateLocalSipCaps();
     BOOL MergeSipCaps(SipCapMapType & BaseCaps, SipCapMapType & RemoteCaps);
 
     nta_leg_t *leg;
@@ -350,7 +359,7 @@ class MCUSipConnection : public MCUH323Connection
     PString ruri_str;
     PString contact_str;
 
-    Direction direction;
+    Directions direction;
     PString local_user;
     PString local_ip;
     PString nat_ip;
@@ -367,10 +376,9 @@ class MCUSipConnection : public MCUH323Connection
     PString key_video80;
     PString key_video32;
 
-    // temp rtp sockets for outgoing invite
-    PUDPSocket *aDataSocket, *aControlSocket;
-    PUDPSocket *vDataSocket, *vControlSocket;
-    unsigned audio_rtp_port, video_rtp_port;
+    // rtp ports for SDP
+    unsigned audio_rtp_port;
+    unsigned video_rtp_port;
 
     PString sdp_o_username;
     unsigned int sdp_o_id;
@@ -380,6 +388,12 @@ class MCUSipConnection : public MCUH323Connection
 
     SipCapMapType LocalSipCaps;
     SipCapMapType RemoteSipCaps;
+
+#ifdef P_STUN
+    PSTUNClient * stun;
+#else
+    void * stun;
+#endif
 
     MCUSipEndPoint *sep;
 };

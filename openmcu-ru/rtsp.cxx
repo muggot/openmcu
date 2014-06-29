@@ -62,18 +62,19 @@ static struct sockaddr *GetIPAddr(const char *ip, int port, int isIPv6, int *siz
 MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken)
   :MCUSipConnection(_sep, _ep, _callToken)
 {
-  connectionState = NoConnectionActive;
-  callToken = _callToken;
   trace_section = "RTSP Connection "+callToken+": ";
-  scap = -1;
-  vcap = -1;
-  connectedTime = PTime();
-  audio_rtp_port = video_rtp_port = 0;
+  remoteApplication = "RTSP terminal";
 
   rtsp_state = RTSP_NONE;
   rtsp_terminating = 0;
   cseq = 1;
   rtsp_thread = NULL;
+
+  // create local capability list
+  CreateLocalSipCaps();
+
+  // create rtp sessions
+  CreateDefaultRTPSessions();
 
   MCUTRACE(1, trace_section << "constructor");
 }
@@ -286,7 +287,6 @@ int MCURtspConnection::OnPlayResponse(msg_t *msg)
   if(!conference || !conferenceMember || !conferenceMember->IsJoined())
     return 600;
 
-  DeleteTempSockets();
   // create and start channels
   CreateLogicalChannels();
   StartReceiveChannels();
@@ -385,8 +385,6 @@ int MCURtspConnection::OnDescribeResponse(msg_t *msg)
     remoteApplication = sip->sip_user_agent->g_string;
   else if(sip->sip_server)
     remoteApplication = sip->sip_server->g_string;
-
-  CreateTempSockets();
 
   if(scap >= 0)
   {

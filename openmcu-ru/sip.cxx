@@ -51,7 +51,7 @@ PString GetFromIp(PString toAddr, PString toPort)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Direction dir)
+MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Directions dir)
   : MCUURL()
 {
   sip_t *sip = sip_object(msg);
@@ -322,23 +322,25 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
   direction = DIRECTION_INBOUND;
   callToken = _callToken;
   trace_section = "SIP Connection "+callToken+": ";
+
   remoteName = "";
   remotePartyName = "";
   remoteApplication = "SIP terminal";
   requestedRoom = OpenMCU::Current().GetDefaultRoomName();
-  scap = -1;
-  vcap = -1;
   connectedTime = PTime();
-  aDataSocket = aControlSocket = vDataSocket = vControlSocket = NULL;
-  audio_rtp_port = video_rtp_port = 0;
+
+  audio_rtp_port = 0;
+  video_rtp_port = 0;
+  rtp_proto = "RTP";
+  stun = NULL;
+
   c_sip_msg = NULL;
   leg = NULL;
   orq_invite = NULL;
-  rtp_proto = "RTP";
   auth_type = AUTH_NONE;
 
-  // create local capability list
-  RefreshLocalSipCaps();
+  scap = -1;
+  vcap = -1;
 
   // add to the list of connections
   ep.SetConnectionActive(this);
@@ -349,27 +351,9 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, Direction _direction, PString _callToken, const msg_t *msg)
-  :MCUH323Connection(*_ep, 0, NULL), sep(_sep)
+BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
 {
-  connectionState = NoConnectionActive;
   direction = _direction;
-  callToken = _callToken;
-  trace_section = "SIP Connection "+callToken+": ";
-  remoteName = "";
-  remotePartyName = "";
-  remoteApplication = "SIP terminal";
-  requestedRoom = OpenMCU::Current().GetDefaultRoomName();
-  scap = -1;
-  vcap = -1;
-  connectedTime = PTime();
-  aDataSocket = aControlSocket = vDataSocket = vControlSocket = NULL;
-  audio_rtp_port = video_rtp_port = 0;
-  c_sip_msg = NULL;
-  leg = NULL;
-  orq_invite = NULL;
-  rtp_proto = "RTP";
-  auth_type = AUTH_NONE;
 
   su_home_t *home = msg_home(msg);
   sip_t *sip = sip_object(msg);
@@ -378,6 +362,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   if(direction == DIRECTION_INBOUND)
   {
     ruri_str = MCUURL_SIP(msg).GetUrl();
+    remotePartyAddress = ruri_str;
     contact_str = url_as_string(home, sip->sip_request->rq_url);
     sip_from = sip->sip_to;
     sip_to = sip->sip_from;
@@ -385,6 +370,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   else if(direction == DIRECTION_OUTBOUND)
   {
     ruri_str = url_as_string(home, sip->sip_request->rq_url);
+    remotePartyAddress = ruri_str;
     contact_str = url_as_string(home, sip->sip_contact->m_url);
     sip_from = sip->sip_from;
     sip_to = sip->sip_to;
@@ -394,19 +380,50 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   PString sip_remote_host = MCUURL(ruri_str).GetHostName();
   PString sip_remote_port = MCUURL(ruri_str).GetPort();
   local_ip = GetFromIp(sip_remote_host, sip_remote_port);
+  if(PIPSocket::Address(local_ip).IsValid() == FALSE)
+  {
+    MCUTRACE(1, trace_section << "unable to determine the local IP address");
+    return FALSE;
+  }
 
-  // nat IP
-  nat_ip = GetEndpointParamFromUrl(NATRouterIPKey, ruri_str, local_ip);
-  remoteIsNAT = FALSE; // always disabled
+  // NAT router IP
+  nat_ip = GetEndpointParam(NATRouterIPKey);
+  if(nat_ip != "" && PIPSocket::Address(nat_ip).IsValid() == FALSE)
+  {
+    MCUTRACE(1, trace_section << "incorrect NAT router IP");
+    return FALSE;
+  }
 
-  // endpoint parameters
-  rtp_proto = GetEndpointParamFromUrl("RTP proto", ruri_str, "RTP");
-  remote_bw = GetEndpointParamFromUrl("Bandwidth to MCU", ruri_str, 0);
-  display_name = GetEndpointParamFromUrl("Display name", ruri_str);
+#ifdef P_STUN
+  // STUN server
+  if(nat_ip == "")
+  {
+    PString stun_server = GetEndpointParam(NATStunServerKey);
+    if(stun_server != "")
+    {
+      stun = new PSTUNClient(stun_server, ep.GetUDPPortBase(), ep.GetUDPPortMax(), ep.GetRtpIpPortBase(), ep.GetRtpIpPortMax());
+      stun->SetTimeout(500);
+      stun->SetRetries(2);
+      PIPSocket::Address extAddress;
+      if(stun->IsAvailable() == FALSE || stun->GetExternalAddress(extAddress) == FALSE)
+      {
+        MCUTRACE(1, trace_section << "STUN server error");
+        return FALSE;
+      }
+      nat_ip = extAddress.AsString();
+    }
+  }
+#endif
+
+  // if empty nat_ip set as local_ip
+  if(nat_ip == "")
+    nat_ip = local_ip;
+
+  // remoteIsNAT ???
+  remoteIsNAT = FALSE;
 
   // local contact
-  MCUURL url(contact_str);
-  local_user = url.GetUserName();
+  local_user = MCUURL(contact_str).GetUserName();
   if(local_user == "")
     local_user = OpenMCU::Current().GetDefaultRoomName();
   contact_str = "sip:"+local_user+"@"+nat_ip;
@@ -430,25 +447,29 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, D
   }
   else if(direction == DIRECTION_OUTBOUND)
   {
-    // create temp rtp sockets
-    CreateTempSockets();
   }
 
+  // endpoint parameters
+  rtp_proto = GetEndpointParam("RTP proto", "RTP");
+  remote_bw = GetEndpointParam("Bandwidth to MCU", 0);
+  display_name = GetEndpointParam("Display name");
+
   // create local capability list
-  RefreshLocalSipCaps();
+  CreateLocalSipCaps();
 
-  // add to the list of connections
-  ep.SetConnectionActive(this);
-  OnCreated();
+  // create rtp sessions
+  CreateDefaultRTPSessions();
 
-  MCUTRACE(1, trace_section << "constructor contact: " << contact_str << " ruri: " << ruri_str);
+  MCUTRACE(1, trace_section << "contact: " << contact_str << " ruri: " << ruri_str);
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUSipConnection::~MCUSipConnection()
 {
-  MCUTRACE(1, trace_section << "destructor contact: " << contact_str << " ruri: " << ruri_str);
+  if(stun) delete stun;
+  MCUTRACE(1, trace_section << "destructor");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -493,7 +514,6 @@ void MCUSipConnection::CleanUpOnCallEnd()
 
   connectionState = ShuttingDownConnection;
 
-  DeleteTempSockets();
   if(orq_invite) nta_outgoing_destroy(orq_invite);
   if(leg) nta_leg_destroy(leg);
   if(c_sip_msg) msg_destroy(c_sip_msg);
@@ -508,70 +528,274 @@ void MCUSipConnection::CleanUpOnCallEnd()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSipConnection::CreateTempSockets()
+BOOL MCUSipConnection::CreateDefaultRTPSessions()
 {
-  unsigned localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
-  PQoS * dataQos = NULL;
-  PQoS * ctrlQos = NULL;
-  aDataSocket = new PUDPSocket(dataQos);
-  aControlSocket = new PUDPSocket(ctrlQos);
-  vDataSocket = new PUDPSocket(dataQos);
-  vControlSocket = new PUDPSocket(ctrlQos);
-  while(!aDataSocket->Listen(local_ip, 1, localDataPort) || !aControlSocket->Listen(local_ip, 1, localDataPort+1))
-  {
-    aDataSocket->Close();
-    aControlSocket->Close();
-    localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
-  }
-  audio_rtp_port = localDataPort;
-  localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
-  while(!vDataSocket->Listen(local_ip, 1, localDataPort) || !vControlSocket->Listen(local_ip, 1, localDataPort+1))
-  {
-    vDataSocket->Close();
-    vControlSocket->Close();
-    localDataPort = OpenMCU::Current().GetEndpoint().GetRtpIpPortPair();
-  }
-  video_rtp_port = localDataPort;
+  SipRTP_UDP *session = NULL;
+
+  session = CreateRTPSession(MEDIA_TYPE_AUDIO);
+  session->DecrementReference();
+
+  session = CreateRTPSession(MEDIA_TYPE_VIDEO);
+  session->DecrementReference();
+
   return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::DeleteTempSockets()
+SipRTP_UDP *MCUSipConnection::CreateRTPSession(MediaTypes media)
 {
-  if(aDataSocket) { aDataSocket->Close(); delete aDataSocket; aDataSocket = NULL; }
-  if(aControlSocket) { aControlSocket->Close(); delete aControlSocket; aControlSocket = NULL; }
-  if(vDataSocket) { vDataSocket->Close(); delete vDataSocket; vDataSocket = NULL; }
-  if(vControlSocket) { vControlSocket->Close(); delete vControlSocket; vControlSocket = NULL; }
+  int id = (media == MEDIA_TYPE_AUDIO) ? RTP_Session::DefaultAudioSessionID : RTP_Session::DefaultVideoSessionID;
+  SipRTP_UDP *session = (SipRTP_UDP *)(rtpSessions.UseSession(id));
+  if(session == NULL)
+  {
+    session = new SipRTP_UDP(
+#ifdef H323_RTP_AGGREGATE
+                useRTPAggregation ? endpoint.GetRTPAggregator() : NULL,
+#endif
+                id, remoteIsNAT);
+
+    // add session to RTP_SessionManager()
+    rtpSessions.AddSession(session);
+
+    PIPSocket::Address localIP(nat_ip);
+    session->Open(localIP, endpoint.GetRtpIpPortBase(), endpoint.GetRtpIpPortMax(), endpoint.GetRtpIpTypeofService(), *this, (PNatMethod *)stun, NULL);
+
+    if(media == MEDIA_TYPE_AUDIO)
+      audio_rtp_port = session->GetLocalDataPort();
+    else if(media == MEDIA_TYPE_VIDEO)
+      video_rtp_port = session->GetLocalDataPort();
+
+    MCUTRACE(1, trace_section << "create " << ((media == MEDIA_TYPE_AUDIO) ? "audio" : "video") <<
+                " RTP session, port=" << ((media == MEDIA_TYPE_AUDIO) ? audio_rtp_port : video_rtp_port));
+  }
+  return session;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::RefreshLocalSipCaps()
+SipRTP_UDP *MCUSipConnection::CreateRTPSession(SipCapability *sc)
 {
-  PString audio_capname = GetEndpointParamFromUrl("Audio codec", ruri_str);
+  SipRTP_UDP *session = CreateRTPSession(sc->media);
+
+  // remoteIsNAT ???
+  PIPSocket::Address remoteIP(sc->remote_ip);
+  session->SetRemoteSocketInfo(remoteIP,sc->remote_port,TRUE);
+
+  return session;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
+{
+  if(pt < 0) return 0;
+  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
+  if(!sc) return 0;
+
+  H323Capability * cap = sc->cap;
+  if(!cap) return 0;
+
+  if(PIPSocket::Address(sc->remote_ip).IsValid() == FALSE || sc->remote_port == 0)
+    return 0;
+
+  // При исходящем вызове payload случайный, терминал может указать в ответе другой payload.
+  // Для исходящего потока использовать payload полученный от терминала, для входящего исходный payload.
+  if(direction == DIRECTION_OUTBOUND && rtp_dir == 0)
+  {
+    SipCapability *local_sc = FindSipCap(LocalSipCaps, sc->capname);
+    if(local_sc && local_sc->payload > 0 && local_sc->payload != pt)
+    {
+      pt = local_sc->payload;
+      MCUTRACE(1, trace_section << "change payload type " << sc->capname << " " << sc->payload << "->" << local_sc->payload);
+    }
+  }
+
+  SipRTP_UDP *session = CreateRTPSession(sc);
+  if(session == NULL)
+    return 0;
+
+  if(sc->secure_type == SECURE_TYPE_ZRTP)
+  {
+    // master zrtp session
+    if(sc->media == MEDIA_TYPE_AUDIO)
+    {
+      session->SetMaster(TRUE);
+      session->SetConnection(this);
+    }
+    session->CreateZRTP();
+  }
+  else if(sc->secure_type == SECURE_TYPE_DTLS_SRTP)
+  {
+    //session->CreateDTLS(rtp_dir, sc->dtls_fp_type, sc->dtls_fp);
+  }
+  else if(sc->secure_type == SECURE_TYPE_SRTP)
+  {
+    if(sc->srtp_local_key == "")
+    {
+      sc->srtp_local_type = sc->srtp_remote_type;
+      if(sc->srtp_local_type == AES_CM_128_HMAC_SHA1_80)
+      {
+        if(sc->media == MEDIA_TYPE_AUDIO)
+        {
+          if(key_audio80 != "") sc->srtp_local_key = key_audio80;
+          else                  sc->srtp_local_key = key_audio80 = srtp_get_random_keysalt();
+        }
+        else if(sc->media == MEDIA_TYPE_VIDEO)
+        {
+          if(key_video80 != "") sc->srtp_local_key = key_video80;
+          else                  sc->srtp_local_key = key_video80 = srtp_get_random_keysalt();
+        }
+      }
+      else if(sc->srtp_local_type == AES_CM_128_HMAC_SHA1_32)
+      {
+        if(sc->media == MEDIA_TYPE_AUDIO)
+        {
+          if(key_audio32 != "") sc->srtp_local_key = key_audio32;
+          else                  sc->srtp_local_key = key_audio32 = srtp_get_random_keysalt();
+        }
+        else if(sc->media == MEDIA_TYPE_VIDEO)
+        {
+          if(key_video32 != "") sc->srtp_local_key = key_video32;
+          else                  sc->srtp_local_key = key_video32 = srtp_get_random_keysalt();
+        }
+      }
+    }
+    if(rtp_dir == 0) session->CreateSRTP(rtp_dir, sc->srtp_remote_type, sc->srtp_remote_key);
+    else             session->CreateSRTP(rtp_dir, sc->srtp_local_type, sc->srtp_local_key);
+  }
+
+  SipRTPChannel *channel =
+    new SipRTPChannel(*this, *cap, ((rtp_dir == 0) ? H323Channel::IsReceiver : H323Channel::IsTransmitter), *session);
+
+  if(pt >= RTP_DataFrame::DynamicBase && pt <= RTP_DataFrame::MaxPayloadType)
+    channel->SetDynamicRTPPayloadType(pt);
+
+  if(rtp_dir == 0)
+    sc->inpChan = channel;
+  else
+    sc->outChan = channel;
+
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::CreateLogicalChannels()
+{
+  CreateMediaChannel(scap, 0);
+  CreateMediaChannel(scap, 1);
+  CreateMediaChannel(vcap, 0);
+  CreateMediaChannel(vcap, 1);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::StartChannel(int pt, int dir)
+{
+  if(pt < 0) return;
+  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
+  if(!sc) return;
+  PTRACE(1, trace_section << "start " << ((dir == 0) ? "receive" : "transmit") << " channel " << pt);
+  if(dir == 0 && (sc->mode&2) && sc->inpChan && !sc->inpChan->IsRunning()) sc->inpChan->Start();
+  if(dir == 1 && (sc->mode&1) && sc->outChan && !sc->outChan->IsRunning()) sc->outChan->Start();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::StartReceiveChannels()
+{
+  StartChannel(scap,0);
+  StartChannel(vcap,0);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::StartTransmitChannels()
+{
+  StartChannel(scap,1);
+  StartChannel(vcap,1);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::StopChannel(int pt, int dir)
+{
+  if(pt < 0) return;
+  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
+  if(!sc) return;
+  PTRACE(1, trace_section << "stop " << ((dir == 0) ? "receive" : "transmit") << " channel " << pt);
+  if(dir==0 && sc->inpChan) sc->inpChan->CleanUpOnTermination();
+  if(dir==1 && sc->outChan) sc->outChan->CleanUpOnTermination();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::StopTransmitChannels()
+{
+  StopChannel(scap,1);
+  StopChannel(vcap,1);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::StopReceiveChannels()
+{
+  StopChannel(scap,0);
+  StopChannel(vcap,0);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::DeleteMediaChannels(int pt)
+{
+  if(pt < 0) return;
+  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
+  if(!sc) return;
+  PTRACE(1, trace_section << "delete media channels " << pt);
+  if(sc->inpChan) { delete sc->inpChan; sc->inpChan = NULL; }
+  if(sc->outChan) { delete sc->outChan; sc->outChan = NULL; }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::DeleteChannels()
+{
+  DeleteMediaChannels(scap);
+  DeleteMediaChannels(vcap);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::CreateLocalSipCaps()
+{
+  PString audio_capname = GetEndpointParam("Audio codec");
   if(audio_capname != "" && audio_capname.Right(4) != "{sw}")
     audio_capname += "{sw}";
-  PString video_capname = GetEndpointParamFromUrl("Video codec", ruri_str);
+  PString video_capname = GetEndpointParam("Video codec");
   if(video_capname != "" && video_capname.Right(4) != "{sw}")
     video_capname += "{sw}";
-  PString video_resolution = GetEndpointParamFromUrl("Video resolution", ruri_str);
-  PString video_fmtp = GetEndpointParamFromUrl("Video fmtp", ruri_str);
-  unsigned frame_rate = GetEndpointParamFromUrl("Frame rate from MCU", ruri_str, 0);
-  unsigned bandwidth = GetEndpointParamFromUrl("Bandwidth from MCU", ruri_str, 0);
+  PString video_resolution = GetEndpointParam("Video resolution");
+  PString video_fmtp = GetEndpointParam("Video fmtp");
+  unsigned frame_rate = GetEndpointParam("Frame rate from MCU", 0);
+  unsigned bandwidth = GetEndpointParam("Bandwidth from MCU", 0);
 
   LocalSipCaps.clear();
   for(SipCapMapType::iterator it = sep->GetBaseSipCaps().begin(); it != sep->GetBaseSipCaps().end(); it++)
   {
     SipCapability *base_sc = it->second;
 
-    if(base_sc->media == 0 && audio_capname != "" && audio_capname != base_sc->capname)
+    if(base_sc->media == MEDIA_TYPE_AUDIO && audio_capname != "" && audio_capname != base_sc->capname)
       continue;
-    if(base_sc->media == 1 && video_capname != "" && video_capname != base_sc->capname)
+    if(base_sc->media == MEDIA_TYPE_VIDEO && video_capname != "" && video_capname != base_sc->capname)
       continue;
 
     SipCapability *local_sc = new SipCapability(*base_sc);
-    if(base_sc->media == 1)
+    if(base_sc->media == MEDIA_TYPE_AUDIO && audio_capname != "")
+    {
+      local_sc->preferred_cap = TRUE;
+    }
+    if(base_sc->media == MEDIA_TYPE_VIDEO)
     {
       if(video_capname != "")
       {
@@ -586,10 +810,6 @@ void MCUSipConnection::RefreshLocalSipCaps()
       }
       local_sc->video_frame_rate = frame_rate;
       local_sc->bandwidth = bandwidth;
-    }
-    if(base_sc->media == 0 && audio_capname != "")
-    {
-      local_sc->preferred_cap = TRUE;
     }
 
     LocalSipCaps.insert(SipCapMapType::value_type(LocalSipCaps.size(), local_sc));
@@ -677,9 +897,9 @@ sdp_media_t * MCUSipConnection::CreateSdpMedia(SipCapMapType & LocalCaps, su_hom
   {
     SipCapability *sc = it->second;
 
-    if(m_type == sdp_media_audio && sc->media != 0)
+    if(m_type == sdp_media_audio && sc->media != MEDIA_TYPE_AUDIO)
       continue;
-    else if(m_type == sdp_media_video && sc->media != 1)
+    else if(m_type == sdp_media_video && sc->media != MEDIA_TYPE_VIDEO)
       continue;
 
     if(m->m_mode == 0)
@@ -860,276 +1080,6 @@ PString MCUSipConnection::CreateSdpStr(SipCapMapType & LocalCaps)
   su_home_unref(sess_home);
 
   return buffer;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-SipRTP_UDP *MCUSipConnection::CreateRTPSession(SipCapability *sc)
-{
-  int id = (!sc->media)?RTP_Session::DefaultAudioSessionID:RTP_Session::DefaultVideoSessionID;
-  SipRTP_UDP *session = (SipRTP_UDP *)(rtpSessions.UseSession(id));
-  if(session == NULL)
-  {
-    session = new SipRTP_UDP(
-#ifdef H323_RTP_AGGREGATE
-                useRTPAggregation ? endpoint.GetRTPAggregator() : NULL,
-#endif
-                id, remoteIsNAT);
-    rtpSessions.AddSession(session);
-    PIPSocket::Address lIP(local_ip);
-    PIPSocket::Address rIP(sc->remote_ip);
-    unsigned port_base = endpoint.GetRtpIpPortBase();
-    unsigned port_max = endpoint.GetRtpIpPortMax();
-    if(sc->media == 0 && audio_rtp_port)
-    {
-      port_base = port_max = audio_rtp_port;
-      audio_rtp_port = 0;
-    }
-    else if(sc->media == 1 && video_rtp_port)
-    {
-      port_base = port_max = video_rtp_port;
-      video_rtp_port = 0;
-    }
-    session->Open(lIP,port_base,port_max,endpoint.GetRtpIpTypeofService(),*this,NULL,NULL);
-    session->SetRemoteSocketInfo(rIP,sc->remote_port,TRUE);
-    if(sc->media == 0)      audio_rtp_port = session->GetLocalDataPort();
-    else if(sc->media == 1) video_rtp_port = session->GetLocalDataPort();
-  }
-  return session;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int MCUSipConnection::CreateMediaChannel(int pt, int dir)
-{
-  if(pt < 0) return 0;
-  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
-  if(!sc) return 0;
-
-  H323Capability * cap = sc->cap;
-  if(!cap) return 0;
-
-  if(sc->remote_ip == "" || sc->remote_ip == "0.0.0.0" || sc->remote_port == 0)
-    return 0;
-
-  // При исходящем вызове payload случайный, терминал может указать в ответе другой payload.
-  // Для исходящего потока использовать payload полученный от терминала, для входящего исходный payload.
-  if(direction == DIRECTION_OUTBOUND && dir == 0)
-  {
-    SipCapability *local_sc = FindSipCap(LocalSipCaps, sc->capname);
-    if(local_sc && local_sc->payload > 0 && local_sc->payload != pt)
-    {
-      pt = local_sc->payload;
-      MCUTRACE(1, trace_section << "change payload type " << sc->capname << " " << sc->payload << "->" << local_sc->payload);
-    }
-  }
-
-  SipRTP_UDP *session = NULL;
-  if(sc->secure_type == SECURE_TYPE_NONE)
-  {
-    session = CreateRTPSession(sc);
-  }
-  else if(sc->secure_type == SECURE_TYPE_ZRTP)
-  {
-    session = CreateRTPSession(sc);
-    // master zrtp session
-    if(sc->media == 0)
-    {
-      session->SetMaster(TRUE);
-      session->SetConnection(this);
-    }
-    session->CreateZRTP();
-  }
-  else if(sc->secure_type == SECURE_TYPE_DTLS_SRTP)
-  {
-    session = CreateRTPSession(sc);
-    //session->CreateDTLS(dir, sc->dtls_fp_type, sc->dtls_fp);
-  }
-  else if(sc->secure_type == SECURE_TYPE_SRTP)
-  {
-    if(sc->srtp_local_key == "")
-    {
-      sc->srtp_local_type = sc->srtp_remote_type;
-      if(sc->srtp_local_type == AES_CM_128_HMAC_SHA1_80)
-      {
-        if(sc->media == 0)
-        {
-          if(key_audio80 != "") sc->srtp_local_key = key_audio80;
-          else                  sc->srtp_local_key = key_audio80 = srtp_get_random_keysalt();
-        }
-        else if(sc->media == 1)
-        {
-          if(key_video80 != "") sc->srtp_local_key = key_video80;
-          else                  sc->srtp_local_key = key_video80 = srtp_get_random_keysalt();
-        }
-      }
-      else if(sc->srtp_local_type == AES_CM_128_HMAC_SHA1_32)
-      {
-        if(sc->media == 0)
-        {
-          if(key_audio32 != "") sc->srtp_local_key = key_audio32;
-          else                  sc->srtp_local_key = key_audio32 = srtp_get_random_keysalt();
-        }
-        else if(sc->media == 1)
-        {
-          if(key_video32 != "") sc->srtp_local_key = key_video32;
-          else                  sc->srtp_local_key = key_video32 = srtp_get_random_keysalt();
-        }
-      }
-    }
-    session = CreateRTPSession(sc);
-    if(dir == 0) session->CreateSRTP(dir, sc->srtp_remote_type, sc->srtp_remote_key);
-    else         session->CreateSRTP(dir, sc->srtp_local_type, sc->srtp_local_key);
-  }
-
-  if(session == NULL)
-    return 0;
-
-  SipRTPChannel *channel =
-    new SipRTPChannel(*this, *cap, (!dir)?H323Channel::IsReceiver:H323Channel::IsTransmitter, *session);
-
-  if(pt >= RTP_DataFrame::DynamicBase && pt <= RTP_DataFrame::MaxPayloadType)
-    channel->SetDynamicRTPPayloadType(pt);
-  if(!dir) sc->inpChan = channel; else sc->outChan = channel;
-
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::CreateLogicalChannels()
-{
-  CreateMediaChannel(scap, 0);
-  CreateMediaChannel(scap, 1);
-  CreateMediaChannel(vcap, 0);
-  CreateMediaChannel(vcap, 1);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::StartChannel(int pt, int dir)
-{
-  if(pt < 0) return;
-  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
-  if(!sc) return;
-  if(dir == 0 && (sc->mode&2) && sc->inpChan && !sc->inpChan->IsRunning()) sc->inpChan->Start();
-  if(dir == 1 && (sc->mode&1) && sc->outChan && !sc->outChan->IsRunning()) sc->outChan->Start();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::StartReceiveChannels()
-{
-  StartChannel(scap,0);
-  StartChannel(vcap,0);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::StartTransmitChannels()
-{
-  StartChannel(scap,1);
-  StartChannel(vcap,1);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::StopChannel(int pt, int dir)
-{
-  if(pt < 0) return;
-  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
-  if(!sc) return;
-  if(dir==0 && sc->inpChan) sc->inpChan->CleanUpOnTermination();
-  if(dir==1 && sc->outChan) sc->outChan->CleanUpOnTermination();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::StopTransmitChannels()
-{
-  StopChannel(scap,1);
-  StopChannel(vcap,1);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::StopReceiveChannels()
-{
-  StopChannel(scap,0);
-  StopChannel(vcap,0);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::DeleteMediaChannels(int pt)
-{
-  if(pt < 0) return;
-  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
-  if(!sc) return;
-  if(sc->inpChan) { delete sc->inpChan; sc->inpChan = NULL; }
-  if(sc->outChan) { delete sc->outChan; sc->outChan = NULL; }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::DeleteChannels()
-{
-  DeleteMediaChannels(scap);
-  DeleteMediaChannels(vcap);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::ReceivedVFU()
-{
-  if(!CheckVFU())
-    return;
-
-  if(vcap < 0) return;
-  SipCapability *sc = FindSipCap(RemoteSipCaps, vcap);
-  if(sc && sc->outChan)
-  {
-    H323VideoCodec *vcodec = (H323VideoCodec*)sc->outChan->GetCodec();
-    if(vcodec)
-      vcodec->OnFastUpdatePicture();
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command)
-{
-  if(command == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
-  {
-    PTime now;
-    if(now < vfuSendTime + PTimeInterval(1000))
-      return;
-    vfuSendTime = now;
-
-    PString *cmd = new PString("fast_update:"+callToken);
-    sep->SipQueue.Push(cmd);
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::ReceivedDTMF(PString sdp)
-{
-  if(conference == NULL)
-    return;
-
-  PStringArray dataArray = sdp.Lines();
-  for(PINDEX i = 0; i < dataArray.GetSize(); i++)
-  {
-    if(dataArray[i].Find("Signal=") != P_MAX_INDEX)
-    {
-      PString signal = dataArray[i].Tokenise("=")[1];
-      PString signalTypes = "1234567890*#ABCD";
-      if(signal.GetLength() == 1 && signalTypes.Find(signal) != P_MAX_INDEX)
-        OnUserInputString(signal);
-      break;
-    }
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1640,9 +1590,9 @@ int MCUSipConnection::ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & Remo
       else
       { PTRACE(1, trace_section << "SDP parsing warning: missing port"); }
 
-      int media = 0;
-      if(m->m_type == sdp_media_audio)      media = 0;
-      else if(m->m_type == sdp_media_video) media = 1;
+      MediaTypes media_type = MEDIA_TYPE_UNKNOWN;
+      if(m->m_type == sdp_media_audio)      media_type = MEDIA_TYPE_AUDIO;
+      else if(m->m_type == sdp_media_video) media_type = MEDIA_TYPE_VIDEO;
       else
       { PTRACE(1, trace_section << "SDP parsing error: unknown media type, skip media"); continue; }
 
@@ -1719,7 +1669,7 @@ int MCUSipConnection::ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & Remo
         if(FindSipCap(RemoteCaps, rm->rm_pt)) continue;
         SipCapability *sc = new SipCapability();
         sc->payload = rm->rm_pt;
-        sc->media = media;
+        sc->media = media_type;
         sc->mode = mode;
         if(rm->rm_encoding) sc->format = PString(rm->rm_encoding).ToLower();
         sc->clock = rm->rm_rate;
@@ -1780,7 +1730,7 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
   for(SipCapMapType::iterator it = RemoteCaps.begin(); it != RemoteCaps.end(); it++)
   {
     SipCapability *remote_sc = it->second;
-    if(remote_sc->media == 0)
+    if(remote_sc->media == MEDIA_TYPE_AUDIO)
     {
       if(scap >= 0) continue;
       // PCMU
@@ -1838,7 +1788,7 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
       else if(remote_sc->format == "amr-wb" && remote_sc->clock == 16000)
       { SelectCapability_G7222(LocalCaps, remote_sc); }
     }
-    else if(remote_sc->media == 1)
+    else if(remote_sc->media == MEDIA_TYPE_VIDEO)
     {
       if(vcap >= 0) continue;
       // preferred capability
@@ -1854,8 +1804,8 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
     if(remote_sc->cap)
     {
       remote_sc->capname = remote_sc->cap->GetFormatName();
-      if(remote_sc->media == 0)      scap = remote_sc->payload;
-      else if(remote_sc->media == 1) vcap = remote_sc->payload;
+      if(remote_sc->media == MEDIA_TYPE_AUDIO)      scap = remote_sc->payload;
+      else if(remote_sc->media == MEDIA_TYPE_VIDEO) vcap = remote_sc->payload;
     }
   }
 
@@ -1933,7 +1883,6 @@ int MCUSipConnection::ProcessInvite(const msg_t *msg)
   }
   else if(direction == DIRECTION_OUTBOUND)
   {
-    DeleteTempSockets();
     // create logical channels
     CreateLogicalChannels();
     // for incoming connection start channels after ACK
@@ -2049,6 +1998,60 @@ int MCUSipConnection::ProcessAck()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUSipConnection::OnReceivedVFU()
+{
+  if(!CheckVFU())
+    return;
+
+  if(vcap < 0) return;
+  SipCapability *sc = FindSipCap(RemoteSipCaps, vcap);
+  if(sc && sc->outChan)
+  {
+    H323VideoCodec *vcodec = (H323VideoCodec*)sc->outChan->GetCodec();
+    if(vcodec)
+      vcodec->OnFastUpdatePicture();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command)
+{
+  if(command == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
+  {
+    PTime now;
+    if(now < vfuSendTime + PTimeInterval(1000))
+      return;
+    vfuSendTime = now;
+
+    PString *cmd = new PString("fast_update:"+callToken);
+    sep->SipQueue.Push(cmd);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::OnReceivedDTMF(PString sdp)
+{
+  if(conference == NULL)
+    return;
+
+  PStringArray dataArray = sdp.Lines();
+  for(PINDEX i = 0; i < dataArray.GetSize(); i++)
+  {
+    if(dataArray[i].Find("Signal=") != P_MAX_INDEX)
+    {
+      PString signal = dataArray[i].Tokenise("=")[1];
+      PString signalTypes = "1234567890*#ABCD";
+      if(signal.GetLength() == 1 && signalTypes.Find(signal) != P_MAX_INDEX)
+        OnUserInputString(signal);
+      break;
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int MCUSipConnection::ProcessInfo(const msg_t *msg)
 {
   PTRACE(1, trace_section << "OnReceivedInfo");
@@ -2059,9 +2062,9 @@ int MCUSipConnection::ProcessInfo(const msg_t *msg)
   PString type = PString(sip->sip_content_type->c_type);
   PString data = PString(sip->sip_payload->pl_data);
   if(type.Find("application/media_control") != P_MAX_INDEX && data.Find("picture_fast_update") != P_MAX_INDEX)
-    ReceivedVFU();
+    OnReceivedVFU();
   else if (type.Find("application/dtmf-relay") != P_MAX_INDEX)
-    ReceivedDTMF(data);
+    OnReceivedDTMF(data);
   return 1;
 }
 
@@ -2518,15 +2521,26 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
     // existing connection, possibly there is a bug
     callToken = GetSipCallToken(msg);
     if(HasConnection(callToken))
+    {
+      msg_destroy(msg);
       return FALSE;
+    }
 
     // create connection
-    MCUSipConnection *sCon = new MCUSipConnection(this, ep, DIRECTION_OUTBOUND, callToken, msg);
+    MCUSipConnection *sCon = new MCUSipConnection(this, ep, callToken);
     sCon->Lock();
+    if(sCon->Init(DIRECTION_OUTBOUND, msg) == FALSE)
+    {
+      sCon->LeaveMCU();
+      sCon->Unlock();
+      msg_destroy(msg);
+      return FALSE;
+    }
     sCon->auth_username = auth_username;
     sCon->auth_password = auth_password;
     BOOL ret = sCon->SendInvite();
     sCon->Unlock();
+    msg_destroy(msg);
     return ret;
 }
 
@@ -2895,9 +2909,10 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
 
   // wrong RequestURI
   PString ruri_str = MCUURL_SIP(msg).GetUrl();
+  PString stun_server = GetEndpointParamFromUrl(NATStunServerKey, ruri_str);
   PString nat_ip = GetEndpointParamFromUrl(NATRouterIPKey, ruri_str);
   PString local_ip = sip->sip_request->rq_url->url_host;
-  if((nat_ip == "" && FindListener(local_ip) == FALSE) || (nat_ip != "" && nat_ip != local_ip))
+  if(stun_server == "" && ((nat_ip != "" && nat_ip != local_ip) || (nat_ip == "" && PIPSocket::IsLocalHost(local_ip) == FALSE)))
     return SipReqReply(msg, NULL, SIP_400_BAD_REQUEST);
 
   if(request == sip_method_invite)
@@ -3084,7 +3099,7 @@ void MCUSipEndPoint::CreateBaseSipCaps()
     SipCapability *sc = new SipCapability(capname);
     if(sc->format == "") { delete sc; sc = NULL; continue; }
 
-    sc->media = 0;
+    sc->media = MEDIA_TYPE_AUDIO;
     if(fmtp != "") sc->fmtp = fmtp;
     if(local_fmtp != "") sc->local_fmtp = local_fmtp;
     if(capname == "OPUS_48K2{sw}") sc->params = "2";
@@ -3103,7 +3118,7 @@ void MCUSipEndPoint::CreateBaseSipCaps()
     SipCapability *sc = new SipCapability(capname);
     if(sc->format == "") { delete sc; sc = NULL; continue; }
 
-    sc->media = 1;
+    sc->media = MEDIA_TYPE_VIDEO;
     BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
   }
 }

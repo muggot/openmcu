@@ -71,7 +71,7 @@ MCUURL::MCUURL(PString str)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString GetEndpointParam(PString param, PString addr)
+PString GetEndpointParameter(PString param, PString addr)
 {
   PString user, host;
   PString sectionPrefix, section;
@@ -110,7 +110,7 @@ PString GetEndpointParam(PString param, PString addr)
 
 PString GetEndpointParamFromUrl(PString param, PString addr)
 {
-  PString value = GetEndpointParam(param, addr);
+  PString value = GetEndpointParameter(param, addr);
   MCUTRACE(1, "GetEndpointParam (" << addr << ") \"" << param << "\" = " << value);
   return value;
 }
@@ -510,42 +510,16 @@ void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height, unsi
 
 BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap)
 {
-  H323VideoCodec *codec = (H323VideoCodec *)(cap->CreateCodec(H323Codec::Encoder));
-  if(codec == NULL)
-    return FALSE;
-
+  // creating conference if needed
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
   ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-  Conference *conf = manager.MakeAndLockConference(requestedRoom); // creating conference if needed
+  Conference *conf = manager.MakeAndLockConference(requestedRoom);
   manager.UnlockConference();
 
-  const OpalMediaFormat & mf = cap->GetMediaFormat();
+  // starting new cache thread
+  unsigned videoMixerNumber=0;
+  new ConferenceFileMember(conf, cap->GetMediaFormat(), PFile::WriteOnly, videoMixerNumber);
 
-  // frame rate
-  unsigned frame_rate;
-  if(mf.GetOptionInteger(OPTION_FRAME_TIME) != 0)
-    frame_rate = 90000/mf.GetOptionInteger(OPTION_FRAME_TIME);
-  else
-    frame_rate = ep.GetVideoFrameRate();
-  codec->SetTargetFrameTimeMs(1000/frame_rate);
-
-  // bandwidth
-  unsigned bandwidth = mf.GetOptionInteger(OPTION_MAX_BIT_RATE);
-
-  // update format string
-  int videoMixerNumber = 0;
-  PString formatWH = codec->formatString.Left(codec->formatString.FindLast(":"));
-  codec->formatString = formatWH+":"+PString(bandwidth)+"x";
-  codec->formatString += PString(frame_rate) + "_" + requestedRoom + "/" + PString(videoMixerNumber);
-
-  if(!codec->CheckCacheRTP())
-  {
-    new ConferenceFileMember(conf, codec->GetMediaFormat(), PFile::WriteOnly, videoMixerNumber);
-    while(!codec->CheckCacheRTP()) { PThread::Sleep(100); }
-  }
-
-  PTRACE(1, "MCU\tOpenVideoCache(" << codec->formatString << ")");
-  delete codec;
   return TRUE;
 }
 

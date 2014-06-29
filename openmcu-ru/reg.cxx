@@ -200,12 +200,17 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
 
   if(regAccount_out->account_type == ACCOUNT_TYPE_SIP)
   {
-    PString callToken;
-    if(sep->SipMakeCall(regConn->username_in, address, callToken))
-    {
-      regConn->callToken_out = callToken;
-      return TRUE;
-    }
+    //PString callToken;
+    //if(sep->SipMakeCall(regConn->username_in, address, callToken))
+    //{
+    //  regConn->callToken_out = callToken;
+    //  return TRUE;
+    //}
+    PString callToken = PGloballyUniqueID().AsString();
+    PString *cmd = new PString("invite:"+regConn->username_in+","+address+","+callToken);
+    sep->SipQueue.Push(cmd);
+    regConn->callToken_out = callToken;
+    return TRUE;
   }
   else if(regAccount_out->account_type == ACCOUNT_TYPE_H323)
   {
