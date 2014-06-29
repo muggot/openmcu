@@ -123,7 +123,6 @@ class ProxyAccount
     PString call_id;
     unsigned cseq;
 };
-typedef std::map<PString, ProxyAccount *> ProxyAccountMapType;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -142,8 +141,8 @@ class SipCapability
     }
     ~SipCapability()
     {
-      delete cap;
-      cap = NULL;
+      if(cap)
+        delete cap;
     }
     void Init()
     {
@@ -221,6 +220,7 @@ typedef std::map<int, SipCapability *> SipCapMapType;
 
 SipCapability * FindSipCap(SipCapMapType & SipCapMap, int payload);
 SipCapability * FindSipCap(SipCapMapType & SipCapMap, PString capname);
+void ClearSipCaps(SipCapMapType & SipCaps);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -411,12 +411,14 @@ class MCUSipEndPoint : public PThread
       init_config = 0;
       init_proxy_accounts = 0;
       init_caps = 0;
+      init_stun = 0;
     }
     int terminating;
     int restart;
     int init_config;
     int init_proxy_accounts;
     int init_caps;
+    int init_stun;
 
     nta_agent_t *GetAgent() { return agent; };
     su_home_t *GetHome() { return &home; };
@@ -436,6 +438,9 @@ class MCUSipEndPoint : public PThread
     PStringArray sipListenerArray;
     BOOL FindListener(PString addr);
 
+    PSTUNClient * CreateStun(PString address);
+    PSTUNClient * GetPreferedStun(PString address);
+
     H323toSipQueue SipQueue;
 
     void Lock()      { mutex.Wait(); }
@@ -447,7 +452,12 @@ class MCUSipEndPoint : public PThread
     void MainLoop();
     void Terminating();
     void InitListener();
+
     void InitProxyAccounts();
+    void ClearProxyAccounts();
+
+    void InitStunList();
+    void ClearStunList();
 
     MCUH323EndPoint *ep;
     su_home_t home;
@@ -480,7 +490,12 @@ class MCUSipEndPoint : public PThread
     void ProcessProxyAccount();
 
     SipCapMapType BaseSipCaps;
+
+    typedef std::map<PString /* account */, ProxyAccount *> ProxyAccountMapType;
     ProxyAccountMapType ProxyAccountMap;
+
+    typedef std::map<PString /* address */, PSTUNClient *> StunMapType;
+    StunMapType StunMap;
 
     PMutex mutex;
 };

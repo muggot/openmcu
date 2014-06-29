@@ -303,6 +303,18 @@ void CheckPreferSipCap(SipCapMapType & SipCapMap, SipCapability *sc)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void ClearSipCaps(SipCapMapType & SipCaps)
+{
+  for(SipCapMapType::iterator it = SipCaps.begin(); it != SipCaps.end(); )
+  {
+    delete it->second;
+    it->second = NULL;
+    SipCaps.erase(it++);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void SipCapability::Print()
 {
  cout << "\r\n\r\n";
@@ -398,14 +410,12 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   // STUN server
   if(nat_ip == "")
   {
-    PString stun_server = GetEndpointParam(NATStunServerKey);
-    if(stun_server != "")
+    PString address = GetEndpointParam(NATStunServerKey);
+    if(address != "")
     {
-      stun = new PSTUNClient(stun_server, ep.GetUDPPortBase(), ep.GetUDPPortMax(), ep.GetRtpIpPortBase(), ep.GetRtpIpPortMax());
-      stun->SetTimeout(500);
-      stun->SetRetries(2);
+      stun = sep->GetPreferedStun(address);
       PIPSocket::Address extAddress;
-      if(stun->IsAvailable() == FALSE || stun->GetExternalAddress(extAddress) == FALSE)
+      if(stun == NULL || stun->GetExternalAddress(extAddress) == FALSE)
       {
         MCUTRACE(1, trace_section << "STUN server error");
         return FALSE;
@@ -468,7 +478,11 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
 
 MCUSipConnection::~MCUSipConnection()
 {
+  ClearSipCaps(LocalSipCaps);
+  ClearSipCaps(RemoteSipCaps);
+
   if(stun) delete stun;
+
   MCUTRACE(1, trace_section << "destructor");
 }
 
@@ -790,7 +804,9 @@ void MCUSipConnection::CreateLocalSipCaps()
     if(base_sc->media == MEDIA_TYPE_VIDEO && video_capname != "" && video_capname != base_sc->capname)
       continue;
 
+    // create new SipCapability()
     SipCapability *local_sc = new SipCapability(*base_sc);
+
     if(base_sc->media == MEDIA_TYPE_AUDIO && audio_capname != "")
     {
       local_sc->preferred_cap = TRUE;
@@ -2985,8 +3001,9 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
 
 void MCUSipEndPoint::ProcessProxyAccount()
 {
-  ProxyAccountMapType::iterator it;
-  for(it=ProxyAccountMap.begin(); it!=ProxyAccountMap.end(); it++)
+  PWaitAndSignal m(mutex);
+
+  for(ProxyAccountMapType::iterator it=ProxyAccountMap.begin(); it!=ProxyAccountMap.end(); it++)
   {
     ProxyAccount *proxy = it->second;
     PTime now;
@@ -3014,6 +3031,8 @@ void MCUSipEndPoint::ProcessProxyAccount()
 
 ProxyAccount * MCUSipEndPoint::FindProxyAccount(PString account)
 {
+  PWaitAndSignal m(mutex);
+
   ProxyAccountMapType::iterator it = ProxyAccountMap.find(account);
   if(it != ProxyAccountMap.end())
     return it->second;
@@ -3022,8 +3041,33 @@ ProxyAccount * MCUSipEndPoint::FindProxyAccount(PString account)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUSipEndPoint::ClearProxyAccounts()
+{
+  mutex.Wait();
+  for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); ++it)
+  {
+    if(it->second->status == 200)
+      SipRegister(it->second, FALSE);
+  }
+  mutex.Signal();
+
+  su_root_sleep(root, 500);
+
+  mutex.Wait();
+  for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); )
+  {
+    delete it->second;
+    ProxyAccountMap.erase(it++);
+  }
+  mutex.Signal();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUSipEndPoint::InitProxyAccounts()
 {
+  PWaitAndSignal m(mutex);
+
   PString sectionPrefix = "SIP Proxy Account ";
   PStringList sect = MCUConfig("Parameters").GetSectionsPrefix(sectionPrefix);
   for(PINDEX i = 0; i < sect.GetSize(); i++)
@@ -3082,9 +3126,10 @@ void MCUSipEndPoint::InitProxyAccounts()
 
 void MCUSipEndPoint::CreateBaseSipCaps()
 {
-  PStringList keys;
-  BaseSipCaps.clear();
+  PWaitAndSignal m(mutex);
+  ClearSipCaps(BaseSipCaps);
 
+  PStringList keys;
   keys = MCUConfig("SIP Audio").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
@@ -3125,6 +3170,121 @@ void MCUSipEndPoint::CreateBaseSipCaps()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+PSTUNClient * MCUSipEndPoint::CreateStun(PString address)
+{
+  if(address == "")
+    return NULL;
+
+  PSTUNClient *stun = new PSTUNClient(address, ep->GetUDPPortBase(), ep->GetUDPPortMax(), ep->GetRtpIpPortBase(), ep->GetRtpIpPortMax());
+  stun->SetTimeout(800);
+  stun->SetRetries(2);
+  if(stun->IsAvailable() == FALSE)
+  {
+    MCUTRACE(1, "MCUSIP\t" << "failed create STUN client, server \"" << address << "\" not available");
+    delete stun;
+    return NULL;
+  }
+
+  MCUTRACE(1, "MCUSIP\t" << "create STUN client, server \"" << address << "\" " << stun->GetServer());
+  return stun;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PSTUNClient * MCUSipEndPoint::GetPreferedStun(PString address)
+{
+  PWaitAndSignal m(mutex);
+
+  PString stun_name;
+  PSTUNClient *stun = NULL;
+  for(StunMapType::iterator it = StunMap.begin(); it != StunMap.end(); ++it)
+  {
+    if(address == "auto")
+    {
+      stun_name = it->first;
+      stun = it->second;
+      break;
+    }
+    else if(address == it->first)
+    {
+      stun_name = it->first;
+      stun = it->second;
+      break;
+    }
+  }
+
+  if(stun != NULL)
+  {
+    MCUTRACE(1, "MCUSIP\t" << "found STUN server \"" << stun_name << "\" " << stun->GetServer());
+    // return clone
+    return new PSTUNClient(*stun);
+  }
+
+  if(address != "" && address != "auto")
+  {
+    // create new stun
+    return CreateStun(address);
+  }
+
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipEndPoint::InitStunList()
+{
+  PWaitAndSignal m(mutex);
+  ClearStunList();
+
+  PStringArray stun_list = MCUConfig("SIP Parameters").GetString(NATStunListKey).Tokenise(",");
+  for(PINDEX i = 0; i < stun_list.GetSize(); i++)
+  {
+    PString address = stun_list[i];
+    if(StunMap.find(address) != StunMap.end())
+      continue;
+
+    PSTUNClient *stun = CreateStun(address);
+    if(stun != NULL)
+      StunMap.insert(StunMapType::value_type(address, stun));
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipEndPoint::ClearStunList()
+{
+  PWaitAndSignal m(mutex);
+  for(StunMapType::iterator it = StunMap.begin(); it != StunMap.end(); )
+  {
+    delete it->second;
+    StunMap.erase(it++);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSipEndPoint::FindListener(PString addr)
+{
+  if(agent == NULL) return FALSE;
+  if(addr.Left(4) != "sip:") addr = "sip:"+addr;
+  if(addr.Find("@") == P_MAX_INDEX) addr.Replace("sip:","sip:@",TRUE,0);
+  MCUURL url(addr);
+  for(tport_t *tp = nta_agent_tports(agent); tp != NULL; tp = tport_next(tp))
+  {
+    tp_name_t const *tp_name = tport_name(tp);
+    PString host = tp_name->tpn_host;
+    //PString port = tp_name->tpn_port;
+    PString port = url.GetPort();
+    //PString proto = tp_name->tpn_proto;
+    if(host == url.GetHostName() && port == url.GetPort())
+      return TRUE;
+  }
+  PTRACE(1, "MCUSIP\tSIP tport not found: " << addr);
+  return FALSE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUSipEndPoint::InitListener()
 {
   nta_agent_close_tports(agent);
@@ -3157,28 +3317,6 @@ void MCUSipEndPoint::InitListener()
     }
 */
   }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BOOL MCUSipEndPoint::FindListener(PString addr)
-{
-  if(agent == NULL) return FALSE;
-  if(addr.Left(4) != "sip:") addr = "sip:"+addr;
-  if(addr.Find("@") == P_MAX_INDEX) addr.Replace("sip:","sip:@",TRUE,0);
-  MCUURL url(addr);
-  for(tport_t *tp = nta_agent_tports(agent); tp != NULL; tp = tport_next(tp))
-  {
-    tp_name_t const *tp_name = tport_name(tp);
-    PString host = tp_name->tpn_host;
-    //PString port = tp_name->tpn_port;
-    PString port = url.GetPort();
-    //PString proto = tp_name->tpn_proto;
-    if(host == url.GetHostName() && port == url.GetPort())
-      return TRUE;
-  }
-  PTRACE(1, "MCUSIP\tSIP tport not found: " << addr);
-  return FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3238,11 +3376,13 @@ void MCUSipEndPoint::MainLoop()
       init_config = 1;
       init_proxy_accounts = 1;
       init_caps = 1;
+      init_stun = 1;
     }
     if(init_config)
     {
       init_config = 0;
       InitListener();
+      init_stun = 1;
     }
     if(init_proxy_accounts)
     {
@@ -3253,6 +3393,11 @@ void MCUSipEndPoint::MainLoop()
     {
       init_caps = 0;
       CreateBaseSipCaps();
+    }
+    if(init_stun)
+    {
+      init_stun = 0;
+      InitStunList();
     }
     ProcessSipQueue();
     ProcessProxyAccount();
@@ -3265,16 +3410,10 @@ void MCUSipEndPoint::MainLoop()
 
 void MCUSipEndPoint::Terminating()
 {
-  for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); ++it)
-  {
-    if(it->second->status == 200)
-      SipRegister(it->second, FALSE);
-  }
-  su_root_sleep(root, 500);
-  for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); )
-  {
-    ProxyAccountMap.erase(it++);
-  }
+  PWaitAndSignal m(mutex);
+  ClearProxyAccounts();
+  ClearSipCaps(BaseSipCaps);
+  ClearStunList();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

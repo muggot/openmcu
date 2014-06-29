@@ -138,6 +138,7 @@ static const char DisableCodecsKey[]      = "Disable codecs - deprecated, use ca
 static const char NATRouterIPKey[]        = "NAT Router IP";
 static const char NATTreatAsGlobalKey[]   = "Treat as global for NAT";
 static const char NATStunServerKey[]      = "STUN server";
+static const char NATStunListKey[]        = "STUN server list";
 static const char DisableFastStartKey[]   = "Disable Fast-Start";
 static const char DisableH245TunnelingKey[]="Disable H.245 Tunneling";
 static const char RTPPortBaseKey[]        = "RTP Base Port";

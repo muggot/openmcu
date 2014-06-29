@@ -120,6 +120,12 @@ int GetEndpointParamFromUrl(PString param, PString addr, int defaultValue)
   PString value = GetEndpointParamFromUrl(param, addr);
   if(value == "")
     return defaultValue;
+
+  if(value.ToLower() == "true")
+    value = "1";
+  else if(value.ToLower() == "false")
+    value = "0";
+
   return value.AsInteger();
 }
 

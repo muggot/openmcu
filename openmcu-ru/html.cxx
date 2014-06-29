@@ -1172,7 +1172,10 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+PString(NATRouterIPKey)+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
-      s2 += rowArray+PString(NATStunServerKey)+StringItem(name, scfg.GetString(NATStunServerKey))+"</tr>";
+      PString stun_list = MCUConfig("SIP Parameters").GetString(NATStunListKey);
+      if(stun_list != "")
+        stun_list = ",auto,"+stun_list;
+      s2 += rowArray+PString(NATStunServerKey)+SelectItem(name, scfg.GetString(NATStunServerKey), stun_list)+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;
@@ -1475,6 +1478,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   s << item;
 
   //s << StringField(NATRouterIPKey, cfg.GetString(NATRouterIPKey));
+  s << ArrayField(NATStunListKey, cfg.GetString(NATStunListKey), 150);
 
   mcu.GetSipEndpoint()->sipListenerArray = sipListener;
 
