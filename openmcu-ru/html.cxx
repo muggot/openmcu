@@ -1172,10 +1172,13 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+PString(NATRouterIPKey)+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
+      PString stun_name = scfg.GetString(NATStunServerKey);
       PString stun_list = MCUConfig("SIP Parameters").GetString(NATStunListKey);
       if(stun_list != "")
         stun_list = ",auto,"+stun_list;
-      s2 += rowArray+PString(NATStunServerKey)+SelectItem(name, scfg.GetString(NATStunServerKey), stun_list)+"</tr>";
+      if(stun_list.Find(stun_name) == P_MAX_INDEX)
+        stun_list = stun_name+","+stun_list;
+      s2 += rowArray+PString(NATStunServerKey)+SelectItem(name, stun_name, stun_list)+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;
