@@ -1837,7 +1837,7 @@ int MCUSipConnection::ProcessConnect()
 
   if(direction == DIRECTION_INBOUND)
   {
-    ProxyAccount *proxy = sep->FindProxyAccount((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
+    ProxyAccount *proxy = sep->FindProxyAccount(sip->sip_to->a_url->url_user, sip->sip_from->a_url->url_host);
     if(proxy) requestedRoom = proxy->roomname;
   }
   MCUURL_SIP url(c_sip_msg, direction);
@@ -2400,7 +2400,7 @@ PString MCUSipEndPoint::GetRoomAccess(const sip_t *sip)
     PString userName_, hostName_, via_, access;
     PString defaultAccess = MCUConfig("RoomAccess").GetString("*", "ALLOW").Tokenise(",")[0].ToUpper();
 
-    ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_to->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
+    ProxyAccount *proxy = FindProxyAccount(sip->sip_to->a_url->url_user, sip->sip_from->a_url->url_host);
     if(proxy)
       roomName = proxy->roomname;
     else
@@ -2477,6 +2477,7 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
         local_user = proxy->username;
         local_domain = proxy->domain;
         local_dname = proxy->roomname;
+        remote_domain = proxy->domain;
         remote_host = proxy->host;
         remote_port = proxy->port;
         auth_username = proxy->username;
@@ -2667,7 +2668,7 @@ BOOL MCUSipEndPoint::MakeMsgAuth(msg_t *msg_orq, const msg_t *msg)
   if(sip_orq->sip_authorization || sip_orq->sip_proxy_authorization)
     return FALSE;
 
-  ProxyAccount *proxy = FindProxyAccount((PString)sip_orq->sip_from->a_url->url_user+"@"+(PString)sip_orq->sip_from->a_url->url_host);
+  ProxyAccount *proxy = FindProxyAccount(sip_orq->sip_from->a_url->url_user, sip_orq->sip_from->a_url->url_host);
   if(!proxy)
     return FALSE;
 
@@ -2748,7 +2749,7 @@ int MCUSipEndPoint::response_cb1(nta_outgoing_t *orq, const sip_t *sip)
 
   if(request == sip_method_register)
   {
-    ProxyAccount *proxy = FindProxyAccount((PString)sip->sip_from->a_url->url_user+"@"+(PString)sip->sip_from->a_url->url_host);
+    ProxyAccount *proxy = FindProxyAccount(sip->sip_from->a_url->url_user, sip->sip_from->a_url->url_host);
     if(!proxy)
     {
       nta_outgoing_destroy(orq);
@@ -3029,13 +3030,16 @@ void MCUSipEndPoint::ProcessProxyAccount()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ProxyAccount * MCUSipEndPoint::FindProxyAccount(PString account)
+ProxyAccount * MCUSipEndPoint::FindProxyAccount(PString username, PString domain)
 {
   PWaitAndSignal m(mutex);
 
-  ProxyAccountMapType::iterator it = ProxyAccountMap.find(account);
-  if(it != ProxyAccountMap.end())
-    return it->second;
+  for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); ++it)
+  {
+    ProxyAccount *proxy = it->second;
+    if(username == proxy->username && (domain == proxy->domain || domain == proxy->host))
+      return proxy;
+  }
   return NULL;
 }
 
@@ -3090,10 +3094,11 @@ void MCUSipEndPoint::InitProxyAccounts()
     PString password = PHTTPPasswordField::Decrypt(scfg.GetString("Password"));
     unsigned expires = scfg.GetInteger("Expires");
 
+    if(username == "") continue;
     if(domain == "") domain = host;
-    if(domain == "") enable = FALSE;
+    if(domain == "") continue;
 
-    ProxyAccount *proxy = FindProxyAccount(username+"@"+domain);
+    ProxyAccount *proxy = FindProxyAccount(username, domain);
     if(proxy && proxy->enable)
     {
       proxy->enable = enable;

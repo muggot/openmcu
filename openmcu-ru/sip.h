@@ -431,7 +431,7 @@ class MCUSipEndPoint : public PThread
     BOOL MakeMsgAuth(msg_t *msg_orq, const msg_t *msg);
     PString MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce);
     BOOL ParseAuthMsg(const msg_t *msg, AuthTypes & auth_type, PString & auth_scheme, PString & auth_realm, PString & auth_nonce);
-    ProxyAccount *FindProxyAccount(PString account);
+    ProxyAccount *FindProxyAccount(PString username, PString domain);
 
     SipCapMapType & GetBaseSipCaps() { return BaseSipCaps; }
 
