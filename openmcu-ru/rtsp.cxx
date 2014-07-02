@@ -59,6 +59,89 @@ static struct sockaddr *GetIPAddr(const char *ip, int port, int isIPv6, int *siz
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+int RecvData(int socket_fd, char *buffer, int buffer_size)
+{
+  // read into buffer
+  int len = recv(socket_fd, buffer, buffer_size, 0);
+
+  // if error or closed
+  if(len <= 0)
+    return 0;
+
+  buffer[len] = 0; // Finalize as string
+  return len;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int SendData(int socket_fd, char *buffer)
+{
+  int len = strlen(buffer);
+  if(send(socket_fd, buffer, len, 0) == -1)
+    return 0;
+
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL PreParseMsg(PString & msg_str)
+{
+  if(msg_str.Find("Cseq:") != P_MAX_INDEX)
+    msg_str.Replace("Cseq:","CSeq:",TRUE,0);
+
+  if(msg_str.Find("CSeq:") == P_MAX_INDEX)
+    return FALSE;
+
+  PString name;
+  if(msg_str.Find("OPTIONS") != P_MAX_INDEX)
+    name = "OPTIONS";
+  else if(msg_str.Find("DESCRIBE") != P_MAX_INDEX)
+    name = "DESCRIBE";
+  else if(msg_str.Find("SETUP") != P_MAX_INDEX)
+    name = "SETUP";
+  else if(msg_str.Find("PLAY") != P_MAX_INDEX)
+    name = "PLAY";
+  else if(msg_str.Find("TEARDOWN") != P_MAX_INDEX)
+    name = "TEARDOWN";
+  else
+    return FALSE;
+
+  PString cseq;
+  for(PINDEX i = msg_str.Find("CSeq:")+6; i < msg_str.GetLength(); i++)
+  {
+    if(msg_str[i] == ' ' || msg_str[i] == '\r')
+      break;
+    cseq += msg_str[i];
+  }
+  if(cseq == "")
+    return FALSE;
+
+  if(msg_str.Find("CSeq: "+cseq+" "+name) == P_MAX_INDEX)
+    msg_str.Replace("CSeq: "+cseq,"CSeq: "+cseq+" "+name,TRUE,0);
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+msg_t * ParseMsg(PString & msg_str)
+{
+  if(PreParseMsg(msg_str) == FALSE)
+    return NULL;
+
+  msg_t *msg = msg_make(sip_default_mclass(), 0, (const void *)(const char *)msg_str, msg_str.GetLength());
+  sip_t *sip = sip_object(msg);
+  if(sip == NULL || sip->sip_cseq == NULL || sip->sip_cseq->cs_method_name == NULL)
+  {
+    msg_destroy(msg);
+    return NULL;
+  }
+  return msg;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken)
   :MCUSipConnection(_sep, _ep, _callToken)
 {
@@ -138,6 +221,8 @@ void MCURtspConnection::CleanUpOnCallEnd()
 int MCURtspConnection::Connect(PString room, PString _ruri_str)
 {
   PTRACE(1, trace_section << "Connect room: " << room << " ruri: " << _ruri_str);
+
+  direction = DIRECTION_OUTBOUND;
   requestedRoom = room;
 
   ruri_str = _ruri_str;
@@ -169,13 +254,13 @@ int MCURtspConnection::Connect(PString room, PString _ruri_str)
 
 int MCURtspConnection::SendOptions()
 {
-  char request[1024];
-  snprintf(request, 1024,
+  char buffer[1024];
+  snprintf(buffer, 1024,
   	   "OPTIONS %s RTSP/1.0\r\n"
 	   "CSeq: %d OPTIONS\r\n",
 	   (const char *)ruri_str, cseq++);
 
-  if(SendRequest(socket_fd, request, "OPTIONS") == 0)
+  if(SendRequest(socket_fd, buffer, "OPTIONS") == 0)
     return 0;
 
   return 1;
@@ -185,18 +270,17 @@ int MCURtspConnection::SendOptions()
 
 int MCURtspConnection::SendPlay()
 {
-  char request[1024];
-  snprintf(request, 1024,
+  char buffer[1024];
+  snprintf(buffer, 1024,
   	   "PLAY %s RTSP/1.0\r\n"
 	   "CSeq: %d PLAY\r\n"
            "Session: %s\r\n"
            "Range: npt=0.000-\r\n",
 	   (const char *)ruri_str, cseq++, (const char *)rtsp_session_str);
 
-  if(SendRequest(socket_fd, request, "PLAY") == 0)
+  if(SendRequest(socket_fd, buffer, "PLAY") == 0)
     return 0;
 
-  rtsp_state = RTSP_PLAY;
   return 1;
 }
 
@@ -225,15 +309,15 @@ int MCURtspConnection::SendSetup(int pt)
   if(rtsp_session_str != "")
     session_header = "Session: "+rtsp_session_str+"\r\n";
 
-  char request[1024];
-  snprintf(request, 1024,
+  char buffer[1024];
+  snprintf(buffer, 1024,
   	   "SETUP %s RTSP/1.0\r\n"
 	   "CSeq: %d SETUP\r\n"
 	   "%s"
            "Transport: RTP/AVP/UDP;unicast;client_port=%d-%d\r\n",
 	   (const char *)control, cseq++, (const char *)session_header, rtp_port, rtp_port+1);
 
-  if(SendRequest(socket_fd, request, "SETUP") == 0)
+  if(SendRequest(socket_fd, buffer, "SETUP") == 0)
     return 0;
 
   return 1;
@@ -243,14 +327,14 @@ int MCURtspConnection::SendSetup(int pt)
 
 int MCURtspConnection::SendTeardown()
 {
-  char request[1024];
-  snprintf(request, 1024,
+  char buffer[1024];
+  snprintf(buffer, 1024,
   	   "TEARDOWN %s RTSP/1.0\r\n"
 	   "CSeq: %d TEARDOWN\r\n"
 	   "Session: %s\r\n",
 	   (const char *)ruri_str, cseq++, (const char *)rtsp_session_str);
 
-  if(SendRequest(socket_fd, request, "TEARDOWN") == 0)
+  if(SendRequest(socket_fd, buffer, "TEARDOWN") == 0)
     return 0;
 
   return 1;
@@ -260,14 +344,14 @@ int MCURtspConnection::SendTeardown()
 
 int MCURtspConnection::SendDescribe()
 {
-  char request[1024];
-  snprintf(request,1024,
+  char buffer[1024];
+  snprintf(buffer,1024,
   	   "DESCRIBE %s RTSP/1.0\r\n"
 	   "CSeq: %d DESCRIBE\r\n"
 	   "Accept: application/sdp\r\n",
 	   (const char *)ruri_str, cseq++);
 
-  if(SendRequest(socket_fd, request, "DESCRIBE") == 0)
+  if(SendRequest(socket_fd, buffer, "DESCRIBE") == 0)
      return 0;
 
   rtsp_state = RTSP_DESCRIBE;
@@ -276,7 +360,7 @@ int MCURtspConnection::SendDescribe()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnPlayResponse(msg_t *msg)
+int MCURtspConnection::OnResponsePlay(const msg_t *msg)
 {
   // set endpoint member name
   SetMemberName();
@@ -309,9 +393,10 @@ int MCURtspConnection::OnPlayResponse(msg_t *msg)
   return 0;
 }
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnSetupResponse(msg_t *msg)
+int MCURtspConnection::OnResponseSetup(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
@@ -363,12 +448,13 @@ int MCURtspConnection::OnSetupResponse(msg_t *msg)
   }
 
   SendPlay();
+  rtsp_state = RTSP_PLAY;
   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnDescribeResponse(msg_t *msg)
+int MCURtspConnection::OnResponseDescribe(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
@@ -402,24 +488,18 @@ int MCURtspConnection::OnDescribeResponse(msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnReceived(msg_t *msg)
+int MCURtspConnection::OnResponseReceived(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
-  int status = 0;
-  PString rq_method_name, cs_method_name;
-  if(sip->sip_status)  status = sip->sip_status->st_status;
-  if(sip->sip_request) rq_method_name = sip->sip_request->rq_method_name;
-  if(sip->sip_cseq)    cs_method_name = sip->sip_cseq->cs_method_name;
-
-  if(status == 0)
-    return 0;
+  int status = sip->sip_status->st_status;
+  PString cs_method_name = sip->sip_cseq->cs_method_name;
 
   if(cs_method_name == "DESCRIBE" && rtsp_state == RTSP_DESCRIBE)
   {
     if(status == 200)
     {
-      int response_code = OnDescribeResponse(msg);
+      int response_code = OnResponseDescribe(msg);
       if(response_code)
       {
         PTRACE(1, trace_section << "error " << response_code);
@@ -450,7 +530,7 @@ int MCURtspConnection::OnReceived(msg_t *msg)
   {
     if(status == 200)
     {
-      OnSetupResponse(msg);
+      OnResponseSetup(msg);
       return 0;
     }
   }
@@ -458,7 +538,7 @@ int MCURtspConnection::OnReceived(msg_t *msg)
   {
     if(status == 200)
     {
-      int response_code = OnPlayResponse(msg);
+      int response_code = OnResponsePlay(msg);
       if(response_code)
       {
         PTRACE(1, trace_section << "error " << response_code);
@@ -469,63 +549,34 @@ int MCURtspConnection::OnReceived(msg_t *msg)
     }
   }
 
-  PTRACE(1, trace_section << "error");
-  ProcessShutdown();
+  PTRACE(1, trace_section << "unknown response " << cs_method_name << ", state " << rtsp_state);
   return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::SendRequest(int socket_fd, char *request, PString method_name)
+int MCURtspConnection::SendRequest(int socket_fd, char *buffer, PString method_name)
 {
-  if(auth_type != AUTH_NONE && method_name != "OPTIONS")
+  if(auth_type != AUTH_NONE && method_name != "OPTIONS" && method_name != "RESPONSE")
   {
     PString auth_str = sep->MakeAuthStr(auth_username, auth_password, ruri_str, method_name, auth_scheme, auth_realm, auth_nonce);
-    strcat(request, (const char *)PString("Authorization: "+auth_str+"\r\n"));
+    strcat(buffer, (const char *)PString("Authorization: "+auth_str+"\r\n"));
   }
-  strcat(request, (const char *)PString("User-Agent: "+SIP_USER_AGENT+"\r\n"));
-  strcat(request, "\r\n");
-
-  int len = strlen(request);
-  if(send(socket_fd, request, len, 0) == -1)
+  if(method_name != "SDP")
   {
-    // If failed connection
-    if(errno != EAGAIN)
-    {
-      MCUTRACE(1, trace_section << "error sending request " << errno);
-      ProcessShutdown();
-    }
+    strcat(buffer, (const char *)PString("User-Agent: "+SIP_USER_AGENT+"\r\n"));
+  }
+  strcat(buffer, "\r\n");
+
+  if(SendData(socket_fd, buffer) == 0)
+  {
+    MCUTRACE(1, trace_section << "error sending " << errno);
+    ProcessShutdown();
     return 0;
   }
 
-  MCUTRACE(1, trace_section << "send " << len << " bytes\n" << request);
-  return len;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int MCURtspConnection::RecvData(int socket_fd, char *buffer, int buffer_size)
-{
-  // Read into buffer
-  int len = recv(socket_fd, buffer, buffer_size, 0);
-
-  // if error or closed
-  if(len <= 0)
-  {
-    // If failed connection
-    if((errno != EAGAIN && errno != EWOULDBLOCK) || !len)
-    {
-      MCUTRACE(1, trace_section << "error receiving data [" << len << "," << errno << "]." << strerror(errno));
-      ProcessShutdown();
-    }
-    // exit
-    return 0;
-  }
-  // Finalize as string
-  buffer[len] = 0;
-
-  MCUTRACE(1, trace_section << "recv " << len << " bytes\n" << buffer);
-  return len;
+  MCUTRACE(1, trace_section << "send " << strlen(buffer) << " bytes\n" << buffer);
+  return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -547,7 +598,7 @@ int MCURtspConnection::CreateSocket()
   // open socket
   socket_fd = socket(PF, SOCK_STREAM,0);
 
-  // Set socket non-blocking
+  // set socket non-blocking
   int flags = fcntl(socket_fd, F_GETFD);
   fcntl(socket_fd, F_SETFD,flags | O_NONBLOCK);
 
@@ -565,7 +616,7 @@ int MCURtspConnection::CreateSocket()
   // Connect
   if(connect(socket_fd, sendAddr, size) < 0)
   {
-    MCUTRACE(1, trace_section << "Failed connect to socket " << ip << ":" << port);
+    MCUTRACE(1, trace_section << "failed connect to socket " << ip << ":" << port);
     free(sendAddr);
     return 0;
   }
@@ -583,42 +634,45 @@ int MCURtspConnection::CreateSocket()
 void MCURtspConnection::RtspListener(PThread &, INT)
 {
   char buffer[16384];
-  int buffer_size = 16383; // One less for finall \0
-  int buffer_len = 0;
-
-  msg_t *msg = NULL;
+  int buffer_size = 16383; // one less for finall \0
+  PString msg_str;
 
   while(rtsp_terminating == 0)
   {
     // Read into buffer
-    if((buffer_len = RecvData(socket_fd, buffer, buffer_size)) == 0)
+    if(RecvData(socket_fd, buffer, buffer_size) == 0)
       continue;
 
-    msg = msg_make(sip_default_mclass(), 0, (void const *)buffer, buffer_len);
+    msg_str = buffer;
+    MCUTRACE(1, trace_section << "recv " << msg_str.GetLength() << " bytes\n" << msg_str);
+
+    msg_t *msg = ParseMsg(msg_str);
     sip_t *sip = sip_object(msg);
-    if(!sip)
+    if(msg == NULL || sip == NULL)
     {
-      MCUTRACE(1, trace_section << "Failed parse message");
-      msg_destroy(msg);
-      msg = NULL;
+      MCUTRACE(1, trace_section << "failed parse message");
       continue;
     }
     if(sip && sip->sip_content_length && sip->sip_content_length->l_length != 0)
     {
       // Read payload
-      if((buffer_len = RecvData(socket_fd, buffer, buffer_size)) == 0)
+      if(RecvData(socket_fd, buffer, buffer_size) == 0)
       {
         msg_destroy(msg);
         msg = NULL;
         continue;
       }
+      msg_str = buffer;
+      MCUTRACE(1, trace_section << "recv " << msg_str.GetLength() << " bytes\n" << msg_str);
       sip_add_tl(msg, sip_object(msg),
-                  SIPTAG_PAYLOAD_STR(buffer),
+                  SIPTAG_PAYLOAD_STR((const char *)msg_str),
                   TAG_END());
     }
-    OnReceived(msg);
+
+    if(sip->sip_status != NULL)
+      OnResponseReceived(msg);
+
     msg_destroy(msg);
-    msg = NULL;
   }
 }
 

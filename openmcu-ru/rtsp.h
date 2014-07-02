@@ -37,19 +37,19 @@ class MCURtspConnection : public MCUSipConnection
     int SendTeardown();
     int SendDescribe();
     int SendRequest(int fd, char *request, PString method_name);
-    int RecvData(int fd, char *buffer, int bufferSize);
 
-    int OnReceived(msg_t *msg);
-    int OnDescribeResponse(msg_t *msg);
-    int OnSetupResponse(msg_t *msg);
-    int OnPlayResponse(msg_t *msg);
+    int OnResponseReceived(const msg_t *msg);
+    int OnResponseDescribe(const msg_t *msg);
+    int OnResponseSetup(const msg_t *msg);
+    int OnResponsePlay(const msg_t *msg);
 
-    int socket_fd;
     int cseq;
     int rtsp_terminating;
     PString rtsp_session_str;
 
+    int socket_fd;
     int CreateSocket();
+
     PThread *rtsp_thread;
     PDECLARE_NOTIFIER(PThread, MCURtspConnection, RtspListener);
 };
