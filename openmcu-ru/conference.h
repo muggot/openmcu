@@ -84,7 +84,18 @@
 
 typedef void * ConferenceMemberId;
 
-////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum MemberTypes
+{
+  MEMBER_TYPE_NONE       = 0,
+  MEMBER_TYPE_PIPE       = 1,
+  MEMBER_TYPE_CACHE      = 2,
+  MEMBER_TYPE_RECORDER   = 3,
+  MEMBER_TYPE_GSYSTEM    = (MEMBER_TYPE_PIPE|MEMBER_TYPE_CACHE|MEMBER_TYPE_RECORDER)
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCULock : public PObject
 {
@@ -981,9 +992,10 @@ class ConferenceMember : public PObject
     virtual void SetName(PString newName) {}
 
     virtual PString GetName() const
-    {
-     return name;
-    }
+    { return name; }
+
+    virtual MemberTypes GetType()
+    { return MEMBER_TYPE_NONE; }
 
     virtual void SetFreezeVideo(BOOL) const
     {

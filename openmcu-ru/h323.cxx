@@ -601,11 +601,11 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         MCUH323Connection * conn = NULL;
         H323Connection_ConferenceMember * connMember = NULL;
         DWORD orx=0, otx=0, vorx=0, votx=0, prx=0, ptx=0, vprx=0, vptx=0, plost=0, vplost=0, plostTx=0, vplostTx=0;
-        if(name=="file recorder")
+        if(member->GetType() == MEMBER_TYPE_PIPE || member->GetType() == MEMBER_TYPE_RECORDER)
         {
           duration = now - member->GetStartTime();
         }
-        else if(name=="cache")
+        else if(member->GetType() == MEMBER_TYPE_CACHE)
         { ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
           if(fileMember!=NULL)
           if(fileMember->codec!=NULL)
@@ -746,7 +746,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         PString formatString;
         int codecCacheMode=-1, cacheUsersNumber=0;
         BOOL visible=member->IsVisible();
-        BOOL cache=(memberName=="cache");
+        BOOL cache=(member->GetType() == MEMBER_TYPE_CACHE);
         members << "<tr><td>";
         if(cache) members << "<nobr><b>[Hidden]</b> cache</nobr></td>";
         else
@@ -757,7 +757,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
 
         MCUH323Connection * conn = NULL;
         H323Connection_ConferenceMember * connMember = NULL;
-        if ((!cache)&&(memberName!="file recorder")) connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
+        if (!(member->GetType() & MEMBER_TYPE_GSYSTEM)) connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
         if (connMember != NULL) conn = (MCUH323Connection *)FindConnectionWithLock(connMember->GetH323Token());
         PTime now;
 
@@ -1180,8 +1180,7 @@ ConferenceMember * MCUH323EndPoint::GetConferenceMemberById(Conference * confere
   for (r = memberList.begin(); r != memberList.end(); ++r)
   {
     ConferenceMember * member = r->second;
-    if(member->GetName()=="file recorder") continue;
-    if(member->GetName()=="cache") continue;
+    if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
     if ((long)(member->GetID()) == id) return member;
   }
   return NULL;
@@ -1341,8 +1340,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     for (r = memberList.begin(); r != memberList.end(); ++r)
     {
       ConferenceMember * member = r->second;
-      if(member->GetName()=="file recorder") continue;
-      if(member->GetName()=="cache") continue;
+      if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
       member->Close();
     }
     OpenMCU::Current().HttpWriteEventRoom("Active members dropped by operator",room);
@@ -1360,8 +1358,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     for (r = memberList.begin(); r != memberList.end(); ++r)
     {
       ConferenceMember * member = r->second;
-      if(member->GetName()=="file recorder") continue;
-      if(member->GetName()=="cache") continue;
+      if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
       connMember = NULL;
       connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
       if(connMember==NULL) continue;
@@ -1760,8 +1757,7 @@ void MCUH323EndPoint::SetMemberListOpts(Conference & conference,const PStringToS
  for (s = memberList.begin(); s != memberList.end(); ++s) 
  {
   ConferenceMember * member = s->second;
-  if(member->GetName()=="file recorder") continue;
-  if(member->GetName()=="cache") continue;
+  if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
   ConferenceMemberId mid = member->GetID();
 
   PString arg = (long)mid;
@@ -1779,7 +1775,7 @@ void MCUH323EndPoint::SetMemberListOpts(Conference & conference,const PStringToS
  for (s = memberList.begin(); s != memberList.end(); ++s) 
  {
   ConferenceMember * member = s->second;
-  if(member->GetName()=="file recorder") continue;
+  if(member->GetType() == MEMBER_TYPE_PIPE) continue;
   ConferenceMemberId mid = member->GetID();
   
   PString arg = (int)mid;
@@ -1802,8 +1798,7 @@ void MCUH323EndPoint::SetMemberListOpts(Conference & conference,const PStringToS
  {
   ConferenceMember * member = s->second;
   s--; i--;
-  if(member->GetName()=="file recorder") continue;
-  if(member->GetName()=="cache") continue;
+  if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
   ConferenceMemberId mid = member->GetID();
   
   PString arg = (long)mid;
@@ -1929,7 +1924,7 @@ void MCUH323EndPoint::UnmoderateConference(Conference & conference)
   for (s = memberList.begin(); s != memberList.end(); ++s) 
   {
     ConferenceMember * member = s->second;
-    if(member->GetName()!="cache") SetMemberVideoMixer(conference, member, 0);
+    if(member->GetType() != MEMBER_TYPE_CACHE) SetMemberVideoMixer(conference, member, 0);
     if(!member->IsVisible()) continue;
     if(mixer->AddVideoSource(member->GetID(), *member)) member->SetFreezeVideo(FALSE);
     else member->SetFreezeVideo(TRUE);
@@ -2256,8 +2251,7 @@ NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, Conferen
   Conference::MemberList::const_iterator r;
   for (r = conference.GetMemberList().begin(); r != conference.GetMemberList().end(); r++) {
     ConferenceMember * mbr = r->second;
-    PString memberName=mbr->GetName();
-    if ((memberName!="cache")&&(memberName!="file recorder"))
+    if(mbr->GetType() & MEMBER_TYPE_GSYSTEM) continue;
     if (mbr != memberToIgnore) {
       H323Connection_ConferenceMember * h323Mbr = dynamic_cast<H323Connection_ConferenceMember *>(mbr);
       if (h323Mbr != NULL)
@@ -3219,7 +3213,7 @@ void MCUH323Connection::OnUserInputString(const PString & str)
             for(Conference::MemberList::const_iterator t = memberList.begin(); t != memberList.end(); ++t)
             {
               ConferenceMember *member = t->second;
-              if(member->GetName() == "file recorder" || member->GetName() == "cache") continue;
+              if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
               MCUVideoMixer *mixer = conference->VMLFind(member->GetVideoMixerNumber());
               if(mixer == NULL) continue;
               int pos = mixer->GetPositionNum(member->GetID());

@@ -36,6 +36,7 @@ var fortyTwo=42
   ,WORD_ROOM         = "Room"
   ,FILE_RECORDER_NAME= "file recorder"
   ,CACHE_NAME        = "cache"
+  ,RECORDER_NAME     = "conference recorder"
   ,data              = []
   ,gettingData       = 0
   ,getDataErrorCount = 0
@@ -104,7 +105,7 @@ function getTableByRoomName(roomName)
 function findMemberInTable(objTable, memberName, memberId)
 {
   var online = memberId != 0;
-  var visible = (memberName!=CACHE_NAME) && (memberName!=FILE_RECORDER_NAME);
+  var visible = (memberName!=CACHE_NAME) && (memberName!=FILE_RECORDER_NAME) && (memberName!=RECORDER_NAME);
   var searchStr = (online?"":OFFLINE_PREFIX) + (visible?"":HIDDEN_PREFIX) + memberName + (visible?"":HIDDEN_SUFFIX) + (online?"":OFFLINE_SUFFIX);
   for(var i=objTable.rows.length-1; i>=0; i--)
   {
@@ -206,6 +207,7 @@ function member_get_nice_stream(isAudio, isCached, streamName, streamText, strea
 function member_get_nice_codecs(m)
 {
   if(!m[0]) return "-";
+  if(m[1]==RECORDER_NAME) return "-";
   if(m[1]==FILE_RECORDER_NAME) return "-";
   if(m[1]==CACHE_NAME) return "<nobr><b>" + VIDEO_OUT_STR + ":</b> " + m[14] + "</nobr>";
 
@@ -219,6 +221,7 @@ function member_get_nice_packets(m)
 {
   if(!m[0]) return "-";
   if(m[1]==CACHE_NAME) return "-";
+  if(m[1]==RECORDER_NAME) return "-";
   if(m[1]==FILE_RECORDER_NAME) return "-";
   var plost='', vplost='', plostTx='', vplostTx='';
   if(m[23])  plost  ="<font color='red'>/"+m[23]+"</font>";
@@ -232,13 +235,14 @@ function member_get_nice_bytes(m)
 {
   if(!m[0]) return "-";
   if(m[1]==CACHE_NAME) return "-";
+  if(m[1]==RECORDER_NAME) return "-";
   if(m[1]==FILE_RECORDER_NAME) return "-";
   return m[5] + "<br>" + m[6] + "<br>" + m[7] + "<br>" + m[8];
 }
 
 function wrong_check(m)
 {
-  return (!m[0]) || (m[4]<=0) || (m[1]==CACHE_NAME) || (m[1]==FILE_RECORDER_NAME);
+  return (!m[0]) || (m[4]<=0) || (m[1]==CACHE_NAME) || (m[1]==FILE_RECORDER_NAME) || (m[1]==RECORDER_NAME);
 }
 
 function member_get_nice_kbps(roomName, m)
@@ -331,6 +335,7 @@ function member_get_nice_fps(m)
 {
   if(!m[0]) return "-";
   if(m[4]<=0) return "-";
+  if(m[1]==RECORDER_NAME) return "-";
   if(m[1]==FILE_RECORDER_NAME) return "-";
   if(m[1]==CACHE_NAME) return "<nobr><b><font color='green'>" + m[17] + " x</font> </b>" + integer_pad_float(m[16], 2) + "</nobr>";
   var s="<br><br>" +  integer_pad_float(m[15], 2) + "<br>";
@@ -432,6 +437,7 @@ function sort_rooms(a,b)
 
 function get_order_key(m)
 {
+  if(m[1]==RECORDER_NAME) return "0";
   if(m[1]==FILE_RECORDER_NAME) return "0";
   var r="1";
   var cache=(m[1]==CACHE_NAME);

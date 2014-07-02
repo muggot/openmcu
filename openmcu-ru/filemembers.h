@@ -72,6 +72,13 @@ class ConferenceFileMember : public ConferenceMember
       return PString(mode == PFile::ReadOnly ? "file player" : "file recorder") & currentFilename;
     }
 
+    virtual MemberTypes GetType()
+    {
+      if(GetName() == "cache")
+        return MEMBER_TYPE_CACHE;
+      return MEMBER_TYPE_PIPE;
+    }
+
     virtual BOOL IsVisible() const
     { return FALSE; }
 

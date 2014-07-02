@@ -181,7 +181,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
     if(member)
     {
       member->SetConference(NULL); // prevent further attempts to read audio/video data from conference
-      if(member->GetName() != "cache" && member->GetName() != "file recorder")
+      if(member->GetType() != MEMBER_TYPE_PIPE && member->GetType() != MEMBER_TYPE_CACHE)
         member->Close();
     }
   }
@@ -201,7 +201,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
     ConferenceMember * member = r->second;
     if(member)
     {
-      if(member->GetName() == "cache" || member->GetName() == "file recorder")
+      if(member->GetType() == MEMBER_TYPE_PIPE || member->GetType() == MEMBER_TYPE_CACHE)
         delete (ConferenceFileMember *)member;
     }
   }

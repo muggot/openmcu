@@ -55,6 +55,9 @@ class ConferenceRecorder : public ConferenceMember
     virtual PString GetName() const
     { return "conference recorder"; }
 
+    virtual MemberTypes GetType()
+    { return MEMBER_TYPE_RECORDER; }
+
     virtual BOOL IsVisible() const
     { return FALSE; }
 
