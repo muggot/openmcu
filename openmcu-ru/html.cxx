@@ -2351,7 +2351,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       Conference * conference = cm.FindConferenceWithLock(room);
       if(conference)
       {
-        conference->StartExternalRecorder();
+        conference->StartRecorder();
         cm.UnlockConference();
       }
     }
@@ -2360,7 +2360,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       Conference * conference = cm.FindConferenceWithLock(room);
       if(conference)
       {
-        conference->StopExternalRecorder();
+        conference->StopRecorder();
         cm.UnlockConference();
       }
     }
@@ -2446,7 +2446,13 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
 
       PStringStream recordButton;
       if(allowRecord)
-      { BOOL recState = conference.externalRecorder!=NULL; recordButton
+      {
+#ifdef _WIN32
+        BOOL recState = conference.externalRecorder!=NULL;
+#else
+        BOOL recState = (conference.conferenceRecorder && conference.conferenceRecorder->IsRunning());
+#endif
+        recordButton
         << "<input type='button' class='btn btn-large "
         << (recState ? "btn-inverse" : "btn-danger")
         << "' style='width:36px;height:36px;"

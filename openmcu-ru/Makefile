@@ -6,18 +6,18 @@ PREFIX          = /opt
 OSTYPE          = linux
 MACHTYPE	= x86
 PROG		= openmcu-ru
-SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx rtsp.cxx template.cxx \
-                   mcu_rtp.cxx reg.cxx reg_sip.cxx reg_h323.cxx util.cxx
+SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx \
+                   mcu_rtp.cxx reg.cxx reg_sip.cxx reg_h323.cxx util.cxx rtsp.cxx recorder.cxx
 
 CXX		= g++
 CFLAGS         += -g  -Os
-LDFLAGS        += -L../libs/libzrtp/.libs  -L../libs/srtp -L../libs/libyuv -L../libs/sofia-sip/libsofia-sip-ua/.libs -L/opt/openmcu-ru/lib -L/opt/git/test/libs/h323plus/lib -L/opt/git/test/libs/ptlib/lib -L/opt/lib -L/usr/lib -L/usr/local/lib
+LDFLAGS        += -L../libs/libzrtp/.libs -L../libs/sofia-sip/libsofia-sip-ua/.libs -L/opt/git/test/libs/h323plus/lib -L/opt/git/test/libs/ptlib/lib -L/opt/lib -L/opt/openmcu-ru/lib -L/usr/lib -L/usr/local/lib
 RFLAGS         += -Wl,-R/opt/openmcu-ru/lib,-R/opt/openmcu-ru/lib
-SFLAGS         +=
-LDLIBS	       +=  -lssl -lsrtp -lzrtp -lfreetype -ljpeg -lyuv -lsofia-sip-ua -lswresample -lh323_linux_x86_r -lpt_linux_x86_r
+SFLAGS         += 
+LDLIBS	       +=  -lssl -lsrtp -lzrtp -lfreetype -ljpeg -lyuv -lsofia-sip-ua -lavcodec -lavutil -lavformat -lswresample -lswresample -lh323_linux_x86_r -lpt_linux_x86_r
 STDCCFLAGS     +=  -D__STDC_CONSTANT_MACROS -Wall
 STDCXXFLAGS    += 
-CPPFLAGS       += -I../libs/h323plus/include -I../libs/libyuv/include -I../libs/libzrtp/include -I../libs/libzrtp/third_party/bgaes -I../libs/libzrtp/third_party/bnlib -I../libs/ptlib/include -I../libs/sofia-sip/libsofia-sip-ua/bnf -I../libs/sofia-sip/libsofia-sip-ua/docs -I../libs/sofia-sip/libsofia-sip-ua/features -I../libs/sofia-sip/libsofia-sip-ua/http -I../libs/sofia-sip/libsofia-sip-ua/ipt -I../libs/sofia-sip/libsofia-sip-ua/iptsec -I../libs/sofia-sip/libsofia-sip-ua/msg -I../libs/sofia-sip/libsofia-sip-ua/nea -I../libs/sofia-sip/libsofia-sip-ua/nta -I../libs/sofia-sip/libsofia-sip-ua/nth -I../libs/sofia-sip/libsofia-sip-ua/nua -I../libs/sofia-sip/libsofia-sip-ua/sdp -I../libs/sofia-sip/libsofia-sip-ua/sip -I../libs/sofia-sip/libsofia-sip-ua/soa -I../libs/sofia-sip/libsofia-sip-ua/sresolv -I../libs/sofia-sip/libsofia-sip-ua/stun -I../libs/sofia-sip/libsofia-sip-ua/su -I../libs/sofia-sip/libsofia-sip-ua/tport -I../libs/sofia-sip/libsofia-sip-ua/url -I../libs/srtp/crypto/include -I../libs/srtp/include -I/opt/openmcu-ru/include -I/opt/include -I/usr/include -I/usr/include/freetype2 -I/usr/local/include
+CPPFLAGS       += -I../libs/h323plus/include -I../libs/libzrtp/include -I../libs/libzrtp/third_party/bgaes -I../libs/libzrtp/third_party/bnlib -I../libs/ptlib/include -I../libs/sofia-sip/libsofia-sip-ua/bnf -I../libs/sofia-sip/libsofia-sip-ua/docs -I../libs/sofia-sip/libsofia-sip-ua/features -I../libs/sofia-sip/libsofia-sip-ua/http -I../libs/sofia-sip/libsofia-sip-ua/ipt -I../libs/sofia-sip/libsofia-sip-ua/iptsec -I../libs/sofia-sip/libsofia-sip-ua/msg -I../libs/sofia-sip/libsofia-sip-ua/nea -I../libs/sofia-sip/libsofia-sip-ua/nta -I../libs/sofia-sip/libsofia-sip-ua/nth -I../libs/sofia-sip/libsofia-sip-ua/nua -I../libs/sofia-sip/libsofia-sip-ua/sdp -I../libs/sofia-sip/libsofia-sip-ua/sip -I../libs/sofia-sip/libsofia-sip-ua/soa -I../libs/sofia-sip/libsofia-sip-ua/sresolv -I../libs/sofia-sip/libsofia-sip-ua/stun -I../libs/sofia-sip/libsofia-sip-ua/su -I../libs/sofia-sip/libsofia-sip-ua/tport -I../libs/sofia-sip/libsofia-sip-ua/url -I/opt/include -I/opt/openmcu-ru/include -I/usr/include -I/usr/include/freetype2 -I/usr/include/srtp/ -I/usr/local/include
 OPTCCFLAGS      =$(CPPFLAGS)
 
 git_revision        = $(shell git rev-list master --max-count=1 HEAD)

@@ -149,6 +149,9 @@ class VideoFrameStoreList {
 
 class ConferenceMember;
 class ConferenceFileMember;
+#ifndef _WIN32
+class ConferenceRecorder;
+#endif
 
 /// Video Mixer Configurator - Begin ///
 #define VMPC_CONFIGURATION_NAME                 "layouts.conf"
@@ -1282,7 +1285,6 @@ class Conference : public PObject
       return NULL;
     }
 
-    ExternalVideoRecorderThread* externalRecorder;
 #endif
 
     void AddMonitorEvent(ConferenceMonitorInfo * info);
@@ -1315,12 +1317,18 @@ class Conference : public PObject
     virtual BOOL RewriteMembersConf();
     ConferenceFileMember * fileRecorder;
 
+#ifdef _WIN32
+    ExternalVideoRecorderThread* externalRecorder;
+#else
+    ConferenceRecorder * conferenceRecorder;
+#endif
+
     void SetForceScreenSplit(BOOL _forceScreenSplit) { forceScreenSplit = _forceScreenSplit; }
     BOOL GetForceScreenSplit() { return forceScreenSplit; }
 
     BOOL RecorderCheckSpace();
-    BOOL StartExternalRecorder();
-    BOOL StopExternalRecorder();
+    BOOL StartRecorder();
+    BOOL StopRecorder();
 
     BOOL lockedTemplate;
 

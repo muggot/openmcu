@@ -130,6 +130,9 @@ void ConferenceManager::OnCreateConference(Conference * conference)
     return;
 
   conference->fileRecorder = new ConferenceFileMember(conference, (const PString) "recorder" , PFile::WriteOnly);
+#ifndef _WIN32
+  conference->conferenceRecorder = new ConferenceRecorder(conference);
+#endif
 
   if(!conference->GetForceScreenSplit())
   { PTRACE(1,"Conference\tOnCreateConference: \"Force split screen video\" unchecked, " << conference->GetNumber() << " skipping members.conf"); return; }
@@ -168,7 +171,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   PTRACE(2,"MCU\tOnDestroyConference " << conference->GetNumber());
 
   // stop external recorder
-  conference->StopExternalRecorder();
+  conference->StopRecorder();
 
   PTRACE(2,"MCU\tOnDestroyConference " << conference->GetNumber() <<", disconnect remote endpoints");
   conference->GetMutex().Wait();
@@ -426,14 +429,14 @@ BOOL ConferenceRecorderInfo::Perform(Conference & conference)
   {
     // stop recorder if room is empty
     if(!conference.GetVisibleMemberCount())
-      conference.StopExternalRecorder();
+      conference.StopRecorder();
     // start recorder if room is not empty
     if(conference.GetVisibleMemberCount())
-      conference.StartExternalRecorder();
+      conference.StartRecorder();
   }
   if(!allowRecord)
   {
-    conference.StopExternalRecorder();
+    conference.StopRecorder();
     return TRUE; // delete monitor
   }
 
@@ -486,7 +489,11 @@ Conference::Conference(        ConferenceManager & _manager,
   echoLevel = 0;
   vidmembernum = 0;
   fileRecorder = NULL;
+#ifdef _WIN32
   externalRecorder = NULL;
+#else
+  conferenceRecorder = NULL;
+#endif
   forceScreenSplit = GetConferenceParam(number, ForceSplitVideoKey, TRUE);
   lockedTemplate = GetConferenceParam(number, LockTemplateKey, FALSE);
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
@@ -496,6 +503,11 @@ Conference::~Conference()
 {
 #if MCU_VIDEO
   VMLClear();
+#endif
+
+#ifndef _WIN32
+  if(conferenceRecorder)
+    delete conferenceRecorder;
 #endif
 }
 
@@ -515,12 +527,20 @@ BOOL Conference::RecorderCheckSpace()
   return result;
 }
 
-BOOL Conference::StartExternalRecorder()
+BOOL Conference::StartRecorder()
 {
+#ifdef _WIN32
   if(externalRecorder)
     return TRUE;
   if(!fileRecorder)
     return FALSE;
+#else
+  if(!conferenceRecorder)
+    return FALSE;
+  if(conferenceRecorder->IsRunning())
+    return TRUE;
+#endif
+
   if(!RecorderCheckSpace())
     return FALSE;
   if(!PDirectory::Exists(OpenMCU::Current().vr_ffmpegDir))
@@ -529,6 +549,8 @@ BOOL Conference::StartExternalRecorder()
     OpenMCU::Current().HttpWriteEventRoom("Recorder failed to start (check recorder directory)", number);
     return FALSE;
   }
+
+#ifdef _WIN32
   externalRecorder = new ExternalVideoRecorderThread(number);
   // wait 1000ms to start recorder
   for(int i = 0; i < 10; i++) if(externalRecorder->running) break; else PThread::Sleep(100);
@@ -538,22 +560,41 @@ BOOL Conference::StartExternalRecorder()
     PTRACE(1,"MCU\tConference: " << number <<", failed to start recorder");
     return FALSE;
   }
-  PTRACE(1,"MCU\tConference: " << number <<", external video recorder started");
-  OpenMCU::Current().HttpWriteEventRoom("external video recording started", number);
+#else
+  conferenceRecorder->Start();
+  for(int i = 0; i < 10; i++) if(conferenceRecorder->IsRunning()) break; else PThread::Sleep(100);
+  if(!conferenceRecorder->IsRunning())
+  {
+    PTRACE(1,"MCU\tConference: " << number <<", failed to start recorder");
+    return FALSE;
+  }
+#endif
+
+  PTRACE(1,"MCU\tConference: " << number <<", video recorder started");
+  OpenMCU::Current().HttpWriteEventRoom("video recording started", number);
   OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
   OpenMCU::Current().HttpWriteCmdRoom("build_page()", number);
   return TRUE;
 }
 
-BOOL Conference::StopExternalRecorder()
+BOOL Conference::StopRecorder()
 {
+#ifdef _WIN32
   if(!externalRecorder)
     return TRUE;
   externalRecorder->running = FALSE;
   PThread::Sleep(1000);
   externalRecorder = NULL;
-  PTRACE(1,"MCU\tConference: " << number <<", external video recorder stopped");
-  OpenMCU::Current().HttpWriteEventRoom("external video recording stopped", number);
+#else
+  if(!conferenceRecorder)
+    return TRUE;
+  if(!conferenceRecorder->IsRunning())
+    return TRUE;
+  conferenceRecorder->Stop();
+#endif
+
+  PTRACE(1,"MCU\tConference: " << number <<", video recorder stopped");
+  OpenMCU::Current().HttpWriteEventRoom("video recording stopped", number);
   OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
   OpenMCU::Current().HttpWriteCmdRoom("build_page()", number);
   return TRUE;

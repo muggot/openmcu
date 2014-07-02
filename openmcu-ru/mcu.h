@@ -34,6 +34,7 @@
 #include "rtsp.h"
 #include "reg.h"
 #include "util.h"
+#include "recorder.h"
 
 #if P_SSL
 #include <ptclib/shttpsvc.h>

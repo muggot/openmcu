@@ -521,6 +521,11 @@ fi
 LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
 LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
 
+MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
+MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
+MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
+MCU_LDLIBS="$MCU_LDLIBS -lavcodec -lavutil -lavformat -lswresample"
+
 dnl ########################################################################
 dnl check for ffmpeg path
 
@@ -1050,7 +1055,7 @@ echo "              H.261 Video Plugin  :  enabled"
 else
 echo "              H.261 Video Plugin  :  disabled"
 fi
-if test "x${mpeg}" = "xyes" ; then
+if test "x${mpeg4}" = "xyes" ; then
 echo "              MPEG4 Video Plugin  :  enabled"
 else
 echo "              MPEG4 Video Plugin  :  disabled"

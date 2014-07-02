@@ -1049,7 +1049,11 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
     r << ",-1";
 #endif
 
+#ifdef _WIN32
   if(c.externalRecorder != NULL) r << ",1"; else r << ",0";               // [0][11] = external video recording state (1=recording, 0=NO)
+#else
+  if(c.conferenceRecorder != NULL && c.conferenceRecorder->IsRunning()) r << ",1"; else r << ",0"; // [0][11] = video recording state (1=recording, 0=NO)
+#endif
   if(c.lockedTemplate) r << ",1"; else r << ",0";                         // [0][12] = member list locked by template (1=yes, 0=no)
 
   r << ")"; //l2 close
@@ -1225,7 +1229,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
   if(action == OTFC_VIDEO_RECORDER_START)
   {
-    if(conference->StartExternalRecorder())
+    if(conference->StartRecorder())
     {
       OTF_RET_OK;
     }
@@ -1233,7 +1237,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
   if(action == OTFC_VIDEO_RECORDER_STOP)
   {
-    conference->StopExternalRecorder();
+    conference->StopRecorder();
     OTF_RET_OK;
   }
   if(action == OTFC_TEMPLATE_RECALL)
