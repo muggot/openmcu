@@ -810,7 +810,7 @@ class ConferenceMember : public PObject
     ConferenceMemberId GetID() const
     { return id; }
 
-    PTime GetStartTime() const
+    virtual PTime GetStartTime() const
     { return startTime; }
      
 #ifdef _WIN32

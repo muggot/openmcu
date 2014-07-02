@@ -58,6 +58,9 @@ class ConferenceRecorder : public ConferenceMember
     virtual MemberTypes GetType()
     { return MEMBER_TYPE_RECORDER; }
 
+    virtual PTime GetStartTime() const
+    { return (running ? startTime : PTime()); }
+
     virtual BOOL IsVisible() const
     { return FALSE; }
 

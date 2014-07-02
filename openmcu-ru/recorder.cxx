@@ -572,6 +572,8 @@ void ConferenceRecorder::Recorder(PThread &, INT)
 {
   MCUTRACE(1, trace_section << "thread started");
 
+  startTime = PTime();
+
   PTime audio_time(0);
   int audio_delay_ms = audio_st ? av_q2d(audio_st->time_base)*1000 : 0;
 

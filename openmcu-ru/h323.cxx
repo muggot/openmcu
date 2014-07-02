@@ -601,9 +601,13 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         MCUH323Connection * conn = NULL;
         H323Connection_ConferenceMember * connMember = NULL;
         DWORD orx=0, otx=0, vorx=0, votx=0, prx=0, ptx=0, vprx=0, vptx=0, plost=0, vplost=0, plostTx=0, vplostTx=0;
-        if(member->GetType() == MEMBER_TYPE_PIPE || member->GetType() == MEMBER_TYPE_RECORDER)
+        if(member->GetType() == MEMBER_TYPE_PIPE)
         {
           duration = now - member->GetStartTime();
+        }
+        else if(member->GetType() == MEMBER_TYPE_RECORDER)
+        {
+          duration = PTime() - member->GetStartTime();
         }
         else if(member->GetType() == MEMBER_TYPE_CACHE)
         { ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
