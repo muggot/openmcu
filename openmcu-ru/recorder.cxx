@@ -4,8 +4,17 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef av_err2str
+char *av_make_error_string(char *errbuf, size_t errbuf_size, int errnum)
+{
+  av_strerror(errnum, errbuf, errbuf_size);
+  return errbuf;
+}
+/**
+ * Convenience macro, the return value should be used only directly in
+ * function arguments but never stand-alone.
+ */
 #define av_err2str(errnum) \
-  av_strerror(errnum, (char[64]){0}, 64)
+  av_make_error_string((char[64]){0}, 64, errnum)
 #endif
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
@@ -359,7 +368,7 @@ BOOL ConferenceRecorder::OpenResampler()
     ret = swr_init(swr_ctx);
     if(ret < 0)
     {
-      MCUTRACE(1, trace_section << "failed to initialize the resampling context");
+      MCUTRACE(1, trace_section << "failed to initialize the resampling context: " << ret << " " << av_err2str(ret));
       return FALSE;
     }
   }
@@ -394,7 +403,7 @@ BOOL ConferenceRecorder::Resampler()
     ret = swr_convert(swr_ctx, (uint8_t **)&dst_samples_data, dst_samples, (const uint8_t **)&src_samples_data, src_samples);
     if(ret < 0)
     {
-      MCUTRACE(1, trace_section << "error while converting");
+      MCUTRACE(1, trace_section << "error while converting: " << ret << " " << av_err2str(ret));
       return FALSE;
     }
   } else if(context->sample_fmt == AV_SAMPLE_FMT_FLT) {
