@@ -205,6 +205,12 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
         delete (ConferenceFileMember *)member;
     }
   }
+
+#ifndef _WIN32
+  if(conference->conferenceRecorder)
+    delete conference->conferenceRecorder;
+#endif
+
   conference->GetMutex().Signal();
 }
 
@@ -503,11 +509,6 @@ Conference::~Conference()
 {
 #if MCU_VIDEO
   VMLClear();
-#endif
-
-#ifndef _WIN32
-  if(conferenceRecorder)
-    delete conferenceRecorder;
 #endif
 }
 

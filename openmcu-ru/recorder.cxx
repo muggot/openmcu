@@ -89,9 +89,17 @@ void ConferenceRecorder::Stop()
   if(swr_ctx)
     swr_free(&swr_ctx);
 
-  if(dst_samples_data != src_samples_data)
+  if(dst_samples_data)
+  {
+    if(src_samples_data && src_samples_data[0] != dst_samples_data[0])
+      av_free(dst_samples_data[0]);
     av_free(dst_samples_data);
-  av_free(src_samples_data);
+  }
+  if(src_samples_data)
+  {
+    av_free(src_samples_data[0]);
+    av_free(src_samples_data);
+  }
 
   if(video_framebuf)
     av_free(video_framebuf);
@@ -148,13 +156,13 @@ BOOL ConferenceRecorder::Start()
   video_bitrate = video_width*video_height*video_framerate/10;
 
   // audio
-  audio_bitrate = 64000;
   audio_samplerate = OpenMCU::Current().vr_sampleRate;
   if(audio_samplerate < 8000)       { audio_samplerate = 8000; PTRACE(1, trace_section << "sample rate changed to 8000"); }
   else if(audio_samplerate > 48000) { audio_samplerate = 48000; PTRACE(1, trace_section << "sample rate changed to 48000"); }
   audio_channels = OpenMCU::Current().vr_audioChans;
   if(audio_channels < 1)      { audio_channels = 1; PTRACE(1, trace_section << "audio channels changed to 1"); }
   else if(audio_channels > 8) { audio_channels = 8; PTRACE(1, trace_section << "audio channels changed to 8"); }
+  audio_bitrate = audio_channels*64000;
 
   // filename format: room101__2013-0516-1058270__704x576x10
   PStringStream t;
@@ -267,6 +275,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
     context->bit_rate      = audio_bitrate;
     context->sample_rate   = audio_samplerate;
     context->channels      = audio_channels;
+    context->strict_std_compliance = -2;
   }
   else if(codec_type == AVMEDIA_TYPE_VIDEO)
   {
@@ -342,10 +351,11 @@ BOOL ConferenceRecorder::OpenResampler()
 
   src_samples = context->frame_size;
   src_samples_size = av_samples_get_buffer_size(NULL, context->channels, src_samples, AV_SAMPLE_FMT_S16, ALIGN);
-  src_samples_data = (uint8_t *)av_malloc(src_samples_size * context->channels);
-  if(src_samples_data == NULL)
+  src_samples_data = (uint8_t **)av_malloc(context->channels * sizeof(uint8_t *));
+  ret = av_samples_alloc(src_samples_data, NULL, context->channels, src_samples, AV_SAMPLE_FMT_S16, ALIGN);
+  if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "could not allocate source samples: " << src_samples);
+    MCUTRACE(1, trace_section << "could not allocate source samples: " << src_samples << " " << ret << " " << av_err2str(ret));
     return FALSE;
   }
 
@@ -376,17 +386,19 @@ BOOL ConferenceRecorder::OpenResampler()
     }
   }
 
-  if(swr_ctx != NULL || context->sample_fmt == AV_SAMPLE_FMT_FLT)
+  // allocate destination samples
+  dst_samples = av_rescale_rnd(src_samples, context->sample_rate, context->sample_rate, AV_ROUND_UP);
+  dst_samples_size = av_samples_get_buffer_size(NULL, context->channels, dst_samples, context->sample_fmt, ALIGN);
+  dst_samples_data = (uint8_t **)av_malloc(context->channels * sizeof(uint8_t *));
+  ret = av_samples_alloc(dst_samples_data, NULL, context->channels, dst_samples, context->sample_fmt, ALIGN);
+  if(ret < 0)
   {
-    // allocate destination samples
-    dst_samples = av_rescale_rnd(src_samples, context->sample_rate, context->sample_rate, AV_ROUND_UP);
-    dst_samples_size = av_samples_get_buffer_size(NULL, context->channels, dst_samples, context->sample_fmt, ALIGN);
-    dst_samples_data = (uint8_t *)av_malloc(dst_samples_size * context->channels);
-    if(dst_samples_data == NULL)
-    {
-      MCUTRACE(1, trace_section << "could not allocate destination samples: " << dst_samples);
-      return FALSE;
-    }
+    MCUTRACE(1, trace_section << "could not allocate destination samples: " << dst_samples << " " << ret << " " << av_err2str(ret));
+    return FALSE;
+  }
+  if(context->sample_fmt == AV_SAMPLE_FMT_S16)
+  {
+    av_free(dst_samples_data[0]);
   }
 
   return TRUE;
@@ -399,27 +411,27 @@ BOOL ConferenceRecorder::Resampler()
   AVCodecContext *context = audio_st->codec;
   int ret;
 
-  // convert samples from native format to destination codec format, using the resampler
-  if(swr_ctx != NULL)
+  // convert to destination format
+  if(context->sample_fmt == AV_SAMPLE_FMT_S16)
   {
-    // convert to destination format
-    ret = swr_convert(swr_ctx, (uint8_t **)&dst_samples_data, dst_samples, (const uint8_t **)&src_samples_data, src_samples);
+    dst_samples = src_samples;
+    dst_samples_size = src_samples_size;
+    dst_samples_data[0] = src_samples_data[0];
+  } else if(context->sample_fmt == AV_SAMPLE_FMT_FLT) {
+    for(int i = 0; i < src_samples; i++)
+      ((float *)dst_samples_data[0])[i] = ((int16_t *)src_samples_data[0])[i] * (1.0 / (1<<15));
+  } else {
+    // convert samples from native format to destination codec format, using the resampler
+    ret = swr_convert(swr_ctx, dst_samples_data, dst_samples, (const uint8_t **)src_samples_data, src_samples);
     if(ret < 0)
     {
       MCUTRACE(1, trace_section << "error while converting: " << ret << " " << av_err2str(ret));
       return FALSE;
     }
-  } else if(context->sample_fmt == AV_SAMPLE_FMT_FLT) {
-    for(int i = 0; i < src_samples; i++)
-      ((float *)dst_samples_data)[i] = ((int16_t *)src_samples_data)[i] * (1.0 / (1<<15));
-  } else {
-    dst_samples = src_samples;
-    dst_samples_size = src_samples_size;
-    dst_samples_data = src_samples_data;
   }
 
   audio_frame->nb_samples = dst_samples;
-  avcodec_fill_audio_frame(audio_frame, context->channels, context->sample_fmt, dst_samples_data, dst_samples_size, ALIGN);
+  avcodec_fill_audio_frame(audio_frame, context->channels, context->sample_fmt, dst_samples_data[0], dst_samples_size, ALIGN);
 
   return TRUE;
 }
@@ -430,7 +442,7 @@ BOOL ConferenceRecorder::GetAudioFrame()
 {
   AVCodecContext *context = audio_st->codec;
 
-  ReadAudio(src_samples_data, src_samples_size, context->sample_rate, context->channels);
+  ReadAudio(src_samples_data[0], src_samples_size, context->sample_rate, context->channels);
   return Resampler();
 }
 

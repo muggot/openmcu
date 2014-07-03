@@ -90,11 +90,11 @@ class ConferenceRecorder : public ConferenceMember
     struct SwrContext *swr_ctx;
     int sws_flags;
 
-    uint8_t *src_samples_data;
+    uint8_t **src_samples_data;
     int src_samples;
     int src_samples_size;
 
-    uint8_t *dst_samples_data;
+    uint8_t **dst_samples_data;
     int dst_samples;
     int dst_samples_size;
 
