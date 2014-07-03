@@ -57,7 +57,10 @@ void ConferenceRecorder::Reset()
   running = FALSE;
   thread = NULL;
 
-  swr_ctx = NULL;
+#if USE_SWRESAMPLE || USE_AVRESAMPLE
+  swrc = NULL;
+#endif
+
   dst_samples_data = NULL;
   src_samples_data = NULL;
 
@@ -86,8 +89,13 @@ void ConferenceRecorder::Stop()
     delete thread;
   }
 
-  if(swr_ctx)
-    swr_free(&swr_ctx);
+#if USE_SWRESAMPLE
+  if(swrc)
+    swr_free(&swrc);
+#elif USE_AVRESAMPLE
+  if(swrc)
+    avresample_free(&swrc);
+#endif
 
   if(dst_samples_data)
   {
@@ -189,14 +197,15 @@ BOOL ConferenceRecorder::Start()
 
 BOOL ConferenceRecorder::InitRecorder()
 {
-  int ret;
+  int ret = 0;
 
   // Initialize libavcodec, and register all codecs and formats
   av_register_all();
 
   // allocate the output media context
-  avformat_alloc_output_context2(&fmt_context, NULL, format_name, filename);
-  if(fmt_context == NULL)
+  fmt_context = avformat_alloc_context();
+  fmt_context->oformat = av_guess_format(format_name, filename, NULL);
+  if(fmt_context->oformat == NULL)
   {
     MCUTRACE(1, trace_section << "could not allocate the output context");
     return FALSE;
@@ -275,6 +284,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
     context->bit_rate      = audio_bitrate;
     context->sample_rate   = audio_samplerate;
     context->channels      = audio_channels;
+    context->channel_layout = av_get_default_channel_layout(context->channels);
     context->strict_std_compliance = -2;
   }
   else if(codec_type == AVMEDIA_TYPE_VIDEO)
@@ -301,7 +311,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
 int ConferenceRecorder::WriteFrame(AVStream *st, AVPacket *pkt)
 {
   AVCodecContext *context = st->codec;
-  int ret;
+  int ret = 0;
 
   pkt->stream_index = st->index;
   // write the compressed frame to the media file
@@ -321,7 +331,7 @@ int ConferenceRecorder::WriteFrame(AVStream *st, AVPacket *pkt)
 BOOL ConferenceRecorder::OpenAudio()
 {
   AVCodecContext *context = audio_st->codec;
-  int ret;
+  int ret = 0;
 
   // open codec
   ret = avcodec_open2(context, context->codec, NULL);
@@ -347,7 +357,14 @@ BOOL ConferenceRecorder::OpenAudio()
 BOOL ConferenceRecorder::OpenResampler()
 {
   AVCodecContext *context = audio_st->codec;
-  int ret;
+  int ret = 0;
+
+  // check resampler
+  if(USE_SWRESAMPLE == 0 && USE_AVRESAMPLE == 0 && context->sample_fmt == AV_SAMPLE_FMT_FLTP)
+  {
+    MCUTRACE(1, trace_section << "resampler not found");
+    return FALSE;
+  }
 
   src_samples = context->frame_size;
   src_samples_size = av_samples_get_buffer_size(NULL, context->channels, src_samples, AV_SAMPLE_FMT_S16, ALIGN);
@@ -359,35 +376,47 @@ BOOL ConferenceRecorder::OpenResampler()
     return FALSE;
   }
 
+#if USE_SWRESAMPLE || USE_AVRESAMPLE
   // create resampler context
-  if(context->sample_fmt != AV_SAMPLE_FMT_S16 && context->sample_fmt != AV_SAMPLE_FMT_FLT)
+  if(context->sample_fmt == AV_SAMPLE_FMT_FLTP)
   {
-    swr_ctx = swr_alloc();
-    if(swr_ctx == NULL)
+#if USE_SWRESAMPLE
+    swrc = swr_alloc();
+#elif USE_AVRESAMPLE
+    swrc = avresample_alloc_context();
+#endif
+    if(swrc == NULL)
     {
       MCUTRACE(1, trace_section << "could not allocate resampler context");
       return FALSE;
     }
 
     // set options
-    av_opt_set_int(swr_ctx, "in_channel_count",    context->channels,      0);
-    av_opt_set_int(swr_ctx, "in_sample_rate",      context->sample_rate,   0);
-    av_opt_set_int(swr_ctx, "in_sample_fmt",       AV_SAMPLE_FMT_S16,      0);
-    av_opt_set_int(swr_ctx, "out_channel_count",   context->channels,      0);
-    av_opt_set_int(swr_ctx, "out_sample_rate",     context->sample_rate,   0);
-    av_opt_set_int(swr_ctx, "out_sample_fmt",      context->sample_fmt,    0);
+    av_opt_set_int(swrc, "in_sample_fmt",       AV_SAMPLE_FMT_S16,        0);
+    av_opt_set_int(swrc, "in_sample_rate",      context->sample_rate,     0);
+    av_opt_set_int(swrc, "in_channel_count",    context->channels,        0);
+    av_opt_set_int(swrc, "in_channel_layout",   context->channel_layout,  0);
+    av_opt_set_int(swrc, "out_sample_fmt",      context->sample_fmt,      0);
+    av_opt_set_int(swrc, "out_sample_rate",     context->sample_rate,     0);
+    av_opt_set_int(swrc, "out_channel_count",   context->channels,        0);
+    av_opt_set_int(swrc, "out_channel_layout",  context->channel_layout,  0);
 
     // initialize the resampling context
-    ret = swr_init(swr_ctx);
+#if USE_SWRESAMPLE
+    ret = swr_init(swrc);
+#elif USE_AVRESAMPLE
+    ret = avresample_open(swrc);
+#endif
     if(ret < 0)
     {
       MCUTRACE(1, trace_section << "failed to initialize the resampling context: " << ret << " " << av_err2str(ret));
       return FALSE;
     }
   }
+#endif
 
   // allocate destination samples
-  dst_samples = av_rescale_rnd(src_samples, context->sample_rate, context->sample_rate, AV_ROUND_UP);
+  dst_samples = src_samples;
   dst_samples_size = av_samples_get_buffer_size(NULL, context->channels, dst_samples, context->sample_fmt, ALIGN);
   dst_samples_data = (uint8_t **)av_malloc(context->channels * sizeof(uint8_t *));
   ret = av_samples_alloc(dst_samples_data, NULL, context->channels, dst_samples, context->sample_fmt, ALIGN);
@@ -409,7 +438,7 @@ BOOL ConferenceRecorder::OpenResampler()
 BOOL ConferenceRecorder::Resampler()
 {
   AVCodecContext *context = audio_st->codec;
-  int ret;
+  int ret = 0;
 
   // convert to destination format
   if(context->sample_fmt == AV_SAMPLE_FMT_S16)
@@ -422,7 +451,11 @@ BOOL ConferenceRecorder::Resampler()
       ((float *)dst_samples_data[0])[i] = ((int16_t *)src_samples_data[0])[i] * (1.0 / (1<<15));
   } else {
     // convert samples from native format to destination codec format, using the resampler
-    ret = swr_convert(swr_ctx, dst_samples_data, dst_samples, (const uint8_t **)src_samples_data, src_samples);
+#if USE_SWRESAMPLE
+    ret = swr_convert(swrc, dst_samples_data, dst_samples, (const uint8_t **)src_samples_data, src_samples);
+#elif USE_AVRESAMPLE
+    ret = avresample_convert(swrc, dst_samples_data, dst_samples_size, dst_samples, (uint8_t **)src_samples_data, src_samples_size, src_samples);
+#endif
     if(ret < 0)
     {
       MCUTRACE(1, trace_section << "error while converting: " << ret << " " << av_err2str(ret));
@@ -451,7 +484,7 @@ BOOL ConferenceRecorder::GetAudioFrame()
 BOOL ConferenceRecorder::WriteAudioFrame()
 {
   AVCodecContext *context = audio_st->codec;
-  int ret, got_packet;
+  int ret = 0, got_packet = 0;
 
   AVPacket pkt = { 0 };
   av_init_packet(&pkt);
@@ -484,7 +517,7 @@ BOOL ConferenceRecorder::WriteAudioFrame()
 BOOL ConferenceRecorder::OpenVideo()
 {
   AVCodecContext *context = video_st->codec;
-  int ret;
+  int ret = 0;
 
   // open the codec
   ret = avcodec_open2(context, context->codec, NULL);
@@ -538,7 +571,7 @@ BOOL ConferenceRecorder::GetVideoFrame()
 BOOL ConferenceRecorder::WriteVideoFrame()
 {
   AVCodecContext *context = video_st->codec;
-  int ret, got_packet;
+  int ret = 0, got_packet = 0;
 
   GetVideoFrame();
 

@@ -521,10 +521,48 @@ fi
 LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
 LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
 
-MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
-MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
-MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
-MCU_LDLIBS="$MCU_LDLIBS -lavcodec -lavutil -lavformat -lswresample"
+MCU_CPPFLAGS="$MCU_CPPFLAGS ${LIBAV_CPPFLAGS}"
+MCU_LDFLAGS="$MCU_LDFLAGS ${LIBAV_LDFLAGS}"
+MCU_RFLAGS="$MCU_RFLAGS ${LIBAV_LDFLAGS}"
+MCU_LDLIBS="$MCU_LDLIBS -lavcodec -lavutil -lavformat"
+
+dnl ########################################################################
+dnl check for resampling library
+
+AC_SUBST(USE_SWRESAMPLE, 0)
+AC_SUBST(USE_AVRESAMPLE, 0)
+AC_SUBST(USE_LIBSAMPLERATE, 0)
+
+if test "${resample}" = "yes"; then
+  if test "${resampler_ffmpeg}" = "yes"; then
+    AC_CHECK_HEADERS(libswresample/swresample.h, SWRESAMPLE=1, SWRESAMPLE=0, [-])
+    if test "${SWRESAMPLE}" = "1"; then
+      AC_CHECK_LIB(swresample, swr_convert, SWRESAMPLE=1, SWRESAMPLE=0)
+    fi
+  fi
+  if test "${resampler_libav}" = "yes"; then
+    AC_CHECK_LIB(avresample, avresample_convert, AVRESAMPLE=1, AVRESAMPLE=0)
+  fi
+  if test "${resampler_libsamplerate}" = "yes"; then
+    AC_CHECK_LIB(samplerate, src_process, LIBSAMPLERATE=1, LIBSAMPLERATE=0)
+  fi
+
+  if test "${SWRESAMPLE}" = "1"; then
+    USE_SWRESAMPLE=1
+    MCU_LDLIBS="$MCU_LDLIBS -lswresample"
+  elif test "${AVRESAMPLE}" = "1"; then
+    USE_AVRESAMPLE=1
+    MCU_LDLIBS="$MCU_LDLIBS -lavresample"
+  elif test "${LIBSAMPLERATE}" = "1"; then
+    USE_LIBSAMPLERATE=1
+    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I samplerate`"
+    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L samplerate`"
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L samplerate`"
+    MCU_LDLIBS="$MCU_LDLIBS -lsamplerate"
+  else
+    AC_MSG_WARN(libswresample/libavresample/libsamplerate not found!)
+  fi
+fi
 
 dnl ########################################################################
 dnl check for ffmpeg path
@@ -566,50 +604,6 @@ if test "${FILE_FOUND}" = "0"; then
   AC_CHECK_FILE(/usr/local/bin/avconv, [FILE_FOUND=1], [FILE_FOUND=0])
   if test "${FILE_FOUND}" = "1"; then
     FFMPEG_PATH=/usr/local/bin/avconv
-  fi
-fi
-
-dnl ########################################################################
-dnl check for resampling library
-
-AC_SUBST(USE_SWRESAMPLE, 0)
-AC_SUBST(USE_AVRESAMPLE, 0)
-AC_SUBST(USE_LIBSAMPLERATE, 0)
-
-if test "${resample}" = "yes"; then
-  if test "${resampler_ffmpeg}" = "yes"; then
-    AC_CHECK_HEADERS(libswresample/swresample.h, SWRESAMPLE=1, SWRESAMPLE=0, [-])
-    if test "${SWRESAMPLE}" = "1"; then
-      AC_CHECK_LIB(swresample, swr_convert, SWRESAMPLE=1, SWRESAMPLE=0)
-    fi
-  fi
-  if test "${resampler_libav}" = "yes"; then
-    AC_CHECK_LIB(avresample, avresample_convert, AVRESAMPLE=1, AVRESAMPLE=0)
-  fi
-  if test "${resampler_libsamplerate}" = "yes"; then
-    AC_CHECK_LIB(samplerate, src_process, LIBSAMPLERATE=1, LIBSAMPLERATE=0)
-  fi
-
-  if test "${SWRESAMPLE}" = "1"; then
-    USE_SWRESAMPLE=1
-    MCU_CPPFLAGS="$MCU_CPPFLAGS ${LIBAV_CPPFLAGS}";
-    MCU_LDFLAGS="$MCU_LDFLAGS ${LIBAV_LDFLAGS}";
-    MCU_RFLAGS="$MCU_RFLAGS ${LIBAV_LDFLAGS}"
-    MCU_LDLIBS="$MCU_LDLIBS -lswresample"
-  elif test "${AVRESAMPLE}" = "1"; then
-    USE_AVRESAMPLE=1
-    MCU_CPPFLAGS="$MCU_CPPFLAGS ${LIBAV_CPPFLAGS}";
-    MCU_LDFLAGS="$MCU_LDFLAGS ${LIBAV_LDFLAGS}";
-    MCU_RFLAGS="$MCU_RFLAGS ${LIBAV_LDFLAGS}"
-    MCU_LDLIBS="$MCU_LDLIBS -lavresample"
-  elif test "${LIBSAMPLERATE}" = "1"; then
-    USE_LIBSAMPLERATE=1
-    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I samplerate`";
-    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L samplerate`";
-    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L samplerate`"
-    MCU_LDLIBS="$MCU_LDLIBS -lsamplerate"
-  else
-    AC_MSG_WARN(libswresample/libavresample/libsamplerate not found!)
   fi
 fi
 

@@ -6,10 +6,16 @@ extern "C"
 {
   #include "libavcodec/avcodec.h"
   #include "libavformat/avformat.h"
-  #include "libswresample/swresample.h"
+  #include "libavutil/avutil.h"
   #include "libavutil/opt.h"
   #include "libavutil/mem.h"
-  #include "libavutil/avutil.h"
+  #include "libavutil/mathematics.h"
+  #include "libavutil/audioconvert.h"
+#if USE_SWRESAMPLE
+  #include <libswresample/swresample.h>
+#elif USE_AVRESAMPLE
+  #include <libavresample/avresample.h>
+#endif
 }
 
 #include "config.h"
@@ -87,8 +93,11 @@ class ConferenceRecorder : public ConferenceMember
     unsigned video_height;
     unsigned video_framerate;
 
-    struct SwrContext *swr_ctx;
-    int sws_flags;
+#if USE_SWRESAMPLE
+    struct SwrContext *swrc;
+#elif USE_AVRESAMPLE
+    struct AVAudioResampleContext * swrc;
+#endif
 
     uint8_t **src_samples_data;
     int src_samples;
