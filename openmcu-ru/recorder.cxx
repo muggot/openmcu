@@ -61,7 +61,8 @@ void ConferenceRecorder::Reset()
   dst_samples_data = NULL;
   src_samples_data = NULL;
 
-  video_buffer = NULL;
+  video_framebuf = NULL;
+  video_outbuf = NULL;
 
   audio_frame = NULL;
   video_frame = NULL;
@@ -92,8 +93,10 @@ void ConferenceRecorder::Stop()
     av_free(dst_samples_data);
   av_free(src_samples_data);
 
-  if(video_buffer)
-    av_free(video_buffer);
+  if(video_framebuf)
+    av_free(video_framebuf);
+  if(video_outbuf)
+    av_free(video_outbuf);
 
   if(audio_frame)
     av_free(audio_frame);
@@ -496,8 +499,10 @@ BOOL ConferenceRecorder::OpenVideo()
   avpicture_fill((AVPicture*)video_frame, NULL, context->pix_fmt, context->width, context->height);
 
   // allocate a buffer large enough for all data
-  video_buffer_size = avpicture_get_size(context->pix_fmt, context->width, context->height);
-  video_buffer = (uint8_t*)av_malloc(video_buffer_size);
+  video_framebuf_size = avpicture_get_size(context->pix_fmt, context->width, context->height);
+  video_framebuf = (uint8_t *)av_malloc(video_framebuf_size);
+  video_outbuf_size = 200000;
+  video_outbuf = (uint8_t *)av_malloc(video_outbuf_size);
 
   return TRUE;
 }
@@ -509,9 +514,9 @@ BOOL ConferenceRecorder::GetVideoFrame()
   AVCodecContext *context = video_st->codec;
 
   // read a block of data
-  conference->ReadMemberVideo(this, video_buffer, context->width, context->height, video_buffer_size);
+  conference->ReadMemberVideo(this, video_framebuf, context->width, context->height, video_framebuf_size);
   // fill frame
-  avpicture_fill((AVPicture*)video_frame, video_buffer, AV_PIX_FMT_YUV420P, context->width, context->height);
+  avpicture_fill((AVPicture*)video_frame, video_framebuf, AV_PIX_FMT_YUV420P, context->width, context->height);
 
   return TRUE;
 }
@@ -532,17 +537,12 @@ BOOL ConferenceRecorder::WriteVideoFrame()
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54, 0, 0)
   ret = avcodec_encode_video2(context, &pkt, video_frame, &got_packet);
 #else
-  int buffer_size = 200000;
-  uint8_t *buffer = (uint8_t *)av_malloc(buffer_size);
-
-  ret = avcodec_encode_video(context, buffer, buffer_size, video_frame);
-  if(ret < 0)
+  ret = avcodec_encode_video(context, video_outbuf, video_outbuf_size, video_frame);
+  if(ret >= 0)
   {
-    av_free(buffer);
-  } else {
     got_packet = 1;
     pkt.size = ret;
-    pkt.data = buffer;
+    pkt.data = video_outbuf;
   }
 #endif
 

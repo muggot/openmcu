@@ -98,8 +98,10 @@ class ConferenceRecorder : public ConferenceMember
     int dst_samples;
     int dst_samples_size;
 
-    uint8_t *video_buffer;
-    int video_buffer_size;
+    uint8_t *video_framebuf;
+    uint8_t *video_outbuf;
+    int video_framebuf_size;
+    int video_outbuf_size;
 
     AVFrame *audio_frame;
     AVFrame *video_frame;
