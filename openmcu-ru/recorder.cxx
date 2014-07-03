@@ -418,7 +418,7 @@ BOOL ConferenceRecorder::Resampler()
     dst_samples_size = src_samples_size;
     dst_samples_data[0] = src_samples_data[0];
   } else if(context->sample_fmt == AV_SAMPLE_FMT_FLT) {
-    for(int i = 0; i < src_samples; i++)
+    for(int i = 0; i < src_samples * context->channels; ++i)
       ((float *)dst_samples_data[0])[i] = ((int16_t *)src_samples_data[0])[i] * (1.0 / (1<<15));
   } else {
     // convert samples from native format to destination codec format, using the resampler
