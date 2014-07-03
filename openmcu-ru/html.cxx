@@ -307,6 +307,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << BoolField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
 
   s << SeparatorField("Video recorder setup");
+#ifdef _WIN32
   PString pathInfo, dirInfo;
   pathInfo =
       "<b>%V</b> - input video stream<br><b>%A</b> - input audio stream<br><br><b>%F</b> - frame size<br>"
@@ -342,7 +343,27 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 0, "", 0);
   s << IntegerField(RecorderSampleRateKey, mcu.vr_sampleRate, 8000, 192000, 0, "", 0);
   s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8", 0, "", 0);
+#else
+  PString dirInfo;
+  if(!PDirectory::Exists(mcu.vr_ffmpegDir)) if(!PFile::Exists(mcu.vr_ffmpegDir)) { PDirectory::Create(mcu.vr_ffmpegDir,0700); PThread::Sleep(50); }
+  if(!PDirectory::Exists(mcu.vr_ffmpegDir)) dirInfo += "<b><font color=red>Directory does not exist: "+mcu.vr_ffmpegDir+"</font></b>";
+  else
+  {
+    PFileInfo info;
+    PFilePath path(mcu.vr_ffmpegDir);
+    PFile::GetInfo(path, info);
+    if(!(info.type & 6)) dirInfo += "<b><font color=red>Warning: output directory neither directory, nor symlink!</font></b>";
+    else if(!(info.permissions & 0222)) dirInfo += "<b><font color=red>output directory permissions check failed</font></b>";
+  }
 
+  s << StringField(RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 250, dirInfo);
+  s << SelectField(RecorderVideoCodecKey, cfg.GetString(RecorderVideoCodecKey), GetRecorderCodecs(1));
+  s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920);
+  s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152);
+  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 30);
+  s << SelectField(RecorderSampleRateKey, mcu.vr_sampleRate, "8000,16000,32000,48000");
+  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8");
+#endif
 
   // get WAV file played to a user when they enter a conference
   //s << StringField(ConnectingWAVFileKey, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile));

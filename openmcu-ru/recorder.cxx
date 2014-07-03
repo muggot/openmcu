@@ -18,13 +18,62 @@ char *av_make_error_string(char *errbuf, size_t errbuf_size, int errnum)
 #endif
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
-  #define AV_CODEC_ID_NONE      CODEC_ID_NONE
+  #define AV_CODEC_ID_NONE        CODEC_ID_NONE
+  #define AV_CODEC_ID_AC3         CODEC_ID_AC3
+  #define AV_CODEC_ID_H264        CODEC_ID_H264
+  #define AV_CODEC_ID_MPEG4       CODEC_ID_MPEG4
+  #define AV_CODEC_ID_VP8         CODEC_ID_VP8
 #endif
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 0, 0)
   #define AV_PIX_FMT_YUV420P    PIX_FMT_YUV420P
 #endif
 
 #define ALIGN 1
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PString GetRecorderCodecs(int media_type)
+{
+  PString codecs;
+  if(media_type == 0)
+  {
+    if(avcodec_find_encoder_by_name("ac3"))
+      codecs += ",ac3";
+  } else {
+    if(avcodec_find_encoder_by_name("libx264"))
+      codecs += ",libx264";
+    if(avcodec_find_encoder_by_name("libvpx"))
+      codecs += ",libvpx";
+    if(avcodec_find_encoder_by_name("mpeg4"))
+      codecs += ",mpeg4";
+    if(avcodec_find_encoder_by_name("msmpeg4"))
+      codecs += ",msmpeg4";
+  }
+  return codecs;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
+CodecID GetCodecId(int media_type, PString codec_name)
+#else
+AVCodecID GetCodecId(int media_type, PString codec_name)
+#endif
+{
+  if(codec_name == "")
+  {
+    if(media_type == 0)
+      return AV_CODEC_ID_AC3;
+    else
+      return AV_CODEC_ID_MPEG4;
+  }
+
+  AVCodec *codec = avcodec_find_encoder_by_name(codec_name);
+  if(codec)
+    return codec->id;
+
+  return AV_CODEC_ID_NONE;
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -140,6 +189,7 @@ BOOL ConferenceRecorder::Start()
     return TRUE;
 
   OpenMCU & mcu = OpenMCU::Current();
+  MCUConfig cfg("Parameters");
 
   // video
   video_width = mcu.vr_framewidth;
@@ -179,9 +229,14 @@ BOOL ConferenceRecorder::Start()
     << "__" << PTime().AsString("yyyy-MMdd-hhmmssu", PTime::Local) << "__"
     << video_width << "x"
     << video_height << "x"
-    << video_framerate << ".avi";
+    << video_framerate;
   filename = t;
+
+  //
+  audio_codec_id = GetCodecId(0, cfg.GetString(RecorderAudioCodecKey));
+  video_codec_id = GetCodecId(1, cfg.GetString(RecorderVideoCodecKey));
   format_name = "avi";
+  filename += "."+format_name;
 
   if(InitRecorder() == FALSE)
   {
@@ -211,11 +266,11 @@ BOOL ConferenceRecorder::InitRecorder()
     return FALSE;
   }
 
-  if(fmt_context->oformat->audio_codec != AV_CODEC_ID_NONE)
-    audio_st = AddStream(AVMEDIA_TYPE_AUDIO);
+  fmt_context->oformat->audio_codec = audio_codec_id;
+  fmt_context->oformat->video_codec = video_codec_id;
 
-  if(fmt_context->oformat->video_codec != AV_CODEC_ID_NONE)
-    video_st = AddStream(AVMEDIA_TYPE_VIDEO);
+  audio_st = AddStream(AVMEDIA_TYPE_AUDIO);
+  video_st = AddStream(AVMEDIA_TYPE_VIDEO);
 
   if(audio_st && OpenAudio() == FALSE)
     return FALSE;
@@ -259,7 +314,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
 
   if(codec == NULL)
   {
-    MCUTRACE(1, trace_section << "could not find encoder for " << codec_type);
+    MCUTRACE(1, trace_section << "could not find encoder for " << (codec_type == AVMEDIA_TYPE_AUDIO ? "audio" : "video"));
     return NULL;
   }
 
@@ -285,7 +340,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
     context->sample_rate   = audio_samplerate;
     context->channels      = audio_channels;
     context->channel_layout = av_get_default_channel_layout(context->channels);
-    context->strict_std_compliance = -2;
+    //context->strict_std_compliance = -2;
   }
   else if(codec_type == AVMEDIA_TYPE_VIDEO)
   {
@@ -294,9 +349,14 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
     context->bit_rate      = video_bitrate;
     context->width         = video_width;
     context->height        = video_height;
+    context->qmin          = 2;
+    context->qmax          = 31;
     context->gop_size      = 12;
     context->time_base.num = 1;
     context->time_base.den = video_framerate;
+
+    if(context->codec->id == AV_CODEC_ID_H264)
+      context->profile = FF_PROFILE_H264_BASELINE;
   }
 
   // Some formats want stream headers to be separate

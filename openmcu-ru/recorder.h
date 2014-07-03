@@ -47,6 +47,10 @@ static struct recorder_resolution {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+PString GetRecorderCodecs(int media_type);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class ConferenceRecorder : public ConferenceMember
 {
   PCLASSINFO(ConferenceRecorder, ConferenceMember);
@@ -92,6 +96,14 @@ class ConferenceRecorder : public ConferenceMember
     unsigned video_width;
     unsigned video_height;
     unsigned video_framerate;
+
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
+    CodecID audio_codec_id;
+    CodecID video_codec_id;
+#else
+    AVCodecID audio_codec_id;
+    AVCodecID video_codec_id;
+#endif
 
 #if USE_SWRESAMPLE
     struct SwrContext *swrc;
