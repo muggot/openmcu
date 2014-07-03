@@ -88,11 +88,11 @@ class ConferenceRecorder : public ConferenceMember
     PString format_name;
     PString trace_section;
 
-    unsigned audio_bitrate;
+    unsigned audio_bitrate; // kbit
     unsigned audio_samplerate;
     unsigned audio_channels;
 
-    unsigned video_bitrate;
+    unsigned video_bitrate; // kbit
     unsigned video_width;
     unsigned video_height;
     unsigned video_framerate;

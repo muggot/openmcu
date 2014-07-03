@@ -209,9 +209,14 @@ BOOL ConferenceRecorder::Start()
     video_height = recorder_resolutions[i].height;
     break;
   }
+
   if(video_framerate < 1)       { video_framerate = 1; PTRACE(1, trace_section << "resolution changed to 1"); }
   else if(video_framerate > 30) { video_framerate = 30; PTRACE(1, trace_section << "resolution changed to 30"); }
-  video_bitrate = video_width*video_height*video_framerate/10;
+
+  video_bitrate = cfg.GetInteger(RecorderVideoBitrateKey);
+  if(video_bitrate == 0) video_bitrate = video_width*video_height*video_framerate/10000;
+  if(video_bitrate < 64) video_bitrate = 64;
+  else if(video_bitrate > 4000) video_bitrate = 4000;
 
   // audio
   audio_samplerate = OpenMCU::Current().vr_sampleRate;
@@ -220,7 +225,7 @@ BOOL ConferenceRecorder::Start()
   audio_channels = OpenMCU::Current().vr_audioChans;
   if(audio_channels < 1)      { audio_channels = 1; PTRACE(1, trace_section << "audio channels changed to 1"); }
   else if(audio_channels > 8) { audio_channels = 8; PTRACE(1, trace_section << "audio channels changed to 8"); }
-  audio_bitrate = audio_channels*64000;
+  audio_bitrate = audio_channels*64;
 
   // filename format: room101__2013-0516-1058270__704x576x10
   PStringStream t;
@@ -336,7 +341,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
     context->sample_fmt    = AV_SAMPLE_FMT_FLTP;
 #endif
     context->codec_id      = fmt_context->oformat->audio_codec;
-    context->bit_rate      = audio_bitrate;
+    context->bit_rate      = audio_bitrate*1000;
     context->sample_rate   = audio_samplerate;
     context->channels      = audio_channels;
     context->channel_layout = av_get_default_channel_layout(context->channels);
@@ -346,7 +351,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
   {
     context->pix_fmt       = AV_PIX_FMT_YUV420P;
     context->codec_id      = fmt_context->oformat->video_codec;
-    context->bit_rate      = video_bitrate;
+    context->bit_rate      = video_bitrate*1000;
     context->width         = video_width;
     context->height        = video_height;
     context->qmin          = 2;
@@ -373,7 +378,9 @@ int ConferenceRecorder::WriteFrame(AVStream *st, AVPacket *pkt)
   AVCodecContext *context = st->codec;
   int ret = 0;
 
+  pkt->dts = AV_NOPTS_VALUE;
   pkt->stream_index = st->index;
+
   // write the compressed frame to the media file
   ret = av_interleaved_write_frame(fmt_context, pkt);
   if(ret >= 0)
@@ -679,27 +686,35 @@ void ConferenceRecorder::Recorder(PThread &, INT)
 
   startTime = PTime();
 
+  double audio_st_time;
   PTime audio_time(0);
-  int audio_delay_ms = audio_st ? av_q2d(audio_st->time_base)*1000 : 0;
+  double audio_delay_ms = audio_st ? av_q2d(audio_st->time_base)*1000 : 0;
+  if(audio_delay_ms == 0 && audio_st) audio_delay_ms = src_samples*1000/audio_samplerate;
 
+  double video_st_time;
   PTime video_time(0);
-  int video_delay_ms = video_st ? av_q2d(video_st->time_base)*1000 : 0;
+  double video_delay_ms = video_st ? av_q2d(video_st->time_base)*1000 : 0;
+  if(video_delay_ms == 0 && video_st) video_delay_ms = 1000/video_framerate;
 
   running = TRUE;
   while(running)
   {
+    audio_st_time = audio_st ? audio_st->pts.val * audio_delay_ms/1000 : 0;
+    video_st_time = video_st ? video_st->pts.val * video_delay_ms/1000 : 0;
+
     PTime now;
-    if(audio_st && now > audio_time + audio_delay_ms)
+    if(audio_delay_ms != 0 && now > audio_time + audio_delay_ms)
     {
       audio_time = now;
       WriteAudioFrame();
     }
-    if(video_st && now > video_time + video_delay_ms)
+    if(video_delay_ms != 0  && now > video_time + video_delay_ms && video_st_time <= audio_st_time)
     {
       video_time = now;
       WriteVideoFrame();
     }
   }
+  running = FALSE;
 
   // write the trailer
   av_write_trailer(fmt_context);

@@ -92,6 +92,8 @@ static const char RecorderAudioChansKey[]  = "Video Recorder sound channels";
 static const char RecorderAudioCodecKey[]  = "Video Recorder audio codec";
 static const char RecorderVideoCodecKey[]  = "Video Recorder video codec";
 static const char RecorderVideoResolutionKey[] = "Video Recorder video resolution";
+static const char RecorderAudioBitrateKey[] = "Video Recorder aduio bitrate";
+static const char RecorderVideoBitrateKey[] = "Video Recorder video bitrate";
 #ifdef _WIN32
 static const char DefaultFfmpegPath[]         = "ffmpeg.exe";
 #else
