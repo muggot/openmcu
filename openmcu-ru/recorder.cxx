@@ -410,6 +410,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
 
 int ConferenceRecorder::WriteFrame(AVStream *st, AVPacket *pkt)
 {
+  PWaitAndSignal m(mutex);
   int ret = 0;
 
   pkt->stream_index = st->index;
@@ -419,7 +420,7 @@ int ConferenceRecorder::WriteFrame(AVStream *st, AVPacket *pkt)
 
   //double audio_time = audio_st ? audio_st->pts.val * av_q2d(audio_st->time_base) : 0.0;
   //double video_time = video_st ? video_st->pts.val * av_q2d(video_st->time_base) : 0.0;
-  //cout << "audio=" << audio_time << " video=" << video_time << " " << video_st->pts.val << " " << video_frame->pts << "\n";
+  //cout << "audio=" << audio_time << "\tvideo=" << video_time << "\t" << video_st->pts.val << "\t" << video_frame->pts << "\n";
 
   return ret;
 }
@@ -695,6 +696,8 @@ void ConferenceRecorder::RecorderAudio(PThread &, INT)
 {
   MCUTRACE(1, trace_section << "audio thread started");
 
+  int frame_count = 0;
+
   PTime audio_time;
   double audio_delay_ms = av_q2d(audio_st->time_base)*1000;
   if(audio_delay_ms == 0) audio_delay_ms = src_samples*1000/audio_samplerate;
@@ -713,6 +716,7 @@ void ConferenceRecorder::RecorderAudio(PThread &, INT)
 
       if(WriteAudioFrame(pkt))
       {
+        pkt.pts = ++frame_count;
         WriteFrame(audio_st, &pkt);
         audio_frame->pts += av_rescale_q(1, audio_st->codec->time_base, audio_st->time_base);
       }
@@ -728,6 +732,8 @@ void ConferenceRecorder::RecorderAudio(PThread &, INT)
 void ConferenceRecorder::RecorderVideo(PThread &, INT)
 {
   MCUTRACE(1, trace_section << "video thread started");
+
+  int frame_count = 0;
 
   unsigned video_delay_us = av_q2d(video_st->time_base)*1000000;
   if(video_delay_us == 0) video_delay_us = 1000000/video_framerate;
@@ -751,6 +757,7 @@ void ConferenceRecorder::RecorderVideo(PThread &, INT)
 
       if(WriteVideoFrame(pkt))
       {
+        pkt.pts = ++frame_count;
         WriteFrame(video_st, &pkt);
         video_frame->pts += av_rescale_q(1, video_st->codec->time_base, video_st->time_base);
       }
