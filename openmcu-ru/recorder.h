@@ -139,18 +139,21 @@ class ConferenceRecorder : public ConferenceMember
 
     BOOL OpenAudio();
     BOOL GetAudioFrame();
-    BOOL WriteAudioFrame();
+    BOOL WriteAudioFrame(AVPacket & pkt);
 
     BOOL OpenVideo();
     BOOL GetVideoFrame();
-    BOOL WriteVideoFrame();
+    BOOL WriteVideoFrame(AVPacket & pkt);
 
     BOOL OpenResampler();
     BOOL Resampler();
     int WriteFrame(AVStream *st, AVPacket *pkt);
 
-    PThread *thread;
-    PDECLARE_NOTIFIER(PThread, ConferenceRecorder, Recorder);
+    PThread *thread_audio;
+    PDECLARE_NOTIFIER(PThread, ConferenceRecorder, RecorderAudio);
+
+    PThread *thread_video;
+    PDECLARE_NOTIFIER(PThread, ConferenceRecorder, RecorderVideo);
 
     PMutex mutex;
 };
