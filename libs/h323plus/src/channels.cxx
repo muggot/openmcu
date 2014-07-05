@@ -1523,9 +1523,9 @@ void H323_RTPChannel::Receive()
   // keep track of consecutive payload type mismatches
   int consecutiveMismatches = 0;
 
+  // do not change payload type for audio and video
+  BOOL allowRtpPayloadChange = FALSE;
   //BOOL allowRtpPayloadChange = codec->GetMediaFormat().GetDefaultSessionID() == OpalMediaFormat::DefaultAudioSessionID;
-  // Allow change payload type for audio and video
-  BOOL allowRtpPayloadChange = TRUE;
 
   RTP_DataFrame frame;
   while (ReadFrame(rtpTimestamp, frame)) {

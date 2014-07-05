@@ -362,6 +362,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152);
   s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 30);
   s << IntegerField(RecorderVideoBitrateKey, cfg.GetInteger(RecorderVideoBitrateKey), 0, 4000, 0, "kbit/s, 0 - auto");
+  s << SelectField(RecorderAudioCodecKey, cfg.GetString(RecorderAudioCodecKey), GetRecorderCodecs(0));
   s << SelectField(RecorderSampleRateKey, mcu.vr_sampleRate, "8000,16000,32000,48000");
   s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8");
 #endif

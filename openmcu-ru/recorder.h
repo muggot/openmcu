@@ -97,6 +97,9 @@ class ConferenceRecorder : public ConferenceMember
     unsigned video_height;
     unsigned video_framerate;
 
+    int audio_frame_count;
+    int video_frame_count;
+
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
     CodecID audio_codec_id;
     CodecID video_codec_id;
@@ -139,15 +142,15 @@ class ConferenceRecorder : public ConferenceMember
 
     BOOL OpenAudio();
     BOOL GetAudioFrame();
-    BOOL WriteAudioFrame(AVPacket & pkt);
+    BOOL WriteAudio();
 
     BOOL OpenVideo();
     BOOL GetVideoFrame();
-    BOOL WriteVideoFrame(AVPacket & pkt);
+    BOOL WriteVideo();
 
     BOOL OpenResampler();
     BOOL Resampler();
-    int WriteFrame(AVStream *st, AVPacket *pkt);
+    int WritePacket(AVStream *st, AVPacket *pkt);
 
     PThread *thread_audio;
     PDECLARE_NOTIFIER(PThread, ConferenceRecorder, RecorderAudio);
@@ -156,6 +159,7 @@ class ConferenceRecorder : public ConferenceMember
     PDECLARE_NOTIFIER(PThread, ConferenceRecorder, RecorderVideo);
 
     PMutex mutex;
+    PMutex write_mutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

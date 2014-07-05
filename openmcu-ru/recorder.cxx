@@ -19,6 +19,7 @@ char *av_make_error_string(char *errbuf, size_t errbuf_size, int errnum)
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
   #define AV_CODEC_ID_NONE        CODEC_ID_NONE
+  #define AV_CODEC_ID_PCM_S16LE   CODEC_ID_PCM_S16LE
   #define AV_CODEC_ID_AC3         CODEC_ID_AC3
   #define AV_CODEC_ID_H264        CODEC_ID_H264
   #define AV_CODEC_ID_MPEG4       CODEC_ID_MPEG4
@@ -34,11 +35,13 @@ char *av_make_error_string(char *errbuf, size_t errbuf_size, int errnum)
 
 PString GetRecorderCodecs(int media_type)
 {
-  PString codecs;
+  PString codecs = ",Disabled";
   if(media_type == 0)
   {
     if(avcodec_find_encoder_by_name("ac3"))
       codecs += ",ac3";
+    if(avcodec_find_encoder_by_name("pcm_s16le"))
+      codecs += ",pcm_s16le";
   } else {
     if(avcodec_find_encoder_by_name("libx264"))
       codecs += ",libx264";
@@ -106,6 +109,9 @@ void ConferenceRecorder::Reset()
   running = FALSE;
   thread_audio = NULL;
   thread_video = NULL;
+
+  audio_frame_count = 0;
+  video_frame_count = 0;
 
 #if USE_SWRESAMPLE || USE_AVRESAMPLE
   swrc = NULL;
@@ -244,7 +250,7 @@ BOOL ConferenceRecorder::Start()
   audio_channels = OpenMCU::Current().vr_audioChans;
   if(audio_channels < 1)      { audio_channels = 1; PTRACE(1, trace_section << "audio channels changed to 1"); }
   else if(audio_channels > 8) { audio_channels = 8; PTRACE(1, trace_section << "audio channels changed to 8"); }
-  audio_bitrate = audio_channels*64;
+  audio_bitrate = 64;
 
   // filename format: room101__2013-0516-1058270__704x576x10
   PStringStream t;
@@ -256,12 +262,16 @@ BOOL ConferenceRecorder::Start()
     << video_framerate;
   filename = t;
 
-  //
+  // set codecs and file format
   audio_codec_id = GetCodecId(0, cfg.GetString(RecorderAudioCodecKey));
   video_codec_id = GetCodecId(1, cfg.GetString(RecorderVideoCodecKey));
-  format_name = "avi";
+  if((audio_codec_id == AV_CODEC_ID_AC3 || audio_codec_id == AV_CODEC_ID_NONE) && video_codec_id == AV_CODEC_ID_MPEG4)
+    format_name = "avi";
+  else
+    format_name = "mkv";
   filename += "."+format_name;
 
+  //
   if(InitRecorder() == FALSE)
   {
     MCUTRACE(1, trace_section << "failed initialise recorder");
@@ -361,22 +371,27 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
 
   if(codec_type == AVMEDIA_TYPE_AUDIO)
   {
+    if(codec->id == AV_CODEC_ID_PCM_S16LE)
+      context->sample_fmt  = AV_SAMPLE_FMT_S16;
+    else
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 0, 0)
-    context->sample_fmt    = AV_SAMPLE_FMT_FLT;
+      context->sample_fmt  = AV_SAMPLE_FMT_FLT;
 #else
-    context->sample_fmt    = AV_SAMPLE_FMT_FLTP;
+      context->sample_fmt  = AV_SAMPLE_FMT_FLTP;
 #endif
-    context->codec_id      = fmt_context->oformat->audio_codec;
-    context->bit_rate      = audio_bitrate*1000;
+    context->codec_id      = codec->id;
+    context->bit_rate      = audio_bitrate * audio_channels * 1000;
     context->sample_rate   = audio_samplerate;
     context->channels      = audio_channels;
     context->channel_layout = av_get_default_channel_layout(context->channels);
+    context->time_base.num = 12;
+    context->time_base.den = 125;
     //context->strict_std_compliance = -2;
   }
   else if(codec_type == AVMEDIA_TYPE_VIDEO)
   {
     context->pix_fmt       = AV_PIX_FMT_YUV420P;
-    context->codec_id      = fmt_context->oformat->video_codec;
+    context->codec_id      = codec->id;
     context->bit_rate      = video_bitrate*1000;
     context->width         = video_width;
     context->height        = video_height;
@@ -396,7 +411,6 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
     {
       av_opt_set(context->priv_data, "speed", "-5", 0);
     }
-
   }
 
   // Some formats want stream headers to be separate
@@ -408,19 +422,22 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int ConferenceRecorder::WriteFrame(AVStream *st, AVPacket *pkt)
+int ConferenceRecorder::WritePacket(AVStream *st, AVPacket *pkt)
 {
-  PWaitAndSignal m(mutex);
   int ret = 0;
 
   pkt->stream_index = st->index;
+  pkt->pts = av_rescale_q(pkt->pts, st->codec->time_base, st->time_base);
+  pkt->dts = AV_NOPTS_VALUE;
 
   // write the compressed frame to the media file
+  PWaitAndSignal m(write_mutex);
   ret = av_interleaved_write_frame(fmt_context, pkt);
 
   //double audio_time = audio_st ? audio_st->pts.val * av_q2d(audio_st->time_base) : 0.0;
   //double video_time = video_st ? video_st->pts.val * av_q2d(video_st->time_base) : 0.0;
-  //cout << "audio=" << audio_time << "\tvideo=" << video_time << "\t" << video_st->pts.val << "\t" << video_frame->pts << "\n";
+  //if(audio_st) cout << "audio=" << audio_time << " " << av_q2d(audio_st->time_base) << " " << av_q2d(audio_st->codec->time_base) << "\n";
+  //if(video_st) cout << "video=" << video_time << " " << av_q2d(video_st->time_base) << " " << av_q2d(video_st->codec->time_base) << "\n";
 
   return ret;
 }
@@ -464,6 +481,10 @@ BOOL ConferenceRecorder::OpenResampler()
     MCUTRACE(1, trace_section << "resampler not found");
     return FALSE;
   }
+
+  // set frame size
+  if(context->frame_size == 0)
+    context->frame_size = context->sample_rate * av_q2d(audio_st->codec->time_base);
 
   src_samples = context->frame_size;
   src_samples_size = av_samples_get_buffer_size(NULL, context->channels, src_samples, AV_SAMPLE_FMT_S16, ALIGN);
@@ -562,9 +583,6 @@ BOOL ConferenceRecorder::Resampler()
     }
   }
 
-  audio_frame->nb_samples = dst_samples;
-  avcodec_fill_audio_frame(audio_frame, context->channels, context->sample_fmt, dst_samples_data[0], dst_samples_size, ALIGN);
-
   return TRUE;
 }
 
@@ -575,18 +593,29 @@ BOOL ConferenceRecorder::GetAudioFrame()
   AVCodecContext *context = audio_st->codec;
 
   ReadAudio(src_samples_data[0], src_samples_size, context->sample_rate, context->channels);
-  return Resampler();
+  if(Resampler() == FALSE)
+    return FALSE;
+
+  audio_frame->nb_samples = dst_samples;
+  avcodec_fill_audio_frame(audio_frame, context->channels, context->sample_fmt, dst_samples_data[0], dst_samples_size, ALIGN);
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL ConferenceRecorder::WriteAudioFrame(AVPacket & pkt)
+BOOL ConferenceRecorder::WriteAudio()
 {
   AVCodecContext *context = audio_st->codec;
   int ret = 0, got_packet = 0;
 
+  AVPacket pkt = { 0 };
+  av_init_packet(&pkt);
+
   if(GetAudioFrame() == FALSE)
     return FALSE;
+
+  // set PTS for packet
+  audio_frame->pts = audio_frame_count++;
 
   ret = avcodec_encode_audio2(context, &pkt, audio_frame, &got_packet);
   if(ret < 0)
@@ -595,8 +624,12 @@ BOOL ConferenceRecorder::WriteAudioFrame(AVPacket & pkt)
     return FALSE;
   }
 
-  if(got_packet == 0)
+  ret = WritePacket(audio_st, &pkt);
+  if(ret < 0)
+  {
+    MCUTRACE(1, trace_section << "error while writing audio frame: " << ret << " " <<  av_err2str(ret));
     return FALSE;
+  }
 
   return TRUE;
 }
@@ -627,7 +660,6 @@ BOOL ConferenceRecorder::OpenVideo()
   video_frame->width = context->width;
   video_frame->height = context->height;
   video_frame->format = context->pix_fmt;
-  video_frame->pts = 0;
 
   // initialize frame->linesize
   avpicture_fill((AVPicture*)video_frame, NULL, context->pix_fmt, context->width, context->height);
@@ -651,18 +683,23 @@ BOOL ConferenceRecorder::GetVideoFrame()
   conference->ReadMemberVideo(this, video_framebuf, context->width, context->height, video_framebuf_size);
   // fill frame
   avpicture_fill((AVPicture*)video_frame, video_framebuf, AV_PIX_FMT_YUV420P, context->width, context->height);
-
   return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL ConferenceRecorder::WriteVideoFrame(AVPacket & pkt)
+BOOL ConferenceRecorder::WriteVideo()
 {
   AVCodecContext *context = video_st->codec;
   int ret = 0, got_packet = 0;
 
+  AVPacket pkt = { 0 };
+  av_init_packet(&pkt);
+
   GetVideoFrame();
+
+  // set PTS for packet
+  video_frame->pts = video_frame_count++;
 
   // encode the frame
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54, 0, 0)
@@ -676,7 +713,6 @@ BOOL ConferenceRecorder::WriteVideoFrame(AVPacket & pkt)
     pkt.data = video_outbuf;
   }
 #endif
-
   // if size is zero, it means the image was buffered
   if(ret < 0)
   {
@@ -684,8 +720,12 @@ BOOL ConferenceRecorder::WriteVideoFrame(AVPacket & pkt)
     return FALSE;
   }
 
-  if(got_packet == 0)
+  ret = WritePacket(video_st, &pkt);
+  if(ret < 0)
+  {
+    MCUTRACE(1, trace_section << "error while writing video frame: " << ret << " " <<  av_err2str(ret));
     return FALSE;
+  }
 
   return TRUE;
 }
@@ -696,12 +736,13 @@ void ConferenceRecorder::RecorderAudio(PThread &, INT)
 {
   MCUTRACE(1, trace_section << "audio thread started");
 
-  int frame_count = 0;
+  unsigned audio_delay_ms = av_q2d(audio_st->codec->time_base)*1000;
+  if(audio_delay_ms <= 1)
+    audio_delay_ms = src_samples*1000/audio_samplerate;
+  if(audio_delay_ms == 0)
+    return;
 
   PTime audio_time;
-  double audio_delay_ms = av_q2d(audio_st->time_base)*1000;
-  if(audio_delay_ms == 0) audio_delay_ms = src_samples*1000/audio_samplerate;
-  if(audio_delay_ms == 0) return;
 
   running = TRUE;
   while(running)
@@ -710,16 +751,7 @@ void ConferenceRecorder::RecorderAudio(PThread &, INT)
     if(now >= audio_time + audio_delay_ms)
     {
       audio_time += audio_delay_ms;
-
-      AVPacket pkt = { 0 };
-      av_init_packet(&pkt);
-
-      if(WriteAudioFrame(pkt))
-      {
-        pkt.pts = ++frame_count;
-        WriteFrame(audio_st, &pkt);
-        audio_frame->pts += av_rescale_q(1, audio_st->codec->time_base, audio_st->time_base);
-      }
+      WriteAudio();
     }
   }
   running = FALSE;
@@ -733,11 +765,9 @@ void ConferenceRecorder::RecorderVideo(PThread &, INT)
 {
   MCUTRACE(1, trace_section << "video thread started");
 
-  int frame_count = 0;
-
-  unsigned video_delay_us = av_q2d(video_st->time_base)*1000000;
-  if(video_delay_us == 0) video_delay_us = 1000000/video_framerate;
-  if(video_delay_us == 0) return;
+  unsigned video_delay_us = av_q2d(video_st->codec->time_base)*1000000;
+  if(video_delay_us <= 1000)
+    video_delay_us = 1000000/video_framerate;
 
   struct timeval tv;
   gettimeofday(&tv, NULL);
@@ -751,16 +781,7 @@ void ConferenceRecorder::RecorderVideo(PThread &, INT)
     if(now >= video_time + video_delay_us)
     {
       video_time += video_delay_us;
-
-      AVPacket pkt = { 0 };
-      av_init_packet(&pkt);
-
-      if(WriteVideoFrame(pkt))
-      {
-        pkt.pts = ++frame_count;
-        WriteFrame(video_st, &pkt);
-        video_frame->pts += av_rescale_q(1, video_st->codec->time_base, video_st->time_base);
-      }
+      WriteVideo();
     }
   }
   running = FALSE;
