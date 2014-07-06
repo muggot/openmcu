@@ -4,17 +4,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef av_err2str
-char *av_make_error_string(char *errbuf, size_t errbuf_size, int errnum)
-{
-  av_strerror(errnum, errbuf, errbuf_size);
-  return errbuf;
-}
-/**
- * Convenience macro, the return value should be used only directly in
- * function arguments but never stand-alone.
- */
-#define av_err2str(errnum) \
-  av_make_error_string((char[64]){0}, 64, errnum)
+  #define av_err2str(errnum)
 #endif
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
