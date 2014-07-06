@@ -4,7 +4,12 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifndef av_err2str
-  #define av_err2str(errnum)
+PString av_err2str(int errnum)
+{
+  char errbuf[64];
+  av_strerror(errnum, errbuf, 64);
+  return PString(errbuf);
+}
 #endif
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
