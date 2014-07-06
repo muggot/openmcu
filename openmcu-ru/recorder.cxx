@@ -35,7 +35,7 @@ char *av_make_error_string(char *errbuf, size_t errbuf_size, int errnum)
 
 PString GetRecorderCodecs(int media_type)
 {
-  PString codecs = ",Disabled";
+  PString codecs = "Disabled";
   if(media_type == 0)
   {
     if(avcodec_find_encoder_by_name("ac3"))
@@ -252,7 +252,16 @@ BOOL ConferenceRecorder::Start()
   else if(audio_channels > 8) { audio_channels = 8; PTRACE(1, trace_section << "audio channels changed to 8"); }
   audio_bitrate = 64;
 
-  // filename format: room101__2013-0516-1058270__704x576x10
+  // codecs
+  audio_codec_id = GetCodecId(0, cfg.GetString(RecorderAudioCodecKey, RecorderDefaultAudioCodec));
+  video_codec_id = GetCodecId(1, cfg.GetString(RecorderVideoCodecKey, RecorderDefaultVideoCodec));
+  if(audio_codec_id == AV_CODEC_ID_NONE && video_codec_id == AV_CODEC_ID_NONE)
+  {
+    MCUTRACE(1, trace_section << "failed initialise recorder, codecs not found");
+    return FALSE;
+  }
+
+  // file format: room101__2013-0516-1058270__704x576x10
   PStringStream t;
   t << mcu.vr_ffmpegDir << PATH_SEPARATOR
     << conference->GetNumber()
@@ -261,10 +270,6 @@ BOOL ConferenceRecorder::Start()
     << video_height << "x"
     << video_framerate;
   filename = t;
-
-  // set codecs and file format
-  audio_codec_id = GetCodecId(0, cfg.GetString(RecorderAudioCodecKey));
-  video_codec_id = GetCodecId(1, cfg.GetString(RecorderVideoCodecKey));
   if((audio_codec_id == AV_CODEC_ID_AC3 || audio_codec_id == AV_CODEC_ID_NONE) && video_codec_id == AV_CODEC_ID_MPEG4)
     format_name = "avi";
   else
@@ -611,11 +616,11 @@ BOOL ConferenceRecorder::WriteAudio()
   AVPacket pkt = { 0 };
   av_init_packet(&pkt);
 
+  // first, increase the counter, set PTS for packet
+  audio_frame->pts = ++audio_frame_count;
+
   if(GetAudioFrame() == FALSE)
     return FALSE;
-
-  // set PTS for packet
-  audio_frame->pts = audio_frame_count++;
 
   ret = avcodec_encode_audio2(context, &pkt, audio_frame, &got_packet);
   if(ret < 0)
@@ -696,10 +701,10 @@ BOOL ConferenceRecorder::WriteVideo()
   AVPacket pkt = { 0 };
   av_init_packet(&pkt);
 
-  GetVideoFrame();
+  // first, increase the counter, set PTS for packet
+  video_frame->pts = ++video_frame_count;
 
-  // set PTS for packet
-  video_frame->pts = video_frame_count++;
+  GetVideoFrame();
 
   // encode the frame
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54, 0, 0)
