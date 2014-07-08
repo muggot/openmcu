@@ -3,15 +3,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#ifndef av_err2str
-PString av_err2str(int errnum)
-{
-  char errbuf[64];
-  av_strerror(errnum, errbuf, 64);
-  return PString(errbuf);
-}
-#endif
-
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
   #define AV_CODEC_ID_NONE        CODEC_ID_NONE
   #define AV_CODEC_ID_PCM_S16LE   CODEC_ID_PCM_S16LE
@@ -25,6 +16,15 @@ PString av_err2str(int errnum)
 #endif
 
 #define ALIGN 1
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PString AVErrorToString(int errnum)
+{
+  char errbuf[64];
+  av_strerror(errnum, errbuf, 64);
+  return PString(errbuf);
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -324,7 +324,7 @@ BOOL ConferenceRecorder::InitRecorder()
   ret = avio_open(&fmt_context->pb, filename, AVIO_FLAG_WRITE);
   if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "could not open " << filename << " " << ret << " " << av_err2str(ret));
+    MCUTRACE(1, trace_section << "could not open " << filename << " " << ret << " " << AVErrorToString(ret));
     return FALSE;
   }
 
@@ -332,7 +332,7 @@ BOOL ConferenceRecorder::InitRecorder()
   ret = avformat_write_header(fmt_context, NULL);
   if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "error occurred when opening output file: " << ret << " " << av_err2str(ret));
+    MCUTRACE(1, trace_section << "error occurred when opening output file: " << ret << " " << AVErrorToString(ret));
     return FALSE;
   }
 
@@ -453,7 +453,7 @@ BOOL ConferenceRecorder::OpenAudio()
   ret = avcodec_open2(context, context->codec, NULL);
   if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "could not open audio codec: " << ret << " " << av_err2str(ret));
+    MCUTRACE(1, trace_section << "could not open audio codec: " << ret << " " << AVErrorToString(ret));
     return FALSE;
   }
 
@@ -492,7 +492,7 @@ BOOL ConferenceRecorder::OpenResampler()
   ret = av_samples_alloc(src_samples_data, NULL, context->channels, src_samples, AV_SAMPLE_FMT_S16, ALIGN);
   if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "could not allocate source samples: " << src_samples << " " << ret << " " << av_err2str(ret));
+    MCUTRACE(1, trace_section << "could not allocate source samples: " << src_samples << " " << ret << " " << AVErrorToString(ret));
     return FALSE;
   }
 
@@ -529,7 +529,7 @@ BOOL ConferenceRecorder::OpenResampler()
 #endif
     if(ret < 0)
     {
-      MCUTRACE(1, trace_section << "failed to initialize the resampling context: " << ret << " " << av_err2str(ret));
+      MCUTRACE(1, trace_section << "failed to initialize the resampling context: " << ret << " " << AVErrorToString(ret));
       return FALSE;
     }
   }
@@ -542,7 +542,7 @@ BOOL ConferenceRecorder::OpenResampler()
   ret = av_samples_alloc(dst_samples_data, NULL, context->channels, dst_samples, context->sample_fmt, ALIGN);
   if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "could not allocate destination samples: " << dst_samples << " " << ret << " " << av_err2str(ret));
+    MCUTRACE(1, trace_section << "could not allocate destination samples: " << dst_samples << " " << ret << " " << AVErrorToString(ret));
     return FALSE;
   }
   if(context->sample_fmt == AV_SAMPLE_FMT_S16)
@@ -578,7 +578,7 @@ BOOL ConferenceRecorder::Resampler()
 #endif
     if(ret < 0)
     {
-      MCUTRACE(1, trace_section << "error while converting: " << ret << " " << av_err2str(ret));
+      MCUTRACE(1, trace_section << "error while converting: " << ret << " " << AVErrorToString(ret));
       return FALSE;
     }
   }
@@ -620,14 +620,14 @@ BOOL ConferenceRecorder::WriteAudio()
   ret = avcodec_encode_audio2(context, &pkt, audio_frame, &got_packet);
   if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "error encoding audio frame: " << ret << " " << av_err2str(ret));
+    MCUTRACE(1, trace_section << "error encoding audio frame: " << ret << " " << AVErrorToString(ret));
     return FALSE;
   }
 
   ret = WritePacket(audio_st, &pkt);
   if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "error while writing audio frame: " << ret << " " <<  av_err2str(ret));
+    MCUTRACE(1, trace_section << "error while writing audio frame: " << ret << " " <<  AVErrorToString(ret));
     return FALSE;
   }
 
@@ -645,7 +645,7 @@ BOOL ConferenceRecorder::OpenVideo()
   ret = avcodec_open2(context, context->codec, NULL);
   if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "could not open video codec: " << ret << " " << av_err2str(ret));
+    MCUTRACE(1, trace_section << "could not open video codec: " << ret << " " << AVErrorToString(ret));
     return FALSE;
   }
 
@@ -716,14 +716,14 @@ BOOL ConferenceRecorder::WriteVideo()
   // if size is zero, it means the image was buffered
   if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "error encoding video frame: " << ret << " " << av_err2str(ret));
+    MCUTRACE(1, trace_section << "error encoding video frame: " << ret << " " << AVErrorToString(ret));
     return FALSE;
   }
 
   ret = WritePacket(video_st, &pkt);
   if(ret < 0)
   {
-    MCUTRACE(1, trace_section << "error while writing video frame: " << ret << " " <<  av_err2str(ret));
+    MCUTRACE(1, trace_section << "error while writing video frame: " << ret << " " <<  AVErrorToString(ret));
     return FALSE;
   }
 
