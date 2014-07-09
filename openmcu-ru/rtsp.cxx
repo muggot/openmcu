@@ -223,41 +223,42 @@ int MCURtspConnection::Connect(PString address, int socket_fd, msg_t *msg)
 
   // setup audio capability
   SipCapability *audio_sc = FindSipCap(RemoteSipCaps, audio_codec);
-  if(audio_sc == NULL)
+  if(audio_sc)
   {
-    MCUTRACE(1, trace_section << "not found audio codec " << audio_codec);
-    return 0;
+    audio_sc->cap = H323Capability::Create(audio_codec);
+    if(audio_sc->cap == NULL)
+    {
+      MCUTRACE(1, trace_section << "not found audio codec " << audio_codec);
+      return 0;
+    }
+    audio_sc->payload = scap = 96;
   }
-  audio_sc->cap = H323Capability::Create(audio_codec);
-  if(audio_sc->cap == NULL)
-  {
-    MCUTRACE(1, trace_section << "error");
-    return 0;
-  }
-  audio_sc->payload = scap = 96;
-
   // setup video capability
   SipCapability *video_sc = FindSipCap(RemoteSipCaps, video_codec);
-  if(video_sc == NULL)
+  if(video_sc)
   {
-    MCUTRACE(1, trace_section << "not found video codec " << video_codec);
+    video_sc->cap = H323Capability::Create(video_codec);
+    if(video_sc->cap == NULL)
+    {
+      MCUTRACE(1, trace_section << "not found video codec " << video_codec);
+      return 0;
+    }
+    video_sc->payload = vcap = 97;
+    video_sc->video_width = video_width;
+    video_sc->video_height = video_height;
+    video_sc->video_frame_rate = video_frame_rate;
+    video_sc->bandwidth = video_bandwidth;
+    //sc->fmtp = "profile-level-id=1;";
+    video_sc->fmtp = "";
+    OpalMediaFormat & wf = video_sc->cap->GetWritableMediaFormat();
+    SetFormatParams(wf, video_sc->video_width, video_sc->video_height, video_sc->video_frame_rate, video_sc->bandwidth);
+  }
+
+  if(audio_sc == NULL && video_sc == NULL)
+  {
+    MCUTRACE(1, trace_section << "cannot create connection without codecs, audio: " << audio_codec << " video: " << video_codec);
     return 0;
   }
-  video_sc->cap = H323Capability::Create(video_codec);
-  if(video_sc->cap == NULL)
-  {
-    MCUTRACE(1, trace_section << "error");
-    return 0;
-  }
-  video_sc->payload = vcap = 97;
-  video_sc->video_width = video_width;
-  video_sc->video_height = video_height;
-  video_sc->video_frame_rate = video_frame_rate;
-  video_sc->bandwidth = video_bandwidth;
-  //sc->fmtp = "profile-level-id=1;";
-  video_sc->fmtp = "";
-  OpalMediaFormat & wf = video_sc->cap->GetWritableMediaFormat();
-  SetFormatParams(wf, video_sc->video_width, video_sc->video_height, video_sc->video_frame_rate, video_sc->bandwidth);
 
   // create listener
   listener = MCUListener::Create(socket_fd, ruri_str, OnReceived_wrap, this);
