@@ -688,6 +688,28 @@ class H323EndpointsPConfigPage : public TablePConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class RtspPConfigPage : public TablePConfigPage
+{
+  public:
+    RtspPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
+    {
+      BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
+      OpenMCU::Current().GetRtspServer()->InitListeners();
+      return ret;
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class RtspServersPConfigPage : public TablePConfigPage
+{
+  public:
+    RtspServersPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class RtspEndpointsPConfigPage : public TablePConfigPage
 {
   public:

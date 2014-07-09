@@ -1278,6 +1278,143 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 
 ///////////////////////////////////////////////////////////////
 
+RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+
+  firstEditRow = 2;
+  rowBorders = TRUE;
+  PStringStream html_begin, html_end, html_page, s;
+  buttonUp = buttonDown = buttonClone = buttonDelete = 1;
+  javascript += js_video_transmit_res_toggle;
+
+  s << BeginTable();
+  s << NewRowColumn(JsLocale("window.l_name_path"), 210);
+  s << ColumnItem(JsLocale("window.l_settings"));
+  s << ColumnItem(JsLocale("window.l_name_video"));
+  s << ColumnItem(JsLocale("window.l_name_codec"));
+
+  optionNames.AppendString("Enable");
+  optionNames.AppendString("Room");
+
+  optionNames.AppendString("Frame rate from MCU");
+  optionNames.AppendString("Bandwidth from MCU");
+
+  optionNames.AppendString("Audio codec");
+  optionNames.AppendString("Video codec");
+  optionNames.AppendString("Video resolution");
+
+  PString a_caps = ",Disabled", v_caps = ",Disabled";
+  PStringList keys = MCUConfig("SIP Audio").GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
+      continue;
+    if(!ep.CheckCapability(keys[i]))
+      continue;
+    if(MCUConfig("SIP Audio").GetBoolean(keys[i])) a_caps += ","+keys[i];
+  }
+  keys = MCUConfig("SIP Video").GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
+      continue;
+    if(!ep.CheckCapability(keys[i]))
+      continue;
+    if(ep.SkipCapability(keys[i]))
+      continue;
+    PString capname = keys[i];
+    if(MCUConfig("SIP Video").GetBoolean(keys[i])) v_caps += ","+capname;
+  }
+
+
+  sectionPrefix = "RTSP Server ";
+  PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
+
+  if(sect.GetStringsIndex(sectionPrefix+"*") == P_MAX_INDEX)
+    sect.InsertAt(0, new PString(sectionPrefix+"*"));
+  if(sect.GetSize() == 1)
+    sect.AppendString(sectionPrefix+"empty");
+
+  for(PINDEX i = 0; i < sect.GetSize(); i++)
+  {
+    MCUConfig scfg(sect[i]);
+    PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
+
+    // account
+    if(name == "*") s << NewRowInput(name, 0, TRUE); else s << NewRowInputAccount(name);
+
+    // settings
+    if(name == "*")
+    {
+      PString s2;
+      s2 += NewItemArray(name, 25);
+      s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += EndItemArray();
+      s << s2;
+    } else {
+      PString s2;
+      s2 += NewItemArray(name);
+      s2 += rowArray+("Enable")+BoolItem(name, scfg.GetBoolean("Enable"))+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_roomname")+StringItem(name, scfg.GetString("Room"))+"</tr>";
+      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += EndItemArray();
+      s << s2;
+    }
+    // video
+    {
+      PString s2;
+      s2 += NewItemArray(name, 25);
+      // frame rate from MCU
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString("Frame rate from MCU"), 1, MAX_FRAME_RATE, 60)+"</tr>";
+      // bandwidth from MCU
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString("Bandwidth from MCU"), 64, 4000, 60)+"</tr>";
+      //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += EndItemArray();
+      s << s2;
+    }
+    // codecs
+    {
+      PString a_codec = scfg.GetString("Audio codec");
+      PString v_codec = scfg.GetString("Video codec");
+      if(a_codec != "" && a_caps.Find(a_codec) == P_MAX_INDEX) a_caps = a_codec+","+a_caps;
+      if(v_codec != "" && v_caps.Find(v_codec) == P_MAX_INDEX) v_caps = v_codec+","+v_caps;
+
+      PString s2;
+      s2 += NewItemArray(name, 25);
+      //
+      s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
+      //
+      PString video_id = rand();
+      PString res_id = rand();
+      PString res_value = scfg.GetString("Video resolution");
+      PString video_onchange = "video_transmit_res_toggle(\""+res_id+"\", this.value);";
+      javascript += "video_transmit_res_toggle('"+res_id+"', '"+v_codec+"');\n";
+      s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
+      //
+      s2 += rowArray+(JsLocale("window.l_name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
+      //
+      s2 += EndItemArray();
+      s << s2;
+    }
+    //
+  }
+
+  s << EndTable();
+
+  BuildHTML("");
+  BeginPage(html_begin, section, "", "");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  string = html_page;
+}
+
+///////////////////////////////////////////////////////////////
+
 ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
@@ -1421,6 +1558,27 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
 
   BuildHTML("");
   BeginPage(html_begin, "Access Rules", "window.l_param_access_rules", "window.l_info_param_access_rules");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  string = html_page;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RtspPConfigPage::RtspPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  PStringStream html_begin, html_end, html_page, s;
+
+  s << BeginTable();
+  s << BoolField("RESTORE DEFAULTS", FALSE);
+
+  s << BoolField("Enable", cfg.GetBoolean("Enable", TRUE));
+  s << ArrayField("Listener", cfg.GetString("Listener", "0.0.0.0:1554"), 150);
+
+  s << EndTable();
+  BuildHTML("");
+  BeginPage(html_begin, section, "", "");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;

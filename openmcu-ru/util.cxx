@@ -113,15 +113,21 @@ PString GetSectionParam(PString section_prefix, PString param, PString addr)
 PString GetSectionParamFromUrl(PString param, PString addr)
 {
   PString section_prefix;
-  MCUURL url(addr);
-  if(url.GetScheme() == "h323")
-    section_prefix = "H323 Endpoint ";
-  else if(url.GetScheme() == "sip")
-    section_prefix = "SIP Endpoint ";
-  else if(url.GetScheme() == "rtsp")
-    section_prefix = "RTSP Endpoint ";
-  else
-    return "";
+  if(addr.Find("RTSP Server ") == 0)
+  {
+    section_prefix = "RTSP Server ";
+    addr.Replace("RTSP Server ","",TRUE,0);
+  } else {
+    MCUURL url(addr);
+    if(url.GetScheme() == "h323")
+      section_prefix = "H323 Endpoint ";
+    else if(url.GetScheme() == "sip")
+      section_prefix = "SIP Endpoint ";
+    else if(url.GetScheme() == "rtsp")
+      section_prefix = "RTSP Endpoint ";
+    else
+      return "";
+  }
 
   PString value = GetSectionParam(section_prefix, param, addr);
   MCUTRACE(1, "Get parameter (" << addr << ") \"" << param << "\" = " << value);

@@ -46,6 +46,8 @@ window.l_param_control_codes = 'Коды управления';
 window.l_param_room_codes = 'Коды комнат';
 window.l_param_h323_endpoints = 'H.323 терминалы';
 window.l_param_sip_endpoints = 'SIP терминалы';
+window.l_param_rtsp = 'RTSP параметры';
+window.l_param_rtsp_servers = 'RTSP серверы';
 window.l_param_rtsp_endpoints = 'RTSP терминалы';
 window.l_param_video = 'Видео';
 window.l_param_record = 'Запись';
@@ -185,6 +187,7 @@ window.l_name_account                              = 'Учетная запис�
 window.l_name_register                             = 'Регистрировать';
 window.l_name_address_sip_proxy                    = 'Адрес SIP-прокси';
 window.l_name_expires                              = 'Продолжительность регистрации';
+window.l_name_path                                 = 'Путь';
 
 window.l_name_registered                           = 'Зарегистрирован';
 window.l_name_connected                            = 'Подключен';

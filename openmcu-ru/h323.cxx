@@ -2234,6 +2234,8 @@ void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
 {
   if(conn->GetCallToken() == "")
     return;
+  if(conn->GetCallToken().Left(4) == "tcp:")
+    return;
   connectionMonitor->AddMonitorEvent(new ConnectionRTPTimeoutInfo(conn->GetCallToken()));
 }
 

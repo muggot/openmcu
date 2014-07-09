@@ -72,12 +72,14 @@ $INIT$  </script>
          <li><a href='TransmitVideoCodecs' id="l_param_transmit_video"></a></li>
         </menu>
        </li>
-       <li><a href='#' id="menu_sip" onmouseover="javascript:displayElement('submenu4',true);" onmouseout="javascript:displayElement('submenu4',false);">RTSP</a>
+       <li><a href='#' id="menu_rtsp" onmouseover="javascript:displayElement('submenu4',true);" onmouseout="javascript:displayElement('submenu4',false);">RTSP</a>
         <menu id="submenu4" style="display:none" onmouseover="javascript:displayElement('submenu4',true);" onmouseout="javascript:displayElement('submenu4',false);">
-         <li><a href='RtspEndpointsParameters' id="l_param_rtsp_endpoints"></a></li>
+         <li><a href='RtspParameters' id="l_param_rtsp"></a></li>
+         <li><a href='RtspServers' id="l_param_rtsp_servers"></a></li>
+         <li><a href='RtspEndpoints' id="l_param_rtsp_endpoints"></a></li>
         </menu>
        </li>
-       <li><a href='#' id="menu_rtsp" onmouseover="javascript:displayElement('submenu5',true);" onmouseout="javascript:displayElement('submenu5',false);">SIP</a>
+       <li><a href='#' id="menu_sip" onmouseover="javascript:displayElement('submenu5',true);" onmouseout="javascript:displayElement('submenu5',false);">SIP</a>
         <menu id="submenu5" style="display:none" onmouseover="javascript:displayElement('submenu5',true);" onmouseout="javascript:displayElement('submenu5',false);">
          <li><a href='SIPParameters' id="l_param_sip"></a></li>
          <li><a href='SipEndpointsParameters' id="l_param_sip_endpoints"></a></li>
@@ -164,6 +166,8 @@ $BODY$
    document.getElementById("l_param_managing_groups").innerHTML = window.l_param_managing_groups;
    document.getElementById("l_param_control_codes").innerHTML = window.l_param_control_codes;
    document.getElementById("l_param_h323_endpoints").innerHTML = window.l_param_h323_endpoints;
+   document.getElementById("l_param_rtsp").innerHTML = window.l_param_rtsp;
+   document.getElementById("l_param_rtsp_servers").innerHTML = window.l_param_rtsp_servers;
    document.getElementById("l_param_rtsp_endpoints").innerHTML = window.l_param_rtsp_endpoints;
    document.getElementById("l_param_sip_endpoints").innerHTML = window.l_param_sip_endpoints;
    document.getElementById("l_param_video").innerHTML = window.l_param_video;

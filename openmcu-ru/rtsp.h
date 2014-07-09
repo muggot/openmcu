@@ -2,17 +2,18 @@
 #ifndef _MCU_RTSP_H
 #define _MCU_RTSP_H
 
-enum RtspStates
-{
-  RTSP_NONE,
-  RTSP_CONNECT,
-  RTSP_DESCRIBE,
-  RTSP_SETUP_AUDIO,
-  RTSP_SETUP_VIDEO,
-  RTSP_PLAY,
-  RTSP_PLAYING,
-  RTSP_RELEASED
-};
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static const PString METHOD_OPTIONS    = "OPTIONS";
+static const PString METHOD_DESCRIBE   = "DESCRIBE";
+static const PString METHOD_SETUP      = "SETUP";
+static const PString METHOD_PLAY       = "PLAY";
+static const PString METHOD_TEARDOWN   = "TEARDOWN";
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class ConferenceStreamMember;
+class MCUListener;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -22,14 +23,29 @@ class MCURtspConnection : public MCUSipConnection
     MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken);
     ~MCURtspConnection();
 
-    int Connect(PString room, PString _ruri_str);
-
     virtual void CleanUpOnCallEnd();
     virtual void LeaveMCU();
-    void ProcessShutdown(CallEndReason reason = EndedByRemoteUser);
+
+    void ProcessShutdown(CallEndReason reason = EndedByLocalUser);
+
+    int Connect(PString room, PString address);
+    int Connect(PString address, int socket_fd, msg_t *msg);
 
   protected:
+    void CreateLocalSipCaps();
 
+    enum RtspStates
+    {
+      RTSP_NONE = 0,
+      RTSP_CONNECT,
+      RTSP_DESCRIBE,
+      RTSP_SETUP,
+      RTSP_SETUP_AUDIO,
+      RTSP_SETUP_VIDEO,
+      RTSP_PLAY,
+      RTSP_PLAYING,
+      RTSP_RELEASED
+    };
     RtspStates rtsp_state;
 
     int SendSetup(int pt);
@@ -37,22 +53,156 @@ class MCURtspConnection : public MCUSipConnection
     int SendOptions();
     int SendTeardown();
     int SendDescribe();
-    int SendRequest(int fd, char *request, PString method_name);
+    int SendRequest(char *request, PString method_name);
 
     int OnResponseReceived(const msg_t *msg);
     int OnResponseDescribe(const msg_t *msg);
     int OnResponseSetup(const msg_t *msg);
     int OnResponsePlay(const msg_t *msg);
 
+    int OnRequestReceived(const msg_t *msg);
+    int OnRequestDescribe(const msg_t *msg);
+    int OnRequestSetup(const msg_t *msg);
+    int OnRequestPlay(const msg_t *msg);
+    int OnRequestTeardown(const msg_t *msg);
+    int OnRequestOptions(const msg_t *msg);
+    BOOL ParseTransportStr(SipCapability *sc, PString & transport_str);
+
     int cseq;
-    int rtsp_terminating;
     PString rtsp_session_str;
+    PString luri_str;
+    msg_t *rtsp_msg;
+
+    static int OnReceived_wrap(void *context, int socket_fd, PString address, PString data)
+    { return ((MCURtspConnection *)context)->OnReceived(socket_fd, address, data); }
+    int OnReceived(int socket_fd, PString address, PString data);
+
+    MCUListener *listener;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCURtspServer
+{
+  public:
+    MCURtspServer(MCUH323EndPoint *ep, MCUSipEndPoint *sep);
+    ~MCURtspServer();
+
+    void InitListeners();
+
+  protected:
+    void AddListener(PString address);
+    void RemoveListener(PString address);
+    void ClearListeners();
+
+    PString trace_section;
+
+    static int OnReceived_wrap(void *context, int socket_fd, PString address, PString data)
+    { return ((MCURtspServer *)context)->OnReceived(socket_fd, address, data); }
+    int OnReceived(int socket_fd, PString address, PString data);
+
+    typedef std::map<PString /* address */, MCUListener *> ListenersMapType;
+    ListenersMapType Listeners;
+
+    MCUH323EndPoint *ep;
+    MCUSipEndPoint *sep;
+
+    PMutex mutex;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+typedef int mcu_listener_cb(void *callback_context, int socket_fd, PString address, PString data);
+
+class MCUListener
+{
+  public:
+    MCUListener(PString address, mcu_listener_cb *callback, void *callback_context);
+    MCUListener(int socket_fd, PString address, mcu_listener_cb *callback, void *callback_context);
+    ~MCUListener();
+
+    enum ListenerType
+    {
+      TCP_LISTENER_CLIENT,
+      TCP_LISTENER_SERVER
+    };
+
+    static MCUListener * Create(PString address, mcu_listener_cb *callback, void *callback_context);
+    static MCUListener * Create(int client_fd, PString address, mcu_listener_cb *callback, void *callback_context);
+
+    BOOL Send(char *buffer);
+
+    BOOL IsRunning()
+    { return running; }
+
+    PString GetAddress()
+    { return socket_address; }
+
+    ListenerType GetType()
+    { return listener_type; }
+
+    int GetSocket()
+    { return socket_fd; }
+
+  protected:
+    BOOL CreateTCPServer();
+    BOOL CreateTCPClient();
+    BOOL TestSocket(int test_socket_fd);
+
+    int ReadData(int fd, char *buffer, int buffer_size);
+    int RecvData(int fd, char *buffer, int buffer_size);
+
+    BOOL running;
+    PString trace_section;
+
+    ListenerType listener_type;
+    PString socket_address;
+
+    PString socket_host;
+    unsigned socket_port;
 
     int socket_fd;
-    int CreateSocket();
+    mcu_listener_cb *callback;
+    void *callback_context;
 
-    PThread *rtsp_thread;
-    PDECLARE_NOTIFIER(PThread, MCURtspConnection, RtspListener);
+    PThread *tcp_thread;
+    PDECLARE_NOTIFIER(PThread, MCUListener, TCPListener);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class ConferenceStreamMember : public ConferenceMember
+{
+  PCLASSINFO(ConferenceStreamMember, ConferenceMember);
+
+  public:
+    ConferenceStreamMember(Conference *_conference, PString _name)
+      : ConferenceMember(_conference, (void *)this)
+    {
+      conference = _conference;
+      name = _name;
+      conference->AddMember(this);
+      //AddToConference(conference);
+    }
+    ~ConferenceStreamMember()
+    {
+      //RemoveFromConference();
+    }
+
+    virtual ConferenceConnection * CreateConnection()
+    { return new ConferenceConnection(this); }
+
+    virtual PString GetName() const
+    { return "conference stream "+name; }
+
+    virtual MemberTypes GetType()
+    { return MEMBER_TYPE_STREAM; }
+
+    virtual BOOL IsVisible() const
+    { return FALSE; }
+
+  protected:
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

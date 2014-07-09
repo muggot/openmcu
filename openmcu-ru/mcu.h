@@ -257,9 +257,6 @@ class OpenMCU : public OpenMCUProcessAncestor
     MCUH323EndPoint & GetEndpoint()
     { return *endpoint; }
 
-    MCUSipEndPoint * GetSipEndpoint()
-    { return sipendpoint; }
-
     int GetHttpBuffer() const { return httpBuffer; }
 
     virtual void HttpWrite_(PString evt) {
@@ -379,7 +376,9 @@ class OpenMCU : public OpenMCUProcessAncestor
     PFilePath  logFilename;
     BOOL       copyWebLogToLog;
 
+    MCUSipEndPoint * GetSipEndpoint() { return sipendpoint; }
     Registrar *GetRegistrar() { return registrar; };
+    MCURtspServer *GetRtspServer() { return rtspServer; };
 
     void ManagerRefreshAddressBook();
 
@@ -392,6 +391,7 @@ class OpenMCU : public OpenMCUProcessAncestor
 
     MCUSipEndPoint * sipendpoint;
     Registrar *registrar;
+    MCURtspServer *rtspServer;
 
     PString    defaultRoomName;
     BOOL       allowLoopbackCalls;

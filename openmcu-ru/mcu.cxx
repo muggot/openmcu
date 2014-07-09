@@ -20,6 +20,7 @@ OpenMCU::OpenMCU()
 #endif
   endpoint          = NULL;
   sipendpoint       = NULL;
+  rtspServer        = NULL;
   registrar         = NULL;
   currentLogLevel   = -1;
   currentTraceLevel = -1;
@@ -49,6 +50,7 @@ BOOL OpenMCU::OnStart()
   endpoint = CreateEndPoint(*manager);
   sipendpoint = new MCUSipEndPoint(endpoint);
   registrar = new Registrar(endpoint, sipendpoint);
+  rtspServer = new MCURtspServer(endpoint, sipendpoint);
 
   return PHTTPServiceProcess::OnStart();
 }
@@ -80,6 +82,8 @@ void OpenMCU::OnStop()
   registrar->WaitForTermination(10000);
   delete registrar;
   registrar = NULL;
+
+  delete rtspServer;
 
 #ifndef _WIN32
   CommonDestruct(); // save config
@@ -301,8 +305,14 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // Create the config page - sip endpoints
   httpNameSpace.AddResource(new SipEndpointsPConfigPage(*this, "SipEndpointsParameters", "SIP Endpoints", authSettings), PHTTPSpace::Overwrite);
 
+  // Create the config page - rtsp parameters
+  httpNameSpace.AddResource(new RtspPConfigPage(*this, "RtspParameters", "RTSP Parameters", authSettings), PHTTPSpace::Overwrite);
+
+  // Create the config page - rtsp servers
+  httpNameSpace.AddResource(new RtspServersPConfigPage(*this, "RtspServers", "RTSP Servers", authSettings), PHTTPSpace::Overwrite);
+
   // Create the config page - rtsp endpoints
-  httpNameSpace.AddResource(new RtspEndpointsPConfigPage(*this, "RtspEndpointsParameters", "RTSP Endpoints", authSettings), PHTTPSpace::Overwrite);
+  httpNameSpace.AddResource(new RtspEndpointsPConfigPage(*this, "RtspEndpoints", "RTSP Endpoints", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - video
 #if MCU_VIDEO

@@ -46,6 +46,8 @@ window.l_param_control_codes = 'Control codes';
 window.l_param_room_codes = 'Room codes';
 window.l_param_h323_endpoints = 'H.323 Endpoints';
 window.l_param_sip_endpoints = 'SIP Endpoints';
+window.l_param_rtsp = 'RTSP parameters';
+window.l_param_rtsp_servers = 'RTSP Servers';
 window.l_param_rtsp_endpoints = 'RTSP Endpoints';
 window.l_param_video = 'Video';
 window.l_param_record = 'Record';
@@ -178,6 +180,7 @@ window.l_name_account                              = 'Account';
 window.l_name_register                             = 'Register';
 window.l_name_address_sip_proxy                    = 'Address SIP-proxy';
 window.l_name_expires                              = 'Expires';
+window.l_name_path                                 = 'Path';
 
 window.l_name_registered                           = 'Registered';
 window.l_name_connected                            = 'Connected';
