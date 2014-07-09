@@ -267,12 +267,38 @@ class MCUSipConnection : public MCUH323Connection
 
     BOOL Init(Directions _direction, const msg_t *msg);
 
-    int ProcessConnect();
+    virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
+    virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
+    virtual void CleanUpOnCallEnd();
+    virtual void LeaveMCU();
+
+    BOOL HadAnsweredCall() { return (direction=DIRECTION_INBOUND); }
+    BOOL IsAwaitingSignalConnect() { return connectionState == AwaitingSignalConnect; };
+    BOOL IsConnected() const { return connectionState == EstablishedConnection; }
+    BOOL IsEstablished() const { return connectionState == EstablishedConnection; }
+
+    void ProcessShutdown(CallEndReason reason = EndedByRemoteUser);
     int ProcessInvite(const msg_t *msg);
+    int SendInvite();
+    int SendVFU();
+
+    AuthTypes auth_type;
+    PString auth_username;
+    PString auth_password;
+    PString auth_scheme;
+    PString auth_realm;
+    PString auth_nonce;
+
+  protected:
+    int ProcessConnect();
     int ProcessReInvite(const msg_t *msg);
     int ProcessAck();
-    int ProcessShutdown(CallEndReason reason = EndedByRemoteUser);
     int ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & RemoteCaps, PString & sdp_str);
+
+    int SendBYE();
+    int SendACK();
+    nta_outgoing_t * SendRequest(sip_method_t method, const char *method_name);
+    int ReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL);
 
     int ProcessInfo(const msg_t *msg);
     void OnReceivedVFU();
@@ -302,33 +328,6 @@ class MCUSipConnection : public MCUH323Connection
     void SelectCapability_OPUS(SipCapMapType & LocalCaps, SipCapability *sc);
     void SelectCapability_G7221(SipCapMapType & LocalCaps, SipCapability *sc);
     void SelectCapability_G7222(SipCapMapType & LocalCaps, SipCapability *sc);
-
-    virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
-    virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
-    void CleanUpOnCallEnd();
-    void LeaveMCU();
-
-    int SendBYE();
-    int SendACK();
-    int SendVFU();
-    int SendInvite();
-    nta_outgoing_t * SendRequest(sip_method_t method, const char *method_name);
-    int ReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL);
-
-    BOOL HadAnsweredCall() { return (direction=DIRECTION_INBOUND); }
-
-    BOOL IsAwaitingSignalConnect() { return connectionState == AwaitingSignalConnect; };
-    BOOL IsConnected() const { return connectionState == EstablishedConnection; }
-    BOOL IsEstablished() const { return connectionState == EstablishedConnection; }
-
-    AuthTypes auth_type;
-    PString auth_username;
-    PString auth_password;
-    PString auth_scheme;
-    PString auth_realm;
-    PString auth_nonce;
-
-  protected:
 
     static int wrap_invite_request_cb(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip)
     { return ((MCUSipConnection *)context)->invite_request_cb(leg, irq, sip); }

@@ -92,7 +92,8 @@ enum MemberTypes
   MEMBER_TYPE_PIPE       = 1,
   MEMBER_TYPE_CACHE      = 2,
   MEMBER_TYPE_RECORDER   = 3,
-  MEMBER_TYPE_GSYSTEM    = (MEMBER_TYPE_PIPE|MEMBER_TYPE_CACHE|MEMBER_TYPE_RECORDER)
+  MEMBER_TYPE_STREAM     = 4,
+  MEMBER_TYPE_GSYSTEM    = (MEMBER_TYPE_PIPE|MEMBER_TYPE_CACHE|MEMBER_TYPE_RECORDER|MEMBER_TYPE_STREAM)
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

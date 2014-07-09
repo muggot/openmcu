@@ -171,13 +171,12 @@ MCURtspConnection::~MCURtspConnection()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::ProcessShutdown(CallEndReason reason)
+void MCURtspConnection::ProcessShutdown(CallEndReason reason)
 {
   PTRACE(1, trace_section << "shutdown connection");
   callEndReason = reason;
   // leave conference and delete connection
   MCUH323Connection::LeaveMCU();
-  return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -235,11 +234,11 @@ int MCURtspConnection::Connect(PString room, PString _ruri_str)
   if(rtsp_port == "80") rtsp_port = "554";
   ruri_str = "rtsp://"+url.GetHostName()+":"+rtsp_port+url.GetPathStr();
 
-  display_name = GetEndpointParamFromUrl(DisplayNameKey, _ruri_str, url.GetPathStr());
+  display_name = GetSectionParamFromUrl(DisplayNameKey, _ruri_str, url.GetPathStr());
   remotePartyName = remoteName = display_name;
 
-  auth_username = GetEndpointParamFromUrl(UserNameKey, _ruri_str, url.GetUserName());
-  auth_password = GetEndpointParamFromUrl(PasswordKey, _ruri_str, url.GetPassword());
+  auth_username = GetSectionParamFromUrl(UserNameKey, _ruri_str, url.GetUserName());
+  auth_password = GetSectionParamFromUrl(PasswordKey, _ruri_str, url.GetPassword());
 
   if(CreateSocket() == 0)
     return 0;

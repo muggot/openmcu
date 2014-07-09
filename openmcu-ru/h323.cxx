@@ -2962,7 +2962,7 @@ PString MCUH323Connection::GetEndpointParam(PString param)
     if(pos != P_MAX_INDEX) url=url.Mid(pos+3);
     url = GetRemoteNumber()+"@"+url;
   }
-  return GetEndpointParamFromUrl(param, url);
+  return GetSectionParamFromUrl(param, url);
 }
 
 #if MCU_VIDEO

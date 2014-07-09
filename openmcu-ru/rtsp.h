@@ -23,9 +23,10 @@ class MCURtspConnection : public MCUSipConnection
     ~MCURtspConnection();
 
     int Connect(PString room, PString _ruri_str);
-    int ProcessShutdown(CallEndReason reason = EndedByRemoteUser);
-    void CleanUpOnCallEnd();
-    void LeaveMCU();
+
+    virtual void CleanUpOnCallEnd();
+    virtual void LeaveMCU();
+    void ProcessShutdown(CallEndReason reason = EndedByRemoteUser);
 
   protected:
 

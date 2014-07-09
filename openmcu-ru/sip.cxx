@@ -488,12 +488,11 @@ MCUSipConnection::~MCUSipConnection()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::ProcessShutdown(CallEndReason reason)
+void MCUSipConnection::ProcessShutdown(CallEndReason reason)
 {
   callEndReason = reason;
   // leave conference and delete connection
   MCUH323Connection::LeaveMCU();
-  return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2488,9 +2487,9 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 
     // override, if using the default port and transport
     if(remote_port == "5060")
-      remote_port = GetEndpointParamFromUrl("Port", "sip:"+remote_user+"@"+remote_domain, remote_port);
+      remote_port = GetSectionParamFromUrl("Port", "sip:"+remote_user+"@"+remote_domain, remote_port);
     if(remote_transport == "*")
-      remote_transport = GetEndpointParamFromUrl("Transport", "sip:"+remote_user+"@"+remote_domain, remote_transport);
+      remote_transport = GetSectionParamFromUrl("Transport", "sip:"+remote_user+"@"+remote_domain, remote_transport);
     if(remote_transport == "tls" && remote_port == "5060")
       remote_port = "5061";
 
@@ -2926,8 +2925,8 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
 
   // wrong RequestURI
   PString ruri_str = MCUURL_SIP(msg).GetUrl();
-  PString stun_server = GetEndpointParamFromUrl(NATStunServerKey, ruri_str);
-  PString nat_ip = GetEndpointParamFromUrl(NATRouterIPKey, ruri_str);
+  PString stun_server = GetSectionParamFromUrl(NATStunServerKey, ruri_str);
+  PString nat_ip = GetSectionParamFromUrl(NATRouterIPKey, ruri_str);
   PString local_ip = sip->sip_request->rq_url->url_host;
   if(stun_server == "" && ((nat_ip != "" && nat_ip != local_ip) || (nat_ip == "" && PIPSocket::IsLocalHost(local_ip) == FALSE)))
     return SipReqReply(msg, NULL, SIP_400_BAD_REQUEST);

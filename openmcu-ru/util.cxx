@@ -36,7 +36,17 @@ MCUURL::MCUURL(PString str)
   else if(url_party.Left(5) == "h323:") url_scheme = "h323";
   else if(url_party.Left(5) == "rtsp:") url_scheme = "rtsp";
   else if(url_party.Left(5) == "http:") url_scheme = "http";
+  else if(url_party.Left(4) == "tcp:") url_scheme = "listener";
+  else if(url_party.Left(4) == "udp:") url_scheme = "listener";
   else { url_party = "h323:"+url_party; url_scheme = "h323"; }
+
+  if(url_scheme == "listener")
+  {
+    transport = url_party.Tokenise(":")[0];
+    hostname = url_party.Tokenise(":")[1];
+    port = url_party.Tokenise(":")[2].AsInteger();
+    return;
+  }
 
   if(url_scheme == "sip" || url_scheme == "h323")
   {
@@ -71,53 +81,56 @@ MCUURL::MCUURL(PString str)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString GetEndpointParameter(PString param, PString addr)
+PString GetSectionParam(PString section_prefix, PString param, PString addr)
 {
   PString user, host;
-  PString sectionPrefix, section;
   PString value;
 
-  MCUURL url(addr);
-  user = url.GetUserName();
-  host = url.GetHostName();
-  if(url.GetScheme() == "h323")
-    sectionPrefix = "H323 Endpoint ";
-  else if(url.GetScheme() == "sip")
-    sectionPrefix = "SIP Endpoint ";
-  else if(url.GetScheme() == "rtsp")
+  if(section_prefix == "RTSP Endpoint ")
   {
-    sectionPrefix = "RTSP Endpoint ";
     user = addr;
-    value = MCUConfig(sectionPrefix+user).GetString(param);
-    if(value != "")
-      return value;
     user.Replace("rtsp://","",TRUE,0);
-    value = MCUConfig(sectionPrefix+user).GetString(param);
-    return value;
   }
+  else
+  {
+    MCUURL url(addr);
+    user = url.GetUserName();
+    host = url.GetHostName();
+  }
+
+  if(value == "")
+    value = MCUConfig(section_prefix+addr).GetString(param);
+  if(value == "")
+    value = MCUConfig(section_prefix+user).GetString(param);
+  if(value == "")
+    value = MCUConfig(section_prefix+host).GetString(param);
+  if(value == "")
+    value = MCUConfig(section_prefix+"*").GetString(param);
+
+  return value;
+}
+
+PString GetSectionParamFromUrl(PString param, PString addr)
+{
+  PString section_prefix;
+  MCUURL url(addr);
+  if(url.GetScheme() == "h323")
+    section_prefix = "H323 Endpoint ";
+  else if(url.GetScheme() == "sip")
+    section_prefix = "SIP Endpoint ";
+  else if(url.GetScheme() == "rtsp")
+    section_prefix = "RTSP Endpoint ";
   else
     return "";
 
-  if(value == "")
-    value = MCUConfig(sectionPrefix+user).GetString(param);
-  if(value == "")
-    value = MCUConfig(sectionPrefix+host).GetString(param);
-  if(value == "")
-    value = MCUConfig(sectionPrefix+"*").GetString(param);
-
+  PString value = GetSectionParam(section_prefix, param, addr);
+  MCUTRACE(1, "Get parameter (" << addr << ") \"" << param << "\" = " << value);
   return value;
 }
 
-PString GetEndpointParamFromUrl(PString param, PString addr)
+int GetSectionParamFromUrl(PString param, PString addr, int defaultValue)
 {
-  PString value = GetEndpointParameter(param, addr);
-  MCUTRACE(1, "GetEndpointParam (" << addr << ") \"" << param << "\" = " << value);
-  return value;
-}
-
-int GetEndpointParamFromUrl(PString param, PString addr, int defaultValue)
-{
-  PString value = GetEndpointParamFromUrl(param, addr);
+  PString value = GetSectionParamFromUrl(param, addr);
   if(value == "")
     return defaultValue;
 
@@ -129,9 +142,9 @@ int GetEndpointParamFromUrl(PString param, PString addr, int defaultValue)
   return value.AsInteger();
 }
 
-PString GetEndpointParamFromUrl(PString param, PString addr, PString defaultValue)
+PString GetSectionParamFromUrl(PString param, PString addr, PString defaultValue)
 {
-  PString value = GetEndpointParamFromUrl(param, addr);
+  PString value = GetSectionParamFromUrl(param, addr);
   if(value == "")
     return defaultValue;
   return value;

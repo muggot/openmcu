@@ -16,9 +16,9 @@
 PString convert_cp1251_to_utf8(PString str);
 PString convert_ucs2_to_utf8(PString str);
 
-PString GetEndpointParamFromUrl(PString param, PString url);
-PString GetEndpointParamFromUrl(PString param, PString url, PString defaultValue);
-int GetEndpointParamFromUrl(PString param, PString url, int defaultValue);
+PString GetSectionParamFromUrl(PString param, PString url);
+PString GetSectionParamFromUrl(PString param, PString url, PString defaultValue);
+int GetSectionParamFromUrl(PString param, PString url, int defaultValue);
 
 PString GetConferenceParam(PString room, PString param, PString defaultValue);
 int GetConferenceParam(PString room, PString param, int defaultValue);
@@ -39,9 +39,10 @@ class MCUConfig: public PConfig
    MCUConfig(const PString & section)
     : PConfig(CONFIG_PATH, section) { };
 
-   PStringList GetSectionsPrefix(PString prefix) const
+   static PStringList GetSectionsPrefix(PString prefix)
    {
-     PStringList sect = MCUConfig("Parameters").GetSections();
+     MCUConfig cfg;
+     PStringList sect = cfg.GetSections();
      for(PINDEX i = 0; i < sect.GetSize(); )
      {
        if(sect[i].Left(prefix.GetLength()) != prefix)
@@ -51,9 +52,10 @@ class MCUConfig: public PConfig
      }
      return sect;
    }
-   BOOL HasSection(PString section) const
+   static BOOL HasSection(PString section)
    {
-     PStringList sect = MCUConfig("Parameters").GetSections();
+     MCUConfig cfg;
+     PStringList sect = cfg.GetSections();
      if(sect.GetStringsIndex(section) != P_MAX_INDEX)
        return TRUE;
      return FALSE;
