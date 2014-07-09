@@ -939,13 +939,13 @@ int MCURtspConnection::OnReceived(int socket_fd, PString address, PString data)
       MCUTRACE(1, trace_section << "failed parse message");
       return 0;
     }
-    // wait SDP
-    if(sip->sip_content_length && sip->sip_content_length->l_length != 0)
+    // wait payload in the second message, if sip_payload==NULL
+    if(sip->sip_content_length && sip->sip_content_length->l_length != 0 && sip->sip_payload == NULL)
       return 0;
   }
   else
   {
-    // received SDP
+    // received payload in the second message
     sip = sip_object(rtsp_msg);
     sip_add_tl(rtsp_msg, sip,
 	          SIPTAG_PAYLOAD_STR((const char *)data),
