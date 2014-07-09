@@ -188,6 +188,7 @@ class RegistrarAccount
       keep_alive_time_request = PTime(3600);
       keep_alive_time_response = PTime(0);
       msg_reg = NULL;
+      start_time = PTime(0);
     }
     PString GetUrl()
     {

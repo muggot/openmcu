@@ -646,7 +646,7 @@ void Registrar::RefreshAccountStatusList()
     PString reg_info;
     PString conn_info;
     PString ping_info;
-    if(reg_state == 2)
+    if(reg_state != 0 && regAccount->start_time != PTime(0))
       reg_info = regAccount->start_time.AsString("hh:mm:ss dd.MM.yyyy");
     if(conn_state == 2)
       conn_info = regConn->start_time.AsString("hh:mm:ss dd.MM.yyyy");

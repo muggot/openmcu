@@ -835,13 +835,15 @@ function invite_panel(){
   var dbutton="<div class='btn btn-small' style='border-width:1px;border-radius:0px;padding:2px 0px 2px 0px;height:"+(height+1)+"px;line-height:"+(height+1)+"px;text-align:center;cursor:pointer;";
   var s="<form onsubmit='return false' id='invite_panel' style='width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;margin:0px'>";
 
-  var proto_posx = 34;
+  var proto_posx = 2;
   var proto_width = 50;
   var input_posx = proto_posx+proto_width;
-  var input_width = panel_width - input_posx - 5;
-  s+=dpre+"2px'>"+dbutton+"width:"+(bwidth)+"px' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='Invite' /></div></div>";
+  var input_width = panel_width - input_posx - 5 - 32;
+  if(input_width > 250) input_width = 250;
+  var button_posx = input_posx + input_width;
   s+=dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;border-radius:0px;' onclick='javascript:{if(this.innerHTML==\"h323\")this.innerHTML=\"rtsp\";else if(this.innerHTML==\"rtsp\")this.innerHTML=\"sip\";else if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>";
   s+=dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;border-radius:0px;border-right:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"binpinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_input(document.getElementById(\"binpinv\"));mlgctr1=1;}}' /></div>";
+  s+=dpre+button_posx+"px'>"+dbutton+"width:"+(bwidth)+"px' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='Invite' /></div></div>";
   s+="</form>";
   return s;
 }
