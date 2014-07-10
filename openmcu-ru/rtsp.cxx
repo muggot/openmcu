@@ -82,7 +82,6 @@ MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep,
 
   rtsp_state = RTSP_NONE;
   cseq = 1;
-  rtsp_msg = NULL;
   listener = NULL;
 
   // create local capability list
@@ -929,38 +928,26 @@ int MCURtspConnection::OnReceived(int socket_fd, PString address, PString data)
 
   MCUTRACE(1, trace_section << "recv from " << address << " "  << data.GetLength() << " bytes\n" << data);
 
-  sip_t *sip = NULL;
-  if(rtsp_msg == NULL)
+  msg_t *msg = ParseMsg(data);
+  sip_t *sip = sip_object(msg);
+  if(msg == NULL || sip == NULL || (sip->sip_request == NULL && sip->sip_status == NULL))
   {
-    rtsp_msg = ParseMsg(data);
-    sip = sip_object(rtsp_msg);
-    if(sip == NULL || (sip->sip_request == NULL && sip->sip_status == NULL))
-    {
-      MCUTRACE(1, trace_section << "failed parse message");
-      return 0;
-    }
-    // wait payload in the second message, if sip_payload==NULL
-    if(sip->sip_content_length && sip->sip_content_length->l_length != 0 && sip->sip_payload == NULL)
-      return 0;
+    MCUTRACE(1, trace_section << "failed parse message");
+    return 0;
   }
-  else
+  if(sip->sip_content_length && sip->sip_content_length->l_length != 0 && sip->sip_payload == NULL)
   {
-    // received payload in the second message
-    sip = sip_object(rtsp_msg);
-    sip_add_tl(rtsp_msg, sip,
-	          SIPTAG_PAYLOAD_STR((const char *)data),
-    	          TAG_END());
+    MCUTRACE(1, trace_section << "failed parse message, empty payload");
+    return 0;
   }
 
   if(sip->sip_status)
-    OnResponseReceived(rtsp_msg);
+    OnResponseReceived(msg);
 
   if(sip->sip_request)
-    OnRequestReceived(rtsp_msg);
+    OnRequestReceived(msg);
 
-  msg_destroy(rtsp_msg);
-  rtsp_msg = NULL;
-
+  msg_destroy(msg);
   return 1;
 }
 
@@ -1078,18 +1065,18 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
   }
 
   msg_t *msg = ParseMsg(data);
-  if(msg == NULL)
+  sip_t *sip = sip_object(msg);
+  if(sip == NULL)
   {
     MCUTRACE(1, trace_section << "failed parse message from " << address);
     return 0;
   }
-
-  sip_t *sip = sip_object(msg);
   if(sip->sip_request == NULL)
   {
     MCUTRACE(1, trace_section << "missing request header from " << address);
     return 0;
   }
+
   PString method_name = sip->sip_cseq->cs_method_name;
   if(method_name != METHOD_OPTIONS && method_name != METHOD_DESCRIBE)
   {
@@ -1100,6 +1087,22 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
   PString luri_str = url_as_string(msg_home(msg), sip->sip_request->rq_url);
   MCUURL lurl(luri_str);
   PString path = lurl.GetPath()[0];
+
+  if(path == "")
+  {
+    char buffer[1024];
+    snprintf(buffer, 1024,
+  	   "RTSP/1.0 200 OK\r\n"
+	   "CSeq: %d %s\r\n"
+	   "Date: %s\r\n"
+	   "Public: OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY\r\n",
+	   sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString());
+
+    if(MCUListener::Send(socket_fd, buffer) == TRUE)
+      MCUTRACE(1, trace_section << "send to " << address << " " << strlen(buffer) << " bytes\n" << buffer);
+
+    return 0;
+  }
 
   MCUConfig cfg("RTSP Server "+path);
   if(cfg.GetBoolean("Enable") == FALSE)
@@ -1245,15 +1248,24 @@ MCUListener *MCUListener::Create(int client_fd, PString address, mcu_listener_cb
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUListener::Send(char *buffer)
+BOOL MCUListener::Send(int fd, char *buffer)
 {
   int len = strlen(buffer);
-  if(send(socket_fd, buffer, len, 0) == -1)
+  if(send(fd, buffer, len, 0) == -1)
+    return FALSE;
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUListener::Send(char *buffer)
+{
+  if(Send(socket_fd, buffer) == FALSE)
   {
     MCUTRACE(1, trace_section << "sending error " << errno << " " << strerror(errno));
     return FALSE;
   }
-
   return TRUE;
 }
 
@@ -1319,10 +1331,10 @@ BOOL MCUListener::CreateTCPServer()
   int flags = fcntl(socket_fd, F_GETFD);
   fcntl(socket_fd, F_SETFD, flags | O_NONBLOCK);
 
-  // recv timeout 1 sec
+  // recv timeout 100 msec
   struct timeval tv;
-  tv.tv_sec = 1;
-  tv.tv_usec = 0;
+  tv.tv_sec = 0;
+  tv.tv_usec = 100000;
   if(setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof(tv)) == -1)
   {
     MCUTRACE(1, trace_section << "setsockopt error " << errno << " " << strerror(errno));
@@ -1376,10 +1388,10 @@ int MCUListener::CreateTCPClient()
   int flags = fcntl(socket_fd, F_GETFD);
   fcntl(socket_fd, F_SETFD, flags | O_NONBLOCK);
 
-  // recv timeout 1 sec
+  // recv timeout 100 msec
   struct timeval tv;
-  tv.tv_sec = 1;
-  tv.tv_usec = 0;
+  tv.tv_sec = 0;
+  tv.tv_usec = 100000;
   if(setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof(tv)) == -1)
   {
     MCUTRACE(1, trace_section << "setsockopt error " << errno << " " << strerror(errno));
@@ -1412,7 +1424,6 @@ void MCUListener::TCPListener(PThread &, INT)
 
   char buffer[16384];
   int buffer_size = 16383; // one less for finall \0
-  PString data;
 
   running = TRUE;
   if(listener_type == TCP_LISTENER_SERVER)
@@ -1429,14 +1440,16 @@ void MCUListener::TCPListener(PThread &, INT)
       inet_ntop(AF_INET, &addr_client.sin_addr, client_ip, sizeof(client_ip));
       PString client_address = "tcp:"+PString(client_ip)+":"+PString(client_port);
 
-      if(ReadData(client_fd, buffer, buffer_size) == 0)
+      PString data;
+      while(ReadData(client_fd, buffer, buffer_size) != 0)
+        data += buffer;
+
+      if(data.GetLength() == 0)
       {
-        MCUTRACE(1, trace_section << "failed read data from " << client_address);
         close(client_fd);
         continue;
       }
 
-      data = PString(buffer);
       if(callback(callback_context, client_fd, client_address, data) == 0)
         close(client_fd);
     }
@@ -1451,10 +1464,13 @@ void MCUListener::TCPListener(PThread &, INT)
         break;
       }
 
-      if(RecvData(socket_fd, buffer, buffer_size) == 0)
+      PString data;
+      while(RecvData(socket_fd, buffer, buffer_size) != 0)
+        data += buffer;
+
+      if(data.GetLength() == 0)
         continue;
 
-      data = PString(buffer);
       callback(callback_context, socket_fd, socket_address, data);
     }
   }

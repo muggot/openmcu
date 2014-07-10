@@ -71,7 +71,6 @@ class MCURtspConnection : public MCUSipConnection
     int cseq;
     PString rtsp_session_str;
     PString luri_str;
-    msg_t *rtsp_msg;
 
     static int OnReceived_wrap(void *context, int socket_fd, PString address, PString data)
     { return ((MCURtspConnection *)context)->OnReceived(socket_fd, address, data); }
@@ -131,6 +130,7 @@ class MCUListener
     static MCUListener * Create(int client_fd, PString address, mcu_listener_cb *callback, void *callback_context);
 
     BOOL Send(char *buffer);
+    static BOOL Send(int fd, char *buffer);
 
     BOOL IsRunning()
     { return running; }
