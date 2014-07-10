@@ -53,7 +53,6 @@ class MCURtspConnection : public MCUSipConnection
     int SendOptions();
     int SendTeardown();
     int SendDescribe();
-    int SendRequest(char *request, PString method_name);
 
     int OnResponseReceived(const msg_t *msg);
     int OnResponseDescribe(const msg_t *msg);
@@ -66,7 +65,10 @@ class MCURtspConnection : public MCUSipConnection
     int OnRequestPlay(const msg_t *msg);
     int OnRequestTeardown(const msg_t *msg);
     int OnRequestOptions(const msg_t *msg);
+
     BOOL ParseTransportStr(SipCapability *sc, PString & transport_str);
+    void AddHeaders(char *buffer, PString method_name="");
+    int SendRequest(char *buffer);
 
     int cseq;
     PString rtsp_session_str;

@@ -289,10 +289,11 @@ int MCURtspConnection::SendOptions()
   char buffer[1024];
   snprintf(buffer, 1024,
   	   "OPTIONS %s RTSP/1.0\r\n"
-	   "CSeq: %d %s\r\n",
-	   (const char *)ruri_str, cseq++, (const char *)METHOD_OPTIONS);
+	   "CSeq: %d %s\r\n"
+	   , (const char *)ruri_str, cseq++, (const char *)METHOD_OPTIONS);
 
-  if(SendRequest(buffer, METHOD_OPTIONS) == 0)
+  AddHeaders(buffer, METHOD_OPTIONS);
+  if(SendRequest(buffer) == 0)
     return 0;
 
   return 1;
@@ -307,10 +308,11 @@ int MCURtspConnection::SendPlay()
   	   "PLAY %s RTSP/1.0\r\n"
 	   "CSeq: %d %s\r\n"
            "Session: %s\r\n"
-           "Range: npt=0.000-\r\n",
-	   (const char *)ruri_str, cseq++, (const char *)METHOD_PLAY, (const char *)rtsp_session_str);
+           "Range: npt=0.000-\r\n"
+	   , (const char *)ruri_str, cseq++, (const char *)METHOD_PLAY, (const char *)rtsp_session_str);
 
-  if(SendRequest(buffer, METHOD_PLAY) == 0)
+  AddHeaders(buffer, METHOD_PLAY);
+  if(SendRequest(buffer) == 0)
     return 0;
 
   return 1;
@@ -346,10 +348,11 @@ int MCURtspConnection::SendSetup(int pt)
   	   "SETUP %s RTSP/1.0\r\n"
 	   "CSeq: %d %s\r\n"
 	   "%s"
-           "Transport: RTP/AVP/UDP;unicast;client_port=%d-%d\r\n",
-	   (const char *)control, cseq++, (const char *)METHOD_SETUP, (const char *)session_header, rtp_port, rtp_port+1);
+           "Transport: RTP/AVP/UDP;unicast;client_port=%d-%d\r\n"
+	   , (const char *)control, cseq++, (const char *)METHOD_SETUP, (const char *)session_header, rtp_port, rtp_port+1);
 
-  if(SendRequest(buffer, METHOD_SETUP) == 0)
+  AddHeaders(buffer, METHOD_SETUP);
+  if(SendRequest(buffer) == 0)
     return 0;
 
   return 1;
@@ -363,10 +366,11 @@ int MCURtspConnection::SendTeardown()
   snprintf(buffer, 1024,
   	   "TEARDOWN %s RTSP/1.0\r\n"
 	   "CSeq: %d %s\r\n"
-	   "Session: %s\r\n",
-	   (const char *)ruri_str, cseq++, (const char *)METHOD_TEARDOWN, (const char *)rtsp_session_str);
+	   "Session: %s\r\n"
+	   , (const char *)ruri_str, cseq++, (const char *)METHOD_TEARDOWN, (const char *)rtsp_session_str);
 
-  if(SendRequest(buffer, METHOD_TEARDOWN) == 0)
+  AddHeaders(buffer, METHOD_TEARDOWN);
+  if(SendRequest(buffer) == 0)
     return 0;
 
   return 1;
@@ -380,10 +384,11 @@ int MCURtspConnection::SendDescribe()
   snprintf(buffer,1024,
   	   "DESCRIBE %s RTSP/1.0\r\n"
 	   "CSeq: %d %s\r\n"
-	   "Accept: application/sdp\r\n",
-	   (const char *)ruri_str, cseq++, (const char *)METHOD_DESCRIBE);
+	   "Accept: application/sdp\r\n"
+	   , (const char *)ruri_str, cseq++, (const char *)METHOD_DESCRIBE);
 
-  if(SendRequest(buffer, METHOD_DESCRIBE) == 0)
+  AddHeaders(buffer, METHOD_DESCRIBE);
+  if(SendRequest(buffer) == 0)
      return 0;
 
   rtsp_state = RTSP_DESCRIBE;
@@ -530,10 +535,11 @@ int MCURtspConnection::OnRequestOptions(const msg_t *msg)
   	   "RTSP/1.0 200 OK\r\n"
 	   "CSeq: %d %s\r\n"
 	   "Date: %s\r\n"
-	   "Public: OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY\r\n",
-	   sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString());
+	   "Public: OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY\r\n"
+	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString());
 
-  if(SendRequest(buffer, "RESPONSE") == 0)
+  AddHeaders(buffer);
+  if(SendRequest(buffer) == 0)
      return 0;
 
   return 1;
@@ -545,8 +551,8 @@ int MCURtspConnection::OnRequestDescribe(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
-  char buffer2[1024];
-  snprintf(buffer2, 1024,
+  char buffer_sdp[1024];
+  snprintf(buffer_sdp, 1024,
            "v=0\r\n"
            "o=- 15516361289475271524 15516361289475271524 IN IP4 OpenMCU-ru\r\n"
            "s=Unnamed\r\n"
@@ -564,7 +570,7 @@ int MCURtspConnection::OnRequestDescribe(const msg_t *msg)
     SipCapability *sc = FindSipCap(RemoteSipCaps, scap);
     if(sc)
     {
-      snprintf(buffer2+strlen(buffer2), 1024,
+      snprintf(buffer_sdp + strlen(buffer_sdp), 1024,
            "m=audio 0 RTP/AVP %d\r\n"
            "a=rtpmap:%d %s/%d\r\n"
            "a=control:%s\r\n"
@@ -578,7 +584,7 @@ int MCURtspConnection::OnRequestDescribe(const msg_t *msg)
     SipCapability *sc = FindSipCap(RemoteSipCaps, vcap);
     if(sc)
     {
-      snprintf(buffer2+strlen(buffer2), 1024,
+      snprintf(buffer_sdp + strlen(buffer_sdp), 1024,
            "m=video 0 RTP/AVP %d\r\n"
            "b=AS:%d\r\n"
            "a=rtpmap:%d %s/90000\r\n"
@@ -590,20 +596,21 @@ int MCURtspConnection::OnRequestDescribe(const msg_t *msg)
     }
   }
 
-  char buffer1[1024];
-  snprintf(buffer1, 1024,
+  char buffer[2048];
+  snprintf(buffer, 2048,
   	   "RTSP/1.0 200 OK\r\n"
 	   "CSeq: %d %s\r\n"
 	   "Date: %s\r\n"
 	   "Content-Type: application/sdp\r\n"
 	   "Cache-Control: no-cache\r\n"
            "Content-Length: %d\r\n"
-	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), strlen(buffer2));
+	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), strlen(buffer_sdp)+2);
 
-  if(SendRequest(buffer1, "RESPONSE") == 0)
-     return 0;
+  AddHeaders(buffer);
+  strcat(buffer, buffer_sdp);
+  strcat(buffer, "\r\n");
 
-  if(SendRequest(buffer2, "SDP") == 0)
+  if(SendRequest(buffer) == 0)
      return 0;
 
   return 1;
@@ -710,7 +717,8 @@ int MCURtspConnection::OnRequestSetup(const msg_t *msg)
 	   "Transport: %s\r\n"
 	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), (const char *)rtsp_session_str, (const char *)transport_str);
 
-  if(SendRequest(buffer, "RESPONSE") == 0)
+  AddHeaders(buffer);
+  if(SendRequest(buffer) == 0)
      return 0;
 
   return 1;
@@ -747,7 +755,8 @@ int MCURtspConnection::OnRequestPlay(const msg_t *msg)
 	   "Range: npt=0.000-\r\n"
 	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), (const char *)rtsp_session_str);
 
-  if(SendRequest(buffer, "RESPONSE") == 0)
+  AddHeaders(buffer);
+  if(SendRequest(buffer) == 0)
      return 0;
 
   return 1;
@@ -767,7 +776,8 @@ int MCURtspConnection::OnRequestTeardown(const msg_t *msg)
 	   "Session: %s\r\n"
 	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), (const char *)rtsp_session_str);
 
-  SendRequest(buffer, "RESPONSE");
+  AddHeaders(buffer);
+  SendRequest(buffer);
 
   ProcessShutdown(EndedByRemoteUser);
   return 1;
@@ -775,19 +785,26 @@ int MCURtspConnection::OnRequestTeardown(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::SendRequest(char *buffer, PString method_name)
+void MCURtspConnection::AddHeaders(char *buffer, PString method_name)
 {
-  if(auth_type != AUTH_NONE && method_name != METHOD_OPTIONS && method_name != "RESPONSE" && method_name != "SDP")
+  if(direction == DIRECTION_OUTBOUND && auth_type != AUTH_NONE && method_name != METHOD_OPTIONS)
   {
     PString auth_str = sep->MakeAuthStr(auth_username, auth_password, ruri_str, method_name, auth_scheme, auth_realm, auth_nonce);
     strcat(buffer, (const char *)PString("Authorization: "+auth_str+"\r\n"));
   }
-  if(method_name != "SDP")
-  {
-    strcat(buffer, (const char *)PString("User-Agent: "+SIP_USER_AGENT+"\r\n"));
-  }
-  strcat(buffer, "\r\n");
 
+  if(direction == DIRECTION_OUTBOUND)
+    strcat(buffer, (const char *)PString("User-Agent: "+SIP_USER_AGENT+"\r\n"));
+  else
+    strcat(buffer, (const char *)PString("Server: "+SIP_USER_AGENT+"\r\n"));
+
+  strcat(buffer, "\r\n");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int MCURtspConnection::SendRequest(char *buffer)
+{
   if(listener->Send(buffer) == FALSE)
   {
     ProcessShutdown();
