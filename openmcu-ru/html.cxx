@@ -1313,7 +1313,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       continue;
     if(!ep.CheckCapability(keys[i]))
       continue;
-    if(keys[i].Left(5) != "G.711" && keys[i].Left(5) != "Speex")
+    if(keys[i].Left(5) != "G.711")
       continue;
     if(MCUConfig("SIP Audio").GetBoolean(keys[i])) a_caps += ","+keys[i];
   }
@@ -1326,7 +1326,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       continue;
     if(ep.SkipCapability(keys[i]))
       continue;
-    if(keys[i] != "H.263{sw}" && keys[i] != "H.263p{sw}" && keys[i] != "H.264{sw}" && keys[i] != "MP4V-ES{sw}")
+    if(keys[i] != "H.263p{sw}" && keys[i] != "H.264{sw}" && keys[i] != "MP4V-ES{sw}")
       continue;
     PString capname = keys[i];
     if(MCUConfig("SIP Video").GetBoolean(keys[i])) v_caps += ","+capname;

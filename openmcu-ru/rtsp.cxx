@@ -230,7 +230,9 @@ int MCURtspConnection::Connect(PString address, int socket_fd, msg_t *msg)
       MCUTRACE(1, trace_section << "not found audio codec " << audio_codec);
       return 0;
     }
-    audio_sc->payload = scap = 96;
+    if(audio_sc->payload == -1)
+      audio_sc->payload = 96;
+    scap = audio_sc->payload;
   }
   // setup video capability
   SipCapability *video_sc = FindSipCap(RemoteSipCaps, video_codec);
@@ -242,7 +244,9 @@ int MCURtspConnection::Connect(PString address, int socket_fd, msg_t *msg)
       MCUTRACE(1, trace_section << "not found video codec " << video_codec);
       return 0;
     }
-    video_sc->payload = vcap = 97;
+    if(video_sc->payload == -1)
+      video_sc->payload = 97;
+    vcap = video_sc->payload;
     video_sc->video_width = video_width;
     video_sc->video_height = video_height;
     video_sc->video_frame_rate = video_frame_rate;
@@ -947,7 +951,7 @@ int MCURtspConnection::OnReceived(int socket_fd, PString address, PString data)
 
   msg_t *msg = ParseMsg(data);
   sip_t *sip = sip_object(msg);
-  if(msg == NULL || sip == NULL || (sip->sip_request == NULL && sip->sip_status == NULL))
+  if(msg == NULL)
   {
     MCUTRACE(1, trace_section << "failed parse message");
     return 0;
@@ -955,6 +959,7 @@ int MCURtspConnection::OnReceived(int socket_fd, PString address, PString data)
   if(sip->sip_content_length && sip->sip_content_length->l_length != 0 && sip->sip_payload == NULL)
   {
     MCUTRACE(1, trace_section << "failed parse message, empty payload");
+    msg_destroy(msg);
     return 0;
   }
 
@@ -1083,14 +1088,15 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
 
   msg_t *msg = ParseMsg(data);
   sip_t *sip = sip_object(msg);
-  if(sip == NULL)
+  if(msg == NULL)
   {
     MCUTRACE(1, trace_section << "failed parse message from " << address);
     return 0;
   }
-  if(sip->sip_request == NULL)
+  if(sip->sip_request == NULL || sip->sip_cseq == NULL)
   {
-    MCUTRACE(1, trace_section << "missing request header from " << address);
+    MCUTRACE(1, trace_section << "missing headers from " << address);
+    msg_destroy(msg);
     return 0;
   }
 
@@ -1098,6 +1104,7 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
   if(method_name != METHOD_OPTIONS && method_name != METHOD_DESCRIBE)
   {
     MCUTRACE(1, trace_section << "incorrect method " << method_name << " from " << address);
+    msg_destroy(msg);
     return 0;
   }
 
@@ -1118,6 +1125,7 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
     if(MCUListener::Send(socket_fd, buffer) == TRUE)
       MCUTRACE(1, trace_section << "send to " << address << " " << strlen(buffer) << " bytes\n" << buffer);
 
+    msg_destroy(msg);
     return 0;
   }
 
@@ -1125,6 +1133,7 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
   if(cfg.GetBoolean("Enable") == FALSE)
   {
     MCUTRACE(1, trace_section << "unknown path " << path);
+    msg_destroy(msg);
     return 0;
   }
 
@@ -1133,9 +1142,11 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
   if(rCon->Connect(address, socket_fd, msg) == 0)
   {
     rCon->LeaveMCU();
+    msg_destroy(msg);
     return 0;
   }
 
+  msg_destroy(msg);
   return 1;
 }
 
