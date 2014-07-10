@@ -180,7 +180,7 @@ int MCURtspConnection::Connect(PString room, PString address)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::Connect(PString address, int socket_fd, msg_t *msg)
+int MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
 {
   direction = DIRECTION_INBOUND;
   sip_t *sip = sip_object(msg);
@@ -1078,34 +1078,66 @@ void MCURtspServer::ClearListeners()
 
 int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
 {
+  PThread::Create(PCREATE_NOTIFIER(ConnectionHandler), socket_fd, PThread::AutoDeleteThread, PThread::NormalPriority, "rtsp_connection_handler:%0x");
+  return 1;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCURtspServer::ConnectionHandler(PThread &, INT socket_fd)
+{
+  PString address;
+  if(MCUListener::GetSocketAddress(socket_fd, address) == FALSE)
+  {
+    close(socket_fd);
+    return;
+  }
+
+  PString data;
+  if(MCUListener::ReadSerialData(socket_fd, data) == FALSE)
+  {
+    close(socket_fd);
+    return;
+  }
+
   MCUTRACE(1, trace_section << "read from " << address << " "  << data.GetLength() << " bytes\n" << data);
 
+  msg_t *msg = ParseMsg(data);
+  if(CreateConnection(address, socket_fd, msg) == FALSE)
+  {
+    close(socket_fd);
+    return;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t *msg)
+{
   if(ep->HasConnection(address))
   {
     MCUTRACE(1, trace_section << "connection already exists " << address);
-    return 0;
+    return FALSE;
   }
 
-  msg_t *msg = ParseMsg(data);
-  sip_t *sip = sip_object(msg);
   if(msg == NULL)
   {
     MCUTRACE(1, trace_section << "failed parse message from " << address);
-    return 0;
+    return FALSE;
   }
+
+  sip_t *sip = sip_object(msg);
   if(sip->sip_request == NULL || sip->sip_cseq == NULL)
   {
     MCUTRACE(1, trace_section << "missing headers from " << address);
-    msg_destroy(msg);
-    return 0;
+    return FALSE;
   }
 
   PString method_name = sip->sip_cseq->cs_method_name;
   if(method_name != METHOD_OPTIONS && method_name != METHOD_DESCRIBE)
   {
     MCUTRACE(1, trace_section << "incorrect method " << method_name << " from " << address);
-    msg_destroy(msg);
-    return 0;
+    return FALSE;
   }
 
   PString luri_str = url_as_string(msg_home(msg), sip->sip_request->rq_url);
@@ -1114,27 +1146,15 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
 
   if(path == "")
   {
-    char buffer[1024];
-    snprintf(buffer, 1024,
-  	   "RTSP/1.0 200 OK\r\n"
-	   "CSeq: %d %s\r\n"
-	   "Date: %s\r\n"
-	   "Public: OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY\r\n",
-	   sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString());
-
-    if(MCUListener::Send(socket_fd, buffer) == TRUE)
-      MCUTRACE(1, trace_section << "send to " << address << " " << strlen(buffer) << " bytes\n" << buffer);
-
-    msg_destroy(msg);
-    return 0;
+    SendOk(address, socket_fd, msg);
+    return FALSE;
   }
 
   MCUConfig cfg("RTSP Server "+path);
   if(cfg.GetBoolean("Enable") == FALSE)
   {
     MCUTRACE(1, trace_section << "unknown path " << path);
-    msg_destroy(msg);
-    return 0;
+    return FALSE;
   }
 
   PString callToken = address;
@@ -1142,12 +1162,28 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
   if(rCon->Connect(address, socket_fd, msg) == 0)
   {
     rCon->LeaveMCU();
-    msg_destroy(msg);
-    return 0;
+    return FALSE;
   }
 
-  msg_destroy(msg);
-  return 1;
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCURtspServer::SendOk(PString address, int socket_fd, const msg_t *msg)
+{
+  sip_t *sip = sip_object(msg);
+
+  char buffer[1024];
+  snprintf(buffer, 1024,
+  	   "RTSP/1.0 200 OK\r\n"
+	   "CSeq: %d %s\r\n"
+	   "Date: %s\r\n"
+	   "Public: OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY\r\n",
+	   sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString());
+
+  if(MCUListener::Send(socket_fd, buffer) == TRUE)
+    MCUTRACE(1, trace_section << "send to " << address << " " << strlen(buffer) << " bytes\n" << buffer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1276,6 +1312,35 @@ MCUListener *MCUListener::Create(int client_fd, PString address, mcu_listener_cb
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCUListener::GetSocketAddress(int fd, PString & address)
+{
+  struct sockaddr_in addr;
+  socklen_t addr_len = sizeof(addr);
+  if(getpeername(fd, (sockaddr *)&addr, &addr_len) == -1)
+    return FALSE;
+
+  unsigned port = ntohs(addr.sin_port);
+  char ip[INET_ADDRSTRLEN];
+  if(inet_ntop(AF_INET, &addr.sin_addr, ip, sizeof(ip)) == NULL)
+    return FALSE;
+
+  int type;
+  socklen_t type_len = sizeof(int);
+  if(getsockopt(fd, SOL_SOCKET, SO_TYPE, &type, &type_len) == -1)
+    return FALSE;
+
+  PString transport;
+  if(type == SOCK_STREAM)
+    transport = "tcp";
+  else
+    transport = "udp";
+
+  address = transport+":"+PString(ip)+":"+PString(port);
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUListener::Send(int fd, char *buffer)
 {
   int len = strlen(buffer);
@@ -1331,10 +1396,41 @@ int MCUListener::RecvData(int fd, char *buffer, int buffer_size)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUListener::TestSocket(int test_socket_fd)
+BOOL MCUListener::ReadSerialData(int fd, PString & data)
 {
-  int test = send(test_socket_fd, NULL, 0, MSG_NOSIGNAL);
-  if(test == -1)
+  char buffer[16384];
+  int buffer_size = 16383; // one less for finall \0
+
+  while(MCUListener::ReadData(fd, buffer, buffer_size) > 0)
+    data += buffer;
+
+  if(data.GetLength() == 0)
+    return FALSE;
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUListener::RecvSerialData(int fd, PString & data)
+{
+  char buffer[16384];
+  int buffer_size = 16383; // one less for finall \0
+
+  while(MCUListener::RecvData(fd, buffer, buffer_size) > 0)
+    data += buffer;
+
+  if(data.GetLength() == 0)
+    return FALSE;
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUListener::TestSocket(int fd)
+{
+  if(send(fd, NULL, 0, MSG_NOSIGNAL) == -1)
     return FALSE;
 
   return TRUE;
@@ -1359,10 +1455,10 @@ BOOL MCUListener::CreateTCPServer()
   int flags = fcntl(socket_fd, F_GETFD);
   fcntl(socket_fd, F_SETFD, flags | O_NONBLOCK);
 
-  // recv timeout 100 msec
+  // recv timeout 250 msec
   struct timeval tv;
   tv.tv_sec = 0;
-  tv.tv_usec = 100000;
+  tv.tv_usec = 250000;
   if(setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof(tv)) == -1)
   {
     MCUTRACE(1, trace_section << "setsockopt error " << errno << " " << strerror(errno));
@@ -1416,10 +1512,10 @@ int MCUListener::CreateTCPClient()
   int flags = fcntl(socket_fd, F_GETFD);
   fcntl(socket_fd, F_SETFD, flags | O_NONBLOCK);
 
-  // recv timeout 100 msec
+  // recv timeout 250 msec
   struct timeval tv;
   tv.tv_sec = 0;
-  tv.tv_usec = 100000;
+  tv.tv_usec = 250000;
   if(setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof(tv)) == -1)
   {
     MCUTRACE(1, trace_section << "setsockopt error " << errno << " " << strerror(errno));
@@ -1450,9 +1546,6 @@ void MCUListener::TCPListener(PThread &, INT)
   struct sockaddr_in addr_client;
   socklen_t addr_client_len = sizeof(addr_client);
 
-  char buffer[16384];
-  int buffer_size = 16383; // one less for finall \0
-
   running = TRUE;
   if(listener_type == TCP_LISTENER_SERVER)
   {
@@ -1462,24 +1555,7 @@ void MCUListener::TCPListener(PThread &, INT)
       if(client_fd < 0)
         continue;
 
-      char client_ip[INET_ADDRSTRLEN];
-      unsigned client_port;
-      client_port = ntohs(addr_client.sin_port);
-      inet_ntop(AF_INET, &addr_client.sin_addr, client_ip, sizeof(client_ip));
-      PString client_address = "tcp:"+PString(client_ip)+":"+PString(client_port);
-
-      PString data;
-      while(ReadData(client_fd, buffer, buffer_size) != 0)
-        data += buffer;
-
-      if(data.GetLength() == 0)
-      {
-        close(client_fd);
-        continue;
-      }
-
-      if(callback(callback_context, client_fd, client_address, data) == 0)
-        close(client_fd);
+      callback(callback_context, client_fd, "", "");
     }
   }
   else if(listener_type == TCP_LISTENER_CLIENT)
@@ -1488,15 +1564,12 @@ void MCUListener::TCPListener(PThread &, INT)
     {
       if(TestSocket(socket_fd) == FALSE)
       {
-        callback(callback_context, -1, socket_address, "");
+        callback(callback_context, -1, "", "");
         break;
       }
 
       PString data;
-      while(RecvData(socket_fd, buffer, buffer_size) != 0)
-        data += buffer;
-
-      if(data.GetLength() == 0)
+      if(RecvSerialData(socket_fd, data) == FALSE)
         continue;
 
       callback(callback_context, socket_fd, socket_address, data);

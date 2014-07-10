@@ -29,7 +29,7 @@ class MCURtspConnection : public MCUSipConnection
     void ProcessShutdown(CallEndReason reason = EndedByLocalUser);
 
     int Connect(PString room, PString address);
-    int Connect(PString address, int socket_fd, msg_t *msg);
+    int Connect(PString address, int socket_fd, const msg_t *msg);
 
   protected:
     void CreateLocalSipCaps();
@@ -96,6 +96,9 @@ class MCURtspServer
     void RemoveListener(PString address);
     void ClearListeners();
 
+    BOOL CreateConnection(PString address, int socket_fd, const msg_t *msg);
+    void SendOk(PString address, int socket_fd, const msg_t *msg);
+
     PString trace_section;
 
     static int OnReceived_wrap(void *context, int socket_fd, PString address, PString data)
@@ -104,6 +107,8 @@ class MCURtspServer
 
     typedef std::map<PString /* address */, MCUListener *> ListenersMapType;
     ListenersMapType Listeners;
+
+    PDECLARE_NOTIFIER(PThread, MCURtspServer, ConnectionHandler);
 
     MCUH323EndPoint *ep;
     MCUSipEndPoint *sep;
@@ -132,7 +137,14 @@ class MCUListener
     static MCUListener * Create(int client_fd, PString address, mcu_listener_cb *callback, void *callback_context);
 
     BOOL Send(char *buffer);
+
     static BOOL Send(int fd, char *buffer);
+    static int ReadData(int fd, char *buffer, int buffer_size);
+    static int RecvData(int fd, char *buffer, int buffer_size);
+    static BOOL ReadSerialData(int fd, PString & data);
+    static BOOL RecvSerialData(int fd, PString & data);
+    static BOOL TestSocket(int fd);
+    static BOOL GetSocketAddress(int fd, PString & address);
 
     BOOL IsRunning()
     { return running; }
@@ -149,10 +161,6 @@ class MCUListener
   protected:
     BOOL CreateTCPServer();
     BOOL CreateTCPClient();
-    BOOL TestSocket(int test_socket_fd);
-
-    int ReadData(int fd, char *buffer, int buffer_size);
-    int RecvData(int fd, char *buffer, int buffer_size);
 
     BOOL running;
     PString trace_section;
