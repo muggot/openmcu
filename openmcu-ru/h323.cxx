@@ -2303,6 +2303,7 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
   conference       = NULL;
   conferenceMember = NULL;
   welcomeState     = NotStartedYet;
+  connectionType   = CONNECTION_TYPE_H323;
 
 #if MCU_VIDEO
   videoMixerNumber = 0;
@@ -2383,7 +2384,7 @@ void MCUH323Connection::OnEstablished()
 
   if(!conference || !conferenceMember || !conferenceMember->IsJoined())
   {
-    if(remotePartyAddress.Left(4) != "sip:")
+    if(connectionType == CONNECTION_TYPE_H323)
       LeaveMCU();
   }
 
@@ -2958,7 +2959,7 @@ PString MCUH323Connection::GetEndpointParam(PString param, PString defaultValue)
 PString MCUH323Connection::GetEndpointParam(PString param)
 {
   PString url = remotePartyAddress;
-  if(remotePartyAddress.Left(4) != "sip:")
+  if(connectionType == CONNECTION_TYPE_H323)
   {
     PINDEX pos = url.Find("ip$");
     if(pos != P_MAX_INDEX) url=url.Mid(pos+3);
@@ -3191,7 +3192,7 @@ void MCUH323Connection::OnUserInputString(const PString & str)
       if(params[1] != "") text = params[1];
       else text = params[0];
     }
-    if(GetRemotePartyAddress().Left(4) == "sip:")
+    if(connectionType == CONNECTION_TYPE_SIP)
       name = GetRemotePartyName()+" ["+GetRemotePartyAddress()+"]";
     else
       name = GetRemotePartyName();
@@ -3542,11 +3543,11 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
 void MCUH323Connection::SetMemberName()
 {
   PString address;
-  if(remotePartyAddress.Left(4) == "sip:")
+  if(connectionType == CONNECTION_TYPE_SIP)
   {
     address = remotePartyAddress;
   }
-  else if(remotePartyAddress.Left(5) == "rtsp:")
+  else if(connectionType == CONNECTION_TYPE_RTSP)
   {
     address = remotePartyAddress;
   }

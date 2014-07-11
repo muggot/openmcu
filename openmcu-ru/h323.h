@@ -372,6 +372,16 @@ class MCUH323Connection : public H323Connection
 
     void SetGatekeeperEnable(BOOL enable) { gatekeeperEnable = enable; }
 
+    enum ConnectionTypes
+    {
+      CONNECTION_TYPE_H323 = 0,
+      CONNECTION_TYPE_SIP,
+      CONNECTION_TYPE_RTSP
+    };
+
+    ConnectionTypes GetConnectionType() const
+    { return connectionType; }
+
   protected:
 
     virtual void OnCreated();
@@ -429,6 +439,8 @@ class MCUH323Connection : public H323Connection
 
     PString remoteName;
     PString memberName;
+
+    ConnectionTypes connectionType;
 
     // Wave file played during the welcome procedure.
     OpalWAVFile playFile;

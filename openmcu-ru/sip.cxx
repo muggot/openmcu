@@ -331,6 +331,7 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
   :MCUH323Connection(*_ep, 0, NULL), sep(_sep)
 {
   connectionState = NoConnectionActive;
+  connectionType = CONNECTION_TYPE_SIP;
   direction = DIRECTION_INBOUND;
   callToken = _callToken;
   trace_section = "SIP Connection "+callToken+": ";
@@ -462,7 +463,7 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   // endpoint parameters
   rtp_proto = GetEndpointParam("RTP proto", "RTP");
   remote_bw = GetEndpointParam("Bandwidth to MCU", 0);
-  display_name = GetEndpointParam("Display name");
+  remoteName = GetEndpointParam("Display name");
 
   // create local capability list
   CreateLocalSipCaps();
@@ -1840,12 +1841,11 @@ int MCUSipConnection::ProcessConnect()
     if(proxy) requestedRoom = proxy->roomname;
   }
   MCUURL_SIP url(c_sip_msg, direction);
-  remoteName = url.GetDisplayName();
+  if(remoteName == "")
+    remoteName = url.GetDisplayName();
   remotePartyName = remoteName;
   remotePartyAddress = url.GetUrl();
   remoteApplication = url.GetRemoteApplication();
-  if(display_name != "")
-    remoteName = remotePartyName = display_name;
 
   // set endpoint member name
   SetMemberName();

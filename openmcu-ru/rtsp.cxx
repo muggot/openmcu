@@ -77,6 +77,7 @@ msg_t * ParseMsg(PString & msg_str)
 MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken)
   :MCUSipConnection(_sep, _ep, _callToken)
 {
+  connectionType = CONNECTION_TYPE_RTSP;
   trace_section = "RTSP Connection "+callToken+": ";
   remoteApplication = "RTSP terminal";
 
@@ -174,8 +175,8 @@ int MCURtspConnection::Connect(PString room, PString address)
   PString listener_address = "tcp:"+url.GetHostName()+":"+rtsp_port;
   trace_section.Replace(":"," ("+listener_address+"):",TRUE,0);
 
-  display_name = GetSectionParamFromUrl(DisplayNameKey, ruri_str, url.GetPathStr());
-  remotePartyName = remoteName = display_name;
+  remoteName = GetSectionParamFromUrl(DisplayNameKey, ruri_str, url.GetPathStr());
+  remotePartyName = remoteName;
 
   auth_username = GetSectionParamFromUrl(UserNameKey, ruri_str, url.GetUserName());
   auth_password = GetSectionParamFromUrl(PasswordKey, ruri_str, url.GetPassword());
