@@ -170,6 +170,8 @@ class MCUListener
 
     PString socket_host;
     unsigned socket_port;
+    unsigned socket_timeout_sec;
+    unsigned socket_timeout_usec;
 
     int socket_fd;
     mcu_listener_cb *callback;

@@ -62,6 +62,8 @@ void OpenMCU::OnStop()
   PHTTPServiceProcess::OnStop();
 #endif
 
+  delete rtspServer;
+
   // clear conference monitor events, autodelete and etc.
   manager->ClearMonitorEvents();
   // clear all conference and leave connections
@@ -82,8 +84,6 @@ void OpenMCU::OnStop()
   registrar->WaitForTermination(10000);
   delete registrar;
   registrar = NULL;
-
-  delete rtspServer;
 
 #ifndef _WIN32
   CommonDestruct(); // save config

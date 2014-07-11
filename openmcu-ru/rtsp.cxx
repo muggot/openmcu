@@ -104,6 +104,13 @@ MCURtspConnection::~MCURtspConnection()
 
 void MCURtspConnection::ProcessShutdown(CallEndReason reason)
 {
+  if(connectionState == ShuttingDownConnection)
+  {
+    MCUTRACE(1, trace_section << "shutdown connection process is already running");
+    return;
+  }
+  connectionState = ShuttingDownConnection;
+
   MCUTRACE(1, trace_section << "shutdown connection");
   callEndReason = reason;
   // leave conference and delete connection
@@ -114,6 +121,13 @@ void MCURtspConnection::ProcessShutdown(CallEndReason reason)
 
 void MCURtspConnection::LeaveMCU()
 {
+  if(connectionState == ShuttingDownConnection)
+  {
+    MCUTRACE(1, trace_section << "shutdown connection process is already running");
+    return;
+  }
+  connectionState = ShuttingDownConnection;
+
   PTRACE(1, trace_section << "LeaveMCU");
   MCUH323Connection::LeaveMCU();
 }
@@ -124,13 +138,13 @@ void MCURtspConnection::CleanUpOnCallEnd()
 {
   PTRACE(1, trace_section << "CleanUpOnCallEnd reason: " << callEndReason);
 
-  if(direction == DIRECTION_OUTBOUND && callEndReason == EndedByLocalUser && connectionState == EstablishedConnection)
+  connectionState = ShuttingDownConnection;
+
+  if(direction == DIRECTION_OUTBOUND && callEndReason == EndedByLocalUser && rtsp_state == RTSP_PLAYING)
     SendTeardown();
 
   if(listener)
     delete listener;
-
-  connectionState = ShuttingDownConnection;
 
   StopTransmitChannels();
   StopReceiveChannels();
@@ -410,7 +424,10 @@ int MCURtspConnection::OnResponsePlay(const msg_t *msg)
   // join conference
   OnEstablished();
   if(!conference || !conferenceMember || !conferenceMember->IsJoined())
-    return 600;
+  {
+    MCUTRACE(1, trace_section << "error");
+    return 0;
+  }
 
   // create and start channels
   CreateMediaChannel(scap, 0);
@@ -432,9 +449,8 @@ int MCURtspConnection::OnResponsePlay(const msg_t *msg)
   }
 
   rtsp_state = RTSP_PLAYING;
-  return 0;
+  return 1;
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -478,7 +494,6 @@ int MCURtspConnection::OnResponseSetup(const msg_t *msg)
   if(rtsp_session_str == "" || sc->remote_port == 0)
   {
     MCUTRACE(1, trace_section << "missing session string or remote port");
-    ProcessShutdown();
     return 0;
   }
 
@@ -486,12 +501,12 @@ int MCURtspConnection::OnResponseSetup(const msg_t *msg)
   {
     rtsp_state = RTSP_SETUP_VIDEO;
     SendSetup(vcap);
-    return 0;
+    return 1;
   }
 
   SendPlay();
   rtsp_state = RTSP_PLAY;
-  return 0;
+  return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -501,12 +516,18 @@ int MCURtspConnection::OnResponseDescribe(const msg_t *msg)
   sip_t *sip = sip_object(msg);
 
   if(!sip->sip_payload || !sip->sip_payload->pl_data)
-    return 415;
+  {
+    MCUTRACE(1, trace_section << "error");
+    return 0;
+  }
 
   PString sdp_str = sip->sip_payload->pl_data;
   int response_code = ProcessSDP(LocalSipCaps, RemoteSipCaps, sdp_str);
   if(response_code)
-    return response_code;
+  {
+    MCUTRACE(1, trace_section << "error");
+    return 0;
+  }
 
   // set remote application
   if(sip->sip_user_agent)
@@ -525,7 +546,7 @@ int MCURtspConnection::OnResponseDescribe(const msg_t *msg)
     SendSetup(vcap);
   }
 
-  return 0;
+  return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -617,6 +638,7 @@ int MCURtspConnection::OnRequestDescribe(const msg_t *msg)
   if(SendRequest(buffer) == 0)
      return 0;
 
+  rtsp_state = RTSP_DESCRIBE;
   return 1;
 }
 
@@ -725,6 +747,7 @@ int MCURtspConnection::OnRequestSetup(const msg_t *msg)
   if(SendRequest(buffer) == 0)
      return 0;
 
+  rtsp_state = RTSP_SETUP;
   return 1;
 }
 
@@ -763,6 +786,7 @@ int MCURtspConnection::OnRequestPlay(const msg_t *msg)
   if(SendRequest(buffer) == 0)
      return 0;
 
+  rtsp_state = RTSP_PLAYING;
   return 1;
 }
 
@@ -834,13 +858,6 @@ int MCURtspConnection::OnResponseReceived(const msg_t *msg)
     if(status == 200)
     {
       response_code = OnResponseDescribe(msg);
-      if(response_code)
-      {
-        MCUTRACE(1, trace_section << "error " << response_code);
-        ProcessShutdown();
-        return 0;
-      }
-      return 0;
     }
     else if(status == 401)
     {
@@ -864,8 +881,7 @@ int MCURtspConnection::OnResponseReceived(const msg_t *msg)
   {
     if(status == 200)
     {
-      OnResponseSetup(msg);
-      return 0;
+      response_code = OnResponseSetup(msg);
     }
   }
   if(cs_method_name == METHOD_PLAY && rtsp_state == RTSP_PLAY)
@@ -873,13 +889,6 @@ int MCURtspConnection::OnResponseReceived(const msg_t *msg)
     if(status == 200)
     {
       response_code = OnResponsePlay(msg);
-      if(response_code)
-      {
-        MCUTRACE(1, trace_section << "error " << response_code);
-        ProcessShutdown();
-        return 0;
-      }
-      return 0;
     }
   }
   if(cs_method_name == METHOD_TEARDOWN)
@@ -887,7 +896,15 @@ int MCURtspConnection::OnResponseReceived(const msg_t *msg)
     return 0;
   }
 
-  MCUTRACE(1, trace_section << "unknown response " << cs_method_name << ", state " << rtsp_state);
+  if(response_code != 1)
+  {
+    if(response_code == -1)
+      MCUTRACE(1, trace_section << "unknown response " << status << " " << cs_method_name << ", state " << rtsp_state);
+
+    MCUTRACE(1, trace_section << "error processing response " << response_code);
+    ProcessShutdown();
+  }
+
   return 0;
 }
 
@@ -907,29 +924,26 @@ int MCURtspConnection::OnRequestReceived(const msg_t *msg)
   if(method_name == METHOD_DESCRIBE && rtsp_state == RTSP_NONE)
   {
     response_code = OnRequestDescribe(msg);
-    rtsp_state = RTSP_DESCRIBE;
   }
   if(method_name == METHOD_SETUP && (rtsp_state == RTSP_DESCRIBE || rtsp_state == RTSP_SETUP))
   {
     response_code = OnRequestSetup(msg);
-    rtsp_state = RTSP_SETUP;
   }
   if(method_name == METHOD_PLAY && rtsp_state == RTSP_SETUP)
   {
     response_code = OnRequestPlay(msg);
-    rtsp_state = RTSP_PLAYING;
   }
   if(method_name == METHOD_TEARDOWN && rtsp_state == RTSP_PLAYING)
   {
     response_code = OnRequestTeardown(msg);
   }
 
-  if(response_code == -1)
+  if(response_code != 1)
   {
-    MCUTRACE(1, trace_section << "unknown request " << method_name << ", state " << rtsp_state);
-  }
-  else if(response_code == 0)
-  {
+    if(response_code == -1)
+      MCUTRACE(1, trace_section << "unknown request " << method_name << ", state " << rtsp_state);
+
+    MCUTRACE(1, trace_section << "error processing request " << response_code);
     ProcessShutdown();
   }
 
@@ -940,27 +954,29 @@ int MCURtspConnection::OnRequestReceived(const msg_t *msg)
 
 int MCURtspConnection::OnReceived(int socket_fd, PString address, PString data)
 {
+  msg_t *msg = NULL;
+  sip_t *sip = NULL;
+
   if(socket_fd == -1)
   {
     MCUTRACE(1, trace_section << "connection closed by remote user");
-    ProcessShutdown(EndedByRemoteUser);
-    return 0;
+    goto error;
   }
 
   MCUTRACE(1, trace_section << "recv from " << address << " "  << data.GetLength() << " bytes\n" << data);
 
-  msg_t *msg = ParseMsg(data);
-  sip_t *sip = sip_object(msg);
+  msg = ParseMsg(data);
   if(msg == NULL)
   {
     MCUTRACE(1, trace_section << "failed parse message");
-    return 0;
+    goto error;
   }
+
+  sip = sip_object(msg);
   if(sip->sip_content_length && sip->sip_content_length->l_length != 0 && sip->sip_payload == NULL)
   {
     MCUTRACE(1, trace_section << "failed parse message, empty payload");
-    msg_destroy(msg);
-    return 0;
+    goto error;
   }
 
   if(sip->sip_status)
@@ -971,6 +987,11 @@ int MCURtspConnection::OnReceived(int socket_fd, PString address, PString data)
 
   msg_destroy(msg);
   return 1;
+
+  error:
+    msg_destroy(msg);
+    ProcessShutdown(EndedByRemoteUser);
+    return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1086,28 +1107,27 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
 
 void MCURtspServer::ConnectionHandler(PThread &, INT socket_fd)
 {
-  PString address;
-  if(MCUListener::GetSocketAddress(socket_fd, address) == FALSE)
-  {
-    close(socket_fd);
-    return;
-  }
+  msg_t *msg = NULL;
+  PString address, data;
 
-  PString data;
+  if(MCUListener::GetSocketAddress(socket_fd, address) == FALSE)
+    goto error;
+
   if(MCUListener::ReadSerialData(socket_fd, data) == FALSE)
-  {
-    close(socket_fd);
-    return;
-  }
+    goto error;
 
   MCUTRACE(1, trace_section << "read from " << address << " "  << data.GetLength() << " bytes\n" << data);
 
-  msg_t *msg = ParseMsg(data);
+  msg = ParseMsg(data);
   if(CreateConnection(address, socket_fd, msg) == FALSE)
-  {
+    goto error;
+
+  msg_destroy(msg);
+  return;
+
+  error:
+    msg_destroy(msg);
     close(socket_fd);
-    return;
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1195,6 +1215,8 @@ MCUListener::MCUListener(PString address, mcu_listener_cb *_callback, void *_cal
   callback = _callback;
   callback_context = _callback_context;
   tcp_thread = NULL;
+  socket_timeout_sec = 0;
+  socket_timeout_usec = 250000;
 
   socket_address = address;
   socket_address.Replace(" ","",TRUE,0);
@@ -1243,6 +1265,8 @@ MCUListener::MCUListener(int client_fd, PString address, mcu_listener_cb *_callb
   callback = _callback;
   callback_context = _callback_context;
   tcp_thread = NULL;
+  socket_timeout_sec = 0;
+  socket_timeout_usec = 250000;
 
   socket_address = address;
   if(socket_address.Find("tcp:") == P_MAX_INDEX)
@@ -1455,10 +1479,10 @@ BOOL MCUListener::CreateTCPServer()
   int flags = fcntl(socket_fd, F_GETFD);
   fcntl(socket_fd, F_SETFD, flags | O_NONBLOCK);
 
-  // recv timeout 250 msec
+  // recv timeout
   struct timeval tv;
-  tv.tv_sec = 0;
-  tv.tv_usec = 250000;
+  tv.tv_sec = socket_timeout_sec;
+  tv.tv_usec = socket_timeout_usec;
   if(setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof(tv)) == -1)
   {
     MCUTRACE(1, trace_section << "setsockopt error " << errno << " " << strerror(errno));
@@ -1512,10 +1536,10 @@ int MCUListener::CreateTCPClient()
   int flags = fcntl(socket_fd, F_GETFD);
   fcntl(socket_fd, F_SETFD, flags | O_NONBLOCK);
 
-  // recv timeout 250 msec
+  // recv timeout
   struct timeval tv;
-  tv.tv_sec = 0;
-  tv.tv_usec = 250000;
+  tv.tv_sec = socket_timeout_sec;
+  tv.tv_usec = socket_timeout_usec;
   if(setsockopt(socket_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&tv,  sizeof(tv)) == -1)
   {
     MCUTRACE(1, trace_section << "setsockopt error " << errno << " " << strerror(errno));
@@ -1576,7 +1600,6 @@ void MCUListener::TCPListener(PThread &, INT)
     }
   }
   running = FALSE;
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
