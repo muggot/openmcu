@@ -1313,7 +1313,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       continue;
     if(!ep.CheckCapability(keys[i]))
       continue;
-    if(keys[i].Left(5) != "G.711")
+    if(keys[i].Left(5) != "G.711" && keys[i].Left(5) != "Speex")
       continue;
     if(MCUConfig("SIP Audio").GetBoolean(keys[i])) a_caps += ","+keys[i];
   }
