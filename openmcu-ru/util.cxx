@@ -549,3 +549,42 @@ BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL CheckCapability(const PString & formatName)
+{
+  if(H323CapabilityFactory::IsSingleton(formatName) || H323CapabilityFactory::IsSingleton(formatName+"{sw}"))
+    return TRUE;
+  return FALSE;
+}
+
+///////////////////////////////////////////////////////////////////////////
+
+BOOL SkipCapability(const PString & formatName, MCUH323Connection::ConnectionTypes connectionType)
+{
+  if(!CheckCapability(formatName))
+    return TRUE;
+  if(  (formatName.Find("H.261-") == 0 && CheckCapability("H.261"))
+     ||(formatName.Find("H.263-") == 0 && CheckCapability("H.263"))
+     ||(formatName.Find("H.263p-") == 0 && CheckCapability("H.263p"))
+     ||(formatName.Find("H.264-") == 0 && CheckCapability("H.264"))
+     ||(formatName.Find("VP8-") == 0 && CheckCapability("VP8"))
+    )
+  {
+    return TRUE;
+  }
+  if(connectionType == MCUH323Connection::CONNECTION_TYPE_H323)
+  {
+    if(formatName.Find("MP4V-ES") == 0)
+      return TRUE;
+  }
+  else if(connectionType == MCUH323Connection::CONNECTION_TYPE_RTSP)
+  {
+    if(formatName.Find("G.711") != 0 && formatName.Find("Speex") != 0 && formatName.Find("OPUS") != 0 && formatName.Find("AC3") != 0 &&
+       formatName.Find("H.263p{sw}") != 0 && formatName.Find("H.264{sw}") != 0 && formatName.Find("MP4V-ES{sw}") != 0
+      )
+      return TRUE;
+  }
+  return FALSE;
+}
+
+///////////////////////////////////////////////////////////////////////////

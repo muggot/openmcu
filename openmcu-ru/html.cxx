@@ -775,20 +775,19 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString("Video codec(transmit)");
   optionNames.AppendString("Video resolution(transmit)");
 
-  MCUH323EndPoint & ep = mcu.GetEndpoint();
   PString ra_caps = ",Disabled", rv_caps = ",Disabled", ta_caps = ",Disabled", tv_caps = ",Disabled";
   if(mcu.GetEndpoint().rsCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().rsCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().rsCaps[i]; if(ep.SkipCapability(capname)) continue; ra_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().rsCaps[i]; if(SkipCapability(capname, MCUH323Connection::CONNECTION_TYPE_H323)) continue; ra_caps += ","+capname; } }
   if(mcu.GetEndpoint().rvCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().rvCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().rvCaps[i]; if(ep.SkipCapability(capname)) continue; rv_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().rvCaps[i]; if(SkipCapability(capname, MCUH323Connection::CONNECTION_TYPE_H323)) continue; rv_caps += ","+capname; } }
   if(mcu.GetEndpoint().tsCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().tsCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().tsCaps[i]; if(ep.SkipCapability(capname)) continue; ta_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().tsCaps[i]; if(SkipCapability(capname, MCUH323Connection::CONNECTION_TYPE_H323)) continue; ta_caps += ","+capname; } }
   if(mcu.GetEndpoint().tvCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().tvCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().tvCaps[i]; if(ep.SkipCapability(capname)) continue; tv_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().tvCaps[i]; if(SkipCapability(capname, MCUH323Connection::CONNECTION_TYPE_H323)) continue; tv_caps += ","+capname; } }
 
   sectionPrefix = "H323 Endpoint ";
   PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
@@ -920,7 +919,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString rv_codec = scfg.GetString("Video codec(receive)");
       PString tv_codec = scfg.GetString("Video codec(transmit)");
       // bak 13.06.2014, restore resolution from capability
-      if(ep.SkipCapability(rv_codec))
+      if(SkipCapability(rv_codec))
       {
         PString res;
         VideoResolutionRestore(rv_codec, res);
@@ -928,7 +927,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
         if(scfg.GetString("Video resolution(receive)") == "")
           scfg.SetString("Video resolution(receive)", res);
       }
-      if(ep.SkipCapability(tv_codec))
+      if(SkipCapability(tv_codec))
       {
         PString res;
         VideoResolutionRestore(tv_codec, res);
@@ -1030,7 +1029,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
   firstEditRow = 2;
   rowBorders = TRUE;
@@ -1076,7 +1074,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   {
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
       continue;
-    if(!ep.CheckCapability(keys[i]))
+    if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_SIP))
       continue;
     if(MCUConfig("SIP Audio").GetBoolean(keys[i])) a_caps += ","+keys[i];
   }
@@ -1085,9 +1083,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   {
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
       continue;
-    if(!ep.CheckCapability(keys[i]))
-      continue;
-    if(ep.SkipCapability(keys[i]))
+    if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_SIP))
       continue;
     PString capname = keys[i];
     if(MCUConfig("SIP Video").GetBoolean(keys[i])) v_caps += ","+capname;
@@ -1229,7 +1225,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString a_codec = scfg.GetString("Audio codec");
       PString v_codec = scfg.GetString("Video codec");
       // bak 13.06.2014, restore resolution from capability
-      if(ep.SkipCapability(v_codec))
+      if(SkipCapability(v_codec))
       {
         PString res;
         VideoResolutionRestore(v_codec, res);
@@ -1281,8 +1277,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-
   firstEditRow = 2;
   rowBorders = TRUE;
   PStringStream html_begin, html_end, html_page, s;
@@ -1311,9 +1305,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
   {
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
       continue;
-    if(!ep.CheckCapability(keys[i]))
-      continue;
-    if(keys[i].Left(5) != "G.711" && keys[i].Left(5) != "Speex")
+    if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_RTSP))
       continue;
     if(MCUConfig("SIP Audio").GetBoolean(keys[i])) a_caps += ","+keys[i];
   }
@@ -1322,11 +1314,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
   {
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
       continue;
-    if(!ep.CheckCapability(keys[i]))
-      continue;
-    if(ep.SkipCapability(keys[i]))
-      continue;
-    if(keys[i] != "H.263p{sw}" && keys[i] != "H.264{sw}" && keys[i] != "MP4V-ES{sw}")
+    if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_RTSP))
       continue;
     PString capname = keys[i];
     if(MCUConfig("SIP Video").GetBoolean(keys[i])) v_caps += ","+capname;
@@ -1720,7 +1708,6 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonDelete = 1;
@@ -1742,7 +1729,7 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
     if(name.Right(4) == "fmtp" || name.Right(7) == "payload") continue;
     if(name.Right(4) != "{sw}") name += "{sw}";
 
-    if(ep.SkipCapability(name))
+    if(SkipCapability(name, MCUH323Connection::CONNECTION_TYPE_SIP))
       continue;
 
     PString info, fmtp;
@@ -1806,7 +1793,6 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
     : TablePConfigPage(app,title,section,auth)
 {
   cfg = MCUConfig(section);
-  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
   buttonUp = buttonDown = buttonDelete = 1;
   firstEditRow = firstDeleteRow = 0;
@@ -1816,7 +1802,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    if(ep.SkipCapability(keys[i]))
+    if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_H323))
       continue;
 
     PString info, fmtpInfo;

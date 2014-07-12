@@ -346,7 +346,7 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
    {
      if(MCUConfig("TRANSMIT_VIDEO").GetBoolean(keys[i]) != 1) continue;
-     if(SkipCapability(keys[i])) continue;
+     if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_H323)) continue;
      strcpy(buf, keys[i]);
      strcpy(&(listCaps[64*capsNum]),buf);
      tvCaps[j]=&(listCaps[64*capsNum]);
@@ -444,33 +444,6 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
       AddCapability(new_cap);
     }
   }
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-BOOL MCUH323EndPoint::CheckCapability(const PString & formatName)
-{
-  if(H323CapabilityFactory::IsSingleton(formatName) || H323CapabilityFactory::IsSingleton(formatName+"{sw}"))
-    return TRUE;
-  return FALSE;
-}
-
-///////////////////////////////////////////////////////////////////////////
-
-BOOL MCUH323EndPoint::SkipCapability(const PString & formatName)
-{
-  if(!CheckCapability(formatName))
-    return TRUE;
-  if(  (formatName.Find("H.261-") == 0 && CheckCapability("H.261"))
-     ||(formatName.Find("H.263-") == 0 && CheckCapability("H.263"))
-     ||(formatName.Find("H.263p-") == 0 && CheckCapability("H.263p"))
-     ||(formatName.Find("H.264-") == 0 && CheckCapability("H.264"))
-     ||(formatName.Find("VP8-") == 0 && CheckCapability("VP8"))
-    )
-  {
-    return TRUE;
-  }
-  return FALSE;
 }
 
 ///////////////////////////////////////////////////////////////////////////

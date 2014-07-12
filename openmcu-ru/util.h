@@ -29,6 +29,9 @@ int PTimedMutexTryLock(PTimedMutex & mutex, const PTimeInterval & timeout, PStri
 
 BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap);
 
+BOOL CheckCapability(const PString & formatName);
+BOOL SkipCapability(const PString & formatName, MCUH323Connection::ConnectionTypes connectionType = MCUH323Connection::CONNECTION_TYPE_NONE);
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUConfig: public PConfig

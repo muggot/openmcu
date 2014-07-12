@@ -76,7 +76,7 @@ enum MediaTypes
 
 PString GetFromIp(PString toAddr, PString toPort);
 PString GetSipCallToken(const msg_t *msg);
-BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rate, PString & fmtp);
+BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rate, PString & fmtp, PString & params);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -133,7 +133,7 @@ class SipCapability
     {
       capname = _capname;
       Init();
-      GetSipCapabilityParams(capname, format, payload, clock, fmtp);
+      GetSipCapabilityParams(capname, format, payload, clock, fmtp, params);
     }
     SipCapability()
     {
@@ -221,6 +221,7 @@ typedef std::map<int, SipCapability *> SipCapMapType;
 SipCapability * FindSipCap(SipCapMapType & SipCapMap, int payload);
 SipCapability * FindSipCap(SipCapMapType & SipCapMap, PString capname);
 void ClearSipCaps(SipCapMapType & SipCaps);
+void CreateSipCaps(SipCapMapType & SipCaps, PString audio_section, PString video_section);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -328,6 +329,7 @@ class MCUSipConnection : public MCUH323Connection
     void SelectCapability_OPUS(SipCapMapType & LocalCaps, SipCapability *sc);
     void SelectCapability_G7221(SipCapMapType & LocalCaps, SipCapability *sc);
     void SelectCapability_G7222(SipCapMapType & LocalCaps, SipCapability *sc);
+    void SelectCapability_AC3(SipCapMapType & LocalCaps, SipCapability *sc);
 
     static int wrap_invite_request_cb(nta_leg_magic_t *context, nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip)
     { return ((MCUSipConnection *)context)->invite_request_cb(leg, irq, sip); }

@@ -297,6 +297,8 @@ void MCURtspConnection::CreateLocalSipCaps()
   for(SipCapMapType::iterator it = sep->GetBaseSipCaps().begin(); it != sep->GetBaseSipCaps().end(); ++it)
   {
     SipCapability *base_sc = it->second;
+    if(SkipCapability(base_sc->capname, connectionType))
+      continue;
     LocalSipCaps.insert(SipCapMapType::value_type(it->first, new SipCapability(*base_sc)));
   }
 }
@@ -598,9 +600,9 @@ int MCURtspConnection::OnRequestDescribe(const msg_t *msg)
     {
       snprintf(buffer_sdp + strlen(buffer_sdp), 1024,
            "m=audio 0 RTP/AVP %d\r\n"
-           "a=rtpmap:%d %s/%d\r\n"
+           "a=rtpmap:%d %s/%d%s\r\n"
            "a=control:%s\r\n"
-           , sc->payload, sc->payload, (const char *)sc->format.ToUpper(), sc->clock
+           , sc->payload, sc->payload, (const char *)sc->format.ToUpper(), sc->clock, (const char *)(sc->params == "" ? "" : "/"+sc->params)
            , (const char *)(luri_str+"/audio"));
     }
   }

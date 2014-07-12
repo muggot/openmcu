@@ -124,8 +124,6 @@ class MCUH323EndPoint : public H323EndPoint
     PString Invite(PString room, PString memberName);
     void SetConnectionActive(MCUH323Connection * conn);
 
-    BOOL CheckCapability(const PString & formatName);
-    BOOL SkipCapability(const PString & formatName);
     void AddCapabilitiesMCU();
 
 #if MCU_VIDEO
@@ -374,7 +372,8 @@ class MCUH323Connection : public H323Connection
 
     enum ConnectionTypes
     {
-      CONNECTION_TYPE_H323 = 0,
+      CONNECTION_TYPE_NONE,
+      CONNECTION_TYPE_H323,
       CONNECTION_TYPE_SIP,
       CONNECTION_TYPE_RTSP
     };

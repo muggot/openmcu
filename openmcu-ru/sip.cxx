@@ -196,7 +196,7 @@ void MCUSipLoggerFunc(void *logarg, char const *fmt, va_list ap)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rate, PString & fmtp)
+BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rate, PString & fmtp, PString & params)
 {
   if(capname == "")
     return FALSE;
@@ -210,11 +210,13 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
   // only for audio use the default fmtp
   if(fmtp == "" && rate != 90000)
   {
-    for (PINDEX i = 0; i < mf.GetOptionCount(); i++)
+    for(PINDEX i = 0; i < mf.GetOptionCount(); i++)
     {
       if(mf.GetOption(i).GetFMTPName() != "" && mf.GetOption(i).GetFMTPDefault() != mf.GetOption(i).AsString())
         fmtp += mf.GetOption(i).GetFMTPName()+"="+mf.GetOption(i).AsString()+";";
     }
+    params = mf.GetOptionInteger("Encoder Channels");
+    if(params.AsInteger() < 2) params = "";
   }
   delete cap;
 
@@ -250,6 +252,52 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
   else                      { pt = -1; }
 
   return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void CreateSipCaps(SipCapMapType & SipCaps, PString audio_section, PString video_section)
+{
+  MCUConfig cfg;
+  PStringList keys;
+
+  cfg = MCUConfig(audio_section);
+  keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
+    if(cfg.GetBoolean(keys[i]) == FALSE) continue;
+
+    PString capname = keys[i];
+    if(capname.Right(4) != "{sw}") capname += "{sw}";
+    PString fmtp = cfg.GetString(capname+"_fmtp");
+    PString local_fmtp = cfg.GetString(capname+"_local_fmtp");
+
+    SipCapability *sc = new SipCapability(capname);
+    if(sc->format == "") { delete sc; sc = NULL; continue; }
+
+    sc->media = MEDIA_TYPE_AUDIO;
+    if(fmtp != "") sc->fmtp = fmtp;
+    if(local_fmtp != "") sc->local_fmtp = local_fmtp;
+    SipCaps.insert(SipCapMapType::value_type(SipCaps.size(), sc));
+  }
+
+  cfg = MCUConfig(video_section);
+  keys = cfg.GetKeys();
+  for(PINDEX i = 0; i < keys.GetSize(); i++)
+  {
+    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
+    if(cfg.GetBoolean(keys[i]) == FALSE) continue;
+
+    PString capname = keys[i];
+    if(capname.Right(4) != "{sw}") capname += "{sw}";
+
+    SipCapability *sc = new SipCapability(capname);
+    if(sc->format == "") { delete sc; sc = NULL; continue; }
+
+    sc->media = MEDIA_TYPE_VIDEO;
+    SipCaps.insert(SipCapMapType::value_type(SipCaps.size(), sc));
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -798,6 +846,9 @@ void MCUSipConnection::CreateLocalSipCaps()
   for(SipCapMapType::iterator it = sep->GetBaseSipCaps().begin(); it != sep->GetBaseSipCaps().end(); it++)
   {
     SipCapability *base_sc = it->second;
+
+    if(SkipCapability(base_sc->capname, connectionType))
+      continue;
 
     if(base_sc->media == MEDIA_TYPE_AUDIO && audio_capname != "" && audio_capname != base_sc->capname)
       continue;
@@ -1420,9 +1471,9 @@ void MCUSipConnection::SelectCapability_OPUS(SipCapMapType & LocalCaps, SipCapab
     capname = "OPUS_8K{sw}";
   else if(sc->clock == 16000 && FindSipCap(LocalCaps, "OPUS_16K{sw}"))
     capname = "OPUS_16K{sw}";
-  else if(sc->clock == 48000 && sc->params != "2" && FindSipCap(LocalCaps, "OPUS_48K{sw}"))
+  else if(sc->clock == 48000 && sc->params.AsInteger() <= 1 && FindSipCap(LocalCaps, "OPUS_48K{sw}"))
     capname = "OPUS_48K{sw}";
-  else if(sc->clock == 48000 && sc->params == "2" && FindSipCap(LocalCaps, "OPUS_48K2{sw}"))
+  else if(sc->clock == 48000 && sc->params.AsInteger() == 2 && FindSipCap(LocalCaps, "OPUS_48K2{sw}"))
     capname = "OPUS_48K2{sw}";
   else
     return;
@@ -1518,6 +1569,21 @@ void MCUSipConnection::SelectCapability_G7222(SipCapMapType & LocalCaps, SipCapa
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
     if(octet_align > -1) wf.SetOptionInteger("Octet Aligned", octet_align);
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::SelectCapability_AC3(SipCapMapType & LocalCaps, SipCapability *sc)
+{
+  PString capname;
+  if(sc->clock == 48000 && sc->params.AsInteger() <= 1 && FindSipCap(LocalCaps, "AC3_48K{sw}"))
+    capname = "AC3_48K{sw}";
+  else if(sc->clock == 48000 && sc->params.AsInteger() == 2 && FindSipCap(LocalCaps, "AC3_48K2{sw}"))
+    capname = "AC3_48K2{sw}";
+  else
+    return;
+
+  sc->cap = H323Capability::Create(capname);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1803,6 +1869,9 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
       // G.722.2
       else if(remote_sc->format == "amr-wb" && remote_sc->clock == 16000)
       { SelectCapability_G7222(LocalCaps, remote_sc); }
+      // AC3
+      else if(remote_sc->format == "ac3")
+      { SelectCapability_AC3(LocalCaps, remote_sc); }
     }
     else if(remote_sc->media == MEDIA_TYPE_VIDEO)
     {
@@ -3132,44 +3201,7 @@ void MCUSipEndPoint::CreateBaseSipCaps()
 {
   PWaitAndSignal m(mutex);
   ClearSipCaps(BaseSipCaps);
-
-  PStringList keys;
-  keys = MCUConfig("SIP Audio").GetKeys();
-  for(PINDEX i = 0; i < keys.GetSize(); i++)
-  {
-    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
-    if(MCUConfig("SIP Audio").GetBoolean(keys[i]) == FALSE) continue;
-
-    PString capname = keys[i];
-    if(capname.Right(4) != "{sw}") capname += "{sw}";
-    PString fmtp = MCUConfig("SIP Audio").GetString(capname+"_fmtp");
-    PString local_fmtp = MCUConfig("SIP Audio").GetString(capname+"_local_fmtp");
-
-    SipCapability *sc = new SipCapability(capname);
-    if(sc->format == "") { delete sc; sc = NULL; continue; }
-
-    sc->media = MEDIA_TYPE_AUDIO;
-    if(fmtp != "") sc->fmtp = fmtp;
-    if(local_fmtp != "") sc->local_fmtp = local_fmtp;
-    if(capname == "OPUS_48K2{sw}") sc->params = "2";
-    BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
-  }
-
-  keys = MCUConfig("SIP Video").GetKeys();
-  for(PINDEX i = 0; i < keys.GetSize(); i++)
-  {
-    if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload") continue;
-    if(MCUConfig("SIP Video").GetBoolean(keys[i]) == FALSE) continue;
-
-    PString capname = keys[i];
-    if(capname.Right(4) != "{sw}") capname += "{sw}";
-
-    SipCapability *sc = new SipCapability(capname);
-    if(sc->format == "") { delete sc; sc = NULL; continue; }
-
-    sc->media = MEDIA_TYPE_VIDEO;
-    BaseSipCaps.insert(SipCapMapType::value_type(BaseSipCaps.size(), sc));
-  }
+  CreateSipCaps(BaseSipCaps, "SIP Audio", "SIP Video");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
