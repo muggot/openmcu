@@ -756,16 +756,16 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
-  optionNames.AppendString("Password");
+  optionNames.AppendString(PasswordKey);
   optionNames.AppendString("H.323 call processing");
 
-  optionNames.AppendString("Display name");
-  optionNames.AppendString("Host");
-  optionNames.AppendString("Port");
+  optionNames.AppendString(DisplayNameKey);
+  optionNames.AppendString(HostKey);
+  optionNames.AppendString(PortKey);
 
-  optionNames.AppendString("Frame rate from MCU");
-  optionNames.AppendString("Bandwidth from MCU");
-  optionNames.AppendString("Bandwidth to MCU");
+  optionNames.AppendString(FrameRateFromKey);
+  optionNames.AppendString(BandwidthFromKey);
+  optionNames.AppendString(BandwidthToKey);
   optionNames.AppendString(ReceivedVFUDelayKey);
 
   optionNames.AppendString("Audio codec(receive)");
@@ -869,7 +869,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += NewItemArray(name);
       s2 += rowArray+JsLocale("window.l_name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString("Password"))+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
       s2 += rowArray+"H.323 call processing"+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
@@ -882,12 +882,12 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += NewItemArray(name, 25);
       //
       if(name == "*") s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString("Display name"))+"</tr>";
+      else            s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       //
       if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, scfg.GetString("Host"))+"</tr>";
+      else            s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, scfg.GetString(HostKey))+"</tr>";
       //
-      s2 += rowArray+"H.323 "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString("Port"), 1, 65535)+"</tr>";
+      s2 += rowArray+"H.323 "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       //
@@ -899,11 +899,11 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString("Frame rate from MCU"), 1, MAX_FRAME_RATE, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MAX_FRAME_RATE, 60)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString("Bandwidth from MCU"), 64, 4000, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), 64, 4000, 60)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString("Bandwidth to MCU"), 64, 4000, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), 64, 4000, 60)+"</tr>";
       // VFU delay
       s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 60)+"</tr>";
       //
@@ -1045,28 +1045,27 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
-  optionNames.AppendString("Display name");
-  optionNames.AppendString("Password");
+  optionNames.AppendString(DisplayNameKey);
+  optionNames.AppendString(PasswordKey);
   optionNames.AppendString("Ping interval");
   optionNames.AppendString("SIP call processing");
 
-  optionNames.AppendString("Host");
-  optionNames.AppendString("Port");
-  optionNames.AppendString("Transport");
-  optionNames.AppendString("RTP proto");
+  optionNames.AppendString(HostKey);
+  optionNames.AppendString(PortKey);
+  optionNames.AppendString(TransportKey);
+  optionNames.AppendString(RtpProtoKey);
   optionNames.AppendString(NATRouterIPKey);
   optionNames.AppendString(NATStunServerKey);
 
-  optionNames.AppendString("Frame rate from MCU");
-  optionNames.AppendString("Bandwidth from MCU");
-  optionNames.AppendString("Bandwidth to MCU");
+  optionNames.AppendString(FrameRateFromKey);
+  optionNames.AppendString(BandwidthFromKey);
+  optionNames.AppendString(BandwidthToKey);
   optionNames.AppendString(ReceivedVFUDelayKey);
 
-  optionNames.AppendString("Audio codec");
-  optionNames.AppendString("Video codec");
-  optionNames.AppendString("Video resolution");
-  //optionNames.AppendString("Video payload type");
-  optionNames.AppendString("Video fmtp");
+  optionNames.AppendString(AudioCodecKey);
+  optionNames.AppendString(VideoCodecKey);
+  optionNames.AppendString(VideoResolutionKey);
+  optionNames.AppendString(VideoFmtpKey);
 
   PString a_caps = ",Disabled", v_caps = ",Disabled";
   PStringList keys = MCUConfig("SIP Audio").GetKeys();
@@ -1168,8 +1167,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += NewItemArray(name);
       s2 += rowArray+JsLocale("window.l_name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString("Display name"))+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString("Password"))+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
       s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString("Ping interval", ""), ",20,30,40,50,60,120,180,240,300,600")+"</tr>";
       s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
       s2 += EndItemArray();
@@ -1183,11 +1182,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, "", 0, TRUE)+"</tr>";
       else            s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, scfg.GetString("Host"))+"</tr>";
       //
-      s2 += rowArray+"SIP "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString("Port"), 1, 65535)+"</tr>";
+      s2 += rowArray+"SIP "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
       //
-      s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString("Transport"), ",udp,tcp")+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString(TransportKey), ",udp,tcp")+"</tr>";
       //
-      s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString("RTP proto"), ",RTP,ZRTP,SRTP,SRTP/RTP")+"</tr>";
+      s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), ",RTP,ZRTP,SRTP,SRTP/RTP")+"</tr>";
       //
       s2 += rowArray+PString(NATRouterIPKey)+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
@@ -1207,11 +1206,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString("Frame rate from MCU"), 1, MAX_FRAME_RATE, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MAX_FRAME_RATE, 60)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString("Bandwidth from MCU"), 64, 4000, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), 64, 4000, 60)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString("Bandwidth to MCU"), 64, 4000, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), 64, 4000, 60)+"</tr>";
       // VFU delay
       s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 60)+"</tr>";
       //
@@ -1222,16 +1221,16 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     }
     // codecs
     {
-      PString a_codec = scfg.GetString("Audio codec");
-      PString v_codec = scfg.GetString("Video codec");
+      PString a_codec = scfg.GetString(AudioCodecKey);
+      PString v_codec = scfg.GetString(VideoCodecKey);
       // bak 13.06.2014, restore resolution from capability
       if(SkipCapability(v_codec))
       {
         PString res;
         VideoResolutionRestore(v_codec, res);
-        scfg.SetString("Video codec", v_codec);
-        if(scfg.GetString("Video resolution") == "")
-          scfg.SetString("Video resolution", res);
+        scfg.SetString(VideoCodecKey, v_codec);
+        if(scfg.GetString(VideoResolutionKey) == "")
+          scfg.SetString(VideoResolutionKey, res);
       }
       ////////////////////////////////////////////////////
       if(a_codec != "" && a_caps.Find(a_codec) == P_MAX_INDEX) a_caps = a_codec+","+a_caps;
@@ -1244,7 +1243,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       PString video_id = GetTableId();
       PString res_id = GetTableId();
-      PString res_value = scfg.GetString("Video resolution");
+      PString res_value = scfg.GetString(VideoResolutionKey);
       PString video_onchange = "video_transmit_res_toggle(\""+res_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+res_id+"', '"+v_codec+"');\n";
       s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
@@ -1289,15 +1288,17 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
   s << ColumnItem(JsLocale("window.l_name_video"));
   s << ColumnItem(JsLocale("window.l_name_codec"));
 
-  optionNames.AppendString("Enable");
-  optionNames.AppendString("Room");
+  optionNames.AppendString(EnableKey);
+  optionNames.AppendString(UserNameKey);
+  optionNames.AppendString(PasswordKey);
+  optionNames.AppendString(RoomNameKey);
 
-  optionNames.AppendString("Frame rate from MCU");
-  optionNames.AppendString("Bandwidth from MCU");
+  optionNames.AppendString(FrameRateFromKey);
+  optionNames.AppendString(BandwidthFromKey);
 
-  optionNames.AppendString("Audio codec");
-  optionNames.AppendString("Video codec");
-  optionNames.AppendString("Video resolution");
+  optionNames.AppendString(AudioCodecKey);
+  optionNames.AppendString(VideoCodecKey);
+  optionNames.AppendString(VideoResolutionKey);
 
   PString a_caps = ",Disabled", v_caps = ",Disabled";
   PStringList keys = MCUConfig("SIP Audio").GetKeys();
@@ -1344,15 +1345,17 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       s2 += NewItemArray(name, 25);
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
       PString s2;
       s2 += NewItemArray(name);
-      s2 += rowArray+("Enable")+BoolItem(name, scfg.GetBoolean("Enable"))+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_roomname")+StringItem(name, scfg.GetString("Room"))+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_enable")+BoolItem(name, scfg.GetBoolean(EnableKey))+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_user")+StringItem(name, scfg.GetString(UserNameKey));
+      s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString(PasswordKey));
+      s2 += rowArray+JsLocale("window.l_name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1361,18 +1364,19 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString("Frame rate from MCU"), 1, MAX_FRAME_RATE, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MAX_FRAME_RATE, 60)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString("Bandwidth from MCU"), 64, 4000, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), 64, 4000, 60)+"</tr>";
       //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
     // codecs
     {
-      PString a_codec = scfg.GetString("Audio codec");
-      PString v_codec = scfg.GetString("Video codec");
+      PString a_codec = scfg.GetString(AudioCodecKey);
+      PString v_codec = scfg.GetString(VideoCodecKey);
       if(a_codec != "" && a_caps.Find(a_codec) == P_MAX_INDEX) a_caps = a_codec+","+a_caps;
       if(v_codec != "" && v_caps.Find(v_codec) == P_MAX_INDEX) v_caps = v_codec+","+v_caps;
 
@@ -1383,13 +1387,14 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       //
       PString video_id = GetTableId();
       PString res_id = GetTableId();
-      PString res_value = scfg.GetString("Video resolution");
+      PString res_value = scfg.GetString(VideoResolutionKey);
       PString video_onchange = "video_transmit_res_toggle(\""+res_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+res_id+"', '"+v_codec+"');\n";
       s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
       //
       s2 += rowArray+(JsLocale("window.l_name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
       //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1423,11 +1428,11 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
   s << ColumnItem(JsLocale("window.l_name_password"));
   s << ColumnItem(JsLocale("window.l_name_expires"));
 
-  optionNames.AppendString("Enable");
-  optionNames.AppendString("Room");
-  optionNames.AppendString("Address");
-  optionNames.AppendString("Password");
-  optionNames.AppendString("Expires");
+  optionNames.AppendString(EnableKey);
+  optionNames.AppendString(RoomNameKey);
+  optionNames.AppendString(AddressKey);
+  optionNames.AppendString(PasswordKey);
+  optionNames.AppendString(ExpiresKey);
 
   sectionPrefix = "SIP Proxy Account ";
   PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
@@ -1474,14 +1479,14 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
     MCUConfig scfg(sect[i]);
     PString name = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
 
-    PString roomname = scfg.GetString("Room");
-    PString address = scfg.GetString("Address");
-    PString password = scfg.GetString("Password");
-    int expires = scfg.GetInteger("Expires");
+    PString roomname = scfg.GetString(RoomNameKey);
+    PString address = scfg.GetString(AddressKey);
+    PString password = scfg.GetString(PasswordKey);
+    int expires = scfg.GetInteger(ExpiresKey);
 
     if(address == "" || roomname == "")
-      scfg.SetBoolean("Enable", FALSE);
-    BOOL enable = scfg.GetBoolean("Enable", FALSE);
+      scfg.SetBoolean(EnableKey, FALSE);
+    BOOL enable = scfg.GetBoolean(EnableKey, FALSE);
 
     if(!enable) s << NewRowInput(name, 150);
     else        s << NewRowInput(name, 150, TRUE);

@@ -509,9 +509,9 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   }
 
   // endpoint parameters
-  rtp_proto = GetEndpointParam("RTP proto", "RTP");
-  remote_bw = GetEndpointParam("Bandwidth to MCU", 0);
-  remoteName = GetEndpointParam("Display name");
+  rtp_proto = GetEndpointParam(RtpProtoKey, "RTP");
+  remote_bw = GetEndpointParam(BandwidthToKey, 0);
+  remoteName = GetEndpointParam(DisplayNameKey);
 
   // create local capability list
   CreateLocalSipCaps();
@@ -831,16 +831,16 @@ void MCUSipConnection::DeleteChannels()
 
 void MCUSipConnection::CreateLocalSipCaps()
 {
-  PString audio_capname = GetEndpointParam("Audio codec");
+  PString audio_capname = GetEndpointParam(AudioCodecKey);
   if(audio_capname != "" && audio_capname.Right(4) != "{sw}")
     audio_capname += "{sw}";
-  PString video_capname = GetEndpointParam("Video codec");
+  PString video_capname = GetEndpointParam(VideoCodecKey);
   if(video_capname != "" && video_capname.Right(4) != "{sw}")
     video_capname += "{sw}";
-  PString video_resolution = GetEndpointParam("Video resolution");
-  PString video_fmtp = GetEndpointParam("Video fmtp");
-  unsigned frame_rate = GetEndpointParam("Frame rate from MCU", 0);
-  unsigned bandwidth = GetEndpointParam("Bandwidth from MCU", 0);
+  PString video_resolution = GetEndpointParam(VideoResolutionKey);
+  PString video_fmtp = GetEndpointParam(VideoFmtpKey);
+  unsigned frame_rate = GetEndpointParam(FrameRateFromKey, 0);
+  unsigned bandwidth = GetEndpointParam(BandwidthFromKey, 0);
 
   LocalSipCaps.clear();
   for(SipCapMapType::iterator it = sep->GetBaseSipCaps().begin(); it != sep->GetBaseSipCaps().end(); it++)
@@ -2556,9 +2556,9 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 
     // override, if using the default port and transport
     if(remote_port == "5060")
-      remote_port = GetSectionParamFromUrl("Port", "sip:"+remote_user+"@"+remote_domain, remote_port);
+      remote_port = GetSectionParamFromUrl(PortKey, "sip:"+remote_user+"@"+remote_domain, remote_port);
     if(remote_transport == "*")
-      remote_transport = GetSectionParamFromUrl("Transport", "sip:"+remote_user+"@"+remote_domain, remote_transport);
+      remote_transport = GetSectionParamFromUrl(TransportKey, "sip:"+remote_user+"@"+remote_domain, remote_transport);
     if(remote_transport == "tls" && remote_port == "5060")
       remote_port = "5061";
 
@@ -3151,16 +3151,16 @@ void MCUSipEndPoint::InitProxyAccounts()
     name = "sip:"+name;
     PString username = MCUURL(name).GetUserName();
     PString domain = MCUURL(name).GetHostName();
-    BOOL enable = scfg.GetBoolean("Enable");
-    PString roomname = scfg.GetString("Room");
-    PString address = scfg.GetString("Address");
+    BOOL enable = scfg.GetBoolean(EnableKey);
+    PString roomname = scfg.GetString(RoomNameKey);
+    PString address = scfg.GetString(AddressKey);
     if(address.Left(4) != "sip:") address = "sip:"+address;
     if(address.Find("@") == P_MAX_INDEX) address.Replace("sip:","sip:@",TRUE,0);
     PString host = MCUURL(address).GetHostName();
     PString port = MCUURL(address).GetPort();
     PString transport = MCUURL(address).GetTransport();
-    PString password = PHTTPPasswordField::Decrypt(scfg.GetString("Password"));
-    unsigned expires = scfg.GetInteger("Expires");
+    PString password = PHTTPPasswordField::Decrypt(scfg.GetString(PasswordKey));
+    unsigned expires = scfg.GetInteger(ExpiresKey);
 
     if(username == "") continue;
     if(domain == "") domain = host;

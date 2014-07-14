@@ -209,12 +209,12 @@ int MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
   rtsp_path = lurl.GetPath()[0];
 
   PString section = "RTSP Server "+rtsp_path;
-  requestedRoom = GetSectionParamFromUrl("Room", section);
-  PString audio_codec = GetSectionParamFromUrl("Audio codec", section);
-  PString video_codec = GetSectionParamFromUrl("Video codec", section);
-  PString video_resolution = GetSectionParamFromUrl("Video resolution", section, "352x288");
-  unsigned video_bandwidth = GetSectionParamFromUrl("Bandwidth from MCU", section, 256);
-  unsigned video_frame_rate = GetSectionParamFromUrl("Frame rate from MCU", section, 10);
+  requestedRoom = GetSectionParamFromUrl(RoomNameKey, section);
+  PString audio_codec = GetSectionParamFromUrl(AudioCodecKey, section);
+  PString video_codec = GetSectionParamFromUrl(VideoCodecKey, section);
+  PString video_resolution = GetSectionParamFromUrl(VideoResolutionKey, section, "352x288");
+  unsigned video_bandwidth = GetSectionParamFromUrl(BandwidthFromKey, section, 256);
+  unsigned video_frame_rate = GetSectionParamFromUrl(FrameRateFromKey, section, 10);
 
   unsigned video_width = video_resolution.Tokenise("x")[0].AsInteger();
   unsigned video_height = video_resolution.Tokenise("x")[1].AsInteger();
@@ -278,6 +278,17 @@ int MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
   {
     MCUTRACE(1, trace_section << "cannot create connection without codecs, audio: " << audio_codec << " video: " << video_codec);
     return 0;
+  }
+
+  // auth
+  auth_username = GetSectionParamFromUrl(UserNameKey, section);
+  auth_password = GetSectionParamFromUrl(PasswordKey, section);
+  if(auth_password != "")
+  {
+    auth_type = AUTH_WWW;
+    auth_scheme = "Digest";
+    auth_realm = "openmcu-ru";
+    auth_nonce = PGloballyUniqueID().AsString();
   }
 
   // create listener
@@ -908,12 +919,69 @@ int MCURtspConnection::OnResponseReceived(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCURtspConnection::RtspCheckAuth(const msg_t *msg)
+{
+  if(auth_type == AUTH_NONE)
+    return TRUE;
+
+  sip_t *sip = sip_object(msg);
+  if(sip->sip_authorization == NULL)
+  {
+    PString auth_str = auth_scheme+" realm=\""+auth_realm+"\",nonce=\""+auth_nonce+"\",algorithm=MD5";
+    char buffer[1024];
+    snprintf(buffer, 1024,
+  	   "RTSP/1.0 401 Unauthorized\r\n"
+	   "CSeq: %d %s\r\n"
+	   "Date: %s\r\n"
+	   "WWW-Authenticate: %s\r\n"
+	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), (const char *)auth_str);
+    AddHeaders(buffer);
+    SendRequest(buffer);
+    return FALSE;
+  }
+  else
+  {
+    PString method_name = sip->sip_request->rq_method_name;
+    PString username = msg_params_find(sip->sip_authorization->au_params, "username=");
+    PString response = msg_params_find(sip->sip_authorization->au_params, "response=");
+    PString uri = msg_params_find(sip->sip_authorization->au_params, "uri=");
+
+    PString auth_str = sep->MakeAuthStr(auth_username, auth_password, uri, method_name, auth_scheme, auth_realm, auth_nonce);
+    MCUStringDictionary dict(auth_str, ", ", "=");
+    PString auth_response = dict("response");
+    if(auth_response != response)
+    {
+      char buffer[1024];
+      snprintf(buffer, 1024,
+  	   "RTSP/1.0 403 Forbidden\r\n"
+	   "CSeq: %d %s\r\n"
+	   "Date: %s\r\n"
+	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString());
+      AddHeaders(buffer);
+      SendRequest(buffer);
+
+      MCUTRACE(1, trace_section << "authorization failure");
+      ProcessShutdown();
+      return FALSE;
+    }
+  }
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int MCURtspConnection::OnRequestReceived(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
   int response_code = -1;
 
   PString method_name = sip->sip_request->rq_method_name;
+
+  if(method_name != METHOD_OPTIONS && RtspCheckAuth(msg) == FALSE)
+  {
+    return 0;
+  }
 
   if(method_name == METHOD_OPTIONS)
   {
@@ -1017,7 +1085,7 @@ void MCURtspServer::InitListeners()
   ClearListeners();
 
   MCUConfig cfg("RTSP Parameters");
-  if(cfg.GetBoolean("Enable", TRUE) == FALSE)
+  if(cfg.GetBoolean(EnableKey, TRUE) == FALSE)
     return;
 
   PStringArray list = cfg.GetString("Listener", "0.0.0.0:1554").Tokenise(",");
@@ -1169,7 +1237,7 @@ BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t
   }
 
   MCUConfig cfg("RTSP Server "+path);
-  if(cfg.GetBoolean("Enable") == FALSE)
+  if(cfg.GetBoolean(EnableKey) == FALSE)
   {
     MCUTRACE(1, trace_section << "unknown path " << path);
     return FALSE;

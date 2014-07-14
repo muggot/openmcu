@@ -99,8 +99,12 @@ void MCUStringDictionary::Parse(const PString & str)
   PStringArray array = str.Tokenise(delim1);
   for(PINDEX i = 0; i < array.GetSize(); ++i)
   {
-    PStringArray varray = array[i].Tokenise(delim2);
-    Append(varray[0], varray[1]);
+    PString key = array[i].Tokenise(delim2)[0];
+    PString value;
+    PINDEX pos = array[i].Find(delim2);
+    if(pos != P_MAX_INDEX)
+      value = array[i].Mid(pos+1);
+    Append(key, value);
   }
 }
 void MCUStringDictionary::Append(PString name, const PString & value)

@@ -857,20 +857,20 @@ void Registrar::InitAccounts()
     if(username == "*" || username == "")
       continue;
 
-    unsigned port = scfg.GetInteger("Port");
-    if(port == 0) port = gcfg.GetInteger("Port");
+    unsigned port = scfg.GetInteger(PortKey);
+    if(port == 0) port = gcfg.GetInteger(PortKey);
 
     RegistrarAccount *regAccount = FindAccountWithLock(account_type, username);
     if(!regAccount)
       regAccount = InsertAccountWithLock(account_type, username);
     regAccount->enable = scfg.GetBoolean("Registrar", FALSE);
     regAccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
-    regAccount->host = scfg.GetString("Host");
+    regAccount->host = scfg.GetString(HostKey);
     if(port != 0)
       regAccount->port = port;
     regAccount->domain = registrar_domain;
-    regAccount->password = scfg.GetString("Password");
-    regAccount->display_name = scfg.GetString("Display name");
+    regAccount->password = scfg.GetString(PasswordKey);
+    regAccount->display_name = scfg.GetString(DisplayNameKey);
     if(account_type == ACCOUNT_TYPE_SIP)
     {
       regAccount->keep_alive_interval = scfg.GetString("Ping interval").AsInteger();

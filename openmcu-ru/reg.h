@@ -242,7 +242,6 @@ class RegistrarAccount
     PString h323_call_processing;
 
     PString scheme, nonce, algorithm;
-    PString www_response, proxy_response;
 
     PTime start_time;
     time_t expires;

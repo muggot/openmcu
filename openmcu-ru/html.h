@@ -466,14 +466,19 @@ class TablePConfigPage : public PConfigPage
      {
        PString item = PURL::UntranslateString(entityData[i], PURL::QueryTranslation);
        PString key = item.Tokenise("=")[0];
-       PString value = item.Tokenise("=")[1];
+       PString value;
+       PINDEX pos = item.Find("=");
+       if(pos != P_MAX_INDEX)
+         value = item.Mid(pos+1);
 
        PString nextKey, nextValue;
        if(i+1 < entityData.GetSize())
        {
          PString nextItem = PURL::UntranslateString(entityData[i+1], PURL::QueryTranslation);
          nextKey = nextItem.Tokenise("=")[0];
-         nextValue = nextItem.Tokenise("=")[1];
+         PINDEX pos = nextItem.Find("=");
+         if(pos != P_MAX_INDEX)
+           nextValue = nextItem.Mid(pos+1);
        }
 
        // skip checkbox

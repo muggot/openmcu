@@ -2555,7 +2555,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
   PString video_res = GetEndpointParam("Video resolution(receive)");
   unsigned width = video_res.Tokenise("x")[0].AsInteger();
   unsigned height = video_res.Tokenise("x")[1].AsInteger();
-  unsigned bandwidth_to = GetEndpointParam("Bandwidth to MCU", 0);
+  unsigned bandwidth_to = GetEndpointParam(BandwidthToKey, 0);
   if(bandwidth_to) { if(bandwidth_to < 64) bandwidth_to = 64; if(bandwidth_to > 4000) bandwidth_to = 4000; }
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
@@ -2620,8 +2620,8 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
 {
   PString audio_cap = GetEndpointParam("Audio codec(transmit)");
   PString video_cap = GetEndpointParam("Video codec(transmit)");
-  unsigned frame_rate = GetEndpointParam("Frame rate from MCU", 0);
-  unsigned bandwidth = GetEndpointParam("Bandwidth from MCU", 0);
+  unsigned frame_rate = GetEndpointParam(FrameRateFromKey, 0);
+  unsigned bandwidth = GetEndpointParam(BandwidthFromKey, 0);
   PString video_res = GetEndpointParam("Video resolution(transmit)");
   unsigned width = video_res.Tokenise("x")[0].AsInteger();
   unsigned height = video_res.Tokenise("x")[1].AsInteger();
@@ -3495,7 +3495,7 @@ PString MCUH323Connection::GetRemoteNumber()
 void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
 {
   // endpoint display name override
-  PString overrideName = GetEndpointParam("Display name");
+  PString overrideName = GetEndpointParam(DisplayNameKey);
   if(overrideName != "")
   {
     PTRACE(1, "MCUH323Connection\tSet endpoint display name: " << overrideName);

@@ -57,9 +57,14 @@ const WORD DefaultHTTPPort = 1420;
 static const char LogLevelKey[]           = "Log Level";
 static const char TraceLevelKey[]         = "Trace level";
 static const char TraceRotateKey[]        = "Rotate trace files at startup";
+
 static const char UserNameKey[]           = "Username";
-static const char DisplayNameKey[]        = "Display name";
 static const char PasswordKey[]           = "Password";
+static const char DisplayNameKey[]        = "Display name";
+static const char RoomNameKey[]           = "Room";
+static const char EnableKey[]             = "Enable";
+static const char DisableKey[]            = "Disable";
+
 static const char HttpPortKey[]           = "HTTP Port";
 static const char HttpLinkEventBufferKey[]= "Room control event buffer size";
 
@@ -154,6 +159,20 @@ static const char RTPPortMaxKey[]         = "RTP Max Port";
 static const char DefaultProtocolKey[]    = "Default protocol for outgoing calls";
 
 static const char RejectDuplicateNameKey[] = "Reject duplicate name";
+
+static const char HostKey[]                = "Host";
+static const char PortKey[]                = "Port";
+static const char AddressKey[]             = "Address";
+static const char ExpiresKey[]             = "Expires";
+static const char TransportKey[]           = "Transport";
+static const char RtpProtoKey[]            = "RTP proto";
+static const char AudioCodecKey[]          = "Audio codec";
+static const char VideoCodecKey[]          = "Video codec";
+static const char VideoResolutionKey[]     = "Video resolution";
+static const char VideoFmtpKey[]           = "Video fmtp";
+static const char BandwidthFromKey[]       = "Bandwidth from MCU";
+static const char BandwidthToKey[]         = "Bandwidth to MCU";
+static const char FrameRateFromKey[]       = "Frame rate from MCU";
 
 static const char OPTION_FRAME_TIME[] = "Frame Time";
 static const char OPTION_FRAME_RATE[] = "Frame Rate";

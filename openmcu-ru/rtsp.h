@@ -66,6 +66,7 @@ class MCURtspConnection : public MCUSipConnection
     int OnRequestTeardown(const msg_t *msg);
     int OnRequestOptions(const msg_t *msg);
 
+    BOOL RtspCheckAuth(const msg_t *msg);
     BOOL ParseTransportStr(SipCapability *sc, PString & transport_str);
     void AddHeaders(char *buffer, PString method_name="");
     int SendRequest(char *buffer);

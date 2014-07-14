@@ -320,9 +320,9 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
     PString reg_uri = msg_params_find(sip->sip_authorization->au_params, "uri=");
 
     PString sip_auth_str = sep->MakeAuthStr(regAccount_in->username, regAccount_in->password, reg_uri, method_name, regAccount_in->scheme, regAccount_in->domain, regAccount_in->nonce);
-    sip_authorization_t *sip_auth = sip_authorization_make(msg_home(msg), sip_auth_str);
-    regAccount_in->www_response = msg_params_find(sip_auth->au_params, "response=");
-    if(regAccount_in->www_response == reg_response)
+    MCUStringDictionary dict(sip_auth_str, ", ", "=");
+    PString www_response = dict("response");
+    if(www_response == reg_response)
       return 0;
   }
   else if(sip->sip_proxy_authorization)
@@ -331,9 +331,9 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
     PString reg_uri = msg_params_find(sip->sip_proxy_authorization->au_params, "uri=");
 
     PString sip_auth_str = sep->MakeAuthStr(regAccount_in->username, regAccount_in->password, reg_uri, method_name, regAccount_in->scheme, regAccount_in->domain, regAccount_in->nonce);
-    sip_authorization_t *sip_auth = sip_authorization_make(msg_home(msg), sip_auth_str);
-    regAccount_in->proxy_response = msg_params_find(sip_auth->au_params, "response=");
-    if(regAccount_in->proxy_response == reg_response)
+    MCUStringDictionary dict(sip_auth_str, ", ", "=");
+    PString proxy_response = dict("response");
+    if(proxy_response == reg_response)
       return 0;
   }
 
