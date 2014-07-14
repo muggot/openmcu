@@ -601,13 +601,13 @@ ManagingUsersPConfigPage::ManagingUsersPConfigPage(PHTTPServiceProcess & app,con
     PString name = keys[i];
     PStringArray params = cfg.GetString(keys[i]).Tokenise(",");
     s << NewRowInput(name);
-    s << PasswordItem(name, PHTTPPasswordField::Decrypt(params[0]));
+    s << PasswordItem(name, params[0]);
     s << SelectItem(name, params[1], groups, 250);
   }
   if(keys.GetSize() == 0)
   {
     s << NewRowInput("admin");
-    s << PasswordItem("admin", PHTTPPasswordField::Decrypt(""));
+    s << PasswordItem("admin", "");
     s << SelectItem("admin", "administrator", groups, 250);
   }
 
@@ -668,7 +668,7 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 
   s << SeparatorField("H.263p");
   s << IntegerField("H.263p Max Bit Rate", cfg.GetString("H.263p Max Bit Rate"), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
-  s << IntegerField("H.263p Tx Key Frame Period", cfg.GetString("H.263p Tx Key Frame Period"), 0, 600, 0, "range 0..600, default 12 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
+  s << IntegerField("H.263p Tx Key Frame Period", cfg.GetString("H.263p Tx Key Frame Period"), 0, 600, 0, "range 0..600, default 125 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
   s << SeparatorField("H.264");
   s << IntegerField("H.264 Max Bit Rate", cfg.GetString("H.264 Max Bit Rate"), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
@@ -946,16 +946,16 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += rowArray+JsLocale("window.l_name_audio_receive")+SelectItem(name, ra_codec, ra_caps)+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_audio_transmit")+SelectItem(name, ta_codec, ta_caps)+"</tr>";
       //
-      PString rv_id = rand();
-      PString rres_id = rand();
+      PString rv_id = GetTableId();
+      PString rres_id = GetTableId();
       PString rres_value = scfg.GetString("Video resolution(receive)");
       PString rv_onchange = "video_receive_res_toggle(\""+rres_id+"\", this.value);";
       javascript += "video_receive_res_toggle('"+rres_id+"', '"+rv_codec+"');\n";
       s2 += rowArray+JsLocale("window.l_name_video_receive")+SelectItem(name, rv_codec, rv_caps, 0, rv_id, rv_onchange)+"</tr>";
       s2 += rowArray+JsLocale("window.l_name_video_resolution")+SelectItem(name, rres_value, rres_value, 0, rres_id)+"</tr>";
       //
-      PString tv_id = rand();
-      PString tres_id = rand();
+      PString tv_id = GetTableId();
+      PString tres_id = GetTableId();
       PString tres_value = scfg.GetString("Video resolution(transmit)");
       PString tv_onchange = "video_transmit_res_toggle(\""+tres_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+tres_id+"', '"+tv_codec+"');\n";
@@ -1242,8 +1242,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
       //
-      PString video_id = rand();
-      PString res_id = rand();
+      PString video_id = GetTableId();
+      PString res_id = GetTableId();
       PString res_value = scfg.GetString("Video resolution");
       PString video_onchange = "video_transmit_res_toggle(\""+res_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+res_id+"', '"+v_codec+"');\n";
@@ -1381,8 +1381,8 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       //
       s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
       //
-      PString video_id = rand();
-      PString res_id = rand();
+      PString video_id = GetTableId();
+      PString res_id = GetTableId();
       PString res_value = scfg.GetString("Video resolution");
       PString video_onchange = "video_transmit_res_toggle(\""+res_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+res_id+"', '"+v_codec+"');\n";
@@ -1476,7 +1476,7 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
 
     PString roomname = scfg.GetString("Room");
     PString address = scfg.GetString("Address");
-    PString password = PHTTPPasswordField::Decrypt(scfg.GetString("Password"));
+    PString password = scfg.GetString("Password");
     int expires = scfg.GetInteger("Expires");
 
     if(address == "" || roomname == "")
@@ -1605,7 +1605,7 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
   s << SelectField(GatekeeperRetryIntervalKey, cfg.GetString(GatekeeperRetryIntervalKey, "30"), "10,20,30,40,50,60,120,180,240,300");
   s << StringField(GatekeeperKey, cfg.GetString(GatekeeperKey));
   s << StringField(GatekeeperUserNameKey, cfg.GetString(GatekeeperUserNameKey, "MCU"));
-  s << StringField(GatekeeperPasswordKey, PHTTPPasswordField::Decrypt(cfg.GetString(GatekeeperPasswordKey)));
+  s << PasswordField(GatekeeperPasswordKey, cfg.GetString(GatekeeperPasswordKey));
   s << ArrayField(GatekeeperAliasKey, cfg.GetString(GatekeeperAliasKey), 150);
 
   s << EndTable();

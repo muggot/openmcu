@@ -582,6 +582,39 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         {
           duration = PTime() - member->GetStartTime();
         }
+        else if(member->GetType() == MEMBER_TYPE_STREAM)
+        {
+          duration = PTime() - member->GetStartTime();
+          conn = (MCUH323Connection *)FindConnectionWithLock(member->GetCallToken());
+          if(conn)
+          {
+            audioCodecT = conn->GetAudioTransmitCodecName();
+            RTP_Session *sess=conn->GetSession(RTP_Session::DefaultAudioSessionID);
+            if(sess != NULL)
+            {
+              orx = sess->GetOctetsReceived(); otx = sess->GetOctetsSent();
+              prx = sess->GetPacketsReceived(); ptx = sess->GetPacketsSent();
+              plost = sess->GetPacketsLost(); plostTx = sess->GetPacketsLostTx();
+            }
+#if MCU_VIDEO
+            videoCodecT = conn->GetVideoTransmitCodecName();
+            RTP_Session* vSess=conn->GetSession(RTP_Session::DefaultVideoSessionID);
+            if(vSess != NULL)
+            {
+              vorx=vSess->GetOctetsReceived(); votx=vSess->GetOctetsSent();
+              vprx=vSess->GetPacketsReceived(); vptx=vSess->GetPacketsSent();
+              vplost = vSess->GetPacketsLost(); vplostTx = vSess->GetPacketsLostTx();
+            }
+            if(conn->GetVideoTransmitCodec()!=NULL)
+            {
+              codecCacheMode=conn->GetVideoTransmitCodec()->cacheMode;
+              formatString=conn->GetVideoTransmitCodec()->formatString;
+            }
+#endif
+            ra = conn->GetRemoteApplication();
+            conn->Unlock();
+          }
+        }
         else if(member->GetType() == MEMBER_TYPE_CACHE)
         { ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
           if(fileMember!=NULL)
@@ -596,7 +629,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         else // real (visible, external) endpoint
         { connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
           if (connMember != NULL)
-          { conn = (MCUH323Connection *)FindConnectionWithLock(connMember->GetH323Token());
+          { conn = (MCUH323Connection *)FindConnectionWithLock(connMember->GetCallToken());
             if(conn!=NULL)
             { duration = now - conn->GetConnectionStartTime();
               audioCodecR = conn->GetAudioReceiveCodecName();
@@ -735,7 +768,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         MCUH323Connection * conn = NULL;
         H323Connection_ConferenceMember * connMember = NULL;
         if (!(member->GetType() & MEMBER_TYPE_GSYSTEM)) connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
-        if (connMember != NULL) conn = (MCUH323Connection *)FindConnectionWithLock(connMember->GetH323Token());
+        if (connMember != NULL) conn = (MCUH323Connection *)FindConnectionWithLock(connMember->GetCallToken());
         PTime now;
 
         if(conn!=NULL)
@@ -1124,7 +1157,7 @@ BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMem
   if(conference.VMLFind(newMixerNumber) == NULL) return FALSE;
 
   H323Connection_ConferenceMember *connMember = dynamic_cast<H323Connection_ConferenceMember *>(victim); if(connMember==NULL) return FALSE;
-  MCUH323Connection *conn=(MCUH323Connection *)FindConnectionWithoutLock(connMember->GetH323Token()); if(conn==NULL) return FALSE;
+  MCUH323Connection *conn=(MCUH323Connection *)FindConnectionWithoutLock(connMember->GetCallToken()); if(conn==NULL) return FALSE;
 
   PString newFormatString; int codecCacheMode; PString oldFormatString;
   BOOL connCodecNotNull = (conn->GetVideoTransmitCodec()!=NULL);
@@ -1991,8 +2024,8 @@ PString MCUH323EndPoint::GetMonitorText()
         H323Connection_ConferenceMember * connMember = NULL;
         if(!isFileMember) connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
         if(connMember!=NULL)
-        { output << hdr << "H323 Token: " << connMember->GetH323Token() << "\n";
-          MCUH323Connection * conn = (MCUH323Connection *)FindConnectionWithoutLock(connMember->GetH323Token());
+        { output << hdr << "H323 Token: " << connMember->GetCallToken() << "\n";
+          MCUH323Connection * conn = (MCUH323Connection *)FindConnectionWithoutLock(connMember->GetCallToken());
           output << hdr << "Connection: " << hex << conn << "\n";
         }
         if(isFileMember)
@@ -2234,7 +2267,7 @@ NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, Conferen
     if (mbr != memberToIgnore) {
       H323Connection_ConferenceMember * h323Mbr = dynamic_cast<H323Connection_ConferenceMember *>(mbr);
       if (h323Mbr != NULL)
-        tokens += h323Mbr->GetH323Token();
+        tokens += h323Mbr->GetCallToken();
     }
   }
 
@@ -3614,9 +3647,10 @@ BOOL MCUH323Connection::OnIncomingVideo(const void * buffer, int width, int heig
 
 ///////////////////////////////////////////////////////////////
 
-H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _h323Token, ConferenceMemberId _id, BOOL _isMCU)
-  : ConferenceMember(_conference, _id, _isMCU), ep(_ep), h323Token(_h323Token)
+H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, ConferenceMemberId _id, BOOL _isMCU)
+  : ConferenceMember(_conference, _id, _isMCU), ep(_ep)
 {
+  callToken = _callToken;
   conference->AddMember(this);
 }
 
@@ -3627,7 +3661,7 @@ H323Connection_ConferenceMember::~H323Connection_ConferenceMember()
 
 void H323Connection_ConferenceMember::Close()
 {
-  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(h323Token);
+  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
   if (conn != NULL) {
     conn->LeaveMCU();
     conn->Unlock();
@@ -3639,13 +3673,13 @@ PString H323Connection_ConferenceMember::GetTitle() const
   PString output;
   if(id!=this)
   {
-   MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(h323Token);
-   if(conn == NULL) return h323Token;
+   MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
+   if(conn == NULL) return callToken;
    if(conn->GetConferenceMember() == this || conn->GetConferenceMember() == NULL) 
    {
     output = conn->GetRemoteName(); 
    }
-   else PTRACE(1, "MCU\tWrong connection in GetTitle for " << h323Token);
+   else PTRACE(1, "MCU\tWrong connection in GetTitle for " << callToken);
    conn->Unlock();
   }
   return output;
@@ -3654,7 +3688,7 @@ PString H323Connection_ConferenceMember::GetTitle() const
 PString H323Connection_ConferenceMember::GetMonitorInfo(const PString & hdr)
 { 
   PStringStream output;
-  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(h323Token);
+  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
   if (conn != NULL) {
     output << hdr << "Remote Address: " << conn->GetRemotePartyAddress() << "\n"
            << hdr << "AudioCodecs: " << conn->GetAudioTransmitCodecName() << '/' << conn->GetAudioReceiveCodecName() << "\n"
@@ -3671,14 +3705,14 @@ void H323Connection_ConferenceMember::SetName()
 {
   if(id!=this)
   {
-    PTRACE(4,"H323\tSetName " << h323Token);
+    PTRACE(4,"H323\tSetName " << callToken);
     int connLock = 0;
-    MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(h323Token);
+    MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
     if(conn == NULL)
     {
-      conn = (MCUH323Connection *)ep.FindConnectionWithoutLock(h323Token);
+      conn = (MCUH323Connection *)ep.FindConnectionWithoutLock(callToken);
       if(conn == NULL) return;
-      PTRACE(1,"Could not lock connection in SetName(): " << h323Token << flush);
+      PTRACE(1,"Could not lock connection in SetName(): " << callToken << flush);
     }
     else connLock = 1;
 
@@ -3688,7 +3722,7 @@ void H323Connection_ConferenceMember::SetName()
       name = conn->GetMemberName();
       PTRACE(1, "SetName name: " << name);
     }
-    else PTRACE(1, "MCU\tWrong connection in SetName for " << h323Token);
+    else PTRACE(1, "MCU\tWrong connection in SetName for " << callToken);
 
     if(connLock != 0) conn->Unlock();
   }
@@ -3701,7 +3735,7 @@ void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
  {
   cout << id << "->SetFreezeVideo(" << disable << ")\n";
   PTRACE(5,id << "->SetFreezeVideo(" << disable << ")");
-  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(h323Token);
+  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
   if(conn == NULL) return;
   H323Connection_ConferenceMember * connConferenceMemeber = conn->GetConferenceMember();
   if( connConferenceMemeber == this || connConferenceMemeber == NULL) 
@@ -3709,7 +3743,7 @@ void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
    H323VideoCodec *codec = conn->GetVideoReceiveCodec();
    if(codec) codec->OnFreezeVideo(disable);
   }
-  else PTRACE(1, "MCU\tWrong connection in SetFreezeVideo for " << h323Token);
+  else PTRACE(1, "MCU\tWrong connection in SetFreezeVideo for " << callToken);
   conn->Unlock();
  }
 }
@@ -3718,13 +3752,13 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
 { 
   PTRACE(3, "Conference\tConnection " << id << " sending user indication " << str);
   int lockcount = 3;
-  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(h323Token);
+  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
   while(conn == NULL && lockcount > 0)
   {
-   conn = (MCUH323Connection *)ep.FindConnectionWithoutLock(h323Token);
+   conn = (MCUH323Connection *)ep.FindConnectionWithoutLock(callToken);
    if(conn == NULL) return;
-   conn = (MCUH323Connection *)ep.FindConnectionWithLock(h323Token);
-   PTRACE(1, "MCU\tDeadlock in SendUserInputIndication for " << h323Token);
+   conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
+   PTRACE(1, "MCU\tDeadlock in SendUserInputIndication for " << callToken);
    lockcount--;
   }
   if(conn == NULL) return;
@@ -3789,14 +3823,14 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
       lock.Signal();
     }
   }
-  else PTRACE(1, "MCU\tWrong connection in SendUserInputIndication for " << h323Token);
+  else PTRACE(1, "MCU\tWrong connection in SendUserInputIndication for " << callToken);
   conn->Unlock();
 }
 
 void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
-  MCUH323Connection * conn = (MCUH323Connection *)OpenMCU::Current().GetEndpoint().FindConnectionWithLock(h323Token);
+  MCUH323Connection * conn = (MCUH323Connection *)OpenMCU::Current().GetEndpoint().FindConnectionWithLock(callToken);
   if(conn == NULL) return;
   PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)
@@ -3843,7 +3877,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
 void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
-  MCUH323Connection * conn = (MCUH323Connection *)OpenMCU::Current().GetEndpoint().FindConnectionWithLock(h323Token);
+  MCUH323Connection * conn = (MCUH323Connection *)OpenMCU::Current().GetEndpoint().FindConnectionWithLock(callToken);
   if(conn == NULL) return;
   PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)

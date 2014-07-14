@@ -206,9 +206,9 @@ int MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
   luri_str = url_as_string(msg_home(msg), sip->sip_request->rq_url);
   MCUURL lurl(luri_str);
   local_ip = lurl.GetHostName();
-  PString path = lurl.GetPath()[0];
+  rtsp_path = lurl.GetPath()[0];
 
-  PString section = "RTSP Server "+path;
+  PString section = "RTSP Server "+rtsp_path;
   requestedRoom = GetSectionParamFromUrl("Room", section);
   PString audio_codec = GetSectionParamFromUrl("Audio codec", section);
   PString video_codec = GetSectionParamFromUrl("Video codec", section);
@@ -270,6 +270,8 @@ int MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
     video_sc->fmtp = "";
     OpalMediaFormat & wf = video_sc->cap->GetWritableMediaFormat();
     SetFormatParams(wf, video_sc->video_width, video_sc->video_height, video_sc->video_frame_rate, video_sc->bandwidth);
+    //int keyint = ((video_frame_rate+4)*2/10)*10;
+    //wf.SetOptionInteger(OPTION_TX_KEY_FRAME_PERIOD, keyint);
   }
 
   if(audio_sc == NULL && video_sc == NULL)
@@ -476,27 +478,9 @@ int MCURtspConnection::OnResponseSetup(const msg_t *msg)
   else
     sc = FindSipCap(RemoteSipCaps, vcap);
 
-  PStringArray ta = transport_str.Tokenise(";");
-  //RTP/AVP/UDP;unicast;source=192.168.1.1;client_port=5002-5003;server_port=52069-52070;ssrc=C7F3A123;mode=play
-  for(PINDEX i = 0; i < ta.GetSize(); i++)
+  if(ParseTransportStr(sc, transport_str) == FALSE)
   {
-    if(ta[i].Left(7) == "source=")
-    {
-      sc->remote_ip = ta[i].Right(ta[i].GetLength()-7);
-    }
-    if(ta[i].Left(12) == "server_port=")
-    {
-      PString ports = ta[i].Right(ta[i].GetLength()-12);
-      sc->remote_port = ports.Tokenise("-")[0].AsInteger();
-    }
-  }
-
-  if(sc->remote_ip == "" || sc->remote_ip == "0.0.0.0")
-    sc->remote_ip = MCUURL(ruri_str).GetHostName();
-
-  if(rtsp_session_str == "" || sc->remote_port == 0)
-  {
-    MCUTRACE(1, trace_section << "missing session string or remote port");
+    MCUTRACE(1, trace_section << "failed parse transport header");
     return 0;
   }
 
@@ -657,41 +641,52 @@ BOOL MCURtspConnection::ParseTransportStr(SipCapability *sc, PString & transport
 
   //RTP/AVP/UDP;unicast;source=192.168.1.1;client_port=5002-5003;server_port=52069-52070;ssrc=C7F3A123;mode=play
   //RTP/AVP;unicast;client_port=55986-55987
-  PStringArray ta = transport_str.Tokenise(";");
-  for(PINDEX i = 0; i < ta.GetSize(); i++)
+  MCUStringDictionary transport_dict(transport_str);
+  PString local_ports, remote_ports;
+
+  if(direction == DIRECTION_INBOUND)
   {
-    if(direction == DIRECTION_INBOUND && ta[i].Left(12) == "client_port=")
-    {
-      PString ports = ta[i].Right(ta[i].GetLength()-12);
-      sc->remote_port = ports.Tokenise("-")[0].AsInteger();
-    }
+    sc->remote_ip = MCUURL(ruri_str).GetHostName();
+    remote_ports = transport_dict("client_port");
+    sc->remote_port = remote_ports.Tokenise("-")[0].AsInteger();
+  } else {
+    sc->remote_ip = transport_dict("source");
+    remote_ports = transport_dict("server_port");
+    sc->remote_port = remote_ports.Tokenise("-")[0].AsInteger();
   }
 
-  sc->remote_ip = MCUURL(ruri_str).GetHostName();
   if(sc->remote_ip == "" || sc->remote_ip == "0.0.0.0" || sc->remote_port == 0)
   {
     MCUTRACE(1, trace_section << "missing remote ip or remote port");
     return FALSE;
   }
 
-  if(sc->media == MEDIA_TYPE_AUDIO)
+  if(direction == DIRECTION_INBOUND)
   {
-    if(audio_rtp_port == 0)
+    if(sc->media == MEDIA_TYPE_AUDIO)
     {
-      MCUTRACE(1, trace_section << "error");
-      return FALSE;
+      if(audio_rtp_port == 0)
+      {
+        MCUTRACE(1, trace_section << "error");
+        return FALSE;
+      }
+      local_ports = PString(audio_rtp_port)+"-"+PString(audio_rtp_port+1);
     }
-    transport_str += ";source="+local_ip+";server_port="+PString(audio_rtp_port)+"-"+PString(audio_rtp_port+1);
-  }
-  else if(sc->media == MEDIA_TYPE_VIDEO)
-  {
-    if(video_rtp_port == 0)
+    else if(sc->media == MEDIA_TYPE_VIDEO)
     {
-      MCUTRACE(1, trace_section << "error");
-      return FALSE;
+      if(video_rtp_port == 0)
+      {
+        MCUTRACE(1, trace_section << "error");
+        return FALSE;
+      }
+      local_ports = PString(video_rtp_port)+"-"+PString(video_rtp_port+1);
     }
-    transport_str += ";source="+local_ip+";server_port="+PString(video_rtp_port)+"-"+PString(video_rtp_port+1);
+    transport_dict.Append("source", local_ip);
+    transport_dict.Append("server_port", local_ports);
+    transport_str = transport_dict.AsString();
+    transport_str.Replace("=;",";",TRUE,0);
   }
+
   return TRUE;
 }
 
@@ -764,8 +759,8 @@ int MCURtspConnection::OnRequestPlay(const msg_t *msg)
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
   ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
   conference = manager.MakeAndLockConference(requestedRoom);
-  ConferenceStreamMember *streamMember = new ConferenceStreamMember(conference, "RTSP "+ruri_str);
-  conferenceMember = (H323Connection_ConferenceMember *)streamMember; // ???
+  ConferenceStreamMember *streamMember = new ConferenceStreamMember(conference, GetCallToken(), "RTSP "+rtsp_path+" ("+ruri_str+")");
+  conferenceMember = (H323Connection_ConferenceMember *)streamMember;
   manager.UnlockConference();
 
   // start rtp channels

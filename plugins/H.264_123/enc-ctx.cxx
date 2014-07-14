@@ -193,6 +193,11 @@ void X264EncoderContext::SetTSTO (unsigned tsto)
     _context.rc.i_qp_step = 4;
 }
 
+void X264EncoderContext::SetMaxKeyFramePeriod (const char *keyint)
+{
+  X264_PARAM_PARSE(&_context, "keyint", keyint);
+}
+
 void X264EncoderContext::SetProfileLevel (unsigned profileLevel)
 {
   unsigned profile = (profileLevel & 0xff0000) >> 16;

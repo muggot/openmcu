@@ -72,6 +72,7 @@ class MCURtspConnection : public MCUSipConnection
 
     int cseq;
     PString rtsp_session_str;
+    PString rtsp_path;
     PString luri_str;
 
     static int OnReceived_wrap(void *context, int socket_fd, PString address, PString data)
@@ -188,10 +189,11 @@ class ConferenceStreamMember : public ConferenceMember
   PCLASSINFO(ConferenceStreamMember, ConferenceMember);
 
   public:
-    ConferenceStreamMember(Conference *_conference, PString _name)
+    ConferenceStreamMember(Conference *_conference, const PString & _callToken, const PString & _name)
       : ConferenceMember(_conference, (void *)this)
     {
       conference = _conference;
+      callToken = _callToken;
       name = _name;
       conference->AddMember(this);
       //AddToConference(conference);
@@ -205,7 +207,7 @@ class ConferenceStreamMember : public ConferenceMember
     { return new ConferenceConnection(this); }
 
     virtual PString GetName() const
-    { return "conference stream "+name; }
+    { return "stream "+name; }
 
     virtual MemberTypes GetType()
     { return MEMBER_TYPE_STREAM; }

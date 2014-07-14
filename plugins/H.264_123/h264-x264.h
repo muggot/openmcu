@@ -108,6 +108,7 @@ class H264EncoderContext
     void SetFrameHeight (unsigned height);
     void SetFrameRate (unsigned rate);
     void SetTSTO (unsigned tsto);
+    void SetMaxKeyFramePeriod (const char *keyint);
     void SetProfileLevel (unsigned profile, unsigned constraints, unsigned level);
     void SetQuality (unsigned quality);
     void SetThreads (unsigned threads);
@@ -270,6 +271,10 @@ static struct PluginCodec_Option const spropParameterSets =
 static struct PluginCodec_Option const customResolution =
   { PluginCodec_IntegerOption, "Custom Resolution", 0, PluginCodec_NoMerge, 0 };
 
+static struct PluginCodec_Option const txkeyFramePeriod =
+  { PluginCodec_IntegerOption,   PLUGINCODEC_OPTION_TX_KEY_FRAME_PERIOD, 0, PluginCodec_EqualMerge, "125" };
+
+
 // MEGA MACRO to set options
 #define DECLARE_GENERIC_OPTIONS(prefix) \
 static struct PluginCodec_Option const * const prefix##_OptionTable[] = { \
@@ -280,6 +285,7 @@ static struct PluginCodec_Option const * const prefix##_OptionTable[] = { \
   &profileLevelId, \
   &spropParameterSets, \
   &customResolution, \
+  &txkeyFramePeriod, \
   NULL \
 }; \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \

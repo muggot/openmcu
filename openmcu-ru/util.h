@@ -97,6 +97,42 @@ class MCUURL : public PURL
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class MCUStringDictionary
+{
+  public:
+    MCUStringDictionary(const PString & str="");
+    MCUStringDictionary(const PString & str, const PString & _delim1, const PString & _delim2);
+
+    void Parse(const PString & str);
+    void SetKeyDelim(const PString & _delim1)
+    { delim1 = _delim1; }
+    void SetValueDelim(const PString & _delim2)
+    { delim2 = _delim2; }
+
+    PINDEX GetSize()
+    { return keys.GetSize(); }
+
+    void Append(PString name, const PString & value);
+    void Remove(const PString & name);
+
+    void SetValueAt(PINDEX index, const PString & value);
+    PString GetKeyAt(PINDEX index);
+    PString GetValueAt(PINDEX index);
+
+    PString AsString(const PString & _delim1, const PString & _delim2);
+    PString AsString()
+    { return AsString(delim1, delim2); }
+
+    PString operator()(const PString & key, const char *defvalue="") const;
+
+  protected:
+    PString delim1, delim2;
+    PStringArray keys;
+    PStringArray values;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 unsigned GetVideoMacroBlocks(unsigned width, unsigned height);
 BOOL GetParamsH263(PString & mpiname, unsigned & width, unsigned & height);
 BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs);

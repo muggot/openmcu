@@ -503,15 +503,15 @@ class H323Connection_ConferenceMember : public ConferenceMember
 {
   PCLASSINFO(H323Connection_ConferenceMember, ConferenceMember);
   public:
-    H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _h323Token, ConferenceMemberId _id, BOOL isMCU);
+    H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, ConferenceMemberId _id, BOOL isMCU);
     ~H323Connection_ConferenceMember();
 
     virtual ConferenceConnection * CreateConnection()
     { 
 //     if(id==this) return NULL;
-//      PTRACE(2, "h323.h\tFCWL from CreateConnection:" << h323Token);
+//      PTRACE(2, "h323.h\tFCWL from CreateConnection:" << callToken);
      H323Connection * conn = (H323Connection *)id;
-//      H323Connection * conn = ep.FindConnectionWithLock(h323Token);
+//      H323Connection * conn = ep.FindConnectionWithLock(callToken);
       if (conn == NULL)
         return NULL;
 
@@ -521,9 +521,6 @@ class H323Connection_ConferenceMember : public ConferenceMember
     }
 
     virtual void Close();
-
-    virtual PString GetH323Token() const
-    { return h323Token; }
 
     virtual PString GetTitle() const;
 
@@ -538,8 +535,8 @@ class H323Connection_ConferenceMember : public ConferenceMember
 
     void OnReceivedUserInputIndication(const PString & str)
     { 
-      PTRACE(2, "h323.cxx\tFCWL from OnReceivedUserInputIndication:" << h323Token);
-      H323Connection * conn = ep.FindConnectionWithLock(h323Token);
+      PTRACE(2, "h323.cxx\tFCWL from OnReceivedUserInputIndication:" << callToken);
+      H323Connection * conn = ep.FindConnectionWithLock(callToken);
       if (conn != NULL)
       {
         conn->SendUserInput(str); 
@@ -553,7 +550,6 @@ class H323Connection_ConferenceMember : public ConferenceMember
   protected:
     PStringStream iISequence; // input indication sequence
     MCUH323EndPoint & ep;
-    PString h323Token;
 };
 
 ////////////////////////////////////////////////////

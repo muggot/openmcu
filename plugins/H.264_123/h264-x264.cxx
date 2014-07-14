@@ -149,6 +149,11 @@ void H264EncoderContext::SetTSTO (unsigned tsto)
   x264->SetTSTO (tsto);
 }
 
+void H264EncoderContext::SetMaxKeyFramePeriod (const char *keyint)
+{
+  x264->SetMaxKeyFramePeriod (keyint);
+}
+
 void H264EncoderContext::SetProfileLevel (unsigned profile, unsigned constraints, unsigned level)
 {
   unsigned profileLevel = (profile << 16) + (constraints << 8) + level;
@@ -774,6 +779,8 @@ static int encoder_set_options(
          context->maxBr = atoi(options[i+1]) * 25000;
       if (STRCMPI(options[i], "Custom Resolution") == 0)
          custom_resolution = atoi(options[i+1]);
+      if (STRCMPI(options[i], PLUGINCODEC_OPTION_TX_KEY_FRAME_PERIOD) == 0)
+         context->SetMaxKeyFramePeriod(options[i+1]);
     }
 
     unsigned profile = context->contextProfile;

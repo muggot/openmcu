@@ -104,6 +104,7 @@ class X264EncoderContext
     void SetFrameHeight (unsigned height);
     void SetFrameRate (unsigned rate);
     void SetTSTO (unsigned tsto);
+    void SetMaxKeyFramePeriod (const char *keyint);
     void SetProfileLevel (unsigned profileLevel);
     void SetQuality (unsigned quality);
     void SetThreads (unsigned threads);

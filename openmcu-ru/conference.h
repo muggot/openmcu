@@ -988,12 +988,15 @@ class ConferenceMember : public PObject
 
     BOOL IsMCU() const
     { return isMCU; }
-    
+
     virtual void SetName() {}
     virtual void SetName(PString newName) {}
 
     virtual PString GetName() const
     { return name; }
+
+    virtual PString GetCallToken() const
+    { return callToken; }
 
     virtual MemberTypes GetType()
     { return MEMBER_TYPE_NONE; }
@@ -1035,6 +1038,7 @@ class ConferenceMember : public PObject
     PTime startTime;
     unsigned audioLevel;
     int terminalNumber;
+    PString callToken;
     BOOL isMCU;
     PString name;
 //    MCUH323Connection *h323con;
