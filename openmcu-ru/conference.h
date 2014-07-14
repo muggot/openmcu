@@ -89,10 +89,11 @@ typedef void * ConferenceMemberId;
 enum MemberTypes
 {
   MEMBER_TYPE_NONE       = 0,
-  MEMBER_TYPE_PIPE       = 1,
-  MEMBER_TYPE_CACHE      = 2,
-  MEMBER_TYPE_RECORDER   = 3,
-  MEMBER_TYPE_STREAM     = 4,
+  MEMBER_TYPE_MCU        = 1,
+  MEMBER_TYPE_PIPE       = 2,
+  MEMBER_TYPE_CACHE      = 3,
+  MEMBER_TYPE_RECORDER   = 4,
+  MEMBER_TYPE_STREAM     = 5,
   MEMBER_TYPE_GSYSTEM    = (MEMBER_TYPE_PIPE|MEMBER_TYPE_CACHE|MEMBER_TYPE_RECORDER|MEMBER_TYPE_STREAM)
 };
 
@@ -771,7 +772,7 @@ class ConferenceMember : public PObject
       * create a new conference member. The single parameter is an "id" (usually a pointer) 
       * that can used to identify this member unambiguously
       */
-    ConferenceMember(Conference * conference, ConferenceMemberId id, BOOL isMCU = FALSE);
+    ConferenceMember(Conference * conference, ConferenceMemberId id);
 
     /**
       * destroy the conference member
@@ -986,9 +987,6 @@ class ConferenceMember : public PObject
     BOOL IsJoined() const
     { return memberIsJoined; }
 
-    BOOL IsMCU() const
-    { return isMCU; }
-
     virtual void SetName() {}
     virtual void SetName(PString newName) {}
 
@@ -999,7 +997,7 @@ class ConferenceMember : public PObject
     { return callToken; }
 
     virtual MemberTypes GetType()
-    { return MEMBER_TYPE_NONE; }
+    { return memberType; }
 
     virtual void SetFreezeVideo(BOOL) const
     {
@@ -1039,7 +1037,7 @@ class ConferenceMember : public PObject
     unsigned audioLevel;
     int terminalNumber;
     PString callToken;
-    BOOL isMCU;
+    MemberTypes memberType;
     PString name;
 //    MCUH323Connection *h323con;
 //    PMutex h323conMutex;

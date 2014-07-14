@@ -565,7 +565,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
           << (long)id                                                          // c[r][4][m][0]: member id
           << "," << JsQuoteScreen(name)                                        // c[r][4][m][1]: member name
           << "," << (member->IsVisible() ? "1" : "0")                          // c[r][4][m][2]: is member visible: 1/0
-          << "," << (member->IsMCU() ? "1" : "0")                              // c[r][4][m][3]: is MCU: 1/0
+          << "," << PString(member->GetType())                                 // c[r][4][m][3]: 0-NONE, 1-MCU ...
         ;
 
         PTimeInterval duration;
@@ -762,7 +762,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         else
           members
             << (visible? "" : "<b>[Hidden]</b> ")
-            << (member->IsMCU() ? "<b>[MCU]</b> " : "")
+            << (member->GetType() == MEMBER_TYPE_MCU ? "<b>[MCU]</b> " : "")
             << memberName << "</td>";
 
         MCUH323Connection * conn = NULL;
@@ -3648,8 +3648,9 @@ BOOL MCUH323Connection::OnIncomingVideo(const void * buffer, int width, int heig
 ///////////////////////////////////////////////////////////////
 
 H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, ConferenceMemberId _id, BOOL _isMCU)
-  : ConferenceMember(_conference, _id, _isMCU), ep(_ep)
+  : ConferenceMember(_conference, _id), ep(_ep)
 {
+  if(_isMCU) memberType = MEMBER_TYPE_MCU;
   callToken = _callToken;
   conference->AddMember(this);
 }

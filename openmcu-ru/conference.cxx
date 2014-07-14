@@ -455,7 +455,7 @@ BOOL ConferenceMCUCheckInfo::Perform(Conference & conference)
   Conference::MemberList & list = conference.GetMemberList();
   Conference::MemberList::iterator r;
   for (r = list.begin(); r != list.end(); ++r)
-    if (!r->second->IsMCU())
+    if (r->second->GetType() != MEMBER_TYPE_MCU)
       break;
 
   // if there is any non-MCU member, check again later
@@ -812,7 +812,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   OnMemberJoining(memberToAdd);
 
   // monitor
-  if(memberToAdd->IsMCU() && !mcuMonitorRunning)
+  if(memberToAdd->GetType() == MEMBER_TYPE_MCU && !mcuMonitorRunning)
   {
     manager.AddMonitorEvent(new ConferenceMCUCheckInfo(GetID(), 1000));
     mcuMonitorRunning = TRUE;
@@ -1268,9 +1268,10 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
 
 ///////////////////////////////////////////////////////////////////////////
 
-ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId _id, BOOL _isMCU)
-  : conference(_conference), id(_id), isMCU(_isMCU)
+ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId _id)
+  : conference(_conference), id(_id)
 {
+  memberType = MEMBER_TYPE_NONE;
   channelCheck=0;
   audioLevel = 0;
   audioCounter = 0; previousAudioLevel = 65535; audioLevelIndicator = 0;
