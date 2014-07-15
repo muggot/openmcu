@@ -181,6 +181,7 @@ window.l_name_register                             = 'Register';
 window.l_name_address_sip_proxy                    = 'Address SIP-proxy';
 window.l_name_expires                              = 'Expires';
 window.l_name_path                                 = 'Path';
+window.l_name_enable                               = 'Enable';
 
 window.l_name_registered                           = 'Registered';
 window.l_name_connected                            = 'Connected';
