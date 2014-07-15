@@ -1285,6 +1285,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
   s << BeginTable();
   s << NewRowColumn(JsLocale("window.l_name_path"), 210);
   s << ColumnItem(JsLocale("window.l_settings"));
+  s << ColumnItem("RTSP");
   s << ColumnItem(JsLocale("window.l_name_video"));
   s << ColumnItem(JsLocale("window.l_name_codec"));
 
@@ -1292,6 +1293,9 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
   optionNames.AppendString(UserNameKey);
   optionNames.AppendString(PasswordKey);
   optionNames.AppendString(RoomNameKey);
+
+  optionNames.AppendString(NATRouterIPKey);
+  optionNames.AppendString(NATStunServerKey);
 
   optionNames.AppendString(FrameRateFromKey);
   optionNames.AppendString(BandwidthFromKey);
@@ -1356,6 +1360,26 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       s2 += rowArray+JsLocale("window.l_name_user")+StringItem(name, scfg.GetString(UserNameKey));
       s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString(PasswordKey));
       s2 += rowArray+JsLocale("window.l_name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
+      s2 += EndItemArray();
+      s << s2;
+    }
+    // RTSP
+    {
+      PString s2;
+      s2 += NewItemArray(name, 25);
+      //
+      s2 += rowArray+PString(NATRouterIPKey)+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
+      //
+      PString stun_name = scfg.GetString(NATStunServerKey);
+      PString stun_list = MCUConfig("SIP Parameters").GetString(NATStunListKey);
+      if(stun_list != "")
+        stun_list = ",auto,"+stun_list;
+      if(stun_list.Find(stun_name) == P_MAX_INDEX)
+        stun_list = stun_name+","+stun_list;
+      s2 += rowArray+(PString(NATStunServerKey)+" (from SIP)")+SelectItem(name, stun_name, stun_list)+"</tr>";
+      //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }

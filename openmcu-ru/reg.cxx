@@ -147,7 +147,7 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
   {
     PString callToken = PGloballyUniqueID().AsString();
     MCURtspConnection *rCon = new MCURtspConnection(sep, ep, callToken);
-    if(rCon->Connect(room, address) == 0)
+    if(rCon->Connect(room, address) == FALSE)
     {
       rCon->LeaveMCU();
       return FALSE;

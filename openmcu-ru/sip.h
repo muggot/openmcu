@@ -291,6 +291,9 @@ class MCUSipConnection : public MCUH323Connection
     PString auth_nonce;
 
   protected:
+    BOOL DetermineNAT();
+    BOOL DetermineLocalIp(const PString & address = "");
+
     int ProcessConnect();
     int ProcessReInvite(const msg_t *msg);
     int ProcessAck();

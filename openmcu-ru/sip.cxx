@@ -437,55 +437,20 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
     sip_to = sip->sip_to;
   }
 
-  // local IP
-  PString sip_remote_host = MCUURL(ruri_str).GetHostName();
-  PString sip_remote_port = MCUURL(ruri_str).GetPort();
-  local_ip = GetFromIp(sip_remote_host, sip_remote_port);
-  if(PIPSocket::Address(local_ip).IsValid() == FALSE)
-  {
-    MCUTRACE(1, trace_section << "unable to determine the local IP address");
+  // detect local_ip, nat_ip and create rtp sessions
+  if(CreateDefaultRTPSessions() == FALSE)
     return FALSE;
-  }
 
-  // NAT router IP
-  nat_ip = GetEndpointParam(NATRouterIPKey);
-  if(nat_ip != "" && PIPSocket::Address(nat_ip).IsValid() == FALSE)
-  {
-    MCUTRACE(1, trace_section << "incorrect NAT router IP");
-    return FALSE;
-  }
-
-#ifdef P_STUN
-  // STUN server
-  if(nat_ip == "")
-  {
-    PString address = GetEndpointParam(NATStunServerKey);
-    if(address != "")
-    {
-      stun = sep->GetPreferedStun(address);
-      PIPSocket::Address extAddress;
-      if(stun == NULL || stun->GetExternalAddress(extAddress) == FALSE)
-      {
-        MCUTRACE(1, trace_section << "STUN server error");
-        return FALSE;
-      }
-      nat_ip = extAddress.AsString();
-    }
-  }
-#endif
-
-  // if empty nat_ip set as local_ip
-  if(nat_ip == "")
-    nat_ip = local_ip;
-
-  // remoteIsNAT ???
-  remoteIsNAT = FALSE;
+  // create local capability list
+  CreateLocalSipCaps();
 
   // local contact
   local_user = MCUURL(contact_str).GetUserName();
   if(local_user == "")
     local_user = OpenMCU::Current().GetDefaultRoomName();
   contact_str = "sip:"+local_user+"@"+nat_ip;
+
+  // requested room
   requestedRoom = local_user;
 
   // create call leg
@@ -512,12 +477,6 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   rtp_proto = GetEndpointParam(RtpProtoKey, "RTP");
   remote_bw = GetEndpointParam(BandwidthToKey, 0);
   remoteName = GetEndpointParam(DisplayNameKey);
-
-  // create local capability list
-  CreateLocalSipCaps();
-
-  // create rtp sessions
-  CreateDefaultRTPSessions();
 
   MCUTRACE(1, trace_section << "contact: " << contact_str << " ruri: " << ruri_str);
   return TRUE;
@@ -590,8 +549,79 @@ void MCUSipConnection::CleanUpOnCallEnd()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCUSipConnection::DetermineLocalIp(const PString & _address)
+{
+  PString address = _address;
+  if(address == "")
+    address = ruri_str;
+
+  PString remote_host = MCUURL(address).GetHostName();
+  PString remote_port = MCUURL(address).GetPort();
+  local_ip = GetFromIp(remote_host, remote_port);
+  if(PIPSocket::Address(local_ip).IsValid() == FALSE)
+  {
+    MCUTRACE(1, trace_section << "unable to determine the local IP address for " << address);
+    return FALSE;
+  }
+
+  MCUTRACE(1, trace_section << "found local IP address \"" << local_ip << "\"");
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSipConnection::DetermineNAT()
+{
+  // NAT router IP
+  nat_ip = GetEndpointParam(NATRouterIPKey);
+  if(nat_ip != "" && PIPSocket::Address(nat_ip).IsValid() == FALSE)
+  {
+    MCUTRACE(1, trace_section << "incorrect NAT router IP " << nat_ip);
+    return FALSE;
+  }
+
+#ifdef P_STUN
+  // STUN server
+  if(nat_ip == "")
+  {
+    PString address = GetEndpointParam(NATStunServerKey);
+    if(address != "")
+    {
+      stun = sep->GetPreferedStun(address);
+      PIPSocket::Address extAddress;
+      if(stun == NULL || stun->GetExternalAddress(extAddress) == FALSE)
+      {
+        MCUTRACE(1, trace_section << "STUN server error");
+        return FALSE;
+      }
+      nat_ip = extAddress.AsString();
+    }
+  }
+#endif
+
+  // if empty nat_ip set as local_ip
+  if(nat_ip == "")
+    nat_ip = local_ip;
+
+  // remoteIsNAT ???
+  remoteIsNAT = FALSE;
+
+  MCUTRACE(1, trace_section << "found NAT IP address \"" << nat_ip << "\"");
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUSipConnection::CreateDefaultRTPSessions()
 {
+  // local ip
+  if(DetermineLocalIp() == FALSE)
+    return FALSE;
+
+  // NAT
+  if(DetermineNAT() == FALSE)
+    return FALSE;
+
   SipRTP_UDP *session = NULL;
 
   session = CreateRTPSession(MEDIA_TYPE_AUDIO);

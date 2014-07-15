@@ -28,8 +28,8 @@ class MCURtspConnection : public MCUSipConnection
 
     void ProcessShutdown(CallEndReason reason = EndedByLocalUser);
 
-    int Connect(PString room, PString address);
-    int Connect(PString address, int socket_fd, const msg_t *msg);
+    BOOL Connect(PString room, PString address);
+    BOOL Connect(PString address, int socket_fd, const msg_t *msg);
 
   protected:
     void CreateLocalSipCaps();

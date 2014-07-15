@@ -88,9 +88,6 @@ MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep,
   // create local capability list
   CreateLocalSipCaps();
 
-  // create rtp sessions
-  CreateDefaultRTPSessions();
-
   PTRACE(1, trace_section << "constructor");
 }
 
@@ -157,73 +154,73 @@ void MCURtspConnection::CleanUpOnCallEnd()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::Connect(PString room, PString address)
+BOOL MCURtspConnection::Connect(PString room, PString address)
 {
   direction = DIRECTION_OUTBOUND;
+
+  // requested room
   requestedRoom = room;
 
-  ruri_str = address;
-  remotePartyAddress = ruri_str;
-
-  ruri_str.Replace("rtsp:","http:",TRUE,0);
-  MCUURL url(ruri_str);
-
+  // rtsp address (remote)
+  address.Replace("rtsp:","http:",TRUE,0);
+  MCUURL url(address);
   PString rtsp_port = url.GetPort();
   if(rtsp_port == "80") rtsp_port = "554";
   ruri_str = "rtsp://"+url.GetHostName()+":"+rtsp_port+url.GetPathStr();
+  remotePartyAddress = ruri_str;
 
+  // listener address
   PString listener_address = "tcp:"+url.GetHostName()+":"+rtsp_port;
   trace_section.Replace(":"," ("+listener_address+"):",TRUE,0);
 
-  remoteName = GetSectionParamFromUrl(DisplayNameKey, ruri_str, url.GetPathStr());
+  // detect local_ip, nat_ip and create rtp sessions
+  if(CreateDefaultRTPSessions() == FALSE)
+    return FALSE;
+
+  // display name
+  remoteName = GetEndpointParam(DisplayNameKey, url.GetPathStr());
   remotePartyName = remoteName;
 
-  auth_username = GetSectionParamFromUrl(UserNameKey, ruri_str, url.GetUserName());
-  auth_password = GetSectionParamFromUrl(PasswordKey, ruri_str, url.GetPassword());
+  // auth
+  auth_username = GetEndpointParam(UserNameKey, url.GetUserName());
+  auth_password = GetEndpointParam(PasswordKey, url.GetPassword());
 
-  MCUTRACE(1, trace_section << "Connect room: " << room << " ruri: " << ruri_str);
-
+  // create listener
   listener = MCUListener::Create(listener_address, OnReceived_wrap, this);
   if(listener == NULL)
-    return 0;
+    return FALSE;
 
+  // start connection
   if(SendDescribe() == 0)
-    return 0;
+    return FALSE;
 
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
+BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
 {
   direction = DIRECTION_INBOUND;
   sip_t *sip = sip_object(msg);
 
+  // remote address proto:host:port
   ruri_str = address;
-  remotePartyAddress = ruri_str;
 
+  // rtsp address (local)
   luri_str = url_as_string(msg_home(msg), sip->sip_request->rq_url);
   MCUURL lurl(luri_str);
-  local_ip = lurl.GetHostName();
   rtsp_path = lurl.GetPath()[0];
 
-  PString section = "RTSP Server "+rtsp_path;
-  requestedRoom = GetSectionParamFromUrl(RoomNameKey, section);
-  PString audio_codec = GetSectionParamFromUrl(AudioCodecKey, section);
-  PString video_codec = GetSectionParamFromUrl(VideoCodecKey, section);
-  PString video_resolution = GetSectionParamFromUrl(VideoResolutionKey, section, "352x288");
-  unsigned video_bandwidth = GetSectionParamFromUrl(BandwidthFromKey, section, 256);
-  unsigned video_frame_rate = GetSectionParamFromUrl(FrameRateFromKey, section, 10);
+  // used in GetEndpointParam
+  remotePartyAddress = "RTSP Server "+rtsp_path;
 
-  unsigned video_width = video_resolution.Tokenise("x")[0].AsInteger();
-  unsigned video_height = video_resolution.Tokenise("x")[1].AsInteger();
+  // requested room
+  requestedRoom = GetEndpointParam(RoomNameKey);
 
-  // set remote application
-  if(sip->sip_user_agent)
-    remoteApplication = sip->sip_user_agent->g_string;
-  else if(sip->sip_server)
-    remoteApplication = sip->sip_server->g_string;
+  // detect local_ip, nat_ip and create rtp sessions
+  if(CreateDefaultRTPSessions() == FALSE)
+    return FALSE;
 
   // random session string
   rtsp_session_str = PString(random());
@@ -235,6 +232,33 @@ int MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
     RemoteSipCaps.insert(SipCapMapType::value_type(it->first, new SipCapability(*local_sc)));
   }
 
+  // auth
+  auth_username = GetEndpointParam(UserNameKey);
+  auth_password = GetEndpointParam(PasswordKey);
+  if(auth_password != "")
+  {
+    auth_type = AUTH_WWW;
+    auth_scheme = "Digest";
+    auth_realm = "openmcu-ru";
+    auth_nonce = PGloballyUniqueID().AsString();
+  }
+
+  // set remote application
+  if(sip->sip_user_agent)
+    remoteApplication = sip->sip_user_agent->g_string;
+  else if(sip->sip_server)
+    remoteApplication = sip->sip_server->g_string;
+
+  // setup codecs
+  PString audio_codec = GetEndpointParam(AudioCodecKey);
+  PString video_codec = GetEndpointParam(VideoCodecKey);
+  PString video_resolution = GetEndpointParam(VideoResolutionKey, "352x288");
+  unsigned video_bandwidth = GetEndpointParam(BandwidthFromKey, 256);
+  unsigned video_frame_rate = GetEndpointParam(FrameRateFromKey, 10);
+
+  unsigned video_width = video_resolution.Tokenise("x")[0].AsInteger();
+  unsigned video_height = video_resolution.Tokenise("x")[1].AsInteger();
+
   // setup audio capability
   SipCapability *audio_sc = FindSipCap(RemoteSipCaps, audio_codec);
   if(audio_sc)
@@ -243,7 +267,7 @@ int MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
     if(audio_sc->cap == NULL)
     {
       MCUTRACE(1, trace_section << "not found audio codec " << audio_codec);
-      return 0;
+      return FALSE;
     }
     if(audio_sc->payload == -1)
       audio_sc->payload = 96;
@@ -257,7 +281,7 @@ int MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
     if(video_sc->cap == NULL)
     {
       MCUTRACE(1, trace_section << "not found video codec " << video_codec);
-      return 0;
+      return FALSE;
     }
     if(video_sc->payload == -1)
       video_sc->payload = 97;
@@ -277,29 +301,18 @@ int MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg)
   if(audio_sc == NULL && video_sc == NULL)
   {
     MCUTRACE(1, trace_section << "cannot create connection without codecs, audio: " << audio_codec << " video: " << video_codec);
-    return 0;
-  }
-
-  // auth
-  auth_username = GetSectionParamFromUrl(UserNameKey, section);
-  auth_password = GetSectionParamFromUrl(PasswordKey, section);
-  if(auth_password != "")
-  {
-    auth_type = AUTH_WWW;
-    auth_scheme = "Digest";
-    auth_realm = "openmcu-ru";
-    auth_nonce = PGloballyUniqueID().AsString();
+    return FALSE;
   }
 
   // create listener
   listener = MCUListener::Create(socket_fd, ruri_str, OnReceived_wrap, this);
   if(listener == NULL)
-    return 0;
+    return FALSE;
 
   // start connection
   OnRequestReceived(msg);
 
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -692,7 +705,7 @@ BOOL MCURtspConnection::ParseTransportStr(SipCapability *sc, PString & transport
       }
       local_ports = PString(video_rtp_port)+"-"+PString(video_rtp_port+1);
     }
-    transport_dict.Append("source", local_ip);
+    transport_dict.Append("source", nat_ip);
     transport_dict.Append("server_port", local_ports);
     transport_str = transport_dict.AsString();
     transport_str.Replace("=;",";",TRUE,0);
@@ -1245,7 +1258,7 @@ BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t
 
   PString callToken = address;
   MCURtspConnection *rCon = new MCURtspConnection(sep, ep, callToken);
-  if(rCon->Connect(address, socket_fd, msg) == 0)
+  if(rCon->Connect(address, socket_fd, msg) == FALSE)
   {
     rCon->LeaveMCU();
     return FALSE;
