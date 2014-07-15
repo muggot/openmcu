@@ -110,8 +110,6 @@ class MCURtspServer
     typedef std::map<PString /* address */, MCUListener *> ListenersMapType;
     ListenersMapType Listeners;
 
-    PDECLARE_NOTIFIER(PThread, MCURtspServer, ConnectionHandler);
-
     MCUH323EndPoint *ep;
     MCUSipEndPoint *sep;
 
@@ -178,6 +176,9 @@ class MCUListener
     int socket_fd;
     mcu_listener_cb *callback;
     void *callback_context;
+
+    int handler_count; // handler threads count
+    PDECLARE_NOTIFIER(PThread, MCUListener, TCPConnectionHandler);
 
     PThread *tcp_thread;
     PDECLARE_NOTIFIER(PThread, MCUListener, TCPListener);

@@ -1178,35 +1178,17 @@ void MCURtspServer::ClearListeners()
 
 int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
 {
-  PThread::Create(PCREATE_NOTIFIER(ConnectionHandler), socket_fd, PThread::AutoDeleteThread, PThread::NormalPriority, "rtsp_connection_handler:%0x");
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCURtspServer::ConnectionHandler(PThread &, INT socket_fd)
-{
-  msg_t *msg = NULL;
-  PString address, data;
-
-  if(MCUListener::GetSocketAddress(socket_fd, address) == FALSE)
-    goto error;
-
-  if(MCUListener::ReadSerialData(socket_fd, data) == FALSE)
-    goto error;
-
   MCUTRACE(1, trace_section << "read from " << address << " "  << data.GetLength() << " bytes\n" << data);
 
-  msg = ParseMsg(data);
+  msg_t *msg = ParseMsg(data);
   if(CreateConnection(address, socket_fd, msg) == FALSE)
-    goto error;
+  {
+    msg_destroy(msg);
+    return 0;
+  }
 
   msg_destroy(msg);
-  return;
-
-  error:
-    msg_destroy(msg);
-    close(socket_fd);
+  return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1296,6 +1278,7 @@ MCUListener::MCUListener(PString address, mcu_listener_cb *_callback, void *_cal
   tcp_thread = NULL;
   socket_timeout_sec = 0;
   socket_timeout_usec = 250000;
+  handler_count = 0;
 
   socket_address = address;
   socket_address.Replace(" ","",TRUE,0);
@@ -1346,6 +1329,7 @@ MCUListener::MCUListener(int client_fd, PString address, mcu_listener_cb *_callb
   tcp_thread = NULL;
   socket_timeout_sec = 0;
   socket_timeout_usec = 250000;
+  handler_count = 0;
 
   socket_address = address;
   if(socket_address.Find("tcp:") == P_MAX_INDEX)
@@ -1373,8 +1357,14 @@ MCUListener::~MCUListener()
     delete tcp_thread;
   }
 
-  MCUTRACE(1, trace_section << "close");
+  // close cocket
   close(socket_fd);
+
+  // wait until all handler threads terminated
+  while(handler_count > 0)
+    PThread::Sleep(100);
+
+  MCUTRACE(1, trace_section << "close");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1473,7 +1463,7 @@ int MCUListener::ReadData(int fd, char *buffer, int buffer_size)
   int len = read(fd, buffer, buffer_size);
   // if error or closed
   if(len <= 0)
-    return 0;
+    return len;
 
   // Finalize as string
   buffer[len] = 0;
@@ -1489,7 +1479,7 @@ int MCUListener::RecvData(int fd, char *buffer, int buffer_size)
   int len = recv(fd, buffer, buffer_size, 0);
   // if error or closed
   if(len <= 0)
-    return 0;
+    return len;
 
   // Finalize as string
   buffer[len] = 0;
@@ -1537,6 +1527,30 @@ BOOL MCUListener::TestSocket(int fd)
     return FALSE;
 
   return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUListener::TCPConnectionHandler(PThread &, INT client_fd)
+{
+  handler_count++;
+  PString address, data;
+
+  if(MCUListener::GetSocketAddress(client_fd, address) == FALSE)
+    goto error;
+
+  if(MCUListener::ReadSerialData(client_fd, data) == FALSE)
+    goto error;
+
+  if(callback(callback_context, client_fd, address, data) == 0)
+    goto error;
+
+  handler_count--;
+  return;
+
+  error:
+    close(client_fd);
+    handler_count--;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1658,7 +1672,7 @@ void MCUListener::TCPListener(PThread &, INT)
       if(client_fd < 0)
         continue;
 
-      callback(callback_context, client_fd, "", "");
+      PThread::Create(PCREATE_NOTIFIER(TCPConnectionHandler), client_fd, PThread::AutoDeleteThread, PThread::NormalPriority, "tcp_connection_handler:%0x");
     }
   }
   else if(listener_type == TCP_LISTENER_CLIENT)
