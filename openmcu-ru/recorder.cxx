@@ -19,6 +19,21 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+const uint64_t MCU_AV_CH_Layout_Selector[] =
+{
+  0
+  ,AV_CH_LAYOUT_MONO
+  ,AV_CH_LAYOUT_STEREO
+  ,AV_CH_LAYOUT_2_1
+  ,AV_CH_LAYOUT_3POINT1
+  ,AV_CH_LAYOUT_5POINT0
+  ,AV_CH_LAYOUT_5POINT1
+  ,AV_CH_LAYOUT_7POINT0
+  ,AV_CH_LAYOUT_7POINT1
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString AVErrorToString(int errnum)
 {
   char errbuf[64];
@@ -383,7 +398,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
     context->bit_rate      = audio_bitrate * audio_channels * 1000;
     context->sample_rate   = audio_samplerate;
     context->channels      = audio_channels;
-    context->channel_layout = av_get_default_channel_layout(context->channels);
+    context->channel_layout = MCU_AV_CH_Layout_Selector[context->channels];
     context->time_base.num = 12;
     context->time_base.den = 125;
     //context->strict_std_compliance = -2;
