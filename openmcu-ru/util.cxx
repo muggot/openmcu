@@ -502,13 +502,15 @@ BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, u
     if(!max_fs) max_fs = h264_profile_levels[i].max_fs;
     if(!max_mbps) max_mbps = h264_profile_levels[i].max_mbps;
     if(!max_br) max_br = h264_profile_levels[i].max_br;
+    break;
   }
   for(int i = 0; h264_resolutions[i].macroblocks != 0; ++i)
   {
-    if(max_fs > h264_resolutions[i].macroblocks)
+    if(max_fs < h264_resolutions[i].macroblocks)
       continue;
     width = h264_resolutions[i].width;
     height = h264_resolutions[i].height;
+    break;
   }
   return TRUE;
 }
