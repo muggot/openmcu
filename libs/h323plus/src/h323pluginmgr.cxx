@@ -1324,116 +1324,11 @@ static H323CodecPluginCapabilityMapEntry videoMaps[] = {
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// Plugin framed audio codec classes
+// Plugin streamed audio codec classes
 //
 
 #ifndef NO_H323_AUDIO_CODECS
 
-class H323PluginFramedAudioCodec : public H323FramedAudioCodec
-{
-  PCLASSINFO(H323PluginFramedAudioCodec, H323FramedAudioCodec);
-  public:
-    H323PluginFramedAudioCodec(const OpalMediaFormat & fmtName, Direction direction, PluginCodec_Definition * _codec)
-      : H323FramedAudioCodec(fmtName, direction), codec(_codec)
-    {
-      if (codec != NULL && codec->createCodec != NULL)
-        context = (*codec->createCodec)(codec);
-      else
-        context = NULL;
-      if (context)
-      {
-        PluginCodec_ControlDefn * ctl = GetCodecControl(codec, SET_CODEC_OPTIONS_CONTROL);
-        if (ctl != NULL) {
-          PStringArray list;
-          for (PINDEX i = 0; i < mediaFormat.GetOptionCount(); i++) {
-            const OpalMediaOption & option = mediaFormat.GetOption(i);
-            list += option.GetName();
-            list += option.AsString();
-            PTRACE(5, "OpalPlugin\tSetting codec option '" << option.GetName() << "'=" << option.AsString());
-          }
-          char ** _options = list.ToCharArray();
-          unsigned int optionsLen = sizeof(_options);
-          (*ctl->control)(codec, context, SET_CODEC_OPTIONS_CONTROL, _options, &optionsLen);
-          free(_options);
-        }
-#if PTRACING
-        PTRACE(6,"Codec Options");
-        OpalMediaFormat::DebugOptionList(mediaFormat);
-#endif
-      }
-    }
-
-    ~H323PluginFramedAudioCodec()
-    { if (codec != NULL && codec->destroyCodec != NULL) (*codec->destroyCodec)(codec, context); }
-
-    BOOL EncodeFrame(
-      BYTE * buffer,        /// Buffer into which encoded bytes are placed
-      unsigned int & toLen  /// Actual length of encoded data buffer
-    )
-    {
-      if (codec == NULL || direction != Encoder)
-        return FALSE;
-      unsigned int fromLen = codec->parm.audio.samplesPerFrame*2*codecChannels;
-      toLen                = codec->parm.audio.bytesPerFrame;
-      PTRACE(9, "PluginFramedAudioCodec\tfromLen" << fromLen);
-      unsigned flags = 0;
-      return (codec->codecFunction)(codec, context, 
-                                 (const unsigned char *)sampleBuffer.GetPointer(), &fromLen,
-                                 buffer, &toLen,
-                                 &flags) != 0;
-    };
-
-    BOOL DecodeFrame(
-      const BYTE * buffer,    /// Buffer from which encoded data is found
-      unsigned length,        /// Length of encoded data buffer
-      unsigned & written,     /// Number of bytes used from data buffer
-      unsigned & bytesDecoded /// Number of bytes output from frame
-    )
-    {
-      if (codec == NULL || direction != Decoder)
-        return FALSE;
-      unsigned flags = 0;
-      if ((codec->codecFunction)(codec, context, 
-                                 buffer, &length,
-                                 (unsigned char *)sampleBuffer.GetPointer(), &bytesDecoded,
-                                 &flags) == 0)
-        return FALSE;
-
-      written = length;
-      return TRUE;
-    }
-
-    void DecodeSilenceFrame(
-      void * buffer,        /// Buffer from which encoded data is found
-      unsigned length       /// Length of encoded data buffer
-    )
-    { 
-      if ((codec->flags & PluginCodec_DecodeSilence) == 0)
-        memset(buffer, 0, length); 
-      else {
-        unsigned flags = PluginCodec_CoderSilenceFrame;
-        (codec->codecFunction)(codec, context, 
-                                 NULL, NULL,
-                                 buffer, &length,
-                                 &flags);
-      }
-    }
-
-    virtual void SetTxQualityLevel(int qlevel)
-    { SetCodecControl(codec, context, SET_CODEC_OPTIONS_CONTROL, "set_quality", qlevel); }
-
-    virtual unsigned GetSampleRate() { return codec->sampleRate; }
-
-
-  protected:
-    void * context;
-    PluginCodec_Definition * codec;
-};
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// Plugin streamed audio codec classes
-//
 class H323StreamedPluginAudioCodec : public H323StreamedAudioCodec
 {
   PCLASSINFO(H323StreamedPluginAudioCodec, H323StreamedAudioCodec);
@@ -1492,9 +1387,6 @@ class H323StreamedPluginAudioCodec : public H323StreamedAudioCodec
 #endif //  NO_H323_AUDIO_CODECS
 
 //////////////////////////////////////////////////////////////////////////////
-//
-// Plugin video codec class
-//
 
 #define FRAME_MASK	0xFFFFFF00
 #define FRAME_BUF_SIZE	0x2000
@@ -1547,7 +1439,7 @@ class cacheArray
        cacheArray() { n = 0; }
        ~cacheArray() { }
 
- 
+
         cache *GetCache();
         int n;
         cache c[10];
@@ -1559,160 +1451,415 @@ CacheMap caches;
 
 void unit::PutFrame(RTP_DataFrame &srcFrame)
 {
- int sz = srcFrame.GetHeaderSize()+srcFrame.GetPayloadSize();
- frame.SetMinSize(sz);
- memcpy(frame.GetPointer(),srcFrame.GetPointer(),sz);
- frame.SetPayloadSize(srcFrame.GetPayloadSize());
+  int sz = srcFrame.GetHeaderSize()+srcFrame.GetPayloadSize();
+  frame.SetMinSize(sz);
+  memcpy(frame.GetPointer(),srcFrame.GetPointer(),sz);
+  frame.SetPayloadSize(srcFrame.GetPayloadSize());
 }
 
 void unit::GetFrame(RTP_DataFrame &dstFrame)
 {
- int sz = frame.GetHeaderSize()+frame.GetPayloadSize();
- dstFrame.SetMinSize(sz);
- memcpy(dstFrame.GetPointer(),frame.GetPointer(),sz);
- dstFrame.SetPayloadSize(frame.GetPayloadSize());
+  int sz = frame.GetHeaderSize()+frame.GetPayloadSize();
+  dstFrame.SetMinSize(sz);
+  memcpy(dstFrame.GetPointer(),frame.GetPointer(),sz);
+  dstFrame.SetPayloadSize(frame.GetPayloadSize());
 }
 
 bool GetMarker (unsigned char *pkt) 
 {
- return (pkt[1] & 0x80);
+  return (pkt[1] & 0x80);
 }
 
 cache *CreateCacheRTP(PString key)
 {
- CacheMap::iterator r = caches.find(key);
- cacheArray *newCacheArray;
- if (r == caches.end()) 
- {
-  newCacheArray = new cacheArray();
-  caches.insert(CacheMap::value_type(key, newCacheArray));
- }
- else newCacheArray = r->second;
- if(newCacheArray->n >= 1) return NULL;
- newCacheArray->n++;
- cout << "new cache " << newCacheArray->n << "\n";
- return &(newCacheArray->c[newCacheArray->n-1]);
+  CacheMap::iterator r = caches.find(key);
+  cacheArray *newCacheArray;
+  if(r == caches.end())
+  {
+    newCacheArray = new cacheArray();
+    caches.insert(CacheMap::value_type(key, newCacheArray));
+  }
+  else newCacheArray = r->second;
+  if(newCacheArray->n >= 1) return NULL;
+  newCacheArray->n++;
+  cout << "new cache " << newCacheArray->n << "\n";
+  return &(newCacheArray->c[newCacheArray->n-1]);
 }
 
 void GetFastUpdate(PString *key, unsigned int &flags, cache *(&srcCache))
 {
- if(srcCache) srcCache->GetFastUpdate(flags);
+  if(srcCache) srcCache->GetFastUpdate(flags);
 }
 
 void cache::GetFastUpdate(unsigned int &flags)
 {
- if(!fastUpdate) return;
- if(seqN-iframeN <= FRAME_OFFSET*10) return;
- cout << "FastUpdate needed\n";
- flags|=PluginCodec_CoderForceIFrame;
- fastUpdate = FALSE;
- iframeN = (seqN&FRAME_MASK)+FRAME_OFFSET;
+  if(!fastUpdate) return;
+  if(seqN-iframeN <= FRAME_OFFSET*10) return;
+  cout << "FastUpdate needed\n";
+  flags|=PluginCodec_CoderForceIFrame;
+  fastUpdate = FALSE;
+  iframeN = (seqN&FRAME_MASK)+FRAME_OFFSET;
 }
 
 unsigned int cache::GetLastFrameNum()
 {
- RTPCacheMap::reverse_iterator r = rtpCaches.rbegin();
- if(r != rtpCaches.rend()) return r->first;
- return 0;
+  RTPCacheMap::reverse_iterator r = rtpCaches.rbegin();
+  if(r != rtpCaches.rend()) return r->first;
+  return 0;
 }
 
 void PutCacheRTP(PString *key, RTP_DataFrame &frame, unsigned int len, unsigned int flags, cache *(&dstCache))
 {
- if(dstCache) { dstCache->PutFrame(frame,len,flags); return; }
- dstCache = CreateCacheRTP(*key); // needs for modes without patently creation of caches
- if (dstCache) dstCache->PutFrame(frame,len,flags);
+  if(dstCache) { dstCache->PutFrame(frame,len,flags); return; }
+  dstCache = CreateCacheRTP(*key); // needs for modes without patently creation of caches
+  if(dstCache) dstCache->PutFrame(frame,len,flags);
 }
 
 void cache::PutFrame(RTP_DataFrame &frame, unsigned int len, unsigned int flags)
 {
- unit *cu;
- unsigned int l;
+  unit *cu;
+  unsigned int l;
 
-// cout << "Frame seqN/lastN " << seqN << "/" << lastN << "\n";
- 
- RTPCacheMap::iterator r = rtpCaches.find(lastN);
- while (r == rtpCaches.end() && seqN-lastN >= FRAME_BUF_SIZE) 
- {
-  lastN=(lastN&FRAME_MASK)+FRAME_OFFSET;
-  r = rtpCaches.find(lastN);
- };
+  //cout << "Frame seqN/lastN " << seqN << "/" << lastN << "\n";
 
- if(r == rtpCaches.end()) { cu = new unit(); }
- else { cu = r->second; rtpCaches.erase(r); lastN++; }
- cu->PutFrame(frame); cu->len=len; cu->lock=0;
- rtpCaches.insert(RTPCacheMap::value_type(seqN, cu));
-/* 
- if(flags&PluginCodec_ReturnCoderIFrame) 
-  { fastUpdate = FALSE; iframeN = seqN;  cout << "IFrame found\n"; }
-*/ 
- if(GetMarker(frame.GetPointer()))
- {
-  seqN=(seqN&FRAME_MASK)+FRAME_OFFSET;
-  l=seqN-FRAME_BUF_SIZE/2;
-  do // lock all frame
+  RTPCacheMap::iterator r = rtpCaches.find(lastN);
+  while (r == rtpCaches.end() && seqN-lastN >= FRAME_BUF_SIZE)
   {
-   r=rtpCaches.find(l); l++;
-   if(r != rtpCaches.end()) r->second->lock = 1;
+    lastN=(lastN&FRAME_MASK)+FRAME_OFFSET;
+    r = rtpCaches.find(lastN);
+  };
+
+  if(r == rtpCaches.end()) { cu = new unit(); }
+  else { cu = r->second; rtpCaches.erase(r); lastN++; }
+  cu->PutFrame(frame); cu->len=len; cu->lock=0;
+  rtpCaches.insert(RTPCacheMap::value_type(seqN, cu));
+
+  //if(flags&PluginCodec_ReturnCoderIFrame) 
+  //{ fastUpdate = FALSE; iframeN = seqN;  cout << "IFrame found\n"; }
+
+  if(GetMarker(frame.GetPointer()))
+  {
+    seqN=(seqN&FRAME_MASK)+FRAME_OFFSET;
+    l=seqN-FRAME_BUF_SIZE/2;
+    do // lock all frame
+    {
+      r=rtpCaches.find(l); l++;
+      if(r != rtpCaches.end()) r->second->lock = 1;
+    }
+    while (r != rtpCaches.end());
   }
-  while (r != rtpCaches.end());
- }
- else seqN++;
+  else seqN++;
 }
 
 cache *FindCacheRTP(PString *key)
 {
- CacheMap::iterator r = caches.find(*key);
- if(r == caches.end()) return NULL;
- if(r->second->c[0].terminate) { PThread::Sleep(50); return NULL; }
- int i=(int)(1.0*r->second->n*(rand()/(RAND_MAX+1.0)));
- return &r->second->c[i];
+  CacheMap::iterator r = caches.find(*key);
+  if(r == caches.end()) return NULL;
+  if(r->second->c[0].terminate) { PThread::Sleep(50); return NULL; }
+  int i=(int)(1.0*r->second->n*(rand()/(RAND_MAX+1.0)));
+  return &r->second->c[i];
 }
 
 void GetCacheRTP(PString *key, RTP_DataFrame &frame, unsigned int &toLen, unsigned int &seqN, unsigned int &flags, cache *(&srcCache))
 {
- if(!srcCache)
- {
-   return; // ???
-   srcCache = FindCacheRTP(key);
-   if(!srcCache) { seqN = 0xFFFFFFFF; cout << "No cache\n"; return; }
- }
- if(srcCache->terminate) { srcCache = NULL; return; }
+  if(!srcCache)
+  {
+    return; // ???
+    srcCache = FindCacheRTP(key);
+    if(!srcCache) { seqN = 0xFFFFFFFF; cout << "No cache\n"; return; }
+  }
+  if(srcCache->terminate) { srcCache = NULL; return; }
 
- if(flags&PluginCodec_CoderForceIFrame) srcCache->fastUpdate = TRUE;
- srcCache->GetFrame(frame,toLen,seqN,flags);
+  if(flags&PluginCodec_CoderForceIFrame) srcCache->fastUpdate = TRUE;
+  srcCache->GetFrame(frame,toLen,seqN,flags);
 }
 
 void cache::GetFrame(RTP_DataFrame &frame, unsigned int &toLen, unsigned int &num, unsigned int &flags)
 {
- while(num>=seqN)
- {
-  if(terminate) return;
-  PThread::Sleep(10);
- }
- RTPCacheMap::iterator r = rtpCaches.find(num);
- int i=0; // for debug
- while ((r == rtpCaches.end() || r->second->lock) && num<seqN) 
- {
-  if(terminate) return;
-  PTRACE_IF(3, i>0, "H323READ\t Lost Packet " << i << " " << num); //for debug
-  PTRACE_IF(3, (r!=rtpCaches.end() && r->second->lock), "H323READ\t Lost Packet " << i << " " << num << " " << r->second->lock); //for debug
-  num=(num&FRAME_MASK)+FRAME_OFFSET; // may be lost frames, fix it
-  r = rtpCaches.find(num);
-  i++; // for debug
- }
- while (r == rtpCaches.end())
- {
-  if(terminate) return;
-  PThread::Sleep(10);
-  r = rtpCaches.find(num);
- }
+  while(num>=seqN)
+  {
+    if(terminate) return;
+    PThread::Sleep(10);
+  }
+  RTPCacheMap::iterator r = rtpCaches.find(num);
+  int i=0; // for debug
+  while ((r == rtpCaches.end() || r->second->lock) && num<seqN)
+  {
+    if(terminate) return;
+    PTRACE_IF(3, i>0, "H323READ\t Lost Packet " << i << " " << num); //for debug
+    PTRACE_IF(3, (r!=rtpCaches.end() && r->second->lock), "H323READ\t Lost Packet " << i << " " << num << " " << r->second->lock); //for debug
+    num=(num&FRAME_MASK)+FRAME_OFFSET; // may be lost frames, fix it
+    r = rtpCaches.find(num);
+    i++; // for debug
+  }
+  while (r == rtpCaches.end())
+  {
+    if(terminate) return;
+    PThread::Sleep(10);
+    r = rtpCaches.find(num);
+  }
 
- r->second->GetFrame(frame); toLen=r->second->len;
- flags=0;
- if(GetMarker(frame.GetPointer())) flags|=PluginCodec_ReturnCoderLastFrame;
- if(num==iframeN) flags|=PluginCodec_ReturnCoderIFrame;
- num++;
+  r->second->GetFrame(frame); toLen=r->second->len;
+  flags=0;
+  if(GetMarker(frame.GetPointer())) flags|=PluginCodec_ReturnCoderLastFrame;
+  if(num==iframeN) flags|=PluginCodec_ReturnCoderIFrame;
+  num++;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifndef NO_H323_AUDIO_CODECS
+
+class H323PluginFramedAudioCodec : public H323FramedAudioCodec
+{
+  PCLASSINFO(H323PluginFramedAudioCodec, H323FramedAudioCodec);
+  public:
+    H323PluginFramedAudioCodec(const OpalMediaFormat & fmtName, Direction direction, PluginCodec_Definition * _codec);
+    ~H323PluginFramedAudioCodec();
+
+    BOOL EncodeFrame(
+      BYTE * buffer,        /// Buffer into which encoded bytes are placed
+      unsigned int & toLen  /// Actual length of encoded data buffer
+    );
+
+    BOOL DecodeFrame(
+      const BYTE * buffer,    /// Buffer from which encoded data is found
+      unsigned length,        /// Length of encoded data buffer
+      unsigned & written,     /// Number of bytes used from data buffer
+      unsigned & bytesDecoded /// Number of bytes output from frame
+    );
+
+    void DecodeSilenceFrame(
+      void * buffer,        /// Buffer from which encoded data is found
+      unsigned length       /// Length of encoded data buffer
+    )
+    {
+      if ((codec->flags & PluginCodec_DecodeSilence) == 0)
+        memset(buffer, 0, length);
+      else {
+        unsigned flags = PluginCodec_CoderSilenceFrame;
+        (codec->codecFunction)(codec, context,
+                                 NULL, NULL,
+                                 buffer, &length,
+                                 &flags);
+      }
+    }
+
+    virtual BOOL Read(
+      BYTE * buffer,            ///< Buffer of encoded data
+      unsigned & length,        ///< Actual length of encoded data buffer
+      RTP_DataFrame & dst       ///< RTP data frame
+    );
+
+    virtual void SetTxQualityLevel(int qlevel)
+    { SetCodecControl(codec, context, SET_CODEC_OPTIONS_CONTROL, "set_quality", qlevel); }
+
+    virtual unsigned GetSampleRate() { return codec->sampleRate; }
+
+    virtual int CheckCacheRTP()
+    {
+      cout << "CheckCacheRTP " << formatString << "\n";
+      if(FindCacheRTP(&formatString)) return 1; else return 0;
+    }
+
+    virtual void AttachCacheRTP()
+    {
+      cout << "AttachCacheRTP " << formatString << "\n";
+      codecCache = FindCacheRTP(&formatString);
+      if(!codecCache) return;
+      encoderSeqN = codecCache->GetLastFrameNum();
+      cout << "SeqN=" << encoderSeqN << "\n";
+      codecCache->uN++;
+      cacheMode = 2;
+      if(codec != NULL && codec->destroyCodec != NULL)
+      {
+        (*codec->destroyCodec)(codec, context);
+        codec = NULL;
+      }
+    }
+
+    virtual unsigned int GetEncoderSeqN()
+    {
+      return codecCache->GetLastFrameNum();
+    }
+
+    virtual void DeleteCacheRTP()
+    {
+      CacheMap::iterator r = caches.find(formatString);
+      if(r != caches.end())
+      {
+        cout << "DeleteCacheRTP " << formatString << "\n";
+        cacheArray *ca = r->second;
+        ca->c[0].terminate = TRUE;
+        ca->c[1].terminate = TRUE;
+        ca->c[2].terminate = TRUE;
+        PThread::Sleep(50);
+        caches.erase(r);
+        delete ca;
+        ca = NULL;
+      }
+    }
+
+    virtual void DetachCacheRTP()
+    {
+      cacheMode = 0;
+      if(!codecCache || !FindCacheRTP(&formatString)) { cout << "DetachCacheRTP " << formatString << ", cache is not found\n"; return; }
+      cout << "DetachCacheRTP " << formatString << "\n";
+      codecCache->uN--;
+      codecCache = NULL;
+    }
+
+    virtual void NewCacheRTP()
+    {
+      cout << "NewCacheRTP " << formatString << "\n";
+      codecCache = CreateCacheRTP(formatString);
+    }
+
+    virtual int GetCacheUsersNumber()
+    {
+      if(codecCache == NULL)
+        return 0;
+      return codecCache->uN;
+    }
+
+  protected:
+    cache *codecCache;
+
+    void * context;
+    PluginCodec_Definition * codec;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+H323PluginFramedAudioCodec::H323PluginFramedAudioCodec(const OpalMediaFormat & fmtName, Direction direction, PluginCodec_Definition * _codec)
+  : H323FramedAudioCodec(fmtName, direction), codec(_codec)
+{
+  if(codec != NULL && codec->createCodec != NULL)
+    context = (*codec->createCodec)(codec);
+  else
+    context = NULL;
+  if(context)
+  {
+    PluginCodec_ControlDefn * ctl = GetCodecControl(codec, SET_CODEC_OPTIONS_CONTROL);
+    if(ctl != NULL)
+    {
+      PStringArray list;
+      for(PINDEX i = 0; i < mediaFormat.GetOptionCount(); i++)
+      {
+        const OpalMediaOption & option = mediaFormat.GetOption(i);
+        list += option.GetName();
+        list += option.AsString();
+        PTRACE(5, "OpalPlugin\tSetting codec option '" << option.GetName() << "'=" << option.AsString());
+      }
+      char ** _options = list.ToCharArray();
+      unsigned int optionsLen = sizeof(_options);
+      (*ctl->control)(codec, context, SET_CODEC_OPTIONS_CONTROL, _options, &optionsLen);
+      free(_options);
+    }
+#if PTRACING
+    PTRACE(6,"Codec Options");
+    OpalMediaFormat::DebugOptionList(mediaFormat);
+#endif
+  }
+
+  encoderSeqN = 0;
+  encoderCacheKey = 0;
+  cacheMode = 0;
+  codecCache = NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+H323PluginFramedAudioCodec::~H323PluginFramedAudioCodec()
+{
+  if(cacheMode == 2)
+    DetachCacheRTP();
+
+  if(codec != NULL && codec->destroyCodec != NULL)
+    (*codec->destroyCodec)(codec, context);
+  codec = NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL H323PluginFramedAudioCodec::EncodeFrame(BYTE * buffer, unsigned int & toLen)
+{
+  if(codec == NULL || direction != Encoder)
+    return FALSE;
+  unsigned int fromLen = codec->parm.audio.samplesPerFrame*2*codecChannels;
+  toLen                = codec->parm.audio.bytesPerFrame;
+  PTRACE(9, "PluginFramedAudioCodec\tfromLen" << fromLen);
+  unsigned flags = 0;
+  return (codec->codecFunction)(codec, context,
+                                 (const unsigned char *)sampleBuffer.GetPointer(), &fromLen,
+                                 buffer, &toLen,
+                                 &flags) != 0;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL H323PluginFramedAudioCodec::DecodeFrame(const BYTE * buffer, unsigned length, unsigned & written, unsigned & bytesDecoded)
+{
+  if(codec == NULL || direction != Decoder)
+    return FALSE;
+  unsigned flags = 0;
+  if((codec->codecFunction)(codec, context, buffer, &length, (unsigned char *)sampleBuffer.GetPointer(), &bytesDecoded, &flags) == 0)
+    return FALSE;
+
+  written = length;
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL H323PluginFramedAudioCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame & dst)
+{
+  PWaitAndSignal mutex(rawChannelMutex);
+
+  if(cacheMode == 0 || encoderSeqN == 0xFFFFFFFF)
+    return H323FramedAudioCodec::Read(buffer, length, dst);
+
+  unsigned flags = 0;
+  BOOL retval = FALSE;
+
+  if(cacheMode == 1)
+  {
+    // get buffer from the encoder
+    retval = H323FramedAudioCodec::Read(dst.GetPayloadPtr(), length, dst);
+    if(retval == FALSE)
+      length = 0;
+
+    // increase the buffer size to the size of the frame
+    length += dst.GetHeaderSize();
+
+    // put frame in cache
+    PutCacheRTP(&formatString, dst, length, flags, codecCache);
+  }
+
+  if(cacheMode == 2)
+  {
+    GetCacheRTP(&formatString, dst, length, encoderSeqN, flags, codecCache);
+    retval = TRUE;
+  }
+
+  if(retval == FALSE && codec != NULL)
+  {
+    PTRACE(3, "PLUGIN\tError encoding frame from plugin " << codec->descr << " cacheMode " << cacheMode);
+    length = 0;
+    return FALSE;
+  }
+
+  if(length > (unsigned)dst.GetHeaderSize())
+    length = length - dst.GetHeaderSize();
+  else
+    length = 0;
+
+  return TRUE;
+};
+
+#endif //  NO_H323_AUDIO_CODECS
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef H323_VIDEO
 
@@ -1721,7 +1868,7 @@ class H323PluginVideoCodec : public H323VideoCodec
   PCLASSINFO(H323PluginVideoCodec, H323VideoCodec);
   public:
     H323PluginVideoCodec(const OpalMediaFormat & fmt, Direction direction, PluginCodec_Definition * _codec);
- 
+
     ~H323PluginVideoCodec();
 
     virtual BOOL Read(
@@ -1819,7 +1966,10 @@ class H323PluginVideoCodec : public H323VideoCodec
         { (*codec->destroyCodec)(codec, context); codec = NULL; }
     }
 
-    virtual unsigned int GetEncoderSeqN(){ return codecCache->GetLastFrameNum(); }
+    virtual unsigned int GetEncoderSeqN()
+    {
+      return codecCache->GetLastFrameNum();
+    }
 
     virtual void DeleteCacheRTP()
     {
@@ -1853,7 +2003,12 @@ class H323PluginVideoCodec : public H323VideoCodec
       codecCache = CreateCacheRTP(formatString);
     }
 
-    virtual int GetCacheUsersNumber() { if(codecCache==NULL) return 0; return codecCache->uN; }
+    virtual int GetCacheUsersNumber()
+    {
+      if(codecCache==NULL)
+        return 0;
+      return codecCache->uN;
+    }
 
   protected:
     void *       context;
@@ -1869,32 +2024,30 @@ class H323PluginVideoCodec : public H323VideoCodec
     int          maxHeight;
     bool         sendIntra;
     bool	 freezeVideo;
-    unsigned int encoderSeqN;
-// New 1
+
     cache *	 codecCache;
-// New end
 
     mutable PTimeInterval lastFrameTick;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H323PluginVideoCodec::H323PluginVideoCodec(const OpalMediaFormat & fmt, Direction direction, PluginCodec_Definition * _codec)
-      : H323VideoCodec(fmt, direction), codec(_codec) 
-{ 
-    if (codec != NULL && codec->createCodec != NULL) 
-        context = (*codec->createCodec)(codec); 
-    else 
-        context = NULL; 
+      : H323VideoCodec(fmt, direction), codec(_codec)
+{
+    if (codec != NULL && codec->createCodec != NULL)
+        context = (*codec->createCodec)(codec);
+    else
+        context = NULL;
 
     sendIntra = TRUE;
     freezeVideo = FALSE;
+
     encoderSeqN	= 0;
     encoderCacheKey = 0;
-// New 1
-    codecCache = NULL;
-// New end
     cacheMode = 0;
-    
+    codecCache = NULL;
+
     lastPacketSent = TRUE;
     lastFrameTimeRTP = 0;
     frameWidth = maxWidth = mediaFormat.GetOptionInteger(OpalVideoFormat::FrameWidthOption); 
@@ -1926,7 +2079,7 @@ H323PluginVideoCodec::H323PluginVideoCodec(const OpalMediaFormat & fmt, Directio
       char ** _options = list.ToCharArray();
       unsigned int optionsLen = sizeof(_options);
       (*ctl->control)(codec, context, SET_CODEC_OPTIONS_CONTROL, _options, &optionsLen);
-      
+
       for(int i=0;_options[i]!=NULL;i+=2)
       {
        if (strcasecmp(_options[i], "Frame Width") == 0)
@@ -1937,8 +2090,14 @@ H323PluginVideoCodec::H323PluginVideoCodec(const OpalMediaFormat & fmt, Directio
          targetFrameTimeMs = atoi(_options[i+1]);
 //         cout << "Answer opt:" << _options[i] << "=" << _options[i+1] << "\n";
       }
- 
+
       free(_options);
+
+      //OpalMediaFormat cmf;
+      //PopulateMediaFormatOptions(codec, cmf);
+      //PString extradata = cmf.GetOptionString("extradata");
+      //GetWritableMediaFormat().SetOptionString("extradata", extradata);
+
     }
    if(targetFrameTimeMs>1000) targetFrameTimeMs=40; // for h.263 codecs
    formatString = mediaFormat + "@" + PString(frameWidth) + "x" + PString(frameHeight) + ":" + PString(mediaFormat.GetOptionInteger(OpalVideoFormat::MaxBitRateOption)) + "x";
@@ -1947,6 +2106,8 @@ H323PluginVideoCodec::H323PluginVideoCodec(const OpalMediaFormat & fmt, Directio
      OpalMediaFormat::DebugOptionList(mediaFormat);
 #endif
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H323PluginVideoCodec::~H323PluginVideoCodec()
 {
@@ -1962,6 +2123,8 @@ H323PluginVideoCodec::~H323PluginVideoCodec()
     codec = NULL;
 //    if (converter!=NULL) delete converter;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void H323PluginVideoCodec::ConvertCIF4ToCIF(const void * _src, void * _dst)
 {
@@ -2012,6 +2175,7 @@ void H323PluginVideoCodec::ConvertCIF4ToCIF(const void * _src, void * _dst)
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame & dst)
 {
@@ -2028,22 +2192,18 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
     }
 
     PVideoChannel *videoIn = (PVideoChannel *)rawDataChannel;
+    int vw = videoIn->GetGrabWidth();
+    int vh = videoIn->GetGrabHeight();
+    if (vw == 0 || vh == 0) {
+      PTRACE(1,"PLUGIN\tVideo grab dimension is 0, close down video transmission thread");
+      videoIn->EnableAccess();
+      return FALSE;
+    }
 
     PluginCodec_Video_FrameHeader * frameHeader = (PluginCodec_Video_FrameHeader *)bufferRTP.GetPayloadPtr();
     frameHeader->x = 0;
     frameHeader->y = 0;
-/*    
-    frameHeader->width = videoIn->GetGrabWidth();
-    frameHeader->height = videoIn->GetGrabHeight();
-*/    
-    int vw=videoIn->GetGrabWidth();
-    int vh=videoIn->GetGrabHeight();
 
-    if (vw == 0 || vh == 0) {
-        PTRACE(1,"PLUGIN\tVideo grab dimension is 0, close down video transmission thread");
-        videoIn->EnableAccess();
-        return FALSE;
-    }
 /*
     if ((encoderCacheKey&0x000000FE)==0)
     {
@@ -2062,16 +2222,16 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
      cout << "Key " << encoderCacheKey << "\n";
     }
 */
-    if (lastPacketSent)
+    if(lastPacketSent)
     {
+      if(cacheMode == 3)
+      {
+        encoderCacheKey++; if(encoderCacheKey >= 125) sendIntra = TRUE;
+        if(sendIntra == TRUE) encoderCacheKey = 0;
+      }
 
-     if(cacheMode==3) 
-     { 
-      encoderCacheKey++; if(encoderCacheKey >= 125) sendIntra = TRUE; 
-      if(sendIntra == TRUE) encoderCacheKey = 0;
-     } 
-
-     if(encoderSeqN==0xFFFFFFFF || encoderSeqN==0) {
+      if(cacheMode == 0 || cacheMode == 1 || cacheMode == 3 || encoderSeqN == 0 || encoderSeqN == 0xFFFFFFFF)
+      {
         videoIn->RestrictAccess();
 
         if (!videoIn->IsGrabberOpen()) {
@@ -2086,17 +2246,12 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
             return FALSE;
         }
 
-	if (frameWidth>vw && frameHeight>vh) SetFrameSize(vw, vh);
+	if(frameWidth > vw && frameHeight > vh)
+	  SetFrameSize(vw, vh);
 
         unsigned char * data = OPAL_VIDEO_FRAME_DATA_PTR(frameHeader);
         unsigned byteRead = (vw * vh * 3)/2;
-
-////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////// FOR MUGGOT //////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////
-// Here is cacheMode value check. If it equals to 0 - it fails. That's why I used
-// cacheMode 1 when OpenMCU works without 'Force split screen video' checkbox :( /kay27
-        if (!rawDataChannel->Read(data, byteRead) || !cacheMode) {
+        if (!rawDataChannel->Read(data, byteRead)) {
             PTRACE(3, "PLUGIN\tFailed to read data from video grabber");
             videoIn->EnableAccess();
             length=0;
@@ -2105,7 +2260,7 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
         }
 
         videoIn->EnableAccess();
-        
+
         RenderFrame(data);
 
         if(converter==NULL && (vw!=frameWidth || vh!=frameHeight))
@@ -2135,14 +2290,14 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
          converter->Convert(data, data, amount, &bytesReturned);
         }
 
-     }
-        PTimeInterval now = PTimer::Tick();
-        if (lastFrameTick != 0)
-          lastFrameTimeRTP = (now - lastFrameTick).GetInterval()*90;
-        lastFrameTick = now;
+      }
+      PTimeInterval now = PTimer::Tick();
+      if (lastFrameTick != 0)
+        lastFrameTimeRTP = (now - lastFrameTick).GetInterval()*90;
+      lastFrameTick = now;
     }
     else
-        lastFrameTimeRTP = 0;
+      lastFrameTimeRTP = 0;
 
     frameHeader->width = frameWidth;
     frameHeader->height = frameHeight;
@@ -2156,38 +2311,26 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
 
     unsigned int fromLen = bufferRTP.GetHeaderSize() + bufferRTP.GetPayloadSize();
     unsigned int toLen = outputDataSize;
-
-    
     unsigned int flags = sendIntra ? PluginCodec_CoderForceIFrame : 0;
-        
+    int retval = 0;
 
-
-    int retval=0;
-
-    if(cacheMode==2 && encoderSeqN!=0xFFFFFFFF) 
-	{ GetCacheRTP(&formatString,dst,toLen,encoderSeqN,flags,codecCache); retval = 1; }
-	
-    if(cacheMode==1)
-     {
+    if(cacheMode == 1)
+    {
       GetFastUpdate(&formatString,flags,codecCache);
-      sendIntra= (flags&PluginCodec_CoderForceIFrame)? 1 : 0;
-     }
+      sendIntra = (flags&PluginCodec_CoderForceIFrame)? 1 : 0;
+    }
 
-    if(cacheMode==1 || cacheMode==3)// || encoderSeqN==0xFFFFFFFF) 
-      retval = (codec->codecFunction)(codec, context,
-                                        bufferRTP.GetPointer(), &fromLen,
-                                        dst.GetPointer(), &toLen,
-                                        &flags);
-    if(cacheMode==1)
-       PutCacheRTP(&formatString,dst,toLen,flags,codecCache);
-/*
-  unsigned char *d=dst.GetPointer();
-  for(int i=0;i<toLen;i++)
-  {
-   printf("%02x ",d[i]);
-  }
-   printf("\n");
-*/
+    if(cacheMode == 0 || cacheMode == 1 || cacheMode == 3)// || encoderSeqN == 0xFFFFFFFF)
+      retval = (codec->codecFunction)(codec, context, bufferRTP.GetPointer(), &fromLen, dst.GetPointer(), &toLen, &flags);
+
+    if(cacheMode == 1)
+      PutCacheRTP(&formatString,dst,toLen,flags,codecCache);
+
+    if(cacheMode == 2 && encoderSeqN != 0xFFFFFFFF)
+    {
+      GetCacheRTP(&formatString,dst,toLen,encoderSeqN,flags,codecCache);
+      retval = 1;
+    }
 
     if (retval == 0 && codec != NULL) {
         PTRACE(3,"PLUGIN\tError encoding frame from plugin " << codec->descr << " cacheMode=" << cacheMode);
@@ -2196,11 +2339,11 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
     }
 
     if ((flags & PluginCodec_ReturnCoderIFrame) != 0) {
-//        PTRACE(sendIntra ? 3 : 5,"PLUGIN\tSent I-Frame" << (sendIntra ? ", in response to VideoFastUpdate" : ""));
+        //PTRACE(sendIntra ? 3 : 5,"PLUGIN\tSent I-Frame" << (sendIntra ? ", in response to VideoFastUpdate" : ""));
         sendIntra = false;
     }
 
-    if (toLen > 0) 
+    if (toLen > 0)
         length = toLen - dst.GetHeaderSize();
     else
         length = 0;
@@ -2209,6 +2352,8 @@ BOOL H323PluginVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame 
 
     return TRUE;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL H323PluginVideoCodec::Write(const BYTE * buffer, unsigned length, const RTP_DataFrame & src, unsigned & written)
 {
@@ -2231,32 +2376,14 @@ BOOL H323PluginVideoCodec::Write(const BYTE * buffer, unsigned length, const RTP
 
   bufferRTP.SetMinSize(outputDataSize);
 
-//PTRACE(4,"PIVC\tRTP pt=" << src.GetPayloadType()
-//               <<  " m=" << src.GetMarker()
-//               << " sn=" << src.GetSequenceNumber()
-//               << " ts=" << src.GetTimestamp()
-//               << " sz=" << src.GetPayloadSize());
   unsigned int fromLen = src.GetHeaderSize() + src.GetPayloadSize();
   unsigned int toLen = bufferRTP.GetSize();
-//  unsigned int flags=0;
-  unsigned int flags=freezeVideo;
-//  cout << freezeVideo << "\n";
+  unsigned int flags = freezeVideo;
 
-
-/*
-  for(int i=0;i<fromLen;i++)
-  {
-   printf("%02x ",src[i]);
-  }
-   printf("\n");
-*/
-
-
-  int retval = (codec->codecFunction)(codec, context, 
+  int retval = (codec->codecFunction)(codec, context,
                                       (const BYTE *)src, &fromLen,
                                       bufferRTP.GetPointer(toLen), &toLen,
                                       &flags);
-
 
   if (retval == 0) {
     PTRACE(3,"PLUGIN\tError decoding frame from plugin " << codec->descr);
@@ -2264,7 +2391,6 @@ BOOL H323PluginVideoCodec::Write(const BYTE * buffer, unsigned length, const RTP
   }
 
   PluginCodec_Video_FrameHeader * h = (PluginCodec_Video_FrameHeader *)(bufferRTP.GetPayloadPtr());
-//  cout << "w=" << h->width << " h=" << h->height << "\n";
 
   if (flags & PluginCodec_ReturnCoderRequestIFrame) {
     PTRACE(6,"PLUGIN\tIFrame Request Decoder: Unimplemented.");
@@ -2296,6 +2422,7 @@ BOOL H323PluginVideoCodec::Write(const BYTE * buffer, unsigned length, const RTP
   return TRUE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL H323PluginVideoCodec::RenderFrame(const BYTE * buffer)
 {
@@ -2310,6 +2437,8 @@ BOOL H323PluginVideoCodec::RenderFrame(const BYTE * buffer)
     PTRACE(9, "PLUGIN\tWrite data to video renderer");
     return videoOut->Write(buffer, 0 /*unused parameter*/);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL H323PluginVideoCodec::SetFrameSize(int _width, int _height)
 {
@@ -2351,6 +2480,8 @@ BOOL H323PluginVideoCodec::SetFrameSize(int _width, int _height)
     return TRUE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 unsigned H323PluginVideoCodec::GetVideoMode(void) 
 { 
    if (mediaFormat.GetOptionBoolean(OpalVideoFormat::DynamicVideoQualityOption))
@@ -2360,6 +2491,8 @@ unsigned H323PluginVideoCodec::GetVideoMode(void)
    else
       return H323VideoCodec::None;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void H323PluginVideoCodec::SetVideoMode(int mode) 
 { 
@@ -2377,6 +2510,8 @@ void H323PluginVideoCodec::SetVideoMode(int mode)
 }
 
 #endif // H323_VIDEO
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////
 //

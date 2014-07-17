@@ -88,12 +88,12 @@ class ConferenceFileMember : public ConferenceMember
     PDECLARE_NOTIFIER(PThread, ConferenceFileMember, ReadThread);
     PDECLARE_NOTIFIER(PThread, ConferenceFileMember, WriteThread);
     PDECLARE_NOTIFIER(PThread, ConferenceFileMember, WriteThreadV);
-    PDECLARE_NOTIFIER(PThread, ConferenceFileMember, VideoEncoderCacheThread);
+    PDECLARE_NOTIFIER(PThread, ConferenceFileMember, EncoderCacheThread);
 
     virtual PString GetFormat(){ return format; }
     virtual PString GetVFormat(){ return vformat; }
 
-    H323VideoCodec * codec;
+    H323Codec * codec;
     MCUH323Connection * con;
     int status;
 

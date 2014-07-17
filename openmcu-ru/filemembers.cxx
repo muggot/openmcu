@@ -174,7 +174,7 @@ void ConferenceFileMember::Construct()
     }
     else // cache
     {
-      thread = PThread::Create(PCREATE_NOTIFIER(VideoEncoderCacheThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "cache:%0x");
+      thread = PThread::Create(PCREATE_NOTIFIER(EncoderCacheThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "cache:%0x");
     }
   }
   else
@@ -470,7 +470,7 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
   mgr.RemoveMember(conference->GetID(), this);
 }
 
-void ConferenceFileMember::VideoEncoderCacheThread(PThread &, INT)
+void ConferenceFileMember::EncoderCacheThread(PThread &, INT)
 {
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
@@ -481,14 +481,28 @@ void ConferenceFileMember::VideoEncoderCacheThread(PThread &, INT)
   wf = vformat;
 
   status = 1;
-  cout << "Starting cache thread " << vformat << "\n";
-  PTRACE(3,"Cache\tStarting cache thread " << vformat);
-  codec = (H323VideoCodec *) cap->CreateCodec(H323Codec::Encoder);
-  codec->cacheMode = 1; // caching codec
-  con = new MCUH323Connection(ep,0,NULL);
-  con->videoMixerNumber=videoMixerNumber;
-  con->SetupCacheConnection(vformat,conference,this);
-  con->OpenVideoChannel(TRUE,*codec);
+  MCUTRACE(1, "Cache\tStarting cache thread " << vformat);
+  if(cap->GetMainType() == H323Capability::e_Audio)
+  {
+    codec = cap->CreateCodec(H323Codec::Encoder);
+    codec->SetCacheMode(1); // caching codec
+    con = new MCUH323Connection(ep, 0, NULL);
+    con->SetupCacheConnection(vformat, conference, this);
+    con->OpenAudioChannel(TRUE, 0, (H323AudioCodec &)*codec);
+
+    unsigned sample_rate = wf.GetTimeUnits()*1000;
+    unsigned channels = wf.GetEncoderChannels();
+    codec->SetFormatString(wf + "@" + PString(sample_rate) + "/" + PString(channels));
+
+    codec->AttachChannel(new OutgoingAudio(ep, *con, sample_rate, channels), TRUE);
+  } else {
+    codec = cap->CreateCodec(H323Codec::Encoder);
+    codec->SetCacheMode(1); // caching codec
+    con = new MCUH323Connection(ep, 0, NULL);
+    con->videoMixerNumber = videoMixerNumber;
+    con->SetupCacheConnection(vformat, conference, this);
+    con->OpenVideoChannel(TRUE, (H323VideoCodec &)*codec);
+  }
 
   if(codec->CheckCacheRTP())
   {
@@ -512,20 +526,21 @@ void ConferenceFileMember::VideoEncoderCacheThread(PThread &, INT)
       {
         status = 0;
         totalVideoFramesSent=0;
-        PTRACE(3,"MCU\tDown to sleep " << codec->formatString);
-        cout << "Down to sleep " << codec->formatString << "\n";
+        MCUTRACE(1, "MCU\tDown to sleep " << codec->GetFormatString());
       }
       PThread::Sleep(1000);
     }
     if(running && status == 0)
     {
-      status = 1; 
-      PTRACE(3,"MCU\tWake up " << codec->formatString); 
-      cout << "Wake up " << codec->formatString << "\n"; 
-      con->RestartGrabber();
+      status = 1;
+      if(cap->GetMainType() == H323Capability::e_Audio)
+        codec->AttachChannel(new OutgoingAudio(ep, *con, wf.GetTimeUnits()*1000, wf.GetEncoderChannels()), TRUE);
+      else
+        con->RestartGrabber();
       firstFrameSendTime=PTime();
+      MCUTRACE(1, "MCU\tWake up " << codec->GetFormatString());
     }
-    if(running) codec->Read(NULL,length,frame);
+    if(running) codec->Read(NULL, length, frame);
   }
   // must destroy videograbber and videochanell here? fix it
   delete(con); con=NULL;

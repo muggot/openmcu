@@ -573,10 +573,27 @@ class H323Codec : public PObject
     */
     virtual BOOL SetRawDataHeld(BOOL hold );
 
+    virtual void SetFormatString(const PString & _formatString) { formatString = _formatString; }
+    virtual PString GetFormatString() { return formatString; }
+
+    virtual void SetCacheMode(unsigned _cacheMode) { cacheMode = _cacheMode; }
+    virtual unsigned GetCacheMode() { return cacheMode; }
+
+    virtual void SetEncoderCacheKey(unsigned key) { encoderCacheKey = key; }
+    virtual unsigned GetEncoderCacheKey() { return encoderCacheKey; }
+
+    virtual int CheckCacheRTP() { return 0; }
+    virtual void AttachCacheRTP() { return; }
+    virtual void DetachCacheRTP() { return; }
+    virtual void DeleteCacheRTP() { return; }
+    virtual void NewCacheRTP() { return; }
+    virtual int GetCacheUsersNumber() { return 0; }
+    virtual unsigned GetEncoderSeqN() { return 0; }
+
   protected:
     Direction direction;
     OpalMediaFormat mediaFormat;
-    
+
     H323Channel * logicalChannel; // sends messages from receive codec to tx codec.
 
     PChannel * rawDataChannel;  // connection to the hardware for reading/writing data.
@@ -584,6 +601,11 @@ class H323Codec : public PObject
     PMutex     rawChannelMutex;
 
     PINDEX     lastSequenceNumber;  // Detects lost RTP packets in the video codec.
+
+    unsigned encoderSeqN;
+    unsigned encoderCacheKey; // used for caching encoded frames
+    unsigned cacheMode;       // 0 - no cache, 1 - cached, 2 - caching
+    PString formatString;
 
     PLIST(FilterList, PNotifier);
     FilterList filters;
@@ -858,10 +880,11 @@ class H323FramedAudioCodec : public H323AudioCodec
     );
 #endif
 
-	virtual void EnableAGC(int);
+    virtual void EnableAGC(int);
+    virtual void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef);
 
   protected:
-	PAec * aec;     // Acoustic Echo Canceller
+    PAec * aec;     // Acoustic Echo Canceller
     PShortArray sampleBuffer;
     unsigned    bytesPerFrame;
     unsigned    sampleRate;
@@ -1154,20 +1177,7 @@ class H323VideoCodec : public H323Codec
    */
    virtual int GetFrameNum() { return frameNum; }
 
-   virtual int CheckCacheRTP() { return 0; }
-   virtual void AttachCacheRTP() { return; } 
-   virtual void DetachCacheRTP() { return; } 
-   virtual void DeleteCacheRTP() { return; }
-   virtual void NewCacheRTP() { return; } 
-   virtual int GetCacheUsersNumber() { return 0; }
-   virtual unsigned int GetEncoderSeqN() { return 0; }
-
-
-  unsigned int encoderCacheKey; // used for caching encoded frames
-  PString formatString;
-  unsigned cacheMode; // 0 - no cache, 1 - cached, 2 - caching
-
-  PMutex & GetVideoHandlerMutex() { return videoHandlerActive; }
+   PMutex & GetVideoHandlerMutex() { return videoHandlerActive; }
 
   protected:
 

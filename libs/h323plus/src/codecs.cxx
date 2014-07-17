@@ -1042,7 +1042,7 @@ H323FramedAudioCodec::H323FramedAudioCodec(const OpalMediaFormat & fmt, Directio
 }
 
 
-void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef)
+void H323FramedAudioCodec::AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef)
 {
   if(!level) return;
 
