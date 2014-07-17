@@ -399,7 +399,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
     context->sample_rate   = audio_samplerate;
     context->channels      = audio_channels;
     context->channel_layout = MCU_AV_CH_Layout_Selector[context->channels];
-    context->time_base.num = 12;
+    context->time_base.num = 12 * 16000 / context->sample_rate;
     context->time_base.den = 125;
     //context->strict_std_compliance = -2;
   }
@@ -751,21 +751,23 @@ void ConferenceRecorder::RecorderAudio(PThread &, INT)
 {
   MCUTRACE(1, trace_section << "audio thread started");
 
-  unsigned audio_delay_ms = av_q2d(audio_st->codec->time_base)*1000;
-  if(audio_delay_ms <= 1)
-    audio_delay_ms = src_samples*1000/audio_samplerate;
-  if(audio_delay_ms == 0)
-    return;
+  unsigned delay_us = av_q2d(audio_st->codec->time_base)*1000000;
+  if(delay_us <= 1000)
+    delay_us = src_samples*1000000/audio_samplerate;
 
-  PTime audio_time;
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  uint64_t last_time = 1000000 * tv.tv_sec + tv.tv_usec;
+  last_time -= delay_us;
 
   running = TRUE;
   while(running)
   {
-    PTime now;
-    if(now >= audio_time + audio_delay_ms)
+    gettimeofday(&tv, NULL);
+    uint64_t now = 1000000 * tv.tv_sec + tv.tv_usec;
+    if(now >= last_time + delay_us)
     {
-      audio_time += audio_delay_ms;
+      last_time += delay_us;
       WriteAudio();
     }
   }
@@ -780,22 +782,23 @@ void ConferenceRecorder::RecorderVideo(PThread &, INT)
 {
   MCUTRACE(1, trace_section << "video thread started");
 
-  unsigned video_delay_us = av_q2d(video_st->codec->time_base)*1000000;
-  if(video_delay_us <= 1000)
-    video_delay_us = 1000000/video_framerate;
+  unsigned delay_us = av_q2d(video_st->codec->time_base)*1000000;
+  if(delay_us <= 1000)
+    delay_us = 1000000/video_framerate;
 
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  uint64_t video_time = 1000000 * tv.tv_sec + tv.tv_usec;
+  uint64_t last_time = 1000000 * tv.tv_sec + tv.tv_usec;
+  last_time -= delay_us;
 
   running = TRUE;
   while(running)
   {
     gettimeofday(&tv, NULL);
     uint64_t now = 1000000 * tv.tv_sec + tv.tv_usec;
-    if(now >= video_time + video_delay_us)
+    if(now >= last_time + delay_us)
     {
-      video_time += video_delay_us;
+      last_time += delay_us;
       WriteVideo();
     }
   }
