@@ -447,7 +447,7 @@ bool FFMPEGCodec::EncodeVideoPacket(const PluginCodec_RTP & in, PluginCodec_RTP 
   */
   m_picture->pts = AV_NOPTS_VALUE;
 
-  m_picture->pict_type = forceIFrame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_NONE;
+  m_picture->pict_type = forceIFrame ? AV_PICTURE_TYPE_I : (AVPictureType)0;
   m_picture->key_frame = 0;
 
   if (m_fullFrame == NULL)
@@ -531,7 +531,7 @@ bool FFMPEGCodec::DecodeVideoFrame(const uint8_t * frame, size_t length, unsigne
   errorsBefore += m_context->decode_error_count
 #endif
 
-  m_picture->pict_type = AV_PICTURE_TYPE_NONE;
+  m_picture->pict_type = (AVPictureType)0;
   int gotPicture = 0;
 #if LIBAVCODEC_VERSION_INT <= AV_VERSION_INT(52, 25, 0)
   int bytesDecoded = avcodec_decode_video(m_context, m_picture, &gotPicture, frame, length);
