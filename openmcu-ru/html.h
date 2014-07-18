@@ -32,9 +32,10 @@ class TablePConfigPage : public PConfigPage
       inputStyle = "font-size:12px;height:16px;margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;";
       selectStyle = "font-size:12px;height:16px;margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
       buttonStyle = "font-size:12px;height:auto;width:14px;margin:2px 1px 2px 1px;border-radius:0px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
+      checkboxStyle = "margin-top:8px;margin-bottom:8px;margin-left:3px;";
       rowBorders = FALSE;
       rowBordersStyle = "3px ridge;";
-      rowArray = "<tr valign='middle'><td align='left' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;'>";
+      rowArray = "<tr valign='middle'><td align='left' style='font-size:12px;background-color:"+itemColor+";padding:0px 4px 0px 4px;line-height:100%;'>";
 
       js_filters =
         "function FilterIp(obj)     { obj.value = obj.value.replace(/[^0-9\\.]/g,''); }"
@@ -290,7 +291,7 @@ class TablePConfigPage : public PConfigPage
    {
      PString s = "<input name='TABLEID' value='"+GetTableId()+"' type='hidden'>";
      s += itemStyle+"<input name='"+name+"' value='FALSE' type='hidden' style='"+inputStyle+"'>"
-                    "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+"margin-top:9px;margin-bottom:9px;margin-left:3px;'";
+                    "<input name='"+name+"' value='TRUE' type='checkbox' style='"+inputStyle+checkboxStyle+"'";
      if(value) s +=" checked='yes'";
      if(!readonly) s += "></input></td>"; else s += " readonly></input></td>";
      return s;
@@ -539,7 +540,7 @@ class TablePConfigPage : public PConfigPage
    MCUConfig cfg;
    BOOL deleteSection;
    PString separator;
-   PString colStyle, rowStyle, rowFieldStyle, itemStyle, itemInfoStyle, itemInfoStyleRowSpan, textStyle, inputStyle, buttonStyle, selectStyle;
+   PString colStyle, rowStyle, rowFieldStyle, itemStyle, itemInfoStyle, itemInfoStyleRowSpan, textStyle, inputStyle, buttonStyle, selectStyle, checkboxStyle;
    PString rowArray;
    MCUStringDictionary dataDict;
    PString columnColor, rowColor, itemColor, itemInfoColor;

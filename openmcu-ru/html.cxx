@@ -767,6 +767,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString(BandwidthFromKey);
   optionNames.AppendString(BandwidthToKey);
   optionNames.AppendString(ReceivedVFUDelayKey);
+  optionNames.AppendString(VideoCacheKey);
 
   optionNames.AppendString("Audio codec(receive)");
   optionNames.AppendString("Audio codec(transmit)");
@@ -899,15 +900,16 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MAX_FRAME_RATE, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MAX_FRAME_RATE, 70)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), 64, 4000, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), 64, 4000, 70)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), 64, 4000, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), 64, 4000, 70)+"</tr>";
       // VFU delay
-      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 60)+"</tr>";
+      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 70)+"</tr>";
+      // Video cache
+      s2 += rowArray+"Video cache"+SelectItem(name, scfg.GetString(VideoCacheKey), ",Enable,Disable", 70)+"</tr>";
       //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
@@ -1061,6 +1063,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString(BandwidthFromKey);
   optionNames.AppendString(BandwidthToKey);
   optionNames.AppendString(ReceivedVFUDelayKey);
+  optionNames.AppendString(VideoCacheKey);
 
   optionNames.AppendString(AudioCodecKey);
   optionNames.AppendString(VideoCodecKey);
@@ -1206,16 +1209,17 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MAX_FRAME_RATE, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MAX_FRAME_RATE, 70)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), 64, 4000, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), 64, 4000, 70)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), 64, 4000, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), 64, 4000, 70)+"</tr>";
       // VFU delay
-      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 60)+"</tr>";
+      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 70)+"</tr>";
+      // Video cache
+      s2 += rowArray+"Video cache"+SelectItem(name, scfg.GetString(VideoCacheKey), ",Enable,Disable", 70)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
-      //
       s2 += EndItemArray();
       s << s2;
     }

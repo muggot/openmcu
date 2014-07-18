@@ -173,6 +173,7 @@ static const char VideoFmtpKey[]           = "Video fmtp";
 static const char BandwidthFromKey[]       = "Bandwidth from MCU";
 static const char BandwidthToKey[]         = "Bandwidth to MCU";
 static const char FrameRateFromKey[]       = "Frame rate from MCU";
+static const char VideoCacheKey[]          = "Video cache";
 
 static const char OPTION_FRAME_TIME[] = "Frame Time";
 static const char OPTION_FRAME_RATE[] = "Frame Rate";

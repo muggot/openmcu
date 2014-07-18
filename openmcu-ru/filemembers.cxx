@@ -489,12 +489,6 @@ void ConferenceFileMember::EncoderCacheThread(PThread &, INT)
     con = new MCUH323Connection(ep, 0, NULL);
     con->SetupCacheConnection(vformat, conference, this);
     con->OpenAudioChannel(TRUE, 0, (H323AudioCodec &)*codec);
-
-    unsigned sample_rate = wf.GetTimeUnits()*1000;
-    unsigned channels = wf.GetEncoderChannels();
-    codec->SetFormatString(wf + "@" + PString(sample_rate) + "/" + PString(channels));
-
-    codec->AttachChannel(new OutgoingAudio(ep, *con, sample_rate, channels), TRUE);
   } else {
     codec = cap->CreateCodec(H323Codec::Encoder);
     codec->SetCacheMode(1); // caching codec
@@ -533,11 +527,13 @@ void ConferenceFileMember::EncoderCacheThread(PThread &, INT)
     if(running && status == 0)
     {
       status = 1;
+      // restart channel
       if(cap->GetMainType() == H323Capability::e_Audio)
         codec->AttachChannel(new OutgoingAudio(ep, *con, wf.GetTimeUnits()*1000, wf.GetEncoderChannels()), TRUE);
       else
         con->RestartGrabber();
-      firstFrameSendTime=PTime();
+      //
+      firstFrameSendTime = PTime();
       MCUTRACE(1, "MCU\tWake up " << codec->GetFormatString());
     }
     if(running) codec->Read(NULL, length, frame);
