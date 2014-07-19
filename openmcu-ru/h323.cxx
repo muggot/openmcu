@@ -572,7 +572,6 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         PString formatString, audioCodecR, audioCodecT, videoCodecR, videoCodecT, ra;
         int codecCacheMode=-1, cacheUsersNumber=-1;
         MCUH323Connection * conn = NULL;
-        H323Connection_ConferenceMember * connMember = NULL;
         DWORD orx=0, otx=0, vorx=0, votx=0, prx=0, ptx=0, vprx=0, vptx=0, plost=0, vplost=0, plostTx=0, vplostTx=0;
         if(member->GetType() == MEMBER_TYPE_PIPE)
         {
@@ -627,11 +626,11 @@ PString MCUH323EndPoint::GetRoomStatusJS()
           duration = now - member->GetStartTime();
         }
         else // real (visible, external) endpoint
-        { connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
-          if (connMember != NULL)
-          { conn = (MCUH323Connection *)FindConnectionWithLock(connMember->GetCallToken());
-            if(conn!=NULL)
-            { duration = now - conn->GetConnectionStartTime();
+        {
+          conn = (MCUH323Connection *)FindConnectionWithLock(member->GetCallToken());
+          if(conn!=NULL)
+          {
+              duration = now - conn->GetConnectionStartTime();
               audioCodecR = conn->GetAudioReceiveCodecName();
               audioCodecT = conn->GetAudioTransmitCodecName();
               RTP_Session *sess=conn->GetSession(RTP_Session::DefaultAudioSessionID);
@@ -641,7 +640,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
                 plost = sess->GetPacketsLost(); plostTx = sess->GetPacketsLostTx();
               }
 #             if MCU_VIDEO
-                videoCodecR = conn->GetVideoReceiveCodecName() + "@" + connMember->GetVideoRxFrameSize();
+                videoCodecR = conn->GetVideoReceiveCodecName() + "@" + member->GetVideoRxFrameSize();
                 videoCodecT = conn->GetVideoTransmitCodecName();
                 RTP_Session* vSess=conn->GetSession(RTP_Session::DefaultVideoSessionID);
                 if(vSess != NULL)
@@ -656,7 +655,6 @@ PString MCUH323EndPoint::GetRoomStatusJS()
                 ra = conn->GetRemoteApplication();
 #             endif
               conn->Unlock();
-            }
           }
         }
 
@@ -766,16 +764,15 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
             << memberName << "</td>";
 
         MCUH323Connection * conn = NULL;
-        H323Connection_ConferenceMember * connMember = NULL;
-        if (!(member->GetType() & MEMBER_TYPE_GSYSTEM)) connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
-        if (connMember != NULL) conn = (MCUH323Connection *)FindConnectionWithLock(connMember->GetCallToken());
+        if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
+          conn = (MCUH323Connection *)FindConnectionWithLock(member->GetCallToken());
+
         PTime now;
 
         if(conn!=NULL)
         {
 #if MCU_VIDEO
-          BOOL connCodecNotNull = (conn->GetVideoTransmitCodec()!=NULL);
-          if(connCodecNotNull) { codecCacheMode=conn->GetVideoTransmitCodec()->GetCacheMode(); formatString=conn->GetVideoTransmitCodec()->GetFormatString(); }
+          if(conn->GetVideoTransmitCodec()) { codecCacheMode=conn->GetVideoTransmitCodec()->GetCacheMode(); formatString=conn->GetVideoTransmitCodec()->GetFormatString(); }
           else formatString="NO_CODEC";
 #endif
           PTimeInterval duration = now - conn->GetConnectionStartTime();
@@ -791,7 +788,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
               << "<b>Audio In: </b>"  << conn->GetAudioReceiveCodecName()
               << "<br /><b>Audio Out: </b>" << conn->GetAudioTransmitCodecName()
 #if MCU_VIDEO
-              << "<br /><b>Video In: </b>"  << conn->GetVideoReceiveCodecName() << "@" << connMember->GetVideoRxFrameSize()
+              << "<br /><b>Video In: </b>"  << conn->GetVideoReceiveCodecName() << "@" << member->GetVideoRxFrameSize()
               << "<br /><b>"
                 << ((codecCacheMode==2)? "<font color=green>":"")
                 << "Video Out"
@@ -1150,18 +1147,17 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
  return members;
 }
 
-BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * victim, unsigned newMixerNumber)
+BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * member, unsigned newMixerNumber)
 {
   // formatString: VIDEOCAP @ W x H : BITRATE x FRAMERATE _ ROOM / MIXER
-  unsigned oldMixerNumber = victim->GetVideoMixerNumber();
+  unsigned oldMixerNumber = member->GetVideoMixerNumber();
   if(oldMixerNumber == newMixerNumber) return TRUE;
   if(conference.VMLFind(newMixerNumber) == NULL) return FALSE;
 
-  H323Connection_ConferenceMember *connMember = dynamic_cast<H323Connection_ConferenceMember *>(victim);
-  if(connMember == NULL)
+  if(member->GetType() & MEMBER_TYPE_GSYSTEM)
     return FALSE;
 
-  MCUH323Connection *conn=(MCUH323Connection *)FindConnectionWithoutLock(connMember->GetCallToken());
+  MCUH323Connection *conn=(MCUH323Connection *)FindConnectionWithoutLock(member->GetCallToken());
   if(conn == NULL)
     return FALSE;
 
@@ -1351,11 +1347,11 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     conferenceManager.UnlockConference();
     PWaitAndSignal m(conference->GetMutex());
     Conference::MemberList & memberList = conference->GetMemberList();
-    Conference::MemberList::iterator r;
-    for (r = memberList.begin(); r != memberList.end(); ++r)
+    for(Conference::MemberList::iterator r = memberList.begin(); r != memberList.end(); ++r)
     {
       ConferenceMember * member = r->second;
-      if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
+      if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+        continue;
       member->Close();
     }
     OpenMCU::Current().HttpWriteEventRoom("Active members dropped by operator",room);
@@ -1368,25 +1364,20 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     BOOL newValue = (action==OTFC_MUTE_ALL);
     PWaitAndSignal m(conference->GetMutex());
     Conference::MemberList & memberList = conference->GetMemberList();
-    Conference::MemberList::iterator r;
-    H323Connection_ConferenceMember * connMember;
-    for (r = memberList.begin(); r != memberList.end(); ++r)
+    for(Conference::MemberList::iterator r = memberList.begin(); r != memberList.end(); ++r)
     {
       ConferenceMember * member = r->second;
-      if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
-      connMember = NULL;
-      connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
-      if(connMember==NULL) continue;
-      if(newValue)connMember->SetChannelPauses  (1);
-      else        connMember->UnsetChannelPauses(1);
+      if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+        continue;
+      if(newValue)member->SetChannelPauses  (1);
+      else        member->UnsetChannelPauses(1);
     }
     return "OK";
   }
   if(action == OTFC_INVITE_ALL_INACT_MMBRS)
   {
     Conference::MemberNameList & memberNameList = conference->GetMemberNameList();
-    Conference::MemberNameList::const_iterator r;
-    for (r = memberNameList.begin(); r != memberNameList.end(); ++r)
+    for(Conference::MemberNameList::const_iterator r = memberNameList.begin(); r != memberNameList.end(); ++r)
       if(r->second==NULL)
         Invite(conference->GetNumber(), r->first);
     OTF_RET_OK;
@@ -1631,9 +1622,9 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   {
     unsigned n=data("o").AsInteger(); MCUVideoMixer * mixer = conference->VMLFind(n); if(mixer==NULL) OTF_RET_FAIL;
     int pos = data("o2").AsInteger(); mixer->PositionSetup(pos, 1, member);
-    H323Connection_ConferenceMember *connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
-    if(connMember==NULL) OTF_RET_FAIL;
-    connMember->SetFreezeVideo(FALSE);
+    if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+      OTF_RET_FAIL;
+    member->SetFreezeVideo(FALSE);
     OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
     OTF_RET_OK;
@@ -1660,14 +1651,14 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
   if(action == OTFC_MUTE)
   {
-    H323Connection_ConferenceMember * connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
-    if(connMember) connMember->SetChannelPauses(data("o").AsInteger());
+    if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
+      member->SetChannelPauses(data("o").AsInteger());
     OTF_RET_OK;
   }
   if(action == OTFC_UNMUTE)
   {
-    H323Connection_ConferenceMember * connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
-    if(connMember) connMember->UnsetChannelPauses(data("o").AsInteger());
+    if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
+      member->UnsetChannelPauses(data("o").AsInteger());
     OTF_RET_OK;
   }
   if(action == OTFC_REMOVE_FROM_VIDEOMIXERS)
@@ -1683,8 +1674,8 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
         if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, TRUE);
         vmr=vmr->next;
       }
-      H323Connection_ConferenceMember *connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
-      if(connMember!=NULL) connMember->SetFreezeVideo(TRUE);
+      if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
+        member->SetFreezeVideo(TRUE);
       OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
       OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
       OTF_RET_OK;
@@ -2018,7 +2009,7 @@ PString MCUH323EndPoint::GetMonitorText()
       { output << "[Member " << ++num << "]\n";
         PStringStream hdr; hdr << "  ";
         PString name = member->GetName();
-        BOOL isFileMember = (name=="cache" || name == "file recorder");
+        BOOL isFileMember = (member->GetType() == MEMBER_TYPE_PIPE || member->GetType() == MEMBER_TYPE_CACHE);
         output << hdr << "Title: " << hex << member->GetTitle();
         if (isFileMember) output << " (file object)";
         output << "\n"
@@ -2026,11 +2017,10 @@ PString MCUH323EndPoint::GetMonitorText()
                << hdr << "Outgoing video mixer: " << member->GetVideoMixerNumber() << "\n"
                << hdr << "Duration: " << (PTime() - member->GetStartTime()) << "\n"
                << member->GetMonitorInfo(hdr);
-        H323Connection_ConferenceMember * connMember = NULL;
-        if(!isFileMember) connMember = dynamic_cast<H323Connection_ConferenceMember *>(member);
-        if(connMember!=NULL)
-        { output << hdr << "H323 Token: " << connMember->GetCallToken() << "\n";
-          MCUH323Connection * conn = (MCUH323Connection *)FindConnectionWithoutLock(connMember->GetCallToken());
+        if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
+        {
+          output << hdr << "callToken: " << member->GetCallToken() << "\n";
+          MCUH323Connection * conn = (MCUH323Connection *)FindConnectionWithoutLock(member->GetCallToken());
           output << hdr << "Connection: " << hex << conn << "\n";
         }
         if(isFileMember)
@@ -2268,12 +2258,10 @@ NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, Conferen
   Conference::MemberList::const_iterator r;
   for (r = conference.GetMemberList().begin(); r != conference.GetMemberList().end(); r++) {
     ConferenceMember * mbr = r->second;
-    if(mbr->GetType() & MEMBER_TYPE_GSYSTEM) continue;
-    if (mbr != memberToIgnore) {
-      H323Connection_ConferenceMember * h323Mbr = dynamic_cast<H323Connection_ConferenceMember *>(mbr);
-      if (h323Mbr != NULL)
-        tokens += h323Mbr->GetCallToken();
-    }
+    if(mbr->GetType() & MEMBER_TYPE_GSYSTEM)
+      continue;
+    if(mbr != memberToIgnore)
+      tokens += mbr->GetCallToken();
   }
 
   Resume(); 
@@ -2547,7 +2535,7 @@ void MCUH323Connection::SetupCacheConnection(PString & format, Conference * conf
  remotePartyName = format;
  conference = conf;
  conferenceIdentifier = conference->GetID();
- conferenceMember = (H323Connection_ConferenceMember *)memb; // fix it
+ conferenceMember = memb;
  requestedRoom = conference->GetNumber();
 }
 
@@ -3745,8 +3733,8 @@ void H323Connection_ConferenceMember::SetName()
     }
     else connLock = 1;
 
-    H323Connection_ConferenceMember * connConferenceMemeber = conn->GetConferenceMember();
-    if( connConferenceMemeber == this || connConferenceMemeber == NULL)
+    ConferenceMember * member = conn->GetConferenceMember();
+    if(member == this || member == NULL)
     {
       name = conn->GetMemberName();
       PTRACE(1, "SetName name: " << name);
@@ -3766,8 +3754,9 @@ void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
   PTRACE(5,id << "->SetFreezeVideo(" << disable << ")");
   MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
   if(conn == NULL) return;
-  H323Connection_ConferenceMember * connConferenceMemeber = conn->GetConferenceMember();
-  if( connConferenceMemeber == this || connConferenceMemeber == NULL) 
+
+  ConferenceMember * member = conn->GetConferenceMember();
+  if(member == this || member == NULL)
   {
    H323VideoCodec *codec = conn->GetVideoReceiveCodec();
    if(codec) codec->OnFreezeVideo(disable);

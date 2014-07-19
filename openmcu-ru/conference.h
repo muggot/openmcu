@@ -1025,6 +1025,11 @@ class ConferenceMember : public PObject
     float kManualGain, kOutputGain;
     int kManualGainDB, kOutputGainDB;
 
+    // functions H323Connection_ConferenceMember
+    virtual void SetChannelPauses(unsigned mask) {};
+    virtual void UnsetChannelPauses(unsigned mask) {};
+
+
   protected:
     unsigned videoMixerNumber;
     Conference * conference;

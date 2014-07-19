@@ -242,7 +242,7 @@ class MCUH323Connection : public H323Connection
     MCUH323Connection(MCUH323EndPoint &, unsigned, void *);
     ~MCUH323Connection();
 
-    virtual H323Connection_ConferenceMember * GetConferenceMember()
+    virtual ConferenceMember * GetConferenceMember()
     {
       PTRACE(5, "GetConferenceMember " << conferenceMember);
       return conferenceMember;
@@ -409,7 +409,7 @@ class MCUH323Connection : public H323Connection
     // Object used to treat the connection as a conference member.
     //  It is NULL before the connection is joined to the conference,
     //  or after the member is disconnected from the conference.
-    H323Connection_ConferenceMember * conferenceMember;
+    ConferenceMember * conferenceMember;
 
     // This is the current state of the welcome procedure. It is not
     //  declared using type WelcomeStates to allow the use of custom
@@ -530,11 +530,11 @@ class H323Connection_ConferenceMember : public ConferenceMember
 
     virtual void SetFreezeVideo(BOOL) const;
 
-    PString GetMonitorInfo(const PString & hdr);
+    virtual PString GetMonitorInfo(const PString & hdr);
 
     virtual void SendUserInputIndication(const PString & str);
 
-    void OnReceivedUserInputIndication(const PString & str)
+    virtual void OnReceivedUserInputIndication(const PString & str)
     { 
       PTRACE(2, "h323.cxx\tFCWL from OnReceivedUserInputIndication:" << callToken);
       H323Connection * conn = ep.FindConnectionWithLock(callToken);
@@ -545,8 +545,8 @@ class H323Connection_ConferenceMember : public ConferenceMember
       }
     }
 
-    void SetChannelPauses(unsigned mask);
-    void UnsetChannelPauses(unsigned mask);
+    virtual void SetChannelPauses(unsigned mask);
+    virtual void UnsetChannelPauses(unsigned mask);
 
   protected:
     PStringStream iISequence; // input indication sequence
