@@ -2593,7 +2593,7 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
       remote_port = "5061";
 
     local_ip = GetFromIp(remote_host, remote_port);
-    if(local_ip == "" || FindListener(local_ip) == FALSE)
+    if(local_ip == "")// || FindListener(local_ip) == FALSE)
       return FALSE;
 
     if(local_domain == "")
@@ -2666,7 +2666,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
     PTRACE(1, "MCUSIP\tSipRegister");
 
     PString local_ip = GetFromIp(proxy->host, proxy->port);
-    if(local_ip == "" || FindListener(local_ip) == FALSE)
+    if(local_ip == "")// || FindListener(local_ip) == FALSE)
       return 0;
 
     // ruri
@@ -3331,21 +3331,25 @@ void MCUSipEndPoint::ClearStunList()
 
 BOOL MCUSipEndPoint::FindListener(PString addr)
 {
-  if(agent == NULL) return FALSE;
   if(addr.Left(4) != "sip:") addr = "sip:"+addr;
   if(addr.Find("@") == P_MAX_INDEX) addr.Replace("sip:","sip:@",TRUE,0);
   MCUURL url(addr);
+  PString host = url.GetHostName();
+  PString port = url.GetPort();
+
+  PWaitAndSignal m(mutex);
   for(tport_t *tp = nta_agent_tports(agent); tp != NULL; tp = tport_next(tp))
   {
     tp_name_t const *tp_name = tport_name(tp);
-    PString host = tp_name->tpn_host;
-    //PString port = tp_name->tpn_port;
-    PString port = url.GetPort();
     //PString proto = tp_name->tpn_proto;
-    if(host == url.GetHostName() && port == url.GetPort())
+    if(host == (PString)tp_name->tpn_host && port == (PString)tp_name->tpn_port)
+    {
+      PTRACE(1, "MCUSIP\tSIP tport found: " << host << ":" << port);
       return TRUE;
+    }
   }
-  PTRACE(1, "MCUSIP\tSIP tport not found: " << addr);
+
+  PTRACE(1, "MCUSIP\tSIP tport not found: " << host << ":" << port);
   return FALSE;
 }
 
@@ -3353,6 +3357,7 @@ BOOL MCUSipEndPoint::FindListener(PString addr)
 
 void MCUSipEndPoint::InitListener()
 {
+  PWaitAndSignal m(mutex);
   nta_agent_close_tports(agent);
   for(PINDEX i = 0; i < sipListenerArray.GetSize(); i++)
   {
