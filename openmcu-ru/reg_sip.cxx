@@ -521,14 +521,8 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
 
 int Registrar::SipSendPing(RegistrarAccount *regAccount)
 {
-//  PTRACE(1, "MCUSIP\tServerSendOptions");
-
   if(regAccount->host == "" || regAccount->port == 0)
     return FALSE;
-
-  //PString local_ip = GetFromIp(regAccount->host, regAccount->port);
-  //if(local_ip == "")
-    //return FALSE;
 
   // do not use GetUrl() directly, "nta outgoing create: invalid URI"
   PString ruri_str = regAccount->GetUrl();

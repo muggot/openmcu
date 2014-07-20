@@ -445,10 +445,18 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   CreateLocalSipCaps();
 
   // local contact
-  local_user = MCUURL(contact_str).GetUserName();
+  MCUURL lurl(contact_str);
+  local_user = lurl.GetUserName();
   if(local_user == "")
+  {
     local_user = OpenMCU::Current().GetDefaultRoomName();
-  contact_str = "sip:"+local_user+"@"+nat_ip;
+    lurl.SetUserName(local_user);
+  }
+  // nat ip for contact
+  if(nat_ip != local_ip)
+    lurl.SetHostName(nat_ip);
+  // final local contact
+  contact_str = lurl.AsString();
 
   // requested room
   requestedRoom = local_user;
@@ -2592,17 +2600,23 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
     if(remote_transport == "tls" && remote_port == "5060")
       remote_port = "5061";
 
-    local_ip = GetFromIp(remote_host, remote_port);
-    if(local_ip == "")// || FindListener(local_ip) == FALSE)
+    // ruri
+    PString ruri_str = "sip:"+remote_user+"@"+remote_host+":"+remote_port+";transport="+remote_transport;
+
+    // local SIP address
+    PString contact_str;
+    if(GetLocalSipAddress(contact_str, ruri_str) == FALSE)
       return FALSE;
+    MCUURL lurl(contact_str);
+    local_ip = lurl.GetHostName();
+    lurl.SetUserName(local_user);
+    contact_str = lurl.AsString();
 
     if(local_domain == "")
       local_domain = local_ip;
     if(local_dname == "")
       local_dname = local_user;
 
-    // ruri
-    PString ruri_str = "sip:"+remote_user+"@"+remote_host+":"+remote_port+";transport="+remote_transport;
     url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)("sip:"+local_user+"@"+local_domain));
@@ -2610,7 +2624,6 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 
     sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)(const char *)("sip:"+remote_user+"@"+remote_domain));
 
-    PString contact_str = "sip:"+local_user+"@"+local_ip;
     sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)contact_str, NULL);
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, ruri, NULL);
@@ -2665,12 +2678,17 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 {
     PTRACE(1, "MCUSIP\tSipRegister");
 
-    PString local_ip = GetFromIp(proxy->host, proxy->port);
-    if(local_ip == "")// || FindListener(local_ip) == FALSE)
-      return 0;
-
     // ruri
     PString ruri_str = "sip:"+proxy->username+"@"+proxy->host+":"+proxy->port;
+
+    // local SIP address
+    PString contact_str;
+    if(GetLocalSipAddress(contact_str, ruri_str) == FALSE)
+      return 0;
+    MCUURL lurl(contact_str);
+    lurl.SetUserName(proxy->username);
+    contact_str = lurl.AsString();
+
     url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
@@ -2681,8 +2699,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
     sip_addr_t *sip_to = sip_to_create(&home, (url_string_t *)(const char *)
 	("sip:"+proxy->username+"@"+proxy->domain));
 
-    sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)
-	("sip:"+proxy->username+"@"+local_ip), NULL);
+    sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)contact_str, NULL);
     sip_contact->m_display = proxy->roomname;
 
     sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_REGISTER, ruri, NULL);
@@ -3388,6 +3405,34 @@ void MCUSipEndPoint::InitListener()
     }
 */
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSipEndPoint::GetLocalSipAddress(PString & local_addr, const PString & ruri_str)
+{
+  tp_name_t tpn[1] = {{ NULL }};
+  tport_t *tp = NULL;
+  const tp_name_t *tp_name = NULL;
+
+  if(tport_name_by_url(&home, tpn, (url_string_t *)(const char *)ruri_str) == -1)
+    goto error;
+
+  tp = tport_by_name(nta_agent_tports(agent), tpn);
+  if(tp == NULL)
+    goto error;
+
+  tp_name = tport_name(tp);
+  if(tp_name == NULL)
+    goto error;
+
+  local_addr = "sip:@"+(PString)tp_name->tpn_host+":"+(PString)tp_name->tpn_port+";transport="+(PString)tp_name->tpn_proto;
+  MCUTRACE(1, "MCUSIP\tfound local SIP address " << local_addr << " for remote " << ruri_str);
+  return TRUE;
+
+  error:
+    MCUTRACE(1, "MCUSIP\tnot found local SIP address for remote " << ruri_str);
+    return FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

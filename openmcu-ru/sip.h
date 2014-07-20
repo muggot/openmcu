@@ -440,6 +440,7 @@ class MCUSipEndPoint : public PThread
 
     PStringArray sipListenerArray;
     BOOL FindListener(PString addr);
+    BOOL GetLocalSipAddress(PString & local_addr, const PString & ruri_str);
 
     PSTUNClient * CreateStun(PString address);
     PSTUNClient * GetPreferedStun(PString address);
