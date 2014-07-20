@@ -2888,7 +2888,7 @@ int MCUSipEndPoint::response_cb1(nta_outgoing_t *orq, const sip_t *sip)
       return 0;
     }
     nta_outgoing_mcreate(agent, wrap_response_cb1, (nta_outgoing_magic_t *)this,
- 			 (url_string_t *)sip_orq->sip_to->a_url,
+ 			 (url_string_t *)sip_orq->sip_request->rq_url,
 			 msg_orq,
           		 TAG_END());
     nta_outgoing_destroy(orq);
