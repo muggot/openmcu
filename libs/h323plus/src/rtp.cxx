@@ -2129,7 +2129,7 @@ RTP_Session::SendReceiveStatus RTP_UDP::ReadDataPDU(RTP_DataFrame & frame)
 
   frame.SetPayloadSize(pduSize - frame.GetHeaderSize());
 
-  PTRACE(6, "RTP_UDP\tSession " << sessionID << ", Received frame " << pduSize << " " << frame.GetHeaderSize() << "+" << frame.GetPayloadSize());
+  PTRACE(9, "RTP_UDP\tSession " << sessionID << ", Received frame " << pduSize << " " << frame.GetHeaderSize() << "+" << frame.GetPayloadSize());
   return OnReceiveData(frame,*this);
 }
 

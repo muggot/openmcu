@@ -2369,6 +2369,11 @@ BOOL H323PluginVideoCodec::Write(const BYTE * buffer, unsigned length, const RTP
     return FALSE;
   }
 
+  if (length == 0) {
+    written = length;
+    return TRUE;
+  }
+
   // get the size of the output buffer
   int outputDataSize;
   if (!CallCodecControl(codec, context, GET_OUTPUT_DATA_SIZE_CONTROL, NULL, NULL, outputDataSize))
@@ -2380,7 +2385,7 @@ BOOL H323PluginVideoCodec::Write(const BYTE * buffer, unsigned length, const RTP
   unsigned int toLen = bufferRTP.GetSize();
   unsigned int flags = freezeVideo;
 
-  PTRACE(6, "PLUGIN\t" << formatString << ", Write " << fromLen << " " << src.GetHeaderSize() << "+" << src.GetPayloadSize());
+  PTRACE(9, "PLUGIN\t" << formatString << ", Write " << fromLen << " " << src.GetHeaderSize() << "+" << src.GetPayloadSize());
 
   int retval = (codec->codecFunction)(codec, context,
                                       (const BYTE *)src, &fromLen,

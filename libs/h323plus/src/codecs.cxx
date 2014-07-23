@@ -1169,7 +1169,7 @@ BOOL H323FramedAudioCodec::Write(const BYTE * buffer,
   written = 0;
 
   unsigned bytesDecoded = samplesPerFrame*2*codecChannels;
-  PTRACE(9,"H323FramedAudioCodec\tWrite: codecChannels " << codecChannels << ", samplesPerFrame " << samplesPerFrame << ", bytesDecoded " << bytesDecoded);
+  PTRACE(9,"H323FramedAudioCodec\tWrite: length " << length << ", codecChannels " << codecChannels << ", samplesPerFrame " << samplesPerFrame << ", bytesDecoded " << bytesDecoded);
 
   if (length != 0) {
     if (length > bytesPerFrame)
