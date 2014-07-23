@@ -228,13 +228,7 @@ BOOL MCURtspConnection::InitServer(const msg_t *msg)
   MCUURL lurl(luri_str);
   rtsp_path = lurl.GetPath()[0];
 
-  if(rtsp_path == "")
-  {
-    MCUTRACE(1, trace_section << "empty path");
-    return FALSE;
-  }
-
-  if(MCUConfig("RTSP Server "+rtsp_path).GetBoolean(EnableKey) == FALSE)
+  if(rtsp_path == "" || MCUConfig("RTSP Server "+rtsp_path).GetBoolean(EnableKey) == FALSE)
   {
     MCUTRACE(1, trace_section << "unknown path " << rtsp_path);
     return FALSE;
