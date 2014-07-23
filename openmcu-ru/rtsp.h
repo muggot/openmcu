@@ -33,6 +33,7 @@ class MCURtspConnection : public MCUSipConnection
 
   protected:
     void CreateLocalSipCaps();
+    BOOL InitServer(const msg_t *msg);
 
     enum RtspStates
     {
@@ -99,7 +100,7 @@ class MCURtspServer
     void ClearListeners();
 
     BOOL CreateConnection(PString address, int socket_fd, const msg_t *msg);
-    void SendOk(PString address, int socket_fd, const msg_t *msg);
+    void SendResponse(int socket_fd, const PString & address, const msg_t *msg, const PString & status_str);
 
     PString trace_section;
 
