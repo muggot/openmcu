@@ -33,7 +33,6 @@ class MCURtspConnection : public MCUSipConnection
 
   protected:
     void CreateLocalSipCaps();
-    BOOL InitServer(const msg_t *msg);
 
     enum RtspStates
     {

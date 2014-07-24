@@ -206,33 +206,12 @@ BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg
   // remote address proto:host:port
   ruri_str = address;
 
-  // create listener
-  listener = MCUListener::Create(socket_fd, ruri_str, OnReceived_wrap, this);
-  if(listener == NULL)
-    return FALSE;
-
-  // start connection
-  OnRequestReceived(msg);
-
-  return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BOOL MCURtspConnection::InitServer(const msg_t *msg)
-{
   sip_t *sip = sip_object(msg);
 
   // rtsp address (local)
   luri_str = url_as_string(msg_home(msg), sip->sip_request->rq_url);
   MCUURL lurl(luri_str);
   rtsp_path = lurl.GetPath()[0];
-
-  if(rtsp_path == "" || MCUConfig("RTSP Server "+rtsp_path).GetBoolean(EnableKey) == FALSE)
-  {
-    MCUTRACE(1, trace_section << "unknown path " << rtsp_path);
-    return FALSE;
-  }
 
   // used in GetEndpointParam
   remotePartyAddress = "RTSP Server "+rtsp_path;
@@ -325,6 +304,14 @@ BOOL MCURtspConnection::InitServer(const msg_t *msg)
     MCUTRACE(1, trace_section << "cannot create connection without codecs, audio: " << audio_codec << " video: " << video_codec);
     return FALSE;
   }
+
+  // create listener
+  listener = MCUListener::Create(socket_fd, ruri_str, OnReceived_wrap, this);
+  if(listener == NULL)
+    return FALSE;
+
+  // start connection
+  OnRequestReceived(msg);
 
   return TRUE;
 }
@@ -599,10 +586,6 @@ int MCURtspConnection::OnRequestOptions(const msg_t *msg)
 
 int MCURtspConnection::OnRequestDescribe(const msg_t *msg)
 {
-  // initializing server settings
-  if(InitServer(msg) == FALSE)
-    return 0;
-
   sip_t *sip = sip_object(msg);
 
   char buffer_sdp[1024];
@@ -1216,14 +1199,14 @@ BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t
 {
   if(ep->HasConnection(address))
   {
-    MCUTRACE(1, trace_section << "connection already exists " << address);
+    MCUTRACE(1, trace_section << address << " connection already exists ");
     SendResponse(socket_fd, address, msg, "454 Session Not Found");
     return FALSE;
   }
 
   if(msg == NULL)
   {
-    MCUTRACE(1, trace_section << "failed parse message from " << address);
+    MCUTRACE(1, trace_section << address << " failed parse message ");
     SendResponse(socket_fd, address, msg, "400 Bad Request");
     return FALSE;
   }
@@ -1231,15 +1214,25 @@ BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t
   sip_t *sip = sip_object(msg);
   if(sip->sip_request == NULL || sip->sip_cseq == NULL)
   {
-    MCUTRACE(1, trace_section << "missing headers from " << address);
+    MCUTRACE(1, trace_section << address << " missing headers ");
     SendResponse(socket_fd, address, msg, "400 Bad Request");
+    return FALSE;
+  }
+
+  PString agent;
+  if(sip->sip_user_agent)
+    agent = sip->sip_user_agent->g_string;
+  if(agent.Find("RealMedia") != P_MAX_INDEX)
+  {
+    MCUTRACE(1, trace_section << address << " RealRTSP is not supported ");
+    SendResponse(socket_fd, address, msg, "505 RTSP Version not supported");
     return FALSE;
   }
 
   PString method_name = sip->sip_cseq->cs_method_name;
   if(method_name != METHOD_OPTIONS && method_name != METHOD_DESCRIBE)
   {
-    MCUTRACE(1, trace_section << "incorrect method " << method_name << " from " << address);
+    MCUTRACE(1, trace_section << address << " incorrect method " << method_name);
     SendResponse(socket_fd, address, msg, "455 Method Not Valid in This State");
     return FALSE;
   }
@@ -1247,9 +1240,9 @@ BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t
   PString luri_str = url_as_string(msg_home(msg), sip->sip_request->rq_url);
   MCUURL lurl(luri_str);
   PString path = lurl.GetPath()[0];
-  if(path != "" && MCUConfig("RTSP Server "+path).GetBoolean(EnableKey) == FALSE)
+  if(path == "" || MCUConfig("RTSP Server "+path).GetBoolean(EnableKey) == FALSE)
   {
-    MCUTRACE(1, trace_section << "unknown path " << path);
+    MCUTRACE(1, trace_section << address << " server not found " << path);
     SendResponse(socket_fd, address, msg, "404 Not Found");
     return FALSE;
   }
@@ -1566,6 +1559,7 @@ void MCUListener::TCPConnectionHandler(PThread &, INT client_fd)
   return;
 
   error:
+    MCUTRACE(1, "MCU Listener: close connection " << address);
     close(client_fd);
     handler_count--;
 }
