@@ -541,7 +541,11 @@ void H323Capability::PrintOn(ostream & strm) const
 H323Capability * H323Capability::Create(const PString & name)
 {
   H323Capability * cap = H323CapabilityFactory::CreateInstance(name);
-  if (cap == NULL)
+  if(cap == NULL && name.Right(4) != "{sw}")
+    cap = H323CapabilityFactory::CreateInstance(name+"{sw}");
+  if(cap == NULL && name.Right(4) == "{sw}" && name.GetLength() > 4)
+    cap = H323CapabilityFactory::CreateInstance(name.Left(name.GetLength()-4));
+  if(cap == NULL)
     return NULL;
 
   return (H323Capability *)cap->Clone();

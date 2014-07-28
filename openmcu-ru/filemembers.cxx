@@ -474,8 +474,7 @@ void ConferenceFileMember::EncoderCacheThread(PThread &, INT)
 {
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
-  H323Capability * cap = H323Capability::Create(vformat+"{sw}");
-  if(!cap) cap = H323Capability::Create(vformat);
+  H323Capability * cap = H323Capability::Create(vformat);
   if(!cap) return;
   OpalMediaFormat & wf = cap->GetWritableMediaFormat();
   wf = vformat;
