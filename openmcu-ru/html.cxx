@@ -885,8 +885,8 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       if(name == "*") s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, "", 0, TRUE)+"</tr>";
       else            s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       //
-      if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, scfg.GetString(HostKey))+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
+      else            s2 += rowArray+JsLocale("window.l_name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
       //
       s2 += rowArray+"H.323 "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
       //
@@ -1182,8 +1182,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_host")+IpItem(name, scfg.GetString("Host"))+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
+      else            s2 += rowArray+JsLocale("window.l_name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
       //
       s2 += rowArray+"SIP "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
       //
