@@ -44,7 +44,7 @@ class MCURtspConnection : public MCUSipConnection
       RTSP_SETUP_VIDEO,
       RTSP_PLAY,
       RTSP_PLAYING,
-      RTSP_RELEASED
+      RTSP_TEARDOWN
     };
     RtspStates rtsp_state;
 

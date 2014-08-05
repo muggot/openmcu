@@ -23,22 +23,13 @@ BOOL PreParseMsg(PString & msg_str)
     msg_str.Replace("Cseq:","CSeq:",TRUE,0);
 
   if(msg_str.Find("CSeq:") == P_MAX_INDEX)
+  {
+    MCUTRACE(1, "RTSP pre-parse: CSeq header not found");
     return FALSE;
+  }
 
-  PString name;
-  if(msg_str.Find(METHOD_OPTIONS) != P_MAX_INDEX)
-    name = METHOD_OPTIONS;
-  else if(msg_str.Find(METHOD_DESCRIBE) != P_MAX_INDEX)
-    name = METHOD_DESCRIBE;
-  else if(msg_str.Find(METHOD_SETUP) != P_MAX_INDEX)
-    name = METHOD_SETUP;
-  else if(msg_str.Find(METHOD_PLAY) != P_MAX_INDEX)
-    name = METHOD_PLAY;
-  else if(msg_str.Find(METHOD_TEARDOWN) != P_MAX_INDEX)
-    name = METHOD_TEARDOWN;
-  else
-    return FALSE;
-
+  // create not empty CSeq method name
+  PString method_name = "EMPTY";
   PString cseq;
   for(PINDEX i = msg_str.Find("CSeq:")+6; i < msg_str.GetLength(); i++)
   {
@@ -47,10 +38,11 @@ BOOL PreParseMsg(PString & msg_str)
     cseq += msg_str[i];
   }
   if(cseq == "")
+  {
+    MCUTRACE(1, "RTSP pre-parse: CSeq number not found");
     return FALSE;
-
-  if(msg_str.Find("CSeq: "+cseq+" "+name) == P_MAX_INDEX)
-    msg_str.Replace("CSeq: "+cseq,"CSeq: "+cseq+" "+name,TRUE,0);
+  }
+  msg_str.Replace("CSeq: "+cseq, "CSeq: "+cseq+" "+method_name, TRUE, 0);
 
   return TRUE;
 }
@@ -64,12 +56,22 @@ msg_t * ParseMsg(PString & msg_str)
 
   msg_t *msg = msg_make(sip_default_mclass(), 0, (const void *)(const char *)msg_str, msg_str.GetLength());
   sip_t *sip = sip_object(msg);
-  if(sip == NULL || sip->sip_cseq == NULL || sip->sip_cseq->cs_method_name == NULL)
+  if(sip == NULL || sip->sip_cseq == NULL)
   {
+    MCUTRACE(1, "RTSP parse: failed parse rtsp message");
+    goto error;
+  }
+  if(sip->sip_request == NULL && sip->sip_status == NULL)
+  {
+    MCUTRACE(1, "RTSP parse: failed parse rtsp message");
+    goto error;
+  }
+
+  return msg;
+
+  error:
     msg_destroy(msg);
     return NULL;
-  }
-  return msg;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -363,6 +365,7 @@ int MCURtspConnection::SendPlay()
   if(SendRequest(buffer) == 0)
     return 0;
 
+  rtsp_state = RTSP_PLAY;
   return 1;
 }
 
@@ -403,6 +406,11 @@ int MCURtspConnection::SendSetup(int pt)
   if(SendRequest(buffer) == 0)
     return 0;
 
+  if(pt == scap)
+    rtsp_state = RTSP_SETUP_AUDIO;
+  else
+    rtsp_state = RTSP_SETUP_VIDEO;
+
   return 1;
 }
 
@@ -421,6 +429,7 @@ int MCURtspConnection::SendTeardown()
   if(SendRequest(buffer) == 0)
     return 0;
 
+  rtsp_state = RTSP_TEARDOWN;
   return 1;
 }
 
@@ -511,13 +520,11 @@ int MCURtspConnection::OnResponseSetup(const msg_t *msg)
 
   if(rtsp_state == RTSP_SETUP_AUDIO && vcap > 0)
   {
-    rtsp_state = RTSP_SETUP_VIDEO;
     SendSetup(vcap);
     return 1;
   }
 
   SendPlay();
-  rtsp_state = RTSP_PLAY;
   return 1;
 }
 
@@ -548,15 +555,9 @@ int MCURtspConnection::OnResponseDescribe(const msg_t *msg)
     remoteApplication = sip->sip_server->g_string;
 
   if(scap >= 0)
-  {
-    rtsp_state = RTSP_SETUP_AUDIO;
     SendSetup(scap);
-  }
   else
-  {
-    rtsp_state = RTSP_SETUP_VIDEO;
     SendSetup(vcap);
-  }
 
   return 1;
 }
@@ -829,6 +830,8 @@ int MCURtspConnection::OnRequestTeardown(const msg_t *msg)
   AddHeaders(buffer);
   SendRequest(buffer);
 
+  rtsp_state = RTSP_TEARDOWN;
+
   ProcessShutdown(EndedByRemoteUser);
   return 1;
 }
@@ -873,9 +876,8 @@ int MCURtspConnection::OnResponseReceived(const msg_t *msg)
   int response_code = -1;
 
   int status = sip->sip_status->st_status;
-  PString cs_method_name = sip->sip_cseq->cs_method_name;
 
-  if(cs_method_name == METHOD_DESCRIBE && rtsp_state == RTSP_DESCRIBE)
+  if(rtsp_state == RTSP_DESCRIBE)
   {
     if(status == 200)
     {
@@ -899,21 +901,21 @@ int MCURtspConnection::OnResponseReceived(const msg_t *msg)
       return 0;
     }
   }
-  if(cs_method_name == METHOD_SETUP && (rtsp_state == RTSP_SETUP_AUDIO || rtsp_state == RTSP_SETUP_VIDEO))
+  else if(rtsp_state == RTSP_SETUP_AUDIO || rtsp_state == RTSP_SETUP_VIDEO)
   {
     if(status == 200)
     {
       response_code = OnResponseSetup(msg);
     }
   }
-  if(cs_method_name == METHOD_PLAY && rtsp_state == RTSP_PLAY)
+  else if(rtsp_state == RTSP_PLAY)
   {
     if(status == 200)
     {
       response_code = OnResponsePlay(msg);
     }
   }
-  if(cs_method_name == METHOD_TEARDOWN)
+  else if(rtsp_state == RTSP_TEARDOWN)
   {
     return 0;
   }
@@ -921,9 +923,11 @@ int MCURtspConnection::OnResponseReceived(const msg_t *msg)
   if(response_code != 1)
   {
     if(response_code == -1)
-      MCUTRACE(1, trace_section << "unknown response " << status << " " << cs_method_name << ", state " << rtsp_state);
+    {
+      MCUTRACE(1, trace_section << "unknown response " << status << ", state " << rtsp_state);
+    }
 
-    MCUTRACE(1, trace_section << "error processing response " << response_code);
+    MCUTRACE(1, trace_section << "error processing response " << status << ", error " << response_code << ", state " << rtsp_state);
     ProcessShutdown();
   }
 
@@ -1012,7 +1016,7 @@ int MCURtspConnection::OnRequestReceived(const msg_t *msg)
   {
     response_code = OnRequestPlay(msg);
   }
-  if(method_name == METHOD_TEARDOWN && rtsp_state == RTSP_PLAYING)
+  if(method_name == METHOD_TEARDOWN)
   {
     response_code = OnRequestTeardown(msg);
   }
@@ -1024,7 +1028,7 @@ int MCURtspConnection::OnRequestReceived(const msg_t *msg)
       MCUTRACE(1, trace_section << "unknown request " << method_name << ", state " << rtsp_state);
     }
 
-    MCUTRACE(1, trace_section << "error processing request " << response_code);
+    MCUTRACE(1, trace_section << "error processing request " << method_name << ", error " << response_code << ", state " << rtsp_state);
     ProcessShutdown();
   }
 
@@ -1229,7 +1233,7 @@ BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t
     return FALSE;
   }
 
-  PString method_name = sip->sip_cseq->cs_method_name;
+  PString method_name = sip->sip_request->rq_method_name;
   if(method_name != METHOD_OPTIONS && method_name != METHOD_DESCRIBE)
   {
     MCUTRACE(1, trace_section << address << " incorrect method " << method_name);
@@ -1262,19 +1266,15 @@ BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t
 
 void MCURtspServer::SendResponse(int socket_fd, const PString & address, const msg_t *msg, const PString & status_str)
 {
-  sip_t *sip = sip_object(msg);
-
   char buffer[1024];
   snprintf(buffer, 1024,
   	   "RTSP/1.0 %s\r\n"
-	   "CSeq: %d %s\r\n"
 	   "Date: %s\r\n"
 	   "Public: OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY\r\n"
 	   "\r\n"
-	   , (const char *)status_str, sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString());
+	   , (const char *)status_str, (const char *)PTime().AsString());
 
-  if(MCUListener::Send(socket_fd, buffer) == TRUE)
-    MCUTRACE(1, trace_section << "send to " << address << " " << strlen(buffer) << " bytes\n" << buffer);
+  MCUTRACE(1, trace_section << "send to " << address << " " << strlen(buffer) << " bytes\n" << buffer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
