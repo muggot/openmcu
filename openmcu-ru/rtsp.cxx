@@ -677,6 +677,8 @@ BOOL MCURtspConnection::ParseTransportStr(SipCapability *sc, PString & transport
     sc->remote_port = remote_ports.Tokenise("-")[0].AsInteger();
   } else {
     sc->remote_ip = transport_dict("source");
+    if(sc->remote_ip == "")
+      sc->remote_ip = MCUURL(ruri_str).GetHostName();
     remote_ports = transport_dict("server_port");
     sc->remote_port = remote_ports.Tokenise("-")[0].AsInteger();
   }
