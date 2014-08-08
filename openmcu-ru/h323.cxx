@@ -179,7 +179,7 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   DisableH245Tunneling(disableH245Tunneling);
 
   // MCU Server Id
-  PString serverId = MCUConfig("Parameters").GetString("OpenMCU-ru Server Id",OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
+  PString serverId = MCUConfig("Parameters").GetString("HONEYNET-MCU Server Id",OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
   // SetLocalUserName make localAliasNames.RemoveAll() !!!
   SetLocalUserName(serverId);
 
@@ -1968,7 +1968,7 @@ PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
   PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
   for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
-  if(r == conferenceList.end() ) return "OpenMCU-ru: Bad room";
+  if(r == conferenceList.end() ) return "HONEYNET-MCU: Bad room";
   Conference & conference = *(r->second);
   PWaitAndSignal m2(conference.videoMixerListMutex);
   MCUVideoMixer * mixer = conference.videoMixerList->mixer;

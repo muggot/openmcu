@@ -261,7 +261,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // Language
   s << SelectField("Language", cfg.GetString("Language"), ",EN,RU");
   // MCU Server Id
-  s << StringField("OpenMCU-ru Server Id", cfg.GetString("OpenMCU-ru Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 250);
+  s << StringField("HONEYNET-MCU Server Id", cfg.GetString("HONEYNET-MCU Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 250);
 
   s << SelectField(DefaultProtocolKey, cfg.GetString(DefaultProtocolKey, "sip"), "h323,sip");
 
@@ -2058,17 +2058,16 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
     if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
   }
   PStringStream shtml;
-  BeginPage(shtml,"OpenMCU-ru","window.l_welcome","window.l_info_welcome");
+  BeginPage(shtml,"HONEYNET-MCU","window.l_welcome","window.l_info_welcome");
 
   PString timeFormat = "yyyyMMdd hhmmss z";
   PTime now;
   PTimeInterval upTime = now - OpenMCU::Current().GetStartTime();
 
-  shtml << "<br><b>Monitor Text (<span style='cursor:pointer;text-decoration:underline' onclick='javascript:{if(document.selection){var range=document.body.createTextRange();range.moveToElementText(document.getElementById(\"monitorTextId\"));range.select();}else if(window.getSelection){var range=document.createRange();range.selectNode(document.getElementById(\"monitorTextId\"));window.getSelection().addRange(range);}}'>select all</span>)</b><div style='padding:5px;border:1px dotted #595;width:100%;height:auto;max-height:300px;overflow:auto'><pre style='margin:0px;padding:0px' id='monitorTextId'>"
 #  ifdef GIT_REVISION
 #    define _QUOTE_MACRO_VALUE1(x) #x
 #    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
-        << "OpenMCU-ru REVISION " << _QUOTE_MACRO_VALUE(GIT_REVISION) << "\n"
+        << "HONEYNET-MCU REVISION " << _QUOTE_MACRO_VALUE(GIT_REVISION) << "\n"
 #    undef _QUOTE_MACRO_VALUE
 #    undef _QUOTE_MACRO_VALUE1
 #  endif
@@ -2099,7 +2098,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU-ru\r\n"
+      << "Server: HONEYNET-MCU\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2173,7 +2172,7 @@ BOOL MainStatusPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   PStringStream message;
   message << "HTTP/1.1 200 OK\r\n"
           << "Date: " << PTime().AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-          << "Server: OpenMCU-ru\r\n"
+          << "Server: HONEYNET-MCU\r\n"
           << "MIME-Version: 1.0\r\n"
           << "Cache-Control: no-cache, must-revalidate\r\n"
           << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2372,7 +2371,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
       PStringStream message;
       message << "HTTP/1.1 200 OK\r\n"
               << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-              << "Server: OpenMCU-ru\r\n"
+              << "Server: HONEYNET-MCU\r\n"
               << "MIME-Version: 1.0\r\n"
               << "Cache-Control: no-cache, must-revalidate\r\n"
               << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2426,7 +2425,7 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
 
   message << "HTTP/1.1 200 OK\r\n"
           << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-          << "Server: OpenMCU-ru\r\n"
+          << "Server: HONEYNET-MCU\r\n"
           << "MIME-Version: 1.0\r\n"
           << "Cache-Control: no-cache, must-revalidate\r\n"
           << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2688,7 +2687,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU-ru\r\n"
+      << "Server: HONEYNET-MCU\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2756,7 +2755,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       PStringStream message; PTime now; message
         << "HTTP/1.1 404 Not Found\r\n"
         << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-        << "Server: OpenMCU-ru\r\n"
+        << "Server: HONEYNET-MCU\r\n"
         << "MIME-Version: 1.0\r\n"
         << "Cache-Control: no-cache, must-revalidate\r\n"
         << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2776,7 +2775,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       PStringStream message; PTime now; message
         << "HTTP/1.1 403 Forbidden\r\n"
         << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-        << "Server: OpenMCU-ru\r\n"
+        << "Server: HONEYNET-MCU\r\n"
         << "MIME-Version: 1.0\r\n"
         << "Cache-Control: no-cache, must-revalidate\r\n"
         << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2792,7 +2791,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU-ru\r\n"
+      << "Server: HONEYNET-MCU\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2852,7 +2851,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     PStringStream message; PTime now; message
       << "HTTP/1.1 404 Not Found\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU-ru\r\n"
+      << "Server: HONEYNET-MCU\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -3024,7 +3023,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU-ru\r\n"
+      << "Server: HONEYNET-MCU\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"

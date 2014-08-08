@@ -160,14 +160,14 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #  ifdef GIT_REVISION
 #    define _QUOTE_MACRO_VALUE1(x) #x
 #    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
-  PTRACE(1,"OpenMCU-ru git revision " << _QUOTE_MACRO_VALUE(GIT_REVISION));
+  PTRACE(1,"HONEYNET-MCU git revision " << _QUOTE_MACRO_VALUE(GIT_REVISION));
 #    undef _QUOTE_MACRO_VALUE
 #    undef _QUOTE_MACRO_VALUE1
 #  endif
 #endif //if PTRACING
 
 #ifdef __VERSION__
-  PTRACE(1,"OpenMCU-ru GCC version " <<__VERSION__);
+  PTRACE(1,"HONEYNET-MCU GCC version " <<__VERSION__);
 #endif
 
 // default log file name
@@ -376,7 +376,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #  ifdef GIT_REVISION
 #    define _QUOTE_MACRO_VALUE1(x) #x
 #    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
-                        (PString("OpenMCU-ru REVISION ") + _QUOTE_MACRO_VALUE(GIT_REVISION) +"\n\n") +
+                        (PString("HONEYNET-MCU REVISION ") + _QUOTE_MACRO_VALUE(GIT_REVISION) +"\n\n") +
 #    undef _QUOTE_MACRO_VALUE
 #    undef _QUOTE_MACRO_VALUE1
 #  endif
@@ -511,13 +511,13 @@ void OpenMCU::LogMessage(const PString & str)
   if (!logFile.IsOpen()) {
     if(!logFile.Open(logFilename, PFile::ReadWrite))
     {
-      PTRACE(1,"OpenMCU-ru\tCan not open log file: " << logFilename << "\n" << msg << flush);
+      PTRACE(1,"HONEYNET-MCU\tCan not open log file: " << logFilename << "\n" << msg << flush);
       logMutex.Signal();
       return;
     }
     if(!logFile.SetPosition(0, PFile::End))
     {
-      PTRACE(1,"OpenMCU-ru\tCan not change log position, log file name: " << logFilename << "\n" << msg << flush);
+      PTRACE(1,"HONEYNET-MCU\tCan not change log position, log file name: " << logFilename << "\n" << msg << flush);
       logFile.Close();
       logMutex.Signal();
       return;
@@ -526,7 +526,7 @@ void OpenMCU::LogMessage(const PString & str)
 
   if(!logFile.WriteLine(msg))
   {
-    PTRACE(1,"OpenMCU-ru\tCan not write to log file: " << logFilename << "\n" << msg << flush);
+    PTRACE(1,"HONEYNET-MCU\tCan not write to log file: " << logFilename << "\n" << msg << flush);
   }
   logFile.Close();
   logMutex.Signal();

@@ -15,11 +15,11 @@
 //
 ////////////////////////////////////////////////////
 
-#define	PRODUCT_NAME_TEXT	"OpenMCU-ru"
+#define	PRODUCT_NAME_TEXT	"HONEYNET-MCU"
 
-#define	EXE_NAME_TEXT	    "openmcu-ru"
+#define	EXE_NAME_TEXT	    "HONEYNET-MCU"
 
-#define	MANUFACTURER_TEXT	"OpenMCU-ru Team"
+#define	MANUFACTURER_TEXT	"HONEYNET-MCU Team"
 
 #define	COPYRIGHT_HOLDER	MANUFACTURER_TEXT
 

@@ -756,7 +756,7 @@ void Registrar::InitConfig()
   MCUConfig cfg("Registrar Parameters");
 
   // general parameters
-  registrar_domain = cfg.GetString("Registrar domain", "openmcu-ru");
+  registrar_domain = cfg.GetString("Registrar domain", "HONEYNET-MCU");
   allow_internal_calls = cfg.GetBoolean("Allow internal calls", TRUE);
 
   enable_gatekeeper = cfg.GetBoolean("H.323 gatekeeper enable", TRUE);
