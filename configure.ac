@@ -365,23 +365,37 @@ AC_SUBST(COMPILE_LIBSRTP, 0)
 AC_SUBST(LIBSRTP_DIR, ${top_srcdir}/libs/srtp)
 
 if test "${libsrtp}" = "yes"; then
-  AC_CHECK_HEADERS(srtp/srtp.h, USE_LIBSRTP=1, USE_LIBSRTP=0, [-])
-  if test ${USE_LIBSRTP} = 1 ; then
-    AC_CHECK_LIB(srtp, srtp_protect, USE_LIBSRTP=1, USE_LIBSRTP=0)
+  if test ${USE_LIBSRTP} = 0 ; then
+    AC_CHECK_FILE(/usr/include/srtp/srtp.h, USE_LIBSRTP=1, USE_LIBSRTP=0)
+    if test ${USE_LIBSRTP} = 1 ; then
+      AC_CHECK_FILE(/usr/lib/libsrtp.so, USE_LIBSRTP=1, USE_LIBSRTP=0)
+      if test ${USE_LIBSRTP} = 1 ; then
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/include/srtp/";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
+      fi
+    fi
   fi
-  if test ${USE_LIBSRTP} = 1 ; then
-    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libsrtp`";
-    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L libsrtp`";
-    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L libsrtp`";
-    MCU_LDLIBS="$MCU_LDLIBS -lsrtp"
+  if test ${USE_LIBSRTP} = 0 ; then
+    AC_CHECK_FILE(/usr/local/include/srtp/srtp.h, USE_LIBSRTP=1, USE_LIBSRTP=0)
+    if test ${USE_LIBSRTP} = 1 ; then
+      AC_CHECK_FILE(/usr/local/lib/libsrtp.so, USE_LIBSRTP=1, USE_LIBSRTP=0)
+      if test ${USE_LIBSRTP} = 1 ; then
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/local/include/srtp/";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/local/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
+      fi
+    fi
   fi
   if test ${USE_LIBSRTP} = 0 ; then
     AC_CONFIG_SUBDIRS(libs/srtp)
     MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/srtp/include -I../libs/srtp/crypto/include"
     MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/srtp";
-    MCU_LDLIBS="$MCU_LDLIBS -lsrtp"
     USE_LIBSRTP=1
     COMPILE_LIBSRTP=1
+  fi
+  if test ${USE_LIBSRTP} = 1 ; then
+    MCU_LDLIBS="$MCU_LDLIBS -lsrtp"
   fi
 fi
 AM_CONDITIONAL(COMPILER_USE_LIBSRTP, [test ${COMPILE_LIBSRTP} = 1])
@@ -456,22 +470,36 @@ AC_SUBST(COMPILE_LIBYUV, 0)
 AC_SUBST(LIBYUV_DIR, ${top_srcdir}/libs/libyuv)
 
 if test "${libyuv}" = "yes"; then
-  AC_CHECK_HEADERS(libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0, [-])
-  if test ${USE_LIBYUV} = 1 ; then
-    AC_CHECK_LIB(yuv, I420Scale, USE_LIBYUV=1, USE_LIBYUV=0)
+  if test ${USE_LIBYUV} = 0 ; then
+    AC_CHECK_FILE(/usr/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
+    if test ${USE_LIBYUV} = 1 ; then
+      AC_CHECK_FILE(/usr/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
+      if test ${USE_LIBYUV} = 1 ; then
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/include";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
+      fi
+    fi
   fi
-  if test ${USE_LIBYUV} = 1 ; then
-    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libyuv`";
-    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L libyuv`";
-    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L libyuv`";
-    MCU_LDLIBS="$MCU_LDLIBS -lyuv"
+  if test ${USE_LIBYUV} = 0 ; then
+    AC_CHECK_FILE(/usr/local/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
+    if test ${USE_LIBYUV} = 1 ; then
+      AC_CHECK_FILE(/usr/local/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
+      if test ${USE_LIBYUV} = 1 ; then
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/local/include";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/local/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
+      fi
+    fi
   fi
   if test ${USE_LIBYUV} = 0 ; then
     MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libyuv/include"
     MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libyuv";
-    MCU_LDLIBS="$MCU_LDLIBS -lyuv"
     USE_LIBYUV=1
     COMPILE_LIBYUV=1
+  fi
+  if test ${USE_LIBYUV} = 1 ; then
+    MCU_LDLIBS="$MCU_LDLIBS -lyuv"
   fi
 fi
 AM_CONDITIONAL(COMPILER_USE_LIBYUV, [test ${COMPILE_LIBYUV} = 1])
@@ -783,21 +811,38 @@ AC_SUBST(SPEEX_LDFLAGS)
 AC_SUBST(SPEEX_CPPFLAGS)
 
 if test "${speex}" = "yes"; then
-  AC_CHECK_HEADERS(speex/speex.h, USE_LIBSPEEX=1, USE_LIBSPEEX=0, [-])
-  if test ${USE_LIBSPEEX} = 1 ; then
-    AC_CHECK_LIB(speex, speex_encoder_init, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
+  if test ${USE_LIBSPEEX} = 0 ; then
+    AC_CHECK_FILE(/usr/include/speex/speex.h, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
+    if test ${USE_LIBSPEEX} = 1 ; then
+      AC_CHECK_FILE(/usr/lib/libspeex.so, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
+      if test ${USE_LIBSPEEX} = 1 ; then
+        SPEEX_CPPFLAGS="-I/usr/include";
+        SPEEX_LDFLAGS="-L/usr/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
+      fi
+    fi
   fi
-  if test ${USE_LIBSPEEX} = 1 ; then
-    SPEEX_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I speex`";
-    SPEEX_LDFLAGS="`pkg-config --silence-errors --libs-only-L speex` -lspeex";
-    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L speex`";
+  if test ${USE_LIBSPEEX} = 0 ; then
+    AC_CHECK_FILE(/usr/local/include/speex/speex.h, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
+    if test ${USE_LIBSPEEX} = 1 ; then
+      AC_CHECK_FILE(/usr/local/lib/libspeex.so, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
+      if test ${USE_LIBSPEEX} = 1 ; then
+        SPEEX_CPPFLAGS="-I/usr/local/include";
+        SPEEX_LDFLAGS="-L/usr/local/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
+      fi
+    fi
   fi
   if test ${USE_LIBSPEEX} = 0 ; then
     SPEEX_CPPFLAGS="-I../../libs/speex/include"
-    SPEEX_LDFLAGS="-L../../libs/speex/libspeex/.libs -lspeex"
+    SPEEX_LDFLAGS="-L../../libs/speex/libspeex/.libs"
     AC_SUBST(LIBSPEEX_DIR, ${top_srcdir}/libs/speex)
     AC_CONFIG_SUBDIRS(libs/speex)
+    USE_LIBSPEEX=1
     COMPILE_LIBSPEEX=1
+  fi
+  if test ${USE_LIBSPEEX} = 1 ; then
+    SPEEX_LDFLAGS="$SPEEX_LDFLAGS -lspeex"
   fi
   AC_CONFIG_FILES(plugins/Speex/Makefile)
   PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_SPEEX_DIR} "
@@ -816,21 +861,38 @@ AC_SUBST(OPUS_LDFLAGS)
 AC_SUBST(OPUS_CPPFLAGS)
 
 if test "${opus}" = "yes"; then
-  AC_CHECK_HEADERS(opus/opus.h, USE_LIBOPUS=1, USE_LIBOPUS=0, [-])
-  if test ${USE_LIBOPUS} = 1 ; then
-    AC_CHECK_LIB(opus, opus_encoder_init, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
+  if test ${USE_LIBOPUS} = 0 ; then
+    AC_CHECK_FILE(/usr/include/opus/opus.h, USE_LIBOPUS=1, USE_LIBOPUS=0)
+    if test ${USE_LIBOPUS} = 1 ; then
+      AC_CHECK_FILE(/usr/lib/libopus.so, USE_LIBOPUS=1, USE_LIBOPUS=0)
+      if test ${USE_LIBOPUS} = 1 ; then
+        OPUS_CPPFLAGS="-I/usr/include/opus";
+        OPUS_LDFLAGS="-L/usr/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
+      fi
+    fi
   fi
-  if test ${USE_LIBOPUS} = 1 ; then
-    OPUS_CPPFLAGS="`pkg-config --silence-errors --cflags-only-I opus`";
-    OPUS_LDFLAGS="`pkg-config --silence-errors --libs-only-L opus` -lopus";
-    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L opus`";
+  if test ${USE_LIBOPUS} = 0 ; then
+    AC_CHECK_FILE(/usr/local/include/opus/opus.h, USE_LIBOPUS=1, USE_LIBOPUS=0)
+    if test ${USE_LIBOPUS} = 1 ; then
+      AC_CHECK_FILE(/usr/local/lib/libopus.so, USE_LIBOPUS=1, USE_LIBOPUS=0)
+      if test ${USE_LIBOPUS} = 1 ; then
+        OPUS_CPPFLAGS="-I/usr/local/include/opus";
+        OPUS_LDFLAGS="-L/usr/local/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
+      fi
+    fi
   fi
   if test ${USE_LIBOPUS} = 0 ; then
     OPUS_CPPFLAGS="-I../../libs/opus/include"
-    OPUS_LDFLAGS="-L../../libs/opus/.libs -lopus"
+    OPUS_LDFLAGS="-L../../libs/opus/.libs"
     AC_SUBST(LIBOPUS_DIR, ${top_srcdir}/libs/opus)
     AC_CONFIG_SUBDIRS(libs/opus)
+    USE_LIBOPUS=1
     COMPILE_LIBOPUS=1
+  fi
+  if test ${USE_LIBOPUS} = 1 ; then
+    OPUS_LDFLAGS="$OPUS_LDFLAGS -lopus"
   fi
   AC_CONFIG_FILES(plugins/OPUS/Makefile)
   PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_OPUS_DIR}"
