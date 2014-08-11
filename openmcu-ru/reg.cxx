@@ -277,6 +277,16 @@ RegistrarAccount * Registrar::FindAccount(RegAccountTypes account_type, PString 
   }
   return regAccount;
 }
+PString Registrar::FindAccountNameByH323Id(const PString & id)
+{
+  PWaitAndSignal m(mutex);
+  for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
+  {
+    if(it->second->h323id == id)
+      return it->second->username;
+  }
+  return "";
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

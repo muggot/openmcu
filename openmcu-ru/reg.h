@@ -234,6 +234,7 @@ class RegistrarAccount
     unsigned port;
     PString transport;
     PString password;
+    PString h323id;
 
     PString contact_str;
     PString remote_application;
@@ -364,6 +365,7 @@ class Registrar : public PThread
     RegistrarAccount * InsertAccount(RegAccountTypes account_type, PString username);
     RegistrarAccount * FindAccountWithLock(RegAccountTypes account_type, PString username);
     RegistrarAccount * FindAccount(RegAccountTypes account_type, PString username);
+    PString FindAccountNameByH323Id(const PString & id);
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }

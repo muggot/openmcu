@@ -97,7 +97,10 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
 
   H323GatekeeperRequest::Response response = H323GatekeeperServer::OnRegistration(info);
   if(response != H323GatekeeperRequest::Confirm)
+  {
+    PTRACE(1, "Registrar H.323\tregistration failed");
     return response;
+  }
 
   PIPSocket::Address host;
   WORD port = 0;
@@ -122,30 +125,36 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
     info.rcf.m_timeToLive = maxTimeToLive;
   unsigned expires = info.rcf.m_timeToLive;
 
-  if(!info.rrq.HasOptionalField(H225_RegistrationRequest::e_terminalAlias))
-    return H323GatekeeperRequest::Reject;
-
+  PString h323id = info.rcf.m_endpointIdentifier.GetValue();
   PString username;
   PString display_name;
-  for(PINDEX i = 0; i < info.rrq.m_terminalAlias.GetSize(); i++)
+  if(info.rrq.HasOptionalField(H225_RegistrationRequest::e_terminalAlias))
   {
-    if(username == "" && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_dialedDigits) // E.164
-      username = H323GetAliasAddressString(info.rrq.m_terminalAlias[i]);
-    if(display_name == "" && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_h323_ID)
-      display_name = H323GetAliasAddressString(info.rrq.m_terminalAlias[i]);
+    for(PINDEX i = 0; i < info.rrq.m_terminalAlias.GetSize(); i++)
+    {
+      if(username == "" && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_dialedDigits) // E.164
+        username = H323GetAliasAddressString(info.rrq.m_terminalAlias[i]);
+      if(display_name == "" && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_h323_ID)
+        display_name = H323GetAliasAddressString(info.rrq.m_terminalAlias[i]);
+    }
+    if(username == "")
+    {
+      if(info.rrq.m_terminalAlias.GetSize() == 1)
+        username = H323GetAliasAddressString(info.rrq.m_terminalAlias[0]);
+      else if(info.rrq.m_terminalAlias.GetSize() > 1)
+        username = H323GetAliasAddressString(info.rrq.m_terminalAlias[1]);
+    }
   }
-
   if(username == "")
   {
-    if(info.rrq.m_terminalAlias.GetSize() == 1)
-      username = H323GetAliasAddressString(info.rrq.m_terminalAlias[0]);
-    else if(info.rrq.m_terminalAlias.GetSize() > 1)
-      username = H323GetAliasAddressString(info.rrq.m_terminalAlias[1]);
+    PTRACE(1, "Registrar H.323\tcheck already endpoint registered " << h323id);
+    username = registrar->FindAccountNameByH323Id(h323id);
   }
-
   if(username == "")
+  {
+    PTRACE(1, "Registrar H.323\tunable to determine username");
     return H323GatekeeperRequest::Reject;
-
+  }
   if(display_name == "")
     display_name = username;
 
@@ -165,7 +174,10 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
     regAccount = registrar->InsertAccountWithLock(ACCOUNT_TYPE_H323, username);
 
   if(!regAccount || (regAccount && !regAccount->enable && requireH235))
+  {
+    PTRACE(1, "Registrar H.323\tregistration failed");
     return H323GatekeeperRequest::Reject;
+  }
 
   // update account data
   regAccount->host = host.AsString();
@@ -175,6 +187,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   if(regAccount->display_name == "")
     regAccount->display_name = display_name;
   regAccount->remote_application = remote_application;
+  regAccount->h323id = h323id;
 
   // regsiter TTL
   regAccount->registered = TRUE;
@@ -183,6 +196,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
 
   regAccount->Unlock();
 
+  PTRACE(1, "Registrar H.323\tendpoint registered, username " << username << ", id " << h323id);
   return response;
 }
 
