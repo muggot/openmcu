@@ -400,6 +400,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
       H323Capability *new_cap = H323Capability::Create("H.264{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       wf.SetOptionInteger("Generic Parameter 42", h264_profile_levels[i].level_h241);
+      wf.SetOptionInteger(OPTION_MAX_BIT_RATE, h264_profile_levels[i].max_br);
       AddCapability(new_cap);
     }
   }

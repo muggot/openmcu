@@ -416,7 +416,7 @@ static unsigned int   H264_FrameHeight     = CIF_HEIGHT;
 static unsigned int   H264_FrameWidth      = CIF_WIDTH;
 static unsigned int   H264_Profile         = H264_PROFILE_BASE;
 static unsigned int   H264_Level           = H264_LEVEL12;
-static unsigned int   H264_MaxBitRate      = H264_LEVEL12_MBPS;
+static unsigned int   H264_MaxBitRate      = 0; // set this using option "Max Bit Rate"
 static unsigned int   H264_VideoType       = PluginCodec_MediaTypeVideo;
 DECLARE_GENERIC_OPTIONS(H264)
 
