@@ -2550,7 +2550,6 @@ void MCUH323Connection::OnSetLocalCapabilities()
   unsigned width = video_res.Tokenise("x")[0].AsInteger();
   unsigned height = video_res.Tokenise("x")[1].AsInteger();
   unsigned bandwidth_to = GetEndpointParam(BandwidthToKey, 0);
-  if(bandwidth_to) { if(bandwidth_to < 64) bandwidth_to = 64; if(bandwidth_to > 4000) bandwidth_to = 4000; }
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {
@@ -2953,8 +2952,6 @@ void MCUH323Connection::SetEndpointDefaultVideoParams()
         value = value*1000;
         if(value == 0 || value > mf.GetOptionInteger(option))
           continue;
-        if(value < 64000)
-          value = 64000;
       }
       mf.SetOptionInteger(option, value);
     }

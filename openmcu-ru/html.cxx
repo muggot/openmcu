@@ -660,22 +660,22 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 #if MCU_VIDEO
   s << BoolField("Enable video", cfg.GetBoolean("Enable video", TRUE));
 #endif
-  s << IntegerField("Video frame rate", cfg.GetString("Video frame rate", DefaultVideoFrameRate), 1, MAX_FRAME_RATE, 0, "range: 1.."+PString(MAX_FRAME_RATE)+" (for outgoing video)");
+  s << IntegerField("Video frame rate", cfg.GetString("Video frame rate", DefaultVideoFrameRate), 1, MCU_MAX_FRAME_RATE, 0, "range: 1.."+PString(MCU_MAX_FRAME_RATE)+" (for outgoing video)");
 
   s << SeparatorField("H.263");
-  s << IntegerField("H.263 Max Bit Rate", cfg.GetString("H.263 Max Bit Rate"), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.263 Max Bit Rate", cfg.GetString("H.263 Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
   s << IntegerField("H.263 Tx Key Frame Period", cfg.GetString("H.263 Tx Key Frame Period"), 0, 600, 0, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
   s << SeparatorField("H.263p");
-  s << IntegerField("H.263p Max Bit Rate", cfg.GetString("H.263p Max Bit Rate"), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.263p Max Bit Rate", cfg.GetString("H.263p Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
   s << IntegerField("H.263p Tx Key Frame Period", cfg.GetString("H.263p Tx Key Frame Period"), 0, 600, 0, "range 0..600, default 125 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
   s << SeparatorField("H.264");
-  s << IntegerField("H.264 Max Bit Rate", cfg.GetString("H.264 Max Bit Rate"), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.264 Max Bit Rate", cfg.GetString("H.264 Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
   s << IntegerField("H.264 Encoding Threads", cfg.GetString("H.264 Encoding Threads"), 0, 64, 0, "range 0..64 (0 auto)");
 
   s << SeparatorField("VP8");
-  s << IntegerField("VP8 Max Bit Rate", cfg.GetString("VP8 Max Bit Rate"), 64, 4000, 0, "range 64..4000 kbit (for outgoing video, 0 disable)");
+  s << IntegerField("VP8 Max Bit Rate", cfg.GetString("VP8 Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
   s << IntegerField("VP8 Encoding Threads", cfg.GetString("VP8 Encoding Threads"), 0, 64, 0, "range 0..64 (0 default)");
   s << IntegerField("VP8 Encoding CPU Used", cfg.GetString("VP8 Encoding CPU Used"), 0, 16, 0, "range: 0..16 (Values greater than 0 will increase encoder speed at the expense of quality)");
 
@@ -900,11 +900,11 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MAX_FRAME_RATE, 70)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), 64, 4000, 70)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), 64, 4000, 70)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // VFU delay
       s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 70)+"</tr>";
       // Video cache
@@ -1209,11 +1209,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MAX_FRAME_RATE, 70)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), 64, 4000, 70)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), 64, 4000, 70)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // VFU delay
       s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 70)+"</tr>";
       // Video cache
@@ -1392,9 +1392,9 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MAX_FRAME_RATE, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 60)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), 64, 4000, 60)+"</tr>";
+      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 60)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";

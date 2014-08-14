@@ -57,9 +57,15 @@
 #define MCU_VIDEO   1
 #endif
 
-// maximum Video frame rate (for outgoing video)
-#ifndef MAX_FRAME_RATE
-#define MAX_FRAME_RATE  999
+// defalt values
+#ifndef MCU_MAX_FRAME_RATE
+  #define MCU_MAX_FRAME_RATE 999
+#endif
+#ifndef MCU_MIN_BIT_RATE
+  #define MCU_MIN_BIT_RATE 64000
+#endif
+#ifndef MCU_MAX_BIT_RATE
+  #define MCU_MAX_BIT_RATE 25000000
 #endif
 
 // enable/disable swresample usage

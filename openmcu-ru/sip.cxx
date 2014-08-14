@@ -1732,8 +1732,8 @@ int MCUSipConnection::ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & Remo
         bw = sdp->sdp_bandwidths->b_value;
         if(PString(sdp->sdp_bandwidths->b_modifier_name) != "AS") bw = bw/1000;
       }
-      if(bw && bw < 64) bw = 64;
-      if(bw && bw > 4000) bw = 4000;
+      if(bw && bw < MCU_MIN_BIT_RATE/1000) bw = MCU_MIN_BIT_RATE/1000;
+      if(bw && bw > MCU_MAX_BIT_RATE/1000) bw = MCU_MAX_BIT_RATE/1000;
 
       SipSecureTypes secure_type = SECURE_TYPE_NONE;
       PString srtp_type, srtp_key, srtp_param, zrtp_hash, dtls_fp, dtls_fp_type;

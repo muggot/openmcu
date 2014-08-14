@@ -606,17 +606,16 @@ void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height, unsi
 
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
-  if(frame_rate == 0)
-    frame_rate = ep.GetVideoFrameRate();
-  if(frame_rate < 1 || frame_rate > MAX_FRAME_RATE)
-    frame_rate = DefaultVideoFrameRate;
+  if(frame_rate == 0) frame_rate = ep.GetVideoFrameRate();
+  if(frame_rate < 1) frame_rate = 1;
+  if(frame_rate > MCU_MAX_FRAME_RATE) frame_rate = MCU_MAX_FRAME_RATE;
   wf.SetOptionInteger(OPTION_FRAME_RATE, frame_rate);
   wf.SetOptionInteger(OPTION_FRAME_TIME, 90000/frame_rate);
 
-  if(bandwidth != 0)
-    wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth*1000);
-  else
-    wf.SetOptionInteger(OPTION_MAX_BIT_RATE, 256*1000);
+  if(bandwidth == 0) bandwidth = 256;
+  if(bandwidth < MCU_MIN_BIT_RATE/1000) bandwidth = MCU_MIN_BIT_RATE/1000;
+  if(bandwidth > MCU_MAX_BIT_RATE/1000) bandwidth = MCU_MAX_BIT_RATE/1000;
+  wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth*1000);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
