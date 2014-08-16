@@ -757,19 +757,22 @@ void ConferenceRecorder::RecorderAudio(PThread &, INT)
 
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  uint64_t last_time = 1000000 * tv.tv_sec + tv.tv_usec;
-  last_time -= delay_us;
+  uint64_t record_time = 1000000 * tv.tv_sec + tv.tv_usec;
+  uint64_t now;
 
   running = TRUE;
   while(running)
   {
     gettimeofday(&tv, NULL);
-    uint64_t now = 1000000 * tv.tv_sec + tv.tv_usec;
-    if(now >= last_time + delay_us)
+    now = 1000000 * tv.tv_sec + tv.tv_usec;
+    if(now < record_time)
     {
-      last_time += delay_us;
-      WriteAudio();
+      struct timespec req = {0};
+      req.tv_nsec = (record_time - now)*1000;
+      nanosleep(&req, NULL);
     }
+    WriteAudio();
+    record_time += delay_us;
   }
   running = FALSE;
 
@@ -788,19 +791,22 @@ void ConferenceRecorder::RecorderVideo(PThread &, INT)
 
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  uint64_t last_time = 1000000 * tv.tv_sec + tv.tv_usec;
-  last_time -= delay_us;
+  uint64_t record_time = 1000000 * tv.tv_sec + tv.tv_usec;
+  uint64_t now;
 
   running = TRUE;
   while(running)
   {
     gettimeofday(&tv, NULL);
-    uint64_t now = 1000000 * tv.tv_sec + tv.tv_usec;
-    if(now >= last_time + delay_us)
+    now = 1000000 * tv.tv_sec + tv.tv_usec;
+    if(now < record_time)
     {
-      last_time += delay_us;
-      WriteVideo();
+      struct timespec req = {0};
+      req.tv_nsec = (record_time - now)*1000;
+      nanosleep(&req, NULL);
     }
+    WriteVideo();
+    record_time += delay_us;
   }
   running = FALSE;
 
