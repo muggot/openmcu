@@ -197,6 +197,12 @@ function check_template_html($filename, $localizations)
             my_echo("Language '$l' not listed in template.html. Язык '$l' не перечислен в template.html.$lf");
             $wrf=true;
           }
+        foreach($w as $l)
+          if(!in_array($l,$localizations))
+          {
+            my_echo("'$l' listed in template.html, but we haven't it. '$l', которого у нас нет, перечислен в template.html.$lf");
+            $wrf=true;
+          }
         if(!$wrf) my_echo("All languages are listed in template.html. Все языки перечислены в template.html.$lf");
         return;
       }
