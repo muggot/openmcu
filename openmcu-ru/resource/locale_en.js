@@ -128,8 +128,8 @@ window.l_info_param_sip ='';
 window.l_info_param_access_rules ='';
 window.l_info_param_sip_proxy ='';
 window.l_info_param_receive_sound = '';
-window.l_info_param_transmit_video = '';
-window.l_info_param_receive_sound = '';
+window.l_info_param_transmit_sound = '';
+window.l_info_param_receive_video = '';
 window.l_info_param_transmit_video = '';
 
 window.l_select_create =       'Create room'

@@ -60,8 +60,11 @@ leaving.wav \
 template.html \
 control.js \
 status.js \
-locale_ru.js \
 locale_en.js \
+locale_fr.js \
+locale_jp.js \
+locale_ru.js \
+locale_uk.js \
 i16_close_gray.png \
 i16_close_red.png \
 main.css \

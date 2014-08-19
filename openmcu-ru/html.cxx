@@ -259,7 +259,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // Reset section
   s << BoolField("RESTORE DEFAULTS", FALSE);
   // Language
-  s << SelectField("Language", cfg.GetString("Language"), ",EN,RU");
+  s << SelectField("Language", cfg.GetString("Language"), ",EN,FR,JP,RU,UK");
   // MCU Server Id
   s << StringField("OpenMCU-ru Server Id", cfg.GetString("OpenMCU-ru Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 250);
 
