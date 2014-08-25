@@ -398,8 +398,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("text/javascript"          , "control.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "status.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "locale_en.js");
-  WEBSERVER_LINK_MIME("text/javascript"          , "locale_jp.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "locale_fr.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "locale_jp.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "locale_pt.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "locale_ru.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "locale_uk.js");
   WEBSERVER_LINK_MIME("text/css"                 , "main.css");

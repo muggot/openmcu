@@ -63,6 +63,7 @@ status.js \
 locale_en.js \
 locale_fr.js \
 locale_jp.js \
+locale_pt.js \
 locale_ru.js \
 locale_uk.js \
 i16_close_gray.png \
