@@ -356,7 +356,9 @@ class TablePConfigPage : public PConfigPage
    PString StringItemArray(PString name, PString value, int width=0)
    {
      if(width == 0) width = 90;
-     PString s = rowArray+"<input type=text name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'></input>";
+     PString id = GetTableId();
+     PString s = "<input name='TABLEID' value='"+id+"' type='hidden'>";
+     s += rowArray+"<input type=text name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'></input>";
      s += "<input type=button value='↑' onClick='rowUp(this,0)' style='"+buttonStyle+"'>";
      s += "<input type=button value='↓' onClick='rowDown(this)' style='"+buttonStyle+"'>";
      s += "<input type=button value='+' onClick='rowClone(this)' style='"+buttonStyle+"'>";
