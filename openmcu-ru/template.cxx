@@ -91,7 +91,7 @@ PString Conference::SaveTemplate(PString tplName)
     {
       t << "  MEMBER "
         << (s->second->autoDial?"1":"0") << ", "
-        << s->second->muteMask << ", "
+        << s->second->muteMask << "/" << (s->second->kManualGainDB+20) << "/" << (s->second->kOutputGainDB+20) << ", "
         << (s->second->disableVAD?"1":"0") << ", "
         << (s->second->chosenVan?"1":"0") << ", "
         << s->second->GetVideoMixerNumber() << ", "
@@ -210,10 +210,23 @@ void Conference::LoadTemplate(PString tpl)
           ConferenceMember *member = FindMemberNameId(memberInternalName);
           if(member)
           {
-            member->autoDial     = memberAutoDial;
-            member->muteMask     = v[1].AsInteger();
-            member->disableVAD   = (v[2]=="1");
-            member->chosenVan    = (v[3]=="1");
+            PStringArray maskAndGain = v[1].Tokenise("/");
+            BOOL hasGainOptions = (maskAndGain.GetSize() > 1);
+            member->autoDial        = memberAutoDial;
+            if(hasGainOptions)
+            {
+              member->muteMask      = maskAndGain[0].AsInteger();
+              member->kManualGainDB = maskAndGain[1].AsInteger()-20;
+              member->kOutputGainDB = maskAndGain[2].AsInteger()-20;
+              member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
+              member->kOutputGain=(float)pow(10.0,((float)member->kOutputGainDB)/20.0);
+            }
+            else // stay compatible with old-style templates:
+            {
+              member->muteMask      = v[1].AsInteger();
+            }
+            member->disableVAD      = (v[2]=="1");
+            member->chosenVan       = (v[3]=="1");
             OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
           }
           else
@@ -386,8 +399,22 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
       for (PINDEX j=6; j<v.GetSize(); j++) iterationMemberName+=","+v[j];
       if(MCUURL(iterationMemberName).GetMemberNameId() == MCUURL(memberName).GetMemberNameId())
       {
+        PStringArray maskAndGain = v[1].Tokenise("/");
+        BOOL hasGainOptions = (maskAndGain.GetSize() > 1);
         member->autoDial     = (v[0] == "1");
         member->muteMask     = v[1].AsInteger();
+        if(hasGainOptions)
+        {
+          member->muteMask      = maskAndGain[0].AsInteger();
+          member->kManualGainDB = maskAndGain[1].AsInteger()-20;
+          member->kOutputGainDB = maskAndGain[2].AsInteger()-20;
+          member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
+          member->kOutputGain=(float)pow(10.0,((float)member->kOutputGainDB)/20.0);
+        }
+        else // stay compatible with old-style templates:
+        {
+          member->muteMask      = v[1].AsInteger();
+        }
         member->disableVAD   = (v[2] == "1");
         member->chosenVan    = (v[3] == "1");
         if(member->chosenVan) if(PutChosenVan()) member->SetFreezeVideo(FALSE);

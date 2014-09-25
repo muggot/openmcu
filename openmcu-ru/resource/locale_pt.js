@@ -1,5 +1,5 @@
-﻿window.l_welcome = 'OpenMCU-ru';
-window.l_status = '<Estado';
+window.l_welcome = 'OpenMCU-ru';
+window.l_status = 'Estado';
 
 window.l_connections = 'Conexões';
 window.l_connections_OFFLINE_PREFIX    = "<B>[Offline] </B>"   ;

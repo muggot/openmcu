@@ -13,6 +13,8 @@ $pull_out_from='en';
 
 $res_dir='../openmcu-ru/resource';
 
+$htmlcxxmask='SelectField("Language", cfg.GetString("Language"), ",*");';
+
 $lf="\n"; if(strtolower(substr(PHP_OS, 0, 3))==='win') $lf="\r\n";
 
 $localizations=my_scan($res_dir);
@@ -25,6 +27,7 @@ if(count($tokens)<10)
 
 foreach($localizations as $language)
 {
+  check_and_remove_bom("$res_dir/".get_locale_name($language));
   if($language==$reference) continue;
   $l_tokens=my_tokens("$res_dir/".get_locale_name($language));
   my_diff_handler($reference, $language, my_compare($tokens, $l_tokens));
@@ -34,6 +37,7 @@ check_presence('../openmcu-ru/Makefile',$localizations);
 check_presence('../openmcu-ru/Makefile.in',$localizations);
 check_presence('../openmcu-ru/mcu.cxx',$localizations);
 check_template_html($res_dir.'/template.html',$localizations);
+check_html_cxx('../openmcu-ru/html.cxx',$localizations);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -209,4 +213,54 @@ function check_template_html($filename, $localizations)
     }
   }
   my_echo("Localization list not found in template.html. Список локализаций не найден в template.html.$lf");
+}
+
+function check_html_cxx($filename, $localizations)
+{
+  global $lf, $htmlcxxmask;
+  $mask=explode('*',$htmlcxxmask);
+  $f=file($filename);
+  foreach($f as $k => $s)
+  {
+    $sp=strpos($s, $mask[0]);
+    if($sp)
+    {
+      $q=strlen($mask[0])+$sp;
+      $w=explode(',',strtolower(substr($s,$q,strlen($s)-strlen($mask[1])-$q-1)));
+      if(count($w)<2) my_echo("Warning, $filename:$k: list too short. Внимание, $filename:$k список слишком мал.$lf");
+      else
+      {
+        $wrf=false;
+        foreach($localizations as $l)
+          if(!in_array($l,$w))
+          {
+            my_echo("Language '$l' not listed in html.cxx. Язык '$l' не перечислен в html.cxx.$lf");
+            $wrf=true;
+          }
+        foreach($w as $l)
+          if(!in_array($l,$localizations))
+          {
+            my_echo("'$l' listed in html.cxx, but we haven't it. '$l', которого у нас нет, перечислен в html.cxx.$lf");
+            $wrf=true;
+          }
+        if(!$wrf) my_echo("All languages are listed in html.cxx. Все языки перечислены в html.cxx.$lf");
+        return;
+      }
+    }
+  }
+  my_echo("Localization list not found in html.cxx. Список локализаций не найден в html.cxx.$lf");
+}
+
+function check_and_remove_bom($f)
+{
+  global $lf;
+  $bom=file_get_contents($f, false, null, 0, 3);
+  if(strlen($bom)!=3) return;
+  if((ord($bom[0]) == 0xEF) && (ord($bom[1]) == 0xBB) && (ord($bom[2]) == 0xBF))
+  {
+    file_put_contents($f,substr(file_get_contents($f),3));
+    my_echo("UTF-8 BOM removed from [удалён из файла] $f.$lf");
+    return;
+  }
+  if((ord($bom[0])<32) || (ord($bom[0])>253)) my_echo("Warning! Wrong BOM in $f, UTF-8 needed. Внимание! Неверный BOM в $f, нужен UTF-8.$lf");
 }
