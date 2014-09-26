@@ -1981,6 +1981,10 @@ int MCUSipConnection::ProcessInvite(const msg_t *msg)
   sip_t *sip = sip_object(c_sip_msg);
   int response_code = 0;
 
+  // empty payload header for invite
+  if(!sip->sip_payload || !sip->sip_payload->pl_data)
+    return 415; // SIP_415_UNSUPPORTED_MEDIA
+
   PString sdp_str = sip->sip_payload->pl_data;
   response_code = ProcessSDP(LocalSipCaps, RemoteSipCaps, sdp_str);
   if(response_code)
@@ -2026,6 +2030,10 @@ int MCUSipConnection::ProcessReInvite(const msg_t *msg)
   c_sip_msg = msg_dup(msg);
   msg_addr_copy(c_sip_msg, msg);
   sip_t *sip = sip_object(c_sip_msg);
+
+  // empty payload header for invite
+  if(!sip->sip_payload || !sip->sip_payload->pl_data)
+    return 415; // SIP_415_UNSUPPORTED_MEDIA
 
   PString sdp_str = sip->sip_payload->pl_data;
   SipCapMapType SipCaps;
