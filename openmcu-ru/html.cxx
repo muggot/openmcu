@@ -2290,7 +2290,7 @@ JpegFrameHTTP::JpegFrameHTTP(OpenMCU & _app, PHTTPAuthority & auth)
 BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
 {
   PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
-  if(!CheckAuthority(server, *req, connectInfo)) {delete[] req; return FALSE;}
+  if(!CheckAuthority(server, *req, connectInfo)) {delete req; return FALSE;}
   delete req;
 
   PString request=url.AsString();

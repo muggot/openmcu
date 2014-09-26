@@ -155,6 +155,7 @@ void MCUSipLoggerFunc(void *logarg, char const *fmt, va_list ap)
   int ret = vasprintf(&data, fmt, ap);
   if(ret == -1 || data == NULL) return;
   PString trace = (const char *)data;
+  free(data);
 #endif
   if(trace.GetLength() < 2) return;
   if(trace == "   ") return;
