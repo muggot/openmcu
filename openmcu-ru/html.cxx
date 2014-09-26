@@ -2290,7 +2290,7 @@ JpegFrameHTTP::JpegFrameHTTP(OpenMCU & _app, PHTTPAuthority & auth)
 BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
 {
   PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
-  if(!CheckAuthority(server, *req, connectInfo)) {delete req; return FALSE;}
+  if(!CheckAuthority(server, *req, connectInfo)) {delete[] req; return FALSE;}
   delete req;
 
   PString request=url.AsString();
@@ -2349,7 +2349,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
         unsigned char * bitmap = new unsigned char[width*height*3];
         converter->Convert(videoData,bitmap);
         delete converter;
-        delete videoData;
+        delete[] videoData;
 
         jpeg_set_defaults(&cinfo);
         cinfo.dest = new jpeg_destination_mgr;
@@ -2363,7 +2363,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
           (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
         }
         jpeg_finish_compress(&cinfo);
-        delete bitmap; delete cinfo.dest; cinfo.dest=NULL;
+        delete[] bitmap; delete cinfo.dest; cinfo.dest=NULL;
         jpeg_destroy_compress(&cinfo);
         jpegMixer->jpegTime=t1;
       }

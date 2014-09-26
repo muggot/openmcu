@@ -4390,7 +4390,7 @@ void VideoMixConfigurator::go(unsigned frame_width, unsigned frame_height)
 #endif
   }
   parser(f_buff,f_size);
-  delete f_buff;
+  delete[] f_buff;
   cout << "VideoMixConfigurator: " << VMPC_CONFIGURATION_NAME << " processed: " << vmconfs << " layout(s) loaded.\n";
 }
 
@@ -4418,12 +4418,6 @@ void VideoMixConfigurator::parser(char* &f_buff,long f_size)
 void VideoMixConfigurator::block_insert(VMPBlock * & b,long b_n,unsigned x,unsigned y,unsigned w,unsigned h){
  if(b_n==0) b=(VMPBlock *)malloc(sizeof(VMPBlock));
  else b=(VMPBlock *)realloc((void *)b,sizeof(VMPBlock)*(b_n+1));
-/*
- b[b_n].posx=(x+1)&0xFFFFFE;
- b[b_n].posy=(y+1)&0XFFFFFE;
- b[b_n].width=(w+1)&0xFFFFFE;
- b[b_n].height=(h+1)&0xFFFFFE;
-*/
  b[b_n].posx=x;
  b[b_n].posy=y;
  b[b_n].width=w;
