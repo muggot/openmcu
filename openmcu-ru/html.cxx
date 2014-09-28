@@ -1777,6 +1777,7 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
       for (PINDEX j = 0; j < mf.GetOptionCount(); j++)
        if(mf.GetOption(j).GetFMTPName() != "")
          fmtp += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
+      delete cap;
     }
     else
       info = JsLocale("window.l_not_found");
@@ -1863,6 +1864,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
     if(cap && (title == "SipSoundCodecs" || title == "SipVideoCodecs"))
       s <<  StringItem("fmtp:"+keys[i], MCUConfig("SIP fmtp remote").GetString(keys[i]), 200);
     s << EndRow();
+    if(cap) delete cap;
   }
 
   s << EndTable();
