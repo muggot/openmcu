@@ -2010,7 +2010,10 @@ PString MCUH323EndPoint::GetMonitorText()
       { output << "[Member " << ++num << "]\n";
         PStringStream hdr; hdr << "  ";
         PString name = member->GetName();
-        BOOL isFileMember = (member->GetType() == MEMBER_TYPE_PIPE || member->GetType() == MEMBER_TYPE_CACHE);
+        MemberTypes membType = member->GetType();
+        BOOL isCache = (membType == MEMBER_TYPE_CACHE);
+        BOOL isPipe = (membType == MEMBER_TYPE_PIPE);
+        BOOL isFileMember = (isCache || isPipe);
         output << hdr << "Title: " << hex << member->GetTitle();
         if (isFileMember) output << " (file object)";
         output << "\n"
@@ -2029,10 +2032,10 @@ PString MCUH323EndPoint::GetMonitorText()
           ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
           if(fileMember!=NULL)
           {
-            if(name != "cache") output << hdr << "Format: " << fileMember->GetFormat() << "\n";
-            if(name != "file recorder")output << hdr << "VFormat: " << fileMember->GetVFormat() << "\n";
+            if(isPipe) output << hdr << "Format: " << fileMember->GetFormat() << "\n";
+            if(isCache)output << hdr << "VFormat: " << fileMember->GetVFormat() << "\n";
             output << hdr << "IsVisible: " << fileMember->IsVisible() << "\n";
-            output << hdr << "Status: " << (fileMember->status?"Awake":"Sleeping") << "\n";
+            if(isCache)output << hdr << "Status: " << (fileMember->status?"Awake":"Sleeping") << "\n";
 //#ifndef _WIN32
 //            if(fileMember->codec) output << hdr << "EncoderSeqN: " << dec << fileMember->codec->GetEncoderSeqN() << "\n";
 //#endif

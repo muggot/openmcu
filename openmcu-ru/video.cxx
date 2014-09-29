@@ -3204,6 +3204,7 @@ void MCUSimpleVideoMixer::Shuffle()
   VideoMixPosition * v = vmpList->next;
   unsigned n=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
   unsigned * used = new unsigned [n];
+  memset((void*)used, 0, n*sizeof(unsigned));
   unsigned done=0;
 #ifdef _WIN32
   unsigned seed=rand();
