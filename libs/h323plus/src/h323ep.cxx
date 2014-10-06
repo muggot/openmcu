@@ -1281,6 +1281,8 @@ H323EndPoint::H323EndPoint()
 
   agc = 0;
 
+  singleLine = FALSE;
+
   PTRACE(3, "H323\tCreated endpoint.");
 }
 
