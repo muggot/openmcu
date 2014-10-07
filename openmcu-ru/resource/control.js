@@ -843,7 +843,7 @@ function invite_panel(){
   var button_posx = input_posx + input_width;
   s+=dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;border-radius:0px;' onclick='javascript:{if(this.innerHTML==\"h323\")this.innerHTML=\"rtsp\";else if(this.innerHTML==\"rtsp\")this.innerHTML=\"sip\";else if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>";
   s+=dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;border-radius:0px;border-right:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"binpinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_input(document.getElementById(\"binpinv\"));mlgctr1=1;}}' /></div>";
-  s+=dpre+button_posx+"px'>"+dbutton+"width:"+(bwidth)+"px' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='Invite' />1</div></div>";
+  s+=dpre+button_posx+"px'>"+dbutton+"width:"+(bwidth)+"px' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='Invite' /></div></div>";
   s+="</form>";
   return s;
 }
