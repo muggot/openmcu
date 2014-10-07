@@ -72,6 +72,7 @@ main.css \
 i32_lock.png \
 i32_lockopen.png \
 s15_ch.png \
+s32_ch.png \
 i16_status_gray.png \
 i16_status_green.png \
 i16_status_blue.png \

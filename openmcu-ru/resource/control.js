@@ -68,8 +68,6 @@ var OTFC_AUDIO_GAIN_LEVEL_SET    = 79;
 var OTFC_OUTPUT_GAIN_SET         = 80;
 var OTFC_REFRESH_ABOOK           = 90;
 
-var libyuv_flt_desc = Array('None', 'Bilin.', 'Box');
-
 var mmw = -1; // build_page() initializer
 var visible_ids='';
 var mixers=0, bfw=704, bfh=576, room='';
@@ -127,6 +125,8 @@ var splitSelectorWindowMixerNumber=-1;
 
 var gainSelecting=false;
 var gainSelector=null;
+
+var roomName, globalMute, isModerated;
 
 function index_exists(a, i)
 {
@@ -843,7 +843,7 @@ function invite_panel(){
   var button_posx = input_posx + input_width;
   s+=dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;border-radius:0px;' onclick='javascript:{if(this.innerHTML==\"h323\")this.innerHTML=\"rtsp\";else if(this.innerHTML==\"rtsp\")this.innerHTML=\"sip\";else if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>";
   s+=dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;border-radius:0px;border-right:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"binpinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_input(document.getElementById(\"binpinv\"));mlgctr1=1;}}' /></div>";
-  s+=dpre+button_posx+"px'>"+dbutton+"width:"+(bwidth)+"px' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='Invite' /></div></div>";
+  s+=dpre+button_posx+"px'>"+dbutton+"width:"+(bwidth)+"px' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='Invite' />1</div></div>";
   s+="</form>";
   return s;
 }
@@ -1299,69 +1299,61 @@ function tpllck(i)
   alive();
 }
 
-function top_panel(){
-  if(vad_setup_mode) return;
-  if(tpl_save_mode) return;
-  try{
+function top_panel()
+{
+  if(vad_setup_mode||tpl_save_mode) return;
+  try
+  {
     var t=document.getElementById('cb1');
-    roomName=conf[0][3];
-    isModerated=(conf[0][4]!='-');
-    globalMute=(conf[0][5]!='0');
-    vad1=0+conf[0][6]+0; vad2=0+conf[0][7]+0; vad3=0+conf[0][8]+0;
-    roomList=Array(); roomStrings=Array();
-    for(var i=0;i<conf[0][9].length;i++){
+    roomName    =  conf[0][3];
+    isModerated = (conf[0][4] != '-');
+    globalMute  = (conf[0][5] != '0');
+    vad1 = 0+conf[0][6]+0; vad2 = 0+conf[0][7]+0; vad3 = 0+conf[0][8]+0;
+//  } catch(e){ return false;}
+
+    roomList=[]; roomStrings=[];
+    for(var i=0;i<conf[0][9].length;i++)
+    {
       roomList[i]=conf[0][9][i][0];
       roomStrings[i]=conf[0][9][i][0]+conf[0][9][i][2]+' ('+(conf[0][9][i][1])+')';
     }
   } catch(e){ return false;}
-  var c="<table width='100%'><tr><td width='70%'>"
-    c+="<form style='margin:0px;margin-left:8px;padding:0px' name='FakeForm1'>";
-    c+="<select class='btn btn-large btn-";
-    if(isModerated)c+="success"; else c+="primary";
-    c+="' style='height:38px;' name='RoomSelector' onchange='room_change(this.value);return false'>";
-    for(i=0;i<roomList.length;i++){
-      c+="<option value=\""+roomList[i]+"\"";
-      if(roomList[i]==roomName) c+=" selected";
-      c+=">"+roomStrings[i]+"</option>";
-    }
-    c+="</select>";
-  c+="<input onclick='javascript:{button_control();return false;}' type='button' class='btn btn-large btn-"+(isModerated?"primary":"success")+"' value='";
-    if(isModerated)c+='Decontrol';
-    else c+='Take contrl';
-  c+="' />";
+  var c="<table width='100%'><tr><td width='70%'>";
+  c+="<form style='margin:0px;margin-left:8px;padding:0px' name='FakeForm1'>";
 
-  c+="<input onclick='javascript:{if(checkcontrol())queue_otf_request(OTFC_GLOBAL_MUTE,"+(!globalMute)+");}' type='button' class='btn btn-large btn-";
+  var who='robot'; if(isModerated) who='human';
+  c+="<button onclick='javascript:{button_control();return false;}' class='"+who+"spr'></button>";
+
+  c+=" ";
+
+  c+="<select class='btn btn-small btn-";
+  if(isModerated)c+="success"; else c+="primary";
+  c+="' style='height:28px;' name='RoomSelector' onchange='room_change(this.value);return false'>";
+  for(i=0;i<roomList.length;i++)
+  {
+    c+="<option value=\""+roomList[i]+"\"";
+    if(roomList[i]==roomName) c+=" selected";
+    c+=">"+roomStrings[i]+"</option>";
+  }
+  c+="</select>";
+
+  c+=" ";
+
+  c+="<input onclick='javascript:{if(checkcontrol())queue_otf_request(OTFC_GLOBAL_MUTE,"+(!globalMute)+");}' type='button' class='btn btn-small btn-";
     if(globalMute)c+="warning' value='Unmute'>";
     else c+="inverse' value='Mute invis.'>";
-  c+="<input onclick='javascript:{if(checkcontrol())vad_setup();}' type='button' class='btn btn-large btn-inverse' value='VAD setup'>";
-  var yuvflt='None';
-  var yuvfltidx=0;
-  try
-  {
-    yuvfltidx=conf[0][10];
-    if(yuvfltidx!=-1) yuvflt=libyuv_flt_desc[ yuvfltidx ];
-  } catch(e) {
-    yuvfltidx=-1;
-    yuvflt='None';
-  }
 
-  if(yuvfltidx != -1)
-  {
-    c += "<input onclick='javascript:{queue_otf_request("
-      +  OTFC_YUV_FILTER_MODE + "," + ((yuvfltidx+1)%3)
-      +  ");}' type='button' class='btn btn-large btn-info' value='Flt: " + yuvflt + "'>";
-  }
+  c+=" ";
+
+  c+="<input onclick='javascript:{if(checkcontrol())vad_setup();}' type='button' class='btn btn-small btn-inverse' value='VAD setup'>";
+
+  var i=0;
+  try { i=conf[0][10]; } catch(e) { i+=0; }
+  if((i<0)||(i>2))i=0;
+  c+="<button onclick='javascript:{queue_otf_request(" + OTFC_YUV_FILTER_MODE + "," + ((i+1)%3) + ");return false;}' class='fltspr" + i + "'></button>";
 
   try{ recState=conf[0][11]; } catch(e) { recState=0; }
-  c +="<input type='button' class='btn btn-large "
-    + (recState?"btn-inverse":"btn-danger")
-    + "' style='width:36px;height:36px;"
-    + (recState?"border-radius:0px":"border-radius:18px")
-    + "' value=' ' title='"
-    + (recState?"Stop recording":"Start recording")
-    + "' onclick='javascript:queue_otf_request(OTFC_VIDEO_RECORDER_"
-    + (recState?"STOP":"START")
-    + ",0)'>";
+  c+="<button onclick='javascript:{queue_otf_request(OTFC_VIDEO_RECORDER_" + (recState?"STOP":"START") + ",0);return false;}' class='recordspr" + recState + "'></button>";
 
   c+="</td><td width='30%' align=right id='savetpl' name='savetpl'><nobr>";
 

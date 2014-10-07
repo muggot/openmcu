@@ -424,6 +424,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/png"                , "logo_text.png");
   WEBSERVER_LINK_MIME("image/png"                , "menu_left.png");
   WEBSERVER_LINK_MIME("image/png"                , "s15_ch.png");
+  WEBSERVER_LINK_MIME("image/png"                , "s32_ch.png");
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.ico");
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.gif");
 #if USE_LIBJPEG
