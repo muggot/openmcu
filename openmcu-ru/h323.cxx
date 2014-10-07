@@ -1115,6 +1115,7 @@ PString OpenMCUH323EndPoint::OTFControl(const PString room, const PStringToStrin
     cmd << "conf[0][10]=" << v;
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
     OpenMCU::Current().HttpWriteCmdRoom("top_panel()",room);
+    OpenMCU::Current().HttpWriteCmdRoom("alive()",room);
     return "OK";
   }
 #endif
