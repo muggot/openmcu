@@ -52,7 +52,6 @@ var OTFC_REMOVE_OFFLINE_MEMBER   = 33;
 var OTFC_DROP_ALL_ACTIVE_MEMBERS = 64;
 var OTFC_INVITE_ALL_INACT_MMBRS  = 65;
 var OTFC_REMOVE_ALL_INACT_MMBRS  = 66;
-var OTFC_SAVE_MEMBERS_CONF       = 67;
 var OTFC_YUV_FILTER_MODE         = 68;
 var OTFC_TAKE_CONTROL            = 69;
 var OTFC_DECONTROL               = 70;
@@ -158,9 +157,10 @@ function pstrip(s){ return s.replace(/[^А-Яа-яA-Z0-9a-z-_]/gi,''); }
 
 function my_trim(s){ s+=""; return s.replace(/(^[\s\t\n\r]+)|([\s\t\n\r]+$)/g, ""); }
 
-function checkcontrol(){
+function checkcontrol()
+{
   if(isModerated)return true;
-  my_alert("Please take the control first");
+  my_alert(window.l_pleasetakecontrol);
   return false;
 }
 
@@ -504,8 +504,6 @@ function drop_all0(obj){ if(confirm(window.l_room_drop_all_active_members)) {que
 function invite_all(obj){ if(confirm(window.l_room_invite_all_inactive_members)) {queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,0); }}
 
 function remove_all0(obj){ if(confirm(window.l_room_remove_all_inactive_members)) {queue_otf_request(OTFC_REMOVE_ALL_INACT_MMBRS,0); }}
-
-function save_members_conf(obj){ if(confirm('Rewrite members.conf?')) {queue_otf_request(OTFC_SAVE_MEMBERS_CONF,0); }}
 
 function highlight(id, state)
 {
@@ -1266,9 +1264,11 @@ function ivad(id,v){
   }
 }
 
-function button_control(){
-  if(isModerated){
-    if(mixers>1)if(!confirm("Additional mixers will be removed.\r\nAre you sure you want to decontrol room?")) return false;
+function button_control()
+{
+  if(isModerated)
+  {
+    if(mixers>1)if(!confirm(window.l_decontrolmixersconfirm)) return false;
     queue_otf_request(OTFC_DECONTROL,0);
   } else queue_otf_request(OTFC_TAKE_CONTROL,0);
   return false;
@@ -1318,11 +1318,14 @@ function top_panel()
       roomStrings[i]=conf[0][9][i][0]+conf[0][9][i][2]+' ('+(conf[0][9][i][1])+')';
     }
   } catch(e){ return false;}
+
+  var title;
+  
   var c="<table width='100%'><tr><td width='70%'>";
   c+="<form style='margin:0px;margin-left:8px;padding:0px' name='FakeForm1'>";
 
-  var who='robot'; if(isModerated) who='human';
-  c+="<button onclick='javascript:{button_control();return false;}' class='"+who+"spr'></button>";
+  var who='robot'; if(isModerated) {who='human'; title=window.l_decontrol;} else title=window.l_takecontrol;
+  c+="<button title='" + title + "' onclick='javascript:{button_control();return false;}' class='"+who+"spr'></button>";
 
   c+=" ";
 
@@ -1339,26 +1342,28 @@ function top_panel()
 
   c+=" ";
 
-  c+="<input onclick='javascript:{if(checkcontrol())queue_otf_request(OTFC_GLOBAL_MUTE,"+(!globalMute)+");}' type='button' class='btn btn-small btn-";
-    if(globalMute)c+="warning' value='Unmute'>";
-    else c+="inverse' value='Mute invis.'>";
+  var j; if(globalMute) {j=0; title=window.l_globalunmute;} else {j=1; title=window.l_globalmute;}
+  c+="<button title='" + title + "' onclick='javascript:{if(checkcontrol())queue_otf_request(OTFC_GLOBAL_MUTE,"+(!globalMute)+");return false;}' class='mutespr" + j + "'></button>";
 
   c+=" ";
 
-  c+="<input onclick='javascript:{if(checkcontrol())vad_setup();}' type='button' class='btn btn-small btn-inverse' value='VAD setup'>";
+  title=window.l_vadsetup;
+  c+="<button title='" + title + "' onclick='javascript:{if(checkcontrol())vad_setup();return false;}' class='vadsetupspr'></button>";
 
-  var i=0;
-  try { i=conf[0][10]; } catch(e) { i+=0; }
-  if((i<0)||(i>2))i=0;
-  c+="<button onclick='javascript:{queue_otf_request(" + OTFC_YUV_FILTER_MODE + "," + ((i+1)%3) + ");return false;}' class='fltspr" + i + "'></button>";
+  var i; try{ i=conf[0][10]; }catch(e){i=0;} if((i<1)||(i>2))i=0;
+  title=window.l_filtermode[i];
+  c+="<button title='" + title + "' onclick='javascript:{queue_otf_request(" + OTFC_YUV_FILTER_MODE + "," + ((i+1)%3) + ");return false;}' class='fltspr" + i + "'></button>";
 
   try{ recState=conf[0][11]; } catch(e) { recState=0; }
-  c+="<button onclick='javascript:{queue_otf_request(OTFC_VIDEO_RECORDER_" + (recState?"STOP":"START") + ",0);return false;}' class='recordspr" + recState + "'></button>";
+  if(recState==1) title=window.l_videorecorderstop; else title=window.l_videorecorder;
+  c+="<button title='" + title + "' onclick='javascript:{queue_otf_request(OTFC_VIDEO_RECORDER_" + (recState?"STOP":"START") + ",0);return false;}' class='recordspr" + recState + "'></button>";
 
   c+="</td><td width='30%' align=right id='savetpl' name='savetpl'><nobr>";
 
   c+=get_template_lock();
-  c+="<input type='button' class='btn btn-large btn-danger' style='width:20px;padding-left:0px;padding-right:0px;margin-right:1px' value='&ndash;' onclick='javascript:{if(confirm(\"Template \"+document.getElementById(\"templateSelector\").value+\" will be deleted\"))queue_otf_request("+OTFC_DELETE_TEMPLATE+",document.getElementById(\"templateSelector\").value);}'>";
+  c+="<input type='button' class='btn btn-large btn-danger' style='width:20px;padding-left:0px;padding-right:0px;margin-right:1px' value='&ndash;' onclick='" +
+    "javascript:{if(confirm(window.l_templatedeleteconfirm.replace(/\\*/g, document.getElementById(\"templateSelector\").value)))queue_otf_request("+OTFC_DELETE_TEMPLATE+",document.getElementById(\"templateSelector\").value);}'>";
+//    "javascript:{if(confirm(\"123\"))queue_otf_request("+OTFC_DELETE_TEMPLATE+",document.getElementById(\"templateSelector\").value);}'>";
   c+="<select class='btn btn-large btn-disabled' style='margin-left:1px;height:39px' id='templateSelector' name='templateSelector' onchange='queue_otf_request("+OTFC_TEMPLATE_RECALL+",this.value)'>";
    if(typeof tl=='undefined') tl=Array();
    if(typeof seltpl=='undefined') seltpl='';

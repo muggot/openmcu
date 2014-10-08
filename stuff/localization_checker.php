@@ -67,7 +67,7 @@ function my_token_grabber($tokens)
 
 function my_diff_handler($reference, $language, $diff)
 {
-  global $lf;
+  global $lf,$res_dir;
   list($missing,$excess)=$diff;
   $missing_count=count($missing);
   $excess_count=count($excess);
@@ -79,7 +79,7 @@ function my_diff_handler($reference, $language, $diff)
   if($missing_count)
   {
     my_echo("Missing tokens in '$language': Токены, отсутствующие в '$language':$lf" . my_token_dump($missing));
-    file_put_contents(get_locale_name($language).'.missing.txt', join('',my_token_grabber($missing)));
+    file_put_contents($res_dir.'/'.get_locale_name($language), join('',my_token_grabber($missing)), FILE_APPEND);
   }
   if($excess_count)
   {

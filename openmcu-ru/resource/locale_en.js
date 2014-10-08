@@ -218,3 +218,19 @@ window.l_room_deletion_text = ["",                   "Closing room &laquo;%&raqu
                                                      "Closing room &laquo;%&raquo;: waiting for members get out of room",
                                                      "Room &laquo;%&raquo; DELETED"
 ];
+
+window.l_takecontrol                               = "Current conference work mode is automatic (unmanaged). Click to operate the conference by your own (take control).";
+window.l_decontrol                                 = "Current conference work mode is managed by operator (that is you). Click to stop management and convert conference to unmanaged (automatic) state.";
+window.l_vadsetup                                  = "Voice activity detection (VAD) parameters";
+window.l_globalmute                                = "Invisible members are UNMUTED. Click to mute.";
+window.l_globalunmute                              = "Invisible members are MUTED. Click to unmute.";
+window.l_filtermode                                = [
+                                                       "Currently selected FASTEST video scaling, worst quality."
+                                                      ,"Currently selected BILINEAR video scaling, optimal for most cases."
+                                                      ,"Currently selected BOX FILTER for video scaling - perfect, but slow."
+                                                     ];
+window.l_videorecorder                             = "Start video recording";
+window.l_videorecorderstop                         = "Stop video recording";
+window.l_pleasetakecontrol                         = "This could not be done because the conference is working in unmanaged (automatic) mode.";
+window.l_decontrolmixersconfirm                    = "You are converting the converence into unmanaged mode..\r\nAdditional video mixers will be removed and the only one will be kept.\r\nAre you sure, you want to continue?";
+window.l_templatedeleteconfirm                     = "Template * will deleted";
