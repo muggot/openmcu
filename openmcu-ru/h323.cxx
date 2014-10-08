@@ -1393,17 +1393,6 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OpenMCU::Current().HttpWriteCmdRoom("remove_all()",room);
     OTF_RET_OK;
   }
-  if(action == OTFC_SAVE_MEMBERS_CONF)
-  {
-    FILE *membLst;
-    PString name="members_"+room+".conf";
-    membLst = fopen(name,"w");
-    if(membLst==NULL) { OpenMCU::Current().HttpWriteEventRoom("<font color=red>Error: Can't save member list</font>",room); OTF_RET_FAIL; }
-    fputs(conference->membersConf,membLst);
-    fclose(membLst);
-    OpenMCU::Current().HttpWriteEventRoom("Member list saved",room);
-    OTF_RET_OK;
-  }
   if(action == OTFC_TAKE_CONTROL)
   {
     if(conference->IsModerated()=="-")
@@ -1915,6 +1904,8 @@ PString MCUH323EndPoint::RoomCtrlPage(const PString room, BOOL ctrl, int n, Conf
 
 void MCUH323EndPoint::UnmoderateConference(Conference & conference)
 {
+  conference.SetMuteUnvisible(FALSE);
+
   conference.videoMixerListMutex.Wait();
   MCUVideoMixer * mixer = NULL;
   if(conference.videoMixerList!=NULL) mixer = conference.videoMixerList->mixer;
