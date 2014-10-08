@@ -2023,7 +2023,7 @@ BOOL WelcomePage::OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo
 
   FILE *f;
   size_t written=0;
-  f=fopen(PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + "logo.jpeg","wb"); 
+  f=fopen(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.jpeg","wb"); 
   if(f) written=fwrite((const void*)(((const char*)eb)+o), 1, (size_t)o2-o, f);
   fclose(f);
 

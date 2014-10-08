@@ -69,7 +69,7 @@ void MyMCU::OnCreateConfigPage(PConfig & cfg, PConfigPage & rsrc)
          struct jpeg_decompress_struct cinfo;
          struct jpeg_error_mgr err;
          FILE * infile;
-         if ((infile = fopen(PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + "logo.jpeg", "rb")))
+         if ((infile = fopen(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.jpeg", "rb")))
          {
            jpeg_create_decompress(&cinfo);
            cinfo.err = jpeg_std_error(&err);
