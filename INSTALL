@@ -12,24 +12,25 @@ Here is basic information.
 Dependencies
 ------------
 
-OpenMCU-ru already contains PTLib and H323Plus libraries forked from:
-  * PTLib (http://opalvoip.org/)
-  * H323Plus (http://h323plus.org/)
-These libraries are not required for build.
-
-Required dependencies:
+Requires:
   * build tools: gcc make flex bison autoconf automake pkg-config
-  * Sofia-SIP >= 1.12.11 (http://sofia-sip.sourceforge.net/)
-  * FFmpeg >= 0.10.4 (http://ffmpeg.org/)
-    or Libav >= 0.8 (http://libav.org/)
-  * libvpx >= 1.0 (http://webm.googlecode.com/)
-  * libx264 (http://www.videolan.org/developers/x264.html)
+  * FFmpeg >= 0.10.4 - http://www.ffmpeg.org
+    or Libav >= 0.8  - http://libav.org
+  * libx264          - http://www.videolan.org/developers/x264.html
+  * libvpx >= 1.0    - http://webm.googlecode.com
 
 Optional dependencies (will be used if they are available in the system):
   * FreeType (http://freetype.org/)
-  * libyuv (http://code.google.com/p/libyuv/)
   * libjpeg-turbo (http://libjpeg-turbo.virtualgl.org/)
     or libjpeg (http://ijg.org/)
+
+OpenMCU-ru contains the following required libraries in the repository:
+  * PTLib            - http://www.opalvoip.org
+  * H323Plus         - http://www.h323plus.org
+  * Sofia-SIP        - http://www.sofia-sip.sourceforge.net
+  * libSRTP          - http://srtp.sourceforge.net/srtp.html
+  * libzrtp          - http://zfoneproject.com/prod_sdk.html
+  * libyuv           - http://www.code.google.com/p/libyuv
 
 
 --------------

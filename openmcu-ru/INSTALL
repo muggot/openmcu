@@ -1,7 +1,63 @@
-Installation Instructions
-*************************
+-------------------------
+Installation instructions
+-------------------------
+
+More detailed instructions can be found in the wiki:
+http://openmcu.ru/wiki/en/install/index
+
+Here is basic information.
+
+
+------------
+Dependencies
+------------
+
+Requires:
+  * build tools: gcc make flex bison autoconf automake pkg-config
+  * FFmpeg >= 0.10.4 - http://www.ffmpeg.org
+    or Libav >= 0.8  - http://libav.org
+  * libx264          - http://www.videolan.org/developers/x264.html
+  * libvpx >= 1.0    - http://webm.googlecode.com
+
+Optional dependencies (will be used if they are available in the system):
+  * FreeType (http://freetype.org/)
+  * libjpeg-turbo (http://libjpeg-turbo.virtualgl.org/)
+    or libjpeg (http://ijg.org/)
+
+OpenMCU-ru contains the following required libraries in the repository:
+  * PTLib            - http://www.opalvoip.org
+  * H323Plus         - http://www.h323plus.org
+  * Sofia-SIP        - http://www.sofia-sip.sourceforge.net
+  * libSRTP          - http://srtp.sourceforge.net/srtp.html
+  * libzrtp          - http://zfoneproject.com/prod_sdk.html
+  * libyuv           - http://www.code.google.com/p/libyuv
+
+
+--------------
+Build on Linux
+--------------
 
 ./autogen.sh
 ./configure
-make all
+make
 make install
+
+
+----------------
+Build on FreeBSD
+----------------
+
+./autogen.sh
+./configure
+gmake
+gmake install
+
+
+----------------
+Build on Windows
+----------------
+
+Build using Microsoft Visual Studio in the following order:
+  * ptlib\ptlib_*.sln
+  * h323plus\h323plus_*.sln
+  * openmcu-ru\win\openmcu_*.sln

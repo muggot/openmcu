@@ -29,11 +29,15 @@ OpenMCU-ru has the following features:
   * configuration and control via the web interface on port 1420
     (use for connecting: http://host:1420)
   * supported interface languages: English, Russian
+  * supported protocols: H.323, RTSP, SIP
+    - built-in H.323 Gatekeeper
+    - built-in SIP registrar
+    - RTSP server and client
+    - internal calls, including between different protocols
+  * supported video codecs: H.261, H.263, H.263+, H.264, MP4V-ES, VP8
+  * supported audio codecs: G.711, G.722, G.722.1, G.722.1C, G.722.2, G723.1, G.726, G.729, iLBC, Speex, SILK, OPUS
   * does not require codec hardware to operate
   * outgoing video is cached to reduce the load on the server
-  * supported protocols: H.323, SIP
-  * supported video codecs: H.261, H.263, H.263+, H.264, VP8
-  * supported audio codecs: G.711, G.722, G723.1, G.726, G.729, iLBC, Speex, SILK, OPUS
   * several different conferences can be taking place at the same time
     using different 'rooms'
   * display statistics on calls in real time
@@ -54,7 +58,7 @@ any room then client will be connected to default room
 ("room101" by default, can be changed in options).
 
 You can call to the server using the destination address:
-"room_name@server-name_or_address".
+"room_name@hostname_or_ip_address".
 
 New rooms are created automatically when they are accessed.
 Also, there is default room for clients which did not specify room
