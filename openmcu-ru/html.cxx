@@ -2094,7 +2094,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
         << app.GetEndpoint().GetMonitorText() << "</pre></div>";
 
 #if USE_LIBJPEG
-  shtml << "<br><form method=\"post\" enctype=\"multipart/form-data\"><h1>Prefatory Frame</h1>JPEG, max 500K:<br><img src=\"logo.jpeg\"><br>Change: <input name=\"image\" type=\"file\"><input type=\"submit\"></form>";
+  shtml << "<br><form method=\"post\" enctype=\"multipart/form-data\"><script type=\"text/javascript\">document.write(window.l_welcome_logo);</script><img src=\"logo.jpeg\"><br><script type=\"text/javascript\">document.write(window.l_changelogo);</script><input name=\"image\" type=\"file\"><input type=\"submit\"></form>";
 #endif
 
   EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());

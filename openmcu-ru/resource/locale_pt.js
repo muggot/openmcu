@@ -233,3 +233,4 @@ window.l_videorecorderstop                         = "Stop video recording";
 window.l_pleasetakecontrol                         = "This could not be done because the conference is working in unmanaged (automatic) mode.";
 window.l_decontrolmixersconfirm                    = "You are converting the converence into unmanaged mode..\r\nAdditional video mixers will be removed and the only one will be kept.\r\nAre you sure, you want to continue?";
 window.l_templatedeleteconfirm                     = "Template * will deleted";
+window.l_changelogo                                = "Change: ";
