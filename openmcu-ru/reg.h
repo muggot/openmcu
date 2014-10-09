@@ -175,7 +175,7 @@ class RegistrarAccount
     }
     void Init()
     {
-      domain = "openmcu-ru";
+      domain = "HONEYNET-MCU";
       port = 0;
       scheme = "Digest";
       algorithm = "MD5";

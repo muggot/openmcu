@@ -1,7 +1,7 @@
 /*
  * VP8 (WebM) video codec Plugin codec for OPAL
  *
- * Copyright (C) 2013 OpenMCU-ru Team, All Rights Reserved
+ * Copyright (C) 2013 HONEYNET-MCU Team, All Rights Reserved
  * Copyright (C) 2012 Vox Lucida Pty Ltd, All Rights Reserved
  *
  * The contents of this file are subject to the Mozilla Public License
@@ -84,7 +84,7 @@ PLUGINCODEC_LICENSE(
   "robertj@voxlucida.com.au",                                   // source code email
   "http://www.openmcu.ru, "                                     // source code URL
   "http://www.voxlucida.com.au",                                // source code URL
-  "Copyright (C) 2013 by OpenMCU-ru Team, "                     // source code copyright
+  "Copyright (C) 2013 by HONEYNET-MCU Team, "                     // source code copyright
   "Copyright (C) 2011 by Vox Lucida Pt.Ltd., All Rights Reserved", // source code copyright
   "MPL 1.0",                                                    // source code license
   PluginCodec_License_MPL,                                      // source code license

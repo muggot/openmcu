@@ -242,7 +242,7 @@ BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg
   {
     auth_type = AUTH_WWW;
     auth_scheme = "Digest";
-    auth_realm = "openmcu-ru";
+    auth_realm = "HONEYNET-MCU";
     auth_nonce = PGloballyUniqueID().AsString();
   }
 
@@ -592,7 +592,7 @@ int MCURtspConnection::OnRequestDescribe(const msg_t *msg)
   char buffer_sdp[1024];
   snprintf(buffer_sdp, 1024,
            "v=0\r\n"
-           "o=- 15516361289475271524 15516361289475271524 IN IP4 OpenMCU-ru\r\n"
+           "o=- 15516361289475271524 15516361289475271524 IN IP4 HONEYNET-MCU\r\n"
            "s=Unnamed\r\n"
            "i=N/A\r\n"
            "c=IN IP4 0.0.0.0\r\n"
