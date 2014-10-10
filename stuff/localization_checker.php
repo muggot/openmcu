@@ -9,7 +9,8 @@ $reference='ru';
 // Тут парадокс: сравниваем список токенов с 'ru', но хотим брать недостающие
 // токены из 'en' (потому что английский язык более "международный"):
 $pull_out_from='en';
-//$pull_out_from='ru';
+// But for uk - from ru :) Но для uk - из ru :)
+$pull_out_from_specials=Array('uk'=>'ru');
 
 $res_dir='../openmcu-ru/resource';
 
@@ -28,6 +29,7 @@ if(count($tokens)<10)
 foreach($localizations as $language)
 {
   check_and_remove_bom("$res_dir/".get_locale_name($language));
+  check_and_add_lf("$res_dir/".get_locale_name($language));
   if($language==$reference) continue;
   $l_tokens=my_tokens("$res_dir/".get_locale_name($language));
   my_diff_handler($reference, $language, my_compare($tokens, $l_tokens));
@@ -43,10 +45,12 @@ check_html_cxx('../openmcu-ru/html.cxx',$localizations);
 
 function get_locale_name($language) { return "locale_$language.js"; }
 
-function my_token_grabber($tokens)
+function my_token_grabber($tokens,$language)
 {
-  global $res_dir, $pull_out_from;
-  $f=file($res_dir.'/'.get_locale_name($pull_out_from));
+  global $res_dir, $pull_out_from, $pull_out_from_specials;
+  $lang_from = $pull_out_from;
+  if(isset($pull_out_from_specials[$language])) $lang_from=$pull_out_from_specials[$language];
+  $f=file("$res_dir/".get_locale_name($lang_from));
   $r=Array();
   $grabbing=false;
   foreach($f as $str)
@@ -79,7 +83,7 @@ function my_diff_handler($reference, $language, $diff)
   if($missing_count)
   {
     my_echo("Missing tokens in '$language': Токены, отсутствующие в '$language':$lf" . my_token_dump($missing));
-    file_put_contents($res_dir.'/'.get_locale_name($language), join('',my_token_grabber($missing)), FILE_APPEND);
+    file_put_contents($res_dir.'/'.get_locale_name($language), join('',my_token_grabber($missing,$language)), FILE_APPEND);
   }
   if($excess_count)
   {
@@ -263,4 +267,17 @@ function check_and_remove_bom($f)
     return;
   }
   if((ord($bom[0])<32) || (ord($bom[0])>253)) my_echo("Warning! Wrong BOM in $f, UTF-8 needed. Внимание! Неверный BOM в $f, нужен UTF-8.$lf");
+}
+
+function check_and_add_lf($f)
+{
+  global $lf;
+  $a=file_get_contents($f);
+  $l=strlen($a);
+  if($l<1) return;
+  $c=$a[$l-1];
+  if($c=="\n") return;
+  if($c=="\r") return;
+  my_echo("Adding LF at the end of $f. Добавляем перевод строки в конце $f.$lf");
+  file_put_contents($f,$lf,FILE_APPEND);
 }

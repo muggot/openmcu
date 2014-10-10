@@ -2947,15 +2947,15 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       PStringStream q;
       if(!t)t=1;
       q << "<pre>" << dec << setprecision(1) << fixed
-        <<     "Total drive size: " << (t        >>30) << " GiB."
-        << "<br>Records takes up: " << (totalSize>>30) << " GiB (" << (100.0 * totalSize / t) << "%)."
-        << "<br>Free space left:  " << (f        >>30) << " GiB (" << (100.0 * f         / t) << "%)."
+        <<     "<script>document.write(window.l_totaldrivesize)</script>" << (t        >>30) << " GiB."
+        << "<br><script>document.write(window.l_recordstakesup)</script>" << (totalSize>>30) << " GiB (" << (100.0 * totalSize / t) << "%)."
+        << "<br><script>document.write(window.l_freespaceleft)</script>"  << (f        >>30) << " GiB (" << (100.0 * f         / t) << "%)."
         << "</pre>";
       freeSpace=q;
     }
   }
 
-  if(fileList.GetSize()==0) shtml << "The direcory does not contain records at the moment. " << freeSpace; else
+  if(fileList.GetSize()==0) shtml << "<script>document.write(window.l_dir_no_records);</script> " << freeSpace; else
   {
     shtml << freeSpace << "<table style='border:2px solid #82b8e3'><tr>"
       << "<th class='h1' style='color:#afc'>N</th>"
@@ -2963,8 +2963,8 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=2)?'2':'3') << "'>Room</a></th>"
       << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=4)?'4':'5') << "'>Resolution</th>"
       << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=6)?'6':'7') << "'>File Size</th>"
-      << "<th class='h1' style='color:#afc'>Download</th>"
-      << "<th class='h1' style='color:#afc'>Delete</th>"
+      << "<th class='h1' style='color:#afc'><script>document.write(window.l_download)</script></th>"
+      << "<th class='h1' style='color:#afc'><script>document.write(window.l_delete)</script></th>"
       << "</tr>";
 
     for(PINDEX i=0;i<fileList.GetSize()-1; i++)
@@ -3018,8 +3018,8 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
             << "<td class='h0'>" << roomName << "</td>"
             << "<td class='h0' style='text-align:right'>" << videoResolution << "</td>"
             << "<td class='h0' style='text-align:right'>" << fileSize << "</td>"
-            << "<td class='h0'><a href='/Records?getfile=" << fileName << "' download style='color:#00a;text-decoration:none'>Download</a></td>"
-            << "<td class='h0'><a href='/Records?deleteRecord=" << fileName << "' style='color:#00a;text-decoration:none'>Delete</a></td>"
+            << "<td class='h0'><a href='/Records?getfile=" << fileName << "' download style='color:#00a;text-decoration:none'><script>document.write(window.l_download)</script></a></td>"
+            << "<td class='h0'><a href='/Records?deleteRecord=" << fileName << "' style='color:#00a;text-decoration:none'><script>document.write(window.l_delete)</script></a></td>"
             << "</tr>";
         }
       }
