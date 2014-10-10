@@ -816,8 +816,8 @@ if test "${speex}" = "yes"; then
     if test ${USE_LIBSPEEX} = 1 ; then
       AC_CHECK_FILE(/usr/lib/libspeex.so, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
       if test ${USE_LIBSPEEX} = 1 ; then
-        SPEEX_CPPFLAGS="-I/usr/include";
-        SPEEX_LDFLAGS="-L/usr/lib";
+        SPEEX_CPPFLAGS="$SPEEX_CPPFLAGS -I/usr/include";
+        SPEEX_LDFLAGS="$SPEEX_LDFLAGS -L/usr/lib";
         MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
       fi
     fi
@@ -827,15 +827,15 @@ if test "${speex}" = "yes"; then
     if test ${USE_LIBSPEEX} = 1 ; then
       AC_CHECK_FILE(/usr/local/lib/libspeex.so, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
       if test ${USE_LIBSPEEX} = 1 ; then
-        SPEEX_CPPFLAGS="-I/usr/local/include";
-        SPEEX_LDFLAGS="-L/usr/local/lib";
+        SPEEX_CPPFLAGS="$SPEEX_CPPFLAGS -I/usr/local/include";
+        SPEEX_LDFLAGS="$SPEEX_LDFLAGS -L/usr/local/lib";
         MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
       fi
     fi
   fi
   if test ${USE_LIBSPEEX} = 0 ; then
-    SPEEX_CPPFLAGS="-I../../libs/speex/include"
-    SPEEX_LDFLAGS="-L../../libs/speex/libspeex/.libs"
+    SPEEX_CPPFLAGS="$SPEEX_CPPFLAGS -I../../libs/speex/include"
+    SPEEX_LDFLAGS="$SPEEX_LDFLAGS -L../../libs/speex/libspeex/.libs"
     AC_SUBST(LIBSPEEX_DIR, ${top_srcdir}/libs/speex)
     AC_CONFIG_SUBDIRS(libs/speex)
     USE_LIBSPEEX=1
@@ -866,8 +866,8 @@ if test "${opus}" = "yes"; then
     if test ${USE_LIBOPUS} = 1 ; then
       AC_CHECK_FILE(/usr/lib/libopus.so, USE_LIBOPUS=1, USE_LIBOPUS=0)
       if test ${USE_LIBOPUS} = 1 ; then
-        OPUS_CPPFLAGS="-I/usr/include/opus";
-        OPUS_LDFLAGS="-L/usr/lib";
+        OPUS_CPPFLAGS="$OPUS_CPPFLAGS -I/usr/include/opus";
+        OPUS_LDFLAGS="$OPUS_LDFLAGS -L/usr/lib";
         MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
       fi
     fi
@@ -877,15 +877,15 @@ if test "${opus}" = "yes"; then
     if test ${USE_LIBOPUS} = 1 ; then
       AC_CHECK_FILE(/usr/local/lib/libopus.so, USE_LIBOPUS=1, USE_LIBOPUS=0)
       if test ${USE_LIBOPUS} = 1 ; then
-        OPUS_CPPFLAGS="-I/usr/local/include/opus";
-        OPUS_LDFLAGS="-L/usr/local/lib";
+        OPUS_CPPFLAGS="$OPUS_CPPFLAGS -I/usr/local/include/opus";
+        OPUS_LDFLAGS="$OPUS_LDFLAGS -L/usr/local/lib";
         MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
       fi
     fi
   fi
   if test ${USE_LIBOPUS} = 0 ; then
-    OPUS_CPPFLAGS="-I../../libs/opus/include"
-    OPUS_LDFLAGS="-L../../libs/opus/.libs"
+    OPUS_CPPFLAGS="$OPUS_CPPFLAGS -I../../libs/opus/include"
+    OPUS_LDFLAGS="$OPUS_LDFLAGS -L../../libs/opus/.libs"
     AC_SUBST(LIBOPUS_DIR, ${top_srcdir}/libs/opus)
     AC_CONFIG_SUBDIRS(libs/opus)
     USE_LIBOPUS=1
