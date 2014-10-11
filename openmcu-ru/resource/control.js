@@ -1363,7 +1363,6 @@ function top_panel()
   c+=get_template_lock();
   c+="<input type='button' class='btn btn-large btn-danger' style='width:20px;padding-left:0px;padding-right:0px;margin-right:1px' value='&ndash;' onclick='" +
     "javascript:{if(confirm(window.l_templatedeleteconfirm.replace(/\\*/g, document.getElementById(\"templateSelector\").value)))queue_otf_request("+OTFC_DELETE_TEMPLATE+",document.getElementById(\"templateSelector\").value);}'>";
-//    "javascript:{if(confirm(\"123\"))queue_otf_request("+OTFC_DELETE_TEMPLATE+",document.getElementById(\"templateSelector\").value);}'>";
   c+="<select class='btn btn-large btn-disabled' style='margin-left:1px;height:39px' id='templateSelector' name='templateSelector' onchange='queue_otf_request("+OTFC_TEMPLATE_RECALL+",this.value)'>";
    if(typeof tl=='undefined') tl=Array();
    if(typeof seltpl=='undefined') seltpl='';

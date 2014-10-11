@@ -2879,9 +2879,10 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   {
     wtd=data("deleteRecord");
     shtml << "<div style='border:2px solid red;padding:8px;margin:4px;background-color:#fff'>"
-      << wtd << " will be deleted"
-      << "<center><a style='color:red' href='/Records?deleteRecordConfirmed=" << wtd << "'>[OK]</a> :: <a href='/Records'>Cancel</a></center>"
-      << "</div>";
+      << "<script>document.write(window.l_recwilldeleted.replace(/\\*/g,\"" << wtd << "\") + ";
+      << "\"<center><a style='color:red' href='/Records?deleteRecordConfirmed=" << wtd
+      << "'>\" + window.l_recwilldeleted_ok + \"</a> :: <a href='/Records'>\" + window.recwilldeleted_cancel + \"</a></center>"
+      << "\");</script></div>";
   }
   else if(data.Contains("deleteRecordConfirmed"))
   {
@@ -2890,7 +2891,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     {
       unlink(OpenMCU::Current().vr_ffmpegDir + PATH_SEPARATOR + wtd);
       shtml << "<div style='border:1px solid green'>"
-      << wtd << " deleted"
+      << "<script>document.write(window.l_recwasdeleted.replace(/\\*/g,\"" << wtd << "\"))</script>";
       << "</div>";
     }
   }
@@ -2959,10 +2960,10 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   {
     shtml << freeSpace << "<table style='border:2px solid #82b8e3'><tr>"
       << "<th class='h1' style='color:#afc'>N</th>"
-      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=0)?'0':'1') << "'>Start Date/Time</a></th>"
-      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=2)?'2':'3') << "'>Room</a></th>"
-      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=4)?'4':'5') << "'>Resolution</th>"
-      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=6)?'6':'7') << "'>File Size</th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=0)?'0':'1') << "'><script>document.write(window.l_startdatetime)</script></a></th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=2)?'2':'3') << "'><script>document.write(window.l_connections_word_room)</script></a></th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=4)?'4':'5') << "'><script>document.write(window.l_resolution)</script></th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=6)?'6':'7') << "'><script>document.write(window.l_filesize)</script></th>"
       << "<th class='h1' style='color:#afc'><script>document.write(window.l_download)</script></th>"
       << "<th class='h1' style='color:#afc'><script>document.write(window.l_delete)</script></th>"
       << "</tr>";
