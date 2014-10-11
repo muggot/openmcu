@@ -2946,11 +2946,11 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     {
       PStringStream q;
       if(!t)t=1;
-      q << "<pre>" << dec << setprecision(1) << fixed
-        <<     "<script>document.write(window.l_totaldrivesize)</script>" << (t        >>30) << " GiB."
-        << "<br><script>document.write(window.l_recordstakesup)</script>" << (totalSize>>30) << " GiB (" << (100.0 * totalSize / t) << "%)."
-        << "<br><script>document.write(window.l_freespaceleft)</script>"  << (f        >>30) << " GiB (" << (100.0 * f         / t) << "%)."
-        << "</pre>";
+      q << dec << setprecision(1) << fixed << "<pre><script>document.write("
+        << "window.l_totaldrivesize.replace(/\\*/g,\"" << (t        >>30) << "\") + \"<br/>\" + "
+        << "window.l_recordstakesup.replace(/\\*/g,\"" << (totalSize>>30) << "\").replace(/\\%/g,\"" << (100.0*totalSize/t) << "%\") + \"<br/>\" + "
+        << "window.l_freespaceleft.replace( /\\*/g,\"" << (f        >>30) << "\").replace(/\\%/g,\"" << (100.0*f        /t) << "%\")"
+        << ")</script>";
       freeSpace=q;
     }
   }

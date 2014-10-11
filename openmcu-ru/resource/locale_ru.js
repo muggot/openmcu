@@ -245,7 +245,7 @@ window.l_changelogo                                = "Заменить: ";
 
 window.l_dir_no_records                            = "В этой директории пока нет ни одной сохранённой видеозаписи.";
 window.l_download                                  = "Скачать";
-window.l_totaldrivesize                            = "Общий размер дискового раздела: ";
-window.l_recordstakesup                            = "Видеозаписи занимают:           ";
-window.l_freespaceleft                             = "Свободно:                       ";
+window.l_totaldrivesize                            = "Общий размер дискового раздела: * ГиБ.";
+window.l_recordstakesup                            = "Видеозаписи занимают:           * ГиБ (%).";
+window.l_freespaceleft                             = "Свободно:                       * ГиБ (%).";
 window.l_delete                                    = "Удалить";
