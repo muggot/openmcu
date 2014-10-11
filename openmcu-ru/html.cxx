@@ -2879,9 +2879,9 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   {
     wtd=data("deleteRecord");
     shtml << "<div style='border:2px solid red;padding:8px;margin:4px;background-color:#fff'>"
-      << "<script>document.write(window.l_recwilldeleted.replace(/\\*/g,\"" << wtd << "\") + ";
+      << "<script>document.write(window.l_recwilldeleted.replace(/\\*/g,\"" << wtd << "\") + "
       << "\"<center><a style='color:red' href='/Records?deleteRecordConfirmed=" << wtd
-      << "'>\" + window.l_recwilldeleted_ok + \"</a> :: <a href='/Records'>\" + window.recwilldeleted_cancel + \"</a></center>"
+      << "'>\" + window.l_recwilldeleted_ok + \"</a> :: <a href='/Records'>\" + window.l_recwilldeleted_cancel + \"</a></center>"
       << "\");</script></div>";
   }
   else if(data.Contains("deleteRecordConfirmed"))
@@ -2891,7 +2891,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     {
       unlink(OpenMCU::Current().vr_ffmpegDir + PATH_SEPARATOR + wtd);
       shtml << "<div style='border:1px solid green'>"
-      << "<script>document.write(window.l_recwasdeleted.replace(/\\*/g,\"" << wtd << "\"))</script>";
+      << "<script>document.write(window.l_recwasdeleted.replace(/\\*/g,\"" << wtd << "\"))</script>"
       << "</div>";
     }
   }
