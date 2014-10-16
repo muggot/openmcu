@@ -9,6 +9,7 @@
   #define AV_CODEC_ID_AC3         CODEC_ID_AC3
   #define AV_CODEC_ID_H264        CODEC_ID_H264
   #define AV_CODEC_ID_MPEG4       CODEC_ID_MPEG4
+  #define AV_CODEC_ID_MSMPEG4V3   CODEC_ID_MSMPEG4V3
   #define AV_CODEC_ID_VP8         CODEC_ID_VP8
 #endif
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 0, 0)
@@ -280,8 +281,8 @@ BOOL ConferenceRecorder::Start()
     << video_height << "x"
     << video_framerate;
   filename = t;
-  if((audio_codec_id == AV_CODEC_ID_AC3 || audio_codec_id == AV_CODEC_ID_NONE) && video_codec_id == AV_CODEC_ID_MPEG4)
-    format_name = "avi";
+  if((video_codec_id == AV_CODEC_ID_MPEG4 || video_codec_id == AV_CODEC_ID_MSMPEG4V3) && audio_codec_id != AV_CODEC_ID_PCM_S16LE)
+    format_name = "asf";
   else
     format_name = "mkv";
   filename += "."+format_name;
