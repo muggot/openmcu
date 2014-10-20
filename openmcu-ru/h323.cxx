@@ -616,7 +616,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
           }
         }
         else if(member->GetType() == MEMBER_TYPE_CACHE)
-        { ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
+        { ConferenceCacheMember * fileMember = dynamic_cast<ConferenceCacheMember *>(member);
           if(fileMember!=NULL)
           if(fileMember->codec!=NULL)
           if(fileMember->codec->GetCacheMode()==1)
@@ -835,7 +835,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         { formatString="NO_CODEC";
           if(cache)
           { cache=FALSE;
-            ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
+            ConferenceCacheMember * fileMember = dynamic_cast<ConferenceCacheMember *>(member);
             if(fileMember!=NULL)
             if(fileMember->codec!=NULL)
             if(fileMember->codec->GetCacheMode()==1)
@@ -1057,11 +1057,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
     r << ",-1";
 #endif
 
-#ifdef _WIN32
-  if(c.externalRecorder != NULL) r << ",1"; else r << ",0";               // [0][11] = external video recording state (1=recording, 0=NO)
-#else
   if(c.conferenceRecorder != NULL && c.conferenceRecorder->IsRunning()) r << ",1"; else r << ",0"; // [0][11] = video recording state (1=recording, 0=NO)
-#endif
   if(c.lockedTemplate) r << ",1"; else r << ",0";                         // [0][12] = member list locked by template (1=yes, 0=no)
 
   r << ")"; //l2 close
@@ -2005,9 +2001,8 @@ PString MCUH323EndPoint::GetMonitorText()
         MemberTypes membType = member->GetType();
         BOOL isCache = (membType == MEMBER_TYPE_CACHE);
         BOOL isPipe = (membType == MEMBER_TYPE_PIPE);
-        BOOL isFileMember = (isCache || isPipe);
         output << hdr << "Title: " << hex << member->GetTitle();
-        if (isFileMember) output << " (file object)";
+        if(isPipe || isCache) output << " (file object)";
         output << "\n"
                << hdr << "Name: " << name << "\n"
                << hdr << "Outgoing video mixer: " << member->GetVideoMixerNumber() << "\n"
@@ -2019,15 +2014,23 @@ PString MCUH323EndPoint::GetMonitorText()
           MCUH323Connection * conn = (MCUH323Connection *)FindConnectionWithoutLock(member->GetCallToken());
           output << hdr << "Connection: " << hex << conn << "\n";
         }
-        if(isFileMember)
+        if(isPipe)
         {
-          ConferenceFileMember * fileMember = dynamic_cast<ConferenceFileMember *>(member);
-          if(fileMember!=NULL)
+          ConferencePipeMember * pipeMember = dynamic_cast<ConferencePipeMember *>(member);
+          if(pipeMember!=NULL)
           {
-            if(isPipe) output << hdr << "Format: " << fileMember->GetFormat() << "\n";
-            if(isCache)output << hdr << "VFormat: " << fileMember->GetVFormat() << "\n";
-            output << hdr << "IsVisible: " << fileMember->IsVisible() << "\n";
-            if(isCache)output << hdr << "Status: " << (fileMember->status?"Awake":"Sleeping") << "\n";
+            output << hdr << "Format: " << pipeMember->GetFormat() << "\n";
+            output << hdr << "IsVisible: " << pipeMember->IsVisible() << "\n";
+          }
+        }
+        if(isCache)
+        {
+          ConferenceCacheMember * cacheMember = dynamic_cast<ConferenceCacheMember *>(member);
+          if(cacheMember!=NULL)
+          {
+            output << hdr << "VFormat: " << cacheMember->GetVFormat() << "\n";
+            output << hdr << "IsVisible: " << cacheMember->IsVisible() << "\n";
+            output << hdr << "Status: " << (cacheMember->status?"Awake":"Sleeping") << "\n";
 //#ifndef _WIN32
 //            if(fileMember->codec) output << hdr << "EncoderSeqN: " << dec << fileMember->codec->GetEncoderSeqN() << "\n";
 //#endif
@@ -2896,7 +2899,7 @@ void MCUH323Connection::OpenAudioCache(H323AudioCodec & codec)
 
   PTRACE(2,"MCU\tOpenAudioCache(" << codec.GetFormatString() << ")");
 
-  new ConferenceFileMember(conf, codec.GetMediaFormat(), PFile::WriteOnly, 0);
+  new ConferenceCacheMember(conf, codec.GetMediaFormat(), 0);
 }
 
 void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
@@ -2918,7 +2921,7 @@ void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
 
   PTRACE(2,"MCU\tOpenVideoCache(" << srcCodec.GetFormatString() << ")");
 
-  new ConferenceFileMember(conf, srcCodec.GetMediaFormat(), PFile::WriteOnly, videoMixerNumber);
+  new ConferenceCacheMember(conf, srcCodec.GetMediaFormat(), videoMixerNumber);
 }
 
 void MCUH323Connection::SetEndpointDefaultVideoParams()

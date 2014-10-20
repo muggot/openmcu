@@ -187,6 +187,7 @@ window.l_room_deletion_text = ["",                   "Closing room &laquo;%&raqu
 
 window.l_param_registrar = '記録係';
 window.l_param_conference = '会議';
+window.l_param_export = 'Export(named pipe)';
 window.l_param_rtsp = 'RTSPパラメータ';
 window.l_param_rtsp_servers = 'RTSPサーバ';
 window.l_param_rtsp_endpoints = 'RTSP端末';

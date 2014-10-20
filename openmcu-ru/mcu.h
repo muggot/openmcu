@@ -86,11 +86,8 @@ static const char SipListenerKey[]         = "SIP Listener";
 const unsigned int DefaultVideoFrameRate = 10;
 const unsigned int DefaultVideoQuality   = 10;
 
-static const char RecorderFfmpegPathKey[]  = "Path to ffmpeg";
-static const char RecorderFfmpegOptsKey[]  = "Ffmpeg options";
 static const char RecorderFfmpegDirKey[]   = "Video Recorder directory";
-static const char RecorderFrameWidthKey[]  = "Video Recorder frame width";
-static const char RecorderFrameHeightKey[] = "Video Recorder frame height";
+static const char RecorderResolutionKey[] = "Video Recorder resolution";
 static const char RecorderFrameRateKey[]   = "Video Recorder frame rate";
 static const char RecorderSampleRateKey[]  = "Video Recorder sound rate";
 static const char RecorderAudioChansKey[]  = "Video Recorder sound channels";
@@ -101,12 +98,13 @@ static const char RecorderAudioBitrateKey[] = "Video Recorder aduio bitrate";
 static const char RecorderVideoBitrateKey[] = "Video Recorder video bitrate";
 static const char RecorderDefaultAudioCodec[] = "ac3";
 static const char RecorderDefaultVideoCodec[] = "mpeg4";
-#ifdef _WIN32
-static const char DefaultFfmpegPath[]         = "ffmpeg.exe";
-#else
-static const char DefaultFfmpegPath[]         = FFMPEG_PATH;
-#endif
-static const char DefaultFfmpegOptions[]      = "-y -f s16le -ac %C -ar %S -i %A -f rawvideo -r %R -s %F -i %V -f asf -acodec pcm_s16le -ac %C -vcodec msmpeg4v2 %O.asf";
+
+static const char VideoFrameWidthKey[]        = "Video frame width";
+static const char VideoFrameHeightKey[]       = "Video frame height";
+static const char VideoFrameRateKey[]         = "Video frame rate";
+static const char AudioSampleRateKey[]        = "Audio sample rate";
+static const char AudioChannelsKey[]          = "Audio channels";
+
 #ifdef RECORDS_DIR
 static const char DefaultRecordingDirectory[] = RECORDS_DIR;
 #else
@@ -377,10 +375,8 @@ class OpenMCU : public OpenMCUProcessAncestor
 #endif
 
     // video recorder
-    PString    vr_ffmpegPath, vr_ffmpegOpts, vr_ffmpegDir;
-    PString    ffmpegCall;
-    int        vr_framewidth, vr_frameheight, vr_framerate;
-    unsigned   vr_sampleRate, vr_audioChans, vr_minimumSpaceMiB;
+    PString vr_ffmpegDir;
+    unsigned vr_minimumSpaceMiB;
 
     PFilePath GetLeavingWAVFile() const
     { return leavingWAVFile; }
@@ -432,7 +428,7 @@ class OpenMCU : public OpenMCUProcessAncestor
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
+/*
 class ExternalVideoRecorderThread : public PThread
 {
   PCLASSINFO(ExternalVideoRecorderThread, PThread);
@@ -448,7 +444,7 @@ class ExternalVideoRecorderThread : public PThread
     pid_t recordPid;
 #endif
 };
-
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif // _MCU_MCU_H

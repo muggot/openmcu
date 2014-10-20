@@ -307,43 +307,6 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << BoolField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
 
   s << SeparatorField("Video recorder setup");
-#ifdef _WIN32
-  PString pathInfo, dirInfo;
-  pathInfo =
-      "<b>%V</b> - input video stream<br><b>%A</b> - input audio stream<br><br><b>%F</b> - frame size<br>"
-      "<b>%R</b> - video frame rate<br><br><b>%S</b> - audio sample rate<br><b>%C</b> - number of channels for audio<br><br>";
-
-  if(!PFile::Exists(mcu.vr_ffmpegPath)) pathInfo += "<b><font color=red>ffmpeg doesn't exist - check the path!</font></b>";
-  else
-  { PFileInfo info;
-    PFilePath path(mcu.vr_ffmpegPath);
-    PFile::GetInfo(path, info);
-    if(!(info.type & 3)) pathInfo += "<b><font color=red>Warning: ffmpeg neither file, nor symlink!</font></b>";
-    else if(!(info.permissions & 0111)) pathInfo += "<b><font color=red>ffmpeg permissions check failed</font></b>";
-    else
-    {
-      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) if(!PFile::Exists(mcu.vr_ffmpegDir)) { PDirectory::Create(mcu.vr_ffmpegDir,0700); PThread::Sleep(50); }
-      if(!PDirectory::Exists(mcu.vr_ffmpegDir)) dirInfo += "<b><font color=red>Directory does not exist: "+mcu.vr_ffmpegDir+"</font></b>";
-      else
-      { PFileInfo info;
-        PFilePath path(mcu.vr_ffmpegDir);
-        PFile::GetInfo(path, info);
-        if(!(info.type & 6)) dirInfo += "<b><font color=red>Warning: output directory neither directory, nor symlink!</font></b>";
-        else if(!(info.permissions & 0222)) dirInfo += "<b><font color=red>output directory permissions check failed</font></b>";
-        else pathInfo += "<b><font color=green>Looks good.</font> Execution script preview:</b><br><tt>"+mcu.ffmpegCall+"</tt>";
-      }
-    }
-  }
-
-  s << StringField(RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 250, dirInfo);
-  s << StringField(RecorderFfmpegPathKey, mcu.vr_ffmpegPath, 250, pathInfo, 7);
-  s << StringField(RecorderFfmpegOptsKey, mcu.vr_ffmpegOpts, 250, "", 0);
-  s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920, 0, "", 0);
-  s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152, 0, "", 0);
-  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 100, 0, "", 0);
-  s << IntegerField(RecorderSampleRateKey, mcu.vr_sampleRate, 8000, 192000, 0, "", 0);
-  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8", 0, "", 0);
-#else
   PString dirInfo;
   if(!PDirectory::Exists(mcu.vr_ffmpegDir)) if(!PFile::Exists(mcu.vr_ffmpegDir)) { PDirectory::Create(mcu.vr_ffmpegDir,0700); PThread::Sleep(50); }
   if(!PDirectory::Exists(mcu.vr_ffmpegDir)) dirInfo += "<b><font color=red>Directory does not exist: "+mcu.vr_ffmpegDir+"</font></b>";
@@ -358,14 +321,31 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
 
   s << StringField(RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 250, dirInfo);
   s << SelectField(RecorderVideoCodecKey, cfg.GetString(RecorderVideoCodecKey, RecorderDefaultVideoCodec), GetRecorderCodecs(1));
-  s << IntegerField(RecorderFrameWidthKey, mcu.vr_framewidth, 176, 1920);
-  s << IntegerField(RecorderFrameHeightKey, mcu.vr_frameheight, 144, 1152);
-  s << IntegerField(RecorderFrameRateKey, mcu.vr_framerate, 1, 30);
+
+  // bak 2014.10.20 ////////////////////////////////////
+  PString RecorderFrameWidthKey  = "Video Recorder frame width";
+  PString RecorderFrameHeightKey = "Video Recorder frame height";
+  if(cfg.HasKey(RecorderFrameWidthKey) && cfg.HasKey(RecorderFrameHeightKey))
+  {
+    int width = cfg.GetInteger(RecorderFrameWidthKey);
+    int height = cfg.GetInteger(RecorderFrameHeightKey);
+    cfg.SetString(RecorderResolutionKey, PString(width)+"x"+PString(height));
+    cfg.DeleteKey(RecorderFrameWidthKey);
+    cfg.DeleteKey(RecorderFrameHeightKey);
+  }
+  //////////////////////////////////////////////////////
+
+  PString resolutions;
+  for(int i = 0; recorder_resolutions[i].macroblocks != 0; ++i)
+    resolutions += ","+PString(recorder_resolutions[i].width)+"x"+PString(recorder_resolutions[i].height);
+  PString res = cfg.GetString(RecorderResolutionKey, PString(DefaultRecorderFrameWidth)+"x"+PString(DefaultRecorderFrameHeight));
+  s << SelectField(RecorderResolutionKey, res, resolutions);
+
+  s << IntegerField(RecorderFrameRateKey, cfg.GetInteger(RecorderFrameRateKey, DefaultRecorderFrameRate), 1, 30);
   s << IntegerField(RecorderVideoBitrateKey, cfg.GetInteger(RecorderVideoBitrateKey), 0, 4000, 0, "kbit/s, 0 - auto");
   s << SelectField(RecorderAudioCodecKey, cfg.GetString(RecorderAudioCodecKey, RecorderDefaultAudioCodec), GetRecorderCodecs(0));
-  s << SelectField(RecorderSampleRateKey, mcu.vr_sampleRate, "8000,16000,32000,48000");
-  s << SelectField(RecorderAudioChansKey, mcu.vr_audioChans, "1,2,3,4,5,6,7,8");
-#endif
+  s << SelectField(RecorderSampleRateKey, cfg.GetString(RecorderSampleRateKey, DefaultRecorderSampleRate), "8000,16000,32000,48000");
+  s << SelectField(RecorderAudioChansKey, cfg.GetString(RecorderAudioChansKey, DefaultRecorderAudioChans), "1,2,3,4,5,6,7,8");
 
   // get WAV file played to a user when they enter a conference
   //s << StringField(ConnectingWAVFileKey, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile));
@@ -682,6 +662,32 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
   s << EndTable();
   BuildHTML("");
   BeginPage(html_begin, "Video settings", "window.l_param_video", "window.l_info_param_video");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  string = html_page;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ExportPConfigPage::ExportPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+    : TablePConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+  PStringStream html_begin, html_end, html_page, s;
+  s << BeginTable();
+
+  s << BoolField("RESTORE DEFAULTS", FALSE);
+
+  s << BoolField("Enable export", cfg.GetBoolean("Enable export", TRUE));
+  s << IntegerField(VideoFrameWidthKey, cfg.GetInteger(VideoFrameWidthKey, 704), 176, 1920);
+  s << IntegerField(VideoFrameHeightKey, cfg.GetInteger(VideoFrameHeightKey, 576), 144, 1152);
+  s << IntegerField(VideoFrameRateKey, cfg.GetInteger(VideoFrameRateKey, 10), 1, 30);
+  s << SelectField(AudioSampleRateKey, cfg.GetInteger(AudioSampleRateKey, 16000), "8000,16000,32000,48000");
+  s << SelectField(AudioChannelsKey, cfg.GetInteger(AudioChannelsKey, 1), "1,2,3,4,5,6,7,8");
+
+  s << EndTable();
+  BuildHTML("");
+  BeginPage(html_begin, "Export settings", "", "");
   EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
   html_page << html_begin << s << html_end;
   string = html_page;
@@ -2656,11 +2662,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       PStringStream recordButton;
       if(allowRecord)
       {
-#ifdef _WIN32
-        BOOL recState = conference.externalRecorder!=NULL;
-#else
         BOOL recState = (conference.conferenceRecorder && conference.conferenceRecorder->IsRunning());
-#endif
         recordButton
         << "<input type='button' class='btn btn-large "
         << (recState ? "btn-inverse" : "btn-danger")

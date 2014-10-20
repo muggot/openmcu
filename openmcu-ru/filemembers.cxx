@@ -104,56 +104,11 @@ ConferenceFileMember::ConferenceFileMember(Conference * _conference, const Filen
   Construct();
 }
 
-ConferenceFileMember::ConferenceFileMember(Conference * _conference, const OpalMediaFormat & _fmt, PFile::OpenMode _mode)
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4355)
-#endif
-  : ConferenceMember(_conference, (void *)this), mode(_mode)
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
-{
-  vformat = _fmt;
-  Construct();
-}
-
-ConferenceFileMember::ConferenceFileMember(Conference * _conference, const OpalMediaFormat & _fmt, PFile::OpenMode _mode, unsigned _videoMixerNumber)
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4355)
-#endif
-  : ConferenceMember(_conference, (void *)this), mode(_mode)
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
-{
-  videoMixerNumber=_videoMixerNumber;
-  vformat = _fmt;
-  Construct();
-}
-
-ConferenceFileMember::ConferenceFileMember(Conference * _conference, const PString & _fmt, PFile::OpenMode _mode)
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4355)
-#endif
-  : ConferenceMember(_conference, (void *)this), mode(_mode)
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
-{
-  format = _fmt;
-  Construct();
-}
-
 void ConferenceFileMember::Construct()
 {
   PTRACE(1,"FileMember\tConstruct");
 
   running = FALSE;
-  thread = NULL;
-  vthread = NULL;
 
   // open the first file
   if (mode != PFile::WriteOnly && !QueueNext())
@@ -167,15 +122,7 @@ void ConferenceFileMember::Construct()
 
   if(mode == PFile::WriteOnly)
   {
-    if(format=="recorder")
-    {
-      thread = PThread::Create(PCREATE_NOTIFIER(WriteThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "recorder_audio:%0x");
-      vthread = PThread::Create(PCREATE_NOTIFIER(WriteThreadV), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "recorder_video:%0x");
-    }
-    else // cache
-    {
-      thread = PThread::Create(PCREATE_NOTIFIER(EncoderCacheThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "cache:%0x");
-    }
+    //
   }
   else
   {
@@ -212,42 +159,9 @@ void ConferenceFileMember::Unlisten()
   if(thread)
   {
     PTRACE(5,"ConferenceFileMember\tWaiting for termination: " << GetName() << "(" << thread->GetThreadName() << ")");
-    if(thread->GetThreadName().Left(8) == "recorder")
-    {
-#ifdef _WIN32
-      thread->WaitForTermination();
-#else
-      int SS = open(audioPipeName, O_RDONLY | O_NONBLOCK);
-      PBYTEArray buffer;
-      buffer.SetSize(100);
-      while(!thread->IsTerminated()) { (void)read(SS, buffer.GetPointer(), buffer.GetSize()); }
-      close(SS);
-#endif
-    } else {
-      thread->WaitForTermination();
-    }
+    thread->WaitForTermination();
     delete thread;
     thread = NULL;
-  }
-  if(vthread)
-  {
-    PTRACE(5,"ConferenceFileMember\tWaiting for termination: " << GetName() << "(" << vthread->GetThreadName() << ")");
-    if(vthread->GetThreadName().Left(8) == "recorder")
-    {
-#ifdef _WIN32
-      vthread->WaitForTermination();
-#else
-      int SS = open(videoPipeName, O_RDONLY | O_NONBLOCK);
-      PBYTEArray buffer;
-      buffer.SetSize(100);
-      while(!vthread->IsTerminated()) { (void)read(SS, buffer.GetPointer(), buffer.GetSize()); }
-      close(SS);
-#endif
-    } else {
-      vthread->WaitForTermination();
-    }
-    delete vthread;
-    vthread = NULL;
   }
   PTRACE(5,"ConferenceFileMember\tTerminated: " << GetName());
 }
@@ -259,187 +173,6 @@ const unsigned char wavHeader[44] =
     0x40,0x1f,0x00,0x00,0x80,0x3e,0x00,0x00,
     0x02,0x00,0x10,0x00,0x64,0x61,0x74,0x61,
     0xef,0xff,0xff,0x7f};
-
-#ifdef _WIN32
-
-#  define MY_NAMED_PIPE_OPEN(_name,_bufOut,_bufIn) \
-     PString cstr = PString("\\\\.\\pipe\\") + _name + "_" + conference->GetNumber(); \
-     \
-     LPCSTR cname = cstr; \
-     \
-     HANDLE pipe = CreateNamedPipe( \
-       cname, \
-       PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED, \
-       PIPE_TYPE_BYTE|PIPE_WAIT, \
-       PIPE_UNLIMITED_INSTANCES, /* DWORD nMaxInstances */ \
-       _bufOut,                  /* DWORD nOutBufferSize */ \
-       _bufIn,                   /* DWORD nInBufferSize */ \
-       0,                        /* DWORD nDefaultTimeOut */ \
-       NULL                      /* /LPSECURITY_ATTRIBUTES lpSecurityAttributes */ \
-     ); \
-     \
-     if (pipe == NULL || pipe == INVALID_HANDLE_VALUE) \
-     { \
-       PTRACE(3,"WriteThread\tFailed to create outbound pipe instance " << cstr); \
-       return; \
-     } \
-     \
-     if(!ConnectNamedPipe(pipe, NULL)) { \
-       PTRACE(3,"WriteThread\tCould not connect to pipe: " << cstr); \
-       return; \
-     } \
-     \
-     PTRACE(3,"WriteThread\tNamed pipe created: " << cstr);
-
-#  define MY_NAMED_PIPE_CLOSE \
-   { \
-     DWORD one = 1; \
-     LPDWORD lpone = &one; \
-     if (!SetNamedPipeHandleState(pipe, lpone, lpone, lpone)) \
-     { \
-       PTRACE(2,"WriteThread\tSetNamedPipeHandleState failed"); \
-     } \
-     FlushFileBuffers(pipe); \
-     DisconnectNamedPipe(pipe); \
-     CloseHandle(pipe); \
-   }
-
-#endif
-
-void ConferenceFileMember::WriteThread(PThread &, INT)
-{
-  unsigned sampleRate = OpenMCU::Current().vr_sampleRate;
-  if(sampleRate < 2000 || sampleRate > 1000000) sampleRate = 16000;
-
-  unsigned channels = OpenMCU::Current().vr_audioChans;
-  if(channels < 1 || channels > 8) channels = 1;
-
-  PINDEX amountBytes = channels * 2 * sampleRate * AUDIO_EXPORT_PCM_BUFFER_SIZE_MS / 1000;
-  unsigned msPerFrame = (amountBytes*1000)/(sampleRate*channels*sizeof(short));
-
-#ifdef _WIN32
-  MY_NAMED_PIPE_OPEN("sound",amountBytes,0);
-#else
-#  ifdef SYS_PIPE_DIR
-  PString cstr = PString(SYS_PIPE_DIR) + "/sound." + conference->GetNumber();
-#  else
-  PString cstr = "sound." + conference->GetNumber();
-#  endif
-  audioPipeName = cstr;
-  const char *cname = cstr;
-  PTRACE(2,"AudioExportThread\tcname=" << cname);
-  mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
-  int SS=open(cname,O_WRONLY);
-#endif
-  PBYTEArray pcmData(amountBytes);
-  PAdaptiveDelay audioDelay;
-  int success=0;
-
-//  write(SS, wavHeader, 44);
-
-  while (running) {
-
-    // read a block of data
-    ReadAudio(pcmData.GetPointer(), amountBytes, sampleRate, channels);
-
-    // write to the file
-#ifdef _WIN32
-    DWORD lpNumberOfBytesWritten;
-    BOOL result=WriteFile(pipe, (const void *)pcmData.GetPointer(), amountBytes, &lpNumberOfBytesWritten, NULL);
-    if(!result)result=(GetLastError()==ERROR_IO_PENDING);
-    if(result) {
-      if(success==0) { success++; audioDelay.Restart(); }
-    } else {
-      MY_NAMED_PIPE_CLOSE(pipe);
-      MY_NAMED_PIPE_OPEN("sound",amountBytes,0);
-      success=0; audioDelay.Restart();
-    }
-#else
-    if (write(SS,(const void *)pcmData.GetPointer(), amountBytes)<0) 
-     { close(SS); SS=open(cname,O_WRONLY); success=0; audioDelay.Restart(); }
-    else if(success==0) { success++; audioDelay.Restart(); } 
-#endif
-
-    // and delay
-    audioDelay.Delay(msPerFrame);
-  }
-
-#ifdef _WIN32
-  MY_NAMED_PIPE_CLOSE;
-  DeleteFile(PString("\\\\.\\pipe\\sound_") + roomName);
-#else
-  close(SS);
-  unlink(audioPipeName);
-#endif
-}
-
-void ConferenceFileMember::WriteThreadV(PThread &, INT)
-{
-  int width=OpenMCU::Current().vr_framewidth;
-  int height=OpenMCU::Current().vr_frameheight;
-  int framerate=OpenMCU::Current().vr_framerate;
-
-  if(width<176 || width>1920) { width=704; PTRACE(1,"WriteThreadV\tWrong frame width value changed to 4CIF width"); }
-  if(height<144 || height>1152) { height=576; PTRACE(1,"WriteThreadV\tWrong frame height value changed to 4CIF height"); }
-  if(framerate<1 || framerate>100) { framerate=10; PTRACE(1,"WriteThreadV\tWrong frame rate value changed to 10 FPS"); }
-
-  PINDEX amount = width*height*3/2;
-  int delay = 1000/framerate;
-#ifdef _WIN32
-  MY_NAMED_PIPE_OPEN("video",amount,0);
-#else
-#ifdef SYS_PIPE_DIR
-  PString cstr = PString(SYS_PIPE_DIR) + "/video." + conference->GetNumber();
-#else
-  PString cstr = "video." + conference->GetNumber();
-#endif
-  videoPipeName = cstr;
-  const char *cname = cstr;
-  PTRACE(2,"VideoExportThread\tcname=" << cname);
-  mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
-  int SV=open(cname,O_WRONLY);
-#endif
-  PBYTEArray videoData(amount);
-  PAdaptiveDelay videoDelay;
-  int success=0;
-
-  while (running) {
-
-    // read a block of data
-    if(videoMixer!=NULL) videoMixer->ReadFrame(*this,videoData.GetPointer(),width,height,amount);
-    else conference->ReadMemberVideo(this,videoData.GetPointer(),width,height,amount);
-
-    // write to the file
-#ifdef _WIN32
-    DWORD lpNumberOfBytesWritten=0;
-    BOOL result=WriteFile(pipe, (const void *)videoData.GetPointer(), amount, &lpNumberOfBytesWritten, NULL);
-    if(!running) break;
-    if(!result)result=(GetLastError()==ERROR_IO_PENDING);
-    if(result) {
-      if(success==0) { success++; videoDelay.Restart(); }
-    } else {
-      MY_NAMED_PIPE_CLOSE;
-      MY_NAMED_PIPE_OPEN("video",amount,0);
-      success=0; videoDelay.Restart();
-    }
-#else
-    if (write(SV,(const void *)videoData.GetPointer(), amount)<0) 
-     { close(SV); SV=open(cname,O_WRONLY); success=0; videoDelay.Restart(); }
-    else if(success==0) { success++; videoDelay.Restart(); }
-#endif
-
-    // and delay
-    videoDelay.Delay(delay);
-  }
-
-#ifdef _WIN32
-  MY_NAMED_PIPE_CLOSE;
-  DeleteFile(PString("\\\\.\\pipe\\video_") + roomName);
-#else
-  close(SV);
-  unlink(videoPipeName);
-#endif
-}
 
 void ConferenceFileMember::ReadThread(PThread &, INT)
 {
@@ -470,7 +203,53 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
   mgr.RemoveMember(conference->GetID(), this);
 }
 
-void ConferenceFileMember::EncoderCacheThread(PThread &, INT)
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConferenceCacheMember::ConferenceCacheMember(Conference * _conference, const OpalMediaFormat & _fmt, unsigned _videoMixerNumber)
+#ifdef _WIN32
+#pragma warning(push)
+#pragma warning(disable:4355)
+#endif
+  : ConferenceMember(_conference, (void *)this)
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
+{
+  PTRACE(1,"ConferenceCacheMember\tConstruct");
+  videoMixerNumber=_videoMixerNumber;
+  vformat = _fmt;
+
+  running = FALSE;
+
+  if(conference == NULL)
+    return;
+  roomName=conference->GetNumber();
+
+  running = TRUE;
+  conference->AddMember(this);
+
+  thread = PThread::Create(PCREATE_NOTIFIER(CacheThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "cache:%0x");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConferenceCacheMember::~ConferenceCacheMember()
+{
+  PTRACE(1,"ConferenceCacheMember\tDestructor: " << GetName());
+  running = FALSE;
+  if(thread)
+  {
+    PTRACE(5,"ConferenceCacheMember\tWaiting for termination: " << GetName() << "(" << thread->GetThreadName() << ")");
+    thread->WaitForTermination();
+    delete thread;
+    thread = NULL;
+  }
+  PTRACE(5,"ConferenceCacheMember\tTerminated: " << GetName());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferenceCacheMember::CacheThread(PThread &, INT)
 {
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
@@ -543,3 +322,266 @@ void ConferenceFileMember::EncoderCacheThread(PThread &, INT)
   delete(codec); codec=NULL;
   delete(cap); cap=NULL;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef _WIN32
+#  define MY_NAMED_PIPE_OPEN(_name,_bufOut,_bufIn) \
+     PString cstr = PString("\\\\.\\pipe\\") + _name + "_" + conference->GetNumber(); \
+     \
+     LPCSTR cname = cstr; \
+     \
+     HANDLE pipe = CreateNamedPipe( \
+       cname, \
+       PIPE_ACCESS_OUTBOUND | FILE_FLAG_OVERLAPPED, \
+       PIPE_TYPE_BYTE|PIPE_WAIT, \
+       PIPE_UNLIMITED_INSTANCES, /* DWORD nMaxInstances */ \
+       _bufOut,                  /* DWORD nOutBufferSize */ \
+       _bufIn,                   /* DWORD nInBufferSize */ \
+       0,                        /* DWORD nDefaultTimeOut */ \
+       NULL                      /* /LPSECURITY_ATTRIBUTES lpSecurityAttributes */ \
+     ); \
+     \
+     if (pipe == NULL || pipe == INVALID_HANDLE_VALUE) \
+     { \
+       PTRACE(3,"WriteThread\tFailed to create outbound pipe instance " << cstr); \
+       return; \
+     } \
+     \
+     if(!ConnectNamedPipe(pipe, NULL)) { \
+       PTRACE(3,"WriteThread\tCould not connect to pipe: " << cstr); \
+       return; \
+     } \
+     \
+     PTRACE(3,"WriteThread\tNamed pipe created: " << cstr);
+
+#  define MY_NAMED_PIPE_CLOSE \
+   { \
+     DWORD one = 1; \
+     LPDWORD lpone = &one; \
+     if (!SetNamedPipeHandleState(pipe, lpone, lpone, lpone)) \
+     { \
+       PTRACE(2,"WriteThread\tSetNamedPipeHandleState failed"); \
+     } \
+     FlushFileBuffers(pipe); \
+     DisconnectNamedPipe(pipe); \
+     CloseHandle(pipe); \
+   }
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConferencePipeMember::ConferencePipeMember(Conference * _conference)
+#ifdef _WIN32
+#pragma warning(push)
+#pragma warning(disable:4355)
+#endif
+  : ConferenceMember(_conference, (void *)this)
+#ifdef _WIN32
+#pragma warning(pop)
+#endif
+{
+  PTRACE(1,"ConferencePipeMember\tConstructor");
+
+  running = FALSE;
+  audio_thread = NULL;
+  video_thread = NULL;
+
+  if(conference == NULL)
+    return;
+  roomName = conference->GetNumber();
+
+  trace_section = "ConferencePipeMember "+roomName+": ";
+
+  running = TRUE;
+  conference->AddMember(this);
+
+  audio_thread = PThread::Create(PCREATE_NOTIFIER(AudioThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "pipe_audio:%0x");
+  video_thread = PThread::Create(PCREATE_NOTIFIER(VideoThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "pipe_video:%0x");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConferencePipeMember::~ConferencePipeMember()
+{
+  PTRACE(1,"ConferencePipeMember\tDestructor: " << GetName());
+  running = FALSE;
+  if(audio_thread)
+  {
+    PTRACE(5,"ConferencePipeMember\tWaiting for termination: " << GetName() << "(" << audio_thread->GetThreadName() << ")");
+#ifdef _WIN32
+    audio_thread->WaitForTermination();
+#else
+    int SS = open(audioPipeName, O_RDONLY | O_NONBLOCK);
+    PBYTEArray buffer;
+    buffer.SetSize(100);
+    while(!audio_thread->IsTerminated()) { (void)read(SS, buffer.GetPointer(), buffer.GetSize()); }
+    close(SS);
+#endif
+    delete audio_thread;
+    audio_thread = NULL;
+  }
+  if(video_thread)
+  {
+    PTRACE(5,"ConferencePipeMember\tWaiting for termination: " << GetName() << "(" << video_thread->GetThreadName() << ")");
+#ifdef _WIN32
+    video_thread->WaitForTermination();
+#else
+    int SS = open(videoPipeName, O_RDONLY | O_NONBLOCK);
+    PBYTEArray buffer;
+    buffer.SetSize(100);
+    while(!video_thread->IsTerminated()) { (void)read(SS, buffer.GetPointer(), buffer.GetSize()); }
+    close(SS);
+#endif
+    delete video_thread;
+    video_thread = NULL;
+  }
+  PTRACE(5,"ConferencePipeMember\tTerminated: " << GetName());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferencePipeMember::AudioThread(PThread &, INT)
+{
+  MCUConfig cfg("Export Parameters");
+  unsigned sampleRate = cfg.GetInteger(AudioSampleRateKey, 16000);
+  if(sampleRate < 2000 || sampleRate > 1000000) sampleRate = 16000;
+
+  unsigned channels = cfg.GetInteger(AudioChannelsKey, 1);
+  if(channels < 1 || channels > 8) channels = 1;
+
+  MCUTRACE(1, trace_section  << "Start export audio thread " << sampleRate << "x" << channels);
+
+  PINDEX amountBytes = channels * 2 * sampleRate * AUDIO_EXPORT_PCM_BUFFER_SIZE_MS / 1000;
+  unsigned msPerFrame = (amountBytes*1000)/(sampleRate*channels*sizeof(short));
+
+#ifdef _WIN32
+  MY_NAMED_PIPE_OPEN("sound",amountBytes,0);
+#else
+#  ifdef SYS_PIPE_DIR
+  PString cstr = PString(SYS_PIPE_DIR) + "/sound." + conference->GetNumber();
+#  else
+  PString cstr = "sound." + conference->GetNumber();
+#  endif
+  audioPipeName = cstr;
+  const char *cname = cstr;
+  PTRACE(2, trace_section << "cname=" << cname);
+  mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
+  int SS=open(cname,O_WRONLY);
+#endif
+  PBYTEArray pcmData(amountBytes);
+  PAdaptiveDelay audioDelay;
+  int success=0;
+
+//  write(SS, wavHeader, 44);
+
+  while (running) {
+
+    // read a block of data
+    ReadAudio(pcmData.GetPointer(), amountBytes, sampleRate, channels);
+
+    // write to the file
+#ifdef _WIN32
+    DWORD lpNumberOfBytesWritten;
+    BOOL result=WriteFile(pipe, (const void *)pcmData.GetPointer(), amountBytes, &lpNumberOfBytesWritten, NULL);
+    if(!result)result=(GetLastError()==ERROR_IO_PENDING);
+    if(result) {
+      if(success==0) { success++; audioDelay.Restart(); }
+    } else {
+      MY_NAMED_PIPE_CLOSE(pipe);
+      MY_NAMED_PIPE_OPEN("sound",amountBytes,0);
+      success=0; audioDelay.Restart();
+    }
+#else
+    if (write(SS,(const void *)pcmData.GetPointer(), amountBytes)<0) 
+     { close(SS); SS=open(cname,O_WRONLY); success=0; audioDelay.Restart(); }
+    else if(success==0) { success++; audioDelay.Restart(); } 
+#endif
+
+    // and delay
+    audioDelay.Delay(msPerFrame);
+  }
+
+#ifdef _WIN32
+  MY_NAMED_PIPE_CLOSE;
+  DeleteFile(PString("\\\\.\\pipe\\sound_") + roomName);
+#else
+  close(SS);
+  unlink(audioPipeName);
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferencePipeMember::VideoThread(PThread &, INT)
+{
+  MCUConfig cfg("Export Parameters");
+  int width = cfg.GetInteger(VideoFrameWidthKey, 704);
+  int height = cfg.GetInteger(VideoFrameHeightKey, 576);
+  int framerate = cfg.GetInteger(VideoFrameRateKey, 10);
+
+  if(width<176 || width>1920) width=704;
+  if(height<144 || height>1152) height=576;
+  if(framerate<1 || framerate>100) framerate=10;
+
+  MCUTRACE(1, trace_section  << "Start export video thread " << width << "x" << height << "x" << framerate);
+
+  PINDEX amount = width*height*3/2;
+  int delay = 1000/framerate;
+#ifdef _WIN32
+  MY_NAMED_PIPE_OPEN("video",amount,0);
+#else
+#ifdef SYS_PIPE_DIR
+  PString cstr = PString(SYS_PIPE_DIR) + "/video." + conference->GetNumber();
+#else
+  PString cstr = "video." + conference->GetNumber();
+#endif
+  videoPipeName = cstr;
+  const char *cname = cstr;
+  PTRACE(2, trace_section << "cname=" << cname);
+  mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
+  int SV=open(cname,O_WRONLY);
+#endif
+  PBYTEArray videoData(amount);
+  PAdaptiveDelay videoDelay;
+  int success=0;
+
+  while (running) {
+
+    // read a block of data
+    if(videoMixer!=NULL) videoMixer->ReadFrame(*this,videoData.GetPointer(),width,height,amount);
+    else conference->ReadMemberVideo(this,videoData.GetPointer(),width,height,amount);
+
+    // write to the file
+#ifdef _WIN32
+    DWORD lpNumberOfBytesWritten=0;
+    BOOL result=WriteFile(pipe, (const void *)videoData.GetPointer(), amount, &lpNumberOfBytesWritten, NULL);
+    if(!running) break;
+    if(!result)result=(GetLastError()==ERROR_IO_PENDING);
+    if(result) {
+      if(success==0) { success++; videoDelay.Restart(); }
+    } else {
+      MY_NAMED_PIPE_CLOSE;
+      MY_NAMED_PIPE_OPEN("video",amount,0);
+      success=0; videoDelay.Restart();
+    }
+#else
+    if (write(SV,(const void *)videoData.GetPointer(), amount)<0) 
+     { close(SV); SV=open(cname,O_WRONLY); success=0; videoDelay.Restart(); }
+    else if(success==0) { success++; videoDelay.Restart(); }
+#endif
+
+    // and delay
+    videoDelay.Delay(delay);
+  }
+
+#ifdef _WIN32
+  MY_NAMED_PIPE_CLOSE;
+  DeleteFile(PString("\\\\.\\pipe\\video_") + roomName);
+#else
+  close(SV);
+  unlink(videoPipeName);
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////

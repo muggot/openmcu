@@ -40,6 +40,7 @@ window.l_settings = "Налаштування";
 window.l_param_general = "Основнi";
 window.l_param_registrar = 'Реєстратор';
 window.l_param_conference = 'Конференції';
+window.l_param_export = 'Экспорт(named pipe)';
 window.l_param_managing_users = "Користувачі";
 window.l_param_managing_groups = "Групи";
 window.l_param_control_codes = "Коди управління";

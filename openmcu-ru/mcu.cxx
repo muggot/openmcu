@@ -237,28 +237,10 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
 
-  { // video recorder setup
-    vr_ffmpegPath  = cfg.GetString( RecorderFfmpegPathKey,  DefaultFfmpegPath);
-    vr_ffmpegOpts  = cfg.GetString( RecorderFfmpegOptsKey,  DefaultFfmpegOptions);
+  {
+    // video recorder setup
     vr_ffmpegDir   = cfg.GetString( RecorderFfmpegDirKey,   DefaultRecordingDirectory);
-    vr_framewidth  = cfg.GetInteger(RecorderFrameWidthKey,  DefaultRecorderFrameWidth);
-    vr_frameheight = cfg.GetInteger(RecorderFrameHeightKey, DefaultRecorderFrameHeight);
-    vr_framerate   = cfg.GetInteger(RecorderFrameRateKey,   DefaultRecorderFrameRate);
-    vr_sampleRate  = cfg.GetInteger(RecorderSampleRateKey,  DefaultRecorderSampleRate);
-    vr_audioChans  = cfg.GetInteger(RecorderAudioChansKey,  DefaultRecorderAudioChans);
     vr_minimumSpaceMiB = 1024;
-    PString opts = vr_ffmpegOpts;
-    PStringStream frameSize; frameSize << vr_framewidth << "x" << vr_frameheight;
-    PStringStream frameRate; frameRate << vr_framerate;
-    PStringStream outFile; outFile << vr_ffmpegDir << PATH_SEPARATOR << "%o";
-    opts.Replace("%F",frameSize,TRUE,0);
-    opts.Replace("%R",frameRate,TRUE,0);
-    opts.Replace("%S",PString(vr_sampleRate),TRUE,0);
-    opts.Replace("%C",PString(vr_audioChans),TRUE,0);
-    opts.Replace("%O",outFile,TRUE,0);
-    PStringStream tmp;
-    tmp << vr_ffmpegPath << " " << opts;
-    ffmpegCall=tmp;
   }
 
   // get WAV file played to a user when they enter a conference
@@ -277,6 +259,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // Create the config page - conference parameters
   httpNameSpace.AddResource(new ConferencePConfigPage(*this, "ConferenceParameters", "Conference Parameters", authSettings), PHTTPSpace::Overwrite);
+
+  // Create the config page - export parameters
+  httpNameSpace.AddResource(new ExportPConfigPage(*this, "ExportParameters", "Export Parameters", authSettings), PHTTPSpace::Overwrite);
 
   // Create the config page - registrar parameters
   httpNameSpace.AddResource(new RegistrarPConfigPage(*this, "RegistrarParameters", "Registrar Parameters", authSettings), PHTTPSpace::Overwrite);
@@ -571,7 +556,7 @@ MCUH323EndPoint * OpenMCU::CreateEndPoint(ConferenceManager & manager)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
+/*
 #ifndef _WIN32
 static pid_t popen2(const char *command, int *infp = NULL, int *outfp = NULL)
 {
@@ -678,6 +663,6 @@ void ExternalVideoRecorderThread::Main()
 #endif
   PThread::Terminate();
 }
-
+*/
 // End of File ///////////////////////////////////////////////////////////////
 

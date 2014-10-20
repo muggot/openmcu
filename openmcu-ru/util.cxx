@@ -630,7 +630,7 @@ BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap)
 
   // starting new cache thread
   unsigned videoMixerNumber=0;
-  new ConferenceFileMember(conf, cap->GetMediaFormat(), PFile::WriteOnly, videoMixerNumber);
+  new ConferenceCacheMember(conf, cap->GetMediaFormat(), videoMixerNumber);
 
   return TRUE;
 }

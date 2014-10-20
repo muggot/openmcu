@@ -40,6 +40,7 @@ window.l_settings = 'Settings';
 window.l_param_general = 'General';
 window.l_param_registrar = 'Registrar';
 window.l_param_conference = 'Conference';
+window.l_param_export = 'Export(named pipe)';
 window.l_param_managing_users = 'Users';
 window.l_param_managing_groups = 'Groups';
 window.l_param_control_codes = 'Control codes';

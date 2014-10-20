@@ -771,6 +771,14 @@ class RoomAccessSIPPConfigPage : public TablePConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class ExportPConfigPage : public TablePConfigPage
+{
+ public:
+   ExportPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class VideoPConfigPage : public TablePConfigPage
 {
  public:
