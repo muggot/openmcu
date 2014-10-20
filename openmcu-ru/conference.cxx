@@ -125,7 +125,7 @@ void ConferenceManager::OnCreateConference(Conference * conference)
   if(timeLimit > 0)
     monitor->AddMonitorEvent(new ConferenceTimeLimitInfo(conference->GetID(), PTime() + timeLimit*1000));
 
-  if(MCUConfig("Export parameters").GetBoolean("Enable export", TRUE) == TRUE)
+  if(MCUConfig("Export Parameters").GetBoolean("Enable export", TRUE) == TRUE)
     new ConferencePipeMember(conference);
 
   // add file recorder member
