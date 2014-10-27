@@ -9,6 +9,16 @@
 
 #define AUDIO_EXPORT_PCM_BUFFER_SIZE_MS    30
 
+const unsigned char wavHeader[44] =
+  { 0x52,0x49,0x46,0x46,0xe7,0xff,0xff,0x7f,
+    0x57,0x41,0x56,0x45,0x66,0x6d,0x74,0x20,
+    0x10,0x00,0x00,0x00,0x01,0x00,0x01,0x00,
+    0x40,0x1f,0x00,0x00,0x80,0x3e,0x00,0x00,
+    0x02,0x00,0x10,0x00,0x64,0x61,0x74,0x61,
+    0xef,0xff,0xff,0x7f};
+
+///////////////////////////////////////////////////////////////////////////
+
 ConferenceSoundCardMember::ConferenceSoundCardMember(Conference * _conference)
 #ifdef _WIN32
 #pragma warning(push)
@@ -35,12 +45,9 @@ ConferenceSoundCardMember::ConferenceSoundCardMember(Conference * _conference)
   conference->AddMember(this);
 }
 
-ConferenceSoundCardMember::~ConferenceSoundCardMember()
-{
-  Unlisten();
-}
+///////////////////////////////////////////////////////////////////////////
 
-void ConferenceSoundCardMember::Unlisten()
+ConferenceSoundCardMember::~ConferenceSoundCardMember()
 {
   if (conference->RemoveMember(this))
     conference->GetManager().RemoveConference(conference->GetID());
@@ -51,6 +58,8 @@ void ConferenceSoundCardMember::Unlisten()
     thread = NULL;
   }
 }
+
+///////////////////////////////////////////////////////////////////////////
 
 void ConferenceSoundCardMember::Thread(PThread &, INT)
 {
@@ -90,6 +99,8 @@ ConferenceFileMember::ConferenceFileMember(Conference * _conference, const PFile
   Construct();
 }
 
+///////////////////////////////////////////////////////////////////////////
+
 ConferenceFileMember::ConferenceFileMember(Conference * _conference, const FilenameList & _fns, PFile::OpenMode _mode)
 #ifdef _WIN32
 #pragma warning(push)
@@ -103,6 +114,8 @@ ConferenceFileMember::ConferenceFileMember(Conference * _conference, const Filen
   filenames = _fns;
   Construct();
 }
+
+///////////////////////////////////////////////////////////////////////////
 
 void ConferenceFileMember::Construct()
 {
@@ -130,11 +143,23 @@ void ConferenceFileMember::Construct()
   }
 }
 
+///////////////////////////////////////////////////////////////////////////
+
 ConferenceFileMember::~ConferenceFileMember()
 {
   PTRACE(1,"ConferenceFileMember\tDestructor: " << GetName());
-  Unlisten();
+  running = FALSE;
+  if(thread)
+  {
+    PTRACE(5,"ConferenceFileMember\tWaiting for termination: " << GetName() << "(" << thread->GetThreadName() << ")");
+    thread->WaitForTermination();
+    delete thread;
+    thread = NULL;
+  }
+  PTRACE(5,"ConferenceFileMember\tTerminated: " << GetName());
 }
+
+///////////////////////////////////////////////////////////////////////////
 
 BOOL ConferenceFileMember::QueueNext()
 {
@@ -153,26 +178,7 @@ BOOL ConferenceFileMember::QueueNext()
   return TRUE;
 }
 
-void ConferenceFileMember::Unlisten()
-{
-  running = FALSE;
-  if(thread)
-  {
-    PTRACE(5,"ConferenceFileMember\tWaiting for termination: " << GetName() << "(" << thread->GetThreadName() << ")");
-    thread->WaitForTermination();
-    delete thread;
-    thread = NULL;
-  }
-  PTRACE(5,"ConferenceFileMember\tTerminated: " << GetName());
-}
-
-const unsigned char wavHeader[44] =
-  { 0x52,0x49,0x46,0x46,0xe7,0xff,0xff,0x7f,
-    0x57,0x41,0x56,0x45,0x66,0x6d,0x74,0x20,
-    0x10,0x00,0x00,0x00,0x01,0x00,0x01,0x00,
-    0x40,0x1f,0x00,0x00,0x80,0x3e,0x00,0x00,
-    0x02,0x00,0x10,0x00,0x64,0x61,0x74,0x61,
-    0xef,0xff,0xff,0x7f};
+///////////////////////////////////////////////////////////////////////////
 
 void ConferenceFileMember::ReadThread(PThread &, INT)
 {
@@ -217,7 +223,7 @@ ConferenceCacheMember::ConferenceCacheMember(Conference * _conference, const Opa
 {
   PTRACE(1,"ConferenceCacheMember\tConstruct");
   videoMixerNumber=_videoMixerNumber;
-  vformat = _fmt;
+  format = _fmt;
 
   running = FALSE;
 
@@ -253,32 +259,32 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
 {
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
-  H323Capability * cap = H323Capability::Create(vformat);
+  H323Capability * cap = H323Capability::Create(format);
   if(!cap) return;
   OpalMediaFormat & wf = cap->GetWritableMediaFormat();
-  wf = vformat;
+  wf = format;
 
   status = 1;
-  MCUTRACE(1, "Cache\tStarting cache thread " << vformat);
+  MCUTRACE(1, "Cache\tStarting cache thread " << format);
   if(cap->GetMainType() == H323Capability::e_Audio)
   {
     codec = cap->CreateCodec(H323Codec::Encoder);
     codec->SetCacheMode(1); // caching codec
     con = new MCUH323Connection(ep, 0, NULL);
-    con->SetupCacheConnection(vformat, conference, this);
+    con->SetupCacheConnection(format, conference, this);
     con->OpenAudioChannel(TRUE, 0, (H323AudioCodec &)*codec);
   } else {
     codec = cap->CreateCodec(H323Codec::Encoder);
     codec->SetCacheMode(1); // caching codec
     con = new MCUH323Connection(ep, 0, NULL);
     con->videoMixerNumber = videoMixerNumber;
-    con->SetupCacheConnection(vformat, conference, this);
+    con->SetupCacheConnection(format, conference, this);
     con->OpenVideoChannel(TRUE, (H323VideoCodec &)*codec);
   }
 
   if(codec->CheckCacheRTP())
   {
-    PTRACE(3,"Cache\t" << vformat << " already exists, nothing to do, stopping thread");
+    PTRACE(3,"Cache\t" << format << " already exists, nothing to do, stopping thread");
     if(conference!=NULL) conference->RemoveMember(this);
     delete(con); con=NULL;
     delete(codec); codec=NULL;
@@ -450,33 +456,29 @@ void ConferencePipeMember::AudioThread(PThread &, INT)
   unsigned channels = cfg.GetInteger(AudioChannelsKey, 1);
   if(channels < 1 || channels > 8) channels = 1;
 
-  MCUTRACE(1, trace_section  << "Start export audio thread " << sampleRate << "x" << channels);
-
   PINDEX amountBytes = channels * 2 * sampleRate * AUDIO_EXPORT_PCM_BUFFER_SIZE_MS / 1000;
   unsigned msPerFrame = (amountBytes*1000)/(sampleRate*channels*sizeof(short));
-
-#ifdef _WIN32
-  MY_NAMED_PIPE_OPEN("sound",amountBytes,0);
-#else
-#  ifdef SYS_PIPE_DIR
-  PString cstr = PString(SYS_PIPE_DIR) + "/sound." + conference->GetNumber();
-#  else
-  PString cstr = "sound." + conference->GetNumber();
-#  endif
-  audioPipeName = cstr;
-  const char *cname = cstr;
-  PTRACE(2, trace_section << "cname=" << cname);
-  mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
-  int SS=open(cname,O_WRONLY);
-#endif
   PBYTEArray pcmData(amountBytes);
   PAdaptiveDelay audioDelay;
   int success=0;
 
+#ifdef _WIN32
+  audioPipeName = PString("\\\\.\\pipe\\sound_") + roomName;
+#else
+  audioPipeName = PString(SYS_PIPE_DIR) + "/sound." + conference->GetNumber();
+#endif
+  PTRACE(1, trace_section  << "Start export audio thread " << sampleRate << "x" << channels << " -> " << audioPipeName);
+
+#ifdef _WIN32
+  MY_NAMED_PIPE_OPEN("sound",amountBytes,0);
+#else
+  const char *cname = audioPipeName;
+  mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
+  int SS=open(cname,O_WRONLY);
+#endif
+
 //  write(SS, wavHeader, 44);
-
   while (running) {
-
     // read a block of data
     ReadAudio(pcmData.GetPointer(), amountBytes, sampleRate, channels);
 
@@ -504,7 +506,7 @@ void ConferencePipeMember::AudioThread(PThread &, INT)
 
 #ifdef _WIN32
   MY_NAMED_PIPE_CLOSE;
-  DeleteFile(PString("\\\\.\\pipe\\sound_") + roomName);
+  DeleteFile(audioPipeName);
 #else
   close(SS);
   unlink(audioPipeName);
@@ -524,30 +526,28 @@ void ConferencePipeMember::VideoThread(PThread &, INT)
   if(height<144 || height>1152) height=576;
   if(framerate<1 || framerate>100) framerate=10;
 
-  MCUTRACE(1, trace_section  << "Start export video thread " << width << "x" << height << "x" << framerate);
-
   PINDEX amount = width*height*3/2;
-  int delay = 1000/framerate;
-#ifdef _WIN32
-  MY_NAMED_PIPE_OPEN("video",amount,0);
-#else
-#ifdef SYS_PIPE_DIR
-  PString cstr = PString(SYS_PIPE_DIR) + "/video." + conference->GetNumber();
-#else
-  PString cstr = "video." + conference->GetNumber();
-#endif
-  videoPipeName = cstr;
-  const char *cname = cstr;
-  PTRACE(2, trace_section << "cname=" << cname);
-  mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
-  int SV=open(cname,O_WRONLY);
-#endif
   PBYTEArray videoData(amount);
+  int delay = 1000/framerate;
   PAdaptiveDelay videoDelay;
   int success=0;
 
-  while (running) {
+#ifdef _WIN32
+  videoPipeName = PString("\\\\.\\pipe\\video_") + roomName;
+#else
+  videoPipeName = PString(SYS_PIPE_DIR) + "/video." + conference->GetNumber();
+#endif
+  PTRACE(1, trace_section  << "Start export video thread " << width << "x" << height << "x" << framerate << " -> " << videoPipeName);
 
+#ifdef _WIN32
+  MY_NAMED_PIPE_OPEN("video",amount,0);
+#else
+  const char *cname = videoPipeName;
+  mkfifo(cname,S_IRUSR | S_IRGRP | S_IROTH | S_IWUSR);
+  int SV=open(cname,O_WRONLY);
+#endif
+
+  while (running) {
     // read a block of data
     if(videoMixer!=NULL) videoMixer->ReadFrame(*this,videoData.GetPointer(),width,height,amount);
     else conference->ReadMemberVideo(this,videoData.GetPointer(),width,height,amount);
@@ -577,7 +577,7 @@ void ConferencePipeMember::VideoThread(PThread &, INT)
 
 #ifdef _WIN32
   MY_NAMED_PIPE_CLOSE;
-  DeleteFile(PString("\\\\.\\pipe\\video_") + roomName);
+  DeleteFile(videoPipeName);
 #else
   close(SV);
   unlink(videoPipeName);

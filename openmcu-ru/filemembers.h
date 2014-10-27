@@ -22,8 +22,6 @@ class ConferenceSoundCardMember : public ConferenceMember
     ConferenceSoundCardMember(Conference * _conference);
     ~ConferenceSoundCardMember();
 
-    void Unlisten();
-
     virtual ConferenceConnection * CreateConnection()
     { return new ConferenceConnection(this); }
 
@@ -57,20 +55,14 @@ class ConferenceFileMember : public ConferenceMember
 
     ~ConferenceFileMember();
 
-    void Unlisten();
-
     virtual ConferenceConnection * CreateConnection()
     { return new ConferenceConnection(this); }
 
     virtual PString GetName() const
-    {
-      return PString(mode == PFile::ReadOnly ? "file player" : "file recorder") & currentFilename;
-    }
+    { return PString(mode == PFile::ReadOnly ? "file player" : "file recorder") & currentFilename; }
 
     virtual MemberTypes GetType()
-    {
-      return MEMBER_TYPE_NONE;
-    }
+    { return MEMBER_TYPE_NONE; }
 
     virtual BOOL IsVisible() const
     { return FALSE; }
@@ -119,11 +111,8 @@ class ConferenceCacheMember : public ConferenceMember
     void OnReceivedUserInputIndication(const PString & str)
     { cout << "Received user input indication " << str << endl; }
 
-    virtual PString GetFormat()
+    virtual PString GetMediaFormat()
     { return format; }
-
-    virtual PString GetVFormat()
-    { return vformat; }
 
     PDECLARE_NOTIFIER(PThread, ConferenceCacheMember, CacheThread);
 
@@ -132,8 +121,7 @@ class ConferenceCacheMember : public ConferenceMember
     int status;
 
   protected:
-    PString format;
-    OpalMediaFormat vformat;
+    OpalMediaFormat format;
 
     PThread * thread;
     BOOL running;
@@ -178,9 +166,7 @@ class ConferencePipeMember : public ConferenceMember
     BOOL running;
     PThread * audio_thread;
     PThread * video_thread;
-#ifndef _WIN32
     PString audioPipeName, videoPipeName;
-#endif
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

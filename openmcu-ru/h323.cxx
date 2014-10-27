@@ -2028,7 +2028,7 @@ PString MCUH323EndPoint::GetMonitorText()
           ConferenceCacheMember * cacheMember = dynamic_cast<ConferenceCacheMember *>(member);
           if(cacheMember!=NULL)
           {
-            output << hdr << "VFormat: " << cacheMember->GetVFormat() << "\n";
+            output << hdr << "Format: " << cacheMember->GetMediaFormat() << "\n";
             output << hdr << "IsVisible: " << cacheMember->IsVisible() << "\n";
             output << hdr << "Status: " << (cacheMember->status?"Awake":"Sleeping") << "\n";
 //#ifndef _WIN32
