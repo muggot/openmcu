@@ -537,14 +537,17 @@ MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
 dnl ########################################################################
 dnl check for video library
 
-AC_CHECK_HEADERS(libavcodec/avcodec.h, USE_AVCODEC=1, USE_AVCODEC=0, [-])
+AC_LANG_PUSH([C])
+USE_AVCODEC=0
+AC_CHECK_HEADERS([libavcodec/avcodec.h ffmpeg/libavcodec/avcodec.h libav/libavcodec/avcodec.h avcodec.h ffmpeg/avcodec.h libav/avcodec.h], USE_AVCODEC=1, [], [-])
 if test ${USE_AVCODEC} = 0; then
-  AC_MSG_ERROR(libavcodec headers not found!)
+  AC_MSG_ERROR(avcodec headers not found!)
 fi
 AC_CHECK_LIB(avcodec, avcodec_version, USE_AVCODEC=1, USE_AVCODEC=0)
 if test ${USE_AVCODEC} = 0; then
   AC_MSG_ERROR(libavcodec library not found!)
 fi
+AC_LANG_POP([C])
 
 LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
 LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
