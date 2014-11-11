@@ -537,11 +537,11 @@ MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
 dnl ########################################################################
 dnl check for video library
 
-AC_LANG_PUSH([C])
 USE_AVCODEC=0
+AC_LANG_PUSH([C])
 AC_CHECK_HEADERS([libavcodec/avcodec.h ffmpeg/libavcodec/avcodec.h libav/libavcodec/avcodec.h avcodec.h ffmpeg/avcodec.h libav/avcodec.h], USE_AVCODEC=1, [], [-])
 if test ${USE_AVCODEC} = 0; then
-  AC_MSG_ERROR(avcodec headers not found!)
+  AC_MSG_ERROR(avcodec headers not found! Install Ffmpeg or Libav.)
 fi
 AC_CHECK_LIB(avcodec, avcodec_version, USE_AVCODEC=1, USE_AVCODEC=0)
 if test ${USE_AVCODEC} = 0; then
@@ -711,8 +711,17 @@ fi
 PLUGIN_H264_DIR=${top_srcdir}/plugins/H.264_123
 AC_SUBST(PLUGIN_H264_DIR)
 if test "${h264}" = "yes"; then
-    AC_CONFIG_FILES(plugins/H.264_123/Makefile)
-    PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_H264_DIR} "
+    USE_H264=0
+    AC_LANG_PUSH([C])
+    AC_CHECK_HEADERS(x264.h, USE_H264=1, [], [-])
+    AC_LANG_POP([C])
+    if test ${USE_H264} = 0 ; then
+      h264=no
+      AC_MSG_ERROR(x264 headers not found! Install x264 or use option: --disable-h264)
+    else
+      AC_CONFIG_FILES(plugins/H.264_123/Makefile)
+      PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_H264_DIR} "
+    fi
 fi
 
 PLUGIN_MPEG4_DIR=${top_srcdir}/plugins/MPEG4
@@ -739,7 +748,7 @@ if test "${vp8}" = "yes"; then
 	AC_CONFIG_FILES(plugins/VP8-WebM/Makefile)
 	PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_VP8_DIR} "
     else
-	AC_MSG_ERROR(VP8 codec not found!)
+	AC_MSG_ERROR(VP8 codec not found! Install libvpx or use option: --disable-vp8)
     fi
 fi
 
@@ -1136,14 +1145,14 @@ else
 echo "              G.722 Audio Plugin  :  disabled"
 fi
 if test "x${g7221}" = "xyes" ; then
-echo "              G.722.1 Audio Plugin:  enabled"
+echo "            G.722.1 Audio Plugin  :  enabled"
 else
-echo "              G.722.1 Audio Plugin:  disabled"
+echo "            G.722.1 Audio Plugin  :  disabled"
 fi
 if test "x${g7222}" = "xyes" ; then
-echo "              G.722.2 Audio Plugin:  enabled"
+echo "            G.722.2 Audio Plugin  :  enabled"
 else
-echo "              G.722.2 Audio Plugin:  disabled"
+echo "            G.722.2 Audio Plugin  :  disabled"
 fi
 if test "x${speex}" = "xyes" ; then
 echo "              SPEEX Audio Plugin  :  enabled"
