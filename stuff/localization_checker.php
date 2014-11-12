@@ -22,16 +22,16 @@ $localizations=my_scan($res_dir);
 if(!in_array($reference,$localizations))
   my_die("We need a reference ($reference) to continue. Для работы требуется эталон ($reference).$lf");
 
-$tokens=my_tokens("$res_dir/".get_locale_name($reference));
+$tokens=my_tokens("$res_dir/".get_translation_name($reference));
 if(count($tokens)<10)
   my_die("Something's wrong: we have < 10 tokens. Что-то не так: у нас < 10 токенов.$lf");
 
 foreach($localizations as $language)
 {
-  check_and_remove_bom("$res_dir/".get_locale_name($language));
-  check_and_add_lf("$res_dir/".get_locale_name($language));
+  check_and_remove_bom("$res_dir/".get_translation_name($language));
+  check_and_add_lf("$res_dir/".get_translation_name($language));
   if($language==$reference) continue;
-  $l_tokens=my_tokens("$res_dir/".get_locale_name($language));
+  $l_tokens=my_tokens("$res_dir/".get_translation_name($language));
   my_diff_handler($reference, $language, my_compare($tokens, $l_tokens));
 }
 
@@ -43,14 +43,14 @@ check_html_cxx('../openmcu-ru/html.cxx',$localizations);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-function get_locale_name($language) { return "locale_$language.js"; }
+function get_translation_name($language) { return "local_$language.js"; }
 
 function my_token_grabber($tokens,$language)
 {
   global $res_dir, $pull_out_from, $pull_out_from_specials;
   $lang_from = $pull_out_from;
   if(isset($pull_out_from_specials[$language])) $lang_from=$pull_out_from_specials[$language];
-  $f=file("$res_dir/".get_locale_name($lang_from));
+  $f=file("$res_dir/".get_translation_name($lang_from));
   $r=Array();
   $grabbing=false;
   foreach($f as $str)
@@ -83,7 +83,7 @@ function my_diff_handler($reference, $language, $diff)
   if($missing_count)
   {
     my_echo("Missing tokens in '$language': Токены, отсутствующие в '$language':$lf" . my_token_dump($missing));
-    file_put_contents($res_dir.'/'.get_locale_name($language), join('',my_token_grabber($missing,$language)), FILE_APPEND);
+    file_put_contents($res_dir.'/'.get_translation_name($language), join('',my_token_grabber($missing,$language)), FILE_APPEND);
   }
   if($excess_count)
   {
@@ -110,9 +110,9 @@ function my_scan($dir)
   while(($s=readdir($d))!==false)
   {
     if(is_dir("$dir/$s")) continue;
-    if((substr($s,0,7)==='locale_') && (substr($s,-3)==='.js'))
+    if((substr($s,0,6)==='local_') && (substr($s,-3)==='.js'))
     {
-      $localizations[]=strtolower(substr($s,7,strlen($s)-10));
+      $localizations[]=strtolower(substr($s,6,strlen($s)-9));
     }
   }
   closedir($d);
@@ -177,7 +177,7 @@ function check_presence($filename, $localizations)
   $f=file_get_contents($filename);
   foreach($localizations as $language)
   {
-    $lang_filename=get_locale_name($language);
+    $lang_filename=get_translation_name($language);
     if(strpos($f, $lang_filename)===false)
     {
       my_echo("$filename does not contain $lang_filename. $filename не содержит $lang_filename.$lf");

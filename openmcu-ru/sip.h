@@ -471,8 +471,8 @@ class MCUSipEndPoint : public PThread
     MCUSipConnection * FindConnectionWithLock(const PString & callToken)
     { return (MCUSipConnection *)ep->FindConnectionWithLock(callToken); }
 
-    MCUSipConnection * HasConnection(const PString & callToken)
-    { return (MCUSipConnection *)ep->HasConnection(callToken); }
+    BOOL HasConnection(const PString & callToken)
+    { return ep->HasConnection(callToken); }
 
     MCUSipConnection * FindConnectionWithoutLock(const PString & callToken)
     { return (MCUSipConnection *)ep->FindConnectionWithoutLock(callToken); }

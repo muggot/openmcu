@@ -382,12 +382,12 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #define WEBSERVER_LINK_LOGS(mt1,r1) httpNameSpace.AddResource(new PHTTPFile(r1, PString(SERVER_LOGS) + PATH_SEPARATOR + r1, mt1), PHTTPSpace::Overwrite)
   WEBSERVER_LINK_MIME("text/javascript"          , "control.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "status.js");
-  WEBSERVER_LINK_MIME("text/javascript"          , "locale_en.js");
-  WEBSERVER_LINK_MIME("text/javascript"          , "locale_fr.js");
-  WEBSERVER_LINK_MIME("text/javascript"          , "locale_jp.js");
-  WEBSERVER_LINK_MIME("text/javascript"          , "locale_pt.js");
-  WEBSERVER_LINK_MIME("text/javascript"          , "locale_ru.js");
-  WEBSERVER_LINK_MIME("text/javascript"          , "locale_uk.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "local_en.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "local_fr.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "local_jp.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "local_pt.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "local_ru.js");
+  WEBSERVER_LINK_MIME("text/javascript"          , "local_uk.js");
   WEBSERVER_LINK_MIME("text/css"                 , "main.css");
   WEBSERVER_LINK_MIME("image/gif"                , "i15_getNoVideo.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "vad_vad.gif");

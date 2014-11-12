@@ -2400,14 +2400,61 @@ void MCUH323Connection::OnCleared()
   registrar->ConnectionCleared(callToken);
 }
 
+class TplCleanCheckThread : public PThread
+{
+  public:
+    TplCleanCheckThread(Conference * _c, const PString & _n, const PString & _a)
+      : PThread(10000, AutoDeleteThread), c(_c), n(_n), a(_a)
+    {
+      Resume();
+    }
+    void Main()
+    {
+      PTRACE(2,"TplCleanCheckThread\tThread started, c=" << c << ", n=" << n << ", a=" << a);
+      PThread::Sleep(6000); // previous connection may still be actvie
+      if(c!=NULL)
+      {
+        if(OpenMCU::Current().GetEndpoint().GetConferenceManager().CheckAndLockConference(c))
+        {
+          c->OnConnectionClean(n, a);
+          OpenMCU::Current().GetEndpoint().GetConferenceManager().UnlockConference();
+        }
+      }
+    }
+  protected:
+    Conference * c;
+    PString n, a;
+};
+
 void MCUH323Connection::CleanUpOnCallEnd()
 {
   PTRACE(2, "MCUH323Connection\tCleanUpOnCallEnd");
+  BOOL lock=FALSE;
+  Conference *c = conference;
+  if(c==NULL)
+  {
+    PTRACE(3,"MCUH323Connection\tNULL Pointer, finding " << requestedRoom);
+    c = OpenMCU::Current().GetEndpoint().GetConferenceManager().FindConferenceWithLock(requestedRoom);
+    PTRACE(4,"MCUH323Connection\tNew pointer: " << c);
+    if(c) lock=TRUE;
+  }
+
+  if(c!=NULL)
+  {
+    if(!c->stopping)
+    {
+      PTRACE(4,"MCUH323Connection\tStarting new thread which will check the connection later in template.cxx");
+      new TplCleanCheckThread(c, remotePartyName, remotePartyAddress);
+    }
+  }
+
+  if(lock)OpenMCU::Current().GetEndpoint().GetConferenceManager().UnlockConference();
+
   videoReceiveCodecName = videoTransmitCodecName = "none";
   videoReceiveCodec = NULL;
   videoTransmitCodec = NULL;
-  LeaveConference();
 
+  LeaveConference();
   H323Connection::CleanUpOnCallEnd();
 }
 

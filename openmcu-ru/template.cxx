@@ -232,19 +232,14 @@ void Conference::LoadTemplate(PString tpl)
           else
           {
             InsertMemberName(memberInternalName, NULL);
-/*
-            if(offline && memberAutoDial) // finally: offline and have to be called
+            if(memberAutoDial) // finally: offline and have to be called
             {
               PString token;
               PString numberWithMixer=number;
               if(v[4]!="0") numberWithMixer+="/"+v[4];
-              if(OpenMCU::Current().GetEndpoint().Invite(numberWithMixer, memberAddress) != "")
-              {
-                PStringStream msg; msg << "Inviting " << memberAddress;
-                OpenMCU::Current().HttpWriteEventRoom(msg,number);
-              }
+              PString * userData = new PString(numberWithMixer);
+              OpenMCU::Current().GetEndpoint().Invite(numberWithMixer, memberAddress);
             }
-*/
           }
           validatedMembers.AppendString(memberInternalName);
 
@@ -583,4 +578,85 @@ BOOL Conference::RewriteMembersConf()
   int result = fputs(membersConf,membLst);
   fclose(membLst);
   return (result >= 0);
+}
+
+void Conference::OnConnectionClean(const PString & remotePartyName, const PString & remotePartyAddress)
+{
+  PTRACE(4,"Conference\tOnConnectionClean: " << remotePartyName << " / " << remotePartyAddress);
+  PString name;
+  if(!remotePartyName.IsEmpty()) if(remotePartyName != remotePartyAddress) name += remotePartyName;
+  if (name.Right(1)!="]")
+  {
+    PString url = remotePartyAddress;
+
+    PINDEX i = url.Find("ip$");
+    if(i != P_MAX_INDEX) url=url.Mid(i+3);
+
+    if(url.Mid(1,6).Find(':') == P_MAX_INDEX) // no url prefix :(
+    {
+      if(url.Find('@') == P_MAX_INDEX) url=PString("@")+url;
+      { // will used defaut prefix "h323:", fix it
+        url=PString("h323:") + url;
+        if(url.Right(5)==":1720") url=url.Left(url.GetLength()-5);
+      }
+    }
+
+    if(!name.IsEmpty()) name+=' ';
+    name += '[' + url +']';
+  }
+
+  PWaitAndSignal m(memberListMutex);
+  Conference::MemberNameList::iterator q = memberNameList.find(name);
+  if(q == memberNameList.end())
+  {
+    for(q=memberNameList.begin(); q!=memberNameList.end(); ++q)
+    {
+      if(q->first.FindLast(name) != P_MAX_INDEX)
+      {
+        name = q->first;
+        break;
+      }
+    }
+    if(q == memberNameList.end())
+    {
+      PTRACE(1,"Conference\tCould not match party name: " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
+      return;
+    }
+  }
+  if(q->second != NULL)
+  {
+    PTRACE(2,"Conference\tMember found in the list, but it's not offine (nothing to do): " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
+    return;
+  }
+
+  if(confTpl.Trim().IsEmpty()) return;
+
+  BOOL autoDial = FALSE;
+
+  PStringArray lines=confTpl.Lines();
+  PINDEX i;
+  for(i=0;i<lines.GetSize();i++)
+  {
+    PString l = lines[i].Trim();
+    PINDEX sp = l.Find(' ');
+    if(sp==P_MAX_INDEX) continue;
+    PString cmd = l.Left(sp);
+    if(cmd=="MEMBER")
+    {
+      PStringArray v=l.Mid(sp+1,P_MAX_INDEX).LeftTrim().Tokenise(',');
+      if(v.GetSize()>4) for(int i=0; i<=4;i++) v[i]=v[i].Trim();
+      PString iterationMemberName = v[5].LeftTrim();
+      for (PINDEX j=6; j<v.GetSize(); j++) iterationMemberName+=","+v[j];
+      if(iterationMemberName == name)
+      {
+        autoDial = (v[0] == "1");
+        break;
+      }
+    }
+  }
+
+  if(!autoDial) return;
+
+  PTRACE(2,"Conference\tGetting back member " << name);
+  OpenMCU::Current().GetEndpoint().Invite(number, name);
 }

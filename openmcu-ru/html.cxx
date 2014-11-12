@@ -374,14 +374,14 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
 
-  s << NewRowColumn(JsLocale("window.l_name_roomname"));
-  s << ColumnItem(JsLocale("window.l_name_auto_create"));
-  s << ColumnItem(JsLocale("window.l_name_force_split_video"));
-  s << ColumnItem(JsLocale("window.l_name_auto_delete_empty"));
-  s << ColumnItem(JsLocale("window.l_name_auto_record_not_empty"));
-  s << ColumnItem(JsLocale("window.l_name_recall_last_template"));
-  s << ColumnItem("Template locks conference by default");
-  s << ColumnItem(JsLocale("window.l_name_time_limit"));
+  s << NewRowColumn(JsLocal("name_roomname"));
+  s << ColumnItem(JsLocal("name_auto_create"));
+  s << ColumnItem(JsLocal("name_force_split_video"));
+  s << ColumnItem(JsLocal("name_auto_delete_empty"));
+  s << ColumnItem(JsLocal("name_auto_record_not_empty"));
+  s << ColumnItem(JsLocal("name_recall_last_template"));
+  s << ColumnItem(JsLocal("lock_tpl_default"));
+  s << ColumnItem(JsLocal("name_time_limit"));
   optionNames.AppendString(RoomAutoCreateKey);
   optionNames.AppendString(ForceSplitVideoKey);
   optionNames.AppendString(RoomAutoDeleteEmptyKey);
@@ -490,9 +490,9 @@ ControlCodesPConfigPage::ControlCodesPConfigPage(PHTTPServiceProcess & app,const
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
 
-  s << NewRowColumn(JsLocale("window.l_name_code"));
-  s << ColumnItem(JsLocale("window.l_name_action"));
-  s << ColumnItem(JsLocale("window.l_name_message"));
+  s << NewRowColumn(JsLocal("name_code"));
+  s << ColumnItem(JsLocal("name_action"));
+  s << ColumnItem(JsLocal("name_message"));
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -528,8 +528,8 @@ RoomCodesPConfigPage::RoomCodesPConfigPage(PHTTPServiceProcess & app,const PStri
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
 
-  s << NewRowColumn(JsLocale("window.l_name_code"));
-  s << ColumnItem(JsLocale("window.l_name_roomname"));
+  s << NewRowColumn(JsLocal("name_code"));
+  s << ColumnItem(JsLocal("name_roomname"));
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -563,9 +563,9 @@ ManagingUsersPConfigPage::ManagingUsersPConfigPage(PHTTPServiceProcess & app,con
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
 
-  s << NewRowColumn(JsLocale("window.l_name_user"));
-  s << ColumnItem(JsLocale("window.l_name_password"));
-  s << ColumnItem(JsLocale("window.l_name_group"));
+  s << NewRowColumn(JsLocal("name_user"));
+  s << ColumnItem(JsLocal("name_password"));
+  s << ColumnItem(JsLocal("name_group"));
 
   PString groups;
   PStringList keysGroups = MCUConfig("Managing Groups").GetKeys();
@@ -608,7 +608,7 @@ ManagingGroupsPConfigPage::ManagingGroupsPConfigPage(PHTTPServiceProcess & app,c
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
-  s << NewRowColumn(JsLocale("window.l_name_group"));
+  s << NewRowColumn(JsLocal("name_group"));
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -754,11 +754,11 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 
   s << BeginTable();
 
-  s << NewRowColumn(JsLocale("window.l_name_user")+"<br>("+JsLocale("window.l_name_account")+")", 210);
-  s << ColumnItem(JsLocale("window.l_settings"));
+  s << NewRowColumn(JsLocal("name_user")+"<br>("+JsLocal("name_account")+")", 210);
+  s << ColumnItem(JsLocal("settings"));
   s << ColumnItem("H.323");
-  s << ColumnItem(JsLocale("window.l_name_video"));
-  s << ColumnItem(JsLocale("window.l_name_codec"));
+  s << ColumnItem(JsLocal("name_video"));
+  s << ColumnItem(JsLocal("name_codec"));
 
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
@@ -874,9 +874,9 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     } else {
       PString s2;
       s2 += NewItemArray(name);
-      s2 += rowArray+JsLocale("window.l_name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
+      s2 += rowArray+JsLocal("name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
+      s2 += rowArray+JsLocal("name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
+      s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
       s2 += rowArray+"H.323 call processing"+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
@@ -888,13 +888,13 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      if(name == "*") s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("name_display_name")+StringItem(name, "", 0, TRUE)+"</tr>";
+      else            s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       //
-      if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
+      else            s2 += rowArray+JsLocal("name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
       //
-      s2 += rowArray+"H.323 "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
+      s2 += rowArray+"H.323 "+JsLocal("name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       //
@@ -906,11 +906,11 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
+      s2 += rowArray+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
+      s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
+      s2 += rowArray+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // VFU delay
       s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 70)+"</tr>";
       // Video cache
@@ -951,24 +951,24 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 
       PString s2;
       s2 += NewItemArray(name, 25);
-      s2 += rowArray+JsLocale("window.l_name_audio_receive")+SelectItem(name, ra_codec, ra_caps)+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_audio_transmit")+SelectItem(name, ta_codec, ta_caps)+"</tr>";
+      s2 += rowArray+JsLocal("name_audio_receive")+SelectItem(name, ra_codec, ra_caps)+"</tr>";
+      s2 += rowArray+JsLocal("name_audio_transmit")+SelectItem(name, ta_codec, ta_caps)+"</tr>";
       //
       PString rv_id = GetTableId();
       PString rres_id = GetTableId();
       PString rres_value = scfg.GetString("Video resolution(receive)");
       PString rv_onchange = "video_receive_res_toggle(\""+rres_id+"\", this.value);";
       javascript += "video_receive_res_toggle('"+rres_id+"', '"+rv_codec+"');\n";
-      s2 += rowArray+JsLocale("window.l_name_video_receive")+SelectItem(name, rv_codec, rv_caps, 0, rv_id, rv_onchange)+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_video_resolution")+SelectItem(name, rres_value, rres_value, 0, rres_id)+"</tr>";
+      s2 += rowArray+JsLocal("name_video_receive")+SelectItem(name, rv_codec, rv_caps, 0, rv_id, rv_onchange)+"</tr>";
+      s2 += rowArray+JsLocal("name_video_resolution")+SelectItem(name, rres_value, rres_value, 0, rres_id)+"</tr>";
       //
       PString tv_id = GetTableId();
       PString tres_id = GetTableId();
       PString tres_value = scfg.GetString("Video resolution(transmit)");
       PString tv_onchange = "video_transmit_res_toggle(\""+tres_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+tres_id+"', '"+tv_codec+"');\n";
-      s2 += rowArray+JsLocale("window.l_name_video_transmit")+SelectItem(name, tv_codec, tv_caps, 0, tv_id, tv_onchange)+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_video_resolution")+SelectItem(name, tres_value, tres_value, 0, tres_id)+"</tr>";
+      s2 += rowArray+JsLocal("name_video_transmit")+SelectItem(name, tv_codec, tv_caps, 0, tv_id, tv_onchange)+"</tr>";
+      s2 += rowArray+JsLocal("name_video_resolution")+SelectItem(name, tres_value, tres_value, 0, tres_id)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -996,10 +996,10 @@ RtspEndpointsPConfigPage::RtspEndpointsPConfigPage(PHTTPServiceProcess & app,con
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
 
   s << BeginTable();
-  s << NewRowColumn(JsLocale("window.l_name_address"));
-  s << ColumnItem(JsLocale("window.l_name_user"));
-  s << ColumnItem(JsLocale("window.l_name_password"));
-  s << ColumnItem(JsLocale("window.l_name_display_name"));
+  s << NewRowColumn(JsLocal("name_address"));
+  s << ColumnItem(JsLocal("name_user"));
+  s << ColumnItem(JsLocal("name_password"));
+  s << ColumnItem(JsLocal("name_display_name"));
 
   optionNames.AppendString(UserNameKey);
   optionNames.AppendString(PasswordKey);
@@ -1045,11 +1045,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   javascript += js_video_transmit_res_toggle;
 
   s << BeginTable();
-  s << NewRowColumn(JsLocale("window.l_name_user")+"<br>("+JsLocale("window.l_name_account")+")", 210);
-  s << ColumnItem(JsLocale("window.l_settings"));
+  s << NewRowColumn(JsLocal("name_user")+"<br>("+JsLocal("name_account")+")", 210);
+  s << ColumnItem(JsLocal("settings"));
   s << ColumnItem("SIP");
-  s << ColumnItem(JsLocale("window.l_name_video"));
-  s << ColumnItem(JsLocale("window.l_name_codec"));
+  s << ColumnItem(JsLocal("name_video"));
+  s << ColumnItem(JsLocal("name_codec"));
 
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
@@ -1174,10 +1174,10 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     } else {
       PString s2;
       s2 += NewItemArray(name);
-      s2 += rowArray+JsLocale("window.l_name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
+      s2 += rowArray+JsLocal("name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
+      s2 += rowArray+JsLocal("name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
+      s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
+      s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
       s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString("Ping interval", ""), ",20,30,40,50,60,120,180,240,300,600")+"</tr>";
       s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
       s2 += EndItemArray();
@@ -1188,12 +1188,12 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      if(name == "*") s2 += rowArray+JsLocale("window.l_name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocale("window.l_name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
+      else            s2 += rowArray+JsLocal("name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
       //
-      s2 += rowArray+"SIP "+JsLocale("window.l_name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
+      s2 += rowArray+"SIP "+JsLocal("name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
       //
-      s2 += rowArray+JsLocale("window.l_name_transport")+SelectItem(name, scfg.GetString(TransportKey), ",udp,tcp")+"</tr>";
+      s2 += rowArray+JsLocal("name_transport")+SelectItem(name, scfg.GetString(TransportKey), ",udp,tcp")+"</tr>";
       //
       s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), ",RTP,ZRTP,SRTP,SRTP/RTP")+"</tr>";
       //
@@ -1215,11 +1215,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
+      s2 += rowArray+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
+      s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
+      s2 += rowArray+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // VFU delay
       s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 70)+"</tr>";
       // Video cache
@@ -1249,21 +1249,21 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
+      s2 += rowArray+JsLocal("name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
       //
       PString video_id = GetTableId();
       PString res_id = GetTableId();
       PString res_value = scfg.GetString(VideoResolutionKey);
       PString video_onchange = "video_transmit_res_toggle(\""+res_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+res_id+"', '"+v_codec+"');\n";
-      s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
+      s2 += rowArray+JsLocal("name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
       //
-      s2 += rowArray+(JsLocale("window.l_name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
+      s2 += rowArray+(JsLocal("name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
       //
       //PString select_pt; for(int i = 96; i < 128; i++) select_pt += ","+PString(i);
-      //s2 += rowArray+(JsLocale("window.l_name_video")+" payload type")+SelectItem(name, scfg.GetString("Video payload type"), select_pt)+"</tr>";
+      //s2 += rowArray+(JsLocal("name_video")+" payload type")+SelectItem(name, scfg.GetString("Video payload type"), select_pt)+"</tr>";
       //
-      s2 += rowArray+(JsLocale("window.l_name_video")+" fmtp")+StringItem(name, scfg.GetString("Video fmtp"))+"</tr>";
+      s2 += rowArray+(JsLocal("name_video")+" fmtp")+StringItem(name, scfg.GetString("Video fmtp"))+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
@@ -1293,11 +1293,11 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
   javascript += js_video_transmit_res_toggle;
 
   s << BeginTable();
-  s << NewRowColumn(JsLocale("window.l_name_path"), 210);
-  s << ColumnItem(JsLocale("window.l_settings"));
+  s << NewRowColumn(JsLocal("name_path"), 210);
+  s << ColumnItem(JsLocal("settings"));
   s << ColumnItem("RTSP");
-  s << ColumnItem(JsLocale("window.l_name_video"));
-  s << ColumnItem(JsLocale("window.l_name_codec"));
+  s << ColumnItem(JsLocal("name_video"));
+  s << ColumnItem(JsLocal("name_codec"));
 
   optionNames.AppendString(EnableKey);
   optionNames.AppendString(UserNameKey);
@@ -1366,10 +1366,10 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
     } else {
       PString s2;
       s2 += NewItemArray(name);
-      s2 += rowArray+JsLocale("window.l_name_enable")+BoolItem(name, scfg.GetBoolean(EnableKey))+"</tr>";
-      s2 += rowArray+JsLocale("window.l_name_user")+StringItem(name, scfg.GetString(UserNameKey));
-      s2 += rowArray+JsLocale("window.l_name_password")+StringItem(name, scfg.GetString(PasswordKey));
-      s2 += rowArray+JsLocale("window.l_name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
+      s2 += rowArray+JsLocal("name_enable")+BoolItem(name, scfg.GetBoolean(EnableKey))+"</tr>";
+      s2 += rowArray+JsLocal("name_user")+StringItem(name, scfg.GetString(UserNameKey));
+      s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey));
+      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1398,9 +1398,9 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocale("window.l_name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 60)+"</tr>";
+      s2 += rowArray+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 60)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocale("window.l_name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 60)+"</tr>";
+      s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 60)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
@@ -1417,16 +1417,16 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      s2 += rowArray+JsLocale("window.l_name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
+      s2 += rowArray+JsLocal("name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
       //
       PString video_id = GetTableId();
       PString res_id = GetTableId();
       PString res_value = scfg.GetString(VideoResolutionKey);
       PString video_onchange = "video_transmit_res_toggle(\""+res_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+res_id+"', '"+v_codec+"');\n";
-      s2 += rowArray+JsLocale("window.l_name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
+      s2 += rowArray+JsLocal("name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
       //
-      s2 += rowArray+(JsLocale("window.l_name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
+      s2 += rowArray+(JsLocal("name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
@@ -1455,12 +1455,12 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
 
   s << BeginTable();
-  s << NewRowColumn(JsLocale("window.l_name_account")+"<br><i>username@domain</i>");
-  s << ColumnItem(JsLocale("window.l_name_register"));
-  s << ColumnItem(JsLocale("window.l_name_roomname"));
-  s << ColumnItem(JsLocale("window.l_name_address_sip_proxy")+"<br><i>hostname or ip</i>");
-  s << ColumnItem(JsLocale("window.l_name_password"));
-  s << ColumnItem(JsLocale("window.l_name_expires"));
+  s << NewRowColumn(JsLocal("name_account")+"<br><i>username@domain</i>");
+  s << ColumnItem(JsLocal("name_register"));
+  s << ColumnItem(JsLocal("name_roomname"));
+  s << ColumnItem(JsLocal("name_address_sip_proxy")+"<br><i>hostname or ip</i>");
+  s << ColumnItem(JsLocal("name_password"));
+  s << ColumnItem(JsLocal("name_expires"));
 
   optionNames.AppendString(EnableKey);
   optionNames.AppendString(RoomNameKey);
@@ -1564,8 +1564,8 @@ RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,con
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
-  s << NewRowColumn(JsLocale("window.l_name_roomname"));
-  s << ColumnItem(JsLocale("window.l_name_access"));
+  s << NewRowColumn(JsLocal("name_roomname"));
+  s << ColumnItem(JsLocal("name_access"));
   s << ColumnItem("'user1@domain user2@ @domain @@via'");
 
   PStringList keys = cfg.GetKeys();
@@ -1756,10 +1756,10 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
   s << ColumnItem("", 80);
   if(section == "SIP Audio")
   {
-    s << ColumnItem(JsLocale("window.l_name_parameters_for_sending"));
-    s << ColumnItem(JsLocale("window.l_name_codec_parameters"));
+    s << ColumnItem(JsLocal("name_parameters_for_sending"));
+    s << ColumnItem(JsLocal("name_codec_parameters"));
   }
-  s << ColumnItem(JsLocale("window.l_name_default_parameters"), 350);
+  s << ColumnItem(JsLocal("name_default_parameters"), 350);
 
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -1786,10 +1786,10 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
       delete cap;
     }
     else
-      info = JsLocale("window.l_not_found");
+      info = JsLocal("not_found");
 
     s << NewRowInput(name, 140);
-    if(info == JsLocale("window.l_not_found")) s << BoolItem(name, FALSE, TRUE);
+    if(info == JsLocal("not_found")) s << BoolItem(name, FALSE, TRUE);
     else if(cfg.GetBoolean(name))              s << BoolItem(name, TRUE);
     else                                       s << BoolItem(name, FALSE);
     s << InfoItem(info);
@@ -1861,7 +1861,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
        if(mf.GetOption(j).GetFMTPName() != "")
          fmtpInfo += mf.GetOption(j).GetFMTPName()+"="+mf.GetOption(j).AsString()+";";
     } else {
-      info += JsLocale("window.l_not_found");
+      info += JsLocal("not_found");
     }
     s << NewRowText(keys[i]);
     s << BoolItem(keys[i], cfg.GetBoolean(keys[i]));

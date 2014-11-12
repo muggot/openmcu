@@ -1331,6 +1331,7 @@ class Conference : public PObject
     virtual void SetLastUsedTemplate(PString tplName);
     virtual void DeleteTemplate(PString tplName);
     virtual BOOL RewriteMembersConf();
+    virtual void OnConnectionClean(const PString & remotePartyName, const PString & remotePartyAddress);
 
     ConferenceRecorder * conferenceRecorder;
 
@@ -1341,6 +1342,7 @@ class Conference : public PObject
     BOOL StartRecorder();
     BOOL StopRecorder();
 
+    BOOL stopping;
     BOOL lockedTemplate;
 
   protected:
@@ -1471,6 +1473,7 @@ class ConferenceManager : public PObject
      * Make a new conference with the specified conference ID, number and name
      */
     Conference * MakeAndLockConference(const OpalGloballyUniqueID & conferenceID, const PString & number, const PString & name);
+    BOOL CheckAndLockConference(Conference * c);
     Conference * FindConferenceWithLock(const PString & n);
 
     /**

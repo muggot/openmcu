@@ -248,3 +248,4 @@ window.l_recwasdeleted                             = "* has been deleted";
 window.l_filesize                                  = "File Size";
 window.l_resolution                                = "Resolution";
 window.l_startdatetime                             = "Start Date/Time";
+window.l_lock_tpl_default                          = "Template locks conference by default";

@@ -390,9 +390,9 @@ class TablePConfigPage : public PConfigPage
    {
      return "TABLEID_"+PString(tableId++);
    }
-   PString JsLocale(PString locale)
+   PString JsLocal(PString token)
    {
-     return "<script type='text/javascript'>document.write("+locale+");</script>";
+     return "<script type='text/javascript'>document.write(window.l_"+token+");</script>";
    }
    PString buttons()
    {
