@@ -173,7 +173,7 @@ window.l_name_advanced       = 'Розширені';
 window.l_name_auto_create              = 'Автоматичне створення';
 window.l_name_force_split_video        = 'Керований режим';
 window.l_name_auto_delete_empty        = 'Автоматичне видалення';
-window.l_name_auto_record_not_empty    = 'Автоматичний запис';
+window.l_name_auto_record_start        = 'Автоматичний запис';
 window.l_name_recall_last_template     = 'Створити з останнім шаблоном';
 window.l_name_time_limit               = 'Обмежити за часом';
 

@@ -378,14 +378,16 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
   s << ColumnItem(JsLocal("name_auto_create"));
   s << ColumnItem(JsLocal("name_force_split_video"));
   s << ColumnItem(JsLocal("name_auto_delete_empty"));
-  s << ColumnItem(JsLocal("name_auto_record_not_empty"));
+  s << ColumnItem(JsLocal("name_auto_record_start"));
+  s << ColumnItem(JsLocal("name_auto_record_stop"));
   s << ColumnItem(JsLocal("name_recall_last_template"));
   s << ColumnItem(JsLocal("lock_tpl_default"));
   s << ColumnItem(JsLocal("name_time_limit"));
   optionNames.AppendString(RoomAutoCreateKey);
   optionNames.AppendString(ForceSplitVideoKey);
   optionNames.AppendString(RoomAutoDeleteEmptyKey);
-  optionNames.AppendString(RoomAutoRecordNotEmptyKey);
+  optionNames.AppendString(RoomAutoRecordStartKey);
+  optionNames.AppendString(RoomAutoRecordStopKey);
   optionNames.AppendString(RoomRecallLastTemplateKey);
   optionNames.AppendString(LockTemplateKey);
   optionNames.AppendString(RoomTimeLimitKey);
@@ -417,8 +419,20 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
     if(name == "*") s << SelectItem(name, scfg.GetString(RoomAutoDeleteEmptyKey, "Disable"), "Enable,Disable");
     else            s << SelectItem(name, scfg.GetString(RoomAutoDeleteEmptyKey, ""), ",Enable,Disable");
     // auto record
-    if(name == "*") s << SelectItem(name, scfg.GetString(RoomAutoRecordNotEmptyKey, "Disable"), "Enable,Disable");
-    else            s << SelectItem(name, scfg.GetString(RoomAutoRecordNotEmptyKey, ""), ",Enable,Disable");
+    // bak 12.11.2014 ///////////////////////////////////////////////////////////////
+    if(scfg.GetString("Auto record not empty") == "Enable")
+    {
+      scfg.SetString(RoomAutoRecordStartKey, "1");
+      scfg.SetString(RoomAutoRecordStopKey, "0");
+    }
+    /////////////////////////////////////////////////////////////////////////////////
+    PString select_autorecord = "Disable";
+    for(PINDEX i = 0; i < 100; i++)
+      select_autorecord += ","+PString(i);
+    if(name != "*")
+      select_autorecord = "," + select_autorecord;
+    s << SelectItem(name, scfg.GetString(RoomAutoRecordStartKey), select_autorecord);
+    s << SelectItem(name, scfg.GetString(RoomAutoRecordStopKey), select_autorecord);
     // recall last template after room created
     if(name == "*") s << SelectItem(name, scfg.GetString(RoomRecallLastTemplateKey, "Disable"), "Enable,Disable");
     else            s << SelectItem(name, scfg.GetString(RoomRecallLastTemplateKey, ""), ",Enable,Disable");

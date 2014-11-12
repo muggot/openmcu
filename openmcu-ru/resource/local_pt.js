@@ -165,7 +165,7 @@ window.l_name_advanced       = 'Avançado';
 window.l_name_auto_create              = 'Auto criação';
 window.l_name_force_split_video        = 'Moderado';
 window.l_name_auto_delete_empty        = 'Auto eliminação';
-window.l_name_auto_record_not_empty    = 'Auto gravação';
+window.l_name_auto_record_start        = 'Auto gravação';
 window.l_name_recall_last_template     = 'Recarrega último modelo';
 window.l_name_time_limit               = 'Limite de tempo';
 

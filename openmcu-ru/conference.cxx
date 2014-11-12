@@ -451,23 +451,23 @@ BOOL ConferenceStatusInfo::Perform(Conference & conference)
 
 BOOL ConferenceRecorderInfo::Perform(Conference & conference)
 {
-  // external recorder
-  BOOL autoRecordNotEmpty = GetConferenceParam(conference.GetNumber(), RoomAutoRecordNotEmptyKey, FALSE);
+  // recorder
   BOOL allowRecord = GetConferenceParam(conference.GetNumber(), RoomAllowRecordKey, TRUE);
-  if(autoRecordNotEmpty && allowRecord)
-  {
-    // stop recorder if room is empty
-    if(!conference.GetVisibleMemberCount())
-      conference.StopRecorder();
-    // start recorder if room is not empty
-    if(conference.GetVisibleMemberCount())
-      conference.StartRecorder();
-  }
   if(!allowRecord)
   {
     conference.StopRecorder();
     return TRUE; // delete monitor
   }
+
+  PString autoRecordStart = GetConferenceParam(conference.GetNumber(), RoomAutoRecordStartKey, "Disable");
+  PString autoRecordStop = GetConferenceParam(conference.GetNumber(), RoomAutoRecordStopKey, "Disable");
+
+  PINDEX visibleMembers = conference.GetVisibleMemberCount();
+
+  if(autoRecordStop != "Disable" && visibleMembers <= autoRecordStop.AsInteger())
+    conference.StopRecorder();
+  else if(autoRecordStart != "Disable" && autoRecordStart.AsInteger() > autoRecordStop.AsInteger() && visibleMembers >= autoRecordStart.AsInteger())
+    conference.StartRecorder();
 
   return ConferenceRepeatingInfo::Perform(conference);
 }
