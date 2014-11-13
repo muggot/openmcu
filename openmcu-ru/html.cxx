@@ -2351,13 +2351,12 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
       {
         PWaitAndSignal mmm(conference.GetMutex());
         ConferenceMember * member = NULL;
-        cout << "1\n";
-        Conference::MemberNameList::iterator i = conference.GetMemberNameList().find("file recorder");
-        cout << "2\n";
-        if(i!=conference.GetMemberNameList().end()) member=i->second;
-        cout << "3:" << (long)member << "\n";
+        for(Conference::MemberList::iterator it = conference.GetMemberList().begin(); it != conference.GetMemberList().end(); ++it)
+        {
+          if(it->second->GetType() == MEMBER_TYPE_PIPE)
+            member = it->second;
+        }
         if(member) jpegMixer=member->videoMixer; else jpegMixer=NULL;
-        cout << "4:" << (long)jpegMixer << "\n";
       }
       if(jpegMixer==NULL) { app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal(); return FALSE; }
       cout << "5\n";
