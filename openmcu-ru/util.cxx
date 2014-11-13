@@ -266,7 +266,9 @@ PString GetConferenceParam(PString room, PString param, PString defaultValue)
       return "Disable";
     if(param == RoomAutoDeleteEmptyKey)
       return "Enable";
-    if(param == RoomAutoRecordNotEmptyKey)
+    if(param == RoomAutoRecordStartKey)
+      return "Disable";
+    if(param == RoomAutoRecordStopKey)
       return "Disable";
     if(param == RoomAllowRecordKey)
       return "Disable";
@@ -279,7 +281,9 @@ PString GetConferenceParam(PString room, PString param, PString defaultValue)
       return "Disable";
     if(param == RoomAutoDeleteEmptyKey)
       return "Enable";
-    if(param == RoomAutoRecordNotEmptyKey)
+    if(param == RoomAutoRecordStartKey)
+      return "Disable";
+    if(param == RoomAutoRecordStopKey)
       return "Disable";
     if(param == RoomAllowRecordKey)
       return "Disable";
@@ -292,7 +296,9 @@ PString GetConferenceParam(PString room, PString param, PString defaultValue)
       return "Disable";
     if(param == RoomAutoDeleteEmptyKey)
       return "Enable";
-    if(param == RoomAutoRecordNotEmptyKey)
+    if(param == RoomAutoRecordStartKey)
+      return "Disable";
+    if(param == RoomAutoRecordStopKey)
       return "Disable";
     if(param == RoomAllowRecordKey)
       return "Enable";
@@ -312,7 +318,9 @@ PString GetConferenceParam(PString room, PString param, PString defaultValue)
       value = "Enable";
     if(param == RoomAutoDeleteEmptyKey)
       value = "Disable";
-    if(param == RoomAutoRecordNotEmptyKey)
+    if(param == RoomAutoRecordStartKey)
+      value = "Disable";
+    if(param == RoomAutoRecordStopKey)
       value = "Disable";
     if(param == RoomAllowRecordKey)
       value = "Enable";
