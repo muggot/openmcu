@@ -237,7 +237,6 @@ void Conference::LoadTemplate(PString tpl)
               PString token;
               PString numberWithMixer=number;
               if(v[4]!="0") numberWithMixer+="/"+v[4];
-              PString * userData = new PString(numberWithMixer);
               OpenMCU::Current().GetEndpoint().Invite(numberWithMixer, memberAddress);
             }
           }
