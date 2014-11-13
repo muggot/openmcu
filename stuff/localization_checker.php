@@ -310,8 +310,8 @@ function my_remove_tokens($f, $tokens)
         $something = true;
         my_echo("Token $token will removed from $f. Токен $token будет удалён из $f.$lf");
       }
-      if(!$removing) $file2[]=$str;
     }
+    if(!$removing) $file2[]=$str;
   }
   if($something)
   {

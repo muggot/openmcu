@@ -170,6 +170,7 @@ window.l_name_save           = 'Сохранить';
 window.l_name_cancel         = 'Отменить';
 window.l_name_advanced       = 'Расширенные';
 window.l_name_auto_create              = 'Автоматическое создание';
+window.l_name_force_split_video        = "Кэширование и управление через браузер";
 window.l_name_auto_delete_empty        = 'Автоматическое удаление';
 window.l_name_auto_record_start        = 'Автоматическая запись';
 window.l_name_auto_record_stop         = 'Автоматическая запись (остановить)';
@@ -259,5 +260,3 @@ window.l_resolution                                = "Разрешение";
 window.l_startdatetime                             = "Дата и время начала";
 
 window.l_lock_tpl_default                          = "Отключать терминалы, отсутствующие в шаблоне (запереть конференцию)";
-
-window.l_name_force_split_video                    = "Кэширование и управление через браузер";

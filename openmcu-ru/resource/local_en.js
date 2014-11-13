@@ -1,5 +1,6 @@
 window.l_welcome = 'OpenMCU-ru';
 window.l_status = 'Status';
+
 window.l_connections = 'Connections';
 window.l_connections_OFFLINE_PREFIX    = "<B>[Offline] </B>"   ;
 window.l_connections_OFFLINE_SUFFIX    = ""                    ;
@@ -28,6 +29,7 @@ window.l_connections_COL_KBPS          = "Kbit/s"              ;
 window.l_connections_COL_FPS           = "FPS"                 ;
 window.l_connections_word_room         = "Room"                ;
 window.l_connections_COL_LOSTPCN       = "60s losses"          ;
+
 window.l_records = 'Records';
 window.l_control = 'Control';
 window.l_rooms = 'Rooms';
@@ -64,15 +66,55 @@ window.l_help = 'Help';
 window.l_forum = 'Forum';
 window.l_manual = 'Manual';
 window.l_support = 'Support';
+
 window.l_info_welcome ='\
+<p>\
+Service OpenMCU-ru is running and accepting connections.\
+</p>\
+<p>\
+Conference started by connection from some terminal will work in unmanaged mode. All members will see the same picture. In unmanaged mode OpenMCU-ru automatically change layout depending on number of conference members, in order  from file "layouts.conf". After connecting 100 members other connecting members will not be visible, but will see others.<br />\
+Audio streams in unmanaged mode are transmitting and receiving from all connected members.<br />\
+</p>\
+<p>\
+To test the server make call to room "echo". Or to room "testroomN", where N is number from 1 to 100.<br />\
+</p>\
+<p>\
+Server management is performed from main menu at the top of the page.<br />\
+Page <b>Status</b> shows current connections and terminal parameters.<br />\
+At page <b>Control</b> rooms can be set to managed mode.<br />\
+At page <b>Settings</b> can be set global server parameters.<br />\
+More info can be found in <b>Help</b> (link leads to official Internet site).<br />\
+</p>\
+<p>Below shows a summary of the server.</p>\
+';
 window.l_welcome_logo ='\
+<p>\
+<b>Custom logo iamge</b>\
+</p>\
+<p>\
+This image is shown when no input video in mixer. Accepted only JPEG, maximum 500kB.\
+</p>\
+';
+
 window.l_info_invite ='';
 window.l_info_invite_f ='';
 window.l_info_invite_s ='';
 window.l_info_rooms ='To view room and set it in managed mode - click its name.';
+
 window.l_info_control ='\
+<div id=\'tip\' name=\'tip\'\
+  onclick=\'if(typeof savedhelpcontent=="undefined"){savedhelpcontent=this.innerHTML;this.innerHTML="This page is used to manage your conference. You can chose participants from the list and place them in desired parts of a screen with layout control feature (drag-and-drop or drop-down boxes). Each position may be assigned to any participant directly (static), or it could be activated by voice.<br>Voice-activated positions could be marked as VAD or VAD2 (most active participants will be automatically moved from VAD to VAD2).";}else {this.innerHTML=savedhelpcontent; try {delete savedhelpcontent;} catch(e){savedhelpcontent=undefined;};}\'\
+>This page is used to\
+ <span style=\'cursor:pointer;font-weight:bold;color:#095\'> ...</span>\
+</div>';
+
 window.l_info_records ='\
+Page shows video records directory (on the server), \
+and allows to download them.';
+
 window.l_info_connections ='\
+Page shows current connections and terminal parameters.\
+';
 window.l_info_param_general ='Global server parameters. To reset all settings to defaults - check "RESTORE DEFAULTS" checkbox and click Accept.';
 window.l_info_param_registrar = '';
 window.l_info_param_conference ='';
@@ -90,6 +132,7 @@ window.l_info_param_receive_sound = '';
 window.l_info_param_transmit_sound = '';
 window.l_info_param_receive_video = '';
 window.l_info_param_transmit_video = '';
+
 window.l_select_create =       'Create room'
 window.l_select_enter =        'Enter room'
 window.l_select_record =       'Record'
@@ -100,7 +143,9 @@ window.l_select_visible =      'Visible members'
 window.l_select_unvisible =    'Unvisible members'
 window.l_select_duration =     'Duration'
 window.l_select_delete =       'Delete room'
+
 window.l_not_found = 'not found';
+
 window.l_name_accept         = 'Accept';
 window.l_name_reset          = 'Reset';
 window.l_name_user           = 'User';
@@ -118,17 +163,20 @@ window.l_name_save           = 'Save';
 window.l_name_cancel         = 'Cancel';
 window.l_name_advanced       = 'Advanced';
 window.l_name_auto_create              = 'Auto create';
+window.l_name_force_split_video        = "Caching and control via browser";
 window.l_name_auto_delete_empty        = 'Auto delete';
 window.l_name_auto_record_start        = 'Auto record';
 window.l_name_auto_record_stop         = 'Auto record (stop)';
 window.l_name_recall_last_template     = 'Recall last template';
 window.l_name_time_limit               = 'Time limit';
+
 window.l_name_display_name                         = 'Display name override';
 window.l_name_frame_rate_from_mcu                  = 'Frame rate from MCU';
 window.l_name_bandwidth_from_mcu                   = 'Bandwidth from MCU, Kbit/s';
 window.l_name_bandwidth_to_mcu                     = 'Bandwidth to MCU, Kbit/s';
 window.l_name_transport                            = 'Transport';
 window.l_name_port                                 = 'port';
+
 window.l_name_registrar                            = 'Registrar';
 window.l_name_account                              = 'Account';
 window.l_name_register                             = 'Register';
@@ -136,9 +184,11 @@ window.l_name_address_sip_proxy                    = 'Address SIP-proxy';
 window.l_name_expires                              = 'Expires';
 window.l_name_path                                 = 'Path';
 window.l_name_enable                               = 'Enable';
+
 window.l_name_registered                           = 'Registered';
 window.l_name_connected                            = 'Connected';
 window.l_name_last_ping_response                   = 'Last response';
+
 window.l_name_codec                                = 'Codec';
 window.l_name_audio                                = 'Audio';
 window.l_name_video                                = 'Video';
@@ -153,27 +203,41 @@ window.l_name_video_codec_receive                  = 'Video codec(receive)';
 window.l_name_audio_codec_transmit                 = 'Audio codec(transmit)';
 window.l_name_video_codec_transmit                 = 'Video codec(transmit)';
 window.l_name_video_resolution                     = 'Video resolution';
+
 window.l_name_parameters_for_sending               = "Parameters for sending";
 window.l_name_codec_parameters                     = "Codec parameters<br>(override received)";
 window.l_name_default_parameters                   = "Default parameters";
+
 window.l_room_invite_all_inactive_members          = 'Invite ALL inactive members?';
 window.l_room_drop_all_active_members              = 'Drop ALL active connections?';
 window.l_room_remove_all_inactive_members          = 'Remove ALL inactive members from list?';
 window.l_room_drop_connection_with                 = 'Drop connection with';
 window.l_room_remove_from_list                     = 'Remove from list';
+
 window.l_room_deletion_text = ["",                   "Closing room &laquo;%&raquo;: disconnecting participants",
+                                                     "Closing room &laquo;%&raquo;: waiting for participants get out of room",
+                                                     "Closing room &laquo;%&raquo;: disconnecting hidden system members",
+                                                     "Closing room &laquo;%&raquo;: waiting for members get out of room",
+                                                     "Room &laquo;%&raquo; DELETED"
+];
+
 window.l_takecontrol                               = "Current conference work mode is automatic (unmanaged). Click to operate the conference by your own (take control).";
 window.l_decontrol                                 = "Current conference work mode is managed by operator (that is you). Click to stop management and convert conference to unmanaged (automatic) state.";
 window.l_vadsetup                                  = "Voice activity detection (VAD) parameters";
 window.l_globalmute                                = "Invisible members are UNMUTED. Click to mute.";
 window.l_globalunmute                              = "Invisible members are MUTED. Click to unmute.";
 window.l_filtermode                                = [
+                                                       "Currently selected FASTEST video scaling, worst quality."
+                                                      ,"Currently selected BILINEAR video scaling, optimal for most cases."
+                                                      ,"Currently selected BOX FILTER for video scaling - perfect, but slow."
+                                                     ];
 window.l_videorecorder                             = "Start video recording";
 window.l_videorecorderstop                         = "Stop video recording";
 window.l_pleasetakecontrol                         = "This could not be done because the conference is working in unmanaged (automatic) mode.";
 window.l_decontrolmixersconfirm                    = "You are converting the conference into unmanaged mode..\r\nAdditional video mixers will be removed and the only one will be kept.\r\nAre you sure, you want to continue?";
 window.l_templatedeleteconfirm                     = "Template * will deleted";
 window.l_changelogo                                = "Change: ";
+
 window.l_dir_no_records                            = "The direcory does not contain records at the moment.";
 window.l_download                                  = "Download";
 window.l_delete                                    = "Delete";
@@ -187,6 +251,5 @@ window.l_recwasdeleted                             = "* has been deleted";
 window.l_filesize                                  = "File Size";
 window.l_resolution                                = "Resolution";
 window.l_startdatetime                             = "Start Date/Time";
-window.l_lock_tpl_default                          = "Template locks conference by default";
 
-window.l_name_force_split_video                    = "Caching and control via browser";
+window.l_lock_tpl_default                          = "Template locks conference by default";
