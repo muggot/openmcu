@@ -2655,7 +2655,8 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     {
       Conference & conference = *(r->second);
       PString roomNumber = conference.GetNumber();
-      BOOL controlled = conference.GetForceScreenSplit();
+      //BOOL controlled = conference.GetForceScreenSplit();
+      BOOL controlled = TRUE;
       BOOL allowRecord = GetConferenceParam(roomNumber, RoomAllowRecordKey, TRUE);
       BOOL moderated=FALSE; PString charModerated = "-";
       if(controlled) { charModerated = conference.IsModerated(); moderated=(charModerated=="+"); }
@@ -2732,18 +2733,7 @@ BOOL SelectRoomPage::Post(PHTTPRequest & request,
                           PHTML & msg)
 {
   PString room = data("room");
-  BOOL forceScreenSplit = FALSE;
-  ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
-  Conference *conference = cm.FindConferenceWithLock(room);
-  if(conference)
-  {
-    forceScreenSplit = conference->GetForceScreenSplit();
-    cm.UnlockConference();
-  }
-  if(forceScreenSplit)
-    msg << OpenMCU::Current().GetEndpoint().SetRoomParams(data);
-  else
-    msg << ErrorPage(request.localAddr.AsString(),request.localPort,423,"Locked","Room Control feature is locked","<br/><br/>");
+  msg << OpenMCU::Current().GetEndpoint().SetRoomParams(data);
   return TRUE;
 }
 

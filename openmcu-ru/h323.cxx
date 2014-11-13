@@ -1953,20 +1953,30 @@ PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
 
   OpenMCU::Current().HttpWriteEventRoom("MCU Operator connected",room);
   PTRACE(6,"WebCtrl\tOperator connected");
-  ConferenceListType::iterator r;
-  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
-  ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-  for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
-  if(r == conferenceList.end() ) return "OpenMCU-ru: Bad room";
-  Conference & conference = *(r->second);
-  PWaitAndSignal m2(conference.videoMixerListMutex);
-  MCUVideoMixer * mixer = conference.videoMixerList->mixer;
+
+  Conference *conference = conferenceManager.FindConferenceWithLock(room);
+  if(conference == NULL)
+    return "OpenMCU-ru: Bad room";
+
   ConferenceMemberId idr[100];
-  for(int i=0;i<100;i++) idr[i]=mixer->GetPositionId(i);
-  return RoomCtrlPage(room,conference.IsModerated()=="+",mixer->GetPositionSet(),conference,idr);
+  int positionSet = 0;
+
+  // не используется
+  /*
+  if(conference->GetForceScreenSplit())
+  {
+    MCUVideoMixer * mixer = conference->videoMixerList->mixer;
+    for(int i=0;i<100;i++)
+      idr[i]=mixer->GetPositionId(i);
+    positionSet = mixer->GetPositionSet();
+  }
+  */
+
+  // unlock - RoomCtrlPage не использует conference
+  conferenceManager.UnlockConference();
+
+  return RoomCtrlPage(room, conference->IsModerated()=="+", positionSet, *conference, idr);
 }
-
-
 
 PString MCUH323EndPoint::GetMonitorText()
 {

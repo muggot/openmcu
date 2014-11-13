@@ -1190,6 +1190,8 @@ class Conference : public PObject
 
     virtual PString IsModerated() const
     {
+      if(forceScreenSplit == FALSE)
+        return "0";
      PString yes="+";
      PString no="-";
      if(!moderated) return no; else return yes;
