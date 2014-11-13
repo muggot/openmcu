@@ -264,7 +264,8 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
 #  endif
 #endif
 
-  BOOL forceScreenSplit = GetConferenceParam(_number, ForceSplitVideoKey, TRUE);
+  //BOOL forceScreenSplit = GetConferenceParam(_number, ForceSplitVideoKey, TRUE);
+  BOOL forceScreenSplit = TRUE;
 
   if(!forceScreenSplit)
   {
@@ -727,8 +728,18 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   if(r != memberList.end())
     return FALSE;
 
+  if(forceScreenSplit == FALSE && memberToAdd->IsVisible())
+  {
+    VMLAdd(memberToAdd->videoMixer);
+    PWaitAndSignal m(videoMixerListMutex);
+    if(!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd))
+      memberToAdd->SetFreezeVideo(TRUE);
+    // refresh room control page
+    OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), GetNumber());
+    OpenMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()", GetNumber());
+  }
 #if MCU_VIDEO
-  if(moderated==FALSE
+  else if(moderated==FALSE
 #  if ENABLE_TEST_ROOMS
      || number=="testroom"
 #  endif
@@ -916,8 +927,18 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
       }
     }
 
+    if(forceScreenSplit == FALSE && memberToRemove->IsVisible())
+    {
+      VMLDel(memberToRemove->videoMixer);
+      memberToRemove->videoMixer = NULL;
+      PWaitAndSignal m(videoMixerListMutex);
+      videoMixerList->mixer->RemoveVideoSource(userid, *memberToRemove);
+      // refresh room control page
+      OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), GetNumber());
+      OpenMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()", GetNumber());
+    }
 #if MCU_VIDEO
-    if (moderated==FALSE
+    else if (moderated==FALSE
 #  if ENABLE_TEST_ROOMS
     || number == "testroom"
 #  endif
@@ -1295,7 +1316,8 @@ ConferenceMember::~ConferenceMember()
 {
   muteMask|=15;
 #if MCU_VIDEO
-  delete videoMixer;
+  if(videoMixer)
+    delete videoMixer;
 #endif
 }   
 

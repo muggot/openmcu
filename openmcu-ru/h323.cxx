@@ -1039,7 +1039,11 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
     << "," << c.VAlevel << "," << c.VAdelay << "," << c.VAtimeout       // [0][6-8]= vad
 
     << ",Array("; // l3 open
-      conferenceManager.GetConferenceListMutex().Wait();
+    // 13.11.2014 Xak
+    // без проверки Wait() зависнет на вызове из Conference::MemberRemove при завершении работы
+    // возможно исправит недоступную страницу управления - http://openmcu.ru/forum/index.php/topic,453.msg12391.html#msg12391
+    if(conferenceManager.GetConferenceListMutex().Wait(500))
+    {
       ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
       ConferenceListType::iterator l;
       for (l = conferenceList.begin(); l != conferenceList.end(); ++l) {
@@ -1049,6 +1053,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
         r << "Array(\"" << jsRoom << "\"," << (*(l->second)).GetVisibleMemberCount() << ",\"" << (*(l->second)).IsModerated() << "\")";
       }
       conferenceManager.GetConferenceListMutex().Signal();
+    }
     r << ")"; // l3 close
 
 #if USE_LIBYUV

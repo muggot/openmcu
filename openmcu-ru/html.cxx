@@ -2342,24 +2342,10 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     Conference & conference = *(r->second);
     if(conference.GetNumber()==room)
     {
-      if(conference.videoMixerList)
-      {
-        PWaitAndSignal m3(conference.videoMixerListMutex);
-        jpegMixer=conference.VMLFind(requestedMixer);
-      }
-      else
-      {
-        PWaitAndSignal mmm(conference.GetMutex());
-        ConferenceMember * member = NULL;
-        for(Conference::MemberList::iterator it = conference.GetMemberList().begin(); it != conference.GetMemberList().end(); ++it)
-        {
-          if(it->second->GetType() == MEMBER_TYPE_PIPE)
-            member = it->second;
-        }
-        if(member) jpegMixer=member->videoMixer; else jpegMixer=NULL;
-      }
+      if(conference.videoMixerList==NULL){ app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal(); return FALSE; }
+      PWaitAndSignal m3(conference.videoMixerListMutex);
+      jpegMixer=conference.VMLFind(requestedMixer);
       if(jpegMixer==NULL) { app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal(); return FALSE; }
-      cout << "5\n";
       if(t1-(jpegMixer->jpegTime)>1)
       {
         if(width<1||height<1||width>2048||height>2048)

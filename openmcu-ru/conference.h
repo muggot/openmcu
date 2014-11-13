@@ -1225,7 +1225,7 @@ class Conference : public PObject
     virtual BOOL WriteMemberVideo(ConferenceMember * member, const void * buffer, int width, int height, PINDEX amount);
 
     virtual BOOL UseSameVideoForAllMembers()
-    { return videoMixerCount > 0; }
+    { return forceScreenSplit == TRUE && videoMixerCount > 0; }
 
     virtual MCUVideoMixer * GetVideoMixer(unsigned i) const
     { return VMLFind(i); }
@@ -1247,7 +1247,8 @@ class Conference : public PObject
     }
     void VMLClear()
     {
-      if(!forceScreenSplit) return;
+      if(videoMixerList == NULL)
+        return;
       PWaitAndSignal m(videoMixerListMutex);
       VideoMixerRecord * vmr = videoMixerList;
       if(vmr->next!=NULL) while(vmr->next->next!=NULL) vmr=vmr->next; //LIFO: points to last but one, delete the next == last
@@ -1258,15 +1259,22 @@ class Conference : public PObject
       delete videoMixerList;
       videoMixerCount = 0;
     }
-    unsigned VMLAdd()
+    unsigned VMLAdd(MCUVideoMixer * mixer = NULL)
     {
+      if(videoMixerList == NULL)
+      {
+        VMLInit(mixer);
+        return 0;
+      }
       PWaitAndSignal m(videoMixerListMutex);
       if(videoMixerCount>=100) return 0; // limitation
       VideoMixerRecord * vmr = videoMixerList;
       unsigned id=vmr->id;
       while (vmr->next!=NULL){ vmr=vmr->next; if(vmr->id>id)id=vmr->id; }
-      VideoMixerRecord * vmrnew = new VideoMixerRecord();
-      vmrnew->mixer=new MCUSimpleVideoMixer(TRUE);
+      VideoMixerRecord *vmrnew = new VideoMixerRecord();
+      if(mixer == NULL)
+        mixer=new MCUSimpleVideoMixer(TRUE);
+      vmrnew->mixer = mixer;
       id++;
       vmr->next = vmrnew; vmrnew->prev = vmr;
       vmrnew->id = id; videoMixerCount++;
@@ -1274,6 +1282,8 @@ class Conference : public PObject
     }
     unsigned VMLDel(unsigned n)
     {
+      if(videoMixerList == NULL)
+        return 0;
       PWaitAndSignal m(videoMixerListMutex);
       PTRACE(6,"MixerCtrl\tVMLDel(" << n << ") videoMixerCount=" << videoMixerCount);
       if(videoMixerCount==1)return FALSE; //prevent last mixer deletion
@@ -1294,8 +1304,24 @@ class Conference : public PObject
       if(newIndex!=videoMixerCount) { PTRACE(1,"MixerCtrl\tVideo mixer counter " << videoMixerCount << " doesn't match last mixer id++ " << newIndex); }
       return newIndex;
     }
+    unsigned VMLDel(MCUVideoMixer * mixer)
+    {
+      if(mixer == NULL || videoMixerList == NULL)
+        return 0;
+      PWaitAndSignal m(videoMixerListMutex);
+      VideoMixerRecord * vmr = videoMixerList;
+      while(vmr != NULL)
+      {
+        if(vmr->mixer == mixer)
+          return VMLDel(vmr->id);
+        vmr=vmr->next;
+      }
+      return 0;
+    }
     MCUVideoMixer * VMLFind(unsigned i) const
     {
+      if(videoMixerList == NULL)
+        return 0;
       PWaitAndSignal m(videoMixerListMutex);
       VideoMixerRecord *vmr = videoMixerList;
       while (vmr->next!=NULL && vmr->id!=i) vmr=vmr->next;
