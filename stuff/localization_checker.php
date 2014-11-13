@@ -31,6 +31,10 @@ foreach($localizations as $language)
   check_and_remove_bom("$res_dir/".get_translation_name($language));
   check_and_add_lf("$res_dir/".get_translation_name($language));
   if($language==$reference) continue;
+  if(file_exists('remove.txt'))
+    if(!in_array($language, $pull_out_from_specials))
+      if($language!=$pull_out_from)
+        my_remove_tokens("$res_dir/".get_translation_name($language), file('remove.txt', FILE_IGNORE_NEW_LINES));
   $l_tokens=my_tokens("$res_dir/".get_translation_name($language));
   my_diff_handler($reference, $language, my_compare($tokens, $l_tokens));
 }
@@ -51,6 +55,7 @@ function my_token_grabber($tokens,$language)
   $lang_from = $pull_out_from;
   if(isset($pull_out_from_specials[$language])) $lang_from=$pull_out_from_specials[$language];
   $f=file("$res_dir/".get_translation_name($lang_from));
+
   $r=Array();
   $grabbing=false;
   foreach($f as $str)
@@ -280,4 +285,37 @@ function check_and_add_lf($f)
   if($c=="\r") return;
   my_echo("Adding LF at the end of $f. Добавляем перевод строки в конце $f.$lf");
   file_put_contents($f,$lf,FILE_APPEND);
+}
+
+function my_remove_tokens($f, $tokens)
+{
+  global $lf;
+  foreach($tokens as $k => $v) $tokens[$k]=trim($v);
+  $file=file($f);
+  $removing=false;
+  $something=false;
+  $file2=Array();
+  foreach($file as $l => $str)
+  {
+    if(substr($str,0,9)==='window.l_')
+    {
+      $removing=false;
+      $token=$str;
+      $ep=strpos($str,'=');
+      if($ep!==false) $token=substr($str,0,$ep);
+      $token=str_replace("\t",'',trim($token));
+      if(in_array($token,$tokens))
+      {
+        $removing = true;
+        $something = true;
+        my_echo("Token $token will removed from $f. Токен $token будет удалён из $f.$lf");
+      }
+      if(!$removing) $file2[]=$str;
+    }
+  }
+  if($something)
+  {
+    my_echo("File $f will be rewritten. Файл $f будет перезаписан.$lf");
+    file_put_contents($f, join('',$file2));
+  }
 }
