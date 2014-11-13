@@ -1321,7 +1321,7 @@ class Conference : public PObject
     MCUVideoMixer * VMLFind(unsigned i) const
     {
       if(videoMixerList == NULL)
-        return 0;
+        return NULL;
       PWaitAndSignal m(videoMixerListMutex);
       VideoMixerRecord *vmr = videoMixerList;
       while (vmr->next!=NULL && vmr->id!=i) vmr=vmr->next;

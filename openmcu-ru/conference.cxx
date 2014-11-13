@@ -731,9 +731,10 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   if(forceScreenSplit == FALSE && memberToAdd->IsVisible())
   {
     VMLAdd(memberToAdd->videoMixer);
-    PWaitAndSignal m(videoMixerListMutex);
+    videoMixerListMutex.Wait();
     if(!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd))
       memberToAdd->SetFreezeVideo(TRUE);
+    videoMixerListMutex.Signal();
     // refresh room control page
     OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), GetNumber());
     OpenMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()", GetNumber());
@@ -931,8 +932,9 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
     {
       VMLDel(memberToRemove->videoMixer);
       memberToRemove->videoMixer = NULL;
-      PWaitAndSignal m(videoMixerListMutex);
+      videoMixerListMutex.Wait();
       videoMixerList->mixer->RemoveVideoSource(userid, *memberToRemove);
+      videoMixerListMutex.Signal();
       // refresh room control page
       OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), GetNumber());
       OpenMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()", GetNumber());
