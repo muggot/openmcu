@@ -1,7 +1,7 @@
 var max_subframes=100;
 var default_page_width=942; //CHANGE IT IF YOU WISH, IT'LL BE AUTO-INCREASED IF NEEDED
 var page_border_width=70;   //for detect panel width
-var debug=0;
+var debug=1;
 var MIXER_PANEL_BGCOLOR='#575';
 var MIXER_PANEL_BGCOLOR2='#242';
 var MIXER_PANEL_MIXER_STYLE='font-weight:bold;background-color:'+MIXER_PANEL_BGCOLOR2+';padding-left:3px;padding-right:3px;border-radius:2px;border:2px solid #484;color:#fc5';
@@ -126,6 +126,8 @@ var gainSelecting=false;
 var gainSelector=null;
 
 var roomName, globalMute, isModerated;
+
+var classicMode = false;
 
 function index_exists(a, i)
 {
@@ -1551,6 +1553,11 @@ function build_page()
   if(typeof conf=='undefined' || typeof document.getElementById('cb3')=='undefined') return;
   b=document.getElementById('cb3');
   mixers=conf[0][0]; bfw=conf[0][1]; bfh=conf[0][2]; room=conf[0][3]; roomLink=encodeURIComponent(room);
+  classicMode=(mixers==0);
+  if(classicMode)
+  {
+    dmsg('CLASSIC MCU MODE, NO CACHES');
+  }
 
   var page_width = document.body.clientWidth || default_page_width;
   if(page_width != default_page_width) {
@@ -1561,11 +1568,27 @@ function build_page()
 
   if(typeof mmw == 'undefined') mmw=-1; if(mmw==-1)
   { mmw=0; total_height=0;
-    for(i=0;i<mixers;i++){
-      var mw=conf[i+1][0][0]; var mh=conf[i+1][0][1];
-      if(mw>mmw) mmw=mw;
-      total_height+=mh;
-      total_height+=MIXER_PANEL_HEIGHT;
+    if(!classicMode)
+    {
+      for(i=0;i<mixers;i++)
+      {
+        var mw=conf[i+1][0][0]; var mh=conf[i+1][0][1];
+        if(mw>mmw) mmw=mw;
+        total_height+=mh;
+        total_height+=MIXER_PANEL_HEIGHT;
+      }
+    }
+    else // classic mode:
+    {
+      if(typeof members=='undefined') alert('error, undefined members :(');
+      for(i=0;i<members.length;i++)
+      {
+        if(!members[i][0]) continue;
+        var mw=members[i][12][0][0]; var mh=members[i][12][0][1];
+        if(mw>mmw) mmw=mw;
+        total_height+=mh;
+        total_height+=MIXER_PANEL_HEIGHT;
+      }
     }
     if(mmw<200)mmw=200; //minimal mixer width
     var free_x=page_width-mmw;
@@ -1590,16 +1613,37 @@ function build_page()
   } catch(e) {};
 
   mockup_content=""; var pos_y=0;
-  for(i=0;i<mixers;i++){
-    var mw=conf[i+1][0][0]; var mh=conf[i+1][0][1]; var pos_x=(mmw-mw)>>1;
-    mockup_content+="<div style='position:relative;top:"+pos_y+"px;left:"+pos_x+"px;width:0px;height:0px'>"; // pointing block for mockup[i]
-     mockup_content+="<img style='position:absolute' id='frame"+i+"' name='frame"+i+"'"+ // rectangle for mockup[i]
-      " src='Jpeg?room="+roomLink+"&w="+mw+"&h="+mh+"&mixer="+i+"'"+
-      " alt='Video Mixer #"+i+"'"+
-     " />";
-    mockup_content+="</div>";
-    pos_y+=mh+MIXER_PANEL_HEIGHT;
-    jpegframes[i]=Array("Jpeg?room="+roomLink+"&w="+mw+"&h="+mh+"&mixer="+i,new Image(),null);
+  if(!classicMode)
+  {
+    for(i=0;i<mixers;i++)
+    {
+      var mw=conf[i+1][0][0]; var mh=conf[i+1][0][1]; var pos_x=(mmw-mw)>>1;
+      mockup_content+="<div style='position:relative;top:"+pos_y+"px;left:"+pos_x+"px;width:0px;height:0px'>"; // pointing block for mockup[i]
+       mockup_content+="<img style='position:absolute' id='frame"+i+"' name='frame"+i+"'"+ // rectangle for mockup[i]
+        " src='Jpeg?room="+roomLink+"&w="+mw+"&h="+mh+"&mixer="+i+"'"+
+        " alt='Video Mixer #"+i+"'"+
+       " />";
+      mockup_content+="</div>";
+      pos_y+=mh+MIXER_PANEL_HEIGHT;
+      jpegframes[i]=Array("Jpeg?room="+roomLink+"&w="+mw+"&h="+mh+"&mixer="+i,new Image(),null);
+    }
+  }
+  else // classic mode
+  {
+    if(typeof members=='undefined') alert('error 2, undefined members :(((');
+    for(i=0;i<members.length;i++)
+    {
+      if(!members[i][0]) continue;
+      var mw=members[i][12][0][0]; var mh=members[i][12][0][1]; var pos_x=(mmw-mw)>>1;
+      mockup_content+="<div style='position:relative;top:"+pos_y+"px;left:"+pos_x+"px;width:0px;height:0px'>"; // pointing block for mockup[i]
+       mockup_content+="<img style='position:absolute' id='frame"+i+"' name='frame"+i+"'"+ // rectangle for mockup[i]
+        " src='Jpeg?room="+roomLink+"&w="+mw+"&h="+mh+"&mixer="+members[i][1]+"'"+
+        " alt='Video Mixer #"+i+"'"+
+       " />";
+      mockup_content+="</div>";
+      pos_y+=mh+MIXER_PANEL_HEIGHT;
+      jpegframes[i]=Array("Jpeg?room="+roomLink+"&w="+mw+"&h="+mh+"&mixer="+i,new Image(),null);
+    }
   }
 
   workplace_content="<div id='pbase' style='position:relative;top:0px;left:0px;width:0px;height:0px'>"; // just workplace pointer

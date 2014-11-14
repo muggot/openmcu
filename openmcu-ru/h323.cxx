@@ -1029,7 +1029,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 {
   PStringStream r; //conf[0]=[videoMixerCount,bfw,bfh):
   PString jsRoom=c.GetNumber(); jsRoom.Replace("&","&amp;",TRUE,0); jsRoom.Replace("\"","&quot;",TRUE,0);
-  r << "conf=Array(Array(" //l1&l2 open
+  r << "conf=[[" //l1&l2 open
     << c.videoMixerCount                                                // [0][0]  = mixerCount
     << "," << OpenMCU::vmcfg.bfw                                        // [0][1]  = base frame width
     << "," << OpenMCU::vmcfg.bfh                                        // [0][2]  = base frame height
@@ -1038,7 +1038,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
     << ",'" << c.IsMuteUnvisible() << "'"                               // [0][5]  = global mute
     << "," << c.VAlevel << "," << c.VAdelay << "," << c.VAtimeout       // [0][6-8]= vad
 
-    << ",Array("; // l3 open
+    << ",["; // l3 open
     // 13.11.2014 Xak
     // без проверки Wait() зависнет на вызове из Conference::MemberRemove при завершении работы
     // возможно исправит недоступную страницу управления - http://openmcu.ru/forum/index.php/topic,453.msg12391.html#msg12391
@@ -1050,11 +1050,11 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
         jsRoom=(*(l->second)).GetNumber();
         jsRoom.Replace("&","&amp;",TRUE,0); jsRoom.Replace("\"","&quot;",TRUE,0);
         if(l!=conferenceList.begin()) r << ",";                         // [0][9][ci][0-2] roomName & memberCount & isModerated
-        r << "Array(\"" << jsRoom << "\"," << (*(l->second)).GetVisibleMemberCount() << ",\"" << (*(l->second)).IsModerated() << "\")";
+        r << "[\"" << jsRoom << "\"," << (*(l->second)).GetVisibleMemberCount() << ",\"" << (*(l->second)).IsModerated() << "\"]";
       }
       conferenceManager.GetConferenceListMutex().Signal();
     }
-    r << ")"; // l3 close
+    r << "]"; // l3 close
 
 #if USE_LIBYUV
     r << "," << OpenMCU::Current().GetScaleFilter();                      // [0][10] = libyuv resizer filter mode
@@ -1065,88 +1065,124 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
   if(c.conferenceRecorder != NULL && c.conferenceRecorder->IsRunning()) r << ",1"; else r << ",0"; // [0][11] = video recording state (1=recording, 0=NO)
   if(c.lockedTemplate) r << ",1"; else r << ",0";                         // [0][12] = member list locked by template (1=yes, 0=no)
 
-  r << ")"; //l2 close
+  r << "]"; //l2 close
 
   PWaitAndSignal m(c.videoMixerListMutex);
   Conference::VideoMixerRecord * vmr = c.videoMixerList;
-  while (vmr!=NULL) {
-    r << ",Array("; //l2 open
-    MCUVideoMixer * mixer = vmr->mixer;
-    unsigned n=mixer->GetPositionSet();
-    VMPCfgSplitOptions & split=OpenMCU::vmcfg.vmconf[n].splitcfg;
-    VMPCfgOptions      * p    =OpenMCU::vmcfg.vmconf[n].vmpcfg;
-
-
-    r << "Array(" //l3 open                                             // conf[n][0]: base parameters:
-      << split.mockup_width << "," << split.mockup_height                 // [n][0][0-1]= mw*mh
-      << "," << n                                                         // [n][0][2]  = position set (layout)
-    << "),Array("; //l3 reopen
-
-    for(unsigned i=0;i<split.vidnum;i++)
-      r << "Array(" << p[i].posx //l4 open                              // conf[n][1]: frame geometry for each position i:
-        << "," << p[i].posy                                               // [n][1][i][0-1]= posx & posy
-        << "," << p[i].width                                              // [n][1][i][2-3]= width & height
-        << "," << p[i].height
-        << "," << p[i].border                                             // [n][1][i][4]  = border
-      << ")" << ((i==split.vidnum-1)?"":","); //l4 close
-
-    r << ")," << mixer->VMPListScanJS() //l3 close                      // conf[n][2], conf[n][3]: members' ids & types
-    << ")"; //l2 close
-
+  while (vmr!=NULL)
+  {
+    r << "," << GetVideoMixerConfiguration(vmr->mixer);
     vmr=vmr->next;
   }
-  r << ");"; //l1 close
+  r << "];"; //l1 close
+  return r;
+}
+
+PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer)
+{
+  if(mixer==NULL) return "[]";
+  unsigned n=mixer->GetPositionSet();
+  VMPCfgSplitOptions & split=OpenMCU::vmcfg.vmconf[n].splitcfg;
+  VMPCfgOptions      * p    =OpenMCU::vmcfg.vmconf[n].vmpcfg;
+  PStringStream r;
+  r << "[";
+
+  r << "["                                                // a[0]: base parameters:
+    << split.mockup_width << "," << split.mockup_height   //   a[0][0-1] = mw * mh
+    << "," << n                                           //   a[0][2]   = position set (layout)
+    << "],[";
+
+  for(unsigned i=0;i<split.vidnum;i++)
+    r << "[" << p[i].posx                                 // a[1]: frame geometry for each position i:
+      << "," << p[i].posy                                 // a[1][i][0-1]= posx & posy
+      << "," << p[i].width                                // a[1][i][2-3]= width & height
+      << "," << p[i].height
+      << "," << p[i].border                               // a[1][i][4]  = border
+      << "]" << ((i==split.vidnum-1) ? "" : ",");
+
+  r << "]," << mixer->VMPListScanJS()                     // a[2], a[3]: members' ids & types
+    << "]";
+
+  return r;
+}
+
+PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
+{
+  if(!member) return "[]";
+  PString mixerData;
+  if(member->videoMixer) mixerData = GetVideoMixerConfiguration(member->videoMixer);
+  PString username=member->GetName();
+  username.Replace("&","&amp;",TRUE,0);
+  username.Replace("\"","&quot;",TRUE,0);
+  PStringStream r;
+  r
+/* 0*/  << "[1"                                           // [i][ 0] = 1 : ONLINE
+/* 1*/  << ",\"" << dec << (long)member->GetID() << "\""  // [i][ 1] = long id
+/* 2*/  << ",\"" << username << "\""                      // [i][ 2] = name [ip]
+/* 3*/  << "," << member->muteMask                        // [i][ 3] = mute
+/* 4*/  << "," << member->disableVAD                      // [i][ 4] = disable vad
+/* 5*/  << "," << member->chosenVan                       // [i][ 5] = chosen van
+/* 6*/  << "," << member->GetAudioLevel()                 // [i][ 6] = audiolevel (peak)
+/* 7*/  << "," << member->GetVideoMixerNumber()           // [i][ 7] = number of mixer member receiving
+/* 8*/  << ",\"" << MCUURL(username).GetMemberNameId() << "\""   // [i][ 8] = memberName id
+/* 9*/  << "," << (unsigned short)member->channelCheck    // [i][ 9] = RTP channels checking bit mask 0000vVaA
+/*10*/  << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
+/*11*/  << "," << member->kOutputGainDB                   // [i][11] = Output audio gain, integer: -20..60
+/*12*/  << "," << GetVideoMixerConfiguration(member->videoMixer) // [i][12] = mixer configuration
+        << "]";
   return r;
 }
 
 PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 {
- PStringStream members;
- PWaitAndSignal m(conference.GetMutex());
- Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
- Conference::MemberNameList::const_iterator s;
- members << "members=Array(";
- int i=0;
- for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
- {
-  PString username=s->first;
-  username.Replace("&","&amp;",TRUE,0);
-  username.Replace("\"","&quot;",TRUE,0);
-  ConferenceMember * member = s->second;
-  if(member==NULL){ // inactive member
-    if(i>0) members << ",";
-    members << "Array(0"
-      << ",0"
-      << ",\"" << username << "\""
-      << ",0"
-      << ",0"
-      << ",0"
-      << ",0"
-      << ",0"
-      << ",\"" << MCUURL(s->first).GetMemberNameId() << "\""
-      << ")";
-    i++;
-  } else {          //   active member
-    if(i>0) members << ",";
-    members << "Array(1"                                // [i][ 0] = 1 : ONLINE
-      << ",\"" << dec << (long)member->GetID() << "\""  // [i][ 1] = long id
-      << ",\"" << username << "\""                      // [i][ 2] = name [ip]
-      << "," << member->muteMask                        // [i][ 3] = mute
-      << "," << member->disableVAD                      // [i][ 4] = disable vad
-      << "," << member->chosenVan                       // [i][ 5] = chosen van
-      << "," << member->GetAudioLevel()                 // [i][ 6] = audiolevel (peak)
-      << "," << member->GetVideoMixerNumber()           // [i][ 7] = number of mixer member receiving
-      << ",\"" << MCUURL(s->first).GetMemberNameId() << "\""   // [i][ 8] = memberName id
-      << "," << (unsigned short)member->channelCheck    // [i][ 9] = RTP channels checking bit mask 0000vVaA
-      << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
-      << "," << member->kOutputGainDB                   // [i][11] = Output audio gain, integer: -20..60
-      << ")";
-    i++;
+  PStringStream members;
+  PWaitAndSignal m(conference.GetMutex());
+  Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
+  Conference::MemberNameList::const_iterator s;
+  members << "members=[";
+  int i=0;
+  if(conference.pipeMember)
+  {
+    if(i!=0) members << ","; i++;
+      members << GetActiveMemberDataJS(conference.pipeMember);
   }
- }
- members << ");";
+//todo...
+/*
+  if(conference.recorderMember)
+  {
+    if(i!=0) members << ","; i++;
+      members << GetActiveMemberDataJS(conference.recorderMember);
+  }
+*/
+  for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
+  {
+    ConferenceMember * member = s->second;
+    if(i!=0) members << ","; i++;
+    if(member==NULL) // inactive member
+    {
+      PString username=s->first;
+      username.Replace("&","&amp;",TRUE,0);
+      username.Replace("\"","&quot;",TRUE,0);
+      members
+/* 0*/  << "[0"
+/* 1*/  << ",0"
+/* 2*/  << ",\"" << username << "\""
+/* 3*/  << ",0"
+/* 4*/  << ",0"
+/* 5*/  << ",0"
+/* 6*/  << ",0"
+/* 7*/  << ",0"
+/* 8*/  << ",\"" << MCUURL(s->first).GetMemberNameId() << "\""
+        << "]";
+    }
+    else // active member
+    {
+      members << GetActiveMemberDataJS(member);
+    }
+  }
+  members << "];";
 
- return members;
+  return members;
 }
 
 BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * member, unsigned newMixerNumber)

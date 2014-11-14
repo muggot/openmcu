@@ -139,13 +139,13 @@ void ConferenceManager::OnCreateConference(Conference * conference)
     monitor->AddMonitorEvent(new ConferenceTimeLimitInfo(conference->GetID(), PTime() + timeLimit*1000));
 
   if(MCUConfig("Export Parameters").GetBoolean("Enable export", TRUE) == TRUE)
-    new ConferencePipeMember(conference);
+    conference->pipeMember = new ConferencePipeMember(conference);
 
   // add file recorder member
-  if(!GetConferenceParam(conference->GetNumber(), RoomAllowRecordKey, TRUE))
-    return;
-
-  conference->conferenceRecorder = new ConferenceRecorder(conference);
+  if(GetConferenceParam(conference->GetNumber(), RoomAllowRecordKey, TRUE))
+  {
+    conference->conferenceRecorder = new ConferenceRecorder(conference);
+  }
 
   if(!conference->GetForceScreenSplit())
   { PTRACE(1,"Conference\tOnCreateConference: \"Force split screen video\" unchecked, " << conference->GetNumber() << " skipping members.conf"); return; }
@@ -264,8 +264,8 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
 #  endif
 #endif
 
-  //BOOL forceScreenSplit = GetConferenceParam(_number, ForceSplitVideoKey, TRUE);
-  BOOL forceScreenSplit = TRUE;
+  BOOL forceScreenSplit = GetConferenceParam(_number, ForceSplitVideoKey, TRUE);
+  //BOOL forceScreenSplit = TRUE;
 
   if(!forceScreenSplit)
   {
@@ -522,6 +522,7 @@ Conference::Conference(        ConferenceManager & _manager,
   conferenceRecorder = NULL;
   forceScreenSplit = GetConferenceParam(number, ForceSplitVideoKey, TRUE);
   lockedTemplate = GetConferenceParam(number, LockTemplateKey, FALSE);
+  pipeMember = NULL;
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 
@@ -728,19 +729,8 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   if(r != memberList.end())
     return FALSE;
 
-  if(forceScreenSplit == FALSE && memberToAdd->IsVisible())
-  {
-    VMLAdd(memberToAdd->videoMixer);
-    videoMixerListMutex.Wait();
-    if(!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd))
-      memberToAdd->SetFreezeVideo(TRUE);
-    videoMixerListMutex.Signal();
-    // refresh room control page
-    OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), GetNumber());
-    OpenMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()", GetNumber());
-  }
 #if MCU_VIDEO
-  else if(moderated==FALSE
+  if(moderated==FALSE
 #  if ENABLE_TEST_ROOMS
      || number=="testroom"
 #  endif
@@ -928,19 +918,8 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
       }
     }
 
-    if(forceScreenSplit == FALSE && memberToRemove->IsVisible())
-    {
-      VMLDel(memberToRemove->videoMixer);
-      memberToRemove->videoMixer = NULL;
-      videoMixerListMutex.Wait();
-      videoMixerList->mixer->RemoveVideoSource(userid, *memberToRemove);
-      videoMixerListMutex.Signal();
-      // refresh room control page
-      OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), GetNumber());
-      OpenMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()", GetNumber());
-    }
 #if MCU_VIDEO
-    else if (moderated==FALSE
+    if (moderated==FALSE
 #  if ENABLE_TEST_ROOMS
     || number == "testroom"
 #  endif

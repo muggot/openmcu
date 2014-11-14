@@ -103,6 +103,8 @@ class MCUH323EndPoint : public H323EndPoint
     PString GetMemberList(Conference & conference, ConferenceMemberId id);
     BOOL MemberExist(Conference & conference, ConferenceMemberId id);
     PString GetMemberListOpts(Conference & conference);
+    PString GetVideoMixerConfiguration(MCUVideoMixer * mixer);
+    PString GetActiveMemberDataJS(ConferenceMember * member);
     PString GetConferenceOptsJavascript(Conference & c);
     PString GetMemberListOptsJavascript(Conference & conference);
     void SetMemberListOpts(Conference & conference, const PStringToString & data);
