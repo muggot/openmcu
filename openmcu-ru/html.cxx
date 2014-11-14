@@ -2328,8 +2328,10 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   int width=atoi(data("w"));
   int height=atoi(data("h"));
 
-  unsigned requestedMixer=0;
-  if(data.Contains("mixer")) requestedMixer=(unsigned)data("mixer").AsInteger();
+  long requestedMixer=0;
+  if(data.Contains("mixer")) requestedMixer=data("mixer").AsInteger();
+
+  BOOL classicMCUMode=FALSE;
 
   const unsigned long t1=(unsigned long)time(0);
 
@@ -2342,13 +2344,33 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     Conference & conference = *(r->second);
     if(conference.GetNumber()==room)
     {
-      if(conference.videoMixerList==NULL){ app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal(); return FALSE; }
-      PWaitAndSignal m3(conference.videoMixerListMutex);
-      jpegMixer=conference.VMLFind(requestedMixer);
-      if(jpegMixer==NULL) { app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal(); return FALSE; }
-      if(t1-(jpegMixer->jpegTime)>1)
+      if(conference.videoMixerList) // muggot mode with caches and shared mixers
       {
-        if(width<1||height<1||width>2048||height>2048)
+        PWaitAndSignal m3(conference.videoMixerListMutex);
+        jpegMixer=conference.VMLFind((unsigned)requestedMixer);
+      }
+      else                          // classic MCU mode without caches and shared mixers
+      {
+        classicMCUMode=TRUE;
+        ConferenceMember * member;
+        conference.GetMutex().Wait(); // !!!LOCK!!! Just to keep in mind
+        Conference::MemberList & memberList = conference.GetMemberList();
+        Conference::MemberList::iterator r = memberList.find((ConferenceMemberId)requestedMixer);
+        if(r!=memberList.end()) member=r->second;
+        else member=conference.pipeMember;
+        if(member) jpegMixer=member->videoMixer; else jpegMixer=NULL;
+      }
+
+      if(jpegMixer==NULL) // no mixer found - unlock and return
+      {
+        if(classicMCUMode) conference.GetMutex().Signal();
+        app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
+        return FALSE;
+      }
+
+      if(t1-(jpegMixer->jpegTime)>1) // artificial limitation to prevent overload: no more than 1 frame per second
+      {
+        if(width<1||height<1||width>2048||height>2048) //suspicious, it's better to get size from layouts.conf
         { width=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_width;
           height=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_height;
         }
@@ -2406,6 +2428,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
       server.Write((const char*)message,message.GetLength());
       server.Write(jpegMixer->myjpeg.GetPointer(),jpegMixer->jpegSize);
 
+      if(classicMCUMode) conference.GetMutex().Signal();
       app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
       server.flush();
       return TRUE;

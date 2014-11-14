@@ -1225,7 +1225,7 @@ class Conference : public PObject
     virtual BOOL WriteMemberVideo(ConferenceMember * member, const void * buffer, int width, int height, PINDEX amount);
 
     virtual BOOL UseSameVideoForAllMembers()
-    { return forceScreenSplit == TRUE && videoMixerCount > 0; }
+    { return videoMixerCount > 0; }
 
     virtual MCUVideoMixer * GetVideoMixer(unsigned i) const
     { return VMLFind(i); }
@@ -1291,7 +1291,7 @@ class Conference : public PObject
       unsigned newIndex=0; // reordering index
       while (vmr!=NULL)
       { if (vmr->id==n)
-        { PTRACE(6,"MixerCtrl\tVMLDel(" << n << ") mixer record with vmr->id=" << vmr->id << "found, removing");
+        { PTRACE(6,"MixerCtrl\tVMLDel(" << n << ") mixer record with vmr->id=" << vmr->id << " found, removing");
           VideoMixerRecord * vmrprev = vmr->prev; VideoMixerRecord * vmrnext = vmr->next; // keep prev & next
           if(vmr->mixer!=NULL) { delete vmr->mixer; vmr->mixer=NULL; }
           if(videoMixerList==vmr)videoMixerList=vmrnext; // special case of deletion of mixer 0
@@ -1372,6 +1372,8 @@ class Conference : public PObject
 
     BOOL stopping;
     BOOL lockedTemplate;
+
+    ConferenceMember * pipeMember;
 
   protected:
     ConferenceManager & manager;
