@@ -2428,8 +2428,8 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
 
   server.Write((const char*)message,message.GetLength());
   server.Write(jpegMixer->myjpeg.GetPointer(),jpegMixer->jpegSize);
-
   server.flush();
+
   return TRUE;
 }
 #endif //#if USE_LIBJPEG
@@ -2481,54 +2481,52 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
 
 //PTRACE(1,"!!!!!\tsha1('123')=" << PMessageDigestSHA1::Encode("123")); // sha1 works!! I'll try with websocket in future
 
-  if(room!="")
+  Conference *conference = OpenMCU::Current().GetEndpoint().GetConferenceManager().FindConferenceWithLock(room);
+  if(conference)
   {
-    OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Wait();
-    ConferenceListType & conferenceList = OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceList();
-    ConferenceListType::iterator r;
-    for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
-    if(r != conferenceList.end() )
+    PStringStream conferenceOpts;
+    conferenceOpts
+        << "p." << OpenMCU::Current().GetEndpoint().GetMemberListOptsJavascript(*conference) << "\n"
+        << "p." << OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*conference) << "\n"
+        << "p.tl=Array" << conference->GetTemplateList() << "\n"
+        << "p.seltpl=\"" << conference->GetSelectedTemplateName() << "\"\n";
+
+    // unlock conferenceList
+    OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
+
+    message << "<script>p.splitdata=Array(";
+    for (unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
     {
-      Conference & conference = *(r->second);
-      message << "<script>p.splitdata=Array(";
-      for (unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
+      PString split=OpenMCU::vmcfg.vmconf[i].splitcfg.Id;
+      split.Replace("\"","\\x22",TRUE,0);
+      if(i!=0) message << ",";
+      message << "\"" << split << "\"";
+    }
+    message << ");\np.splitdata2={";
+    for (unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
+    {
+      PString split=OpenMCU::vmcfg.vmconf[i].splitcfg.Id;
+      split.Replace("\"","\\x22",TRUE,0);
+      message << "\"" << split << "\"" << ":[" << OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum;
+      for(unsigned j=0;j<OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum; j++)
       {
-        PString split=OpenMCU::vmcfg.vmconf[i].splitcfg.Id;
-        split.Replace("\"","\\x22",TRUE,0);
-        if(i!=0) message << ",";
-        message << "\"" << split << "\"";
+        VMPCfgOptions & vo=OpenMCU::vmcfg.vmconf[i].vmpcfg[j];
+        message << ",[" << vo.posx << "," << vo.posy << "," << vo.width << "," << vo.height << "," << vo.border << "," << vo.label_mask << "]";
       }
-      message << ");\np.splitdata2={";
-      for (unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
-      {
-        PString split=OpenMCU::vmcfg.vmconf[i].splitcfg.Id;
-        split.Replace("\"","\\x22",TRUE,0);
-        message << "\"" << split << "\"" << ":[" << OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum;
-        for(unsigned j=0;j<OpenMCU::vmcfg.vmconf[i].splitcfg.vidnum; j++)
-        {
-          VMPCfgOptions & vo=OpenMCU::vmcfg.vmconf[i].vmpcfg[j];
-          message << ",[" << vo.posx << "," << vo.posy << "," << vo.width << "," << vo.height << "," << vo.border << "," << vo.label_mask << "]";
-        }
-        message << "]";
-        if(i+1<OpenMCU::vmcfg.vmconfs) message << ",";
-      }
-      message << "};\n"
-        << "p." << OpenMCU::Current().GetEndpoint().GetMemberListOptsJavascript(conference) << "\n"
-        << "p." << OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(conference) << "\n"
-        << "p.tl=Array" << conference.GetTemplateList() << "\n"
-        << "p.seltpl=\"" << conference.GetSelectedTemplateName() << "\"\n"
+      message << "]";
+      if(i+1<OpenMCU::vmcfg.vmconfs) message << ",";
+    }
+    message << "};\n"
+        << conferenceOpts
         << "p.build_page();\n"
         << "</script>\n";
-    }
-    else
-    { // no (no more) room -- redirect to /
-      OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
-      message << "<script>top.location.href='/';</script>\n";
-      server.Write((const char*)message,message.GetLength());
-      server.flush();
-      return FALSE;
-    }
-    OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
+  }
+  else
+  { // no (no more) room -- redirect to /
+    message << "<script>top.location.href='/';</script>\n";
+    server.Write((const char*)message,message.GetLength());
+    server.flush();
+    return FALSE;
   }
 
   while(server.Write((const char*)message,message.GetLength())) {
