@@ -2364,7 +2364,8 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     jpegMixer = dynamic_cast<MCUSimpleVideoMixer *>(mixer);
     // lock mixer
     if(jpegMixer)
-      PWaitAndSignal m(jpegMixer->GetMutex());
+      PWaitAndSignal m(jpegMixer->GetDestructorMutex());
+      //PWaitAndSignal m(jpegMixer->GetMutex());
   }
 
   // unlock memberList

@@ -558,10 +558,15 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     MCUSimpleVideoMixer(BOOL forceScreenSplit = FALSE);
     virtual MCUVideoMixer * Clone() const
     { return new MCUSimpleVideoMixer(*this); }
-    ~MCUSimpleVideoMixer() { mutex.Wait(); PThread::Sleep(2); }
+
+    ~MCUSimpleVideoMixer()
+    { mutex.Wait(); destructorMutex.Wait(); PThread::Sleep(2); }
 
     PMutex & GetMutex()
     { return mutex; }
+
+    PMutex & GetDestructorMutex()
+    { return destructorMutex; }
 
     virtual BOOL ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount);
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount);
@@ -623,6 +628,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     BOOL ReadSrcFrame(VideoFrameStoreList & srcFrameStores, void * buffer, int width, int height, PINDEX & amount);
 
     PMutex mutex;
+    PMutex destructorMutex;
 
     VideoFrameStoreList frameStores;  // list of framestores for data
 
