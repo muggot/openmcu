@@ -560,6 +560,9 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     { return new MCUSimpleVideoMixer(*this); }
     ~MCUSimpleVideoMixer() { mutex.Wait(); PThread::Sleep(2); }
 
+    PMutex & GetMutex()
+    { return mutex; }
+
     virtual BOOL ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount);
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount);
 

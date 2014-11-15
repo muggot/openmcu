@@ -2282,7 +2282,7 @@ BOOL InvitePage::Post(PHTTPRequest & request,
 
 #if USE_LIBJPEG
 
-MCUVideoMixer* jpegMixer;
+MCUSimpleVideoMixer* jpegMixer;
 
 void jpeg_init_destination(j_compress_ptr cinfo){
   if(jpegMixer->myjpeg.GetSize()<32768)jpegMixer->myjpeg.SetSize(32768);
@@ -2341,30 +2341,43 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   if(!conference->videoMixerList)
     classicMCUMode = TRUE;
 
+  MCUVideoMixer *mixer = NULL;
+  jpegMixer = NULL;
   if(classicMCUMode == FALSE) // muggot mode with caches and shared mixers
   {
-    jpegMixer = conference->VMLFind((unsigned)requestedMixer);
+    mixer = conference->VMLFind((unsigned)requestedMixer);
+    if(mixer)
+    {
+      jpegMixer = dynamic_cast<MCUSimpleVideoMixer *>(mixer);
+      if(jpegMixer)
+        jpegMixer->GetMutex().Wait();
+    }
   }
   else                        // classic MCU mode without caches and shared mixers
   {
-    ConferenceMember * member = NULL;
-    conference->GetMutex().Wait(); // !!!LOCK!!! Just to keep in mind
+    // lock memberList
+    conference->GetMutex().Wait();
     Conference::MemberList & memberList = conference->GetMemberList();
     Conference::MemberList::iterator r = memberList.find((ConferenceMemberId)requestedMixer);
-    if(r!=memberList.end()) member=r->second;
-    else member=conference->pipeMember;
-    if(member) jpegMixer=member->videoMixer; else jpegMixer=NULL;
+    if(r != memberList.end() && r->second)
+      mixer = r->second->videoMixer;
+    else if(conference->pipeMember)
+      mixer = conference->pipeMember->videoMixer;
+    if(mixer)
+    {
+      jpegMixer = dynamic_cast<MCUSimpleVideoMixer *>(mixer);
+      if(jpegMixer)
+        jpegMixer->GetMutex().Wait();
+    }
+    // unlock memberList
+    conference->GetMutex().Signal();
   }
 
   // unlock conferenceList
   app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
 
-  if(jpegMixer==NULL) // no mixer found - unlock and return
-  {
-    // unlock memberList
-    if(classicMCUMode) conference->GetMutex().Signal();
+  if(jpegMixer == NULL) // no mixer found
     return FALSE;
-  }
 
   if(t1-(jpegMixer->jpegTime)>1) // artificial limitation to prevent overload: no more than 1 frame per second
   {
@@ -2410,8 +2423,8 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     jpegMixer->jpegTime=t1;
   }
 
-  // unlock memberList
-  if(classicMCUMode) conference->GetMutex().Signal();
+  // unlock mixer
+  jpegMixer->GetMutex().Signal();
 
   PTime now;
   PStringStream message;
