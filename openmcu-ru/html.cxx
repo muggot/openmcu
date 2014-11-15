@@ -2346,12 +2346,6 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   if(classicMCUMode == FALSE) // muggot mode with caches and shared mixers
   {
     mixer = conference->VMLFind((unsigned)requestedMixer);
-    if(mixer)
-    {
-      jpegMixer = dynamic_cast<MCUSimpleVideoMixer *>(mixer);
-      if(jpegMixer)
-        jpegMixer->GetMutex().Wait();
-    }
   }
   else                        // classic MCU mode without caches and shared mixers
   {
@@ -2363,15 +2357,19 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
       mixer = r->second->videoMixer;
     else if(conference->pipeMember)
       mixer = conference->pipeMember->videoMixer;
-    if(mixer)
-    {
-      jpegMixer = dynamic_cast<MCUSimpleVideoMixer *>(mixer);
-      if(jpegMixer)
-        jpegMixer->GetMutex().Wait();
-    }
-    // unlock memberList
-    conference->GetMutex().Signal();
   }
+
+  if(mixer)
+  {
+    jpegMixer = dynamic_cast<MCUSimpleVideoMixer *>(mixer);
+    // lock mixer
+    if(jpegMixer)
+      PWaitAndSignal m(jpegMixer->GetMutex());
+  }
+
+  // unlock memberList
+  if(classicMCUMode)
+    conference->GetMutex().Signal();
 
   // unlock conferenceList
   app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
@@ -2422,9 +2420,6 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     jpeg_destroy_compress(&cinfo);
     jpegMixer->jpegTime=t1;
   }
-
-  // unlock mixer
-  jpegMixer->GetMutex().Signal();
 
   PTime now;
   PStringStream message;
