@@ -2338,7 +2338,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     return FALSE;
 
   BOOL classicMCUMode = FALSE;
-  if(conference->videoMixerList)
+  if(!conference->videoMixerList)
     classicMCUMode = TRUE;
 
   if(classicMCUMode == FALSE) // muggot mode with caches and shared mixers
