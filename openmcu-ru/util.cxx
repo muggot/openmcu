@@ -633,7 +633,7 @@ BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap)
   // creating conference if needed
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
   ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-  Conference *conf = manager.MakeAndLockConference(requestedRoom);
+  Conference *conf = manager.MakeConferenceWithLock(requestedRoom);
   manager.UnlockConference();
 
   // starting new cache thread

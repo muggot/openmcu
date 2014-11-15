@@ -59,7 +59,7 @@ ConferenceManager::~ConferenceManager()
   delete monitor;
 }
 
-Conference * ConferenceManager::MakeAndLockConference(const PString & roomToCreate, const PString & name)
+Conference * ConferenceManager::MakeConferenceWithLock(const PString & roomToCreate, const PString & name)
 {
   PWaitAndSignal m(conferenceListMutex);
   OpalGloballyUniqueID conferenceID;
@@ -72,10 +72,10 @@ Conference * ConferenceManager::MakeAndLockConference(const PString & roomToCrea
     }
   }
 
-  return MakeAndLockConference(conferenceID, roomToCreate, name);
+  return MakeConferenceWithLock(conferenceID, roomToCreate, name);
 }
 
-BOOL ConferenceManager::CheckAndLockConference(Conference * c)
+BOOL ConferenceManager::CheckConferenceWithLock(Conference * c)
 {
   if(!c) return FALSE;
   conferenceListMutex.Wait();
@@ -100,7 +100,20 @@ Conference * ConferenceManager::FindConferenceWithLock(const PString & n)
   return NULL;
 }
 
-Conference * ConferenceManager::MakeAndLockConference(const OpalGloballyUniqueID & conferenceID, 
+Conference * ConferenceManager::FindConferenceWithoutLock(const PString & n)
+{
+  if(n.IsEmpty())
+    return NULL;
+  PWaitAndSignal m(conferenceListMutex);
+  for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  {
+    if(r->second->GetNumber() == n)
+      return r->second;
+  }
+  return NULL;
+}
+
+Conference * ConferenceManager::MakeConferenceWithLock(const OpalGloballyUniqueID & conferenceID, 
                                                                    const PString & roomToCreate, 
                                                                    const PString & name)
 {

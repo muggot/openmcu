@@ -452,7 +452,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
       PString roomname = sect[i].Right(sect[i].GetLength()-sectionPrefix.GetLength());
       if(GetConferenceParam(roomname, RoomAutoCreateKey, FALSE) && !GetConferenceParam(roomname, RoomAutoDeleteEmptyKey, FALSE))
       {
-        manager->MakeAndLockConference(roomname);
+        manager->MakeConferenceWithLock(roomname);
         manager->UnlockConference();
       }
     }

@@ -1499,19 +1499,15 @@ class ConferenceManager : public PObject
     ConferenceManager();
     ~ConferenceManager();
 
-    /**
-     * Make a new conference with the specified conference ID, number and name
-     */
-    Conference * MakeAndLockConference(const OpalGloballyUniqueID & conferenceID, const PString & number, const PString & name);
-    BOOL CheckAndLockConference(Conference * c);
     Conference * FindConferenceWithLock(const PString & n);
+    Conference * FindConferenceWithoutLock(const PString & n);
 
-    /**
-     * Make a new conference with the specified number and name, and use a new conference ID
-     */
-    Conference * MakeAndLockConference(const PString & number, const PString & name);
-    Conference * MakeAndLockConference(const PString & number)
-    { return MakeAndLockConference(number, PString::Empty()); }
+    Conference * MakeConferenceWithLock(const OpalGloballyUniqueID & conferenceID, const PString & number, const PString & name);
+    Conference * MakeConferenceWithLock(const PString & number, const PString & name);
+    Conference * MakeConferenceWithLock(const PString & number)
+    { return MakeConferenceWithLock(number, PString::Empty()); }
+
+    BOOL CheckConferenceWithLock(Conference * c);
 
     void UnlockConference()
     { conferenceListMutex.Signal(); }

@@ -2331,111 +2331,106 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   long requestedMixer=0;
   if(data.Contains("mixer")) requestedMixer=data("mixer").AsInteger();
 
-  BOOL classicMCUMode=FALSE;
-
   const unsigned long t1=(unsigned long)time(0);
 
-//  PWaitAndSignal m(mutex); // no more required: the following mutex will do the same:
-  app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Wait(); // fix it - browse read cause access_v on serv. stop
+  Conference *conference = app.GetEndpoint().GetConferenceManager().FindConferenceWithLock(room);
+  if(conference == NULL)
+    return FALSE;
 
-  ConferenceListType & conferenceList = app.GetEndpoint().GetConferenceManager().GetConferenceList();
-  for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  BOOL classicMCUMode = FALSE;
+  if(conference->videoMixerList)
+    classicMCUMode = TRUE;
+
+  if(classicMCUMode == FALSE) // muggot mode with caches and shared mixers
   {
-    Conference & conference = *(r->second);
-    if(conference.GetNumber()==room)
-    {
-      if(conference.videoMixerList) // muggot mode with caches and shared mixers
-      {
-        PWaitAndSignal m3(conference.videoMixerListMutex);
-        jpegMixer=conference.VMLFind((unsigned)requestedMixer);
-      }
-      else                          // classic MCU mode without caches and shared mixers
-      {
-        classicMCUMode=TRUE;
-        ConferenceMember * member;
-        conference.GetMutex().Wait(); // !!!LOCK!!! Just to keep in mind
-        Conference::MemberList & memberList = conference.GetMemberList();
-        Conference::MemberList::iterator r = memberList.find((ConferenceMemberId)requestedMixer);
-        if(r!=memberList.end()) member=r->second;
-        else member=conference.pipeMember;
-        if(member) jpegMixer=member->videoMixer; else jpegMixer=NULL;
-      }
-
-      if(jpegMixer==NULL) // no mixer found - unlock and return
-      {
-        if(classicMCUMode) conference.GetMutex().Signal();
-        app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
-        return FALSE;
-      }
-
-      if(t1-(jpegMixer->jpegTime)>1) // artificial limitation to prevent overload: no more than 1 frame per second
-      {
-        if(width<1||height<1||width>2048||height>2048) //suspicious, it's better to get size from layouts.conf
-        { width=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_width;
-          height=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_height;
-        }
-        struct jpeg_compress_struct cinfo; struct jpeg_error_mgr jerr;
-        JSAMPROW row_pointer[1];
-        int row_stride;
-        cinfo.err = jpeg_std_error(&jerr);
-        jpeg_create_compress(&cinfo);
-        cinfo.image_width = width;
-        cinfo.image_height = height;
-        cinfo.input_components = 3;
-        cinfo.in_color_space = JCS_RGB;
-
-        PINDEX amount=width*height*3/2;
-        unsigned char *videoData=new unsigned char[amount];
-
-        ((MCUSimpleVideoMixer*)jpegMixer)->ReadMixedFrame((void*)videoData,width,height,amount);
-        PColourConverter * converter = PColourConverter::Create("YUV420P", "RGB24", width, height);
-        converter->SetDstFrameSize(width, height);
-        unsigned char * bitmap = new unsigned char[width*height*3];
-        converter->Convert(videoData,bitmap);
-        delete converter;
-        delete[] videoData;
-
-        jpeg_set_defaults(&cinfo);
-        cinfo.dest = new jpeg_destination_mgr;
-        cinfo.dest->init_destination = &jpeg_init_destination;
-        cinfo.dest->empty_output_buffer = &jpeg_empty_output_buffer;
-        cinfo.dest->term_destination = &jpeg_term_destination;
-        jpeg_start_compress(&cinfo,TRUE);
-        row_stride = cinfo.image_width * 3;
-        while (cinfo.next_scanline < cinfo.image_height)
-        { row_pointer[0] = (JSAMPLE *) & bitmap [cinfo.next_scanline * row_stride];
-          (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
-        }
-        jpeg_finish_compress(&cinfo);
-        delete[] bitmap; delete cinfo.dest; cinfo.dest=NULL;
-        jpeg_destroy_compress(&cinfo);
-        jpegMixer->jpegTime=t1;
-      }
-
-      PTime now;
-      PStringStream message;
-      message << "HTTP/1.1 200 OK\r\n"
-              << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-              << "Server: OpenMCU-ru\r\n"
-              << "MIME-Version: 1.0\r\n"
-              << "Cache-Control: no-cache, must-revalidate\r\n"
-              << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
-              << "Content-Type: image/jpeg\r\n"
-              << "Content-Length: " << jpegMixer->jpegSize << "\r\n"
-              << "Connection: Close\r\n"
-              << "\r\n";  //that's the last time we need to type \r\n instead of just \n
-
-      server.Write((const char*)message,message.GetLength());
-      server.Write(jpegMixer->myjpeg.GetPointer(),jpegMixer->jpegSize);
-
-      if(classicMCUMode) conference.GetMutex().Signal();
-      app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
-      server.flush();
-      return TRUE;
-    }
+    jpegMixer = conference->VMLFind((unsigned)requestedMixer);
   }
+  else                        // classic MCU mode without caches and shared mixers
+  {
+    ConferenceMember * member = NULL;
+    conference->GetMutex().Wait(); // !!!LOCK!!! Just to keep in mind
+    Conference::MemberList & memberList = conference->GetMemberList();
+    Conference::MemberList::iterator r = memberList.find((ConferenceMemberId)requestedMixer);
+    if(r!=memberList.end()) member=r->second;
+    else member=conference->pipeMember;
+    if(member) jpegMixer=member->videoMixer; else jpegMixer=NULL;
+  }
+
+  // unlock conferenceList
   app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
-  return FALSE;
+
+  if(jpegMixer==NULL) // no mixer found - unlock and return
+  {
+    // unlock memberList
+    if(classicMCUMode) conference->GetMutex().Signal();
+    return FALSE;
+  }
+
+  if(t1-(jpegMixer->jpegTime)>1) // artificial limitation to prevent overload: no more than 1 frame per second
+  {
+    if(width<1||height<1||width>2048||height>2048) //suspicious, it's better to get size from layouts.conf
+    { width=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_width;
+      height=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_height;
+    }
+    struct jpeg_compress_struct cinfo; struct jpeg_error_mgr jerr;
+    JSAMPROW row_pointer[1];
+    int row_stride;
+    cinfo.err = jpeg_std_error(&jerr);
+    jpeg_create_compress(&cinfo);
+    cinfo.image_width = width;
+    cinfo.image_height = height;
+    cinfo.input_components = 3;
+    cinfo.in_color_space = JCS_RGB;
+
+    PINDEX amount=width*height*3/2;
+    unsigned char *videoData=new unsigned char[amount];
+
+    ((MCUSimpleVideoMixer*)jpegMixer)->ReadMixedFrame((void*)videoData,width,height,amount);
+    PColourConverter * converter = PColourConverter::Create("YUV420P", "RGB24", width, height);
+    converter->SetDstFrameSize(width, height);
+    unsigned char * bitmap = new unsigned char[width*height*3];
+    converter->Convert(videoData,bitmap);
+    delete converter;
+    delete[] videoData;
+
+    jpeg_set_defaults(&cinfo);
+    cinfo.dest = new jpeg_destination_mgr;
+    cinfo.dest->init_destination = &jpeg_init_destination;
+    cinfo.dest->empty_output_buffer = &jpeg_empty_output_buffer;
+    cinfo.dest->term_destination = &jpeg_term_destination;
+    jpeg_start_compress(&cinfo,TRUE);
+    row_stride = cinfo.image_width * 3;
+    while (cinfo.next_scanline < cinfo.image_height)
+    { row_pointer[0] = (JSAMPLE *) & bitmap [cinfo.next_scanline * row_stride];
+      (void) jpeg_write_scanlines(&cinfo, row_pointer, 1);
+    }
+    jpeg_finish_compress(&cinfo);
+    delete[] bitmap; delete cinfo.dest; cinfo.dest=NULL;
+    jpeg_destroy_compress(&cinfo);
+    jpegMixer->jpegTime=t1;
+  }
+
+  // unlock memberList
+  if(classicMCUMode) conference->GetMutex().Signal();
+
+  PTime now;
+  PStringStream message;
+  message << "HTTP/1.1 200 OK\r\n"
+          << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
+          << "Server: OpenMCU-ru\r\n"
+          << "MIME-Version: 1.0\r\n"
+          << "Cache-Control: no-cache, must-revalidate\r\n"
+          << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
+          << "Content-Type: image/jpeg\r\n"
+          << "Content-Length: " << jpegMixer->jpegSize << "\r\n"
+          << "Connection: Close\r\n"
+          << "\r\n";  //that's the last time we need to type \r\n instead of just \n
+
+  server.Write((const char*)message,message.GetLength());
+  server.Write(jpegMixer->myjpeg.GetPointer(),jpegMixer->jpegSize);
+
+  server.flush();
+  return TRUE;
 }
 #endif //#if USE_LIBJPEG
 
@@ -2583,7 +2578,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PString room = data("room");
     if(action == "create")
     {
-      cm.MakeAndLockConference(room);
+      cm.MakeConferenceWithLock(room);
       cm.UnlockConference();
     }
     else if(action == "delete")

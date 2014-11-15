@@ -115,7 +115,7 @@ class MCUH323EndPoint : public H323EndPoint
     PString GetRoomList(const PString & block);
     PString SetRoomParams(const PStringToString & data);
     void UnmoderateConference(Conference & conference);
-    PString RoomCtrlPage(const PString room, BOOL ctrl, int n, Conference & conference, ConferenceMemberId *idp);
+    PString RoomCtrlPage(const PString room);
     PString GetMonitorText();
 
     ConferenceManager & GetConferenceManager()

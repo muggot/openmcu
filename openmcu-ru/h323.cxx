@@ -1884,34 +1884,34 @@ void MCUH323EndPoint::OfflineMembersManager(Conference & conference,const PStrin
 PString MCUH323EndPoint::GetRoomList(const PString & block)
 {
   PString substitution;
-  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
-  ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-
   PString insert = block;
   PStringStream members;
   members << "<input name='room' id='room' type=hidden>";
-  ConferenceListType::iterator r;
-  for (r = conferenceList.begin(); r != conferenceList.end(); ++r)
+
+  conferenceManager.GetConferenceListMutex().Wait();
+  ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
+  for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
   {
-    Conference & conference = *(r->second);
-    PString roomNumber = conference.GetNumber();
+    Conference *conference = r->second;
+    PString roomNumber = conference->GetNumber();
     // make a copy of the repeating html chunk
     members << "<span class=\"btn btn-large";
-    if(conference.IsModerated()=="+") members << " btn-success";
+    if(conference->IsModerated()=="+") members << " btn-success";
     else members << " btn-primary";
     members << "\" onclick='document.getElementById(\"room\").value=\"" << roomNumber << "\";document.forms[0].submit();'>"
-            << roomNumber << " " << conference.IsModerated() << " " << conference.GetVisibleMemberCount()
+            << roomNumber << " " << conference->IsModerated() << " " << conference->GetVisibleMemberCount()
 	    << "</span>";
   }
+  conferenceManager.GetConferenceListMutex().Signal();
+
   members << "";
   SpliceMacro(insert, "List", members);
   substitution += insert;
   return substitution;
 }
 
-PString MCUH323EndPoint::RoomCtrlPage(const PString room, BOOL ctrl, int n, Conference & conference, ConferenceMemberId *idp)
+PString MCUH323EndPoint::RoomCtrlPage(const PString room)
 {
-// int i,j;
  PStringStream page;
 
  BeginPage(page,"Room Control","window.l_control","window.l_info_control");
@@ -1983,40 +1983,23 @@ PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
   if(data.Contains("refresh")) // JavaScript data refreshing
   {
     PTRACE(6,"WebCtrl\tJS refresh");
-    ConferenceListType::iterator r;
-    PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
-    ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-    for (r = conferenceList.begin(); r != conferenceList.end(); ++r) if(r->second->GetNumber() == room) break;
-    if(r == conferenceList.end() ) return "";
-    Conference & conference = *(r->second);
-    return GetMemberListOptsJavascript(conference);
+    Conference *conference = conferenceManager.FindConferenceWithLock(room);
+    if(conference == NULL)
+      return "";
+
+    PString data = GetMemberListOptsJavascript(*conference);
+    conferenceManager.UnlockConference();
+    return data;
   }
 
   OpenMCU::Current().HttpWriteEventRoom("MCU Operator connected",room);
   PTRACE(6,"WebCtrl\tOperator connected");
 
-  Conference *conference = conferenceManager.FindConferenceWithLock(room);
+  Conference *conference = conferenceManager.FindConferenceWithoutLock(room);
   if(conference == NULL)
     return "OpenMCU-ru: Bad room";
 
-  ConferenceMemberId idr[100];
-  int positionSet = 0;
-
-  // не используется
-  /*
-  if(conference->GetForceScreenSplit())
-  {
-    MCUVideoMixer * mixer = conference->videoMixerList->mixer;
-    for(int i=0;i<100;i++)
-      idr[i]=mixer->GetPositionId(i);
-    positionSet = mixer->GetPositionSet();
-  }
-  */
-
-  // unlock - RoomCtrlPage не использует conference
-  conferenceManager.UnlockConference();
-
-  return RoomCtrlPage(room, conference->IsModerated()=="+", positionSet, *conference, idr);
+  return RoomCtrlPage(room);
 }
 
 PString MCUH323EndPoint::GetMonitorText()
@@ -2465,7 +2448,7 @@ class TplCleanCheckThread : public PThread
       PThread::Sleep(6000); // previous connection may still be actvie
       if(c!=NULL)
       {
-        if(OpenMCU::Current().GetEndpoint().GetConferenceManager().CheckAndLockConference(c))
+        if(OpenMCU::Current().GetEndpoint().GetConferenceManager().CheckConferenceWithLock(c))
         {
           c->OnConnectionClean(n, a);
           OpenMCU::Current().GetEndpoint().GetConferenceManager().UnlockConference();
@@ -2551,7 +2534,7 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
 
   // create or join the conference
   ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-  conference = manager.MakeAndLockConference(roomToJoin);
+  conference = manager.MakeConferenceWithLock(roomToJoin);
   if(!conference)
     return;
 
@@ -2991,7 +2974,7 @@ void MCUH323Connection::OpenAudioCache(H323AudioCodec & codec)
   {
     MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
     ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-    conf = manager.MakeAndLockConference(requestedRoom); // creating conference if needed
+    conf = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
     manager.UnlockConference();
   }
 
@@ -3007,7 +2990,7 @@ void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
   {
     MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
     ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-    conf = manager.MakeAndLockConference(requestedRoom); // creating conference if needed
+    conf = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
     manager.UnlockConference();
   }
 
