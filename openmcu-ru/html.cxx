@@ -692,7 +692,7 @@ ExportPConfigPage::ExportPConfigPage(PHTTPServiceProcess & app,const PString & t
 
   s << BoolField("RESTORE DEFAULTS", FALSE);
 
-  s << BoolField("Enable export", cfg.GetBoolean("Enable export", TRUE));
+  s << BoolField("Enable export", cfg.GetBoolean("Enable export", FALSE));
   s << IntegerField(VideoFrameWidthKey, cfg.GetInteger(VideoFrameWidthKey, 704), 176, 1920);
   s << IntegerField(VideoFrameHeightKey, cfg.GetInteger(VideoFrameHeightKey, 576), 144, 1152);
   s << IntegerField(VideoFrameRateKey, cfg.GetInteger(VideoFrameRateKey, 10), 1, 30);
