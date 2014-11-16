@@ -1522,6 +1522,15 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
   sect = cfg.GetSectionsPrefix(sectionPrefix);
   /////////////////////////////////////////
 
+  // пустая строка
+  PString name = "empty";
+  s << NewRowInput(name, 150);
+  s << BoolItem(name, FALSE);
+  s << StringItem(name, OpenMCU::Current().GetDefaultRoomName(), 120);
+  s << StringItem(name, "", 120);
+  s << StringItem(name, "", 120);
+  s << SelectItem(name, "600", "60,120,180,240,300,600,1200,1800,2400,3000,3600", 120);
+
   for(PINDEX i = 0; i < sect.GetSize(); i++)
   {
     MCUConfig scfg(sect[i]);
@@ -1547,16 +1556,6 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
     else        s << PasswordItem(name, password, 120, TRUE);
     if(!enable) s << SelectItem(name, expires, "60,120,180,240,300,600,1200,1800,2400,3000,3600", 120);
     else        s << SelectItem(name, expires, expires /* readonly */, 120);
-  }
-  if(sect.GetSize() == 0)
-  {
-    PString name = "empty";
-    s << NewRowInput(name, 150);
-    s << BoolItem(name, FALSE);
-    s << StringItem(name, OpenMCU::Current().GetDefaultRoomName(), 120);
-    s << StringItem(name, "", 120);
-    s << StringItem(name, "", 120);
-    s << SelectItem(name, "600", "60,120,180,240,300,600,1200,1800,2400,3000,3600", 120);
   }
   s << EndTable();
 

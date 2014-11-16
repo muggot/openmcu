@@ -22,7 +22,7 @@ class TablePConfigPage : public PConfigPage
       firstEditRow = 1;
       firstDeleteRow = 1;
       tableId = 0;
-      buttonUp = buttonDown = buttonClone = buttonDelete = 0;
+      buttonUp = buttonDown = buttonClone = buttonDelete = FALSE;
       colStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-right:inherit;";
       rowStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
       rowFieldStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;width:300px;'>";
@@ -220,7 +220,7 @@ class TablePConfigPage : public PConfigPage
      PString s = Row();
      s += rowStyle+"<input onkeyup='"+filter+"' onchange='"+filter+"' type='text' name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
      if(!readonly) s += "></input>"; else s += "readonly></input>";
-     if(!readonly) s += buttons();
+     if(!readonly) s += buttons(); else s += buttons(TRUE, TRUE, FALSE, FALSE);
      s += "</td>";
      return s;
    }
@@ -321,8 +321,13 @@ class TablePConfigPage : public PConfigPage
      if(width == 0) width = 90;
      if(id == "") id = GetTableId();
      PStringArray data = values.Tokenise(",");
+
+     PString readonly;
+     if(value == values)
+        readonly = "readonly";
+
      PString s = "<input name='TABLEID' value='"+id+"' type='hidden'>"
-                 +itemStyle+"<select id='"+id+"' name='"+name+"' onchange='"+onchange+"' style='width:"+PString(width)+"px;"+selectStyle+"'>";
+                 +itemStyle+"<select id='"+id+"' name='"+name+"' "+readonly+" onchange='"+onchange+"' style='width:"+PString(width)+"px;"+selectStyle+"'>";
      for(PINDEX i = 0; i < data.GetSize(); i++)
      {
        if(data[i] == value) s += "<option selected value='"+data[i]+"'>"+data[i]+"</option>";
@@ -394,13 +399,13 @@ class TablePConfigPage : public PConfigPage
    {
      return "<script type='text/javascript'>document.write(window.l_"+token+");</script>";
    }
-   PString buttons()
+   PString buttons(BOOL _buttonUp = TRUE, BOOL _buttonDown = TRUE, BOOL _buttonClone = TRUE, BOOL _buttonDelete = TRUE)
    {
      PString s;
-     if(buttonUp) s += "<input type=button value='↑' onClick='rowUp(this,"+PString(firstEditRow)+")' style='"+buttonStyle+"'>";
-     if(buttonDown) s += "<input type=button value='↓' onClick='rowDown(this)' style='"+buttonStyle+"'>";
-     if(buttonClone) s += "<input type=button value='+' onClick='rowClone(this)' style='"+buttonStyle+"'>";
-     if(buttonDelete) s += "<input type=button value='-' onClick='rowDelete(this,"+PString(firstDeleteRow)+")' style='"+buttonStyle+"'>";
+     if(buttonUp && _buttonUp) s += "<input type=button value='↑' onClick='rowUp(this,"+PString(firstEditRow)+")' style='"+buttonStyle+"'>";
+     if(buttonDown && _buttonDown) s += "<input type=button value='↓' onClick='rowDown(this)' style='"+buttonStyle+"'>";
+     if(buttonClone && _buttonClone) s += "<input type=button value='+' onClick='rowClone(this)' style='"+buttonStyle+"'>";
+     if(buttonDelete && _buttonDelete) s += "<input type=button value='-' onClick='rowDelete(this,"+PString(firstDeleteRow)+")' style='"+buttonStyle+"'>";
      return s;
    }
    PString passwordCrypt(PString pass)
@@ -464,7 +469,6 @@ class TablePConfigPage : public PConfigPage
      PStringArray entityData = connectInfo.GetEntityBody().Tokenise("&");
      PString itemId, curKey, saveKey, saveValue;
      PINDEX num = 0;
-
      for(PINDEX i = 0; i < entityData.GetSize(); i++)
      {
        PString item = PURL::UntranslateString(entityData[i], PURL::QueryTranslation);
@@ -502,12 +506,10 @@ class TablePConfigPage : public PConfigPage
        {
          // save data
          if(saveKey != "")
-         {
            SaveData(saveKey, saveValue);
-           saveValue = "";
-         }
          // next save key
          saveKey = value;
+         saveValue = "";
          num = 1;
          continue;
        }
@@ -528,7 +530,8 @@ class TablePConfigPage : public PConfigPage
        num++;
      }
      // save the latest data
-     SaveData(saveKey, saveValue);
+     if(saveKey != "")
+       SaveData(saveKey, saveValue);
      //
      PHTTPConfig::OnPOST(server, url, info, data, connectInfo);
      return TRUE;
@@ -547,7 +550,7 @@ class TablePConfigPage : public PConfigPage
    MCUStringDictionary dataDict;
    PString columnColor, rowColor, itemColor, itemInfoColor;
    int firstEditRow, firstDeleteRow;
-   int buttonUp, buttonDown, buttonClone, buttonDelete;
+   BOOL buttonUp, buttonDown, buttonClone, buttonDelete;
    int tableId;
    PStringToString passwordFields;
    PString javascript;
