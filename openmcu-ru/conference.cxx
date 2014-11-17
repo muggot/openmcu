@@ -205,7 +205,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   conference->StopRecorder();
 
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", disconnect remote endpoints");
-  conference->GetMutex().Wait();
+  conference->GetMemberListMutex().Wait();
   for(Conference::MemberList::iterator r = conference->GetMemberList().begin(); r != conference->GetMemberList().end(); ++r)
   {
     ConferenceMember * member = r->second;
@@ -216,7 +216,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
         member->Close();
     }
   }
-  conference->GetMutex().Signal();
+  conference->GetMemberListMutex().Signal();
 
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(2,'" + jsName + "')", number);
 
@@ -229,7 +229,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", remove pipes and caches");
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(3,'" + jsName + "')", number);
-  conference->GetMutex().Wait();
+  conference->GetMemberListMutex().Wait();
   for(Conference::MemberList::iterator r = conference->GetMemberList().begin(); r != conference->GetMemberList().end(); ++r)
   {
     ConferenceMember * member = r->second;
@@ -246,7 +246,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   if(conference->conferenceRecorder)
     delete conference->conferenceRecorder;
 
-  conference->GetMutex().Signal();
+  conference->GetMemberListMutex().Signal();
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(5,'" + jsName + "')", number);
 }
 

@@ -1137,7 +1137,7 @@ class Conference : public PObject
 
     ~Conference();
 
-    PMutex & GetMutex()
+    PMutex & GetMemberListMutex()
     { return memberListMutex; }
 
     ConferenceManager & GetManager()

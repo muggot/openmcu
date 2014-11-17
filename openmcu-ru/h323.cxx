@@ -546,7 +546,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
   for (ConferenceListType::iterator r=conferenceList.begin(), re=conferenceList.end(); r!=re; ++r)
   { Conference & conference = *(r->second);
     PStringStream c;
-    { PWaitAndSignal m(conference.GetMutex());
+    { PWaitAndSignal m(conference.GetMemberListMutex());
       Conference::MemberList & memberList = conference.GetMemberList();
       Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
       c << "Array("
@@ -746,7 +746,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
     size_t memberNameListSize = 0;
     PStringArray targets, subses, errors;
 
-    { PWaitAndSignal m(conference.GetMutex());
+    { PWaitAndSignal m(conference.GetMemberListMutex());
       Conference::MemberList & memberList = conference.GetMemberList();
       for (Conference::MemberList::const_iterator t = memberList.begin(); t != memberList.end(); ++t) 
       { ConferenceMember * member = t->second;
@@ -915,7 +915,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
 PString MCUH323EndPoint::GetMemberList(Conference & conference, ConferenceMemberId id)
 {
  PStringStream members;
- PWaitAndSignal m(conference.GetMutex());
+ PWaitAndSignal m(conference.GetMemberListMutex());
  Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
  Conference::MemberNameList::const_iterator s;
  members << "<option value=\"0\"></option>";
@@ -940,7 +940,7 @@ PString MCUH323EndPoint::GetMemberList(Conference & conference, ConferenceMember
 
 BOOL MCUH323EndPoint::MemberExist(Conference & conference, ConferenceMemberId id)
 {
- PWaitAndSignal m(conference.GetMutex());
+ PWaitAndSignal m(conference.GetMemberListMutex());
  Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
  Conference::MemberNameList::const_iterator s;
  for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
@@ -957,7 +957,7 @@ PString MCUH323EndPoint::GetMemberListOpts(Conference & conference)
 {
  PStringStream members;
 // size_t memberListSize = 0;
- PWaitAndSignal m(conference.GetMutex());
+ PWaitAndSignal m(conference.GetMemberListMutex());
  Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
  Conference::MemberNameList::const_iterator s;
  members << "<table class=\"table table-striped table-bordered table-condensed\"><tr><td valign=top style='padding-left:12px'>";
@@ -1136,7 +1136,7 @@ PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
 PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 {
   PStringStream members;
-  PWaitAndSignal m(conference.GetMutex());
+  PWaitAndSignal m(conference.GetMemberListMutex());
   Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
   Conference::MemberNameList::const_iterator s;
   members << "members=[";
@@ -1384,7 +1384,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   if(action == OTFC_DROP_ALL_ACTIVE_MEMBERS)
   {
     conferenceManager.UnlockConference();
-    PWaitAndSignal m(conference->GetMutex());
+    PWaitAndSignal m(conference->GetMemberListMutex());
     Conference::MemberList & memberList = conference->GetMemberList();
     for(Conference::MemberList::iterator r = memberList.begin(); r != memberList.end(); ++r)
     {
@@ -1401,7 +1401,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   {
     conferenceManager.UnlockConference();
     BOOL newValue = (action==OTFC_MUTE_ALL);
-    PWaitAndSignal m(conference->GetMutex());
+    PWaitAndSignal m(conference->GetMemberListMutex());
     Conference::MemberList & memberList = conference->GetMemberList();
     for(Conference::MemberList::iterator r = memberList.begin(); r != memberList.end(); ++r)
     {
@@ -1780,7 +1780,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     conference->PutChosenVan();
 #if 1 // DISABLING VAD WILL CAUSE MEMBER REMOVAL FROM VAD POSITIONS
     {
-      PWaitAndSignal m(conference->GetMutex());
+      PWaitAndSignal m(conference->GetMemberListMutex());
       ConferenceMemberId id = member->GetID();
       if(conference->videoMixerList)
       {
@@ -1840,7 +1840,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
 
 void MCUH323EndPoint::SetMemberListOpts(Conference & conference,const PStringToString & data)
 {
- PWaitAndSignal m(conference.GetMutex());
+ PWaitAndSignal m(conference.GetMemberListMutex());
  Conference::MemberList & memberList = conference.GetMemberList();
  Conference::MemberList::const_iterator s;
  for (s = memberList.begin(); s != memberList.end(); ++s) 
@@ -1908,7 +1908,7 @@ void MCUH323EndPoint::SetMemberListOpts(Conference & conference,const PStringToS
 
 void MCUH323EndPoint::OfflineMembersManager(Conference & conference,const PStringToString & data)
 {
- PWaitAndSignal m(conference.GetMutex());
+ PWaitAndSignal m(conference.GetMemberListMutex());
  Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
  Conference::MemberNameList::const_iterator s;
  PString iall = data("iALL");
@@ -2009,7 +2009,7 @@ void MCUH323EndPoint::UnmoderateConference(Conference & conference)
   mixer->MyRemoveAllVideoSource();
   conference.videoMixerListMutex.Signal();
 
-  conference.GetMutex().Wait();
+  conference.GetMemberListMutex().Wait();
   Conference::MemberList & memberList = conference.GetMemberList();
   Conference::MemberList::const_iterator s;
   for (s = memberList.begin(); s != memberList.end(); ++s) 
@@ -2020,7 +2020,7 @@ void MCUH323EndPoint::UnmoderateConference(Conference & conference)
     if(mixer->AddVideoSource(member->GetID(), *member)) member->SetFreezeVideo(FALSE);
     else member->SetFreezeVideo(TRUE);
   }
-  conference.GetMutex().Signal();
+  conference.GetMemberListMutex().Signal();
 
   conference.videoMixerListMutex.Wait();
   while(conference.videoMixerCount>1) conference.VMLDel(conference.videoMixerCount-1);

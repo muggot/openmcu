@@ -2350,7 +2350,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   else                        // classic MCU mode without caches and shared mixers
   {
     // lock memberList
-    conference->GetMutex().Wait();
+    conference->GetMemberListMutex().Wait();
     Conference::MemberList & memberList = conference->GetMemberList();
     Conference::MemberList::iterator r = memberList.find((ConferenceMemberId)requestedMixer);
     if(r != memberList.end() && r->second)
@@ -2370,7 +2370,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
 
   // unlock memberList
   if(classicMCUMode)
-    conference->GetMutex().Signal();
+    conference->GetMemberListMutex().Signal();
 
   // unlock conferenceList
   app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
