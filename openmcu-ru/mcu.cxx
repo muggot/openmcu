@@ -435,15 +435,20 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   }
 
   // set up the HTTP port for listening & start the first HTTP thread
-  if (ListenForHTTP((WORD)cfg.GetInteger(HttpPortKey, DefaultHTTPPort)))
-    PSYSTEMLOG(Info, "Opened master socket for HTTP: " << httpListeningSocket->GetPort());
-  else {
-    PSYSTEMLOG(Fatal, "Cannot run without HTTP port: " << httpListeningSocket->GetErrorText());
+  PString ip = cfg.GetString(HttpIPKey, "0.0.0.0");
+  WORD port = cfg.GetInteger(HttpPortKey, DefaultHTTPPort);
+  if(MCUListenForHTTP(ip, port))
+  {
+    PSYSTEMLOG(Info, "Opened master socket for HTTP: " << ip << ":" << port);
+    PTRACE(0, "Opened master socket for HTTP: " << ip << ":" << port);
+  } else {
+    PSYSTEMLOG(Fatal, "Failed open master socket: " <<  ip << ":" << port << " " << httpListeningSocket->GetErrorText());
+    PTRACE(0, "Failed open master socket: " <<  ip << ":" << port << " " << httpListeningSocket->GetErrorText());
     return FALSE;
   }
 
-  PStringList sect = cfg.GetSections();
   // auto create
+  PStringList sect = cfg.GetSections();
   PString sectionPrefix = "Conference ";
   for(PINDEX i = 0; i < sect.GetSize(); i++)
   {
@@ -545,10 +550,76 @@ void OpenMCU::LogMessageHTML(PString str)
   LogMessage(str2);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL OpenMCU::MCUListenForHTTP(const PString & ip, unsigned port)
+{
+  PSocket::Reusability reuse = PSocket::CanReuseAddress;
+  PINDEX stackSize = 0x4000;
+
+  MCUShutdownListener();
+
+  PIPSocket::Address address(ip);
+  PTCPSocket *listener = new PTCPSocket(port);
+
+  if(!listener->Listen(address, 5, 0, reuse))
+  {
+    PTRACE(0, "OpenMCU\tListen on address " << ip << ":" << port << " failed: " << listener->GetErrorText());
+    return FALSE;
+  }
+
+  httpListeningSocket = PAssertNULL(listener);
+
+  if(stackSize > 1000)
+    new PHTTPServiceThread(stackSize, *this);
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void OpenMCU::MCUShutdownListener()
+{
+  if(httpListeningSocket == NULL)
+    return;
+
+  if(!httpListeningSocket->IsOpen())
+    return;
+
+  PTRACE(0, "OpenMCU\tClosing listener socket");
+  httpListeningSocket->Close();
+
+  httpThreadsMutex.Wait();
+
+#if PTLIB_VER == PTLIB_VERSION_INT(2,0,1)
+  for(PINDEX i = 0; i < httpThreads.GetSize(); ++i)
+    httpThreads[i].Close();
+#else
+  for(ThreadList::iterator i = httpThreads.begin(); i != httpThreads.end(); ++i)
+    i->Close();
+#endif
+/*
+  while(httpThreads.GetSize() > 0)
+  {
+    httpThreadsMutex.Signal();
+    Sleep(1);
+    httpThreadsMutex.Wait();
+  }
+*/
+  httpThreadsMutex.Signal();
+
+  delete httpListeningSocket;
+  httpListeningSocket = NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ConferenceManager * OpenMCU::CreateConferenceManager()
 {
   return new ConferenceManager();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUH323EndPoint * OpenMCU::CreateEndPoint(ConferenceManager & manager)
 {

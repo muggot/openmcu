@@ -274,6 +274,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << SeparatorField("Port setup");
   // HTTP Port number to use.
   s << SeparatorField();
+  s << StringField(HttpIPKey, cfg.GetString(HttpIPKey, "0.0.0.0"));
   s << IntegerField(HttpPortKey, cfg.GetInteger(HttpPortKey, DefaultHTTPPort), 1, 32767);
   // RTP Port Setup
   s << IntegerField(RTPPortBaseKey, cfg.GetInteger(RTPPortBaseKey, 0), 0, 65535, 0, "0 = auto, Example: base=5000, max=6000");

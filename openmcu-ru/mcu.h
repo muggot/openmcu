@@ -65,6 +65,7 @@ static const char RoomNameKey[]           = "Room";
 static const char EnableKey[]             = "Enable";
 static const char DisableKey[]            = "Disable";
 
+static const char HttpIPKey[]             = "HTTP IP";
 static const char HttpPortKey[]           = "HTTP Port";
 static const char HttpLinkEventBufferKey[]= "Room control event buffer size";
 
@@ -262,6 +263,9 @@ class OpenMCU : public OpenMCUProcessAncestor
     BOOL Initialise(const char * initMsg);
 
     static OpenMCU & Current() { return (OpenMCU &)PProcess::Current(); }
+
+    BOOL MCUListenForHTTP(const PString & ip, unsigned port);
+    void MCUShutdownListener();
 
     virtual ConferenceManager * CreateConferenceManager();
     virtual MCUH323EndPoint * CreateEndPoint(ConferenceManager & manager);
