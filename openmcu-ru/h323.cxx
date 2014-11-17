@@ -1467,6 +1467,8 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
   if(action == OTFC_ADD_VIDEO_MIXER)
   {
+    if(!conference->videoMixerList)
+      OTF_RET_FAIL;
     if(conference->IsModerated()=="+")
     {
       unsigned n = conference->VMLAdd();
@@ -1480,6 +1482,8 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
   if(action == OTFC_DELETE_VIDEO_MIXER)
   {
+    if(!conference->videoMixerList)
+      OTF_RET_FAIL;
     if(conference->IsModerated()=="+")
     {
       unsigned n_old=conference->videoMixerCount;
@@ -1497,8 +1501,18 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
   if(action == OTFC_SET_VIDEO_MIXER_LAYOUT)
   {
-    unsigned option = data("o").AsInteger();
-    MCUVideoMixer * mixer = conference->VMLFind(option);
+    MCUVideoMixer * mixer = NULL;
+    long option = data("o").AsInteger();
+    if(!conference->videoMixerList) // classic MCU mode
+    {
+      Conference::MemberList & memberList = conference->GetMemberList();
+      Conference::MemberList::iterator r = memberList.find((ConferenceMemberId)option);
+      if(r!=memberList.end()) mixer = r->second->videoMixer;
+    }
+    else
+    {
+      mixer = conference->VMLFind((unsigned)option);
+    }
     if(mixer!=NULL)
     {
       mixer->MyChangeLayout(v);

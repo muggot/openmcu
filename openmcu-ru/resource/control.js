@@ -1,7 +1,7 @@
 var max_subframes=100;
 var default_page_width=942; //CHANGE IT IF YOU WISH, IT'LL BE AUTO-INCREASED IF NEEDED
 var page_border_width=70;   //for detect panel width
-var debug=1;
+var debug=0;
 var MIXER_PANEL_BGCOLOR='#575';
 var MIXER_PANEL_BGCOLOR2='#242';
 var MIXER_PANEL_MIXER_STYLE='font-weight:bold;background-color:'+MIXER_PANEL_BGCOLOR2+';padding-left:3px;padding-right:3px;border-radius:2px;border:2px solid #484;color:#fc5';
@@ -1786,7 +1786,7 @@ function get_mixers_content_classic()
           if(mixers>1)s+=" / <span style='color:blue;cursor:pointer;position:relative;left:0px' onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_DELETE_VIDEO_MIXER+","+i+");}'>&ndash;</span>";
 
           s+="</span>&nbsp;";
-          s+=split_selector(i,members[i][12][0][2]);
+          s+=split_selector(members[i][1],members[i][12][0][2]);
 
           var str0="&nbsp;<img src='i24_";
           var str1=" width=24 height=24 style='vertical-align:middle;cursor:pointer' onclick='javascript:{if(checkcontrol())queue_otf_request(";
@@ -1813,22 +1813,27 @@ function mixrfr()
   var old_visible_ids=visible_ids;
   visible_ids=',';
   hl_links=[];
-  for(i=0;i<mixers;i++)
+  mixerCount=mixers;
+  if(mixerCount==0) mixerCount=members.length;
+  for(i=0;i<mixerCount;i++)
   { var obj = null;
     try { obj=document.getElementById('mixercontrol'+i); } catch(e) {obj=null;}
     if(obj==null) continue;
-
+    var mixerData;
+    if(classicMode) mixerData=members[i][12];
+    else mixerData=conf[i+1];
+    
     var s='';
-    var mw=conf[i+1][0][0]; var mh=conf[i+1][0][1]; var pos_x=(mmw-mw)>>1;
+    var mw=mixerData[0][0]; var mh=mixerData[0][1]; var pos_x=(mmw-mw)>>1;
 // walking through the mixer's positions
-    for(var j=0;j<conf[i+1][1].length;j++)
-    { var id=false; try { if(typeof conf[i+1][2][j]!='undefined') id=conf[i+1][2][j]; } catch(e) {id=false;}
+    for(var j=0;j<mixerData[1].length;j++)
+    { var id=false; try { if(typeof mixerData[2][j]!='undefined') id=mixerData[2][j]; } catch(e) {id=false;}
       if(id !== false) if((id!=0)&&(id!=-1)&&(id!=-2)) visible_ids+=''+id+',';
-      var type=false; if(id!==false) try {if(typeof conf[i+1][3][j]!='undefined') type=conf[i+1][3][j];} catch(e) {type=false;}
+      var type=false; if(id!==false) try {if(typeof mixerData[3][j]!='undefined') type=mixerData[3][j];} catch(e) {type=false;}
       var x=0, y=0, w=0, h=0;
       try
-      { x=Math.round(conf[i+1][1][j][0]/bfw*mw); y=Math.round(conf[i+1][1][j][1]/bfh*mh);
-        w=Math.round(conf[i+1][1][j][2]/bfw*mw); h=Math.round(conf[i+1][1][j][3]/bfh*mh);
+      { x=Math.round(mixerData[1][j][0]/bfw*mw); y=Math.round(mixerData[1][j][1]/bfh*mh);
+        w=Math.round(mixerData[1][j][2]/bfw*mw); h=Math.round(mixerData[1][j][3]/bfh*mh);
       }
       catch(e)
       {
