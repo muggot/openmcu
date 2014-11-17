@@ -1627,6 +1627,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   if(action == OTFC_VAD_CLICK)
   {
     OTF_FIND_MIXER(mixer,v);
+    if(!mixer) OTF_RET_FAIL;
     unsigned pos = data("o").AsInteger();
     int type = data("o2").AsInteger();
     if((type<1)||(type>3)) type=2;

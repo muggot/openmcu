@@ -1878,6 +1878,7 @@ function get_mixer_position_html(mixer, position)
     if(!members[mixer][0]) return s;
     if(typeof members[mixer][12]=='undefined') return s;
     c=members[mixer][12];
+    mixer=members[mixer][1];
   }
   var mw=c[0][0]; var mh=c[0][1]; var p=position;
 
