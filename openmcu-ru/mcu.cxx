@@ -554,6 +554,13 @@ void OpenMCU::LogMessageHTML(PString str)
 
 BOOL OpenMCU::MCUListenForHTTP(const PString & ip, unsigned port)
 {
+  if(httpListeningSocket)
+  {
+    PString curAddress = ((PTCPSocket *)httpListeningSocket)->GetLocalAddress();
+    if(curAddress == ip + ":" + PString(port))
+      return TRUE;
+  }
+
   PSocket::Reusability reuse = PSocket::CanReuseAddress;
   PINDEX stackSize = 0x4000;
 
