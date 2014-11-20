@@ -2373,7 +2373,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     conference->GetMemberListMutex().Signal();
 
   // unlock conferenceList
-  app.GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
+  conference->Unlock();
 
   if(jpegMixer == NULL) // no mixer found
     return FALSE;
@@ -2500,8 +2500,8 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
         << "p.tl=Array" << conference->GetTemplateList() << "\n"
         << "p.seltpl=\"" << conference->GetSelectedTemplateName() << "\"\n";
 
-    // unlock conferenceList
-    OpenMCU::Current().GetEndpoint().GetConferenceManager().GetConferenceListMutex().Signal();
+    // unlock conference
+    conference->Unlock();
 
     message << "<script>p.splitdata=Array(";
     for (unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
@@ -2585,17 +2585,13 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PString room = data("room");
     if(action == "create")
     {
-      cm.MakeConferenceWithLock(room);
-      cm.UnlockConference();
+      cm.MakeConferenceWithoutLock(room);
     }
     else if(action == "delete")
     {
-      Conference * conference = cm.FindConferenceWithLock(room);
-      if(conference)
-      {
-        cm.RemoveConference(conference->GetID());
-        cm.UnlockConference();
-      }
+      OpalGloballyUniqueID conferenceID;
+      if(cm.HasConference(room, conferenceID))
+        cm.RemoveConference(conferenceID);
     }
     else if(action == "startRecorder")
     {
@@ -2603,7 +2599,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       if(conference)
       {
         conference->StartRecorder();
-        cm.UnlockConference();
+        conference->Unlock();
       }
     }
     else if(action == "stopRecorder")
@@ -2612,7 +2608,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       if(conference)
       {
         conference->StopRecorder();
-        cm.UnlockConference();
+        conference->Unlock();
       }
     }
   }

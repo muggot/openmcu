@@ -59,55 +59,43 @@ ConferenceManager::~ConferenceManager()
   delete monitor;
 }
 
-Conference * ConferenceManager::MakeConferenceWithLock(const PString & roomToCreate, const PString & name)
+Conference * ConferenceManager::FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID)
 {
   PWaitAndSignal m(conferenceListMutex);
-  OpalGloballyUniqueID conferenceID;
-  for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
-  {
-    if(roomToCreate == r->second->GetNumber())
-    {
-      conferenceID = r->second->GetID();
-      break;
-    }
-  }
-
-  return MakeConferenceWithLock(conferenceID, roomToCreate, name);
+  Conference *conference = FindConferenceWithoutLock(conferenceID);
+  if(conference)
+    conference->Lock();
+  return conference;
 }
 
-BOOL ConferenceManager::CheckConferenceWithLock(Conference * c)
+Conference * ConferenceManager::FindConferenceWithoutLock(const OpalGloballyUniqueID & conferenceID)
 {
-  if(!c) return FALSE;
-  conferenceListMutex.Wait();
-  ConferenceListType::const_iterator r;
-  for (r = conferenceList.begin(); r != conferenceList.end(); ++r)
-  {
-    if(r->second == c) return TRUE;
-  }
-  conferenceListMutex.Signal();
-  return FALSE;
-}
-
-Conference * ConferenceManager::FindConferenceWithLock(const PString & n)
-{
-  if(n.IsEmpty()) return NULL;
-  conferenceListMutex.Wait();
-  for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
-  {
-    if(r->second->GetNumber() == n) return r->second;
-  }
-  conferenceListMutex.Signal();
+  PWaitAndSignal m(conferenceListMutex);
+  ConferenceListType::const_iterator r = conferenceList.find(conferenceID);
+  if(r != conferenceList.end())
+    return r->second;
   return NULL;
 }
 
-Conference * ConferenceManager::FindConferenceWithoutLock(const PString & n)
+Conference * ConferenceManager::FindConferenceWithLock(const PString & room)
 {
-  if(n.IsEmpty())
+  if(room.IsEmpty())
+    return NULL;
+  PWaitAndSignal m(conferenceListMutex);
+  Conference *conference = FindConferenceWithoutLock(room);
+  if(conference)
+    conference->Lock();
+  return conference;
+}
+
+Conference * ConferenceManager::FindConferenceWithoutLock(const PString & room)
+{
+  if(room.IsEmpty())
     return NULL;
   PWaitAndSignal m(conferenceListMutex);
   for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
   {
-    if(r->second->GetNumber() == n)
+    if(r->second->GetNumber() == room)
       return r->second;
   }
   return NULL;
@@ -115,13 +103,12 @@ Conference * ConferenceManager::FindConferenceWithoutLock(const PString & n)
 
 ConferenceMember * ConferenceManager::FindMemberWithLock(const PString & room, const PString & name)
 {
-  PWaitAndSignal m(conferenceListMutex);
-  for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
-  {
-    if(r->second && r->second->GetNumber() == room)
-      return FindMemberWithLock(r->second, name);
-  }
-  return NULL;
+  Conference *conference = FindConferenceWithLock(room);
+  if(conference == NULL)
+    return NULL;
+  ConferenceMember *member = FindMemberWithLock(conference, name);
+  conference->Unlock();
+  return member;
 }
 
 ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference, const PString & name)
@@ -144,12 +131,12 @@ ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference
 ConferenceMember * ConferenceManager::FindMemberWithLock(const PString & room, long id)
 {
   PWaitAndSignal m(conferenceListMutex);
-  for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
-  {
-    if(r->second && r->second->GetNumber() == room)
-      return FindMemberWithLock(r->second, id);
-  }
-  return NULL;
+  Conference *conference = FindConferenceWithLock(room);
+  if(conference == NULL)
+    return NULL;
+  ConferenceMember *member = FindMemberWithLock(conference, id);
+  conference->Unlock();
+  return member;
 }
 
 ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference, long id)
@@ -177,33 +164,71 @@ ConferenceMember * ConferenceManager::FindMemberWithoutLock(Conference * confere
   return NULL;
 }
 
-Conference * ConferenceManager::MakeConferenceWithLock(const OpalGloballyUniqueID & conferenceID, 
-                                                                   const PString & roomToCreate, 
-                                                                   const PString & name)
+Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PString name)
 {
-  conferenceListMutex.Wait();
+  PWaitAndSignal m(conferenceListMutex);
+  Conference * conference = MakeConferenceWithoutLock(room, name);
+  if(conference)
+    conference->Lock();
+  return conference;
+}
 
-  Conference * conference = NULL;
-  BOOL newConference = FALSE;
-  ConferenceListType::const_iterator r = conferenceList.find(conferenceID);
-  if (r != conferenceList.end())
-    conference = r->second;
-  else {
+Conference * ConferenceManager::MakeConferenceWithoutLock(const PString & room, PString name)
+{
+  PWaitAndSignal m(conferenceListMutex);
+  Conference * conference = FindConferenceWithoutLock(room);
+  if(conference == NULL)
+  {
     // create the conference
-    conference = CreateConference(conferenceID, roomToCreate, name, mcuNumberMap.GetNumber(conferenceID));
-
+    OpalGloballyUniqueID conferenceID;
+    conference = CreateConference(conferenceID, room, name, mcuNumberMap.GetNumber(conferenceID));
     // insert conference into the map
     conferenceList.insert(ConferenceListType::value_type(conferenceID, conference));
-
     // set the conference count
     maxConferenceCount = PMAX(maxConferenceCount, (PINDEX)conferenceList.size());
-    newConference = TRUE;
-  }
-
-  if (newConference)
     OnCreateConference(conference);
-
+  }
   return conference;
+}
+
+BOOL ConferenceManager::CheckConferenceWithLock(Conference * conference)
+{
+  if(conference == NULL)
+    return FALSE;
+  PWaitAndSignal m(conferenceListMutex);
+  for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  {
+    if(r->second == conference)
+    {
+      conference->Lock();
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+BOOL ConferenceManager::HasConference(const PString & number, OpalGloballyUniqueID & conferenceID)
+{
+  Conference *conference = FindConferenceWithLock(number);
+  if(conference)
+  {
+    conferenceID = conference->GetID();
+    conference->Unlock();
+    return TRUE;
+  }
+  return FALSE;
+}
+
+BOOL ConferenceManager::HasConference(const OpalGloballyUniqueID & conferenceID, PString & number)
+{
+  Conference *conference = FindConferenceWithLock(conferenceID);
+  if(conference)
+  {
+    number = conference->GetNumber();
+    conference->Unlock();
+    return TRUE;
+  }
+  return FALSE;
 }
 
 void ConferenceManager::OnCreateConference(Conference * conference)
@@ -362,29 +387,6 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
                         ); 
 }
 
-BOOL ConferenceManager::HasConference(const OpalGloballyUniqueID & conferenceID, PString & number)
-{
-  PWaitAndSignal m(conferenceListMutex);
-  ConferenceListType::const_iterator r = conferenceList.find(conferenceID);
-  if (r == conferenceList.end())
-    return FALSE;
-  number = r->second->GetNumber();
-  return TRUE;
-}
-
-BOOL ConferenceManager::HasConference(const PString & number, OpalGloballyUniqueID & conferenceID)
-{
-  PWaitAndSignal m(conferenceListMutex);
-  ConferenceListType::const_iterator r;
-  for (r = conferenceList.begin(); r != conferenceList.end(); ++r) {
-    if (r->second->GetNumber() == number) {
-      conferenceID = r->second->GetID();
-      return TRUE;
-    }
-  }
-  return FALSE;
-}
-
 void ConferenceManager::RemoveConference(const OpalGloballyUniqueID & confId)
 {
   PWaitAndSignal m(conferenceListMutex);
@@ -392,6 +394,7 @@ void ConferenceManager::RemoveConference(const OpalGloballyUniqueID & confId)
   if(r != conferenceList.end())
   {
     Conference * conf = r->second;
+    conf->Lock();
     conferenceList.erase(r);
     mcuNumberMap.RemoveNumber(conf->GetMCUNumber());
     OnDestroyConference(conf);
@@ -407,6 +410,7 @@ void ConferenceManager::ClearConferenceList()
   for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); )
   {
     Conference * conf = r->second;
+    conf->Lock();
     conferenceList.erase(r++);
     mcuNumberMap.RemoveNumber(conf->GetMCUNumber());
     OnDestroyConference(conf);

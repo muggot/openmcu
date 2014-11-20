@@ -1230,11 +1230,11 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
 #endif
 
-#define OTF_RET_OK { conferenceManager.UnlockConference(); return "OK"; }
-#define OTF_RET_FAIL { conferenceManager.UnlockConference(); return "FAIL"; }
-
   Conference * conference = conferenceManager.FindConferenceWithLock(room);
   if(!conference) return "FAIL";
+
+#define OTF_RET_OK { conference->Unlock(); return "OK"; }
+#define OTF_RET_FAIL { conference->Unlock(); return "FAIL"; }
 
   if(action == OTFC_REFRESH_ABOOK)
   {
@@ -1354,7 +1354,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
   if(action == OTFC_DROP_ALL_ACTIVE_MEMBERS)
   {
-    conferenceManager.UnlockConference();
+    conference->Unlock();
     PWaitAndSignal m(conference->GetMemberListMutex());
     Conference::MemberList & memberList = conference->GetMemberList();
     for(Conference::MemberList::iterator r = memberList.begin(); r != memberList.end(); ++r)
@@ -1370,7 +1370,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
   if((action == OTFC_MUTE_ALL)||(action == OTFC_UNMUTE_ALL))
   {
-    conferenceManager.UnlockConference();
+    conference->Unlock();
     BOOL newValue = (action==OTFC_MUTE_ALL);
     PWaitAndSignal m(conference->GetMemberListMutex());
     Conference::MemberList & memberList = conference->GetMemberList();
@@ -1426,7 +1426,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
         if(!conference->videoMixerList->mixer) OTF_RET_FAIL;
         conference->videoMixerList->mixer->SetForceScreenSplit(conference->GetForceScreenSplit());
       }
-      conferenceManager.UnlockConference();  // we have to UnlockConference
+      conference->Unlock();  // we have to UnlockConference
       UnmoderateConference(*conference);  // before conference.GetMutex() usage
       OpenMCU::Current().HttpWriteEventRoom("<span style='background-color:#acf'>Operator resigned</span>",room);
       OpenMCU::Current().HttpWriteCmdRoom("r_unmoder()",room);
@@ -1729,7 +1729,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   {
     member->disableVAD=FALSE;
     member->chosenVan=FALSE;
-    conferenceManager.UnlockConference();
+    conference->Unlock();
     conference->PutChosenVan();
     cmd << "ivad(" << v << ",0)";
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
@@ -1739,7 +1739,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   {
     member->disableVAD=FALSE;
     member->chosenVan=TRUE;
-    conferenceManager.UnlockConference();
+    conference->Unlock();
     conference->PutChosenVan();
     conference->FreezeVideo(member->GetID());
     cmd << "ivad(" << v << ",1)";
@@ -1750,7 +1750,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   {
     member->disableVAD=TRUE;
     member->chosenVan=FALSE;
-    conferenceManager.UnlockConference();
+    conference->Unlock();
     conference->PutChosenVan();
 #if 1 // DISABLING VAD WILL CAUSE MEMBER REMOVAL FROM VAD POSITIONS
     {
@@ -2017,7 +2017,7 @@ PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
       return "";
 
     PString data = GetMemberListOptsJavascript(*conference);
-    conferenceManager.UnlockConference();
+    conference->Unlock();
     return data;
   }
 
@@ -2480,7 +2480,7 @@ class TplCleanCheckThread : public PThread
         if(OpenMCU::Current().GetEndpoint().GetConferenceManager().CheckConferenceWithLock(c))
         {
           c->OnConnectionClean(n, a);
-          OpenMCU::Current().GetEndpoint().GetConferenceManager().UnlockConference();
+          c->Unlock();
         }
       }
     }
@@ -2492,14 +2492,12 @@ class TplCleanCheckThread : public PThread
 void MCUH323Connection::CleanUpOnCallEnd()
 {
   PTRACE(2, "MCUH323Connection\tCleanUpOnCallEnd");
-  BOOL lock=FALSE;
   Conference *c = conference;
   if(c==NULL)
   {
     PTRACE(3,"MCUH323Connection\tNULL Pointer, finding " << requestedRoom);
-    c = OpenMCU::Current().GetEndpoint().GetConferenceManager().FindConferenceWithLock(requestedRoom);
+    c = ep.GetConferenceManager().FindConferenceWithoutLock(requestedRoom);
     PTRACE(4,"MCUH323Connection\tNew pointer: " << c);
-    if(c) lock=TRUE;
   }
 
   if(c!=NULL)
@@ -2510,8 +2508,6 @@ void MCUH323Connection::CleanUpOnCallEnd()
       new TplCleanCheckThread(c, remotePartyName, remotePartyAddress);
     }
   }
-
-  if(lock)OpenMCU::Current().GetEndpoint().GetConferenceManager().UnlockConference();
 
   videoReceiveCodecName = videoTransmitCodecName = "none";
   videoReceiveCodec = NULL;
@@ -2575,7 +2571,7 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
 
   // crete member connection
   conferenceMember = new H323Connection_ConferenceMember(conference, ep, GetCallToken(), this, isMCU);
-  manager.UnlockConference();
+  conference->Unlock();
 }
 
 RTP_Session * MCUH323Connection::UseSession(unsigned sessionID,
@@ -2998,29 +2994,29 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
 
 void MCUH323Connection::OpenAudioCache(H323AudioCodec & codec)
 {
-  Conference *conf = conference;
-  if(conf == NULL)
+  Conference *c = conference;
+  if(c == NULL)
   {
     MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
     ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-    conf = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
-    manager.UnlockConference();
+    c = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
+    c->Unlock();
   }
 
   PTRACE(2,"MCU\tOpenAudioCache(" << codec.GetFormatString() << ")");
 
-  new ConferenceCacheMember(conf, codec.GetMediaFormat(), 0);
+  new ConferenceCacheMember(c, codec.GetMediaFormat(), 0);
 }
 
 void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
 {
-  Conference *conf = conference;
-  if(conf == NULL)
+  Conference *c = conference;
+  if(c == NULL)
   {
     MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
     ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-    conf = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
-    manager.UnlockConference();
+    c = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
+    c->Unlock();
   }
 
   // starting new cache thread
@@ -3031,7 +3027,7 @@ void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
 
   PTRACE(2,"MCU\tOpenVideoCache(" << srcCodec.GetFormatString() << ")");
 
-  new ConferenceCacheMember(conf, srcCodec.GetMediaFormat(), videoMixerNumber);
+  new ConferenceCacheMember(c, srcCodec.GetMediaFormat(), videoMixerNumber);
 }
 
 void MCUH323Connection::SetEndpointDefaultVideoParams()
@@ -3363,8 +3359,8 @@ void MCUH323Connection::OnUserInputString(const PString & str)
             break;
           }
         }
+        ep.GetConferenceManager().GetConferenceListMutex().Signal();
       }
-      ep.GetConferenceManager().GetConferenceListMutex().Signal();
     }
 
     if(codeConferenceMember != NULL)

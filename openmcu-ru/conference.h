@@ -1149,6 +1149,15 @@ class Conference : public PObject
     PMutex & GetMemberListMutex()
     { return memberListMutex; }
 
+    PMutex & GetMutex()
+    { return destructorMutex; }
+
+    void Lock()
+    { destructorMutex.Wait(); }
+
+    void Unlock()
+    { destructorMutex.Signal(); }
+
     ConferenceManager & GetManager()
     { return manager; }
 
@@ -1395,6 +1404,7 @@ class Conference : public PObject
 
   protected:
     ConferenceManager & manager;
+    PMutex destructorMutex;
     PMutex memberListMutex;
     MemberList memberList;
     MemberNameList memberNameList;
@@ -1517,15 +1527,13 @@ class ConferenceManager : public PObject
     ConferenceManager();
     ~ConferenceManager();
 
-    Conference * FindConferenceWithLock(const PString & n);
-    Conference * FindConferenceWithoutLock(const PString & n);
+    Conference * FindConferenceWithLock(const PString & room);
+    Conference * FindConferenceWithoutLock(const PString & room);
+    Conference * FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID);
+    Conference * FindConferenceWithoutLock(const OpalGloballyUniqueID & conferenceID);
 
-    Conference * MakeConferenceWithLock(const OpalGloballyUniqueID & conferenceID, const PString & number, const PString & name);
-    Conference * MakeConferenceWithLock(const PString & number, const PString & name);
-    Conference * MakeConferenceWithLock(const PString & number)
-    { return MakeConferenceWithLock(number, PString::Empty()); }
-
-    BOOL CheckConferenceWithLock(Conference * c);
+    Conference * MakeConferenceWithLock(const PString & number, PString name = "");
+    Conference * MakeConferenceWithoutLock(const PString & number, PString name = "");
 
     ConferenceMember * FindMemberWithLock(const PString & room, const PString & name);
     ConferenceMember * FindMemberWithLock(Conference * conference, const PString & name);
@@ -1533,8 +1541,7 @@ class ConferenceManager : public PObject
     ConferenceMember * FindMemberWithLock(Conference * conference, long id);
     ConferenceMember * FindMemberWithoutLock(Conference * conference, long id);
 
-    void UnlockConference()
-    { conferenceListMutex.Signal(); }
+    BOOL CheckConferenceWithLock(Conference * c);
 
     /**
       * return true if a conference with the specified ID exists
