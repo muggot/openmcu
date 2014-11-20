@@ -198,11 +198,9 @@ class ConferenceStreamMember : public ConferenceMember
       callToken = _callToken;
       name = _name;
       conference->AddMember(this);
-      //AddToConference(conference);
     }
     ~ConferenceStreamMember()
     {
-      //RemoveFromConference();
     }
 
     virtual ConferenceConnection * CreateConnection()

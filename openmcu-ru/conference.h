@@ -803,18 +803,6 @@ class ConferenceMember : public PObject
     { }
 
     /**
-      * used to add a conference member to a conference. This is not done in the constructor
-      * as some conference members have non-trivial startup requirements
-      */
-    virtual BOOL AddToConference(Conference * conference);
-
-    /**
-      * used to remove a conference member from a conference. This is not done in the destructor
-      * as some conference members have non-trivial shutdown requirements
-      */
-    virtual void RemoveFromConference();
-
-    /**
       * If this returns TRUE, the conference member will be visible in all publically displayed
       * conference lists. It will always be visible in the console displays
       */
@@ -1531,6 +1519,7 @@ class ConferenceManager : public PObject
     Conference * FindConferenceWithoutLock(const PString & room);
     Conference * FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID);
     Conference * FindConferenceWithoutLock(const OpalGloballyUniqueID & conferenceID);
+    Conference * FindConferenceWithLock(Conference * c);
 
     Conference * MakeConferenceWithLock(const PString & number, PString name = "");
     Conference * MakeConferenceWithoutLock(const PString & number, PString name = "");
@@ -1540,8 +1529,6 @@ class ConferenceManager : public PObject
     ConferenceMember * FindMemberWithLock(const PString & room, long id);
     ConferenceMember * FindMemberWithLock(Conference * conference, long id);
     ConferenceMember * FindMemberWithoutLock(Conference * conference, long id);
-
-    BOOL CheckConferenceWithLock(Conference * c);
 
     /**
       * return true if a conference with the specified ID exists

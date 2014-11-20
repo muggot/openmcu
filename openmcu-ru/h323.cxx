@@ -2477,7 +2477,7 @@ class TplCleanCheckThread : public PThread
       PThread::Sleep(6000); // previous connection may still be actvie
       if(c!=NULL)
       {
-        if(OpenMCU::Current().GetEndpoint().GetConferenceManager().CheckConferenceWithLock(c))
+        if(OpenMCU::Current().GetEndpoint().GetConferenceManager().FindConferenceWithLock(c))
         {
           c->OnConnectionClean(n, a);
           c->Unlock();
@@ -2994,30 +2994,25 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
 
 void MCUH323Connection::OpenAudioCache(H323AudioCodec & codec)
 {
-  Conference *c = conference;
+  ConferenceManager & manager = ep.GetConferenceManager();
+  Conference *c = manager.FindConferenceWithLock(conference);
   if(c == NULL)
-  {
-    MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-    ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
     c = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
-    c->Unlock();
-  }
 
   PTRACE(2,"MCU\tOpenAudioCache(" << codec.GetFormatString() << ")");
 
   new ConferenceCacheMember(c, codec.GetMediaFormat(), 0);
+
+  // unlock conference
+  c->Unlock();
 }
 
 void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
 {
-  Conference *c = conference;
+  ConferenceManager & manager = ep.GetConferenceManager();
+  Conference *c = manager.FindConferenceWithLock(conference);;
   if(c == NULL)
-  {
-    MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-    ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
     c = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
-    c->Unlock();
-  }
 
   // starting new cache thread
   unsigned videoMixerNumber = 0;
@@ -3028,6 +3023,9 @@ void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
   PTRACE(2,"MCU\tOpenVideoCache(" << srcCodec.GetFormatString() << ")");
 
   new ConferenceCacheMember(c, srcCodec.GetMediaFormat(), videoMixerNumber);
+
+  // unlock conference
+  c->Unlock();
 }
 
 void MCUH323Connection::SetEndpointDefaultVideoParams()

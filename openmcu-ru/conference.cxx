@@ -101,6 +101,22 @@ Conference * ConferenceManager::FindConferenceWithoutLock(const PString & room)
   return NULL;
 }
 
+Conference * ConferenceManager::FindConferenceWithLock(Conference * conference)
+{
+  if(conference == NULL)
+    return FALSE;
+  PWaitAndSignal m(conferenceListMutex);
+  for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  {
+    if(r->second == conference)
+    {
+      conference->Lock();
+      return conference;
+    }
+  }
+  return NULL;
+}
+
 ConferenceMember * ConferenceManager::FindMemberWithLock(const PString & room, const PString & name)
 {
   Conference *conference = FindConferenceWithLock(room);
@@ -189,22 +205,6 @@ Conference * ConferenceManager::MakeConferenceWithoutLock(const PString & room, 
     OnCreateConference(conference);
   }
   return conference;
-}
-
-BOOL ConferenceManager::CheckConferenceWithLock(Conference * conference)
-{
-  if(conference == NULL)
-    return FALSE;
-  PWaitAndSignal m(conferenceListMutex);
-  for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
-  {
-    if(r->second == conference)
-    {
-      conference->Lock();
-      return TRUE;
-    }
-  }
-  return FALSE;
 }
 
 BOOL ConferenceManager::HasConference(const PString & number, OpalGloballyUniqueID & conferenceID)
@@ -792,9 +792,10 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     memberToAdd->SetName(memberName+" ##"+PString(i+2));
   }
 
-  // add the member to the conference
-  if(!memberToAdd->AddToConference(this))
-    return FALSE;
+#if MCU_VIDEO
+  if (!UseSameVideoForAllMembers())
+    memberToAdd->videoMixer = new MCUSimpleVideoMixer();
+#endif
 
   PTRACE(3, "Conference\tAdding member: " << memberToAdd->GetName() << " to conference: " << guid);
   cout << "Conference Adding member: " << memberToAdd->GetName() << " to conference: " << guid << "\n";
@@ -1403,26 +1404,6 @@ void ConferenceMember::ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState)
   }
 
   OpenMCU::Current().HttpWriteCmdRoom(msg,conference->GetNumber());
-}
-
-BOOL ConferenceMember::AddToConference(Conference * _conference)
-{
-  //if (conference != NULL)
-  //  return FALSE;
-  //conference = _conference;
-#if MCU_VIDEO
-  if (!conference->UseSameVideoForAllMembers())
-    videoMixer = new MCUSimpleVideoMixer();
-#endif
-  return TRUE;
-}
-
-void ConferenceMember::RemoveFromConference()
-{
-  if (conference != NULL) {
-    if (conference->RemoveMember(this))
-      conference->GetManager().RemoveConference(conference->GetID());
-  }
 }
 
 void ConferenceMember::AddConnection(ConferenceMember * memberToAdd)

@@ -786,9 +786,12 @@ int MCURtspConnection::OnRequestPlay(const msg_t *msg)
   // creating conference if needed
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
   ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
+
   conference = manager.MakeConferenceWithLock(requestedRoom);
-  conference->Unlock();
   conferenceMember = new ConferenceStreamMember(conference, GetCallToken(), "RTSP "+rtsp_path+" ("+ruri_str+")");
+
+   // unlock conference
+  conference->Unlock();
 
   // start rtp channels
   CreateMediaChannel(scap, 1);
