@@ -938,21 +938,6 @@ PString MCUH323EndPoint::GetMemberList(Conference & conference, ConferenceMember
  return members;
 }
 
-BOOL MCUH323EndPoint::MemberExist(Conference & conference, ConferenceMemberId id)
-{
- PWaitAndSignal m(conference.GetMemberListMutex());
- Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
- Conference::MemberNameList::const_iterator s;
- for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
- {
-  ConferenceMember * member = s->second;
-  if(member==NULL) continue;
-  if(member->GetID()==id) return true;
- }
- PTRACE(6,"!MEMBER_EXIST_MATCH!\tid=" << id << " conference=" << conference);
- return false;
-}
-
 PString MCUH323EndPoint::GetMemberListOpts(Conference & conference)
 {
  PStringStream members;
@@ -1219,20 +1204,6 @@ BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMem
     conn->OpenVideoChannel(TRUE, *(conn->GetVideoTransmitCodec()));
 
   return TRUE;
-}
-
-ConferenceMember * MCUH323EndPoint::GetConferenceMemberById(Conference * conference, long id)
-{ // safer than just memberList.search (?)
-//  PWaitAndSignal m(conference.GetMutex()); // memberListMutex
-  Conference::MemberList & memberList = conference->GetMemberList();
-  Conference::MemberList::const_iterator r;
-  for (r = memberList.begin(); r != memberList.end(); ++r)
-  {
-    ConferenceMember * member = r->second;
-    if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
-    if ((long)(member->GetID()) == id) return member;
-  }
-  return NULL;
 }
 
 PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & data)
@@ -1617,8 +1588,10 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     } else {
       ConferenceMemberId id = mixer1->GetHonestId(pos1); if(((long)id<100)&&((long)id>=0)) id=NULL;
       ConferenceMemberId id2 = mixer2->GetHonestId(pos2); if(((long)id2<100)&&((long)id2>=0)) id2=NULL;
-      mixer2->PositionSetup(pos2, 1, GetConferenceMemberById(conference, (long)id));
-      mixer1->PositionSetup(pos1, 1, GetConferenceMemberById(conference, (long)id2));
+      ConferenceMember *member1 = conferenceManager.FindMemberWithoutLock(conference, (long)id);
+      ConferenceMember *member2 = conferenceManager.FindMemberWithoutLock(conference, (long)id2);
+      mixer2->PositionSetup(pos2, 1, member1);
+      mixer1->PositionSetup(pos1, 1, member2);
     }
     OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
@@ -1663,7 +1636,8 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OTF_RET_OK;
   }
 
-  ConferenceMember * member = GetConferenceMemberById(conference, v); if(member==NULL) OTF_RET_FAIL;
+  ConferenceMember * member = conferenceManager.FindMemberWithoutLock(conference, v);
+  if(member == NULL) OTF_RET_FAIL;
   PStringStream cmd;
 
   if(action == OTFC_SET_VMP_STATIC )

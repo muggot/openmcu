@@ -79,8 +79,7 @@ void ConferenceSoundCardMember::Thread(PThread &, INT)
     audioDelay.Delay(pcmData.GetSize() / 16);
   }
 
-  ConferenceManager & mgr = conference->GetManager();
-  mgr.RemoveMember(conference->GetID(), this);
+  conference->RemoveMember(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -205,8 +204,7 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
     audioDelay.Delay(pcmData.GetSize() / 16);
   }
 
-  ConferenceManager & mgr = conference->GetManager();
-  mgr.RemoveMember(conference->GetID(), this);
+  conference->RemoveMember(this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

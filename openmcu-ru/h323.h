@@ -101,7 +101,6 @@ class MCUH323EndPoint : public H323EndPoint
     PString GetRoomStatusJS();
     PString GetRoomStatusJSStart();
     PString GetMemberList(Conference & conference, ConferenceMemberId id);
-    BOOL MemberExist(Conference & conference, ConferenceMemberId id);
     PString GetMemberListOpts(Conference & conference);
     PString GetVideoMixerConfiguration(MCUVideoMixer * mixer);
     PString GetActiveMemberDataJS(ConferenceMember * member);
@@ -109,7 +108,6 @@ class MCUH323EndPoint : public H323EndPoint
     PString GetMemberListOptsJavascript(Conference & conference);
     void SetMemberListOpts(Conference & conference, const PStringToString & data);
     BOOL SetMemberVideoMixer(Conference & conference, ConferenceMember * victim, unsigned newVideoMixer);
-    ConferenceMember * GetConferenceMemberById(Conference * conference, long id);
     PString OTFControl(const PString room, const PStringToString & data);
     void OfflineMembersManager(Conference & conference,const PStringToString & data);
     PString GetRoomList(const PString & block);

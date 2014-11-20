@@ -787,6 +787,15 @@ class ConferenceMember : public PObject
 
     void ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState);
 
+    PMutex & GetMutex()
+    { return destructorMutex; }
+
+    void Lock()
+    { destructorMutex.Wait(); }
+
+    void Unlock()
+    { destructorMutex.Signal(); }
+
     /**
       * used to pre-emptively close a members connection
       */
@@ -1050,10 +1059,10 @@ class ConferenceMember : public PObject
     PString callToken;
     MemberTypes memberType;
     PString name;
-//    MCUH323Connection *h323con;
-//    PMutex h323conMutex;
     BufferListType bufferList;
     float currVolCoef;
+
+    PMutex destructorMutex;
 
 #if MCU_VIDEO
     //PMutex videoMutex;
@@ -1518,6 +1527,12 @@ class ConferenceManager : public PObject
 
     BOOL CheckConferenceWithLock(Conference * c);
 
+    ConferenceMember * FindMemberWithLock(const PString & room, const PString & name);
+    ConferenceMember * FindMemberWithLock(Conference * conference, const PString & name);
+    ConferenceMember * FindMemberWithLock(const PString & room, long id);
+    ConferenceMember * FindMemberWithLock(Conference * conference, long id);
+    ConferenceMember * FindMemberWithoutLock(Conference * conference, long id);
+
     void UnlockConference()
     { conferenceListMutex.Signal(); }
 
@@ -1539,13 +1554,6 @@ class ConferenceManager : public PObject
       * Remove and delete the specified conference
       */
     void RemoveConference(const OpalGloballyUniqueID & confId);
-
-    /**
-      * Remove the specified member from the specified conference.
-      * The member will will deleted, and if the conference is empty after the removal, 
-      * it is deleted too
-      */
-    void RemoveMember(const OpalGloballyUniqueID & confId, ConferenceMember * toRemove);
 
     PMutex & GetConferenceListMutex()
     { return conferenceListMutex; }
