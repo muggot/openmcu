@@ -124,6 +124,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #endif
 
   MCUConfig cfg("Parameters");
+  serverId = cfg.GetString(ServerIdKey, OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
 
   vmcfg.go(vmcfg.bfw,vmcfg.bfh);
 

@@ -179,9 +179,8 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   DisableH245Tunneling(disableH245Tunneling);
 
   // MCU Server Id
-  PString serverId = MCUConfig("Parameters").GetString("OpenMCU-ru Server Id",OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
   // SetLocalUserName make localAliasNames.RemoveAll() !!!
-  SetLocalUserName(serverId);
+  SetLocalUserName(OpenMCU::Current().GetServerId());
 
   // Gatekeeper UserName
   PString gkUserName = cfg.GetString(GatekeeperUserNameKey,"MCU");
@@ -2290,11 +2289,12 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
     requestedRoom = OpenMCU::Current().GetDefaultRoomName();
 
   localPartyName = requestedRoom;
-  localDisplayName = OpenMCU::Current().GetName()+" / "+localPartyName;
+  localDisplayName = OpenMCU::Current().GetServerId();
   if(!ep.IsRegisteredWithGatekeeper())
   {
     localAliasNames.RemoveAll();
-    localAliasNames.AppendString(localPartyName);
+    localAliasNames.AppendString(OpenMCU::Current().GetName());
+    localAliasNames.AppendString(requestedRoom);
   }
 
   vfuSendTime = PTime(0);

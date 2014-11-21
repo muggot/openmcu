@@ -261,7 +261,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // Language
   s << SelectField("Language", cfg.GetString("Language"), ",EN,FR,JP,PT,RU,UK");
   // MCU Server Id
-  s << StringField("OpenMCU-ru Server Id", cfg.GetString("OpenMCU-ru Server Id", mcu.GetName()+" v"+mcu.GetVersion()), 250);
+  s << StringField(ServerIdKey, OpenMCU::Current().GetServerId(), 250);
 
   s << SelectField(DefaultProtocolKey, cfg.GetString(DefaultProtocolKey, "sip"), "h323,sip");
 

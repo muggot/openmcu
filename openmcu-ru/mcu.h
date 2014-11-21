@@ -54,6 +54,7 @@ static const PString MCU_INTERNAL_CALL_PREFIX("INTERNAL_CALL_");
 
 const WORD DefaultHTTPPort = 1420;
 
+static const char ServerIdKey[]           = "OpenMCU-ru Server Id";
 static const char LogLevelKey[]           = "Log Level";
 static const char TraceLevelKey[]         = "Trace level";
 static const char TraceRotateKey[]        = "Rotate trace files at startup";
@@ -273,7 +274,9 @@ class OpenMCU : public OpenMCUProcessAncestor
     virtual void OnCreateConfigPage(PConfig & /*cfg*/, PConfigPage & /*page*/)
     { }
 
-    PString GetDefaultRoomName() const { return defaultRoomName; }
+    const PString & GetServerId() const { return serverId; }
+    const PString & GetDefaultRoomName() const { return defaultRoomName; }
+
     BOOL AreLoopbackCallsAllowed() const { return allowLoopbackCalls; }
     PString GetNewRoomNumber();
     void LogMessage(const PString & str);
@@ -416,6 +419,7 @@ class OpenMCU : public OpenMCUProcessAncestor
     Registrar *registrar;
     MCURtspServer *rtspServer;
 
+    PString    serverId;
     PString    defaultRoomName;
     BOOL       allowLoopbackCalls;
     BOOL       traceFileRotated;
