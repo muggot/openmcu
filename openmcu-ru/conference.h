@@ -996,6 +996,9 @@ class ConferenceMember : public PObject
     virtual PString GetName() const
     { return name; }
 
+    virtual PString GetNameID() const
+    { return nameID; }
+
     virtual PString GetCallToken() const
     { return callToken; }
 
@@ -1047,6 +1050,7 @@ class ConferenceMember : public PObject
     PString callToken;
     MemberTypes memberType;
     PString name;
+    PString nameID;
     BufferListType bufferList;
     float currVolCoef;
 

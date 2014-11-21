@@ -1812,104 +1812,6 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   OTF_RET_FAIL;
 }
 
-void MCUH323EndPoint::SetMemberListOpts(Conference & conference,const PStringToString & data)
-{
- PWaitAndSignal m(conference.GetMemberListMutex());
- Conference::MemberList & memberList = conference.GetMemberList();
- Conference::MemberList::const_iterator s;
- for (s = memberList.begin(); s != memberList.end(); ++s) 
- {
-  ConferenceMember * member = s->second;
-  if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
-  ConferenceMemberId mid = member->GetID();
-
-  PString arg = (long)mid;
-  PString arg1 = "m" + arg;
-  PString opt = data(arg1);
-  if(opt=="+")member->muteMask|=1;else member->muteMask&=~1;
-  arg1 = "v" + arg;
-  opt = data(arg1);
-  member->disableVAD = (opt == "+")?TRUE:FALSE; 
-  arg1 = "c" + arg;
-  opt = data(arg1);
-  member->chosenVan = (opt == "+")?1:0; 
- }
-/* 
- for (s = memberList.begin(); s != memberList.end(); ++s) 
- {
-  ConferenceMember * member = s->second;
-  if(member->GetType() == MEMBER_TYPE_PIPE) continue;
-  ConferenceMemberId mid = member->GetID();
-  
-  PString arg = (int)mid;
-  PString arg1 = "d" + arg;
-  PString opt = data(arg1);
-  if(opt == "Drop") 
-  { 
-   conference.RemoveMember(member);
-   member->Close();
-//   member->WaitForClose();
-   return; 
-  }
- }
-*/
-
- int i = memberList.size();
- s = memberList.end(); s--;
- PString dall = data("dALL");
- while(i!=0)
- {
-  ConferenceMember * member = s->second;
-  s--; i--;
-  if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
-  ConferenceMemberId mid = member->GetID();
-  
-  PString arg = (long)mid;
-  PString arg1 = "d" + arg;
-  PString opt = data(arg1);
-  if(opt == "+" || dall == "+") 
-  {
-//   PThread::Sleep(500);
-//   conference.RemoveMember(member);
-   memberList.erase(member->GetID());
-   member->Close();
-//   member->WaitForClose();
-//   return; 
-  }
- }
-
-}
-
-void MCUH323EndPoint::OfflineMembersManager(Conference & conference,const PStringToString & data)
-{
- PWaitAndSignal m(conference.GetMemberListMutex());
- Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
- Conference::MemberNameList::const_iterator s;
- PString iall = data("iALL");
- for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
- {
-  ConferenceMember * member = s->second;
-  if(member!=NULL) continue; //online member
-  PString arg = "i" + s->first;
-  PString opt = data(arg);
-  const char * name=s->first;
-  if(opt=="+" || iall=="+") Invite(conference.GetNumber(), name);
- }
-
- PString rall = data("rALL");
- for (s = memberNameList.begin(); s != memberNameList.end(); ) 
- {
-  PString opt = data("r" + s->first);
-  PString name = s->first;
-  ConferenceMember * member = s->second;
-  s++;
-  if(member!=NULL) continue; //online member
-  if(opt=="+" || rall=="+") 
-    conference.RemoveOfflineMemberFromNameList(name);
- }
-}
-
-
 PString MCUH323EndPoint::GetRoomList(const PString & block)
 {
   PString substitution;
@@ -3837,6 +3739,7 @@ void H323Connection_ConferenceMember::SetName()
     if(member == this || member == NULL)
     {
       name = conn->GetMemberName();
+      nameID = MCUURL(name).GetMemberNameId();
       PTRACE(1, "SetName name: " << name);
     }
     else PTRACE(1, "MCU\tWrong connection in SetName for " << callToken);

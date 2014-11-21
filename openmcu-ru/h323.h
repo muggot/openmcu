@@ -106,10 +106,8 @@ class MCUH323EndPoint : public H323EndPoint
     PString GetActiveMemberDataJS(ConferenceMember * member);
     PString GetConferenceOptsJavascript(Conference & c);
     PString GetMemberListOptsJavascript(Conference & conference);
-    void SetMemberListOpts(Conference & conference, const PStringToString & data);
     BOOL SetMemberVideoMixer(Conference & conference, ConferenceMember * victim, unsigned newVideoMixer);
     PString OTFControl(const PString room, const PStringToString & data);
-    void OfflineMembersManager(Conference & conference,const PStringToString & data);
     PString GetRoomList(const PString & block);
     PString SetRoomParams(const PStringToString & data);
     void UnmoderateConference(Conference & conference);
@@ -484,21 +482,6 @@ class MCUH323Connection : public H323Connection
 
 ////////////////////////////////////////////////////
 
-class H323Connection_ConferenceConnection : public ConferenceConnection
-{
-  PCLASSINFO(H323Connection_ConferenceConnection, ConferenceConnection);
-  public:
-    H323Connection_ConferenceConnection(void * id)
-      : ConferenceConnection(id)
-    { conn = (MCUH323Connection *)id; }
-
-    virtual PString GetName() const
-    { return conn->GetCallToken(); }
-
-  protected:
-    MCUH323Connection * conn;
-};
-
 class H323Connection_ConferenceMember : public ConferenceMember
 {
   PCLASSINFO(H323Connection_ConferenceMember, ConferenceMember);
@@ -507,18 +490,7 @@ class H323Connection_ConferenceMember : public ConferenceMember
     ~H323Connection_ConferenceMember();
 
     virtual ConferenceConnection * CreateConnection()
-    { 
-//     if(id==this) return NULL;
-//      PTRACE(2, "h323.h\tFCWL from CreateConnection:" << callToken);
-     H323Connection * conn = (H323Connection *)id;
-//      H323Connection * conn = ep.FindConnectionWithLock(callToken);
-      if (conn == NULL)
-        return NULL;
-
-      H323Connection_ConferenceConnection * confConn = new H323Connection_ConferenceConnection(conn); 
-//      conn->Unlock();
-      return confConn;
-    }
+    { return new ConferenceConnection(this); }
 
     virtual void Close();
 

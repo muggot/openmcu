@@ -893,8 +893,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // add this member to the conference member name list
   if(memberToAdd != memberToAdd->GetID())
   {
-    PString memberNameId = MCUURL(memberToAdd->GetName()).GetMemberNameId();
-
     InsertMemberName(memberToAdd->GetName(), memberToAdd);
 
     PullMemberOptionsFromTemplate(memberToAdd, confTpl);
@@ -908,7 +906,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         << "," << memberToAdd->chosenVan
         << "," << memberToAdd->GetAudioLevel()
         << "," << memberToAdd->GetVideoMixerNumber()
-        << ",\"" << memberNameId << "\""
+        << ",\"" << memberToAdd->GetNameID() << "\""
         << "," << dec << (unsigned)memberToAdd->channelCheck
         << "," << memberToAdd->kManualGainDB
         << "," << memberToAdd->kOutputGainDB
