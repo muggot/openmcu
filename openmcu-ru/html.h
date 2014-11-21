@@ -319,12 +319,13 @@ class TablePConfigPage : public PConfigPage
    PString SelectItem(PString name, PString value, PString values, int width=0, PString id="", PString onchange="")
    {
      if(width == 0) width = 90;
-     if(id == "") id = GetTableId();
      PStringArray data = values.Tokenise(",");
 
      PString readonly;
-     if(value == values)
+     if(id == "" && value == values)
         readonly = "readonly";
+     if(id == "")
+       id = GetTableId();
 
      PString s = "<input name='TABLEID' value='"+id+"' type='hidden'>"
                  +itemStyle+"<select id='"+id+"' name='"+name+"' "+readonly+" onchange='"+onchange+"' style='width:"+PString(width)+"px;"+selectStyle+"'>";
