@@ -705,13 +705,12 @@ PString MCUH323EndPoint::GetRoomStatusJSStart()
 }
 
 PString MCUH323EndPoint::GetRoomStatus(const PString & block)
-{ 
+{
   PString substitution;
+
   PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-
-  ConferenceListType::iterator r;
-  for (r = conferenceList.begin(); r != conferenceList.end(); ++r) {
+  for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r) {
 
     // make a copy of the repeating html chunk
     PString insert = block;
@@ -739,16 +738,16 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
 #endif
                  "</tr>";
 
-    Conference & conference = *(r->second);
-    size_t memberNameListSize = 0;
+    Conference *conference = r->second;
+    size_t profileListSize = 0;
     PStringArray targets, subses, errors;
-
-    { PWaitAndSignal m(conference.GetMemberListMutex());
-      Conference::MemberList & memberList = conference.GetMemberList();
-      for (Conference::MemberList::const_iterator t = memberList.begin(); t != memberList.end(); ++t) 
-      { ConferenceMember * member = t->second;
+    {
+      PWaitAndSignal m(conference->GetProfileListMutex());
+      Conference::ProfileList & profileList = conference->GetProfileList();
+      for(Conference::ProfileList::const_iterator t = profileList.begin(); t != profileList.end(); ++t)
+      {
+        ConferenceMember * member = t->second->GetMember();
         if(member==NULL) continue;
-        PString memberName=member->GetName();
         PString formatString;
         int codecCacheMode=-1, cacheUsersNumber=0;
         BOOL visible=member->IsVisible();
@@ -759,7 +758,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
           members
             << (visible? "" : "<b>[Hidden]</b> ")
             << (member->GetType() == MEMBER_TYPE_MCU ? "<b>[MCU]</b> " : "")
-            << memberName << "</td>";
+            << member->GetName() << "</td>";
 
         MCUH323Connection * conn = NULL;
         if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
@@ -800,14 +799,18 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
           DWORD vorx=0, votx=0; MCU_RTP_UDP * v_session = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultVideoSessionID);
 #endif
           if(session!=NULL)
-          { orx = session->GetOctetsReceived(); otx = session->GetOctetsSent();
+          {
+            orx = session->GetOctetsReceived(); otx = session->GetOctetsSent();
             members << session->GetPacketsReceived() << "<br />" << session->GetPacketsSent();
-          } else members << "-<br />-";
+          } else
+            members << "-<br />-";
 #if MCU_VIDEO
           if(v_session!=NULL)
-          { vorx = v_session->GetOctetsReceived(); votx = v_session->GetOctetsSent();
+          {
+            vorx = v_session->GetOctetsReceived(); votx = v_session->GetOctetsSent();
             members << "<br />" << v_session->GetPacketsReceived() << "<br />" << v_session->GetPacketsSent();
-          } else members << "<br />-<br />-";
+          } else
+            members << "<br />-<br />-";
 #endif
           members << "</td><td style='text-align:right'>";
           if(session!=NULL) members << orx << "<br />" << otx; else members << "-<br />-";
@@ -829,14 +832,18 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         }
 
         if(conn==NULL)
-        { formatString="NO_CODEC";
+        {
+          formatString="NO_CODEC";
           if(cache)
-          { cache=FALSE;
+          {
+            cache=FALSE;
             ConferenceCacheMember * fileMember = dynamic_cast<ConferenceCacheMember *>(member);
-            if(fileMember!=NULL)
-            if(fileMember->codec!=NULL)
-            if(fileMember->codec->GetCacheMode()==1)
-            { cache=TRUE; formatString=fileMember->codec->GetFormatString(); cacheUsersNumber=fileMember->codec->GetCacheUsersNumber(); }
+            if(fileMember) if(fileMember->codec) if(fileMember->codec->GetCacheMode() == 1)
+            {
+              cache=TRUE;
+              formatString=fileMember->codec->GetFormatString();
+              cacheUsersNumber=fileMember->codec->GetCacheUsersNumber();
+            }
           }
           PStringStream d;
           d << (now - member->GetStartTime());
@@ -855,16 +862,19 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         members << "<td style='text-align:right'>";
         if(visible) members << "<br /><br />";
         if(cache)
-        { PString target="%%[" + formatString +"]";
+        {
+          PString target="%%[" + formatString +"]";
           PStringStream subs; subs << psprintf("%4.2f",floor(member->GetVideoTxFrameRate()*100+0.55)/100);
           targets.AppendString(target);
           subses.AppendString(subs);
           members << "<nobr><b><font color=green>" << cacheUsersNumber << " x </font></b>" << subs << "</nobr>";
         }
         else if(visible)
-        { members << "<nobr>" << psprintf("%4.2f",floor(member->GetVideoRxFrameRate()*100+0.55)/100) << "<br />";
+        {
+          members << "<nobr>" << psprintf("%4.2f",floor(member->GetVideoRxFrameRate()*100+0.55)/100) << "<br />";
           if(codecCacheMode==2)
-          { PString t = "%%[" + formatString + "]";
+          {
+            PString t = "%%[" + formatString + "]";
             members << t;
             if(errors.GetStringsIndex(t)==P_MAX_INDEX) errors.AppendString(t);
           }
@@ -877,134 +887,35 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         members 
           << "</tr>";
       }
-    }
-          
-    Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
-    memberNameListSize = memberNameList.size();
-    Conference::MemberNameList::const_iterator s;
-    for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
-    {
-      ConferenceMember * member = s->second;
+
+      profileListSize = profileList.size();
+      for(Conference::ProfileList::const_iterator s = profileList.begin(); s != profileList.end(); ++s)
+      {
+        ConferenceMember * member = s->second->GetMember();
 #if MCU_VIDEO
-      if(member == NULL) {members << "<tr><td colspan='7'><b>[Offline]</b> <font color='gray'>" << s->first << "</font></td></tr>"; continue; }
+        if(member == NULL) {members << "<tr><td colspan='7'><b>[Offline]</b> <font color='gray'>" << s->second->GetName() << "</font></td></tr>"; continue; }
 #else
-      if(member == NULL) {members << "<tr><td colspan='6'><b>[Offline]</b> <font color='gray'>" << s->first << "</font></td></tr>"; continue; }
+        if(member == NULL) {members << "<tr><td colspan='6'><b>[Offline]</b> <font color='gray'>" << s->second->GetName() << "</font></td></tr>"; continue; }
 #endif
+      }
     }
 
     members << "</table>";
     for(PINDEX i=0; i<errors.GetSize(); i++)
-    { PString target=errors[i], subs;
+    {
+      PString target=errors[i], subs;
       PINDEX j = targets.GetStringsIndex(target);
       if(j!=P_MAX_INDEX) subs="<font color='green'>" + subses[j] + "</font>"; else subs="<font color=red>Error</font>";
       members.Replace(target, subs, TRUE, 0);
     }
 
-    SpliceMacro(insert, "RoomName",        conference.GetNumber());
-    SpliceMacro(insert, "RoomMemberCount", PString(PString::Unsigned, memberNameListSize));
+    SpliceMacro(insert, "RoomName",        conference->GetNumber());
+    SpliceMacro(insert, "RoomMemberCount", PString(PString::Unsigned, profileListSize));
     SpliceMacro(insert, "RoomMembers",     members);
     substitution += insert;
   }
 
   return substitution;
-}
-
-PString MCUH323EndPoint::GetMemberList(Conference & conference, ConferenceMemberId id)
-{
- PStringStream members;
- PWaitAndSignal m(conference.GetMemberListMutex());
- Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
- Conference::MemberNameList::const_iterator s;
- members << "<option value=\"0\"></option>";
- members << "<option" << ((id==(void *)(-1))?" selected ":" ") << "value=\"-1\">VAD</option>";
- members << "<option" << ((id==(void *)(-2))?" selected ":" ") << "value=\"-2\">VAD2</option>";
- for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
- {
-  ConferenceMember * member = s->second;
-  if(member==NULL) continue;
-  long mint=(long)member->GetID();
-  if(mint!=0)
-  {
-   PString username=s->first;
-   members << "<option"
-	<< ((mint==(long)id)?" selected ":" ")
-	<< "value=\"" << mint << "\">"
-	<< username << "</option>";
-  }
- }
- return members;
-}
-
-PString MCUH323EndPoint::GetMemberListOpts(Conference & conference)
-{
- PStringStream members;
-// size_t memberListSize = 0;
- PWaitAndSignal m(conference.GetMemberListMutex());
- Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
- Conference::MemberNameList::const_iterator s;
- members << "<table class=\"table table-striped table-bordered table-condensed\"><tr><td valign=top style='padding-left:12px'>";
- members << "<font color=green><b>Active Members</b></font>";
- members << "<table class=\"table table-striped table-bordered table-condensed\">";
- members << "<tr><th>Active Members<th>Mute voice<th>Disable VAD<th>Chosen Van<th>Drop"; 
- int i=0;
- for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
- {
-  ConferenceMember * member = s->second;
-  if(member==NULL) continue;
-  long mint=(long)member->GetID();
-   members << "<tr>"; 
-  members << "<th id=\"tam_" << i << "\" >";
-  members << s->first;
-  members << "<th>";
-  members << "<input type=\"checkbox\" name=\"m" << mint << "\" value=\"+\" " << ((member->muteMask&1)?"checked":"") << ">";
-  members << "<th>";
-  members << "<input type=\"checkbox\" name=\"v" << mint << "\" value=\"+\" " << ((member->disableVAD)?"checked":"") << ">";
-  members << "<th>";
-  members << "<input type=\"checkbox\" name=\"c" << mint << "\" value=\"+\" " << ((member->chosenVan)?"checked":"") << ">";
-  members << "<th>";
-  members << "<input type=\"checkbox\" name=\"d" << mint << "\" value=\"+\">";
-  i++;
- }
- members << "<tr>"; 
- members << "<th>";
- members << "ALL Active!!!";
- members << "<th>";
- members << "<th>";
- members << "<th>";
- members << "<th>";
- members << "<input type=\"checkbox\" name=\"d" << "ALL" << "\" value=\"+\">";
- members  << "</table>";
-
- members << "</td><td valign=top style='padding-right:12px'>";
-
- members << "<font color=red><b>Inactive Members</b></font>";
- members << "<table class=\"table table-striped table-bordered table-condensed\">";
- members << "<tr><th>Inactive Members<th>Remove<th>Invite"; 
- members << "<tr>"; 
- members << "<th>";
- members << "ALL Inactive!!!";
- members << "<th>";
- members << "<input type=\"checkbox\" name=\"r" << "ALL" << "\" value=\"+\">";
- members << "<th>";
- members << "<input type=\"checkbox\" name=\"i" << "ALL" << "\" value=\"+\">";
- i=0;
- for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
- {
-  ConferenceMember * member = s->second;
-  if(member!=NULL) continue;
-  members << "<tr>"; 
-  members << "<th id=\"tim_" << i << "\">";
-  members << s->first;
-  members << "<th>";
-  members << "<input type=\"checkbox\" name=\"r" << s->first << "\" value=\"+\">";
-  members << "<th>";
-  members << "<input id=\"iinv_" << i << "\" type=\"checkbox\" name=\"i" << s->first << "\" value=\"+\">";
-  i++;
- }
- members  << "</table>";
- members << "</td></table>";
-
- return members;
 }
 
 PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
