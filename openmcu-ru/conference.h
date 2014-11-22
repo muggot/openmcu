@@ -788,11 +788,19 @@ class ConferenceProfile : public PObject
 
     void SetName(PString _name);
 
-    PString GetName() const
+    const PString & GetName() const
     { return name; }
 
-    PString GetNameID() const
+    const PString & GetNameID() const
     { return nameID; }
+
+    PString GetNameHTML() const
+    {
+      PString _name = name;
+      _name.Replace("&","&amp;",TRUE,0);
+      _name.Replace("\"","&quot;",TRUE,0);
+      return _name;
+    }
 
     ConferenceMemberId GetID() const
     { return (ConferenceMemberId)this; }
@@ -1043,6 +1051,14 @@ class ConferenceMember : public PObject
 
     virtual PString GetNameID() const
     { return nameID; }
+
+    PString GetNameHTML() const
+    {
+      PString _name = name;
+      _name.Replace("&","&amp;",TRUE,0);
+      _name.Replace("\"","&quot;",TRUE,0);
+      return _name;
+    }
 
     virtual PString GetCallToken() const
     { return callToken; }

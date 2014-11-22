@@ -539,31 +539,35 @@ PString MCUH323EndPoint::GetRoomStatusJS()
 {
   PString str = "Array(";
   PTime now;
+
   PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-  BOOL notFirstConference = FALSE;
+  BOOL firstConference = TRUE;
   for (ConferenceListType::iterator r=conferenceList.begin(), re=conferenceList.end(); r!=re; ++r)
-  { Conference & conference = *(r->second);
+  {
+    Conference *conference = r->second;
     PStringStream c;
-    { PWaitAndSignal m(conference.GetMemberListMutex());
-      Conference::MemberList & memberList = conference.GetMemberList();
-      Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
+    {
+      PWaitAndSignal m(conference->GetProfileListMutex());
+      Conference::ProfileList & profileList = conference->GetProfileList();
       c << "Array("
-        << JsQuoteScreen(conference.GetNumber())                               // c[r][0]: room name
-        << "," << memberList.size()                                            // c[r][1]: memberList size
-        << "," << memberNameList.size()                                        // c[r][2]: memberNameList size
-        << "," << PString((now - conference.GetStartTime()).GetMilliSeconds()) // c[r][3]: duration
+        << JsQuoteScreen(conference->GetNumber())                              // c[r][0]: room name
+        << "," << conference->GetMemberList().size()                           // c[r][1]: memberList size
+        << "," << profileList.size()                                           // c[r][2]: profileList size
+        << "," << PString((now - conference->GetStartTime()).GetMilliSeconds())// c[r][3]: duration
         << ",Array("                                                           // c[r][4]: member descriptors
       ;
-      BOOL notFirstMember = FALSE;
-      for (Conference::MemberList::const_iterator t=memberList.begin(), te=memberList.end(); t!=te; ++t) 
-      { ConferenceMember * member = t->second; if(member==NULL) continue;
-        PString name=member->GetName();
-        ConferenceMemberId id = member->GetID();
-        if(notFirstMember) c << ",";
+      BOOL firstMember = TRUE;
+      for(Conference::ProfileList::const_iterator t = profileList.begin(), te = profileList.end(); t != te; ++t)
+      {
+        ConferenceMember * member = t->second->GetMember();
+        if(member == NULL)
+          continue;
+
+        if(!firstMember) c << ",";
         c << "Array("                                                          // c[r][4][m]: member m descriptor
-          << (long)id                                                          // c[r][4][m][0]: member id
-          << "," << JsQuoteScreen(name)                                        // c[r][4][m][1]: member name
+          << (long)member->GetID()                                             // c[r][4][m][0]: member id
+          << "," << JsQuoteScreen(member->GetName())                           // c[r][4][m][1]: member name
           << "," << (member->IsVisible() ? "1" : "0")                          // c[r][4][m][2]: is member visible: 1/0
           << "," << PString(member->GetType())                                 // c[r][4][m][3]: 0-NONE, 1-MCU ...
         ;
@@ -615,11 +619,11 @@ PString MCUH323EndPoint::GetRoomStatusJS()
           }
         }
         else if(member->GetType() == MEMBER_TYPE_CACHE)
-        { ConferenceCacheMember * fileMember = dynamic_cast<ConferenceCacheMember *>(member);
-          if(fileMember!=NULL)
-          if(fileMember->codec!=NULL)
-          if(fileMember->codec->GetCacheMode()==1)
-          { formatString=fileMember->codec->GetFormatString();
+        {
+          ConferenceCacheMember * fileMember = dynamic_cast<ConferenceCacheMember *>(member);
+          if(fileMember) if(fileMember->codec) if(fileMember->codec->GetCacheMode() == 1)
+          {
+            formatString=fileMember->codec->GetFormatString();
             cacheUsersNumber=fileMember->codec->GetCacheUsersNumber();
             codecCacheMode=fileMember->codec->GetCacheMode();
           }
@@ -635,7 +639,8 @@ PString MCUH323EndPoint::GetRoomStatusJS()
               audioCodecT = conn->GetAudioTransmitCodecName();
               RTP_Session *sess=conn->GetSession(RTP_Session::DefaultAudioSessionID);
               if(sess != NULL)
-              { orx = sess->GetOctetsReceived(); otx = sess->GetOctetsSent();
+              {
+                orx = sess->GetOctetsReceived(); otx = sess->GetOctetsSent();
                 prx = sess->GetPacketsReceived(); ptx = sess->GetPacketsSent();
                 plost = sess->GetPacketsLost(); plostTx = sess->GetPacketsLostTx();
               }
@@ -644,12 +649,14 @@ PString MCUH323EndPoint::GetRoomStatusJS()
                 videoCodecT = conn->GetVideoTransmitCodecName();
                 RTP_Session* vSess=conn->GetSession(RTP_Session::DefaultVideoSessionID);
                 if(vSess != NULL)
-                { vorx=vSess->GetOctetsReceived(); votx=vSess->GetOctetsSent();
+                {
+                  vorx=vSess->GetOctetsReceived(); votx=vSess->GetOctetsSent();
                   vprx=vSess->GetPacketsReceived(); vptx=vSess->GetPacketsSent();
                   vplost = vSess->GetPacketsLost(); vplostTx = vSess->GetPacketsLostTx();
                 }
                 if(conn->GetVideoTransmitCodec()!=NULL)
-                { codecCacheMode=conn->GetVideoTransmitCodec()->GetCacheMode();
+                {
+                  codecCacheMode=conn->GetVideoTransmitCodec()->GetCacheMode();
                   formatString=conn->GetVideoTransmitCodec()->GetFormatString();
                 }
                 ra = conn->GetRemoteApplication();
@@ -672,22 +679,13 @@ PString MCUH323EndPoint::GetRoomStatusJS()
           << "," << JsQuoteScreen(ra)                                          // c[r][4][m][22]: remote application name
           << "," << plost << "," << vplost << "," << plostTx << "," << vplostTx// c[r][4][m][23-26]: rx & tx_from_RTCP packets lost (audio, video)
           << ")";
-        notFirstMember = TRUE;
-      }
-          
-      for(Conference::MemberNameList::const_iterator s=memberNameList.begin(), se=memberNameList.end(); s!=se; ++s)
-      { if(s->second != NULL) continue;
-        c << (notFirstMember ? "," : "") << "Array("                           // c[r][4][m]: member m descriptor
-          << "0"                                                               // c[r][4][m][0]: member id: 0 (offline)
-          << "," << JsQuoteScreen(s->first)                                    // c[r][4][m][1]: member name
-          << ")";
-        notFirstMember = TRUE;
+        firstMember = FALSE;
       }
       c << "))";
     }
 
-    if(notFirstConference) str += ",";
-    notFirstConference = TRUE;
+    if(!firstConference) str += ",";
+    firstConference = FALSE;
     str += c;
   }
 
@@ -1095,20 +1093,17 @@ PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
   if(!member) return "[]";
   PString mixerData;
   if(member->videoMixer) mixerData = GetVideoMixerConfiguration(member->videoMixer);
-  PString username=member->GetName();
-  username.Replace("&","&amp;",TRUE,0);
-  username.Replace("\"","&quot;",TRUE,0);
   PStringStream r;
   r
 /* 0*/  << "[1"                                           // [i][ 0] = 1 : ONLINE
 /* 1*/  << ",\"" << dec << (long)member->GetID() << "\""  // [i][ 1] = long id
-/* 2*/  << ",\"" << username << "\""                      // [i][ 2] = name [ip]
+/* 2*/  << ",\"" << member->GetNameHTML() << "\""         // [i][ 2] = name [ip]
 /* 3*/  << "," << member->muteMask                        // [i][ 3] = mute
 /* 4*/  << "," << member->disableVAD                      // [i][ 4] = disable vad
 /* 5*/  << "," << member->chosenVan                       // [i][ 5] = chosen van
 /* 6*/  << "," << member->GetAudioLevel()                 // [i][ 6] = audiolevel (peak)
 /* 7*/  << "," << member->GetVideoMixerNumber()           // [i][ 7] = number of mixer member receiving
-/* 8*/  << ",\"" << MCUURL(username).GetMemberNameId() << "\""   // [i][ 8] = memberName id
+/* 8*/  << ",\"" << member->GetNameID() << "\""           // [i][ 8] = memberName id
 /* 9*/  << "," << (unsigned short)member->channelCheck    // [i][ 9] = RTP channels checking bit mask 0000vVaA
 /*10*/  << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
 /*11*/  << "," << member->kOutputGainDB                   // [i][11] = Output audio gain, integer: -20..60
@@ -1121,23 +1116,24 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 {
   PStringStream members;
   members << "members=[";
+  BOOL firstMember = TRUE;
 
   PWaitAndSignal m(conference.GetProfileListMutex());
   Conference::ProfileList & profileList = conference.GetProfileList();
   for(Conference::ProfileList::const_iterator s = profileList.begin(); s != profileList.end(); ++s)
   {
-    if(s != profileList.begin())
-      members << ",";
     ConferenceProfile *profile = s->second;
-    if(profile->GetMember() == NULL) // inactive member
+    ConferenceMember *member = profile->GetMember();
+    if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+      continue;
+    if(!firstMember)
+      members << ",";
+    if(member == NULL) // inactive member
     {
-      PString username = profile->GetName();
-      username.Replace("&","&amp;",TRUE,0);
-      username.Replace("\"","&quot;",TRUE,0);
       members
 /* 0*/  << "[0"
 /* 1*/  << ",0"
-/* 2*/  << ",\"" << username << "\""
+/* 2*/  << ",\"" << profile->GetNameHTML() << "\""
 /* 3*/  << ",0"
 /* 4*/  << ",0"
 /* 5*/  << ",0"
@@ -1148,19 +1144,12 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
     }
     else // active member
     {
-      members << GetActiveMemberDataJS(profile->GetMember());
+      members << GetActiveMemberDataJS(member);
     }
+    firstMember = FALSE;
   }
 
-  if(conference.pipeMember)
-    members << "," << GetActiveMemberDataJS(conference.pipeMember);
-//todo...
-/*
-  if(conference.recorderMember)
-      members << "," << GetActiveMemberDataJS(conference.recorderMember);
-*/
   members << "];";
-
   return members;
 }
 
