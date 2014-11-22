@@ -293,6 +293,17 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
   conference->StopRecorder();
 
+  // delete profiles
+  conference->GetProfileListMutex().Wait();
+  for(Conference::ProfileList::iterator r = conference->GetProfileList().begin(); r != conference->GetProfileList().end(); ++r)
+  {
+    ConferenceProfile *profile = r->second;
+    conference->GetProfileList().erase(r->first);
+    profile->Lock();
+    delete profile;
+  }
+  conference->GetProfileListMutex().Signal();
+
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", disconnect remote endpoints");
   conference->GetMemberListMutex().Wait();
   for(Conference::MemberList::iterator r = conference->GetMemberList().begin(); r != conference->GetMemberList().end(); ++r)
@@ -746,19 +757,96 @@ ConferenceMember * Conference::FindMemberNameId(PString memberName)
   return NULL;
 }
 
-void Conference::InsertMemberName(PString memberName, ConferenceMember *member)
+void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
 {
-  PString memberNameId = MCUURL(memberName).GetMemberNameId();
   PWaitAndSignal m(memberListMutex);
+  PWaitAndSignal m2(profileListMutex);
+
+  // memberList
+  if(member)
+  {
+    MemberList::iterator r = memberList.find(member->GetID());
+    if(r != memberList.end())
+      return;
+    memberList.insert(MemberList::value_type(member->GetID(), member));
+  }
+
+  //
+  if(member == member->GetID())
+    return;
+
+  // memberNameList
+  PString nameID = MCUURL(name).GetMemberNameId();
   for(MemberNameList::iterator it = memberNameList.begin(); it != memberNameList.end(); ++it)
   {
-    if(MCUURL(it->first).GetMemberNameId() == memberNameId && it->second == NULL)
+    if(MCUURL(it->first).GetMemberNameId() == nameID && it->second == NULL)
     {
       memberNameList.erase(it);
       break;
     }
   }
-  memberNameList.insert(MemberNameList::value_type(memberName, member));
+  memberNameList.insert(MemberNameList::value_type(name, member));
+
+  // memberProfileList
+  ConferenceProfile * profile = NULL;
+  if(member)
+  {
+    for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
+    {
+      if(r->second->GetMember())
+        continue;
+      if(r->second->GetNameID() == member->GetNameID())
+      {
+        profile = r->second;
+        profile->SetMember(member);
+        break;
+      }
+    }
+  }
+  if(profile == NULL)
+  {
+    profile = new ConferenceProfile(this, name);
+    profile->SetMember(member);
+    profileList.insert(ProfileList::value_type((ConferenceMemberId)profile, profile));
+  }
+}
+
+void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *member)
+{
+  PWaitAndSignal m(memberListMutex);
+  PWaitAndSignal m2(profileListMutex);
+
+  // memberList
+  if(member)
+    memberList.erase(member->GetID());
+
+  // memberNameList
+  MemberNameList::iterator s = memberNameList.find(name);
+  if(s != memberNameList.end())
+  {
+    memberNameList.erase(name);
+    if(member)
+      memberNameList.insert(MemberNameList::value_type(name, NULL));
+  }
+
+  // profileList
+  for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
+  {
+    if(r->second->GetName() == name)
+    {
+      ConferenceProfile *profile = r->second;
+      profile->Lock();
+      if(member)
+      {
+        profile->SetMember(NULL);
+        profile->Unlock();
+      } else {
+        profileList.erase(profile);
+        delete profile;
+      }
+      break;
+    }
+  }
 }
 
 BOOL Conference::AddMember(ConferenceMember * memberToAdd)
@@ -772,8 +860,9 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 
   memberToAdd->SetName();
 
-  // lock the member list
+  // lock the member lists
   PWaitAndSignal m(memberListMutex);
+  PWaitAndSignal m2(profileListMutex);
 
   // check for duplicate name or very fast reconnect
   PString memberName = memberToAdd->GetName();
@@ -825,8 +914,8 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     memberToAdd->SetFreezeVideo(TRUE);
 #endif
 
-  // add this member to the conference member list
-  memberList.insert(MemberList::value_type(memberToAdd->GetID(), memberToAdd));
+  // add to all lists
+  AddMemberToList(memberToAdd->GetName(), memberToAdd);
 
   // for H.323
   int tid = terminalNumberMap.GetNumber(memberToAdd->GetID());
@@ -893,8 +982,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // add this member to the conference member name list
   if(memberToAdd != memberToAdd->GetID())
   {
-    InsertMemberName(memberToAdd->GetName(), memberToAdd);
-
     PullMemberOptionsFromTemplate(memberToAdd, confTpl);
 
     PString username=memberToAdd->GetName(); username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
@@ -926,6 +1013,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
   // lock memberList
   PWaitAndSignal m(memberListMutex);
+  PWaitAndSignal m2(profileListMutex);
 
   // lock conferenceMember
   memberToRemove->Lock();
@@ -949,16 +1037,6 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
   BOOL closeConference;
   {
 
-    MemberNameList::iterator s;
-    s = memberNameList.find(username);
-
-    ConferenceMember *zerop=NULL;
-    if(memberToRemove!=userid && s->second==memberToRemove && s!=memberNameList.end())
-     {
-       memberNameList.erase(username);
-       memberNameList.insert(MemberNameList::value_type(username,zerop));
-     }
-
     PStringStream msg; msg << "<font color=red><b>-</b>" << username << "</font>"; OpenMCU::Current().HttpWriteEventRoom(msg,number);
     username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
     msg="remmmbr(0";
@@ -969,13 +1047,13 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
         << ","  << memberToRemove->chosenVan
         << ","  << memberToRemove->GetAudioLevel()
         << ",\"" << MCUURL(memberToRemove->GetName()).GetMemberNameId() << "\"";
-    if(s==memberNameList.end()) msg << ",1";
+// ???    if(s==memberNameList.end()) msg << ",1";
     msg << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 
+    // remove from all lists
+    RemoveMemberFromList(memberToRemove->GetName(), memberToRemove);
 
-    // remove this connection from the member list
-    memberList.erase(userid);
     memberToRemove->RemoveAllConnections();
 
     MemberList::iterator r;
@@ -1278,16 +1356,6 @@ void Conference::FreezeVideo(ConferenceMemberId id)
   }
 }
 
-void Conference::AddOfflineMemberToNameList(PString & name)
-{
-  ConferenceMember *zerop=NULL;
-  memberNameList.insert(MemberNameList::value_type(name,zerop));
-  PString username(name);
-  username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
-  PString id = MCUURL(username).GetMemberNameId();
-  OpenMCU::Current().HttpWriteCmdRoom("addmmbr(0,0,'"+username+"',0,0,0,0,0,'"+id+"',0)",number);
-}
-
 BOOL Conference::PutChosenVan()
 {
   BOOL put=FALSE;
@@ -1337,8 +1405,34 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-///////////////////////////////////////////////////////////////////////////
+ConferenceProfile::ConferenceProfile(Conference * _conference, PString _name)
+{
+  conference = _conference;
+  SetName(_name);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferenceProfile::SetName(PString _name)
+{
+  PWaitAndSignal m(mutex);
+  name = _name;
+  nameID = MCUURL(name).GetMemberNameId();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferenceProfile::SetMember(ConferenceMember * _member)
+{
+  PWaitAndSignal m(mutex);
+  member = _member;
+  if(member)
+    SetName(member->GetName());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId _id)
   : conference(_conference), id(_id)

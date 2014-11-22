@@ -1120,31 +1120,18 @@ PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
 PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 {
   PStringStream members;
-  PWaitAndSignal m(conference.GetMemberListMutex());
-  Conference::MemberNameList & memberNameList = conference.GetMemberNameList();
-  Conference::MemberNameList::const_iterator s;
   members << "members=[";
-  int i=0;
-  if(conference.pipeMember)
+
+  PWaitAndSignal m(conference.GetProfileListMutex());
+  Conference::ProfileList & profileList = conference.GetProfileList();
+  for(Conference::ProfileList::const_iterator s = profileList.begin(); s != profileList.end(); ++s)
   {
-    if(i!=0) members << ","; i++;
-      members << GetActiveMemberDataJS(conference.pipeMember);
-  }
-//todo...
-/*
-  if(conference.recorderMember)
-  {
-    if(i!=0) members << ","; i++;
-      members << GetActiveMemberDataJS(conference.recorderMember);
-  }
-*/
-  for (s = memberNameList.begin(); s != memberNameList.end(); ++s) 
-  {
-    ConferenceMember * member = s->second;
-    if(i!=0) members << ","; i++;
-    if(member==NULL) // inactive member
+    if(s != profileList.begin())
+      members << ",";
+    ConferenceProfile *profile = s->second;
+    if(profile->GetMember() == NULL) // inactive member
     {
-      PString username=s->first;
+      PString username = profile->GetName();
       username.Replace("&","&amp;",TRUE,0);
       username.Replace("\"","&quot;",TRUE,0);
       members
@@ -1156,14 +1143,22 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 /* 5*/  << ",0"
 /* 6*/  << ",0"
 /* 7*/  << ",0"
-/* 8*/  << ",\"" << MCUURL(s->first).GetMemberNameId() << "\""
+/* 8*/  << ",\"" << profile->GetNameID() << "\""
         << "]";
     }
     else // active member
     {
-      members << GetActiveMemberDataJS(member);
+      members << GetActiveMemberDataJS(profile->GetMember());
     }
   }
+
+  if(conference.pipeMember)
+    members << "," << GetActiveMemberDataJS(conference.pipeMember);
+//todo...
+/*
+  if(conference.recorderMember)
+      members << "," << GetActiveMemberDataJS(conference.recorderMember);
+*/
   members << "];";
 
   return members;
@@ -1338,13 +1333,17 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
   if(action == OTFC_ADD_AND_INVITE)
   {
-    conference->AddOfflineMemberToNameList(value);
+    conference->AddMemberToList(value, NULL);
+    PString username(value);
+    username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
+    PString id = MCUURL(username).GetMemberNameId();
+    OpenMCU::Current().HttpWriteCmdRoom("addmmbr(0,0,'"+username+"',0,0,0,0,0,'"+id+"',0)", room);
     Invite(conference->GetNumber(), value);
     OTF_RET_OK;
   }
   if(action == OTFC_REMOVE_OFFLINE_MEMBER)
   {
-    conference->RemoveOfflineMemberFromNameList(value);
+    conference->RemoveMemberFromList(value, NULL);
     PStringStream msg;
     msg << GetMemberListOptsJavascript(*conference) << "\n"
         << "p.members_refresh()";
@@ -1395,7 +1394,9 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   {
     Conference::MemberNameList & memberNameList = conference->GetMemberNameList();
     Conference::MemberNameList::const_iterator r;
-    for (r = memberNameList.begin(); r != memberNameList.end(); ++r) if(r->second==NULL) conference->RemoveOfflineMemberFromNameList((PString &)(r->first));
+    for(r = memberNameList.begin(); r != memberNameList.end(); ++r)
+      if(r->second==NULL)
+        conference->RemoveMemberFromList(r->first, NULL);
     OpenMCU::Current().HttpWriteEventRoom("Offline members removed by operator",room);
     OpenMCU::Current().HttpWriteCmdRoom("remove_all()",room);
     OTF_RET_OK;

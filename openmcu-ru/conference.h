@@ -767,6 +767,51 @@ class ConferenceConnection : public PObject {
 
 class ConferenceManager;
 
+class ConferenceProfile : public PObject
+{
+  PCLASSINFO(ConferenceProfile, PObject);
+
+  public:
+    ConferenceProfile(Conference * _conference, PString _name);
+
+    ~ConferenceProfile()
+    { }
+
+    PMutex & GetMutex()
+    { return mutex; }
+
+    void Lock()
+    { mutex.Wait(); }
+
+    void Unlock()
+    { mutex.Signal(); }
+
+    void SetName(PString _name);
+
+    PString GetName() const
+    { return name; }
+
+    PString GetNameID() const
+    { return nameID; }
+
+    ConferenceMemberId GetID() const
+    { return (ConferenceMemberId)this; }
+
+    ConferenceMember * GetMember()
+    { return member; }
+
+    void SetMember(ConferenceMember *_member);
+
+  protected:
+    PMutex mutex;
+
+    PString name;
+    PString nameID;
+
+    Conference *conference;
+    ConferenceMember *member;
+};
+
 class ConferenceMember : public PObject
 {
   PCLASSINFO(ConferenceMember, PObject);
@@ -1125,6 +1170,7 @@ class Conference : public PObject
 
     typedef std::map<void *, ConferenceMember *> MemberList;
     typedef std::map<PString, ConferenceMember *> MemberNameList;
+    typedef std::map<ConferenceMemberId, ConferenceProfile *> ProfileList;
 
     Conference(ConferenceManager & manager,     
       const OpalGloballyUniqueID & _guid,
@@ -1140,6 +1186,9 @@ class Conference : public PObject
 
     PMutex & GetMemberListMutex()
     { return memberListMutex; }
+
+    PMutex & GetProfileListMutex()
+    { return profileListMutex; }
 
     PMutex & GetMutex()
     { return destructorMutex; }
@@ -1175,14 +1224,14 @@ class Conference : public PObject
     MemberNameList & GetMemberNameList() 
     { return memberNameList; }
 
-    MemberNameList & GetServiceMemberNameList() 
-    { return serviceMemberNameList; }
+    ProfileList & GetProfileList()
+    { return profileList; }
+
+    void AddMemberToList(const PString & name, ConferenceMember *member);
+    void RemoveMemberFromList(const PString & name, ConferenceMember *member);
 
     ConferenceMember *FindMemberName(PString memberName);
-
     ConferenceMember *FindMemberNameId(PString memberName);
-
-    void InsertMemberName(PString memberName, ConferenceMember *member);
 
     int GetMemberCount() const
     { PWaitAndSignal m(memberListMutex); return (int)memberList.size(); }
@@ -1352,13 +1401,6 @@ class Conference : public PObject
 
     void AddMonitorEvent(ConferenceMonitorInfo * info);
 
-    void AddOfflineMemberToNameList(PString & name);
-
-    void RemoveOfflineMemberFromNameList(PString & name)
-    {
-     memberNameList.erase(name);
-    }
-
     void HandleFeatureAccessCode(ConferenceMember & member, PString fac);
 
     unsigned short int VAdelay;
@@ -1396,11 +1438,14 @@ class Conference : public PObject
 
   protected:
     ConferenceManager & manager;
+
     PMutex destructorMutex;
     PMutex memberListMutex;
+    PMutex profileListMutex;
+
     MemberList memberList;
     MemberNameList memberNameList;
-    MemberNameList serviceMemberNameList;
+    ProfileList profileList;
     PINDEX maxMemberCount;
 
     OpalGloballyUniqueID guid;

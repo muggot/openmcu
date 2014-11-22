@@ -231,7 +231,7 @@ void Conference::LoadTemplate(PString tpl)
           }
           else
           {
-            InsertMemberName(memberInternalName, NULL);
+            AddMemberToList(memberInternalName, NULL);
             if(memberAutoDial) // finally: offline and have to be called
             {
               PString token;
