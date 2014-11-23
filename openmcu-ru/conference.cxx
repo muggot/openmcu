@@ -876,7 +876,7 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
   }
 
   //
-  if(member && member == member->GetID())
+  if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
     return;
 
   // memberNameList
@@ -950,20 +950,24 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   PWaitAndSignal m2(profileListMutex);
 
   // check for duplicate name or very fast reconnect
-  PString memberName = memberToAdd->GetName();
-  for(PINDEX i = 0; FindMemberWithoutLock(memberToAdd->GetName()) != NULL; i++)
+  if(!memberToAdd->GetType() & MEMBER_TYPE_GSYSTEM)
   {
-    if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
+    // check for duplicate name or very fast reconnect
+    PString memberName = memberToAdd->GetName();
+    for(PINDEX i = 0; FindMemberWithoutLock(memberToAdd->GetName()) != NULL; i++)
     {
-      PString username = memberToAdd->GetName();
-      username.Replace("&","&amp;",TRUE,0);
-      username.Replace("\"","&quot;",TRUE,0);
-      PStringStream msg;
-      msg << username << " REJECTED - DUPLICATE NAME";
-      OpenMCU::Current().HttpWriteEventRoom(msg, number);
-      return FALSE;
+      if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
+      {
+        PString username = memberToAdd->GetName();
+        username.Replace("&","&amp;",TRUE,0);
+        username.Replace("\"","&quot;",TRUE,0);
+        PStringStream msg;
+        msg << username << " REJECTED - DUPLICATE NAME";
+        OpenMCU::Current().HttpWriteEventRoom(msg, number);
+        return FALSE;
+      }
+      memberToAdd->SetName(memberName+" ##"+PString(i+2));
     }
-    memberToAdd->SetName(memberName+" ##"+PString(i+2));
   }
 
 #if MCU_VIDEO
@@ -1065,7 +1069,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   PStringStream msg;
 
   // add this member to the conference member name list
-  if(memberToAdd != memberToAdd->GetID())
+  if(!memberToAdd->GetType() & MEMBER_TYPE_GSYSTEM)
   {
     PullMemberOptionsFromTemplate(memberToAdd, confTpl);
 
