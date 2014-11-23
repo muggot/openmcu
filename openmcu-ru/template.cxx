@@ -623,25 +623,26 @@ void Conference::OnConnectionClean(const PString & remotePartyName, const PStrin
     name += '[' + url +']';
   }
 
-  PWaitAndSignal m(memberListMutex);
-  Conference::MemberNameList::iterator q = memberNameList.find(name);
-  if(q == memberNameList.end())
+  PWaitAndSignal m(profileListMutex);
+  ConferenceProfile *profile = FindProfileWithoutLock(name);
+  if(profile == NULL)
   {
-    for(q=memberNameList.begin(); q!=memberNameList.end(); ++q)
+    for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
     {
-      if(q->first.FindLast(name) != P_MAX_INDEX)
+      if(r->second->GetName().FindLast(name) != P_MAX_INDEX)
       {
-        name = q->first;
+        profile = r->second;
+        name = profile->GetName();
         break;
       }
     }
-    if(q == memberNameList.end())
-    {
-      PTRACE(1,"Conference\tCould not match party name: " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
-      return;
-    }
   }
-  if(q->second != NULL)
+  if(profile == NULL)
+  {
+    PTRACE(1,"Conference\tCould not match party name: " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
+    return;
+  }
+  if(profile->GetMember() != NULL)
   {
     PTRACE(2,"Conference\tMember found in the list, but it's not offine (nothing to do): " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
     return;

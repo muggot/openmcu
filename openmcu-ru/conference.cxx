@@ -874,22 +874,6 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
     profile->SetMember(member);
     profileList.insert(ProfileList::value_type((ConferenceMemberId)profile, profile));
   }
-
-  //
-  if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
-    return;
-
-  // memberNameList
-  PString nameID = MCUURL(name).GetMemberNameId();
-  for(MemberNameList::iterator it = memberNameList.begin(); it != memberNameList.end(); ++it)
-  {
-    if(MCUURL(it->first).GetMemberNameId() == nameID && it->second == NULL)
-    {
-      memberNameList.erase(it);
-      break;
-    }
-  }
-  memberNameList.insert(MemberNameList::value_type(name, member));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -902,15 +886,6 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
   // memberList
   if(member)
     memberList.erase(member->GetID());
-
-  // memberNameList
-  MemberNameList::iterator s = memberNameList.find(name);
-  if(s != memberNameList.end())
-  {
-    memberNameList.erase(name);
-    if(member)
-      memberNameList.insert(MemberNameList::value_type(name, NULL));
-  }
 
   // profileList
   for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)

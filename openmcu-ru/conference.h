@@ -1185,7 +1185,6 @@ class Conference : public PObject
     };
 
     typedef std::map<void *, ConferenceMember *> MemberList;
-    typedef std::map<PString, ConferenceMember *> MemberNameList;
     typedef std::map<ConferenceMemberId, ConferenceProfile *> ProfileList;
 
     Conference(ConferenceManager & manager,     
@@ -1464,7 +1463,6 @@ class Conference : public PObject
     PMutex profileListMutex;
 
     MemberList memberList;
-    MemberNameList memberNameList;
     ProfileList profileList;
     PINDEX maxMemberCount;
 
