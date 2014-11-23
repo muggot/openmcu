@@ -736,6 +736,8 @@ void Conference::RefreshAddressBook()
   OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ConferenceProfile * Conference::FindProfileWithLock(const PString & memberName)
 {
   PWaitAndSignal m(profileListMutex);
@@ -744,6 +746,8 @@ ConferenceProfile * Conference::FindProfileWithLock(const PString & memberName)
     profile->Lock();
   return profile;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ConferenceProfile * Conference::FindProfileWithoutLock(const PString & memberName)
 {
@@ -756,6 +760,8 @@ ConferenceProfile * Conference::FindProfileWithoutLock(const PString & memberNam
   return NULL;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ConferenceProfile * Conference::FindProfileNameIDWithLock(const PString & memberName)
 {
   PWaitAndSignal m(profileListMutex);
@@ -764,6 +770,8 @@ ConferenceProfile * Conference::FindProfileNameIDWithLock(const PString & member
     profile->Lock();
   return profile;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ConferenceProfile * Conference::FindProfileNameIDWithoutLock(const PString & memberName)
 {
@@ -777,6 +785,8 @@ ConferenceProfile * Conference::FindProfileNameIDWithoutLock(const PString & mem
   return NULL;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ConferenceMember * Conference::FindMemberNameIDWithLock(const PString & memberName)
 {
   PWaitAndSignal m(profileListMutex);
@@ -785,6 +795,8 @@ ConferenceMember * Conference::FindMemberNameIDWithLock(const PString & memberNa
     member->Lock();
   return member;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ConferenceMember * Conference::FindMemberNameIDWithoutLock(const PString & memberName)
 {
@@ -798,6 +810,33 @@ ConferenceMember * Conference::FindMemberNameIDWithoutLock(const PString & membe
   }
   return NULL;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConferenceMember * Conference::FindMemberWithLock(const PString & memberName)
+{
+  PWaitAndSignal m(profileListMutex);
+  ConferenceMember * member = FindMemberNameIDWithoutLock(memberName);
+  if(member)
+    member->Lock();
+  return member;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConferenceMember * Conference::FindMemberWithoutLock(const PString & memberName)
+{
+  PWaitAndSignal m(profileListMutex);
+  for(ProfileList::iterator it = profileList.begin(); it != profileList.end(); ++it)
+  {
+    ConferenceProfile *profile = it->second;
+    if(profile->GetMember() && profile->GetName() == memberName)
+      return profile->GetMember();
+  }
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
 {
@@ -853,6 +892,8 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
   memberNameList.insert(MemberNameList::value_type(name, member));
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *member)
 {
   PWaitAndSignal m(memberListMutex);
@@ -891,6 +932,8 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 {
 
@@ -908,7 +951,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 
   // check for duplicate name or very fast reconnect
   PString memberName = memberToAdd->GetName();
-  for(PINDEX i = 0; FindProfileWithoutLock(memberToAdd->GetName()) != NULL; i++)
+  for(PINDEX i = 0; FindMemberWithoutLock(memberToAdd->GetName()) != NULL; i++)
   {
     if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
     {
@@ -1048,6 +1091,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   return TRUE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 {

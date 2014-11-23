@@ -1243,6 +1243,8 @@ class Conference : public PObject
     void AddMemberToList(const PString & name, ConferenceMember *member);
     void RemoveMemberFromList(const PString & name, ConferenceMember *member);
 
+    ConferenceMember * FindMemberWithLock(const PString & memberName);
+    ConferenceMember * FindMemberWithoutLock(const PString & memberName);
     ConferenceMember * FindMemberNameIDWithLock(const PString & memberName);
     ConferenceMember * FindMemberNameIDWithoutLock(const PString & memberName);
 
