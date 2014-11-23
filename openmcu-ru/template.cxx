@@ -7,7 +7,6 @@ PString Conference::SaveTemplate(PString tplName)
   PTRACE(4,"Conference\tSaving template \"" << tplName << "\"");
   PStringArray previousTemplate = confTpl.Lines();
   PStringStream t;
-  Conference::MemberNameList::const_iterator s;
   t << "TEMPLATE " << tplName << "\n"
     << "{\n"
     << "  GLOBAL_MUTE " << (muteUnvisible?"on":"off") << "\n"
@@ -31,9 +30,17 @@ PString Conference::SaveTemplate(PString tplName)
       else if((long)id==-2) vmpText << "VMP 3";    // - or        "VMP 3" (VAD2 type)
       else
       if(id!=NULL)                                 // - or        "VMP 1, memberName" (static type)
-      { PWaitAndSignal m(memberListMutex);
-        for(s = memberNameList.begin(); s != memberNameList.end(); ++s) if(s->second != NULL) if(s->second->GetID()==id)
-        { vmpText << "VMP 1, " << s->first; break; }
+      {
+        PWaitAndSignal m(profileListMutex);
+        for(ProfileList::iterator s = profileList.begin(); s != profileList.end(); ++s)
+        {
+          ConferenceMember *member = s->second->GetMember();
+          if(member) if(member->GetID() == id)
+          {
+            vmpText << "VMP 1, " << member->GetName();
+            break;
+          }
+        }
       }
       else                                         // - nothing: trying get the value from current template:
       { int previous_level=0;
@@ -57,12 +64,18 @@ PString Conference::SaveTemplate(PString tplName)
               else if(cmd=="LAYOUT") { if(mixMatch) mixMatch=(value==newLayout); }
               else if(cmd=="SKIP") prev_vmpN+=value.AsInteger();
               else if(cmd=="VMP")
-              { if(mixMatch) if(prev_vmpN == i) if(value.Left(1)=="1")
-                { PWaitAndSignal m(memberListMutex);
-                  for(s = memberNameList.begin(); s != memberNameList.end(); ++s)
-                  if(s->second == NULL) if(("1, "+(s->first)) == value)
-                  { vmpText << "VMP " << value;
-                    break;
+              {
+                if(mixMatch) if(prev_vmpN == i) if(value.Left(1)=="1")
+                {
+                  PWaitAndSignal m(profileListMutex);
+                  for(ProfileList::iterator s = profileList.begin(); s != profileList.end(); ++s)
+                  {
+                    ConferenceMember *member = s->second->GetMember();
+                    if(member == NULL) if(("1, "+(member->GetName())) == value)
+                    {
+                      vmpText << "VMP " << value;
+                      break;
+                    }
                   }
                 }
                 prev_vmpN++;
@@ -84,18 +97,20 @@ PString Conference::SaveTemplate(PString tplName)
     t << "  }\n";
     vmr=vmr->next;
   }
-  PWaitAndSignal m(memberListMutex);
-  for(s = memberNameList.begin(); s != memberNameList.end(); ++s)
+  PWaitAndSignal m(profileListMutex);
+  for(ProfileList::iterator s = profileList.begin(); s != profileList.end(); ++s)
   {
-    if(s->second != NULL)
+    ConferenceProfile *profile = s->second;
+    ConferenceMember *member = profile->GetMember();
+    if(member)
     {
       t << "  MEMBER "
-        << (s->second->autoDial?"1":"0") << ", "
-        << s->second->muteMask << "/" << (s->second->kManualGainDB+20) << "/" << (s->second->kOutputGainDB+20) << ", "
-        << (s->second->disableVAD?"1":"0") << ", "
-        << (s->second->chosenVan?"1":"0") << ", "
-        << s->second->GetVideoMixerNumber() << ", "
-        << s->first << "\n";
+        << (member->autoDial?"1":"0") << ", "
+        << member->muteMask << "/" << (member->kManualGainDB+20) << "/" << (member->kOutputGainDB+20) << ", "
+        << (member->disableVAD?"1":"0") << ", "
+        << (member->chosenVan?"1":"0") << ", "
+        << member->GetVideoMixerNumber() << ", "
+        << member->GetName() << "\n";
     }
     else
     {
@@ -109,7 +124,7 @@ PString Conference::SaveTemplate(PString tplName)
           { PString value=prev_l.Mid(space+1,P_MAX_INDEX).LeftTrim();
             PStringArray options=value.Tokenise(',',TRUE);
             if(options.GetSize()==6)
-            if(options[5].LeftTrim()==PString(s->first).LeftTrim())
+            if(options[5].LeftTrim()==PString(profile->GetName()).LeftTrim())
             { t << "  MEMBER " << value << "\n";
               memberFound = TRUE;
               break;
@@ -117,7 +132,7 @@ PString Conference::SaveTemplate(PString tplName)
           }
         }
       }
-      if(!memberFound) t << "  MEMBER 0, 0, 0, 0, 0, " << s->first << "\n";
+      if(!memberFound) t << "  MEMBER 0, 0, 0, 0, 0, " << profile->GetName() << "\n";
     }
   }
   t << "}\n\n";
@@ -184,8 +199,8 @@ void Conference::LoadTemplate(PString tpl)
             if(commaPosition != P_MAX_INDEX)
             {
               PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
-              PWaitAndSignal m(memberListMutex);
-              ConferenceMember *member = FindMemberNameId(name);
+              PWaitAndSignal m(profileListMutex);
+              ConferenceMember *member = FindMemberNameIDWithoutLock(name);
               if(member && mixer!=NULL)
               {
                 mixer->PositionSetup(vmpN, 1, member);
@@ -206,8 +221,8 @@ void Conference::LoadTemplate(PString tpl)
           for(int i=6; i<v.GetSize(); i++) memberInternalName += "," + v[i];
           PString memberAddress = MCUURL(memberInternalName).GetUrl();
 
-          PWaitAndSignal m(memberListMutex);
-          ConferenceMember *member = FindMemberNameId(memberInternalName);
+          PWaitAndSignal m(profileListMutex);
+          ConferenceMember *member = FindMemberNameIDWithoutLock(memberInternalName);
           if(member)
           {
             PStringArray maskAndGain = v[1].Tokenise("/");
@@ -263,22 +278,26 @@ void Conference::LoadTemplate(PString tpl)
 
   if(!lockedTemplate) return; // room not locked - don't touch member list
 
-  PWaitAndSignal m(memberListMutex);
-  MemberNameList theCopy(memberNameList);
-  for(MemberNameList::iterator r = theCopy.begin(); r != theCopy.end(); ++r)
-  { if(validatedMembers.GetStringsIndex(r->first) == P_MAX_INDEX) // remove unwanted members
-    { if(r->second == NULL) // offline: simple
-      { PTRACE(6,"Conference\tLoading template - removing offline member " << r->first << " from memberNameList" << flush);
-        memberNameList.erase(r->first);
+  PWaitAndSignal m(profileListMutex);
+  ProfileList profileListCopy(profileList);
+  for(ProfileList::iterator r = profileListCopy.begin(); r != profileListCopy.end(); ++r)
+  {
+    PString name = r->second->GetName();
+    ConferenceMember *member = r->second->GetMember();
+    if(validatedMembers.GetStringsIndex(name) == P_MAX_INDEX) // remove unwanted members
+    {
+      if(member == NULL) // offline: simple
+      {
+        PTRACE(6,"Conference\tLoading template - removing offline member " << r->first << " from memberNameList" << flush);
+        RemoveMemberFromList(name, NULL);
       }
       else // online :(
-      { ConferenceMember & member = *r->second;
-        ConferenceMemberId id = member.GetID();
-        PTRACE(6,"Conference\tLoading template - closing connection with " << r->first << " (id " << id << ")" << flush);
-        member.Close();
-        PTRACE(6,"Conference\tLoading template - removing " << r->first << " from memberList" << flush);
-        memberList.erase(id);
-        memberNameList.erase(r->first);
+      {
+        ConferenceMemberId id = member->GetID();
+        PTRACE(6,"Conference\tLoading template - closing connection with " << name << " (id " << id << ")" << flush);
+        member->Close();
+        PTRACE(6,"Conference\tLoading template - removing " << name << " from memberList" << flush);
+        RemoveMemberFromList(name, member); // ???
       }
     }
   }

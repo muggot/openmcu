@@ -736,23 +736,65 @@ void Conference::RefreshAddressBook()
   OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 }
 
-ConferenceMember * Conference::FindMemberName(PString memberName)
+ConferenceProfile * Conference::FindProfileWithLock(const PString & memberName)
 {
-  PWaitAndSignal m(memberListMutex);
-  MemberNameList::iterator it = memberNameList.find(memberName);
-  if(it != memberNameList.end())
-    return it->second;
+  PWaitAndSignal m(profileListMutex);
+  ConferenceProfile * profile = FindProfileWithoutLock(memberName);
+  if(profile)
+    profile->Lock();
+  return profile;
+}
+
+ConferenceProfile * Conference::FindProfileWithoutLock(const PString & memberName)
+{
+  PWaitAndSignal m(profileListMutex);
+  for(ProfileList::iterator it = profileList.begin(); it != profileList.end(); ++it)
+  {
+    if(it->second->GetName() == memberName)
+      return it->second;
+  }
   return NULL;
 }
 
-ConferenceMember * Conference::FindMemberNameId(PString memberName)
+ConferenceProfile * Conference::FindProfileNameIDWithLock(const PString & memberName)
 {
-  PString memberNameId = MCUURL(memberName).GetMemberNameId();
-  PWaitAndSignal m(memberListMutex);
-  for(MemberNameList::iterator it = memberNameList.begin(); it != memberNameList.end(); ++it)
+  PWaitAndSignal m(profileListMutex);
+  ConferenceProfile * profile = FindProfileWithoutLock(memberName);
+  if(profile)
+    profile->Lock();
+  return profile;
+}
+
+ConferenceProfile * Conference::FindProfileNameIDWithoutLock(const PString & memberName)
+{
+  PString memberNameID = MCUURL(memberName).GetMemberNameId();
+  PWaitAndSignal m(profileListMutex);
+  for(ProfileList::iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
-    if(MCUURL(it->first).GetMemberNameId() == memberNameId)
+    if(it->second->GetNameID() == memberNameID)
       return it->second;
+  }
+  return NULL;
+}
+
+ConferenceMember * Conference::FindMemberNameIDWithLock(const PString & memberName)
+{
+  PWaitAndSignal m(profileListMutex);
+  ConferenceMember * member = FindMemberNameIDWithoutLock(memberName);
+  if(member)
+    member->Lock();
+  return member;
+}
+
+ConferenceMember * Conference::FindMemberNameIDWithoutLock(const PString & memberName)
+{
+  PString memberNameID = MCUURL(memberName).GetMemberNameId();
+  PWaitAndSignal m(profileListMutex);
+  for(ProfileList::iterator it = profileList.begin(); it != profileList.end(); ++it)
+  {
+    ConferenceProfile *profile = it->second;
+    if(profile->GetMember() && profile->GetNameID() == memberNameID)
+      return profile->GetMember();
   }
   return NULL;
 }
@@ -795,7 +837,7 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
   }
 
   //
-  if(member == member->GetID())
+  if(member && member == member->GetID())
     return;
 
   // memberNameList
@@ -866,7 +908,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 
   // check for duplicate name or very fast reconnect
   PString memberName = memberToAdd->GetName();
-  for(PINDEX i = 0; FindMemberName(memberToAdd->GetName()) != NULL; i++)
+  for(PINDEX i = 0; FindProfileWithoutLock(memberToAdd->GetName()) != NULL; i++)
   {
     if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
     {

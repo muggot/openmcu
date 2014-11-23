@@ -1253,11 +1253,13 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   if(action == OTFC_DROP_ALL_ACTIVE_MEMBERS)
   {
     conference->Unlock();
-    PWaitAndSignal m(conference->GetMemberListMutex());
-    Conference::MemberList & memberList = conference->GetMemberList();
-    for(Conference::MemberList::iterator r = memberList.begin(); r != memberList.end(); ++r)
+    PWaitAndSignal m(conference->GetProfileListMutex());
+    Conference::ProfileList & profileList = conference->GetProfileList();
+    for(Conference::ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
     {
-      ConferenceMember * member = r->second;
+      ConferenceMember * member = r->second->GetMember();
+      if(member == NULL)
+        continue;
       if(member->GetType() & MEMBER_TYPE_GSYSTEM)
         continue;
       member->Close();
@@ -1284,19 +1286,18 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
   }
   if(action == OTFC_INVITE_ALL_INACT_MMBRS)
   {
-    Conference::MemberNameList & memberNameList = conference->GetMemberNameList();
-    for(Conference::MemberNameList::const_iterator r = memberNameList.begin(); r != memberNameList.end(); ++r)
-      if(r->second==NULL)
-        Invite(conference->GetNumber(), r->first);
+    Conference::ProfileList & profileList = conference->GetProfileList();
+    for(Conference::ProfileList::const_iterator r = profileList.begin(); r != profileList.end(); ++r)
+      if(r->second->GetMember() == NULL)
+        Invite(conference->GetNumber(), r->second->GetName());
     OTF_RET_OK;
   }
   if(action == OTFC_REMOVE_ALL_INACT_MMBRS)
   {
-    Conference::MemberNameList & memberNameList = conference->GetMemberNameList();
-    Conference::MemberNameList::const_iterator r;
-    for(r = memberNameList.begin(); r != memberNameList.end(); ++r)
-      if(r->second==NULL)
-        conference->RemoveMemberFromList(r->first, NULL);
+    Conference::ProfileList & profileList = conference->GetProfileList();
+    for(Conference::ProfileList::const_iterator r = profileList.begin(); r != profileList.end(); ++r)
+      if(r->second->GetMember() == NULL)
+        conference->RemoveMemberFromList(r->second->GetName(), NULL);
     OpenMCU::Current().HttpWriteEventRoom("Offline members removed by operator",room);
     OpenMCU::Current().HttpWriteCmdRoom("remove_all()",room);
     OTF_RET_OK;

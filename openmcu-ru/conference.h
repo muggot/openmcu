@@ -1234,11 +1234,8 @@ class Conference : public PObject
      */
     BOOL RemoveMember(ConferenceMember * member);
 
-    MemberList & GetMemberList() 
+    MemberList & GetMemberList()
     { return memberList; }
-
-    MemberNameList & GetMemberNameList() 
-    { return memberNameList; }
 
     ProfileList & GetProfileList()
     { return profileList; }
@@ -1246,8 +1243,13 @@ class Conference : public PObject
     void AddMemberToList(const PString & name, ConferenceMember *member);
     void RemoveMemberFromList(const PString & name, ConferenceMember *member);
 
-    ConferenceMember *FindMemberName(PString memberName);
-    ConferenceMember *FindMemberNameId(PString memberName);
+    ConferenceMember * FindMemberNameIDWithLock(const PString & memberName);
+    ConferenceMember * FindMemberNameIDWithoutLock(const PString & memberName);
+
+    ConferenceProfile * FindProfileWithLock(const PString & memberName);
+    ConferenceProfile * FindProfileWithoutLock(const PString & memberName);
+    ConferenceProfile * FindProfileNameIDWithLock(const PString & memberName);
+    ConferenceProfile * FindProfileNameIDWithoutLock(const PString & memberName);
 
     int GetMemberCount() const
     { PWaitAndSignal m(memberListMutex); return (int)memberList.size(); }

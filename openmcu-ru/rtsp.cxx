@@ -1642,8 +1642,7 @@ int MCUListener::CreateTCPClient()
   }
 
   // set socket non-blocking
-  int flags = fcntl(socket_fd, F_GETFD);
-  fcntl(socket_fd, F_SETFD, flags | O_NONBLOCK);
+  fcntl(socket_fd, F_SETFL, O_NONBLOCK);
 
   // recv timeout
   struct timeval tv;
