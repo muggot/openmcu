@@ -964,7 +964,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
   Conference::VideoMixerRecord * vmr = c.videoMixerList;
   while (vmr!=NULL)
   {
-    r << "," << GetVideoMixerConfiguration(vmr->mixer);
+    r << "," << GetVideoMixerConfiguration(vmr->GetMixer());
     vmr=vmr->next;
   }
   r << "];"; //l1 close
@@ -1161,7 +1161,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     if(conference->IsModerated()=="-")
     { conference->SetModerated(TRUE);
       conference->videoMixerListMutex.Wait();
-      conference->videoMixerList->mixer->SetForceScreenSplit(TRUE);
+      conference->videoMixerList->GetMixer()->SetForceScreenSplit(TRUE);
       conference->videoMixerListMutex.Signal();
       conference->PutChosenVan();
       OpenMCU::Current().HttpWriteEventRoom("<span style='background-color:#bfb'>Operator took the control</span>",room);
@@ -1308,7 +1308,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     {
       conference->SetModerated(TRUE);
       conference->videoMixerListMutex.Wait();
-      conference->videoMixerList->mixer->SetForceScreenSplit(TRUE);
+      conference->videoMixerList->GetMixer()->SetForceScreenSplit(TRUE);
       conference->videoMixerListMutex.Signal();
       conference->PutChosenVan();
       OpenMCU::Current().HttpWriteEventRoom("<span style='background-color:#bfb'>Operator took the control</span>",room);
@@ -1324,8 +1324,8 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
       {
         PWaitAndSignal m(conference->videoMixerListMutex);
         if(!conference->videoMixerList) OTF_RET_FAIL;
-        if(!conference->videoMixerList->mixer) OTF_RET_FAIL;
-        conference->videoMixerList->mixer->SetForceScreenSplit(conference->GetForceScreenSplit());
+        if(!conference->videoMixerList->GetMixer()) OTF_RET_FAIL;
+        conference->videoMixerList->GetMixer()->SetForceScreenSplit(conference->GetForceScreenSplit());
       }
       conference->Unlock();  // we have to UnlockConference
       UnmoderateConference(*conference);  // before conference.GetMutex() usage
@@ -1595,7 +1595,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
       {
         while( vmr!=NULL )
         {
-          MCUVideoMixer * mixer = vmr->mixer;
+          MCUVideoMixer * mixer = vmr->GetMixer();
           int oldPos = mixer->GetPositionNum(member->GetID());
           if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, TRUE);
           vmr=vmr->next;
@@ -1663,9 +1663,9 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
         Conference::VideoMixerRecord * vmr = conference->videoMixerList;
         while(vmr!=NULL)
         {
-          int type = vmr->mixer->GetPositionType(id);
+          int type = vmr->GetMixer()->GetPositionType(id);
           if(type<2 || type>3) { vmr=vmr->next; continue;} //-1:not found, 1:static, 2&3:VAD
-          vmr->mixer->MyRemoveVideoSourceById(id, FALSE);
+          vmr->GetMixer()->MyRemoveVideoSourceById(id, FALSE);
           vmr = vmr->next;
         }
         conference->videoMixerListMutex.Signal();
@@ -1777,7 +1777,7 @@ void MCUH323EndPoint::UnmoderateConference(Conference & conference)
 
   conference.videoMixerListMutex.Wait();
   MCUVideoMixer * mixer = NULL;
-  if(conference.videoMixerList!=NULL) mixer = conference.videoMixerList->mixer;
+  if(conference.videoMixerList!=NULL) mixer = conference.videoMixerList->GetMixer();
   if(mixer==NULL)
   {
     conference.videoMixerListMutex.Signal();
@@ -1923,7 +1923,7 @@ PString MCUH323EndPoint::GetMonitorText()
     Conference::VideoMixerRecord * vmr = conference.videoMixerList;
     while (vmr!=NULL)
     { output << "[Mixer " << vmr->id << "]\n";
-      MCUSimpleVideoMixer * mixer = (MCUSimpleVideoMixer*) vmr->mixer;
+      MCUSimpleVideoMixer * mixer = (MCUSimpleVideoMixer*) vmr->GetMixer();
       int n=mixer->GetPositionSet();
       output << "  Layout ID: "       << OpenMCU::vmcfg.vmconf[n].splitcfg.Id << "\n"
              << "  Layout capacity: " << OpenMCU::vmcfg.vmconf[n].splitcfg.vidnum << "\n"

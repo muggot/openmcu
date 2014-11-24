@@ -17,7 +17,7 @@ PString Conference::SaveTemplate(PString tplName)
   while(vmr != NULL)
   { t << "  MIXER " << vmr->id << "\n"
       << "  {\n";
-    MCUVideoMixer & m = *(vmr->mixer);
+    MCUVideoMixer & m = *(vmr->GetMixer());
     unsigned n=m.GetPositionSet();
     VMPCfgSplitOptions & o = OpenMCU::vmcfg.vmconf[n].splitcfg;
     PString newLayout=PString(n) + ", " + o.Id;
@@ -200,7 +200,7 @@ void Conference::LoadTemplate(PString tpl)
             {
               PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
               PWaitAndSignal m(profileListMutex);
-              ConferenceMember *member = FindMemberNameIDWithoutLock(name);
+              ConferenceMember *member = manager.FindMemberNameIDWithoutLock(this, name);
               if(member && mixer!=NULL)
               {
                 mixer->PositionSetup(vmpN, 1, member);
@@ -222,7 +222,7 @@ void Conference::LoadTemplate(PString tpl)
           PString memberAddress = MCUURL(memberInternalName).GetUrl();
 
           PWaitAndSignal m(profileListMutex);
-          ConferenceMember *member = FindMemberNameIDWithoutLock(memberInternalName);
+          ConferenceMember *member = manager.FindMemberNameIDWithoutLock(this, memberInternalName);
           if(member)
           {
             PStringArray maskAndGain = v[1].Tokenise("/");
@@ -624,7 +624,7 @@ void Conference::OnConnectionClean(const PString & remotePartyName, const PStrin
   }
 
   PWaitAndSignal m(profileListMutex);
-  ConferenceProfile *profile = FindProfileWithoutLock(name);
+  ConferenceProfile *profile = manager.FindProfileWithoutLock(this, name);
   if(profile == NULL)
   {
     for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)

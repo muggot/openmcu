@@ -2333,48 +2333,8 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
 
   const unsigned long t1=(unsigned long)time(0);
 
-  Conference *conference = app.GetEndpoint().GetConferenceManager().FindConferenceWithLock(room);
-  if(conference == NULL)
-    return FALSE;
-
-  BOOL classicMCUMode = FALSE;
-  if(!conference->videoMixerList)
-    classicMCUMode = TRUE;
-
-  MCUVideoMixer *mixer = NULL;
-  jpegMixer = NULL;
-  if(classicMCUMode == FALSE) // muggot mode with caches and shared mixers
-  {
-    mixer = conference->VMLFind((unsigned)requestedMixer);
-  }
-  else                        // classic MCU mode without caches and shared mixers
-  {
-    // lock memberList
-    conference->GetMemberListMutex().Wait();
-    Conference::MemberList & memberList = conference->GetMemberList();
-    Conference::MemberList::iterator r = memberList.find((ConferenceMemberId)requestedMixer);
-    if(r != memberList.end() && r->second)
-      mixer = r->second->videoMixer;
-    else if(conference->pipeMember)
-      mixer = conference->pipeMember->videoMixer;
-  }
-
-  if(mixer)
-  {
-    jpegMixer = dynamic_cast<MCUSimpleVideoMixer *>(mixer);
-    // lock mixer
-    if(jpegMixer)
-      PWaitAndSignal m(jpegMixer->GetDestructorMutex());
-      //PWaitAndSignal m(jpegMixer->GetMutex());
-  }
-
-  // unlock memberList
-  if(classicMCUMode)
-    conference->GetMemberListMutex().Signal();
-
-  // unlock conferenceList
-  conference->Unlock();
-
+  ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
+  jpegMixer = cm.FindMixerWithLock(room, requestedMixer);
   if(jpegMixer == NULL) // no mixer found
     return FALSE;
 
@@ -2438,6 +2398,8 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   server.Write((const char*)message,message.GetLength());
   server.Write(jpegMixer->myjpeg.GetPointer(),jpegMixer->jpegSize);
   server.flush();
+
+  //jpegMixer->Unlock();
 
   return TRUE;
 }

@@ -52,12 +52,16 @@ ConferenceManager::ConferenceManager()
   monitor  = new ConferenceMonitor(*this);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ConferenceManager::~ConferenceManager()
 {
   monitor->running = FALSE;
   monitor->WaitForTermination();
   delete monitor;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID)
 {
@@ -68,6 +72,8 @@ Conference * ConferenceManager::FindConferenceWithLock(const OpalGloballyUniqueI
   return conference;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Conference * ConferenceManager::FindConferenceWithoutLock(const OpalGloballyUniqueID & conferenceID)
 {
   PWaitAndSignal m(conferenceListMutex);
@@ -76,6 +82,8 @@ Conference * ConferenceManager::FindConferenceWithoutLock(const OpalGloballyUniq
     return r->second;
   return NULL;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::FindConferenceWithLock(const PString & room)
 {
@@ -87,6 +95,8 @@ Conference * ConferenceManager::FindConferenceWithLock(const PString & room)
     conference->Lock();
   return conference;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::FindConferenceWithoutLock(const PString & room)
 {
@@ -100,6 +110,8 @@ Conference * ConferenceManager::FindConferenceWithoutLock(const PString & room)
   }
   return NULL;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::FindConferenceWithLock(Conference * conference)
 {
@@ -117,68 +129,7 @@ Conference * ConferenceManager::FindConferenceWithLock(Conference * conference)
   return NULL;
 }
 
-ConferenceMember * ConferenceManager::FindMemberWithLock(const PString & room, const PString & name)
-{
-  Conference *conference = FindConferenceWithLock(room);
-  if(conference == NULL)
-    return NULL;
-  ConferenceMember *member = FindMemberWithLock(conference, name);
-  conference->Unlock();
-  return member;
-}
-
-ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference, const PString & name)
-{
-  if(conference == NULL)
-    return NULL;
-  PWaitAndSignal m(conference->GetMemberListMutex());
-  Conference::MemberList & memberList = conference->GetMemberList();
-  for(Conference::MemberList::iterator r = memberList.begin(); r != memberList.end(); ++r)
-  {
-    if(r->second && r->second->GetName() == name)
-    {
-      r->second->Lock();
-      return r->second;
-    }
-  }
-  return NULL;
-}
-
-ConferenceMember * ConferenceManager::FindMemberWithLock(const PString & room, long id)
-{
-  PWaitAndSignal m(conferenceListMutex);
-  Conference *conference = FindConferenceWithLock(room);
-  if(conference == NULL)
-    return NULL;
-  ConferenceMember *member = FindMemberWithLock(conference, id);
-  conference->Unlock();
-  return member;
-}
-
-ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference, long id)
-{
-  if(conference == NULL)
-    return NULL;
-  PWaitAndSignal m(conference->GetMemberListMutex());
-  ConferenceMember *member = FindMemberWithoutLock(conference, id);
-  if(member)
-    member->Lock();
-  return member;
-}
-
-ConferenceMember * ConferenceManager::FindMemberWithoutLock(Conference * conference, long id)
-{
-  if(conference == NULL)
-    return NULL;
-  PWaitAndSignal m(conference->GetMemberListMutex());
-  Conference::MemberList & memberList = conference->GetMemberList();
-  for(Conference::MemberList::iterator r = memberList.begin(); r != memberList.end(); ++r)
-  {
-    if(r->second && (long)r->second->GetID() == id)
-      return r->second;
-  }
-  return NULL;
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PString name)
 {
@@ -188,6 +139,8 @@ Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PSt
     conference->Lock();
   return conference;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::MakeConferenceWithoutLock(const PString & room, PString name)
 {
@@ -207,6 +160,8 @@ Conference * ConferenceManager::MakeConferenceWithoutLock(const PString & room, 
   return conference;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL ConferenceManager::HasConference(const PString & number, OpalGloballyUniqueID & conferenceID)
 {
   Conference *conference = FindConferenceWithLock(number);
@@ -219,6 +174,8 @@ BOOL ConferenceManager::HasConference(const PString & number, OpalGloballyUnique
   return FALSE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL ConferenceManager::HasConference(const OpalGloballyUniqueID & conferenceID, PString & number)
 {
   Conference *conference = FindConferenceWithLock(conferenceID);
@@ -230,6 +187,187 @@ BOOL ConferenceManager::HasConference(const OpalGloballyUniqueID & conferenceID,
   }
   return FALSE;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConferenceProfile * ConferenceManager::FindProfileWithLock(const PString & roomName, const PString & memberName)
+{
+  Conference *conference = FindConferenceWithLock(roomName);
+  if(conference == NULL)
+    return NULL;
+  ConferenceProfile *profile = FindProfileWithLock(conference, memberName);
+  conference->Unlock();
+  return profile;
+}
+ConferenceProfile * ConferenceManager::FindProfileWithLock(Conference * conference, const PString & memberName)
+{
+  PWaitAndSignal m(conference->GetProfileListMutex());
+  ConferenceProfile *profile = FindProfileWithoutLock(conference, memberName);
+  if(profile)
+    profile->Lock();
+  return profile;
+}
+ConferenceProfile * ConferenceManager::FindProfileWithoutLock(Conference * conference, const PString & memberName)
+{
+  PWaitAndSignal m(conference->GetProfileListMutex());
+  Conference::ProfileList & profileList = conference->GetProfileList();
+  for(Conference::ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
+  {
+    ConferenceProfile *profile = r->second;
+    if(profile->GetName() == memberName)
+      return profile;
+  }
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConferenceMember * ConferenceManager::FindMemberWithLock(const PString & roomName, const PString & memberName)
+{
+  Conference *conference = FindConferenceWithLock(roomName);
+  if(conference == NULL)
+    return NULL;
+  ConferenceMember *member = FindMemberWithLock(conference, memberName);
+  conference->Unlock();
+  return member;
+}
+ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference, const PString & memberName)
+{
+  PWaitAndSignal m(conference->GetProfileListMutex());
+  ConferenceMember *member = FindMemberWithoutLock(conference, memberName);
+  if(member)
+    member->Lock();
+  return member;
+}
+ConferenceMember * ConferenceManager::FindMemberWithoutLock(Conference * conference, const PString & memberName)
+{
+  PWaitAndSignal m(conference->GetProfileListMutex());
+  Conference::ProfileList & profileList = conference->GetProfileList();
+  for(Conference::ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
+  {
+    ConferenceMember *member = r->second->GetMember();
+    if(member && member->GetName() == memberName)
+      return member;
+  }
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConferenceMember * ConferenceManager::FindMemberNameIDWithLock(const PString & roomName, const PString & memberName)
+{
+  Conference *conference = FindConferenceWithLock(roomName);
+  if(conference == NULL)
+    return NULL;
+  ConferenceMember *member = FindMemberWithLock(conference, memberName);
+  conference->Unlock();
+  return member;
+}
+ConferenceMember * ConferenceManager::FindMemberNameIDWithLock(Conference * conference, const PString & memberName)
+{
+  PWaitAndSignal m(conference->GetProfileListMutex());
+  ConferenceMember *member = FindMemberWithoutLock(conference, memberName);
+  if(member)
+    member->Lock();
+  return member;
+}
+ConferenceMember * ConferenceManager::FindMemberNameIDWithoutLock(Conference * conference, const PString & memberName)
+{
+  PString memberNameID = MCUURL(memberName).GetMemberNameId();
+  PWaitAndSignal m(conference->GetProfileListMutex());
+  Conference::ProfileList & profileList = conference->GetProfileList();
+  for(Conference::ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
+  {
+    ConferenceMember *member = r->second->GetMember();
+    if(member && member->GetNameID() == memberNameID)
+      return member;
+  }
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+ConferenceMember * ConferenceManager::FindMemberWithLock(const PString & roomName, long id)
+{
+  Conference *conference = FindConferenceWithLock(roomName);
+  if(conference == NULL)
+    return NULL;
+  ConferenceMember *member = FindMemberWithLock(conference, id);
+  conference->Unlock();
+  return member;
+}
+ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference, long id)
+{
+  PWaitAndSignal m(conference->GetProfileListMutex());
+  ConferenceMember *member = FindMemberWithoutLock(conference, id);
+  if(member)
+    member->Lock();
+  return member;
+}
+ConferenceMember * ConferenceManager::FindMemberWithoutLock(Conference * conference, long id)
+{
+  PWaitAndSignal m(conference->GetProfileListMutex());
+  Conference::ProfileList & profileList = conference->GetProfileList();
+  for(Conference::ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
+  {
+    ConferenceMember *member = r->second->GetMember();
+    if(member && (long)member->GetID() == id)
+      return member;
+  }
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUSimpleVideoMixer * ConferenceManager::FindMixerWithLock(const PString & roomName, long id)
+{
+  Conference *conference = FindConferenceWithLock(roomName);
+  if(conference == NULL)
+    return NULL;
+  MCUSimpleVideoMixer * mixer = FindMixerWithLock(conference, id);
+  conference->Unlock();
+  return mixer;
+}
+MCUSimpleVideoMixer * ConferenceManager::FindMixerWithLock(Conference * conference, long id)
+{
+  if(conference->videoMixerList)
+  {
+    PWaitAndSignal m(conference->videoMixerListMutex);
+    MCUSimpleVideoMixer *mixer = FindMixerWithoutLock(conference, id);
+//    if(mixer)
+//      mixer->Lock();
+    return mixer;
+  } else {
+    PWaitAndSignal m(conference->GetProfileListMutex());
+    MCUSimpleVideoMixer *mixer = FindMixerWithoutLock(conference, id);
+//    if(mixer)
+//      mixer->Lock();
+    return mixer;
+  }
+  return NULL;
+}
+MCUSimpleVideoMixer * ConferenceManager::FindMixerWithoutLock(Conference * conference, long id)
+{
+  if(conference->videoMixerList)
+  {
+    PWaitAndSignal m(conference->videoMixerListMutex);
+    MCUVideoMixer *_mixer = conference->VMLFind(id);
+    MCUSimpleVideoMixer *mixer = dynamic_cast<MCUSimpleVideoMixer *>(_mixer);
+    return mixer;
+  } else {
+    ConferenceMember *member = FindMemberWithLock(conference, id);
+    if(member)
+    {
+      MCUVideoMixer *_mixer = member->videoMixer;
+      MCUSimpleVideoMixer *mixer = dynamic_cast<MCUSimpleVideoMixer *>(_mixer);
+      member->Unlock();
+      return mixer;
+    }
+  }
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ConferenceManager::OnCreateConference(Conference * conference)
 {
@@ -280,6 +418,8 @@ void ConferenceManager::OnCreateConference(Conference * conference)
     }
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ConferenceManager::OnDestroyConference(Conference * conference)
 {
@@ -350,6 +490,8 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(5,'" + jsName + "')", number);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _guid,
                                                               const PString & _number,
@@ -738,106 +880,6 @@ void Conference::RefreshAddressBook()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ConferenceProfile * Conference::FindProfileWithLock(const PString & memberName)
-{
-  PWaitAndSignal m(profileListMutex);
-  ConferenceProfile * profile = FindProfileWithoutLock(memberName);
-  if(profile)
-    profile->Lock();
-  return profile;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ConferenceProfile * Conference::FindProfileWithoutLock(const PString & memberName)
-{
-  PWaitAndSignal m(profileListMutex);
-  for(ProfileList::iterator it = profileList.begin(); it != profileList.end(); ++it)
-  {
-    if(it->second->GetName() == memberName)
-      return it->second;
-  }
-  return NULL;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ConferenceProfile * Conference::FindProfileNameIDWithLock(const PString & memberName)
-{
-  PWaitAndSignal m(profileListMutex);
-  ConferenceProfile * profile = FindProfileWithoutLock(memberName);
-  if(profile)
-    profile->Lock();
-  return profile;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ConferenceProfile * Conference::FindProfileNameIDWithoutLock(const PString & memberName)
-{
-  PString memberNameID = MCUURL(memberName).GetMemberNameId();
-  PWaitAndSignal m(profileListMutex);
-  for(ProfileList::iterator it = profileList.begin(); it != profileList.end(); ++it)
-  {
-    if(it->second->GetNameID() == memberNameID)
-      return it->second;
-  }
-  return NULL;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ConferenceMember * Conference::FindMemberNameIDWithLock(const PString & memberName)
-{
-  PWaitAndSignal m(profileListMutex);
-  ConferenceMember * member = FindMemberNameIDWithoutLock(memberName);
-  if(member)
-    member->Lock();
-  return member;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ConferenceMember * Conference::FindMemberNameIDWithoutLock(const PString & memberName)
-{
-  PString memberNameID = MCUURL(memberName).GetMemberNameId();
-  PWaitAndSignal m(profileListMutex);
-  for(ProfileList::iterator it = profileList.begin(); it != profileList.end(); ++it)
-  {
-    ConferenceProfile *profile = it->second;
-    if(profile->GetMember() && profile->GetNameID() == memberNameID)
-      return profile->GetMember();
-  }
-  return NULL;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ConferenceMember * Conference::FindMemberWithLock(const PString & memberName)
-{
-  PWaitAndSignal m(profileListMutex);
-  ConferenceMember * member = FindMemberNameIDWithoutLock(memberName);
-  if(member)
-    member->Lock();
-  return member;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ConferenceMember * Conference::FindMemberWithoutLock(const PString & memberName)
-{
-  PWaitAndSignal m(profileListMutex);
-  for(ProfileList::iterator it = profileList.begin(); it != profileList.end(); ++it)
-  {
-    ConferenceProfile *profile = it->second;
-    if(profile->GetMember() && profile->GetName() == memberName)
-      return profile->GetMember();
-  }
-  return NULL;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
 {
   PWaitAndSignal m(memberListMutex);
@@ -929,7 +971,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   {
     // check for duplicate name or very fast reconnect
     PString memberName = memberToAdd->GetName();
-    for(PINDEX i = 0; FindMemberWithoutLock(memberToAdd->GetName()) != NULL; i++)
+    for(PINDEX i = 0; manager.FindMemberWithoutLock(this, memberToAdd->GetName()) != NULL; i++)
     {
       if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
       {
@@ -968,7 +1010,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     if(UseSameVideoForAllMembers() && memberToAdd->IsVisible())
     {
       videoMixerListMutex.Wait();
-      if(!videoMixerList->mixer->AddVideoSource(mid, *memberToAdd))
+      if(!videoMixerList->GetMixer()->AddVideoSource(mid, *memberToAdd))
         memberToAdd->SetFreezeVideo(TRUE);
       videoMixerListMutex.Signal();
       PTRACE(3, "Conference\tUseSameVideoForAllMembers ");
@@ -1149,7 +1191,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
       if (memberToRemove->IsVisible())
       {
         PWaitAndSignal m(videoMixerListMutex);
-        videoMixerList->mixer->RemoveVideoSource(userid, *memberToRemove);
+        videoMixerList->GetMixer()->RemoveVideoSource(userid, *memberToRemove);
       }
     }
     else
@@ -1157,7 +1199,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
       PWaitAndSignal m(videoMixerListMutex);
       VideoMixerRecord * vmr=videoMixerList; while(vmr!=NULL)
       {
-        vmr->mixer->MyRemoveVideoSourceById(userid,FALSE);
+        vmr->GetMixer()->MyRemoveVideoSourceById(userid,FALSE);
         vmr=vmr->next;
       }
     }
@@ -1199,7 +1241,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDE
       {
         PWaitAndSignal m(videoMixerListMutex);
         VideoMixerRecord * vmr = videoMixerList;
-        while(vmr != NULL) if(vmr->mixer->GetPositionStatus(r->first)>=0)
+        while(vmr != NULL) if(vmr->GetMixer()->GetPositionStatus(r->first)>=0)
         { skip=FALSE; break; }
         else vmr=vmr->next;
       }
@@ -1250,7 +1292,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, unsigned audio
       VideoMixerRecord * vmr=videoMixerList;
       while(vmr!=NULL)
       {
-        MCUVideoMixer * videoMixer = vmr->mixer;
+        MCUVideoMixer * videoMixer = vmr->GetMixer();
         int status = videoMixer->GetPositionStatus(member->GetID());
         if(audioLevel > VAlevel)
         {
@@ -1336,7 +1378,7 @@ BOOL Conference::WriteMemberVideo(ConferenceMember * member, const void * buffer
     if (videoMixerList != NULL) {
       VideoMixerRecord * vmr = videoMixerList; BOOL writeResult=FALSE;
       while(vmr!=NULL)
-      { writeResult |= vmr->mixer->WriteFrame(member->GetID(), buffer, width, height, amount);
+      { writeResult |= vmr->GetMixer()->WriteFrame(member->GetID(), buffer, width, height, amount);
         vmr=vmr->next;
       }
       return writeResult;
@@ -1380,7 +1422,7 @@ void Conference::FreezeVideo(ConferenceMemberId id)
     PWaitAndSignal m(videoMixerListMutex);
     VideoMixerRecord * vmr = videoMixerList;
     while(vmr!=NULL)
-    { i=vmr->mixer->GetPositionStatus(id);
+    { i=vmr->GetMixer()->GetPositionStatus(id);
       if(i>=0) {
         r->second->SetFreezeVideo(FALSE);
         return;
@@ -1398,7 +1440,7 @@ void Conference::FreezeVideo(ConferenceMemberId id)
     VideoMixerRecord * vmr = videoMixerList;
     while(vmr!=NULL)
     {
-      i=vmr->mixer->GetPositionStatus(mid);
+      i=vmr->GetMixer()->GetPositionStatus(mid);
       if(i>=0)
       {
         r->second->SetFreezeVideo(FALSE);
@@ -1434,8 +1476,8 @@ BOOL Conference::PutChosenVan()
       PWaitAndSignal m(videoMixerListMutex);
       VideoMixerRecord * vmr = videoMixerList;
       while(vmr!=NULL){
-        i=vmr->mixer->GetPositionStatus(r->second->GetID());
-        if(i < 0) put |= (NULL != vmr->mixer->SetVADPosition(r->second,r->second->chosenVan,VAtimeout));
+        i=vmr->GetMixer()->GetPositionStatus(r->second->GetID());
+        if(i < 0) put |= (NULL != vmr->GetMixer()->SetVADPosition(r->second,r->second->chosenVan,VAtimeout));
         vmr = vmr->next;
       }
     }
@@ -1458,10 +1500,10 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
     {
       PWaitAndSignal m(videoMixerListMutex);
       if(videoMixerList==NULL) return;
-      if(videoMixerList->mixer==NULL) return;
-      int pos=videoMixerList->mixer->GetPositionNum(id);
+      if(videoMixerList->GetMixer()==NULL) return;
+      int pos=videoMixerList->GetMixer()->GetPositionNum(id);
       if(pos==posTo) return;
-      videoMixerList->mixer->InsertVideoSource(&member,posTo);
+      videoMixerList->GetMixer()->InsertVideoSource(&member,posTo);
     }
     FreezeVideo(NULL);
 
@@ -1535,7 +1577,10 @@ ConferenceMember::~ConferenceMember()
   muteMask|=15;
 #if MCU_VIDEO
   if(videoMixer)
+  {
+    videoMixer->FullLock();
     delete videoMixer;
+  }
 #endif
 }   
 
