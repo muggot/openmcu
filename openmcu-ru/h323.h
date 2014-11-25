@@ -105,7 +105,7 @@ class MCUH323EndPoint : public H323EndPoint
     PString GetConferenceOptsJavascript(Conference & c);
     PString GetMemberListOptsJavascript(Conference & conference);
     BOOL SetMemberVideoMixer(Conference & conference, ConferenceMember * victim, unsigned newVideoMixer);
-    PString OTFControl(const PString room, const PStringToString & data);
+    BOOL OTFControl(const PString room, const PStringToString & data);
     PString GetRoomList(const PString & block);
     PString SetRoomParams(const PStringToString & data);
     void UnmoderateConference(Conference & conference);

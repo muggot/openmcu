@@ -1100,13 +1100,17 @@ BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMem
   return TRUE;
 }
 
-PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & data)
+BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & data)
 {
   PTRACE(6,"WebCtrl\tRoom " << room << ", action " << data("action") << ", value " << data("v") << ", options " << data("o") << ", " << data("o2") << ", " << data("o3"));
 
-  if(!data.Contains("action")) return "FAIL"; int action=data("action").AsInteger();
+  if(!data.Contains("action"))
+    return FALSE;
+  int action = data("action").AsInteger();
 
-  if(!data.Contains("v")) return "FAIL"; PString value=data("v");
+  if(!data.Contains("v"))
+    return FALSE;
+  PString value = data("v");
   long v = value.AsInteger();
 
 #if USE_LIBYUV
@@ -1120,15 +1124,16 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
     OpenMCU::Current().HttpWriteCmdRoom("top_panel()",room);
     OpenMCU::Current().HttpWriteCmdRoom("alive()",room);
-    return "OK";
+    return TRUE;
   }
 #endif
 
   Conference * conference = conferenceManager.FindConferenceWithLock(room);
-  if(!conference) return "FAIL";
+  if(!conference)
+    return FALSE;
 
-#define OTF_RET_OK { conference->Unlock(); return "OK"; }
-#define OTF_RET_FAIL { conference->Unlock(); return "FAIL"; }
+#define OTF_RET_OK { conference->Unlock(); return TRUE; }
+#define OTF_RET_FAIL { conference->Unlock(); return FALSE; }
 
   if(action == OTFC_REFRESH_ABOOK)
   {
@@ -1266,7 +1271,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     }
     OpenMCU::Current().HttpWriteEventRoom("Active members dropped by operator",room);
     OpenMCU::Current().HttpWriteCmdRoom("drop_all()",room);
-    return "OK";
+    return TRUE;
   }
   if((action == OTFC_MUTE_ALL)||(action == OTFC_UNMUTE_ALL))
   {
@@ -1282,7 +1287,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
       if(newValue)member->SetChannelPauses  (1);
       else        member->UnsetChannelPauses(1);
     }
-    return "OK";
+    return TRUE;
   }
   if(action == OTFC_INVITE_ALL_INACT_MMBRS)
   {
@@ -1333,7 +1338,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
       OpenMCU::Current().HttpWriteCmdRoom("r_unmoder()",room);
       OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
       OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-      return "OK";
+      return TRUE;
     }
     OTF_RET_OK;
   }
@@ -1634,7 +1639,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     conference->PutChosenVan();
     cmd << "ivad(" << v << ",0)";
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-    return "OK";
+    return TRUE;
   }
   if(action == OTFC_VAD_CHOSEN_VAN)
   {
@@ -1645,7 +1650,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
     conference->FreezeVideo(member->GetID());
     cmd << "ivad(" << v << ",1)";
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-    return "OK";
+    return TRUE;
   }
   if(action == OTFC_VAD_DISABLE_VAD)
   {
@@ -1689,7 +1694,7 @@ PString MCUH323EndPoint::OTFControl(const PString room, const PStringToString & 
 #endif
     cmd << "ivad(" << v << ",2)";
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-    return "OK";
+    return TRUE;
   }
   if(action == OTFC_SET_MEMBER_VIDEO_MIXER)
   {
@@ -1810,7 +1815,8 @@ PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
   PString room = data("room");
 
   // "On-the-Fly" Control via XMLHTTPRequest:
-  if(data.Contains("otfc")) return OTFControl(room, data);
+  if(data.Contains("otfc"))
+    return (OTFControl(room, data) ? "OK" : "FAIL");
 
   if(data.Contains("refresh")) // JavaScript data refreshing
   {
@@ -1838,83 +1844,93 @@ PString MCUH323EndPoint::GetMonitorText()
 {
   PStringStream output;
 
+  // lock conferenceList
   PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
   ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
 
   output << "Room Count: " << (int)conferenceList.size() << "\n"
          << "Max Room Count: " << conferenceManager.GetMaxConferenceCount() << "\n";
 
-  ConferenceListType::iterator r;
   PINDEX confNum = 0;
-  for (r = conferenceList.begin(); r != conferenceList.end(); ++r)
-  { Conference & conference = *(r->second); Conference::MemberList & memberList = conference.GetMemberList();
+  for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  {
+    Conference & conference = *(r->second);
+
+    // lock profileList
+    PWaitAndSignal m2(conference.GetProfileListMutex());
+    Conference::ProfileList & profileList = conference.GetProfileList();
 
     output << "\n[Conference "     << ++confNum << "]\n"
-           << "Title: "            <<  conference.GetNumber() << "\n"
+           << "Title: "            << conference.GetNumber() << "\n"
            << "ID: "               << conference.GetID() << "\n"
            << "Duration: "         << (PTime() - conference.GetStartTime()) << "\n"
-           << "Member Count: "     << (int)memberList.size() << "\n"
+           << "Member Count: "     << (int)conference.GetMemberList().size() << "\n"
            << "Max Member Count: " << conference.GetMaxMemberCount() << "\n";
 
-    Conference::MemberList::const_iterator s;
     PINDEX num = 0;
-    for (s = memberList.begin(); s != memberList.end(); ++s)
-    { ConferenceMember * member = s->second;
-      if (member != NULL)
-      { output << "[Member " << ++num << "]\n";
-        PStringStream hdr; hdr << "  ";
-        PString name = member->GetName();
-        MemberTypes membType = member->GetType();
-        BOOL isCache = (membType == MEMBER_TYPE_CACHE);
-        BOOL isPipe = (membType == MEMBER_TYPE_PIPE);
-        output << hdr << "Title: " << hex << member->GetTitle();
-        if(isPipe || isCache) output << " (file object)";
-        output << "\n"
-               << hdr << "Name: " << name << "\n"
-               << hdr << "Outgoing video mixer: " << member->GetVideoMixerNumber() << "\n"
-               << hdr << "Duration: " << (PTime() - member->GetStartTime()) << "\n"
-               << member->GetMonitorInfo(hdr);
-        if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
+    for(Conference::ProfileList::const_iterator s = profileList.begin(); s != profileList.end(); ++s)
+    {
+      ConferenceMember * member = s->second->GetMember();
+      if(member == NULL)
+        continue;
+
+      output << "[Member " << ++num << "]\n";
+      PStringStream hdr; hdr << "  ";
+      PString name = member->GetName();
+
+      MemberTypes membType = member->GetType();
+      BOOL isCache = (membType == MEMBER_TYPE_CACHE);
+      BOOL isPipe = (membType == MEMBER_TYPE_PIPE);
+
+      output << hdr << "Title: " << hex << member->GetTitle();
+      if(isPipe || isCache) output << " (file object)";
+      output << "\n"
+             << hdr << "Name: " << name << "\n"
+             << hdr << "Outgoing video mixer: " << member->GetVideoMixerNumber() << "\n"
+             << hdr << "Duration: " << (PTime() - member->GetStartTime()) << "\n"
+             << member->GetMonitorInfo(hdr);
+      if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
+      {
+        output << hdr << "callToken: " << member->GetCallToken() << "\n";
+        MCUH323Connection * conn = (MCUH323Connection *)FindConnectionWithoutLock(member->GetCallToken());
+        output << hdr << "Connection: " << hex << conn << "\n";
+      }
+      if(isPipe)
+      {
+        ConferencePipeMember * pipeMember = dynamic_cast<ConferencePipeMember *>(member);
+        if(pipeMember!=NULL)
         {
-          output << hdr << "callToken: " << member->GetCallToken() << "\n";
-          MCUH323Connection * conn = (MCUH323Connection *)FindConnectionWithoutLock(member->GetCallToken());
-          output << hdr << "Connection: " << hex << conn << "\n";
+          output << hdr << "Format: " << pipeMember->GetFormat() << "\n";
+          output << hdr << "IsVisible: " << pipeMember->IsVisible() << "\n";
         }
-        if(isPipe)
+      }
+      if(isCache)
+      {
+        ConferenceCacheMember * cacheMember = dynamic_cast<ConferenceCacheMember *>(member);
+        if(cacheMember!=NULL)
         {
-          ConferencePipeMember * pipeMember = dynamic_cast<ConferencePipeMember *>(member);
-          if(pipeMember!=NULL)
-          {
-            output << hdr << "Format: " << pipeMember->GetFormat() << "\n";
-            output << hdr << "IsVisible: " << pipeMember->IsVisible() << "\n";
-          }
-        }
-        if(isCache)
-        {
-          ConferenceCacheMember * cacheMember = dynamic_cast<ConferenceCacheMember *>(member);
-          if(cacheMember!=NULL)
-          {
-            output << hdr << "Format: " << cacheMember->GetMediaFormat() << "\n";
-            output << hdr << "IsVisible: " << cacheMember->IsVisible() << "\n";
-            output << hdr << "Status: " << (cacheMember->status?"Awake":"Sleeping") << "\n";
+          output << hdr << "Format: " << cacheMember->GetMediaFormat() << "\n";
+          output << hdr << "IsVisible: " << cacheMember->IsVisible() << "\n";
+          output << hdr << "Status: " << (cacheMember->status?"Awake":"Sleeping") << "\n";
 //#ifndef _WIN32
 //            if(fileMember->codec) output << hdr << "EncoderSeqN: " << dec << fileMember->codec->GetEncoderSeqN() << "\n";
 //#endif
-          }
         }
-        if(member->videoMixer!=NULL)
-        { output << hdr << "Video Mixer ID: " << member->videoMixer << "\n";
-          int n=member->videoMixer->GetPositionSet();
-          output << hdr << "Video Mixer Layout ID: " << OpenMCU::vmcfg.vmconf[n].splitcfg.Id << "\n"
-            << hdr << "Video Mixer Layout capacity: " << dec << OpenMCU::vmcfg.vmconf[n].splitcfg.vidnum << hex << "\n";
-          MCUVideoMixer::VideoMixPosition *r=member->videoMixer->vmpList->next;
-          while(r!=NULL)
-          { output << hdr << "[Position " << r->n << "]\n"
-              << hdr << "  Conference Member Id: " << r->id << "\n"
-              << hdr << "  Position type: " << r->type << "\n"
-              << hdr << "  Position status: " << r->status << "\n";
-           r=r->next;
-          }
+      }
+      if(member->videoMixer!=NULL)
+      {
+        output << hdr << "Video Mixer ID: " << member->videoMixer << "\n";
+        int n=member->videoMixer->GetPositionSet();
+        output << hdr << "Video Mixer Layout ID: " << OpenMCU::vmcfg.vmconf[n].splitcfg.Id << "\n"
+          << hdr << "Video Mixer Layout capacity: " << dec << OpenMCU::vmcfg.vmconf[n].splitcfg.vidnum << hex << "\n";
+        MCUVideoMixer::VideoMixPosition *r=member->videoMixer->vmpList->next;
+        while(r!=NULL)
+        {
+          output << hdr << "[Position " << r->n << "]\n"
+                 << hdr << "  Conference Member Id: " << r->id << "\n"
+                 << hdr << "  Position type: " << r->type << "\n"
+                 << hdr << "  Position status: " << r->status << "\n";
+          r=r->next;
         }
       }
     }
@@ -1922,7 +1938,8 @@ PString MCUH323EndPoint::GetMonitorText()
     PWaitAndSignal m3(conference.videoMixerListMutex);
     Conference::VideoMixerRecord * vmr = conference.videoMixerList;
     while (vmr!=NULL)
-    { output << "[Mixer " << vmr->id << "]\n";
+    {
+      output << "[Mixer " << vmr->id << "]\n";
       MCUSimpleVideoMixer * mixer = (MCUSimpleVideoMixer*) vmr->GetMixer();
       int n=mixer->GetPositionSet();
       output << "  Layout ID: "       << OpenMCU::vmcfg.vmconf[n].splitcfg.Id << "\n"
