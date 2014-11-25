@@ -4,12 +4,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#if USE_LIBJPEG
-extern "C" {
-#include <jpeglib.h>
-}
-#endif
-
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 PCREATE_SERVICE_MACRO(mcuinfo,P_EMPTY,P_EMPTY)
@@ -2282,27 +2276,6 @@ BOOL InvitePage::Post(PHTTPRequest & request,
 
 #if USE_LIBJPEG
 
-MCUSimpleVideoMixer* jpegMixer;
-
-void jpeg_init_destination(j_compress_ptr cinfo){
-  if(jpegMixer->myjpeg.GetSize()<32768)jpegMixer->myjpeg.SetSize(32768);
-  cinfo->dest->next_output_byte=&jpegMixer->myjpeg[0];
-  cinfo->dest->free_in_buffer=jpegMixer->myjpeg.GetSize();
-}
-
-boolean jpeg_empty_output_buffer(j_compress_ptr cinfo){
-  PINDEX oldsize=jpegMixer->myjpeg.GetSize();
-  jpegMixer->myjpeg.SetSize(oldsize+16384);
-  cinfo->dest->next_output_byte = &jpegMixer->myjpeg[oldsize];
-  cinfo->dest->free_in_buffer = jpegMixer->myjpeg.GetSize() - oldsize;
-  return true;
-}
-
-void jpeg_term_destination(j_compress_ptr cinfo){
-  jpegMixer->jpegSize=jpegMixer->myjpeg.GetSize() - cinfo->dest->free_in_buffer;
-  jpegMixer->jpegTime=(long)time(0);
-}
-
 JpegFrameHTTP::JpegFrameHTTP(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Jpeg", "", "image/jpeg", auth),
     app(_app)
@@ -2333,6 +2306,9 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
 
   const unsigned long t1=(unsigned long)time(0);
 
+  // lock!
+  PWaitAndSignal m(jpegMixerMutex);
+
   ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
   jpegMixer = cm.FindMixerWithLock(room, requestedMixer);
   if(jpegMixer == NULL) // no mixer found
@@ -2341,10 +2317,14 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   if(t1-(jpegMixer->jpegTime)>1) // artificial limitation to prevent overload: no more than 1 frame per second
   {
     if(width<1||height<1||width>2048||height>2048) //suspicious, it's better to get size from layouts.conf
-    { width=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_width;
+    {
+      width=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_width;
       height=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_height;
     }
-    struct jpeg_compress_struct cinfo; struct jpeg_error_mgr jerr;
+    struct my_jpeg_compress_struct cinfo;
+    cinfo.context = this;
+    struct jpeg_error_mgr jerr;
+
     JSAMPROW row_pointer[1];
     int row_stride;
     cinfo.err = jpeg_std_error(&jerr);
@@ -2357,7 +2337,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     PINDEX amount=width*height*3/2;
     unsigned char *videoData=new unsigned char[amount];
 
-    ((MCUSimpleVideoMixer*)jpegMixer)->ReadMixedFrame((void*)videoData,width,height,amount);
+    jpegMixer->ReadMixedFrame((void*)videoData,width,height,amount);
     PColourConverter * converter = PColourConverter::Create("YUV420P", "RGB24", width, height);
     converter->SetDstFrameSize(width, height);
     unsigned char * bitmap = new unsigned char[width*height*3];
@@ -2399,7 +2379,8 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   server.Write(jpegMixer->myjpeg.GetPointer(),jpegMixer->jpegSize);
   server.flush();
 
-  //jpegMixer->Unlock();
+  // unlock mixer
+  jpegMixer->Unlock();
 
   return TRUE;
 }

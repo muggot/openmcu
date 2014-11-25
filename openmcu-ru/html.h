@@ -1,6 +1,11 @@
 #ifndef _MCU_HTML_H
 #define _MCU_HTML_H
 
+#if USE_LIBJPEG
+extern "C" {
+  #include <jpeglib.h>
+};
+#endif
 
 #include <ptlib.h>
 
@@ -857,9 +862,48 @@ class JpegFrameHTTP : public PServiceHTTPString
   public:
     JpegFrameHTTP(OpenMCU & app, PHTTPAuthority & auth);
     BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
-    PMutex mutex;
+
+    struct my_jpeg_compress_struct : jpeg_compress_struct
+    {
+      JpegFrameHTTP *context;
+    };
+
+    static void jpeg_init_destination(struct jpeg_compress_struct *cinfo)
+    {
+      MCUSimpleVideoMixer *jpegMixer = JpegFrameHTTP::GetMixer(cinfo);
+      if(jpegMixer->myjpeg.GetSize() < 32768)
+        jpegMixer->myjpeg.SetSize(32768);
+      cinfo->dest->next_output_byte = &jpegMixer->myjpeg[0];
+      cinfo->dest->free_in_buffer = jpegMixer->myjpeg.GetSize();
+    }
+
+    static boolean jpeg_empty_output_buffer(struct jpeg_compress_struct *cinfo)
+    {
+      MCUSimpleVideoMixer *jpegMixer = JpegFrameHTTP::GetMixer(cinfo);
+      PINDEX oldsize = jpegMixer->myjpeg.GetSize();
+      jpegMixer->myjpeg.SetSize(oldsize + 16384);
+      cinfo->dest->next_output_byte = &jpegMixer->myjpeg[oldsize];
+      cinfo->dest->free_in_buffer = jpegMixer->myjpeg.GetSize() - oldsize;
+      return true;
+    }
+
+    static void jpeg_term_destination(struct jpeg_compress_struct *cinfo)
+    {
+      MCUSimpleVideoMixer *jpegMixer = JpegFrameHTTP::GetMixer(cinfo);
+      jpegMixer->jpegSize = jpegMixer->myjpeg.GetSize() - cinfo->dest->free_in_buffer;
+      jpegMixer->jpegTime = (long)time(0);
+    }
+
+    static MCUSimpleVideoMixer * GetMixer(struct jpeg_compress_struct *cinfo)
+    {
+      my_jpeg_compress_struct *my_cinfo = static_cast<my_jpeg_compress_struct *>(cinfo);
+      return my_cinfo->context->jpegMixer;
+    }
+
   private:
     OpenMCU & app;
+    PMutex jpegMixerMutex;
+    MCUSimpleVideoMixer *jpegMixer;
 };
 #endif
 

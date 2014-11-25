@@ -334,14 +334,14 @@ MCUSimpleVideoMixer * ConferenceManager::FindMixerWithLock(Conference * conferen
   {
     PWaitAndSignal m(conference->videoMixerListMutex);
     MCUSimpleVideoMixer *mixer = FindMixerWithoutLock(conference, id);
-//    if(mixer)
-//      mixer->Lock();
+    if(mixer)
+      mixer->Lock();
     return mixer;
   } else {
     PWaitAndSignal m(conference->GetProfileListMutex());
     MCUSimpleVideoMixer *mixer = FindMixerWithoutLock(conference, id);
-//    if(mixer)
-//      mixer->Lock();
+    if(mixer)
+      mixer->Lock();
     return mixer;
   }
   return NULL;
