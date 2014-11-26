@@ -880,19 +880,17 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
   }
 
   // memberProfileList
+  PString nameID = MCUURL(name).GetMemberNameId();
   ConferenceProfile * profile = NULL;
-  if(member)
+  for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
   {
-    for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
+    if(r->second->GetMember())
+      continue;
+    if(r->second->GetNameID() == nameID)
     {
-      if(r->second->GetMember())
-        continue;
-      if(r->second->GetNameID() == member->GetNameID())
-      {
-        profile = r->second;
-        profile->SetMember(member);
-        break;
-      }
+      profile = r->second;
+      profile->SetMember(member);
+      break;
     }
   }
   if(profile == NULL)

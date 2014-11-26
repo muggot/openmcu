@@ -71,7 +71,11 @@ PString Conference::SaveTemplate(PString tplName)
                   for(ProfileList::iterator s = profileList.begin(); s != profileList.end(); ++s)
                   {
                     ConferenceMember *member = s->second->GetMember();
-                    if(member == NULL) if(("1, "+(member->GetName())) == value)
+                    if(member == NULL)
+                      continue;
+                    if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+                      continue;
+                    if(("1, "+(member->GetName())) == value)
                     {
                       vmpText << "VMP " << value;
                       break;
@@ -102,6 +106,8 @@ PString Conference::SaveTemplate(PString tplName)
   {
     ConferenceProfile *profile = s->second;
     ConferenceMember *member = profile->GetMember();
+    if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+      continue;
     if(member)
     {
       t << "  MEMBER "
@@ -221,8 +227,7 @@ void Conference::LoadTemplate(PString tpl)
           for(int i=6; i<v.GetSize(); i++) memberInternalName += "," + v[i];
           PString memberAddress = MCUURL(memberInternalName).GetUrl();
 
-          PWaitAndSignal m(profileListMutex);
-          ConferenceMember *member = manager.FindMemberNameIDWithoutLock(this, memberInternalName);
+          ConferenceMember *member = manager.FindMemberNameIDWithLock(this, memberInternalName);
           if(member)
           {
             PStringArray maskAndGain = v[1].Tokenise("/");
@@ -243,6 +248,7 @@ void Conference::LoadTemplate(PString tpl)
             member->disableVAD      = (v[2]=="1");
             member->chosenVan       = (v[3]=="1");
             OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
+            member->Unlock();
           }
           else
           {
@@ -282,8 +288,10 @@ void Conference::LoadTemplate(PString tpl)
   ProfileList profileListCopy(profileList);
   for(ProfileList::iterator r = profileListCopy.begin(); r != profileListCopy.end(); ++r)
   {
-    PString name = r->second->GetName();
     ConferenceMember *member = r->second->GetMember();
+    if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+      continue;
+    PString name = r->second->GetName();
     if(validatedMembers.GetStringsIndex(name) == P_MAX_INDEX) // remove unwanted members
     {
       if(member == NULL) // offline: simple
