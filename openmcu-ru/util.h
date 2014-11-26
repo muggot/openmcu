@@ -5,6 +5,40 @@
 #include "config.h"
 #include "mcu.h"
 
+extern "C"
+{
+  #include "libavcodec/avcodec.h"
+  #include "libavformat/avformat.h"
+  #include "libavutil/avutil.h"
+  #include "libavutil/opt.h"
+  #include "libavutil/mem.h"
+  #include "libavutil/mathematics.h"
+  #include "libavutil/audioconvert.h"
+#if USE_SWRESAMPLE
+  #include <libswresample/swresample.h>
+#elif USE_AVRESAMPLE
+  #include <libavresample/avresample.h>
+  #include <libavutil/samplefmt.h>
+#elif USE_LIBSAMPLERATE
+  #include <samplerate.h>
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+const uint64_t MCU_AV_CH_Layout_Selector[] =
+{
+  0
+  ,AV_CH_LAYOUT_MONO
+  ,AV_CH_LAYOUT_STEREO
+  ,AV_CH_LAYOUT_2_1
+  ,AV_CH_LAYOUT_3POINT1
+  ,AV_CH_LAYOUT_5POINT0
+  ,AV_CH_LAYOUT_5POINT1
+  ,AV_CH_LAYOUT_7POINT0
+  ,AV_CH_LAYOUT_7POINT1
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define MCUTRACE(level, args) \

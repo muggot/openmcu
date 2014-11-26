@@ -20,21 +20,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-const uint64_t MCU_AV_CH_Layout_Selector[] =
-{
-  0
-  ,AV_CH_LAYOUT_MONO
-  ,AV_CH_LAYOUT_STEREO
-  ,AV_CH_LAYOUT_2_1
-  ,AV_CH_LAYOUT_3POINT1
-  ,AV_CH_LAYOUT_5POINT0
-  ,AV_CH_LAYOUT_5POINT1
-  ,AV_CH_LAYOUT_7POINT0
-  ,AV_CH_LAYOUT_7POINT1
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PString AVErrorToString(int errnum)
 {
   char errbuf[64];

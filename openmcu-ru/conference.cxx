@@ -6,21 +6,6 @@
 #include "conference.h"
 #include "mcu.h"
 
-extern "C" {
-#if USE_SWRESAMPLE
-#include <libswresample/swresample.h>
-#include <libavutil/audioconvert.h>
-#elif USE_AVRESAMPLE
-#include <libavresample/avresample.h>
-#include <libavutil/audioconvert.h>
-#include <libavutil/samplefmt.h>
-#include <libavutil/opt.h>
-#include <libavutil/mem.h>
-#elif USE_LIBSAMPLERATE
-#include <samplerate.h>
-#endif
-};
-
 #if MCU_VIDEO
 #include <ptlib/vconvert.h>
 #endif
@@ -1229,8 +1214,8 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   // get number of channels to mix
-//  ConferenceMember::ConnectionListType & connectionList = member->GetConnectionList();
-  ConferenceMember::ConnectionListType connectionList(member->GetConnectionList()); // make a copy
+  // lock in ConferenceMember::ReadAudio
+  ConferenceMember::ConnectionListType & connectionList = member->GetConnectionList();
   for (ConferenceMember::ConnectionListType::iterator r=connectionList.begin(), e=connectionList.end(); r!=e; ++r) 
   {
     if (r->second != NULL)
@@ -1729,53 +1714,40 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
   { if (conference != NULL) conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
 
     // reset buffer usage flag
-    for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t) if(t->second != NULL) t->second->used=FALSE;
+    for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t)
+      if(t->second != NULL)
+        t->second->used=FALSE;
 
     MemberListType::iterator r;
     for (r = memberList.begin(); r != memberList.end(); ++r)
-    { if (r->second != NULL) // member in the list != NULL
-      { ConnectionListType::iterator s = r->second->connectionList.find(id);
+    {
+      if (r->second != NULL) // member in the list != NULL
+      {
+        ConnectionListType::iterator s = r->second->connectionList.find(id);
         if(s == r->second->connectionList.end()) continue; // seems this is really needs for same-time connections
         if(s->second == NULL) continue;                    // one more paranoidal check just in case
-        { if(s->second->outgoingSampleRate == sampleRate && s->second->outgoingCodecChannels == channels)
+        {
+          if(s->second->outgoingSampleRate == sampleRate && s->second->outgoingCodecChannels == channels)
             s->second->Write((BYTE *)buffer, amount); // equal rates
           else // resampler needs here
-          { unsigned targetSampleRate = s->second->outgoingSampleRate;
+          {
+            unsigned targetSampleRate = s->second->outgoingSampleRate;
             unsigned targetCodecChannels = s->second->outgoingCodecChannels;
             unsigned bufferKey = (targetCodecChannels<<24)|targetSampleRate;
             PINDEX newAmount = amount * targetCodecChannels * targetSampleRate / sampleRate / channels;
             newAmount-=(newAmount % (channels<<1));
             BufferListType::iterator t = bufferList.find(bufferKey);
             if(t==bufferList.end()) // no buffer found, create
-            { ResamplerBufferType * newResamplerBuffer = new ResamplerBufferType();
+            {
+              ResamplerBufferType * newResamplerBuffer = new ResamplerBufferType();
               newResamplerBuffer->used = FALSE;
 #if USE_SWRESAMPLE
-              const uint64_t MCU_AV_CH_Layout_Selector[] = {0
-                ,AV_CH_LAYOUT_MONO
-                ,AV_CH_LAYOUT_STEREO
-                ,AV_CH_LAYOUT_2_1
-                ,AV_CH_LAYOUT_3POINT1
-                ,AV_CH_LAYOUT_5POINT0
-                ,AV_CH_LAYOUT_5POINT1
-                ,AV_CH_LAYOUT_7POINT0
-                ,AV_CH_LAYOUT_7POINT1
-              };
               newResamplerBuffer->swrc = NULL;
               newResamplerBuffer->swrc = swr_alloc_set_opts(NULL,
                 MCU_AV_CH_Layout_Selector[targetCodecChannels], AV_SAMPLE_FMT_S16, targetSampleRate,
                 MCU_AV_CH_Layout_Selector[channels           ], AV_SAMPLE_FMT_S16, sampleRate,       0, NULL);
               swr_init(newResamplerBuffer->swrc);
 #elif USE_AVRESAMPLE
-              const uint64_t MCU_AV_CH_Layout_Selector[] = {0
-                ,AV_CH_LAYOUT_MONO
-                ,AV_CH_LAYOUT_STEREO
-                ,AV_CH_LAYOUT_2_1
-                ,AV_CH_LAYOUT_3POINT1
-                ,AV_CH_LAYOUT_5POINT0
-                ,AV_CH_LAYOUT_5POINT1
-                ,AV_CH_LAYOUT_7POINT0
-                ,AV_CH_LAYOUT_7POINT1
-              };
               newResamplerBuffer->swrc = NULL;
               newResamplerBuffer->swrc = avresample_alloc_context();
               av_opt_set_int(newResamplerBuffer->swrc, "out_channel_layout", MCU_AV_CH_Layout_Selector[targetCodecChannels], 0);
@@ -1795,7 +1767,8 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
             }
             if(t->second==NULL) continue;
             if(!(t->second->used))
-            { if(t->second->data.GetSize() < newAmount) t->second->data.SetSize(newAmount + 16);
+            {
+              if(t->second->data.GetSize() < newAmount) t->second->data.SetSize(newAmount + 16);
               DoResample((BYTE *)buffer, amount, sampleRate, channels, t, newAmount, targetSampleRate, targetCodecChannels);
               t->second->used = TRUE;
             }

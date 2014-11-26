@@ -2,22 +2,6 @@
 #ifndef _MCU_RECORDER_H
 #define _MCU_RECORDER_H
 
-extern "C"
-{
-  #include "libavcodec/avcodec.h"
-  #include "libavformat/avformat.h"
-  #include "libavutil/avutil.h"
-  #include "libavutil/opt.h"
-  #include "libavutil/mem.h"
-  #include "libavutil/mathematics.h"
-  #include "libavutil/audioconvert.h"
-#if USE_SWRESAMPLE
-  #include <libswresample/swresample.h>
-#elif USE_AVRESAMPLE
-  #include <libavresample/avresample.h>
-#endif
-}
-
 #include "config.h"
 #include "conference.h"
 
