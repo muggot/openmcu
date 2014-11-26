@@ -904,7 +904,7 @@ class ConferenceMember : public PObject
     { return conference; }
 
     void SetConference(Conference * c)
-    { conference=c; }
+    { lock.Wait(); conference = c; lock.Signal(); }
 
     /**
       * add a new connection for the specified member to this member to the internal list of connections
@@ -935,7 +935,9 @@ class ConferenceMember : public PObject
       */
     virtual void WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
-    virtual void DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, unsigned srcChannels, BufferListType::const_iterator t, PINDEX dstBytes, unsigned dstRate, unsigned dstChannels);
+    virtual void DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, unsigned srcChannels, ResamplerBufferType *resBuffer, PINDEX dstBytes, unsigned dstRate, unsigned dstChannels);
+
+    ResamplerBufferType * CreateResamplerBuffer(unsigned bufferKey, unsigned sampleRate, unsigned targetSampleRate, unsigned channels, unsigned targetChannels);
 
     /**
       *  Called when the conference member wants to read a block of audio from the conference

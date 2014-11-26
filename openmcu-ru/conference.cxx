@@ -1701,126 +1701,138 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
   }
 }
 
+ResamplerBufferType * ConferenceMember::CreateResamplerBuffer(unsigned bufferKey, unsigned sampleRate, unsigned targetSampleRate, unsigned channels, unsigned targetChannels)
+{
+  ResamplerBufferType * newResamplerBuffer = new ResamplerBufferType();
+  newResamplerBuffer->used = FALSE;
+#if USE_SWRESAMPLE
+  newResamplerBuffer->swrc = NULL;
+  newResamplerBuffer->swrc = swr_alloc_set_opts(NULL,
+  MCU_AV_CH_Layout_Selector[targetChannels], AV_SAMPLE_FMT_S16, targetSampleRate,
+  MCU_AV_CH_Layout_Selector[channels      ], AV_SAMPLE_FMT_S16, sampleRate,       0, NULL);
+  swr_init(newResamplerBuffer->swrc);
+#elif USE_AVRESAMPLE
+  newResamplerBuffer->swrc = NULL;
+  newResamplerBuffer->swrc = avresample_alloc_context();
+  av_opt_set_int(newResamplerBuffer->swrc, "out_channel_layout", MCU_AV_CH_Layout_Selector[targetChannels], 0);
+  av_opt_set_int(newResamplerBuffer->swrc, "out_sample_fmt",     AV_SAMPLE_FMT_S16, 0);
+  av_opt_set_int(newResamplerBuffer->swrc, "out_sample_rate",    targetSampleRate, 0);
+  av_opt_set_int(newResamplerBuffer->swrc, "in_channel_layout",  MCU_AV_CH_Layout_Selector[channels], 0);
+  av_opt_set_int(newResamplerBuffer->swrc, "in_sample_fmt",      AV_SAMPLE_FMT_S16,0);
+  av_opt_set_int(newResamplerBuffer->swrc, "in_sample_rate",     sampleRate, 0);
+  avresample_open(newResamplerBuffer->swrc);
+#elif USE_LIBSAMPLERATE
+  newResamplerBuffer->swrc = NULL;
+  newResamplerBuffer->swrc = src_new(SRC_LINEAR, 1, NULL);
+#endif
+  bufferList.insert(BufferListType::value_type(bufferKey, newResamplerBuffer));
+  return newResamplerBuffer;
+}
+
 void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   if(!(channelCheck&1)) ChannelBrowserStateUpdate(1,TRUE);
   if(muteMask&1) return;
+
   // calculate average signal level for this member
   unsigned signalLevel=0;
   AutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 2000, &currVolCoef, &signalLevel, kManualGain);
   audioLevel = ((signalLevel * 2) + audioLevel) / 3;
 
-  if (lock.Wait())
-  { if (conference != NULL) conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
+  if(lock.Wait())
+  {
+    if(conference != NULL)
+      conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
 
     // reset buffer usage flag
-    for(BufferListType::iterator t=bufferList.begin(); t!=bufferList.end(); ++t)
+    for(BufferListType::iterator t = bufferList.begin(); t != bufferList.end(); ++t)
       if(t->second != NULL)
-        t->second->used=FALSE;
+        t->second->used = FALSE;
 
-    MemberListType::iterator r;
-    for (r = memberList.begin(); r != memberList.end(); ++r)
+    for(MemberListType::iterator r = memberList.begin(); r != memberList.end(); ++r)
     {
-      if (r->second != NULL) // member in the list != NULL
+      if(r->second == NULL) // member in the list != NULL
+        continue;
+
+      ConnectionListType::iterator s = r->second->connectionList.find(id);
+      if(s == r->second->connectionList.end())
+        continue; // seems this is really needs for same-time connections
+      if(s->second == NULL)
+        continue; // one more paranoidal check just in case
+
+      if(s->second->outgoingSampleRate == sampleRate && s->second->outgoingCodecChannels == channels)
+        s->second->Write((BYTE *)buffer, amount); // equal rates
+      else // resampler needs here
       {
-        ConnectionListType::iterator s = r->second->connectionList.find(id);
-        if(s == r->second->connectionList.end()) continue; // seems this is really needs for same-time connections
-        if(s->second == NULL) continue;                    // one more paranoidal check just in case
+        unsigned targetSampleRate = s->second->outgoingSampleRate;
+        unsigned targetChannels = s->second->outgoingCodecChannels;
+        unsigned bufferKey = (targetChannels<<24)|targetSampleRate;
+        PINDEX newAmount = amount * targetChannels * targetSampleRate / sampleRate / channels;
+        newAmount -= (newAmount % (channels<<1));
+
+        ResamplerBufferType *resBuffer = NULL;
+        BufferListType::iterator t = bufferList.find(bufferKey);
+        if(t != bufferList.end())
+          resBuffer = t->second;
+        else
+          resBuffer = CreateResamplerBuffer(bufferKey, sampleRate, targetSampleRate, channels, targetChannels);
+        if(resBuffer == NULL)
+          continue;
+
+        if(!resBuffer->used)
         {
-          if(s->second->outgoingSampleRate == sampleRate && s->second->outgoingCodecChannels == channels)
-            s->second->Write((BYTE *)buffer, amount); // equal rates
-          else // resampler needs here
-          {
-            unsigned targetSampleRate = s->second->outgoingSampleRate;
-            unsigned targetCodecChannels = s->second->outgoingCodecChannels;
-            unsigned bufferKey = (targetCodecChannels<<24)|targetSampleRate;
-            PINDEX newAmount = amount * targetCodecChannels * targetSampleRate / sampleRate / channels;
-            newAmount-=(newAmount % (channels<<1));
-            BufferListType::iterator t = bufferList.find(bufferKey);
-            if(t==bufferList.end()) // no buffer found, create
-            {
-              ResamplerBufferType * newResamplerBuffer = new ResamplerBufferType();
-              newResamplerBuffer->used = FALSE;
-#if USE_SWRESAMPLE
-              newResamplerBuffer->swrc = NULL;
-              newResamplerBuffer->swrc = swr_alloc_set_opts(NULL,
-                MCU_AV_CH_Layout_Selector[targetCodecChannels], AV_SAMPLE_FMT_S16, targetSampleRate,
-                MCU_AV_CH_Layout_Selector[channels           ], AV_SAMPLE_FMT_S16, sampleRate,       0, NULL);
-              swr_init(newResamplerBuffer->swrc);
-#elif USE_AVRESAMPLE
-              newResamplerBuffer->swrc = NULL;
-              newResamplerBuffer->swrc = avresample_alloc_context();
-              av_opt_set_int(newResamplerBuffer->swrc, "out_channel_layout", MCU_AV_CH_Layout_Selector[targetCodecChannels], 0);
-              av_opt_set_int(newResamplerBuffer->swrc, "out_sample_fmt",     AV_SAMPLE_FMT_S16, 0);
-              av_opt_set_int(newResamplerBuffer->swrc, "out_sample_rate",    targetSampleRate, 0);
-              av_opt_set_int(newResamplerBuffer->swrc, "in_channel_layout",  MCU_AV_CH_Layout_Selector[channels], 0);
-              av_opt_set_int(newResamplerBuffer->swrc, "in_sample_fmt",      AV_SAMPLE_FMT_S16,0);
-              av_opt_set_int(newResamplerBuffer->swrc, "in_sample_rate",     sampleRate, 0);
-              avresample_open(newResamplerBuffer->swrc);
-#elif USE_LIBSAMPLERATE
-              newResamplerBuffer->swrc = NULL;
-              newResamplerBuffer->swrc = src_new(SRC_LINEAR, 1, NULL);
-#endif
-              bufferList.insert(BufferListType::value_type(bufferKey, newResamplerBuffer));
-              t=bufferList.find(bufferKey);
-              if(t==bufferList.end()) { PTRACE(1,"Mixer\tBuffer creation error, s/r=" << targetSampleRate); continue; }
-            }
-            if(t->second==NULL) continue;
-            if(!(t->second->used))
-            {
-              if(t->second->data.GetSize() < newAmount) t->second->data.SetSize(newAmount + 16);
-              DoResample((BYTE *)buffer, amount, sampleRate, channels, t, newAmount, targetSampleRate, targetCodecChannels);
-              t->second->used = TRUE;
-            }
-            s->second->Write((BYTE *)(t->second->data.GetPointer()), newAmount);
-          }
+          if(resBuffer->data.GetSize() < newAmount)
+            resBuffer->data.SetSize(newAmount + 16);
+          DoResample((BYTE *)buffer, amount, sampleRate, channels, resBuffer, newAmount, targetSampleRate, targetChannels);
+          resBuffer->used = TRUE;
         }
+        s->second->Write((BYTE *)(resBuffer->data.GetPointer()), newAmount);
       }
     }
 
     // delete unused buffers
-    BufferListType::iterator t0 = bufferList.begin();
-    while(t0 != bufferList.end())
+    BufferListType::iterator t = bufferList.begin();
+    while(t != bufferList.end())
     {
-      if(t0->second != NULL) if(!(t0->second->used))
+      if(t->second) if(!t->second->used)
       {
 #if USE_SWRESAMPLE
-        if(t0->second->swrc != NULL) swr_free(&(t0->second->swrc));
-        t0->second->swrc = NULL;
+        if(t->second->swrc) swr_free(&(t->second->swrc));
+        t->second->swrc = NULL;
 #elif USE_AVRESAMPLE
-        if(t0->second->swrc != NULL) avresample_free(&(t0->second->swrc));
-        t0->second->swrc = NULL;
+        if(t->second->swrc) avresample_free(&(t->second->swrc));
+        t->second->swrc = NULL;
 #elif USE_LIBSAMPLERATE
-        if(t0->second->swrc != NULL) src_delete(t0->second->swrc);
-        t0->second->swrc = NULL;
+        if(t->second->swrc) src_delete(t->second->swrc);
+        t->second->swrc = NULL;
 #endif
-        delete t0->second;
-        t0->second=NULL;
-        bufferList.erase(t0);
-        t0=bufferList.begin(); // needed at least for msvc++ 2010
-                               // (it fixes access violation when thread after last iteration strangely failed still here)
+        delete t->second;
+        t->second = NULL;
+        bufferList.erase(t);
+        t = bufferList.begin(); // needed at least for msvc++ 2010
+                                // (it fixes access violation when thread after last iteration strangely failed still here)
         continue;
       }
-      t0++;
+      t++;
     }
 
     lock.Signal();
   }
 }
 
-void ConferenceMember::DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, unsigned srcChannels, BufferListType::const_iterator t, PINDEX dstBytes, unsigned dstRate, unsigned dstChannels)
+void ConferenceMember::DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, unsigned srcChannels, ResamplerBufferType *resBuffer, PINDEX dstBytes, unsigned dstRate, unsigned dstChannels)
 {
 #if USE_SWRESAMPLE
-  void * to = t->second->data.GetPointer();
+  void * to = resBuffer->data.GetPointer();
   void * from = (void*)src;
-  swr_convert(t->second->swrc,
+  swr_convert(resBuffer->swrc,
     (uint8_t **)&to,
        (((int)dstBytes)>>1)/dstChannels,
     (const uint8_t **)&from,
        (((int)srcBytes)>>1)/srcChannels
   );
 #elif USE_AVRESAMPLE
-  void * to = t->second->data.GetPointer();
+  void * to = resBuffer->data.GetPointer();
   void * from = (void*)src;
 
   int out_samples = (((int)dstBytes)>>1)/dstChannels;
@@ -1828,7 +1840,7 @@ void ConferenceMember::DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate,
   int in_samples = (((int)srcBytes)>>1)/srcChannels;
   int in_linesize = (int)srcBytes;
 
-  avresample_convert(t->second->swrc, (uint8_t **)&to, out_linesize, out_samples,
+  avresample_convert(resBuffer->swrc, (uint8_t **)&to, out_linesize, out_samples,
                                       (uint8_t **)&from, in_linesize, in_samples);
 #elif USE_LIBSAMPLERATE
   SRC_DATA src_data;
@@ -1844,30 +1856,35 @@ void ConferenceMember::DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate,
   src_data.output_frames = out_samples;
   src_data.src_ratio = (double)out_samples/(double)in_samples;
 
-  int err = src_process(t->second->swrc, &src_data);
+  int err = src_process(resBuffer->swrc, &src_data);
   if (err)
   {
     PTRACE(1, "libsamplerate error: " << src_strerror(err));
     return;
   }
-  src_float_to_short_array(data_out, (short *)t->second->data.GetPointer(), src_data.output_frames_gen);
+  src_float_to_short_array(data_out, (short *)resBuffer->data.GetPointer(), src_data.output_frames_gen);
   //PTRACE(1, "libsamplerate: " << src_data.input_frames << " " << src_data.output_frames << " " << src_data.input_frames_used << " " << src_data.output_frames_gen);
 #else
   if(srcChannels == dstChannels && srcChannels == 1)
-  { for(PINDEX i=0;i<(dstBytes>>1);i++) ((short*)(t->second->data.GetPointer()))[i] = ((short*)src)[i*srcRate/dstRate];
+  {
+    for(PINDEX i=0;i<(dstBytes>>1);i++) ((short*)(resBuffer->data.GetPointer()))[i] = ((short*)src)[i*srcRate/dstRate];
     return;
   }
   if(srcChannels == dstChannels)
-  { for(unsigned i=0;i<((dstBytes>>1)/dstChannels);i++)
-    { unsigned ofs=(i*srcRate/dstRate)*srcChannels;
-      for(unsigned j=0;j<srcChannels;j++) ((short*)(t->second->data.GetPointer()))[i*srcChannels+j] = ((short*)src)[ofs+j];
+  {
+    for(unsigned i=0;i<((dstBytes>>1)/dstChannels);i++)
+    {
+      unsigned ofs=(i*srcRate/dstRate)*srcChannels;
+      for(unsigned j=0;j<srcChannels;j++) ((short*)(resBuffer->data.GetPointer()))[i*srcChannels+j] = ((short*)src)[ofs+j];
     }
     return;
   }
   for(unsigned i=0;i<(dstBytes>>1)/dstChannels;i++)
-  { unsigned ofs=(i*srcRate/dstRate)*srcChannels, srcChan=0;
+  {
+    unsigned ofs=(i*srcRate/dstRate)*srcChannels, srcChan=0;
     for(unsigned j=0;j<dstChannels;j++)
-    { ((short*)(t->second->data.GetPointer()))[i*dstChannels+j] = ((short*)src)[ofs+srcChan];
+    {
+      ((short*)(resBuffer->data.GetPointer()))[i*dstChannels+j] = ((short*)src)[ofs+srcChan];
       srcChan++; if(srcChan>=srcChannels) srcChan=0;
     }
   }
