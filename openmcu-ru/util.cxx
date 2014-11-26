@@ -656,7 +656,7 @@ BOOL CheckCapability(const PString & formatName)
 
 ///////////////////////////////////////////////////////////////////////////
 
-BOOL SkipCapability(const PString & formatName, MCUH323Connection::ConnectionTypes connectionType)
+BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionType)
 {
   if(!CheckCapability(formatName))
     return TRUE;
@@ -669,12 +669,12 @@ BOOL SkipCapability(const PString & formatName, MCUH323Connection::ConnectionTyp
   {
     return TRUE;
   }
-  if(connectionType == MCUH323Connection::CONNECTION_TYPE_H323)
+  if(connectionType == CONNECTION_TYPE_H323)
   {
     if(formatName.Find("MP4V-ES") == 0)
       return TRUE;
   }
-  else if(connectionType == MCUH323Connection::CONNECTION_TYPE_RTSP)
+  else if(connectionType == CONNECTION_TYPE_RTSP)
   {
     if(formatName.Find("G.711") != 0 && formatName.Find("Speex") != 0 && formatName.Find("OPUS") != 0 && formatName.Find("AC3") != 0 &&
        formatName.Find("H.263p{sw}") != 0 && formatName.Find("H.264{sw}") != 0 && formatName.Find("MP4V-ES{sw}") != 0

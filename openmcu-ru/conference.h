@@ -16,6 +16,7 @@
 #include <map>
 
 #include "config.h"
+#include "util.h"
 
 #define CIF_WIDTH     352
 #define CIF_HEIGHT    288

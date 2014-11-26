@@ -3,7 +3,6 @@
 #define _MCU_UTIL_H
 
 #include "config.h"
-#include "mcu.h"
 
 extern "C"
 {
@@ -41,6 +40,16 @@ const uint64_t MCU_AV_CH_Layout_Selector[] =
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+enum MCUConnectionTypes
+{
+  CONNECTION_TYPE_NONE,
+  CONNECTION_TYPE_H323,
+  CONNECTION_TYPE_SIP,
+  CONNECTION_TYPE_RTSP
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #define MCUTRACE(level, args) \
   if(level > 0) PTrace::Begin(level, __FILE__, __LINE__) << args << PTrace::End; \
   if(PTrace::CanTrace(level)) cout << setw(8) << PTime() - OpenMCU::Current().GetStartTime() << " " << args << endl
@@ -64,7 +73,7 @@ int PTimedMutexTryLock(PTimedMutex & mutex, const PTimeInterval & timeout, PStri
 BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap);
 
 BOOL CheckCapability(const PString & formatName);
-BOOL SkipCapability(const PString & formatName, MCUH323Connection::ConnectionTypes connectionType = MCUH323Connection::CONNECTION_TYPE_NONE);
+BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionType = CONNECTION_TYPE_NONE);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

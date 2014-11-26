@@ -12,15 +12,6 @@
 #include <ptlib/videoio.h>
 #include <opalwavfile.h>
 
-/*
-#if USE_SWRESAMPLE
-extern "C" {
-#include <libswresample/swresample.h>
-#include <libavutil/audioconvert.h>
-};
-#endif //USE_SWRESAMPLE
-*/
-
 // don't forget to add the same into quote.txt:
 #define OTFC_UNMUTE                    0
 #define OTFC_MUTE                      1
@@ -366,15 +357,7 @@ class MCUH323Connection : public H323Connection
 
     void SetGatekeeperEnable(BOOL enable) { gatekeeperEnable = enable; }
 
-    enum ConnectionTypes
-    {
-      CONNECTION_TYPE_NONE,
-      CONNECTION_TYPE_H323,
-      CONNECTION_TYPE_SIP,
-      CONNECTION_TYPE_RTSP
-    };
-
-    ConnectionTypes GetConnectionType() const
+    MCUConnectionTypes GetConnectionType() const
     { return connectionType; }
 
   protected:
@@ -435,7 +418,7 @@ class MCUH323Connection : public H323Connection
     PString remoteName;
     PString memberName;
 
-    ConnectionTypes connectionType;
+    MCUConnectionTypes connectionType;
 
     // Wave file played during the welcome procedure.
     OpalWAVFile playFile;

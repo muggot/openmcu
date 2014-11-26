@@ -794,16 +794,16 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   PString ra_caps = ",Disabled", rv_caps = ",Disabled", ta_caps = ",Disabled", tv_caps = ",Disabled";
   if(mcu.GetEndpoint().rsCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().rsCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().rsCaps[i]; if(SkipCapability(capname, MCUH323Connection::CONNECTION_TYPE_H323)) continue; ra_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().rsCaps[i]; if(SkipCapability(capname, CONNECTION_TYPE_H323)) continue; ra_caps += ","+capname; } }
   if(mcu.GetEndpoint().rvCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().rvCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().rvCaps[i]; if(SkipCapability(capname, MCUH323Connection::CONNECTION_TYPE_H323)) continue; rv_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().rvCaps[i]; if(SkipCapability(capname, CONNECTION_TYPE_H323)) continue; rv_caps += ","+capname; } }
   if(mcu.GetEndpoint().tsCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().tsCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().tsCaps[i]; if(SkipCapability(capname, MCUH323Connection::CONNECTION_TYPE_H323)) continue; ta_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().tsCaps[i]; if(SkipCapability(capname, CONNECTION_TYPE_H323)) continue; ta_caps += ","+capname; } }
   if(mcu.GetEndpoint().tvCaps != NULL)
   { for(PINDEX i=0; mcu.GetEndpoint().tvCaps[i]!=NULL; i++)
-    { PString capname = mcu.GetEndpoint().tvCaps[i]; if(SkipCapability(capname, MCUH323Connection::CONNECTION_TYPE_H323)) continue; tv_caps += ","+capname; } }
+    { PString capname = mcu.GetEndpoint().tvCaps[i]; if(SkipCapability(capname, CONNECTION_TYPE_H323)) continue; tv_caps += ","+capname; } }
 
   sectionPrefix = "H323 Endpoint ";
   PStringList sect = cfg.GetSectionsPrefix(sectionPrefix);
@@ -1091,7 +1091,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   {
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
       continue;
-    if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_SIP))
+    if(SkipCapability(keys[i], CONNECTION_TYPE_SIP))
       continue;
     if(MCUConfig("SIP Audio").GetBoolean(keys[i])) a_caps += ","+keys[i];
   }
@@ -1100,7 +1100,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   {
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
       continue;
-    if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_SIP))
+    if(SkipCapability(keys[i], CONNECTION_TYPE_SIP))
       continue;
     PString capname = keys[i];
     if(MCUConfig("SIP Video").GetBoolean(keys[i])) v_caps += ","+capname;
@@ -1329,7 +1329,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
   {
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
       continue;
-    if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_RTSP))
+    if(SkipCapability(keys[i], CONNECTION_TYPE_RTSP))
       continue;
     if(MCUConfig("SIP Audio").GetBoolean(keys[i])) a_caps += ","+keys[i];
   }
@@ -1338,7 +1338,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
   {
     if(keys[i].Right(4) == "fmtp" || keys[i].Right(7) == "payload")
       continue;
-    if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_RTSP))
+    if(SkipCapability(keys[i], CONNECTION_TYPE_RTSP))
       continue;
     PString capname = keys[i];
     if(MCUConfig("SIP Video").GetBoolean(keys[i])) v_caps += ","+capname;
@@ -1776,7 +1776,7 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
     if(name.Right(4) == "fmtp" || name.Right(7) == "payload") continue;
     if(name.Right(4) != "{sw}") name += "{sw}";
 
-    if(SkipCapability(name, MCUH323Connection::CONNECTION_TYPE_SIP))
+    if(SkipCapability(name, CONNECTION_TYPE_SIP))
       continue;
 
     PString info, fmtp;
@@ -1850,7 +1850,7 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
   PStringList keys = cfg.GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
   {
-    if(SkipCapability(keys[i], MCUH323Connection::CONNECTION_TYPE_H323))
+    if(SkipCapability(keys[i], CONNECTION_TYPE_H323))
       continue;
 
     PString info, fmtpInfo;
