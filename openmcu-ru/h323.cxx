@@ -1281,6 +1281,8 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     for(Conference::ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
     {
       ConferenceMember * member = r->second->GetMember();
+      if(member == NULL)
+        continue;
       if(member->GetType() & MEMBER_TYPE_GSYSTEM)
         continue;
       if(action == OTFC_MUTE_ALL) member->SetChannelPauses  (1);
