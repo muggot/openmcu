@@ -420,10 +420,10 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
   // delete profiles
   conference->GetProfileListMutex().Wait();
-  for(Conference::ProfileList::iterator r = conference->GetProfileList().begin(); r != conference->GetProfileList().end(); ++r)
+  for(Conference::ProfileList::iterator r = conference->GetProfileList().begin(); r != conference->GetProfileList().end(); )
   {
     ConferenceProfile *profile = r->second;
-    conference->GetProfileList().erase(r->first);
+    conference->GetProfileList().erase(r++);
     profile->Lock();
     delete profile;
   }
@@ -724,6 +724,7 @@ Conference::Conference(        ConferenceManager & _manager,
 #if MCU_VIDEO
   VMLInit(_videoMixer);
 #endif
+  visibleMemberCount = 0;
   maxMemberCount = 0;
   moderated = FALSE;
   muteUnvisible = FALSE;
@@ -806,18 +807,6 @@ BOOL Conference::StopRecorder()
   OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
   OpenMCU::Current().HttpWriteCmdRoom("build_page()", number);
   return TRUE;
-}
-
-int Conference::GetVisibleMemberCount() const
-{
-  PWaitAndSignal m(memberListMutex);
-  int visibleMembers = 0;
-  std::map<void *, ConferenceMember *>::const_iterator r;
-  for (r = memberList.begin(); r != memberList.end(); r++) {
-    if (r->second->IsVisible())
-      ++visibleMembers;
-  }
-  return visibleMembers;
 }
 
 void Conference::AddMonitorEvent(ConferenceMonitorInfo * info)
@@ -1007,13 +996,15 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // add to all lists
   AddMemberToList(memberToAdd->GetName(), memberToAdd);
 
+  if(memberToAdd->IsVisible())
+    visibleMemberCount++;
+
   // for H.323
   int tid = terminalNumberMap.GetNumber(memberToAdd->GetID());
   memberToAdd->SetTerminalNumber(tid);
 
   // make sure each member has a connection created for the new member
   // make sure the new member has a connection created for each existing member
-  PINDEX visibleMembers = 0;
   for(MemberList::iterator r = memberList.begin(); r != memberList.end(); r++)
   {
     ConferenceMember * conn = r->second;
@@ -1030,26 +1021,20 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
       {
         if(!UseSameVideoForAllMembers())
         {
-          if (conn->IsVisible())
-          {
+          if(conn->IsVisible())
             memberToAdd->AddVideoSource(conn->GetID(), *conn);
-          }
-          if (memberToAdd->IsVisible())
-          {
+          if(memberToAdd->IsVisible())
             conn->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
-          }
         }
 #endif
       }
     }
-    if(conn->IsVisible())
-      ++visibleMembers;
   }
 
   // update the statistics
   if(memberToAdd->IsVisible())
   {
-    maxMemberCount = PMAX(maxMemberCount, visibleMembers);
+    maxMemberCount = PMAX(maxMemberCount, visibleMemberCount);
     // trigger H245 thread for join message
     //new NotifyH245Thread(*this, TRUE, memberToAdd);
   }
@@ -1144,6 +1129,9 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
     // remove from all lists
     RemoveMemberFromList(memberToRemove->GetName(), memberToRemove);
+
+    if(memberToRemove->IsVisible())
+      visibleMemberCount--;
 
     memberToRemove->RemoveAllConnections();
 

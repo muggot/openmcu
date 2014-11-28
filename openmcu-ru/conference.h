@@ -1260,7 +1260,8 @@ class Conference : public PObject
     int GetMemberCount() const
     { PWaitAndSignal m(memberListMutex); return (int)memberList.size(); }
 
-    int GetVisibleMemberCount() const;
+    int GetVisibleMemberCount() const
+    { return visibleMemberCount; }
 
     virtual PString GetName() const
     { return name; }
@@ -1473,6 +1474,8 @@ class Conference : public PObject
 
     MemberList memberList;
     ProfileList profileList;
+
+    PINDEX visibleMemberCount;
     PINDEX maxMemberCount;
 
     OpalGloballyUniqueID guid;
