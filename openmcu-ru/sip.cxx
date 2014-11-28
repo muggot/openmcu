@@ -2162,6 +2162,14 @@ void MCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsi
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUSipConnection::SendUserInput(const PString & value)
+{
+  PTRACE(6, trace_section << "SendUserInput");
+  SendRequest(SIP_METHOD_MESSAGE, value);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUSipConnection::OnReceivedDTMF(PString sdp)
 {
   if(conference == NULL)
@@ -2201,7 +2209,7 @@ int MCUSipConnection::ProcessInfo(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *method_name)
+nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, const char *payload)
 {
   PTRACE(1, trace_section << "SendRequest request: " << method_name);
 
@@ -2214,6 +2222,7 @@ nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *
   sip_contact_t *sip_contact = NULL;
   sip_content_type_t *sip_content = NULL;
   sip_payload_t *sip_payload = NULL;
+  sip_date_t *sip_date = NULL;
   sip_authorization_t *sip_auth = NULL;
   sip_authorization_t *sip_proxy_auth = NULL;
 
@@ -2251,7 +2260,12 @@ nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *
     sip_content = sip_content_type_make(sep->GetHome(), "application/media_control+xml");
     sip_payload = sip_payload_format(sep->GetHome(), "<media_control><vc_primitive><to_encoder><picture_fast_update/></to_encoder></vc_primitive></media_control>");
   }
-
+  if(method == sip_method_message)
+  {
+    sip_content = sip_content_type_make(sep->GetHome(), "text/plain");
+    sip_payload = sip_payload_format(sep->GetHome(), payload);
+    sip_date = sip_date_create(sep->GetHome(), sip_now());
+  }
 
   if(auth_type != AUTH_NONE)
   {
@@ -2274,6 +2288,7 @@ nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *
                         SIPTAG_CONTACT(sip_contact),
                         SIPTAG_CONTENT_TYPE(sip_content),
                         SIPTAG_PAYLOAD(sip_payload),
+                        SIPTAG_DATE(sip_date),
 			SIPTAG_AUTHORIZATION(sip_auth),
 			SIPTAG_PROXY_AUTHORIZATION(sip_proxy_auth),
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),

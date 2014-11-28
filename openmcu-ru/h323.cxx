@@ -3727,7 +3727,10 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
   }
   if(conn == NULL) return;
 
-  PStringStream msg; PStringStream utfmsg; if(conn->GetRemoteApplication().Find("MyPhone")!=P_MAX_INDEX){
+  PStringStream msg;
+  PStringStream utfmsg;
+  if(conn->GetRemoteApplication().Find("MyPhone")!=P_MAX_INDEX)
+  {
     static const int table[128] = { // cp1251 -> utf8 translation based on http://www.linux.org.ru/forum/development/3968525
       0x82D0,0x83D0,  0x9A80E2,0x93D1,  0x9E80E2,0xA680E2,0xA080E2,0xA180E2,0xAC82E2,0xB080E2,0x89D0,0xB980E2,0x8AD0,0x8CD0,0x8BD0,0x8FD0,
       0x92D1,0x9880E2,0x9980E2,0x9C80E2,0x9D80E2,0xA280E2,0x9380E2,0x9480E2,0,       0xA284E2,0x99D1,0xBA80E2,0x9AD1,0x9CD1,0x9BD1,0x9FD1,
@@ -3747,48 +3750,63 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
         }
       } else utfmsg << (char)charcode;
     }
-  } else utfmsg << str;
-  msg << "<font color=blue><b>" << name << "</b>: " << utfmsg << "</font>"; OpenMCU::Current().HttpWriteEvent(msg);
+  }
+  else
+    utfmsg << str;
 
-  if (conn->GetConferenceMember() == this || conn->GetConferenceMember() == NULL) 
+  msg << "<font color=blue><b>" << name << "</b>: " << utfmsg << "</font>";
+  OpenMCU::Current().HttpWriteEvent(msg);
+
+  if(conn->GetConferenceMember() != this && conn->GetConferenceMember() != NULL)
   {
-    if(str.GetLength()<10)
+    conn->Unlock();
+    PTRACE(1, "MCU\tWrong connection in SendUserInputIndication for " << callToken);
+    return;
+  }
+
+  PString sendmsg = "[" + conn->GetRemotePartyName() + "]: " + str;
+  conn->Unlock();
+
+  if(str.GetLength()<10)
+  {
+    iISequence << str.Trim();
+    iISequence=iISequence.Right(10);
+  }
+  else
+    iISequence=str.Trim();
+
+  //cout << "*uii: " << iISequence << "\n";
+  PINDEX hashPos=iISequence.FindLast("#");
+  if(hashPos != P_MAX_INDEX)
+  {
+    PINDEX astPos=iISequence.FindLast("*");
+    if(astPos < hashPos)
     {
-      iISequence << str.Trim();
-      iISequence=iISequence.Right(10);
-    }
-    else iISequence=str.Trim();
-//    cout << "*uii: " << iISequence << "\n";
-    PINDEX hashPos=iISequence.FindLast("#");
-    if(hashPos != P_MAX_INDEX)
-    {
-      PINDEX astPos=iISequence.FindLast("*");
-      if(astPos < hashPos)
+      PINDEX astPos2=iISequence.Left(astPos-1).FindLast("*");
+      PINDEX hashPos2=iISequence.Left(astPos-1).FindLast("#");
+      if(astPos2!=P_MAX_INDEX) if((hashPos2==P_MAX_INDEX)||(hashPos2<astPos2)) astPos=astPos2;
+      Conference * conference=GetConference();
+      if(conference!=NULL)
       {
-        PINDEX astPos2=iISequence.Left(astPos-1).FindLast("*");
-        PINDEX hashPos2=iISequence.Left(astPos-1).FindLast("#");
-        if(astPos2!=P_MAX_INDEX) if((hashPos2==P_MAX_INDEX)||(hashPos2<astPos2)) astPos=astPos2;
-        Conference * conference=GetConference();
-        if(conference!=NULL)
-        {
-          conference->HandleFeatureAccessCode(*this,iISequence(astPos+1,hashPos-1));
-          iISequence=iISequence.Mid(hashPos+1,P_MAX_INDEX);
-          conn->Unlock();
-          return;
-        }
+        conference->HandleFeatureAccessCode(*this,iISequence(astPos+1,hashPos-1));
+        iISequence=iISequence.Mid(hashPos+1,P_MAX_INDEX);
+        return;
       }
     }
-    PString msg = "[" + conn->GetRemotePartyName() + "]: " + str;
-    if (lock.Wait()) 
+  }
+
+  if(conference)
+  {
+    PWaitAndSignal m(conference->GetProfileListMutex());
+    Conference::ProfileList & profileList = conference->GetProfileList();
+    for(Conference::ProfileList::const_iterator r = profileList.begin(); r != profileList.end(); ++r)
     {
-      MemberListType::iterator r;
-      for (r = memberList.begin(); r != memberList.end(); ++r)
-        if (r->second != NULL) r->second->OnReceivedUserInputIndication(msg);
-      lock.Signal();
+      ConferenceMember *member = r->second->GetMember();
+      if(member == NULL || member == this || member->GetType() & MEMBER_TYPE_GSYSTEM)
+        continue;
+      member->OnReceivedUserInputIndication(sendmsg);
     }
   }
-  else PTRACE(1, "MCU\tWrong connection in SendUserInputIndication for " << callToken);
-  conn->Unlock();
 }
 
 void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)

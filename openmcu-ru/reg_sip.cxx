@@ -84,14 +84,28 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
   PString username_out = sip->sip_to->a_url->url_user;
   msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
 
+  int response_code = 0;
+  RegistrarConnection *regConn = NULL;
   RegistrarAccount *regAccount_in = NULL;
   RegistrarAccount *regAccount_out = NULL;
   PWaitAndSignal m(mutex);
 
+  regConn = FindRegConnUsername(username_in);
+  if(regConn && regConn->state == CONN_MCU_ESTABLISHED)
+  {
+    MCUH323Connection *conn = (MCUH323Connection *)ep->FindConnectionWithLock(regConn->callToken_in);
+    if(conn)
+    {
+      conn->OnUserInputString(sip->sip_payload->pl_data);
+      conn->Unlock();
+    }
+    response_code = 200;
+    goto return_response;
+  }
+
   regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
   regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_out);
-
-  int response_code = SipPolicyCheck(msg, msg_reply, regAccount_in, regAccount_out);
+  response_code = SipPolicyCheck(msg, msg_reply, regAccount_in, regAccount_out);
   if(response_code)
     goto return_response;
 
@@ -104,6 +118,7 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
   }
 
   return_response:
+    //if(regConn) regConn->Unlock(); // not lock
     if(regAccount_in) regAccount_in->Unlock();
     if(regAccount_out) regAccount_out->Unlock();
     if(response_code == 0)

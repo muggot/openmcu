@@ -235,6 +235,7 @@ class MCUSipConnection : public MCUH323Connection
 
     virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
+    virtual void SendUserInput(const PString & value);
     virtual void CleanUpOnCallEnd();
     virtual void LeaveMCU();
 
@@ -266,7 +267,7 @@ class MCUSipConnection : public MCUH323Connection
 
     int SendBYE();
     int SendACK();
-    nta_outgoing_t * SendRequest(sip_method_t method, const char *method_name);
+    nta_outgoing_t * SendRequest(sip_method_t method, const char *method_name, const char *payload = NULL);
     int ReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL);
 
     int ProcessInfo(const msg_t *msg);
