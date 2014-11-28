@@ -225,41 +225,6 @@ void CreateSipCaps(SipCapMapType & SipCaps, PString audio_section, PString video
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class H323toSipQueue
-{
-  public:
-    H323toSipQueue() { }
-    ~H323toSipQueue() { }
-    BOOL Push(PString *cmd)
-    {
-      PThread::Sleep(10);
-      if(!cmd) return FALSE;
-      PWaitAndSignal m(mutex);
-      if(queue.GetSize() > 100) return FALSE;
-      if(queue.GetStringsIndex(*cmd) != P_MAX_INDEX) return FALSE;
-      queue.InsertAt(0, cmd);
-      return TRUE;
-    }
-    PString *Pop()
-    {
-      PThread::Sleep(10);
-      PWaitAndSignal m(mutex);
-      PString *cmd = (PString *)queue.GetAt(0);
-      if(cmd)
-      {
-        cmd = new PString(*cmd);
-        queue.RemoveAt(0);
-      }
-      return cmd;
-    }
-
-  protected:
-    PStringArray queue;
-    PMutex mutex;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 class MCUSipConnection : public MCUH323Connection
 {
   public:
@@ -445,7 +410,7 @@ class MCUSipEndPoint : public PThread
     PSTUNClient * CreateStun(PString address);
     PSTUNClient * GetPreferedStun(PString address);
 
-    H323toSipQueue SipQueue;
+    MCUQueue SipQueue;
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }

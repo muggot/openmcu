@@ -367,6 +367,9 @@ class Registrar : public PThread
     RegistrarAccount * FindAccount(RegAccountTypes account_type, PString username);
     PString FindAccountNameByH323Id(const PString & id);
 
+    MCUQueue & GetQueue()
+    { return regQueue; }
+
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
     PMutex & GetMutex() { return mutex; }
@@ -440,6 +443,11 @@ class Registrar : public PThread
     RegConnMapType RegConnMapCopy;
 
     PStringArray account_status_list;
+
+    PDECLARE_NOTIFIER(PThread, Registrar, QueueThread);
+    PThread *queueThread;
+    BOOL queueTerminating;
+    MCUQueue regQueue;
 
     PMutex mutex;
 };

@@ -117,31 +117,15 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
 
   if(account_type == ACCOUNT_TYPE_SIP)
   {
-    PString call_id_str = PGloballyUniqueID().AsString();
-    PString *cmd = new PString("invite:"+room+","+address+","+call_id_str);
+    callToken = PGloballyUniqueID().AsString();
+    PString *cmd = new PString("invite:"+room+","+address+","+callToken);
     sep->SipQueue.Push(cmd);
-    callToken = call_id_str;
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
-    H323Transport * transport = NULL;
-    if(ep->GetGatekeeper())
-    {
-      PString gk_host = ep->GetGatekeeperHostName();
-      if(url.GetHostName() == "" || gk_host == url.GetHostName())
-      {
-        address = url.GetUserName();
-        PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << address);
-      }
-      else
-      {
-        H323TransportAddress taddr(url.GetHostName()+":"+url.GetPort());
-        transport = taddr.CreateTransport(*ep);
-        transport->SetRemoteAddress(taddr);
-      }
-    }
-    void *userData = new PString(room);
-    ep->MakeCall(address, transport, callToken, userData);
+    callToken = PGloballyUniqueID().AsString();
+    PString *cmd = new PString("invite:"+room+","+address+","+callToken);
+    regQueue.Push(cmd);
   }
   else if(account_type == ACCOUNT_TYPE_RTSP)
   {
@@ -761,6 +745,55 @@ void Registrar::MainLoop()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void Registrar::QueueThread(PThread &, INT)
+{
+  queueTerminating = FALSE;
+  while(!queueTerminating)
+  {
+    PString *cmd = regQueue.Pop();
+    while(cmd != NULL)
+    {
+      if(cmd->Left(7) == "invite:")
+      {
+        PString data = cmd->Right(cmd->GetLength()-7);
+        PString from = data.Tokenise(",")[0];
+        PString to = data.Tokenise(",")[1];
+        PString callToken = data.Tokenise(",")[2];
+        MCUURL url(to);
+        if(url.GetScheme() == "sip")
+        {
+          sep->SipMakeCall(from, to, callToken);
+        }
+        else if(url.GetScheme() == "h323")
+        {
+          H323Transport * transport = NULL;
+          if(ep->GetGatekeeper())
+          {
+            PString gk_host = ep->GetGatekeeperHostName();
+            if(url.GetHostName() == "" || gk_host == url.GetHostName())
+            {
+              to = url.GetUserName();
+              PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << to);
+            }
+            else
+            {
+              H323TransportAddress taddr(url.GetHostName()+":"+url.GetPort());
+              transport = taddr.CreateTransport(*ep);
+              transport->SetRemoteAddress(taddr);
+            }
+          }
+          void *userData = new PString(from);
+          ep->MakeCall(to, transport, callToken, userData);
+        }
+      }
+      delete cmd;
+      cmd = regQueue.Pop();
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Registrar::InitConfig()
 {
   MCUConfig cfg("Registrar Parameters");
@@ -919,6 +952,16 @@ void Registrar::InitAccounts()
 
 void Registrar::Terminating()
 {
+  // stop queue thread
+  if(queueThread)
+  {
+    PTRACE(5,"Registrar\tWaiting for termination queue: " << queueThread->GetThreadName());
+    queueTerminating = TRUE;
+    queueThread->WaitForTermination();
+    delete queueThread;
+    queueThread = NULL;
+  }
+
   PWaitAndSignal m(mutex);
   if(registrarGk)
   {
@@ -955,6 +998,7 @@ void Registrar::Terminating()
 
 void Registrar::Main()
 {
+  queueThread = PThread::Create(PCREATE_NOTIFIER(QueueThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "registrar queue:%0x");
   MainLoop();
 }
 
