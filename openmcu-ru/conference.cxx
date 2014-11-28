@@ -913,22 +913,23 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
     memberList.erase(member->GetID());
 
   // profileList
-  for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
+  for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); )
   {
-    if(r->second->GetName() == name)
+    ConferenceProfile *profile = r->second;
+    profile->Lock();
+    if(profile->GetName() == name && profile->GetMember() == member)
     {
-      ConferenceProfile *profile = r->second;
-      profile->Lock();
-      if(member)
+      if(member && !member->GetType() & MEMBER_TYPE_GSYSTEM)
       {
         profile->SetMember(NULL);
-        profile->Unlock();
       } else {
-        profileList.erase(profile);
+        profileList.erase(r++);
         delete profile;
+        continue;
       }
-      break;
     }
+    profile->Unlock();
+    ++r;
   }
 }
 
@@ -1137,7 +1138,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
         << ","  << memberToRemove->chosenVan
         << ","  << memberToRemove->GetAudioLevel()
         << ",\"" << MCUURL(memberToRemove->GetName()).GetMemberNameId() << "\"";
-// ???    if(s==memberNameList.end()) msg << ",1";
+    msg << ",1";
     msg << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 
