@@ -1123,7 +1123,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
         << ","  << memberToRemove->chosenVan
         << ","  << memberToRemove->GetAudioLevel()
         << ",\"" << MCUURL(memberToRemove->GetName()).GetMemberNameId() << "\"";
-    msg << ",1";
+    msg << ",0";
     msg << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 
