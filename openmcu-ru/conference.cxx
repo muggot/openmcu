@@ -856,19 +856,18 @@ void Conference::RefreshAddressBook()
 
 void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
 {
-  PWaitAndSignal m(memberListMutex);
-  PWaitAndSignal m2(profileListMutex);
-
   // memberList
   if(member)
   {
+    memberListMutex.Wait();
     MemberList::iterator r = memberList.find(member->GetID());
-    if(r != memberList.end())
-      return;
-    memberList.insert(MemberList::value_type(member->GetID(), member));
+    if(r == memberList.end())
+      memberList.insert(MemberList::value_type(member->GetID(), member));
+    memberListMutex.Signal();
   }
 
   // memberProfileList
+  profileListMutex.Wait();
   PString nameID = MCUURL(name).GetMemberNameId();
   ConferenceProfile * profile = NULL;
   for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
@@ -888,20 +887,23 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
     profile->SetMember(member);
     profileList.insert(ProfileList::value_type((ConferenceMemberId)profile, profile));
   }
+  profileListMutex.Signal();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *member)
 {
-  PWaitAndSignal m(memberListMutex);
-  PWaitAndSignal m2(profileListMutex);
-
   // memberList
   if(member)
+  {
+    memberListMutex.Wait();
     memberList.erase(member->GetID());
+    memberListMutex.Signal();
+  }
 
   // profileList
+  profileListMutex.Wait();
   for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); )
   {
     ConferenceProfile *profile = r->second;
@@ -920,6 +922,7 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
     profile->Unlock();
     ++r;
   }
+  profileListMutex.Signal();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

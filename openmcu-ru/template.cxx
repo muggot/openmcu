@@ -284,8 +284,9 @@ void Conference::LoadTemplate(PString tpl)
 
   if(!lockedTemplate) return; // room not locked - don't touch member list
 
-  PWaitAndSignal m(profileListMutex);
+  profileListMutex.Wait();
   ProfileList profileListCopy(profileList);
+  profileListMutex.Signal();
   for(ProfileList::iterator r = profileListCopy.begin(); r != profileListCopy.end(); ++r)
   {
     ConferenceMember *member = r->second->GetMember();
@@ -297,7 +298,6 @@ void Conference::LoadTemplate(PString tpl)
       if(member == NULL) // offline: simple
       {
         PTRACE(6,"Conference\tLoading template - removing offline member " << r->first << " from memberNameList" << flush);
-        RemoveMemberFromList(name, NULL);
       }
       else // online :(
       {
@@ -307,8 +307,10 @@ void Conference::LoadTemplate(PString tpl)
         PTRACE(6,"Conference\tLoading template - removing " << name << " from memberList" << flush);
         RemoveMemberFromList(name, member); // ???
       }
+      RemoveMemberFromList(name, NULL);
     }
   }
+
   RefreshAddressBook();
 }
 
