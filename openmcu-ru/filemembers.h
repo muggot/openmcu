@@ -99,6 +99,8 @@ class ConferenceCacheMember : public ConferenceMember
     virtual ConferenceConnection * CreateConnection()
     { return new ConferenceConnection(this); }
 
+    virtual void Close();
+
     virtual PString GetName() const
     { return "cache"; }
 
@@ -114,19 +116,23 @@ class ConferenceCacheMember : public ConferenceMember
     virtual PString GetMediaFormat()
     { return format; }
 
+    int GetStatus()
+    { return status; }
+
     PDECLARE_NOTIFIER(PThread, ConferenceCacheMember, CacheThread);
 
     H323Codec * codec;
     MCUH323Connection * con;
-    int status;
 
   protected:
     OpalMediaFormat format;
-
-    PThread * thread;
-    BOOL running;
-
     PString roomName;
+    int status;
+
+    BOOL running;
+    PThread * thread;
+
+    PMutex mutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -141,6 +147,8 @@ class ConferencePipeMember : public ConferenceMember
 
     virtual ConferenceConnection * CreateConnection()
     { return new ConferenceConnection(this); }
+
+    virtual void Close();
 
     virtual PString GetName() const
     { return PString("file recorder"); }

@@ -35,33 +35,6 @@ void SpliceMacro(PString & text, const PString & token, const PString & value)
 
 ///////////////////////////////////////////////////////////////
 
-class MemberDeleteThread : public PThread
-{
-  public:
-    MemberDeleteThread(MCUH323EndPoint * _ep, Conference * _conf, ConferenceMember * _cm)
-      : PThread(10000, AutoDeleteThread), ep(_ep), conf(_conf), cm(_cm)
-    {
-      Resume();
-    }
-
-    void Main()
-    {
-      cm->WaitForClose();
-      if(conf->RemoveMember(cm))
-      {
-        //
-      }
-      delete cm;
-    }
-
-  protected:
-    MCUH323EndPoint * ep;
-    Conference * conf;
-    ConferenceMember * cm;
-};
-
-///////////////////////////////////////////////////////////////
-
 #ifdef _WIN32
 PluginLoaderStartup2  OpenMCU::pluginLoader;
 H323PluginCodecManager * OpenMCU::plugmgr=NULL;
@@ -1935,7 +1908,7 @@ PString MCUH323EndPoint::GetMonitorText()
         {
           output << hdr << "Format: " << cacheMember->GetMediaFormat() << "\n";
           output << hdr << "IsVisible: " << cacheMember->IsVisible() << "\n";
-          output << hdr << "Status: " << (cacheMember->status?"Awake":"Sleeping") << "\n";
+          output << hdr << "Status: " << (cacheMember->GetStatus()?"Awake":"Sleeping") << "\n";
 //#ifndef _WIN32
 //            if(fileMember->codec) output << hdr << "EncoderSeqN: " << dec << fileMember->codec->GetEncoderSeqN() << "\n";
 //#endif
@@ -2378,7 +2351,7 @@ void MCUH323Connection::LeaveConference()
   {
     LogCall();
 
-    new MemberDeleteThread(&ep, conference, conferenceMember);
+    new MemberDeleteThread(conference, conferenceMember);
     conferenceMember = NULL;
     conference = NULL;
   }

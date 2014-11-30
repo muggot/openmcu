@@ -408,9 +408,13 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   jsName.Replace("\"","\\x27",TRUE,0); jsName.Replace("'","\\x22",TRUE,0);
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(1,'" + jsName + "')", number);
 
-  conference->StopRecorder();
+  if(conference->conferenceRecorder)
+  {
+    conference->StopRecorder();
+    delete conference->conferenceRecorder;
+  }
 
-  // delete profiles
+  PTRACE(2,"MCU\tOnDestroyConference " << number <<", clearing profile list");
   conference->GetProfileListMutex().Wait();
   for(Conference::ProfileList::iterator r = conference->GetProfileList().begin(); r != conference->GetProfileList().end(); )
   {
@@ -427,46 +431,24 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   {
     ConferenceMember * member = r->second;
     if(member)
-    {
-      member->SetConference(NULL); // prevent further attempts to read audio/video data from conference
-      if(member->GetType() != MEMBER_TYPE_PIPE && member->GetType() != MEMBER_TYPE_CACHE)
-        member->Close();
-    }
+      member->Close();
   }
   conference->GetMemberListMutex().Signal();
 
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(2,'" + jsName + "')", number);
 
+  PTRACE(2,"MCU\tOnDestroyConference " << number <<", waiting...");
   for(PINDEX i = 0; i < 100; i++)
   {
-   PThread::Sleep(100);
-   if(!conference->GetVisibleMemberCount())
-     break;
+    if(conference->GetMemberList().size() == 0)
+      break;
+    PThread::Sleep(100);
   }
 
-  PTRACE(2,"MCU\tOnDestroyConference " << number <<", remove pipes and caches");
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(3,'" + jsName + "')", number);
-  conference->GetMemberListMutex().Wait();
-  for(Conference::MemberList::iterator r = conference->GetMemberList().begin(); r != conference->GetMemberList().end(); ++r)
-  {
-    ConferenceMember * member = r->second;
-    if(member)
-    {
-      if(member->GetType() == MEMBER_TYPE_PIPE)
-        delete (ConferencePipeMember *)member;
-      else if(member->GetType() == MEMBER_TYPE_CACHE)
-        delete (ConferenceCacheMember *)member;
-    }
-  }
-//  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(4,'" + jsName + "')", number);
 
-  if(conference->conferenceRecorder)
-    delete conference->conferenceRecorder;
-
-  conference->GetMemberListMutex().Signal();
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(5,'" + jsName + "')", number);
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1686,14 +1668,10 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
   AutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 2000, &currVolCoef, &signalLevel, kManualGain);
   audioLevel = ((signalLevel * 2) + audioLevel) / 3;
 
-  if(lock.Wait())
+  if(conference != NULL)
   {
-    if(conference != NULL)
-    {
-      conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
-      conference->WriteMemberAudio(this, buffer, amount, sampleRate, channels);
-    }
-    lock.Signal();
+    conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
+    conference->WriteMemberAudio(this, buffer, amount, sampleRate, channels);
   }
 }
 
@@ -1708,12 +1686,8 @@ void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRa
 
   if(muteMask&2) return;
 
-  if(lock.Wait())
-  {
-    if(conference != NULL)
-      conference->ReadMemberAudio(this, buffer, amount, sampleRate, channels);
-    lock.Signal();
-  }
+  if(conference != NULL)
+    conference->ReadMemberAudio(this, buffer, amount, sampleRate, channels);
 
   ClearAudioReaderList();
 }

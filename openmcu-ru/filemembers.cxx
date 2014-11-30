@@ -253,6 +253,17 @@ ConferenceCacheMember::~ConferenceCacheMember()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void ConferenceCacheMember::Close()
+{
+  Conference *c = conference;
+  mutex.Wait();
+  conference = NULL;
+  mutex.Signal();
+  new MemberDeleteThread(c, this);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ConferenceCacheMember::CacheThread(PThread &, INT)
 {
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
@@ -318,8 +329,22 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
       firstFrameSendTime = PTime();
       MCUTRACE(1, "MCU\tWake up " << codec->GetFormatString());
     }
-    if(running) codec->Read(NULL, length, frame);
+    if(running)
+    {
+      mutex.Wait();
+      codec->Read(NULL, length, frame);
+      mutex.Signal();
+    }
   }
+
+  PTRACE(1, "MCU\tWait before deleting cache " << codec->GetFormatString() << ", active users " << codec->GetCacheUsersNumber());
+  while(codec->GetCacheUsersNumber() != 0)
+  {
+    codec->Read(NULL, length, frame);
+    PThread::Sleep(100);
+  }
+  PTRACE(1, "MCU\tDelete cache " << codec->GetFormatString());
+
   // must destroy videograbber and videochanell here? fix it
   delete(con); con=NULL;
   codec->DeleteCacheRTP();
@@ -441,6 +466,15 @@ ConferencePipeMember::~ConferencePipeMember()
     video_thread = NULL;
   }
   PTRACE(5,"ConferencePipeMember\tTerminated: " << GetName());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferencePipeMember::Close()
+{
+  Conference *c = conference;
+  conference = NULL;
+  new MemberDeleteThread(c, this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

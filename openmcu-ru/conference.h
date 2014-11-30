@@ -946,10 +946,6 @@ class ConferenceMember : public PObject
     Conference * GetConference()
     { return conference; }
 
-    void SetConference(Conference * c)
-    { lock.Wait(); conference = c; lock.Signal(); }
-
-
     virtual void RemoveAllConnections();
 
     /**
@@ -1520,6 +1516,7 @@ class Conference : public PObject
     PMutex membersConfMutex;
     BOOL forceScreenSplit;
 };
+typedef std::map<OpalGloballyUniqueID, Conference *> ConferenceListType;
 
 ////////////////////////////////////////////////////
 
@@ -1611,10 +1608,33 @@ class ConferenceMonitor : public PThread
     MonitorInfoList monitorList;
 };
 
-////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class MemberDeleteThread : public PThread
+{
+  public:
+    MemberDeleteThread(Conference * _conf, ConferenceMember * _cm)
+      : PThread(10000, AutoDeleteThread), conf(_conf), cm(_cm)
+    {
+      Resume();
+    }
 
-typedef std::map<OpalGloballyUniqueID, Conference *> ConferenceListType;
+    void Main()
+    {
+      cm->WaitForClose();
+      if(conf->RemoveMember(cm))
+      {
+        //
+      }
+      delete cm;
+    }
+
+  protected:
+    Conference * conf;
+    ConferenceMember * cm;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class ConferenceManager : public PObject
 {
