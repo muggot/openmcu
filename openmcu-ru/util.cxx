@@ -6,6 +6,37 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUReadWriteMutex::ReadWait()
+{
+  reader.Wait();
+}
+void MCUReadWriteMutex::ReadSignal()
+{
+  reader.Signal();
+}
+void MCUReadWriteMutex::WriteWait()
+{
+  writeMutex.Wait();
+#ifdef _WIN32
+  for(unsigned i = 0; i < reader.GetMaxCountVal(); ++i)
+#else
+  for(unsigned i = 0; i < reader.GetMaxCount(); ++i)
+#endif
+    reader.Wait();
+}
+void MCUReadWriteMutex::WriteSignal()
+{
+#ifdef _WIN32
+  for(unsigned i = 0; i < reader.GetMaxCountVal(); ++i)
+#else
+  for(unsigned i = 0; i < reader.GetMaxCount(); ++i)
+#endif
+    reader.Signal();
+  writeMutex.Signal();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 MCUURL::MCUURL()
 {
 }

@@ -77,6 +77,126 @@ BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionTyp
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class MCUReadWriteMutex : public PObject
+{
+  public:
+    MCUReadWriteMutex(unsigned max = 64)
+      : reader(max, max) { }
+    void ReadWait();
+    void ReadSignal();
+    void WriteWait();
+    void WriteSignal();
+
+  protected:
+    PSemaphore reader;
+    PMutex writeMutex;
+};
+class MCUReadWaitAndSignal
+{
+  public:
+    MCUReadWaitAndSignal(MCUReadWriteMutex & _mutex)
+      : mutex(_mutex)
+    { mutex.ReadWait(); }
+    ~MCUReadWaitAndSignal()
+    { mutex.ReadSignal(); }
+  protected:
+    MCUReadWriteMutex & mutex;
+};
+class MCUWriteWaitAndSignal
+{
+  public:
+    MCUWriteWaitAndSignal(MCUReadWriteMutex & _mutex)
+      : mutex(_mutex)
+    { mutex.WriteWait(); }
+    ~MCUWriteWaitAndSignal()
+    { mutex.WriteSignal(); }
+  protected:
+    MCUReadWriteMutex & mutex;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUStaticList
+{
+  public:
+    MCUStaticList(int _size = 128)
+    {
+      size = _size;
+      states = new bool[size];
+      ids = new long[size];
+      objs = new void*[size];
+      for(int i = 0; i < size; ++i)
+        states[i] = false;
+    }
+    ~MCUStaticList()
+    {
+      delete states;
+      delete ids;
+      delete objs;
+    }
+
+    int GetSize() const
+    { return size; }
+
+    bool Append(long id, void * obj)
+    {
+      PWaitAndSignal m(mutex);
+      for(int i = 0; i < size; ++i)
+      {
+        if(states[i] == false)
+        {
+          ids[i] = id;
+          objs[i] = obj;
+          states[i] = true;
+          return true;
+        }
+      }
+      return false;
+    }
+    bool Remove(long id)
+    {
+      PWaitAndSignal m(mutex);
+      for(int i = 0; i < size; ++i)
+      {
+        if(states[i] == true && ids[i] == id)
+        {
+          states[i] = false;
+          return true;
+        }
+      }
+      return false;
+    }
+
+    void * operator[] (int index) const
+    {
+      if(index >= size)
+        return NULL;
+      if(states[index] == false)
+        return NULL;
+      if(states[index] == true)
+        return objs[index];
+      return NULL;
+    }
+
+    void * operator() (long id) const
+    {
+      for(int i = 0; i < size; ++i)
+      {
+        if(states[i] == true && ids[i] == id)
+          return objs[i];
+      }
+      return NULL;
+    }
+
+    int size;
+    bool *states;
+    long *ids;
+    void **objs;
+    PMutex mutex;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class MCUQueue
 {
   public:

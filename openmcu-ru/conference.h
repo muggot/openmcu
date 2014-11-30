@@ -85,6 +85,11 @@
 
 typedef void * ConferenceMemberId;
 
+class ConferenceMember;
+class ConferenceRecorder;
+class Conference;
+class ConferenceManager;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 enum MemberTypes
@@ -160,9 +165,6 @@ class VideoFrameStoreList {
 };
 
 ////////////////////////////////////////////////////
-
-class ConferenceMember;
-class ConferenceRecorder;
 
 /// Video Mixer Configurator - Begin ///
 #define VMPC_CONFIGURATION_NAME                 "layouts.conf"
@@ -679,6 +681,8 @@ class TestVideoMixer : public MCUSimpleVideoMixer
 };
 #endif // ENABLE_TEST_ROOMS
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #if ENABLE_ECHO_MIXER
 class EchoVideoMixer : public MCUSimpleVideoMixer
 {
@@ -689,39 +693,70 @@ class EchoVideoMixer : public MCUSimpleVideoMixer
 };
 #endif
 
-////////////////////////////////////////////////////
-
 #endif  // MCU_VIDEO
 
-////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct ResamplerBufferType
+class AudioResampler
 {
-  PBYTEArray data;
-  BOOL used;
+  public:
+    AudioResampler()
+    {
+#if USE_SWRESAMPLE || USE_AVRESAMPLE || USE_LIBSAMPLERATE
+      swrc = NULL;
+#endif
+    }
+    ~AudioResampler()
+    {
 #if USE_SWRESAMPLE
-  struct SwrContext * swrc;
+      if(swrc) swr_free(&swrc);
 #elif USE_AVRESAMPLE
-  struct AVAudioResampleContext * swrc;
+      if(swrc) avresample_free(&swrc);
 #elif USE_LIBSAMPLERATE
-  struct SRC_STATE_tag * swrc;
+      if(swrc) src_delete(swrc);
+#endif
+    }
+
+    PTime readTime;
+    PBYTEArray data;
+    int srcSampleRate;
+    int srcChannels;
+    int dstSampleRate;
+    int dstChannels;
+#if USE_SWRESAMPLE
+    struct SwrContext * swrc;
+#elif USE_AVRESAMPLE
+    struct AVAudioResampleContext * swrc;
+#elif USE_LIBSAMPLERATE
+    struct SRC_STATE_tag * swrc;
 #endif
 };
-typedef std::map<unsigned, ResamplerBufferType *> BufferListType;
+typedef std::map<unsigned, AudioResampler *> AudioResamplerListType;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class Conference;
+class AudioReader
+{
+  public:
+    AudioReader() { }
+    ~AudioReader() { }
+    int timeIndex;
+    PTime readTime;
+    PBYTEArray buffer;
+};
+typedef std::map<ConferenceMemberId, AudioReader *> AudioReaderListType;
 
-/**
-  * this class describes a connection between a conference member and a conference
-  * each conference member has one instance of class for every other member of the conference
-  */
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class ConferenceConnection : public PObject {
   PCLASSINFO(ConferenceConnection, PObject);
   public:
-    ConferenceConnection(ConferenceMemberId _id);
-    ~ConferenceConnection();
+    ConferenceConnection(ConferenceMemberId _id)
+      : id(_id)
+    { }
+
+    ~ConferenceConnection()
+    { }
 
     ConferenceMemberId GetID() const
     { return id; }
@@ -743,37 +778,44 @@ class ConferenceConnection : public PObject {
     virtual void OnUserInputIndication(const PString &)
     { }
 
-    void WriteAudio(ConferenceMemberId source, const void * buffer, PINDEX amount);
-    void Write(const BYTE * ptr, PINDEX amount);
-    void ReadAudio(BYTE * ptr, PINDEX amount);
-    void ReadAndMixAudio(BYTE * ptr, PINDEX amount, PINDEX channels, unsigned short echoLevel, unsigned sampleRate, unsigned codecChannels);
-
-    unsigned outgoingSampleRate, outgoingCodecChannels;
-    PMutex audioBufferMutex;
-
   protected:
-    Conference * conference;
     ConferenceMemberId id;
-
-    void Mix(BYTE * dst, const BYTE * src, PINDEX count, PINDEX channels, unsigned short echoLevel, unsigned sampleRate);
-
-    PBYTEArray buffer;
-    PINDEX bufferLen;     ///Number of bytes unread in the buffer.
-    PINDEX bufferStart;   ///Current position in the buffer.
-    PINDEX bufferSize;    ///Total number of bytes in buffer. Never gets changed.
-//    PMutex audioBufferMutex;
-    BOOL hasUnderflow;
-
-//    BufferListType bufferList;
 };
 
-////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-/**
-  * this class describes a member of a conference
-  */
+class ConferenceAudioConnection : public ConferenceConnection
+{
+  PCLASSINFO(ConferenceAudioConnection, ConferenceConnection);
 
-class ConferenceManager;
+  public:
+    ConferenceAudioConnection(ConferenceMemberId _id, int _sampleRate = 8000, int _channels = 1);
+    ~ConferenceAudioConnection();
+
+    virtual void WriteAudio(const BYTE * data, int amount);
+    virtual void ReadAudio(ConferenceMember *member, BYTE * data, int amount, int dstSampleRate, int dstChannels);
+
+    int GetSampleRate() const
+    { return sampleRate; }
+
+    int GetChannels() const
+    { return channels; }
+
+    void Mix(const BYTE * src, BYTE * dst, int count);
+    void Resample(BYTE * src, int srcBytes, int srcSampleRate, int srcChannels, AudioResampler *resampler, int dstBytes, int dstSampleRate, int dstChannels);
+    AudioResampler * CreateResampler(int srcSampleRate, int srcChannels, int dstSampleRate, int dstChannels);
+
+  protected:
+    int sampleRate;
+    int channels;
+    int timeSize;           // 1ms size
+    int timeIndex;          // current position ms
+    int timeBufferSize;     // size ms
+    int byteBufferSize;     // size bytes
+    PBYTEArray buffer;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class ConferenceProfile : public PObject
 {
@@ -828,12 +870,12 @@ class ConferenceProfile : public PObject
     ConferenceMember *member;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class ConferenceMember : public PObject
 {
   PCLASSINFO(ConferenceMember, PObject);
   public:
-    typedef std::map<ConferenceMemberId, ConferenceConnection *> ConnectionListType;
-    typedef std::map<ConferenceMemberId, ConferenceMember *> MemberListType;
 
     /**
       * create a new conference member. The single parameter is an "id" (usually a pointer) 
@@ -907,15 +949,7 @@ class ConferenceMember : public PObject
     void SetConference(Conference * c)
     { lock.Wait(); conference = c; lock.Signal(); }
 
-    /**
-      * add a new connection for the specified member to this member to the internal list of connections
-      */
-    virtual void AddConnection(ConferenceMember * newMember);
 
-    /**
-      * remove any connections belong to the specified ID from the internal list of connections
-      */
-    virtual void RemoveConnection(ConferenceMemberId id);
     virtual void RemoveAllConnections();
 
     /**
@@ -936,23 +970,13 @@ class ConferenceMember : public PObject
       */
     virtual void WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
-    virtual void DoResample(BYTE * src, PINDEX srcBytes, unsigned srcRate, unsigned srcChannels, ResamplerBufferType *resBuffer, PINDEX dstBytes, unsigned dstRate, unsigned dstChannels);
-
-    ResamplerBufferType * CreateResamplerBuffer(unsigned bufferKey, unsigned sampleRate, unsigned targetSampleRate, unsigned channels, unsigned targetChannels);
-
     /**
       *  Called when the conference member wants to read a block of audio from the conference
       *  By default, this calls ReadMemberAudio on the conference
       */
     virtual void ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
-    /**
-      * Called when another conference member wants to send audio to the endpoint
-      * By default, the audio is added to the queue for the specified member
-      * so it can be retreived by a later call to OnIncomingAudio
-      */
-    virtual void OnExternalSendAudio(ConferenceMemberId id, const void * buffer, PINDEX amount, unsigned sampleRate);
-
+    virtual void ReadAudioOutputGain(void * buffer, int amount);
 
 #if MCU_VIDEO
     /**
@@ -1038,12 +1062,6 @@ class ConferenceMember : public PObject
      */
     virtual PString GetMonitorInfo(const PString & hdr);
 
-    ConnectionListType & GetConnectionList()
-    { return connectionList; }
-
-    MemberListType & GetMemberList()
-    { return memberList; }
-
     virtual int GetTerminalNumber() const             { return terminalNumber; }
     virtual void SetTerminalNumber(int n)             { terminalNumber = n; }
 
@@ -1077,13 +1095,18 @@ class ConferenceMember : public PObject
     { return memberType; }
 
     virtual void SetFreezeVideo(BOOL) const
-    {
-    }
+    { }
 
     virtual unsigned GetAudioLevel() const
-    {
-      return audioLevel;
-    }
+    { return audioLevel;  }
+
+    AudioResamplerListType & GetAudioResamplerList()
+    { return audioResamplerList; }
+
+    AudioReaderListType & GetAudioReaderList()
+    { return audioReaderList; }
+
+    void ClearAudioReaderList(BOOL force = FALSE);
 
     BOOL autoDial;
     unsigned muteMask;
@@ -1113,8 +1136,6 @@ class ConferenceMember : public PObject
     ConferenceMemberId id;
     BOOL memberIsJoined;
     MCULock lock;
-    ConnectionListType connectionList;
-    MemberListType memberList;
     PTime startTime;
     unsigned audioLevel;
     int terminalNumber;
@@ -1122,10 +1143,12 @@ class ConferenceMember : public PObject
     MemberTypes memberType;
     PString name;
     PString nameID;
-    BufferListType bufferList;
     float currVolCoef;
 
     PMutex destructorMutex;
+
+    AudioReaderListType audioReaderList;
+    AudioResamplerListType audioResamplerList;
 
 #if MCU_VIDEO
     //PMutex videoMutex;
@@ -1308,9 +1331,11 @@ class Conference : public PObject
 
     virtual void OnMemberLeaving(ConferenceMember *);
 
-    virtual void ReadMemberAudio(ConferenceMember * member, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
+    virtual void ReadMemberAudio(ConferenceMember * member, void * buffer, int amount, int sampleRate, int channels);
 
-    virtual void WriteMemberAudioLevel(ConferenceMember * member, unsigned audioLevel, int tint);
+    virtual void WriteMemberAudio(ConferenceMember * member, const void * buffer, int amount, int sampleRate, int channels);
+
+    virtual void WriteMemberAudioLevel(ConferenceMember * member, int audioLevel, int tint);
 
 #if MCU_VIDEO
     virtual void ReadMemberVideo(ConferenceMember * member, void * buffer, int width, int height, PINDEX & amount);
@@ -1474,6 +1499,10 @@ class Conference : public PObject
 
     MemberList memberList;
     ProfileList profileList;
+
+    ConferenceAudioConnection * AddAudioConnection(ConferenceMember * member, unsigned sampleRate = 8000, unsigned channels = 1);
+    void RemoveAudioConnection(ConferenceMember * member);
+    MCUStaticList audioConnectionList;
 
     PINDEX visibleMemberCount;
     PINDEX maxMemberCount;
