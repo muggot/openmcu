@@ -1278,9 +1278,18 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     PWaitAndSignal m(conference->GetProfileListMutex());
     conference->Unlock();
     Conference::ProfileList & profileList = conference->GetProfileList();
-    for(Conference::ProfileList::const_iterator r = profileList.begin(); r != profileList.end(); ++r)
-      if(r->second->GetMember() == NULL)
-        conference->RemoveMemberFromList(r->second->GetName(), NULL);
+    for(Conference::ProfileList::iterator r = profileList.begin(); r != profileList.end();)
+    {
+      ConferenceProfile *profile = r->second;
+      if(profile->GetMember() == NULL)
+      {
+        profile->Lock();
+        profileList.erase(r++);
+        delete profile;
+        continue;
+      }
+      ++r;
+    }
     OpenMCU::Current().HttpWriteEventRoom("Offline members removed by operator",room);
     OpenMCU::Current().HttpWriteCmdRoom("remove_all()",room);
     return TRUE;

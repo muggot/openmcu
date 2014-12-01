@@ -284,31 +284,34 @@ void Conference::LoadTemplate(PString tpl)
 
   if(!lockedTemplate) return; // room not locked - don't touch member list
 
-  profileListMutex.Wait();
-  ProfileList profileListCopy(profileList);
-  profileListMutex.Signal();
-  for(ProfileList::iterator r = profileListCopy.begin(); r != profileListCopy.end(); ++r)
+  PWaitAndSignal m(profileListMutex);
+  for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); )
   {
-    ConferenceMember *member = r->second->GetMember();
+    ConferenceProfile *profile = r->second;
+    ConferenceMember *member = profile->GetMember();
     if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+    {
+      ++r;
       continue;
-    PString name = r->second->GetName();
+    }
+    PString name = profile->GetName();
     if(validatedMembers.GetStringsIndex(name) == P_MAX_INDEX) // remove unwanted members
     {
-      if(member == NULL) // offline: simple
-      {
-        PTRACE(6,"Conference\tLoading template - removing offline member " << r->first << " from memberNameList" << flush);
-      }
-      else // online :(
+      if(member)
       {
         ConferenceMemberId id = member->GetID();
         PTRACE(6,"Conference\tLoading template - closing connection with " << name << " (id " << id << ")" << flush);
+        //PTRACE(6,"Conference\tLoading template - removing " << name << " from memberList" << flush);
         member->Close();
-        PTRACE(6,"Conference\tLoading template - removing " << name << " from memberList" << flush);
-        RemoveMemberFromList(name, member); // ???
+      } else {
+        PTRACE(6,"Conference\tLoading template - removing offline member " << name << " from memberNameList" << flush);
       }
-      RemoveMemberFromList(name, NULL);
+      profileList.erase(r++);
+      profile->Lock();
+      delete profile;
+      continue;
     }
+    ++r;
   }
 
   RefreshAddressBook();
