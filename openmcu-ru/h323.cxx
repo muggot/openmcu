@@ -21,8 +21,12 @@
 
 #define new PNEW
 
+#ifdef _WIN32
+PluginLoaderStartup2  OpenMCU::pluginLoader;
+H323PluginCodecManager * OpenMCU::plugmgr=NULL;
+#endif
 
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void SpliceMacro(PString & text, const PString & token, const PString & value)
 {
@@ -33,12 +37,7 @@ void SpliceMacro(PString & text, const PString & token, const PString & value)
     text.Splice(value, pos, len);
 }
 
-///////////////////////////////////////////////////////////////
-
-#ifdef _WIN32
-PluginLoaderStartup2  OpenMCU::pluginLoader;
-H323PluginCodecManager * OpenMCU::plugmgr=NULL;
-#endif
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUH323EndPoint::MCUH323EndPoint(ConferenceManager & _conferenceManager)
   : conferenceManager(_conferenceManager)
@@ -65,6 +64,8 @@ MCUH323EndPoint::MCUH323EndPoint(ConferenceManager & _conferenceManager)
 #endif
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 MCUH323EndPoint::~MCUH323EndPoint()
 {
   if(gatekeeperMonitor)
@@ -89,6 +90,8 @@ MCUH323EndPoint::~MCUH323EndPoint()
   OpenMCU::Current().pluginLoader.OnShutdown();
 #endif
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323EndPoint::Initialise(PConfig & cfg)
 {
@@ -347,6 +350,8 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
   PTRACE(2, "MCU\tCodecs (in preference order):\n" << setprecision(2) << GetCapabilities());;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323EndPoint::AddCapabilitiesMCU()
 {
   // add fake VP8 capabilities, need only for H.323
@@ -419,7 +424,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
   }
 }
 
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323EndPoint::GetGatekeeperHostName()
 {
@@ -429,7 +434,7 @@ PString MCUH323EndPoint::GetGatekeeperHostName()
   return host;
 }
 
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H323Connection * MCUH323EndPoint::CreateConnection(unsigned callReference, void * userData, H323Transport * transport, H323SignalPDU *)
 {
@@ -443,7 +448,7 @@ H323Connection * MCUH323EndPoint::CreateConnection(unsigned callReference, void 
   return conn;
 }
 
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323EndPoint::TranslateTCPAddress(PIPSocket::Address &localAddr, const PIPSocket::Address &remoteAddr)
 {
@@ -485,6 +490,8 @@ void MCUH323EndPoint::TranslateTCPAddress(PIPSocket::Address &localAddr, const P
   return;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString JsQuoteScreen(PString s)
 {
   PString r="\"";
@@ -507,6 +514,8 @@ PString JsQuoteScreen(PString s)
   r+="\"";
   return r;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323EndPoint::GetRoomStatusJS()
 {
@@ -676,6 +685,8 @@ PString MCUH323EndPoint::GetRoomStatusJSStart()
   EndPage(html,OpenMCU::Current().GetHtmlCopyright());
   return html;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323EndPoint::GetRoomStatus(const PString & block)
 {
@@ -891,6 +902,8 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
   return substitution;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 {
   PStringStream r; //conf[0]=[videoMixerCount,bfw,bfh):
@@ -944,6 +957,8 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
   return r;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer)
 {
   if(mixer==NULL) return "[]";
@@ -972,6 +987,8 @@ PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer)
   return r;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
 {
   if(!member) return "[]";
@@ -995,6 +1012,8 @@ PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
         << "]";
   return r;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 {
@@ -1037,6 +1056,8 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
   return members;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * member, unsigned newMixerNumber)
 {
   // formatString: VIDEOCAP @ W x H : BITRATE x FRAMERATE _ ROOM / MIXER
@@ -1072,6 +1093,8 @@ BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMem
 
   return TRUE;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & data)
 {
@@ -1724,6 +1747,8 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   OTF_RET_FAIL;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString MCUH323EndPoint::GetRoomList(const PString & block)
 {
   PString substitution;
@@ -1753,6 +1778,8 @@ PString MCUH323EndPoint::GetRoomList(const PString & block)
   return substitution;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString MCUH323EndPoint::RoomCtrlPage(const PString room)
 {
  PStringStream page;
@@ -1781,6 +1808,7 @@ PString MCUH323EndPoint::RoomCtrlPage(const PString room)
  return page;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323EndPoint::UnmoderateConference(Conference & conference)
 {
@@ -1815,6 +1843,7 @@ void MCUH323EndPoint::UnmoderateConference(Conference & conference)
   conference.videoMixerListMutex.Signal();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
 {
@@ -1845,6 +1874,8 @@ PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
 
   return RoomCtrlPage(room);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323EndPoint::GetMonitorText()
 {
@@ -1969,6 +2000,8 @@ PString MCUH323EndPoint::GetMonitorText()
   return output;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString MCUH323EndPoint::Invite(PString room, PString memberName)
 {
   MCUURL url(memberName);
@@ -2020,6 +2053,8 @@ PString MCUH323EndPoint::Invite(PString room, PString memberName)
   }
   return callToken;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323EndPoint::IncomingConferenceRequest(H323Connection & connection, 
                                                   const H323SignalPDU & setupPDU,
@@ -2112,12 +2147,16 @@ PString MCUH323EndPoint::IncomingConferenceRequest(H323Connection & connection,
   return PString::Empty();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323EndPoint::SetConnectionActive(MCUH323Connection * conn)
 {
   connectionsMutex.Wait();
   connectionsActive.SetAt(conn->GetCallToken(), conn);
   connectionsMutex.Signal();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
 {
@@ -2128,13 +2167,15 @@ void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
   connectionMonitor->AddMonitorEvent(new ConnectionRTPTimeoutInfo(conn->GetCallToken()));
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323EndPoint::OnConnectionCleared(H323Connection & connection, const PString & token)
 {
   connectionMonitor->RemoveForConnection(token);
   H323EndPoint::OnConnectionCleared(connection, token);
 }
 
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, ConferenceMember * _memberToIgnore)
   : PThread(10000, AutoDeleteThread), join(_join), memberToIgnore(_memberToIgnore)
@@ -2155,7 +2196,7 @@ NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, Conferen
   Resume(); 
 }
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void NotifyH245Thread::Main()
 {
@@ -2182,7 +2223,7 @@ void NotifyH245Thread::Main()
   }
 }
 
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReference, void * userData)
   : H323Connection(_ep, callReference), ep(_ep), isMCU(FALSE)
@@ -2242,11 +2283,13 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
 #endif
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 MCUH323Connection::~MCUH323Connection()
 {
- PThread::Sleep(500);
- connMutex.Wait();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::AttachSignalChannel(const PString & token, H323Transport * channel, BOOL answeringCall)
 {
@@ -2254,12 +2297,16 @@ void MCUH323Connection::AttachSignalChannel(const PString & token, H323Transport
   OnCreated();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::OnCreated()
 {
   ep.OnConnectionCreated(this);
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
   registrar->ConnectionCreated(callToken);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::OnEstablished()
 {
@@ -2283,12 +2330,7 @@ void MCUH323Connection::OnEstablished()
   }
 }
 
-void MCUH323Connection::OnCleared()
-{
-  H323Connection::OnCleared();
-  Registrar *registrar = OpenMCU::Current().GetRegistrar();
-  registrar->ConnectionCleared(callToken);
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class TplCleanCheckThread : public PThread
 {
@@ -2316,9 +2358,12 @@ class TplCleanCheckThread : public PThread
     PString n, a;
 };
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::CleanUpOnCallEnd()
 {
-  PTRACE(2, "MCUH323Connection\tCleanUpOnCallEnd");
+  PTRACE(2, "MCUH323Connection\tCleanUpOnCallEnd" << callToken);
+
   Conference *c = conference;
   if(c==NULL)
   {
@@ -2344,6 +2389,24 @@ void MCUH323Connection::CleanUpOnCallEnd()
   H323Connection::CleanUpOnCallEnd();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323Connection::OnCleared()
+{
+  PTRACE(2, "MCUH323Connection\tOnCleared() " << callToken);
+  H323Connection::OnCleared();
+
+  Registrar *registrar = OpenMCU::Current().GetRegistrar();
+  registrar->ConnectionCleared(callToken);
+
+  // OnCleared executed after CleanUpOnCallEnd, before deleting connection
+  // all the RTP channels is completed, start member delete thread
+  if(conference && conferenceMember)
+    new MemberDeleteThread(conference, conferenceMember);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::LeaveMCU()
 {
   PWaitAndSignal m(connMutex);
@@ -2352,25 +2415,25 @@ void MCUH323Connection::LeaveMCU()
   ClearCall();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::LeaveConference()
 {
   PWaitAndSignal m(connMutex);
 
-  if(conference != NULL && conferenceMember != NULL)
-  {
+  if(conference && conferenceMember)
     LogCall();
-
-    new MemberDeleteThread(conference, conferenceMember);
-    conferenceMember = NULL;
-    conference = NULL;
-  }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::SetRequestedRoom()
 {
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
   registrar->SetRequestedRoom(callToken, requestedRoom);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::JoinConference(const PString & roomToJoin)
 {
@@ -2400,6 +2463,8 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
   conferenceMember = new H323Connection_ConferenceMember(conference, ep, GetCallToken(), this, isMCU);
   conference->Unlock();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 RTP_Session * MCUH323Connection::UseSession(unsigned sessionID,
                                          const H245_TransportAddress & taddr,
@@ -2437,6 +2502,8 @@ RTP_Session * MCUH323Connection::UseSession(unsigned sessionID,
   return udp_session;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 H323Channel * MCUH323Connection::CreateRealTimeLogicalChannel(const H323Capability & capability,
                                                            H323Channel::Directions dir,
                                                            unsigned sessionID,
@@ -2461,6 +2528,8 @@ H323Channel * MCUH323Connection::CreateRealTimeLogicalChannel(const H323Capabili
   return new H323_RTPChannel(*this, capability, dir, *session);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::SetupCacheConnection(PString & format, Conference * conf, ConferenceMember * memb)
 {
  remoteName = format;
@@ -2470,6 +2539,8 @@ void MCUH323Connection::SetupCacheConnection(PString & format, Conference * conf
  conferenceMember = memb;
  requestedRoom = conference->GetNumber();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::OnSetLocalCapabilities()
 {
@@ -2539,6 +2610,8 @@ void MCUH323Connection::OnSetLocalCapabilities()
   }
   //cout << "OnSetLocalCapabilities\n" << localCapabilities << "\n";
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteCaps, const H245_MultiplexCapability * muxCap, H245_TerminalCapabilitySetReject & rejectPDU)
 {
@@ -2641,16 +2714,22 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
   return H323Connection::OnReceivedCapabilitySet(_remoteCaps, muxCap, rejectPDU);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::OnSendCapabilitySet(H245_TerminalCapabilitySet & pdu)
 {
   H323Connection::OnSendCapabilitySet(pdu);
   //cout << "OnSendCapabilitySet\n" << pdu << "\n";
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323Connection::StartControlNegotiations(BOOL renegotiate)
 {
   return H323Connection::StartControlNegotiations(renegotiate);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
 {
@@ -2662,6 +2741,8 @@ BOOL MCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
   return ret;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323Connection::OnReceivedCallProceeding(const H323SignalPDU & proceedingPDU)
 {
   const H225_CallProceeding_UUIE & proceeding = proceedingPDU.m_h323_uu_pdu.m_h323_message_body;
@@ -2672,6 +2753,8 @@ BOOL MCUH323Connection::OnReceivedCallProceeding(const H323SignalPDU & proceedin
   return ret;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323Connection::OnReceivedSignalConnect(const H323SignalPDU & pdu)
 {
   BOOL ret = H323Connection::OnReceivedSignalConnect(pdu);
@@ -2679,6 +2762,8 @@ BOOL MCUH323Connection::OnReceivedSignalConnect(const H323SignalPDU & pdu)
   SetRequestedRoom(); // override requested room from registrar
   return ret;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString & /*caller*/, const H323SignalPDU & setupPDU, H323SignalPDU & /*connectPDU*/)
 {
@@ -2695,6 +2780,8 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
   return registrar->OnReceivedH323Invite(this);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCUH323Connection::CheckVFU()
 {
@@ -2733,6 +2820,8 @@ BOOL MCUH323Connection::CheckVFU()
   return TRUE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323Connection::OnH245_MiscellaneousCommand(const H245_MiscellaneousCommand & pdu)
 {
   if(pdu.m_type.GetTag() == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
@@ -2742,6 +2831,8 @@ BOOL MCUH323Connection::OnH245_MiscellaneousCommand(const H245_MiscellaneousComm
   }
   return H323Connection::OnH245_MiscellaneousCommand(pdu);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command)
 {
@@ -2755,6 +2846,8 @@ void MCUH323Connection::SendLogicalChannelMiscCommand(H323Channel & channel, uns
 
   H323Connection::SendLogicalChannelMiscCommand(channel, command);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize */, H323AudioCodec & codec)
 {
@@ -2819,6 +2912,8 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
   return TRUE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::OpenAudioCache(H323AudioCodec & codec)
 {
   ConferenceManager & manager = ep.GetConferenceManager();
@@ -2833,6 +2928,8 @@ void MCUH323Connection::OpenAudioCache(H323AudioCodec & codec)
   // unlock conference
   c->Unlock();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
 {
@@ -2854,6 +2951,8 @@ void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
   // unlock conference
   c->Unlock();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::SetEndpointDefaultVideoParams()
 {
@@ -2887,6 +2986,8 @@ void MCUH323Connection::SetEndpointDefaultVideoParams()
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int MCUH323Connection::GetEndpointParam(PString param, int defaultValue)
 {
   PString value = GetEndpointParam(param);
@@ -2895,6 +2996,8 @@ int MCUH323Connection::GetEndpointParam(PString param, int defaultValue)
   return value.AsInteger();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString MCUH323Connection::GetEndpointParam(PString param, PString defaultValue)
 {
   PString value = GetEndpointParam(param);
@@ -2902,6 +3005,8 @@ PString MCUH323Connection::GetEndpointParam(PString param, PString defaultValue)
     return defaultValue;
   return value;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323Connection::GetEndpointParam(PString param)
 {
@@ -2914,6 +3019,8 @@ PString MCUH323Connection::GetEndpointParam(PString param)
   }
   return GetSectionParamFromUrl(param, url);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if MCU_VIDEO
 BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec)
@@ -3042,6 +3149,8 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
   return TRUE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::OnClosedLogicalChannel(const H323Channel & channel)
 {
  H323Codec * codec = channel.GetCodec();
@@ -3049,7 +3158,14 @@ void MCUH323Connection::OnClosedLogicalChannel(const H323Channel & channel)
  if(codec == videoReceiveCodec) videoReceiveCodec = NULL;
 }
 
-void MCUH323Connection::RestartGrabber() { videoGrabber->Restart(); }
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323Connection::RestartGrabber()
+{
+  videoGrabber->Restart();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCUH323Connection::InitGrabber(PVideoInputDevice * grabber, int newFrameWidth, int newFrameHeight, int newFrameRate)
 {
@@ -3096,6 +3212,8 @@ BOOL MCUH323Connection::InitGrabber(PVideoInputDevice * grabber, int newFrameWid
 }
 
 #endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::OnUserInputString(const PString & str)
 {
@@ -3207,120 +3325,7 @@ void MCUH323Connection::OnUserInputString(const PString & str)
   dtmfBuffer = "";
 }
 
-BOOL MCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
-{
-  PWaitAndSignal m(connMutex);
-/*
-  // If record file is open, write data to it
-  if (recordFile.IsOpen()) {
-    recordFile.Write(buffer, amount);
-
-    recordDuration += amount / 2;
-    if (recordDuration > recordLimit) {
-      recordFile.Close();
-      OnFinishRecording();
-    }
-    else {
-      const WORD * samples = (const WORD *)buffer;
-      PINDEX sampleCount = amount / 2;
-      BOOL silence = TRUE;
-      while (sampleCount-- > 0 && silence) {
-        if (*samples > 100 || *samples < -100)
-          silence = FALSE;
-        ++samples;
-      }
-      if (!silence)
-        recordSilenceCount = 0;
-      else {
-        recordSilenceCount += amount / 2;
-        if ((recordSilenceThreshold > 0) && (recordSilenceCount >= recordSilenceThreshold)) {
-          recordFile.Close();
-          OnFinishRecording();
-        }
-      }
-    }
-  }
-
-  else */ if (conferenceMember != NULL)
-    conferenceMember->WriteAudio(buffer, amount, sampleRate, channels);
-
-  return TRUE;
-}
-
-/*
-void MCUH323Connection::StartRecording(const PFilePath & filename, unsigned limit, unsigned threshold)
-{
-  if (!recordFile.Open(filename, PFile::ReadWrite, PFile::Create | PFile::Truncate))
-    return;
-
-  recordSilenceCount = 0;
-  recordDuration = 0;
-
-  recordSilenceThreshold = threshold * 8000;
-  recordLimit            = limit * 8000;
-}
-
-void MCUH323Connection::OnFinishRecording()
-{
-}
-*/
-
-BOOL MCUH323Connection::OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
-{
-  // When the prodedure begins, play the welcome file
-  if (welcomeState == NotStartedYet) {
-    ChangeWelcomeState(PlayingWelcome);
-  }
-
-  for (;;) {
-    // Do actions that are not triggered by events
-    OnWelcomeProcessing();
-
-    // If a wave is not playing, we may continue now
-    if (!playFile.IsOpen())
-      break;
-
-    // Wait for wave file completion
-    if (playFile.Read(buffer, amount)) {
-      int len = playFile.GetLastReadCount();
-      if (len < amount) {
-        memset(((BYTE *)buffer)+len, 0, amount-len);
-      }
-      //playDelay.Delay(amount/16);
-
-      // Exit now since the buffer is ready
-      return TRUE;
-    }
-
-    PTRACE(4, "MCU\tFinished playing file");
-    playFile.Close();
-
-    // Wave completed, if no event should be fired
-    //  then we may continue now
-    if(!wavePlayingInSameState)
-      break;
-
-    // Fire wave completion event
-    OnWelcomeWaveEnded();
-
-    // We should repeat the loop now because the callback
-    //  above might have started a new wave file
-  }
-
-  PWaitAndSignal m(connMutex);
-
-  // If a we are connected to a conference and no wave
-  //  is playing, read data from the conference
-  if (conferenceMember != NULL) {
-    conferenceMember->ReadAudio(buffer, amount, sampleRate, channels);
-    return TRUE;
-  }
-
-  // Generate silence
-  return FALSE;
-}
-
-///////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::ChangeWelcomeState(int newState)
 {
@@ -3334,6 +3339,8 @@ void MCUH323Connection::ChangeWelcomeState(int newState)
     OnWelcomeStateChanged();
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::PlayWelcomeFile(BOOL useTheFile, PFilePath & fileToPlay)
 {
@@ -3354,6 +3361,8 @@ void MCUH323Connection::PlayWelcomeFile(BOOL useTheFile, PFilePath & fileToPlay)
   // File not played, call the wave end callback anyway
   OnWelcomeWaveEnded();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::OnWelcomeStateChanged()
 {
@@ -3386,9 +3395,13 @@ void MCUH323Connection::OnWelcomeStateChanged()
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::OnWelcomeProcessing()
 {
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::OnWelcomeWaveEnded()
 {
@@ -3412,7 +3425,7 @@ void MCUH323Connection::OnWelcomeWaveEnded()
   }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323Connection::GetRemoteNumber()
 {
@@ -3434,6 +3447,8 @@ PString MCUH323Connection::GetRemoteNumber()
   if(number == "") number = "undefined";
   return number;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
 {
@@ -3489,6 +3504,8 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
   SetMemberName();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::SetMemberName()
 {
   PString address;
@@ -3541,22 +3558,113 @@ void MCUH323Connection::SetMemberName()
   PTRACE(1, "SetMemberName memberName: " << memberName);
 }
 
-///////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
+{
+/*
+  // If record file is open, write data to it
+  if (recordFile.IsOpen()) {
+    recordFile.Write(buffer, amount);
+
+    recordDuration += amount / 2;
+    if (recordDuration > recordLimit) {
+      recordFile.Close();
+      OnFinishRecording();
+    }
+    else {
+      const WORD * samples = (const WORD *)buffer;
+      PINDEX sampleCount = amount / 2;
+      BOOL silence = TRUE;
+      while (sampleCount-- > 0 && silence) {
+        if (*samples > 100 || *samples < -100)
+          silence = FALSE;
+        ++samples;
+      }
+      if (!silence)
+        recordSilenceCount = 0;
+      else {
+        recordSilenceCount += amount / 2;
+        if ((recordSilenceThreshold > 0) && (recordSilenceCount >= recordSilenceThreshold)) {
+          recordFile.Close();
+          OnFinishRecording();
+        }
+      }
+    }
+  }
+
+  else */ if (conferenceMember != NULL)
+    conferenceMember->WriteAudio(buffer, amount, sampleRate, channels);
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUH323Connection::OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
+{
+  // When the prodedure begins, play the welcome file
+  if (welcomeState == NotStartedYet) {
+    ChangeWelcomeState(PlayingWelcome);
+  }
+
+  for (;;) {
+    // Do actions that are not triggered by events
+    OnWelcomeProcessing();
+
+    // If a wave is not playing, we may continue now
+    if (!playFile.IsOpen())
+      break;
+
+    // Wait for wave file completion
+    if (playFile.Read(buffer, amount)) {
+      int len = playFile.GetLastReadCount();
+      if (len < amount) {
+        memset(((BYTE *)buffer)+len, 0, amount-len);
+      }
+      //playDelay.Delay(amount/16);
+
+      // Exit now since the buffer is ready
+      return TRUE;
+    }
+
+    PTRACE(4, "MCU\tFinished playing file");
+    playFile.Close();
+
+    // Wave completed, if no event should be fired
+    //  then we may continue now
+    if(!wavePlayingInSameState)
+      break;
+
+    // Fire wave completion event
+    OnWelcomeWaveEnded();
+
+    // We should repeat the loop now because the callback
+    //  above might have started a new wave file
+  }
+
+  // If a we are connected to a conference and no wave
+  //  is playing, read data from the conference
+  if (conferenceMember != NULL) {
+    conferenceMember->ReadAudio(buffer, amount, sampleRate, channels);
+    return TRUE;
+  }
+
+  // Generate silence
+  return FALSE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if MCU_VIDEO
 
-//
-// this function is called whenever a connection needs a frame of video for output
-//
-
 BOOL MCUH323Connection::OnOutgoingVideo(void * buffer, int width, int height, PINDEX & amount)
 {
-  PWaitAndSignal m(connMutex);
-
-  if (conferenceMember != NULL)
+  if(conferenceMember != NULL)
     conferenceMember->ReadVideo(buffer, width, height, amount);
-  else return FALSE;
-/*  
+  else
+    return FALSE;
+/*
   else if (!GetPreMediaFrame(buffer, width, height, amount)) {
     if ((width == CIF4_WIDTH) && (height == CIF4_HEIGHT))
       MCUVideoMixer::FillCIF4YUVFrame(buffer, 0, 0, 0);
@@ -3569,26 +3677,26 @@ BOOL MCUH323Connection::OnOutgoingVideo(void * buffer, int width, int height, PI
   return TRUE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUH323Connection::OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount)
+{
+  if(conferenceMember != NULL)
+    conferenceMember->WriteVideo(buffer, width, height, amount);
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323Connection::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount)
 {
   return OpenMCU::Current().GetPreMediaFrame(buffer, width, height, amount);
 }
 
-//
-// this function is called whenever a connection receives a frame of video
-//
-
-BOOL MCUH323Connection::OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount)
-{
-  if (conferenceMember != NULL)
-    conferenceMember->WriteVideo(buffer, width, height, amount);
-  return TRUE;
-}
-
 #endif // MCU_VIDEO
 
-
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, ConferenceMemberId _id, BOOL _isMCU)
   : ConferenceMember(_conference, _id), ep(_ep)
@@ -3598,10 +3706,14 @@ H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _c
   conference->AddMember(this);
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 H323Connection_ConferenceMember::~H323Connection_ConferenceMember()
 {
   PTRACE(4, "H323Connection_ConferenceMember deleted");
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void H323Connection_ConferenceMember::Close()
 {
@@ -3611,6 +3723,8 @@ void H323Connection_ConferenceMember::Close()
     conn->Unlock();
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString H323Connection_ConferenceMember::GetTitle() const
 {
@@ -3629,6 +3743,8 @@ PString H323Connection_ConferenceMember::GetTitle() const
   return output;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString H323Connection_ConferenceMember::GetMonitorInfo(const PString & hdr)
 { 
   PStringStream output;
@@ -3644,6 +3760,8 @@ PString H323Connection_ConferenceMember::GetMonitorInfo(const PString & hdr)
   }
   return output;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void H323Connection_ConferenceMember::SetName()
 {
@@ -3673,6 +3791,8 @@ void H323Connection_ConferenceMember::SetName()
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 // signal to codec plugin for disable(enable) decoding incoming video from unvisible(visible) member
 void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
 {
@@ -3693,6 +3813,8 @@ void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
   conn->Unlock();
  }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void H323Connection_ConferenceMember::SendUserInputIndication(const PString & str)
 { 
@@ -3791,6 +3913,8 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
@@ -3837,6 +3961,8 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
   PStringStream cmd; cmd << "imute(" << dec << (long)id << "," << sumMask << ")";
   if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
 {
@@ -3885,7 +4011,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
   if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
 }
 
-//////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::LogCall(const BOOL accepted)
 {
@@ -3909,7 +4035,7 @@ void MCUH323Connection::LogCall(const BOOL accepted)
     OpenMCU::Current().LogMessage(timeStream + " Call denied:" + stringStream);		
 }
 
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, MCUH323Connection & _conn, unsigned int _sampleRate, unsigned _channels)
   : ep(_ep), conn(_conn), sampleRate(_sampleRate), channels(_channels)
@@ -3917,11 +4043,15 @@ OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, MCUH323Connection & _conn, unsi
   os_handle = 0;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void OutgoingAudio::CreateSilence(void * buffer, PINDEX amount)
 {
   memset(buffer, 0, amount);
 //  lastReadCount = amount;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL OutgoingAudio::Read(void * buffer, PINDEX amount)
 {
@@ -3936,6 +4066,8 @@ BOOL OutgoingAudio::Read(void * buffer, PINDEX amount)
   return TRUE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL OutgoingAudio::Close()
 {
   if (!IsOpen()) 
@@ -3946,13 +4078,15 @@ BOOL OutgoingAudio::Close()
   return TRUE;
 }
 
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 IncomingAudio::IncomingAudio(H323EndPoint & _ep, MCUH323Connection & _conn, unsigned int _sampleRate, unsigned _channels)
   : sampleRate(_sampleRate), channels(_channels), ep(_ep), conn(_conn)
 {
   os_handle = 0;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
 {
@@ -3966,6 +4100,8 @@ BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
   return TRUE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL IncomingAudio::Close()
 {
   if (!IsOpen())
@@ -3976,7 +4112,7 @@ BOOL IncomingAudio::Close()
   return TRUE;
 }
 
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ConnectionMonitor::Main()
 {
@@ -4024,11 +4160,15 @@ void ConnectionMonitor::Main()
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ConnectionMonitor::AddMonitorEvent(ConnectionMonitorInfo * info)
 {
   PWaitAndSignal m(mutex);
   monitorList.push_back(info);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ConnectionMonitor::RemoveForConnection(const PString & callToken)
 {
@@ -4048,11 +4188,15 @@ void ConnectionMonitor::RemoveForConnection(const PString & callToken)
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL ConnectionRepeatingInfo::Perform(H323Connection & conn)
 {
   this->timeToPerform = PTime() + repeatTime;
   return FALSE;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL ConnectionRTPTimeoutInfo::Perform(H323Connection & conn)
 {
@@ -4078,7 +4222,7 @@ BOOL ConnectionRTPTimeoutInfo::Perform(H323Connection & conn)
   return ConnectionRepeatingInfo::Perform(conn);
 }
 
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void GatekeeperMonitor::Main()
 {
@@ -4150,4 +4294,4 @@ void GatekeeperMonitor::Main()
   }
 }
 
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////

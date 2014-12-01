@@ -169,13 +169,11 @@ class MCUStaticList
 
     void * operator[] (int index) const
     {
-      if(index >= size)
+      if(index < 0 || index >= size)
         return NULL;
       if(states[index] == false)
         return NULL;
-      if(states[index] == true)
-        return objs[index];
-      return NULL;
+      return objs[index];
     }
 
     void * operator() (long id) const
@@ -204,30 +202,23 @@ class MCUQueue
     ~MCUQueue() { }
     BOOL Push(PString *cmd)
     {
-      PThread::Sleep(10);
-      if(!cmd) return FALSE;
-      PWaitAndSignal m(mutex);
-      if(queue.GetSize() > 100) return FALSE;
-      if(queue.GetStringsIndex(*cmd) != P_MAX_INDEX) return FALSE;
-      queue.InsertAt(0, cmd);
-      return TRUE;
+      return queue.Append((long)cmd, cmd);
     }
     PString *Pop()
     {
-      PThread::Sleep(10);
-      PWaitAndSignal m(mutex);
-      PString *cmd = (PString *)queue.GetAt(0);
-      if(cmd)
+      for(int i = 0; i < queue.GetSize(); ++i)
       {
-        cmd = new PString(*cmd);
-        queue.RemoveAt(0);
+        PString *cmd = (PString *)queue[i];
+        if(cmd == NULL)
+          continue;
+        queue.Remove((long)cmd);
+        return cmd;
       }
-      return cmd;
+      return NULL;
     }
 
   protected:
-    PStringArray queue;
-    PMutex mutex;
+    MCUStaticList queue;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

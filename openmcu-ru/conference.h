@@ -1613,25 +1613,26 @@ class ConferenceMonitor : public PThread
 class MemberDeleteThread : public PThread
 {
   public:
-    MemberDeleteThread(Conference * _conf, ConferenceMember * _cm)
-      : PThread(10000, AutoDeleteThread), conf(_conf), cm(_cm)
+    MemberDeleteThread(Conference * _conference, ConferenceMember * _member)
+      : PThread(10000, AutoDeleteThread), conference(_conference), member(_member)
     {
       Resume();
     }
 
     void Main()
     {
-      cm->WaitForClose();
-      if(conf->RemoveMember(cm))
+      if(member)
       {
-        //
+        member->WaitForClose();
+        if(conference)
+          conference->RemoveMember(member);
+        delete member;
       }
-      delete cm;
     }
 
   protected:
-    Conference * conf;
-    ConferenceMember * cm;
+    Conference * conference;
+    ConferenceMember * member;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

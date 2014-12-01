@@ -421,6 +421,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", disconnect remote endpoints");
   conference->GetMemberListMutex().Wait();
+  int members = conference->GetMemberList().size();
   for(Conference::MemberList::iterator r = conference->GetMemberList().begin(); r != conference->GetMemberList().end(); ++r)
   {
     ConferenceMember * member = r->second;
@@ -431,12 +432,13 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(2,'" + jsName + "')", number);
 
-  PTRACE(2,"MCU\tOnDestroyConference " << number <<", waiting...");
-  for(PINDEX i = 0; i < 100; i++)
+  while(members != 0)
   {
-    if(conference->GetMemberList().size() == 0)
-      break;
+    MCUTRACE(0,"MCU\tOnDestroyConference " << number <<", waiting... members: " << members);
     PThread::Sleep(100);
+    conference->GetMemberListMutex().Wait();
+    members = conference->GetMemberList().size();
+    conference->GetMemberListMutex().Signal();
   }
 
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(3,'" + jsName + "')", number);

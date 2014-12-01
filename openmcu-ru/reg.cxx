@@ -13,49 +13,16 @@ void Registrar::ConnectionCreated(const PString & callToken)
 
 void Registrar::ConnectionEstablished(const PString & callToken)
 {
-  RegistrarConnection *regConn = FindRegConnWithLock(callToken);
-  if(!regConn)
-    return;
-
-  if(regConn->state == CONN_MCU_WAIT)
-    regConn->state = CONN_MCU_ESTABLISHED;
-
-  if(regConn->state == CONN_WAIT && regConn->callToken_out == callToken)
-    regConn->state = CONN_ACCEPT_IN;
-
-  regConn->Unlock();
+  PString *cmd = new PString("established:"+callToken);
+  regQueue.Push(cmd);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Registrar::ConnectionCleared(const PString & callToken)
 {
-  RegistrarConnection *regConn = FindRegConnWithLock(callToken);
-  if(!regConn)
-    return;
-
-  if(regConn->state == CONN_MCU_WAIT || regConn->state == CONN_MCU_ESTABLISHED)
-    regConn->state = CONN_IDLE;
-
-  if(regConn->state == CONN_WAIT && regConn->callToken_out == callToken)
-    regConn->state = CONN_CANCEL_IN;
-
-  if(regConn->state == CONN_WAIT && regConn->callToken_in == callToken)
-    regConn->state = CONN_CANCEL_OUT;
-
-  if(regConn->state == CONN_ESTABLISHED && regConn->callToken_out == callToken)
-    regConn->state = CONN_LEAVE_IN;
-
-  if(regConn->state == CONN_ESTABLISHED && regConn->callToken_in == callToken)
-    regConn->state = CONN_LEAVE_OUT;
-
-  if(regConn->state == CONN_ACCEPT_IN && regConn->callToken_out == callToken)
-    regConn->state = CONN_LEAVE_IN;
-
-  if(regConn->state == CONN_ACCEPT_IN && regConn->callToken_in == callToken)
-    regConn->state = CONN_LEAVE_OUT;
-
-  regConn->Unlock();
+  PString *cmd = new PString("cleared:"+callToken);
+  regQueue.Push(cmd);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -604,9 +571,9 @@ void Registrar::ProcessConnectionList()
 
 void Registrar::RefreshAccountStatusList()
 {
-  PWaitAndSignal m(mutex);
   PStringArray list;
 
+  mutex.Wait();
   for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
   {
     RegistrarAccount *regAccount = it->second;
@@ -658,6 +625,8 @@ void Registrar::RefreshAccountStatusList()
                       ping_info
                      );
   }
+  mutex.Signal();
+
   if(account_status_list != list)
   {
     account_status_list = list;
@@ -786,9 +755,46 @@ void Registrar::QueueThread(PThread &, INT)
           ep->MakeCall(to, transport, callToken, userData);
         }
       }
+      else if(cmd->Left(12) == "established:")
+      {
+        PString callToken = cmd->Right(cmd->GetLength()-12);
+        RegistrarConnection *regConn = FindRegConnWithLock(callToken);
+        if(regConn)
+        {
+          if(regConn->state == CONN_MCU_WAIT)
+            regConn->state = CONN_MCU_ESTABLISHED;
+          if(regConn->state == CONN_WAIT && regConn->callToken_out == callToken)
+            regConn->state = CONN_ACCEPT_IN;
+          regConn->Unlock();
+        }
+      }
+      else if(cmd->Left(8) == "cleared:")
+      {
+        PString callToken = cmd->Right(cmd->GetLength()-8);
+        RegistrarConnection *regConn = FindRegConnWithLock(callToken);
+        if(regConn)
+        {
+          if(regConn->state == CONN_MCU_WAIT || regConn->state == CONN_MCU_ESTABLISHED)
+            regConn->state = CONN_IDLE;
+          if(regConn->state == CONN_WAIT && regConn->callToken_out == callToken)
+            regConn->state = CONN_CANCEL_IN;
+          if(regConn->state == CONN_WAIT && regConn->callToken_in == callToken)
+            regConn->state = CONN_CANCEL_OUT;
+          if(regConn->state == CONN_ESTABLISHED && regConn->callToken_out == callToken)
+            regConn->state = CONN_LEAVE_IN;
+          if(regConn->state == CONN_ESTABLISHED && regConn->callToken_in == callToken)
+            regConn->state = CONN_LEAVE_OUT;
+          if(regConn->state == CONN_ACCEPT_IN && regConn->callToken_out == callToken)
+            regConn->state = CONN_LEAVE_IN;
+          if(regConn->state == CONN_ACCEPT_IN && regConn->callToken_in == callToken)
+            regConn->state = CONN_LEAVE_OUT;
+          regConn->Unlock();
+        }
+      }
       delete cmd;
       cmd = regQueue.Pop();
     }
+    PThread::Sleep(100);
   }
 }
 
