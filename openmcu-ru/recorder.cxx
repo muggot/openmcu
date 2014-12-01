@@ -79,13 +79,8 @@ AVCodecID GetCodecId(int media_type, PString codec_name)
 ConferenceRecorder::ConferenceRecorder(Conference *_conference)
   : ConferenceMember(_conference, (void *)this)
 {
-  Reset();
-
   trace_section = "ConferenceRecorder: ";
-
-  if(conference == NULL)
-    return;
-
+  Reset();
   conference->AddMember(this);
 
   MCUTRACE(1, trace_section << "create");
@@ -96,6 +91,14 @@ ConferenceRecorder::ConferenceRecorder(Conference *_conference)
 ConferenceRecorder::~ConferenceRecorder()
 {
   Stop();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferenceRecorder::Close()
+{
+  Stop();
+  new MemberDeleteThread(conference, this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

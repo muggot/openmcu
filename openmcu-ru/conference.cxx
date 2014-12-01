@@ -408,12 +408,6 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   jsName.Replace("\"","\\x27",TRUE,0); jsName.Replace("'","\\x22",TRUE,0);
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(1,'" + jsName + "')", number);
 
-  if(conference->conferenceRecorder)
-  {
-    conference->StopRecorder();
-    delete conference->conferenceRecorder;
-  }
-
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", clearing profile list");
   conference->GetProfileListMutex().Wait();
   for(Conference::ProfileList::iterator r = conference->GetProfileList().begin(); r != conference->GetProfileList().end(); )

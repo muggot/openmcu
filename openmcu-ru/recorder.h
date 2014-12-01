@@ -43,6 +43,8 @@ class ConferenceRecorder : public ConferenceMember
     ConferenceRecorder(Conference *_conference);
     ~ConferenceRecorder();
 
+    virtual void Close();
+
     virtual ConferenceConnection * CreateConnection()
     { return new ConferenceConnection(this); }
 
