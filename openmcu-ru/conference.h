@@ -731,7 +731,7 @@ class AudioResampler
     struct SRC_STATE_tag * swrc;
 #endif
 };
-typedef std::map<unsigned, AudioResampler *> AudioResamplerListType;
+typedef std::map<long, AudioResampler *> AudioResamplerListType;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

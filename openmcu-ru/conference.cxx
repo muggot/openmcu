@@ -1988,7 +1988,7 @@ void ConferenceAudioConnection::ReadAudio(ConferenceMember *member, BYTE * data,
   {
     // при использовании одного swrc для разных соединений появляются артефакты
     // ???
-    int resamplerKey = (int)id; //(channels<<24)|sampleRate;
+    long resamplerKey = (long)id; //(channels<<24)|sampleRate;
     AudioResampler *resampler = NULL;
     AudioResamplerListType & audioResamplerList = member->GetAudioResamplerList();
     AudioResamplerListType::iterator it = audioResamplerList.find(resamplerKey);
