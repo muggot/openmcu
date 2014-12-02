@@ -715,7 +715,7 @@ void Registrar::QueueThread(PThread &, INT)
   {
     for(;;)
     {
-      PString *cmd = regQueue.Pop();
+      PString *cmd = (PString *)regQueue.Pop();
       if(cmd == NULL)
         break;
       if(cmd->Left(7) == "invite:")
@@ -727,6 +727,20 @@ void Registrar::QueueThread(PThread &, INT)
       delete cmd;
     }
     PThread::Sleep(100);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::QueueClear()
+{
+  regQueue.Stop();
+  for(;;)
+  {
+    PString *cmd = (PString *)regQueue.Pop();
+    if(cmd == NULL)
+      break;
+    delete cmd;
   }
 }
 
@@ -975,6 +989,7 @@ void Registrar::InitAccounts()
 void Registrar::Terminating()
 {
   // stop queue thread
+  QueueClear();
   if(queueThread)
   {
     PTRACE(5,"Registrar\tWaiting for termination queue: " << queueThread->GetThreadName());

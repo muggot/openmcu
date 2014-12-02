@@ -449,6 +449,7 @@ class Registrar : public PThread
     BOOL queueTerminating;
     MCUQueue regQueue;
 
+    void QueueClear();
     void QueueInvite(const PString & data);
     void QueueCleared(const PString & data);
     void QueueEstablished(const PString & data);

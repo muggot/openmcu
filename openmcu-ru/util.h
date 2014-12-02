@@ -138,7 +138,7 @@ class MCUStaticList
     int GetSize() const
     { return size; }
 
-    bool Append(long id, void * obj)
+    virtual bool Append(long id, void * obj)
     {
       PWaitAndSignal m(mutex);
       for(int i = 0; i < size; ++i)
@@ -153,7 +153,7 @@ class MCUStaticList
       }
       return false;
     }
-    bool Remove(long id)
+    virtual bool Remove(long id)
     {
       PWaitAndSignal m(mutex);
       for(int i = 0; i < size; ++i)
@@ -198,26 +198,35 @@ class MCUStaticList
 class MCUQueue
 {
   public:
-    MCUQueue() { }
+    MCUQueue() { stopped = false; }
     ~MCUQueue() { }
-    BOOL Push(PString *cmd)
+
+    virtual bool Push(void *obj)
     {
-      return queue.Append((long)cmd, cmd);
+      if(stopped)
+        return false;
+      return queue.Append((long)obj, obj);
     }
-    PString *Pop()
+    virtual void * Pop()
     {
       for(int i = 0; i < queue.GetSize(); ++i)
       {
-        PString *cmd = (PString *)queue[i];
-        if(cmd == NULL)
+        void *obj = queue[i];
+        if(obj == NULL)
           continue;
-        queue.Remove((long)cmd);
-        return cmd;
+        queue.Remove((long)obj);
+        return obj;
       }
       return NULL;
     }
+    virtual void Stop()
+    {
+      stopped = true;
+      PThread::Sleep(2);
+    }
 
   protected:
+    bool stopped;
     MCUStaticList queue;
 };
 

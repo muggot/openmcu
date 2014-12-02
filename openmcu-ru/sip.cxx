@@ -2988,6 +2988,26 @@ int MCUSipEndPoint::SendAckBye(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+int MCUSipEndPoint::SendMsg(msg_t *msg)
+{
+  sip_t *sip = sip_object(msg);
+  if(sip == NULL || sip->sip_request == NULL)
+  {
+    msg_destroy(msg);
+    return 0;
+  }
+
+  PString url_str = url_as_string(&home, sip->sip_request->rq_url);
+  int ret = nta_msg_tsend(agent,
+                        msg,
+                        (const url_string_t *)(const char *)url_str,
+			NTATAG_STATELESS(1),
+			TAG_END());
+  return ret;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int MCUSipEndPoint::SipReqReply(const msg_t *msg, msg_t *msg_reply, unsigned status, const char *status_phrase)
 {
   PTRACE(1, "MCUSIP\tSipReqReply");
@@ -3471,7 +3491,7 @@ void MCUSipEndPoint::ProcessSipQueue()
 {
   for(;;)
   {
-    PString *cmd = sipQueue.Pop();
+    PString *cmd = (PString *)sipQueue.Pop();
     if(cmd == NULL)
       break;
     if(cmd->Left(7) == "invite:")
@@ -3481,6 +3501,35 @@ void MCUSipEndPoint::ProcessSipQueue()
     else if(cmd->Left(4) == "bye:")
       QueueBye(cmd->Right(cmd->GetLength()-4));
     delete cmd;
+  }
+  for(;;)
+  {
+    msg_t *msg = (msg_t *)sipMsgQueue.Pop();
+    if(msg == NULL)
+      break;
+    SendMsg(msg);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipEndPoint::QueueClear()
+{
+  sipQueue.Stop();
+  for(;;)
+  {
+    PString *cmd = (PString *)sipQueue.Pop();
+    if(cmd == NULL)
+      break;
+    delete cmd;
+  }
+  sipMsgQueue.Stop();
+  for(;;)
+  {
+    msg_t *msg = (msg_t *)sipMsgQueue.Pop();
+    if(msg == NULL)
+      break;
+    msg_destroy(msg);
   }
 }
 
@@ -3570,6 +3619,7 @@ void MCUSipEndPoint::MainLoop()
 void MCUSipEndPoint::Terminating()
 {
   PWaitAndSignal m(mutex);
+  QueueClear();
   ClearProxyAccounts();
   ClearSipCaps(BaseSipCaps);
   ClearStunList();

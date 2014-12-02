@@ -465,10 +465,7 @@ int Registrar::SipSendNotify(msg_t *msg_sub, Subscription *subAccount)
   sip_route_t* sip_route = sip_route_reverse(GetHome(), sip_sub->sip_record_route);
 
   msg_t *msg_req = nta_msg_create(GetAgent(), 0);
-  nta_outgoing_mcreate(GetAgent(), NULL, NULL,
-			ruri,
-			msg_req,
-			NTATAG_STATELESS(1),
+  sip_add_tl(msg_req, sip_object(msg_req),
 			SIPTAG_FROM(sip_sub->sip_to),
 			SIPTAG_TO(sip_sub->sip_from),
 			SIPTAG_CONTACT_STR((const char*)subAccount->contact_str),
@@ -483,6 +480,10 @@ int Registrar::SipSendNotify(msg_t *msg_sub, Subscription *subAccount)
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
 			SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
 			TAG_END());
+
+  if(!sep->GetMsgQueue().Push(msg_req))
+    msg_destroy(msg_req);
+
   return 1;
 }
 
@@ -513,10 +514,7 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
     sip_route = sip_route_reverse(GetHome(), sip_reg_out->sip_record_route);
 
   msg_t *msg_req = nta_msg_create(GetAgent(), 0);
-  nta_outgoing_mcreate(GetAgent(), NULL, NULL,
-			ruri,
-			msg_req,
-			NTATAG_STATELESS(1),
+  sip_add_tl(msg_req, sip_object(msg_req),
 			SIPTAG_FROM(sip_from),
 			SIPTAG_TO(sip_to),
 			//SIPTAG_CONTACT(sip_contact),
@@ -529,6 +527,10 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
 			SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
 			TAG_END());
+
+  if(!sep->GetMsgQueue().Push(msg_req))
+    msg_destroy(msg_req);
+
   return 1;
 }
 
@@ -563,17 +565,18 @@ int Registrar::SipSendPing(RegistrarAccount *regAccount)
   }
 
   msg_t *msg_req = nta_msg_create(GetAgent(), 0);
-  nta_outgoing_mcreate(GetAgent(), NULL, NULL,
-			ruri,
-			msg_req,
-			NTATAG_STATELESS(1),
+  sip_add_tl(msg_req, sip_object(msg_req),
 			SIPTAG_FROM(sip_from),
 			SIPTAG_TO(sip_to),
 			SIPTAG_ROUTE(sip_route),
  			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_CSEQ(sip_cseq),
 			SIPTAG_CALL_ID(sip_call_id),
-			TAG_END());
+                        TAG_END());
+
+  if(!sep->GetMsgQueue().Push(msg_req))
+    msg_destroy(msg_req);
+
   return 1;
 }
 

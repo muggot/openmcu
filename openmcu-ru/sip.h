@@ -394,6 +394,7 @@ class MCUSipEndPoint : public PThread
 
     int CreateIncomingConnection(const msg_t *msg);
     int SipReqReply(const msg_t *msg, msg_t *msg_reply, unsigned status, const char *status_phrase=NULL);
+    int SendMsg(msg_t *msg);
     int SendAckBye(const msg_t *msg);
     BOOL SipMakeCall(PString from, PString to, PString & callToken);
 
@@ -413,6 +414,9 @@ class MCUSipEndPoint : public PThread
 
     MCUQueue & GetQueue()
     { return sipQueue; }
+
+    MCUQueue & GetMsgQueue()
+    { return sipMsgQueue; }
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
@@ -458,7 +462,9 @@ class MCUSipEndPoint : public PThread
     void CreateBaseSipCaps();
 
     MCUQueue sipQueue;
+    MCUQueue sipMsgQueue;
     void ProcessSipQueue();
+    void QueueClear();
     void QueueInvite(const PString & data);
     void QueueFastUpdate(const PString & data);
     void QueueBye(const PString & data);
