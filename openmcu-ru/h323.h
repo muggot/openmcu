@@ -80,6 +80,7 @@ class MCUH323EndPoint : public H323EndPoint
     virtual H323Connection * CreateConnection(unsigned callReference,void * userData,H323Transport * transport,H323SignalPDU * setupPDU);
     virtual void TranslateTCPAddress(PIPSocket::Address &localAddr, const PIPSocket::Address &remoteAddr);
     H323Connection * FindConnectionWithoutLock(const PString & token) { return FindConnectionWithoutLocks(token); }
+    virtual void CleanUpConnections();
 
     BOOL behind_masq;
     PIPSocket::Address *masqAddressPtr;
@@ -229,10 +230,13 @@ class MCUH323Connection : public H323Connection
     ~MCUH323Connection();
 
     virtual ConferenceMember * GetConferenceMember()
-    {
-      PTRACE(5, "GetConferenceMember " << conferenceMember);
-      return conferenceMember;
-    }
+    { return conferenceMember; }
+
+    virtual Conference * GetConference()
+    { return conference; }
+
+    PMutex & GetMutex()
+    { return connMutex; }
 
      // leave conference and delete connection
     virtual void LeaveMCU();
@@ -312,15 +316,6 @@ class MCUH323Connection : public H323Connection
     unsigned videoMixerNumber;
 #endif
 
-    // Room the connection is joined to. It is NULL before the
-    //  welcome procedure ends, or after the member is disconnected
-    //  from the conference.
-    Conference * conference;
-
-    PMutex connMutex;
-
-    PMutex & GetMutex() { return connMutex; }
-
     // Valid states for the welcome procedure. Note that new states may
     //  be added because the procedure can be customized by subclassing.
     enum WelcomeStates {
@@ -371,7 +366,8 @@ class MCUH323Connection : public H323Connection
     virtual BOOL InitGrabber(PVideoInputDevice  * grabber, int frameWidth, int frameHeight, int frameRate);
 #endif
 
-//    PMutex connMutex;
+    PMutex connMutex;
+
     MCUH323EndPoint & ep;
 
     // Name of the room to join when the welcome procedure ends.
@@ -382,7 +378,7 @@ class MCUH323Connection : public H323Connection
     // Room the connection is joined to. It is NULL before the
     //  welcome procedure ends, or after the member is disconnected
     //  from the conference.
-//    Conference * conference;
+    Conference * conference;
 
     // Object used to treat the connection as a conference member.
     //  It is NULL before the connection is joined to the conference,

@@ -411,7 +411,8 @@ class MCUSipEndPoint : public PThread
     PSTUNClient * CreateStun(PString address);
     PSTUNClient * GetPreferedStun(PString address);
 
-    MCUQueue SipQueue;
+    MCUQueue & GetQueue()
+    { return sipQueue; }
 
     void Lock()      { mutex.Wait(); }
     void Unlock()    { mutex.Signal(); }
@@ -456,7 +457,12 @@ class MCUSipEndPoint : public PThread
 
     void CreateBaseSipCaps();
 
+    MCUQueue sipQueue;
     void ProcessSipQueue();
+    void QueueInvite(const PString & data);
+    void QueueFastUpdate(const PString & data);
+    void QueueBye(const PString & data);
+
     void ProcessProxyAccount();
 
     SipCapMapType BaseSipCaps;

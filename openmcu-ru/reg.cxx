@@ -86,7 +86,7 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
   {
     callToken = PGloballyUniqueID().AsString();
     PString *cmd = new PString("invite:"+room+","+address+","+callToken);
-    sep->SipQueue.Push(cmd);
+    sep->GetQueue().Push(cmd);
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
@@ -151,15 +151,9 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
 
   if(regAccount_out->account_type == ACCOUNT_TYPE_SIP)
   {
-    //PString callToken;
-    //if(sep->SipMakeCall(regConn->username_in, address, callToken))
-    //{
-    //  regConn->callToken_out = callToken;
-    //  return TRUE;
-    //}
     PString callToken = PGloballyUniqueID().AsString();
     PString *cmd = new PString("invite:"+regConn->username_in+","+address+","+callToken);
-    sep->SipQueue.Push(cmd);
+    sep->GetQueue().Push(cmd);
     regConn->callToken_out = callToken;
     return TRUE;
   }
@@ -719,83 +713,105 @@ void Registrar::QueueThread(PThread &, INT)
   queueTerminating = FALSE;
   while(!queueTerminating)
   {
-    PString *cmd = regQueue.Pop();
-    while(cmd != NULL)
+    for(;;)
     {
+      PString *cmd = regQueue.Pop();
+      if(cmd == NULL)
+        break;
       if(cmd->Left(7) == "invite:")
-      {
-        PString data = cmd->Right(cmd->GetLength()-7);
-        PString from = data.Tokenise(",")[0];
-        PString to = data.Tokenise(",")[1];
-        PString callToken = data.Tokenise(",")[2];
-        MCUURL url(to);
-        if(url.GetScheme() == "sip")
-        {
-          sep->SipMakeCall(from, to, callToken);
-        }
-        else if(url.GetScheme() == "h323")
-        {
-          H323Transport * transport = NULL;
-          if(ep->GetGatekeeper())
-          {
-            PString gk_host = ep->GetGatekeeperHostName();
-            if(url.GetHostName() == "" || gk_host == url.GetHostName())
-            {
-              to = url.GetUserName();
-              PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << to);
-            }
-            else
-            {
-              H323TransportAddress taddr(url.GetHostName()+":"+url.GetPort());
-              transport = taddr.CreateTransport(*ep);
-              transport->SetRemoteAddress(taddr);
-            }
-          }
-          void *userData = new PString(from);
-          ep->MakeCall(to, transport, callToken, userData);
-        }
-      }
+        QueueInvite(cmd->Right(cmd->GetLength()-7));
       else if(cmd->Left(12) == "established:")
-      {
-        PString callToken = cmd->Right(cmd->GetLength()-12);
-        RegistrarConnection *regConn = FindRegConnWithLock(callToken);
-        if(regConn)
-        {
-          if(regConn->state == CONN_MCU_WAIT)
-            regConn->state = CONN_MCU_ESTABLISHED;
-          if(regConn->state == CONN_WAIT && regConn->callToken_out == callToken)
-            regConn->state = CONN_ACCEPT_IN;
-          regConn->Unlock();
-        }
-      }
+        QueueEstablished(cmd->Right(cmd->GetLength()-12));
       else if(cmd->Left(8) == "cleared:")
-      {
-        PString callToken = cmd->Right(cmd->GetLength()-8);
-        RegistrarConnection *regConn = FindRegConnWithLock(callToken);
-        if(regConn)
-        {
-          if(regConn->state == CONN_MCU_WAIT || regConn->state == CONN_MCU_ESTABLISHED)
-            regConn->state = CONN_IDLE;
-          if(regConn->state == CONN_WAIT && regConn->callToken_out == callToken)
-            regConn->state = CONN_CANCEL_IN;
-          if(regConn->state == CONN_WAIT && regConn->callToken_in == callToken)
-            regConn->state = CONN_CANCEL_OUT;
-          if(regConn->state == CONN_ESTABLISHED && regConn->callToken_out == callToken)
-            regConn->state = CONN_LEAVE_IN;
-          if(regConn->state == CONN_ESTABLISHED && regConn->callToken_in == callToken)
-            regConn->state = CONN_LEAVE_OUT;
-          if(regConn->state == CONN_ACCEPT_IN && regConn->callToken_out == callToken)
-            regConn->state = CONN_LEAVE_IN;
-          if(regConn->state == CONN_ACCEPT_IN && regConn->callToken_in == callToken)
-            regConn->state = CONN_LEAVE_OUT;
-          regConn->Unlock();
-        }
-      }
+        QueueCleared(cmd->Right(cmd->GetLength()-8));
       delete cmd;
-      cmd = regQueue.Pop();
     }
     PThread::Sleep(100);
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::QueueInvite(const PString & data)
+{
+  PString from = data.Tokenise(",")[0];
+  PString to = data.Tokenise(",")[1];
+  PString callToken = data.Tokenise(",")[2];
+  MCUURL url(to);
+  if(url.GetScheme() == "sip")
+  {
+    sep->SipMakeCall(from, to, callToken);
+  }
+  else if(url.GetScheme() == "h323")
+  {
+    RegistrarConnection *regConn = FindRegConnWithLock(callToken);
+    if(regConn == NULL)
+      return;
+    H323Transport * transport = NULL;
+    if(ep->GetGatekeeper())
+    {
+      PString gk_host = ep->GetGatekeeperHostName();
+      if(url.GetHostName() == "" || gk_host == url.GetHostName())
+      {
+        to = url.GetUserName();
+        PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << to);
+      }
+      else
+      {
+        H323TransportAddress taddr(url.GetHostName()+":"+url.GetPort());
+        transport = taddr.CreateTransport(*ep);
+        transport->SetRemoteAddress(taddr);
+      }
+    }
+    PString newToken;
+    void *userData = new PString(from);
+    if(ep->MakeCall(to, transport, newToken, userData))
+    {
+      regConn->callToken_in = newToken;
+      regConn->callToken_out = newToken;
+    }
+    regConn->Unlock();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::QueueEstablished(const PString & data)
+{
+  PString callToken = data;
+  RegistrarConnection *regConn = FindRegConnWithLock(callToken);
+  if(regConn == NULL)
+    return;
+  if(regConn->state == CONN_MCU_WAIT)
+    regConn->state = CONN_MCU_ESTABLISHED;
+  if(regConn->state == CONN_WAIT && regConn->callToken_out == callToken)
+    regConn->state = CONN_ACCEPT_IN;
+  regConn->Unlock();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::QueueCleared(const PString & data)
+{
+  PString callToken = data;
+  RegistrarConnection *regConn = FindRegConnWithLock(callToken);
+  if(regConn == NULL)
+    return;
+  if(regConn->state == CONN_MCU_WAIT || regConn->state == CONN_MCU_ESTABLISHED)
+    regConn->state = CONN_IDLE;
+  if(regConn->state == CONN_WAIT && regConn->callToken_out == callToken)
+    regConn->state = CONN_CANCEL_IN;
+  if(regConn->state == CONN_WAIT && regConn->callToken_in == callToken)
+    regConn->state = CONN_CANCEL_OUT;
+  if(regConn->state == CONN_ESTABLISHED && regConn->callToken_out == callToken)
+    regConn->state = CONN_LEAVE_IN;
+  if(regConn->state == CONN_ESTABLISHED && regConn->callToken_in == callToken)
+    regConn->state = CONN_LEAVE_OUT;
+  if(regConn->state == CONN_ACCEPT_IN && regConn->callToken_out == callToken)
+    regConn->state = CONN_LEAVE_IN;
+  if(regConn->state == CONN_ACCEPT_IN && regConn->callToken_in == callToken)
+    regConn->state = CONN_LEAVE_OUT;
+  regConn->Unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

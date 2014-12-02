@@ -518,7 +518,7 @@ void MCUSipConnection::LeaveMCU()
 {
   PTRACE(1, trace_section << "LeaveMCU");
   PString *bye = new PString("bye:"+callToken);
-  sep->SipQueue.Push(bye);
+  sep->GetQueue().Push(bye);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -544,8 +544,10 @@ void MCUSipConnection::CleanUpOnCallEnd()
 
   connectionState = ShuttingDownConnection;
 
-  if(orq_invite) nta_outgoing_destroy(orq_invite);
+  PWaitAndSignal m(connMutex);
+
   if(leg) nta_leg_destroy(leg);
+  if(orq_invite) nta_outgoing_destroy(orq_invite);
   if(c_sip_msg) msg_destroy(c_sip_msg);
 
   StopTransmitChannels();
@@ -2156,7 +2158,7 @@ void MCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsi
     vfuSendTime = now;
 
     PString *cmd = new PString("fast_update:"+callToken);
-    sep->SipQueue.Push(cmd);
+    sep->GetQueue().Push(cmd);
   }
 }
 
@@ -2393,6 +2395,8 @@ int MCUSipConnection::ReqReply(const msg_t *msg, unsigned status, const char *st
 
 int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, const sip_t *sip)
 {
+  PWaitAndSignal m(connMutex);
+
   msg_t *msg = nta_incoming_getrequest(irq);
   int request = sip->sip_request->rq_method;
 
@@ -2443,6 +2447,8 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
 
 int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
 {
+  PWaitAndSignal m(connMutex);
+
   // note that the message is not copied
   msg_t *msg = nta_outgoing_getresponse(orq);
   // note that the request message is not copied
@@ -3463,39 +3469,52 @@ BOOL MCUSipEndPoint::GetLocalSipAddress(PString & local_addr, const PString & ru
 
 void MCUSipEndPoint::ProcessSipQueue()
 {
-  PString *cmd = SipQueue.Pop();
-  while(cmd != NULL)
+  for(;;)
   {
-    if(cmd->Left(4) == "bye:")
-    {
-      PString callToken = cmd->Right(cmd->GetLength()-4);
-      MCUSipConnection *sCon = FindConnectionWithLock(callToken);
-      if(sCon)
-      {
-        sCon->ProcessShutdown(MCUSipConnection::EndedByLocalUser);
-        sCon->Unlock();
-      }
-    }
+    PString *cmd = sipQueue.Pop();
+    if(cmd == NULL)
+      break;
     if(cmd->Left(7) == "invite:")
-    {
-      PString data = cmd->Right(cmd->GetLength()-7);
-      PString from = data.Tokenise(",")[0];
-      PString to = data.Tokenise(",")[1];
-      PString call_id = data.Tokenise(",")[2];
-      SipMakeCall(from, to, call_id);
-    }
-    if(cmd->Left(12) == "fast_update:")
-    {
-      PString callToken = cmd->Right(cmd->GetLength()-12);
-      MCUSipConnection *sCon = FindConnectionWithLock(callToken);
-      if(sCon)
-      {
-        sCon->SendVFU();
-        sCon->Unlock();
-      }
-    }
+      QueueInvite(cmd->Right(cmd->GetLength()-7));
+    else if(cmd->Left(12) == "fast_update:")
+      QueueFastUpdate(cmd->Right(cmd->GetLength()-12));
+    else if(cmd->Left(4) == "bye:")
+      QueueBye(cmd->Right(cmd->GetLength()-4));
     delete cmd;
-    cmd = SipQueue.Pop();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipEndPoint::QueueInvite(const PString & data)
+{
+  PString from = data.Tokenise(",")[0];
+  PString to = data.Tokenise(",")[1];
+  PString call_id = data.Tokenise(",")[2];
+  SipMakeCall(from, to, call_id);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipEndPoint::QueueFastUpdate(const PString & data)
+{
+  MCUSipConnection *sCon = FindConnectionWithLock(data);
+  if(sCon)
+  {
+    sCon->SendVFU();
+    sCon->Unlock();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipEndPoint::QueueBye(const PString & data)
+{
+  MCUSipConnection *sCon = FindConnectionWithLock(data);
+  if(sCon)
+  {
+    sCon->ProcessShutdown(MCUSipConnection::EndedByLocalUser);
+    sCon->Unlock();
   }
 }
 

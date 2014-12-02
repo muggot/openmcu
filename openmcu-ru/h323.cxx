@@ -2177,6 +2177,62 @@ void MCUH323EndPoint::OnConnectionCleared(H323Connection & connection, const PSt
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUH323EndPoint::CleanUpConnections()
+{
+  PTRACE(3, "MCUH323EndPoint\tCleaning up connections");
+
+  // Lock the connections database.
+  connectionsMutex.Wait();
+
+  // Continue cleaning up until no more connections to clean
+  while (connectionsToBeCleaned.GetSize() > 0) {
+    // Just get the first entry in the set of tokens to clean up.
+    PString token = connectionsToBeCleaned.GetKeyAt(0);
+    H323Connection & connection = connectionsActive[token];
+
+    // Unlock the structures here so does not block other uses of ClearCall()
+    // for the possibly long time it takes to CleanUpOnCallEnd().
+    connectionsMutex.Signal();
+
+    // Clean up the connection, waiting for all threads to terminate
+    connection.CleanUpOnCallEnd();
+    connection.OnCleared();
+
+    // Get the lock again as we remove the connection from our database
+    connectionsMutex.Wait();
+
+    // Remove the token from the set of connections to be cleaned up
+    connectionsToBeCleaned -= token;
+
+    // And remove the connection instance itself from the dictionary which will
+    // cause its destructor to be called.
+    MCUH323Connection * connectionToDelete = (MCUH323Connection *)connectionsActive.RemoveAt(token);
+
+    // Unlock the structures yet again to avoid possible race conditions when
+    // deleting the connection as well as the delte of a conncetion descendent
+    // is application writer dependent and may cause deadlocks or just consume
+    // lots of time.
+    connectionsMutex.Signal();
+
+    // connMutex
+    connectionToDelete->GetMutex().Wait();
+
+    // Finally we get to delete it!
+    delete connectionToDelete;
+
+    // Get the lock again as we continue around the loop
+    connectionsMutex.Wait();
+  }
+
+  // Finished with loop, unlock the connections database.
+  connectionsMutex.Signal();
+
+  // Signal thread that may be waiting on ClearAllCalls()
+  connectionsAreCleaned.Signal();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, ConferenceMember * _memberToIgnore)
   : PThread(10000, AutoDeleteThread), join(_join), memberToIgnore(_memberToIgnore)
 { 
