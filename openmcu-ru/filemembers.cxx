@@ -255,11 +255,11 @@ ConferenceCacheMember::~ConferenceCacheMember()
 
 void ConferenceCacheMember::Close()
 {
-  Conference *c = conference;
-  mutex.Wait();
+  PWaitAndSignal m(mutex);
+  if(conference == NULL)
+    return;
+  new MemberDeleteThread(conference, this);
   conference = NULL;
-  mutex.Signal();
-  new MemberDeleteThread(c, this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -268,11 +268,19 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
 {
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
+  // lock
+  mutex.Wait();
+  if(conference == NULL)
+  {
+    mutex.Signal();
+    Close();
+    return;
+  }
+
   H323Capability * cap = H323Capability::Create(format);
   if(!cap) return;
   OpalMediaFormat & wf = cap->GetWritableMediaFormat();
   wf = format;
-
   status = 1;
   MCUTRACE(1, "Cache\tStarting cache thread " << format);
   if(cap->GetMainType() == H323Capability::e_Audio)
@@ -294,13 +302,17 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
   if(codec->CheckCacheRTP())
   {
     PTRACE(3,"Cache\t" << format << " already exists, nothing to do, stopping thread");
-    if(conference!=NULL) conference->RemoveMember(this);
     delete(con); con=NULL;
     delete(codec); codec=NULL;
     delete(cap); cap=NULL;
+    mutex.Signal();
+    Close();
     return;
   }
   codec->NewCacheRTP();
+
+  // unlock
+  mutex.Signal();
 
   unsigned length = 0;
   RTP_DataFrame frame;
