@@ -788,7 +788,7 @@ int MCURtspConnection::OnRequestPlay(const msg_t *msg)
   ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
 
   conference = manager.MakeConferenceWithLock(requestedRoom);
-  conferenceMember = new ConferenceStreamMember(conference, GetCallToken(), "RTSP "+rtsp_path+" ("+ruri_str+")");
+  conferenceMember = new ConferenceStreamMember(conference, ep, GetCallToken(), "RTSP "+rtsp_path+" ("+ruri_str+")");
 
    // unlock conference
   conference->Unlock();

@@ -191,8 +191,8 @@ class ConferenceStreamMember : public ConferenceMember
   PCLASSINFO(ConferenceStreamMember, ConferenceMember);
 
   public:
-    ConferenceStreamMember(Conference *_conference, const PString & _callToken, const PString & _name)
-      : ConferenceMember(_conference, (void *)this)
+    ConferenceStreamMember(Conference *_conference, MCUH323EndPoint & ep, const PString & _callToken, const PString & _name)
+      : ConferenceMember(_conference, (void *)this), ep(ep)
     {
       conference = _conference;
       callToken = _callToken;
@@ -201,6 +201,16 @@ class ConferenceStreamMember : public ConferenceMember
     }
     ~ConferenceStreamMember()
     {
+    }
+
+    virtual void Close()
+    {
+      MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
+      if(conn != NULL)
+      {
+        conn->LeaveMCU();
+        conn->Unlock();
+      }
     }
 
     virtual ConferenceConnection * CreateConnection()
@@ -216,6 +226,7 @@ class ConferenceStreamMember : public ConferenceMember
     { return FALSE; }
 
   protected:
+    MCUH323EndPoint & ep;
 
 };
 

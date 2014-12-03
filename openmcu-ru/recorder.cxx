@@ -97,8 +97,12 @@ ConferenceRecorder::~ConferenceRecorder()
 
 void ConferenceRecorder::Close()
 {
+  PWaitAndSignal m(mutex);
+  if(conference == NULL)
+    return;
   Stop();
   new MemberDeleteThread(conference, this);
+  conference = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -208,6 +212,9 @@ void ConferenceRecorder::Stop()
 BOOL ConferenceRecorder::Start()
 {
   PWaitAndSignal m(mutex);
+
+  if(conference == NULL)
+    return FALSE;
 
   if(IsRunning() == TRUE)
     return TRUE;
