@@ -1177,7 +1177,7 @@ ConferenceAudioConnection * Conference::AddAudioConnection(ConferenceMember * me
   if(member->GetType() & MEMBER_TYPE_GSYSTEM)
     return NULL;
   ConferenceAudioConnection * conn = new ConferenceAudioConnection(member->GetID(), sampleRate, channels);
-  audioConnectionList.Append((long)member->GetID(), conn);
+  audioConnectionList.Insert((long)member->GetID(), conn);
   return conn;
 }
 
@@ -1186,8 +1186,8 @@ ConferenceAudioConnection * Conference::AddAudioConnection(ConferenceMember * me
 void Conference::RemoveAudioConnection(ConferenceMember * member)
 {
   ConferenceAudioConnection * conn = (ConferenceAudioConnection *)audioConnectionList((long)member->GetID());
-  audioConnectionList.Remove((long)member->GetID());
-  PThread::Sleep(10);
+  audioConnectionList.Release((long)member->GetID());
+  audioConnectionList.Erase((long)member->GetID());
   delete conn;
 }
 
@@ -1198,8 +1198,13 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, int a
   for(int i = 0; i < audioConnectionList.GetSize(); ++i)
   {
     ConferenceAudioConnection * conn = (ConferenceAudioConnection *)audioConnectionList[i];
-    if(conn == NULL || conn->GetID() == member->GetID())
+    if(conn == NULL)
       continue;
+    if(conn->GetID() == member->GetID())
+    {
+      audioConnectionList.Release((long)conn->GetID());
+      continue;
+    }
     BOOL skip = moderated&&muteUnvisible;
     if(skip)
     {
@@ -1221,6 +1226,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, int a
       conn->ReadAudio(member, (BYTE *)buffer, amount, sampleRate, channels);
       member->ReadAudioOutputGain(buffer, amount);
     }
+    audioConnectionList.Release((long)conn->GetID());
   }
 }
 
@@ -1231,12 +1237,15 @@ void Conference::WriteMemberAudio(ConferenceMember * member, const void * buffer
   ConferenceAudioConnection * conn = (ConferenceAudioConnection *)audioConnectionList((long)member->GetID());
   if(conn && (conn->GetSampleRate() != sampleRate || conn->GetChannels() != channels))
   {
-    RemoveAudioConnection(member);
+    audioConnectionList.Release((long)member->GetID());
+    audioConnectionList.Erase((long)member->GetID());
+    delete conn;
     conn = NULL;
   }
   if(conn == NULL)
     conn = AddAudioConnection(member, sampleRate, channels);
   conn->WriteAudio((const BYTE *)buffer, amount);
+  audioConnectionList.Release((long)member->GetID());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -116,82 +116,63 @@ class MCUWriteWaitAndSignal
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#ifdef _WIN32
+#define sync_val_compare_and_swap(ptr, oldval, newval) InterlockedCompareExchange(ptr, newval, oldval)
+#define sync_bool_compare_and_swap(ptr, oldval, newval) \
+  if(InterlockedCompareExchange(ptr, newval, oldval) == oldval) \
+    return true; \
+  else \
+    return false;
+#define sync_fetch_and_add(value, addvalue) InterlockedExchangeAdd(value, addvalue)
+#define sync_fetch_and_sub(value, subvalue) InterlockedExchangeAdd(value, subvalue*(-1))
+#define sync_increment(value) InterlockedIncrement(value)
+#define sync_decrement(value) InterlockedDecrement(value)
+#else
+// returns the contents of *ptr before the operation
+#define sync_val_compare_and_swap(ptr, oldval, newval) __sync_val_compare_and_swap(ptr, oldval, newval)
+// returns true if the comparison is successful and newval was written
+#define sync_bool_compare_and_swap(ptr, oldval, newval) __sync_bool_compare_and_swap(ptr, oldval, newval)
+#define sync_fetch_and_add(value, addvalue) __sync_fetch_and_add(value, addvalue);
+#define sync_fetch_and_sub(value, subvalue) __sync_fetch_and_sub(value, subvalue)
+#define sync_increment(value) __sync_fetch_and_add(value, 1)
+#define sync_decrement(value) __sync_fetch_and_sub(value, 1)
+#endif
+
+
 class MCUStaticList
 {
   public:
-    MCUStaticList(int _size = 128)
-    {
-      size = _size;
-      states = new bool[size];
-      ids = new long[size];
-      objs = new void*[size];
-      for(int i = 0; i < size; ++i)
-        states[i] = false;
-    }
-    ~MCUStaticList()
-    {
-      delete states;
-      delete ids;
-      delete objs;
-    }
+    MCUStaticList(int _size = 128);
+    ~MCUStaticList();
 
-    int GetSize() const
+    int GetSize()
     { return size; }
 
-    virtual bool Append(long id, void * obj)
-    {
-      PWaitAndSignal m(mutex);
-      for(int i = 0; i < size; ++i)
-      {
-        if(states[i] == false)
-        {
-          ids[i] = id;
-          objs[i] = obj;
-          states[i] = true;
-          return true;
-        }
-      }
-      return false;
-    }
-    virtual bool Remove(long id)
-    {
-      PWaitAndSignal m(mutex);
-      for(int i = 0; i < size; ++i)
-      {
-        if(states[i] == true && ids[i] == id)
-        {
-          states[i] = false;
-          return true;
-        }
-      }
-      return false;
-    }
+    long GetNextID()
+    { return sync_increment(&idcounter); }
 
-    void * operator[] (int index) const
-    {
-      if(index < 0 || index >= size)
-        return NULL;
-      if(states[index] == false)
-        return NULL;
-      return objs[index];
-    }
+    bool Insert(long id, void * obj);
+    bool Erase(long id);
+    void Release(long id);
 
-    void * operator() (long id) const
-    {
-      for(int i = 0; i < size; ++i)
-      {
-        if(states[i] == true && ids[i] == id)
-          return objs[i];
-      }
-      return NULL;
-    }
+    void * operator[] (int index);
+    void * operator() (long id);
+
+  protected:
+    void CaptureInternal(int index);
+    void ReleaseInternal(int index);
 
     int size;
-    bool *states;
-    long *ids;
-    void **objs;
-    PMutex mutex;
+    long idcounter;
+    bool * volatile states;
+    bool * states_end;
+    long * volatile ids;
+    long * ids_end;
+    void ** volatile objs;
+    long * volatile captures;
+    bool * volatile locks;
 };
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -205,7 +186,10 @@ class MCUQueue
     {
       if(stopped)
         return false;
-      return queue.Append((long)obj, obj);
+      while(!queue.Insert((long)obj, obj))
+        PThread::Sleep(10);
+      queue.Release((long)obj);
+      return true;
     }
     virtual void * Pop()
     {
@@ -214,7 +198,8 @@ class MCUQueue
         void *obj = queue[i];
         if(obj == NULL)
           continue;
-        queue.Remove((long)obj);
+        queue.Release((long)obj);
+        queue.Erase((long)obj);
         return obj;
       }
       return NULL;
