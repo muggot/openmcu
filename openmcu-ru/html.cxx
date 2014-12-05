@@ -2528,7 +2528,8 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PString room = data("room");
     if(action == "create")
     {
-      cm.MakeConferenceWithoutLock(room);
+      Conference * conference = cm.MakeConferenceWithLock(room);
+      conference->Unlock();
     }
     else if(action == "delete")
     {

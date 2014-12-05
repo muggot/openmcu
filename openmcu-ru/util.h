@@ -118,11 +118,13 @@ class MCUWriteWaitAndSignal
 
 #ifdef _WIN32
 #define sync_val_compare_and_swap(ptr, oldval, newval) InterlockedCompareExchange(ptr, newval, oldval)
-#define sync_bool_compare_and_swap(ptr, oldval, newval) \
-  if(InterlockedCompareExchange(ptr, newval, oldval) == oldval) \
-    return true; \
-  else \
-    return false;
+//inline bool sync_bool_compare_and_swap(bool *ptr, bool oldval, bool newval)
+//{
+//  if(InterlockedCompareExchange(ptr, newval, oldval) == oldval)
+//    return true;
+//  else
+//    return false;
+//}
 #define sync_fetch_and_add(value, addvalue) InterlockedExchangeAdd(value, addvalue)
 #define sync_fetch_and_sub(value, subvalue) InterlockedExchangeAdd(value, subvalue*(-1))
 #define sync_increment(value) InterlockedIncrement(value)

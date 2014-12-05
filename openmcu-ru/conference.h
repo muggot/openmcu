@@ -1291,6 +1291,12 @@ class Conference : public PObject
     OpalGloballyUniqueID GetID() const
     { return guid; }
 
+    long GetID2() const
+    { return id; }
+
+    void SetID2(long _id)
+    { id = _id; }
+
     virtual BOOL IsVisible() const
     { return TRUE; }
 
@@ -1504,6 +1510,8 @@ class Conference : public PObject
     PINDEX maxMemberCount;
 
     OpalGloballyUniqueID guid;
+    long id;
+
     PString number;
     PString name;
     int mcuNumber;
@@ -1644,14 +1652,13 @@ class ConferenceManager : public PObject
     ConferenceManager();
     ~ConferenceManager();
 
-    Conference * FindConferenceWithLock(const PString & room);
-    Conference * FindConferenceWithoutLock(const PString & room);
-    Conference * FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID);
-    Conference * FindConferenceWithoutLock(const OpalGloballyUniqueID & conferenceID);
     Conference * FindConferenceWithLock(Conference * c);
+    Conference * FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID);
+    Conference * FindConferenceWithLock(long id);
+    Conference * FindConferenceWithLock(const PString & room);
+    Conference * FindConferenceWithLock(Conference * c, const OpalGloballyUniqueID * conferenceID, long id, const PString & room);
 
     Conference * MakeConferenceWithLock(const PString & number, PString name = "");
-    Conference * MakeConferenceWithoutLock(const PString & number, PString name = "");
 
     ConferenceProfile * FindProfileWithLock(const PString & roomName, const PString & memberName);
     ConferenceProfile * FindProfileWithLock(Conference * conference, const PString & memberName);
@@ -1699,6 +1706,9 @@ class ConferenceManager : public PObject
     ConferenceListType & GetConferenceList()
     { return conferenceList; }
 
+    MCUStaticList & GetConferenceList2()
+    { return conferenceList2; }
+
     virtual void OnCreateConference(Conference *);
 
     virtual void OnDestroyConference(Conference *);
@@ -1727,6 +1737,8 @@ class ConferenceManager : public PObject
 
     PMutex conferenceListMutex;
     ConferenceListType conferenceList;
+    MCUStaticList conferenceList2;
+
     PINDEX maxConferenceCount;
     MCUNumberMapType<OpalGloballyUniqueID> mcuNumberMap;
     ConferenceMonitor * monitor;

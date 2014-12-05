@@ -918,21 +918,21 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
     << "," << c.VAlevel << "," << c.VAdelay << "," << c.VAtimeout       // [0][6-8]= vad
 
     << ",["; // l3 open
-    // 13.11.2014 Xak
-    // без проверки Wait() зависнет на вызове из Conference::MemberRemove при завершении работы
-    // возможно исправит недоступную страницу управления - http://openmcu.ru/forum/index.php/topic,453.msg12391.html#msg12391
-    if(conferenceManager.GetConferenceListMutex().Wait(500))
+
+    MCUStaticList & conferenceList = conferenceManager.GetConferenceList2();
+    for(int i = 0; i < conferenceList.GetSize(); ++i)
     {
-      ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-      ConferenceListType::iterator l;
-      for (l = conferenceList.begin(); l != conferenceList.end(); ++l) {
-        jsRoom=(*(l->second)).GetNumber();
-        jsRoom.Replace("&","&amp;",TRUE,0); jsRoom.Replace("\"","&quot;",TRUE,0);
-        if(l!=conferenceList.begin()) r << ",";                         // [0][9][ci][0-2] roomName & memberCount & isModerated
-        r << "[\"" << jsRoom << "\"," << (*(l->second)).GetVisibleMemberCount() << ",\"" << (*(l->second)).IsModerated() << "\"]";
-      }
-      conferenceManager.GetConferenceListMutex().Signal();
+      Conference *conference = (Conference *)conferenceList[i];
+      if(conference == NULL)
+        continue;
+      jsRoom = conference->GetNumber();
+      jsRoom.Replace("&","&amp;",TRUE,0);
+      jsRoom.Replace("\"","&quot;",TRUE,0);
+      if(i != 0) r << ",";                                                // [0][9][ci][0-2] roomName & memberCount & isModerated
+      r << "[\"" << jsRoom << "\"," << conference->GetVisibleMemberCount() << ",\"" << conference->IsModerated() << "\"]";
+      conferenceList.Release(conference->GetID2());
     }
+
     r << "]"; // l3 close
 
 #if USE_LIBYUV
@@ -1868,9 +1868,10 @@ PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
   OpenMCU::Current().HttpWriteEventRoom("MCU Operator connected",room);
   PTRACE(6,"WebCtrl\tOperator connected");
 
-  Conference *conference = conferenceManager.FindConferenceWithoutLock(room);
+  Conference *conference = conferenceManager.FindConferenceWithLock(room);
   if(conference == NULL)
     return "OpenMCU-ru: Bad room";
+  conference->Unlock();
 
   return RoomCtrlPage(room);
 }
@@ -2420,21 +2421,10 @@ void MCUH323Connection::CleanUpOnCallEnd()
 {
   PTRACE(2, "MCUH323Connection\tCleanUpOnCallEnd" << callToken);
 
-  Conference *c = conference;
-  if(c==NULL)
+  if(conference && !conference->stopping)
   {
-    PTRACE(3,"MCUH323Connection\tNULL Pointer, finding " << requestedRoom);
-    c = ep.GetConferenceManager().FindConferenceWithoutLock(requestedRoom);
-    PTRACE(4,"MCUH323Connection\tNew pointer: " << c);
-  }
-
-  if(c!=NULL)
-  {
-    if(!c->stopping)
-    {
-      PTRACE(4,"MCUH323Connection\tStarting new thread which will check the connection later in template.cxx");
-      new TplCleanCheckThread(c, remotePartyName, remotePartyAddress);
-    }
+    PTRACE(4,"MCUH323Connection\tStarting new thread which will check the connection later in template.cxx");
+    new TplCleanCheckThread(conference, remotePartyName, remotePartyAddress);
   }
 
   videoReceiveCodecName = videoTransmitCodecName = "none";

@@ -40,99 +40,82 @@ ConferenceManager::~ConferenceManager()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Conference * ConferenceManager::FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID)
+Conference * ConferenceManager::FindConferenceWithLock(Conference * _conference)
 {
-  PWaitAndSignal m(conferenceListMutex);
-  Conference *conference = FindConferenceWithoutLock(conferenceID);
-  if(conference)
-    conference->Lock();
-  return conference;
+  return FindConferenceWithLock(_conference, NULL, 0, "");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Conference * ConferenceManager::FindConferenceWithoutLock(const OpalGloballyUniqueID & conferenceID)
+Conference * ConferenceManager::FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID)
 {
-  PWaitAndSignal m(conferenceListMutex);
-  ConferenceListType::const_iterator r = conferenceList.find(conferenceID);
-  if(r != conferenceList.end())
-    return r->second;
-  return NULL;
+  return FindConferenceWithLock(NULL, &conferenceID, 0, "");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::FindConferenceWithLock(const PString & room)
 {
-  if(room.IsEmpty())
-    return NULL;
-  PWaitAndSignal m(conferenceListMutex);
-  Conference *conference = FindConferenceWithoutLock(room);
-  if(conference)
-    conference->Lock();
-  return conference;
+  return FindConferenceWithLock(NULL, NULL, 0, room);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Conference * ConferenceManager::FindConferenceWithoutLock(const PString & room)
+Conference * ConferenceManager::FindConferenceWithLock(long id)
 {
-  if(room.IsEmpty())
-    return NULL;
-  PWaitAndSignal m(conferenceListMutex);
-  for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
-  {
-    if(r->second->GetNumber() == room)
-      return r->second;
-  }
-  return NULL;
+  return FindConferenceWithLock(NULL, NULL, id, "");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Conference * ConferenceManager::FindConferenceWithLock(Conference * conference)
+Conference * ConferenceManager::FindConferenceWithLock(Conference * _conference, const OpalGloballyUniqueID * conferenceID, long id, const PString & room)
 {
-  if(conference == NULL)
-    return FALSE;
-  PWaitAndSignal m(conferenceListMutex);
-  for(ConferenceListType::const_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  Conference *conference = NULL;
+  for(int i = 0; i < conferenceList2.GetSize(); ++i)
   {
-    if(r->second == conference)
+    Conference *c = (Conference *)conferenceList2[i];
+    if(c)
     {
-      conference->Lock();
-      return conference;
+      if(_conference && c == _conference)
+        conference = c;
+      else if(conferenceID && c->GetID() == *conferenceID)
+        conference = c;
+      else if(id != 0 && c->GetID2() == id)
+        conference = c;
+      else if(room != "" && c->GetNumber() == room)
+        conference = c;
+
+      if(conference)
+        conference->Lock();
+      conferenceList2.Release(c->GetID2());
+      if(conference)
+        break;
     }
   }
-  return NULL;
+  return conference;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PString name)
 {
-  PWaitAndSignal m(conferenceListMutex);
-  Conference * conference = MakeConferenceWithoutLock(room, name);
-  if(conference)
-    conference->Lock();
-  return conference;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Conference * ConferenceManager::MakeConferenceWithoutLock(const PString & room, PString name)
-{
-  PWaitAndSignal m(conferenceListMutex);
-  Conference * conference = FindConferenceWithoutLock(room);
+  Conference * conference = FindConferenceWithLock(room);
   if(conference == NULL)
   {
     // create the conference
     OpalGloballyUniqueID conferenceID;
     conference = CreateConference(conferenceID, room, name, mcuNumberMap.GetNumber(conferenceID));
+    conference->Lock();
     // insert conference into the map
+    PWaitAndSignal m(conferenceListMutex);
     conferenceList.insert(ConferenceListType::value_type(conferenceID, conference));
     // set the conference count
     maxConferenceCount = PMAX(maxConferenceCount, (PINDEX)conferenceList.size());
     OnCreateConference(conference);
+    //
+    conference->SetID2(conferenceList2.GetNextID());
+    conferenceList2.Insert(conference->GetID2(), conference);
+    conferenceList2.Release(conference->GetID2());
   }
   return conference;
 }
@@ -502,6 +485,9 @@ void ConferenceManager::RemoveConference(const OpalGloballyUniqueID & confId)
   if(r != conferenceList.end())
   {
     Conference * conf = r->second;
+    // before lock
+    conferenceList2.Erase(conf->GetID2());
+    //
     conf->Lock();
     conferenceList.erase(r);
     mcuNumberMap.RemoveNumber(conf->GetMCUNumber());
