@@ -373,7 +373,7 @@ class MCUSipEndPoint : public PThread
 {
   public:
     MCUSipEndPoint(MCUH323EndPoint *_ep)
-      :PThread(10000,NoAutoDeleteThread,NormalPriority,"SIP Listener:%0x"), ep(_ep)
+      : PThread(10000,NoAutoDeleteThread,NormalPriority,"SIP Listener:%0x"), ep(_ep), sipQueue(1000), sipMsgQueue(1000)
     {
       restart = 1;
       terminating = 0;
@@ -412,10 +412,10 @@ class MCUSipEndPoint : public PThread
     PSTUNClient * CreateStun(PString address);
     PSTUNClient * GetPreferedStun(PString address);
 
-    MCUQueue & GetQueue()
+    MCUQueuePString & GetQueue()
     { return sipQueue; }
 
-    MCUQueue & GetMsgQueue()
+    MCUQueueMsg & GetMsgQueue()
     { return sipMsgQueue; }
 
     void Lock()      { mutex.Wait(); }
@@ -461,8 +461,8 @@ class MCUSipEndPoint : public PThread
 
     void CreateBaseSipCaps();
 
-    MCUQueue sipQueue;
-    MCUQueue sipMsgQueue;
+    MCUQueuePString sipQueue;
+    MCUQueueMsg sipMsgQueue;
     void ProcessSipQueue();
     void QueueClear();
     void QueueInvite(const PString & data);

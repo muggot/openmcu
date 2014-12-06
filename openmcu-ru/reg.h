@@ -324,7 +324,7 @@ class Registrar : public PThread
   public:
     Registrar(MCUH323EndPoint *_ep, MCUSipEndPoint *_sep):
       PThread(10000,NoAutoDeleteThread,NormalPriority,"Registrar:%0x"),
-      ep(_ep), sep(_sep)
+      ep(_ep), sep(_sep), regQueue(1000)
     {
       restart = 1;
       terminating = 0;
@@ -367,7 +367,7 @@ class Registrar : public PThread
     RegistrarAccount * FindAccount(RegAccountTypes account_type, PString username);
     PString FindAccountNameByH323Id(const PString & id);
 
-    MCUQueue & GetQueue()
+    MCUQueuePString & GetQueue()
     { return regQueue; }
 
     void Lock()      { mutex.Wait(); }
@@ -447,7 +447,7 @@ class Registrar : public PThread
     PDECLARE_NOTIFIER(PThread, Registrar, QueueThread);
     PThread *queueThread;
     BOOL queueTerminating;
-    MCUQueue regQueue;
+    MCUQueuePString regQueue;
 
     void QueueClear();
     void QueueInvite(const PString & data);

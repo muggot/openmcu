@@ -522,23 +522,26 @@ PString MCUH323EndPoint::GetRoomStatusJS()
   PString str = "Array(";
   PTime now;
 
-  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
-  ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
   BOOL firstConference = TRUE;
-  for (ConferenceListType::iterator r=conferenceList.begin(), re=conferenceList.end(); r!=re; ++r)
+  MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
+  for(int i = 0; i < conferenceList.GetSize(); ++i)
   {
-    Conference *conference = r->second;
+    Conference *conference = conferenceList[i];
+    if(conference == NULL)
+      continue;
+
     PStringStream c;
-    {
-      PWaitAndSignal m(conference->GetProfileListMutex());
-      Conference::ProfileList & profileList = conference->GetProfileList();
-      c << "Array("
+    PWaitAndSignal m(conference->GetProfileListMutex());
+    Conference::ProfileList & profileList = conference->GetProfileList();
+    c << "Array("
         << JsQuoteScreen(conference->GetNumber())                              // c[r][0]: room name
         << "," << conference->GetMemberList().size()                           // c[r][1]: memberList size
         << "," << profileList.size()                                           // c[r][2]: profileList size
         << "," << PString((now - conference->GetStartTime()).GetMilliSeconds())// c[r][3]: duration
         << ",Array("                                                           // c[r][4]: member descriptors
-      ;
+    ;
+
+    {
       BOOL firstMember = TRUE;
       for(Conference::ProfileList::const_iterator t = profileList.begin(), te = profileList.end(); t != te; ++t)
       {
@@ -669,6 +672,8 @@ PString MCUH323EndPoint::GetRoomStatusJS()
     if(!firstConference) str += ",";
     firstConference = FALSE;
     str += c;
+
+    conferenceList.Release(conference->GetID());
   }
 
   str += ")";
@@ -692,9 +697,12 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
 {
   PString substitution;
 
-  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
-  ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-  for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r) {
+  MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
+  for(int i = 0; i < conferenceList.GetSize(); ++i)
+  {
+    Conference *conference = conferenceList[i];
+    if(conference == NULL)
+      continue;
 
     // make a copy of the repeating html chunk
     PString insert = block;
@@ -722,7 +730,6 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
 #endif
                  "</tr>";
 
-    Conference *conference = r->second;
     size_t profileListSize = 0;
     PStringArray targets, subses, errors;
     {
@@ -897,6 +904,8 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
     SpliceMacro(insert, "RoomMemberCount", PString(PString::Unsigned, profileListSize));
     SpliceMacro(insert, "RoomMembers",     members);
     substitution += insert;
+
+    conferenceList.Release(conference->GetID());
   }
 
   return substitution;
@@ -919,10 +928,10 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 
     << ",["; // l3 open
 
-    MCUStaticList & conferenceList = conferenceManager.GetConferenceList2();
+    MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
     for(int i = 0; i < conferenceList.GetSize(); ++i)
     {
-      Conference *conference = (Conference *)conferenceList[i];
+      Conference *conference = conferenceList[i];
       if(conference == NULL)
         continue;
       jsRoom = conference->GetNumber();
@@ -930,7 +939,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
       jsRoom.Replace("\"","&quot;",TRUE,0);
       if(i != 0) r << ",";                                                // [0][9][ci][0-2] roomName & memberCount & isModerated
       r << "[\"" << jsRoom << "\"," << conference->GetVisibleMemberCount() << ",\"" << conference->IsModerated() << "\"]";
-      conferenceList.Release(conference->GetID2());
+      conferenceList.Release(conference->GetID());
     }
 
     r << "]"; // l3 close
@@ -1756,11 +1765,13 @@ PString MCUH323EndPoint::GetRoomList(const PString & block)
   PStringStream members;
   members << "<input name='room' id='room' type=hidden>";
 
-  conferenceManager.GetConferenceListMutex().Wait();
-  ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
-  for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+  MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
+  for(int i = 0; i < conferenceList.GetSize(); ++i)
   {
-    Conference *conference = r->second;
+    Conference *conference = conferenceList[i];
+    if(conference == NULL)
+      continue;
+
     PString roomNumber = conference->GetNumber();
     // make a copy of the repeating html chunk
     members << "<span class=\"btn btn-large";
@@ -1769,8 +1780,9 @@ PString MCUH323EndPoint::GetRoomList(const PString & block)
     members << "\" onclick='document.getElementById(\"room\").value=\"" << roomNumber << "\";document.forms[0].submit();'>"
             << roomNumber << " " << conference->IsModerated() << " " << conference->GetVisibleMemberCount()
 	    << "</span>";
+
+    conferenceList.Release(conference->GetID());
   }
-  conferenceManager.GetConferenceListMutex().Signal();
 
   members << "";
   SpliceMacro(insert, "List", members);
@@ -1882,28 +1894,29 @@ PString MCUH323EndPoint::GetMonitorText()
 {
   PStringStream output;
 
-  // lock conferenceList
-  PWaitAndSignal m(conferenceManager.GetConferenceListMutex());
-  ConferenceListType & conferenceList = conferenceManager.GetConferenceList();
+  MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
 
-  output << "Room Count: " << (int)conferenceList.size() << "\n"
+  output << "Room Count: " << conferenceList.GetCurrentSize() << "\n"
          << "Max Room Count: " << conferenceManager.GetMaxConferenceCount() << "\n";
 
   PINDEX confNum = 0;
-  for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+
+  for(int i = 0; i < conferenceList.GetSize(); ++i)
   {
-    Conference & conference = *(r->second);
+    Conference *conference = conferenceList[i];
+    if(conference == NULL)
+      continue;
 
     // lock profileList
-    PWaitAndSignal m2(conference.GetProfileListMutex());
-    Conference::ProfileList & profileList = conference.GetProfileList();
+    PWaitAndSignal m2(conference->GetProfileListMutex());
+    Conference::ProfileList & profileList = conference->GetProfileList();
 
     output << "\n[Conference "     << ++confNum << "]\n"
-           << "Title: "            << conference.GetNumber() << "\n"
-           << "ID: "               << conference.GetID() << "\n"
-           << "Duration: "         << (PTime() - conference.GetStartTime()) << "\n"
-           << "Member Count: "     << (int)conference.GetMemberList().size() << "\n"
-           << "Max Member Count: " << conference.GetMaxMemberCount() << "\n";
+           << "Title: "            << conference->GetNumber() << "\n"
+           << "ID: "               << conference->GetID() << "\n"
+           << "Duration: "         << (PTime() - conference->GetStartTime()) << "\n"
+           << "Member Count: "     << (int)conference->GetMemberList().size() << "\n"
+           << "Max Member Count: " << conference->GetMaxMemberCount() << "\n";
 
     PINDEX num = 0;
     for(Conference::ProfileList::const_iterator s = profileList.begin(); s != profileList.end(); ++s)
@@ -1973,8 +1986,8 @@ PString MCUH323EndPoint::GetMonitorText()
       }
     }
 
-    PWaitAndSignal m3(conference.videoMixerListMutex);
-    Conference::VideoMixerRecord * vmr = conference.videoMixerList;
+    PWaitAndSignal m3(conference->videoMixerListMutex);
+    Conference::VideoMixerRecord * vmr = conference->videoMixerList;
     while (vmr!=NULL)
     {
       output << "[Mixer " << vmr->id << "]\n";
@@ -1996,6 +2009,7 @@ PString MCUH323EndPoint::GetMonitorText()
       vmr=vmr->next;
     }
 
+    conferenceList.Release(conference->GetID());
   }
 
   return output;
@@ -2499,7 +2513,7 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
   if(!conference)
     return;
 
-  conferenceIdentifier = conference->GetID();
+  conferenceIdentifier = conference->GetGUID();
 
   if(videoTransmitCodec!=NULL)
 //   videoTransmitCodec->encoderCacheKey = ((long)conference&0xFFFFFF00)|(videoTransmitCodec->encoderCacheKey&0x000000FF);
@@ -2581,7 +2595,7 @@ void MCUH323Connection::SetupCacheConnection(PString & format, Conference * conf
  remoteName = format;
  remotePartyName = format;
  conference = conf;
- conferenceIdentifier = conference->GetID();
+ conferenceIdentifier = conference->GetGUID();
  conferenceMember = memb;
  requestedRoom = conference->GetNumber();
 }
@@ -3321,34 +3335,37 @@ void MCUH323Connection::OnUserInputString(const PString & str)
 
     if(codeRoomName != "" && codePos != "")
     {
+      MCUConferenceList & conferenceList = ep.GetConferenceManager().GetConferenceList();
+      for(int i = 0; i < conferenceList.GetSize(); ++i)
       {
-        ep.GetConferenceManager().GetConferenceListMutex().Wait();
-        ConferenceListType & conferenceList = ep.GetConferenceManager().GetConferenceList();
-        for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+        Conference *conference = conferenceList[i];
+        if(conference == NULL)
+          continue;
+
+        if(conference->GetNumber() != codeRoomName)
         {
-          Conference *conference = r->second;
-          if(conference->GetNumber() == codeRoomName)
+          conferenceList.Release(conference->GetID());
+          continue;
+        }
+
+        Conference::MemberList & memberList = conference->GetMemberList();
+        for(Conference::MemberList::const_iterator t = memberList.begin(); t != memberList.end(); ++t)
+        {
+          ConferenceMember *member = t->second;
+          if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
+          MCUVideoMixer *mixer = conference->VMLFind(member->GetVideoMixerNumber());
+          if(mixer == NULL) continue;
+          int pos = mixer->GetPositionNum(member->GetID());
+          if(pos < 0) continue;
+          if(pos == atoi(codePos))
           {
-            Conference::MemberList & memberList = conference->GetMemberList();
-            for(Conference::MemberList::const_iterator t = memberList.begin(); t != memberList.end(); ++t)
-            {
-              ConferenceMember *member = t->second;
-              if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
-              MCUVideoMixer *mixer = conference->VMLFind(member->GetVideoMixerNumber());
-              if(mixer == NULL) continue;
-              int pos = mixer->GetPositionNum(member->GetID());
-              if(pos < 0) continue;
-              if(pos == atoi(codePos))
-              {
-                codeConferenceMember = member;
-                codeMsg << "<br>-> action:"+codeAction+" room:"+codeRoomName+" pos:"+codePos+" found:" << member->GetName();
-                break;
-              }
-            }
+            codeConferenceMember = member;
+            codeMsg << "<br>-> action:"+codeAction+" room:"+codeRoomName+" pos:"+codePos+" found:" << member->GetName();
             break;
           }
         }
-        ep.GetConferenceManager().GetConferenceListMutex().Signal();
+        conferenceList.Release(conference->GetID());
+        break;
       }
     }
 

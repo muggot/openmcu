@@ -56,14 +56,26 @@ Conference * ConferenceManager::FindConferenceWithLock(const OpalGloballyUniqueI
 
 Conference * ConferenceManager::FindConferenceWithLock(const PString & room)
 {
-  return FindConferenceWithLock(NULL, NULL, 0, room);
+  Conference *conference = conferenceList(room);
+  if(conference)
+  {
+    conference->Lock();
+    conferenceList.Release(conference->GetID());
+  }
+  return conference;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::FindConferenceWithLock(long id)
 {
-  return FindConferenceWithLock(NULL, NULL, id, "");
+  Conference *conference = conferenceList(id);
+  if(conference)
+  {
+    conference->Lock();
+    conferenceList.Release(conference->GetID());
+  }
+  return conference;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -71,23 +83,23 @@ Conference * ConferenceManager::FindConferenceWithLock(long id)
 Conference * ConferenceManager::FindConferenceWithLock(Conference * _conference, const OpalGloballyUniqueID * conferenceID, long id, const PString & room)
 {
   Conference *conference = NULL;
-  for(int i = 0; i < conferenceList2.GetSize(); ++i)
+  for(int i = 0; i < conferenceList.GetSize(); ++i)
   {
-    Conference *c = (Conference *)conferenceList2[i];
+    Conference *c = conferenceList[i];
     if(c)
     {
       if(_conference && c == _conference)
         conference = c;
-      else if(conferenceID && c->GetID() == *conferenceID)
+      else if(conferenceID && c->GetGUID() == *conferenceID)
         conference = c;
-      else if(id != 0 && c->GetID2() == id)
+      else if(id != 0 && c->GetID() == id)
         conference = c;
       else if(room != "" && c->GetNumber() == room)
         conference = c;
 
       if(conference)
         conference->Lock();
-      conferenceList2.Release(c->GetID2());
+      conferenceList.Release(c->GetID());
       if(conference)
         break;
     }
@@ -103,19 +115,17 @@ Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PSt
   if(conference == NULL)
   {
     // create the conference
+    long id = conferenceList.GetNextID();
     OpalGloballyUniqueID conferenceID;
-    conference = CreateConference(conferenceID, room, name, mcuNumberMap.GetNumber(conferenceID));
-    conference->Lock();
-    // insert conference into the map
-    PWaitAndSignal m(conferenceListMutex);
-    conferenceList.insert(ConferenceListType::value_type(conferenceID, conference));
-    // set the conference count
-    maxConferenceCount = PMAX(maxConferenceCount, (PINDEX)conferenceList.size());
-    OnCreateConference(conference);
+    conference = CreateConference(id, conferenceID, room, name, mcuNumberMap.GetNumber(conferenceID));
+    conferenceList.Insert(id, conference, room);
+    conferenceList.Release(id);
     //
-    conference->SetID2(conferenceList2.GetNextID());
-    conferenceList2.Insert(conference->GetID2(), conference);
-    conferenceList2.Release(conference->GetID2());
+    OnCreateConference(conference);
+    // lock
+    conference->Lock();
+    // set the conference count
+    maxConferenceCount = PMAX(maxConferenceCount, conferenceList.GetCurrentSize());
   }
   return conference;
 }
@@ -124,11 +134,11 @@ Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PSt
 
 BOOL ConferenceManager::HasConference(const PString & number, OpalGloballyUniqueID & conferenceID)
 {
-  Conference *conference = FindConferenceWithLock(number);
+  Conference *conference = conferenceList(number);
   if(conference)
   {
-    conferenceID = conference->GetID();
-    conference->Unlock();
+    conferenceID = conference->GetGUID();
+    conferenceList.Release(conference->GetID());
     return TRUE;
   }
   return FALSE;
@@ -431,7 +441,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _guid,
+Conference * ConferenceManager::CreateConference(long _id, const OpalGloballyUniqueID & _guid,
                                                               const PString & _number,
                                                               const PString & _name,
                                                               int _mcuNumber)
@@ -439,7 +449,7 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
 #if MCU_VIDEO
 #  if ENABLE_ECHO_MIXER
      if(_number.Left(4) *= "echo")
-       return new Conference(*this, _guid, "echo"+_guid.AsString(), _name, _mcuNumber, new EchoVideoMixer());
+       return new Conference(*this, _id, _guid, "echo"+_guid.AsString(), _name, _mcuNumber, new EchoVideoMixer());
 #  endif
 #  if ENABLE_TEST_ROOMS
      if(_number.Left(8) == "testroom")
@@ -452,7 +462,7 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
          if(count <= 0) { count = 0; number = "testroom"; }
        }
        if(count >= 0)
-         return new Conference(*this, _guid, number, _name, _mcuNumber, new TestVideoMixer(count));
+         return new Conference(*this, _id, _guid, number, _name, _mcuNumber, new TestVideoMixer(count));
      }
 #  endif
 #endif
@@ -462,7 +472,7 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
 
   if(!forceScreenSplit)
   {
-    Conference *conference = new Conference(*this, _guid, _number, _name, _mcuNumber, NULL);
+    Conference *conference = new Conference(*this, _id, _guid, _number, _name, _mcuNumber, NULL);
     return conference;
   }
 
@@ -471,53 +481,55 @@ Conference * ConferenceManager::CreateConference(const OpalGloballyUniqueID & _g
   if (slashPos != P_MAX_INDEX) number=_number.Left(slashPos);
   else number=_number;
 
-  return new Conference(*this, _guid, number, _name, _mcuNumber
+  return new Conference(*this, _id, _guid, number, _name, _mcuNumber
 #if MCU_VIDEO
                         ,OpenMCU::Current().CreateVideoMixer(forceScreenSplit)
 #endif
                         ); 
 }
 
-void ConferenceManager::RemoveConference(const OpalGloballyUniqueID & confId)
+void ConferenceManager::RemoveConference(const PString & room)
 {
-  PWaitAndSignal m(conferenceListMutex);
-  ConferenceListType::iterator r = conferenceList.find(confId);
-  if(r != conferenceList.end())
+  Conference *conference = FindConferenceWithLock(room);
+  if(conference)
   {
-    Conference * conf = r->second;
-    // before lock
-    conferenceList2.Erase(conf->GetID2());
-    //
-    conf->Lock();
-    conferenceList.erase(r);
-    mcuNumberMap.RemoveNumber(conf->GetMCUNumber());
-    OnDestroyConference(conf);
-    //monitor->RemoveForConference(conf->GetID());
-    delete conf;
+    conferenceList.Erase(conference->GetID());
+    mcuNumberMap.RemoveNumber(conference->GetMCUNumber());
+    OnDestroyConference(conference);
+    delete conference;
     PTRACE(1, "RemoveConference");
   }
 }
 
 void ConferenceManager::ClearConferenceList()
 {
-  PWaitAndSignal m(conferenceListMutex);
-  for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); )
+  for(int i = 0; i < conferenceList.GetSize(); ++i)
   {
-    Conference * conf = r->second;
-    conf->Lock();
-    conferenceList.erase(r++);
-    mcuNumberMap.RemoveNumber(conf->GetMCUNumber());
-    OnDestroyConference(conf);
-    delete conf;
-    PTRACE(1, "RemoveConference");
+    Conference *conference = (Conference *)conferenceList[i];
+    if(conference)
+    {
+      conference->Lock();
+      conferenceList.Release(conference->GetID());
+      conferenceList.Erase(conference->GetID());
+      mcuNumberMap.RemoveNumber(conference->GetMCUNumber());
+      OnDestroyConference(conference);
+      delete conference;
+      PTRACE(1, "RemoveConference");
+    }
   }
 }
 
 void ConferenceManager::ClearMonitorEvents()
 {
-  PWaitAndSignal m(conferenceListMutex);
-  for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
-    monitor->RemoveForConference(r->second->GetID());
+  for(int i = 0; i < conferenceList.GetSize(); ++i)
+  {
+    Conference *conference = (Conference *)conferenceList[i];
+    if(conference)
+    {
+      monitor->RemoveForConference(conference->GetID());
+      conferenceList.Release(conference->GetID());
+    }
+  }
 }
 
 void ConferenceManager::AddMonitorEvent(ConferenceMonitorInfo * info)
@@ -544,26 +556,31 @@ void ConferenceMonitor::Main()
     PWaitAndSignal m(mutex);
 
     PTime now;
-    MonitorInfoList::iterator r = monitorList.begin();
-    while (r != monitorList.end()) {
+    for(MonitorInfoList::iterator r = monitorList.begin(); r != monitorList.end(); )
+    {
       ConferenceMonitorInfo & info = **r;
-      if (now < info.timeToPerform)
+      if(now < info.timeToPerform)
         ++r;
       else {
-        BOOL deleteAfterPerform = TRUE;
+        int ret = 1;
+        PString room;
+        MCUConferenceList & conferenceList = manager.GetConferenceList();
+        Conference *conference = conferenceList(info.id);
+        if(conference)
         {
-          PWaitAndSignal m2(manager.GetConferenceListMutex());
-          ConferenceListType & confList = manager.GetConferenceList();
-          ConferenceListType::iterator s = confList.find(info.guid);
-          if (s != confList.end())
-            deleteAfterPerform = info.Perform(*s->second);
+          ret = info.Perform(*conference);
+          room = conference->GetNumber();
+          conferenceList.Release(info.id);
         }
-        if (!deleteAfterPerform)
+        if(ret == 0)
+        {
           ++r;
-        else {
+        } else {
           delete *r;
           monitorList.erase(r);
           r = monitorList.begin();
+          if(ret == 2)
+            manager.RemoveConference(room);
         }
       }
     }
@@ -576,13 +593,13 @@ void ConferenceMonitor::AddMonitorEvent(ConferenceMonitorInfo * info)
   monitorList.push_back(info);
 }
 
-void ConferenceMonitor::RemoveForConference(const OpalGloballyUniqueID & guid)
+void ConferenceMonitor::RemoveForConference(const long & _id)
 {
   PWaitAndSignal m(mutex);
   MonitorInfoList::iterator r = monitorList.begin();
   while (r != monitorList.end()) {
     ConferenceMonitorInfo & info = **r;
-    if (info.guid != guid)
+    if (info.id != _id)
       ++r;
     else {
       delete *r;
@@ -592,41 +609,37 @@ void ConferenceMonitor::RemoveForConference(const OpalGloballyUniqueID & guid)
   }
 }
 
-BOOL ConferenceTimeLimitInfo::Perform(Conference & conference)
+int ConferenceTimeLimitInfo::Perform(Conference & conference)
 {
-  ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
-  cm.RemoveConference(conference.GetID());
-  return FALSE;
+  return 2;
 }
 
-BOOL ConferenceRepeatingInfo::Perform(Conference & conference)
+int ConferenceRepeatingInfo::Perform(Conference & conference)
 {
   this->timeToPerform = PTime() + repeatTime;
-  return FALSE;
+  return 0;
 }
 
-BOOL ConferenceStatusInfo::Perform(Conference & conference)
+int ConferenceStatusInfo::Perform(Conference & conference)
 {
   // auto delete empty room
   BOOL autoDeleteEmpty = GetConferenceParam(conference.GetNumber(), RoomAutoDeleteEmptyKey, FALSE);
   if(autoDeleteEmpty && !conference.GetVisibleMemberCount())
   {
-    ConferenceManager & cm = OpenMCU::Current().GetEndpoint().GetConferenceManager();
-    cm.RemoveConference(conference.GetID());
-    return TRUE; // delete monitor
+    return 2; // delete conference
   }
 
   return ConferenceRepeatingInfo::Perform(conference);
 }
 
-BOOL ConferenceRecorderInfo::Perform(Conference & conference)
+int ConferenceRecorderInfo::Perform(Conference & conference)
 {
   // recorder
   BOOL allowRecord = GetConferenceParam(conference.GetNumber(), RoomAllowRecordKey, TRUE);
   if(!allowRecord)
   {
     conference.StopRecorder();
-    return TRUE; // delete monitor
+    return 1; // delete monitor
   }
 
   PString autoRecordStart = GetConferenceParam(conference.GetNumber(), RoomAutoRecordStartKey, "Disable");
@@ -642,7 +655,7 @@ BOOL ConferenceRecorderInfo::Perform(Conference & conference)
   return ConferenceRepeatingInfo::Perform(conference);
 }
 
-BOOL ConferenceMCUCheckInfo::Perform(Conference & conference)
+int ConferenceMCUCheckInfo::Perform(Conference & conference)
 {
   // see if any member of this conference is a not an MCU
   Conference::MemberList & list = conference.GetMemberList();
@@ -659,13 +672,14 @@ BOOL ConferenceMCUCheckInfo::Perform(Conference & conference)
   for (r = list.begin(); r != list.end(); ++r)
     r->second->Close();
 
-  return TRUE;
+  return 1;
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////
 
 Conference::Conference(        ConferenceManager & _manager,
+                                           long _id,
                        const OpalGloballyUniqueID & _guid,
                                     const PString & _number,
                                     const PString & _name,
@@ -674,7 +688,7 @@ Conference::Conference(        ConferenceManager & _manager,
                                     ,MCUVideoMixer * _videoMixer
 #endif
 )
-  : manager(_manager), guid(_guid), number(_number), name(_name), mcuNumber(_mcuNumber), mcuMonitorRunning(FALSE)
+  : manager(_manager), id(_id), guid(_guid), number(_number), name(_name), mcuNumber(_mcuNumber), mcuMonitorRunning(FALSE)
 {
   stopping = FALSE;
 #if MCU_VIDEO
@@ -1171,7 +1185,7 @@ ConferenceAudioConnection * Conference::AddAudioConnection(ConferenceMember * me
 
 void Conference::RemoveAudioConnection(ConferenceMember * member)
 {
-  ConferenceAudioConnection * conn = (ConferenceAudioConnection *)audioConnectionList((long)member->GetID());
+  ConferenceAudioConnection * conn = audioConnectionList((long)member->GetID());
   audioConnectionList.Release((long)member->GetID());
   audioConnectionList.Erase((long)member->GetID());
   delete conn;
@@ -1183,7 +1197,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, int a
 {
   for(int i = 0; i < audioConnectionList.GetSize(); ++i)
   {
-    ConferenceAudioConnection * conn = (ConferenceAudioConnection *)audioConnectionList[i];
+    ConferenceAudioConnection * conn = audioConnectionList[i];
     if(conn == NULL)
       continue;
     if(conn->GetID() == member->GetID())
@@ -1220,7 +1234,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, int a
 
 void Conference::WriteMemberAudio(ConferenceMember * member, const void * buffer, int amount, int sampleRate, int channels)
 {
-  ConferenceAudioConnection * conn = (ConferenceAudioConnection *)audioConnectionList((long)member->GetID());
+  ConferenceAudioConnection * conn = audioConnectionList((long)member->GetID());
   if(conn && (conn->GetSampleRate() != sampleRate || conn->GetChannels() != channels))
   {
     audioConnectionList.Release((long)member->GetID());

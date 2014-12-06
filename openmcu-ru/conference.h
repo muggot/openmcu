@@ -1221,11 +1221,12 @@ class Conference : public PObject
     typedef std::map<void *, ConferenceMember *> MemberList;
     typedef std::map<ConferenceMemberId, ConferenceProfile *> ProfileList;
 
-    Conference(ConferenceManager & manager,     
-      const OpalGloballyUniqueID & _guid,
+    Conference(ConferenceManager & manager,
+                                  long _id,
+        const OpalGloballyUniqueID & _guid, // H.323 m_conferenceID ???
                    const PString & _number,
-                   const PString & _name,
-                               int _mcuNumber
+                     const PString & _name,
+                             int _mcuNumber
 #if MCU_VIDEO
                   ,MCUVideoMixer * _videoMixer = NULL
 #endif
@@ -1288,14 +1289,11 @@ class Conference : public PObject
     virtual PString GetNumber() const
     { return number; }
 
-    OpalGloballyUniqueID GetID() const
+    OpalGloballyUniqueID GetGUID() const
     { return guid; }
 
-    long GetID2() const
+    long GetID() const
     { return id; }
-
-    void SetID2(long _id)
-    { id = _id; }
 
     virtual BOOL IsVisible() const
     { return TRUE; }
@@ -1504,13 +1502,13 @@ class Conference : public PObject
 
     ConferenceAudioConnection * AddAudioConnection(ConferenceMember * member, unsigned sampleRate = 8000, unsigned channels = 1);
     void RemoveAudioConnection(ConferenceMember * member);
-    MCUStaticList audioConnectionList;
+    MCUAudioConnectionList audioConnectionList;
 
     PINDEX visibleMemberCount;
     PINDEX maxMemberCount;
 
-    OpalGloballyUniqueID guid;
     long id;
+    OpalGloballyUniqueID guid;
 
     PString number;
     PString name;
@@ -1524,7 +1522,6 @@ class Conference : public PObject
     PMutex membersConfMutex;
     BOOL forceScreenSplit;
 };
-typedef std::map<OpalGloballyUniqueID, Conference *> ConferenceListType;
 
 ////////////////////////////////////////////////////
 
@@ -1532,33 +1529,33 @@ class ConferenceMonitorInfo : public PObject
 {
   PCLASSINFO(ConferenceMonitorInfo, PObject);
   public:
-    ConferenceMonitorInfo(const OpalGloballyUniqueID & _guid, const PTime & endTime)
-      : guid(_guid), timeToPerform(endTime) { }
+    ConferenceMonitorInfo(const long & _id, const PTime & endTime)
+      : id(_id), timeToPerform(endTime) { }
 
-    OpalGloballyUniqueID guid;
+    long id;
     PTime timeToPerform;
 
-    virtual BOOL Perform(Conference &) = 0;
+    virtual int Perform(Conference &) = 0;
 };
 
 class ConferenceTimeLimitInfo : public ConferenceMonitorInfo
 {
   public:
-    ConferenceTimeLimitInfo(const OpalGloballyUniqueID & guid, const PTime & endTime)
-      : ConferenceMonitorInfo(guid, endTime)
+    ConferenceTimeLimitInfo(const long & _id, const PTime & endTime)
+      : ConferenceMonitorInfo(_id, endTime)
     { }
 
-    BOOL Perform(Conference & conference);
+    int Perform(Conference & conference);
 };
 
 class ConferenceRepeatingInfo : public ConferenceMonitorInfo
 {
   public:
-    ConferenceRepeatingInfo(const OpalGloballyUniqueID & guid, const PTimeInterval & _repeatTime)
-      : ConferenceMonitorInfo(guid, PTime() + _repeatTime), repeatTime(_repeatTime)
+    ConferenceRepeatingInfo(const long & _id, const PTimeInterval & _repeatTime)
+      : ConferenceMonitorInfo(_id, PTime() + _repeatTime), repeatTime(_repeatTime)
     { }
 
-    BOOL Perform(Conference & conference);
+    int Perform(Conference & conference);
 
   protected:
     PTimeInterval repeatTime;
@@ -1567,33 +1564,32 @@ class ConferenceRepeatingInfo : public ConferenceMonitorInfo
 class ConferenceStatusInfo : public ConferenceRepeatingInfo
 {
   public:
-    ConferenceStatusInfo(const OpalGloballyUniqueID & guid)
-      : ConferenceRepeatingInfo(guid, 1000)
+    ConferenceStatusInfo(const long & _id)
+      : ConferenceRepeatingInfo(_id, 1000)
     { }
 
-    BOOL Perform(Conference & conference);
+    int Perform(Conference & conference);
 };
 
 class ConferenceRecorderInfo : public ConferenceRepeatingInfo
 {
   public:
-    ConferenceRecorderInfo(const OpalGloballyUniqueID & guid)
-      : ConferenceRepeatingInfo(guid, 1000)
+    ConferenceRecorderInfo(const long & _id)
+      : ConferenceRepeatingInfo(_id, 1000)
     { }
 
-    BOOL Perform(Conference & conference);
+    int Perform(Conference & conference);
 };
 
 class ConferenceMCUCheckInfo : public ConferenceRepeatingInfo
 {
   public:
-    ConferenceMCUCheckInfo(const OpalGloballyUniqueID & guid, const PTimeInterval & _repeatTime)
-      : ConferenceRepeatingInfo(guid, _repeatTime)
+    ConferenceMCUCheckInfo(const long & _id, const PTimeInterval & _repeatTime)
+      : ConferenceRepeatingInfo(_id, _repeatTime)
     { }
 
-    BOOL Perform(Conference & conference);
+    int Perform(Conference & conference);
 };
-
 
 class ConferenceMonitor : public PThread
 {
@@ -1605,7 +1601,7 @@ class ConferenceMonitor : public PThread
 
     void Main();
     void AddMonitorEvent(ConferenceMonitorInfo * info);
-    void RemoveForConference(const OpalGloballyUniqueID & guid);
+    void RemoveForConference(const long & _id);
 
     typedef std::vector<ConferenceMonitorInfo *> MonitorInfoList;
     BOOL running;
@@ -1695,19 +1691,11 @@ class ConferenceManager : public PObject
     BOOL HasConference(const PString & number)
     { OpalGloballyUniqueID i; return HasConference(number, i); }
 
-    /**
-      * Remove and delete the specified conference
-      */
-    void RemoveConference(const OpalGloballyUniqueID & confId);
+    //
+    void RemoveConference(const PString & room);
 
-    PMutex & GetConferenceListMutex()
-    { return conferenceListMutex; }
-
-    ConferenceListType & GetConferenceList()
+    MCUConferenceList & GetConferenceList()
     { return conferenceList; }
-
-    MCUStaticList & GetConferenceList2()
-    { return conferenceList2; }
 
     virtual void OnCreateConference(Conference *);
 
@@ -1730,14 +1718,9 @@ class ConferenceManager : public PObject
     void ClearConferenceList();
 
   protected:
-    virtual Conference * CreateConference(const OpalGloballyUniqueID & _guid,
-                                                       const PString & _number,
-                                                       const PString & _name,
-                                                       int mcuNumber);
+    virtual Conference * CreateConference(long _id, const OpalGloballyUniqueID & _guid, const PString & _number, const PString & _name, int mcuNumber);
 
-    PMutex conferenceListMutex;
-    ConferenceListType conferenceList;
-    MCUStaticList conferenceList2;
+    MCUConferenceList conferenceList;
 
     PINDEX maxConferenceCount;
     MCUNumberMapType<OpalGloballyUniqueID> mcuNumberMap;

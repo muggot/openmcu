@@ -3491,7 +3491,7 @@ void MCUSipEndPoint::ProcessSipQueue()
 {
   for(;;)
   {
-    PString *cmd = (PString *)sipQueue.Pop();
+    PString *cmd = sipQueue.Pop();
     if(cmd == NULL)
       break;
     if(cmd->Left(7) == "invite:")
@@ -3504,7 +3504,7 @@ void MCUSipEndPoint::ProcessSipQueue()
   }
   for(;;)
   {
-    msg_t *msg = (msg_t *)sipMsgQueue.Pop();
+    msg_t *msg = sipMsgQueue.Pop();
     if(msg == NULL)
       break;
     SendMsg(msg);
@@ -3518,7 +3518,7 @@ void MCUSipEndPoint::QueueClear()
   sipQueue.Stop();
   for(;;)
   {
-    PString *cmd = (PString *)sipQueue.Pop();
+    PString *cmd = sipQueue.Pop();
     if(cmd == NULL)
       break;
     delete cmd;
@@ -3526,7 +3526,7 @@ void MCUSipEndPoint::QueueClear()
   sipMsgQueue.Stop();
   for(;;)
   {
-    msg_t *msg = (msg_t *)sipMsgQueue.Pop();
+    msg_t *msg = sipMsgQueue.Pop();
     if(msg == NULL)
       break;
     msg_destroy(msg);

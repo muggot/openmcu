@@ -1,8 +1,6 @@
 
 #include <ptlib.h>
 
-#include <algorithm>
-
 #include "config.h"
 #include "mcu.h"
 
@@ -37,187 +35,6 @@ void MCUReadWriteMutex::WriteSignal()
   writeMutex.Signal();
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-MCUStaticList::MCUStaticList(int _size)
-{
-  size = _size;
-  idcounter = 1;
-  states = new bool [size];
-  states_end = states + size;
-  ids = new long [size];
-  ids_end = ids + size;
-  objs = new void * [size];
-  captures = new long [size];
-  locks = new bool [size];
-  for(int i = 0; i < size; ++i)
-  {
-    states[i] = false;
-    ids[i] = 0;
-    objs[i] = NULL;
-    captures[i] = 0;
-    locks[i] = false;
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-MCUStaticList::~MCUStaticList()
-{
-  delete [] states;
-  delete [] ids;
-  delete [] objs;
-  delete [] captures;
-  delete [] locks;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool MCUStaticList::Insert(long id, void * obj)
-{
-  bool insert = false;
-  for(bool *it = find(states, states_end, false); it != states_end; it = find(it, states_end, false))
-  {
-    int index = it - states;
-    // блокировка записи
-    if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
-    {
-      // повторная проверка после блокировки
-      if(states[index] == false)
-      {
-        insert = true;
-        while(captures[index] != 0)
-        {
-          PThread::Sleep(2);
-          //if(captures[index] != 0)
-            //cout << "insert index=" << index << " captures=" << captures[index] << " " << PThread::GetCurrentThreadId() << " id=" << ids[index] << "\n";
-        }
-        // запись
-        objs[index] = obj;
-        ids[index] = id;
-        states[index] = true;
-        // захват
-        CaptureInternal(index);
-      }
-      // разблокировка записи
-      sync_bool_compare_and_swap(&locks[index], true, false);
-      if(insert)
-        return true;
-    }
-  }
-  return false;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-bool MCUStaticList::Erase(long id)
-{
-  bool erase = false;
-  long *it = find(ids, ids_end, id);
-  if(it != ids_end)
-  {
-    int index = it - ids;;
-    if(ids[index] == id && states[index] == true )
-    {
-      // блокировка записи
-      if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
-      {
-        // повторная проверка после блокировки
-        if(ids[index] == id && states[index] == true)
-        {
-          erase = true;
-          // запись
-          states[index] = false;
-          while(captures[index] != 0)
-          {
-            PThread::Sleep(2);
-            //if(captures[index] != 0)
-             // cout << "erase index=" << index << " captures=" << captures[index] << " " << PThread::GetCurrentThreadId() << " id=" << ids[index] << "\n";
-          }
-          // запись
-          ids[index] = 0;
-          objs[index] = NULL;
-        }
-        // разблокировка записи
-        sync_bool_compare_and_swap(&locks[index], true, false);
-        if(erase)
-          return true;
-      }
-    }
-  }
-  return false;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUStaticList::Release(long id)
-{
-  long *it = find(ids, ids_end, id);
-  if(it != ids_end)
-  {
-    int index = it - ids;
-    ReleaseInternal(index);
-  }
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUStaticList::ReleaseInternal(int index)
-{
-  //PTRACE(0, "release " << index << " " << captures[index] << " " << PThread::GetCurrentThreadId() << " objs=" << (objs[index] == NULL ? 0 : objs[index]) << " id=" << ids[index]);
-  sync_decrement(&captures[index]);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUStaticList::CaptureInternal(int index)
-{
-  //PTRACE(0, "capture " << index << " " << captures[index] << " " << PThread::GetCurrentThreadId() << " objs=" << (objs[index] == NULL ? 0 : objs[index]) << " id=" << ids[index]);
-  sync_increment(&captures[index]);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void * MCUStaticList::operator[] (int index)
-{
-  if(index < 0 || index >= size)
-    return NULL;
-  void *obj = NULL;
-  if(states[index] == true)
-  {
-    CaptureInternal(index);
-    // повторная проверка после захвата
-    if(states[index] == true)
-      obj = objs[index];
-    // освободить если нет объекта
-    if(obj == NULL)
-      ReleaseInternal(index);
-  }
-  return obj;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void * MCUStaticList::operator() (long id)
-{
-  void *obj = NULL;
-  long *it = find(ids, ids_end, id);
-  if(it != ids_end)
-  {
-    int index = it - ids;
-    CaptureInternal(index);
-    // повторная проверка после захвата
-    if(ids[index] == id && states[index] == true)
-      obj = objs[index];
-    // освободить если нет объекта
-    if(obj == NULL)
-      ReleaseInternal(index);
-  }
-  return obj;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUURL::MCUURL()
@@ -430,7 +247,7 @@ PString GetSectionParamFromUrl(PString param, PString addr)
   }
 
   PString value = GetSectionParam(section_prefix, param, addr);
-  MCUTRACE(1, "Get parameter (" << addr << ") \"" << param << "\" = " << value);
+  PTRACE(1, "Get parameter (" << addr << ") \"" << param << "\" = " << value);
   return value;
 }
 

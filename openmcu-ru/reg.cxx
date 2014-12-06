@@ -715,7 +715,7 @@ void Registrar::QueueThread(PThread &, INT)
   {
     for(;;)
     {
-      PString *cmd = (PString *)regQueue.Pop();
+      PString *cmd = regQueue.Pop();
       if(cmd == NULL)
         break;
       if(cmd->Left(7) == "invite:")
@@ -737,7 +737,7 @@ void Registrar::QueueClear()
   regQueue.Stop();
   for(;;)
   {
-    PString *cmd = (PString *)regQueue.Pop();
+    PString *cmd = regQueue.Pop();
     if(cmd == NULL)
       break;
     delete cmd;

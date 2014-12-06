@@ -2533,9 +2533,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     }
     else if(action == "delete")
     {
-      OpalGloballyUniqueID conferenceID;
-      if(cm.HasConference(room, conferenceID))
-        cm.RemoveConference(conferenceID);
+      cm.RemoveConference(room);
     }
     else if(action == "startRecorder")
     {
@@ -2563,6 +2561,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   if(data.Contains("action")) html << "<script language='javascript'>location.href='Select';</script>";
 
   PString nextRoom;
+  /*
   {
     PWaitAndSignal m(cm.GetConferenceListMutex());
     for(ConferenceListType::const_iterator r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r)
@@ -2593,6 +2592,8 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     }
     if(nextRoom.IsEmpty()) nextRoom = OpenMCU::Current().GetDefaultRoomName();
   }
+  */
+    if(nextRoom.IsEmpty()) nextRoom = OpenMCU::Current().GetDefaultRoomName();
 
   html
     << "<form method=\"post\" onsubmit=\"javascript:{if(document.getElementById('newroom').value!='')location.href='?action=create&room='+encodeURIComponent(document.getElementById('newroom').value);return false;}\"><input name='room' id='room' type=hidden>"
@@ -2614,21 +2615,23 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   ;
 
   {
-    PWaitAndSignal m(cm.GetConferenceListMutex());
-    ConferenceListType & conferenceList = cm.GetConferenceList();
-    for(ConferenceListType::iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+    MCUConferenceList & conferenceList = ep.GetConferenceManager().GetConferenceList();
+    for(int i = 0; i < conferenceList.GetSize(); ++i)
     {
-      Conference & conference = *(r->second);
-      PString roomNumber = conference.GetNumber();
+      Conference *conference = conferenceList[i];
+      if(conference == NULL)
+        continue;
+
+      PString roomNumber = conference->GetNumber();
       //BOOL controlled = conference.GetForceScreenSplit();
       BOOL controlled = TRUE;
       BOOL allowRecord = GetConferenceParam(roomNumber, RoomAllowRecordKey, TRUE);
       BOOL moderated=FALSE; PString charModerated = "-";
-      if(controlled) { charModerated = conference.IsModerated(); moderated=(charModerated=="+"); }
+      if(controlled) { charModerated = conference->IsModerated(); moderated=(charModerated=="+"); }
       if(charModerated=="-") charModerated = "<script type=\"text/javascript\">document.write(window.l_select_moderated_no);</script>";
       else charModerated = "<script type=\"text/javascript\">document.write(window.l_select_moderated_yes);</script>";
-      PINDEX   visibleMemberCount = conference.GetVisibleMemberCount();
-      PINDEX unvisibleMemberCount = conference.GetMemberCount() - visibleMemberCount;
+      PINDEX   visibleMemberCount = conference->GetVisibleMemberCount();
+      PINDEX unvisibleMemberCount = conference->GetMemberCount() - visibleMemberCount;
 
       PString roomButton = "<span class=\"btn btn-large btn-";
       if(moderated) roomButton+="success";
@@ -2642,7 +2645,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       PStringStream recordButton;
       if(allowRecord)
       {
-        BOOL recState = (conference.conferenceRecorder && conference.conferenceRecorder->IsRunning());
+        BOOL recState = (conference->conferenceRecorder && conference->conferenceRecorder->IsRunning());
         recordButton
         << "<input type='button' class='btn btn-large "
         << (recState ? "btn-inverse" : "btn-danger")
@@ -2663,9 +2666,11 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
         << "<td style='text-align:center'>" << charModerated                         << "</td>"
         << "<td style='text-align:right'>"  << visibleMemberCount                    << "</td>"
         << "<td style='text-align:right'>"  << unvisibleMemberCount                  << "</td>"
-        << "<td style='text-align:right'>"  << (PTime() - conference.GetStartTime()).AsString(0, PTimeInterval::IncludeDays, 10) << "</td>"
+        << "<td style='text-align:right'>"  << (PTime() - conference->GetStartTime()).AsString(0, PTimeInterval::IncludeDays, 10) << "</td>"
         << "<td style='text-align:center'><span class=\"btn btn-large btn-danger\" onclick=\"if(confirm('Вы уверены? Are you sure?')){location.href='?action=delete&room=" << PURL::TranslateString(roomNumber,PURL::QueryTranslation) << "';}\">X</span></td>"
         << "</tr>";
+
+      conferenceList.Release(conference->GetID());
     }
   }
 

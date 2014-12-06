@@ -49,9 +49,6 @@ ConferenceSoundCardMember::ConferenceSoundCardMember(Conference * _conference)
 
 ConferenceSoundCardMember::~ConferenceSoundCardMember()
 {
-  if (conference->RemoveMember(this))
-    conference->GetManager().RemoveConference(conference->GetID());
-
   if ((thread != NULL) && running) {
     running = FALSE;
     thread->WaitForTermination();
