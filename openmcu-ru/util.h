@@ -432,6 +432,7 @@ class MCUStaticList
   protected:
     void CaptureInternal(int index);
     void ReleaseInternal(int index);
+    void ReleaseWait(long * _captures);
 
     int size;
     long current_size;
@@ -504,21 +505,16 @@ bool MCUStaticList<T>::Insert(long id, T * obj, PString name)
       // повторная проверка после блокировки
       if(states[index] == false)
       {
-        insert = true;
-        while(captures[index] != 0)
-        {
-          PThread::Sleep(10);
-          //if(captures[index] != 0)
-            //cout << "insert index=" << index << " captures=" << captures[index] << " " << PThread::GetCurrentThreadId() << " id=" << ids[index] << "\n";
-        }
-        // запись
+        // захват
+        CaptureInternal(index);
+        // запись объекта
         objs[index] = obj;
         ids[index] = id;
         names[index] = name;
+        // разрешить получение объекта
         states[index] = true;
         sync_increment(&current_size);
-        // захват
-        CaptureInternal(index);
+        insert = true;
       }
       // разблокировка записи
       sync_bool_compare_and_swap(&locks[index], true, false);
@@ -547,20 +543,16 @@ bool MCUStaticList<T>::Erase(long id)
         // повторная проверка после блокировки
         if(ids[index] == id && states[index] == true)
         {
-          erase = true;
-          // запись
+          // запретить получение объекта
           states[index] = false;
-          while(captures[index] != 0)
-          {
-            PThread::Sleep(10);
-            //if(captures[index] != 0)
-             // cout << "erase index=" << index << " captures=" << captures[index] << " " << PThread::GetCurrentThreadId() << " id=" << ids[index] << "\n";
-          }
-          // запись
+          sync_decrement(&current_size);
+          // ждать освобождения объекта
+          ReleaseWait(&captures[index]);
+          // запись объекта
           ids[index] = 0;
           names[index] = "";
           objs[index] = NULL;
-          sync_decrement(&current_size);
+          erase = true;
         }
         // разблокировка записи
         sync_bool_compare_and_swap(&locks[index], true, false);
@@ -570,6 +562,30 @@ bool MCUStaticList<T>::Erase(long id)
     }
   }
   return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+void MCUStaticList<T>::ReleaseWait(long * _captures)
+{
+  for(int i = 0; *_captures != 0; ++i)
+  {
+    if(i < 100)
+      __asm__ __volatile__("pause":::"memory");
+    else if(i < 1000)
+    {
+      struct timespec req = {0};
+      req.tv_nsec = 1000; // 1μs
+      nanosleep(&req, NULL);
+    }
+    else
+    {
+      struct timespec req = {0};
+      req.tv_nsec = 1000000; // 1ms
+      nanosleep(&req, NULL);
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
