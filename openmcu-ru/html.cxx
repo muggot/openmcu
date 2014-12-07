@@ -2561,12 +2561,16 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   if(data.Contains("action")) html << "<script language='javascript'>location.href='Select';</script>";
 
   PString nextRoom;
-  /*
+  MCUConferenceList & conferenceList = ep.GetConferenceManager().GetConferenceList();
+  for(int i = 0; i < conferenceList.GetSize(); ++i)
   {
-    PWaitAndSignal m(cm.GetConferenceListMutex());
-    for(ConferenceListType::const_iterator r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r)
-    {
-      PString room0 = r->second->GetNumber().Trim();
+    Conference *conference = conferenceList[i];
+    if(conference == NULL)
+      continue;
+
+    PString room0 = conference->GetNumber().Trim();
+    conferenceList.Release(conference->GetID());
+
       if(room0.IsEmpty()) continue;
       if(room0.Left(MCU_INTERNAL_CALL_PREFIX.GetLength()) == MCU_INTERNAL_CALL_PREFIX) continue; // todo: use much more fast boolean check to determine int. call
       PINDEX lastCharPos=room0.GetLength()-1;
@@ -2581,19 +2585,31 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       if(d2-d1>6)d1=d2-6;
       PINDEX roomStart=room0.Mid(d1,d2).AsInteger(); PString roomText=room0.Left(d1);
       PString roomText2; if(d2<lastCharPos) roomText2=room0.Mid(d2+1,lastCharPos);
-      while(1)
+
+    while(1)
+    {
+      roomStart++;
+      PString testName = roomText + PString(roomStart) + roomText2;
+      int j;
+      for(j = 0; j < conferenceList.GetSize(); ++j)
       {
-        roomStart++;
-        PString testName = roomText + PString(roomStart) + roomText2;
-        for (r = cm.GetConferenceList().begin(); r != cm.GetConferenceList().end(); ++r) if(r->second->GetNumber()==testName) break;
-        if(r == cm.GetConferenceList().end()) { nextRoom = testName; break; }
+        Conference *c = conferenceList[j];
+        if(c == NULL)
+          continue;
+        PString name = c->GetNumber();
+        conferenceList.Release(c->GetID());
+        if(name == testName)
+          break;
       }
-      break;
+      if(j == conferenceList.GetSize())
+      {
+        nextRoom = testName;
+        break;
+      }
     }
-    if(nextRoom.IsEmpty()) nextRoom = OpenMCU::Current().GetDefaultRoomName();
+    break;
   }
-  */
-    if(nextRoom.IsEmpty()) nextRoom = OpenMCU::Current().GetDefaultRoomName();
+  if(nextRoom.IsEmpty()) nextRoom = OpenMCU::Current().GetDefaultRoomName();
 
   html
     << "<form method=\"post\" onsubmit=\"javascript:{if(document.getElementById('newroom').value!='')location.href='?action=create&room='+encodeURIComponent(document.getElementById('newroom').value);return false;}\"><input name='room' id='room' type=hidden>"
