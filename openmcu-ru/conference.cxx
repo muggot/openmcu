@@ -42,14 +42,27 @@ ConferenceManager::~ConferenceManager()
 
 Conference * ConferenceManager::FindConferenceWithLock(Conference * _conference)
 {
-  return FindConferenceWithLock(_conference, NULL, 0, "");
+  Conference *conference = conferenceList(_conference);
+  return conference;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Conference * ConferenceManager::FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID)
 {
-  return FindConferenceWithLock(NULL, &conferenceID, 0, "");
+  Conference *conference = NULL;
+  for(int i = 0; i < conferenceList.GetSize(); ++i)
+  {
+    Conference *c = conferenceList[i];
+    if(c)
+    {
+      if(conferenceID && c->GetGUID() == conferenceID)
+        conference = c;
+      if(conference)
+        break;
+    }
+  }
+  return conference;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -57,11 +70,6 @@ Conference * ConferenceManager::FindConferenceWithLock(const OpalGloballyUniqueI
 Conference * ConferenceManager::FindConferenceWithLock(const PString & room)
 {
   Conference *conference = conferenceList(room);
-  if(conference)
-  {
-    conference->Lock();
-    conferenceList.Release(conference->GetID());
-  }
   return conference;
 }
 
@@ -70,40 +78,6 @@ Conference * ConferenceManager::FindConferenceWithLock(const PString & room)
 Conference * ConferenceManager::FindConferenceWithLock(long id)
 {
   Conference *conference = conferenceList(id);
-  if(conference)
-  {
-    conference->Lock();
-    conferenceList.Release(conference->GetID());
-  }
-  return conference;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Conference * ConferenceManager::FindConferenceWithLock(Conference * _conference, const OpalGloballyUniqueID * conferenceID, long id, const PString & room)
-{
-  Conference *conference = NULL;
-  for(int i = 0; i < conferenceList.GetSize(); ++i)
-  {
-    Conference *c = conferenceList[i];
-    if(c)
-    {
-      if(_conference && c == _conference)
-        conference = c;
-      else if(conferenceID && c->GetGUID() == *conferenceID)
-        conference = c;
-      else if(id != 0 && c->GetID() == id)
-        conference = c;
-      else if(room != "" && c->GetNumber() == room)
-        conference = c;
-
-      if(conference)
-        conference->Lock();
-      conferenceList.Release(c->GetID());
-      if(conference)
-        break;
-    }
-  }
   return conference;
 }
 
@@ -119,11 +93,8 @@ Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PSt
     OpalGloballyUniqueID conferenceID;
     conference = CreateConference(id, conferenceID, room, name, mcuNumberMap.GetNumber(conferenceID));
     conferenceList.Insert(id, conference, room);
-    conferenceList.Release(id);
     //
     OnCreateConference(conference);
-    // lock
-    conference->Lock();
     // set the conference count
     maxConferenceCount = PMAX(maxConferenceCount, conferenceList.GetCurrentSize());
   }
@@ -493,6 +464,7 @@ void ConferenceManager::RemoveConference(const PString & room)
   Conference *conference = FindConferenceWithLock(room);
   if(conference)
   {
+    conferenceList.Release(conference->GetID());
     conferenceList.Erase(conference->GetID());
     mcuNumberMap.RemoveNumber(conference->GetMCUNumber());
     OnDestroyConference(conference);
@@ -508,7 +480,6 @@ void ConferenceManager::ClearConferenceList()
     Conference *conference = (Conference *)conferenceList[i];
     if(conference)
     {
-      conference->Lock();
       conferenceList.Release(conference->GetID());
       conferenceList.Erase(conference->GetID());
       mcuNumberMap.RemoveNumber(conference->GetMCUNumber());
@@ -716,6 +687,12 @@ Conference::~Conference()
   VMLClear();
 #endif
 }
+
+void Conference::Unlock()
+{
+  manager.GetConferenceList().Release(id);
+}
+
 
 BOOL Conference::RecorderCheckSpace()
 {

@@ -427,6 +427,7 @@ class MCUStaticList
     T * operator[] (int index);
     T * operator() (long id);
     T * operator() (PString name);
+    T * operator() (T * obj);
 
   protected:
     void CaptureInternal(int index);
@@ -442,6 +443,7 @@ class MCUStaticList
     PString * names;
     PString * names_end;
     T ** volatile objs;
+    T ** objs_end;
     long * volatile captures;
     bool * volatile locks;
 };
@@ -461,6 +463,7 @@ MCUStaticList<T>::MCUStaticList(int _size)
   names = new PString [size];
   names_end = names + size;
   objs = new T * [size];
+  objs_end = objs + size;
   captures = new long [size];
   locks = new bool [size];
   for(int i = 0; i < size; ++i)
@@ -655,6 +658,27 @@ T * MCUStaticList<T>::operator() (PString name)
     CaptureInternal(index);
     // повторная проверка после захвата
     if(names[index] == name && states[index] == true)
+      obj = objs[index];
+    // освободить если нет объекта
+    if(obj == NULL)
+      ReleaseInternal(index);
+  }
+  return obj;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+T * MCUStaticList<T>::operator() (T * _obj)
+{
+  T *obj = NULL;
+  T **it = find(objs, objs_end, _obj);
+  if(it != objs_end)
+  {
+    int index = it - objs;
+    CaptureInternal(index);
+    // повторная проверка после захвата
+    if(objs[index] == _obj && states[index] == true)
       obj = objs[index];
     // освободить если нет объекта
     if(obj == NULL)

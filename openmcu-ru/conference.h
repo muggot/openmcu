@@ -1240,14 +1240,7 @@ class Conference : public PObject
     PMutex & GetProfileListMutex()
     { return profileListMutex; }
 
-    PMutex & GetMutex()
-    { return destructorMutex; }
-
-    void Lock()
-    { destructorMutex.Wait(); }
-
-    void Unlock()
-    { destructorMutex.Signal(); }
+    void Unlock();
 
     ConferenceManager & GetManager()
     { return manager; }
@@ -1493,7 +1486,6 @@ class Conference : public PObject
   protected:
     ConferenceManager & manager;
 
-    PMutex destructorMutex;
     PMutex memberListMutex;
     PMutex profileListMutex;
 
@@ -1652,7 +1644,6 @@ class ConferenceManager : public PObject
     Conference * FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID);
     Conference * FindConferenceWithLock(long id);
     Conference * FindConferenceWithLock(const PString & room);
-    Conference * FindConferenceWithLock(Conference * c, const OpalGloballyUniqueID * conferenceID, long id, const PString & room);
 
     Conference * MakeConferenceWithLock(const PString & number, PString name = "");
 
