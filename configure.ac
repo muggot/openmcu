@@ -196,6 +196,18 @@ else
 fi
 
 dnl ########################################################################
+dnl gcc
+
+if test "${USE_GCC}" = "yes"; then
+  # undefined reference to `__sync_bool_compare_and_swap_1'
+  if test ${GXX_MAJOR} -eq 4 && test ${GXX_MINOR} -eq 1; then
+    if test "${MACHTYPE}" = "x86"; then
+      CFLAGS="$CFLAGS -march=i686"
+    fi
+  fi
+fi
+
+dnl ########################################################################
 dnl configuration openmcu-ru
 
 AC_ARG_WITH(separator,[  ])
