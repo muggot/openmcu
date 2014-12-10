@@ -12,12 +12,15 @@ PString Conference::SaveTemplate(PString tplName)
     << "  GLOBAL_MUTE " << (muteUnvisible?"on":"off") << "\n"
     << "  CONTROL_TYPE " << (moderated?"manual":"auto") << "\n"
     << "  VAD_VALUES " << VAdelay << ", " << VAtimeout << ", " << VAlevel << "\n";
-  PWaitAndSignal m3(videoMixerListMutex);
-  VideoMixerRecord * vmr = videoMixerList;
-  while(vmr != NULL)
-  { t << "  MIXER " << vmr->id << "\n"
+
+
+  int mixer_number = 0;
+  for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++mixer_number)
+  {
+    MCUSimpleVideoMixer & m = *it.GetObject();
+
+    t << "  MIXER " << mixer_number << "\n"
       << "  {\n";
-    MCUVideoMixer & m = *(vmr->GetMixer());
     unsigned n=m.GetPositionSet();
     VMPCfgSplitOptions & o = OpenMCU::vmcfg.vmconf[n].splitcfg;
     PString newLayout=PString(n) + ", " + o.Id;
@@ -44,7 +47,7 @@ PString Conference::SaveTemplate(PString tplName)
       }
       else                                         // - nothing: trying get the value from current template:
       { int previous_level=0;
-        unsigned previous_mixer=32767;
+        int previous_mixer=32767;
         unsigned prev_vmpN=32767;
         BOOL mixMatch=FALSE;
         for(PINDEX previous_i=0; previous_i<previousTemplate.GetSize(); previous_i++)
@@ -58,7 +61,7 @@ PString Conference::SaveTemplate(PString tplName)
               PString value=prev_l.Mid(space+1,P_MAX_INDEX).LeftTrim();
               if     (cmd=="MIXER")
               { previous_mixer=value.AsInteger();
-                mixMatch=(previous_mixer==vmr->id);
+                mixMatch=(previous_mixer==mixer_number);
                 prev_vmpN=0;
               }
               else if(cmd=="LAYOUT") { if(mixMatch) mixMatch=(value==newLayout); }
@@ -99,8 +102,10 @@ PString Conference::SaveTemplate(PString tplName)
     if(skipCounter==1) t << "    VMP -\n";
     else if(skipCounter>1) t << "    SKIP " << skipCounter << "\n";
     t << "  }\n";
-    vmr=vmr->next;
+
+    m.Unlock();
   }
+
   PWaitAndSignal m(profileListMutex);
   for(ProfileList::iterator s = profileList.begin(); s != profileList.end(); ++s)
   {
@@ -158,7 +163,7 @@ void Conference::LoadTemplate(PString tpl)
   unsigned mixerId=0;
   unsigned maxMixerId=0;
   int vmpN=0;
-  MCUVideoMixer * mixer = NULL;
+  MCUSimpleVideoMixer * mixer = NULL;
   PStringArray validatedMembers;
   for(PINDEX i=0; i<lines.GetSize(); i++)
   {
@@ -177,12 +182,29 @@ void Conference::LoadTemplate(PString tpl)
         else if(cmd=="VAD_VALUES") {PStringArray v=value.Tokenise(",");if(v.GetSize()==3){ VAdelay=(unsigned short int)(v[0].Trim().AsInteger()); VAtimeout=(unsigned short int)(v[1].Trim().AsInteger()); VAlevel=(unsigned short int)(v[2].Trim().AsInteger());}}
         else if(cmd=="MIXER")
         {
-          mixerId=value.AsInteger();
-          while((mixer=VMLFind(mixerId))==NULL) VMLAdd();
+          mixerId = value.AsInteger();
+          while(true)
+          {
+            mixer = manager.FindVideoMixerWithLock(this, mixerId);
+            if(mixer)
+            {
+              mixer->Unlock();
+              break;
+            }
+            manager.AddVideoMixer(this);
+          }
           if(maxMixerId<mixerId) maxMixerId=mixerId;
           vmpN=0;
         }
-        else if(cmd=="LAYOUT") {if(mixer!=NULL) {PStringArray v=value.Tokenise(","); if(v.GetSize()==2) mixer->MyChangeLayout(v[0].Trim().AsInteger()); }}
+        else if(cmd=="LAYOUT")
+        {
+          if(mixer!=NULL)
+          {
+            PStringArray v=value.Tokenise(",");
+            if(v.GetSize()==2)
+              mixer->MyChangeLayout(v[0].Trim().AsInteger());
+          }
+        }
         else if(cmd=="SKIP")
         { unsigned skipping=value.AsInteger();
           while(skipping>0)
@@ -272,6 +294,7 @@ void Conference::LoadTemplate(PString tpl)
   } // for(i=0; i<lines.GetSize()
 
   BOOL tracingFirst=FALSE;
+  int videoMixerCount = videoMixerList.GetCurrentSize();
   for(unsigned i = videoMixerCount-1; i > maxMixerId; i--) // remove reduntant mixers
   {
     if(!tracingFirst)
@@ -279,7 +302,7 @@ void Conference::LoadTemplate(PString tpl)
       PTRACE(6,"Conference\tLoading template - currently active video mixers from " << (videoMixerCount-1) << " up to " << (maxMixerId+1) << " will be removed" << flush);
       tracingFirst=TRUE;
     }
-    VMLDel(i);
+    manager.DeleteVideoMixer(this, i);
   }
 
   if(!lockedTemplate) return; // room not locked - don't touch member list
@@ -407,11 +430,12 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
       {
         if(mixerCounter>0)
         {
-          MCUVideoMixer * mixer = VMLFind(mixerCounter-1);
+          MCUSimpleVideoMixer * mixer = manager.FindVideoMixerWithLock(this, mixerCounter-1);
           if(mixer != NULL)
           {
             mixer->PositionSetup(vmpCounter-1, 1, member);
             member->SetFreezeVideo(FALSE);
+            mixer->Unlock();
           }
         }
       }

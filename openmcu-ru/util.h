@@ -5,6 +5,7 @@
 #include "config.h"
 
 #include <algorithm>
+#include <typeinfo>
 #include <sofia-sip/msg_types.h>
 
 extern "C"
@@ -404,6 +405,57 @@ const static struct h264_resolution {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+template <class T1, class T2>
+class MCUStaticListIterator
+{
+  public:
+    MCUStaticListIterator()
+      : list(NULL), index(-1)
+    { }
+
+    MCUStaticListIterator(T1 * _list, int _index)
+      : list(_list), index(_index)
+    { }
+
+    int GetIndex()
+    { return index; }
+
+    long GetID()
+    { return list->ids[index]; }
+
+    T2 * GetObject()
+    { return list->objs[index]; }
+
+    bool operator == (const MCUStaticListIterator & it)
+    { return (index == it.index); }
+
+    bool operator != (const MCUStaticListIterator & it)
+    { return (index != it.index); }
+
+    MCUStaticListIterator & operator ++ ()
+    {
+      index = list->IteratorIncrement(index);
+      return *this;
+    }
+
+    MCUStaticListIterator operator ++ (int)
+    {
+      MCUStaticListIterator tmp = *this;
+      ++*this;
+      return tmp;
+    }
+
+    T2 * operator -> ()
+    { return list->objs[index]; }
+
+    T2 * operator * ()
+    { return list->objs[index]; }
+
+  protected:
+    T1 * list;
+    int index;
+};
+
 template <class T>
 class MCUStaticList
 {
@@ -429,10 +481,17 @@ class MCUStaticList
     T * operator() (PString name);
     T * operator() (T * obj);
 
+    template<class T1, class T2> friend class MCUStaticListIterator;
+    typedef MCUStaticListIterator<MCUStaticList, T> iterator;
+    iterator begin() { return iterator(this, IteratorIncrement(-1)); }
+    iterator end() { return iterator(this, size); }
+
   protected:
     void CaptureInternal(int index);
     void ReleaseInternal(int index);
     void ReleaseWait(long * _captures);
+
+    int IteratorIncrement(int index);
 
     int size;
     long current_size;
@@ -456,7 +515,7 @@ MCUStaticList<T>::MCUStaticList(int _size)
 {
   size = _size;
   current_size = 0;
-  idcounter = 1;
+  idcounter = 0;
   states = new bool [size];
   states_end = states + size;
   ids = new long [size];
@@ -470,7 +529,7 @@ MCUStaticList<T>::MCUStaticList(int _size)
   for(int i = 0; i < size; ++i)
   {
     states[i] = false;
-    ids[i] = 0;
+    ids[i] = -1;
     objs[i] = NULL;
     captures[i] = 0;
     locks[i] = false;
@@ -496,7 +555,7 @@ template <class T>
 bool MCUStaticList<T>::Insert(long id, T * obj, PString name)
 {
   bool insert = false;
-  for(bool *it = find(states, states_end, false); it != states_end; it = find(it, states_end, false))
+  for(bool *it = find(states, states_end, false); it != states_end; it = find(++it, states_end, false))
   {
     int index = it - states;
     // блокировка записи
@@ -549,7 +608,7 @@ bool MCUStaticList<T>::Erase(long id)
           // ждать освобождения объекта
           ReleaseWait(&captures[index]);
           // запись объекта
-          ids[index] = 0;
+          ids[index] = -1;
           names[index] = "";
           objs[index] = NULL;
           erase = true;
@@ -585,6 +644,11 @@ void MCUStaticList<T>::ReleaseWait(long * _captures)
       req.tv_nsec = 1000000; // 1ms
       nanosleep(&req, NULL);
     }
+    if(i % 5000 == 0)
+    {
+      PTRACE(1, "ReleaseWait list: " << typeid(objs).name() << ", captures: " << *_captures);
+      cout << "ReleaseWait list: " << typeid(this).name() << ", captures: " << *_captures << "\n";
+    }
   }
 }
 
@@ -617,6 +681,28 @@ void MCUStaticList<T>::CaptureInternal(int index)
 {
   //PTRACE(0, "capture " << index << " " << captures[index] << " " << PThread::GetCurrentThreadId() << " objs=" << (objs[index] == NULL ? 0 : objs[index]) << " id=" << ids[index]);
   sync_increment(&captures[index]);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+int MCUStaticList<T>::IteratorIncrement(int index)
+{
+  ++index;
+  if(index < 0 || index >= size)
+    return size;
+
+  for(bool *it = find(states + index, states_end, true); it != states_end; it = find(++it, states_end, true))
+  {
+    index = it - states;
+    CaptureInternal(index);
+    // повторная проверка после захвата
+    if(states[index] == true)
+      return index;
+    else
+      ReleaseInternal(index);
+  }
+  return size;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -710,6 +796,12 @@ typedef MCUStaticList<Conference> MCUConferenceList;
 
 class ConferenceAudioConnection;
 typedef MCUStaticList<ConferenceAudioConnection> MCUAudioConnectionList;
+
+class MCUSimpleVideoMixer;
+typedef MCUStaticList<MCUSimpleVideoMixer> MCUVideoMixerList;
+
+class ConferenceProfile;
+typedef MCUStaticList<ConferenceProfile> MCUConferenceProfileList;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

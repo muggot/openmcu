@@ -2310,7 +2310,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   PWaitAndSignal m(jpegMixerMutex);
 
   ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
-  jpegMixer = cm.FindMixerWithLock(room, requestedMixer);
+  jpegMixer = cm.FindVideoMixerWithLock(room, requestedMixer);
   if(jpegMixer == NULL) // no mixer found
     return FALSE;
 
@@ -2561,15 +2561,13 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   if(data.Contains("action")) html << "<script language='javascript'>location.href='Select';</script>";
 
   PString nextRoom;
-  MCUConferenceList & conferenceList = ep.GetConferenceManager().GetConferenceList();
-  for(int i = 0; i < conferenceList.GetSize(); ++i)
+  ConferenceManager & manager = ep.GetConferenceManager();
+  MCUConferenceList & conferenceList = manager.GetConferenceList();
+  for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
-    Conference *conference = conferenceList[i];
-    if(conference == NULL)
-      continue;
-
+    Conference *conference = it.GetObject();
     PString room0 = conference->GetNumber().Trim();
-    conferenceList.Release(conference->GetID());
+    conference->Unlock();
 
       if(room0.IsEmpty()) continue;
       if(room0.Left(MCU_INTERNAL_CALL_PREFIX.GetLength()) == MCU_INTERNAL_CALL_PREFIX) continue; // todo: use much more fast boolean check to determine int. call
@@ -2590,18 +2588,17 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     {
       roomStart++;
       PString testName = roomText + PString(roomStart) + roomText2;
-      int j;
-      for(j = 0; j < conferenceList.GetSize(); ++j)
+
+      MCUConferenceList::iterator it2;
+      for(it2 = conferenceList.begin(); it2 != conferenceList.end(); ++it2)
       {
-        Conference *c = conferenceList[j];
-        if(c == NULL)
-          continue;
+        Conference *c = it2.GetObject();
         PString name = c->GetNumber();
-        conferenceList.Release(c->GetID());
+        c->Unlock();
         if(name == testName)
           break;
       }
-      if(j == conferenceList.GetSize())
+      if(it2 == conferenceList.end())
       {
         nextRoom = testName;
         break;
@@ -2630,13 +2627,9 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     << "</tr>"
   ;
 
+  for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
-    MCUConferenceList & conferenceList = ep.GetConferenceManager().GetConferenceList();
-    for(int i = 0; i < conferenceList.GetSize(); ++i)
-    {
-      Conference *conference = conferenceList[i];
-      if(conference == NULL)
-        continue;
+    Conference *conference = it.GetObject();
 
       PString roomNumber = conference->GetNumber();
       //BOOL controlled = conference.GetForceScreenSplit();
@@ -2686,8 +2679,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
         << "<td style='text-align:center'><span class=\"btn btn-large btn-danger\" onclick=\"if(confirm('Вы уверены? Are you sure?')){location.href='?action=delete&room=" << PURL::TranslateString(roomNumber,PURL::QueryTranslation) << "';}\">X</span></td>"
         << "</tr>";
 
-      conferenceList.Release(conference->GetID());
-    }
+    conference->Unlock();
   }
 
   html << "</table></form>";

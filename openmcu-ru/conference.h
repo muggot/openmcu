@@ -287,23 +287,16 @@ class MCUVideoMixer
     virtual ~MCUVideoMixer()
     { VMPListClear(); }
 
-    PMutex & GetMutex()
-    { return mutex; }
+    virtual void Unlock();
 
-    PMutex & GetDestructorMutex()
-    { return destructorMutex; }
+    virtual long GetID()
+    { return id; }
 
-    void Lock()
-    { destructorMutex.Wait(); }
+    virtual void SetID(long newid)
+    { id = newid; }
 
-    void Unlock()
-    { destructorMutex.Signal(); }
-
-    void FullLock()
-    { destructorMutex.Wait(); mutex.Wait(); }
-
-    void FullUnlock()
-    { destructorMutex.Signal(); mutex.Signal(); }
+    virtual void SetConference(Conference * _conference)
+    { conference = _conference; }
 
     VideoMixPosition *vmpList;
     unsigned vmpNum;
@@ -565,8 +558,10 @@ class MCUVideoMixer
     virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
 
   protected:
+    Conference * conference;
+    long id;
+
     PMutex mutex;
-    PMutex destructorMutex;
     BOOL forceScreenSplit;
 };
 
@@ -1203,20 +1198,6 @@ class Conference : public PObject
 {
   PCLASSINFO(Conference, PObject);
   public:
-    class VideoMixerRecord
-    {
-      public:
-        VideoMixerRecord() { mixer = NULL; prev = NULL; next = NULL; };
-        ~VideoMixerRecord() { DeleteMixer(); };
-        void SetMixer(MCUVideoMixer * _mixer) { DeleteMixer(); mixer = _mixer; }
-        MCUVideoMixer * GetMixer() { return mixer; }
-        void DeleteMixer() { if(mixer) { mixer->FullLock(); delete mixer; mixer = NULL; } }
-        VideoMixerRecord * prev;
-        VideoMixerRecord * next;
-        unsigned id;
-      protected:
-        MCUVideoMixer * mixer;
-    };
 
     typedef std::map<void *, ConferenceMember *> MemberList;
     typedef std::map<ConferenceMemberId, ConferenceProfile *> ProfileList;
@@ -1228,7 +1209,7 @@ class Conference : public PObject
                      const PString & _name,
                              int _mcuNumber
 #if MCU_VIDEO
-                  ,MCUVideoMixer * _videoMixer = NULL
+                  ,MCUSimpleVideoMixer * _videoMixer = NULL
 #endif
                    );
 
@@ -1318,6 +1299,9 @@ class Conference : public PObject
     int GetMCUNumber() const
     { return mcuNumber; }
 
+    MCUVideoMixerList & GetVideoMixerList()
+    { return videoMixerList; }
+
     virtual BOOL BeforeMemberJoining(ConferenceMember *);
 
     virtual void OnMemberJoining(ConferenceMember *);
@@ -1336,114 +1320,10 @@ class Conference : public PObject
     virtual BOOL WriteMemberVideo(ConferenceMember * member, const void * buffer, int width, int height, PINDEX amount);
 
     virtual BOOL UseSameVideoForAllMembers()
-    { return videoMixerCount > 0; }
-
-    virtual MCUVideoMixer * GetVideoMixer(unsigned i) const
-    { return VMLFind(i); }
+    { return videoMixerList.GetCurrentSize() > 0; }
 
     virtual void FreezeVideo(ConferenceMemberId id);
     virtual BOOL PutChosenVan();
-
-    VideoMixerRecord *videoMixerList;
-    unsigned videoMixerCount;
-    PMutex videoMixerListMutex;
-    void VMLInit(MCUVideoMixer * mixer)
-    {
-      PWaitAndSignal m(videoMixerListMutex);
-      if(mixer==NULL){ videoMixerList=NULL; videoMixerCount=0; return; } // DONT FORCE SCREEN SPLIT: NO CONFERENCE MIXER
-      videoMixerList = new VideoMixerRecord();
-      videoMixerList->id = 0;
-      videoMixerList->SetMixer(mixer);
-      videoMixerCount = 1;
-    }
-    void VMLClear()
-    {
-      if(videoMixerList == NULL)
-        return;
-      PWaitAndSignal m(videoMixerListMutex);
-      VideoMixerRecord * vmr = videoMixerList;
-      if(vmr->next!=NULL) while(vmr->next->next!=NULL) vmr=vmr->next; //LIFO: points to last but one, delete the next == last
-      while(vmr!=NULL)
-      {
-        if(vmr->next)
-          delete vmr->next;
-        vmr=vmr->prev;
-      }
-      delete videoMixerList;
-      videoMixerCount = 0;
-    }
-    unsigned VMLAdd(MCUVideoMixer * mixer = NULL)
-    {
-      if(videoMixerList == NULL)
-      {
-        VMLInit(mixer);
-        return 0;
-      }
-      PWaitAndSignal m(videoMixerListMutex);
-      if(videoMixerCount>=100) return 0; // limitation
-      VideoMixerRecord * vmr = videoMixerList;
-      unsigned id=vmr->id;
-      while (vmr->next!=NULL){ vmr=vmr->next; if(vmr->id>id)id=vmr->id; }
-      VideoMixerRecord *vmrnew = new VideoMixerRecord();
-      if(mixer == NULL)
-        mixer=new MCUSimpleVideoMixer(TRUE);
-      vmrnew->SetMixer(mixer);
-      id++;
-      vmr->next = vmrnew; vmrnew->prev = vmr;
-      vmrnew->id = id; videoMixerCount++;
-      return id;
-    }
-    unsigned VMLDel(unsigned n)
-    {
-      if(videoMixerList == NULL)
-        return 0;
-      PWaitAndSignal m(videoMixerListMutex);
-      PTRACE(6,"MixerCtrl\tVMLDel(" << n << ") videoMixerCount=" << videoMixerCount);
-      if(videoMixerCount==1)return FALSE; //prevent last mixer deletion
-      VideoMixerRecord * vmr = videoMixerList;
-      unsigned newIndex=0; // reordering index
-      while (vmr!=NULL)
-      { if (vmr->id==n)
-        { PTRACE(6,"MixerCtrl\tVMLDel(" << n << ") mixer record with vmr->id=" << vmr->id << " found, removing");
-          VideoMixerRecord * vmrprev = vmr->prev; VideoMixerRecord * vmrnext = vmr->next; // keep prev & next
-          vmr->DeleteMixer();
-          if(videoMixerList==vmr)videoMixerList=vmrnext; // special case of deletion of mixer 0
-          if(vmrprev!=NULL)vmrprev->next=vmrnext; if(vmrnext!=NULL)vmrnext->prev=vmrprev;
-          delete vmr; videoMixerCount--;
-          n=65535; // prevent further deletions
-          vmr=vmrnext;
-        } else { vmr->id=newIndex; newIndex++; vmr=vmr->next; }
-      }
-      if(newIndex!=videoMixerCount) { PTRACE(1,"MixerCtrl\tVideo mixer counter " << videoMixerCount << " doesn't match last mixer id++ " << newIndex); }
-      return newIndex;
-    }
-    unsigned VMLDel(MCUVideoMixer * mixer)
-    {
-      if(mixer == NULL || videoMixerList == NULL)
-        return 0;
-      PWaitAndSignal m(videoMixerListMutex);
-      VideoMixerRecord * vmr = videoMixerList;
-      while(vmr)
-      {
-        if(vmr->GetMixer() == mixer)
-          return VMLDel(vmr->id);
-        vmr=vmr->next;
-      }
-      return 0;
-    }
-    MCUVideoMixer * VMLFind(unsigned i) const
-    {
-      if(videoMixerList == NULL)
-        return NULL;
-      PWaitAndSignal m(videoMixerListMutex);
-      VideoMixerRecord *vmr = videoMixerList;
-      while(vmr->next && vmr->id != i)
-        vmr = vmr->next;
-      if(vmr && vmr->id == i)
-        return vmr->GetMixer();
-      return NULL;
-    }
-
 #endif
 
     void AddMonitorEvent(ConferenceMonitorInfo * info);
@@ -1495,6 +1375,8 @@ class Conference : public PObject
     ConferenceAudioConnection * AddAudioConnection(ConferenceMember * member, unsigned sampleRate = 8000, unsigned channels = 1);
     void RemoveAudioConnection(ConferenceMember * member);
     MCUAudioConnectionList audioConnectionList;
+
+    MCUVideoMixerList videoMixerList;
 
     PINDEX visibleMemberCount;
     PINDEX maxMemberCount;
@@ -1663,10 +1545,12 @@ class ConferenceManager : public PObject
     ConferenceMember * FindMemberWithLock(Conference * conference, long id);
     ConferenceMember * FindMemberWithoutLock(Conference * conference, long id);
 
-    MCUSimpleVideoMixer * FindMixerWithLock(const PString & roomName, long id);
-    MCUSimpleVideoMixer * FindMixerWithLock(Conference * conference, long id);
-    MCUSimpleVideoMixer * FindMixerWithoutLock(Conference * conference, long id);
-
+    MCUSimpleVideoMixer * FindVideoMixerWithLock(const PString & room, int number);
+    MCUSimpleVideoMixer * FindVideoMixerWithLock(Conference * conference, int number);
+    MCUSimpleVideoMixer * GetVideoMixerWithLock(const PString & room);
+    MCUSimpleVideoMixer * GetVideoMixerWithLock(Conference * conference);
+    int AddVideoMixer(Conference * conference);
+    int DeleteVideoMixer(Conference * conference, int number);
 
     /**
       * return true if a conference with the specified ID exists

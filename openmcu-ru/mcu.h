@@ -355,9 +355,6 @@ class OpenMCU : public OpenMCUProcessAncestor
 #if MCU_VIDEO
     static VideoMixConfigurator vmcfg;
 
-    virtual MCUVideoMixer * CreateVideoMixer(BOOL forceScreenSplit)
-    { return new MCUSimpleVideoMixer(forceScreenSplit); }
-
     virtual void RemovePreMediaFrame()
     { }
 

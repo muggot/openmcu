@@ -349,6 +349,16 @@ VideoFrameStoreList::FrameStore & VideoFrameStoreList::GetNearestFrameStore(int 
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
+void MCUVideoMixer::Unlock()
+{
+  if(conference)
+  {
+    MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
+    videoMixerList.Release(id);
+  }
+}
+
+
 static inline int ABS(int v)
 {  return (v >= 0) ? v : -v; }
 
