@@ -405,26 +405,39 @@ const static struct h264_resolution {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//
+// "обычный" итератор
+// после использования объекта обязательно делать list.Release()
+//
 template <class T1, class T2>
 class MCUStaticListIterator
 {
   public:
-    MCUStaticListIterator()
-      : list(NULL), index(-1)
+    MCUStaticListIterator(T1 * _list = NULL, int _index = -1)
+      : list(_list), index(_index), auto_release(false)
     { }
 
-    MCUStaticListIterator(T1 * _list, int _index)
-      : list(_list), index(_index)
-    { }
+    ~MCUStaticListIterator()
+    {
+      AutoRelease();
+    }
 
     int GetIndex()
     { return index; }
 
     long GetID()
-    { return list->ids[index]; }
+    {
+      if(list && index >= 0 && index < list->size)
+        return list->ids[index];
+      return -1;
+    }
 
     T2 * GetObject()
-    { return list->objs[index]; }
+    {
+      if(list && index >= 0 && index < list->size)
+        return list->objs[index];
+      return NULL;
+    }
 
     bool operator == (const MCUStaticListIterator & it)
     { return (index == it.index); }
@@ -432,8 +445,18 @@ class MCUStaticListIterator
     bool operator != (const MCUStaticListIterator & it)
     { return (index != it.index); }
 
+    MCUStaticListIterator & operator = (const MCUStaticListIterator & it)
+    {
+      AutoRelease();
+      list = it.list;
+      index = it.index;
+      AutoCapture();
+      return *this;
+    }
+
     MCUStaticListIterator & operator ++ ()
     {
+      AutoRelease();
       index = list->IteratorIncrement(index);
       return *this;
     }
@@ -441,19 +464,61 @@ class MCUStaticListIterator
     MCUStaticListIterator operator ++ (int)
     {
       MCUStaticListIterator tmp = *this;
-      ++*this;
+      index = list->IteratorIncrement(index);
       return tmp;
     }
 
+    // для "обычного" итератора
+    // быстрее чем list.Release(id)
+    void Release()
+    {
+      if(list && index >= 0 && index < list->size)
+        list->ReleaseInternal(index);
+    }
+
     T2 * operator -> ()
-    { return list->objs[index]; }
+    { return GetObject(); }
 
     T2 * operator * ()
-    { return list->objs[index]; }
+    { return GetObject(); }
 
   protected:
+    void AutoRelease()
+    {
+      if(auto_release)
+        Release();
+    }
+
+    void AutoCapture()
+    {
+      if(auto_release && list && index >= 0 && index < list->size)
+        list->CaptureInternal(index);
+    }
+
     T1 * list;
     int index;
+    bool auto_release;
+};
+
+//
+// "умный" итератор
+// автоматически освобождает текущий объект при изменении итератора и в деструкторе
+//
+template <class T1, class T2>
+class MCUStaticListSmartIterator : public MCUStaticListIterator<T1, T2>
+{
+  public:
+    MCUStaticListSmartIterator(T1 * _list = NULL, int _index = -1)
+      : MCUStaticListIterator<T1, T2>(_list, _index)
+    {
+      this->auto_release = true;
+    }
+
+    MCUStaticListSmartIterator(MCUStaticListIterator<T1, T2> const & it)
+      : MCUStaticListIterator<T1, T2>(it)
+    {
+      this->auto_release = true;
+    }
 };
 
 template <class T>
@@ -483,8 +548,13 @@ class MCUStaticList
 
     template<class T1, class T2> friend class MCUStaticListIterator;
     typedef MCUStaticListIterator<MCUStaticList, T> iterator;
+    // первый объект в списке, захвачен сразу
     iterator begin() { return iterator(this, IteratorIncrement(-1)); }
-    iterator end() { return iterator(this, size); }
+    // для end() index = size
+    const iterator & end() const { return iterator_end; }
+
+    template<class T1, class T2> friend class MCUStaticListSmartIterator;
+    typedef MCUStaticListSmartIterator<MCUStaticList, T> smart_iterator;
 
   protected:
     void CaptureInternal(int index);
@@ -506,12 +576,14 @@ class MCUStaticList
     T ** objs_end;
     long * volatile captures;
     bool * volatile locks;
+    iterator iterator_end;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
 MCUStaticList<T>::MCUStaticList(int _size)
+  : iterator_end(this, _size)
 {
   size = _size;
   current_size = 0;

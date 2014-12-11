@@ -15,7 +15,7 @@ PString Conference::SaveTemplate(PString tplName)
 
 
   int mixer_number = 0;
-  for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++mixer_number)
+  for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++mixer_number)
   {
     MCUSimpleVideoMixer & m = *it.GetObject();
 
@@ -102,8 +102,6 @@ PString Conference::SaveTemplate(PString tplName)
     if(skipCounter==1) t << "    VMP -\n";
     else if(skipCounter>1) t << "    SKIP " << skipCounter << "\n";
     t << "  }\n";
-
-    m.Unlock();
   }
 
   PWaitAndSignal m(profileListMutex);

@@ -524,7 +524,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
 
   BOOL firstConference = TRUE;
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
-  for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
     PStringStream c;
@@ -669,8 +669,6 @@ PString MCUH323EndPoint::GetRoomStatusJS()
     if(!firstConference) str += ",";
     firstConference = FALSE;
     str += c;
-
-    conference->Unlock();
   }
 
   str += ")";
@@ -695,7 +693,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
   PString substitution;
 
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
-  for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
     // make a copy of the repeating html chunk
@@ -898,8 +896,6 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
     SpliceMacro(insert, "RoomMemberCount", PString(PString::Unsigned, profileListSize));
     SpliceMacro(insert, "RoomMembers",     members);
     substitution += insert;
-
-    conference->Unlock();
   }
 
   return substitution;
@@ -924,7 +920,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
   int number = 0;
-  for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it, ++number)
+  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it, ++number)
   {
     Conference *conference = it.GetObject();
       jsRoom = conference->GetNumber();
@@ -932,7 +928,6 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
       jsRoom.Replace("\"","&quot;",TRUE,0);
       if(number != 0) r << ",";                                                // [0][9][ci][0-2] roomName & memberCount & isModerated
       r << "[\"" << jsRoom << "\"," << conference->GetVisibleMemberCount() << ",\"" << conference->IsModerated() << "\"]";
-    conference->Unlock();
   }
 
     r << "]"; // l3 close
@@ -949,11 +944,10 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
   r << "]"; //l2 close
 
   MCUVideoMixerList & videoMixerList = c.GetVideoMixerList();
-  for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+  for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
   {
     MCUSimpleVideoMixer *mixer = it.GetObject();
     r << "," << GetVideoMixerConfiguration(mixer);
-    mixer->Unlock();
   }
 
   r << "];"; //l1 close
@@ -1654,13 +1648,12 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
       if(videoMixerList.GetCurrentSize() != 0)
       {
-        for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+        for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
         {
           MCUSimpleVideoMixer *mixer = it.GetObject();
           int oldPos = mixer->GetPositionNum(member->GetID());
           if(oldPos != -1)
             mixer->MyRemoveVideoSource(oldPos, TRUE);
-          mixer->Unlock();
         }
       }
       else // classic MCU mode
@@ -1720,13 +1713,12 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
       if(videoMixerList.GetCurrentSize() != 0)
       {
-        for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+        for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
         {
           MCUSimpleVideoMixer *mixer = it.GetObject();
           int type = mixer->GetPositionType(id);
           if(type == 2 || type == 3)
             mixer->MyRemoveVideoSourceById(id, FALSE);
-           mixer->Unlock();
         }
       }
       else
@@ -1783,7 +1775,7 @@ PString MCUH323EndPoint::GetRoomList(const PString & block)
   members << "<input name='room' id='room' type=hidden>";
 
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
-  for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
 
@@ -1795,8 +1787,6 @@ PString MCUH323EndPoint::GetRoomList(const PString & block)
     members << "\" onclick='document.getElementById(\"room\").value=\"" << roomNumber << "\";document.forms[0].submit();'>"
             << roomNumber << " " << conference->IsModerated() << " " << conference->GetVisibleMemberCount()
 	    << "</span>";
-
-    conference->Unlock();
   }
 
   members << "";
@@ -1911,7 +1901,7 @@ PString MCUH323EndPoint::GetMonitorText()
 
   PINDEX confNum = 0;
 
-  for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
 
@@ -1996,7 +1986,7 @@ PString MCUH323EndPoint::GetMonitorText()
 
     MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
     int number = 0;
-    for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++number)
+    for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++number)
     {
       MCUSimpleVideoMixer *mixer = it.GetObject();
       output << "[Mixer " << number << "]\n";
@@ -2014,9 +2004,7 @@ PString MCUH323EndPoint::GetMonitorText()
                << "    Position status: " << r->status << "\n";
         r=r->next;
       }
-      mixer->Unlock();
     }
-    conference->Unlock();
   }
 
   return output;
@@ -3344,15 +3332,12 @@ void MCUH323Connection::OnUserInputString(const PString & str)
     if(codeRoomName != "" && codePos != "")
     {
       MCUConferenceList & conferenceList = ep.GetConferenceManager().GetConferenceList();
-      for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+      for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
       {
         Conference *conference = it.GetObject();
 
         if(conference->GetNumber() != codeRoomName)
-        {
-          conference->Unlock();
           continue;
-        }
 
         Conference::MemberList & memberList = conference->GetMemberList();
         for(Conference::MemberList::const_iterator t = memberList.begin(); t != memberList.end(); ++t)
@@ -3373,7 +3358,6 @@ void MCUH323Connection::OnUserInputString(const PString & str)
             break;
           }
         }
-        conference->Unlock();
         break;
       }
     }

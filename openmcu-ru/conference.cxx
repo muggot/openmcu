@@ -518,11 +518,10 @@ void ConferenceManager::ClearConferenceList()
 
 void ConferenceManager::ClearMonitorEvents()
 {
-  for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
     monitor->RemoveForConference(conference->GetID());
-    conference->Unlock();
   }
 }
 
@@ -1155,11 +1154,10 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
     }
     else
     {
-      for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+      for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
         mixer->MyRemoveVideoSourceById(userid,FALSE);
-        mixer->Unlock();
       }
     }
 #endif
@@ -1209,27 +1207,23 @@ void Conference::RemoveAudioConnection(ConferenceMember * member)
 
 void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, int amount, int sampleRate, int channels)
 {
-  for(int i = 0; i < audioConnectionList.GetSize(); ++i)
+  for(MCUAudioConnectionList::smart_iterator it = audioConnectionList.begin(); it != audioConnectionList.end(); ++it)
   {
-    ConferenceAudioConnection * conn = audioConnectionList[i];
-    if(conn == NULL)
-      continue;
+    ConferenceAudioConnection * conn = it.GetObject();
     if(conn->GetID() == member->GetID())
-    {
-      audioConnectionList.Release((long)conn->GetID());
       continue;
-    }
+
     BOOL skip = moderated&&muteUnvisible;
     if(skip)
     {
-      for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+      for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
         if(mixer->GetPositionStatus(member->GetID()) >= 0)
+        {
           skip = FALSE;
-        mixer->Unlock();
-        if(skip == FALSE)
           break;
+        }
       }
     }
     if(!skip) // default behaviour
@@ -1237,7 +1231,6 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, int a
       conn->ReadAudio(member, (BYTE *)buffer, amount, sampleRate, channels);
       member->ReadAudioOutputGain(buffer, amount);
     }
-    audioConnectionList.Release((long)conn->GetID());
   }
 }
 
@@ -1282,7 +1275,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
     else
       member->vad = 0;
 
-    for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+    for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
     {
       MCUSimpleVideoMixer *mixer = it.GetObject();
       int status = mixer->GetPositionStatus(member->GetID());
@@ -1315,8 +1308,6 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
       }
       if(audioLevel > VAlevel && status == 0 && member->disableVAD == FALSE && member->vad-VAdelay > 500)
         member->vad = VAdelay;
-
-      mixer->Unlock();
     }
   }
 #endif // MCU_VIDEO
@@ -1379,11 +1370,10 @@ BOOL Conference::WriteMemberVideo(ConferenceMember * member, const void * buffer
   if(UseSameVideoForAllMembers())
   {
     bool writeResult = FALSE;
-    for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+    for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
     {
       MCUSimpleVideoMixer *mixer = it.GetObject();
       writeResult |= mixer->WriteFrame(member->GetID(), buffer, width, height, amount);
-      mixer->Unlock();
     }
     return writeResult;
   }
@@ -1425,11 +1415,10 @@ void Conference::FreezeVideo(ConferenceMemberId id)
 
     if(UseSameVideoForAllMembers())
     {
-      for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+      for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
         int pos = mixer->GetPositionStatus(id);
-        mixer->Unlock();
         if(pos >= 0)
         {
           r->second->SetFreezeVideo(FALSE);
@@ -1455,11 +1444,10 @@ void Conference::FreezeVideo(ConferenceMemberId id)
     ConferenceMemberId mid = r->second->GetID();
     if(UseSameVideoForAllMembers())
     {
-      for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+      for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
         int pos = mixer->GetPositionStatus(mid);
-        mixer->Unlock();
         if(pos >= 0)
         {
           r->second->SetFreezeVideo(FALSE);
@@ -1490,13 +1478,12 @@ BOOL Conference::PutChosenVan()
   {
     if(r->second->chosenVan)
     {
-      for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+      for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
         int pos = mixer->GetPositionStatus(r->second->GetID());
         if(pos < 0)
           put |= (NULL != mixer->SetVADPosition(r->second, r->second->chosenVan, VAtimeout));
-        mixer->Unlock();
       }
     }
   }
