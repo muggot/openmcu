@@ -410,14 +410,14 @@ const static struct h264_resolution {
 // после использования объекта обязательно делать list.Release()
 //
 template <class T1, class T2>
-class MCUStaticListIterator
+class MCUSharedListIterator
 {
   public:
-    MCUStaticListIterator(T1 * _list = NULL, int _index = -1)
+    MCUSharedListIterator(T1 * _list = NULL, int _index = -1)
       : list(_list), index(_index), auto_release(false)
     { }
 
-    ~MCUStaticListIterator()
+    ~MCUSharedListIterator()
     {
       AutoRelease();
     }
@@ -439,13 +439,13 @@ class MCUStaticListIterator
       return NULL;
     }
 
-    bool operator == (const MCUStaticListIterator & it)
+    bool operator == (const MCUSharedListIterator & it)
     { return (index == it.index); }
 
-    bool operator != (const MCUStaticListIterator & it)
+    bool operator != (const MCUSharedListIterator & it)
     { return (index != it.index); }
 
-    MCUStaticListIterator & operator = (const MCUStaticListIterator & it)
+    MCUSharedListIterator & operator = (const MCUSharedListIterator & it)
     {
       AutoRelease();
       list = it.list;
@@ -454,16 +454,16 @@ class MCUStaticListIterator
       return *this;
     }
 
-    MCUStaticListIterator & operator ++ ()
+    MCUSharedListIterator & operator ++ ()
     {
       AutoRelease();
       index = list->IteratorIncrement(index);
       return *this;
     }
 
-    MCUStaticListIterator operator ++ (int)
+    MCUSharedListIterator operator ++ (int)
     {
-      MCUStaticListIterator tmp = *this;
+      MCUSharedListIterator tmp = *this;
       index = list->IteratorIncrement(index);
       return tmp;
     }
@@ -505,28 +505,37 @@ class MCUStaticListIterator
 // автоматически освобождает текущий объект при изменении итератора и в деструкторе
 //
 template <class T1, class T2>
-class MCUStaticListSmartIterator : public MCUStaticListIterator<T1, T2>
+class MCUSharedListSmartIterator : public MCUSharedListIterator<T1, T2>
 {
   public:
-    MCUStaticListSmartIterator(T1 * _list = NULL, int _index = -1)
-      : MCUStaticListIterator<T1, T2>(_list, _index)
+    MCUSharedListSmartIterator(T1 * _list = NULL, int _index = -1)
+      : MCUSharedListIterator<T1, T2>(_list, _index)
     {
       this->auto_release = true;
     }
 
-    MCUStaticListSmartIterator(MCUStaticListIterator<T1, T2> const & it)
-      : MCUStaticListIterator<T1, T2>(it)
+    MCUSharedListSmartIterator(MCUSharedListIterator<T1, T2> const & it)
+      : MCUSharedListIterator<T1, T2>(it)
     {
       this->auto_release = true;
     }
 };
 
 template <class T>
-class MCUStaticList
+class MCUSharedList
 {
   public:
-    MCUStaticList(int _size = 128);
-    ~MCUStaticList();
+    MCUSharedList(int _size = 128);
+    ~MCUSharedList();
+
+    template<class T1, class T2> friend class MCUSharedListIterator;
+    typedef MCUSharedListIterator<MCUSharedList, T> iterator;
+
+    template<class T1, class T2> friend class MCUSharedListSmartIterator;
+    typedef MCUSharedListSmartIterator<MCUSharedList, T> smart_iterator;
+
+    iterator begin() { return iterator(this, IteratorIncrement(-1)); }
+    const iterator & end() const { return iterator_end; }
 
     int GetSize()
     { return size; }
@@ -537,29 +546,28 @@ class MCUStaticList
     long GetNextID()
     { return sync_increment(&idcounter); }
 
+    // Insert() - после добавления объект захвачен
     bool Insert(long id, T * obj, PString name = "");
+    // Erase(id) - Release выполнить(если захвачен) перед Erase
     bool Erase(long id);
+    // Erase(iterator) - Release выполнить после Erase
+    bool Erase(iterator & it);
     void Release(long id);
 
+    iterator Find(long id);
+    iterator Find(const PString & name);
+    iterator Find(T * obj);
+
+    // операторы возвращают захваченный объект
     T * operator[] (int index);
     T * operator() (long id);
-    T * operator() (PString name);
+    T * operator() (const PString & name);
     T * operator() (T * obj);
-
-    template<class T1, class T2> friend class MCUStaticListIterator;
-    typedef MCUStaticListIterator<MCUStaticList, T> iterator;
-    // первый объект в списке, захвачен сразу
-    iterator begin() { return iterator(this, IteratorIncrement(-1)); }
-    // для end() index = size
-    const iterator & end() const { return iterator_end; }
-
-    template<class T1, class T2> friend class MCUStaticListSmartIterator;
-    typedef MCUStaticListSmartIterator<MCUStaticList, T> smart_iterator;
 
   protected:
     void CaptureInternal(int index);
     void ReleaseInternal(int index);
-    void ReleaseWait(long * _captures);
+    void ReleaseWait(long * _captures, int threshold = 0);
 
     int IteratorIncrement(int index);
 
@@ -582,7 +590,7 @@ class MCUStaticList
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-MCUStaticList<T>::MCUStaticList(int _size)
+MCUSharedList<T>::MCUSharedList(int _size)
   : iterator_end(this, _size)
 {
   size = _size;
@@ -611,7 +619,7 @@ MCUStaticList<T>::MCUStaticList(int _size)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-MCUStaticList<T>::~MCUStaticList()
+MCUSharedList<T>::~MCUSharedList()
 {
   delete [] states;
   delete [] ids;
@@ -624,7 +632,7 @@ MCUStaticList<T>::~MCUStaticList()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-bool MCUStaticList<T>::Insert(long id, T * obj, PString name)
+bool MCUSharedList<T>::Insert(long id, T * obj, PString name)
 {
   bool insert = false;
   for(bool *it = find(states, states_end, false); it != states_end; it = find(++it, states_end, false))
@@ -659,13 +667,13 @@ bool MCUStaticList<T>::Insert(long id, T * obj, PString name)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-bool MCUStaticList<T>::Erase(long id)
+bool MCUSharedList<T>::Erase(long id)
 {
   bool erase = false;
   long *it = find(ids, ids_end, id);
   if(it != ids_end)
   {
-    int index = it - ids;;
+    int index = it - ids;
     if(ids[index] == id && states[index] == true )
     {
       // блокировка записи
@@ -687,20 +695,58 @@ bool MCUStaticList<T>::Erase(long id)
         }
         // разблокировка записи
         sync_bool_compare_and_swap(&locks[index], true, false);
-        if(erase)
-          return true;
       }
     }
   }
+  if(erase)
+    return true;
   return false;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-void MCUStaticList<T>::ReleaseWait(long * _captures)
+bool MCUSharedList<T>::Erase(MCUSharedListIterator<MCUSharedList<T>, T> & it)
 {
-  for(int i = 0; *_captures != 0; ++i)
+  int index = it.GetIndex();
+  if(index < 0 || index >= size)
+    return false;
+
+  bool erase = false;
+  if(states[index] == true )
+  {
+    // блокировка записи
+    if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
+    {
+      // повторная проверка после блокировки
+      if(states[index] == true)
+      {
+        // запретить получение объекта
+        states[index] = false;
+        sync_decrement(&current_size);
+        // ждать освобождения объекта
+        ReleaseWait(&captures[index], 1);
+        // запись объекта
+        ids[index] = -1;
+        names[index] = "";
+        objs[index] = NULL;
+        erase = true;
+      }
+      // разблокировка записи
+      sync_bool_compare_and_swap(&locks[index], true, false);
+    }
+  }
+  if(erase)
+    return true;
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+void MCUSharedList<T>::ReleaseWait(long * _captures, int treshold)
+{
+  for(int i = 0; *_captures != treshold; ++i)
   {
     if(i < 100)
       __asm__ __volatile__("pause":::"memory");
@@ -727,7 +773,7 @@ void MCUStaticList<T>::ReleaseWait(long * _captures)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-void MCUStaticList<T>::Release(long id)
+void MCUSharedList<T>::Release(long id)
 {
   long *it = find(ids, ids_end, id);
   if(it != ids_end)
@@ -740,7 +786,7 @@ void MCUStaticList<T>::Release(long id)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-void MCUStaticList<T>::ReleaseInternal(int index)
+void MCUSharedList<T>::ReleaseInternal(int index)
 {
   //PTRACE(0, "release " << index << " " << captures[index] << " " << PThread::GetCurrentThreadId() << " objs=" << (objs[index] == NULL ? 0 : objs[index]) << " id=" << ids[index]);
   sync_decrement(&captures[index]);
@@ -749,7 +795,7 @@ void MCUStaticList<T>::ReleaseInternal(int index)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-void MCUStaticList<T>::CaptureInternal(int index)
+void MCUSharedList<T>::CaptureInternal(int index)
 {
   //PTRACE(0, "capture " << index << " " << captures[index] << " " << PThread::GetCurrentThreadId() << " objs=" << (objs[index] == NULL ? 0 : objs[index]) << " id=" << ids[index]);
   sync_increment(&captures[index]);
@@ -758,7 +804,7 @@ void MCUStaticList<T>::CaptureInternal(int index)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-int MCUStaticList<T>::IteratorIncrement(int index)
+int MCUSharedList<T>::IteratorIncrement(int index)
 {
   ++index;
   if(index < 0 || index >= size)
@@ -771,6 +817,7 @@ int MCUStaticList<T>::IteratorIncrement(int index)
     // повторная проверка после захвата
     if(states[index] == true)
       return index;
+    // освободить если нет объекта
     else
       ReleaseInternal(index);
   }
@@ -780,30 +827,8 @@ int MCUStaticList<T>::IteratorIncrement(int index)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-T * MCUStaticList<T>::operator[] (int index)
+MCUSharedListIterator<MCUSharedList<T>, T> MCUSharedList<T>::Find(long id)
 {
-  if(index < 0 || index >= size)
-    return NULL;
-  T *obj = NULL;
-  if(states[index] == true)
-  {
-    CaptureInternal(index);
-    // повторная проверка после захвата
-    if(states[index] == true)
-      obj = objs[index];
-    // освободить если нет объекта
-    if(obj == NULL)
-      ReleaseInternal(index);
-  }
-  return obj;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template <class T>
-T * MCUStaticList<T>::operator() (long id)
-{
-  T *obj = NULL;
   long *it = find(ids, ids_end, id);
   if(it != ids_end)
   {
@@ -811,20 +836,19 @@ T * MCUStaticList<T>::operator() (long id)
     CaptureInternal(index);
     // повторная проверка после захвата
     if(ids[index] == id && states[index] == true)
-      obj = objs[index];
+      return iterator(this, index);
     // освободить если нет объекта
-    if(obj == NULL)
+    else
       ReleaseInternal(index);
   }
-  return obj;
+  return iterator_end;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-T * MCUStaticList<T>::operator() (PString name)
+MCUSharedListIterator<MCUSharedList<T>, T> MCUSharedList<T>::Find(const PString & name)
 {
-  T *obj = NULL;
   PString *it = find(names, names_end, name);
   if(it != names_end)
   {
@@ -832,48 +856,94 @@ T * MCUStaticList<T>::operator() (PString name)
     CaptureInternal(index);
     // повторная проверка после захвата
     if(names[index] == name && states[index] == true)
-      obj = objs[index];
+      return iterator(this, index);
     // освободить если нет объекта
-    if(obj == NULL)
+    else
       ReleaseInternal(index);
   }
-  return obj;
+  return iterator_end;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-T * MCUStaticList<T>::operator() (T * _obj)
+MCUSharedListIterator<MCUSharedList<T>, T> MCUSharedList<T>::Find(T * obj)
 {
-  T *obj = NULL;
-  T **it = find(objs, objs_end, _obj);
+  T **it = find(objs, objs_end, obj);
   if(it != objs_end)
   {
     int index = it - objs;
     CaptureInternal(index);
     // повторная проверка после захвата
-    if(objs[index] == _obj && states[index] == true)
-      obj = objs[index];
+    if(objs[index] == obj && states[index] == true)
+      return iterator(this, index);
     // освободить если нет объекта
-    if(obj == NULL)
+    else
       ReleaseInternal(index);
   }
-  return obj;
+  return iterator_end;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+T * MCUSharedList<T>::operator[] (int index)
+{
+  if(index < 0 || index >= size)
+    return NULL;
+  if(states[index] == true)
+  {
+    CaptureInternal(index);
+    // повторная проверка после захвата
+    if(states[index] == true)
+      return objs[index];
+    // освободить если нет объекта
+    else
+      ReleaseInternal(index);
+  }
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+T * MCUSharedList<T>::operator() (long id)
+{
+  iterator it = Find(id);
+  return it.GetObject();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+T * MCUSharedList<T>::operator() (const PString & name)
+{
+  iterator it = Find(name);
+  return it.GetObject();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T>
+T * MCUSharedList<T>::operator() (T * obj)
+{
+  iterator it = Find(obj);
+  return it.GetObject();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class Conference;
-typedef MCUStaticList<Conference> MCUConferenceList;
+typedef MCUSharedList<Conference> MCUConferenceList;
 
 class ConferenceAudioConnection;
-typedef MCUStaticList<ConferenceAudioConnection> MCUAudioConnectionList;
+typedef MCUSharedList<ConferenceAudioConnection> MCUAudioConnectionList;
 
 class MCUSimpleVideoMixer;
-typedef MCUStaticList<MCUSimpleVideoMixer> MCUVideoMixerList;
+typedef MCUSharedList<MCUSimpleVideoMixer> MCUVideoMixerList;
 
 class ConferenceProfile;
-typedef MCUStaticList<ConferenceProfile> MCUConferenceProfileList;
+typedef MCUSharedList<ConferenceProfile> MCUConferenceProfileList;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -918,7 +988,7 @@ class MCUQueueT
 
   protected:
     bool stopped;
-    MCUStaticList<T> queue;
+    MCUSharedList<T> queue;
 };
 
 typedef MCUQueueT<PString> MCUQueuePString;
