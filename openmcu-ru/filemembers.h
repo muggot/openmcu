@@ -3,15 +3,13 @@
 #define _MCU_FILEMEMBERS_H
 
 #include "config.h"
+#include "util.h"
 
 #include <ptlib/sound.h>
 #include <opalwavfile.h>
 #include "conference.h"
 
 #include <deque>
-
-
-class MCUH323Connection;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -189,5 +187,7 @@ class ConferenceFilePlayer : public ConferenceFileMember
 
     PDECLARE_NOTIFIER(PThread, ConferenceFilePlayer, Thread);
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif // _MCU_FILEMEMBERS_H

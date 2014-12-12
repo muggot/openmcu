@@ -354,7 +354,7 @@ void MCUVideoMixer::Unlock()
   if(conference)
   {
     MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-    videoMixerList.Release(id);
+    videoMixerList.Release(listID);
   }
 }
 

@@ -2,11 +2,8 @@
 #ifndef _MCU_H323_H
 #define _MCU_H323_H
 
-#ifdef _WIN32
-#pragma warning(disable:4786)
-#endif
-
 #include "config.h"
+#include "util.h"
 
 #include <ptlib.h>
 #include <ptlib/videoio.h>
@@ -57,12 +54,6 @@
 #define OTFC_AUDIO_GAIN_LEVEL_SET     79
 #define OTFC_OUTPUT_GAIN_SET          80
 #define OTFC_REFRESH_ABOOK            90
-
-////////////////////////////////////////////////////
-
-class GatekeeperMonitor;
-class ConnectionMonitor;
-class ConnectionMonitorInfo;
 
 ////////////////////////////////////////////////////
 
@@ -135,8 +126,6 @@ class MCUH323EndPoint : public H323EndPoint
 };
 
 ////////////////////////////////////////////////////
-
-class MCUH323Connection;
 
 class OutgoingAudio : public PChannel
 {
@@ -216,10 +205,6 @@ class NotifyH245Thread : public PThread
     int mcuNumber;
     int terminalIdToSend;
 };
-
-class H323Connection_ConferenceMember;
-class MCUPVideoInputDevice;
-class MCUPVideoOutputDevice;
 
 class MCUH323Connection : public H323Connection
 {
@@ -504,8 +489,6 @@ class H323Connection_ConferenceMember : public ConferenceMember
 ////////////////////////////////////////////////////
 
 #if MCU_VIDEO
-
-#include <ptlib/vconvert.h>
 
 class MCUPVideoInputDevice : public PVideoInputDevice
 {

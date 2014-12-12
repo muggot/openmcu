@@ -10,6 +10,7 @@
 #include <h323con.h>
 
 #include "config.h"
+#include "util.h"
 
 #if MCUSIP_SRTP
   #include "srtp.h"
@@ -31,9 +32,6 @@
 
 static const PString AES_CM_128_HMAC_SHA1_80("AES_CM_128_HMAC_SHA1_80");
 static const PString AES_CM_128_HMAC_SHA1_32("AES_CM_128_HMAC_SHA1_32");
-
-class MCUSipConnnection;
-class SipRTP_UDP;
 
 void sip_rtp_init();
 void sip_rtp_shutdown();

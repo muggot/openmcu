@@ -34,10 +34,9 @@ PString Conference::SaveTemplate(PString tplName)
       else
       if(id!=NULL)                                 // - or        "VMP 1, memberName" (static type)
       {
-        PWaitAndSignal m(profileListMutex);
-        for(ProfileList::iterator s = profileList.begin(); s != profileList.end(); ++s)
+        for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
         {
-          ConferenceMember *member = s->second->GetMember();
+          ConferenceMember * member = it->GetMember();
           if(member) if(member->GetID() == id)
           {
             vmpText << "VMP 1, " << member->GetName();
@@ -70,10 +69,9 @@ PString Conference::SaveTemplate(PString tplName)
               {
                 if(mixMatch) if(prev_vmpN == i) if(value.Left(1)=="1")
                 {
-                  PWaitAndSignal m(profileListMutex);
-                  for(ProfileList::iterator s = profileList.begin(); s != profileList.end(); ++s)
+                  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
                   {
-                    ConferenceMember *member = s->second->GetMember();
+                    ConferenceMember * member = it->GetMember();
                     if(member == NULL)
                       continue;
                     if(member->GetType() & MEMBER_TYPE_GSYSTEM)
@@ -104,10 +102,9 @@ PString Conference::SaveTemplate(PString tplName)
     t << "  }\n";
   }
 
-  PWaitAndSignal m(profileListMutex);
-  for(ProfileList::iterator s = profileList.begin(); s != profileList.end(); ++s)
+  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
-    ConferenceProfile *profile = s->second;
+    ConferenceProfile *profile = it.GetObject();
     ConferenceMember *member = profile->GetMember();
     if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
       continue;
@@ -225,12 +222,15 @@ void Conference::LoadTemplate(PString tpl)
             if(commaPosition != P_MAX_INDEX)
             {
               PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
-              PWaitAndSignal m(profileListMutex);
-              ConferenceMember *member = manager.FindMemberNameIDWithoutLock(this, name);
-              if(member && mixer!=NULL)
+              ConferenceMember *member = manager.FindMemberNameIDWithLock(this, name);
+              if(member)
               {
-                mixer->PositionSetup(vmpN, 1, member);
-                member->SetFreezeVideo(FALSE);
+                if(mixer)
+                {
+                  mixer->PositionSetup(vmpN, 1, member);
+                  member->SetFreezeVideo(FALSE);
+                }
+                member->Unlock();
               }
             }
           }
@@ -305,16 +305,12 @@ void Conference::LoadTemplate(PString tpl)
 
   if(!lockedTemplate) return; // room not locked - don't touch member list
 
-  PWaitAndSignal m(profileListMutex);
-  for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); )
+  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
-    ConferenceProfile *profile = r->second;
+    ConferenceProfile *profile = it.GetObject();
     ConferenceMember *member = profile->GetMember();
     if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
-    {
-      ++r;
       continue;
-    }
     PString name = profile->GetName();
     if(validatedMembers.GetStringsIndex(name) == P_MAX_INDEX) // remove unwanted members
     {
@@ -327,12 +323,9 @@ void Conference::LoadTemplate(PString tpl)
       } else {
         PTRACE(6,"Conference\tLoading template - removing offline member " << name << " from memberNameList" << flush);
       }
-      profileList.erase(r++);
-      profile->Lock();
+      profileList.Erase(it);
       delete profile;
-      continue;
     }
-    ++r;
   }
 
   RefreshAddressBook();
@@ -658,15 +651,17 @@ void Conference::OnConnectionClean(const PString & remotePartyName, const PStrin
     name += '[' + url +']';
   }
 
-  PWaitAndSignal m(profileListMutex);
-  ConferenceProfile *profile = manager.FindProfileWithoutLock(this, name);
+  ConferenceProfile *profile = manager.FindProfileWithLock(this, name);
+  if(profile)
+    profile->Unlock();
   if(profile == NULL)
   {
-    for(ProfileList::iterator r = profileList.begin(); r != profileList.end(); ++r)
+    for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
-      if(r->second->GetName().FindLast(name) != P_MAX_INDEX)
+      ConferenceProfile *p = it.GetObject();
+      if(p->GetName().FindLast(name) != P_MAX_INDEX)
       {
-        profile = r->second;
+        profile = p;
         name = profile->GetName();
         break;
       }
@@ -680,6 +675,7 @@ void Conference::OnConnectionClean(const PString & remotePartyName, const PStrin
   if(profile->GetMember() != NULL)
   {
     PTRACE(2,"Conference\tMember found in the list, but it's not offine (nothing to do): " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
+    profile->Unlock();
     return;
   }
 
