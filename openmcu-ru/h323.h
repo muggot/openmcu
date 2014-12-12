@@ -133,7 +133,7 @@ class OutgoingAudio : public PChannel
 
   public:
     OutgoingAudio(H323EndPoint & ep, MCUH323Connection & conn, unsigned int sr, unsigned _channels);
-    
+
     BOOL Read(void * buffer, PINDEX amount);
     BOOL Close();
 
@@ -145,14 +145,7 @@ class OutgoingAudio : public PChannel
 
     unsigned int sampleRate;
     unsigned channels; //1=mono, 2=stereo
-/*
-#if USE_SWRESAMPLE
-    struct SwrContext *swrc;
-#else
-    BOOL swrc;
-#endif
-    PShortArray swr_buf;
-*/
+
     PAdaptiveDelay delay;
     PMutex audioChanMutex;
 };
@@ -176,18 +169,8 @@ class IncomingAudio : public PChannel
     H323EndPoint & ep;
     MCUH323Connection & conn;
 
-//    unsigned int sampleRate;
-/*
-#if USE_SWRESAMPLE
-    struct SwrContext *swrc;
-#else
-    BOOL swrc;
-#endif
-    PShortArray swr_buf;
-*/
     PMutex audioChanMutex;
     PAdaptiveDelay delay;
-    unsigned modulo;
 };
 
 ////////////////////////////////////////////////////
@@ -455,8 +438,6 @@ class H323Connection_ConferenceMember : public ConferenceMember
     { return new ConferenceConnection(this); }
 
     virtual void Close();
-
-    virtual PString GetTitle() const;
 
     virtual void SetName();
     virtual void SetName(PString newName) { name = newName; }

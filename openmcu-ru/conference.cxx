@@ -50,12 +50,11 @@ Conference * ConferenceManager::FindConferenceWithLock(Conference * _conference)
 
 Conference * ConferenceManager::FindConferenceWithLock(const OpalGloballyUniqueID & conferenceID)
 {
-  for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = *it;
-    if(conference && conference->GetGUID() == conferenceID)
-      return conference;
-    it.Release();
+    if(conference->GetGUID() == conferenceID)
+      return it.GetCapturedObject();
   }
   return NULL;
 }
@@ -86,7 +85,7 @@ Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PSt
     // create the conference
     long id = conferenceList.GetNextID();
     OpalGloballyUniqueID conferenceID;
-    conference = CreateConference(id, conferenceID, room, name, mcuNumberMap.GetNumber(conferenceID));
+    conference = CreateConference(id, conferenceID, room, name);
     conferenceList.Insert(id, conference, room);
     //
     OnCreateConference(conference);
@@ -180,12 +179,11 @@ ConferenceMember * ConferenceManager::FindMemberNameIDWithLock(Conference * conf
 {
   PString memberNameID = MCUURL(memberName).GetMemberNameId();
   MCUMemberList & memberList = conference->GetMemberList();
-  for(MCUMemberList::iterator it = memberList.begin(); it != memberList.end(); ++it)
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember *member = it.GetObject();
-    if(member && member->GetNameID() == memberNameID)
-      return member;
-    it.Release();
+    if(member->GetNameID() == memberNameID)
+      return it.GetCapturedObject();
   }
   return NULL;
 }
@@ -225,11 +223,10 @@ MCUSimpleVideoMixer * ConferenceManager::FindVideoMixerWithLock(Conference * con
   if(videoMixerList.GetCurrentSize() != 0)
   {
     int n = 0;
-    for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++n)
+    for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++n)
     {
       if(n == number)
-        return it.GetObject();
-      it->Unlock();
+        return it.GetCapturedObject();
     }
   }
   else
@@ -258,9 +255,9 @@ MCUSimpleVideoMixer * ConferenceManager::GetVideoMixerWithLock(const PString & r
 MCUSimpleVideoMixer * ConferenceManager::GetVideoMixerWithLock(Conference * conference)
 {
   MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-  MCUVideoMixerList::iterator it = videoMixerList.begin();
+  MCUVideoMixerList::shared_iterator it = videoMixerList.begin();
   if(it != videoMixerList.end())
-    return it.GetObject();
+    return it.GetCapturedObject();
   return NULL;
 }
 
@@ -282,14 +279,12 @@ int ConferenceManager::DeleteVideoMixer(Conference * conference, int number)
     return videoMixerList.GetCurrentSize();
 
   int j = 0;
-  for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
   {
     MCUSimpleVideoMixer *mixer = it.GetObject();
-    long id = mixer->GetID();
-    mixer->Unlock();
     if(j == number)
     {
-      if(videoMixerList.Erase(id))
+      if(videoMixerList.Erase(it))
         delete mixer;
       break;
     }
@@ -368,7 +363,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", clearing profile list");
 
   MCUProfileList & profileList = conference->GetProfileList();
-  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
     ConferenceProfile *profile = it.GetObject();
     profileList.Erase(it);
@@ -377,7 +372,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", disconnect remote endpoints");
   MCUMemberList & memberList = conference->GetMemberList();
-  for(MCUMemberList::smart_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember * member = it.GetObject();
     if(member)
@@ -403,12 +398,11 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
 Conference * ConferenceManager::CreateConference(long _id, const OpalGloballyUniqueID & _guid,
                                                               const PString & _number,
-                                                              const PString & _name,
-                                                              int _mcuNumber)
+                                                              const PString & _name)
 {
 #if ENABLE_ECHO_MIXER
   if(_number.Left(4) *= "echo")
-    return new Conference(*this, _id, _guid, "echo"+_guid.AsString(), _name, _mcuNumber, new EchoVideoMixer());
+    return new Conference(*this, _id, _guid, "echo"+_guid.AsString(), _name, new EchoVideoMixer());
 #endif
 #if ENABLE_TEST_ROOMS
   if(_number.Left(8) == "testroom")
@@ -421,7 +415,7 @@ Conference * ConferenceManager::CreateConference(long _id, const OpalGloballyUni
       if(count <= 0) { count = 0; number = "testroom"; }
     }
     if(count >= 0)
-      return new Conference(*this, _id, _guid, number, _name, _mcuNumber, new TestVideoMixer(count));
+      return new Conference(*this, _id, _guid, number, _name, new TestVideoMixer(count));
   }
 #endif
 
@@ -429,7 +423,7 @@ Conference * ConferenceManager::CreateConference(long _id, const OpalGloballyUni
 
   if(!forceScreenSplit)
   {
-    Conference *conference = new Conference(*this, _id, _guid, _number, _name, _mcuNumber, NULL);
+    Conference *conference = new Conference(*this, _id, _guid, _number, _name, NULL);
     return conference;
   }
 
@@ -438,7 +432,7 @@ Conference * ConferenceManager::CreateConference(long _id, const OpalGloballyUni
   if (slashPos != P_MAX_INDEX) number=_number.Left(slashPos);
   else number=_number;
 
-  return new Conference(*this, _id, _guid, number, _name, _mcuNumber
+  return new Conference(*this, _id, _guid, number, _name
 #if MCU_VIDEO
                         , new MCUSimpleVideoMixer(forceScreenSplit)
 #endif
@@ -449,12 +443,11 @@ Conference * ConferenceManager::CreateConference(long _id, const OpalGloballyUni
 
 void ConferenceManager::RemoveConference(const PString & room)
 {
-  Conference *conference = FindConferenceWithLock(room);
-  if(conference)
+  MCUConferenceList::shared_iterator it = conferenceList.Find(room);
+  if(it != conferenceList.end())
   {
-    conferenceList.Release(conference->GetID());
-    conferenceList.Erase(conference->GetID());
-    mcuNumberMap.RemoveNumber(conference->GetMCUNumber());
+    Conference *conference = *it;
+    conferenceList.Erase(it);
     OnDestroyConference(conference);
     delete conference;
     PTRACE(1, "RemoveConference");
@@ -465,12 +458,10 @@ void ConferenceManager::RemoveConference(const PString & room)
 
 void ConferenceManager::ClearConferenceList()
 {
-  for(MCUConferenceList::iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
-    conferenceList.Release(conference->GetID());
-    conferenceList.Erase(conference->GetID());
-    mcuNumberMap.RemoveNumber(conference->GetMCUNumber());
+    conferenceList.Erase(it);
     OnDestroyConference(conference);
     delete conference;
     PTRACE(1, "RemoveConference");
@@ -481,7 +472,7 @@ void ConferenceManager::ClearConferenceList()
 
 void ConferenceManager::ClearMonitorEvents()
 {
-  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
     monitor->RemoveForConference(conference->GetID());
@@ -654,13 +645,12 @@ int ConferenceMCUCheckInfo::Perform(Conference & conference)
 Conference::Conference(ConferenceManager & _manager, long _listID,
                        const OpalGloballyUniqueID & _guid,
                                     const PString & _number,
-                                    const PString & _name,
-                                    int _mcuNumber
+                                    const PString & _name
 #if MCU_VIDEO
                                     , MCUSimpleVideoMixer * mixer
 #endif
 )
-  : manager(_manager), listID(_listID), guid(_guid), number(_number), name(_name), mcuNumber(_mcuNumber), mcuMonitorRunning(FALSE)
+  : manager(_manager), listID(_listID), guid(_guid), number(_number), name(_name), mcuMonitorRunning(FALSE)
 {
   stopping = FALSE;
 #if MCU_VIDEO
@@ -681,7 +671,6 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
   VAtimeout = 10000;
   VAlevel = 100;
   echoLevel = 0;
-  vidmembernum = 0;
   conferenceRecorder = NULL;
   forceScreenSplit = GetConferenceParam(number, ForceSplitVideoKey, TRUE);
   lockedTemplate = GetConferenceParam(number, LockTemplateKey, FALSE);
@@ -694,12 +683,10 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
 Conference::~Conference()
 {
 #if MCU_VIDEO
-  for(MCUVideoMixerList::iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
   {
     MCUSimpleVideoMixer *mixer = it.GetObject();
-    long id = mixer->GetID();
-    mixer->Unlock();
-    if(videoMixerList.Erase(id))
+    if(videoMixerList.Erase(it))
       delete mixer;
   }
 #endif
@@ -843,7 +830,7 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
   // memberProfileList
   PString nameID = MCUURL(name).GetMemberNameId();
   ConferenceProfile * profile = NULL;
-  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
     ConferenceProfile *p = it.GetObject();
     if(p->GetMember())
@@ -901,7 +888,7 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
     memberList.Erase((long)member->GetID());
 
   // profileList
-  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
     ConferenceProfile *profile = it.GetObject();
     if(profile->GetName() == name && profile->GetMember() == member)
@@ -948,7 +935,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   // lock the member lists
   PWaitAndSignal m(memberListMutex);
 
-  MCUMemberList::smart_iterator it = memberList.Find((long)memberToAdd->GetID());
+  MCUMemberList::shared_iterator it = memberList.Find((long)memberToAdd->GetID());
   if(it != memberList.end())
   {
     PTRACE(1, "Conference\t" << number << "Rejected duplicate member ID: " << (long)memberToAdd->GetID() << " " << memberToAdd->GetName());
@@ -962,7 +949,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     PString memberName = memberToAdd->GetName();
     for(PINDEX i = 0; ; i++)
     {
-      MCUMemberList::smart_iterator mit = memberList.Find(memberToAdd->GetName());
+      MCUMemberList::shared_iterator mit = memberList.Find(memberToAdd->GetName());
       if(mit == memberList.end())
         break;
       if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
@@ -1016,7 +1003,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     // classic mode
     // make sure each member has a connection created for the new member
     // make sure the new member has a connection created for each existing member
-    for(MCUMemberList::smart_iterator it = memberList.begin(); it != memberList.end(); ++it)
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
       ConferenceMember *member = it.GetObject();
       if(member != memberToAdd)
@@ -1028,10 +1015,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
       }
     }
   }
-
-  // for H.323
-  int tid = terminalNumberMap.GetNumber(memberToAdd->GetID());
-  memberToAdd->SetTerminalNumber(tid);
 
   // update the statistics
   if(memberToAdd->IsVisible())
@@ -1101,7 +1084,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
     }
     else
     {
-      for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+      for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
         mixer->MyRemoveVideoSourceById(memberToRemove->GetID(), FALSE);
@@ -1112,7 +1095,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
   {
     // classic mode
     // remove this member from the connection lists for all other members
-    for(MCUMemberList::smart_iterator it = memberList.begin(); it != memberList.end(); ++it)
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
       ConferenceMember *member = it.GetObject();
       if(member != memberToRemove)
@@ -1129,8 +1112,6 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
   // trigger H245 thread for leave message
   //if (memberToRemove->IsVisible())
   //  new NotifyH245Thread(*this, FALSE, memberToRemove);
-
-  terminalNumberMap.RemoveNumber(memberToRemove->GetTerminalNumber());
 
   // notify that member is not joined anymore
   memberToRemove->SetJoined(FALSE);
@@ -1163,7 +1144,7 @@ void Conference::RemoveAudioConnection(ConferenceMember * member)
 
 void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, int amount, int sampleRate, int channels)
 {
-  for(MCUAudioConnectionList::smart_iterator it = audioConnectionList.begin(); it != audioConnectionList.end(); ++it)
+  for(MCUAudioConnectionList::shared_iterator it = audioConnectionList.begin(); it != audioConnectionList.end(); ++it)
   {
     ConferenceAudioConnection * conn = it.GetObject();
     if(conn->GetID() == member->GetID())
@@ -1172,7 +1153,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, void * buffer, int a
     BOOL skip = moderated&&muteUnvisible;
     if(skip)
     {
-      for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+      for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
         if(mixer->GetPositionStatus(member->GetID()) >= 0)
@@ -1231,7 +1212,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
     else
       member->vad = 0;
 
-    for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+    for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
     {
       MCUSimpleVideoMixer *mixer = it.GetObject();
       int status = mixer->GetPositionStatus(member->GetID());
@@ -1298,21 +1279,6 @@ void Conference::ReadMemberVideo(ConferenceMember * member, void * buffer, int w
 
   mixer->ReadFrame(*member, buffer, width, height, amount);
   mixer->Unlock();
-
-/* commented by kay27 not really understanding what he is doing, 04.09.2013
-  // find the other member and copy it's video
-  PWaitAndSignal m(memberListMutex);
-  MemberList::iterator r;
-  for (r = memberList.begin(); r != memberList.end(); r++) {
-    if ((r->second != member) && r->second->IsVisible()) {
-      void * frameStore = r->second->OnExternalReadVideo(member->GetID(), width, height, amount);  
-      if (frameStore != NULL) {
-        memcpy(buffer, frameStore, amount);
-        r->second->UnlockExternalVideo();
-      }
-    }
-  }
-*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1322,7 +1288,7 @@ BOOL Conference::WriteMemberVideo(ConferenceMember * member, const void * buffer
   if(UseSameVideoForAllMembers())
   {
     bool writeResult = FALSE;
-    for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+    for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
     {
       MCUSimpleVideoMixer *mixer = it.GetObject();
       writeResult |= mixer->WriteFrame(member->GetID(), buffer, width, height, amount);
@@ -1331,7 +1297,7 @@ BOOL Conference::WriteMemberVideo(ConferenceMember * member, const void * buffer
   }
   else
   {
-    for(MCUMemberList::smart_iterator it = memberList.begin(); it != memberList.end(); ++it)
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
       it->OnExternalSendVideo(member->GetID(), buffer, width, height, amount);
   }
   return TRUE;
@@ -1345,14 +1311,14 @@ void Conference::FreezeVideo(ConferenceMemberId id)
 
   if(id != NULL)
   {
-    MCUMemberList::smart_iterator it = memberList.Find((long)id);
+    MCUMemberList::shared_iterator it = memberList.Find((long)id);
     if(it == memberList.end())
       return;
     ConferenceMember *member = it.GetObject();
 
     if(UseSameVideoForAllMembers())
     {
-      for(MCUVideoMixerList::smart_iterator it2 = videoMixerList.begin(); it2 != videoMixerList.end(); ++it2)
+      for(MCUVideoMixerList::shared_iterator it2 = videoMixerList.begin(); it2 != videoMixerList.end(); ++it2)
       {
         MCUSimpleVideoMixer *mixer = it2.GetObject();
         if(mixer->GetPositionStatus(id) >= 0)
@@ -1362,7 +1328,7 @@ void Conference::FreezeVideo(ConferenceMemberId id)
         }
       }
     } else {
-      for(MCUMemberList::smart_iterator it2 = memberList.begin(); it2 != memberList.end(); ++it2)
+      for(MCUMemberList::shared_iterator it2 = memberList.begin(); it2 != memberList.end(); ++it2)
       {
         ConferenceMember *member = it2.GetObject();
         if(member->videoMixer && member->videoMixer->GetPositionStatus(id) >= 0)
@@ -1376,13 +1342,13 @@ void Conference::FreezeVideo(ConferenceMemberId id)
     return;
   }
 
-  for(MCUMemberList::smart_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember *member = it.GetObject();
     ConferenceMemberId mid = member->GetID();
     if(UseSameVideoForAllMembers())
     {
-      for(MCUVideoMixerList::smart_iterator it2 = videoMixerList.begin(); it2 != videoMixerList.end(); ++it2)
+      for(MCUVideoMixerList::shared_iterator it2 = videoMixerList.begin(); it2 != videoMixerList.end(); ++it2)
       {
         MCUSimpleVideoMixer *mixer = it2.GetObject();
         if(mixer->GetPositionStatus(mid) >= 0)
@@ -1392,19 +1358,17 @@ void Conference::FreezeVideo(ConferenceMemberId id)
         }
       }
     } else {
-      MCUMemberList::iterator it;
-      for(it = memberList.begin(); it != memberList.end(); ++it)
+      MCUMemberList::shared_iterator it2;
+      for(it2 = memberList.begin(); it2 != memberList.end(); ++it2)
       {
-        ConferenceMember *member = it.GetObject();
+        ConferenceMember *member = it2.GetObject();
         if(member->videoMixer && member->videoMixer->GetPositionStatus(mid) >= 0)
         {
           member->SetFreezeVideo(FALSE);
-          it.Release();
           break;
         }
-        it.Release();
       }
-      if(it == memberList.end())
+      if(it2 == memberList.end())
         member->SetFreezeVideo(TRUE);
     }
   }
@@ -1415,12 +1379,12 @@ void Conference::FreezeVideo(ConferenceMemberId id)
 BOOL Conference::PutChosenVan()
 {
   BOOL put = FALSE;
-  for(MCUMemberList::smart_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember *member = it.GetObject();
     if(member->chosenVan)
     {
-      for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+      for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
         if(mixer->GetPositionStatus(member->GetID()) < 0)
@@ -1511,17 +1475,16 @@ ConferenceMember::ConferenceMember(Conference * _conference, ConferenceMemberId 
   memberType = MEMBER_TYPE_NONE;
   channelCheck=0;
   audioLevel = 0;
-  audioCounter = 0; previousAudioLevel = 65535; audioLevelIndicator = 0;
+  audioCounter = 0;
+  previousAudioLevel = 65535;
+  audioLevelIndicator = 0;
   currVolCoef = 1.0;
   kManualGain = 1.0; kManualGainDB = 0;
   kOutputGain = 1.0; kOutputGainDB = 0;
-  terminalNumber = -1;
   memberIsJoined = FALSE;
 
 #if MCU_VIDEO
   videoMixer = NULL;
-//  fsConverter = PColourConverter::Create("YUV420P", "YUV420P", CIF4_WIDTH, CIF4_HEIGHT);
-//  MCUVideoMixer::FillCIF4YUVFrame(memberFrameStores.GetFrameStore(CIF4_WIDTH, CIF4_HEIGHT).data.GetPointer(), 0, 0, 0);
   totalVideoFramesReceived = 0;
   firstFrameReceiveTime = -1;
   totalVideoFramesSent = 0;
@@ -1778,15 +1741,7 @@ void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PI
   if(lock.Wait())
   {
     if(conference != NULL)
-    {
-      if(!conference->WriteMemberVideo(this, buffer, width, height, amount))
-      {
-        PWaitAndSignal m(memberFrameStoreMutex);
-        VideoFrameStoreList::FrameStore & fs = memberFrameStores.GetFrameStore(width, height);
-        memcpy(fs.data.GetPointer(), buffer, amount);
-        memberFrameStores.InvalidateExcept(width, height);
-      }
-    }
+      conference->WriteMemberVideo(this, buffer, width, height, amount);
     lock.Signal();
   }
 }
@@ -1800,47 +1755,6 @@ void ConferenceMember::OnExternalSendVideo(ConferenceMemberId id, const void * b
   }
 }
 
-void * ConferenceMember::OnExternalReadVideo(ConferenceMemberId id, int width, int height, PINDEX & bytesReturned)
-{
-  if (!lock.Wait())
-    return NULL;
-
-  memberFrameStoreMutex.Wait();
-
-  BOOL found;
-  VideoFrameStoreList::FrameStore & nearestFs = memberFrameStores.GetNearestFrameStore(width, height, found);
-
-  // if no valid framestores, nothing we can do
-/*  if (!found) {
-    memberFrameStoreMutex.Signal();
-    lock.Signal();
-    return NULL;
-  }
-*/
-  // if the valid framestore is a perfect match, return it
-  if(found)
-  if ((nearestFs.width == width) && (nearestFs.height == height))
-    return nearestFs.data.GetPointer();
-
-  // create a new destinationf framestore
-  VideoFrameStoreList::FrameStore & destFs = memberFrameStores.GetFrameStore(width, height);
-
-  if(found)
-  MCUVideoMixer::ResizeYUV420P(nearestFs.data.GetPointer(), destFs.data.GetPointer(), nearestFs.width, nearestFs.height, width, height);
-  else
-//  OpenMCU::Current().GetPreMediaFrame(destFs.data.GetPointer(), width, height, bytesReturned);
-  MCUVideoMixer::FillYUVFrame(destFs.data.GetPointer(), 0, 0, 0, width, height);
-  destFs.valid = TRUE;
-
-  return destFs.data.GetPointer();
-}
-
-void ConferenceMember::UnlockExternalVideo()
-{ 
-  memberFrameStoreMutex.Signal(); 
-  lock.Signal();
-}
-
 BOOL ConferenceMember::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
   PAssert(videoMixer != NULL, "attempt to add video source to NULL video mixer");
@@ -1851,16 +1765,6 @@ void ConferenceMember::RemoveVideoSource(ConferenceMemberId id, ConferenceMember
 {
   PAssert(videoMixer != NULL, "attempt to remove video source from NULL video mixer");
   videoMixer->RemoveVideoSource(id, mbr);
-}
-
-BOOL ConferenceMember::OnOutgoingVideo(void * buffer, int width, int height, PINDEX & amount)
-{
-  return FALSE;
-}
-
-BOOL ConferenceMember::OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount)
-{
-  return FALSE;
 }
 
 #endif

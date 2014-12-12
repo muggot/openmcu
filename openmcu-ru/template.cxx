@@ -15,7 +15,7 @@ PString Conference::SaveTemplate(PString tplName)
 
 
   int mixer_number = 0;
-  for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++mixer_number)
+  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++mixer_number)
   {
     MCUSimpleVideoMixer & m = *it.GetObject();
 
@@ -34,7 +34,7 @@ PString Conference::SaveTemplate(PString tplName)
       else
       if(id!=NULL)                                 // - or        "VMP 1, memberName" (static type)
       {
-        for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+        for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
         {
           ConferenceMember * member = it->GetMember();
           if(member) if(member->GetID() == id)
@@ -69,7 +69,7 @@ PString Conference::SaveTemplate(PString tplName)
               {
                 if(mixMatch) if(prev_vmpN == i) if(value.Left(1)=="1")
                 {
-                  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+                  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
                   {
                     ConferenceMember * member = it->GetMember();
                     if(member == NULL)
@@ -102,7 +102,7 @@ PString Conference::SaveTemplate(PString tplName)
     t << "  }\n";
   }
 
-  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
     ConferenceProfile *profile = it.GetObject();
     ConferenceMember *member = profile->GetMember();
@@ -305,7 +305,7 @@ void Conference::LoadTemplate(PString tpl)
 
   if(!lockedTemplate) return; // room not locked - don't touch member list
 
-  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
     ConferenceProfile *profile = it.GetObject();
     ConferenceMember *member = profile->GetMember();
@@ -656,7 +656,7 @@ void Conference::OnConnectionClean(const PString & remotePartyName, const PStrin
     profile->Unlock();
   if(profile == NULL)
   {
-    for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
       ConferenceProfile *p = it.GetObject();
       if(p->GetName().FindLast(name) != P_MAX_INDEX)

@@ -262,25 +262,6 @@ class ConferenceMember : public PObject
 
     virtual PTime GetStartTime() const
     { return startTime; }
-     
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4311)
-#endif
-
-    /**
-      * return the title that should be used for the conference member
-      */
-    virtual PString GetTitle() const
-#ifdef P_64BIT
-    { return psprintf("%lli", id); }
-#else
-    { return PString(PString::Unsigned, (unsigned)id); }
-#endif
-
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
 
     /**
       * return the conference this member belongs to
@@ -329,14 +310,6 @@ class ConferenceMember : public PObject
     virtual void ReadVideo(void * buffer, int width, int height, PINDEX & amount);
 
     /**
-      * Called when another conference member wants to read video from the endpoint
-      * UnlockExternalVideo must be called after video has been used
-      */
-    virtual void * OnExternalReadVideo(ConferenceMemberId /*id*/, int width, int height, PINDEX & /*amount*/);
-
-    virtual void UnlockExternalVideo();
-
-    /**
       * called when another conference member wants to write a video frame to this endpoint
       * this will only be called when the conference is not "use same video for all members"
       */
@@ -351,9 +324,6 @@ class ConferenceMember : public PObject
       * called to when a new video source removed
       */
     virtual void RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
-
-    virtual BOOL OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount);
-    virtual BOOL OnOutgoingVideo(void * buffer, int width, int height, PINDEX & amount);
 
     double GetVideoTxFrameRate() const
     { 
@@ -399,9 +369,6 @@ class ConferenceMember : public PObject
      * used to output monitor information for the member
      */
     virtual PString GetMonitorInfo(const PString & hdr);
-
-    virtual int GetTerminalNumber() const             { return terminalNumber; }
-    virtual void SetTerminalNumber(int n)             { terminalNumber = n; }
 
     void SetJoined(BOOL isJoinedNow)
     { memberIsJoined = isJoinedNow; }
@@ -474,7 +441,6 @@ class ConferenceMember : public PObject
     MCULock lock;
     PTime startTime;
     unsigned audioLevel;
-    int terminalNumber;
     PString callToken;
     MemberTypes memberType;
     PString name;
@@ -487,47 +453,14 @@ class ConferenceMember : public PObject
     AudioResamplerListType audioResamplerList;
 
 #if MCU_VIDEO
-    //PMutex videoMutex;
-
-    VideoFrameStoreList memberFrameStores;
-    PMutex memberFrameStoreMutex;
-//    PColourConverter * fsConverter; 
-
     PTime firstFrameSendTime;
     PINDEX totalVideoFramesSent;
 
     PTime firstFrameReceiveTime;
     PINDEX totalVideoFramesReceived;
-    
+
     int rxFrameWidth, rxFrameHeight;
 #endif
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template <class KeyType>
-class MCUNumberMapType : public std::map<int, KeyType>
-{
-  public:
-    typedef std::map<int, KeyType> Ancestor;
-    int GetNumber(const KeyType & id)
-    {
-      PWaitAndSignal m(mutex);
-      int mcuNumber = 1;
-      if (Ancestor::size() != 0) {
-        mcuNumber = 1 + Ancestor::begin()->first;
-        while (Ancestor::find(mcuNumber) != Ancestor::end())
-          ++mcuNumber;
-      }
-      Ancestor::insert(std::pair<int, KeyType>(mcuNumber, id));
-      return mcuNumber;
-    }
-
-    void RemoveNumber(int mcuNumber)
-    { PWaitAndSignal m(mutex); Ancestor::erase(mcuNumber); }
-
-  protected:
-    PMutex mutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -541,8 +474,7 @@ class Conference : public PObject
                                   long _listID,
         const OpalGloballyUniqueID & _guid, // H.323 m_conferenceID ???
                    const PString & _number,
-                     const PString & _name,
-                             int _mcuNumber
+                     const PString & _name
 #if MCU_VIDEO
                   ,MCUSimpleVideoMixer * _videoMixer = NULL
 #endif
@@ -625,9 +557,6 @@ class Conference : public PObject
     PINDEX GetMaxMemberCount() const
     { return maxMemberCount; }
 
-    int GetMCUNumber() const
-    { return mcuNumber; }
-
     MCUVideoMixerList & GetVideoMixerList()
     { return videoMixerList; }
 
@@ -673,6 +602,7 @@ class Conference : public PObject
     virtual void OnConnectionClean(const PString & remotePartyName, const PString & remotePartyAddress);
 
     ConferenceRecorder * conferenceRecorder;
+    ConferenceMember * pipeMember;
 
     void SetForceScreenSplit(BOOL _forceScreenSplit) { forceScreenSplit = _forceScreenSplit; }
     BOOL GetForceScreenSplit() { return forceScreenSplit; }
@@ -684,11 +614,10 @@ class Conference : public PObject
     BOOL stopping;
     BOOL lockedTemplate;
 
-    ConferenceMember * pipeMember;
-
   protected:
     ConferenceManager & manager;
 
+    // только для записи в список memberList,profileList
     PMutex memberListMutex;
 
     MCUMemberList memberList;
@@ -709,9 +638,7 @@ class Conference : public PObject
 
     PString number;
     PString name;
-    int mcuNumber;
     PTime startTime;
-    MCUNumberMapType<ConferenceMemberId> terminalNumberMap;
     BOOL mcuMonitorRunning;
     BOOL moderated;
     BOOL muteUnvisible;
@@ -916,12 +843,11 @@ class ConferenceManager : public PObject
     void ClearConferenceList();
 
   protected:
-    virtual Conference * CreateConference(long _id, const OpalGloballyUniqueID & _guid, const PString & _number, const PString & _name, int mcuNumber);
+    virtual Conference * CreateConference(long _id, const OpalGloballyUniqueID & _guid, const PString & _number, const PString & _name);
 
     MCUConferenceList conferenceList;
 
     PINDEX maxConferenceCount;
-    MCUNumberMapType<OpalGloballyUniqueID> mcuNumberMap;
     ConferenceMonitor * monitor;
 };
 

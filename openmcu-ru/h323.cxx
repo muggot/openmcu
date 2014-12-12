@@ -524,7 +524,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
 
   BOOL firstConference = TRUE;
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
-  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
     PStringStream c;
@@ -541,7 +541,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
 
     {
       BOOL firstMember = TRUE;
-      for(MCUProfileList::smart_iterator it2 = profileList.begin(); it2 != profileList.end(); ++it2)
+      for(MCUProfileList::shared_iterator it2 = profileList.begin(); it2 != profileList.end(); ++it2)
       {
         ConferenceMember * member = it2->GetMember();
         if(member == NULL)
@@ -694,7 +694,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
   PString substitution;
 
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
-  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
     // make a copy of the repeating html chunk
@@ -727,7 +727,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
     PStringArray targets, subses, errors;
     {
       MCUProfileList & profileList = conference->GetProfileList();
-      for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+      for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
       {
         ConferenceMember * member = it->GetMember();
         if(member==NULL)
@@ -873,7 +873,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
       }
 
       profileListSize = profileList.GetCurrentSize();
-      for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+      for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
       {
         ConferenceMember *member = it->GetMember();
 #if MCU_VIDEO
@@ -921,7 +921,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
   int number = 0;
-  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it, ++number)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it, ++number)
   {
     Conference *conference = it.GetObject();
       jsRoom = conference->GetNumber();
@@ -945,7 +945,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
   r << "]"; //l2 close
 
   MCUVideoMixerList & videoMixerList = c.GetVideoMixerList();
-  for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
   {
     MCUSimpleVideoMixer *mixer = it.GetObject();
     r << "," << GetVideoMixerConfiguration(mixer);
@@ -1021,7 +1021,7 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
   BOOL firstMember = TRUE;
 
   MCUProfileList & profileList = conference.GetProfileList();
-  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
     ConferenceProfile *profile = it.GetObject();
     ConferenceMember *member = profile->GetMember();
@@ -1128,7 +1128,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
 #endif
 
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
-  MCUConferenceList::smart_iterator cit = conferenceList.Find(room);
+  MCUConferenceList::shared_iterator cit = conferenceList.Find(room);
   if(cit == conferenceList.end())
     return FALSE;
   Conference *conference = *cit;
@@ -1260,7 +1260,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   if(action == OTFC_DROP_ALL_ACTIVE_MEMBERS)
   {
     MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
       ConferenceMember *member = it->GetMember();
       if(member == NULL)
@@ -1276,7 +1276,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   if(action == OTFC_MUTE_ALL || action == OTFC_UNMUTE_ALL)
   {
     MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
       ConferenceMember *member = it->GetMember();
       if(member == NULL)
@@ -1291,7 +1291,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   if(action == OTFC_INVITE_ALL_INACT_MMBRS)
   {
     MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
       ConferenceMember *member = it->GetMember();
       if(member == NULL)
@@ -1302,7 +1302,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   if(action == OTFC_REMOVE_ALL_INACT_MMBRS)
   {
     MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
       ConferenceProfile *profile = it.GetObject();
       if(profile->GetMember() == NULL)
@@ -1421,7 +1421,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     if(mixer == NULL)
       return FALSE;
     MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
       ConferenceMember * member = it->GetMember();
       if(member && member->IsVisible())
@@ -1559,7 +1559,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     {
       BOOL setup = FALSE;
       MCUProfileList & profileList = conference->GetProfileList();
-      for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+      for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
       {
         ConferenceMember * member = it->GetMember();
         if(member && member->IsVisible())
@@ -1588,7 +1588,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
 
   MCUMemberList & memberList = conference->GetMemberList();
-  MCUMemberList::smart_iterator mit = memberList.Find(v);
+  MCUMemberList::shared_iterator mit = memberList.Find(v);
   if(mit == memberList.end())
     return FALSE;
   ConferenceMember * member = *mit;
@@ -1651,7 +1651,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
       if(videoMixerList.GetCurrentSize() != 0)
       {
-        for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+        for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
         {
           MCUSimpleVideoMixer *mixer = it.GetObject();
           int oldPos = mixer->GetPositionNum(member->GetID());
@@ -1662,7 +1662,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       else // classic MCU mode
       {
         MCUProfileList & profileList = conference->GetProfileList();
-        for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+        for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
         {
           ConferenceMember * member = it->GetMember();
           if(member == NULL)
@@ -1715,7 +1715,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
       if(videoMixerList.GetCurrentSize() != 0)
       {
-        for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+        for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
         {
           MCUSimpleVideoMixer *mixer = it.GetObject();
           int type = mixer->GetPositionType(id);
@@ -1726,7 +1726,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       else
       {
         MCUProfileList & profileList = conference->GetProfileList();
-        for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+        for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
         {
           ConferenceMember * member = it->GetMember();
           if(member == NULL)
@@ -1777,7 +1777,7 @@ PString MCUH323EndPoint::GetRoomList(const PString & block)
   members << "<input name='room' id='room' type=hidden>";
 
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
-  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
 
@@ -1840,7 +1840,7 @@ void MCUH323EndPoint::UnmoderateConference(Conference & conference)
   mixer->Unlock();
 
   MCUMemberList & memberList = conference.GetMemberList();
-  for(MCUMemberList::smart_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember * member = *it;
     if(member->GetType() != MEMBER_TYPE_CACHE)
@@ -1904,7 +1904,7 @@ PString MCUH323EndPoint::GetMonitorText()
 
   PINDEX confNum = 0;
 
-  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
 
@@ -1917,24 +1917,17 @@ PString MCUH323EndPoint::GetMonitorText()
 
     MCUProfileList & profileList = conference->GetProfileList();
     PINDEX num = 0;
-    for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
       ConferenceMember * member = it->GetMember();
       if(member == NULL)
         continue;
 
       output << "[Member " << ++num << "]\n";
-      PStringStream hdr; hdr << "  ";
-      PString name = member->GetName();
+      PStringStream hdr;
+      hdr << "  ";
 
-      MemberTypes membType = member->GetType();
-      BOOL isCache = (membType == MEMBER_TYPE_CACHE);
-      BOOL isPipe = (membType == MEMBER_TYPE_PIPE);
-
-      output << hdr << "Title: " << hex << member->GetTitle();
-      if(isPipe || isCache) output << " (file object)";
-      output << "\n"
-             << hdr << "Name: " << name << "\n"
+      output << hdr << "Name: " << member->GetName() << "\n"
              << hdr << "Outgoing video mixer: " << member->GetVideoMixerNumber() << "\n"
              << hdr << "Duration: " << (PTime() - member->GetStartTime()) << "\n"
              << member->GetMonitorInfo(hdr);
@@ -1944,7 +1937,7 @@ PString MCUH323EndPoint::GetMonitorText()
         MCUH323Connection * conn = (MCUH323Connection *)FindConnectionWithoutLock(member->GetCallToken());
         output << hdr << "Connection: " << hex << conn << "\n";
       }
-      if(isPipe)
+      if(member->GetType() == MEMBER_TYPE_CACHE)
       {
         ConferencePipeMember * pipeMember = dynamic_cast<ConferencePipeMember *>(member);
         if(pipeMember!=NULL)
@@ -1953,7 +1946,7 @@ PString MCUH323EndPoint::GetMonitorText()
           output << hdr << "IsVisible: " << pipeMember->IsVisible() << "\n";
         }
       }
-      if(isCache)
+      if(member->GetType() == MEMBER_TYPE_PIPE)
       {
         ConferenceCacheMember * cacheMember = dynamic_cast<ConferenceCacheMember *>(member);
         if(cacheMember!=NULL)
@@ -1986,7 +1979,7 @@ PString MCUH323EndPoint::GetMonitorText()
 
     MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
     int number = 0;
-    for(MCUVideoMixerList::smart_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++number)
+    for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++number)
     {
       MCUSimpleVideoMixer *mixer = it.GetObject();
       output << "[Mixer " << number << "]\n";
@@ -2245,13 +2238,13 @@ void MCUH323EndPoint::CleanUpConnections()
 
 NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, ConferenceMember * _memberToIgnore)
   : PThread(10000, AutoDeleteThread), join(_join), memberToIgnore(_memberToIgnore)
-{ 
-  mcuNumber  = conference.GetMCUNumber();
-  terminalIdToSend = memberToIgnore->GetTerminalNumber();
+{
+  mcuNumber  = conference.GetID();
+  terminalIdToSend = (long)memberToIgnore->GetID();
 
   // create list of connections to notify
   MCUProfileList & profileList = conference.GetProfileList();
-  for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
     ConferenceMember * member = it->GetMember();
     if(member == NULL)
@@ -3335,7 +3328,7 @@ void MCUH323Connection::OnUserInputString(const PString & str)
     if(codeRoomName != "" && codePos != "")
     {
       MCUConferenceList & conferenceList = ep.GetConferenceManager().GetConferenceList();
-      for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+      for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
       {
         Conference *conference = it.GetObject();
 
@@ -3343,7 +3336,7 @@ void MCUH323Connection::OnUserInputString(const PString & str)
           continue;
 
         MCUProfileList & profileList = conference->GetProfileList();
-        for(MCUProfileList::smart_iterator it2 = profileList.begin(); it2 != profileList.end(); ++it2)
+        for(MCUProfileList::shared_iterator it2 = profileList.begin(); it2 != profileList.end(); ++it2)
         {
           ConferenceMember * member = it2->GetMember();
           if(member == NULL)
@@ -3725,16 +3718,7 @@ BOOL MCUH323Connection::OnOutgoingVideo(void * buffer, int width, int height, PI
     conferenceMember->ReadVideo(buffer, width, height, amount);
   else
     return FALSE;
-/*
-  else if (!GetPreMediaFrame(buffer, width, height, amount)) {
-    if ((width == CIF4_WIDTH) && (height == CIF4_HEIGHT))
-      MCUVideoMixer::FillCIF4YUVFrame(buffer, 0, 0, 0);
-    else if ((width == CIF_WIDTH) && (height == CIF_HEIGHT))
-      MCUVideoMixer::FillCIFYUVFrame(buffer, 0, 0, 0);
-    else if ((width == QCIF_WIDTH) && (height == QCIF_HEIGHT))
-      MCUVideoMixer::FillQCIFYUVFrame(buffer, 0, 0, 0);
-  }
-*/
+
   return TRUE;
 }
 
@@ -3783,25 +3767,6 @@ void H323Connection_ConferenceMember::Close()
     conn->LeaveMCU();
     conn->Unlock();
   }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PString H323Connection_ConferenceMember::GetTitle() const
-{
-  PString output;
-  if(id!=this)
-  {
-   MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
-   if(conn == NULL) return callToken;
-   if(conn->GetConferenceMember() == this || conn->GetConferenceMember() == NULL) 
-   {
-    output = conn->GetRemoteName(); 
-   }
-   else PTRACE(1, "MCU\tWrong connection in GetTitle for " << callToken);
-   conn->Unlock();
-  }
-  return output;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3963,7 +3928,7 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
   if(conference)
   {
     MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::smart_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
       ConferenceMember * member = it->GetMember();
       if(member == NULL || member == this || member->GetType() & MEMBER_TYPE_GSYSTEM)
@@ -4108,7 +4073,7 @@ OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, MCUH323Connection & _conn, unsi
 void OutgoingAudio::CreateSilence(void * buffer, PINDEX amount)
 {
   memset(buffer, 0, amount);
-//  lastReadCount = amount;
+  lastReadCount = amount;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4116,8 +4081,12 @@ void OutgoingAudio::CreateSilence(void * buffer, PINDEX amount)
 BOOL OutgoingAudio::Read(void * buffer, PINDEX amount)
 {
   PWaitAndSignal mutexR(audioChanMutex);
-  if (!IsOpen()) return FALSE;
-  if (!conn.OnOutgoingAudio(buffer, amount, sampleRate, channels)) CreateSilence(buffer, amount);
+
+  if(!IsOpen())
+    return FALSE;
+
+  if(!conn.OnOutgoingAudio(buffer, amount, sampleRate, channels))
+    CreateSilence(buffer, amount);
 
   unsigned msPerFrame = (amount*1000)/(sampleRate*channels*sizeof(short));
   delay.Delay(msPerFrame);
@@ -4130,7 +4099,7 @@ BOOL OutgoingAudio::Read(void * buffer, PINDEX amount)
 
 BOOL OutgoingAudio::Close()
 {
-  if (!IsOpen()) 
+  if(!IsOpen())
     return FALSE;
 
   PWaitAndSignal mutexC(audioChanMutex);
@@ -4151,7 +4120,10 @@ IncomingAudio::IncomingAudio(H323EndPoint & _ep, MCUH323Connection & _conn, unsi
 BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
 {
   PWaitAndSignal mutexW(audioChanMutex);
-  if (!IsOpen()) return FALSE;
+
+  if(!IsOpen())
+    return FALSE;
+
   conn.OnIncomingAudio(buffer, amount, sampleRate, channels);
 
   unsigned msPerFrame = (amount*1000)/(sampleRate*channels*sizeof(short));

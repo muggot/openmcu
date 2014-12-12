@@ -2563,7 +2563,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   PString nextRoom;
   ConferenceManager & manager = ep.GetConferenceManager();
   MCUConferenceList & conferenceList = manager.GetConferenceList();
-  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
     PString room0 = conference->GetNumber().Trim();
@@ -2588,7 +2588,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
       roomStart++;
       PString testName = roomText + PString(roomStart) + roomText2;
 
-      MCUConferenceList::smart_iterator it2;
+      MCUConferenceList::shared_iterator it2;
       for(it2 = conferenceList.begin(); it2 != conferenceList.end(); ++it2)
       {
         Conference *c = it2.GetObject();
@@ -2625,7 +2625,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     << "</tr>"
   ;
 
-  for(MCUConferenceList::smart_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
       PString roomNumber = conference->GetNumber();
