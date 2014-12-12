@@ -1069,12 +1069,12 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
   if(!memberToRemove->IsJoined())
   {
-    PTRACE(4, "Conference\t" << number << "No need to remove call " << memberToRemove->GetName());
+    PTRACE(4, "Conference\t" << number << "No need to remove member " << memberToRemove->GetName());
     return FALSE;
   }
 
-  PTRACE(3, "Conference\t" << number << "Removing call " << memberToRemove->GetName());
-  cout << "Conference" << number << "Removing call " << memberToRemove->GetName() << endl;
+  PTRACE(3, "Conference\t" << number << "Removing member " << memberToRemove->GetName());
+  cout << "Conference " << number << " Removing member " << memberToRemove->GetName() << endl;
 
   // remove from all lists
   RemoveMemberFromList(memberToRemove->GetName(), memberToRemove);

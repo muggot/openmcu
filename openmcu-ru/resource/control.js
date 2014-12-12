@@ -620,7 +620,8 @@ function gain_selector(obj, id, dir0)
   gainSelector.style.height=selHeight+'px';
   gainSelector.style.position='absolute';
   gainSelector.style.left=getLeftPos(obj)+'px';
-  gainSelector.style.top=getTopPos(obj)+'px';
+  offset = document.getElementById('right_scroller').scrollTop;
+  gainSelector.style.top=getTopPos(obj, offset)+'px';
   gainSelector.style.overflowY='scroll';
   gainSelector.style.overflowX='hidden';
   gainSelector.style.border='1px solid #000';
@@ -2129,9 +2130,9 @@ function my_alert(s)
   myAlertTimeout=setTimeout(my_alerting,444);
 }
 
-function getTopPos(el) {
+function getTopPos(el, offset) {
   for (var topPos=0; el!=null; topPos+=el.offsetTop, el=el.offsetParent);
-  return topPos;
+  return topPos-offset;
 }
 
 function getLeftPos(el) {
