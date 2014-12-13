@@ -2167,14 +2167,14 @@ void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
     return;
   if(conn->GetCallToken().Left(4) == "tcp:")
     return;
-  connectionMonitor->AddMonitorEvent(new ConnectionRTPTimeoutInfo(conn->GetCallToken()));
+  connectionMonitor->AddConnection(conn->GetCallToken());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323EndPoint::OnConnectionCleared(H323Connection & connection, const PString & token)
 {
-  connectionMonitor->RemoveForConnection(token);
+  connectionMonitor->RemoveConnection(token);
   H323EndPoint::OnConnectionCleared(connection, token);
 }
 
@@ -4149,91 +4149,62 @@ BOOL IncomingAudio::Close()
 void ConnectionMonitor::Main()
 {
   running = TRUE;
-
-  for (;;) {
-
-    if (!running)
-      break;
-
-    Sleep(1000);
-
-    if (!running)
-      break;
-
-    PWaitAndSignal m(mutex);
-
-    PTime now;
-    MonitorInfoList::iterator r = monitorList.begin();
-    while (r != monitorList.end())
-    {
-      ConnectionMonitorInfo & info = **r;
-      if (now < info.timeToPerform)
-        ++r;
-      else {
-        BOOL deleteAfterPerform = TRUE;
-        {
-          H323Connection *conn = ep.FindConnectionWithLock(info.callToken);
-          if(conn)
-          {
-            deleteAfterPerform = info.Perform(*conn);
-            conn->Unlock();
-          }
-        }
-        if(!deleteAfterPerform)
-        {
-          ++r;
-        } else {
-          delete *r;
-          monitorList.erase(r);
-          r = monitorList.begin();
-        }
-      }
-    }
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ConnectionMonitor::AddMonitorEvent(ConnectionMonitorInfo * info)
-{
-  PWaitAndSignal m(mutex);
-  monitorList.push_back(info);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ConnectionMonitor::RemoveForConnection(const PString & callToken)
-{
-  PWaitAndSignal m(mutex);
-  MonitorInfoList::iterator r = monitorList.begin();
-  while(r != monitorList.end())
+  while(running)
   {
-    ConnectionMonitorInfo & info = **r;
-    if(info.callToken != callToken)
+    Sleep(1000);
+    if(!running)
+      break;
+
+    for(MCUSharedList<PString>::shared_iterator it = monitorList.begin(); it != monitorList.end(); ++it)
     {
-      ++r;
-    } else {
-      delete *r;
-      monitorList.erase(r);
-      r = monitorList.begin();
+      PString *callToken = *it;
+      MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(*callToken);
+      if(conn == NULL)
+      {
+        if(monitorList.Erase(it))
+          delete callToken;
+        continue;
+      }
+      int ret = Perform(conn);
+      if(ret == 1)
+        conn->LeaveMCU();
+      conn->Unlock();
     }
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL ConnectionRepeatingInfo::Perform(H323Connection & conn)
+void ConnectionMonitor::AddConnection(const PString & _callToken)
 {
-  this->timeToPerform = PTime() + repeatTime;
-  return FALSE;
+  long id = monitorList.GetNextID();
+  PString *callToken = new PString(_callToken);
+  monitorList.Insert(id, callToken);
+  monitorList.Release(id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL ConnectionRTPTimeoutInfo::Perform(H323Connection & conn)
+void ConnectionMonitor::RemoveConnection(const PString & _callToken)
 {
-  RTP_Session * as = conn.GetSession(RTP_Session::DefaultAudioSessionID);
-  RTP_Session * vs = conn.GetSession(RTP_Session::DefaultVideoSessionID);
+  for(MCUSharedList<PString>::shared_iterator it = monitorList.begin(); it != monitorList.end(); ++it)
+  {
+    PString *callToken = *it;
+    if(*callToken == _callToken)
+    {
+      if(monitorList.Erase(it))
+        delete callToken;
+      break;
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int ConnectionMonitor::Perform(MCUH323Connection * conn)
+{
+  RTP_Session * as = conn->GetSession(RTP_Session::DefaultAudioSessionID);
+  RTP_Session * vs = conn->GetSession(RTP_Session::DefaultVideoSessionID);
   int count = 0;
   if(as) count += as->GetPacketsReceived() + as->GetRtpcReceived();
   if(vs) count += vs->GetPacketsReceived() + vs->GetRtpcReceived();
@@ -4246,12 +4217,11 @@ BOOL ConnectionRTPTimeoutInfo::Perform(H323Connection & conn)
   }
   if(no_input_timeout >= 9) // 3+27=30 sec timeout
   {
-    PTRACE(1, "MCU\tConnection: " << callToken << ", 30 sec timeout waiting incoming stream data.");
-    ((MCUH323Connection &)conn).LeaveMCU();
-    return TRUE; // delete monitor
+    PTRACE(1, "MCU\tConnection: " << conn->GetCallToken() << ", 30 sec timeout waiting incoming stream data.");
+    return 1; // leave
   }
 
-  return ConnectionRepeatingInfo::Perform(conn);
+  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

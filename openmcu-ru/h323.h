@@ -701,68 +701,32 @@ class MCUPVideoOutputDevice : public PVideoOutputDevice
 
 ////////////////////////////////////////////////////
 
-class ConnectionMonitorInfo : public PObject
-{
-  PCLASSINFO(ConnectionMonitorInfo, PObject);
-  public:
-    ConnectionMonitorInfo(const PString & _callToken, const PTime & endTime)
-      : callToken(_callToken), timeToPerform(endTime) { }
-
-    PString callToken;
-    PTime timeToPerform;
-
-    virtual BOOL Perform(H323Connection &) = 0;
-};
-
-class ConnectionRepeatingInfo : public ConnectionMonitorInfo
-{
-  public:
-    ConnectionRepeatingInfo(const PString & callToken, const PTimeInterval & _repeatTime)
-      : ConnectionMonitorInfo(callToken, PTime() + _repeatTime), repeatTime(_repeatTime)
-    { }
-
-    BOOL Perform(H323Connection & conn);
-
-  protected:
-    PTimeInterval repeatTime;
-};
-
-class ConnectionRTPTimeoutInfo : public ConnectionRepeatingInfo
-{
-  public:
-    ConnectionRTPTimeoutInfo(const PString & callToken)
-      : ConnectionRepeatingInfo(callToken, 3000)
-    {
-      input_bytes = 0;
-      no_input_timeout = 0;
-    }
-
-    BOOL Perform(H323Connection & conn);
-
-  protected:
-    int input_bytes;
-    int no_input_timeout;
-};
-
 class ConnectionMonitor : public PThread
 {
   PCLASSINFO(ConnectionMonitor, PThread);
   public:
     ConnectionMonitor(MCUH323EndPoint & _ep)
       : PThread(10000, NoAutoDeleteThread), ep(_ep)
-    { Resume(); }
+    {
+      input_bytes = 0;
+      no_input_timeout = 0;
+      Resume();
+    }
 
     void Main();
-    void AddMonitorEvent(ConnectionMonitorInfo * info);
-    void RemoveForConnection(const PString & callToken);
-
-    typedef std::vector<ConnectionMonitorInfo *> MonitorInfoList;
     BOOL running;
 
+    void AddConnection(const PString & callToken);
+    void RemoveConnection(const PString & callToken);
+
   protected:
+    int input_bytes;
+    int no_input_timeout;
+
+    int Perform(MCUH323Connection * conn);
+
     MCUH323EndPoint & ep;
-    PMutex mutex;
-    MonitorInfoList monitorList;
+    MCUSharedList<PString> monitorList;
 };
 
 ////////////////////////////////////////////////////

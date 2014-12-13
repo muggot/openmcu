@@ -457,14 +457,11 @@ void ConferenceManager::ClearConferenceList()
 void ConferenceMonitor::Main()
 {
   running = TRUE;
-
   while(running)
   {
     Sleep(1000);
     if(!running)
       break;
-
-    PWaitAndSignal m(mutex);
 
     MCUConferenceList & conferenceList = manager.GetConferenceList();
     for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)

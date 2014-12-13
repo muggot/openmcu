@@ -660,7 +660,6 @@ class ConferenceMonitor : public PThread
   protected:
     int Perform(Conference * conference);
     ConferenceManager & manager;
-    PMutex mutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

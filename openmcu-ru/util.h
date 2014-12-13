@@ -467,10 +467,12 @@ class MCUSharedListSharedIterator
 
   public:
 
+    // Пустой итератор
     MCUSharedListSharedIterator()
       : list(NULL), index(-1), captured(false)
     { }
 
+    // Итератор n-го доступного объекта в списке
     MCUSharedListSharedIterator(T1 * _list, int _number)
       : list(_list), index(-1), captured(false)
     {
@@ -493,21 +495,25 @@ class MCUSharedListSharedIterator
 
     long GetID()
     {
-      if(list && index >= 0 && index < list->size)
+      if(captured)
         return list->ids[index];
       return -1;
     }
 
+    // Возвращает текущий объект итератора или NULL
     T2 * GetObject()
     {
-      if(captured && list && index >= 0 && index < list->size)
+      if(captured)
         return list->objs[index];
       return NULL;
     }
 
+    // Возвращает повторно захваченный объект.
+    // Объект останется захваченным после изменения/уничтожения итератора,
+    // использовать например в функциях поиска объекта FindWithLock()
     T2 * GetCapturedObject()
     {
-      if(captured && list && index >= 0 && index < list->size)
+      if(captured)
       {
         list->CaptureInternal(index);
         return list->objs[index];
@@ -543,9 +549,10 @@ class MCUSharedListSharedIterator
     bool operator != (const shared_iterator & it)
     { return (index != it.index); }
 
+    // После Release() объект недоступен в итераторе
     void Release()
     {
-      if(captured && list && index >= 0 && index < list->size)
+      if(captured)
       {
         captured = false;
         list->ReleaseInternal(index);
@@ -605,7 +612,7 @@ class MCUSharedList
     template<class T1, class T2> friend class MCUSharedListSharedIterator;
 
   public:
-    MCUSharedList(int _size = 128);
+    MCUSharedList(int _size = 256);
     ~MCUSharedList();
 
     // В новом итераторе объект захвачен
@@ -629,20 +636,28 @@ class MCUSharedList
     long GetNextID()
     { return sync_increment(&idcounter); }
 
+    // Insert вохвращает false если нет свободного места
     // Insert() - после добавления объект захвачен
     bool Insert(long id, T * obj, PString name = "");
-    // Erase(id) - Release выполнять(если захвачен) перед Erase
+
+    // Erase возвращает false если объекта нет в списке или Erase выполняется другим потоком
+    // Обязательно проверять результат выполнения перед удалением объекта!
+    // Erase(id) - перед Erase освободить(если захвачен)
     bool Erase(long id);
-    // Erase(iterator) - Release выполнять после Erase
+    // Erase(iterator)
     bool Erase(shared_iterator & it);
+
+    // Release() - освободить объект
     void Release(long id);
 
     // Find() возвращают захваченный объект
+    // Освобождать функцией iterator.Release()
     shared_iterator Find(long id);
     shared_iterator Find(const PString & name);
     shared_iterator Find(T * obj);
 
     // Операторы возвращают захваченный объект
+    // Освобождать функцией list.Release(id)
     T * operator[] (int index);
     T * operator() (long id);
     T * operator() (const PString & name);
@@ -780,9 +795,7 @@ bool MCUSharedList<T>::Erase(long id)
       }
     }
   }
-  if(erase)
-    return true;
-  return false;
+  return erase;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -790,13 +803,14 @@ bool MCUSharedList<T>::Erase(long id)
 template <class T>
 bool MCUSharedList<T>::Erase(shared_iterator & it)
 {
-  int index = it.GetIndex();
-  if(index < 0 || index >= size)
+  // итератор должен быть захвачен
+  if(it.captured == false)
     return false;
 
-  // освободить объект и
-  // запретить получение объекта из итератора
-  it.Release();
+  int index = it.GetIndex();
+  // пустой итератор
+  if(index < 0 || index >= size)
+    return false;
 
   bool erase = false;
   if(states[index] == true )
@@ -811,7 +825,8 @@ bool MCUSharedList<T>::Erase(shared_iterator & it)
         states[index] = false;
         sync_decrement(&current_size);
         // ждать освобождения объекта
-        ReleaseWait(&captures[index], 0);
+        // 1 захват в итераторе
+        ReleaseWait(&captures[index], 1);
         // запись объекта
         ids[index] = -1;
         names[index] = "";
@@ -822,9 +837,12 @@ bool MCUSharedList<T>::Erase(shared_iterator & it)
       sync_bool_compare_and_swap(&locks[index], true, false);
     }
   }
-  if(erase)
-    return true;
-  return false;
+
+  // освободить объект и
+  // запретить получение объекта из итератора
+  it.Release();
+
+  return erase;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1003,7 +1021,7 @@ template <typename T>
 class MCUQueueT
 {
   public:
-    MCUQueueT(int _size = 128)
+    MCUQueueT(int _size = 256)
       : queue(_size)
     {
       stopped = false;
