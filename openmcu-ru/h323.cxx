@@ -529,23 +529,20 @@ PString MCUH323EndPoint::GetRoomStatusJS()
     Conference *conference = it.GetObject();
     PStringStream c;
 
-    MCUProfileList & profileList = conference->GetProfileList();
-
     c << "Array("
         << JsQuoteScreen(conference->GetNumber())                              // c[r][0]: room name
         << "," << conference->GetMemberList().GetCurrentSize()                 // c[r][1]: memberList size
-        << "," << profileList.GetCurrentSize()                                 // c[r][2]: profileList size
+        << "," << conference->GetProfileList().GetCurrentSize()                 // c[r][2]: profileList size
         << "," << PString((now - conference->GetStartTime()).GetMilliSeconds())// c[r][3]: duration
         << ",Array("                                                           // c[r][4]: member descriptors
     ;
 
     {
       BOOL firstMember = TRUE;
-      for(MCUProfileList::shared_iterator it2 = profileList.begin(); it2 != profileList.end(); ++it2)
+      MCUMemberList & memberList = conference->GetMemberList();
+      for(MCUMemberList::shared_iterator it2 = memberList.begin(); it2 != memberList.end(); ++it2)
       {
-        ConferenceMember * member = it2->GetMember();
-        if(member == NULL)
-          continue;
+        ConferenceMember * member = *it2;
 
         if(!firstMember) c << ",";
         c << "Array("                                                          // c[r][4][m]: member m descriptor
@@ -726,12 +723,11 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
     size_t profileListSize = 0;
     PStringArray targets, subses, errors;
     {
-      MCUProfileList & profileList = conference->GetProfileList();
-      for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+      MCUMemberList & memberList = conference->GetMemberList();
+      for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
       {
-        ConferenceMember * member = it->GetMember();
-        if(member==NULL)
-          continue;
+        ConferenceMember * member = *it;
+
         PString formatString;
         int codecCacheMode=-1, cacheUsersNumber=0;
         BOOL visible=member->IsVisible();
@@ -872,6 +868,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
           << "</tr>";
       }
 
+      MCUProfileList & profileList = conference->GetProfileList();
       profileListSize = profileList.GetCurrentSize();
       for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
       {
@@ -1259,12 +1256,10 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_DROP_ALL_ACTIVE_MEMBERS)
   {
-    MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    MCUMemberList & memberList = conference->GetMemberList();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
-      ConferenceMember *member = it->GetMember();
-      if(member == NULL)
-        continue;
+      ConferenceMember * member = *it;
       if(member->GetType() & MEMBER_TYPE_GSYSTEM)
         continue;
       member->Close();
@@ -1275,12 +1270,10 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_MUTE_ALL || action == OTFC_UNMUTE_ALL)
   {
-    MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    MCUMemberList & memberList = conference->GetMemberList();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
-      ConferenceMember *member = it->GetMember();
-      if(member == NULL)
-        continue;
+      ConferenceMember * member = *it;
       if(member->GetType() & MEMBER_TYPE_GSYSTEM)
         continue;
       if(action == OTFC_MUTE_ALL) member->SetChannelPauses  (1);
@@ -1293,8 +1286,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     MCUProfileList & profileList = conference->GetProfileList();
     for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
-      ConferenceMember *member = it->GetMember();
-      if(member == NULL)
+      if(it->GetMember() == NULL)
         Invite(room, it->GetName());
     }
     return TRUE;
@@ -1307,8 +1299,8 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       ConferenceProfile *profile = it.GetObject();
       if(profile->GetMember() == NULL)
       {
-        profileList.Erase(it);
-        delete profile;
+        if(profileList.Erase(it))
+          delete profile;
       }
     }
     OpenMCU::Current().HttpWriteEventRoom("Offline members removed by operator",room);
@@ -1420,11 +1412,11 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
     if(mixer == NULL)
       return FALSE;
-    MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    MCUMemberList & memberList = conference->GetMemberList();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
-      ConferenceMember * member = it->GetMember();
-      if(member && member->IsVisible())
+      ConferenceMember * member = *it;
+      if(member->IsVisible())
       {
         if(mixer->AddVideoSourceToLayout(member->GetID(), *(member)))
            member->SetFreezeVideo(FALSE);
@@ -1558,11 +1550,11 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     if((type==1)&&(id>=0)&&(id<100)) //static but no member
     {
       BOOL setup = FALSE;
-      MCUProfileList & profileList = conference->GetProfileList();
-      for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+      MCUMemberList & memberList = conference->GetMemberList();
+      for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
       {
-        ConferenceMember * member = it->GetMember();
-        if(member && member->IsVisible())
+        ConferenceMember * member = *it;
+        if(member->IsVisible())
         {
           if(mixer->VMPListFindVMP(member->GetID()) == NULL)
           {
@@ -1661,12 +1653,10 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       }
       else // classic MCU mode
       {
-        MCUProfileList & profileList = conference->GetProfileList();
-        for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+        MCUMemberList & memberList = conference->GetMemberList();
+        for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
         {
-          ConferenceMember * member = it->GetMember();
-          if(member == NULL)
-            continue;
+          ConferenceMember * member = *it;
           MCUVideoMixer * mixer = member->videoMixer;
           int oldPos = mixer->GetPositionNum(member->GetID());
           if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, TRUE);
@@ -1725,12 +1715,10 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       }
       else
       {
-        MCUProfileList & profileList = conference->GetProfileList();
-        for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+        MCUMemberList & memberList = conference->GetMemberList();
+        for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
         {
-          ConferenceMember * member = it->GetMember();
-          if(member == NULL)
-            continue;
+          ConferenceMember * member = *it;
           MCUVideoMixer * mixer = member->videoMixer;
           int type = mixer->GetPositionType(id);
           if(type<2 || type>3) continue; //-1:not found, 1:static, 2&3:VAD
@@ -1915,13 +1903,11 @@ PString MCUH323EndPoint::GetMonitorText()
            << "Member Count: "     << conference->GetMemberList().GetCurrentSize() << "\n"
            << "Max Member Count: " << conference->GetMaxMemberCount() << "\n";
 
-    MCUProfileList & profileList = conference->GetProfileList();
     PINDEX num = 0;
-    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    MCUMemberList & memberList = conference->GetMemberList();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
-      ConferenceMember * member = it->GetMember();
-      if(member == NULL)
-        continue;
+      ConferenceMember * member = *it;
 
       output << "[Member " << ++num << "]\n";
       PStringStream hdr;
@@ -2243,12 +2229,10 @@ NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, Conferen
   terminalIdToSend = (long)memberToIgnore->GetID();
 
   // create list of connections to notify
-  MCUProfileList & profileList = conference.GetProfileList();
-  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  MCUMemberList & memberList = conference.GetMemberList();
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
-    ConferenceMember * member = it->GetMember();
-    if(member == NULL)
-      continue;
+    ConferenceMember * member = *it;
     if(member->GetType() & MEMBER_TYPE_GSYSTEM)
       continue;
     if(member != memberToIgnore)
@@ -3335,13 +3319,12 @@ void MCUH323Connection::OnUserInputString(const PString & str)
         if(conference->GetNumber() != codeRoomName)
           continue;
 
-        MCUProfileList & profileList = conference->GetProfileList();
-        for(MCUProfileList::shared_iterator it2 = profileList.begin(); it2 != profileList.end(); ++it2)
+        MCUMemberList & memberList = conference->GetMemberList();
+        for(MCUMemberList::shared_iterator it2 = memberList.begin(); it2 != memberList.end(); ++it2)
         {
-          ConferenceMember * member = it2->GetMember();
-          if(member == NULL)
+          ConferenceMember * member = *it2;
+          if(member->GetType() & MEMBER_TYPE_GSYSTEM)
             continue;
-          if(member->GetType() & MEMBER_TYPE_GSYSTEM) continue;
           MCUSimpleVideoMixer *mixer = ep.GetConferenceManager().FindVideoMixerWithLock(conference, member->GetVideoMixerNumber());
           if(mixer == NULL)
             continue;
@@ -3927,11 +3910,11 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
 
   if(conference)
   {
-    MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    MCUMemberList & memberList = conference->GetMemberList();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
-      ConferenceMember * member = it->GetMember();
-      if(member == NULL || member == this || member->GetType() & MEMBER_TYPE_GSYSTEM)
+      ConferenceMember * member = *it;
+      if(member == this || member->GetType() & MEMBER_TYPE_GSYSTEM)
         continue;
       member->OnReceivedUserInputIndication(sendmsg);
     }

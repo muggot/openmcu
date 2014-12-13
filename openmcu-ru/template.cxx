@@ -34,10 +34,10 @@ PString Conference::SaveTemplate(PString tplName)
       else
       if(id!=NULL)                                 // - or        "VMP 1, memberName" (static type)
       {
-        for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+        for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
         {
-          ConferenceMember * member = it->GetMember();
-          if(member) if(member->GetID() == id)
+          ConferenceMember * member = *it;
+          if(member->GetID() == id)
           {
             vmpText << "VMP 1, " << member->GetName();
             break;
@@ -69,11 +69,9 @@ PString Conference::SaveTemplate(PString tplName)
               {
                 if(mixMatch) if(prev_vmpN == i) if(value.Left(1)=="1")
                 {
-                  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+                  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
                   {
-                    ConferenceMember * member = it->GetMember();
-                    if(member == NULL)
-                      continue;
+                    ConferenceMember * member = *it;
                     if(member->GetType() & MEMBER_TYPE_GSYSTEM)
                       continue;
                     if(("1, "+(member->GetName())) == value)

@@ -350,8 +350,8 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
     ConferenceProfile *profile = it.GetObject();
-    profileList.Erase(it);
-    delete profile;
+    if(profileList.Erase(it))
+      delete profile;
   }
 
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", disconnect remote endpoints");
@@ -704,27 +704,21 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
 
   // memberProfileList
   PString nameID = MCUURL(name).GetMemberNameId();
-  ConferenceProfile * profile = NULL;
   for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
-    ConferenceProfile *p = it.GetObject();
-    if(p->GetMember())
+    ConferenceProfile *profile = it.GetObject();
+    if(profile->GetMember())
       continue;
-    if(p->GetNameID() == nameID)
+    if(profile->GetNameID() == nameID)
     {
-      profile = p;
-      profile->SetMember(member);
+      if(profileList.Erase(it))
+        delete profile;
       break;
     }
   }
-  if(profile == NULL)
-  {
-    long listID = profileList.GetNextID();
-    profile = new ConferenceProfile(this, listID, name);
-    profile->SetMember(member);
-    profileList.Insert(profile->GetID(), profile, name);
-    profileList.Release(profile->GetID());
-  }
+  ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, member);
+  profileList.Insert(profile->GetID(), profile, name);
+  profileList.Release(profile->GetID());
 
   if(member)
   {
@@ -768,14 +762,18 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
     ConferenceProfile *profile = it.GetObject();
     if(profile->GetName() == name && profile->GetMember() == member)
     {
-      if(member && !member->GetType() & MEMBER_TYPE_GSYSTEM)
-      {
-        profile->SetMember(NULL);
-      } else {
-        if(profileList.Erase(it))
-          delete profile;
-      }
+      if(profileList.Erase(it))
+        delete profile;
+      break;
     }
+  }
+
+  if(member)
+  {
+    long listID = profileList.GetNextID();
+    ConferenceProfile *profile = new ConferenceProfile(listID, name, this, member);
+    profileList.Insert(profile->GetID(), profile, name);
+    profileList.Release(profile->GetID());
   }
 
   if(member)
@@ -1299,11 +1297,16 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ConferenceProfile::ConferenceProfile(Conference * _conference, long _listID, PString _name)
+ConferenceProfile::ConferenceProfile(long _listID, const PString & _name, Conference * _conference, ConferenceMember *_member)
 {
   listID = _listID;
+  member = _member;
   conference = _conference;
-  SetName(_name);
+  name = _name;
+  nameID = MCUURL(name).GetMemberNameId();
+  nameHTML = name;
+  nameHTML.Replace("&","&amp;",TRUE,0);
+  nameHTML.Replace("\"","&quot;",TRUE,0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1311,25 +1314,6 @@ ConferenceProfile::ConferenceProfile(Conference * _conference, long _listID, PSt
 void ConferenceProfile::Unlock()
 {
   conference->GetProfileList().Release(listID);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ConferenceProfile::SetName(PString _name)
-{
-  PWaitAndSignal m(mutex);
-  name = _name;
-  nameID = MCUURL(name).GetMemberNameId();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ConferenceProfile::SetMember(ConferenceMember * _member)
-{
-  PWaitAndSignal m(mutex);
-  member = _member;
-  if(member)
-    SetName(member->GetName());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

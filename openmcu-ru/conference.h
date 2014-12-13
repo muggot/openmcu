@@ -169,17 +169,12 @@ class ConferenceProfile : public PObject
   PCLASSINFO(ConferenceProfile, PObject);
 
   public:
-    ConferenceProfile(Conference * _conference, long _listID, PString _name);
+    ConferenceProfile(long _listID, const PString & _name, Conference * _conference, ConferenceMember * member);
 
     ~ConferenceProfile()
     { }
 
-    PMutex & GetMutex()
-    { return mutex; }
-
     void Unlock();
-
-    void SetName(PString _name);
 
     long GetID()
     { return listID; }
@@ -190,13 +185,8 @@ class ConferenceProfile : public PObject
     const PString & GetNameID() const
     { return nameID; }
 
-    PString GetNameHTML() const
-    {
-      PString _name = name;
-      _name.Replace("&","&amp;",TRUE,0);
-      _name.Replace("\"","&quot;",TRUE,0);
-      return _name;
-    }
+    const PString & GetNameHTML() const
+    { return nameHTML; }
 
     ConferenceMemberId GetID() const
     { return (ConferenceMemberId)this; }
@@ -204,11 +194,10 @@ class ConferenceProfile : public PObject
     ConferenceMember * GetMember()
     { return member; }
 
-    void SetMember(ConferenceMember *_member);
-
   protected:
     long listID;
     PString name;
+    PString nameHTML;
     PString nameID;
 
     Conference *conference;
