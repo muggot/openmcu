@@ -444,42 +444,48 @@ const static struct h264_resolution {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //
-// "Обычный" итератор
+// "Умный" итератор
+//  - захватывает объект в конструкторе
+//  - освобождает текущий объект и захватывает новый при изменении операторами
+//  - освобождает в деструкторе
 //
 template <class _T1> class MCUSharedList;
-template <class _T1, class _T2> class MCUSharedListSharedIterator;
 
 template <class T1, class T2>
-class MCUSharedListIterator
+class MCUSharedListSharedIterator
 {
     template <class _T1> friend class MCUSharedList;
-    template <class _T1, class _T2> friend class MCUSharedListSharedIterator;
-    typedef MCUSharedListIterator<T1, T2> iterator;
     typedef MCUSharedListSharedIterator<T1, T2> shared_iterator;
 
     // Для внутреннего пользования
-    MCUSharedListIterator(T1 * _list, int _index)
-      : list(_list), index(_index), captured(false), type_shared(false)
-    { }
+    MCUSharedListSharedIterator(T1 * _list, int _index, bool _captured)
+      : list(_list), index(_index), captured(_captured)
+    {
+      if(captured == false)
+        Capture();
+    }
 
   public:
 
-    MCUSharedListIterator()
-      : list(NULL), index(-1), captured(false), type_shared(false)
+    MCUSharedListSharedIterator()
+      : list(NULL), index(-1), captured(false)
     { }
 
-    MCUSharedListIterator(const iterator & it)
-      : list(it.list), index(it.index), captured(false), type_shared(false)
-    { }
-
-    MCUSharedListIterator(const shared_iterator & it)
-      : list(it.list), index(it.index), captured(false), type_shared(false)
-    { }
-
-    ~MCUSharedListIterator()
+    MCUSharedListSharedIterator(T1 * _list, int _number)
+      : list(_list), index(-1), captured(false)
     {
-      if(type_shared)
-        Release();
+      IteratorIncrement(_number);
+    }
+
+    MCUSharedListSharedIterator(const shared_iterator & it)
+      : list(it.list), index(it.index), captured(false)
+    {
+      Capture();
+    }
+
+    ~MCUSharedListSharedIterator()
+    {
+      Release();
     }
 
     int GetIndex()
@@ -515,38 +521,33 @@ class MCUSharedListIterator
     T2 * operator * ()
     { return GetObject(); }
 
-    MCUSharedListIterator & operator = (const iterator & it)
+    MCUSharedListSharedIterator & operator = (const shared_iterator & it)
     {
+      Release();
       list = it.list;
       index = it.index;
+      Capture();
       return *this;
     }
 
-    MCUSharedListIterator & operator = (const shared_iterator & it)
+    MCUSharedListSharedIterator & operator ++ ()
     {
-      list = it.list;
-      index = it.index;
-      return *this;
-    }
-
-    bool operator == (const iterator & it)
-    { return (index == it.index); }
-
-    bool operator != (const iterator & it)
-    { return (index != it.index); }
-
-    MCUSharedListIterator & operator ++ ()
-    {
-      if(type_shared)
-        Release();
+      Release();
       IteratorIncrement();
       return *this;
     }
 
+    bool operator == (const shared_iterator & it)
+    { return (index == it.index); }
+
+    bool operator != (const shared_iterator & it)
+    { return (index != it.index); }
+
   protected:
+
     void Release()
     {
-      if(list && index >= 0 && index < list->size)
+      if(captured && list && index >= 0 && index < list->size)
       {
         captured = false;
         list->ReleaseInternal(index);
@@ -555,102 +556,43 @@ class MCUSharedListIterator
 
     void Capture()
     {
-      if(list && index >= 0 && index < list->size)
+      if(!captured && list && index >= 0 && index < list->size)
       {
         captured = true;
         list->CaptureInternal(index);
       }
     }
 
-    void IteratorIncrement()
+    bool IteratorIncrement(int _number = 0)
     {
+      if(list == NULL)
+        return false;
       ++index;
       if(index < 0 || index >= list->size)
       {
         index = list->size;
-        return;
+        return false;
       }
+      int i = -1;
       for(bool *it = find(list->states + index, list->states_end, true); it != list->states_end; it = find(++it, list->states_end, true))
       {
+        if(++i < _number)
+          continue;
         index = it - list->states;
-        list->CaptureInternal(index);
+        Capture();
         // повторная проверка после захвата
         if(list->states[index] == true)
-          return;
+          return true;
         // освободить если нет объекта
-        list->ReleaseInternal(index);
+        Release();
       }
       index = list->size;
+      return false;
     }
 
     T1 * list;
     int index;
     bool captured;
-    bool type_shared;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-// "Умный" итератор
-//  - захватывает объект в конструкторе
-//  - освобождает текущий объект и захватывает новый при изменении операторами
-//  - освобождает в деструкторе
-//
-template <class T1, class T2>
-class MCUSharedListSharedIterator : public MCUSharedListIterator<T1, T2>
-{
-    template <class _T1> friend class MCUSharedList;
-    template <class _T1, class _T2> friend class MCUSharedListIterator;
-    typedef MCUSharedListIterator<T1, T2> iterator;
-    typedef MCUSharedListSharedIterator<T1, T2> shared_iterator;
-
-    // Для внутреннего пользования
-    MCUSharedListSharedIterator(T1 * _list, int _index)
-      : iterator(_list, _index)
-    {
-      iterator::type_shared = true;
-      if(_list && _index == -1)
-        iterator::IteratorIncrement();
-    }
-
-  public:
-    MCUSharedListSharedIterator()
-      : iterator(NULL, -1)
-    {
-      iterator::type_shared = true;
-    }
-
-    MCUSharedListSharedIterator(const iterator & it)
-      : iterator(it)
-    {
-      iterator::type_shared = true;
-      iterator::Capture();
-    }
-
-    MCUSharedListSharedIterator(const shared_iterator & it)
-      : iterator(it)
-    {
-      iterator::type_shared = true;
-      iterator::Capture();
-    }
-
-    MCUSharedListSharedIterator & operator = (const iterator & it)
-    {
-      iterator::Release();
-      iterator::list = it.list;
-      iterator::index = it.index;
-      iterator::Capture();
-      return *this;
-    }
-
-    MCUSharedListSharedIterator & operator = (const shared_iterator & it)
-    {
-      iterator::Release();
-      iterator::list = it.list;
-      iterator::index = it.index;
-      iterator::Capture();
-      return *this;
-    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -658,9 +600,7 @@ class MCUSharedListSharedIterator : public MCUSharedListIterator<T1, T2>
 template <class T>
 class MCUSharedList
 {
-    template<class T1, class T2> friend class MCUSharedListIterator;
-    // Обычный итератор отключен
-    typedef MCUSharedListIterator<MCUSharedList, T> iterator;
+    template<class T1, class T2> friend class MCUSharedListSharedIterator;
 
   public:
     MCUSharedList(int _size = 128);
@@ -671,9 +611,9 @@ class MCUSharedList
     typedef MCUSharedListSharedIterator<MCUSharedList, T> shared_iterator;
 
     // begin() - первый доступный объект
-    shared_iterator begin() { return shared_iterator(this, -1); }
+    shared_iterator begin() { return shared_iterator(this, 0); }
     // end() - постоянный index = size
-    const iterator & end() const { return iterator_end; }
+    const shared_iterator & end() const { return iterator_end; }
 
     // Максимальный размер списка
     int GetSize()
@@ -692,7 +632,7 @@ class MCUSharedList
     // Erase(id) - Release выполнять(если захвачен) перед Erase
     bool Erase(long id);
     // Erase(iterator) - Release выполнять после Erase
-    bool Erase(iterator & it);
+    bool Erase(shared_iterator & it);
     void Release(long id);
 
     // Find() возвращают захваченный объект
@@ -709,7 +649,7 @@ class MCUSharedList
   protected:
     void CaptureInternal(int index);
     void ReleaseInternal(int index);
-    void ReleaseWait(long * _captures, int threshold = 0);
+    void ReleaseWait(long * _captures, int threshold);
 
     int size;
     long current_size;
@@ -724,14 +664,14 @@ class MCUSharedList
     T ** objs_end;
     long * volatile captures;
     bool * volatile locks;
-    iterator iterator_end;
+    shared_iterator iterator_end;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
 MCUSharedList<T>::MCUSharedList(int _size)
-  : iterator_end(this, _size)
+  : iterator_end(this, _size, true)
 {
   size = _size;
   current_size = 0;
@@ -826,7 +766,7 @@ bool MCUSharedList<T>::Erase(long id)
           states[index] = false;
           sync_decrement(&current_size);
           // ждать освобождения объекта
-          ReleaseWait(&captures[index]);
+          ReleaseWait(&captures[index], 0);
           // запись объекта
           ids[index] = -1;
           names[index] = "";
@@ -846,7 +786,7 @@ bool MCUSharedList<T>::Erase(long id)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-bool MCUSharedList<T>::Erase(iterator & it)
+bool MCUSharedList<T>::Erase(shared_iterator & it)
 {
   int index = it.GetIndex();
   if(index < 0 || index >= size)
@@ -928,7 +868,7 @@ void MCUSharedList<T>::Release(long id)
 template <class T>
 void MCUSharedList<T>::ReleaseInternal(int index)
 {
-  PTRACE(0, "release index=" << index << " captures=" << captures[index] << " id=" << ids[index] << " obj=" << (objs[index] == NULL ? 0 : objs[index]) << " thread=" << PThread::Current() << " " << PThread::Current()->GetThreadName()<< "\ttype=" << typeid(objs[index]).name());
+  //PTRACE(0, "release index=" << index << " captures=" << captures[index] << " id=" << ids[index] << " obj=" << (objs[index] == NULL ? 0 : objs[index]) << " thread=" << PThread::Current() << " " << PThread::Current()->GetThreadName()<< "\ttype=" << typeid(objs[index]).name());
   sync_decrement(&captures[index]);
 }
 
@@ -937,7 +877,7 @@ void MCUSharedList<T>::ReleaseInternal(int index)
 template <class T>
 void MCUSharedList<T>::CaptureInternal(int index)
 {
-  PTRACE(0, "capture index=" << index << " captures=" << captures[index] << " id=" << ids[index] << " obj=" << (objs[index] == NULL ? 0 : objs[index]) << " thread=" << PThread::Current() << " " << PThread::Current()->GetThreadName()<< "\ttype=" << typeid(objs[index]).name());
+  //PTRACE(0, "capture index=" << index << " captures=" << captures[index] << " id=" << ids[index] << " obj=" << (objs[index] == NULL ? 0 : objs[index]) << " thread=" << PThread::Current() << " " << PThread::Current()->GetThreadName()<< "\ttype=" << typeid(objs[index]).name());
   sync_increment(&captures[index]);
 }
 
@@ -955,7 +895,7 @@ MCUSharedListSharedIterator<MCUSharedList<T>, T> MCUSharedList<T>::Find(long id)
     CaptureInternal(index);
     // повторная проверка после захвата
     if(ids[index] == id && states[index] == true)
-      return shared_iterator(this, index);
+      return shared_iterator(this, index, true);
     // освободить если нет объекта
     ReleaseInternal(index);
   }
@@ -974,7 +914,7 @@ MCUSharedListSharedIterator<MCUSharedList<T>, T> MCUSharedList<T>::Find(const PS
     CaptureInternal(index);
     // повторная проверка после захвата
     if(names[index] == name && states[index] == true)
-      return shared_iterator(this, index);
+      return shared_iterator(this, index, true);
     // освободить если нет объекта
     ReleaseInternal(index);
   }
@@ -993,7 +933,7 @@ MCUSharedListSharedIterator<MCUSharedList<T>, T> MCUSharedList<T>::Find(T * obj)
     CaptureInternal(index);
     // повторная проверка после захвата
     if(objs[index] == obj && states[index] == true)
-      return shared_iterator(this, index);
+      return shared_iterator(this, index, true);
     // освободить если нет объекта
     ReleaseInternal(index);
   }

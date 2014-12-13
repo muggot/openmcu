@@ -222,12 +222,8 @@ MCUSimpleVideoMixer * ConferenceManager::FindVideoMixerWithLock(Conference * con
   MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
   if(videoMixerList.GetCurrentSize() != 0)
   {
-    int n = 0;
-    for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++n)
-    {
-      if(n == number)
-        return it.GetCapturedObject();
-    }
+    MCUVideoMixerList::shared_iterator it(&videoMixerList, number);
+    return it.GetCapturedObject();
   }
   else
   {
@@ -278,17 +274,12 @@ int ConferenceManager::DeleteVideoMixer(Conference * conference, int number)
   if(videoMixerList.GetCurrentSize() == 1)
     return videoMixerList.GetCurrentSize();
 
-  int j = 0;
-  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+  MCUVideoMixerList::shared_iterator it(&videoMixerList, number);
+  if(it != videoMixerList.end())
   {
     MCUSimpleVideoMixer *mixer = it.GetObject();
-    if(j == number)
-    {
-      if(videoMixerList.Erase(it))
-        delete mixer;
-      break;
-    }
-    j++;
+    if(videoMixerList.Erase(it))
+      delete mixer;
   }
   return videoMixerList.GetCurrentSize();
 }
@@ -954,11 +945,8 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         break;
       if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
       {
-        PString username = memberToAdd->GetName();
-        username.Replace("&","&amp;",TRUE,0);
-        username.Replace("\"","&quot;",TRUE,0);
         PStringStream msg;
-        msg << username << " REJECTED - DUPLICATE NAME";
+        msg << memberToAdd->GetNameHTML() << " REJECTED - DUPLICATE NAME";
         OpenMCU::Current().HttpWriteEventRoom(msg, number);
         PTRACE(1, "Conference " << number << "\tRejected duplicate name: " << memberToAdd->GetName());
         return FALSE;
