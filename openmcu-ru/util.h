@@ -457,7 +457,7 @@ class MCUSharedListSharedIterator
     template <class _T1> friend class MCUSharedList;
     typedef MCUSharedListSharedIterator<T1, T2> shared_iterator;
 
-    // Для внутреннего пользования
+    // Только для внутреннего пользования
     MCUSharedListSharedIterator(T1 * _list, int _index, bool _captured)
       : list(_list), index(_index), captured(_captured)
     {
@@ -500,14 +500,14 @@ class MCUSharedListSharedIterator
 
     T2 * GetObject()
     {
-      if(list && index >= 0 && index < list->size)
+      if(captured && list && index >= 0 && index < list->size)
         return list->objs[index];
       return NULL;
     }
 
     T2 * GetCapturedObject()
     {
-      if(list && index >= 0 && index < list->size)
+      if(captured && list && index >= 0 && index < list->size)
       {
         list->CaptureInternal(index);
         return list->objs[index];
@@ -543,8 +543,6 @@ class MCUSharedListSharedIterator
     bool operator != (const shared_iterator & it)
     { return (index != it.index); }
 
-  protected:
-
     void Release()
     {
       if(captured && list && index >= 0 && index < list->size)
@@ -554,6 +552,9 @@ class MCUSharedListSharedIterator
       }
     }
 
+  protected:
+
+    // Только для внутреннего пользования
     void Capture()
     {
       if(!captured && list && index >= 0 && index < list->size)
@@ -563,6 +564,7 @@ class MCUSharedListSharedIterator
       }
     }
 
+    // Только для внутреннего пользования
     bool IteratorIncrement(int _number = 0)
     {
       if(list == NULL)
@@ -792,6 +794,10 @@ bool MCUSharedList<T>::Erase(shared_iterator & it)
   if(index < 0 || index >= size)
     return false;
 
+  // освободить объект и
+  // запретить получение объекта из итератора
+  it.Release();
+
   bool erase = false;
   if(states[index] == true )
   {
@@ -805,7 +811,7 @@ bool MCUSharedList<T>::Erase(shared_iterator & it)
         states[index] = false;
         sync_decrement(&current_size);
         // ждать освобождения объекта
-        ReleaseWait(&captures[index], 1);
+        ReleaseWait(&captures[index], 0);
         // запись объекта
         ids[index] = -1;
         names[index] = "";
@@ -868,7 +874,7 @@ void MCUSharedList<T>::Release(long id)
 template <class T>
 void MCUSharedList<T>::ReleaseInternal(int index)
 {
-  //PTRACE(0, "release index=" << index << " captures=" << captures[index] << " id=" << ids[index] << " obj=" << (objs[index] == NULL ? 0 : objs[index]) << " thread=" << PThread::Current() << " " << PThread::Current()->GetThreadName()<< "\ttype=" << typeid(objs[index]).name());
+  //PTRACE(6, "release index=" << index << " captures=" << captures[index] << " id=" << ids[index] << " obj=" << (objs[index] == NULL ? 0 : objs[index]) << " thread=" << PThread::Current() << " " << PThread::Current()->GetThreadName()<< "\ttype=" << typeid(objs[index]).name());
   sync_decrement(&captures[index]);
 }
 
@@ -877,7 +883,7 @@ void MCUSharedList<T>::ReleaseInternal(int index)
 template <class T>
 void MCUSharedList<T>::CaptureInternal(int index)
 {
-  //PTRACE(0, "capture index=" << index << " captures=" << captures[index] << " id=" << ids[index] << " obj=" << (objs[index] == NULL ? 0 : objs[index]) << " thread=" << PThread::Current() << " " << PThread::Current()->GetThreadName()<< "\ttype=" << typeid(objs[index]).name());
+  //PTRACE(6, "capture index=" << index << " captures=" << captures[index] << " id=" << ids[index] << " obj=" << (objs[index] == NULL ? 0 : objs[index]) << " thread=" << PThread::Current() << " " << PThread::Current()->GetThreadName()<< "\ttype=" << typeid(objs[index]).name());
   sync_increment(&captures[index]);
 }
 

@@ -288,13 +288,6 @@ int ConferenceManager::DeleteVideoMixer(Conference * conference, int number)
 
 void ConferenceManager::OnCreateConference(Conference * conference)
 {
-  // add monitor event
-  monitor->AddMonitorEvent(new ConferenceStatusInfo(conference->GetID()));
-  monitor->AddMonitorEvent(new ConferenceRecorderInfo(conference->GetID()));
-  int timeLimit = GetConferenceParam(conference->GetNumber(), RoomTimeLimitKey, 0);
-  if(timeLimit > 0)
-    monitor->AddMonitorEvent(new ConferenceTimeLimitInfo(conference->GetID(), PTime() + timeLimit*1000));
-
   if(MCUConfig("Export Parameters").GetBoolean("Enable export", FALSE) == TRUE)
     conference->pipeMember = new ConferencePipeMember(conference);
 
@@ -461,67 +454,28 @@ void ConferenceManager::ClearConferenceList()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceManager::ClearMonitorEvents()
-{
-  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
-  {
-    Conference *conference = it.GetObject();
-    monitor->RemoveForConference(conference->GetID());
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ConferenceManager::AddMonitorEvent(ConferenceMonitorInfo * info)
-{
-  monitor->AddMonitorEvent(info);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ConferenceMonitor::Main()
 {
   running = TRUE;
 
-  for (;;) {
-
-    if (!running)
-      break;
-
+  while(running)
+  {
     Sleep(1000);
-
-    if (!running)
+    if(!running)
       break;
 
     PWaitAndSignal m(mutex);
 
-    PTime now;
-    for(MonitorInfoList::iterator r = monitorList.begin(); r != monitorList.end(); )
+    MCUConferenceList & conferenceList = manager.GetConferenceList();
+    for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
     {
-      ConferenceMonitorInfo & info = **r;
-      if(now < info.timeToPerform)
-        ++r;
-      else {
-        int ret = 1;
-        PString room;
-        MCUConferenceList & conferenceList = manager.GetConferenceList();
-        Conference *conference = conferenceList(info.id);
-        if(conference)
-        {
-          ret = info.Perform(*conference);
-          room = conference->GetNumber();
-          conferenceList.Release(info.id);
-        }
-        if(ret == 0)
-        {
-          ++r;
-        } else {
-          delete *r;
-          monitorList.erase(r);
-          r = monitorList.begin();
-          if(ret == 2)
-            manager.RemoveConference(room);
-        }
+      Conference *conference = *it;
+      PString room = conference->GetNumber();
+      int ret = Perform(conference);
+      if(ret == 1)
+      {
+        it.Release();
+        manager.RemoveConference(room);
       }
     }
   }
@@ -529,107 +483,47 @@ void ConferenceMonitor::Main()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceMonitor::AddMonitorEvent(ConferenceMonitorInfo * info)
+int ConferenceMonitor::Perform(Conference * conference)
 {
-  PWaitAndSignal m(mutex);
-  monitorList.push_back(info);
-}
+  PTime now;
+  if(now < conference->GetStartTime() + 1000)
+    return 0;
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ConferenceMonitor::RemoveForConference(const long & _id)
-{
-  PWaitAndSignal m(mutex);
-  MonitorInfoList::iterator r = monitorList.begin();
-  while (r != monitorList.end()) {
-    ConferenceMonitorInfo & info = **r;
-    if (info.id != _id)
-      ++r;
-    else {
-      delete *r;
-      monitorList.erase(r);
-      r = monitorList.begin();
-    }
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int ConferenceTimeLimitInfo::Perform(Conference & conference)
-{
-  return 2;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int ConferenceRepeatingInfo::Perform(Conference & conference)
-{
-  this->timeToPerform = PTime() + repeatTime;
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int ConferenceStatusInfo::Perform(Conference & conference)
-{
-  // auto delete empty room
-  BOOL autoDeleteEmpty = GetConferenceParam(conference.GetNumber(), RoomAutoDeleteEmptyKey, FALSE);
-  if(autoDeleteEmpty && !conference.GetVisibleMemberCount())
+  // time limit
+  int timeLimit = GetConferenceParam(conference->GetNumber(), RoomTimeLimitKey, 0);
+  if(timeLimit > 0 && now >= conference->GetStartTime() + timeLimit*1000)
   {
-    return 2; // delete conference
+    return 1; // delete conference
   }
 
-  return ConferenceRepeatingInfo::Perform(conference);
-}
+  // auto delete empty room
+  BOOL autoDeleteEmpty = GetConferenceParam(conference->GetNumber(), RoomAutoDeleteEmptyKey, FALSE);
+  if(autoDeleteEmpty && !conference->GetVisibleMemberCount())
+  {
+    return 1; // delete conference
+  }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int ConferenceRecorderInfo::Perform(Conference & conference)
-{
   // recorder
-  BOOL allowRecord = GetConferenceParam(conference.GetNumber(), RoomAllowRecordKey, TRUE);
+  BOOL allowRecord = GetConferenceParam(conference->GetNumber(), RoomAllowRecordKey, TRUE);
   if(!allowRecord)
   {
-    conference.StopRecorder();
-    return 1; // delete monitor
+    conference->StopRecorder();
+  }
+  else
+  {
+    PString autoRecordStart = GetConferenceParam(conference->GetNumber(), RoomAutoRecordStartKey, "Disable");
+    PString autoRecordStop = GetConferenceParam(conference->GetNumber(), RoomAutoRecordStopKey, "Disable");
+
+    PINDEX visibleMembers = conference->GetVisibleMemberCount();
+
+    if(autoRecordStop != "Disable" && visibleMembers <= autoRecordStop.AsInteger())
+      conference->StopRecorder();
+    else if(autoRecordStart != "Disable" && autoRecordStart.AsInteger() > autoRecordStop.AsInteger() && visibleMembers >= autoRecordStart.AsInteger())
+      conference->StartRecorder();
   }
 
-  PString autoRecordStart = GetConferenceParam(conference.GetNumber(), RoomAutoRecordStartKey, "Disable");
-  PString autoRecordStop = GetConferenceParam(conference.GetNumber(), RoomAutoRecordStopKey, "Disable");
-
-  PINDEX visibleMembers = conference.GetVisibleMemberCount();
-
-  if(autoRecordStop != "Disable" && visibleMembers <= autoRecordStop.AsInteger())
-    conference.StopRecorder();
-  else if(autoRecordStart != "Disable" && autoRecordStart.AsInteger() > autoRecordStop.AsInteger() && visibleMembers >= autoRecordStart.AsInteger())
-    conference.StartRecorder();
-
-  return ConferenceRepeatingInfo::Perform(conference);
+  return 0;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int ConferenceMCUCheckInfo::Perform(Conference & conference)
-{
-/*
-  // see if any member of this conference is a not an MCU
-  MCUMemberList & list = conference.GetMemberList();
-  Conference::MemberList::iterator r;
-  for (r = list.begin(); r != list.end(); ++r)
-    if (r->second->GetType() != MEMBER_TYPE_MCU)
-      break;
-
-  // if there is any non-MCU member, check again later
-  if (r != list.end())
-    return ConferenceRepeatingInfo::Perform(conference);
-
-  // else shut down the conference
-  for (r = list.begin(); r != list.end(); ++r)
-    r->second->Close();
-*/
-  return 1;
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -641,7 +535,7 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
                                     , MCUSimpleVideoMixer * mixer
 #endif
 )
-  : manager(_manager), listID(_listID), guid(_guid), number(_number), name(_name), mcuMonitorRunning(FALSE)
+  : manager(_manager), listID(_listID), guid(_guid), number(_number), name(_name)
 {
   stopping = FALSE;
 #if MCU_VIDEO
@@ -756,13 +650,6 @@ BOOL Conference::StopRecorder()
   OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
   OpenMCU::Current().HttpWriteCmdRoom("build_page()", number);
   return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Conference::AddMonitorEvent(ConferenceMonitorInfo * info)
-{
-  manager.AddMonitorEvent(info); 
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1013,13 +900,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 
   // notify that member is joined
   memberToAdd->SetJoined(TRUE);
-
-  // monitor
-  if(memberToAdd->GetType() == MEMBER_TYPE_MCU && !mcuMonitorRunning)
-  {
-    manager.AddMonitorEvent(new ConferenceMCUCheckInfo(GetID(), 1000));
-    mcuMonitorRunning = TRUE;
-  }
 
   // template
   if(!memberToAdd->GetType() & MEMBER_TYPE_GSYSTEM)

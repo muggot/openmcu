@@ -64,8 +64,6 @@ void OpenMCU::OnStop()
 
   delete rtspServer;
 
-  // clear conference monitor events, autodelete and etc.
-  manager->ClearMonitorEvents();
   // clear all conference and leave connections
   manager->ClearConferenceList();
 

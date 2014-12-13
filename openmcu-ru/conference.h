@@ -578,8 +578,6 @@ class Conference : public PObject
     virtual BOOL PutChosenVan();
 #endif
 
-    void AddMonitorEvent(ConferenceMonitorInfo * info);
-
     void HandleFeatureAccessCode(ConferenceMember & member, PString fac);
 
     unsigned short int VAdelay;
@@ -639,90 +637,11 @@ class Conference : public PObject
     PString number;
     PString name;
     PTime startTime;
-    BOOL mcuMonitorRunning;
     BOOL moderated;
     BOOL muteUnvisible;
     int vidmembernum;
     PMutex membersConfMutex;
     BOOL forceScreenSplit;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class ConferenceMonitorInfo : public PObject
-{
-  PCLASSINFO(ConferenceMonitorInfo, PObject);
-  public:
-    ConferenceMonitorInfo(const long & _id, const PTime & endTime)
-      : id(_id), timeToPerform(endTime) { }
-
-    long id;
-    PTime timeToPerform;
-
-    virtual int Perform(Conference &) = 0;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class ConferenceTimeLimitInfo : public ConferenceMonitorInfo
-{
-  public:
-    ConferenceTimeLimitInfo(const long & _id, const PTime & endTime)
-      : ConferenceMonitorInfo(_id, endTime)
-    { }
-
-    int Perform(Conference & conference);
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class ConferenceRepeatingInfo : public ConferenceMonitorInfo
-{
-  public:
-    ConferenceRepeatingInfo(const long & _id, const PTimeInterval & _repeatTime)
-      : ConferenceMonitorInfo(_id, PTime() + _repeatTime), repeatTime(_repeatTime)
-    { }
-
-    int Perform(Conference & conference);
-
-  protected:
-    PTimeInterval repeatTime;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class ConferenceStatusInfo : public ConferenceRepeatingInfo
-{
-  public:
-    ConferenceStatusInfo(const long & _id)
-      : ConferenceRepeatingInfo(_id, 1000)
-    { }
-
-    int Perform(Conference & conference);
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class ConferenceRecorderInfo : public ConferenceRepeatingInfo
-{
-  public:
-    ConferenceRecorderInfo(const long & _id)
-      : ConferenceRepeatingInfo(_id, 1000)
-    { }
-
-    int Perform(Conference & conference);
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class ConferenceMCUCheckInfo : public ConferenceRepeatingInfo
-{
-  public:
-    ConferenceMCUCheckInfo(const long & _id, const PTimeInterval & _repeatTime)
-      : ConferenceRepeatingInfo(_id, _repeatTime)
-    { }
-
-    int Perform(Conference & conference);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -736,16 +655,12 @@ class ConferenceMonitor : public PThread
     { Resume(); }
 
     void Main();
-    void AddMonitorEvent(ConferenceMonitorInfo * info);
-    void RemoveForConference(const long & _id);
-
-    typedef std::vector<ConferenceMonitorInfo *> MonitorInfoList;
     BOOL running;
 
   protected:
+    int Perform(Conference * conference);
     ConferenceManager & manager;
     PMutex mutex;
-    MonitorInfoList monitorList;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -838,8 +753,6 @@ class ConferenceManager : public PObject
     PINDEX GetMaxConferenceCount() const
     { return maxConferenceCount; }
 
-    void AddMonitorEvent(ConferenceMonitorInfo * info);
-    void ClearMonitorEvents();
     void ClearConferenceList();
 
   protected:
