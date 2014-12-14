@@ -40,25 +40,43 @@ PString srtp_get_random_keysalt();
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class MCU_RTPChannel  : public H323_RTPChannel
+class MCU_RTPChannel : public H323_RTPChannel
 {
   PCLASSINFO(MCU_RTPChannel, H323_RTPChannel);
   public:
-    MCU_RTPChannel(H323Connection & connection, const H323Capability & capability, Directions direction, RTP_Session & rtp)
-      : H323_RTPChannel(connection, capability, direction, rtp) { };
-    ~MCU_RTPChannel() { };
+    MCU_RTPChannel(H323Connection & connection, const H323Capability & capability, Directions direction, RTP_Session & rtp);
+    ~MCU_RTPChannel();
+
+    virtual BOOL Open();
+    virtual BOOL Start();
+    virtual void CleanUpOnTermination();
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class SipRTPChannel  : public MCU_RTPChannel
+class MCUH323_RTPChannel : public MCU_RTPChannel
 {
-  PCLASSINFO(SipRTPChannel, MCU_RTPChannel);
+  PCLASSINFO(MCUH323_RTPChannel, H323_RTPChannel);
+  public:
+    MCUH323_RTPChannel(H323Connection & connection, const H323Capability & capability, Directions direction, RTP_Session & rtp);
+    ~MCUH323_RTPChannel() { };
+
+    virtual BOOL Open();
+    virtual BOOL Start();
+    virtual void CleanUpOnTermination();
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUSIP_RTPChannel : public MCU_RTPChannel
+{
+  PCLASSINFO(MCUSIP_RTPChannel, MCU_RTPChannel);
 
   public:
-    SipRTPChannel(H323Connection & connection, const H323Capability & capability, Directions direction, RTP_Session & rtp);
-    ~SipRTPChannel();
+    MCUSIP_RTPChannel(H323Connection & connection, const H323Capability & capability, Directions direction, RTP_Session & rtp);
+    ~MCUSIP_RTPChannel();
 
+    virtual BOOL Open();
     virtual BOOL Start();
     virtual void CleanUpOnTermination();
 
@@ -135,16 +153,16 @@ class MCU_RTP_UDP : public RTP_UDP
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class SipRTP_UDP : public MCU_RTP_UDP
+class MCUSIP_RTP_UDP : public MCU_RTP_UDP
 {
   public:
-    SipRTP_UDP(
+    MCUSIP_RTP_UDP(
 #ifdef H323_RTP_AGGREGATE
       PHandleAggregator * aggregator,
 #endif
       unsigned id, BOOL remoteIsNat = FALSE
               );
-    ~SipRTP_UDP();
+    ~MCUSIP_RTP_UDP();
 
     virtual BOOL ReadData(RTP_DataFrame & frame, BOOL loop);
     virtual BOOL WriteData(RTP_DataFrame & frame);

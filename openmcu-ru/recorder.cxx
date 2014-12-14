@@ -159,10 +159,13 @@ void ConferenceRecorder::Stop()
     av_write_trailer(fmt_context);
   }
 
+  PMutex & avcodecMutex = OpenMCU::Current().GetAVCodecMutex();
+  avcodecMutex.Wait();
   if(audio_st)
     avcodec_close(audio_st->codec);
   if(video_st)
     avcodec_close(video_st->codec);
+  avcodecMutex.Signal();
 
   if(fmt_context)
   {
@@ -462,7 +465,10 @@ BOOL ConferenceRecorder::OpenAudio()
   int ret = 0;
 
   // open codec
+  PMutex & avcodecMutex = OpenMCU::Current().GetAVCodecMutex();
+  avcodecMutex.Wait();
   ret = avcodec_open2(context, context->codec, NULL);
+  avcodecMutex.Signal();
   if(ret < 0)
   {
     MCUTRACE(1, trace_section << "could not open audio codec: " << ret << " " << AVErrorToString(ret));
@@ -654,7 +660,10 @@ BOOL ConferenceRecorder::OpenVideo()
   int ret = 0;
 
   // open the codec
+  PMutex & avcodecMutex = OpenMCU::Current().GetAVCodecMutex();
+  avcodecMutex.Wait();
   ret = avcodec_open2(context, context->codec, NULL);
+  avcodecMutex.Signal();
   if(ret < 0)
   {
     MCUTRACE(1, trace_section << "could not open video codec: " << ret << " " << AVErrorToString(ret));

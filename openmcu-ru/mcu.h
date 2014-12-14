@@ -269,6 +269,9 @@ class OpenMCU : public OpenMCUProcessAncestor
     virtual void OnCreateConfigPage(PConfig & /*cfg*/, PConfigPage & /*page*/)
     { }
 
+    PMutex & GetAVCodecMutex()
+    { return avcodecMutex; }
+
     const PString & GetServerId() const { return serverId; }
     const PString & GetDefaultRoomName() const { return defaultRoomName; }
 
@@ -418,8 +421,10 @@ class OpenMCU : public OpenMCUProcessAncestor
 
     int        httpBuffer, httpBufferIndex;
     PStringArray httpBufferedEvents;
-    PMutex     httpBufferMutex;
     BOOL       httpBufferComplete;
+
+    PMutex     httpBufferMutex;
+    PMutex     avcodecMutex;
 
 #if MCU_VIDEO
 #if USE_LIBYUV

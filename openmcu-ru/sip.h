@@ -280,8 +280,8 @@ class MCUSipConnection : public MCUH323Connection
     void CreateLogicalChannels();
     int CreateMediaChannel(int pt, int rtp_dir);
     BOOL CreateDefaultRTPSessions();
-    SipRTP_UDP *CreateRTPSession(MediaTypes media);
-    SipRTP_UDP *CreateRTPSession(SipCapability *sc);
+    MCUSIP_RTP_UDP *CreateRTPSession(MediaTypes media);
+    MCUSIP_RTP_UDP *CreateRTPSession(SipCapability *sc);
 
     void SelectCapability_H261(SipCapMapType & LocalCaps, SipCapability *sc);
     void SelectCapability_H263(SipCapMapType & LocalCaps, SipCapability *sc);

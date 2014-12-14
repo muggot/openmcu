@@ -118,7 +118,7 @@ static void zrtp_event_security(zrtp_stream_t *stream, zrtp_security_event_t eve
 
 static void zrtp_event_protocol(zrtp_stream_t *stream, zrtp_protocol_event_t event)
 {
-  SipRTP_UDP *rtp_session = (SipRTP_UDP *)zrtp_stream_get_userdata(stream);
+  MCUSIP_RTP_UDP *rtp_session = (MCUSIP_RTP_UDP *)zrtp_stream_get_userdata(stream);
   if(!rtp_session)
     return;
 
@@ -139,7 +139,7 @@ static void zrtp_event_protocol(zrtp_stream_t *stream, zrtp_protocol_event_t eve
       if(rtp_session->zrtp_master && rtp_session->GetConnection())
       {
         // attach extended stream
-        SipRTP_UDP *video_rtp_session = (SipRTP_UDP*)rtp_session->GetConnection()->GetSession(RTP_Session::DefaultVideoSessionID);
+        MCUSIP_RTP_UDP *video_rtp_session = (MCUSIP_RTP_UDP*)rtp_session->GetConnection()->GetSession(RTP_Session::DefaultVideoSessionID);
         if(video_rtp_session && video_rtp_session->transmitter_state == 1 && video_rtp_session->receiver_state == 1)
         {
           if(!ZRTP_ERROR(zrtp_stream_attach, (stream->session, &video_rtp_session->zrtp_stream)))
@@ -180,7 +180,7 @@ static void zrtp_event_protocol(zrtp_stream_t *stream, zrtp_protocol_event_t eve
 
 static int zrtp_on_send_packet(const zrtp_stream_t *stream, char *packet, unsigned int len)
 {
-  SipRTP_UDP *session = (SipRTP_UDP *)zrtp_stream_get_userdata(stream);
+  MCUSIP_RTP_UDP *session = (MCUSIP_RTP_UDP *)zrtp_stream_get_userdata(stream);
   if(!session)
     return zrtp_status_write_fail;
 
@@ -257,40 +257,126 @@ void sip_rtp_shutdown()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SipRTPChannel::SipRTPChannel(H323Connection & conn, const H323Capability & cap, Directions direction, RTP_Session & r)
+MCU_RTPChannel::MCU_RTPChannel(H323Connection & conn, const H323Capability & cap, Directions direction, RTP_Session & r)
+  : H323_RTPChannel(conn, cap, direction, r)
+{
+  PMutex & avcodecMutex = OpenMCU::Current().GetAVCodecMutex();
+  avcodecMutex.Wait();
+  codec = capability->CreateCodec(direction == IsReceiver ? H323Codec::Decoder : H323Codec::Encoder);
+  avcodecMutex.Signal();
+
+#ifdef H323_AUDIO_CODECS
+  if(codec && PIsDescendant(codec, H323AudioCodec))
+    ((H323AudioCodec*)codec)->SetSilenceDetectionMode(endpoint.GetSilenceDetectionMode());
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCU_RTPChannel::~MCU_RTPChannel()
+{
+  if(codec)
+  {
+    PMutex & avcodecMutex = OpenMCU::Current().GetAVCodecMutex();
+    avcodecMutex.Wait();
+    delete codec;
+    codec = NULL;
+    avcodecMutex.Signal();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTPChannel::Start()
+{
+  return H323_RTPChannel::Start();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTPChannel::Open()
+{
+  return H323_RTPChannel::Open();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTPChannel::CleanUpOnTermination()
+{
+  H323_RTPChannel::CleanUpOnTermination();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUH323_RTPChannel::MCUH323_RTPChannel(H323Connection & conn, const H323Capability & cap, Directions direction, RTP_Session & r)
   : MCU_RTPChannel(conn, cap, direction, r)
 {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SipRTPChannel::~SipRTPChannel()
+BOOL MCUH323_RTPChannel::Start()
+{
+  return MCU_RTPChannel::Start();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUH323_RTPChannel::Open()
+{
+  return MCU_RTPChannel::Open();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323_RTPChannel::CleanUpOnTermination()
+{
+  MCU_RTPChannel::CleanUpOnTermination();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUSIP_RTPChannel::MCUSIP_RTPChannel(H323Connection & conn, const H323Capability & cap, Directions direction, RTP_Session & r)
+  : MCU_RTPChannel(conn, cap, direction, r)
 {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL SipRTPChannel::Start()
+MCUSIP_RTPChannel::~MCUSIP_RTPChannel()
 {
-  BOOL status = H323_RTPChannel::Start();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSIP_RTPChannel::Open()
+{
+  return MCU_RTPChannel::Open();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSIP_RTPChannel::Start()
+{
+  BOOL status = MCU_RTPChannel::Start();
   if(status)
-    ((SipRTP_UDP *)&rtpSession)->SetState(!receiver, 1);
+    ((MCUSIP_RTP_UDP *)&rtpSession)->SetState(!receiver, 1);
   return status;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void SipRTPChannel::CleanUpOnTermination()
+void MCUSIP_RTPChannel::CleanUpOnTermination()
 {
-  ((SipRTP_UDP *)&rtpSession)->SetState(!receiver, 0);
+  ((MCUSIP_RTP_UDP *)&rtpSession)->SetState(!receiver, 0);
   if(terminating)
     return;
-  return H323_RTPChannel::CleanUpOnTermination();
+  MCU_RTPChannel::CleanUpOnTermination();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL SipRTPChannel::ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame)
+BOOL MCUSIP_RTPChannel::ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame)
 {
   if(!rtpSession.ReadBufferedData(rtpTimestamp, frame))
     return FALSE;
@@ -299,7 +385,7 @@ BOOL SipRTPChannel::ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL SipRTPChannel::WriteFrame(RTP_DataFrame & frame)
+BOOL MCUSIP_RTPChannel::WriteFrame(RTP_DataFrame & frame)
 {
   if(!rtpSession.PreWriteData(frame))
     return FALSE;
@@ -308,7 +394,7 @@ BOOL SipRTPChannel::WriteFrame(RTP_DataFrame & frame)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SipRTP_UDP::SipRTP_UDP(
+MCUSIP_RTP_UDP::MCUSIP_RTP_UDP(
 #ifdef H323_RTP_AGGREGATE
                              PHandleAggregator * aggregator,
 #endif
@@ -340,7 +426,7 @@ SipRTP_UDP::SipRTP_UDP(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SipRTP_UDP::~SipRTP_UDP()
+MCUSIP_RTP_UDP::~MCUSIP_RTP_UDP()
 {
 #if MCUSIP_SRTP
   if(srtp_read) delete srtp_read;
@@ -353,7 +439,7 @@ SipRTP_UDP::~SipRTP_UDP()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void SipRTP_UDP::SetState(int dir, int state)
+void MCUSIP_RTP_UDP::SetState(int dir, int state)
 {
   if(!dir)
     receiver_state = state;
@@ -368,7 +454,7 @@ void SipRTP_UDP::SetState(int dir, int state)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL SipRTP_UDP::ReadData(RTP_DataFrame & frame, BOOL loop)
+BOOL MCUSIP_RTP_UDP::ReadData(RTP_DataFrame & frame, BOOL loop)
 {
   if(!RTP_UDP::ReadData(frame, loop))
     return FALSE;
@@ -392,7 +478,7 @@ BOOL SipRTP_UDP::ReadData(RTP_DataFrame & frame, BOOL loop)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL SipRTP_UDP::PreWriteData(RTP_DataFrame & frame)
+BOOL MCUSIP_RTP_UDP::PreWriteData(RTP_DataFrame & frame)
 {
   if(shutdownWrite)
   {
@@ -419,7 +505,7 @@ BOOL SipRTP_UDP::PreWriteData(RTP_DataFrame & frame)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL SipRTP_UDP::WriteData(RTP_DataFrame & frame)
+BOOL MCUSIP_RTP_UDP::WriteData(RTP_DataFrame & frame)
 {
 #if MCUSIP_SRTP
   if(srtp_write)
@@ -450,7 +536,7 @@ BOOL SipRTP_UDP::WriteData(RTP_DataFrame & frame)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL SipRTP_UDP::PostWriteData(RTP_DataFrame & frame)
+BOOL MCUSIP_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
 {
   while(!dataSocket->WriteTo(frame.GetPointer(), frame.GetHeaderSize()+frame.GetPayloadSize(), remoteAddress, remoteDataPort))
   {
@@ -473,7 +559,7 @@ BOOL SipRTP_UDP::PostWriteData(RTP_DataFrame & frame)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL SipRTP_UDP::WriteDataZRTP(RTP_DataFrame & frame)
+BOOL MCUSIP_RTP_UDP::WriteDataZRTP(RTP_DataFrame & frame)
 {
   if(transmitter_state == 0)
     return TRUE;
@@ -499,7 +585,7 @@ BOOL SipRTP_UDP::WriteDataZRTP(RTP_DataFrame & frame)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RTP_Session::SendReceiveStatus SipRTP_UDP::OnSendData(RTP_DataFrame & frame)
+RTP_Session::SendReceiveStatus MCUSIP_RTP_UDP::OnSendData(RTP_DataFrame & frame)
 {
   SendReceiveStatus status = RTP_UDP::OnSendData(frame);
   return status;
@@ -507,7 +593,7 @@ RTP_Session::SendReceiveStatus SipRTP_UDP::OnSendData(RTP_DataFrame & frame)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RTP_Session::SendReceiveStatus SipRTP_UDP::OnReceiveData(const RTP_DataFrame & frame, const RTP_UDP & rtp)
+RTP_Session::SendReceiveStatus MCUSIP_RTP_UDP::OnReceiveData(const RTP_DataFrame & frame, const RTP_UDP & rtp)
 {
   SendReceiveStatus status = RTP_UDP::OnReceiveData(frame, rtp);
 #if MCUSIP_ZRTP
@@ -531,7 +617,7 @@ RTP_Session::SendReceiveStatus SipRTP_UDP::OnReceiveData(const RTP_DataFrame & f
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL SipRTP_UDP::CreateSRTP(int dir, const PString & crypto, const PString & key_str)
+BOOL MCUSIP_RTP_UDP::CreateSRTP(int dir, const PString & crypto, const PString & key_str)
 {
 #if MCUSIP_SRTP
   if(dir == 0)
@@ -550,7 +636,7 @@ BOOL SipRTP_UDP::CreateSRTP(int dir, const PString & crypto, const PString & key
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL SipRTP_UDP::CreateZRTP()
+BOOL MCUSIP_RTP_UDP::CreateZRTP()
 {
 #if MCUSIP_ZRTP
   if(!zrtp_global_initialized)

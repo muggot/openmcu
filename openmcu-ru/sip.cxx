@@ -633,7 +633,7 @@ BOOL MCUSipConnection::CreateDefaultRTPSessions()
   if(DetermineNAT() == FALSE)
     return FALSE;
 
-  SipRTP_UDP *session = NULL;
+  MCUSIP_RTP_UDP *session = NULL;
 
   session = CreateRTPSession(MEDIA_TYPE_AUDIO);
   session->DecrementReference();
@@ -646,13 +646,13 @@ BOOL MCUSipConnection::CreateDefaultRTPSessions()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SipRTP_UDP *MCUSipConnection::CreateRTPSession(MediaTypes media)
+MCUSIP_RTP_UDP *MCUSipConnection::CreateRTPSession(MediaTypes media)
 {
   int id = (media == MEDIA_TYPE_AUDIO) ? RTP_Session::DefaultAudioSessionID : RTP_Session::DefaultVideoSessionID;
-  SipRTP_UDP *session = (SipRTP_UDP *)(rtpSessions.UseSession(id));
+  MCUSIP_RTP_UDP *session = (MCUSIP_RTP_UDP *)(rtpSessions.UseSession(id));
   if(session == NULL)
   {
-    session = new SipRTP_UDP(
+    session = new MCUSIP_RTP_UDP(
 #ifdef H323_RTP_AGGREGATE
                 useRTPAggregation ? endpoint.GetRTPAggregator() : NULL,
 #endif
@@ -677,9 +677,9 @@ SipRTP_UDP *MCUSipConnection::CreateRTPSession(MediaTypes media)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SipRTP_UDP *MCUSipConnection::CreateRTPSession(SipCapability *sc)
+MCUSIP_RTP_UDP *MCUSipConnection::CreateRTPSession(SipCapability *sc)
 {
-  SipRTP_UDP *session = CreateRTPSession(sc->media);
+  MCUSIP_RTP_UDP *session = CreateRTPSession(sc->media);
 
   // remoteIsNAT ???
   PIPSocket::Address remoteIP(sc->remote_ip);
@@ -714,7 +714,7 @@ int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
     }
   }
 
-  SipRTP_UDP *session = CreateRTPSession(sc);
+  MCUSIP_RTP_UDP *session = CreateRTPSession(sc);
   if(session == NULL)
     return 0;
 
@@ -768,8 +768,8 @@ int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
     else             session->CreateSRTP(rtp_dir, sc->srtp_local_type, sc->srtp_local_key);
   }
 
-  SipRTPChannel *channel =
-    new SipRTPChannel(*this, *cap, ((rtp_dir == 0) ? H323Channel::IsReceiver : H323Channel::IsTransmitter), *session);
+  MCUSIP_RTPChannel *channel =
+    new MCUSIP_RTPChannel(*this, *cap, ((rtp_dir == 0) ? H323Channel::IsReceiver : H323Channel::IsTransmitter), *session);
 
   if(pt >= RTP_DataFrame::DynamicBase && pt <= RTP_DataFrame::MaxPayloadType)
     channel->SetDynamicRTPPayloadType(pt);

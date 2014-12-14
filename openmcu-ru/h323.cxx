@@ -2561,7 +2561,7 @@ H323Channel * MCUH323Connection::CreateRealTimeLogicalChannel(const H323Capabili
   if (session == NULL)
     return NULL;
 
-  return new H323_RTPChannel(*this, capability, dir, *session);
+  return new MCUH323_RTPChannel(*this, capability, dir, *session);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
