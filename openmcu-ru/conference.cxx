@@ -771,7 +771,7 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
   if(member)
   {
     long listID = profileList.GetNextID();
-    ConferenceProfile *profile = new ConferenceProfile(listID, name, this, member);
+    ConferenceProfile *profile = new ConferenceProfile(listID, name, this, NULL);
     profileList.Insert(profile->GetID(), profile, name);
     profileList.Release(profile->GetID());
   }
