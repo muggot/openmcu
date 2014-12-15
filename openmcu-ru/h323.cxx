@@ -3515,9 +3515,8 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
     if(remoteName.IsEmpty())
       remoteName = GetRemotePartyName();
 
-    if(remoteApplication.Find("MyPhone") != P_MAX_INDEX ||
-       remoteApplication.Find("Polycom ViaVideo\tRelease 8.0") != P_MAX_INDEX ||
-       remoteApplication.Find("RealPresence") != P_MAX_INDEX
+    if(remoteApplication.Find("MyPhone") != P_MAX_INDEX
+       || remoteApplication.Find("Polycom ViaVideo\tRelease 8.0") != P_MAX_INDEX
       )
     {
       // Fast bad fix of presence of redundant aliases in remote party name on incoming direction

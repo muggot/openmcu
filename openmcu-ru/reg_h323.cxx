@@ -162,9 +162,8 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   PString remote_application = info.rrq.m_endpointVendor.m_productId.AsString()+" "+
                                info.rrq.m_endpointVendor.m_versionId.AsString();
 
-  if(remote_application.Find("MyPhone") != P_MAX_INDEX ||
-     remote_application.Find("Polycom ViaVideo\tRelease 8.0") != P_MAX_INDEX ||
-     remote_application.Find("RealPresence") != P_MAX_INDEX
+  if(remote_application.Find("MyPhone") != P_MAX_INDEX
+     || remote_application.Find("Polycom ViaVideo\tRelease 8.0") != P_MAX_INDEX
     )
   {
     username = convert_ucs2_to_utf8(username);
