@@ -3581,8 +3581,8 @@ void MCUH323Connection::SetMemberName()
 
     alias = GetRemoteNumber();
 
-    PRegularExpression RegEx("[^A-Za-z0-9._-]");
-    if(alias.FindRegEx(RegEx) != P_MAX_INDEX) alias = "invalid_name";
+    //PRegularExpression RegEx("[^A-Za-z0-9._-]");
+    //if(alias.FindRegEx(RegEx) != P_MAX_INDEX) alias = "invalid_name";
 
     address = "h323:"+alias+"@"+host;
   }
