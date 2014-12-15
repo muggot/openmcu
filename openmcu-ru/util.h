@@ -688,7 +688,7 @@ class MCUSharedList
 
 template <class T>
 MCUSharedList<T>::MCUSharedList(int _size)
-  : iterator_end(this, _size, true)
+  : iterator_end(NULL, _size, false)
 {
   size = _size;
   current_size = 0;
@@ -719,11 +719,24 @@ template <class T>
 MCUSharedList<T>::~MCUSharedList()
 {
   delete [] states;
+  states = NULL;
+
   delete [] ids;
+  ids = NULL;
+
   delete [] names;
-  delete objs;
+  names = NULL;
+
+  for(int i = 0; i < size; ++i)
+    objs[i] = NULL;
+  delete [] objs;
+  objs = NULL;
+
   delete [] captures;
+  captures = NULL;
+
   delete [] locks;
+  locks = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

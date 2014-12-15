@@ -604,7 +604,8 @@ class Conference : public PObject
   protected:
     ConferenceManager & manager;
 
-    // только для записи в список memberList,profileList
+    // memberListMutex - используется при добавлении/удалении участника
+    // предотвращает создание в списке двух одноименных участников
     PMutex memberListMutex;
 
     MCUMemberList memberList;
@@ -747,6 +748,10 @@ class ConferenceManager : public PObject
     virtual Conference * CreateConference(long _id, const OpalGloballyUniqueID & _guid, const PString & _number, const PString & _name);
 
     MCUConferenceList conferenceList;
+
+    // conferenceListMutex - используется при создании конференции
+    // предотвращает создание в списке двух одноименных конференций
+    PMutex conferenceListMutex;
 
     PINDEX maxConferenceCount;
     ConferenceMonitor * monitor;

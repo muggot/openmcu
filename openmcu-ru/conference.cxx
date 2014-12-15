@@ -79,6 +79,7 @@ Conference * ConferenceManager::FindConferenceWithLock(long id)
 
 Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PString name)
 {
+  PWaitAndSignal m(conferenceListMutex);
   Conference * conference = FindConferenceWithLock(room);
   if(conference == NULL)
   {
@@ -344,16 +345,6 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   jsName.Replace("\"","\\x27",TRUE,0); jsName.Replace("'","\\x22",TRUE,0);
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(1,'" + jsName + "')", number);
 
-  PTRACE(2,"MCU\tOnDestroyConference " << number <<", clearing profile list");
-
-  MCUProfileList & profileList = conference->GetProfileList();
-  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
-  {
-    ConferenceProfile *profile = it.GetObject();
-    if(profileList.Erase(it))
-      delete profile;
-  }
-
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", disconnect remote endpoints");
   MCUMemberList & memberList = conference->GetMemberList();
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
@@ -371,6 +362,15 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
     MCUTRACE(0,"MCU\tOnDestroyConference " << number <<", waiting... members: " << members);
     PThread::Sleep(100);
     members = memberList.GetCurrentSize();
+  }
+
+  PTRACE(2,"MCU\tOnDestroyConference " << number <<", clearing profile list");
+  MCUProfileList & profileList = conference->GetProfileList();
+  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  {
+    ConferenceProfile *profile = it.GetObject();
+    if(profileList.Erase(it))
+      delete profile;
   }
 
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(3,'" + jsName + "')", number);
@@ -420,7 +420,7 @@ Conference * ConferenceManager::CreateConference(long _id, const OpalGloballyUni
 #if MCU_VIDEO
                         , new MCUSimpleVideoMixer(forceScreenSplit)
 #endif
-                        ); 
+                        );
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -431,10 +431,12 @@ void ConferenceManager::RemoveConference(const PString & room)
   if(it != conferenceList.end())
   {
     Conference *conference = *it;
-    conferenceList.Erase(it);
-    OnDestroyConference(conference);
-    delete conference;
-    PTRACE(1, "RemoveConference");
+    if(conferenceList.Erase(it))
+    {
+      OnDestroyConference(conference);
+      delete conference;
+      PTRACE(1, "RemoveConference");
+    }
   }
 }
 
@@ -445,10 +447,12 @@ void ConferenceManager::ClearConferenceList()
   for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();
-    conferenceList.Erase(it);
-    OnDestroyConference(conference);
-    delete conference;
-    PTRACE(1, "RemoveConference");
+    if(conferenceList.Erase(it))
+    {
+      OnDestroyConference(conference);
+      delete conference;
+      PTRACE(1, "RemoveConference");
+    }
   }
 }
 
