@@ -706,31 +706,34 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
     memberList.Release((long)member->GetID());
   }
 
-  // memberProfileList
-  PString nameID = MCUURL(name).GetMemberNameId();
-  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  if(member == NULL || !member->GetType() & MEMBER_TYPE_GSYSTEM)
   {
-    ConferenceProfile *profile = it.GetObject();
-    if(profile->GetMember())
-      continue;
-    if(profile->GetNameID() == nameID)
+    // profileList
+    PString nameID = MCUURL(name).GetMemberNameId();
+    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
-      if(profileList.Erase(it))
-        delete profile;
-      break;
+      ConferenceProfile *profile = it.GetObject();
+      if(profile->GetMember())
+        continue;
+      if(profile->GetNameID() == nameID)
+      {
+        if(profileList.Erase(it))
+          delete profile;
+        break;
+      }
     }
+    ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, member);
+    profileList.Insert(profile->GetID(), profile, name);
+    profileList.Release(profile->GetID());
   }
-  ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, member);
-  profileList.Insert(profile->GetID(), profile, name);
-  profileList.Release(profile->GetID());
 
-  if(member)
+  if(member && !member->GetType() & MEMBER_TYPE_GSYSTEM)
   {
     PStringStream msg;
-    if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
-    {
-      msg="addmmbr(1";
-      msg << "," << (long)member->GetID()
+    msg << "<font color=green><b>+</b>" << member->GetName() << "</font>";
+    OpenMCU::Current().HttpWriteEventRoom(msg, number);
+    msg = "addmmbr(1";
+    msg << "," << (long)member->GetID()
         << ",\"" << member->GetNameHTML() << "\""
         << "," << member->muteMask
         << "," << member->disableVAD
@@ -742,11 +745,7 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
         << "," << member->kManualGainDB
         << "," << member->kOutputGainDB
         << ")";
-      OpenMCU::Current().HttpWriteCmdRoom(msg, number);
-    }
-    msg = "<font color=green><b>+</b>";
-    msg << member->GetName() << "</font>";
-    OpenMCU::Current().HttpWriteEventRoom(msg, number);
+    OpenMCU::Current().HttpWriteCmdRoom(msg, number);
   }
 }
 
@@ -760,33 +759,31 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
   if(member)
     memberList.Erase((long)member->GetID());
 
-  // profileList
-  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  if(member == NULL || !member->GetType() & MEMBER_TYPE_GSYSTEM)
   {
-    ConferenceProfile *profile = it.GetObject();
-    if(profile->GetName() == name && profile->GetMember() == member)
+    // profileList
+    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
     {
-      if(profileList.Erase(it))
-        delete profile;
-      break;
+      ConferenceProfile *profile = it.GetObject();
+      if(profile->GetName() == name && profile->GetMember() == member)
+      {
+        if(profileList.Erase(it))
+          delete profile;
+        break;
+      }
     }
-  }
-
-  if(member)
-  {
     long listID = profileList.GetNextID();
     ConferenceProfile *profile = new ConferenceProfile(listID, name, this, NULL);
     profileList.Insert(profile->GetID(), profile, name);
     profileList.Release(profile->GetID());
   }
 
-  if(member)
+  if(member && !member->GetType() & MEMBER_TYPE_GSYSTEM)
   {
     PStringStream msg;
     msg << "<font color=red><b>-</b>" << member->GetName() << "</font>";
     OpenMCU::Current().HttpWriteEventRoom(msg, number);
-
-    msg="remmmbr(0";
+    msg = "remmmbr(0";
     msg << ","  << (long)member->GetID()
         << ",\"" << member->GetNameHTML() << "\""
         << ","  << member->muteMask
