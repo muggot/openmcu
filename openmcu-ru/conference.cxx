@@ -657,7 +657,7 @@ BOOL Conference::StopRecorder()
 
 void Conference::RefreshAddressBook()
 {
-  PStringArray abook = OpenMCU::Current().GetRegistrar()->GetAccountList();
+  PStringArray abook = OpenMCU::Current().GetRegistrar()->GetAccountStatusList();
   PStringStream msg;
   msg = "addressbook=Array(";
   for(PINDEX i = 0; i < abook.GetSize(); i++)

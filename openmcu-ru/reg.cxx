@@ -5,6 +5,168 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+PString RegistrarAccount::GetUrl()
+{
+  PString url;
+  if(account_type == ACCOUNT_TYPE_SIP)
+  {
+    url = "sip:"+username+"@"+host;
+    if(port != 0 && port != 5060)
+      url += ":"+PString(port);
+    if(transport != "" && transport != "*")
+      url += ";transport="+transport;
+  }
+  else if(account_type == ACCOUNT_TYPE_H323)
+  {
+    url = "h323:"+username+"@"+host;
+    if(port != 0 && port != 1720)
+      url += ":"+PString(port);
+  }
+  else if(account_type == ACCOUNT_TYPE_RTSP)
+  {
+    if(username.Left(7) != "rtsp://")
+      url += "rtsp://";
+    url += username;
+  }
+  return url;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PString RegistrarAccount::GetAuthStr()
+{
+  if(nonce == "")
+    nonce = PGloballyUniqueID().AsString();
+  PString sip_auth_str = scheme+" "+"realm=\""+domain+"\",nonce=\""+nonce+"\",algorithm="+algorithm;
+  return sip_auth_str;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RegistrarAccount::Unlock()
+{
+  registrar->GetAccountList().Release(id);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RegistrarConnection::Unlock()
+{
+  registrar->GetConnectionList().Release(id);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void RegistrarSubscription::Unlock()
+{
+  registrar->GetSubscriptionList().Release(id);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RegistrarAccount * Registrar::InsertAccountWithLock(RegAccountTypes account_type, const PString & username)
+{
+  long id = accountList.GetNextID();
+  RegistrarAccount *raccount = new RegistrarAccount(this, id, account_type, username);
+  PString name = PString(raccount->account_type)+":"+raccount->username;
+  accountList.Insert(id, raccount, name);
+  return raccount;
+}
+
+RegistrarAccount * Registrar::FindAccountWithLock(RegAccountTypes account_type, const PString & username)
+{
+  for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
+  {
+    if(it->username == username && (account_type == ACCOUNT_TYPE_UNKNOWN || account_type == it->account_type))
+    {
+      return it.GetCapturedObject();
+    }
+  }
+  return NULL;
+}
+
+PString Registrar::FindAccountNameFromH323Id(const PString & h323id)
+{
+  for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
+  {
+    if(it->h323id == h323id)
+      return it->username;
+  }
+  return "";
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RegistrarSubscription * Registrar::InsertSubWithLock(const PString & username_in, const PString & username_out)
+{
+  long id = accountList.GetNextID();
+  RegistrarSubscription *rsub = new RegistrarSubscription(this, id, username_in, username_out);
+  subscriptionList.Insert(id, rsub, rsub->username_pair);
+  return rsub;
+}
+
+RegistrarSubscription *Registrar::FindSubWithLock(const PString & username_pair)
+{
+  MCURegistrarSubscriptionList::shared_iterator it = subscriptionList.Find(username_pair);
+  if(it != subscriptionList.end())
+  {
+    return it.GetCapturedObject();
+  }
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RegistrarConnection * Registrar::InsertRegConnWithLock(const PString & callToken, const PString & username_in, const PString & username_out)
+{
+  long id = connectionList.GetNextID();
+  RegistrarConnection *rconn = new RegistrarConnection(this, id, callToken, username_in, username_out);
+  connectionList.Insert(id, rconn, callToken);
+  return rconn;
+}
+
+RegistrarConnection * Registrar::FindRegConnWithLock(const PString & callToken)
+{
+  MCURegistrarConnectionList::shared_iterator it = connectionList.Find(callToken);
+  if(it != connectionList.end())
+  {
+    return it.GetCapturedObject();
+  }
+  return NULL;
+}
+
+RegistrarConnection * Registrar::FindRegConnUsernameWithLock(const PString & username)
+{
+  for(MCURegistrarConnectionList::shared_iterator it = connectionList.begin(); it != connectionList.end(); ++it)
+  {
+    if(it->username_in == username || it->username_out == username)
+    {
+      return it.GetCapturedObject();
+    }
+  }
+  return NULL;
+}
+
+bool Registrar::HasRegConn(const PString & callToken)
+{
+  MCURegistrarConnectionList::shared_iterator it = connectionList.Find(callToken);
+  if(it != connectionList.end())
+    return true;
+  return false;
+}
+
+bool Registrar::HasRegConnUsername(const PString & username)
+{
+  for(MCURegistrarConnectionList::shared_iterator it = connectionList.begin(); it != connectionList.end(); ++it)
+  {
+    if(it->username_in == username || it->username_out == username)
+      return true;
+  }
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Registrar::ConnectionCreated(const PString & callToken)
 {
 }
@@ -29,23 +191,26 @@ void Registrar::ConnectionCleared(const PString & callToken)
 
 void Registrar::SetRequestedRoom(const PString & callToken, PString & requestedRoom)
 {
-  RegistrarConnection *regConn = FindRegConnWithLock(callToken);
-  if(regConn)
+  RegistrarConnection *rconn = FindRegConnWithLock(callToken);
+  if(rconn)
   {
-    if(regConn->roomname != "")
-      requestedRoom = regConn->roomname;
-    regConn->Unlock();
+    if(rconn->roomname != "")
+      requestedRoom = rconn->roomname;
+    rconn->Unlock();
   }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
+BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & callToken)
 {
   // the default protocol H.323
   // correct formats - proto:username, proto:username@, proto:ip, proto:@ip
   // wrong formats - proto:@username, proto:ip@
 
+  PWaitAndSignal m(mutex);
+
+  PString address = to;
   MCUURL url(address);
 
   RegAccountTypes account_type = ACCOUNT_TYPE_UNKNOWN;
@@ -66,16 +231,15 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
   else
     return FALSE;
 
-  RegistrarAccount *regAccount_out = NULL;
-  RegistrarConnection *regConn = NULL;
-  PWaitAndSignal m(mutex);
+  RegistrarAccount *raccount_out = NULL;
+  RegistrarConnection *rconn = NULL;
 
-  regAccount_out = FindAccountWithLock(account_type, username_out);
-  if(regAccount_out)
+  raccount_out = FindAccountWithLock(account_type, username_out);
+  if(raccount_out)
   {
     // update address from account
-    address = regAccount_out->GetUrl();
-    regAccount_out->Unlock();
+    address = raccount_out->GetUrl();
+    raccount_out->Unlock();
     // update url
     url = MCUURL(address);
   }
@@ -107,12 +271,12 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
 
   if(callToken != "")
   {
-    regConn = InsertRegConnWithLock(callToken, room, username_out);
-    regConn->account_type_out = account_type;
-    regConn->callToken_out = callToken;
-    regConn->roomname = room;
-    regConn->state = CONN_MCU_WAIT;
-    regConn->Unlock();
+    rconn = InsertRegConnWithLock(callToken, room, username_out);
+    rconn->account_type_out = account_type;
+    rconn->callToken_out = callToken;
+    rconn->roomname = room;
+    rconn->state = CONN_MCU_WAIT;
+    rconn->Unlock();
   }
 
   if(callToken == "")
@@ -122,49 +286,45 @@ BOOL Registrar::MakeCall(PString room, PString address, PString & callToken)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL Registrar::MakeCall(RegistrarConnection *regConn, PString & username_in, PString & username_out)
+BOOL Registrar::InternalMakeCall(RegistrarConnection *rconn, const PString & username_in, const PString & username_out)
 {
-  RegistrarAccount *regAccount_in = NULL;
-  RegistrarAccount *regAccount_out = NULL;
-  PWaitAndSignal m(mutex);
+  RegistrarAccount *raccount_in = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_in);
+  RegistrarAccount *raccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
+  BOOL ret = InternalMakeCall(rconn, raccount_in, raccount_out);
 
-  regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_in);
-  regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
-  BOOL ret = MakeCall(regConn, regAccount_in, regAccount_out);
-
-  if(regAccount_in) regAccount_in->Unlock();
-  if(regAccount_out) regAccount_out->Unlock();
+  if(raccount_in) raccount_in->Unlock();
+  if(raccount_out) raccount_out->Unlock();
   return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out)
+BOOL Registrar::InternalMakeCall(RegistrarConnection *rconn, RegistrarAccount *raccount_in, RegistrarAccount *raccount_out)
 {
-  if(!regConn || !regAccount_in || !regAccount_out)
+  if(!rconn || !raccount_in || !raccount_out)
     return FALSE;
 
-  regConn->account_type_in = regAccount_in->account_type;
-  regConn->account_type_out = regAccount_out->account_type;
+  rconn->account_type_in = raccount_in->account_type;
+  rconn->account_type_out = raccount_out->account_type;
 
-  PString address = regAccount_out->GetUrl();
+  PString address = raccount_out->GetUrl();
 
-  if(regAccount_out->account_type == ACCOUNT_TYPE_SIP)
+  if(raccount_out->account_type == ACCOUNT_TYPE_SIP)
   {
     PString callToken = PGloballyUniqueID().AsString();
-    PString *cmd = new PString("invite:"+regConn->username_in+","+address+","+callToken);
+    PString *cmd = new PString("invite:"+rconn->username_in+","+address+","+callToken);
     sep->GetQueue().Push(cmd);
-    regConn->callToken_out = callToken;
+    rconn->callToken_out = callToken;
     return TRUE;
   }
-  else if(regAccount_out->account_type == ACCOUNT_TYPE_H323)
+  else if(raccount_out->account_type == ACCOUNT_TYPE_H323)
   {
     PString callToken_out;
-    void *userData = new PString(regConn->username_in);
+    void *userData = new PString(rconn->username_in);
     ep->MakeCall(address, callToken_out, userData);
     if(callToken_out != "")
     {
-      regConn->callToken_out = callToken_out;
+      rconn->callToken_out = callToken_out;
       return TRUE;
     }
   }
@@ -173,170 +333,17 @@ BOOL Registrar::MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAcco
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString RegistrarAccount::GetAuthStr()
+void Registrar::IncomingCallAccept(RegistrarConnection *rconn)
 {
-  if(nonce == "")
-    nonce = PGloballyUniqueID().AsString();
-  PString sip_auth_str = scheme+" "+"realm=\""+domain+"\",nonce=\""+nonce+"\",algorithm="+algorithm;
-  return sip_auth_str;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-RegistrarAccount * Registrar::InsertAccountWithLock(RegAccountTypes account_type, PString username)
-{
-  RegistrarAccount *regAccount = new RegistrarAccount(account_type, username);
-  regAccount->Lock();
-  return InsertAccount(regAccount);
-}
-RegistrarAccount * Registrar::InsertAccount(RegistrarAccount *regAccount)
-{
-  PWaitAndSignal m(mutex);
-  AccountMap.insert(AccountMapType::value_type(PString(regAccount->account_type)+":"+regAccount->username, regAccount));
-  return regAccount;
-}
-RegistrarAccount * Registrar::InsertAccount(RegAccountTypes account_type, PString username)
-{
-  RegistrarAccount *regAccount = new RegistrarAccount(account_type, username);
-  return InsertAccount(regAccount);
-}
-RegistrarAccount * Registrar::FindAccountWithLock(RegAccountTypes account_type, PString username)
-{
-  PWaitAndSignal m(mutex);
-  RegistrarAccount *regAccount = FindAccount(account_type, username);
-  if(regAccount)
-    regAccount->Lock();
-  return regAccount;
-}
-RegistrarAccount * Registrar::FindAccount(RegAccountTypes account_type, PString username)
-{
-  RegistrarAccount *regAccount = NULL;
-  PWaitAndSignal m(mutex);
-  for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
+  if(rconn->account_type_in == ACCOUNT_TYPE_SIP)
   {
-    if(it->second->username == username && (account_type == ACCOUNT_TYPE_UNKNOWN || account_type == it->second->account_type))
-    {
-      regAccount = it->second;
-      break;
-    }
+    msg_t *msg = rconn->GetInviteMsgCopy();
+    sep->CreateIncomingConnection(msg);
+    msg_destroy(msg);
   }
-  return regAccount;
-}
-PString Registrar::FindAccountNameByH323Id(const PString & id)
-{
-  PWaitAndSignal m(mutex);
-  for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
+  else if(rconn->account_type_in == ACCOUNT_TYPE_H323)
   {
-    if(it->second->h323id == id)
-      return it->second->username;
-  }
-  return "";
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Subscription * Registrar::InsertSubWithLock(Registrar *_registrar, PString username_in, PString username_out)
-{
-  Subscription *subAccount = new Subscription(_registrar, username_in, username_out);
-  subAccount->Lock();
-  return InsertSub(subAccount);
-}
-Subscription * Registrar::InsertSub(Subscription *subAccount)
-{
-  PWaitAndSignal m(mutex);
-  SubscriptionMap.insert(SubscriptionMapType::value_type(subAccount->username_pair, subAccount));
-  return subAccount;
-}
-Subscription * Registrar::InsertSub(Registrar *_registrar, PString username_in, PString username_out)
-{
-  Subscription *subAccount = new Subscription(_registrar, username_in, username_out);
-  return InsertSub(subAccount);
-}
-Subscription *Registrar::FindSubWithLock(PString username_pair)
-{
-  PWaitAndSignal m(mutex);
-  Subscription *subAccount = FindSub(username_pair);
-  if(subAccount)
-    subAccount->Lock();
-  return subAccount;
-}
-Subscription *Registrar::FindSub(PString username_pair)
-{
-  Subscription *subAccount = NULL;
-  PWaitAndSignal m(mutex);
-  SubscriptionMapType::iterator it = SubscriptionMap.find(username_pair);
-  if(it != SubscriptionMap.end())
-    subAccount = it->second;
-  return subAccount;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-RegistrarConnection * Registrar::InsertRegConnWithLock(PString callToken, PString username_in, PString username_out)
-{
-  RegistrarConnection *regConn = new RegistrarConnection(callToken, username_in, username_out);
-  regConn->Lock();
-  return InsertRegConn(regConn);
-}
-RegistrarConnection * Registrar::InsertRegConn(RegistrarConnection *regConn)
-{
-  PWaitAndSignal m(mutex);
-  RegConnMap.insert(RegConnMapType::value_type(regConn->callToken_in, regConn));
-  return regConn;
-}
-RegistrarConnection * Registrar::InsertRegConn(PString callToken, PString username_in, PString username_out)
-{
-  RegistrarConnection *regConn = new RegistrarConnection(callToken, username_in, username_out);
-  return InsertRegConn(regConn);
-}
-RegistrarConnection *Registrar::FindRegConnWithLock(PString callToken)
-{
-  PWaitAndSignal m(mutex);
-  RegistrarConnection *regConn = FindRegConn(callToken);
-  if(regConn)
-    regConn->Lock();
-  return regConn;
-}
-RegistrarConnection *Registrar::FindRegConn(PString callToken)
-{
-  RegistrarConnection *regConn = NULL;
-  PWaitAndSignal m(mutex);
-  for(RegConnMapType::iterator it=RegConnMap.begin(); it!=RegConnMap.end(); ++it)
-  {
-    if(it->second->callToken_in == callToken || it->second->callToken_out == callToken)
-    {
-      regConn = it->second;
-      break;
-    }
-  }
-  return regConn;
-}
-RegistrarConnection *Registrar::FindRegConnUsername(PString username)
-{
-  RegistrarConnection *regConn = NULL;
-  PWaitAndSignal m(mutex);
-  for(RegConnMapType::iterator it=RegConnMap.begin(); it!=RegConnMap.end(); ++it)
-  {
-    if(it->second->username_in == username || it->second->username_out == username)
-    {
-      regConn = it->second;
-      break;
-    }
-  }
-  return regConn;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Registrar::IncomingCallAccept(RegistrarConnection *regConn)
-{
-  if(regConn->account_type_in == ACCOUNT_TYPE_SIP)
-  {
-    sep->CreateIncomingConnection(regConn->msg_invite);
-  }
-  else if(regConn->account_type_in == ACCOUNT_TYPE_H323)
-  {
-    MCUH323Connection *conn = (MCUH323Connection *)ep->FindConnectionWithLock(regConn->callToken_in);
+    MCUH323Connection *conn = (MCUH323Connection *)ep->FindConnectionWithLock(rconn->callToken_in);
     if(conn)
     {
       conn->AnsweringCall(H323Connection::AnswerCallNow);
@@ -347,23 +354,23 @@ void Registrar::IncomingCallAccept(RegistrarConnection *regConn)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::IncomingCallCancel(RegistrarConnection *regConn)
+void Registrar::IncomingCallCancel(RegistrarConnection *rconn)
 {
-  if(regConn->callToken_in != "")
-    Leave(regConn->account_type_in, regConn->callToken_in);
+  if(rconn->callToken_in != "")
+    Leave(rconn->account_type_in, rconn->callToken_in);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::OutgoingCallCancel(RegistrarConnection *regConn)
+void Registrar::OutgoingCallCancel(RegistrarConnection *rconn)
 {
-  if(regConn->callToken_out != "")
-    Leave(regConn->account_type_out, regConn->callToken_out);
+  if(rconn->callToken_out != "")
+    Leave(rconn->account_type_out, rconn->callToken_out);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::Leave(int account_type, PString callToken)
+void Registrar::Leave(int account_type, const PString & callToken)
 {
   MCUH323Connection *conn = NULL;
   if(account_type == ACCOUNT_TYPE_SIP)
@@ -379,330 +386,266 @@ void Registrar::Leave(int account_type, PString callToken)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::ProcessSubscriptionList()
-{
-  PWaitAndSignal m(mutex);
-  PTime now;
-
-  for(SubscriptionMapType::iterator it=SubscriptionMap.begin(); it!=SubscriptionMap.end(); )
-  {
-    Subscription *subAccount = it->second;
-    if(!subAccount->TryLock())
-      continue;
-
-    RegSubscriptionStates state_new;
-    if(now > subAccount->start_time + PTimeInterval(subAccount->expires*1000))
-    {
-      SubscriptionMap.erase(it++);
-      delete subAccount;
-      continue;
-    } else {
-      ++it;
-    }
-
-    RegistrarAccount *regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, subAccount->username_out);
-    if(!regAccount_out)
-      regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_H323, subAccount->username_out);
-
-    if(regAccount_out && regAccount_out->registered)
-    {
-      state_new = SUB_STATE_OPEN;
-      RegistrarConnection *regConn = FindRegConnUsername(subAccount->username_out);
-      if(regConn)
-        state_new = SUB_STATE_BUSY;
-    } else {
-      state_new = SUB_STATE_CLOSED;
-    }
-
-    // send notify
-    if(subAccount->state != state_new)
-    {
-      subAccount->state = state_new;
-      if(subAccount->msg_sub) // SIP
-        SipSendNotify(subAccount->msg_sub, subAccount);
-    }
-    if(subAccount) subAccount->Unlock();
-    if(regAccount_out) regAccount_out->Unlock();
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Registrar::ProcessKeepAlive()
-{
-  PWaitAndSignal m(mutex);
-  PTime now;
-
-  for(AccountMapType::iterator it = AccountMap.begin(); it != AccountMap.end(); ++it)
-  {
-    RegistrarAccount *regAccount = it->second;
-    if(regAccount->account_type != ACCOUNT_TYPE_SIP)
-      continue;
-    if(!regAccount->TryLock())
-      continue;
-    if(regAccount->keep_alive_enable && now > regAccount->keep_alive_time_request+PTimeInterval(regAccount->keep_alive_interval*1000))
-    {
-      regAccount->keep_alive_time_request = now;
-      SipSendPing(regAccount);
-    }
-    regAccount->Unlock();
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Registrar::ProcessAccountList()
-{
-  PWaitAndSignal m(mutex);
-  PTime now;
-
-  for(AccountMapType::iterator it = AccountMap.begin(); it != AccountMap.end(); ++it)
-  {
-    RegistrarAccount *regAccount = it->second;
-    if(!regAccount->TryLock())
-      continue;
-    // expires
-    if(regAccount->registered)
-    {
-      if(now > regAccount->start_time + PTimeInterval(regAccount->expires*1000))
-        regAccount->registered = FALSE;
-    }
-    regAccount->Unlock();
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Registrar::ProcessConnectionList()
-{
-  PWaitAndSignal m(mutex);
-  PTime now;
-
-  for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )
-  {
-    RegistrarConnection *regConn = it->second;
-    if(!regConn->TryLock())
-      continue;
-    // remove empty connection
-    if(regConn->state == CONN_IDLE)
-    {
-      RegConnMap.erase(it++);
-      delete regConn;
-      continue;
-    } else {
-      ++it;
-    }
-    // MCU call answer limit
-    if(regConn->state == CONN_MCU_WAIT)
-    {
-      if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
-      {
-        OutgoingCallCancel(regConn);
-        regConn->state = CONN_END;
-      }
-    }
-    // internal call answer limit
-    if(regConn->state == CONN_WAIT)
-    {
-      if(now > regConn->start_time + PTimeInterval(regConn->accept_timeout*1000))
-      {
-        IncomingCallCancel(regConn);
-        OutgoingCallCancel(regConn);
-        regConn->state = CONN_END;
-      }
-    }
-    // make internal call
-    if(regConn->state == CONN_WAIT)
-    {
-      if(regConn->callToken_out == "")
-      {
-        if(!MakeCall(regConn, regConn->username_in, regConn->username_out))
-        {
-          regConn->state = CONN_CANCEL_IN;
-        }
-      }
-    }
-    // accept incoming
-    if(regConn->state == CONN_ACCEPT_IN)
-    {
-      IncomingCallAccept(regConn);
-      regConn->state = CONN_ESTABLISHED;
-    }
-    // cancel incoming
-    if(regConn->state == CONN_CANCEL_IN)
-    {
-      IncomingCallCancel(regConn);
-      regConn->state = CONN_END;
-    }
-    // cancel outgoing
-    if(regConn->state == CONN_CANCEL_OUT)
-    {
-      OutgoingCallCancel(regConn);
-      regConn->state = CONN_END;
-    }
-    // leave incoming
-    if(regConn->state == CONN_LEAVE_IN)
-    {
-      Leave(regConn->account_type_in, regConn->callToken_in);
-      regConn->state = CONN_END;
-    }
-    // leave outgoing
-    if(regConn->state == CONN_LEAVE_OUT)
-    {
-      Leave(regConn->account_type_out, regConn->callToken_out);
-      regConn->state = CONN_END;
-    }
-    // internal call end
-    if(regConn->state == CONN_END)
-    {
-      regConn->state = CONN_IDLE;
-    }
-    regConn->Unlock();
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Registrar::RefreshAccountStatusList()
-{
-  PStringArray list;
-
-  mutex.Wait();
-  for(AccountMapType::iterator it=AccountMap.begin(); it!=AccountMap.end(); ++it)
-  {
-    RegistrarAccount *regAccount = it->second;
-    int reg_state = 0;
-    int conn_state = 0;
-    int ping_state = 0;
-
-    if(regAccount->registered)
-      reg_state = 2;
-    else if(regAccount->enable)
-      reg_state = 1;
-
-    RegistrarConnection *regConn = FindRegConnUsername(regAccount->username);
-    if(regConn)
-    {
-     if(regConn->state == CONN_WAIT || regConn->state == CONN_MCU_WAIT)
-       conn_state = 1;
-     else if(regConn->state == CONN_ESTABLISHED || regConn->state == CONN_MCU_ESTABLISHED)
-       conn_state = 2;
-    }
-
-    if(regAccount->keep_alive_enable)
-    {
-      if(regAccount->keep_alive_time_response > regAccount->keep_alive_time_request-PTimeInterval(regAccount->keep_alive_interval*1000-2000))
-        ping_state = 1;
-      else
-        ping_state = 2;
-    }
-
-    PString remote_application = regAccount->remote_application;
-    PString reg_info;
-    PString conn_info;
-    PString ping_info;
-    if(reg_state != 0 && regAccount->start_time != PTime(0))
-      reg_info = regAccount->start_time.AsString("hh:mm:ss dd.MM.yyyy");
-    if(conn_state == 2)
-      conn_info = regConn->start_time.AsString("hh:mm:ss dd.MM.yyyy");
-    if(ping_state == 2)
-      ping_info = regAccount->keep_alive_time_response.AsString("hh:mm:ss dd.MM.yyyy");
-
-    list.AppendString(regAccount->display_name+" ["+regAccount->GetUrl()+"],"+
-                      PString(regAccount->abook_enable)+","+
-                      remote_application+","+
-                      PString(reg_state)+","+
-                      reg_info+","+
-                      PString(conn_state)+","+
-                      conn_info+","+
-                      PString(ping_state)+","+
-                      ping_info
-                     );
-  }
-  mutex.Signal();
-
-  if(account_status_list != list)
-  {
-    account_status_list = list;
-    OpenMCU::Current().ManagerRefreshAddressBook();
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PStringArray Registrar::GetAccountList()
+PStringArray Registrar::GetAccountStatusList()
 {
   return account_status_list;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::MainLoop()
+void Registrar::AccountThread(PThread &, INT)
 {
-  PTime time_sub;
-  PTime time_abook;
-  PTime time_account;
-  PTime time_conn;
-  PTime time_ping;
-  while(1)
+  while(!terminating)
   {
+    PThread::Sleep(100);
     if(terminating)
-    {
-      Terminating();
-      return;
-    }
-    if(restart)
-    {
-      restart = 0;
-      init_config = 1;
-      init_accounts = 1;
-    }
-    if(init_config)
-    {
-      init_config = 0;
-      InitConfig();
-    }
-    if(init_accounts)
-    {
-      init_accounts = 0;
-      InitAccounts();
-    }
-    //
-    PTime now;
-    // accounts
-    if((now-time_account).GetMilliSeconds() > 1000)
-    {
-      time_account = now;
-      ProcessAccountList();
-    }
-    // connections
-    if((now-time_conn).GetMilliSeconds() > 250)
-    {
-      time_conn = now;
-      ProcessConnectionList();
-    }
-    // subscriptions
-    if((now-time_sub).GetMilliSeconds() > 1000)
-    {
-      time_sub = now;
-      ProcessSubscriptionList();
-    }
-    // address book
-    if((now-time_abook).GetMilliSeconds() > 1000)
-    {
-      time_abook = now;
-      RefreshAccountStatusList();
-    }
-    // keep alive
-    if((now-time_ping).GetMilliSeconds() > 1000)
-    {
-      time_ping = now;
-      ProcessKeepAlive();
-    }
+      break;
 
-    int wait = 100 - PTimeInterval(PTime() - now).GetMilliSeconds();
-    if(wait < 30) wait = 30;
-    PThread::Sleep(wait);
+    PTime now;
+    for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
+    {
+      RegistrarAccount *raccount = *it;
+      // expires
+      if(raccount->registered)
+      {
+        if(now > raccount->start_time + PTimeInterval(raccount->expires*1000))
+          raccount->registered = FALSE;
+      }
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::ConnectionThread(PThread &, INT)
+{
+  while(!terminating)
+  {
+    PThread::Sleep(100);
+    if(terminating)
+      break;
+
+    PTime now;
+    for(MCURegistrarConnectionList::shared_iterator it = connectionList.begin(); it != connectionList.end(); ++it)
+    {
+      RegistrarConnection *rconn = *it;
+      // remove empty connection
+      if(rconn->state == CONN_IDLE)
+      {
+        if(connectionList.Erase(it))
+          delete rconn;
+        continue;
+      }
+      // MCU call answer limit
+      if(rconn->state == CONN_MCU_WAIT)
+      {
+        if(now > rconn->start_time + PTimeInterval(rconn->accept_timeout*1000))
+        {
+          OutgoingCallCancel(rconn);
+          rconn->state = CONN_END;
+        }
+      }
+      // internal call answer limit
+      if(rconn->state == CONN_WAIT)
+      {
+        if(now > rconn->start_time + PTimeInterval(rconn->accept_timeout*1000))
+        {
+          IncomingCallCancel(rconn);
+          OutgoingCallCancel(rconn);
+          rconn->state = CONN_END;
+        }
+      }
+      // make internal call
+      if(rconn->state == CONN_WAIT)
+      {
+        if(rconn->callToken_out == "")
+        {
+          if(!InternalMakeCall(rconn, rconn->username_in, rconn->username_out))
+          {
+            rconn->state = CONN_CANCEL_IN;
+          }
+        }
+      }
+      // accept incoming
+      if(rconn->state == CONN_ACCEPT_IN)
+      {
+        IncomingCallAccept(rconn);
+        rconn->state = CONN_ESTABLISHED;
+      }
+      // cancel incoming
+      if(rconn->state == CONN_CANCEL_IN)
+      {
+        IncomingCallCancel(rconn);
+        rconn->state = CONN_END;
+      }
+      // cancel outgoing
+      if(rconn->state == CONN_CANCEL_OUT)
+      {
+        OutgoingCallCancel(rconn);
+        rconn->state = CONN_END;
+      }
+      // leave incoming
+      if(rconn->state == CONN_LEAVE_IN)
+      {
+        Leave(rconn->account_type_in, rconn->callToken_in);
+        rconn->state = CONN_END;
+      }
+      // leave outgoing
+      if(rconn->state == CONN_LEAVE_OUT)
+      {
+        Leave(rconn->account_type_out, rconn->callToken_out);
+        rconn->state = CONN_END;
+      }
+      // internal call end
+      if(rconn->state == CONN_END)
+      {
+        rconn->state = CONN_IDLE;
+      }
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::BookThread(PThread &, INT)
+{
+  while(!terminating)
+  {
+    PThread::Sleep(1000);
+    if(terminating)
+      break;
+
+    PStringArray list;
+    for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
+    {
+      RegistrarAccount *raccount = *it;
+
+      int reg_state = 0;
+      int conn_state = 0;
+      int ping_state = 0;
+      PString remote_application = raccount->remote_application;
+      PString reg_info;
+      PString conn_info;
+      PString ping_info;
+
+      if(raccount->registered)
+        reg_state = 2;
+      else if(raccount->enable)
+        reg_state = 1;
+
+      RegistrarConnection *rconn = FindRegConnUsernameWithLock(raccount->username);
+      if(rconn)
+      {
+        if(rconn->state == CONN_WAIT || rconn->state == CONN_MCU_WAIT)
+            conn_state = 1;
+        else if(rconn->state == CONN_ESTABLISHED || rconn->state == CONN_MCU_ESTABLISHED)
+        {
+          conn_state = 2;
+          conn_info = it->start_time.AsString("hh:mm:ss dd.MM.yyyy");
+        }
+        rconn->Unlock();
+      }
+
+      if(raccount->keep_alive_enable)
+      {
+        if(raccount->keep_alive_time_response > raccount->keep_alive_time_request-PTimeInterval(raccount->keep_alive_interval*1000-2000))
+          ping_state = 1;
+        else
+          ping_state = 2;
+      }
+
+      if(reg_state != 0 && raccount->start_time != PTime(0))
+        reg_info = raccount->start_time.AsString("hh:mm:ss dd.MM.yyyy");
+      if(ping_state == 2)
+        ping_info = raccount->keep_alive_time_response.AsString("hh:mm:ss dd.MM.yyyy");
+
+      list.AppendString(raccount->display_name+" ["+raccount->GetUrl()+"],"+
+                        PString(raccount->abook_enable)+","+
+                        remote_application+","+
+                        PString(reg_state)+","+
+                        reg_info+","+
+                        PString(conn_state)+","+
+                        conn_info+","+
+                        PString(ping_state)+","+
+                        ping_info
+                       );
+    }
+    if(account_status_list != list)
+    {
+      account_status_list = list;
+      OpenMCU::Current().ManagerRefreshAddressBook();
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::SubscriptionThread(PThread &, INT)
+{
+  while(!terminating)
+  {
+    PThread::Sleep(1000);
+    if(terminating)
+      break;
+
+    PTime now;
+    for(MCURegistrarSubscriptionList::shared_iterator it = subscriptionList.begin(); it != subscriptionList.end(); ++it)
+    {
+      RegistrarSubscription *rsub = *it;
+      RegSubscriptionStates state_new;
+      if(now > rsub->start_time + PTimeInterval(rsub->expires*1000))
+      {
+        if(subscriptionList.Erase(it))
+          delete rsub;
+        continue;
+      }
+
+      RegistrarAccount *raccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, rsub->username_out);
+      if(!raccount_out)
+        raccount_out = FindAccountWithLock(ACCOUNT_TYPE_H323, rsub->username_out);
+
+      if(raccount_out && raccount_out->registered)
+      {
+        state_new = SUB_STATE_OPEN;
+        if(HasRegConnUsername(raccount_out->username))
+          state_new = SUB_STATE_BUSY;
+      } else {
+        state_new = SUB_STATE_CLOSED;
+      }
+
+      // send notify
+      if(rsub->state != state_new)
+      {
+        rsub->state = state_new;
+        SipSendNotify(rsub);
+      }
+      if(raccount_out) raccount_out->Unlock();
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::AliveThread(PThread &, INT)
+{
+  while(!terminating)
+  {
+    PThread::Sleep(1000);
+    if(terminating)
+      break;
+
+    PTime now;
+    for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
+    {
+      RegistrarAccount *raccount = *it;
+      if(raccount->account_type != ACCOUNT_TYPE_SIP)
+        continue;
+      if(raccount->keep_alive_enable && now > raccount->keep_alive_time_request+PTimeInterval(raccount->keep_alive_interval*1000))
+      {
+        raccount->keep_alive_time_request = now;
+        SipSendPing(raccount);
+      }
+    }
   }
 }
 
@@ -710,10 +653,13 @@ void Registrar::MainLoop()
 
 void Registrar::QueueThread(PThread &, INT)
 {
-  queueTerminating = FALSE;
-  while(!queueTerminating)
+  while(!terminating)
   {
-    for(;;)
+    PThread::Sleep(100);
+    if(terminating)
+      break;
+
+    while(1)
     {
       PString *cmd = regQueue.Pop();
       if(cmd == NULL)
@@ -726,7 +672,6 @@ void Registrar::QueueThread(PThread &, INT)
         QueueCleared(cmd->Right(cmd->GetLength()-8));
       delete cmd;
     }
-    PThread::Sleep(100);
   }
 }
 
@@ -758,8 +703,8 @@ void Registrar::QueueInvite(const PString & data)
   }
   else if(url.GetScheme() == "h323")
   {
-    RegistrarConnection *regConn = FindRegConnWithLock(callToken);
-    if(regConn == NULL)
+    RegistrarConnection *rconn = FindRegConnWithLock(callToken);
+    if(rconn == NULL)
       return;
     H323Transport * transport = NULL;
     if(ep->GetGatekeeper())
@@ -781,10 +726,10 @@ void Registrar::QueueInvite(const PString & data)
     void *userData = new PString(from);
     if(ep->MakeCall(to, transport, newToken, userData))
     {
-      regConn->callToken_in = newToken;
-      regConn->callToken_out = newToken;
+      rconn->callToken_in = newToken;
+      rconn->callToken_out = newToken;
     }
-    regConn->Unlock();
+    rconn->Unlock();
   }
 }
 
@@ -793,14 +738,14 @@ void Registrar::QueueInvite(const PString & data)
 void Registrar::QueueEstablished(const PString & data)
 {
   PString callToken = data;
-  RegistrarConnection *regConn = FindRegConnWithLock(callToken);
-  if(regConn == NULL)
+  RegistrarConnection *rconn = FindRegConnWithLock(callToken);
+  if(rconn == NULL)
     return;
-  if(regConn->state == CONN_MCU_WAIT)
-    regConn->state = CONN_MCU_ESTABLISHED;
-  if(regConn->state == CONN_WAIT && regConn->callToken_out == callToken)
-    regConn->state = CONN_ACCEPT_IN;
-  regConn->Unlock();
+  if(rconn->state == CONN_MCU_WAIT)
+    rconn->state = CONN_MCU_ESTABLISHED;
+  if(rconn->state == CONN_WAIT && rconn->callToken_out == callToken)
+    rconn->state = CONN_ACCEPT_IN;
+  rconn->Unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -808,24 +753,24 @@ void Registrar::QueueEstablished(const PString & data)
 void Registrar::QueueCleared(const PString & data)
 {
   PString callToken = data;
-  RegistrarConnection *regConn = FindRegConnWithLock(callToken);
-  if(regConn == NULL)
+  RegistrarConnection *rconn = FindRegConnWithLock(callToken);
+  if(rconn == NULL)
     return;
-  if(regConn->state == CONN_MCU_WAIT || regConn->state == CONN_MCU_ESTABLISHED)
-    regConn->state = CONN_IDLE;
-  if(regConn->state == CONN_WAIT && regConn->callToken_out == callToken)
-    regConn->state = CONN_CANCEL_IN;
-  if(regConn->state == CONN_WAIT && regConn->callToken_in == callToken)
-    regConn->state = CONN_CANCEL_OUT;
-  if(regConn->state == CONN_ESTABLISHED && regConn->callToken_out == callToken)
-    regConn->state = CONN_LEAVE_IN;
-  if(regConn->state == CONN_ESTABLISHED && regConn->callToken_in == callToken)
-    regConn->state = CONN_LEAVE_OUT;
-  if(regConn->state == CONN_ACCEPT_IN && regConn->callToken_out == callToken)
-    regConn->state = CONN_LEAVE_IN;
-  if(regConn->state == CONN_ACCEPT_IN && regConn->callToken_in == callToken)
-    regConn->state = CONN_LEAVE_OUT;
-  regConn->Unlock();
+  if(rconn->state == CONN_MCU_WAIT || rconn->state == CONN_MCU_ESTABLISHED)
+    rconn->state = CONN_IDLE;
+  if(rconn->state == CONN_WAIT && rconn->callToken_out == callToken)
+    rconn->state = CONN_CANCEL_IN;
+  if(rconn->state == CONN_WAIT && rconn->callToken_in == callToken)
+    rconn->state = CONN_CANCEL_OUT;
+  if(rconn->state == CONN_ESTABLISHED && rconn->callToken_out == callToken)
+    rconn->state = CONN_LEAVE_IN;
+  if(rconn->state == CONN_ESTABLISHED && rconn->callToken_in == callToken)
+    rconn->state = CONN_LEAVE_OUT;
+  if(rconn->state == CONN_ACCEPT_IN && rconn->callToken_out == callToken)
+    rconn->state = CONN_LEAVE_IN;
+  if(rconn->state == CONN_ACCEPT_IN && rconn->callToken_in == callToken)
+    rconn->state = CONN_LEAVE_OUT;
+  rconn->Unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -880,6 +825,8 @@ void Registrar::InitConfig()
 
 void Registrar::InitAccounts()
 {
+  PWaitAndSignal m(mutex);
+
   MCUConfig cfg("Registrar Parameters");
 
   PString h323SectionPrefix = "H323 Endpoint ";
@@ -888,24 +835,22 @@ void Registrar::InitAccounts()
 
   PStringToString h323Passwords;
 
-  Lock();
-  for(AccountMapType::iterator reg = AccountMap.begin(); reg != AccountMap.end(); ++reg)
+  for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
   {
-    RegistrarAccount *regAccount = reg->second;
-    if(regAccount->account_type == ACCOUNT_TYPE_SIP)
+    RegistrarAccount *raccount = *it;
+    if(raccount->account_type == ACCOUNT_TYPE_SIP)
     {
-      regAccount->enable = MCUConfig(sipSectionPrefix+regAccount->username).GetBoolean("Registrar", FALSE);
-      if(!regAccount->enable && sip_require_password)
-        regAccount->registered = FALSE;
+      raccount->enable = MCUConfig(sipSectionPrefix+raccount->username).GetBoolean("Registrar", FALSE);
+      if(!raccount->enable && sip_require_password)
+        raccount->registered = FALSE;
     }
-    if(regAccount->account_type == ACCOUNT_TYPE_H323)
+    if(raccount->account_type == ACCOUNT_TYPE_H323)
     {
-      regAccount->enable = MCUConfig(h323SectionPrefix+regAccount->username).GetBoolean("Registrar", FALSE);
-      if(!regAccount->enable && h323_require_h235)
-        regAccount->registered = FALSE;
+      raccount->enable = MCUConfig(h323SectionPrefix+raccount->username).GetBoolean("Registrar", FALSE);
+      if(!raccount->enable && h323_require_h235)
+        raccount->registered = FALSE;
     }
   }
-  Unlock();
 
   PStringList sect = cfg.GetSections();
   for(PINDEX i = 0; i < sect.GetSize(); i++)
@@ -939,95 +884,165 @@ void Registrar::InitAccounts()
     unsigned port = scfg.GetInteger(PortKey);
     if(port == 0) port = gcfg.GetInteger(PortKey);
 
-    RegistrarAccount *regAccount = FindAccountWithLock(account_type, username);
-    if(!regAccount)
-      regAccount = InsertAccountWithLock(account_type, username);
-    regAccount->enable = scfg.GetBoolean("Registrar", FALSE);
-    regAccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
-    regAccount->host = scfg.GetString(HostKey);
+    RegistrarAccount *raccount = FindAccountWithLock(account_type, username);
+    if(!raccount)
+      raccount = InsertAccountWithLock(account_type, username);
+    raccount->enable = scfg.GetBoolean("Registrar", FALSE);
+    raccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
+    raccount->host = scfg.GetString(HostKey);
     if(port != 0)
-      regAccount->port = port;
-    regAccount->domain = registrar_domain;
-    regAccount->password = scfg.GetString(PasswordKey);
-    regAccount->display_name = scfg.GetString(DisplayNameKey);
+      raccount->port = port;
+    raccount->domain = registrar_domain;
+    raccount->password = scfg.GetString(PasswordKey);
+    raccount->display_name = scfg.GetString(DisplayNameKey);
     if(account_type == ACCOUNT_TYPE_SIP)
     {
-      regAccount->keep_alive_interval = scfg.GetString("Ping interval").AsInteger();
-      if(regAccount->keep_alive_interval == 0)
-        regAccount->keep_alive_interval = gcfg.GetString("Ping interval").AsInteger();
-      if(regAccount->keep_alive_interval != 0)
-        regAccount->keep_alive_enable = TRUE;
+      raccount->keep_alive_interval = scfg.GetString("Ping interval").AsInteger();
+      if(raccount->keep_alive_interval == 0)
+        raccount->keep_alive_interval = gcfg.GetString("Ping interval").AsInteger();
+      if(raccount->keep_alive_interval != 0)
+        raccount->keep_alive_enable = TRUE;
       else
-        regAccount->keep_alive_enable = FALSE;
+        raccount->keep_alive_enable = FALSE;
 
       PString sip_call_processing = scfg.GetString("SIP call processing");
       if(sip_call_processing == "")
         sip_call_processing = gcfg.GetString("SIP call processing", "redirect");
-      regAccount->sip_call_processing = sip_call_processing;
+      raccount->sip_call_processing = sip_call_processing;
     }
     else if(account_type == ACCOUNT_TYPE_H323)
     {
       PString h323_call_processing = scfg.GetString("H.323 call processing");
       if(h323_call_processing == "")
         h323_call_processing = gcfg.GetString("H.323 call processing", "direct");
-      regAccount->h323_call_processing = h323_call_processing;
+      raccount->h323_call_processing = h323_call_processing;
 
-      h323Passwords.Insert(PString(username), new PString(regAccount->password));
+      h323Passwords.Insert(PString(username), new PString(raccount->password));
     }
     else if(account_type == ACCOUNT_TYPE_RTSP)
     {
-      regAccount->abook_enable = TRUE;
+      raccount->abook_enable = TRUE;
     }
-    regAccount->Unlock();
+    raccount->Unlock();
   }
   // set gatekeeper parameters
-  if(registrarGk) registrarGk->SetPasswords(h323Passwords);
+  if(registrarGk)
+    registrarGk->SetPasswords(h323Passwords);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void Registrar::Terminating()
 {
+  // stop alive refresh
+  if(aliveThread)
+  {
+    PTRACE(5,"Registrar\tWaiting for termination alive thread: " << aliveThread->GetThreadName());
+    aliveThread->WaitForTermination();
+    delete aliveThread;
+    aliveThread = NULL;
+  }
+
+  // stop abook refresh
+  if(bookThread)
+  {
+    PTRACE(5,"Registrar\tWaiting for termination book thread: " << bookThread->GetThreadName());
+    bookThread->WaitForTermination();
+    delete bookThread;
+    bookThread = NULL;
+  }
+
+  // stop subscriptions refresh
+  if(subscriptionThread)
+  {
+    PTRACE(5,"Registrar\tWaiting for termination book thread: " << connectionThread->GetThreadName());
+    subscriptionThread->WaitForTermination();
+    delete subscriptionThread;
+    subscriptionThread = NULL;
+  }
+
   // stop queue thread
   QueueClear();
   if(queueThread)
   {
-    PTRACE(5,"Registrar\tWaiting for termination queue: " << queueThread->GetThreadName());
-    queueTerminating = TRUE;
+    PTRACE(5,"Registrar\tWaiting for termination queue thread: " << queueThread->GetThreadName());
     queueThread->WaitForTermination();
     delete queueThread;
     queueThread = NULL;
   }
 
-  PWaitAndSignal m(mutex);
+  // stop accounts refresh
+  if(accountThread)
+  {
+    PTRACE(5,"Registrar\tWaiting for termination accounts thread: " << accountThread->GetThreadName());
+    accountThread->WaitForTermination();
+    delete accountThread;
+    accountThread = NULL;
+  }
+
+  // stop connections refresh
+  if(connectionThread)
+  {
+    PTRACE(5,"Registrar\tWaiting for termination book thread: " << connectionThread->GetThreadName());
+    connectionThread->WaitForTermination();
+    delete connectionThread;
+    connectionThread = NULL;
+  }
+
+  for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
+  {
+    RegistrarAccount *raccount = *it;
+    if(accountList.Erase(it))
+      delete raccount;
+  }
+  for(MCURegistrarConnectionList::shared_iterator it = connectionList.begin(); it != connectionList.end(); ++it)
+  {
+    RegistrarConnection *rconn = *it;
+    if(connectionList.Erase(it))
+      delete rconn;
+  }
+  for(MCURegistrarSubscriptionList::shared_iterator it = subscriptionList.begin(); it != subscriptionList.end(); ++it)
+  {
+    RegistrarSubscription *rsub = *it;
+    if(subscriptionList.Erase(it))
+      delete rsub;
+  }
+
   if(registrarGk)
   {
     delete registrarGk;
     registrarGk = NULL;
   }
-  for(SubscriptionMapType::iterator it = SubscriptionMap.begin(); it != SubscriptionMap.end(); )
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Registrar::MainLoop()
+{
+  while(1)
   {
-    Subscription *subAccount = it->second;
-    subAccount->Lock();
-    SubscriptionMap.erase(it++);
-    delete subAccount;
-    subAccount = NULL;
-  }
-  for(RegConnMapType::iterator it = RegConnMap.begin(); it != RegConnMap.end(); )
-  {
-    RegistrarConnection *regConn = it->second;
-    regConn->Lock();
-    RegConnMap.erase(it++);
-    delete regConn;
-    regConn = NULL;
-  }
-  for(AccountMapType::iterator it = AccountMap.begin(); it != AccountMap.end(); )
-  {
-    RegistrarAccount *regAccount = it->second;
-    regAccount->Lock();
-    AccountMap.erase(it++);
-    delete regAccount;
-    regAccount = NULL;
+    PThread::Sleep(100);
+    if(terminating)
+    {
+      Terminating();
+      return;
+    }
+    if(restart)
+    {
+      restart = 0;
+      init_config = 1;
+      init_accounts = 1;
+    }
+    if(init_config)
+    {
+      init_config = 0;
+      InitConfig();
+    }
+    if(init_accounts)
+    {
+      init_accounts = 0;
+      InitAccounts();
+    }
   }
 }
 
@@ -1035,7 +1050,13 @@ void Registrar::Terminating()
 
 void Registrar::Main()
 {
+  accountThread = PThread::Create(PCREATE_NOTIFIER(AccountThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "registrar account:%0x");
+  connectionThread = PThread::Create(PCREATE_NOTIFIER(ConnectionThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "registrar connection:%0x");
+  subscriptionThread = PThread::Create(PCREATE_NOTIFIER(SubscriptionThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "registrar subscription:%0x");
   queueThread = PThread::Create(PCREATE_NOTIFIER(QueueThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "registrar queue:%0x");
+  aliveThread = PThread::Create(PCREATE_NOTIFIER(AliveThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "registrar alive:%0x");
+  bookThread = PThread::Create(PCREATE_NOTIFIER(BookThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "registrar book:%0x");
+
   MainLoop();
 }
 

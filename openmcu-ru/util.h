@@ -62,6 +62,10 @@ class ConnectionMonitor;
 class ConnectionMonitorInfo;
 class ConferenceMonitorInfo;
 
+class RegistrarAccount;
+class RegistrarConnection;
+class RegistrarSubscription;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef void * ConferenceMemberId;
@@ -1027,6 +1031,10 @@ typedef MCUSharedList<ConferenceAudioConnection> MCUAudioConnectionList;
 typedef MCUSharedList<MCUSimpleVideoMixer> MCUVideoMixerList;
 typedef MCUSharedList<ConferenceMember> MCUMemberList;
 typedef MCUSharedList<ConferenceProfile> MCUProfileList;
+
+typedef MCUSharedList<RegistrarAccount> MCURegistrarAccountList;
+typedef MCUSharedList<RegistrarConnection> MCURegistrarConnectionList;
+typedef MCUSharedList<RegistrarSubscription> MCURegistrarSubscriptionList;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

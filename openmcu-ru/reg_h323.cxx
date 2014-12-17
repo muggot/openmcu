@@ -8,11 +8,14 @@
 H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connection *conn)
 {
   PTRACE(1, "Registrar\tOnReceivedH323Invite");
+
+  PWaitAndSignal m(mutex);
+
   MCUURL url(conn->GetMemberName());
   if(url.GetUserName() == "" || url.GetHostName() == "")
     return H323Connection::AnswerCallDenied;
 
-  if(FindRegConn(conn->GetCallToken()))
+  if(HasRegConn(conn->GetCallToken()))
     return H323Connection::AnswerCallDenied;
 
   PString username_in = url.GetUserName();
@@ -20,36 +23,35 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
 
   H323Connection::AnswerCallResponse response = H323Connection::AnswerCallDenied; // default response
 
-  RegistrarAccount *regAccount_in = NULL;
-  RegistrarAccount *regAccount_out = NULL;
-  RegistrarConnection *regConn = NULL;
-  PWaitAndSignal m(mutex);
+  RegistrarAccount *raccount_in = NULL;
+  RegistrarAccount *raccount_out = NULL;
+  RegistrarConnection *rconn = NULL;
 
-  regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_H323, username_in);
+  raccount_in = FindAccountWithLock(ACCOUNT_TYPE_H323, username_in);
 
   if(allow_internal_calls)
   {
-    regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
-    if(regAccount_out && !regAccount_out->enable && !regAccount_out->registered)
+    raccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
+    if(raccount_out && !raccount_out->enable && !raccount_out->registered)
     {
       response = H323Connection::AnswerCallDenied;
       goto return_response;
     }
   }
-  if((!regAccount_in && h323_allow_unreg_mcu_calls && !regAccount_out) ||
-     (!regAccount_in && h323_allow_unreg_internal_calls && regAccount_out))
+  if((!raccount_in && h323_allow_unreg_mcu_calls && !raccount_out) ||
+     (!raccount_in && h323_allow_unreg_internal_calls && raccount_out))
   {
-    regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_H323, username_in);
+    raccount_in = InsertAccountWithLock(ACCOUNT_TYPE_H323, username_in);
   }
-  if(!regAccount_in)
+  if(!raccount_in)
   {
     response = H323Connection::AnswerCallDenied;
     goto return_response;
   }
 
-  if((!regAccount_out && !h323_allow_unreg_mcu_calls) || (regAccount_out && !h323_allow_unreg_internal_calls))
+  if((!raccount_out && !h323_allow_unreg_mcu_calls) || (raccount_out && !h323_allow_unreg_internal_calls))
   {
-    if(regAccount_in->h323CallIdentifier != conn->GetCallIdentifier())
+    if(raccount_in->h323CallIdentifier != conn->GetCallIdentifier())
     {
       response = H323Connection::AnswerCallDenied;
       goto return_response;
@@ -57,35 +59,35 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
   }
 
   // update account data ???
-  if(!regAccount_in->registered)
+  if(!raccount_in->registered)
   {
-    regAccount_in->host = url.GetHostName();
-    regAccount_in->domain = regAccount_in->host;
-    if(regAccount_in->display_name == "")
-      regAccount_in->display_name = url.GetDisplayName();
-    regAccount_in->remote_application = conn->GetRemoteApplication();
+    raccount_in->host = url.GetHostName();
+    raccount_in->domain = raccount_in->host;
+    if(raccount_in->display_name == "")
+      raccount_in->display_name = url.GetDisplayName();
+    raccount_in->remote_application = conn->GetRemoteApplication();
   }
 
-  regConn = InsertRegConnWithLock(conn->GetCallToken(), username_in, username_out);
+  rconn = InsertRegConnWithLock(conn->GetCallToken(), username_in, username_out);
 
-  // MCU call if !regAccount_out
-  if(!regAccount_out)
+  // MCU call if !raccount_out
+  if(!raccount_out)
   {
-    regConn->account_type_in = regAccount_in->account_type;
-    regConn->roomname = conn->GetRequestedRoom();
-    regConn->state = CONN_MCU_WAIT;
+    rconn->account_type_in = raccount_in->account_type;
+    rconn->roomname = conn->GetRequestedRoom();
+    rconn->state = CONN_MCU_WAIT;
     response = H323Connection::AnswerCallNow;
   } else {
-    regConn->roomname = MCU_INTERNAL_CALL_PREFIX + OpalGloballyUniqueID().AsString();
-    conn->SetRequestedRoom(regConn->roomname);
-    regConn->state = CONN_WAIT;
+    rconn->roomname = MCU_INTERNAL_CALL_PREFIX + OpalGloballyUniqueID().AsString();
+    conn->SetRequestedRoom(rconn->roomname);
+    rconn->state = CONN_WAIT;
     response = H323Connection::AnswerCallPending;
   }
 
   return_response:
-    if(regAccount_in) regAccount_in->Unlock();
-    if(regAccount_out) regAccount_out->Unlock();
-    if(regConn) regConn->Unlock();
+    if(raccount_in) raccount_in->Unlock();
+    if(raccount_out) raccount_out->Unlock();
+    if(rconn) rconn->Unlock();
     return response;
 }
 
@@ -148,7 +150,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   if(username == "")
   {
     PTRACE(1, "Registrar H.323\tcheck already endpoint registered " << h323id);
-    username = registrar->FindAccountNameByH323Id(h323id);
+    username = registrar->FindAccountNameFromH323Id(h323id);
   }
   if(username == "")
   {
@@ -171,32 +173,32 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   }
 
   // check account
-  RegistrarAccount *regAccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, username);
-  if(!regAccount && !requireH235)
-    regAccount = registrar->InsertAccountWithLock(ACCOUNT_TYPE_H323, username);
+  RegistrarAccount *raccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, username);
+  if(!raccount && !requireH235)
+    raccount = registrar->InsertAccountWithLock(ACCOUNT_TYPE_H323, username);
 
-  if(!regAccount || (regAccount && !regAccount->enable && requireH235))
+  if(!raccount || (raccount && !raccount->enable && requireH235))
   {
     PTRACE(1, "Registrar H.323\tregistration failed");
     return H323GatekeeperRequest::Reject;
   }
 
   // update account data
-  regAccount->host = host.AsString();
-  regAccount->domain = regAccount->host;
+  raccount->host = host.AsString();
+  raccount->domain = raccount->host;
   if(port != 0)
-    regAccount->port = port;
-  if(regAccount->display_name == "")
-    regAccount->display_name = display_name;
-  regAccount->remote_application = remote_application;
-  regAccount->h323id = h323id;
+    raccount->port = port;
+  if(raccount->display_name == "")
+    raccount->display_name = display_name;
+  raccount->remote_application = remote_application;
+  raccount->h323id = h323id;
 
   // regsiter TTL
-  regAccount->registered = TRUE;
-  regAccount->start_time = PTime();
-  regAccount->expires = expires;
+  raccount->registered = TRUE;
+  raccount->start_time = PTime();
+  raccount->expires = expires;
 
-  regAccount->Unlock();
+  raccount->Unlock();
 
   PTRACE(1, "Registrar H.323\tendpoint registered, username " << username << ", id " << h323id);
   return response;
@@ -208,18 +210,18 @@ H323GatekeeperRequest::Response RegistrarGk::OnUnregistration(H323GatekeeperURQ 
 {
   H323GatekeeperRequest::Response response = H323GatekeeperServer::OnUnregistration(info);
 
-  PWaitAndSignal wait(mutex);
+  PWaitAndSignal m(mutex);
 
   if(info.urq.HasOptionalField(H225_UnregistrationRequest::e_endpointAlias))
   {
     for(PINDEX i = 0; i < info.urq.m_endpointAlias.GetSize(); i++)
     {
       PString alias = H323GetAliasAddressString(info.urq.m_endpointAlias[i]);
-      RegistrarAccount *regAccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, alias);
-      if(regAccount)
+      RegistrarAccount *raccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, alias);
+      if(raccount)
       {
-        regAccount->registered = FALSE;
-        regAccount->Unlock();
+        raccount->registered = FALSE;
+        raccount->Unlock();
       }
     }
   }
@@ -231,7 +233,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnUnregistration(H323GatekeeperURQ 
 
 BOOL RegistrarGk::AdmissionPolicyCheck(H323GatekeeperARQ & info)
 {
-  PWaitAndSignal wait(mutex);
+  PWaitAndSignal m(mutex);
 
   BOOL answerCall = info.arq.m_answerCall;
   //if (arq.m_answerCall ? canOnlyAnswerRegisteredEP : canOnlyCallRegisteredEP) {
@@ -359,19 +361,19 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
       dstUsername = dstUsername.Right(dstUsername.GetLength()-dstPrefix.GetLength()-1);
     }
     //
-    RegistrarAccount *regAccount_in = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
-    //RegistrarAccount *regAccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstUsername);
-    RegistrarAccount *regAccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstPrefix);
-    if(regAccount_in && regAccount_out && regAccount_out->account_type == ACCOUNT_TYPE_H323 &&
-       regAccount_out->host != "" && regAccount_out->port != 0 &&
-       regAccount_in->h323_call_processing != "full" && regAccount_out->h323_call_processing != "full"
+    RegistrarAccount *raccount_in = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
+    //RegistrarAccount *raccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstUsername);
+    RegistrarAccount *raccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstPrefix);
+    if(raccount_in && raccount_out && raccount_out->account_type == ACCOUNT_TYPE_H323 &&
+       raccount_out->host != "" && raccount_out->port != 0 &&
+       raccount_in->h323_call_processing != "full" && raccount_out->h323_call_processing != "full"
       )
     {
-      dstHost = H323TransportAddress(regAccount_out->host, regAccount_out->port);
+      dstHost = H323TransportAddress(raccount_out->host, raccount_out->port);
       direct = TRUE;
     }
-    if(regAccount_in) regAccount_in->Unlock();
-    if(regAccount_out) regAccount_out->Unlock();
+    if(raccount_in) raccount_in->Unlock();
+    if(raccount_out) raccount_out->Unlock();
 
     if(direct)
       return OnAdmissionDirect(info, dstUsername, dstHost);
@@ -467,11 +469,11 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmissionMCU(H323GatekeeperARQ & 
   // set call identifier for security check incoming call
   if(srcUsername != "")
   {
-    RegistrarAccount *regAccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
-    if(regAccount)
+    RegistrarAccount *raccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
+    if(raccount)
     {
-      regAccount->h323CallIdentifier = info.arq.m_callIdentifier.m_guid;
-      regAccount->Unlock();
+      raccount->h323CallIdentifier = info.arq.m_callIdentifier.m_guid;
+      raccount->Unlock();
     }
   }
 

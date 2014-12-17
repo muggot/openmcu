@@ -48,133 +48,15 @@ class MCUSipEndPoint;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class RegistrarConnection
-{
-  public:
-    RegistrarConnection()
-    {
-      Init();
-    }
-    RegistrarConnection(PString callToken, PString _username_in, PString _username_out)
-    {
-      callToken_in = callToken;
-      username_in = _username_in;
-      username_out = _username_out;
-      Init();
-    }
-    ~RegistrarConnection()
-    {
-      if(msg_invite) { msg_destroy(msg_invite); msg_invite = NULL; }
-    }
-    void Init()
-    {
-      account_type_in = ACCOUNT_TYPE_UNKNOWN;
-      account_type_out = ACCOUNT_TYPE_UNKNOWN;
-      msg_invite = NULL;
-      state = CONN_IDLE;
-      start_time = PTime();
-      accept_timeout = 20; // 20 sec connection accept timeout
-    }
-
-    void Lock()      { mutex.Wait(); }
-    void Unlock()    { mutex.Signal(); }
-    int TryLock()    { return PTimedMutexTryLock(mutex, 20, "Warning! Can not lock RegistrarConnection: "+callToken_in); }
-    PTimedMutex & GetMutex() { return mutex; }
-
-    PString username_in;
-    PString username_out;
-    PString roomname;
-
-    PString callToken_in;
-    PString callToken_out;
-
-    RegAccountTypes account_type_in;
-    RegAccountTypes account_type_out;
-
-    RegConnectionStates state;
-
-    msg_t *msg_invite;
-
-    time_t accept_timeout;
-    PTime start_time;
-
-  protected:
-    PTimedMutex mutex;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class Subscription
-{
-  public:
-    Subscription(Registrar *_registrar)
-      :registrar(_registrar)
-    {
-      Init();
-    }
-    Subscription(Registrar *_registrar, PString _username_in, PString _username_out)
-      :registrar(_registrar)
-    {
-      username_in = _username_in;
-      username_out = _username_out;
-      username_pair = username_in+"@"+username_out;
-      Init();
-    }
-    ~Subscription()
-    {
-      if(msg_sub) { msg_destroy(msg_sub); msg_sub = NULL; }
-    }
-    void Init()
-    {
-      state = SUB_STATE_CLOSED;
-      msg_sub = NULL;
-      start_time = PTime();
-      expires = 0;
-      cseq = 100;
-    }
-
-    void Lock()      { mutex.Wait(); }
-    void Unlock()    { mutex.Signal(); }
-    int TryLock()    { return PTimedMutexTryLock(mutex, 20, "Warning! Can not lock Subscription: "+username_pair); }
-    PTimedMutex & GetMutex() { return mutex; }
-
-    PString username_in;
-    PString username_out;
-    PString username_pair;
-    PString ruri_str;
-    PString contact_str;
-    int cseq;
-
-    PTime start_time;
-    time_t expires;
-
-    RegSubscriptionStates state;
-
-    msg_t *msg_sub;
-
-  protected:
-    PTimedMutex mutex;
-    Registrar *registrar;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 class RegistrarAccount
 {
   public:
-    RegistrarAccount() { Init(); }
-    RegistrarAccount(RegAccountTypes _account_type, PString _username)
+    RegistrarAccount(Registrar *_registrar, long _id, RegAccountTypes _account_type, PString _username)
     {
+      registrar = _registrar;
+      id = _id;
       account_type = _account_type;
       username = _username;
-      Init();
-    }
-    ~RegistrarAccount()
-    {
-      if(msg_reg) { msg_destroy(msg_reg); msg_reg = NULL; }
-    }
-    void Init()
-    {
       domain = "openmcu-ru";
       port = 0;
       scheme = "Digest";
@@ -190,42 +72,48 @@ class RegistrarAccount
       msg_reg = NULL;
       start_time = PTime(0);
     }
-    PString GetUrl()
+
+    ~RegistrarAccount()
     {
-      PString url;
-      if(account_type == ACCOUNT_TYPE_SIP)
+      if(msg_reg)
       {
-        url = "sip:"+username+"@"+host;
-        if(port != 0 && port != 5060)
-          url += ":"+PString(port);
-        if(transport != "" && transport != "*")
-          url += ";transport="+transport;
+        msg_destroy(msg_reg);
+        msg_reg = NULL;
       }
-      else if(account_type == ACCOUNT_TYPE_H323)
-      {
-        url = "h323:"+username+"@"+host;
-        if(port != 0 && port != 1720)
-          url += ":"+PString(port);
-      }
-      else if(account_type == ACCOUNT_TYPE_RTSP)
-      {
-        if(username.Left(7) != "rtsp://")
-          url += "rtsp://";
-        url += username;
-      }
-      return url;
-    }
-    PString GetContact()
-    {
-      return contact_str;
     }
 
-    void Lock()      { mutex.Wait(); }
-    void Unlock()    { mutex.Signal(); }
-    int TryLock()    { return PTimedMutexTryLock(mutex, 20, "Warning! Can not lock RegistrarAccount: "+username); }
-    PTimedMutex & GetMutex() { return mutex; }
+    PMutex & GetMutex()
+    { return account_mutex; }
+
+    void Unlock();
+
+    long GetID() const
+    { return id; }
+
+    PString GetUrl();
+
+    PString GetContact()
+    { return contact_str; }
 
     PString GetAuthStr();
+
+    void SetRegisterMsg(const msg_t * msg)
+    {
+      PWaitAndSignal m(account_mutex);
+      msg_destroy(msg_reg);
+      msg_reg = msg_dup(msg);
+      msg_addr_copy(msg_reg, msg);
+    }
+
+    msg_t * GetRegisterMsgCopy()
+    {
+      if(!msg_reg)
+        return NULL;
+      PWaitAndSignal m(account_mutex);
+      msg_t *msg = msg_dup(msg_reg);
+      msg_addr_copy(msg, msg_reg);
+      return msg;
+    }
 
     PString display_name;
     PString username;
@@ -260,10 +148,165 @@ class RegistrarAccount
 
     RegAccountTypes account_type;
 
+  protected:
+    long id;
     msg_t *msg_reg;
 
+    PTimedMutex account_mutex;
+    Registrar *registrar;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class RegistrarConnection
+{
+  public:
+    RegistrarConnection(Registrar *_registrar, long _id, PString callToken, PString _username_in, PString _username_out)
+    {
+      registrar = _registrar;
+      id = _id;
+      callToken_in = callToken;
+      username_in = _username_in;
+      username_out = _username_out;
+      account_type_in = ACCOUNT_TYPE_UNKNOWN;
+      account_type_out = ACCOUNT_TYPE_UNKNOWN;
+      msg_invite = NULL;
+      state = CONN_IDLE;
+      start_time = PTime();
+      accept_timeout = 20; // 20 sec connection accept timeout
+    }
+
+    ~RegistrarConnection()
+    {
+      if(msg_invite)
+      {
+        msg_destroy(msg_invite);
+        msg_invite = NULL;
+      }
+    }
+
+    PMutex & GetMutex()
+    { return conn_mutex; }
+
+    void Unlock();
+
+    long GetID() const
+    { return id; }
+
+    void SetInviteMsg(const msg_t * msg)
+    {
+      PWaitAndSignal m(conn_mutex);
+      msg_destroy(msg_invite);
+      msg_invite = msg_dup(msg);
+      msg_addr_copy(msg_invite, msg);
+    }
+
+    msg_t * GetInviteMsgCopy()
+    {
+      if(!msg_invite)
+        return NULL;
+      PWaitAndSignal m(conn_mutex);
+      msg_t *msg = msg_dup(msg_invite);
+      msg_addr_copy(msg, msg_invite);
+      return msg;
+    }
+
+    PString username_in;
+    PString username_out;
+    PString roomname;
+
+    PString callToken_in;
+    PString callToken_out;
+
+    RegAccountTypes account_type_in;
+    RegAccountTypes account_type_out;
+
+    RegConnectionStates state;
+
+    time_t accept_timeout;
+    PTime start_time;
+
   protected:
-    PTimedMutex mutex;
+    long id;
+    msg_t *msg_invite;
+
+    PTimedMutex conn_mutex;
+    Registrar *registrar;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class RegistrarSubscription
+{
+  public:
+    RegistrarSubscription(Registrar *_registrar, long _id, PString _username_in, PString _username_out)
+      :registrar(_registrar)
+    {
+      registrar = _registrar;
+      id = _id;
+      username_in = _username_in;
+      username_out = _username_out;
+      username_pair = username_in+"@"+username_out;
+      state = SUB_STATE_CLOSED;
+      msg_sub = NULL;
+      start_time = PTime();
+      expires = 0;
+      cseq = 100;
+    }
+
+    ~RegistrarSubscription()
+    {
+      if(msg_sub)
+      {
+        msg_destroy(msg_sub);
+        msg_sub = NULL;
+      }
+    }
+
+    PMutex & GetMutex()
+    { return sub_mutex; }
+
+    void Unlock();
+
+    long GetID() const
+    { return id; }
+
+    void SetSubMsg(const msg_t * msg)
+    {
+      PWaitAndSignal m(sub_mutex);
+      msg_destroy(msg_sub);
+      msg_sub = msg_dup(msg);
+      msg_addr_copy(msg_sub, msg);
+    }
+
+    msg_t * GetSubMsgCopy()
+    {
+      if(!msg_sub)
+        return NULL;
+      PWaitAndSignal m(sub_mutex);
+      msg_t *msg = msg_dup(msg_sub);
+      msg_addr_copy(msg, msg_sub);
+      return msg;
+    }
+
+    PString username_in;
+    PString username_out;
+    PString username_pair;
+    PString ruri_str;
+    PString contact_str;
+    int cseq;
+
+    PTime start_time;
+    time_t expires;
+
+    RegSubscriptionStates state;
+
+  protected:
+    long id;
+    msg_t *msg_sub;
+
+    PTimedMutex sub_mutex;
+    Registrar *registrar;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -332,22 +375,27 @@ class Registrar : public PThread
       init_accounts = 0;
       registrarGk = NULL;
     }
-    int terminating;
-    int restart;
-    int init_config;
-    int init_accounts;
+
+    void SetTerminating()
+    { terminating = 1; }
+
+    void SetInitConfig()
+    { init_config = 1; }
+
+    void SetInitAccounts()
+    { init_accounts = 1; }
 
     const PString & GetRegistrarDomain() const { return registrar_domain; };
 
     void RefreshAccountStatusList();
-    PStringArray GetAccountList();
+    PStringArray GetAccountStatusList();
 
     void ConnectionCreated(const PString & callToken);
     void ConnectionEstablished(const PString & callToken);
     void ConnectionCleared(const PString & callToken);
     void SetRequestedRoom(const PString & callToken, PString & requestedRoom);
 
-    BOOL MakeCall(PString room, PString to, PString & callToken);
+    BOOL MakeCall(const PString & room, const PString & to, PString & callToken);
 
     int OnReceivedSipRegister(const msg_t *msg);
     int OnReceivedSipInvite(const msg_t *msg);
@@ -360,31 +408,40 @@ class Registrar : public PThread
     su_home_t *GetHome() { return sep->GetHome(); };
     MCUSipEndPoint *GetSep() { return sep; };
 
-    RegistrarAccount * InsertAccountWithLock(RegAccountTypes account_type, PString username);
-    RegistrarAccount * InsertAccount(RegistrarAccount *regAccount);
-    RegistrarAccount * InsertAccount(RegAccountTypes account_type, PString username);
-    RegistrarAccount * FindAccountWithLock(RegAccountTypes account_type, PString username);
-    RegistrarAccount * FindAccount(RegAccountTypes account_type, PString username);
-    PString FindAccountNameByH323Id(const PString & id);
+    RegistrarAccount * InsertAccountWithLock(RegAccountTypes account_type, const PString & username);
+    RegistrarAccount * FindAccountWithLock(RegAccountTypes account_type, const PString & username);
+    PString FindAccountNameFromH323Id(const PString & id);
 
     MCUQueuePString & GetQueue()
     { return regQueue; }
 
-    void Lock()      { mutex.Wait(); }
-    void Unlock()    { mutex.Signal(); }
-    PMutex & GetMutex() { return mutex; }
+    MCURegistrarAccountList & GetAccountList()
+    { return accountList; }
+
+    MCURegistrarSubscriptionList & GetSubscriptionList()
+    { return subscriptionList; }
+
+    MCURegistrarConnectionList & GetConnectionList()
+    { return connectionList; }
 
   protected:
     void Main();
     void MainLoop();
+
     void Terminating();
     void InitConfig();
     void InitAccounts();
+
     MCUH323EndPoint *ep;
     MCUSipEndPoint *sep;
     RegistrarGk *registrarGk;
 
     PString registrar_domain;
+
+    int restart;
+    int terminating;
+    int init_config;
+    int init_accounts;
 
     BOOL allow_internal_calls;
     BOOL sip_require_password;
@@ -399,61 +456,66 @@ class Registrar : public PThread
     int h323_min_time_to_live;
     int h323_max_time_to_live;
 
-    BOOL MakeCall(RegistrarConnection *regConn, PString & username_in, PString & username_out);
-    BOOL MakeCall(RegistrarConnection *regConn, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
+    BOOL InternalMakeCall(RegistrarConnection *rconn, const PString & username_in, const PString & username_out);
+    BOOL InternalMakeCall(RegistrarConnection *rconn, RegistrarAccount *raccount_in, RegistrarAccount *raccount_out);
 
-    int SipSendNotify(msg_t *msg_sub, Subscription *subAccount);
-    int SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out, PString message);
-    int SipSendPing(RegistrarAccount *regAccount);
+    int SipSendNotify(RegistrarSubscription *rsub);
+    int SipSendMessage(RegistrarAccount *raccount_in, RegistrarAccount *raccount_out, const PString & message);
+    int SipSendPing(RegistrarAccount *raccount);
 
     void ProcessAccountList();
     void ProcessSubscriptionList();
     void ProcessConnectionList();
     void ProcessKeepAlive();
 
-    int SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out);
+    int SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccount *raccount_in, RegistrarAccount *raccount_out);
 
     // internal call process function
-    void Leave(int account_type, PString callToken);
-    void IncomingCallAccept(RegistrarConnection *regConn);
-    void IncomingCallCancel(RegistrarConnection *regConn);
-    void OutgoingCallCancel(RegistrarConnection *regConn);
+    void Leave(int account_type, const PString & callToken);
+    void IncomingCallAccept(RegistrarConnection *rconn);
+    void IncomingCallCancel(RegistrarConnection *rconn);
+    void OutgoingCallCancel(RegistrarConnection *rconn);
 
-    Subscription * InsertSubWithLock(Registrar *_registrar, PString username_in, PString username_out);
-    Subscription * InsertSub(Registrar *_registrar, PString username_in, PString username_out);
-    Subscription * InsertSub(Subscription *subAccount);
-    Subscription * FindSubWithLock(PString username_pair);
-    Subscription * FindSub(PString username_pair);
+    RegistrarSubscription * InsertSubWithLock(const PString & username_in, const PString & username_out);
+    RegistrarSubscription * FindSubWithLock(const PString & username_pair);
 
-    RegistrarConnection * InsertRegConnWithLock(PString callToken, PString username_in, PString username_out);
-    RegistrarConnection * InsertRegConn(PString callToken, PString username_in, PString username_out);
-    RegistrarConnection * InsertRegConn(RegistrarConnection *regConn);
-    RegistrarConnection * FindRegConnWithLock(PString callToken);
-    RegistrarConnection * FindRegConn(PString callToken);
-    RegistrarConnection * FindRegConnUsername(PString username);
+    RegistrarConnection * InsertRegConnWithLock(const PString & callToken, const PString & username_in, const PString & username_out);
+    RegistrarConnection * FindRegConnWithLock(const PString & callToken);
+    RegistrarConnection * FindRegConnUsernameWithLock(const PString & username);
+    bool HasRegConn(const PString & callToken);
+    bool HasRegConnUsername(const PString & username);
 
-    typedef std::map<PString /* username */, RegistrarAccount *> AccountMapType;
-    AccountMapType AccountMap;
+    PDECLARE_NOTIFIER(PThread, Registrar, AccountThread);
+    PThread * accountThread;
 
-    typedef std::map<PString /* username */, Subscription *> SubscriptionMapType;
-    SubscriptionMapType SubscriptionMap;
+    PDECLARE_NOTIFIER(PThread, Registrar, ConnectionThread);
+    PThread * connectionThread;
 
-    typedef std::map<PString /* callToken */, RegistrarConnection *> RegConnMapType;
-    RegConnMapType RegConnMap;
-    RegConnMapType RegConnMapCopy;
-
-    PStringArray account_status_list;
+    PDECLARE_NOTIFIER(PThread, Registrar, SubscriptionThread);
+    PThread * subscriptionThread;
 
     PDECLARE_NOTIFIER(PThread, Registrar, QueueThread);
     PThread *queueThread;
-    BOOL queueTerminating;
     MCUQueuePString regQueue;
+
+    PDECLARE_NOTIFIER(PThread, Registrar, BookThread);
+    PThread * bookThread;
+    PStringArray account_status_list;
+
+    PDECLARE_NOTIFIER(PThread, Registrar, AliveThread);
+    PThread * aliveThread;
 
     void QueueClear();
     void QueueInvite(const PString & data);
     void QueueCleared(const PString & data);
     void QueueEstablished(const PString & data);
 
+    MCURegistrarAccountList accountList;
+    MCURegistrarSubscriptionList subscriptionList;
+    MCURegistrarConnectionList connectionList;
+
+    // mutex - используется в функциях OnReceived, MakeCall
+    // предотвращает создание в списках двух одноименных объектов
     PMutex mutex;
 };
 

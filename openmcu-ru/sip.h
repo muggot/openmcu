@@ -377,12 +377,18 @@ class MCUSipEndPoint : public PThread
       init_caps = 0;
       init_stun = 0;
     }
-    int terminating;
-    int restart;
-    int init_config;
-    int init_proxy_accounts;
-    int init_caps;
-    int init_stun;
+
+    void SetTerminating()
+    { terminating = 1; }
+
+    void SetInitConfig()
+    { init_config = 1; }
+
+    void SetInitProxyAccounts()
+    { init_proxy_accounts = 1; }
+
+    void SetInitCaps()
+    { init_caps = 1; }
 
     nta_agent_t *GetAgent() { return agent; };
     su_home_t *GetHome() { return &home; };
@@ -420,6 +426,7 @@ class MCUSipEndPoint : public PThread
   protected:
     void Main();
     void MainLoop();
+
     void Terminating();
     void InitListener();
 
@@ -428,6 +435,13 @@ class MCUSipEndPoint : public PThread
 
     void InitStunList();
     void ClearStunList();
+
+    int restart;
+    int terminating;
+    int init_config;
+    int init_proxy_accounts;
+    int init_caps;
+    int init_stun;
 
     MCUH323EndPoint *ep;
     su_home_t home;

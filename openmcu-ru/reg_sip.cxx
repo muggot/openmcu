@@ -8,62 +8,62 @@
 int Registrar::OnReceivedSipRegister(const msg_t *msg)
 {
   PTRACE(1, "Registrar\tOnReceivedSipRegister");
-  sip_t *sip = sip_object(msg);
 
+  PWaitAndSignal m(mutex);
+
+  sip_t *sip = sip_object(msg);
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username = url.GetUserName();
   msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
 
-  RegistrarAccount *regAccount = NULL;
-  PWaitAndSignal m(mutex);
+  RegistrarAccount *raccount = NULL;
 
-  regAccount = FindAccountWithLock(ACCOUNT_TYPE_SIP, username);
-  if(!regAccount && !sip_require_password)
-    regAccount = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username);
+  raccount = FindAccountWithLock(ACCOUNT_TYPE_SIP, username);
+  if(!raccount && !sip_require_password)
+    raccount = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username);
 
-  int response_code = SipPolicyCheck(msg, msg_reply, regAccount, NULL);
+  int response_code = SipPolicyCheck(msg, msg_reply, raccount, NULL);
   if(response_code)
     goto return_response;
 
   {
-    regAccount->registered = TRUE;
-    regAccount->start_time = PTime();
+    raccount->registered = TRUE;
+    raccount->start_time = PTime();
     // update account data
-    regAccount->host = url.GetHostName();
-    regAccount->domain = url.GetDomainName();
-    regAccount->port = atoi(url.GetPort());
-    regAccount->transport = url.GetTransport();
-    if(regAccount->display_name == "")
-      regAccount->display_name = url.GetDisplayName();
-    regAccount->remote_application = url.GetRemoteApplication();
-    regAccount->contact_str = regAccount->GetUrl();
+    raccount->host = url.GetHostName();
+    raccount->domain = url.GetDomainName();
+    raccount->port = atoi(url.GetPort());
+    raccount->transport = url.GetTransport();
+    if(raccount->display_name == "")
+      raccount->display_name = url.GetDisplayName();
+    raccount->remote_application = url.GetRemoteApplication();
+    raccount->contact_str = raccount->GetUrl();
     // save register message
-    msg_destroy(regAccount->msg_reg);
-    regAccount->msg_reg = msg_dup(msg);
-    msg_addr_copy(regAccount->msg_reg, msg);
+    raccount->SetRegisterMsg(msg);
     // expires
-    regAccount->expires = sip_reg_max_expires;
+    raccount->expires = sip_reg_max_expires;
     if(sip->sip_expires)
-      regAccount->expires = sip->sip_expires->ex_delta;
-    if(regAccount->expires != 0)
+      raccount->expires = sip->sip_expires->ex_delta;
+    if(raccount->expires != 0)
     {
-      if(regAccount->expires < sip_reg_min_expires)
-        regAccount->expires = sip_reg_min_expires;
-      if(regAccount->expires > sip_reg_max_expires)
-        regAccount->expires = sip_reg_max_expires;
+      if(raccount->expires < sip_reg_min_expires)
+        raccount->expires = sip_reg_min_expires;
+      if(raccount->expires > sip_reg_max_expires)
+        raccount->expires = sip_reg_max_expires;
     }
     // add headers
     sip_add_tl(msg_reply, sip_object(msg_reply),
-		   SIPTAG_CONTACT_STR((const char*)regAccount->contact_str),
-		   SIPTAG_EXPIRES_STR((const char*)PString(regAccount->expires)),
+		   SIPTAG_CONTACT_STR((const char*)raccount->contact_str),
+		   SIPTAG_EXPIRES_STR((const char*)PString(raccount->expires)),
   		   SIPTAG_EVENT_STR("registration"),
   		   SIPTAG_ALLOW_EVENTS_STR("presence"),
                    TAG_END());
     response_code = 200;
     goto return_response;
   }
+
   return_response:
-    if(regAccount) regAccount->Unlock();
+    if(raccount) raccount->Unlock();
     if(response_code == 0)
       return 0;
     else
@@ -75,8 +75,8 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
 int Registrar::OnReceivedSipMessage(msg_t *msg)
 {
   PTRACE(1, "Registrar\tOnReceivedSipMessage");
-  sip_t *sip = sip_object(msg);
 
+  sip_t *sip = sip_object(msg);
   if(sip->sip_payload == NULL)
     return sep->SipReqReply(msg, NULL, 415); // SIP_415_UNSUPPORTED_MEDIA
 
@@ -85,15 +85,14 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
   msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
 
   int response_code = 0;
-  RegistrarConnection *regConn = NULL;
-  RegistrarAccount *regAccount_in = NULL;
-  RegistrarAccount *regAccount_out = NULL;
-  PWaitAndSignal m(mutex);
+  RegistrarAccount *raccount_in = NULL;
+  RegistrarAccount *raccount_out = NULL;
+  RegistrarConnection *rconn = NULL;
 
-  regConn = FindRegConnUsername(username_in);
-  if(regConn && regConn->state == CONN_MCU_ESTABLISHED)
+  rconn = FindRegConnUsernameWithLock(username_in);
+  if(rconn && rconn->state == CONN_MCU_ESTABLISHED)
   {
-    MCUH323Connection *conn = (MCUH323Connection *)ep->FindConnectionWithLock(regConn->callToken_in);
+    MCUH323Connection *conn = (MCUH323Connection *)ep->FindConnectionWithLock(rconn->callToken_in);
     if(conn)
     {
       conn->OnUserInputString(sip->sip_payload->pl_data);
@@ -103,24 +102,24 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
     goto return_response;
   }
 
-  regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
-  regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_out);
-  response_code = SipPolicyCheck(msg, msg_reply, regAccount_in, regAccount_out);
+  raccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
+  raccount_out = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_out);
+  response_code = SipPolicyCheck(msg, msg_reply, raccount_in, raccount_out);
   if(response_code)
     goto return_response;
 
   {
-    if(regAccount_out->account_type == ACCOUNT_TYPE_SIP)
-      SipSendMessage(regAccount_in, regAccount_out, PString(sip->sip_payload->pl_data));
+    if(raccount_out->account_type == ACCOUNT_TYPE_SIP)
+      SipSendMessage(raccount_in, raccount_out, PString(sip->sip_payload->pl_data));
     response_code = 200;
-//  else if(regAccount_out->account_type == ACCOUNT_TYPE_H323)
-//    H323SendMessage(regAccount_out, PString(sip->sip_payload->pl_data));
+//  else if(raccount_out->account_type == ACCOUNT_TYPE_H323)
+//    H323SendMessage(raccount_out, PString(sip->sip_payload->pl_data));
   }
 
   return_response:
-    //if(regConn) regConn->Unlock(); // not lock
-    if(regAccount_in) regAccount_in->Unlock();
-    if(regAccount_out) regAccount_out->Unlock();
+    if(rconn) rconn->Unlock();
+    if(raccount_in) raccount_in->Unlock();
+    if(raccount_out) raccount_out->Unlock();
     if(response_code == 0)
       return 0;
     else
@@ -132,10 +131,12 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
 int Registrar::OnReceivedSipInvite(const msg_t *msg)
 {
   PTRACE(1, "Registrar\tOnReceivedSipInvite");
-  sip_t *sip = sip_object(msg);
 
+  PWaitAndSignal m(mutex);
+
+  sip_t *sip = sip_object(msg);
   PString callToken = GetSipCallToken(msg);
-  if(FindRegConn(callToken))
+  if(HasRegConn(callToken))
     return 1;
 
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
@@ -146,44 +147,43 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   if(username_in == username_out)
     sep->SipReqReply(msg, NULL, 486); // SIP_486_BUSY_HERE
 
-  RegistrarAccount *regAccount_in = NULL;
-  RegistrarAccount *regAccount_out = NULL;
-  RegistrarConnection *regConn = NULL;
-  PWaitAndSignal m(mutex);
+  RegistrarAccount *raccount_in = NULL;
+  RegistrarAccount *raccount_out = NULL;
+  RegistrarConnection *rconn = NULL;
 
-  regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
+  raccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
   if(allow_internal_calls)
-    regAccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
+    raccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
 
-  if((!regAccount_in && sip_allow_unauth_mcu_calls && !regAccount_out) || (!regAccount_in && sip_allow_unauth_internal_calls && regAccount_out))
-    regAccount_in = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
+  if((!raccount_in && sip_allow_unauth_mcu_calls && !raccount_out) || (!raccount_in && sip_allow_unauth_internal_calls && raccount_out))
+    raccount_in = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
 
-  int response_code = SipPolicyCheck(msg, msg_reply, regAccount_in, regAccount_out);
+  int response_code = SipPolicyCheck(msg, msg_reply, raccount_in, raccount_out);
   if(response_code)
     goto return_response;
 
   // update account data ???
-  if(!regAccount_in->registered)
+  if(!raccount_in->registered)
   {
-    regAccount_in->host = url.GetHostName();
-    regAccount_in->domain = url.GetDomainName();
-    regAccount_in->port = atoi(url.GetPort());
-    regAccount_in->transport = url.GetTransport();
-    if(regAccount_in->display_name == "")
-      regAccount_in->display_name = url.GetDisplayName();
-    regAccount_in->remote_application = url.GetRemoteApplication();
-    regAccount_in->contact_str = regAccount_in->GetUrl();
+    raccount_in->host = url.GetHostName();
+    raccount_in->domain = url.GetDomainName();
+    raccount_in->port = atoi(url.GetPort());
+    raccount_in->transport = url.GetTransport();
+    if(raccount_in->display_name == "")
+      raccount_in->display_name = url.GetDisplayName();
+    raccount_in->remote_application = url.GetRemoteApplication();
+    raccount_in->contact_str = raccount_in->GetUrl();
   }
 
   {
     // redirect
-    if(regAccount_out && regAccount_out->account_type == ACCOUNT_TYPE_SIP && regAccount_in->sip_call_processing != "full" && regAccount_out->sip_call_processing != "full")
+    if(raccount_out && raccount_out->account_type == ACCOUNT_TYPE_SIP && raccount_in->sip_call_processing != "full" && raccount_out->sip_call_processing != "full")
     {
       sep->SipReqReply(msg, NULL, 100);
       sep->SipReqReply(msg, NULL, 180);
       // add headers
       sip_add_tl(msg_reply, sip_object(msg_reply),
-		   SIPTAG_CONTACT_STR((const char*)regAccount_out->GetUrl()),
+		   SIPTAG_CONTACT_STR((const char*)raccount_out->GetUrl()),
                    TAG_END());
       response_code = 302;
       goto return_response;
@@ -199,32 +199,31 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     }
 
     // create registrar connection
-    regConn = InsertRegConnWithLock(callToken, username_in, username_out);
-    msg_destroy(regConn->msg_invite);
-    regConn->msg_invite = msg_dup(msg);
-    msg_addr_copy(regConn->msg_invite, msg);
+    rconn = InsertRegConnWithLock(callToken, username_in, username_out);
+    // save msg
+    rconn->SetInviteMsg(msg);
 
-     // MCU call if !regAccount_out
-    if(!regAccount_out)
+     // MCU call if !raccount_out
+    if(!raccount_out)
     {
-      regConn->account_type_in = regAccount_in->account_type;
-      regConn->state = CONN_MCU_WAIT;
+      rconn->account_type_in = raccount_in->account_type;
+      rconn->state = CONN_MCU_WAIT;
       response_code = -1; // MCU call
       goto return_response;
     }
     else
     {
-      regConn->roomname = MCU_INTERNAL_CALL_PREFIX + OpalGloballyUniqueID().AsString();
-      regConn->state = CONN_WAIT;
+      rconn->roomname = MCU_INTERNAL_CALL_PREFIX + OpalGloballyUniqueID().AsString();
+      rconn->state = CONN_WAIT;
       response_code = 180; // SIP_180_RINGING
       goto return_response;
     }
   }
 
   return_response:
-    if(regAccount_in) regAccount_in->Unlock();
-    if(regAccount_out) regAccount_out->Unlock();
-    if(regConn) regConn->Unlock();
+    if(raccount_in) raccount_in->Unlock();
+    if(raccount_out) raccount_out->Unlock();
+    if(rconn) rconn->Unlock();
     if(response_code == 0)
       return 0;
     else if(response_code == -1)
@@ -239,8 +238,10 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
 int Registrar::OnReceivedSipSubscribe(msg_t *msg)
 {
   PTRACE(1, "Registrar\tOnReceivedSipSubscribe");
-  sip_t *sip = sip_object(msg);
 
+  PWaitAndSignal m(mutex);
+
+  sip_t *sip = sip_object(msg);
   if(!sip->sip_event || (sip->sip_event && PString(sip->sip_event->o_type) != "presence"))
     return sep->SipReqReply(msg, NULL, 406); // SIP_406_NOT_ACCEPTABLE
 
@@ -250,46 +251,43 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
   PString username_pair = username_in+"@"+username_out;
   msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
 
-  RegistrarAccount *regAccount_in = NULL;
-  Subscription *subAccount = NULL;
-  PWaitAndSignal m(mutex);
+  RegistrarAccount *raccount_in = NULL;
+  RegistrarSubscription *rsub = NULL;
 
-  regAccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
+  raccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
 
-  int response_code = SipPolicyCheck(msg, msg_reply, regAccount_in, NULL);
+  int response_code = SipPolicyCheck(msg, msg_reply, raccount_in, NULL);
   if(response_code)
     goto return_response;
 
   {
-    subAccount = FindSubWithLock(username_pair);
-    if(!subAccount)
-      subAccount = InsertSubWithLock(this, username_in, username_out);
-    subAccount->state = SUB_STATE_CLOSED;
-    subAccount->ruri_str = url.GetUrl();
-    subAccount->contact_str = "sip:"+PString(sip->sip_to->a_url->url_user)+"@"+PString(sip->sip_to->a_url->url_host);
+    rsub = FindSubWithLock(username_pair);
+    if(!rsub)
+      rsub = InsertSubWithLock(username_in, username_out);
+    rsub->state = SUB_STATE_CLOSED;
+    rsub->ruri_str = url.GetUrl();
+    rsub->contact_str = "sip:"+PString(sip->sip_to->a_url->url_user)+"@"+PString(sip->sip_to->a_url->url_host);
     // expires
     if(sip->sip_expires)
-      subAccount->expires = sip->sip_expires->ex_delta;
+      rsub->expires = sip->sip_expires->ex_delta;
     else
-      subAccount->expires = 600;
-    // save subscribe message
+      rsub->expires = 600;
     // create to_tag for reply
     msg_header_add_param(msg_home(msg), (msg_common_t *)sip->sip_to, nta_agent_newtag(GetHome(), "tag=%s", GetAgent()));
-    msg_destroy(subAccount->msg_sub);
-    subAccount->msg_sub = msg_dup(msg);
-    msg_addr_copy(subAccount->msg_sub, msg);
+    // save subscribe message
+    rsub->SetSubMsg(msg);
     // add headers
     sip_add_tl(msg_reply, sip_object(msg_reply),
-		   SIPTAG_CONTACT_STR((const char*)subAccount->contact_str),
-		   SIPTAG_EXPIRES_STR((const char*)PString(subAccount->expires)),
+		   SIPTAG_CONTACT_STR((const char*)rsub->contact_str),
+		   SIPTAG_EXPIRES_STR((const char*)PString(rsub->expires)),
                    TAG_END());
     response_code = 202; // SIP_202_ACCEPTED
     goto return_response;
   }
 
   return_response:
-    if(regAccount_in) regAccount_in->Unlock();
-    if(subAccount) subAccount->Unlock();
+    if(raccount_in) raccount_in->Unlock();
+    if(rsub) rsub->Unlock();
     if(response_code == 0)
       return 0;
     else
@@ -300,17 +298,13 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
 
 int Registrar::OnReceivedSipOptionsResponse(const msg_t *msg)
 {
-  RegistrarAccount *regAccount = NULL;
-  PWaitAndSignal m(mutex);
-
   sip_t *sip = sip_object(msg);
   PString username = sip->sip_to->a_url->url_user;
-
-  regAccount = FindAccountWithLock(ACCOUNT_TYPE_SIP, username);
-  if(regAccount)
+  RegistrarAccount *raccount = FindAccountWithLock(ACCOUNT_TYPE_SIP, username);
+  if(raccount)
   {
-    regAccount->keep_alive_time_response = PTime();
-    regAccount->Unlock();
+    raccount->keep_alive_time_response = PTime();
+    raccount->Unlock();
   }
 
   return 0;
@@ -318,12 +312,12 @@ int Registrar::OnReceivedSipOptionsResponse(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out)
+int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccount *raccount_in, RegistrarAccount *raccount_out)
 {
   PTRACE(1, "Registrar\tSipPolicyCheck");
   sip_t *sip = sip_object(msg);
 
-  if(!regAccount_in)
+  if(!raccount_in)
     return 403; // SIP_403_FORBIDDEN
 
   int request = sip->sip_request->rq_method;
@@ -334,7 +328,7 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
     PString reg_response = msg_params_find(sip->sip_authorization->au_params, "response=");
     PString reg_uri = msg_params_find(sip->sip_authorization->au_params, "uri=");
 
-    PString sip_auth_str = sep->MakeAuthStr(regAccount_in->username, regAccount_in->password, reg_uri, method_name, regAccount_in->scheme, regAccount_in->domain, regAccount_in->nonce);
+    PString sip_auth_str = sep->MakeAuthStr(raccount_in->username, raccount_in->password, reg_uri, method_name, raccount_in->scheme, raccount_in->domain, raccount_in->nonce);
     MCUStringDictionary dict(sip_auth_str, ", ", "=");
     PString www_response = dict("response");
     if(www_response == reg_response)
@@ -345,7 +339,7 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
     PString reg_response = msg_params_find(sip->sip_proxy_authorization->au_params, "response=");
     PString reg_uri = msg_params_find(sip->sip_proxy_authorization->au_params, "uri=");
 
-    PString sip_auth_str = sep->MakeAuthStr(regAccount_in->username, regAccount_in->password, reg_uri, method_name, regAccount_in->scheme, regAccount_in->domain, regAccount_in->nonce);
+    PString sip_auth_str = sep->MakeAuthStr(raccount_in->username, raccount_in->password, reg_uri, method_name, raccount_in->scheme, raccount_in->domain, raccount_in->nonce);
     MCUStringDictionary dict(sip_auth_str, ", ", "=");
     PString proxy_response = dict("response");
     if(proxy_response == reg_response)
@@ -354,14 +348,14 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
 
   if(request == sip_method_register)
   {
-    if(!regAccount_in->enable && sip_require_password)
+    if(!raccount_in->enable && sip_require_password)
       return 403; // SIP_403_FORBIDDEN
     if(!sip_require_password)
       return 0;
-    if(regAccount_in->password == "")
+    if(raccount_in->password == "")
       return 0;
     // add headers
-    sip_authorization_t *sip_www_auth = sip_authorization_make(msg_home(msg_reply), regAccount_in->GetAuthStr());
+    sip_authorization_t *sip_www_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
     sip_add_tl(msg_reply, sip_object(msg_reply),
                    SIPTAG_WWW_AUTHENTICATE(sip_www_auth),
                    TAG_END());
@@ -369,16 +363,16 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   }
   if(request == sip_method_invite)
   {
-    if(regAccount_out && regAccount_out->host == "")
+    if(raccount_out && raccount_out->host == "")
       return 404; // SIP_404_NOT_FOUND
-    if(regAccount_out && sip_allow_unauth_internal_calls)
+    if(raccount_out && sip_allow_unauth_internal_calls)
       return 0;
-    if(!regAccount_out && sip_allow_unauth_mcu_calls)
+    if(!raccount_out && sip_allow_unauth_mcu_calls)
       return 0;
-    if(regAccount_in->password == "")
+    if(raccount_in->password == "")
       return 0;
     // add headers
-    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), regAccount_in->GetAuthStr());
+    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
     sip_add_tl(msg_reply, sip_object(msg_reply),
                    SIPTAG_PROXY_AUTHENTICATE(sip_proxy_auth),
                    TAG_END());
@@ -386,12 +380,12 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   }
   if(request == sip_method_message)
   {
-    if(!regAccount_out || (regAccount_out && !regAccount_out->registered) || (regAccount_out && regAccount_out->host == ""))
+    if(!raccount_out || (raccount_out && !raccount_out->registered) || (raccount_out && raccount_out->host == ""))
       return 404; // SIP_404_NOT_FOUND
-    if(regAccount_in->password == "")
+    if(raccount_in->password == "")
       return 0;
     // add headers
-    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), regAccount_in->GetAuthStr());
+    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
     sip_add_tl(msg_reply, sip_object(msg_reply),
                    SIPTAG_PROXY_AUTHENTICATE(sip_proxy_auth),
                    TAG_END());
@@ -399,10 +393,10 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   }
   if(request == sip_method_subscribe)
   {
-    if(regAccount_in->password == "")
+    if(raccount_in->password == "")
       return 0;
     // add headers
-    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), regAccount_in->GetAuthStr());
+    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
     sip_add_tl(msg_reply, sip_object(msg_reply),
                    SIPTAG_PROXY_AUTHENTICATE(sip_proxy_auth),
                    TAG_END());
@@ -414,19 +408,23 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipSendNotify(msg_t *msg_sub, Subscription *subAccount)
+int Registrar::SipSendNotify(RegistrarSubscription *rsub)
 {
   PTRACE(1, "MCUSIP\tSipSendNotify");
+
+  msg_t *msg_sub = rsub->GetSubMsgCopy();
   sip_t *sip_sub = sip_object(msg_sub);
+  if(sip_sub == NULL)
+    return 0;
 
   PString basic;
-  if(subAccount->state == SUB_STATE_OPEN)
+  if(rsub->state == SUB_STATE_OPEN)
     basic = "open";
   else
     basic = "closed";
 
   PString state_rpid; // http://tools.ietf.org/search/rfc4480
-  if(subAccount->state == SUB_STATE_BUSY)
+  if(rsub->state == SUB_STATE_BUSY)
     state_rpid = "on-the-phone";
 
   PString sip_payload_str = "<?xml version='1.0' encoding='UTF-8'?>"
@@ -436,7 +434,7 @@ int Registrar::SipSendNotify(msg_t *msg_sub, Subscription *subAccount)
 //      " xmlns:ci='urn:ietf:params:xml:ns:pidf:cipid'"
       " xmlns:dm='urn:ietf:params:xml:ns:pidf:data-model'"
       " xmlns:rpid='urn:ietf:params:xml:ns:pidf:rpid'"
-      " entity='"+subAccount->contact_str+"'>"
+      " entity='"+rsub->contact_str+"'>"
       "<tuple id='sg89ae'>"
         "<status>"
           "<basic>"+basic+"</basic>"
@@ -455,11 +453,10 @@ int Registrar::SipSendNotify(msg_t *msg_sub, Subscription *subAccount)
 
   sip_payload_str += "</presence>";
 
-  url_string_t *ruri = (url_string_t *)(const char *)subAccount->ruri_str;
+  url_string_t *ruri = (url_string_t *)(const char *)rsub->ruri_str;
 
   // cseq increment for incoming sub request
-  sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), subAccount->cseq++, SIP_METHOD_NOTIFY);
-  msg_header_insert(msg_sub, (msg_pub_t *)sip_sub, (msg_header_t *)sip_cseq);
+  sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), rsub->cseq++, SIP_METHOD_NOTIFY);
 
   sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_NOTIFY, ruri, NULL);
   sip_route_t* sip_route = sip_route_reverse(GetHome(), sip_sub->sip_record_route);
@@ -468,7 +465,7 @@ int Registrar::SipSendNotify(msg_t *msg_sub, Subscription *subAccount)
   sip_add_tl(msg_req, sip_object(msg_req),
 			SIPTAG_FROM(sip_sub->sip_to),
 			SIPTAG_TO(sip_sub->sip_from),
-			SIPTAG_CONTACT_STR((const char*)subAccount->contact_str),
+			SIPTAG_CONTACT_STR((const char*)rsub->contact_str),
 			SIPTAG_ROUTE(sip_route),
  			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_CSEQ(sip_cseq),
@@ -484,25 +481,29 @@ int Registrar::SipSendNotify(msg_t *msg_sub, Subscription *subAccount)
   if(!sep->GetMsgQueue().Push(msg_req))
     msg_destroy(msg_req);
 
+  msg_destroy(msg_sub);
   return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount *regAccount_out, PString message)
+int Registrar::SipSendMessage(RegistrarAccount *raccount_in, RegistrarAccount *raccount_out, const PString & message)
 {
   PTRACE(1, "MCUSIP\tServerSendMessage");
-  sip_t *sip_reg_out = sip_object(regAccount_out->msg_reg);
+  msg_t *msg_reg_out = raccount_out->GetRegisterMsgCopy();
+  sip_t *sip_reg_out = sip_object(msg_reg_out);
+  if(sip_reg_out == NULL)
+    return 0;
 
   // do not use GetUrl() directly, "nta outgoing create: invalid URI"
-  PString ruri_str = regAccount_out->GetUrl();
+  PString ruri_str = raccount_out->GetUrl();
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
-  PString url_from = "sip:"+regAccount_in->username+"@"+regAccount_out->domain;
+  PString url_from = "sip:"+raccount_in->username+"@"+raccount_out->domain;
   sip_addr_t *sip_from = sip_from_create(GetHome(), (url_string_t *)(const char *)url_from);
   sip_from_tag(GetHome(), sip_from, nta_agent_newtag(GetHome(), "tag=%s", GetAgent()));
 
-  PString url_to = "sip:"+regAccount_out->username+"@"+regAccount_out->domain;
+  PString url_to = "sip:"+raccount_out->username+"@"+raccount_out->domain;
   sip_addr_t *sip_to = sip_to_create(GetHome(), (url_string_t *)(const char *)url_to);
 
   sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), 1, SIP_METHOD_MESSAGE);
@@ -531,25 +532,30 @@ int Registrar::SipSendMessage(RegistrarAccount *regAccount_in, RegistrarAccount 
   if(!sep->GetMsgQueue().Push(msg_req))
     msg_destroy(msg_req);
 
+  msg_destroy(msg_reg_out);
   return 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipSendPing(RegistrarAccount *regAccount)
+int Registrar::SipSendPing(RegistrarAccount *raccount)
 {
-  if(regAccount->host == "" || regAccount->port == 0)
+  if(raccount->host == "" || raccount->port == 0)
     return FALSE;
 
+  msg_t *msg_reg = raccount->GetRegisterMsgCopy();
+  if(msg_reg == NULL)
+    return 0;
+
   // do not use GetUrl() directly, "nta outgoing create: invalid URI"
-  PString ruri_str = regAccount->GetUrl();
+  PString ruri_str = raccount->GetUrl();
   url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
-  PString url_from = "sip:keepalive@"+regAccount->domain;
+  PString url_from = "sip:keepalive@"+raccount->domain;
   sip_addr_t *sip_from = sip_from_create(GetHome(), (url_string_t *)(const char *)url_from);
   sip_from_tag(GetHome(), sip_from, nta_agent_newtag(GetHome(), "tag=%s", GetAgent()));
 
-  PString url_to = "sip:"+regAccount->username+"@"+regAccount->domain;
+  PString url_to = "sip:"+raccount->username+"@"+raccount->domain;
   sip_addr_t *sip_to = sip_to_create(GetHome(), (url_string_t *)(const char *)url_to);
 
   sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), su_randint(0, 0x7fffffff), SIP_METHOD_OPTIONS);
@@ -557,9 +563,9 @@ int Registrar::SipSendPing(RegistrarAccount *regAccount)
   sip_call_id_t* sip_call_id = sip_call_id_make(GetHome(), PGloballyUniqueID().AsString());
 
   sip_route_t* sip_route = NULL;
-  if(regAccount->registered)
+  if(raccount->registered)
   {
-    sip_t *sip = sip_object(regAccount->msg_reg);
+    sip_t *sip = sip_object(msg_reg);
     if(sip && sip->sip_record_route)
       sip_route = sip_route_reverse(GetHome(), sip->sip_record_route);
   }
@@ -577,6 +583,7 @@ int Registrar::SipSendPing(RegistrarAccount *regAccount)
   if(!sep->GetMsgQueue().Push(msg_req))
     msg_destroy(msg_req);
 
+  msg_destroy(msg_reg);
   return 1;
 }
 

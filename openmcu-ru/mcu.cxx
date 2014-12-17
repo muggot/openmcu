@@ -62,24 +62,30 @@ void OpenMCU::OnStop()
   PHTTPServiceProcess::OnStop();
 #endif
 
-  delete rtspServer;
+  // stop registrar
+  registrar->SetTerminating();
+  registrar->WaitForTermination(10000);
 
   // clear all conference and leave connections
   manager->ClearConferenceList();
 
+  // stop rtsp endpoint
+  delete rtspServer;
+
+  // stop sip endpoint
+  sipendpoint->SetTerminating();
+  sipendpoint->WaitForTermination(10000);
+
+  // stop h323 endpoint
   delete endpoint;
   endpoint = NULL;
 
   delete manager;
   manager = NULL;
 
-  sipendpoint->terminating = 1;
-  sipendpoint->WaitForTermination(10000);
   delete sipendpoint;
   sipendpoint = NULL;
 
-  registrar->terminating = 1;
-  registrar->WaitForTermination(10000);
   delete registrar;
   registrar = NULL;
 
@@ -475,16 +481,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 void OpenMCU::ManagerRefreshAddressBook()
 {
   // refresh Address Book
-  if(!manager) return; // Fixes SIGSEGV on termination
   MCUConferenceList & conferenceList = manager->GetConferenceList();
-  for(int i = 0; i < conferenceList.GetSize(); ++i)
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
-    Conference *conference = (Conference *)conferenceList[i];
-    if(conference)
-    {
-      conference->RefreshAddressBook();
-      conferenceList.Release(conference->GetID());
-    }
+    Conference *conference = *it;
+    conference->RefreshAddressBook();
   }
 }
 

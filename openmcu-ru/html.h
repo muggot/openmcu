@@ -625,7 +625,7 @@ class RegistrarPConfigPage : public TablePConfigPage
     virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
     {
       BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
-      OpenMCU::Current().GetRegistrar()->init_config = 1;
+      OpenMCU::Current().GetRegistrar()->SetInitConfig();
       return ret;
     }
 };
@@ -687,7 +687,7 @@ class H323EndpointsPConfigPage : public TablePConfigPage
     virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
     {
       BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
-      OpenMCU::Current().GetRegistrar()->init_accounts = 1;
+      OpenMCU::Current().GetRegistrar()->SetInitAccounts();
       return ret;
     }
 };
@@ -723,7 +723,7 @@ class RtspEndpointsPConfigPage : public TablePConfigPage
     virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
     {
       BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
-      OpenMCU::Current().GetRegistrar()->init_accounts = 1;
+      OpenMCU::Current().GetRegistrar()->SetInitAccounts();
       return ret;
     }
 };
@@ -737,7 +737,7 @@ class SIPPConfigPage : public TablePConfigPage
     virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
     {
       BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
-      OpenMCU::Current().GetSipEndpoint()->init_config = 1;
+      OpenMCU::Current().GetSipEndpoint()->SetInitConfig();
       return ret;
     }
 };
@@ -751,7 +751,7 @@ class SipEndpointsPConfigPage : public TablePConfigPage
     virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
     {
       BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
-      OpenMCU::Current().GetRegistrar()->init_accounts = 1;
+      OpenMCU::Current().GetRegistrar()->SetInitAccounts();
       return ret;
     }
 };
@@ -765,7 +765,7 @@ class ProxySIPPConfigPage : public TablePConfigPage
     virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
     {
       BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
-      OpenMCU::Current().GetSipEndpoint()->init_proxy_accounts = 1;
+      OpenMCU::Current().GetSipEndpoint()->SetInitProxyAccounts();
       return ret;
     }
 };
@@ -803,7 +803,7 @@ class SIPCodecsPConfigPage : public TablePConfigPage
     virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
     {
       BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
-      OpenMCU::Current().GetSipEndpoint()->init_caps = 1;
+      OpenMCU::Current().GetSipEndpoint()->SetInitCaps();
       return ret;
     }
 };
