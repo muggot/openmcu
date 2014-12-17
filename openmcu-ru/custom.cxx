@@ -31,7 +31,7 @@
 
 #define	EMAIL ""
 
-#define	HOME_PAGE ""
+#define	HOME_PAGE "http://www.openmcu.ru"
 
 #define	PRODUCT_NAME_HTML PRODUCT_NAME_TEXT
 
