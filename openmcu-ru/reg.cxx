@@ -127,10 +127,12 @@ RegistrarConnection * Registrar::InsertRegConnWithLock(const PString & callToken
 
 RegistrarConnection * Registrar::FindRegConnWithLock(const PString & callToken)
 {
-  MCURegistrarConnectionList::shared_iterator it = connectionList.Find(callToken);
-  if(it != connectionList.end())
+  for(MCURegistrarConnectionList::shared_iterator it = connectionList.begin(); it != connectionList.end(); ++it)
   {
-    return it.GetCapturedObject();
+    if(it->callToken_in == callToken || it->callToken_out == callToken)
+    {
+      return it.GetCapturedObject();
+    }
   }
   return NULL;
 }
