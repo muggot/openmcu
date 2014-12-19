@@ -2404,7 +2404,7 @@ BOOL H323PluginVideoCodec::Write(const BYTE * buffer, unsigned length, const RTP
   }
 
   if (toLen < (unsigned)bufferRTP.GetHeaderSize()) {
-    PTRACE(6,"PLUGIN\tPartial Frame received " << codec->descr << " Ignoring rendering.");
+    PTRACE(9,"PLUGIN\tPartial Frame received " << codec->descr << " Ignoring rendering.");
     written = length;
     return TRUE;
   }
