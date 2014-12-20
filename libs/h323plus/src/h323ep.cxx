@@ -1161,13 +1161,6 @@ H323EndPoint::H323EndPoint()
   canDisplayAmountString = FALSE;
   canEnforceDurationLimit = TRUE;
 
-   rsCaps = NULL;
-   tsCaps = NULL;
-   rvCaps = NULL;
-   tvCaps = NULL;
-   cvCaps = NULL;
-   listCaps = NULL;
-
 #ifdef H323_H450
   callIntrusionProtectionLevel = 3; //H45011_CIProtectionLevel::e_fullProtection;
 #endif

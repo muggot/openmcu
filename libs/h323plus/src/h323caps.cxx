@@ -3229,43 +3229,6 @@ PINDEX H323Capabilities::AddAllCapabilities(PINDEX descriptorNum,
   return reply;
 }
 
-PINDEX H323Capabilities::AddCapabilities(PINDEX descriptorNum,
-                                            PINDEX simultaneous,
-                                            const char **caps)
-{
-  PINDEX reply = descriptorNum == P_MAX_INDEX ? P_MAX_INDEX : simultaneous;
-
-  int capNum=0;
-  while(caps[capNum]!=NULL)
-  {
-   PString capName(caps[capNum]);
-   OpalMediaFormat mediaFormat(capName);
-   if (!mediaFormat.IsValid() && (capName.Right(4) == "{sw}") && capName.GetLength() > 4)
-      mediaFormat = OpalMediaFormat(capName.Left(capName.GetLength()-4));
-   if (mediaFormat.IsValid()) 
-   {
-    // add the capability
-    H323Capability * capability = H323Capability::Create(capName);
-    PINDEX num = SetCapability(descriptorNum, simultaneous, capability);
-    if (descriptorNum == P_MAX_INDEX) 
-    {
-     reply = num;
-     descriptorNum = num;
-     simultaneous = P_MAX_INDEX;
-    }
-    else if (simultaneous == P_MAX_INDEX) 
-    {
-     if (reply == P_MAX_INDEX) reply = num;
-     simultaneous = num;
-    }
-   }
-   capNum++;
-  }
-
-  return reply;
-}
-
-
 static unsigned MergeCapabilityNumber(const H323CapabilitiesList & table,
                                       unsigned newCapabilityNumber)
 {
@@ -4209,51 +4172,6 @@ BOOL H323Capabilities::Merge(const H323Capabilities & newCaps)
                  << (table.IsEmpty() ? "rejected" : "accepted"));
   return !table.IsEmpty();
 }
-
-H323Capability * H323Capabilities::SelectRemoteCapabilty(unsigned sessionID, char **capsName)
-{
- PString name = capsName[0];
- if(name=="H.323")
- {
-  PINDEX resSet = 0;
-  PINDEX capTypes = 0;
-  for (PINDEX outer = 0; outer < set.GetSize(); outer++) 
-  {
-    int i=0;
-    for (PINDEX middle = 0; middle < set[outer].GetSize(); middle++) {
-      if(set[outer][middle].GetSize()) i++;
-      else break;
-    }
-    if(i>capTypes) { resSet=outer; capTypes=i; }
-  }
-
-  PTRACE(3, "H245\tSelectRemoteCapabilty: " << resSet << " " << sessionID << " " << capTypes);
-
-  if(!capTypes) return NULL;
-
-  for (PINDEX middle = 0; middle < set[resSet].GetSize(); middle++) {
-      if(set[resSet][middle].GetSize() && set[resSet][middle][0].GetDefaultSessionID()==sessionID)
-      {
-       PTRACE(3, "H245\tSelectRemoteCapabilty: " << set[resSet][middle][0]);
-       return &(set[resSet][middle][0]);
-      }
-    }
-  return NULL;
- }
- else
- {
-  int i=0;
-  while(capsName[i]!=NULL)
-  {
-   PString capName(capsName[i]);
-   H323Capability * capability = FindCapability(capName);
-   if(capability != NULL) return capability;
-   i++;
-  }
- } 
- return NULL;
-}
-
 
 void H323Capabilities::Reorder(const PStringArray & preferenceOrder)
 {

@@ -103,6 +103,14 @@ class MCUH323EndPoint : public H323EndPoint
     void SetConnectionActive(MCUH323Connection * conn);
 
     void AddCapabilitiesMCU();
+    PINDEX AddCapabilitiesMCU(PINDEX descriptorNum, PINDEX simultaneous, const char **caps);
+
+    char **rsCaps;
+    char **tsCaps;
+    char **rvCaps;
+    char **tvCaps;
+    char **cvCaps;
+    char *listCaps;
 
 #if MCU_VIDEO
     unsigned GetVideoTxQuality() const
@@ -228,6 +236,9 @@ class MCUH323Connection : public H323Connection
     virtual BOOL OnReceivedSignalSetup(const H323SignalPDU & setupPDU);
     virtual BOOL OnReceivedCallProceeding(const H323SignalPDU & proceedingPDU);
     virtual BOOL OnReceivedSignalConnect(const H323SignalPDU & pdu);
+
+    virtual void SelectDefaultLogicalChannel(unsigned sessionID);
+    H323Capability * SelectRemoteCapability(H323Capabilities & capabilities, unsigned sessionID, char **capsName);
 
     virtual BOOL OnReceivedCapabilitySet(const H323Capabilities & remoteCaps, const H245_MultiplexCapability * muxCap, H245_TerminalCapabilitySetReject & /*rejectPDU*/);
     virtual void OnSendCapabilitySet(H245_TerminalCapabilitySet & /*pdu*/);

@@ -4053,43 +4053,12 @@ void H323Connection::OnSelectLogicalChannels()
   }
 }
 
+
 void H323Connection::SelectDefaultLogicalChannel(unsigned sessionID)
 {
   if (FindChannel (sessionID, FALSE))
     return; 
 
-  if(sessionID == RTP_Session::DefaultVideoSessionID)
-  {
-   if(endpoint.tvCaps==NULL)
-   for (PINDEX i = 0; i < remoteCapabilities.GetSize(); i++) {
-    H323Capability & remoteCapability = remoteCapabilities[i];
-    if (remoteCapability.GetDefaultSessionID() == sessionID) {
-     if(remoteCapabilities.FindCapability(remoteCapability,sessionID)==TRUE) {
-      PTRACE(2, "H245\tOpenLogicalChannel " << remoteCapability);
-      OpenLogicalChannel(remoteCapability, sessionID, H323Channel::IsTransmitter);
-      return;
-     }
-    }
-   }
-   else
-   {
-     H323Capability * remoteCapability = remoteCapabilities.SelectRemoteCapabilty(sessionID,endpoint.tvCaps);
-     if(remoteCapability==NULL) return;
-     PTRACE(2, "H245\tOpenLogicalChannel " << *remoteCapability);
-     OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter);
-     return;
-   }
-   return;
-  }
-  if(endpoint.tsCaps!=NULL)
-  {
-     H323Capability * remoteCapability = remoteCapabilities.SelectRemoteCapabilty(sessionID,endpoint.tsCaps);
-     if(remoteCapability==NULL) return;
-     PTRACE(2, "H245\tOpenLogicalChannel " << *remoteCapability);
-     OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter);
-     return;
-  }
-  else
   for (PINDEX i = 0; i < localCapabilities.GetSize(); i++) {
     H323Capability & localCapability = localCapabilities[i];
     if (localCapability.GetDefaultSessionID() == sessionID) {

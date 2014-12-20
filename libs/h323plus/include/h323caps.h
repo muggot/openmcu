@@ -2289,11 +2289,6 @@ class H323Capabilities : public PObject
     )
     { return AddAllCapabilities(descriptorNum, simultaneous, name); }
 
-    PINDEX AddCapabilities(PINDEX descriptorNum,
-                                            PINDEX simultaneous,
-                                            const char **caps);
-
-
     /**Add a codec to the capabilities table. This will assure that the
        assignedCapabilityNumber field in the capability is unique for all
        capabilities installed on this set.
@@ -2474,9 +2469,6 @@ class H323Capabilities : public PObject
     BOOL Merge(
       const H323Capabilities & newCaps
     );
-    
-    H323Capability * SelectRemoteCapabilty(unsigned sessionID, char **capsName);
-
 
     /**Change the order of capabilities in the table to the order specified.
        Note that this does not change the unique capability numbers assigned

@@ -42,6 +42,13 @@ void SpliceMacro(PString & text, const PString & token, const PString & value)
 MCUH323EndPoint::MCUH323EndPoint(ConferenceManager & _conferenceManager)
   : conferenceManager(_conferenceManager)
 {
+  rsCaps = NULL;
+  tsCaps = NULL;
+  rvCaps = NULL;
+  tvCaps = NULL;
+  cvCaps = NULL;
+  listCaps = NULL;
+
   connectionMonitor = new ConnectionMonitor(*this);
 
   gatekeeperRequestTimeout = PTimeInterval(1000);
@@ -341,9 +348,8 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
    cout << "[TRANSMIT_VIDEO]= "; listNum=0; 
    while(tvCaps[listNum]!=NULL) { cout << tvCaps[listNum] << ", "; listNum++; }
    cout << "\n";
-   AddCapabilities(0,0,(const char **)rsCaps);
-   AddCapabilities(0,1,(const char **)rvCaps);
-
+   AddCapabilitiesMCU(0,0,(const char **)rsCaps);
+   AddCapabilitiesMCU(0,1,(const char **)rvCaps);
    AddCapabilitiesMCU();
    cout << capabilities;
 
@@ -422,6 +428,42 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
       AddCapability(new_cap);
     }
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PINDEX MCUH323EndPoint::AddCapabilitiesMCU(PINDEX descriptorNum, PINDEX simultaneous, const char **caps)
+{
+  PINDEX reply = descriptorNum == P_MAX_INDEX ? P_MAX_INDEX : simultaneous;
+
+  int capNum = 0;
+  while(caps[capNum] != NULL)
+  {
+    PString capName(caps[capNum]);
+    OpalMediaFormat mediaFormat(capName);
+    if(!mediaFormat.IsValid() && (capName.Right(4) == "{sw}") && capName.GetLength() > 4)
+      mediaFormat = OpalMediaFormat(capName.Left(capName.GetLength()-4));
+    if(mediaFormat.IsValid())
+    {
+      // add the capability
+      H323Capability * capability = H323Capability::Create(capName);
+      PINDEX num = capabilities.SetCapability(descriptorNum, simultaneous, capability);
+      if(descriptorNum == P_MAX_INDEX)
+      {
+        reply = num;
+        descriptorNum = num;
+        simultaneous = P_MAX_INDEX;
+      }
+      else if (simultaneous == P_MAX_INDEX)
+      {
+        if(reply == P_MAX_INDEX)
+          reply = num;
+        simultaneous = num;
+      }
+    }
+    capNum++;
+  }
+  return reply;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2574,6 +2616,115 @@ void MCUH323Connection::SetupCacheConnection(PString & format, Conference * conf
  conferenceIdentifier = conference->GetGUID();
  conferenceMember = memb;
  requestedRoom = conference->GetNumber();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323Connection::SelectDefaultLogicalChannel(unsigned sessionID)
+{
+  if(FindChannel(sessionID, FALSE))
+    return;
+
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+  if(sessionID == RTP_Session::DefaultVideoSessionID)
+  {
+    if(ep.tvCaps == NULL)
+      for(PINDEX i = 0; i < remoteCapabilities.GetSize(); i++)
+      {
+        H323Capability & remoteCapability = remoteCapabilities[i];
+        if(remoteCapability.GetDefaultSessionID() == sessionID)
+        {
+          if(remoteCapabilities.FindCapability(remoteCapability, sessionID) == TRUE)
+          {
+            PTRACE(2, "H245\tOpenLogicalChannel " << remoteCapability);
+            OpenLogicalChannel(remoteCapability, sessionID, H323Channel::IsTransmitter);
+            return;
+          }
+        }
+      }
+    else
+    {
+      H323Capability * remoteCapability = SelectRemoteCapability(remoteCapabilities, sessionID, ep.tvCaps);
+      if(remoteCapability == NULL) return;
+      PTRACE(2, "H245\tOpenLogicalChannel " << *remoteCapability);
+      OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter);
+      return;
+    }
+    return;
+  }
+  if(ep.tsCaps != NULL)
+  {
+     H323Capability * remoteCapability = SelectRemoteCapability(remoteCapabilities, sessionID, ep.tsCaps);
+     if(remoteCapability == NULL) return;
+     PTRACE(2, "H245\tOpenLogicalChannel " << *remoteCapability);
+     OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter);
+     return;
+  }
+  else
+    for(PINDEX i = 0; i < localCapabilities.GetSize(); i++)
+    {
+      H323Capability & localCapability = localCapabilities[i];
+      if(localCapability.GetDefaultSessionID() == sessionID)
+      {
+        H323Capability * remoteCapability = remoteCapabilities.FindCapability(localCapability);
+        if(remoteCapability != NULL)
+        {
+          PTRACE(3, "H323\tSelecting " << *remoteCapability);
+          MergeCapabilities(sessionID, localCapability, remoteCapability);
+          if(OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter))
+            break;
+          PTRACE(2, "H323\tOnSelectLogicalChannels, OpenLogicalChannel failed: " << *remoteCapability);
+        }
+      }
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+H323Capability * MCUH323Connection::SelectRemoteCapability(H323Capabilities & capabilities, unsigned sessionID, char **capsName)
+{
+  PString name = capsName[0];
+  if(name == "H.323") // ???
+  {
+    /*
+    PINDEX resSet = 0;
+    PINDEX capTypes = 0;
+    for(PINDEX outer = 0; outer < set.GetSize(); outer++)
+    {
+      int i=0;
+      for(PINDEX middle = 0; middle < set[outer].GetSize(); middle++)
+      {
+        if(set[outer][middle].GetSize()) i++;
+        else break;
+      }
+      if(i>capTypes) { resSet=outer; capTypes=i; }
+    }
+    PTRACE(3, "H245\tSelectRemoteCapabilty: " << resSet << " " << sessionID << " " << capTypes);
+    if(!capTypes) return NULL;
+    for(PINDEX middle = 0; middle < set[resSet].GetSize(); middle++)
+    {
+      if(set[resSet][middle].GetSize() && set[resSet][middle][0].GetDefaultSessionID()==sessionID)
+      {
+        PTRACE(3, "H245\tSelectRemoteCapabilty: " << set[resSet][middle][0]);
+        return &(set[resSet][middle][0]);
+      }
+    }
+    */
+    return NULL;
+  }
+  else
+  {
+    int i=0;
+    while(capsName[i]!=NULL)
+    {
+      PString capName(capsName[i]);
+      H323Capability * capability = capabilities.FindCapability(capName);
+      if(capability != NULL)
+        return capability;
+      i++;
+    }
+  }
+  return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

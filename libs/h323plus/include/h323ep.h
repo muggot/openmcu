@@ -570,21 +570,6 @@ class H323EndPoint : public PObject
       const PString & name  ///< New capabilities name, if using "known" one.
     );
 
-    void AddCapabilities(PINDEX descriptorNum,
-                                            PINDEX simultaneous,
-                                            const char **caps)
-    {
-     capabilities.AddCapabilities(descriptorNum, simultaneous, caps);
-    }                                            
-
-    char **rsCaps;
-    char **tsCaps;
-    char **rvCaps;
-    char **tvCaps;
-    char **cvCaps;
-    char *listCaps;
-
-
     /**Add all user input capabilities to this endpoints capability table.
       */
     void AddAllUserInputCapabilities(
