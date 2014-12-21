@@ -1652,9 +1652,8 @@ void ConferenceAudioConnection::WriteAudio(const BYTE * data, int amount)
     return;
 
   int frameTime = amount / timeSize;
-  // большой amount, например при переключении паузы в линфоне
-  // ???
-  if(frameTime > 30)
+  // ??? большой amount при переключении паузы в линфоне
+  if(frameTime >= 120)
     return;
 
   int byteIndex = (timeIndex % timeBufferSize) * timeSize;
@@ -1736,9 +1735,8 @@ void ConferenceAudioConnection::ReadAudio(ConferenceMember *member, BYTE * data,
   }
   else
   {
-    // при использовании одного swrc для разных соединений появляются артефакты
-    // ???
-    long resamplerKey = (long)id; //(channels<<24)|sampleRate;
+    // ??? при использовании одного swrc для разных соединений появляются артефакты
+    long resamplerKey = (long)id + channels + sampleRate;
     AudioResampler *resampler = NULL;
     AudioResamplerListType & audioResamplerList = member->GetAudioResamplerList();
     AudioResamplerListType::iterator it = audioResamplerList.find(resamplerKey);
