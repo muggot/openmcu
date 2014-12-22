@@ -1780,11 +1780,11 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
       continue;
 
     PString info, fmtp;
-    H323Capability *cap = H323Capability::Create(name);
+    MCUCapability *cap = MCUCapability::Create(name);
     if(cap)
     {
       const OpalMediaFormat & mf = cap->GetMediaFormat();
-      if(cap->GetMainType() == H323Capability::e_Video)
+      if(cap->GetMainType() == MCUCapability::e_Video)
         info += PString(mf.GetOptionInteger(OPTION_FRAME_WIDTH))+"x"+PString(mf.GetOptionInteger(OPTION_FRAME_HEIGHT));
       else
         info += PString(mf.GetTimeUnits()*1000)+"Hz";
@@ -1854,13 +1854,13 @@ CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & t
       continue;
 
     PString info, fmtpInfo;
-    H323Capability *cap = H323Capability::Create(keys[i]);
+    MCUCapability *cap = MCUCapability::Create(keys[i]);
     if(cap == NULL && keys[i].Find("{sw}") == P_MAX_INDEX)
-      cap = H323Capability::Create(keys[i]+"{sw}");
+      cap = MCUCapability::Create(keys[i]+"{sw}");
     if(cap)
     {
       const OpalMediaFormat & mf = cap->GetMediaFormat();
-      if(cap->GetMainType() == H323Capability::e_Video)
+      if(cap->GetMainType() == MCUCapability::e_Video)
         info += PString(mf.GetOptionInteger(OPTION_FRAME_WIDTH))+"x"+PString(mf.GetOptionInteger(OPTION_FRAME_HEIGHT));
       else
         info += PString(mf.GetTimeUnits()*1000)+"Hz";

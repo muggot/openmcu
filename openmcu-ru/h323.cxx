@@ -217,7 +217,7 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
           mediaFormat = OpalMediaFormat(capName.Left(capName.GetLength()-4));
         if(mediaFormat.IsValid())
         {
-          H323Capability * cap = H323Capability::Create(capName);
+          MCUCapability * cap = MCUCapability::Create(capName);
           if(cap) AddCapability(cap);
         }
      }
@@ -367,7 +367,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
     {
       if(vp8_resolutions[i].width == 352) // skip default capability
         continue;
-      H323Capability *new_cap = H323Capability::Create("VP8{sw}");
+      MCUCapability *new_cap = MCUCapability::Create("VP8{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       SetFormatParams(wf, vp8_resolutions[i].width, vp8_resolutions[i].height);
       AddCapability(new_cap);
@@ -380,7 +380,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
     {
       if(h264_profile_levels[i].level_h241 == 29) // skip default capability
         continue;
-      H323Capability *new_cap = H323Capability::Create("H.264{sw}");
+      MCUCapability *new_cap = MCUCapability::Create("H.264{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       wf.SetOptionInteger("Generic Parameter 42", h264_profile_levels[i].level_h241);
       wf.SetOptionInteger(OPTION_MAX_BIT_RATE, h264_profile_levels[i].max_br);
@@ -394,7 +394,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
     {
       if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
         continue;
-      H323Capability *new_cap = H323Capability::Create("H.263p{sw}");
+      MCUCapability *new_cap = MCUCapability::Create("H.263p{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
       AddCapability(new_cap);
@@ -407,7 +407,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
     {
       if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
         continue;
-      H323Capability *new_cap = H323Capability::Create("H.263{sw}");
+      MCUCapability *new_cap = MCUCapability::Create("H.263{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
       AddCapability(new_cap);
@@ -422,7 +422,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
         continue;
       if(PString(h263_resolutions[i].mpiname) != "QCIF")
         continue;
-      H323Capability *new_cap = H323Capability::Create("H.261{sw}");
+      MCUCapability *new_cap = MCUCapability::Create("H.261{sw}");
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
       SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
       AddCapability(new_cap);
@@ -446,7 +446,7 @@ PINDEX MCUH323EndPoint::AddCapabilitiesMCU(PINDEX descriptorNum, PINDEX simultan
     if(mediaFormat.IsValid())
     {
       // add the capability
-      H323Capability * capability = H323Capability::Create(capName);
+      MCUCapability * capability = MCUCapability::Create(capName);
       PINDEX num = capabilities.SetCapability(descriptorNum, simultaneous, capability);
       if(descriptorNum == P_MAX_INDEX)
       {
@@ -2613,13 +2613,13 @@ H323Channel * MCUH323Connection::CreateRealTimeLogicalChannel(const H323Capabili
 
   MCUH323_RTPChannel *channel = new MCUH323_RTPChannel(*this, capability, dir, *session);
 
-  if(capability.GetMainType() == H323Capability::e_Audio && dir == H323Channel::IsReceiver)
+  if(capability.GetMainType() == MCUCapability::e_Audio && dir == H323Channel::IsReceiver)
     audioReceiveChannel = channel;
-  if(capability.GetMainType() == H323Capability::e_Video && dir == H323Channel::IsReceiver)
+  if(capability.GetMainType() == MCUCapability::e_Video && dir == H323Channel::IsReceiver)
     videoReceiveChannel = channel;
-  if(capability.GetMainType() == H323Capability::e_Audio && dir == H323Channel::IsTransmitter)
+  if(capability.GetMainType() == MCUCapability::e_Audio && dir == H323Channel::IsTransmitter)
     audioTransmitChannel = channel;
-  if(capability.GetMainType() == H323Capability::e_Video && dir == H323Channel::IsTransmitter)
+  if(capability.GetMainType() == MCUCapability::e_Video && dir == H323Channel::IsTransmitter)
     videoTransmitChannel = channel;
 
   return channel;
@@ -2647,28 +2647,11 @@ void MCUH323Connection::SelectDefaultLogicalChannel(unsigned sessionID)
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
   if(sessionID == RTP_Session::DefaultVideoSessionID)
   {
-    if(ep.tvCaps == NULL)
-      for(PINDEX i = 0; i < remoteCapabilities.GetSize(); i++)
-      {
-        H323Capability & remoteCapability = remoteCapabilities[i];
-        if(remoteCapability.GetDefaultSessionID() == sessionID)
-        {
-          if(remoteCapabilities.FindCapability(remoteCapability, sessionID) == TRUE)
-          {
-            PTRACE(2, "H245\tOpenLogicalChannel " << remoteCapability);
-            OpenLogicalChannel(remoteCapability, sessionID, H323Channel::IsTransmitter);
-            return;
-          }
-        }
-      }
-    else
-    {
-      H323Capability * remoteCapability = SelectRemoteCapability(remoteCapabilities, sessionID, ep.tvCaps);
-      if(remoteCapability == NULL) return;
-      PTRACE(2, "H245\tOpenLogicalChannel " << *remoteCapability);
-      OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter);
+    H323Capability * remoteCapability = SelectRemoteCapability(remoteCapabilities, sessionID, ep.tvCaps);
+    if(remoteCapability == NULL)
       return;
-    }
+    PTRACE(2, "H245\tOpenLogicalChannel " << *remoteCapability);
+    OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter);
     return;
   }
   if(ep.tsCaps != NULL)
@@ -2702,46 +2685,14 @@ void MCUH323Connection::SelectDefaultLogicalChannel(unsigned sessionID)
 
 H323Capability * MCUH323Connection::SelectRemoteCapability(H323Capabilities & capabilities, unsigned sessionID, char **capsName)
 {
-  PString name = capsName[0];
-  if(name == "H.323") // ???
-  {
-    /*
-    PINDEX resSet = 0;
-    PINDEX capTypes = 0;
-    for(PINDEX outer = 0; outer < set.GetSize(); outer++)
-    {
-      int i=0;
-      for(PINDEX middle = 0; middle < set[outer].GetSize(); middle++)
-      {
-        if(set[outer][middle].GetSize()) i++;
-        else break;
-      }
-      if(i>capTypes) { resSet=outer; capTypes=i; }
-    }
-    PTRACE(3, "H245\tSelectRemoteCapabilty: " << resSet << " " << sessionID << " " << capTypes);
-    if(!capTypes) return NULL;
-    for(PINDEX middle = 0; middle < set[resSet].GetSize(); middle++)
-    {
-      if(set[resSet][middle].GetSize() && set[resSet][middle][0].GetDefaultSessionID()==sessionID)
-      {
-        PTRACE(3, "H245\tSelectRemoteCapabilty: " << set[resSet][middle][0]);
-        return &(set[resSet][middle][0]);
-      }
-    }
-    */
+  if(capsName == NULL)
     return NULL;
-  }
-  else
+  for(int i = 0; capsName[i] != NULL; i++)
   {
-    int i=0;
-    while(capsName[i]!=NULL)
-    {
-      PString capName(capsName[i]);
-      H323Capability * capability = capabilities.FindCapability(capName);
-      if(capability != NULL)
-        return capability;
-      i++;
-    }
+    PString capName(capsName[i]);
+    H323Capability * capability = capabilities.FindCapability(capName);
+    if(capability != NULL)
+     return capability;
   }
   return NULL;
 }
@@ -2762,12 +2713,12 @@ void MCUH323Connection::OnSetLocalCapabilities()
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {
     PString capname = localCapabilities[i].GetFormatName();
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Audio && audio_cap != "")
+    if(localCapabilities[i].GetMainType() == MCUCapability::e_Audio && audio_cap != "")
     {
       if(capname != audio_cap)
       { localCapabilities.Remove(&localCapabilities[i]); continue; }
     }
-    else if(localCapabilities[i].GetMainType() == H323Capability::e_Video && video_cap != "")
+    else if(localCapabilities[i].GetMainType() == MCUCapability::e_Video && video_cap != "")
     {
       if(capname != video_cap)
       {
@@ -2805,9 +2756,9 @@ void MCUH323Connection::OnSetLocalCapabilities()
         }
       }
       // set video group
-      localCapabilities.SetCapability(0, H323Capability::e_Video, &localCapabilities[i]);
+      localCapabilities.SetCapability(0, MCUCapability::e_Video, &localCapabilities[i]);
     }
-    if(localCapabilities[i].GetMainType() == H323Capability::e_Video && bandwidth_to != 0)
+    if(localCapabilities[i].GetMainType() == MCUCapability::e_Video && bandwidth_to != 0)
     {
       OpalMediaFormat & wf = localCapabilities[i].GetWritableMediaFormat();
       wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth_to*1000);
@@ -2836,7 +2787,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
   for(PINDEX i = 0; i < remoteCaps.GetSize(); i++)
   {
     PString capname = remoteCaps[i].GetFormatName();
-    if(remoteCaps[i].GetMainType() == H323Capability::e_Audio)
+    if(remoteCaps[i].GetMainType() == MCUCapability::e_Audio)
     {
       // для аудио всегда создавать новый audio_cap
       if(audio_cap == "")
@@ -2844,7 +2795,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
       else if(audio_cap == capname)
         custom_audio_codec = TRUE;
     }
-    else if(remoteCaps[i].GetMainType() == H323Capability::e_Video)
+    else if(remoteCaps[i].GetMainType() == MCUCapability::e_Video)
     {
       if(bandwidth == 0)
       {
@@ -2885,7 +2836,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
   // create custom audio capability
   if(custom_audio_codec)
   {
-    H323Capability *new_cap = H323Capability::Create(audio_cap);
+    MCUCapability *new_cap = MCUCapability::Create(audio_cap);
     if(new_cap)
     {
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
@@ -2906,7 +2857,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
   // create custom video capability
   if(custom_video_codec)
   {
-    H323Capability *new_cap = H323Capability::Create(video_cap);
+    MCUCapability *new_cap = MCUCapability::Create(video_cap);
     if(new_cap)
     {
       OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();

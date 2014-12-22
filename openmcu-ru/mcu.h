@@ -35,6 +35,7 @@
 #include "reg.h"
 #include "util.h"
 #include "recorder.h"
+#include "mcu_caps.h"
 
 #if P_SSL
 #include <ptclib/shttpsvc.h>

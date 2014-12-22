@@ -589,6 +589,15 @@ void MCU_RTPChannel::Transmit()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCU_RTPChannel::WriteFrame(RTP_DataFrame & frame)
+{
+  if(!((MCU_RTP_UDP &)rtpSession).PreWriteData(frame))
+    return FALSE;
+  return ((MCU_RTP_UDP &)rtpSession).WriteData(frame);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 MCUH323_RTPChannel::MCUH323_RTPChannel(H323Connection & conn, const H323Capability & cap, Directions direction, RTP_Session & r)
   : MCU_RTPChannel(conn, cap, direction, r)
 {
@@ -662,15 +671,6 @@ BOOL MCUSIP_RTPChannel::ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame)
   if(!rtpSession.ReadBufferedData(rtpTimestamp, frame))
     return FALSE;
   return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BOOL MCUSIP_RTPChannel::WriteFrame(RTP_DataFrame & frame)
-{
-  if(!rtpSession.PreWriteData(frame))
-    return FALSE;
-  return rtpSession.WriteData(frame);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -754,6 +754,64 @@ void MCU_RTP_UDP::OnRxReceiverReport(DWORD PTRACE_PARAM(src), const ReceiverRepo
 {
   rtpcReceived++;
   RTP_UDP::OnRxReceiverReport(PTRACE_PARAM(src), PTRACE_PARAM(reports));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTP_UDP::WriteData(RTP_DataFrame & frame)
+{
+  return PostWriteData(frame);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTP_UDP::PreWriteData(RTP_DataFrame & frame)
+{
+  if(shutdownWrite)
+  {
+    PTRACE(3, "MCU_RTP_UDP\tSession " << sessionID << ", Write shutdown.");
+    shutdownWrite = FALSE;
+    return FALSE;
+  }
+
+  // Trying to send a PDU before we are set up!
+  if(remoteAddress.IsAny() || !remoteAddress.IsValid() || remoteDataPort == 0)
+    return TRUE;
+
+  switch (OnSendData(frame))
+  {
+    case e_ProcessPacket :
+      break;
+    case e_IgnorePacket :
+      return TRUE;
+    case e_AbortTransport :
+      return FALSE;
+  }
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
+{
+  while(!dataSocket->WriteTo(frame.GetPointer(), frame.GetHeaderSize()+frame.GetPayloadSize(), remoteAddress, remoteDataPort))
+  {
+    switch(dataSocket->GetErrorNumber())
+    {
+      case ECONNRESET :
+      case ECONNREFUSED :
+        PTRACE(2, "RTP_UDP\tSession " << sessionID << ", data port on remote not ready.");
+        break;
+      default:
+        PTRACE(1, "RTP_UDP\tSession " << sessionID
+               << ", Write error on data port ("
+               << dataSocket->GetErrorNumber(PChannel::LastWriteError) << "): "
+               << dataSocket->GetErrorText(PChannel::LastWriteError));
+        return FALSE;
+    }
+  }
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -842,33 +900,6 @@ BOOL MCUSIP_RTP_UDP::ReadData(RTP_DataFrame & frame, BOOL loop)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSIP_RTP_UDP::PreWriteData(RTP_DataFrame & frame)
-{
-  if(shutdownWrite)
-  {
-    PTRACE(3, "RTP_UDP\tSession " << sessionID << ", Write shutdown.");
-    shutdownWrite = FALSE;
-    return FALSE;
-  }
-
-  // Trying to send a PDU before we are set up!
-  if(remoteAddress.IsAny() || !remoteAddress.IsValid() || remoteDataPort == 0)
-    return TRUE;
-
-  switch(OnSendData(frame))
-  {
-    case e_ProcessPacket :
-      break;
-    case e_IgnorePacket :
-      return TRUE;
-    case e_AbortTransport :
-      return FALSE;
-  }
-  return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 BOOL MCUSIP_RTP_UDP::WriteData(RTP_DataFrame & frame)
 {
 #if MCUSIP_SRTP
@@ -896,29 +927,6 @@ BOOL MCUSIP_RTP_UDP::WriteData(RTP_DataFrame & frame)
 #endif
 
   return PostWriteData(frame);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BOOL MCUSIP_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
-{
-  while(!dataSocket->WriteTo(frame.GetPointer(), frame.GetHeaderSize()+frame.GetPayloadSize(), remoteAddress, remoteDataPort))
-  {
-    switch(dataSocket->GetErrorNumber())
-    {
-      case ECONNRESET :
-      case ECONNREFUSED :
-        PTRACE(2, "RTP_UDP\tSession " << sessionID << ", data port on remote not ready.");
-        break;
-      default:
-        PTRACE(1, "RTP_UDP\tSession " << sessionID
-               << ", Write error on data port ("
-               << dataSocket->GetErrorNumber(PChannel::LastWriteError) << "): "
-               << dataSocket->GetErrorText(PChannel::LastWriteError));
-        return FALSE;
-    }
-  }
-  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

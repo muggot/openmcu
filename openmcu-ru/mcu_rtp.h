@@ -338,6 +338,9 @@ class MCU_RTPChannel : public H323_RTPChannel
     virtual void CleanUpOnTermination();
     virtual void Transmit();
 
+    // Write a DataFrame
+    virtual BOOL WriteFrame(RTP_DataFrame & frame);
+
     virtual void SendMiscIndication(unsigned command);
 
     void SetCacheMode(int _cacheMode)
@@ -393,7 +396,6 @@ class MCUSIP_RTPChannel : public MCU_RTPChannel
     virtual void CleanUpOnTermination();
 
     virtual BOOL ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame);
-    virtual BOOL WriteFrame(RTP_DataFrame & frame);
 
 };
 
@@ -458,6 +460,11 @@ class MCU_RTP_UDP : public RTP_UDP
     // Get total number transmitted packets lost in session (via RTCP).
     DWORD GetPacketsLostTx() const { return packetsLostTx; }
 
+    // Write a data frame from the RTP channel.
+    virtual BOOL WriteData(RTP_DataFrame & frame);
+    virtual BOOL PreWriteData(RTP_DataFrame & frame);
+    virtual BOOL PostWriteData(RTP_DataFrame & frame);
+
     BOOL           zrtp_secured;
     PString        zrtp_sas_token;
     BOOL           srtp_secured;
@@ -482,8 +489,6 @@ class MCUSIP_RTP_UDP : public MCU_RTP_UDP
 
     virtual BOOL ReadData(RTP_DataFrame & frame, BOOL loop);
     virtual BOOL WriteData(RTP_DataFrame & frame);
-    virtual BOOL PreWriteData(RTP_DataFrame & frame);
-    virtual BOOL PostWriteData(RTP_DataFrame & frame);
 
     virtual SendReceiveStatus OnSendData(RTP_DataFrame & frame);
     virtual SendReceiveStatus OnReceiveData(const RTP_DataFrame & frame, const RTP_UDP & rtp);

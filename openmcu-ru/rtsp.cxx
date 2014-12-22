@@ -266,7 +266,7 @@ BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg
   SipCapability *audio_sc = FindSipCap(RemoteSipCaps, audio_codec);
   if(audio_sc)
   {
-    audio_sc->cap = H323Capability::Create(audio_codec);
+    audio_sc->cap = MCUCapability::Create(audio_codec);
     if(audio_sc->cap == NULL)
     {
       MCUTRACE(1, trace_section << "not found audio codec " << audio_codec);
@@ -280,7 +280,7 @@ BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg
   SipCapability *video_sc = FindSipCap(RemoteSipCaps, video_codec);
   if(video_sc)
   {
-    video_sc->cap = H323Capability::Create(video_codec);
+    video_sc->cap = MCUCapability::Create(video_codec);
     if(video_sc->cap == NULL)
     {
       MCUTRACE(1, trace_section << "not found video codec " << video_codec);

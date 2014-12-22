@@ -194,9 +194,9 @@ class SipCapability
     unsigned video_frame_rate;
     PString params;
     PStringToString attr;
-    H323Capability *cap;
-    H323_RTPChannel *inpChan;
-    H323_RTPChannel *outChan;
+    MCUCapability *cap;
+    MCU_RTPChannel *inpChan;
+    MCU_RTPChannel *outChan;
 
     BOOL preferred_cap; // из настроек терминала
 

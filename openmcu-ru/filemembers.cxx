@@ -277,13 +277,13 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
     return;
   }
 
-  H323Capability *cap = H323Capability::Create(format);
+  MCUCapability *cap = MCUCapability::Create(format);
   if(cap == NULL)
     return;
   OpalMediaFormat & wf = cap->GetWritableMediaFormat();
   wf = format;
   MCUTRACE(1, "CacheRTP " << cacheName << " Thread starting");
-  if(cap->GetMainType() == H323Capability::e_Audio)
+  if(cap->GetMainType() == MCUCapability::e_Audio)
   {
     codec = cap->CreateCodec(H323Codec::Encoder);
     conn = new MCUH323Connection(ep, 0, NULL);
@@ -321,7 +321,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
     {
       status = 1;
       // restart channel
-      if(cap->GetMainType() == H323Capability::e_Audio)
+      if(cap->GetMainType() == MCUCapability::e_Audio)
       {
         int channels = format.GetOptionInteger(OPTION_ENCODER_CHANNELS, 1);
         codec->AttachChannel(new OutgoingAudio(ep, *conn, wf.GetTimeUnits()*1000, channels), TRUE);

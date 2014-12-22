@@ -202,7 +202,7 @@ BOOL GetSipCapabilityParams(PString capname, PString & name, int & pt, int & rat
   if(capname == "")
     return FALSE;
 
-  H323Capability *cap = H323Capability::Create(capname);
+  MCUCapability *cap = MCUCapability::Create(capname);
   if(!cap)
     return FALSE;
 
@@ -343,7 +343,7 @@ void CheckPreferSipCap(SipCapMapType & SipCapMap, SipCapability *sc)
   {
     if(it->second->preferred_cap && it->second->format == sc->format)
     {
-      sc->cap = H323Capability::Create(it->second->capname);
+      sc->cap = MCUCapability::Create(it->second->capname);
       if(sc->cap) sc->preferred_cap = TRUE;
       return;
     }
@@ -705,7 +705,7 @@ int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
   SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
   if(!sc) return 0;
 
-  H323Capability * cap = sc->cap;
+  MCUCapability * cap = sc->cap;
   if(!cap) return 0;
 
   if(PIPSocket::Address(sc->remote_ip).IsValid() == FALSE || sc->remote_port == 0)
@@ -780,13 +780,13 @@ int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
   MCUSIP_RTPChannel *channel =
     new MCUSIP_RTPChannel(*this, *cap, ((rtp_dir == 0) ? H323Channel::IsReceiver : H323Channel::IsTransmitter), *session);
 
-  if(cap->GetMainType() == H323Capability::e_Audio && rtp_dir == 0)
+  if(cap->GetMainType() == MCUCapability::e_Audio && rtp_dir == 0)
     audioReceiveChannel = channel;
-  if(cap->GetMainType() == H323Capability::e_Video && rtp_dir == 0)
+  if(cap->GetMainType() == MCUCapability::e_Video && rtp_dir == 0)
     videoReceiveChannel = channel;
-  if(cap->GetMainType() == H323Capability::e_Audio && rtp_dir == 1)
+  if(cap->GetMainType() == MCUCapability::e_Audio && rtp_dir == 1)
     audioTransmitChannel = channel;
-  if(cap->GetMainType() == H323Capability::e_Video && rtp_dir == 1)
+  if(cap->GetMainType() == MCUCapability::e_Video && rtp_dir == 1)
     videoTransmitChannel = channel;
 
   if(pt >= RTP_DataFrame::DynamicBase && pt <= RTP_DataFrame::MaxPayloadType)
@@ -1218,7 +1218,7 @@ void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapab
   if(!sc->cap)
   {
     if(FindSipCap(LocalCaps, "H.261{sw}"))
-      sc->cap = H323Capability::Create("H.261{sw}");
+      sc->cap = MCUCapability::Create("H.261{sw}");
     if(!sc->cap)
       return;
   }
@@ -1263,7 +1263,7 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
   if(!sc->cap)
   {
     if(FindSipCap(LocalCaps, "H.263{sw}"))
-      sc->cap = H323Capability::Create("H.263{sw}");
+      sc->cap = MCUCapability::Create("H.263{sw}");
     if(!sc->cap)
       return;
   }
@@ -1314,7 +1314,7 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
   if(!sc->cap)
   {
     if(FindSipCap(LocalCaps, "H.263p{sw}"))
-      sc->cap = H323Capability::Create("H.263p{sw}");
+      sc->cap = MCUCapability::Create("H.263p{sw}");
     if(!sc->cap)
       return;
   }
@@ -1365,7 +1365,7 @@ void MCUSipConnection::SelectCapability_H264(SipCapMapType & LocalCaps, SipCapab
   if(!sc->cap)
   {
     if(FindSipCap(LocalCaps, "H.264{sw}"))
-      sc->cap = H323Capability::Create("H.264{sw}");
+      sc->cap = MCUCapability::Create("H.264{sw}");
     if(!sc->cap)
       return;
   }
@@ -1406,7 +1406,7 @@ void MCUSipConnection::SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapabi
   if(!sc->cap)
   {
     if(FindSipCap(LocalCaps, "VP8{sw}"))
-      sc->cap = H323Capability::Create("VP8{sw}");
+      sc->cap = MCUCapability::Create("VP8{sw}");
     if(!sc->cap)
       return;
   }
@@ -1450,7 +1450,7 @@ void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapa
   if(!sc->cap)
   {
     if(FindSipCap(LocalCaps, "MP4V-ES{sw}"))
-      sc->cap = H323Capability::Create("MP4V-ES{sw}");
+      sc->cap = MCUCapability::Create("MP4V-ES{sw}");
     if(!sc->cap)
       return;
   }
@@ -1512,7 +1512,7 @@ void MCUSipConnection::SelectCapability_SPEEX(SipCapMapType & LocalCaps, SipCapa
       mode = (keys[kn].Tokenise("=")[1]).AsInteger();
   }
 
-  sc->cap = H323Capability::Create(capname);
+  sc->cap = MCUCapability::Create(capname);
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
@@ -1561,7 +1561,7 @@ void MCUSipConnection::SelectCapability_OPUS(SipCapMapType & LocalCaps, SipCapab
       usedtx = (keys[kn].Tokenise("=")[1]).AsInteger();
   }
 
-  sc->cap = H323Capability::Create(capname);
+  sc->cap = MCUCapability::Create(capname);
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
@@ -1601,7 +1601,7 @@ void MCUSipConnection::SelectCapability_G7221(SipCapMapType & LocalCaps, SipCapa
   SipCapability *local_sc = FindSipCap(LocalCaps, capname);
   local_sc->fmtp = sc->fmtp;
   local_sc->local_fmtp = sc->fmtp;
-  sc->cap = H323Capability::Create(capname);
+  sc->cap = MCUCapability::Create(capname);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1622,7 +1622,7 @@ void MCUSipConnection::SelectCapability_G7222(SipCapMapType & LocalCaps, SipCapa
       octet_align = (keys[kn].Tokenise("=")[1]).AsInteger();
   }
 
-  sc->cap = H323Capability::Create(capname);
+  sc->cap = MCUCapability::Create(capname);
   if(sc->cap)
   {
     OpalMediaFormat & wf = sc->cap->GetWritableMediaFormat();
@@ -1642,7 +1642,7 @@ void MCUSipConnection::SelectCapability_AC3(SipCapMapType & LocalCaps, SipCapabi
   else
     return;
 
-  sc->cap = H323Capability::Create(capname);
+  sc->cap = MCUCapability::Create(capname);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1876,46 +1876,46 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
       if(scap >= 0) continue;
       // PCMU
       if((remote_sc->format == "pcmu" || remote_sc->payload == 0) && FindSipCap(LocalCaps, "G.711-uLaw-64k{sw}"))
-      { remote_sc->capname = "G.711-uLaw-64k{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "G.711-uLaw-64k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // PCMA
       else if((remote_sc->format == "pcma" || remote_sc->payload == 8) && FindSipCap(LocalCaps, "G.711-ALaw-64k{sw}"))
-      { remote_sc->capname = "G.711-ALaw-64k{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "G.711-ALaw-64k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.722
       else if(remote_sc->format == "g722" && FindSipCap(LocalCaps, "G.722-64k{sw}"))
-      { remote_sc->capname = "G.722-64k{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "G.722-64k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.723.1
       else if(remote_sc->format == "g723" && FindSipCap(LocalCaps, "G.7231-6.3k[e]{sw}"))
-      { remote_sc->capname = "G.7231-6.3k[e]{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "G.7231-6.3k[e]{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.726-16
       else if(remote_sc->format == "g726-16" && FindSipCap(LocalCaps, "G.726-16k{sw}"))
-      { remote_sc->capname = "G.726-16k{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "G.726-16k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.726-24
       else if(remote_sc->format == "g726-24" && FindSipCap(LocalCaps, "G.726-24k{sw}"))
-      { remote_sc->capname = "G.726-24k{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "G.726-24k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.726-32
       else if(remote_sc->format == "g726-32" && FindSipCap(LocalCaps, "G.726-32k{sw}"))
-      { remote_sc->capname = "G.726-32k{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "G.726-32k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.726-40
       else if(remote_sc->format == "g726-40" && FindSipCap(LocalCaps, "G.726-40k{sw}"))
-      { remote_sc->capname = "G.726-40k{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "G.726-40k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.728
       else if(remote_sc->format == "g728" && FindSipCap(LocalCaps, "G.728-16k[e]"))
-      { remote_sc->capname = "G.728-16k[e]"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "G.728-16k[e]"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.729A
       else if(remote_sc->format == "g729" && remote_sc->fmtp == "annexb=no;" && FindSipCap(LocalCaps, "G.729A-8k[e]{sw}"))
-      { remote_sc->capname = "G.729A-8k[e]{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "G.729A-8k[e]{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // iLBC-13k3
       else if(remote_sc->format == "ilbc" && remote_sc->fmtp == "mode=30;" && FindSipCap(LocalCaps, "iLBC-13k3{sw}"))
-      { remote_sc->capname = "iLBC-13k3{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "iLBC-13k3{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // iLBC-15k2
       else if(remote_sc->format == "ilbc" && remote_sc->fmtp == "mode=20;" && FindSipCap(LocalCaps, "iLBC-15k2{sw}"))
-      { remote_sc->capname = "iLBC-15k2{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "iLBC-15k2{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // SILK 16000
       else if(remote_sc->format == "silk" && remote_sc->clock == 16000 && FindSipCap(LocalCaps, "SILK_B40{sw}"))
-      { remote_sc->capname = "SILK_B40{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "SILK_B40{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // SILK 24000
       else if(remote_sc->format == "silk" && remote_sc->clock == 24000 && FindSipCap(LocalCaps, "SILK_B40_24K{sw}"))
-      { remote_sc->capname = "SILK_B40_24K{sw}"; remote_sc->cap = H323Capability::Create(remote_sc->capname); }
+      { remote_sc->capname = "SILK_B40_24K{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // SPEEX
       else if(remote_sc->format == "speex")
       { SelectCapability_SPEEX(LocalCaps, remote_sc); }

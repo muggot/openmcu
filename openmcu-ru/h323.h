@@ -4,6 +4,7 @@
 
 #include "config.h"
 #include "util.h"
+#include "mcu_caps.h"
 
 #include <ptlib.h>
 #include <ptlib/videoio.h>
