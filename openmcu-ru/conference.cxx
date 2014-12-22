@@ -706,28 +706,28 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
     memberList.Release((long)member->GetID());
   }
 
-  if(member == NULL || !member->GetType() & MEMBER_TYPE_GSYSTEM)
-  {
-    // profileList
-    PString nameID = MCUURL(name).GetMemberNameId();
-    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
-    {
-      ConferenceProfile *profile = it.GetObject();
-      if(profile->GetMember())
-        continue;
-      if(profile->GetNameID() == nameID)
-      {
-        if(profileList.Erase(it))
-          delete profile;
-        break;
-      }
-    }
-    ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, member);
-    profileList.Insert(profile->GetID(), profile, name);
-    profileList.Release(profile->GetID());
-  }
+  if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+    return;
 
-  if(member && !member->GetType() & MEMBER_TYPE_GSYSTEM)
+  // profileList
+  PString nameID = MCUURL(name).GetMemberNameId();
+  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  {
+    ConferenceProfile *profile = it.GetObject();
+    if(profile->GetMember())
+      continue;
+    if(profile->GetNameID() == nameID)
+    {
+      if(profileList.Erase(it))
+        delete profile;
+      break;
+    }
+  }
+  ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, member);
+  profileList.Insert(profile->GetID(), profile, name);
+  profileList.Release(profile->GetID());
+
+  if(member)
   {
     PStringStream msg;
     msg << "<font color=green><b>+</b>" << member->GetName() << "</font>";
@@ -759,26 +759,29 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
   if(member)
     memberList.Erase((long)member->GetID());
 
-  if(member == NULL || !member->GetType() & MEMBER_TYPE_GSYSTEM)
+  if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+    return;
+
+  // profileList
+  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
-    // profileList
-    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    ConferenceProfile *profile = it.GetObject();
+    if(profile->GetName() == name && profile->GetMember() == member)
     {
-      ConferenceProfile *profile = it.GetObject();
-      if(profile->GetName() == name && profile->GetMember() == member)
-      {
-        if(profileList.Erase(it))
-          delete profile;
-        break;
-      }
+      if(profileList.Erase(it))
+        delete profile;
+      break;
     }
-    long listID = profileList.GetNextID();
-    ConferenceProfile *profile = new ConferenceProfile(listID, name, this, NULL);
+  }
+
+  if(member)
+  {
+    ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, NULL);
     profileList.Insert(profile->GetID(), profile, name);
     profileList.Release(profile->GetID());
   }
 
-  if(member && !member->GetType() & MEMBER_TYPE_GSYSTEM)
+  if(member)
   {
     PStringStream msg;
     msg << "<font color=red><b>-</b>" << member->GetName() << "</font>";
