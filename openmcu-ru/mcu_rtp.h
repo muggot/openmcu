@@ -338,6 +338,8 @@ class MCU_RTPChannel : public H323_RTPChannel
     virtual void CleanUpOnTermination();
     virtual void Transmit();
 
+    virtual void SendMiscIndication(unsigned command);
+
     void SetCacheMode(unsigned _cacheMode)
     { cacheMode = _cacheMode; }
 

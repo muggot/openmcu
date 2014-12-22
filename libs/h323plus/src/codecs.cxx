@@ -779,12 +779,6 @@ void H323VideoCodec::SendMiscCommand(unsigned command)
     logicalChannel->SendMiscCommand(command);
 }
 
-void H323VideoCodec::SendMiscIndication(unsigned command)
-{
-  if (logicalChannel != NULL)
-    logicalChannel->SendMiscIndication(command);
-}
-
 
 #endif // NO_H323_VIDEO
 

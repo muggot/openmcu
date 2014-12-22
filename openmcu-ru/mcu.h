@@ -181,6 +181,9 @@ static const char OPTION_FRAME_RATE[] = "Frame Rate";
 static const char OPTION_FRAME_WIDTH[] = "Frame Width";
 static const char OPTION_FRAME_HEIGHT[] = "Frame Height";
 static const char OPTION_MAX_BIT_RATE[] = "Max Bit Rate";
+static const char OPTION_ENCODER_QUALITY[] = "Encoding Quality";
+static const char OPTION_ENCODER_CHANNELS[] = "Encoder Channels";
+static const char OPTION_DECODER_CHANNELS[] = "Decoder Channels";
 static const char OPTION_TX_KEY_FRAME_PERIOD[] = "Tx Key Frame Period";
 
 

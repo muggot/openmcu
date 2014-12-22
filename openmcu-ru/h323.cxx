@@ -2370,6 +2370,8 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
   videoTransmitCodec = NULL;
 #endif
 
+  audioReceiveChannel = NULL;
+  videoReceiveChannel = NULL;
   audioTransmitChannel = NULL;
   videoTransmitChannel = NULL;
 }
@@ -2462,9 +2464,14 @@ void MCUH323Connection::CleanUpOnCallEnd()
   }
 
   videoReceiveCodecName = videoTransmitCodecName = "none";
+
+  audioReceiveCodec = NULL;
   videoReceiveCodec = NULL;
+  audioTransmitCodec = NULL;
   videoTransmitCodec = NULL;
 
+  audioReceiveChannel = NULL;
+  videoReceiveChannel = NULL;
   audioTransmitChannel = NULL;
   videoTransmitChannel = NULL;
 
@@ -2606,6 +2613,10 @@ H323Channel * MCUH323Connection::CreateRealTimeLogicalChannel(const H323Capabili
 
   MCUH323_RTPChannel *channel = new MCUH323_RTPChannel(*this, capability, dir, *session);
 
+  if(capability.GetMainType() == H323Capability::e_Audio && dir == H323Channel::IsReceiver)
+    audioReceiveChannel = channel;
+  if(capability.GetMainType() == H323Capability::e_Video && dir == H323Channel::IsReceiver)
+    videoReceiveChannel = channel;
   if(capability.GetMainType() == H323Capability::e_Audio && dir == H323Channel::IsTransmitter)
     audioTransmitChannel = channel;
   if(capability.GetMainType() == H323Capability::e_Video && dir == H323Channel::IsTransmitter)
@@ -3050,26 +3061,36 @@ void MCUH323Connection::SendLogicalChannelMiscCommand(H323Channel & channel, uns
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUH323Connection::SendLogicalChannelMiscIndication(H323Channel & channel, unsigned commandIdentifier)
+{
+  H323ControlPDU pdu;
+  H245_IndicationMessage & indication = pdu.Build(H245_IndicationMessage::e_miscellaneousIndication);
+  H245_MiscellaneousIndication & miscIndication = indication;
+  miscIndication.m_logicalChannelNumber = (unsigned)channel.GetNumber();
+  miscIndication.m_type.SetTag(commandIdentifier);
+  WriteControlPDU(pdu);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize */, H323AudioCodec & codec)
 {
   PWaitAndSignal m(connMutex);
 
-  unsigned sampleRate = codec.GetSampleRate();
-  if(sampleRate == 0)
-    sampleRate = 8000; // built-in g711
-
+  const OpalMediaFormat & mf = codec.GetMediaFormat();
+  unsigned sampleRate = mf.GetTimeUnits() * 1000;
   unsigned channels = 1;
   if(isEncoding)
-    channels = codec.GetMediaFormat().GetEncoderChannels();
+    channels = mf.GetOptionInteger(OPTION_ENCODER_CHANNELS, 1);
   else
-    channels = codec.GetMediaFormat().GetDecoderChannels();
+    channels = mf.GetOptionInteger(OPTION_DECODER_CHANNELS, 1);
 
   codec.SetSilenceDetectionMode(H323AudioCodec::NoSilenceDetection);
 
   if(isEncoding)
   {
     audioTransmitCodec = &codec;
-    audioTransmitCodecName = codec.GetMediaFormat() + "@" + PString(sampleRate) + "/" +PString(channels);
+    audioTransmitCodecName = mf + "@" + PString(sampleRate) + "/" +PString(channels);
 
     // check cache mode
     BOOL enableCache = FALSE;
@@ -3083,7 +3104,7 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
     {
       // update format string
       audioTransmitCodecName = audioTransmitCodecName + "_" + requestedRoom;
-      OpenAudioCache(codec.GetMediaFormat(), audioTransmitCodecName);
+      OpenAudioCache(mf, audioTransmitCodecName);
       audioTransmitChannel->SetCacheName(audioTransmitCodecName);
       audioTransmitChannel->SetCacheMode(2);
     }
@@ -3160,7 +3181,7 @@ void MCUH323Connection::SetEndpointDefaultVideoParams()
   if(codec == NULL) return;
   OpalMediaFormat & mf = codec->GetWritableMediaFormat();
 
-  mf.SetOptionInteger("Encoding Quality", DefaultVideoQuality);
+  mf.SetOptionInteger(OPTION_ENCODER_QUALITY, DefaultVideoQuality);
 
   PStringList keys = MCUConfig("Video").GetKeys();
   for(PINDEX i = 0; i < keys.GetSize(); i++)
@@ -4095,41 +4116,45 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
   if(conn == NULL) return;
   PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)
-  { H323AudioCodec * codec = conn->GetAudioReceiveCodec();
-    if(codec)
-    { H323Channel * channel = codec->GetLogicalChannel();
-      if(channel)
-      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-        ConferenceMember::muteMask |= 1;
-        sumMask |= 1;
-  } } }
+  {
+    MCU_RTPChannel * channel = conn->GetAudioReceiveChannel();
+    if(channel)
+    {
+      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+      ConferenceMember::muteMask |= 1;
+      sumMask |= 1;
+    }
+  }
   if(mask & 2)
-  { H323AudioCodec * codec = conn->GetAudioTransmitCodec();
-    if(codec)
-    { H323Channel * channel = codec->GetLogicalChannel();
-      if(channel)
-      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-        ConferenceMember::muteMask |= 2;
-        sumMask |= 2;
-  } } }
+  {
+    MCU_RTPChannel * channel = conn->GetAudioTransmitChannel();
+    if(channel)
+    {
+      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+      ConferenceMember::muteMask |= 2;
+      sumMask |= 2;
+    }
+  }
   if(mask & 4)
-  { H323VideoCodec * codec = conn->GetVideoReceiveCodec();
-    if(codec)
-    { H323Channel * channel = codec->GetLogicalChannel();
-      if(channel)
-      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-        ConferenceMember::muteMask |= 4;
-        sumMask |= 4;
-  } } }
+  {
+    MCU_RTPChannel * channel = conn->GetVideoReceiveChannel();
+    if(channel)
+    {
+      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+      ConferenceMember::muteMask |= 4;
+      sumMask |= 4;
+    }
+  }
   if(mask & 8)
-  { H323VideoCodec * codec = conn->GetVideoTransmitCodec();
-    if(codec)
-    { H323Channel * channel = codec->GetLogicalChannel();
-      if(channel)
-      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-        ConferenceMember::muteMask |= 8;
-        sumMask |= 8;
-  } } }
+  {
+    MCU_RTPChannel * channel = conn->GetVideoTransmitChannel();
+    if(channel)
+    {
+      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+      ConferenceMember::muteMask |= 8;
+      sumMask |= 8;
+    }
+  }
   conn->Unlock();
   PStringStream cmd; cmd << "imute(" << dec << (long)id << "," << sumMask << ")";
   if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
@@ -4144,41 +4169,45 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
   if(conn == NULL) return;
   PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)
-  { H323AudioCodec * codec = conn->GetAudioReceiveCodec();
-    if(codec)
-    { H323Channel * channel = codec->GetLogicalChannel();
-      if(channel)
-      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-        ConferenceMember::muteMask &= ~1;
-        sumMask |= 1;
-  } } }
+  {
+    MCU_RTPChannel * channel = conn->GetAudioReceiveChannel();
+    if(channel)
+    {
+      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+      ConferenceMember::muteMask &= ~1;
+      sumMask |= 1;
+    }
+  }
   if(mask & 2)
-  { H323AudioCodec * codec = conn->GetAudioTransmitCodec();
-    if(codec)
-    { H323Channel * channel = codec->GetLogicalChannel();
-      if(channel)
-      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-        ConferenceMember::muteMask &= ~2;
-        sumMask |= 2;
-  } } }
+  {
+    MCU_RTPChannel * channel = conn->GetAudioTransmitChannel();
+    if(channel)
+    {
+      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+      ConferenceMember::muteMask &= ~2;
+      sumMask |= 2;
+    }
+  }
   if(mask & 4)
-  { H323VideoCodec * codec = conn->GetVideoReceiveCodec();
-    if(codec)
-    { H323Channel * channel = codec->GetLogicalChannel();
-      if(channel)
-      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-        ConferenceMember::muteMask &= ~4;
-        sumMask |= 4;
-  } } }
+  {
+    MCU_RTPChannel * channel = conn->GetVideoReceiveChannel();
+    if(channel)
+    {
+      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+      ConferenceMember::muteMask &= ~4;
+      sumMask |= 4;
+    }
+  }
   if(mask & 8)
-  { H323VideoCodec * codec = conn->GetVideoTransmitCodec();
-    if(codec)
-    { H323Channel * channel = codec->GetLogicalChannel();
-      if(channel)
-      { channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-        ConferenceMember::muteMask &= ~8;
-        sumMask |= 8;
-  } } }
+  {
+    MCU_RTPChannel * channel = conn->GetVideoTransmitChannel();
+    if(channel)
+    {
+      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+      ConferenceMember::muteMask &= ~8;
+      sumMask |= 8;
+    }
+  }
   conn->Unlock();
   PStringStream cmd; cmd << "iunmute(" << dec << (long)id << "," << sumMask << ")";
   if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);

@@ -322,8 +322,10 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
       status = 1;
       // restart channel
       if(cap->GetMainType() == H323Capability::e_Audio)
-        codec->AttachChannel(new OutgoingAudio(ep, *conn, wf.GetTimeUnits()*1000, wf.GetEncoderChannels()), TRUE);
-      else
+      {
+        int channels = format.GetOptionInteger(OPTION_ENCODER_CHANNELS, 1);
+        codec->AttachChannel(new OutgoingAudio(ep, *conn, wf.GetTimeUnits()*1000, channels), TRUE);
+      } else
         conn->RestartGrabber();
       firstFrameSendTime = PTime();
       MCUTRACE(1, "CacheRTP " << cacheName << " Wake up");

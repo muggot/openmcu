@@ -462,7 +462,6 @@ class H323Codec : public PObject
 
     Direction GetDirection()   const { return direction; }
 
-    H323Channel * GetLogicalChannel() const { return logicalChannel; }
     virtual const OpalMediaFormat & GetMediaFormat() const { return mediaFormat; }
     OpalMediaFormat & GetWritableMediaFormat() { return mediaFormat; }
 
@@ -1170,7 +1169,6 @@ class H323VideoCodec : public H323Codec
        This message is sent via the H245 Logical Channel.
     */
     void SendMiscCommand(unsigned command);
-    void SendMiscIndication(unsigned command);
  
    /** 
        Returns the number of frames transmitted or received so far. 

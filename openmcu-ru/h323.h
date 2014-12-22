@@ -217,9 +217,11 @@ class MCUH323Connection : public H323Connection
      // leave conference and delete connection
     virtual void LeaveMCU();
 
+    virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
+    virtual void SendLogicalChannelMiscIndication(H323Channel & channel, unsigned command);
+
     // overrides from H323Connection
     virtual BOOL OnH245_MiscellaneousCommand(const H245_MiscellaneousCommand & pdu /* Received PDU */ );
-    virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     virtual void AttachSignalChannel(const PString & token, H323Transport * channel, BOOL answeringCall);
     virtual BOOL OpenAudioChannel(BOOL, unsigned, H323AudioCodec & codec);
     virtual void OpenAudioCache(const OpalMediaFormat & format, const PString & cacheName);
@@ -290,10 +292,14 @@ class MCUH323Connection : public H323Connection
     virtual BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount);
     virtual H323VideoCodec * GetVideoReceiveCodec() const  { return videoReceiveCodec; }
     virtual H323VideoCodec * GetVideoTransmitCodec() const  { return videoTransmitCodec; }
-    virtual MCU_RTPChannel * GetVideoTransmitChannel() const { return videoTransmitChannel; }
     virtual void RestartGrabber();
     unsigned videoMixerNumber;
 #endif
+
+    MCU_RTPChannel * GetAudioReceiveChannel() const { return audioReceiveChannel; }
+    MCU_RTPChannel * GetVideoReceiveChannel() const { return videoReceiveChannel; }
+    MCU_RTPChannel * GetAudioTransmitChannel() const { return audioTransmitChannel; }
+    MCU_RTPChannel * GetVideoTransmitChannel() const { return videoTransmitChannel; }
 
     // Valid states for the welcome procedure. Note that new states may
     //  be added because the procedure can be customized by subclassing.
@@ -418,6 +424,8 @@ class MCUH323Connection : public H323Connection
     H323AudioCodec *audioReceiveCodec;
     H323AudioCodec *audioTransmitCodec;
 
+    MCU_RTPChannel *audioReceiveChannel;
+    MCU_RTPChannel *videoReceiveChannel;
     MCU_RTPChannel *audioTransmitChannel;
     MCU_RTPChannel *videoTransmitChannel;
 

@@ -308,6 +308,13 @@ BOOL MCU_RTPChannel::Open()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCU_RTPChannel::SendMiscIndication(unsigned command)
+{
+  ((MCUH323Connection &)connection).SendLogicalChannelMiscIndication(*this, command);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCU_RTPChannel::CleanUpOnTermination()
 {
   H323_RTPChannel::CleanUpOnTermination();
