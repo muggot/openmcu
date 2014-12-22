@@ -420,13 +420,18 @@ void MCU_RTPChannel::Transmit()
 
     if(cacheMode == 2 && encoderSeqN != 0xFFFFFFFF)
     {
-      PWaitAndSignal m(cacheRTPMutex);
+      if(cache == NULL || cache->GetName() != cacheName)
+      {
+        DetachCacheRTP(cache);
+        while(!AttachCacheRTP(cache, cacheName, encoderSeqN))
+          PThread::Sleep(100);
+      }
 
       unsigned flags = 0;
       if(fastUpdate)
         flags = PluginCodec_CoderForceIFrame;
 
-      GetCacheRTP(cacheName, cache, frame, length, encoderSeqN, flags);
+      GetCacheRTP(cache, frame, length, encoderSeqN, flags);
 
       if(flags & PluginCodec_ReturnCoderIFrame)
         fastUpdate = false;
@@ -561,8 +566,8 @@ void MCU_RTPChannel::Transmit()
 
   }
 
-  if(cache)
-    DetachCacheRTP(cacheName, cache);
+  // detach cache
+  DetachCacheRTP(cache);
 
 #if PTRACING
   PTRACE_IF(5, codecReadAnalysis != NULL, "Codec read timing:\n" << *codecReadAnalysis);

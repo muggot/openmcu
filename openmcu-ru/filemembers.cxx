@@ -247,7 +247,7 @@ ConferenceCacheMember::~ConferenceCacheMember()
     delete thread;
     thread = NULL;
   }
-  DeleteCacheRTP(cacheName, cache);
+  DeleteCacheRTP(cache);
   PTRACE(5,"ConferenceCacheMember\tTerminated: " << GetName());
 }
 
@@ -282,7 +282,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
     return;
   OpalMediaFormat & wf = cap->GetWritableMediaFormat();
   wf = format;
-  MCUTRACE(1, "Cache\tStarting cache thread " << cacheName);
+  MCUTRACE(1, "CacheRTP " << cacheName << " Thread starting");
   if(cap->GetMainType() == H323Capability::e_Audio)
   {
     codec = cap->CreateCodec(H323Codec::Encoder);
@@ -313,7 +313,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
       {
         status = 0;
         totalVideoFramesSent = 0;
-        MCUTRACE(1, "MCU\tDown to sleep " << cacheName);
+        MCUTRACE(1, "CacheRTP " << cacheName << " Down to sleep");
       }
       PThread::Sleep(1000);
     }
@@ -326,7 +326,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
       else
         conn->RestartGrabber();
       firstFrameSendTime = PTime();
-      MCUTRACE(1, "MCU\tWake up " << cacheName);
+      MCUTRACE(1, "CacheRTP " << cacheName << " Wake up");
     }
     if(running)
     {
@@ -339,17 +339,17 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
         ((H323VideoCodec *)codec)->OnFastUpdatePicture();
 
       codec->Read(NULL, length, frame);
-      PutCacheRTP(cacheName, cache, frame, length, flags);
+      PutCacheRTP(cache, frame, length, flags);
     }
   }
 
-  PTRACE(1, "MCU\tWait before deleting cache " << cacheName << ", active users " << GetCacheUsersNumber());
+  MCUTRACE(1, "CacheRTP " << cacheName << " Wait before deleting cache " << cacheName << ", active users " << GetCacheUsersNumber());
   while(GetCacheUsersNumber() != 0)
   {
     PWaitAndSignal m(mutex);
     unsigned flags = 0;
     codec->Read(NULL, length, frame);
-    PutCacheRTP(cacheName, cache, frame, length, flags);
+    PutCacheRTP(cache, frame, length, flags);
     PThread::Sleep(1);
   }
 
@@ -358,7 +358,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
   delete(codec); codec = NULL;
   delete(cap); cap = NULL;
 
-  PTRACE(1, "MCU\tDelete cache " << cacheName);
+  MCUTRACE(1, "CacheRTP " << cacheName << " Thread stop");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

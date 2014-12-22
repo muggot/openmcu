@@ -3086,7 +3086,6 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
       OpenAudioCache(codec.GetMediaFormat(), audioTransmitCodecName);
       audioTransmitChannel->SetCacheName(audioTransmitCodecName);
       audioTransmitChannel->SetCacheMode(2);
-      audioTransmitChannel->AttachCache();
     }
 
     codec.AttachChannel(new OutgoingAudio(ep, *this, sampleRate, channels), TRUE);
@@ -3234,79 +3233,95 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     videoTransmitCodec = &codec;
     videoTransmitCodecName = codec.GetMediaFormat();
 
-    PVideoChannel * channel = new PVideoChannel;
-    if(videoGrabber)
+    // cache mode
+    // forceScreenSplit не изменяется в созданной конференции
+    BOOL forceScreenSplit = TRUE;
+    if(conference)
+      forceScreenSplit = conference->GetForceScreenSplit();
+    else
+      forceScreenSplit = GetConferenceParam(requestedRoom, ForceSplitVideoKey, TRUE);
+    int cacheMode = 0;
+    if(forceScreenSplit)
     {
-      channel->CloseVideoReader();
-      codec.SetCacheMode(0);
-    }
-
-    videoGrabber = new MCUPVideoInputDevice(*this);
-    if(videoGrabber == NULL)
-    {
-      PTRACE(3, "Cannot create MCU video input driver");
-      return FALSE;
+      // Для всех по умолчанию 2
+      cacheMode = 2;
+      // Настройки терминала
+      if(GetEndpointParam(VideoCacheKey, "Enable") == "Disable")
+        cacheMode = 0;
+      // Режим кэширования после подключения не изменяется
+      if(conferenceMember && videoTransmitChannel)
+        cacheMode = videoTransmitChannel->GetCacheMode();
+      // Для потока кэша всегда 1
+      if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_CACHE)
+        cacheMode = 1;
+      // Не понятно что они будут видеть в конференции без forceScreenSplit
+      if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_STREAM)
+        cacheMode = 2;
+      // Не работает с кэшем, требует периодический опорный кадр
+      if(remoteApplication.Find("PCS-") != P_MAX_INDEX && videoTransmitCodecName.Find("H.264") != P_MAX_INDEX)
+        cacheMode = 0; // ???
     }
 
     // set params from video config page
-    SetEndpointDefaultVideoParams();
+    if(cacheMode == 0 || cacheMode == 2)
+      SetEndpointDefaultVideoParams();
 
     // get frame rate from codec
     const OpalMediaFormat & mf = codec.GetMediaFormat();
-    unsigned fr;
+    unsigned frameRate;
     if(mf.GetOptionInteger(OPTION_FRAME_TIME) != 0)
-      fr = 90000/mf.GetOptionInteger(OPTION_FRAME_TIME);
+      frameRate = 90000/mf.GetOptionInteger(OPTION_FRAME_TIME);
     else if(mf.GetOptionInteger(OPTION_FRAME_RATE) != 0)
-      fr = mf.GetOptionInteger(OPTION_FRAME_RATE);
+      frameRate = mf.GetOptionInteger(OPTION_FRAME_RATE);
     else
-      fr = ep.GetVideoFrameRate();
-    codec.SetTargetFrameTimeMs(1000/fr); // ???
+      frameRate = ep.GetVideoFrameRate();
+    codec.SetTargetFrameTimeMs(1000/frameRate); // ???
 
     // update format string
     videoTransmitCodecName = mf + "@" + PString(mf.GetOptionInteger(OPTION_FRAME_WIDTH))
                              + "x" + PString(mf.GetOptionInteger(OPTION_FRAME_HEIGHT))
                              + ":" + PString(mf.GetOptionInteger(OPTION_MAX_BIT_RATE))
-                             + "x" + PString(fr);
+                             + "x" + PString(frameRate);
 
-    // check cache mode
-    BOOL enableCache = TRUE;
-    if(conference)
-      enableCache = conference->GetForceScreenSplit();
-    else
-      enableCache = GetConferenceParam(requestedRoom, ForceSplitVideoKey, TRUE);
-
-    if(GetEndpointParam(VideoCacheKey, "Enable") == "Disable")
-      enableCache = FALSE;
-    if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_STREAM)
-      enableCache = TRUE;
-    if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_CACHE)
-      enableCache = FALSE;
-    if(remoteApplication.Find("PCS-") != P_MAX_INDEX && videoTransmitCodecName.Find("H.264") != P_MAX_INDEX)
-      enableCache = FALSE; // ???
-
-    // setup cache
-    if(enableCache)
+    // videoGrabber
+    // Нужен в режиме без кэша или для потока кэша
+    if(cacheMode == 0 || cacheMode == 1)
     {
-      // update
+      PVideoChannel * channel = new PVideoChannel;
+      if(videoGrabber)
+        channel->CloseVideoReader();
+
+      videoGrabber = new MCUPVideoInputDevice(*this);
+      if(videoGrabber == NULL)
+      {
+        PTRACE(3, "Cannot create MCU video input driver");
+        return FALSE;
+      }
+
+      if(!InitGrabber(videoGrabber, codec.GetWidth(), codec.GetHeight(), frameRate))
+      {
+        delete videoGrabber;
+        videoGrabber = NULL;
+        return FALSE;
+      }
+
+      videoGrabber->Start();
+      channel->AttachVideoReader(videoGrabber);
+      if(!codec.AttachChannel(channel,TRUE))
+        return FALSE;
+    }
+
+    // Режим с кэшированием
+    if(cacheMode == 2)
+    {
       videoTransmitCodecName = videoTransmitCodecName + "_" + requestedRoom + "/" + (PString)videoMixerNumber;
       OpenVideoCache(codec.GetMediaFormat(), videoTransmitCodecName);
       videoTransmitChannel->SetCacheName(videoTransmitCodecName);
       videoTransmitChannel->SetCacheMode(2);
-      videoTransmitChannel->AttachCache();
     }
 
-    if (!InitGrabber(videoGrabber, codec.GetWidth(), codec.GetHeight(), fr)) {
-      delete videoGrabber;
-      videoGrabber = NULL;
-      return FALSE;
-    }
-
-    videoGrabber->Start();
-    channel->AttachVideoReader(videoGrabber);
-    if (!codec.AttachChannel(channel,TRUE))
-      return FALSE;
-
-    if(conferenceMember) conferenceMember->ChannelBrowserStateUpdate(8,TRUE);
+    if(conferenceMember)
+      conferenceMember->ChannelBrowserStateUpdate(8,TRUE);
 
   } else {
 

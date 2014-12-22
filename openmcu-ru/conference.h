@@ -591,7 +591,6 @@ class Conference : public PObject
     ConferenceRecorder * conferenceRecorder;
     ConferenceMember * pipeMember;
 
-    void SetForceScreenSplit(BOOL _forceScreenSplit) { forceScreenSplit = _forceScreenSplit; }
     BOOL GetForceScreenSplit() { return forceScreenSplit; }
 
     BOOL RecorderCheckSpace();

@@ -75,7 +75,7 @@ class CacheRTP
     long GetID() const
     { return id; }
 
-    const PString & GetCacheName() const
+    const PString & GetName() const
     { return name; }
 
     void OnFastUpdatePicture()
@@ -242,16 +242,17 @@ inline CacheRTP * CreateCacheRTP(const PString & key)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-inline void DeleteCacheRTP(PString & key, CacheRTP *& cache)
+inline void DeleteCacheRTP(CacheRTP *& cache)
 {
   if(cache == NULL)
     return;
+  PString key = cache->GetName();
   cacheRTPList.Release(cache->GetID());
   MCUCacheRTPList::shared_iterator it = cacheRTPList.Find(key);
   if(it != cacheRTPList.end())
   {
     MCUTRACE(1, "CacheRTP " << key << " Delete");
-    CacheRTP *cache = it.GetObject();
+    cache = it.GetObject();
     if(cacheRTPList.Erase(it))
       delete cache;
   }
@@ -270,22 +271,25 @@ inline bool FindCacheRTP(const PString & key)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-inline void PutCacheRTP(const PString & key, CacheRTP *& cache, RTP_DataFrame & frame, unsigned int len, unsigned int flags)
+inline void PutCacheRTP(CacheRTP *& cache, RTP_DataFrame & frame, unsigned int len, unsigned int flags)
 {
   if(cache == NULL)
-    cache = CreateCacheRTP(key); // needs for modes without patently creation of caches
+  {
+    MCUTRACE(1, "CacheRTP Put - No cache!");
+    return;
+  }
   //cout << "PutCacheRTP length=" << len << " marker=" << frame.GetMarker() << "\n";
   cache->PutFrame(frame, len, flags);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-inline void GetCacheRTP(const PString & key, CacheRTP *& cache, RTP_DataFrame & frame, unsigned & toLen, unsigned & seqN, unsigned & flags)
+inline void GetCacheRTP(CacheRTP *& cache, RTP_DataFrame & frame, unsigned & toLen, unsigned & seqN, unsigned & flags)
 {
   if(!cache)
   {
+    MCUTRACE(1, "CacheRTP Get - No cache!");
     seqN = 0xFFFFFFFF;
-    MCUTRACE(1, "CacheRTP " << key << " GetCacheRTP - No cache!");
     return;
   }
   if(flags & PluginCodec_CoderForceIFrame)
@@ -296,7 +300,7 @@ inline void GetCacheRTP(const PString & key, CacheRTP *& cache, RTP_DataFrame & 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-inline bool AttachCacheRTP(const PString & key, CacheRTP *& cache, unsigned & encoderSeqN)
+inline bool AttachCacheRTP(CacheRTP *& cache, const PString & key, unsigned & encoderSeqN)
 {
   MCUCacheRTPList::shared_iterator it = cacheRTPList.Find(key);
   if(it == cacheRTPList.end())
@@ -310,11 +314,11 @@ inline bool AttachCacheRTP(const PString & key, CacheRTP *& cache, unsigned & en
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-inline void DetachCacheRTP(const PString & key, CacheRTP *& cache)
+inline void DetachCacheRTP(CacheRTP *& cache)
 {
   if(cache == NULL)
     return;
-  MCUTRACE(1, "CacheRTP " << key << " Detach");
+  MCUTRACE(1, "CacheRTP " << cache->GetName() << " Detach");
   cache->DecrementUsersNumber();
   cacheRTPList.Release(cache->GetID());
   cache = NULL;
@@ -346,14 +350,6 @@ class MCU_RTPChannel : public H323_RTPChannel
     const PString & GetCacheName() const
     { return cacheName; }
 
-    void AttachCache()
-    {
-      PWaitAndSignal m(cacheRTPMutex);
-      DetachCacheRTP(cacheName, cache);
-      while(!AttachCacheRTP(cacheName, cache, encoderSeqN))
-        PThread::Sleep(20);
-    }
-
     void OnFastUpdatePicture()
     { fastUpdate = true; }
 
@@ -364,8 +360,6 @@ class MCU_RTPChannel : public H323_RTPChannel
 
     bool fastUpdate;
     CacheRTP *cache;
-
-    PMutex cacheRTPMutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
