@@ -553,9 +553,13 @@ void MCUSipConnection::CleanUpOnCallEnd()
   StopTransmitChannels();
   StopReceiveChannels();
   DeleteChannels();
+
   videoReceiveCodecName = videoTransmitCodecName = "none";
   videoReceiveCodec = NULL;
   videoTransmitCodec = NULL;
+
+  audioTransmitChannel = NULL;
+  videoTransmitChannel = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -770,6 +774,11 @@ int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
 
   MCUSIP_RTPChannel *channel =
     new MCUSIP_RTPChannel(*this, *cap, ((rtp_dir == 0) ? H323Channel::IsReceiver : H323Channel::IsTransmitter), *session);
+
+  if(cap->GetMainType() == H323Capability::e_Audio && rtp_dir == 1)
+    audioTransmitChannel = channel;
+  if(cap->GetMainType() == H323Capability::e_Video && rtp_dir == 1)
+    videoTransmitChannel = channel;
 
   if(pt >= RTP_DataFrame::DynamicBase && pt <= RTP_DataFrame::MaxPayloadType)
     channel->SetDynamicRTPPayloadType(pt);
@@ -2136,13 +2145,12 @@ void MCUSipConnection::OnReceivedVFU()
   if(!CheckVFU())
     return;
 
-  if(vcap < 0) return;
-  SipCapability *sc = FindSipCap(RemoteSipCaps, vcap);
-  if(sc && sc->outChan)
+  if(videoTransmitChannel)
   {
-    H323VideoCodec *vcodec = (H323VideoCodec*)sc->outChan->GetCodec();
-    if(vcodec)
-      vcodec->OnFastUpdatePicture();
+    if(videoTransmitChannel->GetCacheMode() != 0)
+      videoTransmitChannel->OnFastUpdatePicture();
+    else
+      ((H323VideoCodec *)videoTransmitChannel->GetCodec())->OnFastUpdatePicture();
   }
 }
 

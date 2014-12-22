@@ -159,7 +159,6 @@ void ConferenceRecorder::Stop()
     av_write_trailer(fmt_context);
   }
 
-  PMutex & avcodecMutex = OpenMCU::Current().GetAVCodecMutex();
   avcodecMutex.Wait();
   if(audio_st)
     avcodec_close(audio_st->codec);
@@ -465,7 +464,6 @@ BOOL ConferenceRecorder::OpenAudio()
   int ret = 0;
 
   // open codec
-  PMutex & avcodecMutex = OpenMCU::Current().GetAVCodecMutex();
   avcodecMutex.Wait();
   ret = avcodec_open2(context, context->codec, NULL);
   avcodecMutex.Signal();
@@ -660,7 +658,6 @@ BOOL ConferenceRecorder::OpenVideo()
   int ret = 0;
 
   // open the codec
-  PMutex & avcodecMutex = OpenMCU::Current().GetAVCodecMutex();
   avcodecMutex.Wait();
   ret = avcodec_open2(context, context->codec, NULL);
   avcodecMutex.Signal();

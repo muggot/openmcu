@@ -5,6 +5,10 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+MCUCacheRTPList cacheRTPList;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #if MCUSIP_SRTP
 #if STRP_TRACING
   static BOOL SRTPError(err_status_t err, const char * fn, const char * file, int line)
@@ -260,7 +264,6 @@ void sip_rtp_shutdown()
 MCU_RTPChannel::MCU_RTPChannel(H323Connection & conn, const H323Capability & cap, Directions direction, RTP_Session & r)
   : H323_RTPChannel(conn, cap, direction, r)
 {
-  PMutex & avcodecMutex = OpenMCU::Current().GetAVCodecMutex();
   avcodecMutex.Wait();
   codec = capability->CreateCodec(direction == IsReceiver ? H323Codec::Decoder : H323Codec::Encoder);
   avcodecMutex.Signal();
@@ -269,6 +272,11 @@ MCU_RTPChannel::MCU_RTPChannel(H323Connection & conn, const H323Capability & cap
   if(codec && PIsDescendant(codec, H323AudioCodec))
     ((H323AudioCodec*)codec)->SetSilenceDetectionMode(endpoint.GetSilenceDetectionMode());
 #endif
+
+  cache = NULL;
+  cacheMode = 0;
+  encoderSeqN = 0;
+  fastUpdate = true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -277,7 +285,6 @@ MCU_RTPChannel::~MCU_RTPChannel()
 {
   if(codec)
   {
-    PMutex & avcodecMutex = OpenMCU::Current().GetAVCodecMutex();
     avcodecMutex.Wait();
     delete codec;
     codec = NULL;
@@ -304,6 +311,268 @@ BOOL MCU_RTPChannel::Open()
 void MCU_RTPChannel::CleanUpOnTermination()
 {
   H323_RTPChannel::CleanUpOnTermination();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if PTRACING
+class CodecReadAnalyser
+{
+  enum { MaxSamples = 1000 };
+  public:
+    CodecReadAnalyser()
+    { count = 0; }
+    void AddSample(DWORD timestamp)
+    {
+      if(count < MaxSamples)
+      {
+        tick[count] = PTimer::Tick();
+        rtp[count] = timestamp;
+        count++;
+      }
+    }
+    friend ostream & operator<<(ostream & strm, const CodecReadAnalyser & analysis)
+    {
+      PTimeInterval minimum = PMaxTimeInterval;
+      PTimeInterval maximum;
+      for(PINDEX i = 1; i < analysis.count; i++)
+      {
+        PTimeInterval delta = analysis.tick[i] - analysis.tick[i-1];
+        strm << setw(6) << analysis.rtp[i] << ' '
+               << setw(6) << (analysis.tick[i] - analysis.tick[0]) << ' '
+               << setw(6) << delta
+               << '\n';
+        if(delta > maximum)
+          maximum = delta;
+        if(delta < minimum)
+          minimum = delta;
+      }
+      strm << "Maximum delta time: " << maximum << "\n"
+              "Minimum delta time: " << minimum << '\n';
+      return strm;
+    }
+  private:
+    PTimeInterval tick[MaxSamples];
+    DWORD rtp[MaxSamples];
+    PINDEX count;
+};
+#endif
+
+void MCU_RTPChannel::Transmit()
+{
+  if(terminating)
+  {
+    PTRACE(3, "H323RTP\tTransmit thread terminated on start up");
+    return;
+  }
+
+  const OpalMediaFormat & mediaFormat = codec->GetMediaFormat();
+
+  // Get parameters from the codec on time and data sizes
+  BOOL isAudio = mediaFormat.NeedsJitterBuffer();
+  unsigned framesInPacket = capability->GetTxFramesInPacket();
+
+  rtpPayloadType = GetRTPPayloadType();
+  if(rtpPayloadType == RTP_DataFrame::G722)
+     framesInPacket /= 10;
+
+  unsigned maxFrameSize = mediaFormat.GetFrameSize();
+  if(maxFrameSize == 0)
+    maxFrameSize = isAudio ? 8 : 2000;
+  RTP_DataFrame frame(framesInPacket * maxFrameSize);
+
+  if(rtpPayloadType == RTP_DataFrame::IllegalPayloadType)
+  {
+     PTRACE(1, "H323RTP\tReceive " << mediaFormat << " thread ended (illegal payload type)");
+     return;
+  }
+  frame.SetPayloadType(rtpPayloadType); 
+
+  PTRACE(2, "H323RTP\tTransmit " << mediaFormat << " thread started:"
+            " rate=" << codec->GetFrameRate() <<
+            " time=" << (codec->GetFrameRate()/(mediaFormat.GetTimeUnits() > 0 ? mediaFormat.GetTimeUnits() : 1)) << "ms" <<
+            " size=" << framesInPacket << '*' << maxFrameSize << '='
+                    << (framesInPacket*maxFrameSize) );
+
+  // This is real time so need to keep track of elapsed milliseconds
+  BOOL silent = TRUE;
+  unsigned length;
+  unsigned frameOffset = 0;
+  unsigned frameCount = 0;
+  DWORD rtpFirstTimestamp = rand();
+  DWORD rtpTimestamp = rtpFirstTimestamp;
+  PTimeInterval firstFrameTick = PTimer::Tick();
+  frame.SetPayloadSize(0);
+
+#if PTRACING
+  DWORD lastDisplayedTimestamp = 0;
+  CodecReadAnalyser * codecReadAnalysis = NULL;
+  if(PTrace::GetLevel() >= 5)
+    codecReadAnalysis = new CodecReadAnalyser;
+#endif
+
+  while(1)
+  {
+    BOOL retval = FALSE;
+
+    if(cacheMode == 0 || cacheMode == 1 || cacheMode == 3 || encoderSeqN == 0xFFFFFFFF)
+      retval = codec->Read(frame.GetPayloadPtr() + frameOffset, length, frame);
+
+    if(cacheMode == 2 && encoderSeqN != 0xFFFFFFFF)
+    {
+      PWaitAndSignal m(cacheRTPMutex);
+
+      unsigned flags = 0;
+      if(fastUpdate)
+        flags = PluginCodec_CoderForceIFrame;
+
+      GetCacheRTP(cacheName, cache, frame, length, encoderSeqN, flags);
+
+      if(flags & PluginCodec_ReturnCoderIFrame)
+        fastUpdate = false;
+
+      retval = TRUE;
+    }
+
+    if(retval == FALSE)
+      break;
+
+    if(paused)
+      length = 0; // Act as though silent/no video
+
+    // Handle marker bit for audio codec
+    if(isAudio)
+    {
+      // If switching from silence to signal
+      if(silent && length > 0)
+      {
+        silent = FALSE;
+        frame.SetMarker(TRUE);  // Set flag for start of sound
+        PTRACE(3, "H323RTP\tTransmit start of talk burst: " << rtpTimestamp);
+      }
+      // If switching from signal to silence
+      else if (!silent && length == 0)
+      {
+        silent = TRUE;
+        // If had some data waiting to go out
+        if(frameOffset > 0)
+          frameCount = framesInPacket;  // Force the RTP write
+        PTRACE(3, "H323RTP\tTransmit  end  of talk burst: " << rtpTimestamp);
+      }
+    }
+
+    // See if is silence or have some audio data to stuff in the RTP packet
+    if(length == 0)
+      frame.SetTimestamp(rtpTimestamp);
+    else
+    {
+      silenceStartTick = PTimer::Tick();
+
+      // If first read frame in packet, set timestamp for it
+      if(frameOffset == 0)
+        frame.SetTimestamp(rtpTimestamp);
+      frameOffset += length;
+
+      // Look for special cases
+      if(rtpPayloadType == RTP_DataFrame::G729 && length == 2)
+      {
+        /* If we have a G729 sid frame (ie 2 bytes instead of 10) then we must
+           not send any more frames in the RTP packet.
+         */
+        frameCount = framesInPacket;
+      }
+      else
+      {
+        /* Increment by number of frames that were read in one hit Note a
+           codec that does variable length frames should never return more
+           than one frame per Read() call or confusion will result.
+         */
+        frameCount += (length + maxFrameSize - 1) / maxFrameSize;
+      }
+    }
+
+    BOOL sendPacket = FALSE;
+
+    // Have read number of frames for packet (or just went silent)
+    if(frameCount >= framesInPacket)
+    {
+      // Set payload size to frame offset, now length of frame.
+      frame.SetPayloadSize(frameOffset);
+      frame.SetPayloadType(rtpPayloadType);
+
+      frameOffset = 0;
+      frameCount = 0;
+
+      sendPacket = TRUE;
+    }
+
+    if(isAudio)
+    {
+      filterMutex.Wait();
+      for(PINDEX i = 0; i < filters.GetSize(); i++)
+        filters[i](frame, (INT)&sendPacket);
+      filterMutex.Signal();
+    }
+
+    if(sendPacket || (silent && frame.GetPayloadSize() > 0))
+    {
+      // Send the frame of coded data we have so far to RTP transport
+      if(!WriteFrame(frame))
+         break;
+
+      if(!isAudio && !frame.GetMarker())
+        PThread::Sleep(1);
+
+      // Reset flag for in talk burst
+      if(isAudio)
+        frame.SetMarker(FALSE); 
+
+      frame.SetPayloadSize(0);
+      frameOffset = 0;
+      frameCount = 0;
+    }
+    else
+      PTRACE(3, "H323READ\t Drop Packet");
+
+    if(terminating)
+      break;
+
+    // Calculate the timestamp and real time to take in processing
+    if(isAudio)
+    {
+      rtpTimestamp += codec->GetFrameRate();
+    }
+    else
+    {
+      if(frame.GetMarker())
+        rtpTimestamp = rtpFirstTimestamp + ((PTimer::Tick() - firstFrameTick).GetInterval() * 90);
+    }
+
+#if PTRACING
+    if(rtpTimestamp - lastDisplayedTimestamp > RTP_TRACE_DISPLAY_RATE)
+    {
+      PTRACE(9, "H323RTP\tTransmitter sent timestamp " << rtpTimestamp);
+      lastDisplayedTimestamp = rtpTimestamp;
+    }
+
+    if(codecReadAnalysis != NULL)
+      codecReadAnalysis->AddSample(rtpTimestamp);
+#endif
+
+  }
+
+  if(cache)
+    DetachCacheRTP(cacheName, cache);
+
+#if PTRACING
+  PTRACE_IF(5, codecReadAnalysis != NULL, "Codec read timing:\n" << *codecReadAnalysis);
+  delete codecReadAnalysis;
+#endif
+
+  if(!terminating)
+    connection.CloseLogicalChannelNumber(number);
+
+  PTRACE(2, "H323RTP\tTransmit " << mediaFormat << " thread ended");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

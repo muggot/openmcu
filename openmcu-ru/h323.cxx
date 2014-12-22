@@ -630,10 +630,10 @@ PString MCUH323EndPoint::GetRoomStatusJS()
               vprx=vSess->GetPacketsReceived(); vptx=vSess->GetPacketsSent();
               vplost = vSess->GetPacketsLost(); vplostTx = vSess->GetPacketsLostTx();
             }
-            if(conn->GetVideoTransmitCodec()!=NULL)
+            if(conn->GetVideoTransmitChannel() != NULL)
             {
-              codecCacheMode=conn->GetVideoTransmitCodec()->GetCacheMode();
-              formatString=conn->GetVideoTransmitCodec()->GetFormatString();
+              codecCacheMode = conn->GetVideoTransmitChannel()->GetCacheMode();
+              formatString = conn->GetVideoTransmitChannel()->GetCacheName();
             }
 #endif
             ra = conn->GetRemoteApplication();
@@ -642,12 +642,12 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         }
         else if(member->GetType() == MEMBER_TYPE_CACHE)
         {
-          ConferenceCacheMember * fileMember = dynamic_cast<ConferenceCacheMember *>(member);
-          if(fileMember) if(fileMember->codec) if(fileMember->codec->GetCacheMode() == 1)
+          ConferenceCacheMember * cacheMember = dynamic_cast<ConferenceCacheMember *>(member);
+          if(cacheMember)
           {
-            formatString=fileMember->codec->GetFormatString();
-            cacheUsersNumber=fileMember->codec->GetCacheUsersNumber();
-            codecCacheMode=fileMember->codec->GetCacheMode();
+            formatString = cacheMember->GetCacheName();
+            cacheUsersNumber = cacheMember->GetCacheUsersNumber();
+            codecCacheMode = 2;
           }
           duration = now - member->GetStartTime();
         }
@@ -676,13 +676,13 @@ PString MCUH323EndPoint::GetRoomStatusJS()
                   vprx=vSess->GetPacketsReceived(); vptx=vSess->GetPacketsSent();
                   vplost = vSess->GetPacketsLost(); vplostTx = vSess->GetPacketsLostTx();
                 }
-                if(conn->GetVideoTransmitCodec()!=NULL)
+                if(conn->GetVideoTransmitChannel() != NULL)
                 {
-                  codecCacheMode=conn->GetVideoTransmitCodec()->GetCacheMode();
-                  formatString=conn->GetVideoTransmitCodec()->GetFormatString();
+                  codecCacheMode = conn->GetVideoTransmitChannel()->GetCacheMode();
+                  formatString = conn->GetVideoTransmitChannel()->GetCacheName();
                 }
-                ra = conn->GetRemoteApplication();
 #             endif
+              ra = conn->GetRemoteApplication();
               conn->Unlock();
           }
         }
@@ -791,8 +791,13 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         if(conn!=NULL)
         {
 #if MCU_VIDEO
-          if(conn->GetVideoTransmitCodec()) { codecCacheMode=conn->GetVideoTransmitCodec()->GetCacheMode(); formatString=conn->GetVideoTransmitCodec()->GetFormatString(); }
-          else formatString="NO_CODEC";
+          if(conn->GetVideoTransmitChannel() != NULL)
+          {
+            codecCacheMode = conn->GetVideoTransmitChannel()->GetCacheMode();
+            formatString = conn->GetVideoTransmitChannel()->GetCacheName();
+          }
+          else
+            formatString="NO_CODEC";
 #endif
           PTimeInterval duration = now - conn->GetConnectionStartTime();
           PStringStream d;
@@ -859,12 +864,12 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
           if(cache)
           {
             cache=FALSE;
-            ConferenceCacheMember * fileMember = dynamic_cast<ConferenceCacheMember *>(member);
-            if(fileMember) if(fileMember->codec) if(fileMember->codec->GetCacheMode() == 1)
+            ConferenceCacheMember * cacheMember = dynamic_cast<ConferenceCacheMember *>(member);
+            if(cacheMember)
             {
-              cache=TRUE;
-              formatString=fileMember->codec->GetFormatString();
-              cacheUsersNumber=fileMember->codec->GetCacheUsersNumber();
+              cache = TRUE;
+              formatString = cacheMember->GetCacheName();
+              cacheUsersNumber = cacheMember->GetCacheUsersNumber();
             }
           }
           PStringStream d;
@@ -1110,7 +1115,7 @@ BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMem
   if(member->GetType() & MEMBER_TYPE_GSYSTEM)
     return FALSE;
 
-  MCUH323Connection *conn=(MCUH323Connection *)FindConnectionWithoutLock(member->GetCallToken());
+  MCUH323Connection *conn = (MCUH323Connection *)FindConnectionWithoutLock(member->GetCallToken());
   if(conn == NULL)
     return FALSE;
 
@@ -1120,16 +1125,11 @@ BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMem
     return FALSE;
   }
 
-  PWaitAndSignal m(conn->GetVideoTransmitCodec()->GetVideoHandlerMutex());
-
-  unsigned cacheMode = conn->GetVideoTransmitCodec()->GetCacheMode();
-
-  if(cacheMode == 2)
-    conn->GetVideoTransmitCodec()->DetachCacheRTP();
-
   conn->videoMixerNumber = newMixerNumber;
   conn->GetConferenceMember()->SetVideoMixerNumber(newMixerNumber);
 
+  MCU_RTPChannel *channel = conn->GetVideoTransmitChannel();
+  unsigned cacheMode = channel->GetCacheMode();
   if(cacheMode == 2)
     conn->OpenVideoChannel(TRUE, *(conn->GetVideoTransmitCodec()));
 
@@ -2369,6 +2369,9 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
   videoReceiveCodec = NULL;
   videoTransmitCodec = NULL;
 #endif
+
+  audioTransmitChannel = NULL;
+  videoTransmitChannel = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2462,6 +2465,9 @@ void MCUH323Connection::CleanUpOnCallEnd()
   videoReceiveCodec = NULL;
   videoTransmitCodec = NULL;
 
+  audioTransmitChannel = NULL;
+  videoTransmitChannel = NULL;
+
   LeaveConference();
   H323Connection::CleanUpOnCallEnd();
 }
@@ -2532,11 +2538,6 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
 
   conferenceIdentifier = conference->GetGUID();
 
-  if(videoTransmitCodec!=NULL)
-//   videoTransmitCodec->encoderCacheKey = ((long)conference&0xFFFFFF00)|(videoTransmitCodec->encoderCacheKey&0x000000FF);
-//    videoTransmitCodec->SetEncoderCacheKey(((long)(conference->videoMixerList)<<8)|(videoTransmitCodec->GetEncoderCacheKey()&0x000000FF));
-    videoTransmitCodec->SetEncoderCacheKey(((long)(conference)<<8)|(videoTransmitCodec->GetEncoderCacheKey()&0x000000FF));
-
   // crete member connection
   conferenceMember = new H323Connection_ConferenceMember(conference, ep, GetCallToken(), this, isMCU);
   conference->Unlock();
@@ -2603,7 +2604,14 @@ H323Channel * MCUH323Connection::CreateRealTimeLogicalChannel(const H323Capabili
   if (session == NULL)
     return NULL;
 
-  return new MCUH323_RTPChannel(*this, capability, dir, *session);
+  MCUH323_RTPChannel *channel = new MCUH323_RTPChannel(*this, capability, dir, *session);
+
+  if(capability.GetMainType() == H323Capability::e_Audio && dir == H323Channel::IsTransmitter)
+    audioTransmitChannel = channel;
+  if(capability.GetMainType() == H323Capability::e_Video && dir == H323Channel::IsTransmitter)
+    videoTransmitChannel = channel;
+
+  return channel;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3015,6 +3023,12 @@ BOOL MCUH323Connection::OnH245_MiscellaneousCommand(const H245_MiscellaneousComm
   {
     if(!CheckVFU())
       return TRUE;
+
+    if(videoTransmitChannel && videoTransmitChannel->GetCacheMode() != 0)
+    {
+      videoTransmitChannel->OnFastUpdatePicture();
+      return TRUE;
+    }
   }
   return H323Connection::OnH245_MiscellaneousCommand(pdu);
 }
@@ -3040,60 +3054,47 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
 {
   PWaitAndSignal m(connMutex);
 
-  unsigned codecSampleRate = codec.GetSampleRate();
-  if(codecSampleRate == 0)
-    codecSampleRate = 8000; // built-in g711
+  unsigned sampleRate = codec.GetSampleRate();
+  if(sampleRate == 0)
+    sampleRate = 8000; // built-in g711
 
-  unsigned codecChannels = 1;
+  unsigned channels = 1;
   if(isEncoding)
-    codecChannels = codec.GetMediaFormat().GetEncoderChannels();
+    channels = codec.GetMediaFormat().GetEncoderChannels();
   else
-    codecChannels = codec.GetMediaFormat().GetDecoderChannels();
-
-  PString codecName = codec.GetMediaFormat() + "@" + PString(codecSampleRate) + "/" +PString(codecChannels);
+    channels = codec.GetMediaFormat().GetDecoderChannels();
 
   codec.SetSilenceDetectionMode(H323AudioCodec::NoSilenceDetection);
 
   if(isEncoding)
   {
     audioTransmitCodec = &codec;
-    // update format string
-    audioTransmitCodecName = codecName;
-    codec.SetFormatString(audioTransmitCodecName);
+    audioTransmitCodecName = codec.GetMediaFormat() + "@" + PString(sampleRate) + "/" +PString(channels);
 
     // check cache mode
     BOOL enableCache = FALSE;
     if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_STREAM && codec.GetMediaFormat().Find("G.711") == P_MAX_INDEX)
       enableCache = TRUE;
     if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_CACHE)
-      enableCache = TRUE;
+      enableCache = FALSE;
 
     // setup cache
     if(enableCache)
     {
       // update format string
-      audioTransmitCodecName = codec.GetFormatString() + "_" + requestedRoom;
-      codec.SetFormatString(audioTransmitCodecName);
-      if(codec.GetCacheMode() == 0)
-      {
-        if(!codec.CheckCacheRTP())
-        {
-          OpenAudioCache(codec);
-          while(!codec.CheckCacheRTP()) { PThread::Sleep(100); }
-        }
-        codec.AttachCacheRTP();
-      }
-    } else {
-      codec.SetCacheMode(0); // "no cache" mode
+      audioTransmitCodecName = audioTransmitCodecName + "_" + requestedRoom;
+      OpenAudioCache(codec.GetMediaFormat(), audioTransmitCodecName);
+      audioTransmitChannel->SetCacheName(audioTransmitCodecName);
+      audioTransmitChannel->SetCacheMode(2);
+      audioTransmitChannel->AttachCache();
     }
 
-    if(codec.GetCacheMode() != 2)
-      codec.AttachChannel(new OutgoingAudio(ep, *this, codecSampleRate, codecChannels), TRUE);
+    codec.AttachChannel(new OutgoingAudio(ep, *this, sampleRate, channels), TRUE);
 
   } else {
     audioReceiveCodec = &codec;
-    audioReceiveCodecName = codecName;
-    codec.AttachChannel(new IncomingAudio(ep, *this, codecSampleRate, codecChannels), TRUE);
+    audioReceiveCodecName = codec.GetMediaFormat() + "@" + PString(sampleRate) + "/" +PString(channels);
+    codec.AttachChannel(new IncomingAudio(ep, *this, sampleRate, channels), TRUE);
   }
 
   return TRUE;
@@ -3101,16 +3102,21 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUH323Connection::OpenAudioCache(H323AudioCodec & codec)
+void MCUH323Connection::OpenAudioCache(const OpalMediaFormat & format, const PString & cacheName)
 {
+  PWaitAndSignal m(cacheRTPListMutex);
+
+  if(FindCacheRTP(cacheName))
+    return;
+
   ConferenceManager & manager = ep.GetConferenceManager();
   Conference *c = manager.FindConferenceWithLock(conference);
   if(c == NULL)
     c = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
 
-  PTRACE(2,"MCU\tOpenAudioCache(" << codec.GetFormatString() << ")");
+  PTRACE(2,"MCU\tOpenAudioCache(" << cacheName << ")");
 
-  new ConferenceCacheMember(c, codec.GetMediaFormat(), 0);
+  new ConferenceCacheMember(c, 0, format, cacheName);
 
   // unlock conference
   c->Unlock();
@@ -3118,22 +3124,27 @@ void MCUH323Connection::OpenAudioCache(H323AudioCodec & codec)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUH323Connection::OpenVideoCache(H323VideoCodec & srcCodec)
+void MCUH323Connection::OpenVideoCache(const OpalMediaFormat & format, const PString & cacheName)
 {
+  PWaitAndSignal m(cacheRTPListMutex);
+
+  if(FindCacheRTP(cacheName))
+    return;
+
   ConferenceManager & manager = ep.GetConferenceManager();
-  Conference *c = manager.FindConferenceWithLock(conference);;
+  Conference *c = manager.FindConferenceWithLock(conference);
   if(c == NULL)
     c = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
 
   // starting new cache thread
   unsigned videoMixerNumber = 0;
-  PINDEX slashPos=srcCodec.GetFormatString().Find("/");
+  PINDEX slashPos = cacheName.Find("/");
   if(slashPos != P_MAX_INDEX)
-    videoMixerNumber=atoi(srcCodec.GetFormatString().Mid(slashPos+1,P_MAX_INDEX));
+    videoMixerNumber = atoi(cacheName.Mid(slashPos+1, P_MAX_INDEX));
 
-  PTRACE(2,"MCU\tOpenVideoCache(" << srcCodec.GetFormatString() << ")");
+  PTRACE(2,"MCU\tOpenVideoCache(" << cacheName << ")");
 
-  new ConferenceCacheMember(c, srcCodec.GetMediaFormat(), videoMixerNumber);
+  new ConferenceCacheMember(c, videoMixerNumber, format, cacheName);
 
   // unlock conference
   c->Unlock();
@@ -3252,10 +3263,10 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     codec.SetTargetFrameTimeMs(1000/fr); // ???
 
     // update format string
-    PString formatWH = codec.GetFormatString().Left(codec.GetFormatString().FindLast(":"));
-    PString bitrate = mf.GetOptionInteger(OPTION_MAX_BIT_RATE);
-    videoTransmitCodecName = formatWH + ":" + bitrate + "x" + (PString)fr;
-    codec.SetFormatString(videoTransmitCodecName);
+    videoTransmitCodecName = mf + "@" + PString(mf.GetOptionInteger(OPTION_FRAME_WIDTH))
+                             + "x" + PString(mf.GetOptionInteger(OPTION_FRAME_HEIGHT))
+                             + ":" + PString(mf.GetOptionInteger(OPTION_MAX_BIT_RATE))
+                             + "x" + PString(fr);
 
     // check cache mode
     BOOL enableCache = TRUE;
@@ -3269,31 +3280,19 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_STREAM)
       enableCache = TRUE;
     if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_CACHE)
-      enableCache = TRUE;
-
-    if(GetRemoteApplication().Find("PCS-") != P_MAX_INDEX && codec.GetFormatString().Find("H.264") != P_MAX_INDEX) 
-    {
       enableCache = FALSE;
-      codec.SetCacheMode(3); // ??? mode
-    }
+    if(remoteApplication.Find("PCS-") != P_MAX_INDEX && videoTransmitCodecName.Find("H.264") != P_MAX_INDEX)
+      enableCache = FALSE; // ???
 
     // setup cache
     if(enableCache)
     {
-      // update format string
-      videoTransmitCodecName = codec.GetFormatString() + "_" + requestedRoom + "/" + (PString)videoMixerNumber;
-      codec.SetFormatString(videoTransmitCodecName);
-      if(codec.GetCacheMode() == 0)
-      {
-        if(!codec.CheckCacheRTP())
-        {
-          OpenVideoCache(codec);
-          while(!codec.CheckCacheRTP()) { PThread::Sleep(100); }
-        }
-        codec.AttachCacheRTP();
-      }
-    } else {
-      codec.SetCacheMode(0); // "no cache" mode
+      // update
+      videoTransmitCodecName = videoTransmitCodecName + "_" + requestedRoom + "/" + (PString)videoMixerNumber;
+      OpenVideoCache(codec.GetMediaFormat(), videoTransmitCodecName);
+      videoTransmitChannel->SetCacheName(videoTransmitCodecName);
+      videoTransmitChannel->SetCacheMode(2);
+      videoTransmitChannel->AttachCache();
     }
 
     if (!InitGrabber(videoGrabber, codec.GetWidth(), codec.GetHeight(), fr)) {

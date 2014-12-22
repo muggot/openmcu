@@ -72,6 +72,16 @@ typedef void * ConferenceMemberId;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+// avcodecMutex - используется при создании/удалении кодеков
+// insufficient thread locking around avcodec_open/close()
+extern PMutex avcodecMutex;
+
+// cacheRTPListMutex - используется при создании кэшей
+// предотвращает создание в списке двух одноименных кэшей
+extern PMutex cacheRTPListMutex;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 const uint64_t MCU_AV_CH_Layout_Selector[] =
 {
   0
@@ -99,7 +109,7 @@ enum MCUConnectionTypes
 
 #define MCUTRACE(level, args) \
   if(level > 0) PTrace::Begin(level, __FILE__, __LINE__) << args << PTrace::End; \
-  if(PTrace::CanTrace(level)) cout << setw(8) << PTime() - OpenMCU::Current().GetStartTime() << " " << args << endl
+  if(PTrace::CanTrace(level)) cout << setw(8) << PTime() - PProcess::Current().GetStartTime() << " " << args << endl
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -117,7 +127,7 @@ char * PStringToChar(PString str);
 
 int PTimedMutexTryLock(PTimedMutex & mutex, const PTimeInterval & timeout, PString info="");
 
-BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap);
+//BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap);
 
 BOOL CheckCapability(const PString & formatName);
 BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionType = CONNECTION_TYPE_NONE);

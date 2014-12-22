@@ -4,11 +4,11 @@
 
 #include "config.h"
 #include "util.h"
+#include "conference.h"
+#include "mcu_rtp.h"
 
 #include <ptlib/sound.h>
 #include <opalwavfile.h>
-#include "conference.h"
-
 #include <deque>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -91,7 +91,7 @@ class ConferenceCacheMember : public ConferenceMember
 {
   PCLASSINFO(ConferenceCacheMember, ConferenceMember);
   public:
-    ConferenceCacheMember(Conference * conference, const OpalMediaFormat & _fmt, unsigned _videoMixerNumber);
+    ConferenceCacheMember(Conference * conference, unsigned videoMixerNumber, const OpalMediaFormat & _format, const PString & cacheName);
     ~ConferenceCacheMember();
 
     virtual ConferenceConnection * CreateConnection()
@@ -111,21 +111,33 @@ class ConferenceCacheMember : public ConferenceMember
     void OnReceivedUserInputIndication(const PString & str)
     { cout << "Received user input indication " << str << endl; }
 
-    virtual PString GetMediaFormat()
+    PString GetMediaFormat()
     { return format; }
 
     int GetStatus()
     { return status; }
 
-    PDECLARE_NOTIFIER(PThread, ConferenceCacheMember, CacheThread);
+    PString GetCacheName() const
+    { return cacheName; }
 
-    H323Codec * codec;
-    MCUH323Connection * con;
+    int GetCacheUsersNumber() const
+    { return (cache ? cache->GetUsersNumber() : 0); }
+
+    const H323Codec * GetCodec() const
+    { return codec; }
+
+    PDECLARE_NOTIFIER(PThread, ConferenceCacheMember, CacheThread);
 
   protected:
     OpalMediaFormat format;
+    PString cacheName;
     PString roomName;
     int status;
+
+    CacheRTP *cache;
+
+    H323Codec * codec;
+    MCUH323Connection * conn;
 
     BOOL running;
     PThread * thread;

@@ -222,10 +222,10 @@ class MCUH323Connection : public H323Connection
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     virtual void AttachSignalChannel(const PString & token, H323Transport * channel, BOOL answeringCall);
     virtual BOOL OpenAudioChannel(BOOL, unsigned, H323AudioCodec & codec);
-    virtual void OpenAudioCache(H323AudioCodec & codec);
+    virtual void OpenAudioCache(const OpalMediaFormat & format, const PString & cacheName);
 #if MCU_VIDEO
     virtual BOOL OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec);
-    virtual void OpenVideoCache(H323VideoCodec & srcCodec);
+    virtual void OpenVideoCache(const OpalMediaFormat & format, const PString & cacheName);
     virtual void OnClosedLogicalChannel(const H323Channel & channel);
 #endif
     virtual void CleanUpOnCallEnd();
@@ -286,11 +286,11 @@ class MCUH323Connection : public H323Connection
     virtual BOOL OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount);
     virtual BOOL OnOutgoingVideo(void * buffer, int width, int height, PINDEX & amount);
     virtual PString GetVideoTransmitCodecName() const { return videoTransmitCodecName; }
-    virtual void SetVideoTransmitCodecName(PString newVideoTransmitCodecName) { videoTransmitCodecName=newVideoTransmitCodecName; }
     virtual PString GetVideoReceiveCodecName() const  { return videoReceiveCodecName; }
     virtual BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount);
     virtual H323VideoCodec * GetVideoReceiveCodec() const  { return videoReceiveCodec; }
     virtual H323VideoCodec * GetVideoTransmitCodec() const  { return videoTransmitCodec; }
+    virtual MCU_RTPChannel * GetVideoTransmitChannel() const { return videoTransmitChannel; }
     virtual void RestartGrabber();
     unsigned videoMixerNumber;
 #endif
@@ -417,6 +417,9 @@ class MCUH323Connection : public H323Connection
 
     H323AudioCodec *audioReceiveCodec;
     H323AudioCodec *audioTransmitCodec;
+
+    MCU_RTPChannel *audioTransmitChannel;
+    MCU_RTPChannel *videoTransmitChannel;
 
     BOOL CheckVFU();
     PTime vfuSendTime;             // время отправки запроса от MCU

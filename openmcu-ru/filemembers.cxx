@@ -206,7 +206,7 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ConferenceCacheMember::ConferenceCacheMember(Conference * _conference, const OpalMediaFormat & _fmt, unsigned _videoMixerNumber)
+ConferenceCacheMember::ConferenceCacheMember(Conference * _conference, unsigned _videoMixerNumber, const OpalMediaFormat & _format, const PString & _cacheName)
 #ifdef _WIN32
 #pragma warning(push)
 #pragma warning(disable:4355)
@@ -217,18 +217,20 @@ ConferenceCacheMember::ConferenceCacheMember(Conference * _conference, const Opa
 #endif
 {
   PTRACE(1,"ConferenceCacheMember\tConstruct");
-  videoMixerNumber=_videoMixerNumber;
-  format = _fmt;
-
-  running = FALSE;
 
   if(conference == NULL)
     return;
-  roomName=conference->GetNumber();
 
-  running = TRUE;
+  roomName = conference->GetNumber();
+  videoMixerNumber = _videoMixerNumber;
+  format = _format;
+  cacheName = _cacheName;
+
+  cache = CreateCacheRTP(cacheName);
+
   conference->AddMember(this);
 
+  running = TRUE;
   thread = PThread::Create(PCREATE_NOTIFIER(CacheThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "cache:%0x");
 }
 
@@ -245,6 +247,7 @@ ConferenceCacheMember::~ConferenceCacheMember()
     delete thread;
     thread = NULL;
   }
+  DeleteCacheRTP(cacheName, cache);
   PTRACE(5,"ConferenceCacheMember\tTerminated: " << GetName());
 }
 
@@ -274,55 +277,43 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
     return;
   }
 
-  H323Capability * cap = H323Capability::Create(format);
-  if(!cap) return;
+  H323Capability *cap = H323Capability::Create(format);
+  if(cap == NULL)
+    return;
   OpalMediaFormat & wf = cap->GetWritableMediaFormat();
   wf = format;
-  status = 1;
-  MCUTRACE(1, "Cache\tStarting cache thread " << format);
+  MCUTRACE(1, "Cache\tStarting cache thread " << cacheName);
   if(cap->GetMainType() == H323Capability::e_Audio)
   {
     codec = cap->CreateCodec(H323Codec::Encoder);
-    codec->SetCacheMode(1); // caching codec
-    con = new MCUH323Connection(ep, 0, NULL);
-    con->SetupCacheConnection(format, conference, this);
-    con->OpenAudioChannel(TRUE, 0, (H323AudioCodec &)*codec);
+    conn = new MCUH323Connection(ep, 0, NULL);
+    conn->SetupCacheConnection(cacheName, conference, this);
+    conn->OpenAudioChannel(TRUE, 0, (H323AudioCodec &)*codec);
   } else {
     codec = cap->CreateCodec(H323Codec::Encoder);
-    codec->SetCacheMode(1); // caching codec
-    con = new MCUH323Connection(ep, 0, NULL);
-    con->videoMixerNumber = videoMixerNumber;
-    con->SetupCacheConnection(format, conference, this);
-    con->OpenVideoChannel(TRUE, (H323VideoCodec &)*codec);
+    conn = new MCUH323Connection(ep, 0, NULL);
+    conn->videoMixerNumber = videoMixerNumber;
+    conn->SetupCacheConnection(cacheName, conference, this);
+    conn->OpenVideoChannel(TRUE, (H323VideoCodec &)*codec);
   }
-
-  if(codec->CheckCacheRTP())
-  {
-    PTRACE(3,"Cache\t" << format << " already exists, nothing to do, stopping thread");
-    delete(con); con=NULL;
-    delete(codec); codec=NULL;
-    delete(cap); cap=NULL;
-    mutex.Signal();
-    Close();
-    return;
-  }
-  codec->NewCacheRTP();
 
   // unlock
   mutex.Signal();
 
-  unsigned length = 0;
   RTP_DataFrame frame;
+  unsigned length = 0;
+  status = 1;
+
   // from here we are ready to call codec->Read in cicle
   while(running)
   {
-    while(running && codec->GetCacheUsersNumber() == 0)
+    while(running && GetCacheUsersNumber() == 0)
     {
       if(status == 1)
       {
         status = 0;
-        totalVideoFramesSent=0;
-        MCUTRACE(1, "MCU\tDown to sleep " << codec->GetFormatString());
+        totalVideoFramesSent = 0;
+        MCUTRACE(1, "MCU\tDown to sleep " << cacheName);
       }
       PThread::Sleep(1000);
     }
@@ -331,34 +322,43 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
       status = 1;
       // restart channel
       if(cap->GetMainType() == H323Capability::e_Audio)
-        codec->AttachChannel(new OutgoingAudio(ep, *con, wf.GetTimeUnits()*1000, wf.GetEncoderChannels()), TRUE);
+        codec->AttachChannel(new OutgoingAudio(ep, *conn, wf.GetTimeUnits()*1000, wf.GetEncoderChannels()), TRUE);
       else
-        con->RestartGrabber();
-      //
+        conn->RestartGrabber();
       firstFrameSendTime = PTime();
-      MCUTRACE(1, "MCU\tWake up " << codec->GetFormatString());
+      MCUTRACE(1, "MCU\tWake up " << cacheName);
     }
     if(running)
     {
-      mutex.Wait();
+      PWaitAndSignal m(mutex);
+
+      unsigned flags = 0;
+
+      cache->GetFastUpdate(flags);
+      if(flags & PluginCodec_CoderForceIFrame)
+        ((H323VideoCodec *)codec)->OnFastUpdatePicture();
+
       codec->Read(NULL, length, frame);
-      mutex.Signal();
+      PutCacheRTP(cacheName, cache, frame, length, flags);
     }
   }
 
-  PTRACE(1, "MCU\tWait before deleting cache " << codec->GetFormatString() << ", active users " << codec->GetCacheUsersNumber());
-  while(codec->GetCacheUsersNumber() != 0)
+  PTRACE(1, "MCU\tWait before deleting cache " << cacheName << ", active users " << GetCacheUsersNumber());
+  while(GetCacheUsersNumber() != 0)
   {
+    PWaitAndSignal m(mutex);
+    unsigned flags = 0;
     codec->Read(NULL, length, frame);
-    PThread::Sleep(100);
+    PutCacheRTP(cacheName, cache, frame, length, flags);
+    PThread::Sleep(1);
   }
-  PTRACE(1, "MCU\tDelete cache " << codec->GetFormatString());
 
   // must destroy videograbber and videochanell here? fix it
-  delete(con); con=NULL;
-  codec->DeleteCacheRTP();
-  delete(codec); codec=NULL;
-  delete(cap); cap=NULL;
+  delete(conn); conn = NULL;
+  delete(codec); codec = NULL;
+  delete(cap); cap = NULL;
+
+  PTRACE(1, "MCU\tDelete cache " << cacheName);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
