@@ -614,7 +614,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
           if(conn)
           {
             audioCodecT = conn->GetAudioTransmitCodecName();
-            RTP_Session *sess=conn->GetSession(RTP_Session::DefaultAudioSessionID);
+            MCU_RTP_UDP *sess = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultAudioSessionID);
             if(sess != NULL)
             {
               orx = sess->GetOctetsReceived(); otx = sess->GetOctetsSent();
@@ -623,7 +623,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
             }
 #if MCU_VIDEO
             videoCodecT = conn->GetVideoTransmitCodecName();
-            RTP_Session* vSess=conn->GetSession(RTP_Session::DefaultVideoSessionID);
+            MCU_RTP_UDP *vSess = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultVideoSessionID);
             if(vSess != NULL)
             {
               vorx=vSess->GetOctetsReceived(); votx=vSess->GetOctetsSent();
@@ -659,7 +659,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
               duration = now - conn->GetConnectionStartTime();
               audioCodecR = conn->GetAudioReceiveCodecName();
               audioCodecT = conn->GetAudioTransmitCodecName();
-              RTP_Session *sess=conn->GetSession(RTP_Session::DefaultAudioSessionID);
+              MCU_RTP_UDP *sess = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultAudioSessionID);
               if(sess != NULL)
               {
                 orx = sess->GetOctetsReceived(); otx = sess->GetOctetsSent();
@@ -669,7 +669,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
 #             if MCU_VIDEO
                 videoCodecR = conn->GetVideoReceiveCodecName() + "@" + member->GetVideoRxFrameSize();
                 videoCodecT = conn->GetVideoTransmitCodecName();
-                RTP_Session* vSess=conn->GetSession(RTP_Session::DefaultVideoSessionID);
+                MCU_RTP_UDP *vSess = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultVideoSessionID);
                 if(vSess != NULL)
                 {
                   vorx=vSess->GetOctetsReceived(); votx=vSess->GetOctetsSent();
@@ -3270,7 +3270,7 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
       if(GetEndpointParam(VideoCacheKey, "Enable") == "Disable")
         cacheMode = 0;
       // Режим кэширования после подключения не изменяется
-      if(conferenceMember && videoTransmitChannel)
+      if(videoTransmitChannel && videoTransmitChannel->GetCacheMode() >= 0)
         cacheMode = videoTransmitChannel->GetCacheMode();
       // Для потока кэша всегда 1
       if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_CACHE)
@@ -4380,8 +4380,8 @@ void ConnectionMonitor::RemoveConnection(const PString & _callToken)
 
 int ConnectionMonitor::Perform(MCUH323Connection * conn)
 {
-  RTP_Session * as = conn->GetSession(RTP_Session::DefaultAudioSessionID);
-  RTP_Session * vs = conn->GetSession(RTP_Session::DefaultVideoSessionID);
+  MCU_RTP_UDP *as = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultAudioSessionID);
+  MCU_RTP_UDP *vs = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultVideoSessionID);
   int count = 0;
   if(as) count += as->GetPacketsReceived() + as->GetRtpcReceived();
   if(vs) count += vs->GetPacketsReceived() + vs->GetRtpcReceived();

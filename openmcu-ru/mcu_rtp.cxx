@@ -274,7 +274,7 @@ MCU_RTPChannel::MCU_RTPChannel(H323Connection & conn, const H323Capability & cap
 #endif
 
   cache = NULL;
-  cacheMode = 0;
+  cacheMode = -1;
   encoderSeqN = 0;
   fastUpdate = true;
 }
@@ -422,7 +422,7 @@ void MCU_RTPChannel::Transmit()
   {
     BOOL retval = FALSE;
 
-    if(cacheMode == 0 || cacheMode == 1 || cacheMode == 3 || encoderSeqN == 0xFFFFFFFF)
+    if(cacheMode == -1 || cacheMode == 0 || cacheMode == 1 || encoderSeqN == 0xFFFFFFFF)
       retval = codec->Read(frame.GetPayloadPtr() + frameOffset, length, frame);
 
     if(cacheMode == 2 && encoderSeqN != 0xFFFFFFFF)
@@ -671,6 +671,89 @@ BOOL MCUSIP_RTPChannel::WriteFrame(RTP_DataFrame & frame)
   if(!rtpSession.PreWriteData(frame))
     return FALSE;
   return rtpSession.WriteData(frame);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static RTP_Session::ReceiverReportArray BuildReceiverReportArray(const RTP_ControlFrame & frame, PINDEX offset)
+{
+  RTP_Session::ReceiverReportArray reports;
+
+  const RTP_ControlFrame::ReceiverReport * rr = (const RTP_ControlFrame::ReceiverReport *)(frame.GetPayloadPtr()+offset);
+  for(PINDEX repIdx = 0; repIdx < (PINDEX)frame.GetCount(); repIdx++)
+  {
+    RTP_Session::ReceiverReport * report = new RTP_Session::ReceiverReport;
+    report->sourceIdentifier = rr->ssrc;
+    report->fractionLost = rr->fraction;
+    report->totalLost = rr->GetLostPackets();
+    report->lastSequenceNumber = rr->last_seq;
+    report->jitter = rr->jitter;
+    report->lastTimestamp = (PInt64)(DWORD)rr->lsr;
+    report->delay = ((PInt64)rr->dlsr << 16)/1000;
+    reports.SetAt(repIdx, report);
+    rr++;
+  }
+
+  return reports;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCU_RTP_UDP::MCU_RTP_UDP(
+#ifdef H323_RTP_AGGREGATE
+      PHandleAggregator * aggregator,
+#endif
+      unsigned id, BOOL remoteIsNat
+               )
+                : RTP_UDP(
+#ifdef H323_RTP_AGGREGATE
+      aggregator,
+#endif
+      id, remoteIsNat
+                         )
+{
+  rtpcReceived = 0;
+  packetsLostTx = 0;
+
+  zrtp_secured = FALSE;
+  srtp_secured = FALSE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RTP_Session::SendReceiveStatus MCU_RTP_UDP::OnReceiveControl(RTP_ControlFrame & frame)
+{
+  unsigned size = frame.GetPayloadSize();
+  if(frame.GetPayloadType() == RTP_ControlFrame::e_SenderReport && size >= sizeof(RTP_ControlFrame::SenderReport))
+  {
+    RTP_Session::ReceiverReportArray ra = BuildReceiverReportArray(frame, sizeof(RTP_ControlFrame::SenderReport));
+    if(ra.GetSize() > 0)
+      packetsLostTx = ra[ra.GetSize()-1].totalLost;
+  }
+  else if(frame.GetPayloadType() == RTP_ControlFrame::e_ReceiverReport && size >= 4)
+  {
+    RTP_Session::ReceiverReportArray ra = BuildReceiverReportArray(frame, sizeof(PUInt32b));
+    if(ra.GetSize() > 0)
+      packetsLostTx = ra[ra.GetSize()-1].totalLost;
+  }
+
+  return RTP_UDP::OnReceiveControl(frame);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTP_UDP::OnRxSenderReport(const SenderReport & PTRACE_PARAM(sender), const ReceiverReportArray & PTRACE_PARAM(reports))
+{
+  rtpcReceived++;
+  RTP_UDP::OnRxSenderReport(PTRACE_PARAM(sender), PTRACE_PARAM(reports));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTP_UDP::OnRxReceiverReport(DWORD PTRACE_PARAM(src), const ReceiverReportArray & PTRACE_PARAM(reports))
+{
+  rtpcReceived++;
+  RTP_UDP::OnRxReceiverReport(PTRACE_PARAM(src), PTRACE_PARAM(reports));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

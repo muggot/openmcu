@@ -787,9 +787,7 @@ RTP_Session::RTP_Session(
   octetsSent = 0;
   packetsReceived = 0;
   octetsReceived = 0;
-  rtpcReceived = 0;
   packetsLost = 0;
-  packetsLostTx = 0;
   packetsOutOfOrder = 0;
   averageSendTime = 0;
   maximumSendTime = 0;
@@ -830,7 +828,6 @@ RTP_Session::~RTP_Session()
             "    minimumSendTime   = " << minimumSendTime << "\n"
             "    packetsReceived   = " << packetsReceived << "\n"
             "    octetsReceived    = " << octetsReceived << "\n"
-            "    rtpcReceived      = " << rtpcReceived << "\n"
             "    packetsLost       = " << packetsLost << "\n"
             "    packetsTooLate    = " << GetPacketsTooLate() << "\n"
             "    packetsOutOfOrder = " << packetsOutOfOrder << "\n"
@@ -1297,7 +1294,6 @@ RTP_Session::SendReceiveStatus RTP_Session::OnReceiveData(const RTP_DataFrame & 
   PTRACE(2, "RTP\tReceive statistics: "
             " packets=" << packetsReceived <<
             " octets=" << octetsReceived <<
-            " rtpc=" << rtpcReceived <<
             " lost=" << packetsLost <<
             " tooLate=" << GetPacketsTooLate() <<
             " order=" << packetsOutOfOrder <<
@@ -1429,7 +1425,6 @@ RTP_Session::SendReceiveStatus RTP_Session::OnReceiveControl(RTP_ControlFrame & 
           sender.packetsSent = sr.psent;
           sender.octetsSent = sr.osent;
           RTP_Session::ReceiverReportArray ra = BuildReceiverReportArray(frame, sizeof(RTP_ControlFrame::SenderReport));
-          if(ra.GetSize()>0) packetsLostTx = ra[ra.GetSize()-1].totalLost;
           OnRxSenderReport(sender, ra);
         }
         else {
@@ -1441,7 +1436,6 @@ RTP_Session::SendReceiveStatus RTP_Session::OnReceiveControl(RTP_ControlFrame & 
         if (size >= 4)
         {
           RTP_Session::ReceiverReportArray ra = BuildReceiverReportArray(frame, sizeof(PUInt32b));
-          if(ra.GetSize()>0) packetsLostTx = ra[ra.GetSize()-1].totalLost;
           OnRxReceiverReport(*(const PUInt32b *)payload, ra);
         }
         else {
@@ -1513,7 +1507,6 @@ void RTP_Session::OnRxSenderReport(const SenderReport & PTRACE_PARAM(sender),
   for (PINDEX i = 0; i < reports.GetSize(); i++)
     PTRACE(3, "RTP\tOnRxSenderReport RR: " << reports[i]);
 #endif
- rtpcReceived++;
 }
 
 
@@ -1525,7 +1518,6 @@ void RTP_Session::OnRxReceiverReport(DWORD PTRACE_PARAM(src),
   for (PINDEX i = 0; i < reports.GetSize(); i++)
     PTRACE(3, "RTP\tOnReceiverReport RR: " << reports[i]);
 #endif
- rtpcReceived++;
 }
 
 

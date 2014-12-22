@@ -555,9 +555,14 @@ void MCUSipConnection::CleanUpOnCallEnd()
   DeleteChannels();
 
   videoReceiveCodecName = videoTransmitCodecName = "none";
+
+  audioReceiveCodec = NULL;
   videoReceiveCodec = NULL;
+  audioTransmitCodec = NULL;
   videoTransmitCodec = NULL;
 
+  audioReceiveChannel = NULL;
+  videoReceiveChannel = NULL;
   audioTransmitChannel = NULL;
   videoTransmitChannel = NULL;
 }
@@ -775,6 +780,10 @@ int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
   MCUSIP_RTPChannel *channel =
     new MCUSIP_RTPChannel(*this, *cap, ((rtp_dir == 0) ? H323Channel::IsReceiver : H323Channel::IsTransmitter), *session);
 
+  if(cap->GetMainType() == H323Capability::e_Audio && rtp_dir == 0)
+    audioReceiveChannel = channel;
+  if(cap->GetMainType() == H323Capability::e_Video && rtp_dir == 0)
+    videoReceiveChannel = channel;
   if(cap->GetMainType() == H323Capability::e_Audio && rtp_dir == 1)
     audioTransmitChannel = channel;
   if(cap->GetMainType() == H323Capability::e_Video && rtp_dir == 1)

@@ -340,10 +340,10 @@ class MCU_RTPChannel : public H323_RTPChannel
 
     virtual void SendMiscIndication(unsigned command);
 
-    void SetCacheMode(unsigned _cacheMode)
+    void SetCacheMode(int _cacheMode)
     { cacheMode = _cacheMode; }
 
-    unsigned GetCacheMode() const
+    int GetCacheMode() const
     { return cacheMode; }
 
     void SetCacheName(const PString & _cacheName)
@@ -357,7 +357,7 @@ class MCU_RTPChannel : public H323_RTPChannel
 
   protected:
     unsigned encoderSeqN;
-    unsigned cacheMode;       // 0 - no cache, 1 - cached, 2 - caching
+    int cacheMode; // -1 - default no cache, 0 - no cache, 1 - cached, 2 - caching
     PString cacheName;
 
     bool fastUpdate;
@@ -446,21 +446,25 @@ class MCU_RTP_UDP : public RTP_UDP
       PHandleAggregator * aggregator,
 #endif
       unsigned id, BOOL remoteIsNat = FALSE
-               )
-                : RTP_UDP(
-#ifdef H323_RTP_AGGREGATE
-      aggregator,
-#endif
-      id, remoteIsNat
-                         )
-    {
-      zrtp_secured = FALSE;
-      srtp_secured = FALSE;
-    };
+               );
+
+    virtual void OnRxSenderReport(const SenderReport & sender, const ReceiverReportArray & reports);
+    virtual void OnRxReceiverReport(DWORD src, const ReceiverReportArray & reports);
+    virtual SendReceiveStatus OnReceiveControl(RTP_ControlFrame & frame);
+
+    // Get total number of control packets received in session.
+    DWORD GetRtpcReceived() const { return rtpcReceived; }
+
+    // Get total number transmitted packets lost in session (via RTCP).
+    DWORD GetPacketsLostTx() const { return packetsLostTx; }
 
     BOOL           zrtp_secured;
     PString        zrtp_sas_token;
     BOOL           srtp_secured;
+
+  protected:
+    DWORD rtpcReceived;
+    DWORD packetsLostTx;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
