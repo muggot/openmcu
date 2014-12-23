@@ -100,6 +100,13 @@ MCUH323EndPoint::~MCUH323EndPoint()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+H323Gatekeeper * MCUH323EndPoint::CreateGatekeeper(H323Transport * transport)
+{
+  return new MCUH323Gatekeeper(*this, transport);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323EndPoint::Initialise(PConfig & cfg)
 {
 
@@ -468,6 +475,15 @@ PINDEX MCUH323EndPoint::AddCapabilitiesMCU(PINDEX descriptorNum, PINDEX simultan
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUH323EndPoint::SetConnectionActive(MCUH323Connection * conn)
+{
+  connectionsMutex.Wait();
+  connectionsActive.SetAt(conn->GetCallToken(), conn);
+  connectionsMutex.Signal();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString MCUH323EndPoint::GetGatekeeperHostName()
 {
   PString host;
@@ -485,9 +501,88 @@ H323Connection * MCUH323EndPoint::CreateConnection(unsigned callReference, void 
   {
     PString remote_host = transport->GetRemoteAddress().GetHostName();
     if(remote_host != "*" && remote_host != GetGatekeeperHostName())
-      conn->SetGatekeeperEnable(FALSE);
+      ((MCUH323Gatekeeper *)gatekeeper)->AddIgnoreConnection(callReference, conn);
   }
   return conn;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
+{
+  if(conn->GetCallToken() == "")
+    return;
+  if(conn->GetCallToken().Left(4) == "tcp:")
+    return;
+  connectionMonitor->AddConnection(conn->GetCallToken());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323EndPoint::OnConnectionCleared(H323Connection & connection, const PString & token)
+{
+  connectionMonitor->RemoveConnection(token);
+
+  if(gatekeeper)
+    ((MCUH323Gatekeeper *)gatekeeper)->RemoveIgnoreConnection(connection.GetCallReference());
+
+  H323EndPoint::OnConnectionCleared(connection, token);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323EndPoint::CleanUpConnections()
+{
+  PTRACE(3, "MCUH323EndPoint\tCleaning up connections");
+
+  // Lock the connections database.
+  connectionsMutex.Wait();
+
+  // Continue cleaning up until no more connections to clean
+  while (connectionsToBeCleaned.GetSize() > 0) {
+    // Just get the first entry in the set of tokens to clean up.
+    PString token = connectionsToBeCleaned.GetKeyAt(0);
+    H323Connection & connection = connectionsActive[token];
+
+    // Unlock the structures here so does not block other uses of ClearCall()
+    // for the possibly long time it takes to CleanUpOnCallEnd().
+    connectionsMutex.Signal();
+
+    // Clean up the connection, waiting for all threads to terminate
+    connection.CleanUpOnCallEnd();
+    connection.OnCleared();
+
+    // Get the lock again as we remove the connection from our database
+    connectionsMutex.Wait();
+
+    // Remove the token from the set of connections to be cleaned up
+    connectionsToBeCleaned -= token;
+
+    // And remove the connection instance itself from the dictionary which will
+    // cause its destructor to be called.
+    MCUH323Connection * connectionToDelete = (MCUH323Connection *)connectionsActive.RemoveAt(token);
+
+    // Unlock the structures yet again to avoid possible race conditions when
+    // deleting the connection as well as the delte of a conncetion descendent
+    // is application writer dependent and may cause deadlocks or just consume
+    // lots of time.
+    connectionsMutex.Signal();
+
+    // connMutex
+    connectionToDelete->GetMutex().Wait();
+
+    // Finally we get to delete it!
+    delete connectionToDelete;
+
+    // Get the lock again as we continue around the loop
+    connectionsMutex.Wait();
+  }
+
+  // Finished with loop, unlock the connections database.
+  connectionsMutex.Signal();
+
+  // Signal thread that may be waiting on ClearAllCalls()
+  connectionsAreCleaned.Signal();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2180,90 +2275,6 @@ PString MCUH323EndPoint::IncomingConferenceRequest(H323Connection & connection,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUH323EndPoint::SetConnectionActive(MCUH323Connection * conn)
-{
-  connectionsMutex.Wait();
-  connectionsActive.SetAt(conn->GetCallToken(), conn);
-  connectionsMutex.Signal();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
-{
-  if(conn->GetCallToken() == "")
-    return;
-  if(conn->GetCallToken().Left(4) == "tcp:")
-    return;
-  connectionMonitor->AddConnection(conn->GetCallToken());
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUH323EndPoint::OnConnectionCleared(H323Connection & connection, const PString & token)
-{
-  connectionMonitor->RemoveConnection(token);
-  H323EndPoint::OnConnectionCleared(connection, token);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUH323EndPoint::CleanUpConnections()
-{
-  PTRACE(3, "MCUH323EndPoint\tCleaning up connections");
-
-  // Lock the connections database.
-  connectionsMutex.Wait();
-
-  // Continue cleaning up until no more connections to clean
-  while (connectionsToBeCleaned.GetSize() > 0) {
-    // Just get the first entry in the set of tokens to clean up.
-    PString token = connectionsToBeCleaned.GetKeyAt(0);
-    H323Connection & connection = connectionsActive[token];
-
-    // Unlock the structures here so does not block other uses of ClearCall()
-    // for the possibly long time it takes to CleanUpOnCallEnd().
-    connectionsMutex.Signal();
-
-    // Clean up the connection, waiting for all threads to terminate
-    connection.CleanUpOnCallEnd();
-    connection.OnCleared();
-
-    // Get the lock again as we remove the connection from our database
-    connectionsMutex.Wait();
-
-    // Remove the token from the set of connections to be cleaned up
-    connectionsToBeCleaned -= token;
-
-    // And remove the connection instance itself from the dictionary which will
-    // cause its destructor to be called.
-    MCUH323Connection * connectionToDelete = (MCUH323Connection *)connectionsActive.RemoveAt(token);
-
-    // Unlock the structures yet again to avoid possible race conditions when
-    // deleting the connection as well as the delte of a conncetion descendent
-    // is application writer dependent and may cause deadlocks or just consume
-    // lots of time.
-    connectionsMutex.Signal();
-
-    // connMutex
-    connectionToDelete->GetMutex().Wait();
-
-    // Finally we get to delete it!
-    delete connectionToDelete;
-
-    // Get the lock again as we continue around the loop
-    connectionsMutex.Wait();
-  }
-
-  // Finished with loop, unlock the connections database.
-  connectionsMutex.Signal();
-
-  // Signal thread that may be waiting on ClearAllCalls()
-  connectionsAreCleaned.Signal();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 NotifyH245Thread::NotifyH245Thread(Conference & conference, BOOL _join, ConferenceMember * _memberToIgnore)
   : PThread(10000, AutoDeleteThread), join(_join), memberToIgnore(_memberToIgnore)
 {
@@ -2357,7 +2368,6 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
   vfuLimit = 0;
   vfuCount = 0;
   vfuTotalCount = 0;
-
   audioReceiveCodecName = audioTransmitCodecName = "none";
   audioTransmitCodec = NULL;
   audioReceiveCodec = NULL;

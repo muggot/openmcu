@@ -3071,7 +3071,6 @@ class H323Connection : public PObject
 
     int                  remoteCallWaiting; // Number of call's waiting at the remote endpoint
     BOOL                 callAnswered;
-    BOOL                 gatekeeperEnable;
     BOOL                 gatekeeperRouted;
     unsigned             distinctiveRing;
     PString              callToken;

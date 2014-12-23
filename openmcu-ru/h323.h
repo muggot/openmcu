@@ -72,6 +72,7 @@ class MCUH323EndPoint : public H323EndPoint
     virtual H323Connection * CreateConnection(unsigned callReference,void * userData,H323Transport * transport,H323SignalPDU * setupPDU);
     virtual void TranslateTCPAddress(PIPSocket::Address &localAddr, const PIPSocket::Address &remoteAddr);
     H323Connection * FindConnectionWithoutLock(const PString & token) { return FindConnectionWithoutLocks(token); }
+
     virtual void CleanUpConnections();
 
     BOOL behind_masq;
@@ -98,6 +99,8 @@ class MCUH323EndPoint : public H323EndPoint
 
     ConferenceManager & GetConferenceManager()
     { return conferenceManager; }
+
+    virtual H323Gatekeeper * CreateGatekeeper(H323Transport * transport);
 
     PString GetGatekeeperHostName();
     PString Invite(PString room, PString memberName);
@@ -335,8 +338,6 @@ class MCUH323Connection : public H323Connection
 
     const PString & GetRequestedRoom() const { return requestedRoom; };
     void SetRequestedRoom(PString room) { requestedRoom = room; };
-
-    void SetGatekeeperEnable(BOOL enable) { gatekeeperEnable = enable; }
 
     MCUConnectionTypes GetConnectionType() const
     { return connectionType; }

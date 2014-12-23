@@ -395,7 +395,6 @@ void MCU_RTPChannel::Receive()
 
   // do not change payload type for audio and video
   BOOL allowRtpPayloadChange = FALSE;
-  //BOOL allowRtpPayloadChange = codec->GetMediaFormat().GetDefaultSessionID() == OpalMediaFormat::DefaultAudioSessionID;
 
   MCU_RTP_DataFrame frame;
   while(1)
@@ -578,7 +577,7 @@ void MCU_RTPChannel::Transmit()
   while(1)
   {
     // periodic intra refresh
-    if(intraPeriod > 0 && rtpSession.GetPacketsSent() % intraPeriod == 0)
+    if(!isAudio && intraPeriod > 0 && rtpSession.GetPacketsSent() % intraPeriod == 0)
       ((H323VideoCodec *)codec)->OnFastUpdatePicture();
 
     BOOL retval = FALSE;
@@ -653,17 +652,15 @@ void MCU_RTPChannel::Transmit()
       // Look for special cases
       if(rtpPayloadType == RTP_DataFrame::G729 && length == 2)
       {
-        /* If we have a G729 sid frame (ie 2 bytes instead of 10) then we must
-           not send any more frames in the RTP packet.
-         */
+        // If we have a G729 sid frame (ie 2 bytes instead of 10) then we must
+        // not send any more frames in the RTP packet.
         frameCount = framesInPacket;
       }
       else
       {
-        /* Increment by number of frames that were read in one hit Note a
-           codec that does variable length frames should never return more
-           than one frame per Read() call or confusion will result.
-         */
+        // Increment by number of frames that were read in one hit Note a
+        // codec that does variable length frames should never return more
+        // than one frame per Read() call or confusion will result.
         frameCount += (length + maxFrameSize - 1) / maxFrameSize;
       }
     }
@@ -702,17 +699,12 @@ void MCU_RTPChannel::Transmit()
 
       // Reset flag for in talk burst
       if(isAudio)
-        frame.SetMarker(FALSE); 
+        frame.SetMarker(FALSE);
 
       frame.SetPayloadSize(0);
       frameOffset = 0;
       frameCount = 0;
     }
-    else
-      PTRACE(3, "MCU_RTPChannel\tTransmit Drop Packet");
-
-    if(terminating)
-      break;
 
     // Calculate the timestamp and real time to take in processing
     if(isAudio)
@@ -735,6 +727,9 @@ void MCU_RTPChannel::Transmit()
     if(codecReadAnalysis != NULL)
       codecReadAnalysis->AddSample(rtpTimestamp);
 #endif
+
+    if(terminating)
+      break;
 
   }
 

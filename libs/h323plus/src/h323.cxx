@@ -662,7 +662,6 @@ H323Connection::H323Connection(H323EndPoint & ep,
   localAliasNames.MakeUnique();
 
   callAnswered = FALSE;
-  gatekeeperEnable = TRUE;
   gatekeeperRouted = FALSE;
   distinctiveRing = 0;
   callReference = ref;
@@ -1062,7 +1061,7 @@ void H323Connection::CleanUpOnCallEnd()
   // Check for gatekeeper and do disengage if have one
   if (mustSendDRQ) {
     H323Gatekeeper * gatekeeper = endpoint.GetGatekeeper();
-    if (gatekeeperEnable && gatekeeper != NULL)
+    if (gatekeeper != NULL)
       gatekeeper->DisengageRequest(*this, H225_DisengageReason::e_normalDrop);
   }
 
@@ -1102,7 +1101,7 @@ BOOL H323Connection::WriteSignalPDU(H323SignalPDU & pdu)
     pdu.m_h323_uu_pdu.m_h245Tunneling = h245Tunneling;
 
     H323Gatekeeper * gk = endpoint.GetGatekeeper();
-    if (gatekeeperEnable && gk != NULL)
+    if (gk != NULL)
       gk->InfoRequestResponse(*this, pdu.m_h323_uu_pdu, TRUE);
 
     if (pdu.Write(*signallingChannel,*this))
@@ -1321,7 +1320,7 @@ BOOL H323Connection::HandleSignalPDU(H323SignalPDU & pdu)
     OnUserInputString(digits);
 
   H323Gatekeeper * gk = endpoint.GetGatekeeper();
-  if (gatekeeperEnable && gk != NULL)
+  if (gk != NULL)
     gk->InfoRequestResponse(*this, pdu.m_h323_uu_pdu, FALSE);
 
   Unlock();
@@ -1658,7 +1657,7 @@ if (!IsNonCallConnection) {
 
     // Check for gatekeeper and do admission check if have one
     H323Gatekeeper * gatekeeper = endpoint.GetGatekeeper();
-    if (gatekeeperEnable && gatekeeper != NULL) {
+    if (gatekeeper != NULL) {
       H225_ArrayOf_AliasAddress destExtraCallInfoArray;
       H323Gatekeeper::AdmissionResponse response;
       response.destExtraCallInfo = &destExtraCallInfoArray;
@@ -2426,7 +2425,7 @@ H323Connection::CallEndReason H323Connection::SendSignalSetup(const PString & al
   // Check for gatekeeper and do admission check if have one
   H323Gatekeeper * gatekeeper = endpoint.GetGatekeeper();
   H225_ArrayOf_AliasAddress newAliasAddresses;
-  if (gatekeeperEnable && gatekeeper != NULL) {
+  if (gatekeeper != NULL) {
     H323Gatekeeper::AdmissionResponse response;
     response.transportAddress = &gatekeeperRoute;
     response.aliasAddresses = &newAliasAddresses;

@@ -7,6 +7,7 @@
 
 #include "h323.h"
 #include "gkserver.h"
+#include "gkclient.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -358,6 +359,54 @@ class RegistrarGk : public H323GatekeeperServer
 
     H323Transactor *gkListener;
     Registrar *registrar;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUH323Gatekeeper : public H323Gatekeeper
+{
+  PCLASSINFO(MCUH323Gatekeeper, H323Gatekeeper);
+
+  public:
+    MCUH323Gatekeeper(H323EndPoint & endpoint, H323Transport * transport)
+      : H323Gatekeeper(endpoint, transport)
+    { }
+
+    void AddIgnoreConnection(unsigned ref, MCUH323Connection *conn)
+    {
+      ignoreList.Insert((long)ref, conn);
+      ignoreList.Release((long)ref);
+    }
+
+    void RemoveIgnoreConnection(unsigned ref)
+    { ignoreList.Erase((long)ref); }
+
+    virtual BOOL MakeRequest(Request & request)
+    {
+      H323TransactionPDU & pdu = request.requestPDU;
+      if(pdu.GetPDU().GetTag() == H323RasPDU::e_admissionRequest)
+      {
+        H225_AdmissionRequest arq((H225_AdmissionRequest &)request.requestPDU.GetChoice().GetObject());
+        MCUConnectionIgnoreList::shared_iterator it = ignoreList.Find((long)arq.m_callReferenceValue);
+        if(it != ignoreList.end())
+          return TRUE;
+
+      }
+      else if(pdu.GetPDU().GetTag() == H323RasPDU::e_disengageRequest)
+      {
+        H225_DisengageRequest arq((H225_DisengageRequest &)request.requestPDU.GetChoice().GetObject());
+        MCUConnectionIgnoreList::shared_iterator it = ignoreList.Find((long)arq.m_callReferenceValue);
+        if(it != ignoreList.end())
+          return TRUE;
+      }
+
+      return H323Gatekeeper::MakeRequest(request);
+    }
+    //InfoRequestResponse(*this, pdu.m_h323_uu_pdu, TRUE);
+
+  protected:
+    typedef MCUSharedList<MCUH323Connection> MCUConnectionIgnoreList;
+    MCUConnectionIgnoreList ignoreList;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
