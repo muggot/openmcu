@@ -363,10 +363,15 @@ class MCU_RTPChannel : public H323_RTPChannel
 
     void Freeze(bool _freeze);
 
+    void SetIntraRefreshPeriod(int period)
+    { intraPeriod = period; }
+
   protected:
     unsigned encoderSeqN;
     int cacheMode; // -1 - default no cache, 0 - no cache, 1 - cached, 2 - caching
     PString cacheName;
+
+    int intraPeriod;
 
     bool fastUpdate;
     bool freezeWrite;

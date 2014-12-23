@@ -278,6 +278,7 @@ MCU_RTPChannel::MCU_RTPChannel(H323Connection & conn, const H323Capability & cap
   cacheMode = -1;
   encoderSeqN = 0;
   fastUpdate = true;
+  intraPeriod = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -576,6 +577,9 @@ void MCU_RTPChannel::Transmit()
 
   while(1)
   {
+    // periodic intra refresh
+    if(intraPeriod > 0 && rtpSession.GetPacketsSent() % intraPeriod == 0)
+      ((H323VideoCodec *)codec)->OnFastUpdatePicture();
 
     BOOL retval = FALSE;
 

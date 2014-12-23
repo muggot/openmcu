@@ -3231,7 +3231,10 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
         cacheMode = 2;
       // Не работает с кэшем, требует периодический опорный кадр
       if(remoteApplication.Find("PCS-") != P_MAX_INDEX && videoTransmitCodecName.Find("H.264") != P_MAX_INDEX)
-        cacheMode = 0; // ???
+      {
+        cacheMode = 0;
+        videoTransmitChannel->SetIntraRefreshPeriod(125);
+      }
     }
 
     // set params from video config page
