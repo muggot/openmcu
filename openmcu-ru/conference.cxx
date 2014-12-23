@@ -1471,8 +1471,8 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
 
 void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-  if(!(channelCheck&1)) ChannelBrowserStateUpdate(1,TRUE);
-  if(muteMask&1) return;
+  if(!(channelCheck&1))
+    ChannelBrowserStateUpdate(1,TRUE);
 
   // calculate average signal level for this member
   unsigned signalLevel=0;
@@ -1490,12 +1490,11 @@ void ConferenceMember::WriteAudio(const void * buffer, PINDEX amount, unsigned s
 
 void ConferenceMember::ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-  if(!(channelCheck&2)) ChannelBrowserStateUpdate(2,TRUE);
+  if(!(channelCheck&2))
+    ChannelBrowserStateUpdate(2,TRUE);
 
   // First, set the buffer to empty.
   memset(buffer, 0, amount);
-
-  if(muteMask&2) return;
 
   if(conference != NULL)
     conference->ReadMemberAudio(this, buffer, amount, sampleRate, channels);
@@ -1560,8 +1559,8 @@ void ConferenceMember::ClearAudioReaderList(BOOL force)
 // called whenever the connection needs a frame of video to send
 void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & amount)
 {
-  if(!(channelCheck&8)) ChannelBrowserStateUpdate(8,TRUE);
-  if(muteMask&8) return;
+  if(!(channelCheck&8))
+    ChannelBrowserStateUpdate(8,TRUE);
 
   ++totalVideoFramesSent;
   if(!firstFrameSendTime.IsValid())
@@ -1583,11 +1582,12 @@ void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & 
 // called whenever the connection receives a frame of video
 void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PINDEX amount)
 {
-  if(!(channelCheck&4)) ChannelBrowserStateUpdate(4,TRUE);
-  if(muteMask&4) return;
+  if(!(channelCheck&4))
+    ChannelBrowserStateUpdate(4,TRUE);
 
   ++totalVideoFramesReceived;
-  rxFrameWidth=width; rxFrameHeight=height;
+  rxFrameWidth = width;
+  rxFrameHeight = height;
   if (!firstFrameReceiveTime.IsValid())
     firstFrameReceiveTime = PTime();
 

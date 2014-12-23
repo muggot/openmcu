@@ -273,6 +273,7 @@ MCU_RTPChannel::MCU_RTPChannel(H323Connection & conn, const H323Capability & cap
     ((H323AudioCodec*)codec)->SetSilenceDetectionMode(endpoint.GetSilenceDetectionMode());
 #endif
 
+  freezeWrite = false;
   cache = NULL;
   cacheMode = -1;
   encoderSeqN = 0;
@@ -318,6 +319,161 @@ void MCU_RTPChannel::SendMiscIndication(unsigned command)
 void MCU_RTPChannel::CleanUpOnTermination()
 {
   H323_RTPChannel::CleanUpOnTermination();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTPChannel::ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame)
+{
+  if(!rtpSession.ReadBufferedData(rtpTimestamp, frame))
+    return FALSE;
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTPChannel::WriteFrame(RTP_DataFrame & frame)
+{
+  if(!((MCU_RTP_UDP &)rtpSession).PreWriteData(frame))
+    return FALSE;
+  return ((MCU_RTP_UDP &)rtpSession).WriteData(frame);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTPChannel::Freeze(bool _freeze)
+{
+  if(receiver)
+  {
+    // обнуляется в OnReceiveData
+    ((MCU_RTP_UDP &)rtpSession).FreezeRead(_freeze);
+  }
+  else
+  {
+    freezeWrite = _freeze;
+  }
+  MCUTRACE(1, "MCU_RTPChannel " << (receiver ? "Receive" : "Transmit") << " thread " << (_freeze ? "freeze" : "unfreeze"));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTPChannel::Receive()
+{
+  if(terminating)
+  {
+    PTRACE(3, "MCU_RTPChannel\tReceive thread terminated on start up");
+    return;
+  }
+
+  const OpalMediaFormat & mediaFormat = codec->GetMediaFormat();
+
+  PTRACE(2, "MCU_RTPChannel\tReceive " << mediaFormat << " thread started.");
+
+  // if jitter buffer required, start the thread that is on the other end of it
+  if(mediaFormat.NeedsJitterBuffer())
+    rtpSession.SetJitterBufferSize(connection.GetMinAudioJitterDelay()*mediaFormat.GetTimeUnits(),
+                                   connection.GetMaxAudioJitterDelay()*mediaFormat.GetTimeUnits(),
+                                   endpoint.GetJitterThreadStackSize());
+
+  // Keep time using th RTP timestamps.
+  DWORD codecFrameRate = codec->GetFrameRate();
+  DWORD rtpTimestamp = 0;
+#if PTRACING
+  DWORD lastDisplayedTimestamp = 0;
+#endif
+
+  rtpPayloadType = GetRTPPayloadType();
+  if(rtpPayloadType == RTP_DataFrame::IllegalPayloadType)
+  {
+     PTRACE(1, "MCU_RTPChannel\tReceive " << mediaFormat << " thread ended (illegal payload type)");
+     return;
+  }
+
+  // keep track of consecutive payload type mismatches
+  int consecutiveMismatches = 0;
+
+  // do not change payload type for audio and video
+  BOOL allowRtpPayloadChange = FALSE;
+  //BOOL allowRtpPayloadChange = codec->GetMediaFormat().GetDefaultSessionID() == OpalMediaFormat::DefaultAudioSessionID;
+
+  MCU_RTP_DataFrame frame;
+  while(1)
+  {
+    if(!ReadFrame(rtpTimestamp, frame))
+      break;
+
+    filterMutex.Wait();
+    for(PINDEX i = 0; i < filters.GetSize(); i++)
+      filters[i](frame, 0);
+    filterMutex.Signal();
+
+    int size = frame.GetPayloadSize();
+    rtpTimestamp = frame.GetTimestamp();
+
+#if PTRACING
+    if(rtpTimestamp - lastDisplayedTimestamp > RTP_TRACE_DISPLAY_RATE)
+    {
+      PTRACE(9, "MCU_RTPChannel\tReceiver written timestamp " << rtpTimestamp);
+      lastDisplayedTimestamp = rtpTimestamp;
+    }
+#endif
+
+    unsigned written;
+    BOOL ok = TRUE;
+    if(size == 0)
+    {
+      ok = codec->Write(NULL, 0, frame, written);
+      rtpTimestamp += codecFrameRate;
+    } else {
+      silenceStartTick = PTimer::Tick();
+
+      BOOL isCodecPacket = TRUE;
+
+      if (frame.GetPayloadType() == rtpPayloadType)
+      {
+        PTRACE_IF(2, consecutiveMismatches > 0, "MCU_RTPChannel\tPayload type matched again " << rtpPayloadType);
+        consecutiveMismatches = 0;
+      }
+      else
+      {
+        consecutiveMismatches++;
+        if(allowRtpPayloadChange && consecutiveMismatches >= MAX_PAYLOAD_TYPE_MISMATCHES)
+        {
+          rtpPayloadType = frame.GetPayloadType();
+          consecutiveMismatches = 0;
+          PTRACE(1, "MCU_RTPChannel\tResetting expected payload type to " << rtpPayloadType);
+        }
+        PTRACE_IF(2, consecutiveMismatches < MAX_PAYLOAD_TYPE_MISMATCHES, "MCU_RTPChannel\tPayload type mismatch: expected "
+                  << rtpPayloadType << ", got " << frame.GetPayloadType()
+                  << ". Ignoring packet.");
+      }
+
+      if(isCodecPacket && consecutiveMismatches == 0)
+      {
+        const BYTE * ptr = frame.GetPayloadPtr();
+        while(ok && size > 0)
+        {
+          ok = codec->Write(ptr, paused ? 0 : size, frame, written);
+          rtpTimestamp += codecFrameRate;
+          size -= written != 0 ? written : size;
+          ptr += written;
+          PTRACE(9, "MCU_RTPChannel\tWrite to decoder");
+        }
+        PTRACE_IF(1, size < 0, "MCU_RTPChannel\tPayload size too small, short " << -size << " bytes.");
+      }
+    }
+
+    if(terminating)
+      break;
+
+    if(!ok)
+    {
+      connection.CloseLogicalChannelNumber(number);
+      break;
+    }
+  }
+
+  PTRACE(2, "MCU_RTPChannel\tReceive " << mediaFormat << " thread ended");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -369,7 +525,7 @@ void MCU_RTPChannel::Transmit()
 {
   if(terminating)
   {
-    PTRACE(3, "H323RTP\tTransmit thread terminated on start up");
+    PTRACE(3, "MCU_RTPChannel\tTransmit thread terminated on start up");
     return;
   }
 
@@ -386,16 +542,16 @@ void MCU_RTPChannel::Transmit()
   unsigned maxFrameSize = mediaFormat.GetFrameSize();
   if(maxFrameSize == 0)
     maxFrameSize = isAudio ? 8 : 2000;
-  RTP_DataFrame frame(framesInPacket * maxFrameSize);
+  MCU_RTP_DataFrame frame(framesInPacket * maxFrameSize);
 
   if(rtpPayloadType == RTP_DataFrame::IllegalPayloadType)
   {
-     PTRACE(1, "H323RTP\tReceive " << mediaFormat << " thread ended (illegal payload type)");
+     PTRACE(1, "MCU_RTPChannel\tTransmit " << mediaFormat << " thread ended (illegal payload type)");
      return;
   }
   frame.SetPayloadType(rtpPayloadType); 
 
-  PTRACE(2, "H323RTP\tTransmit " << mediaFormat << " thread started:"
+  PTRACE(2, "MCU_RTPChannel\tTransmit " << mediaFormat << " thread started:"
             " rate=" << codec->GetFrameRate() <<
             " time=" << (codec->GetFrameRate()/(mediaFormat.GetTimeUnits() > 0 ? mediaFormat.GetTimeUnits() : 1)) << "ms" <<
             " size=" << framesInPacket << '*' << maxFrameSize << '='
@@ -420,6 +576,7 @@ void MCU_RTPChannel::Transmit()
 
   while(1)
   {
+
     BOOL retval = FALSE;
 
     if(cacheMode == -1 || cacheMode == 0 || cacheMode == 1 || encoderSeqN == 0xFFFFFFFF)
@@ -449,6 +606,10 @@ void MCU_RTPChannel::Transmit()
     if(retval == FALSE)
       break;
 
+    // ???
+    if(freezeWrite)
+      length = 0;
+
     if(paused)
       length = 0; // Act as though silent/no video
 
@@ -460,7 +621,7 @@ void MCU_RTPChannel::Transmit()
       {
         silent = FALSE;
         frame.SetMarker(TRUE);  // Set flag for start of sound
-        PTRACE(3, "H323RTP\tTransmit start of talk burst: " << rtpTimestamp);
+        PTRACE(3, "MCU_RTPChannel\tTransmit start of talk burst: " << rtpTimestamp);
       }
       // If switching from signal to silence
       else if (!silent && length == 0)
@@ -469,7 +630,7 @@ void MCU_RTPChannel::Transmit()
         // If had some data waiting to go out
         if(frameOffset > 0)
           frameCount = framesInPacket;  // Force the RTP write
-        PTRACE(3, "H323RTP\tTransmit  end  of talk burst: " << rtpTimestamp);
+        PTRACE(3, "MCU_RTPChannel\tTransmit  end  of talk burst: " << rtpTimestamp);
       }
     }
 
@@ -544,7 +705,7 @@ void MCU_RTPChannel::Transmit()
       frameCount = 0;
     }
     else
-      PTRACE(3, "H323READ\t Drop Packet");
+      PTRACE(3, "MCU_RTPChannel\tTransmit Drop Packet");
 
     if(terminating)
       break;
@@ -563,7 +724,7 @@ void MCU_RTPChannel::Transmit()
 #if PTRACING
     if(rtpTimestamp - lastDisplayedTimestamp > RTP_TRACE_DISPLAY_RATE)
     {
-      PTRACE(9, "H323RTP\tTransmitter sent timestamp " << rtpTimestamp);
+      PTRACE(9, "MCU_RTPChannel\tTransmitter sent timestamp " << rtpTimestamp);
       lastDisplayedTimestamp = rtpTimestamp;
     }
 
@@ -577,23 +738,14 @@ void MCU_RTPChannel::Transmit()
   DetachCacheRTP(cache);
 
 #if PTRACING
-  PTRACE_IF(5, codecReadAnalysis != NULL, "Codec read timing:\n" << *codecReadAnalysis);
+  PTRACE_IF(5, codecReadAnalysis != NULL, "MCU_RTPChannel\tTransmit Codec read timing:\n" << *codecReadAnalysis);
   delete codecReadAnalysis;
 #endif
 
   if(!terminating)
     connection.CloseLogicalChannelNumber(number);
 
-  PTRACE(2, "H323RTP\tTransmit " << mediaFormat << " thread ended");
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BOOL MCU_RTPChannel::WriteFrame(RTP_DataFrame & frame)
-{
-  if(!((MCU_RTP_UDP &)rtpSession).PreWriteData(frame))
-    return FALSE;
-  return ((MCU_RTP_UDP &)rtpSession).WriteData(frame);
+  PTRACE(2, "MCU_RTPChannel\tTransmit " << mediaFormat << " thread ended");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -666,15 +818,6 @@ void MCUSIP_RTPChannel::CleanUpOnTermination()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSIP_RTPChannel::ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame)
-{
-  if(!rtpSession.ReadBufferedData(rtpTimestamp, frame))
-    return FALSE;
-  return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 static RTP_Session::ReceiverReportArray BuildReceiverReportArray(const RTP_ControlFrame & frame, PINDEX offset)
 {
   RTP_Session::ReceiverReportArray reports;
@@ -712,11 +855,26 @@ MCU_RTP_UDP::MCU_RTP_UDP(
       id, remoteIsNat
                          )
 {
+  freezeRead = false;
+
   rtpcReceived = 0;
   packetsLostTx = 0;
 
   zrtp_secured = FALSE;
   srtp_secured = FALSE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCU_RTP_UDP::~MCU_RTP_UDP()
+{
+  std::map<WORD, RTP_DataFrame *>::iterator r;
+  while(frameQueue.size() > 0)
+  {
+    r = frameQueue.begin();
+    delete r->second;
+    frameQueue.erase(r);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -801,10 +959,10 @@ BOOL MCU_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
     {
       case ECONNRESET :
       case ECONNREFUSED :
-        PTRACE(2, "RTP_UDP\tSession " << sessionID << ", data port on remote not ready.");
+        PTRACE(2, "MCU_RTP_UDP\tSession " << sessionID << ", data port on remote not ready.");
         break;
       default:
-        PTRACE(1, "RTP_UDP\tSession " << sessionID
+        PTRACE(1, "MCU_RTP_UDP\tSession " << sessionID
                << ", Write error on data port ("
                << dataSocket->GetErrorNumber(PChannel::LastWriteError) << "): "
                << dataSocket->GetErrorText(PChannel::LastWriteError));
@@ -812,6 +970,408 @@ BOOL MCU_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
     }
   }
   return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTP_UDP::SetLastTimeRTPQueue(void)
+{
+  PTime oldTime;
+  std::map<WORD, RTP_DataFrame *>::iterator r;
+
+  for(r = frameQueue.begin(); r != frameQueue.end(); r++)
+  {
+    MCU_RTP_DataFrame *frame = (MCU_RTP_DataFrame *)r->second;
+    if(oldTime > frame->localTimeStamp)
+      oldTime = frame->localTimeStamp;
+  }
+  lastWriteTime = oldTime;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTP_UDP::CopyRTPDataFrame(RTP_DataFrame & dstFrame, RTP_DataFrame & srcFrame)
+{
+  PINDEX frameSize = srcFrame.GetSize();
+  dstFrame.SetSize(frameSize);
+  memcpy(dstFrame.GetPointer(), srcFrame.GetPointer(), frameSize);
+  frameSize = srcFrame.GetPayloadSize();
+  dstFrame.SetPayloadSize(frameSize);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTP_UDP::ReadRTPQueue(RTP_DataFrame & frame)
+{
+  if(frameQueue.size() == 0)
+    return FALSE; // queue is empty
+
+  std::map<WORD, RTP_DataFrame *>::iterator r = frameQueue.find(expectedSequenceNumber);
+
+  if(r != frameQueue.end())
+  {
+    CopyRTPDataFrame(frame,*(r->second));
+    delete r->second;
+    frameQueue.erase(r);
+    SetLastTimeRTPQueue();
+    PTRACE(6, "MCU_RTP_UDP\tReadRTPQueue Get frame from queue " << expectedSequenceNumber << " " << frame.GetSequenceNumber());
+    return TRUE;
+  }
+
+  if((PTime() - lastWriteTime).GetMilliSeconds() > 250)
+  {
+    WORD i = 0; while( (r = frameQueue.find(expectedSequenceNumber + i)) == frameQueue.end()) i++;
+    PTRACE(6, "MCU_RTP_UDP\tReadRTPQueue Timeout, return first frame from queue " << expectedSequenceNumber + i);
+    CopyRTPDataFrame(frame,*(r->second));
+    delete r->second;
+    frameQueue.erase(r);
+    return TRUE;
+  }
+
+  return FALSE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTP_UDP::ProcessRTPQueue(RTP_DataFrame & frame)
+{
+  WORD sequenceNumber = frame.GetSequenceNumber();
+  if(sequenceNumber == expectedSequenceNumber)
+    return TRUE;
+  if(frame.GetTimestamp() < lastRcvdTimeStamp)
+  {
+    PTRACE(6, "MCU_RTP_UDP\tProcessRTPQueue out of order old frame received " << sequenceNumber << " " << lastRcvdTimeStamp << " > " << frame.GetTimestamp());
+    return TRUE;
+  }
+
+  PTime now;  // Get timestamp now
+
+// if((now - lastWriteTime).GetMilliSeconds() > 250 && frameQueue.size() == 0) return TRUE;
+
+// Out of order frame received, needs to put it in queue
+  std::map<WORD, RTP_DataFrame *>::iterator r = frameQueue.find(sequenceNumber);
+  if(r != frameQueue.end()) // duplicate frame
+  {
+    delete r->second;
+    frameQueue.erase(r);
+    SetLastTimeRTPQueue();
+  }
+
+  ((MCU_RTP_DataFrame &)frame).localTimeStamp = now;
+
+  MCU_RTP_DataFrame * newFrame = new MCU_RTP_DataFrame();
+  CopyRTPDataFrame(*newFrame,frame);
+
+  frameQueue.insert(std::map<WORD, RTP_DataFrame *>::value_type(sequenceNumber, newFrame));
+  SetLastTimeRTPQueue();
+  PTRACE(6, "MCU_RTP_UDP\tProcessRTPQueue Put frame into queue " << sequenceNumber);
+
+  r = frameQueue.find(expectedSequenceNumber);
+
+  if(r != frameQueue.end())
+  {
+    PTRACE(6, "MCU_RTP_UDP\tProcessRTPQueue Get frame from queue " << expectedSequenceNumber);
+    CopyRTPDataFrame(frame,*(r->second));
+    delete r->second;
+    frameQueue.erase(r);
+    SetLastTimeRTPQueue();
+    return TRUE;
+  }
+
+  if((now - lastWriteTime).GetMilliSeconds() > 250) // Timeout, return first frame from queue
+  {
+    WORD i = 0; while( (r = frameQueue.find(expectedSequenceNumber + i)) == frameQueue.end()) i++;
+    PTRACE(6, "MCU_RTP_UDP\tProcessRTPQueue Timeout, return first frame from queue " << expectedSequenceNumber + i);
+    CopyRTPDataFrame(frame,*(r->second));
+    delete r->second;
+    frameQueue.erase(r);
+    return TRUE;
+  }
+
+  frame.SetSequenceNumber(expectedSequenceNumber-1);
+  return FALSE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTP_UDP::ReadData(RTP_DataFrame & frame, BOOL loop)
+{
+  do
+  {
+    if(jitter == NULL && ReadRTPQueue(frame))
+    {
+      OnReceiveData(frame, *this);
+      return TRUE; // Got frame from queue
+    }
+
+#ifdef H323_RTP_AGGREGATE
+    PTime start;
+#endif
+    int selectStatus = PSocket::Select(*dataSocket, *controlSocket, reportTimer);
+#ifdef H323_RTP_AGGREGATE
+    unsigned duration = (unsigned)(PTime() - start).GetMilliSeconds();
+    if (duration > 50) {
+      PTRACE(4, "Warning: aggregator read routine was of extended duration = " << duration << " msecs");
+    }
+#endif
+
+    if(shutdownRead)
+    {
+      PTRACE(3, "MCU_RTP_UDP\tSession " << sessionID << ", Read shutdown.");
+      shutdownRead = FALSE;
+      return FALSE;
+    }
+
+    switch (selectStatus) {
+      case -2 :
+        if (ReadControlPDU() == e_AbortTransport)
+          return FALSE;
+        break;
+
+      case -3 :
+        if (ReadControlPDU() == e_AbortTransport)
+          return FALSE;
+        // Then do -1 case
+
+      case -1 :
+        switch (ReadDataPDU(frame)) {
+          case e_ProcessPacket :
+            if (!shutdownRead)
+              return TRUE;
+          case e_IgnorePacket :
+            break;
+          case e_AbortTransport :
+            return FALSE;
+        }
+        break;
+
+      case 0 :
+        PTRACE(5, "MCU_RTP_UDP\tSession " << sessionID << ", check for sending report.");
+        if (!SendReport())
+          return FALSE;
+        break;
+
+      case PSocket::Interrupted:
+        PTRACE(3, "MCU_RTP_UDP\tSession " << sessionID << ", Interrupted.");
+        return FALSE;
+
+      default :
+        PTRACE(1, "MCU_RTP_UDP\tSession " << sessionID << ", Select error: " << PChannel::GetErrorText((PChannel::Errors)selectStatus));
+        return FALSE;
+    }
+  } while (loop);
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RTP_Session::SendReceiveStatus MCU_RTP_UDP::OnReceiveData(const RTP_DataFrame & frame, const RTP_UDP & rtp)
+{
+  // Check that the PDU is the right version
+  if(frame.GetVersion() != RTP_DataFrame::ProtocolVersion)
+    return e_IgnorePacket; // Non fatal error, just ignore
+
+  // Check for if a control packet rather than data packet.
+  if(frame.GetPayloadType() > RTP_DataFrame::MaxPayloadType)
+    return e_IgnorePacket; // Non fatal error, just ignore
+
+  PTimeInterval tick = PTimer::Tick();  // Get timestamp now
+
+  // Have not got SSRC yet, so grab it now
+  if(syncSourceIn == 0)
+    syncSourceIn = frame.GetSyncSource();
+
+  // Check packet sequence numbers
+  if(packetsReceived == 0)
+  {
+    expectedSequenceNumber = (WORD)(frame.GetSequenceNumber() + 1);
+    lastRcvdTimeStamp = frame.GetTimestamp();
+    firstDataReceivedTime = PTime();
+    PTRACE(2, "RTP\tFirst data:"
+              " ver=" << frame.GetVersion()
+           << " pt=" << frame.GetPayloadType()
+           << " psz=" << frame.GetPayloadSize()
+           << " m=" << frame.GetMarker()
+           << " x=" << frame.GetExtension()
+           << " seq=" << frame.GetSequenceNumber()
+           << " ts=" << frame.GetTimestamp()
+           << " src=" << frame.GetSyncSource()
+           << " ccnt=" << frame.GetContribSrcCount());
+  }
+  else
+  {
+    if(ignoreOtherSources && frame.GetSyncSource() != syncSourceIn)
+    {
+      PTRACE(2, "RTP\tPacket from SSRC=" << frame.GetSyncSource() << " ignored, expecting SSRC=" << syncSourceIn);
+      return e_IgnorePacket; // Non fatal error, just ignore
+    }
+
+    if(jitter == NULL)
+      ProcessRTPQueue(const_cast <RTP_DataFrame &> (frame));
+
+    WORD sequenceNumber = frame.GetSequenceNumber();
+    if(sequenceNumber == expectedSequenceNumber)
+    {
+      lastRcvdTimeStamp = frame.GetTimestamp();
+      expectedSequenceNumber++;
+      consecutiveOutOfOrderPackets = 0;
+      // Only do statistics on packets after first received in talk burst
+      if(!frame.GetMarker())
+      {
+        DWORD diff = (tick - lastReceivedPacketTime).GetInterval();
+
+        averageReceiveTimeAccum += diff;
+        if(diff > maximumReceiveTimeAccum)
+          maximumReceiveTimeAccum = diff;
+        if(diff < minimumReceiveTimeAccum)
+          minimumReceiveTimeAccum = diff;
+        rxStatisticsCount++;
+
+        // The following has the implicit assumption that something that has jitter
+        // is an audio codec and thus is in 8kHz timestamp units.
+        diff *= 8;
+        long variance = diff - lastTransitTime;
+        lastTransitTime = diff;
+        if (variance < 0)
+          variance = -variance;
+        jitterLevel += variance - ((jitterLevel+8) >> 4);
+        if (jitterLevel > maximumJitterLevel)
+          maximumJitterLevel = jitterLevel;
+      }
+    }
+    else if (sequenceNumber < expectedSequenceNumber)
+    {
+      PTRACE(3, "RTP\tOut of order packet, received "
+             << sequenceNumber << " expected " << expectedSequenceNumber
+             << " ssrc=" << syncSourceIn);
+      packetsOutOfOrder++;
+
+      // Check for Cisco bug where sequence numbers suddenly start incrementing
+      // from a different base.
+      if(++consecutiveOutOfOrderPackets > 10)
+      {
+        expectedSequenceNumber = (WORD)(sequenceNumber + 1);
+        PTRACE(1, "RTP\tAbnormal change of sequence numbers, adjusting to expect "
+               << expectedSequenceNumber << " ssrc=" << syncSourceIn);
+      }
+
+      if(ignoreOutOfOrderPackets)
+        return e_IgnorePacket; // Non fatal error, just ignore
+    }
+    else
+    {
+      unsigned dropped = sequenceNumber - expectedSequenceNumber;
+      packetsLost += dropped;
+      packetsLostSinceLastRR += dropped;
+      PTRACE(3, "RTP\tDropped " << dropped << " packet(s) at " << sequenceNumber
+             << ", ssrc=" << syncSourceIn);
+      expectedSequenceNumber = (WORD)(sequenceNumber + 1);
+      consecutiveOutOfOrderPackets = 0;
+    }
+  }
+
+  lastReceivedPacketTime = tick;
+
+  octetsReceived += frame.GetPayloadSize();
+  packetsReceived++;
+
+  if(rtp.GetRemoteDataPort() > 0 && localAddress.AsString().IsEmpty())
+  {
+    localAddress = rtp.GetLocalAddress().AsString() + ":" + PString(rtp.GetLocalDataPort());
+    remoteAddress = rtp.GetRemoteAddress().AsString() + ":" + PString(rtp.GetRemoteDataPort());
+  }
+
+  // Call the statistics call-back on the first PDU with total count == 1
+  if(packetsReceived == 1 && userData != NULL)
+    userData->OnRxStatistics(*this);
+
+  if(!SendReport())
+    return e_AbortTransport;
+
+  if(rxStatisticsCount < rxStatisticsInterval)
+    return e_ProcessPacket;
+
+  rxStatisticsCount = 0;
+
+  averageReceiveTime = averageReceiveTimeAccum/rxStatisticsInterval;
+  maximumReceiveTime = maximumReceiveTimeAccum;
+  minimumReceiveTime = minimumReceiveTimeAccum;
+
+  averageReceiveTimeAccum = 0;
+  maximumReceiveTimeAccum = 0;
+  minimumReceiveTimeAccum = 0xffffffff;
+
+  PTRACE(2, "RTP\tReceive statistics: "
+            " packets=" << packetsReceived <<
+            " octets=" << octetsReceived <<
+            " lost=" << packetsLost <<
+            " tooLate=" << GetPacketsTooLate() <<
+            " order=" << packetsOutOfOrder <<
+            " avgTime=" << averageReceiveTime <<
+            " maxTime=" << maximumReceiveTime <<
+            " minTime=" << minimumReceiveTime <<
+            " jitter=" << (jitterLevel >> 7) <<
+            " maxJitter=" << (maximumJitterLevel >> 7)
+            );
+
+  if(userData != NULL)
+    userData->OnRxStatistics(*this);
+
+  return e_ProcessPacket;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUH323_RTP_UDP::MCUH323_RTP_UDP(
+#ifdef H323_RTP_AGGREGATE
+                             PHandleAggregator * aggregator,
+#endif
+                             unsigned id, BOOL remoteIsNat
+                            )
+                              : MCU_RTP_UDP(
+#ifdef H323_RTP_AGGREGATE
+                                        aggregator,
+#endif
+                                        id, remoteIsNat
+                                       )
+{
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUH323_RTP_UDP::~MCUH323_RTP_UDP()
+{
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUH323_RTP_UDP::ReadData(RTP_DataFrame & frame, BOOL loop)
+{
+  if(!MCU_RTP_UDP::ReadData(frame, loop))
+    return FALSE;
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+RTP_Session::SendReceiveStatus MCUH323_RTP_UDP::OnReceiveData(const RTP_DataFrame & frame, const RTP_UDP & rtp)
+{
+  SendReceiveStatus status = MCU_RTP_UDP::OnReceiveData(frame, rtp);
+  if(freezeRead)
+  {
+    RTP_DataFrame & _frame = *PRemoveConst(RTP_DataFrame, &frame);
+    _frame.SetPayloadSize(0);
+    return e_ProcessPacket;
+  }
+  return status;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUH323_RTP_UDP::WriteData(RTP_DataFrame & frame)
+{
+  return MCU_RTP_UDP::WriteData(frame);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -878,23 +1438,8 @@ void MCUSIP_RTP_UDP::SetState(int dir, int state)
 
 BOOL MCUSIP_RTP_UDP::ReadData(RTP_DataFrame & frame, BOOL loop)
 {
-  if(!RTP_UDP::ReadData(frame, loop))
+  if(!MCU_RTP_UDP::ReadData(frame, loop))
     return FALSE;
-
-#if MCUSIP_SRTP
-  if(srtp_read)
-  {
-    int len = frame.GetHeaderSize() + frame.GetPayloadSize();
-    if(SRTP_ERROR(srtp_unprotect, (srtp_read->GetSession(), frame.GetPointer(), &len)))
-    {
-      frame.SetPayloadSize(0);
-      return TRUE;
-    }
-    //cout << "SRTP Unprotected RTP packet\n";
-    frame.SetPayloadSize(len - frame.GetHeaderSize());
-  }
-#endif
-
   return TRUE;
 }
 
@@ -926,7 +1471,7 @@ BOOL MCUSIP_RTP_UDP::WriteData(RTP_DataFrame & frame)
   }
 #endif
 
-  return PostWriteData(frame);
+  return MCU_RTP_UDP::WriteData(frame);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -949,7 +1494,7 @@ BOOL MCUSIP_RTP_UDP::WriteDataZRTP(RTP_DataFrame & frame)
   if(remoteAddress.IsAny() || !remoteAddress.IsValid() || remoteDataPort == 0)
     return TRUE;
 
-  if(!PostWriteData(frame))
+  if(!MCU_RTP_UDP::WriteData(frame))
     return FALSE;
 
   return TRUE;
@@ -957,17 +1502,31 @@ BOOL MCUSIP_RTP_UDP::WriteDataZRTP(RTP_DataFrame & frame)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-RTP_Session::SendReceiveStatus MCUSIP_RTP_UDP::OnSendData(RTP_DataFrame & frame)
-{
-  SendReceiveStatus status = RTP_UDP::OnSendData(frame);
-  return status;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 RTP_Session::SendReceiveStatus MCUSIP_RTP_UDP::OnReceiveData(const RTP_DataFrame & frame, const RTP_UDP & rtp)
 {
-  SendReceiveStatus status = RTP_UDP::OnReceiveData(frame, rtp);
+  SendReceiveStatus status = MCU_RTP_UDP::OnReceiveData(frame, rtp);
+
+  if(freezeRead)
+  {
+    RTP_DataFrame & _frame = *PRemoveConst(RTP_DataFrame, &frame);
+    _frame.SetPayloadSize(0);
+    return e_ProcessPacket;
+  }
+
+#if MCUSIP_SRTP
+  if(srtp_read)
+  {
+    RTP_DataFrame & _frame = *PRemoveConst(RTP_DataFrame, &frame);
+    int len = _frame.GetHeaderSize() + _frame.GetPayloadSize();
+    if(SRTP_ERROR(srtp_unprotect, (srtp_read->GetSession(), _frame.GetPointer(), &len)))
+    {
+      _frame.SetPayloadSize(0);
+      return e_ProcessPacket;
+    }
+    //cout << "SRTP Unprotected RTP packet\n";
+    _frame.SetPayloadSize(len - _frame.GetHeaderSize());
+  }
+#endif
 #if MCUSIP_ZRTP
   if(zrtp_initialised)
   {
@@ -975,13 +1534,13 @@ RTP_Session::SendReceiveStatus MCUSIP_RTP_UDP::OnReceiveData(const RTP_DataFrame
     //if(status == e_IgnorePacket && frame.GetVersion() != RTP_DataFrame::ProtocolVersion)
     //  return e_ProcessPacket;
 
-    RTP_DataFrame & new_frame = *PRemoveConst(RTP_DataFrame, &frame);
-    unsigned len = new_frame.GetPayloadSize() + new_frame.GetHeaderSize();
-    unsigned hlen = new_frame.GetHeaderSize();
+    RTP_DataFrame & _frame = *PRemoveConst(RTP_DataFrame, &frame);
+    unsigned len = _frame.GetPayloadSize() + _frame.GetHeaderSize();
+    unsigned hlen = _frame.GetHeaderSize();
     //cout << "ZRTP OnReceiveData " << len << "\n";
-    if(ZRTP_ERROR(zrtp_process_srtp, (zrtp_stream, (char *)new_frame.GetPointer(), &len)))
+    if(ZRTP_ERROR(zrtp_process_srtp, (zrtp_stream, (char *)_frame.GetPointer(), &len)))
       return e_IgnorePacket;
-    new_frame.SetPayloadSize(len-hlen);
+    _frame.SetPayloadSize(len - hlen);
   }
 #endif
   return status;

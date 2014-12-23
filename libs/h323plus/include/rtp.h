@@ -378,8 +378,6 @@ class RTP_DataFrame : public PBYTEArray
     BOOL   SetPayloadSize(PINDEX sz);
     BYTE * GetPayloadPtr()     const { return (BYTE *)(theArray+GetHeaderSize()); }
 
-    PTime  localTimeStamp;
-
     BYTE * GetSequenceNumberPtr() const;
     BOOL GetPadding()  { return (theArray[0]&0x20) != 0; }
     void SetPadding(BOOL padding);
@@ -923,13 +921,6 @@ class RTP_Session : public PObject
 #ifndef NO_H323_AUDIO_CODECS
     RTP_JitterBuffer * jitter;
 #endif
-    std::map<WORD, RTP_DataFrame *> frameQueue;
-    PTime lastWriteTime;
-    DWORD lastRcvdTimeStamp;
-    void   SetLastTimeRTPQueue();
-    BOOL   ReadRTPQueue(RTP_DataFrame&);
-    BOOL   ProcessRTPQueue(RTP_DataFrame&);
-    void   CopyRTPDataFrame(RTP_DataFrame &, RTP_DataFrame &);
 
     BOOL          ignoreOtherSources;
     BOOL          ignoreOutOfOrderPackets;

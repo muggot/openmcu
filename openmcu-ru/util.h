@@ -66,6 +66,12 @@ class RegistrarAccount;
 class RegistrarConnection;
 class RegistrarSubscription;
 
+class MCU_RTPChannel;
+class MCUSIP_RTPChannel;
+class MCUH323_RTPChannel;
+class MCU_RTP_UDP;
+class MCUSIP_RTP_UDP;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef void * ConferenceMemberId;

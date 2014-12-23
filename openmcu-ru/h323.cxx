@@ -2573,11 +2573,11 @@ RTP_Session * MCUH323Connection::UseSession(unsigned sessionID,
 
   RTP_Session * session = (RTP_Session *)rtpSessions.UseSession(sessionID);
   if (session != NULL) {
-    ((MCU_RTP_UDP *) session)->Reopen(dir == H323Channel::IsReceiver);
+    ((MCUH323_RTP_UDP *) session)->Reopen(dir == H323Channel::IsReceiver);
     return session;
   }
 
-  MCU_RTP_UDP * udp_session = new MCU_RTP_UDP(
+  MCUH323_RTP_UDP * udp_session = new MCUH323_RTP_UDP(
 #ifdef H323_RTP_AGGREGATE
                   useRTPAggregation ? endpoint.GetRTPAggregator() : NULL, 
 #endif
@@ -3942,22 +3942,25 @@ void H323Connection_ConferenceMember::SetName()
 // signal to codec plugin for disable(enable) decoding incoming video from unvisible(visible) member
 void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
 {
- if(id!=this)
- {
-  cout << id << "->SetFreezeVideo(" << disable << ")\n";
-  PTRACE(5,id << "->SetFreezeVideo(" << disable << ")");
-  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
-  if(conn == NULL) return;
-
-  ConferenceMember * member = conn->GetConferenceMember();
-  if(member == this || member == NULL)
+  if(id != this)
   {
-   H323VideoCodec *codec = conn->GetVideoReceiveCodec();
-   if(codec) codec->OnFreezeVideo(disable);
+    cout << id << "->SetFreezeVideo(" << disable << ")\n";
+    PTRACE(5,id << "->SetFreezeVideo(" << disable << ")");
+    MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
+    if(conn == NULL)
+      return;
+
+    ConferenceMember * member = conn->GetConferenceMember();
+    if(member == this || member == NULL)
+    {
+      MCU_RTPChannel *channel = conn->GetVideoReceiveChannel();
+      if(channel)
+        channel->Freeze(disable);
+    }
+    else
+      PTRACE(1, "MCU\tWrong connection in SetFreezeVideo for " << callToken);
+    conn->Unlock();
   }
-  else PTRACE(1, "MCU\tWrong connection in SetFreezeVideo for " << callToken);
-  conn->Unlock();
- }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4072,6 +4075,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+      channel->Freeze(true);
       ConferenceMember::muteMask |= 1;
       sumMask |= 1;
     }
@@ -4082,6 +4086,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+      channel->Freeze(true);
       ConferenceMember::muteMask |= 2;
       sumMask |= 2;
     }
@@ -4092,6 +4097,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+      channel->Freeze(true);
       ConferenceMember::muteMask |= 4;
       sumMask |= 4;
     }
@@ -4102,6 +4108,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+      channel->Freeze(true);
       ConferenceMember::muteMask |= 8;
       sumMask |= 8;
     }
@@ -4125,6 +4132,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+      channel->Freeze(false);
       ConferenceMember::muteMask &= ~1;
       sumMask |= 1;
     }
@@ -4135,6 +4143,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+      channel->Freeze(false);
       ConferenceMember::muteMask &= ~2;
       sumMask |= 2;
     }
@@ -4145,6 +4154,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+      channel->Freeze(false);
       ConferenceMember::muteMask &= ~4;
       sumMask |= 4;
     }
@@ -4155,6 +4165,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+      channel->Freeze(false);
       ConferenceMember::muteMask &= ~8;
       sumMask |= 8;
     }

@@ -43,6 +43,8 @@ PString srtp_get_random_keysalt();
 #define FRAME_MASK	0xFFFFFF00
 #define FRAME_BUF_SIZE	0x2000
 #define FRAME_OFFSET	0x100
+
+#define	MAX_PAYLOAD_TYPE_MISMATCHES 8
 #define RTP_TRACE_DISPLAY_RATE 16000 // 2 seconds
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -336,10 +338,11 @@ class MCU_RTPChannel : public H323_RTPChannel
     virtual BOOL Open();
     virtual BOOL Start();
     virtual void CleanUpOnTermination();
+    virtual void Receive();
     virtual void Transmit();
 
-    // Write a DataFrame
     virtual BOOL WriteFrame(RTP_DataFrame & frame);
+    virtual BOOL ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame);
 
     virtual void SendMiscIndication(unsigned command);
 
@@ -358,12 +361,15 @@ class MCU_RTPChannel : public H323_RTPChannel
     void OnFastUpdatePicture()
     { fastUpdate = true; }
 
+    void Freeze(bool _freeze);
+
   protected:
     unsigned encoderSeqN;
     int cacheMode; // -1 - default no cache, 0 - no cache, 1 - cached, 2 - caching
     PString cacheName;
 
     bool fastUpdate;
+    bool freezeWrite;
     CacheRTP *cache;
 };
 
@@ -394,9 +400,6 @@ class MCUSIP_RTPChannel : public MCU_RTPChannel
     virtual BOOL Open();
     virtual BOOL Start();
     virtual void CleanUpOnTermination();
-
-    virtual BOOL ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame);
-
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -450,8 +453,24 @@ class MCU_RTP_UDP : public RTP_UDP
       unsigned id, BOOL remoteIsNat = FALSE
                );
 
+    ~MCU_RTP_UDP();
+
+    virtual BOOL ReadData(RTP_DataFrame & frame, BOOL loop);
+    virtual SendReceiveStatus OnReceiveData(const RTP_DataFrame & frame, const RTP_UDP & rtp);
+
+    virtual BOOL WriteData(RTP_DataFrame & frame);
+    virtual BOOL PreWriteData(RTP_DataFrame & frame);
+    virtual BOOL PostWriteData(RTP_DataFrame & frame);
+
+    // non-virtual
+    //BOOL ReadBufferedData(DWORD timestamp, RTP_DataFrame & frame);
+
+    void FreezeRead(bool _freeze)
+    { freezeRead = _freeze; }
+
     virtual void OnRxSenderReport(const SenderReport & sender, const ReceiverReportArray & reports);
     virtual void OnRxReceiverReport(DWORD src, const ReceiverReportArray & reports);
+
     virtual SendReceiveStatus OnReceiveControl(RTP_ControlFrame & frame);
 
     // Get total number of control packets received in session.
@@ -460,18 +479,42 @@ class MCU_RTP_UDP : public RTP_UDP
     // Get total number transmitted packets lost in session (via RTCP).
     DWORD GetPacketsLostTx() const { return packetsLostTx; }
 
-    // Write a data frame from the RTP channel.
-    virtual BOOL WriteData(RTP_DataFrame & frame);
-    virtual BOOL PreWriteData(RTP_DataFrame & frame);
-    virtual BOOL PostWriteData(RTP_DataFrame & frame);
 
     BOOL           zrtp_secured;
     PString        zrtp_sas_token;
     BOOL           srtp_secured;
 
   protected:
+    bool freezeRead;
     DWORD rtpcReceived;
     DWORD packetsLostTx;
+
+    std::map<WORD, RTP_DataFrame *> frameQueue;
+    PTime  lastWriteTime;
+    DWORD  lastRcvdTimeStamp;
+    void   SetLastTimeRTPQueue();
+    BOOL   ReadRTPQueue(RTP_DataFrame&);
+    BOOL   ProcessRTPQueue(RTP_DataFrame&);
+    void   CopyRTPDataFrame(RTP_DataFrame &, RTP_DataFrame &);
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUH323_RTP_UDP : public MCU_RTP_UDP
+{
+  public:
+    MCUH323_RTP_UDP(
+#ifdef H323_RTP_AGGREGATE
+      PHandleAggregator * aggregator,
+#endif
+      unsigned id, BOOL remoteIsNat = FALSE
+              );
+    ~MCUH323_RTP_UDP();
+
+    virtual BOOL ReadData(RTP_DataFrame & frame, BOOL loop);
+    virtual SendReceiveStatus OnReceiveData(const RTP_DataFrame & frame, const RTP_UDP & rtp);
+
+    virtual BOOL WriteData(RTP_DataFrame & frame);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -488,10 +531,9 @@ class MCUSIP_RTP_UDP : public MCU_RTP_UDP
     ~MCUSIP_RTP_UDP();
 
     virtual BOOL ReadData(RTP_DataFrame & frame, BOOL loop);
-    virtual BOOL WriteData(RTP_DataFrame & frame);
-
-    virtual SendReceiveStatus OnSendData(RTP_DataFrame & frame);
     virtual SendReceiveStatus OnReceiveData(const RTP_DataFrame & frame, const RTP_UDP & rtp);
+
+    virtual BOOL WriteData(RTP_DataFrame & frame);
 
     BOOL CreateSRTP(int dir, const PString & crypto, const PString & key_str);
     BOOL CreateZRTP();
@@ -523,6 +565,20 @@ class MCUSIP_RTP_UDP : public MCU_RTP_UDP
     SipSRTP               * srtp_read;
     SipSRTP               * srtp_write;
 #endif
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCU_RTP_DataFrame : public RTP_DataFrame
+{
+  PCLASSINFO(MCU_RTP_DataFrame, RTP_DataFrame);
+
+  public:
+    MCU_RTP_DataFrame(PINDEX payloadSize = 2048, BOOL dynamicAllocation = TRUE)
+      : RTP_DataFrame(payloadSize, dynamicAllocation)
+    { }
+
+    PTime  localTimeStamp;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
