@@ -138,6 +138,8 @@ int PTimedMutexTryLock(PTimedMutex & mutex, const PTimeInterval & timeout, PStri
 BOOL CheckCapability(const PString & formatName);
 BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionType = CONNECTION_TYPE_NONE);
 
+PString GetPluginName(const PString & format);
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUReadWriteMutex : public PObject

@@ -2737,7 +2737,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
       }
       else if(width != 0 && height != 0)
       {
-        if(capname == "H.261{sw}" || capname == "H.263{sw}" || capname == "H.263p{sw}")
+        if(GetPluginName(capname) == "H.261" || GetPluginName(capname) == "H.263" || GetPluginName(capname) == "H.263p")
         {
           PString mpiname;
           GetParamsH263(mpiname, width, height);
@@ -2746,7 +2746,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
           if(cap_mpi == 0)
           { localCapabilities.Remove(&localCapabilities[i]); continue; }
         }
-        else if(capname == "H.264{sw}")
+        else if(GetPluginName(capname) == "H.264")
         {
           unsigned level = 0, level_h241 = 0, max_fs = 0;
           max_fs = GetVideoMacroBlocks(width, height);
@@ -2756,7 +2756,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
           if(level_h241 != cap_level_h241)
           { localCapabilities.Remove(&localCapabilities[i]); continue; }
         }
-        else if(capname == "VP8{sw}")
+        else if(GetPluginName(capname) == "VP8")
         {
           const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
           unsigned cap_width = mf.GetOptionInteger("Generic Parameter 1");
@@ -2820,7 +2820,7 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
         SetFormatParams(wf, 0, 0, frame_rate, bandwidth);
         _remoteCaps.Copy(remoteCaps[i]);
       }
-      else if(video_cap.Left(4) == capname.Left(4))
+      else if(GetPluginName(video_cap) == GetPluginName(capname))
       {
         // создать новый video_cap только если задано разрешение,
         // иначе только применить заданные frame_rate,bandwidth

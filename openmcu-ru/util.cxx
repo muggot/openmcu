@@ -203,6 +203,20 @@ PString MCUStringDictionary::operator()(const PString & key, const char *defvalu
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+PString GetPluginName(const PString & formatName)
+{
+  PINDEX sep = formatName.Find("-");
+  if(sep == P_MAX_INDEX)
+    sep = formatName.Find("_");
+  if(sep == P_MAX_INDEX)
+    sep = formatName.Find("{");
+  if(sep != P_MAX_INDEX)
+    return formatName.Left(sep);
+  return formatName;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString GetSectionParam(PString section_prefix, PString param, PString addr)
 {
   PString user, host;
