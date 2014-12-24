@@ -247,9 +247,17 @@ class PluginLoaderStartup2 : public PProcessStartup
 };
 #endif //_WIN32
 
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+class OpenMCUPreInit
+{
+  public:
+    OpenMCUPreInit();
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class OpenMCU : public OpenMCUProcessAncestor
+class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
 {
   PCLASSINFO(OpenMCU, OpenMCUProcessAncestor)
 
@@ -277,7 +285,6 @@ class OpenMCU : public OpenMCUProcessAncestor
     const PString & GetDefaultRoomName() const { return defaultRoomName; }
 
     BOOL AreLoopbackCallsAllowed() const { return allowLoopbackCalls; }
-    PString GetNewRoomNumber();
     void LogMessage(const PString & str);
     void LogMessageHTML(PString str);
 
@@ -341,9 +348,10 @@ class OpenMCU : public OpenMCUProcessAncestor
       }
       return result;
     }
+
     PString GetHtmlCopyright()
     {
-      PHTML html(PHTML::InBody);
+      PStringStream html;
       html << "Copyright &copy;"
        << compilationDate.AsString("yyyy") << " by "
        << PHTML::HotLink(copyrightHomePage + "\" target=\"_blank\"")
@@ -405,7 +413,12 @@ class OpenMCU : public OpenMCUProcessAncestor
     void ManagerRefreshAddressBook();
 
   protected:
-    int        currentLogLevel, currentTraceLevel;
+
+    void InitialiseTrace();
+    int currentLogLevel, currentTraceLevel;
+    BOOL traceFileRotated;
+    PINDEX rotationLevel;
+
     PFilePath executableFile;
     ConferenceManager * manager;
     MCUH323EndPoint * endpoint;
@@ -418,7 +431,6 @@ class OpenMCU : public OpenMCUProcessAncestor
     PString    serverId;
     PString    defaultRoomName;
     BOOL       allowLoopbackCalls;
-    BOOL       traceFileRotated;
 
     int        httpBuffer, httpBufferIndex;
     PStringArray httpBufferedEvents;

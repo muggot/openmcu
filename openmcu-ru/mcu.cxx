@@ -12,8 +12,20 @@
 
 VideoMixConfigurator OpenMCU::vmcfg;
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+OpenMCUPreInit::OpenMCUPreInit()
+{
+  //setenv("PWLIB_TRACE_STARTUP", "6", 1);
+  //setenv("PWLIB_TRACE_LEVEL", "6", 1);
+  //setenv("PWLIB_TRACE_FILE", PString(SERVER_LOGS) + PATH_SEPARATOR + "trace_startup.txt", 1);
+  setenv("PWLIBPLUGINDIR", MCU_PLUGIN_DIR, 1);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 OpenMCU::OpenMCU()
-  : OpenMCUProcessAncestor(ProductInfo)
+  : OpenMCUPreInit(), OpenMCUProcessAncestor(ProductInfo)
 {
 #ifndef _WIN32
   signal(SIGPIPE, SIG_IGN); // PTCPSocket caused SIGPIPE on browser disconnect time to time
@@ -27,14 +39,18 @@ OpenMCU::OpenMCU()
   traceFileRotated  = FALSE;
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void OpenMCU::Main()
 {
   Suspend();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL OpenMCU::OnStart()
 {
-#if PTLIB_VER == PTLIB_VERSION_INT(2,0,1)
+#if MCU_PTLIB_VERSION == MCU_PTLIB_VERSION_INT(2,0,1)
   char ** argv=PXGetArgv();
   executableFile = argv[0];
   PDirectory exeDir = executableFile.GetDirectory();
@@ -42,6 +58,21 @@ BOOL OpenMCU::OnStart()
 #endif
 
   SetConfigurationPath(CONFIG_PATH);
+  InitialiseTrace();
+
+#ifdef GIT_REVISION
+  #define _QUOTE_MACRO_VALUE1(x) #x
+  #define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
+  PTRACE(1,"OpenMCU-ru git revision " << _QUOTE_MACRO_VALUE(GIT_REVISION));
+  #undef _QUOTE_MACRO_VALUE
+  #undef _QUOTE_MACRO_VALUE1
+#endif
+#ifdef __VERSION__
+  PTRACE(1,"OpenMCU-ru GCC version " << __VERSION__);
+#endif
+#ifdef PTLIB_VERSION
+  PTRACE(1,"OpenMCU-ru PTLib version " << PTLIB_VERSION);
+#endif
 
   httpNameSpace.AddResource(new PHTTPDirectory("data", "data"));
   httpNameSpace.AddResource(new PServiceHTTPDirectory("html", "html"));
@@ -55,12 +86,12 @@ BOOL OpenMCU::OnStart()
   return PHTTPServiceProcess::OnStart();
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void OpenMCU::OnStop()
 {
-
-#if PTLIB_VER < PTLIB_VERSION_INT(2,10,0)
-  PHTTPServiceProcess::OnStop();
-#endif
+  // shutdown http listener
+  MCUShutdownListener();
 
   // stop registrar
   registrar->SetTerminating();
@@ -94,6 +125,8 @@ void OpenMCU::OnStop()
 #endif
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void OpenMCU::OnControl()
 {
   // This function get called when the Control menu item is selected in the
@@ -113,6 +146,14 @@ void OpenMCU::OnControl()
   PURL::OpenBrowser(url);
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////
+
+void OpenMCU::OnConfigChanged()
+{
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL OpenMCU::Initialise(const char * initMsg)
 {
   PDirectory exeDir = executableFile.GetDirectory();
@@ -129,51 +170,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   MCUConfig cfg("Parameters");
   serverId = cfg.GetString(ServerIdKey, OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
+  InitialiseTrace();
 
   vmcfg.go(vmcfg.bfw,vmcfg.bfh);
-
-#if PTRACING
-  int TraceLevel=cfg.GetInteger(TraceLevelKey, DEFAULT_TRACE_LEVEL);
-  int LogLevel=cfg.GetInteger(LogLevelKey, DEFAULT_LOG_LEVEL);
-  if(currentLogLevel != LogLevel)
-  {
-    SetLogLevel((PSystemLog::Level)LogLevel);
-    currentLogLevel = LogLevel;
-  }
-  PINDEX rotationLevel = cfg.GetInteger(TraceRotateKey, 0);
-  if(currentTraceLevel != TraceLevel)
-  {
-    if(!traceFileRotated)
-    {
-      if(rotationLevel != 0)
-      {
-        PString
-          pfx = PString(SERVER_LOGS) + PATH_SEPARATOR + "trace",
-          sfx = ".txt";
-        PFile::Remove(pfx + PString(rotationLevel-1) + sfx, TRUE);
-        for (PINDEX i=rotationLevel-1; i>0; i--) PFile::Move(pfx + PString(i-1) + sfx, pfx + PString(i) + sfx, TRUE);
-        PFile::Move(pfx + sfx, pfx + "0" + sfx, TRUE);
-      }
-      traceFileRotated = TRUE;
-    }
-
-    PTrace::Initialise(TraceLevel, PString(SERVER_LOGS) + PATH_SEPARATOR + "trace.txt");
-    PTrace::SetOptions(PTrace::FileAndLine);
-    currentTraceLevel = TraceLevel;
-  }
-
-#  ifdef GIT_REVISION
-#    define _QUOTE_MACRO_VALUE1(x) #x
-#    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
-  PTRACE(1,"OpenMCU-ru git revision " << _QUOTE_MACRO_VALUE(GIT_REVISION));
-#    undef _QUOTE_MACRO_VALUE
-#    undef _QUOTE_MACRO_VALUE1
-#  endif
-#endif //if PTRACING
-
-#ifdef __VERSION__
-  PTRACE(1,"OpenMCU-ru GCC version " <<__VERSION__);
-#endif
 
 // default log file name
 #ifdef SERVER_LOGS
@@ -489,17 +488,44 @@ void OpenMCU::ManagerRefreshAddressBook()
   }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void OpenMCU::OnConfigChanged()
+void OpenMCU::InitialiseTrace()
 {
+#if PTRACING
+  MCUConfig cfg("Parameters");
+  int TraceLevel = cfg.GetInteger(TraceLevelKey, DEFAULT_TRACE_LEVEL);
+  int LogLevel = cfg.GetInteger(LogLevelKey, DEFAULT_LOG_LEVEL);
+  if(currentLogLevel != LogLevel)
+  {
+    SetLogLevel((PSystemLog::Level)LogLevel);
+    currentLogLevel = LogLevel;
+  }
+  rotationLevel = cfg.GetInteger(TraceRotateKey, 0);
+  if(currentTraceLevel != TraceLevel)
+  {
+    if(!traceFileRotated)
+    {
+      if(rotationLevel != 0)
+      {
+        PString
+          pfx = PString(SERVER_LOGS) + PATH_SEPARATOR + "trace",
+          sfx = ".txt";
+        PFile::Remove(pfx + PString(rotationLevel-1) + sfx, TRUE);
+        for (PINDEX i=rotationLevel-1; i>0; i--) PFile::Move(pfx + PString(i-1) + sfx, pfx + PString(i) + sfx, TRUE);
+        PFile::Move(pfx + sfx, pfx + "0" + sfx, TRUE);
+      }
+      traceFileRotated = TRUE;
+    }
+
+    PTrace::Initialise(TraceLevel, PString(SERVER_LOGS) + PATH_SEPARATOR + "trace.txt");
+    PTrace::SetOptions(PTrace::FileAndLine);
+    currentTraceLevel = TraceLevel;
+  }
+#endif
 }
 
-PString OpenMCU::GetNewRoomNumber()
-{
-  static PAtomicInteger number(100);
-  return PString(PString::Unsigned, ++number);
-}
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void OpenMCU::LogMessage(const PString & str)
 {
@@ -533,6 +559,8 @@ void OpenMCU::LogMessage(const PString & str)
   logFile.Close();
   logMutex.Signal();
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void OpenMCU::LogMessageHTML(PString str)
 {
@@ -604,7 +632,7 @@ void OpenMCU::MCUShutdownListener()
 
   httpThreadsMutex.Wait();
 
-#if PTLIB_VER == PTLIB_VERSION_INT(2,0,1)
+#if MCU_PTLIB_VERSION == MCU_PTLIB_VERSION_INT(2,0,1)
   for(PINDEX i = 0; i < httpThreads.GetSize(); ++i)
     httpThreads[i].Close();
 #else

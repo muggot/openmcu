@@ -653,12 +653,12 @@ fi
 dnl ########################################################################
 dnl configuration plugins
 
-P_DEFAULT_PLUGIN_DIR=${MCU_LIB_DIR}/ptlib
-PLUGIN_INSTALLPREFIX=${P_DEFAULT_PLUGIN_DIR}
+MCU_PLUGIN_DIR=${MCU_LIB_DIR}/ptlib
+PLUGIN_INSTALLPREFIX=${MCU_PLUGIN_DIR}
 AUDIO_PLUGIN_DIR=codecs/audio
 VIDEO_PLUGIN_DIR=codecs/video
 
-AC_SUBST(P_DEFAULT_PLUGIN_DIR)
+AC_SUBST(MCU_PLUGIN_DIR)
 AC_SUBST(PLUGIN_INSTALLPREFIX)
 AC_SUBST(AUDIO_PLUGIN_DIR)
 AC_SUBST(VIDEO_PLUGIN_DIR)
@@ -1060,8 +1060,6 @@ sed -i -r 's/all: all-recursive/all: all/g' Makefile
 
 dnl ########################################################################
 dnl replace default install path
-
-sed -i -r "s#^\#define P_DEFAULT_PLUGIN_DIR.*#\#define P_DEFAULT_PLUGIN_DIR \"${P_DEFAULT_PLUGIN_DIR}\"#g" ${PTLIBDIR}/include/ptbuildopts.h
 
 if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
   sed -i -r "s#${PTLIBDIR}#${PTLIBDIR}\\nPTLIBDIR\\t= ${PTLIBDIR}#g" ${H323PLUSDIR}/openh323u.mak

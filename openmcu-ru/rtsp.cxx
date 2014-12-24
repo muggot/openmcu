@@ -1628,7 +1628,7 @@ BOOL MCUListener::CreateTCPServer()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUListener::CreateTCPClient()
+BOOL MCUListener::CreateTCPClient()
 {
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);

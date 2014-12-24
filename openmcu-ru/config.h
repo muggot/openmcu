@@ -1,18 +1,23 @@
 #ifndef _MCU_CONFIG_H
 #define _MCU_CONFIG_H
 
-#ifndef PTLIB_VERSION_INT
-  #define PTLIB_VERSION_INT(major,minor,build) ((major<<24)|(minor<<16)|build)
-#endif
-#define PTLIB_VER PTLIB_VERSION_INT(PTLIB_MAJOR, PTLIB_MINOR, PTLIB_BUILD)
+////////////////////////////////////////////////////////////////////////////////////////////////////
+// PTLib
 
-#if PTLIB_VER > PTLIB_VERSION_INT(2,0,1)
+#define MCU_PTLIB_VERSION_INT(major,minor,build) ((major<<24)|(minor<<16)|build)
+#define MCU_PTLIB_VERSION MCU_PTLIB_VERSION_INT(PTLIB_MAJOR, PTLIB_MINOR, PTLIB_BUILD)
+#if MCU_PTLIB_VERSION > MCU_PTLIB_VERSION_INT(2,0,1)
   #define BOOL PBoolean
 #endif
+
+#define MCU_PLUGIN_DIR "/opt/openmcu-ru/lib/ptlib"
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define MCUSIP_SRTP 1
 #define MCUSIP_ZRTP 1
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _WIN32
 #  define PATH_SEPARATOR "\\"
@@ -20,6 +25,7 @@
 #  define PATH_SEPARATOR "/"
 #endif
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // specify the path executable files
 #define SYS_BIN_DIR "/opt/openmcu-ru/bin"

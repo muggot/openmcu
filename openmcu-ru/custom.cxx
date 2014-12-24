@@ -16,24 +16,19 @@
 ////////////////////////////////////////////////////
 
 #define	PRODUCT_NAME_TEXT	"OpenMCU-ru"
-
-#define	EXE_NAME_TEXT	    "openmcu-ru"
-
+#define	EXE_NAME_TEXT	        "openmcu-ru"
 #define	MANUFACTURER_TEXT	"OpenMCU-ru Team"
-
 #define	COPYRIGHT_HOLDER	MANUFACTURER_TEXT
 
+#define	EMAIL                   ""
+#define	HOME_PAGE               "http://www.openmcu.ru"
+#define	PRODUCT_NAME_HTML       PRODUCT_NAME_TEXT
+
 #ifndef GIF_NAME
-#define GIF_NAME  		    EXE_NAME_TEXT ".gif"
+#define GIF_NAME  		EXE_NAME_TEXT ".gif"
 #define	GIF_WIDTH  176
 #define GIF_HEIGHT 144
 #endif
-
-#define	EMAIL ""
-
-#define	HOME_PAGE "http://www.openmcu.ru"
-
-#define	PRODUCT_NAME_HTML PRODUCT_NAME_TEXT
 
 
 #ifdef RC_INVOKED
@@ -99,7 +94,7 @@ PHTTPServiceProcess::Info ProductInfo = {
     PRODUCT_NAME_TEXT,
     MANUFACTURER_TEXT,
     MAJOR_VERSION, MINOR_VERSION, PProcess::BUILD_TYPE, BUILD_NUMBER, __TIME__ __DATE__,
-    
+
     {{ 0 }}, { NULL }, 0, {{ 0 }},  // Only relevent for commercial apps
 
     HOME_PAGE,
