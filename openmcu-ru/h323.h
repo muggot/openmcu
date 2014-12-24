@@ -243,6 +243,7 @@ class MCUH323Connection : public H323Connection
     virtual BOOL OnReceivedCallProceeding(const H323SignalPDU & proceedingPDU);
     virtual BOOL OnReceivedSignalConnect(const H323SignalPDU & pdu);
 
+    virtual BOOL OnH245Request(const H323ControlPDU & pdu);
     virtual void SelectDefaultLogicalChannel(unsigned sessionID);
     H323Capability * SelectRemoteCapability(H323Capabilities & capabilities, unsigned sessionID, char **capsName);
 

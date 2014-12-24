@@ -2655,7 +2655,7 @@ void MCUH323Connection::SelectDefaultLogicalChannel(unsigned sessionID)
     return;
 
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-  if(sessionID == RTP_Session::DefaultVideoSessionID)
+  if(ep.tvCaps != NULL && sessionID == RTP_Session::DefaultVideoSessionID)
   {
     H323Capability * remoteCapability = SelectRemoteCapability(remoteCapabilities, sessionID, ep.tvCaps);
     if(remoteCapability == NULL)
@@ -2664,31 +2664,33 @@ void MCUH323Connection::SelectDefaultLogicalChannel(unsigned sessionID)
     OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter);
     return;
   }
-  if(ep.tsCaps != NULL)
+  if(ep.tsCaps != NULL && sessionID == RTP_Session::DefaultAudioSessionID)
   {
-     H323Capability * remoteCapability = SelectRemoteCapability(remoteCapabilities, sessionID, ep.tsCaps);
-     if(remoteCapability == NULL) return;
-     PTRACE(2, "H245\tOpenLogicalChannel " << *remoteCapability);
-     OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter);
-     return;
+    H323Capability * remoteCapability = SelectRemoteCapability(remoteCapabilities, sessionID, ep.tsCaps);
+    if(remoteCapability == NULL)
+      return;
+    PTRACE(2, "H245\tOpenLogicalChannel " << *remoteCapability);
+    OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter);
+    return;
   }
-  else
-    for(PINDEX i = 0; i < localCapabilities.GetSize(); i++)
+
+  const H323Capabilities & capabilities = ep.GetCapabilities();
+  for(PINDEX i = 0; i < capabilities.GetSize(); i++)
+  {
+    H323Capability & capability = capabilities[i];
+    if(capability.GetDefaultSessionID() == sessionID)
     {
-      H323Capability & localCapability = localCapabilities[i];
-      if(localCapability.GetDefaultSessionID() == sessionID)
+      H323Capability * remoteCapability = remoteCapabilities.FindCapability(capability);
+      if(remoteCapability != NULL)
       {
-        H323Capability * remoteCapability = remoteCapabilities.FindCapability(localCapability);
-        if(remoteCapability != NULL)
-        {
-          PTRACE(3, "H323\tSelecting " << *remoteCapability);
-          MergeCapabilities(sessionID, localCapability, remoteCapability);
-          if(OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter))
-            break;
-          PTRACE(2, "H323\tOnSelectLogicalChannels, OpenLogicalChannel failed: " << *remoteCapability);
-        }
+        PTRACE(3, "H323\tSelecting " << *remoteCapability);
+        MergeCapabilities(sessionID, capability, remoteCapability);
+        if(OpenLogicalChannel(*remoteCapability, sessionID, H323Channel::IsTransmitter))
+          break;
+        PTRACE(2, "H323\tOnSelectLogicalChannels, OpenLogicalChannel failed: " << *remoteCapability);
       }
     }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2879,6 +2881,22 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
   //cout << "OnReceivedCapabilitySet\n" << _remoteCaps << "\n";
 
   return H323Connection::OnReceivedCapabilitySet(_remoteCaps, muxCap, rejectPDU);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUH323Connection::OnH245Request(const H323ControlPDU & pdu)
+{
+  const H245_RequestMessage & request = pdu;
+  if(request.GetTag() == H245_RequestMessage::e_terminalCapabilitySet)
+  {
+    H323Capabilities copy = localCapabilities;
+    localCapabilities = ep.GetCapabilities();
+    BOOL ret = H323Connection::OnH245Request(pdu);
+    localCapabilities = copy;
+    return ret;
+  }
+  return H323Connection::OnH245Request(pdu);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
