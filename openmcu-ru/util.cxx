@@ -217,7 +217,7 @@ PString GetPluginName(const PString & formatName)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString GetSectionParam(PString section_prefix, PString param, PString addr)
+PString GetSectionParam(PString section_prefix, PString param, PString addr, bool asterisk)
 {
   PString user, host;
   PString value;
@@ -240,13 +240,13 @@ PString GetSectionParam(PString section_prefix, PString param, PString addr)
     value = MCUConfig(section_prefix+user).GetString(param);
   if(value == "")
     value = MCUConfig(section_prefix+host).GetString(param);
-  if(value == "")
+  if(value == "" && asterisk == true)
     value = MCUConfig(section_prefix+"*").GetString(param);
 
   return value;
 }
 
-PString GetSectionParamFromUrl(PString param, PString addr)
+PString GetSectionParamFromUrl(PString param, PString addr, bool asterisk)
 {
   PString section_prefix;
   if(addr.Find("RTSP Server ") == 0)
@@ -265,28 +265,14 @@ PString GetSectionParamFromUrl(PString param, PString addr)
       return "";
   }
 
-  PString value = GetSectionParam(section_prefix, param, addr);
+  PString value = GetSectionParam(section_prefix, param, addr, asterisk);
   PTRACE(1, "Get parameter (" << addr << ") \"" << param << "\" = " << value);
   return value;
 }
 
-int GetSectionParamFromUrl(PString param, PString addr, int defaultValue)
+PString GetSectionParamFromUrl(PString param, PString addr, PString defaultValue, bool asterisk)
 {
-  PString value = GetSectionParamFromUrl(param, addr);
-  if(value == "")
-    return defaultValue;
-
-  if(value.ToLower() == "true")
-    value = "1";
-  else if(value.ToLower() == "false")
-    value = "0";
-
-  return value.AsInteger();
-}
-
-PString GetSectionParamFromUrl(PString param, PString addr, PString defaultValue)
-{
-  PString value = GetSectionParamFromUrl(param, addr);
+  PString value = GetSectionParamFromUrl(param, addr, asterisk);
   if(value == "")
     return defaultValue;
   return value;

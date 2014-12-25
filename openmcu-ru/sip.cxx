@@ -484,7 +484,7 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
 
   // endpoint parameters
   rtp_proto = GetEndpointParam(RtpProtoKey, "RTP");
-  remote_bw = GetEndpointParam(BandwidthToKey, 0);
+  remote_bw = GetEndpointParam(BandwidthToKey, "0").AsInteger();
   remoteName = GetEndpointParam(DisplayNameKey);
 
   MCUTRACE(1, trace_section << "contact: " << contact_str << " ruri: " << ruri_str);
@@ -893,13 +893,18 @@ void MCUSipConnection::CreateLocalSipCaps()
   PString audio_capname = GetEndpointParam(AudioCodecKey);
   if(audio_capname != "" && audio_capname.Right(4) != "{sw}")
     audio_capname += "{sw}";
-  PString video_capname = GetEndpointParam(VideoCodecKey);
+  PString video_capname = GetEndpointParam(VideoCodecKey, false);
+  PString video_resolution = GetEndpointParam(VideoResolutionKey, false);
+  if(video_capname == "")
+  {
+    video_capname = GetEndpointParam(VideoCodecKey);
+    video_resolution = GetEndpointParam(VideoResolutionKey);
+  }
   if(video_capname != "" && video_capname.Right(4) != "{sw}")
     video_capname += "{sw}";
-  PString video_resolution = GetEndpointParam(VideoResolutionKey);
   PString video_fmtp = GetEndpointParam(VideoFmtpKey);
-  unsigned frame_rate = GetEndpointParam(FrameRateFromKey, 0);
-  unsigned bandwidth = GetEndpointParam(BandwidthFromKey, 0);
+  unsigned frame_rate = GetEndpointParam(FrameRateFromKey, "0").AsInteger();
+  unsigned bandwidth = GetEndpointParam(BandwidthFromKey, "0").AsInteger();
 
   LocalSipCaps.clear();
   for(SipCapMapType::iterator it = sep->GetBaseSipCaps().begin(); it != sep->GetBaseSipCaps().end(); it++)

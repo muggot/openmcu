@@ -2716,11 +2716,16 @@ void MCUH323Connection::OnSetLocalCapabilities()
   PTRACE(1, "MCUH323Connection\tOnSetLocalCapabilities");
   PString audio_cap = GetEndpointParam("Audio codec(receive)");
   if(audio_cap.Left(5) == "G.711" && audio_cap.Right(4) == "{sw}") { audio_cap.Replace("{sw}","",TRUE,0); }
-  PString video_cap = GetEndpointParam("Video codec(receive)");
-  PString video_res = GetEndpointParam("Video resolution(receive)");
+  PString video_cap = GetEndpointParam("Video codec(receive)", false);
+  PString video_res = GetEndpointParam("Video resolution(receive)", false);
+  if(video_cap == "")
+  {
+    video_cap = GetEndpointParam("Video codec(receive)");
+    video_res = GetEndpointParam("Video resolution(receive)");
+  }
   unsigned width = video_res.Tokenise("x")[0].AsInteger();
   unsigned height = video_res.Tokenise("x")[1].AsInteger();
-  unsigned bandwidth_to = GetEndpointParam(BandwidthToKey, 0);
+  unsigned bandwidth_to = GetEndpointParam(BandwidthToKey, "0").AsInteger();
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {
@@ -2785,12 +2790,17 @@ void MCUH323Connection::OnSetLocalCapabilities()
 BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteCaps, const H245_MultiplexCapability * muxCap, H245_TerminalCapabilitySetReject & rejectPDU)
 {
   PString audio_cap = GetEndpointParam("Audio codec(transmit)");
-  PString video_cap = GetEndpointParam("Video codec(transmit)");
-  unsigned frame_rate = GetEndpointParam(FrameRateFromKey, 0);
-  unsigned bandwidth = GetEndpointParam(BandwidthFromKey, 0);
-  PString video_res = GetEndpointParam("Video resolution(transmit)");
+  PString video_cap = GetEndpointParam("Video codec(transmit)", false);
+  PString video_res = GetEndpointParam("Video resolution(transmit)", false);
+  if(video_cap == "")
+  {
+    video_cap = GetEndpointParam("Video codec(transmit)");
+    video_res = GetEndpointParam("Video resolution(transmit)");
+  }
   unsigned width = video_res.Tokenise("x")[0].AsInteger();
   unsigned height = video_res.Tokenise("x")[1].AsInteger();
+  unsigned frame_rate = GetEndpointParam(FrameRateFromKey, "0").AsInteger();
+  unsigned bandwidth = GetEndpointParam(BandwidthFromKey, "0").AsInteger();
 
   BOOL custom_audio_codec = FALSE;
   BOOL custom_video_codec = FALSE;
@@ -3185,19 +3195,9 @@ void MCUH323Connection::SetEndpointDefaultVideoParams()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUH323Connection::GetEndpointParam(PString param, int defaultValue)
+PString MCUH323Connection::GetEndpointParam(PString param, PString defaultValue, bool asterisk)
 {
-  PString value = GetEndpointParam(param);
-  if(value == "")
-    return defaultValue;
-  return value.AsInteger();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PString MCUH323Connection::GetEndpointParam(PString param, PString defaultValue)
-{
-  PString value = GetEndpointParam(param);
+  PString value = GetEndpointParam(param, asterisk);
   if(value == "")
     return defaultValue;
   return value;
@@ -3205,7 +3205,7 @@ PString MCUH323Connection::GetEndpointParam(PString param, PString defaultValue)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString MCUH323Connection::GetEndpointParam(PString param)
+PString MCUH323Connection::GetEndpointParam(PString param, bool asterisk)
 {
   PString url = remotePartyAddress;
   if(connectionType == CONNECTION_TYPE_H323)
@@ -3214,7 +3214,7 @@ PString MCUH323Connection::GetEndpointParam(PString param)
     if(pos != P_MAX_INDEX) url=url.Mid(pos+3);
     url = GetRemoteNumber()+"@"+url;
   }
-  return GetSectionParamFromUrl(param, url);
+  return GetSectionParamFromUrl(param, url, asterisk);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -122,9 +122,8 @@ enum MCUConnectionTypes
 PString convert_cp1251_to_utf8(PString str);
 PString convert_ucs2_to_utf8(PString str);
 
-PString GetSectionParamFromUrl(PString param, PString url);
-PString GetSectionParamFromUrl(PString param, PString url, PString defaultValue);
-int GetSectionParamFromUrl(PString param, PString url, int defaultValue);
+PString GetSectionParamFromUrl(PString param, PString url, bool asterisk = true);
+PString GetSectionParamFromUrl(PString param, PString url, PString defaultValue, bool asterisk = true);
 
 PString GetConferenceParam(PString room, PString param, PString defaultValue);
 int GetConferenceParam(PString room, PString param, int defaultValue);

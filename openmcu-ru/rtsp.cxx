@@ -256,8 +256,8 @@ BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg
   PString audio_codec = GetEndpointParam(AudioCodecKey);
   PString video_codec = GetEndpointParam(VideoCodecKey);
   PString video_resolution = GetEndpointParam(VideoResolutionKey, "352x288");
-  unsigned video_bandwidth = GetEndpointParam(BandwidthFromKey, 256);
-  unsigned video_frame_rate = GetEndpointParam(FrameRateFromKey, 10);
+  unsigned video_bandwidth = GetEndpointParam(BandwidthFromKey, "256").AsInteger();
+  unsigned video_frame_rate = GetEndpointParam(FrameRateFromKey, "10").AsInteger();
 
   unsigned video_width = video_resolution.Tokenise("x")[0].AsInteger();
   unsigned video_height = video_resolution.Tokenise("x")[1].AsInteger();
