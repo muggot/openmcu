@@ -742,7 +742,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
           {
             formatString = cacheMember->GetCacheName();
             cacheUsersNumber = cacheMember->GetCacheUsersNumber();
-            codecCacheMode = 2;
+            codecCacheMode = 1;
           }
           duration = now - member->GetStartTime();
         }
