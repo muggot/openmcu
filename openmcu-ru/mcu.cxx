@@ -90,8 +90,8 @@ BOOL OpenMCU::OnStart()
 
 void OpenMCU::OnStop()
 {
-  // shutdown http listener
-  MCUShutdownListener();
+  // close http listener
+  MCUHTTPListenerClose();
 
   // stop registrar
   registrar->SetTerminating();
@@ -441,7 +441,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // set up the HTTP port for listening & start the first HTTP thread
   PString ip = cfg.GetString(HttpIPKey, "0.0.0.0");
   WORD port = cfg.GetInteger(HttpPortKey, DefaultHTTPPort);
-  if(MCUListenForHTTP(ip, port))
+  if(MCUHTTPListenerCreate(ip, port))
   {
     PSYSTEMLOG(Info, "Opened master socket for HTTP: " << ip << ":" << port);
     PTRACE(0, "Opened master socket for HTTP: " << ip << ":" << port);
@@ -586,7 +586,7 @@ void OpenMCU::LogMessageHTML(PString str)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL OpenMCU::MCUListenForHTTP(const PString & ip, unsigned port)
+BOOL OpenMCU::MCUHTTPListenerCreate(const PString & ip, unsigned port)
 {
   if(httpListeningSocket)
   {
@@ -598,7 +598,7 @@ BOOL OpenMCU::MCUListenForHTTP(const PString & ip, unsigned port)
   PSocket::Reusability reuse = PSocket::CanReuseAddress;
   PINDEX stackSize = 0x4000;
 
-  MCUShutdownListener();
+  MCUHTTPListenerShutdown();
 
   PIPSocket::Address address(ip);
   PTCPSocket *listener = new PTCPSocket(port);
@@ -619,7 +619,7 @@ BOOL OpenMCU::MCUListenForHTTP(const PString & ip, unsigned port)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void OpenMCU::MCUShutdownListener()
+void OpenMCU::MCUHTTPListenerClose()
 {
   if(httpListeningSocket == NULL)
     return;
@@ -629,6 +629,13 @@ void OpenMCU::MCUShutdownListener()
 
   PTRACE(0, "OpenMCU\tClosing listener socket");
   httpListeningSocket->Close();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void OpenMCU::MCUHTTPListenerShutdown()
+{
+  MCUHTTPListenerClose();
 
   httpThreadsMutex.Wait();
 

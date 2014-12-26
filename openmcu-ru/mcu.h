@@ -272,8 +272,9 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
 
     static OpenMCU & Current() { return (OpenMCU &)PProcess::Current(); }
 
-    BOOL MCUListenForHTTP(const PString & ip, unsigned port);
-    void MCUShutdownListener();
+    BOOL MCUHTTPListenerCreate(const PString & ip, unsigned port);
+    void MCUHTTPListenerClose();
+    void MCUHTTPListenerShutdown();
 
     virtual ConferenceManager * CreateConferenceManager();
     virtual MCUH323EndPoint * CreateEndPoint(ConferenceManager & manager);
