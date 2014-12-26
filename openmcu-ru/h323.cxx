@@ -3986,7 +3986,7 @@ void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
     {
       MCU_RTPChannel *channel = conn->GetVideoReceiveChannel();
       if(channel)
-        channel->Freeze(disable);
+        channel->SetFreeze(disable);
     }
     else
       PTRACE(1, "MCU\tWrong connection in SetFreezeVideo for " << callToken);
@@ -4106,7 +4106,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-      channel->Freeze(true);
+      channel->SetFreeze(true);
       ConferenceMember::muteMask |= 1;
       sumMask |= 1;
     }
@@ -4117,7 +4117,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-      channel->Freeze(true);
+      channel->SetFreeze(true);
       ConferenceMember::muteMask |= 2;
       sumMask |= 2;
     }
@@ -4128,7 +4128,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-      channel->Freeze(true);
+      channel->SetFreeze(true);
       ConferenceMember::muteMask |= 4;
       sumMask |= 4;
     }
@@ -4139,7 +4139,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-      channel->Freeze(true);
+      channel->SetFreeze(true);
       ConferenceMember::muteMask |= 8;
       sumMask |= 8;
     }
@@ -4163,7 +4163,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-      channel->Freeze(false);
+      channel->SetFreeze(false);
       ConferenceMember::muteMask &= ~1;
       sumMask |= 1;
     }
@@ -4174,7 +4174,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-      channel->Freeze(false);
+      channel->SetFreeze(false);
       ConferenceMember::muteMask &= ~2;
       sumMask |= 2;
     }
@@ -4185,7 +4185,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-      channel->Freeze(false);
+      channel->SetFreeze(false);
       ConferenceMember::muteMask &= ~4;
       sumMask |= 4;
     }
@@ -4196,7 +4196,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
     if(channel)
     {
       channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-      channel->Freeze(false);
+      channel->SetFreeze(false);
       ConferenceMember::muteMask &= ~8;
       sumMask |= 8;
     }

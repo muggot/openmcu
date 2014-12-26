@@ -273,12 +273,16 @@ MCU_RTPChannel::MCU_RTPChannel(H323Connection & conn, const H323Capability & cap
     ((H323AudioCodec*)codec)->SetSilenceDetectionMode(endpoint.GetSilenceDetectionMode());
 #endif
 
+  isAudio = (capability->GetMainType() == MCUCapability::e_Audio);
+  fastUpdate = true;
   freezeWrite = false;
+
+  intraRefreshPeriod = 0;
+  intraRequestPeriod = 0;
+
   cache = NULL;
   cacheMode = -1;
   encoderSeqN = 0;
-  fastUpdate = true;
-  intraPeriod = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -342,18 +346,24 @@ BOOL MCU_RTPChannel::WriteFrame(RTP_DataFrame & frame)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCU_RTPChannel::Freeze(bool _freeze)
+void MCU_RTPChannel::SetFreeze(bool enable)
 {
   if(receiver)
   {
     // обнуляется в OnReceiveData
-    ((MCU_RTP_UDP &)rtpSession).FreezeRead(_freeze);
+    ((MCU_RTP_UDP &)rtpSession).SetFreezeRead(enable);
+    // Запрос intra-frame
+    if(!isAudio && !enable)
+      SendMiscCommand(H245_MiscellaneousCommand_type::e_videoFastUpdatePicture);
   }
   else
   {
-    freezeWrite = _freeze;
+    freezeWrite = enable;
+    // Отправка intra-frame
+    if(!isAudio && !enable)
+      ((H323VideoCodec *)codec)->OnFastUpdatePicture();
   }
-  MCUTRACE(1, "MCU_RTPChannel " << (receiver ? "Receive" : "Transmit") << " thread " << (_freeze ? "freeze" : "unfreeze"));
+  MCUTRACE(1, "MCU_RTPChannel " << (receiver ? "Receive" : "Transmit") << " thread " << (enable ? "freeze" : "unfreeze"));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -399,6 +409,10 @@ void MCU_RTPChannel::Receive()
   MCU_RTP_DataFrame frame;
   while(1)
   {
+    // Запрос intra-frame
+    if(!isAudio && intraRequestPeriod > 0 && rtpSession.GetPacketsReceived() % intraRequestPeriod == 0)
+      SendMiscCommand(H245_MiscellaneousCommand_type::e_videoFastUpdatePicture);
+
     if(!ReadFrame(rtpTimestamp, frame))
       break;
 
@@ -532,7 +546,6 @@ void MCU_RTPChannel::Transmit()
   const OpalMediaFormat & mediaFormat = codec->GetMediaFormat();
 
   // Get parameters from the codec on time and data sizes
-  BOOL isAudio = mediaFormat.NeedsJitterBuffer();
   unsigned framesInPacket = capability->GetTxFramesInPacket();
 
   rtpPayloadType = GetRTPPayloadType();
@@ -576,8 +589,8 @@ void MCU_RTPChannel::Transmit()
 
   while(1)
   {
-    // periodic intra refresh
-    if(!isAudio && intraPeriod > 0 && rtpSession.GetPacketsSent() % intraPeriod == 0)
+    // periodic intra-frame refresh
+    if(!isAudio && intraRefreshPeriod > 0 && rtpSession.GetPacketsSent() % intraRefreshPeriod == 0)
       ((H323VideoCodec *)codec)->OnFastUpdatePicture();
 
     BOOL retval = FALSE;

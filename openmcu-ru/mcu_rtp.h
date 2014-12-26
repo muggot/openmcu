@@ -361,20 +361,25 @@ class MCU_RTPChannel : public H323_RTPChannel
     void OnFastUpdatePicture()
     { fastUpdate = true; }
 
-    void Freeze(bool _freeze);
+    void SetFreeze(bool enable);
 
     void SetIntraRefreshPeriod(int period)
-    { intraPeriod = period; }
+    { intraRefreshPeriod = period; }
+
+    void SetIntraRequestPeriod(int period)
+    { intraRequestPeriod = period; }
 
   protected:
+    bool fastUpdate;
+    bool freezeWrite;
+    bool isAudio;
+
+    int intraRefreshPeriod;
+    int intraRequestPeriod;
+
     unsigned encoderSeqN;
     int cacheMode; // -1 - default no cache, 0 - no cache, 1 - cached, 2 - caching
     PString cacheName;
-
-    int intraPeriod;
-
-    bool fastUpdate;
-    bool freezeWrite;
     CacheRTP *cache;
 };
 
@@ -470,8 +475,8 @@ class MCU_RTP_UDP : public RTP_UDP
     // non-virtual
     //BOOL ReadBufferedData(DWORD timestamp, RTP_DataFrame & frame);
 
-    void FreezeRead(bool _freeze)
-    { freezeRead = _freeze; }
+    void SetFreezeRead(bool enable)
+    { freezeRead = enable; }
 
     virtual void OnRxSenderReport(const SenderReport & sender, const ReceiverReportArray & reports);
     virtual void OnRxReceiverReport(DWORD src, const ReceiverReportArray & reports);
