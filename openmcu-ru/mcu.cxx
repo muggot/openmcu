@@ -14,6 +14,26 @@ VideoMixConfigurator OpenMCU::vmcfg;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUSignalHandler(int sig)
+{
+  PProcess & process = PProcess::Current();
+  switch(sig)
+  {
+    case SIGINT:
+      MCUTRACE(0, "OpenMCU-ru received signal " << sig << " SIGINT");
+      process.Terminate();
+    case SIGTERM:
+      MCUTRACE(0, "OpenMCU-ru received signal " << sig << " SIGTERM");
+      process.Terminate();
+    case SIGPIPE:
+      MCUTRACE(0, "OpenMCU-ru received signal " << sig << " SIGPIPE");
+    default:
+      return;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 OpenMCUPreInit::OpenMCUPreInit()
 {
   //setenv("PWLIB_TRACE_STARTUP", "6", 1);
@@ -28,7 +48,11 @@ OpenMCU::OpenMCU()
   : OpenMCUPreInit(), OpenMCUProcessAncestor(ProductInfo)
 {
 #ifndef _WIN32
-  signal(SIGPIPE, SIG_IGN); // PTCPSocket caused SIGPIPE on browser disconnect time to time
+  // new versions ptlib hang on signal SIGINT
+  signal(SIGINT, &MCUSignalHandler);
+  signal(SIGTERM, &MCUSignalHandler);
+  // PTCPSocket caused SIGPIPE on browser disconnect time to time
+  signal(SIGPIPE, &MCUSignalHandler);
 #endif
   endpoint          = NULL;
   sipendpoint       = NULL;
