@@ -2722,7 +2722,17 @@ void MCUH323Connection::OnSetLocalCapabilities()
     if(localCapabilities[i].GetMainType() == MCUCapability::e_Audio && audio_cap != "")
     {
       if(capname != audio_cap)
-      { localCapabilities.Remove(&localCapabilities[i]); continue; }
+      {
+        localCapabilities.Remove(&localCapabilities[i]);
+        continue;
+      }
+      // ITU‑T Rec. G.722.1 (05/2005)
+      if(audio_cap.Find("G.722.1-") == 0)
+      {
+        OpalMediaFormat & wf = localCapabilities[i].GetWritableMediaFormat();
+        int bitrate = wf.GetOptionInteger(OPTION_MAX_BIT_RATE);
+        wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bitrate * 100);
+      }
     }
     else if(localCapabilities[i].GetMainType() == MCUCapability::e_Video && video_cap != "")
     {
