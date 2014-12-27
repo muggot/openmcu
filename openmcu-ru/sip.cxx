@@ -556,11 +556,6 @@ void MCUSipConnection::CleanUpOnCallEnd()
 
   videoReceiveCodecName = videoTransmitCodecName = "none";
 
-  audioReceiveCodec = NULL;
-  videoReceiveCodec = NULL;
-  audioTransmitCodec = NULL;
-  videoTransmitCodec = NULL;
-
   audioReceiveChannel = NULL;
   videoReceiveChannel = NULL;
   audioTransmitChannel = NULL;
@@ -666,6 +661,8 @@ MCUSIP_RTP_UDP *MCUSipConnection::CreateRTPSession(MediaTypes media)
                 useRTPAggregation ? endpoint.GetRTPAggregator() : NULL,
 #endif
                 id, remoteIsNAT);
+
+    session->SetUserData(new RTP_UserData());
 
     // add session to RTP_SessionManager()
     rtpSessions.AddSession(session);
@@ -2159,13 +2156,10 @@ void MCUSipConnection::OnReceivedVFU()
   if(!CheckVFU())
     return;
 
+  PWaitAndSignal m(connMutex);
+
   if(videoTransmitChannel)
-  {
-    if(videoTransmitChannel->GetCacheMode() != 0)
-      videoTransmitChannel->OnFastUpdatePicture();
-    else
-      ((H323VideoCodec *)videoTransmitChannel->GetCodec())->OnFastUpdatePicture();
-  }
+    videoTransmitChannel->OnFastUpdatePicture();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -3,6 +3,7 @@
 #define _MCU_CAPS_H
 
 #include "config.h"
+#include "mcu_codecs.h"
 
 #include <ptlib.h>
 #include <ptlib/pluginmgr.h>
@@ -15,18 +16,9 @@
 class MCUCapability : public H323Capability
 {
   public:
-
-    static MCUCapability * Create(const PString & name)
-    {
-      MCUCapability * cap = (MCUCapability *)H323CapabilityFactory::CreateInstance(name);
-      if(cap == NULL && name.Right(4) != "{sw}")
-        cap = (MCUCapability *)H323CapabilityFactory::CreateInstance(name+"{sw}");
-      if(cap == NULL && name.Right(4) == "{sw}" && name.GetLength() > 4)
-        cap = (MCUCapability *)H323CapabilityFactory::CreateInstance(name.Left(name.GetLength()-4));
-      if(cap == NULL)
-        return NULL;
-      return (MCUCapability *)cap->Clone();
-    }
+    static MCUCapability * Create(const PString & name);
+    static H323Codec * CreateCodec(const H323Capability * capability, MCUCodec::Direction direction);
+    static OpalFactoryCodec * CreateOpalFactoryCodec(const H323Capability * capability, MCUCodec::Direction direction);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

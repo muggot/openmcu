@@ -549,7 +549,7 @@ class OpalPluginCodecFactory : public PFactory<OpalFactoryCodec>
         { PFactory<OpalFactoryCodec>::Register(key, this); }
 
       protected:
-        virtual OpalFactoryCodec * Create(const PString &) const
+        virtual OpalFactoryCodec * Create(const PDefaultPFactoryKey &) const
         { return new OpalPluginCodec(codecDefn); }
 
         PluginCodec_Definition * codecDefn;

@@ -74,6 +74,36 @@ BOOL OpenMCU::OnStart()
   PTRACE(1,"OpenMCU-ru PTLib version " << PTLIB_VERSION);
 #endif
 
+  // Setup capabilities
+  H323CapabilityFactory::KeyList_T stdCaps = H323CapabilityFactory::GetKeyList();
+  for(H323CapabilityFactory::KeyList_T::const_iterator r = stdCaps.begin(); r != stdCaps.end(); ++r)
+  {
+    PString name = *r;
+    H323Capability *capability = H323CapabilityFactory::CreateInstance(name);
+    OpalFactoryCodec *fcodec = MCUCapability::CreateOpalFactoryCodec(capability, MCUCodec::Encoder);
+    if(fcodec)
+    {
+      PluginCodec_Definition * defn = (PluginCodec_Definition *)fcodec->GetDefinition();
+#if PTRACING
+      int retVal;
+      unsigned parmLen = sizeof(PluginCodec_LogFunction);
+      CallCodecControl(defn, NULL, PLUGINCODEC_CONTROL_SET_LOG_FUNCTION, (void *)PluginLogFunction, &parmLen, retVal);
+#endif
+      // populate mediaformat options
+      PopulateMediaFormatOptions(defn, capability->GetWritableMediaFormat());
+    }
+    fcodec = MCUCapability::CreateOpalFactoryCodec(capability, MCUCodec::Decoder);
+    if(fcodec)
+    {
+      PluginCodec_Definition * defn = (PluginCodec_Definition *)fcodec->GetDefinition();
+#if PTRACING
+      int retVal;
+      unsigned parmLen = sizeof(PluginCodec_LogFunction);
+      CallCodecControl(defn, NULL, PLUGINCODEC_CONTROL_SET_LOG_FUNCTION, (void *)PluginLogFunction, &parmLen, retVal);
+#endif
+    }
+  }
+
   httpNameSpace.AddResource(new PHTTPDirectory("data", "data"));
   httpNameSpace.AddResource(new PServiceHTTPDirectory("html", "html"));
 

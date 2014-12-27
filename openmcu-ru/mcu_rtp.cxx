@@ -2,6 +2,7 @@
 #include <ptlib.h>
 #include "mcu.h"
 #include "mcu_rtp.h"
+#include "mcu_codecs.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -264,14 +265,9 @@ void sip_rtp_shutdown()
 MCU_RTPChannel::MCU_RTPChannel(H323Connection & conn, const H323Capability & cap, Directions direction, RTP_Session & r)
   : H323_RTPChannel(conn, cap, direction, r)
 {
-  avcodecMutex.Wait();
-  codec = capability->CreateCodec(direction == IsReceiver ? H323Codec::Decoder : H323Codec::Encoder);
-  avcodecMutex.Signal();
-
-#ifdef H323_AUDIO_CODECS
-  if(codec && PIsDescendant(codec, H323AudioCodec))
-    ((H323AudioCodec*)codec)->SetSilenceDetectionMode(endpoint.GetSilenceDetectionMode());
-#endif
+  // Инициализировать сразу
+  // не виртуальная
+  GetCodec();
 
   isAudio = (capability->GetMainType() == MCUCapability::e_Audio);
   fastUpdate = true;
@@ -300,6 +296,26 @@ MCU_RTPChannel::~MCU_RTPChannel()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+H323Codec * MCU_RTPChannel::GetCodec() const
+{
+  if(codec == NULL)
+  {
+    avcodecMutex.Wait();
+    ((MCU_RTPChannel*)this)->codec = MCUCapability::CreateCodec(capability, GetDirection() == IsReceiver ? MCUCodec::Decoder : MCUCodec::Encoder);
+    avcodecMutex.Signal();
+
+#ifdef H323_AUDIO_CODECS
+    if(codec && PIsDescendant(codec, H323AudioCodec))
+      ((H323AudioCodec*)codec)->SetSilenceDetectionMode(endpoint.GetSilenceDetectionMode());
+#endif
+  }
+
+  PTRACE(1, "MCU_RTPChannel\t" << (GetDirection() == IsReceiver ? "Receive" : "Transmit") <<  " Get codec " << codec);
+  return codec;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCU_RTPChannel::Start()
 {
   return H323_RTPChannel::Start();
@@ -309,7 +325,52 @@ BOOL MCU_RTPChannel::Start()
 
 BOOL MCU_RTPChannel::Open()
 {
-  return H323_RTPChannel::Open();
+  PTRACE(1, "MCU_RTPChannel\t" << (GetDirection() == IsReceiver ? "Receive" : "Transmit") <<  " Open");
+
+  if(opened)
+    return TRUE;
+
+  if(GetCodec() == NULL)
+  {
+    PTRACE(1, "MCU_RTPChannel\t" << (GetDirection() == IsReceiver ? "Receive" : "Transmit") << " thread aborted (could not create codec)");
+    return FALSE;
+  }
+
+  if(!codec->GetMediaFormat().IsValid())
+  {
+    PTRACE(1, "MCU_RTPChannel\t" << (GetDirection() == IsReceiver ? "Receive" : "Transmit") << " thread aborted (invalid media format)");
+    return FALSE;
+  }
+
+  codec->AttachLogicalChannel((H323Channel*)this);
+
+  // Open the codec
+  if(!codec->Open(connection))
+  {
+    PTRACE(1, "MCU_RTPChannel\t" << (GetDirection() == IsReceiver ? "Receive" : "Transmit") << " thread aborted (open fail) for "<< *capability);
+    return FALSE;
+  }
+
+  // Give the connection (or endpoint) a chance to do something with
+  // the opening of the codec. Default sets up various filters.
+  if(!connection.OnStartLogicalChannel(*this))
+  {
+    PTRACE(1, "MCU_RTPChannel\t" << (GetDirection() == IsReceiver ? "Receive" : "Transmit") << " thread aborted (OnStartLogicalChannel fail)");
+    return FALSE;
+  }
+
+  PTRACE(3, "MCU_RTPChannel\tOpened using capability " << *capability);
+
+  opened = TRUE;
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTPChannel::SendMiscCommand(unsigned command)
+{
+  ((MCUH323Connection &)connection).SendLogicalChannelMiscCommand(*this, command); 
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -324,6 +385,46 @@ void MCU_RTPChannel::SendMiscIndication(unsigned command)
 void MCU_RTPChannel::CleanUpOnTermination()
 {
   H323_RTPChannel::CleanUpOnTermination();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTPChannel::OnFlowControl(long bitRateRestriction)
+{
+  if(GetCodec() != NULL)
+    codec->OnFlowControl(bitRateRestriction);
+  else
+    PTRACE(3, "MCU_RTPChannel\tOnFlowControl: " << bitRateRestriction);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTPChannel::OnMiscellaneousCommand(const H245_MiscellaneousCommand_type & type)
+{
+  if(GetCodec() != NULL)
+    codec->OnMiscellaneousCommand(type);
+  else
+    PTRACE(3, "MCU_RTPChannel\tOnMiscellaneousCommand: chan=" << number << ", type=" << type.GetTagName());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCU_RTPChannel::OnMiscellaneousIndication(const H245_MiscellaneousIndication_type & type)
+{
+  if(GetCodec() != NULL)
+    codec->OnMiscellaneousIndication(type);
+  else
+    PTRACE(3, "MCU_RTPChannel\tOnMiscellaneousIndication: chan=" << number << ", type=" << type.GetTagName());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTPChannel::SetInitialBandwidth()
+{
+  if(GetCodec() == NULL)
+    return TRUE;
+
+  return SetBandwidthUsed(codec->GetMediaFormat().GetBandwidth()/100);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -363,7 +464,7 @@ void MCU_RTPChannel::SetFreeze(bool enable)
     if(!isAudio && !enable)
       ((H323VideoCodec *)codec)->OnFastUpdatePicture();
   }
-  MCUTRACE(1, "MCU_RTPChannel " << (receiver ? "Receive" : "Transmit") << " thread " << (enable ? "freeze" : "unfreeze"));
+  MCUTRACE(1, "MCU_RTPChannel " << (receiver ? "Receive" : "Transmit") << " " << (isAudio ? "audio" : "video") << " thread " << (enable ? "freeze" : "unfreeze"));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -443,7 +544,7 @@ void MCU_RTPChannel::Receive()
 
       BOOL isCodecPacket = TRUE;
 
-      if (frame.GetPayloadType() == rtpPayloadType)
+      if(frame.GetPayloadType() == rtpPayloadType)
       {
         PTRACE_IF(2, consecutiveMismatches > 0, "MCU_RTPChannel\tPayload type matched again " << rtpPayloadType);
         consecutiveMismatches = 0;
@@ -1122,9 +1223,8 @@ BOOL MCU_RTP_UDP::ReadData(RTP_DataFrame & frame, BOOL loop)
     int selectStatus = PSocket::Select(*dataSocket, *controlSocket, reportTimer);
 #ifdef H323_RTP_AGGREGATE
     unsigned duration = (unsigned)(PTime() - start).GetMilliSeconds();
-    if (duration > 50) {
+    if(duration > 50)
       PTRACE(4, "Warning: aggregator read routine was of extended duration = " << duration << " msecs");
-    }
 #endif
 
     if(shutdownRead)
@@ -1518,7 +1618,7 @@ RTP_Session::SendReceiveStatus MCUSIP_RTP_UDP::OnReceiveData(const RTP_DataFrame
 {
   SendReceiveStatus status = MCU_RTP_UDP::OnReceiveData(frame, rtp);
 
-  if(freezeRead)
+  if(freezeRead && (!zrtp_initialised || zrtp_sas_token != ""))
   {
     RTP_DataFrame & _frame = *PRemoveConst(RTP_DataFrame, &frame);
     _frame.SetPayloadSize(0);

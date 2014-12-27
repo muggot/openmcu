@@ -285,12 +285,12 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
   MCUTRACE(1, "CacheRTP " << cacheName << " Thread starting");
   if(cap->GetMainType() == MCUCapability::e_Audio)
   {
-    codec = cap->CreateCodec(H323Codec::Encoder);
+    codec = MCUCapability::CreateCodec(cap, MCUCodec::Encoder);
     conn = new MCUH323Connection(ep, 0, NULL);
     conn->SetupCacheConnection(cacheName, conference, this);
     conn->OpenAudioChannel(TRUE, 0, (H323AudioCodec &)*codec);
   } else {
-    codec = cap->CreateCodec(H323Codec::Encoder);
+    codec = MCUCapability::CreateCodec(cap, MCUCodec::Encoder);
     conn = new MCUH323Connection(ep, 0, NULL);
     conn->videoMixerNumber = videoMixerNumber;
     conn->SetupCacheConnection(cacheName, conference, this);

@@ -13,6 +13,12 @@
 #define MCU_PLUGIN_DIR "/opt/openmcu-ru/lib/ptlib"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+// H323Plus
+
+#define MCU_OPENH323_VERSION_INT(major,minor,build) ((major<<24)|(minor<<16)|build)
+#define MCU_OPENH323_VERSION MCU_OPENH323_VERSION_INT(OPENH323_MAJOR, OPENH323_MINOR, OPENH323_BUILD)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define MCUSIP_SRTP 1
 #define MCUSIP_ZRTP 1

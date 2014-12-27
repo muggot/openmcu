@@ -344,7 +344,15 @@ class MCU_RTPChannel : public H323_RTPChannel
     virtual BOOL WriteFrame(RTP_DataFrame & frame);
     virtual BOOL ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame);
 
+    void SendMiscCommand(unsigned command);
     virtual void SendMiscIndication(unsigned command);
+
+    virtual void OnFlowControl(long bitRateRestriction);
+    virtual void OnMiscellaneousCommand(const H245_MiscellaneousCommand_type & type);
+    virtual void OnMiscellaneousIndication(const H245_MiscellaneousIndication_type & type);
+    virtual BOOL SetInitialBandwidth();
+
+    H323Codec * GetCodec() const;
 
     void SetCacheMode(int _cacheMode)
     { cacheMode = _cacheMode; }
@@ -359,7 +367,12 @@ class MCU_RTPChannel : public H323_RTPChannel
     { return cacheName; }
 
     void OnFastUpdatePicture()
-    { fastUpdate = true; }
+    {
+      if(cache)
+        cache->OnFastUpdatePicture();
+      else
+        fastUpdate = true;
+    }
 
     void SetFreeze(bool enable);
 

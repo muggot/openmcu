@@ -150,8 +150,6 @@ void MCURtspConnection::CleanUpOnCallEnd()
   StopReceiveChannels();
   DeleteChannels();
   videoReceiveCodecName = videoTransmitCodecName = "none";
-  videoReceiveCodec = NULL;
-  videoTransmitCodec = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

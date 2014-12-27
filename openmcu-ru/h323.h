@@ -75,6 +75,8 @@ class MCUH323EndPoint : public H323EndPoint
 
     virtual void CleanUpConnections();
 
+    void InitialiseCapability();
+
     BOOL behind_masq;
     PIPSocket::Address *masqAddressPtr;
     PString nat_lag_ip;
@@ -254,10 +256,6 @@ class MCUH323Connection : public H323Connection
 
     virtual BOOL OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
     virtual BOOL OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
-    virtual PString GetAudioTransmitCodecName() const { return audioTransmitCodecName; }
-    virtual PString GetAudioReceiveCodecName() const  { return audioReceiveCodecName; }
-    virtual H323AudioCodec * GetAudioReceiveCodec() const  { return audioReceiveCodec; }
-    virtual H323AudioCodec * GetAudioTransmitCodec() const  { return audioTransmitCodec; }
 
     virtual PString GetRemoteName() const             { return remoteName; }
     virtual PString GetMemberName() const             { return memberName; }
@@ -281,7 +279,7 @@ class MCUH323Connection : public H323Connection
 
     void SetRemoteName(const H323SignalPDU & pdu);
     void SetMemberName();
-    void SetEndpointDefaultVideoParams();
+    void SetEndpointDefaultVideoParams(H323VideoCodec & codec);
     PString GetRemoteNumber();
     PString dtmfBuffer;
 
@@ -291,14 +289,15 @@ class MCUH323Connection : public H323Connection
 #if MCU_VIDEO
     virtual BOOL OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount);
     virtual BOOL OnOutgoingVideo(void * buffer, int width, int height, PINDEX & amount);
-    virtual PString GetVideoTransmitCodecName() const { return videoTransmitCodecName; }
-    virtual PString GetVideoReceiveCodecName() const  { return videoReceiveCodecName; }
     virtual BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount);
-    virtual H323VideoCodec * GetVideoReceiveCodec() const  { return videoReceiveCodec; }
-    virtual H323VideoCodec * GetVideoTransmitCodec() const  { return videoTransmitCodec; }
     virtual void RestartGrabber();
     unsigned videoMixerNumber;
 #endif
+
+    PString GetVideoTransmitCodecName() const { return videoTransmitCodecName; }
+    PString GetVideoReceiveCodecName() const  { return videoReceiveCodecName; }
+    PString GetAudioTransmitCodecName() const { return audioTransmitCodecName; }
+    PString GetAudioReceiveCodecName() const  { return audioReceiveCodecName; }
 
     MCU_RTPChannel * GetAudioReceiveChannel() const { return audioReceiveChannel; }
     MCU_RTPChannel * GetVideoReceiveChannel() const { return videoReceiveChannel; }
@@ -418,13 +417,12 @@ class MCUH323Connection : public H323Connection
     // True if the state has not changed since the wave file started.
     BOOL wavePlayingInSameState;
 
-    PString audioTransmitCodecName;
-    PString audioReceiveCodecName;
-
     BOOL isMCU;
 
-    H323AudioCodec *audioReceiveCodec;
-    H323AudioCodec *audioTransmitCodec;
+    PString audioTransmitCodecName;
+    PString audioReceiveCodecName;
+    PString videoTransmitCodecName;
+    PString videoReceiveCodecName;
 
     MCU_RTPChannel *audioReceiveChannel;
     MCU_RTPChannel *videoReceiveChannel;
@@ -442,10 +440,6 @@ class MCUH323Connection : public H323Connection
 #if MCU_VIDEO
     MCUPVideoInputDevice * videoGrabber;
     MCUPVideoOutputDevice * videoDisplay;
-    PString videoTransmitCodecName;
-    PString videoReceiveCodecName;
-    H323VideoCodec *videoReceiveCodec;
-    H323VideoCodec *videoTransmitCodec;
 #endif
 };
 
