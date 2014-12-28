@@ -2854,6 +2854,22 @@ BOOL MCUH323Connection::OnReceivedCapabilitySet(const H323Capabilities & remoteC
     }
   }
 
+  // Отправить openLogicalChannel для заданного кодека,
+  // даже если его нет в полученном capabilitySet
+  if(video_cap != "" && custom_video_codec == FALSE && width != 0 && height != 0)
+  {
+    custom_video_codec = TRUE;
+    for(PINDEX i = 0; i < _remoteCaps.GetSize(); i++)
+    {
+      PString capname = remoteCaps[i].GetFormatName();
+      if(GetPluginName(video_cap) == GetPluginName(capname))
+      {
+        custom_video_codec = FALSE;
+        break;
+      }
+    }
+  }
+
   // create custom audio capability
   if(custom_audio_codec)
   {
