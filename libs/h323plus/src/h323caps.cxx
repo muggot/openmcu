@@ -3832,6 +3832,7 @@ H323Capability * H323Capabilities::FindCapability(const H245_VideoCapability & v
        PString mediaPacketization = format.GetOptionString("Media Packetization");
        if ( plus==0
           ||(mediaPacketization.IsEmpty() && plus==1)
+          ||(mediaPacketization.NumCompare("RFC2190") == PObject::EqualTo && plus==1)
           ||(mediaPacketization.NumCompare("RFC2429") == PObject::EqualTo && plus==2))
        if(format.GetOptionInteger("CIF MPI")>0) {
          PTRACE(3, "H323\tFound capability: " << capability);
