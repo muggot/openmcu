@@ -30,9 +30,6 @@ MCUFramedAudioCodec::MCUFramedAudioCodec(const OpalMediaFormat & fmt, Direction 
 
   sampleBuffer = PShortArray(samplesPerFrame * channels);
 
-  currVolCoef = 1.0;
-  agc = 0;
-
   if(context)
   {
     PluginCodec_ControlDefn * ctl = GetCodecControl(codec, SET_CODEC_OPTIONS_CONTROL);
@@ -267,63 +264,6 @@ void MCUFramedAudioCodec::DecodeSilenceFrame(void * buffer, unsigned length)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUFramedAudioCodec::AutoGainControl()
-{
-  if(agc == 0)
-    return;
-
-  const short *pcm = (const short*)sampleBuffer.GetPointer();
-
-  float max_vol = 17000.0;
-  float inc_vol = 0.05*8000.0/sampleRate;
-
-  unsigned samplesCount = samplesPerFrame * channels;
-
-  const short * end = pcm + samplesCount;
-  short *buf = (short*)pcm;
-  int c_max_vol = 0, c_avg_vol = 0;
-  while (pcm != end)
-  {
-    if (*pcm < 0)
-    { if(-*pcm > c_max_vol) c_max_vol = -*pcm; c_avg_vol -= *pcm++; }
-    else 
-    { if( *pcm > c_max_vol) c_max_vol =  *pcm; c_avg_vol += *pcm++; }
-  }
-  c_avg_vol /= samplesPerFrame;
-
-  float & cvc = currVolCoef;
-  float vc0= cvc;
-
-  if(c_avg_vol > agc)
-  {
-    if(c_max_vol*cvc >= 32768) // есть перегрузка
-      cvc = 32767.0 / c_max_vol;
-    else
-    if(c_max_vol*cvc < max_vol) // нужно увеличить усиление
-      cvc += inc_vol;
-  }
-  else // не должен срабатывать, но временно грубая защита от перегрузки:
-  {
-    if(c_max_vol*cvc >= 32768) // есть перегрузка
-      cvc = 32767.0 / c_max_vol;
-  }
-  PTRACE(9,"AGC\tavg_vol=" << c_avg_vol << " max_vol=" << c_max_vol << " vol_coef=" << vc0 << "->" << cvc << " inc_vol=" << inc_vol);
-
-  float delta0=(cvc-vc0)/samplesCount;
-
-  for(int i=0; i<samplesCount; i++)
-  {
-    int v = buf[i];
-    v*=vc0;
-    if(v > 32767) buf[i]=32767;
-    else if(v < -32768) buf[i]=-32768;
-    else buf[i] = (short)v;
-    vc0+=delta0;
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 BOOL MCUFramedAudioCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame &)
 {
   PWaitAndSignal mutex(rawChannelMutex);
@@ -379,8 +319,6 @@ BOOL MCUFramedAudioCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame &
 
   // Default length is the frame size
   length = bytesPerFrame;
-
-  AutoGainControl();
 
   return EncodeFrame(buffer, length);
 }

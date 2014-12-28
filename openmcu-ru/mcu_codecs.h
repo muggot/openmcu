@@ -234,11 +234,6 @@ class MCUFramedAudioCodec : public H323AudioCodec
     virtual BOOL DetectSilence();
     virtual void DecodeSilenceFrame(void * buffer, unsigned length);
 
-    void AutoGainControl();
-
-    virtual void EnableAGC(int _agc)
-    { agc = _agc; }
-
     virtual unsigned GetSampleRate()
     { return codec->sampleRate; }
 
@@ -250,8 +245,6 @@ class MCUFramedAudioCodec : public H323AudioCodec
     unsigned bytesPerFrame;
     unsigned sampleRate;
     unsigned channels;
-    float currVolCoef;
-    int agc;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
