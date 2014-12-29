@@ -3297,8 +3297,8 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     codec.SetTargetFrameTimeMs(1000/frameRate); // ???
 
     // update format string
-    videoTransmitCodecName = mf + "@" + PString(mf.GetOptionInteger(OPTION_FRAME_WIDTH))
-                             + "x" + PString(mf.GetOptionInteger(OPTION_FRAME_HEIGHT))
+    videoTransmitCodecName = mf + "@" + PString(codec.GetWidth())
+                             + "x" + PString(codec.GetHeight())
                              + ":" + PString(mf.GetOptionInteger(OPTION_MAX_BIT_RATE))
                              + "x" + PString(frameRate);
 
