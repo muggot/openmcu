@@ -2629,7 +2629,6 @@ H323Channel * MCUH323Connection::CreateRealTimeLogicalChannel(const H323Capabili
 
 void MCUH323Connection::SetupCacheConnection(PString & format, Conference * conf, ConferenceMember * memb)
 {
- remoteName = format;
  remotePartyName = format;
  conference = conf;
  conferenceIdentifier = conference->GetGUID();
@@ -3658,21 +3657,27 @@ void MCUH323Connection::OnWelcomeWaveEnded()
 PString MCUH323Connection::GetRemoteNumber()
 {
   PString number;
-  if(ep.IsRegisteredWithGatekeeper() && remotePartyAddress.Left(4) == "url:")
+  if(connectionType == CONNECTION_TYPE_H323)
   {
-    PURL url(remotePartyAddress.Right(remotePartyAddress.GetLength()-4), "h323");
-    number = url.GetUserName();
+    if(ep.IsRegisteredWithGatekeeper() && remotePartyAddress.Left(4) == "url:")
+    {
+      PURL url(remotePartyAddress.Right(remotePartyAddress.GetLength()-4), "h323");
+      number = url.GetUserName();
+    }
+    if(number == "")
+      number = remotePartyNumber;
+    if(number == "")
+    {
+      if(remoteAliasNames.GetSize() == 1)
+        number = remoteAliasNames[0];
+      else if(remoteAliasNames.GetSize() > 1)
+        number = remoteAliasNames[1];
+    }
+    if(number == "")
+      number = "undefined";
   }
-  if(number == "") number = remotePartyNumber;
-  if(number == "")
-  {
-    if(remoteAliasNames.GetSize() == 1)
-      number = remoteAliasNames[0];
-    else if(remoteAliasNames.GetSize() > 1)
-      number = remoteAliasNames[1];
-  }
-  if(number == "") number = remoteName;
-  if(number == "") number = "undefined";
+  else
+    number = MCUURL(remotePartyAddress).GetUserName();
   return number;
 }
 
@@ -3680,64 +3685,46 @@ PString MCUH323Connection::GetRemoteNumber()
 
 void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
 {
+  // remotePartyNumber
+  if(remotePartyNumber.IsEmpty())
+    pdu.GetSourceE164(remotePartyNumber);
+
+  // remotePartyName
+  remotePartyName = pdu.GetQ931().GetDisplayName();
+  if(remotePartyName.IsEmpty() && remoteAliasNames.GetSize() > 0)
+    remotePartyName = remoteAliasNames[0];
+  if(remotePartyName.IsEmpty())
+    remotePartyName = remotePartyNumber;
+  if(remotePartyName.IsEmpty())
+    remotePartyName = signallingChannel->GetRemoteAddress().GetHostName();
+  PTRACE(1, "MCUH323Connection\tSet remotePartyName: " << remotePartyName);
+
   // ??? h323plus 1.25.0
   remotePartyName.Replace("h323:", "", TRUE, 0);
   remotePartyAddress.Replace("h323:", "", TRUE, 0);
   for(int i = 0; i < remoteAliasNames.GetSize(); ++i)
     remoteAliasNames[i].Replace("h323:", "", TRUE, 0);
 
-  // endpoint display name override
-  PString overrideName = GetEndpointParam(DisplayNameKey);
-  if(overrideName != "")
+  if(remoteApplication.Find("MyPhone") != P_MAX_INDEX
+     || remoteApplication.Find("Polycom ViaVideo\tRelease 8.0") != P_MAX_INDEX
+    )
   {
-    PTRACE(1, "MCUH323Connection\tSet endpoint display name: " << overrideName);
-    remoteName = overrideName;
-    remotePartyName = overrideName;
+    // convert
+    remotePartyName = convert_cp1251_to_utf8(remotePartyName);
   }
 
-  if(overrideName == "")
+  // Нужен для получения настроек терминала
+  if(remotePartyNumber.IsEmpty())
+    remotePartyNumber = remotePartyName;
+
+  // display name
+  PString displayName = GetEndpointParam(DisplayNameKey);
+  if(displayName != "")
   {
-    // get a good name from the other end
-    remoteName = pdu.GetQ931().GetDisplayName();
-    if(remoteName.IsEmpty())
-    {
-      if(remoteAliasNames.GetSize() > 0)
-        remoteName = remoteAliasNames[0];
-    }
-    if(remoteName.IsEmpty())
-    {
-      if(!pdu.GetQ931().GetCallingPartyNumber(remoteName))
-        remoteName.MakeEmpty();
-    }
-    if(remoteName.IsEmpty())
-      remoteName = GetRemotePartyName();
-
-    // ??? h323plus 1.25.0
-    remoteName.Replace("h323:", "", TRUE, 0);
-
-    if(remoteApplication.Find("MyPhone") != P_MAX_INDEX
-       || remoteApplication.Find("Polycom ViaVideo\tRelease 8.0") != P_MAX_INDEX
-      )
-    {
-      // Fast bad fix of presence of redundant aliases in remote party name on incoming direction
-      PINDEX brPos = remotePartyName.Find(" (");
-      if(brPos != P_MAX_INDEX)
-      {
-        PINDEX br2Pos = remotePartyName.FindLast(")", P_MAX_INDEX);
-        if((br2Pos != P_MAX_INDEX) && (br2Pos > brPos))
-        {
-          PString newName = remotePartyName.Left(brPos) + remotePartyName.Mid(br2Pos+1,P_MAX_INDEX);
-          PTRACE(5,"H225\t(Aliases) removed from remote party name: " << remotePartyName << " -> " << newName);
-          remotePartyName = newName;
-        }
-      }
-      // convert
-      remotePartyName = convert_cp1251_to_utf8(remotePartyName);
-      remoteName = convert_cp1251_to_utf8(remoteName);
-    }
-    if(remotePartyName.Find("[") == P_MAX_INDEX && remotePartyName.Find("]") == P_MAX_INDEX) // ???
-      remoteName = remotePartyName;
+    remotePartyName = displayName;
+    PTRACE(1, "MCUH323Connection\tSet remotePartyName: " << remotePartyName);
   }
+
   SetMemberName();
 }
 
@@ -3786,12 +3773,14 @@ void MCUH323Connection::SetMemberName()
 
     address = "h323:"+alias+"@"+host;
   }
-  memberName = remoteName+" ["+address+"]";
-  PTRACE(1, "SetMemberName remoteName: " << remoteName);
+
+  memberName = remotePartyName+" ["+address+"]";
+
+  PTRACE(1, "SetMemberName remote account: " << GetRemoteNumber());
   PTRACE(1, "SetMemberName remotePartyName: " << remotePartyName);
+  PTRACE(1, "SetMemberName remotePartyNumber: " << remotePartyNumber);
   PTRACE(1, "SetMemberName remotePartyAddress: " << remotePartyAddress);
   PTRACE(1, "SetMemberName remotePartyAliases: " << remoteAliasNames);
-  PTRACE(1, "SetMemberName remotePartyNumber: " << remotePartyNumber);
   PTRACE(1, "SetMemberName memberName: " << memberName);
 }
 

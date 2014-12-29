@@ -178,8 +178,7 @@ BOOL MCURtspConnection::Connect(PString room, PString address)
     return FALSE;
 
   // display name
-  remoteName = GetEndpointParam(DisplayNameKey, url.GetPathStr());
-  remotePartyName = remoteName;
+  remotePartyName = GetEndpointParam(DisplayNameKey, url.GetPathStr());
 
   // auth
   auth_username = GetEndpointParam(UserNameKey, url.GetUserName());

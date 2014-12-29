@@ -257,8 +257,14 @@ class MCUH323Connection : public H323Connection
     virtual BOOL OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
     virtual BOOL OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
-    virtual PString GetRemoteName() const             { return remoteName; }
-    virtual PString GetMemberName() const             { return memberName; }
+    void SetRemoteName(const H323SignalPDU & pdu);
+    void SetMemberName();
+    PString GetRemoteNumber();
+
+    virtual PString GetMemberName() const
+    { return memberName; }
+
+    void SetEndpointDefaultVideoParams(H323VideoCodec & codec);
 
     virtual void SetupCacheConnection(PString & format,Conference * conf, ConferenceMember * memb);
 
@@ -277,10 +283,6 @@ class MCUH323Connection : public H323Connection
       RTP_QOS * rtpqos = NULL            ///< QoS for RTP
     );
 
-    void SetRemoteName(const H323SignalPDU & pdu);
-    void SetMemberName();
-    void SetEndpointDefaultVideoParams(H323VideoCodec & codec);
-    PString GetRemoteNumber();
     PString dtmfBuffer;
 
     PString GetEndpointParam(PString param, bool asterisk = true);
@@ -397,7 +399,6 @@ class MCUH323Connection : public H323Connection
     //  stopped. Use welcomeState to know the current state.
     virtual void OnWelcomeWaveEnded();
 
-    PString remoteName;
     PString memberName;
 
     MCUConnectionTypes connectionType;
