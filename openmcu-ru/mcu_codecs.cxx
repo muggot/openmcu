@@ -30,29 +30,33 @@ MCUFramedAudioCodec::MCUFramedAudioCodec(const OpalMediaFormat & fmt, Direction 
 
   sampleBuffer = PShortArray(samplesPerFrame * channels);
 
-  if(context)
+  if(context == NULL)
   {
-    PluginCodec_ControlDefn * ctl = GetCodecControl(codec, SET_CODEC_OPTIONS_CONTROL);
-    if(ctl != NULL)
-    {
-      PStringArray list;
-      for(PINDEX i = 0; i < mediaFormat.GetOptionCount(); i++)
-      {
-        const OpalMediaOption & option = mediaFormat.GetOption(i);
-        list += option.GetName();
-        list += option.AsString();
-        PTRACE(5, "OpalPlugin\tSetting codec option '" << option.GetName() << "'=" << option.AsString());
-      }
-      char ** _options = list.ToCharArray();
-      unsigned int optionsLen = sizeof(_options);
-      (*ctl->control)(codec, context, SET_CODEC_OPTIONS_CONTROL, _options, &optionsLen);
-      free(_options);
-    }
-#if PTRACING
-    PTRACE(6,"Codec Options");
-    OpalMediaFormat::DebugOptionList(mediaFormat);
-#endif
+    PTRACE(1, "MCUFramedAudioCodec\tFailed create codec " << mediaFormat);
+    return;
   }
+
+  PluginCodec_ControlDefn * ctl = GetCodecControl(codec, SET_CODEC_OPTIONS_CONTROL);
+  if(ctl != NULL)
+  {
+    PStringArray list;
+    for(PINDEX i = 0; i < mediaFormat.GetOptionCount(); i++)
+    {
+      const OpalMediaOption & option = mediaFormat.GetOption(i);
+      list += option.GetName();
+      list += option.AsString();
+      PTRACE(5, "MCUFramedAudioCodec\tSetting codec option '" << option.GetName() << "'=" << option.AsString());
+    }
+    char ** _options = list.ToCharArray();
+    unsigned int optionsLen = sizeof(_options);
+    (*ctl->control)(codec, context, SET_CODEC_OPTIONS_CONTROL, _options, &optionsLen);
+    free(_options);
+  }
+
+#if PTRACING
+  PTRACE(6,"MCUFramedAudioCodec Options");
+  OpalMediaFormat::DebugOptionList(mediaFormat);
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -418,6 +422,12 @@ MCUVideoCodec::MCUVideoCodec(const OpalMediaFormat & fmt, Direction direction, P
   bytesPerFrame = (maxHeight * maxWidth * 3)/2;
   bufferRTP = RTP_DataFrame(sizeof(PluginCodec_Video_FrameHeader) + bytesPerFrame, TRUE);
 
+  if(context == NULL)
+  {
+    PTRACE(1, "MCUVideoCodec\tFailed create codec " << mediaFormat);
+    return;
+  }
+
   PluginCodec_ControlDefn * ctl = GetCodecControl(codec, SET_CODEC_OPTIONS_CONTROL);
   if(ctl != NULL)
   {
@@ -447,6 +457,10 @@ MCUVideoCodec::MCUVideoCodec(const OpalMediaFormat & fmt, Direction direction, P
 
   if(targetFrameTimeMs > 1000)
     targetFrameTimeMs = 40; // for h.263 codecs
+
+  // Полученные значение из кодека
+  mediaFormat.SetOptionInteger(OPTION_FRAME_WIDTH, frameWidth);
+  mediaFormat.SetOptionInteger(OPTION_FRAME_HEIGHT, frameHeight);
 
 #if PTRACING
   PTRACE(6,"Codec Options");
