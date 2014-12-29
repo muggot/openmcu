@@ -284,12 +284,12 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // Log level for messages
   s << SelectField(LogLevelKey, cfg.GetString(LogLevelKey, DEFAULT_LOG_LEVEL), "0,1,2,3,4,5", 0, "1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug");
   // Log filename
-  s << StringField(CallLogFilenameKey, mcu.logFilename, 250);
+  s << StringField(CallLogFilenameKey, cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename), 250);
 #endif
   // Buffered events
   s << IntegerField(HttpLinkEventBufferKey, cfg.GetInteger(HttpLinkEventBufferKey, 100), 10, 1000, 0, "range: 10...1000");
   // Copy web log from Room Control Page to call log
-  s << BoolField("Copy web log to call log", mcu.copyWebLogToLog, "check if you want to store event log from Room Control Page");
+  s << BoolField("Copy web log to call log", cfg.GetBoolean("Copy web log to call log", FALSE), "check if you want to store event log from Room Control Page");
 
   s << SeparatorField("Room setup");
   // Default room
@@ -1632,7 +1632,6 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
   cfg = MCUConfig(section);
 
   mcu.GetEndpoint().Initialise(cfg);
-  if(mcu.GetEndpoint().behind_masq){PStringStream msq; msq<<"Masquerading as "<<*(mcu.GetEndpoint().masqAddressPtr); mcu.HttpWriteEvent(msq);}
 
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();

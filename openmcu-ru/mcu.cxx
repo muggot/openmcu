@@ -40,6 +40,7 @@ OpenMCUPreInit::OpenMCUPreInit()
   //setenv("PWLIB_TRACE_LEVEL", "6", 1);
   //setenv("PWLIB_TRACE_FILE", PString(SERVER_LOGS) + PATH_SEPARATOR + "trace_startup.txt", 1);
   setenv("PWLIBPLUGINDIR", MCU_PLUGIN_DIR, 1);
+  pluginCodecManager = new MCUPluginCodecManager();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,42 +98,17 @@ BOOL OpenMCU::OnStart()
 #ifdef PTLIB_VERSION
   PTRACE(1,"OpenMCU-ru PTLib version " << PTLIB_VERSION);
 #endif
+#ifdef OPENH323_VERSION
+  PTRACE(1,"OpenMCU-ru H323Plus version " << OPENH323_VERSION);
+#endif
 
-  // Setup capabilities
-  H323CapabilityFactory::KeyList_T stdCaps = H323CapabilityFactory::GetKeyList();
-  for(H323CapabilityFactory::KeyList_T::const_iterator r = stdCaps.begin(); r != stdCaps.end(); ++r)
-  {
-    PString name = *r;
-    H323Capability *capability = H323CapabilityFactory::CreateInstance(name);
-    OpalFactoryCodec *fcodec = MCUCapability::CreateOpalFactoryCodec(capability, MCUCodec::Encoder);
-    if(fcodec)
-    {
-      PluginCodec_Definition * defn = (PluginCodec_Definition *)fcodec->GetDefinition();
-#if PTRACING
-      int retVal;
-      unsigned parmLen = sizeof(PluginCodec_LogFunction);
-      CallCodecControl(defn, NULL, PLUGINCODEC_CONTROL_SET_LOG_FUNCTION, (void *)PluginLogFunction, &parmLen, retVal);
-#endif
-      // populate mediaformat options
-      PopulateMediaFormatOptions(defn, capability->GetWritableMediaFormat());
-    }
-    fcodec = MCUCapability::CreateOpalFactoryCodec(capability, MCUCodec::Decoder);
-    if(fcodec)
-    {
-      PluginCodec_Definition * defn = (PluginCodec_Definition *)fcodec->GetDefinition();
-#if PTRACING
-      int retVal;
-      unsigned parmLen = sizeof(PluginCodec_LogFunction);
-      CallCodecControl(defn, NULL, PLUGINCODEC_CONTROL_SET_LOG_FUNCTION, (void *)PluginLogFunction, &parmLen, retVal);
-#endif
-    }
-  }
+  MCUPluginCodecManager::PopulateMediaFormats();
 
   httpNameSpace.AddResource(new PHTTPDirectory("data", "data"));
   httpNameSpace.AddResource(new PServiceHTTPDirectory("html", "html"));
 
-  manager  = CreateConferenceManager();
-  endpoint = CreateEndPoint(*manager);
+  manager  = new ConferenceManager();
+  endpoint = new MCUH323EndPoint(*manager);
   sipendpoint = new MCUSipEndPoint(endpoint);
   registrar = new Registrar(endpoint, sipendpoint);
   rtspServer = new MCURtspServer(endpoint, sipendpoint);
@@ -223,22 +199,24 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 #endif
 
   MCUConfig cfg("Parameters");
+
   serverId = cfg.GetString(ServerIdKey, OpenMCU::Current().GetName() + " v" + OpenMCU::Current().GetVersion());
+
   InitialiseTrace();
 
   vmcfg.go(vmcfg.bfw,vmcfg.bfh);
 
-// default log file name
 #ifdef SERVER_LOGS
-  {
-    PString lfn = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
-    if(lfn.Find(PATH_SEPARATOR) == P_MAX_INDEX) logFilename = PString(SERVER_LOGS)+PATH_SEPARATOR+lfn;
-    else logFilename = lfn;
-  }
-#else
+  // default log file name
   logFilename = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
+  if(logFilename.Find(PATH_SEPARATOR) == P_MAX_INDEX)
+  {
+    logFilename = PString(SERVER_LOGS) + PATH_SEPARATOR + logFilename;
+    cfg.SetString(CallLogFilenameKey, logFilename);
+  }
 #endif
   copyWebLogToLog = cfg.GetBoolean("Copy web log to call log", FALSE);
+
   // Buffered events
   httpBuffer=cfg.GetInteger(HttpLinkEventBufferKey, 100);
   httpBufferedEvents.SetSize(httpBuffer);
@@ -252,9 +230,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   scaleFilter=libyuv::LIBYUV_FILTER;
 #endif
 #endif
-
-  // allow/disallow self-invite:
-  allowLoopbackCalls = cfg.GetBoolean(AllowLoopbackCallsKey, FALSE);
 
 #if P_SSL
   // Secure HTTP
@@ -295,11 +270,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
 
-  {
-    // video recorder setup
-    vr_ffmpegDir   = cfg.GetString( RecorderFfmpegDirKey,   DefaultRecordingDirectory);
-    vr_minimumSpaceMiB = 1024;
-  }
+  // video recorder setup
+  vr_ffmpegDir   = cfg.GetString( RecorderFfmpegDirKey,   DefaultRecordingDirectory);
+  vr_minimumSpaceMiB = 1024;
 
   // get WAV file played to a user when they enter a conference
   connectingWAVFile = cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile);
@@ -312,7 +285,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // Create the config page - general
   GeneralPConfigPage * rsrc = new GeneralPConfigPage(*this, "Parameters", "Parameters", authSettings);
-  OnCreateConfigPage(cfg, *rsrc);
   httpNameSpace.AddResource(rsrc, PHTTPSpace::Overwrite);
 
   // Create the config page - conference parameters
@@ -529,19 +501,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   return TRUE;
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-void OpenMCU::ManagerRefreshAddressBook()
-{
-  // refresh Address Book
-  MCUConferenceList & conferenceList = manager->GetConferenceList();
-  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
-  {
-    Conference *conference = *it;
-    conference->RefreshAddressBook();
-  }
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void OpenMCU::InitialiseTrace()
@@ -712,20 +671,6 @@ void OpenMCU::MCUHTTPListenerShutdown()
 
   delete httpListeningSocket;
   httpListeningSocket = NULL;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ConferenceManager * OpenMCU::CreateConferenceManager()
-{
-  return new ConferenceManager();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-MCUH323EndPoint * OpenMCU::CreateEndPoint(ConferenceManager & manager)
-{
-  return new MCUH323EndPoint(manager);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

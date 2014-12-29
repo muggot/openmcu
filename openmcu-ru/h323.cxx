@@ -2137,7 +2137,8 @@ PString MCUH323EndPoint::Invite(PString room, PString memberName)
   // get url from memberName
   PString address = url.GetUrl();
 
-  if(!OpenMCU::Current().AreLoopbackCallsAllowed())
+  BOOL allowLoopbackCalls = MCUConfig("Parameters").GetBoolean(AllowLoopbackCallsKey, FALSE);
+  if(!allowLoopbackCalls)
   {
     if(url.GetScheme() == "sip")
     {
@@ -3593,7 +3594,7 @@ void MCUH323Connection::PlayWelcomeFile(BOOL useTheFile, PFilePath & fileToPlay)
 
 void MCUH323Connection::OnWelcomeStateChanged()
 {
-  PFilePath fn = OpenMCU::Current().connectingWAVFile;
+  PFilePath fn = OpenMCU::Current().GetConnectingWAVFile();
 
   switch(welcomeState) {
 

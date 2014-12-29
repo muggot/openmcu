@@ -743,6 +743,8 @@ class ConferenceManager : public PObject
 
     void ClearConferenceList();
 
+    void ManagerRefreshAddressBook();
+
   protected:
     virtual Conference * CreateConference(long _id, const OpalGloballyUniqueID & _guid, const PString & _number, const PString & _name);
 

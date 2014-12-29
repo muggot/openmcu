@@ -575,7 +575,8 @@ void Registrar::BookThread(PThread &, INT)
     if(account_status_list != list)
     {
       account_status_list = list;
-      OpenMCU::Current().ManagerRefreshAddressBook();
+      ConferenceManager *cm = OpenMCU::Current().GetConferenceManager();
+      cm->ManagerRefreshAddressBook();
     }
   }
 }

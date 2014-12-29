@@ -77,10 +77,6 @@ class MCUH323EndPoint : public H323EndPoint
 
     void InitialiseCapability();
 
-    BOOL behind_masq;
-    PIPSocket::Address *masqAddressPtr;
-    PString nat_lag_ip;
-
     // new functions
     void Initialise(PConfig & cfg);
 
@@ -134,6 +130,10 @@ class MCUH323EndPoint : public H323EndPoint
     void OnConnectionCreated(MCUH323Connection * conn);
 
   protected:
+    BOOL behind_masq;
+    PIPSocket::Address *masqAddressPtr;
+    PString nat_lag_ip;
+
     ConferenceManager & conferenceManager;
     ConnectionMonitor * connectionMonitor;
     GatekeeperMonitor * gatekeeperMonitor;

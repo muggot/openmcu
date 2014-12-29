@@ -120,7 +120,7 @@ inline void PopulateMediaFormatOptions(PluginCodec_Definition * defn, OpalMediaF
 
   if(!CallCodecControl(defn, NULL, GET_CODEC_OPTIONS_CONTROL, &_options, &optionsLen, retVal) || _options == NULL)
   {
-    PTRACE(6, "Plugin\tUnable to read options for format " << format);
+    PTRACE(6, "Plugin\tUnable to read options from plugin " << format);
     return;
   }
 

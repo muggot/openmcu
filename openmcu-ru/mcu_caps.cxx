@@ -30,10 +30,9 @@ H323Codec * MCUCapability::CreateCodec(const H323Capability * capability, MCUCod
   if(formatName.Find("G711") != P_MAX_INDEX || formatName.Find("G.711") != P_MAX_INDEX)
     return capability->CreateCodec(direction);
 
-  OpalFactoryCodec *fcodec = CreateOpalFactoryCodec(capability, direction);
-  if(fcodec)
+  PluginCodec_Definition *defn = MCUPluginCodecManager::GetPluginCodec(capability, direction);
+  if(defn)
   {
-    PluginCodec_Definition * defn = (PluginCodec_Definition *)fcodec->GetDefinition();
     if(capability->GetMainType() == MCUCapability::e_Audio)
       return new MCUFramedAudioCodec(capability->GetMediaFormat(), direction, defn);
     else
@@ -46,39 +45,109 @@ H323Codec * MCUCapability::CreateCodec(const H323Capability * capability, MCUCod
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-OpalFactoryCodec * MCUCapability::CreateOpalFactoryCodec(const H323Capability * capability, MCUCodec::Direction direction)
+MCUPluginCodecManager::MCUPluginCodecManager(PPluginManager * _pluginMgr)
+  : PPluginModuleManager(PLUGIN_CODEC_GET_CODEC_FN_STR, _pluginMgr)
+{
+  PPluginManager & mgr = PPluginManager::GetPluginManager();
+  mgr.AddNotifier(PCREATE_NOTIFIER(OnLoadPlugin));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PluginCodec_Definition * MCUPluginCodecManager::GetPluginCodec(const PString & key)
+{
+  PWaitAndSignal m(MCUPluginCodecManager::GetPluginCodecListMutex());
+  PluginCodecListType & pluginCodecList = MCUPluginCodecManager::GetPluginCodecList();
+  PluginCodecListType::iterator it = pluginCodecList.find(key);
+  if(it != pluginCodecList.end())
+    return it->second;
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PluginCodec_Definition * MCUPluginCodecManager::GetPluginCodec(const H323Capability * capability, MCUCodec::Direction direction)
 {
   if(capability == NULL)
     return NULL;
-
-#if MCU_OPENH323_VERSION < MCU_OPENH323_VERSION_INT(1,23,0)
-  typedef PFactory<OpalFactoryCodec, PDefaultPFactoryKey> OpalPluginCodecFactory;
-#else
-  typedef PFactory<OpalFactoryCodec, PString> OpalPluginCodecFactory;
-#endif
 
   const OpalMediaFormat & mediaFormat = capability->GetMediaFormat();
   PString formatName = mediaFormat;
   formatName.Replace("{sw}", "");
 
-  OpalFactoryCodec *fcodec = NULL;
+  PluginCodec_Definition *defn = NULL;
 
   if(capability->GetMainType() == MCUCapability::e_Audio)
   {
     if(direction == MCUCodec::Decoder)
-      fcodec = OpalPluginCodecFactory::CreateInstance(formatName + "|L16");
+      defn = MCUPluginCodecManager::GetPluginCodec(formatName + "|L16");
     else
-      fcodec = OpalPluginCodecFactory::CreateInstance("L16|" + formatName);
+      defn = MCUPluginCodecManager::GetPluginCodec("L16|" + formatName);
   }
   else
   {
     if(direction == MCUCodec::Decoder)
-      fcodec = OpalPluginCodecFactory::CreateInstance(formatName + "|YUV420P");
+      defn = MCUPluginCodecManager::GetPluginCodec(formatName + "|YUV420P");
     else
-      fcodec = OpalPluginCodecFactory::CreateInstance("YUV420P|" + formatName);
+      defn = MCUPluginCodecManager::GetPluginCodec("YUV420P|" + formatName);
   }
 
-  return fcodec;
+  return defn;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUPluginCodecManager::OnLoadPlugin(PDynaLink & dll, INT code)
+{
+  PWaitAndSignal m(MCUPluginCodecManager::GetPluginCodecListMutex());
+
+  PluginCodec_GetCodecFunction *GetCodecsDefn = new PluginCodec_GetCodecFunction;
+  if(!dll.GetFunction(PLUGIN_CODEC_GET_CODEC_FN_STR, *(PDynaLink::Function *)GetCodecsDefn))
+    return;
+
+  unsigned int count;
+  PluginCodec_Definition *codecsDefn = (*GetCodecsDefn)(&count, PLUGIN_CODEC_VERSION_OPTIONS);
+  if(codecsDefn == NULL || count == 0)
+    return;
+
+  for(unsigned i = 0; i < count; ++i)
+  {
+    PluginCodec_Definition & defn = codecsDefn[i];
+    PString key = PString(defn.sourceFormat) + "|" + PString(defn.destFormat);
+    PluginCodecListType & pluginCodecList = MCUPluginCodecManager::GetPluginCodecList();
+    if(code == 0)
+    {
+      PluginCodecListType::iterator it = pluginCodecList.find(key);
+      if(it == pluginCodecList.end())
+      {
+#if PTRACING
+        int retVal;
+        unsigned parmLen = sizeof(PluginCodec_LogFunction);
+        CallCodecControl(&defn, NULL, PLUGINCODEC_CONTROL_SET_LOG_FUNCTION, (void *)PluginLogFunction, &parmLen, retVal);
+#endif
+        pluginCodecList.insert(PluginCodecListType::value_type(key, &defn));
+      }
+    }
+    else if(code == 1)
+      pluginCodecList.erase(key);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUPluginCodecManager::PopulateMediaFormats()
+{
+  // Setup capabilities
+  H323CapabilityFactory::KeyList_T stdCaps = H323CapabilityFactory::GetKeyList();
+  for(H323CapabilityFactory::KeyList_T::const_iterator r = stdCaps.begin(); r != stdCaps.end(); ++r)
+  {
+    PString name = *r;
+    H323Capability *capability = H323CapabilityFactory::CreateInstance(name);
+    PluginCodec_Definition *defn = MCUPluginCodecManager::GetPluginCodec(capability, MCUCodec::Encoder);
+    if(defn)
+      PopulateMediaFormatOptions(defn, capability->GetWritableMediaFormat());
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

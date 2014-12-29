@@ -458,6 +458,18 @@ void ConferenceManager::ClearConferenceList()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void ConferenceManager::ManagerRefreshAddressBook()
+{
+  // refresh Address Book
+  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
+  {
+    Conference *conference = *it;
+    conference->RefreshAddressBook();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ConferenceMonitor::Main()
 {
   running = TRUE;

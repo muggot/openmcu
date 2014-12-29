@@ -254,6 +254,14 @@ class OpenMCUPreInit
 {
   public:
     OpenMCUPreInit();
+
+    ~OpenMCUPreInit()
+    {
+      delete pluginCodecManager;
+    }
+
+  protected:
+    MCUPluginCodecManager *pluginCodecManager;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -271,27 +279,32 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     void OnConfigChanged();
     BOOL Initialise(const char * initMsg);
 
-    static OpenMCU & Current() { return (OpenMCU &)PProcess::Current(); }
+    static OpenMCU & Current()
+    { return (OpenMCU &)PProcess::Current(); }
 
-    BOOL MCUHTTPListenerCreate(const PString & ip, unsigned port);
-    void MCUHTTPListenerClose();
-    void MCUHTTPListenerShutdown();
-
-    virtual ConferenceManager * CreateConferenceManager();
-    virtual MCUH323EndPoint * CreateEndPoint(ConferenceManager & manager);
-
-    virtual void OnCreateConfigPage(PConfig & /*cfg*/, PConfigPage & /*page*/)
-    { }
-
-    const PString & GetServerId() const { return serverId; }
-    const PString & GetDefaultRoomName() const { return defaultRoomName; }
-
-    BOOL AreLoopbackCallsAllowed() const { return allowLoopbackCalls; }
-    void LogMessage(const PString & str);
-    void LogMessageHTML(PString str);
+    ConferenceManager * GetConferenceManager()
+    { return manager; }
 
     MCUH323EndPoint & GetEndpoint()
     { return *endpoint; }
+
+    MCUSipEndPoint * GetSipEndpoint()
+    { return sipendpoint; }
+
+    Registrar *GetRegistrar()
+    { return registrar; };
+
+    MCURtspServer *GetRtspServer()
+    { return rtspServer; };
+
+    const PString & GetServerId() const
+    { return serverId; }
+
+    const PString & GetDefaultRoomName() const
+    { return defaultRoomName; }
+
+    void LogMessage(const PString & str);
+    void LogMessageHTML(PString str);
 
     int GetHttpBuffer() const { return httpBuffer; }
 
@@ -392,39 +405,31 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     PString vr_ffmpegDir;
     unsigned vr_minimumSpaceMiB;
 
-    PFilePath GetLeavingWAVFile() const
+    const PFilePath GetLeavingWAVFile() const
     { return leavingWAVFile; }
 
-    PFilePath GetEnteringWAVFile() const
+    const PFilePath GetEnteringWAVFile() const
     { return enteringWAVFile; }
 
-    BOOL GetConnectingWAVFile(PFilePath & fn) const
-    { fn = connectingWAVFile; return TRUE; }
-
-    PFilePath connectingWAVFile;
-    PFilePath enteringWAVFile;
-    PFilePath leavingWAVFile;
-
-    PFilePath  logFilename;
-    BOOL       copyWebLogToLog;
-
-    MCUSipEndPoint * GetSipEndpoint() { return sipendpoint; }
-    Registrar *GetRegistrar() { return registrar; };
-    MCURtspServer *GetRtspServer() { return rtspServer; };
-
-    void ManagerRefreshAddressBook();
+    const PFilePath & GetConnectingWAVFile() const
+    { return connectingWAVFile; }
 
   protected:
+
+    BOOL MCUHTTPListenerCreate(const PString & ip, unsigned port);
+    void MCUHTTPListenerClose();
+    void MCUHTTPListenerShutdown();
 
     void InitialiseTrace();
     int currentLogLevel, currentTraceLevel;
     BOOL traceFileRotated;
     PINDEX rotationLevel;
+    PFilePath  logFilename;
+    BOOL       copyWebLogToLog;
 
     PFilePath executableFile;
     ConferenceManager * manager;
     MCUH323EndPoint * endpoint;
-    long GetCodec(const PString & codecname);
 
     MCUSipEndPoint * sipendpoint;
     Registrar *registrar;
@@ -433,6 +438,10 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     PString    serverId;
     PString    defaultRoomName;
     BOOL       allowLoopbackCalls;
+
+    PFilePath connectingWAVFile;
+    PFilePath enteringWAVFile;
+    PFilePath leavingWAVFile;
 
     int        httpBuffer, httpBufferIndex;
     PStringArray httpBufferedEvents;

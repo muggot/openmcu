@@ -20,11 +20,8 @@ class MyMCU : public OpenMCU
     MyMCU()
     { }
 
-    static MyMCU & Current() { return (MyMCU &)PProcess::Current(); }
-
-    ConferenceManager * CreateConferenceManager();
-
-    void OnCreateConfigPage(PConfig & cfg, PConfigPage & page);
+    static MyMCU & Current()
+    { return (MyMCU &)PProcess::Current(); }
 
 #if MCU_VIDEO
     void RemovePreMediaFrame();
@@ -34,23 +31,7 @@ class MyMCU : public OpenMCU
   protected:
 };
 
-class MyConferenceManager : public ConferenceManager
-{
-  public:
-    void OnMemberJoining(Conference * conf, ConferenceMember *);
-    void OnMemberLeaving(Conference * conf, ConferenceMember *);
-};
-
 //////////////////////////////////////////////////////////////////////////////////////////////
-
-ConferenceManager * MyMCU::CreateConferenceManager()
-{ 
-  return new MyConferenceManager; 
-}
-
-void MyMCU::OnCreateConfigPage(PConfig & cfg, PConfigPage & rsrc)
-{
-}
 
 #if MCU_VIDEO
    void MyMCU::RemovePreMediaFrame()
@@ -142,20 +123,6 @@ void MyMCU::OnCreateConfigPage(PConfig & cfg, PConfigPage & rsrc)
 #endif // MCU_VIDEO
 
 PCREATE_PROCESS(MyMCU);
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-
-void MyConferenceManager::OnMemberJoining(Conference * conf, ConferenceMember * member)
-{ 
-//  if (!PIsDescendant(member, ConferenceFileMember))
-//    new ConferenceFileMember(conf, MyMCU::Current().GetEnteringWAVFile(), PFile::ReadOnly); 
-}
-
-void MyConferenceManager::OnMemberLeaving(Conference * conf, ConferenceMember * member)
-{ 
-//  if (!PIsDescendant(member, ConferenceFileMember))
-//    new ConferenceFileMember(conf, MyMCU::Current().GetLeavingWAVFile(), PFile::ReadOnly); 
-}
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
