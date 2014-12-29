@@ -3680,8 +3680,19 @@ PString MCUH323Connection::GetRemoteNumber()
 void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
 {
   // remotePartyNumber
-  if(remotePartyNumber.IsEmpty())
-    pdu.GetSourceE164(remotePartyNumber);
+  // Аккаунт - для получения настроек терминала
+  if(callAnswered)
+  {
+    if(remotePartyNumber.IsEmpty())
+      pdu.GetSourceE164(remotePartyNumber);
+  }
+  else
+  {
+    if(remoteAliasNames.GetSize() > 0)
+      remotePartyNumber = remoteAliasNames[0];
+    else
+      remotePartyNumber = remotePartyAddress.Tokenise("@")[0];
+  }
 
   // remotePartyName
   remotePartyName = pdu.GetQ931().GetDisplayName();
@@ -3694,6 +3705,7 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
   PTRACE(1, "MCUH323Connection\tSet remotePartyName: " << remotePartyName);
 
   // ??? h323plus 1.25.0
+  remotePartyNumber.Replace("h323:", "", TRUE, 0);
   remotePartyName.Replace("h323:", "", TRUE, 0);
   remotePartyAddress.Replace("h323:", "", TRUE, 0);
   for(int i = 0; i < remoteAliasNames.GetSize(); ++i)
@@ -3707,8 +3719,8 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
     remotePartyName = convert_cp1251_to_utf8(remotePartyName);
   }
 
-  // Нужен для получения настроек терминала
-  if(remotePartyNumber.IsEmpty())
+  // Может быть пустым в GetSourceE164()
+  if(callAnswered && remotePartyNumber.IsEmpty())
     remotePartyNumber = remotePartyName;
 
   // display name
