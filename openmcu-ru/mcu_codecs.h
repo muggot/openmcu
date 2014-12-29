@@ -237,6 +237,9 @@ class MCUFramedAudioCodec : public H323AudioCodec
     virtual unsigned GetSampleRate()
     { return codec->sampleRate; }
 
+    MCU_RTPChannel * GetLogicalChannel()
+    { return (MCU_RTPChannel *)logicalChannel; }
+
   protected:
     void * context;
     PluginCodec_Definition * codec;
@@ -271,6 +274,9 @@ class MCUVideoCodec : public H323VideoCodec
     }
 
     BOOL RenderFrame(const BYTE * buffer);
+
+    MCU_RTPChannel * GetLogicalChannel()
+    { return (MCU_RTPChannel *)logicalChannel; }
 
   protected:
     void * context;

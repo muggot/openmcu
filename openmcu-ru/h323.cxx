@@ -2612,16 +2612,6 @@ H323Channel * MCUH323Connection::CreateRealTimeLogicalChannel(const H323Capabili
     return NULL;
 
   MCUH323_RTPChannel *channel = new MCUH323_RTPChannel(*this, capability, dir, *session);
-
-  if(capability.GetMainType() == MCUCapability::e_Audio && dir == H323Channel::IsReceiver)
-    audioReceiveChannel = channel;
-  if(capability.GetMainType() == MCUCapability::e_Video && dir == H323Channel::IsReceiver)
-    videoReceiveChannel = channel;
-  if(capability.GetMainType() == MCUCapability::e_Audio && dir == H323Channel::IsTransmitter)
-    audioTransmitChannel = channel;
-  if(capability.GetMainType() == MCUCapability::e_Video && dir == H323Channel::IsTransmitter)
-    videoTransmitChannel = channel;
-
   return channel;
 }
 
@@ -3099,6 +3089,7 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
 
   if(isEncoding)
   {
+    audioTransmitChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
     audioTransmitCodecName = mf + "@" + PString(sampleRate) + "/" +PString(channels);
 
     // check cache mode
@@ -3121,6 +3112,7 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
     codec.AttachChannel(new OutgoingAudio(ep, *this, sampleRate, channels), TRUE);
 
   } else {
+    audioReceiveChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
     audioReceiveCodecName = codec.GetMediaFormat() + "@" + PString(sampleRate) + "/" +PString(channels);
     codec.AttachChannel(new IncomingAudio(ep, *this, sampleRate, channels), TRUE);
   }
@@ -3247,6 +3239,7 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
 
   if(isEncoding)
   {
+    videoTransmitChannel = ((MCUVideoCodec &)codec).GetLogicalChannel();
     videoTransmitCodecName = codec.GetMediaFormat();
 
     // cache mode
@@ -3344,6 +3337,7 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
 
   } else {
 
+    videoReceiveChannel = ((MCUVideoCodec &)codec).GetLogicalChannel();
     videoReceiveCodecName = codec.GetMediaFormat();
 
     if(conference && conference->IsModerated() == "+")

@@ -876,13 +876,10 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
       if(memberToAdd->IsVisible())
       {
         MCUSimpleVideoMixer * mixer = manager.GetVideoMixerWithLock(this);
-        if(mixer->AddVideoSource(memberToAdd->GetID(), *memberToAdd))
-          memberToAdd->SetFreezeVideo(TRUE);
+        mixer->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
         mixer->Unlock();
       }
     }
-    else
-      memberToAdd->SetFreezeVideo(TRUE);
   }
   else
   {
