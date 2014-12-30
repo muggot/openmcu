@@ -3369,13 +3369,25 @@ void MCUH323Connection::OnClosedLogicalChannel(const H323Channel & channel)
   PWaitAndSignal m(connMutex);
 
   if(&channel == audioReceiveChannel)
+  {
     audioReceiveChannel = NULL;
-  if(&channel == audioTransmitChannel)
+    audioReceiveCodecName = "none";
+  }
+  else if(&channel == audioTransmitChannel)
+  {
     audioTransmitChannel = NULL;
-  if(&channel == videoReceiveChannel)
+    audioTransmitCodecName = "none";
+  }
+  else if(&channel == videoReceiveChannel)
+  {
     videoReceiveChannel = NULL;
-  if(&channel == videoTransmitChannel)
+    videoReceiveCodecName = "none";
+  }
+  else if(&channel == videoTransmitChannel)
+  {
     videoTransmitChannel = NULL;
+    videoTransmitCodecName = "none";
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
