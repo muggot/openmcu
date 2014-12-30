@@ -134,10 +134,10 @@ class ConferenceCacheMember : public ConferenceMember
     PString roomName;
     int status;
 
-    CacheRTP *cache;
+    bool isAudio;
 
     H323Codec * codec;
-    MCUH323Connection * conn;
+    CacheRTP *cache;
 
     BOOL running;
     PThread * thread;

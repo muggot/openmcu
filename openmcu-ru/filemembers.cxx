@@ -218,14 +218,12 @@ ConferenceCacheMember::ConferenceCacheMember(Conference * _conference, unsigned 
 {
   PTRACE(1,"ConferenceCacheMember\tConstruct");
 
-  if(conference == NULL)
-    return;
-
   roomName = conference->GetNumber();
   videoMixerNumber = _videoMixerNumber;
   format = _format;
   cacheName = _cacheName;
 
+  codec = NULL;
   cache = CreateCacheRTP(cacheName);
 
   conference->AddMember(this);
@@ -266,32 +264,32 @@ void ConferenceCacheMember::Close()
 
 void ConferenceCacheMember::CacheThread(PThread &, INT)
 {
+  MCUTRACE(1, "CacheRTP " << cacheName << " Thread starting");
+
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
 
   // lock
   mutex.Wait();
+
   if(conference == NULL)
   {
+    MCUTRACE(1, "CacheRTP " << cacheName << " conference == NULL!");
     mutex.Signal();
-    Close();
     return;
   }
 
   MCUCapability *cap = MCUCapability::Create(format);
-  if(cap == NULL)
-    return;
   OpalMediaFormat & wf = cap->GetWritableMediaFormat();
   wf = format;
-  MCUTRACE(1, "CacheRTP " << cacheName << " Thread starting");
-  if(cap->GetMainType() == MCUCapability::e_Audio)
+  codec = MCUCapability::CreateCodec(cap, MCUCodec::Encoder);
+  isAudio = (cap->GetMainType() == MCUCapability::e_Audio);
+
+  MCUH323Connection * conn = new MCUH323Connection(ep, 0, NULL);
+  if(isAudio)
   {
-    codec = MCUCapability::CreateCodec(cap, MCUCodec::Encoder);
-    conn = new MCUH323Connection(ep, 0, NULL);
     conn->SetupCacheConnection(cacheName, conference, this);
     conn->OpenAudioChannel(TRUE, 0, (H323AudioCodec &)*codec);
   } else {
-    codec = MCUCapability::CreateCodec(cap, MCUCodec::Encoder);
-    conn = new MCUH323Connection(ep, 0, NULL);
     conn->videoMixerNumber = videoMixerNumber;
     conn->SetupCacheConnection(cacheName, conference, this);
     conn->OpenVideoChannel(TRUE, (H323VideoCodec &)*codec);
@@ -321,7 +319,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
     {
       status = 1;
       // restart channel
-      if(cap->GetMainType() == MCUCapability::e_Audio)
+      if(isAudio)
       {
         int channels = format.GetOptionInteger(OPTION_ENCODER_CHANNELS, 1);
         codec->AttachChannel(new OutgoingAudio(ep, *conn, wf.GetTimeUnits()*1000, channels), TRUE);
@@ -335,12 +333,14 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
       PWaitAndSignal m(mutex);
 
       unsigned flags = 0;
+      if(!isAudio)
+      {
+        cache->GetFastUpdate(flags);
+        if(flags & PluginCodec_CoderForceIFrame)
+          ((H323VideoCodec *)codec)->OnFastUpdatePicture();
+      }
 
-      cache->GetFastUpdate(flags);
-      if(flags & PluginCodec_CoderForceIFrame)
-        ((H323VideoCodec *)codec)->OnFastUpdatePicture();
-
-      codec->Read(NULL, length, frame);
+      codec->Read(frame.GetPayloadPtr(), length, frame);
       PutCacheRTP(cache, frame, length, flags);
     }
   }

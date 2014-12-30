@@ -709,12 +709,12 @@ void MCU_RTPChannel::Transmit()
       }
 
       unsigned flags = 0;
-      if(fastUpdate)
+      if(!isAudio && fastUpdate)
         flags = PluginCodec_CoderForceIFrame;
 
       GetCacheRTP(cache, frame, length, encoderSeqN, flags);
 
-      if(flags & PluginCodec_ReturnCoderIFrame)
+      if(!isAudio && flags & PluginCodec_ReturnCoderIFrame)
         fastUpdate = false;
 
       retval = TRUE;
