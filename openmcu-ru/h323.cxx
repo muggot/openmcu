@@ -4237,24 +4237,19 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
 
 void MCUH323Connection::LogCall(const BOOL accepted)
 {
-  if(!controlChannel && !signallingChannel) return;
-  H323TransportAddress address = GetControlChannel().GetRemoteAddress();
-  PIPSocket::Address ip;
-  WORD port;
   PStringStream stringStream, timeStream;
-  address.GetIpAndPort(ip, port);
   timeStream << GetConnectionStartTime().AsString("hh:mm:ss");
-  stringStream << ' ' << "caller-ip:" << ip << ':' << port << ' '
-	             << GetRemotePartyName() 
-               << " room:" << ((conference != NULL) ? conference->GetNumber() : PString());
+  stringStream << " caller: " << memberName
+               << " room: " << ((conference != NULL) ? conference->GetNumber() : PString());
 
-  if (accepted) {
+  if(accepted)
+  {
     PStringStream connectionDuration;
     connectionDuration << setprecision(0) << setw(5) << (PTime() - GetConnectionStartTime());
     OpenMCU::Current().LogMessage(timeStream + stringStream	+ " connection duration:" + connectionDuration);
   }
-  else 
-    OpenMCU::Current().LogMessage(timeStream + " Call denied:" + stringStream);		
+  else
+    OpenMCU::Current().LogMessage(timeStream + " Call denied:" + stringStream);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
