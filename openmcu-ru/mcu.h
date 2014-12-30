@@ -405,13 +405,13 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     PString vr_ffmpegDir;
     unsigned vr_minimumSpaceMiB;
 
-    const PFilePath GetLeavingWAVFile() const
+    const PString & GetLeavingWAVFile() const
     { return leavingWAVFile; }
 
-    const PFilePath GetEnteringWAVFile() const
+    const PString & GetEnteringWAVFile() const
     { return enteringWAVFile; }
 
-    const PFilePath & GetConnectingWAVFile() const
+    const PString & GetConnectingWAVFile() const
     { return connectingWAVFile; }
 
   protected:
@@ -424,7 +424,7 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     int currentLogLevel, currentTraceLevel;
     BOOL traceFileRotated;
     PINDEX rotationLevel;
-    PFilePath  logFilename;
+    PString logFilename;
     BOOL       copyWebLogToLog;
 
     PFilePath executableFile;
@@ -439,9 +439,9 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     PString    defaultRoomName;
     BOOL       allowLoopbackCalls;
 
-    PFilePath connectingWAVFile;
-    PFilePath enteringWAVFile;
-    PFilePath leavingWAVFile;
+    PString connectingWAVFile;
+    PString enteringWAVFile;
+    PString leavingWAVFile;
 
     int        httpBuffer, httpBufferIndex;
     PStringArray httpBufferedEvents;
