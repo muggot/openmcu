@@ -263,12 +263,9 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
   else if(account_type == ACCOUNT_TYPE_RTSP)
   {
     PString callToken = PGloballyUniqueID().AsString();
-    MCURtspConnection *rCon = new MCURtspConnection(sep, ep, callToken);
-    if(rCon->Connect(room, address) == FALSE)
-    {
-      rCon->LeaveMCU();
+    MCURtspServer *rtsp = OpenMCU::Current().GetRtspServer();
+    if(!rtsp->CreateConnection(room, address, callToken))
       return FALSE;
-    }
   }
 
   if(callToken != "")

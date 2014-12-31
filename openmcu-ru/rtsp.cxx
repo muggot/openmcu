@@ -104,6 +104,8 @@ MCURtspConnection::~MCURtspConnection()
 
 void MCURtspConnection::ProcessShutdown(CallEndReason reason)
 {
+  PWaitAndSignal m(connMutex);
+
   if(connectionState == ShuttingDownConnection)
   {
     MCUTRACE(1, trace_section << "shutdown connection process is already running");
@@ -121,15 +123,7 @@ void MCURtspConnection::ProcessShutdown(CallEndReason reason)
 
 void MCURtspConnection::LeaveMCU()
 {
-  if(connectionState == ShuttingDownConnection)
-  {
-    MCUTRACE(1, trace_section << "shutdown connection process is already running");
-    return;
-  }
-  connectionState = ShuttingDownConnection;
-
-  PTRACE(1, trace_section << "LeaveMCU");
-  MCUH323Connection::LeaveMCU();
+  ProcessShutdown(EndedByLocalUser);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -145,6 +139,7 @@ void MCURtspConnection::CleanUpOnCallEnd()
 
   if(listener)
     delete listener;
+  listener = NULL;
 
   StopTransmitChannels();
   StopReceiveChannels();
@@ -175,7 +170,7 @@ BOOL MCURtspConnection::Connect(PString room, PString address)
 
   // detect local_ip, nat_ip and create rtp sessions
   if(CreateDefaultRTPSessions() == FALSE)
-    return FALSE;
+    goto error;
 
   // display name
   remotePartyName = GetEndpointParam(DisplayNameKey, url.GetPathStr());
@@ -187,13 +182,17 @@ BOOL MCURtspConnection::Connect(PString room, PString address)
   // create listener
   listener = MCUListener::Create(listener_address, OnReceived_wrap, this);
   if(listener == NULL)
-    return FALSE;
+    goto error;
 
   // start connection
   if(SendDescribe() == 0)
     return FALSE;
 
   return TRUE;
+
+  error:
+    ProcessShutdown();
+    return FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -207,10 +206,19 @@ BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg
 
   sip_t *sip = sip_object(msg);
 
+  // random session string
+  rtsp_session_str = PString(random());
+
   // rtsp address (local)
   luri_str = url_as_string(msg_home(msg), sip->sip_request->rq_url);
   MCUURL lurl(luri_str);
   rtsp_path = lurl.GetPath()[0];
+
+  // set remote application
+  if(sip->sip_user_agent)
+    remoteApplication = sip->sip_user_agent->g_string;
+  else if(sip->sip_server)
+    remoteApplication = sip->sip_server->g_string;
 
   // used in GetEndpointParam
   remotePartyAddress = "RTSP Server "+rtsp_path;
@@ -219,18 +227,11 @@ BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg
   requestedRoom = GetEndpointParam(RoomNameKey);
 
   // detect local_ip, nat_ip and create rtp sessions
-  if(CreateDefaultRTPSessions() == FALSE)
-    return FALSE;
+  if(!CreateDefaultRTPSessions())
+    goto error;
 
-  // random session string
-  rtsp_session_str = PString(random());
-
-  // create remote caps, for RTP channels
-  for(SipCapMapType::iterator it = LocalSipCaps.begin(); it != LocalSipCaps.end(); ++it)
-  {
-    SipCapability *local_sc = it->second;
-    RemoteSipCaps.insert(SipCapMapType::value_type(it->first, new SipCapability(*local_sc)));
-  }
+  if(!CreateInboundCaps())
+    goto error;
 
   // auth
   auth_username = GetEndpointParam(UserNameKey);
@@ -243,13 +244,46 @@ BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg
     auth_nonce = PGloballyUniqueID().AsString();
   }
 
-  // set remote application
-  if(sip->sip_user_agent)
-    remoteApplication = sip->sip_user_agent->g_string;
-  else if(sip->sip_server)
-    remoteApplication = sip->sip_server->g_string;
+  // create listener
+  listener = MCUListener::Create(socket_fd, ruri_str, OnReceived_wrap, this);
+  if(listener == NULL)
+    goto error;
 
-  // setup codecs
+  // start connection
+  OnRequestReceived(msg);
+
+  return TRUE;
+
+  error:
+    ProcessShutdown();
+    return FALSE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCURtspConnection::CreateLocalSipCaps()
+{
+  LocalSipCaps.clear();
+  for(SipCapMapType::iterator it = sep->GetBaseSipCaps().begin(); it != sep->GetBaseSipCaps().end(); ++it)
+  {
+    SipCapability *base_sc = it->second;
+    if(SkipCapability(base_sc->capname, connectionType))
+      continue;
+    LocalSipCaps.insert(SipCapMapType::value_type(it->first, new SipCapability(*base_sc)));
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCURtspConnection::CreateInboundCaps()
+{
+  // create remote caps, for RTP channels
+  for(SipCapMapType::iterator it = LocalSipCaps.begin(); it != LocalSipCaps.end(); ++it)
+  {
+    SipCapability *local_sc = it->second;
+    RemoteSipCaps.insert(SipCapMapType::value_type(it->first, new SipCapability(*local_sc)));
+  }
+
   PString audio_codec = GetEndpointParam(AudioCodecKey);
   PString video_codec = GetEndpointParam(VideoCodecKey);
   PString video_resolution = GetEndpointParam(VideoResolutionKey, "352x288");
@@ -304,34 +338,12 @@ BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg
     return FALSE;
   }
 
-  // create listener
-  listener = MCUListener::Create(socket_fd, ruri_str, OnReceived_wrap, this);
-  if(listener == NULL)
-    return FALSE;
-
-  // start connection
-  OnRequestReceived(msg);
-
   return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCURtspConnection::CreateLocalSipCaps()
-{
-  LocalSipCaps.clear();
-  for(SipCapMapType::iterator it = sep->GetBaseSipCaps().begin(); it != sep->GetBaseSipCaps().end(); ++it)
-  {
-    SipCapability *base_sc = it->second;
-    if(SkipCapability(base_sc->capname, connectionType))
-      continue;
-    LocalSipCaps.insert(SipCapMapType::value_type(it->first, new SipCapability(*base_sc)));
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int MCURtspConnection::SendOptions()
+BOOL MCURtspConnection::SendOptions()
 {
   char buffer[1024];
   snprintf(buffer, 1024,
@@ -340,15 +352,15 @@ int MCURtspConnection::SendOptions()
 	   , (const char *)ruri_str, cseq++, (const char *)METHOD_OPTIONS);
 
   AddHeaders(buffer, METHOD_OPTIONS);
-  if(SendRequest(buffer) == 0)
-    return 0;
+  if(!SendRequest(buffer))
+    return FALSE;
 
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::SendPlay()
+BOOL MCURtspConnection::SendPlay()
 {
   char buffer[1024];
   snprintf(buffer, 1024,
@@ -359,23 +371,23 @@ int MCURtspConnection::SendPlay()
 	   , (const char *)ruri_str, cseq++, (const char *)METHOD_PLAY, (const char *)rtsp_session_str);
 
   AddHeaders(buffer, METHOD_PLAY);
-  if(SendRequest(buffer) == 0)
-    return 0;
+  if(!SendRequest(buffer))
+    return FALSE;
 
   rtsp_state = RTSP_PLAY;
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::SendSetup(int pt)
+BOOL MCURtspConnection::SendSetup(int pt)
 {
   SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
   if(sc->attr.GetAt("control") == NULL)
   {
     MCUTRACE(1, trace_section << "capability attribute \"control\" not found");
     ProcessShutdown();
-    return 0;
+    return FALSE;
   }
   PString control = sc->attr("control");
   if(control.Left(4) != "rtsp")
@@ -400,20 +412,20 @@ int MCURtspConnection::SendSetup(int pt)
 	   , (const char *)control, cseq++, (const char *)METHOD_SETUP, (const char *)session_header, rtp_port, rtp_port+1);
 
   AddHeaders(buffer, METHOD_SETUP);
-  if(SendRequest(buffer) == 0)
-    return 0;
+  if(!SendRequest(buffer))
+    return FALSE;
 
   if(pt == scap)
     rtsp_state = RTSP_SETUP_AUDIO;
   else
     rtsp_state = RTSP_SETUP_VIDEO;
 
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::SendTeardown()
+BOOL MCURtspConnection::SendTeardown()
 {
   char buffer[1024];
   snprintf(buffer, 1024,
@@ -423,16 +435,16 @@ int MCURtspConnection::SendTeardown()
 	   , (const char *)ruri_str, cseq++, (const char *)METHOD_TEARDOWN, (const char *)rtsp_session_str);
 
   AddHeaders(buffer, METHOD_TEARDOWN);
-  if(SendRequest(buffer) == 0)
-    return 0;
+  if(!SendRequest(buffer))
+    return FALSE;
 
   rtsp_state = RTSP_TEARDOWN;
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::SendDescribe()
+BOOL MCURtspConnection::SendDescribe()
 {
   char buffer[1024];
   snprintf(buffer,1024,
@@ -442,16 +454,16 @@ int MCURtspConnection::SendDescribe()
 	   , (const char *)ruri_str, cseq++, (const char *)METHOD_DESCRIBE);
 
   AddHeaders(buffer, METHOD_DESCRIBE);
-  if(SendRequest(buffer) == 0)
-     return 0;
+  if(!SendRequest(buffer))
+     return FALSE;
 
   rtsp_state = RTSP_DESCRIBE;
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnResponsePlay(const msg_t *msg)
+BOOL MCURtspConnection::OnResponsePlay(const msg_t *msg)
 {
   // set endpoint member name
   SetMemberName();
@@ -462,7 +474,7 @@ int MCURtspConnection::OnResponsePlay(const msg_t *msg)
   if(!conference || !conferenceMember || !conferenceMember->IsJoined())
   {
     MCUTRACE(1, trace_section << "error");
-    return 0;
+    return FALSE;
   }
 
   // create and start channels
@@ -485,12 +497,12 @@ int MCURtspConnection::OnResponsePlay(const msg_t *msg)
   }
 
   rtsp_state = RTSP_PLAYING;
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnResponseSetup(const msg_t *msg)
+BOOL MCURtspConnection::OnResponseSetup(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
@@ -512,29 +524,29 @@ int MCURtspConnection::OnResponseSetup(const msg_t *msg)
   if(ParseTransportStr(sc, transport_str) == FALSE)
   {
     MCUTRACE(1, trace_section << "failed parse transport header");
-    return 0;
+    return FALSE;
   }
 
   if(rtsp_state == RTSP_SETUP_AUDIO && vcap > 0)
   {
     SendSetup(vcap);
-    return 1;
+    return TRUE;
   }
 
   SendPlay();
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnResponseDescribe(const msg_t *msg)
+BOOL MCURtspConnection::OnResponseDescribe(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
   if(!sip->sip_payload || !sip->sip_payload->pl_data)
   {
     MCUTRACE(1, trace_section << "error");
-    return 0;
+    return FALSE;
   }
 
   PString sdp_str = sip->sip_payload->pl_data;
@@ -542,7 +554,7 @@ int MCURtspConnection::OnResponseDescribe(const msg_t *msg)
   if(response_code)
   {
     MCUTRACE(1, trace_section << "error");
-    return 0;
+    return FALSE;
   }
 
   // set remote application
@@ -556,12 +568,12 @@ int MCURtspConnection::OnResponseDescribe(const msg_t *msg)
   else
     SendSetup(vcap);
 
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnRequestOptions(const msg_t *msg)
+BOOL MCURtspConnection::OnRequestOptions(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
@@ -575,14 +587,14 @@ int MCURtspConnection::OnRequestOptions(const msg_t *msg)
 
   AddHeaders(buffer);
   if(SendRequest(buffer) == 0)
-     return 0;
+     return FALSE;
 
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnRequestDescribe(const msg_t *msg)
+BOOL MCURtspConnection::OnRequestDescribe(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
@@ -645,11 +657,11 @@ int MCURtspConnection::OnRequestDescribe(const msg_t *msg)
   strcat(buffer, buffer_sdp);
   strcat(buffer, "\r\n");
 
-  if(SendRequest(buffer) == 0)
-     return 0;
+  if(!SendRequest(buffer))
+     return FALSE;
 
   rtsp_state = RTSP_DESCRIBE;
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -717,7 +729,7 @@ BOOL MCURtspConnection::ParseTransportStr(SipCapability *sc, PString & transport
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnRequestSetup(const msg_t *msg)
+BOOL MCURtspConnection::OnRequestSetup(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
   SipCapability *sc = NULL;
@@ -731,7 +743,7 @@ int MCURtspConnection::OnRequestSetup(const msg_t *msg)
   else
   {
     MCUTRACE(1, trace_section << "incorrect path " << url.GetPathStr());
-    return 0;
+    return FALSE;
   }
 
   if(setup_media == "audio")
@@ -741,7 +753,7 @@ int MCURtspConnection::OnRequestSetup(const msg_t *msg)
   else
   {
     MCUTRACE(1, trace_section << "unknown media " << setup_media);
-    return 0;
+    return FALSE;
   }
 
   PString transport_str;
@@ -754,7 +766,7 @@ int MCURtspConnection::OnRequestSetup(const msg_t *msg)
   if(ParseTransportStr(sc, transport_str) == FALSE)
   {
     MCUTRACE(1, trace_section << "failed parse transport header");
-    return 0;
+    return FALSE;
   }
 
   char buffer[1024];
@@ -768,15 +780,15 @@ int MCURtspConnection::OnRequestSetup(const msg_t *msg)
 
   AddHeaders(buffer);
   if(SendRequest(buffer) == 0)
-     return 0;
+     return FALSE;
 
   rtsp_state = RTSP_SETUP;
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnRequestPlay(const msg_t *msg)
+BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
@@ -808,16 +820,16 @@ int MCURtspConnection::OnRequestPlay(const msg_t *msg)
 	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), (const char *)rtsp_session_str);
 
   AddHeaders(buffer);
-  if(SendRequest(buffer) == 0)
-     return 0;
+  if(!SendRequest(buffer))
+     return FALSE;
 
   rtsp_state = RTSP_PLAYING;
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnRequestTeardown(const msg_t *msg)
+BOOL MCURtspConnection::OnRequestTeardown(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
@@ -835,7 +847,7 @@ int MCURtspConnection::OnRequestTeardown(const msg_t *msg)
   rtsp_state = RTSP_TEARDOWN;
 
   ProcessShutdown(EndedByRemoteUser);
-  return 1;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -854,86 +866,6 @@ void MCURtspConnection::AddHeaders(char *buffer, PString method_name)
     strcat(buffer, (const char *)PString("Server: "+SIP_USER_AGENT+"\r\n"));
 
   strcat(buffer, "\r\n");
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int MCURtspConnection::SendRequest(char *buffer)
-{
-  if(listener->Send(buffer) == FALSE)
-  {
-    ProcessShutdown();
-    return 0;
-  }
-
-  MCUTRACE(1, trace_section << "send " << strlen(buffer) << " bytes\n" << buffer);
-  return 1;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int MCURtspConnection::OnResponseReceived(const msg_t *msg)
-{
-  sip_t *sip = sip_object(msg);
-  int response_code = -1;
-
-  int status = sip->sip_status->st_status;
-
-  if(rtsp_state == RTSP_DESCRIBE)
-  {
-    if(status == 200)
-    {
-      response_code = OnResponseDescribe(msg);
-    }
-    else if(status == 401)
-    {
-      if(auth_type != AUTH_NONE || auth_username == "" || auth_password == "")
-      {
-        MCUTRACE(1, trace_section << "error");
-        ProcessShutdown();
-        return 0;
-      }
-      if(sep->ParseAuthMsg(msg, auth_type, auth_scheme, auth_realm, auth_nonce) == FALSE)
-      {
-        MCUTRACE(1, trace_section << "error");
-        ProcessShutdown();
-        return 0;
-      }
-      SendDescribe();
-      return 0;
-    }
-  }
-  else if(rtsp_state == RTSP_SETUP_AUDIO || rtsp_state == RTSP_SETUP_VIDEO)
-  {
-    if(status == 200)
-    {
-      response_code = OnResponseSetup(msg);
-    }
-  }
-  else if(rtsp_state == RTSP_PLAY)
-  {
-    if(status == 200)
-    {
-      response_code = OnResponsePlay(msg);
-    }
-  }
-  else if(rtsp_state == RTSP_TEARDOWN)
-  {
-    return 0;
-  }
-
-  if(response_code != 1)
-  {
-    if(response_code == -1)
-    {
-      MCUTRACE(1, trace_section << "unknown response " << status << ", state " << rtsp_state);
-    }
-
-    MCUTRACE(1, trace_section << "error processing response " << status << ", error " << response_code << ", state " << rtsp_state);
-    ProcessShutdown();
-  }
-
-  return 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -990,7 +922,82 @@ BOOL MCURtspConnection::RtspCheckAuth(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCURtspConnection::OnRequestReceived(const msg_t *msg)
+BOOL MCURtspConnection::SendRequest(char *buffer)
+{
+  if(listener->Send(buffer) == FALSE)
+  {
+    ProcessShutdown();
+    return FALSE;
+  }
+
+  MCUTRACE(1, trace_section << "send " << strlen(buffer) << " bytes\n" << buffer);
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCURtspConnection::OnResponseReceived(const msg_t *msg)
+{
+  sip_t *sip = sip_object(msg);
+  int response_code = -1;
+
+  int status = sip->sip_status->st_status;
+
+  if(rtsp_state == RTSP_DESCRIBE)
+  {
+    if(status == 200)
+    {
+      response_code = OnResponseDescribe(msg);
+    }
+    else if(status == 401)
+    {
+      if(auth_type != AUTH_NONE || auth_username == "" || auth_password == "")
+      {
+        MCUTRACE(1, trace_section << "error");
+        return FALSE;
+      }
+      if(sep->ParseAuthMsg(msg, auth_type, auth_scheme, auth_realm, auth_nonce) == FALSE)
+      {
+        MCUTRACE(1, trace_section << "error");
+        return FALSE;
+      }
+      SendDescribe();
+      return TRUE;
+    }
+  }
+  else if(rtsp_state == RTSP_SETUP_AUDIO || rtsp_state == RTSP_SETUP_VIDEO)
+  {
+    if(status == 200)
+      response_code = OnResponseSetup(msg);
+  }
+  else if(rtsp_state == RTSP_PLAY)
+  {
+    if(status == 200)
+      response_code = OnResponsePlay(msg);
+  }
+  else if(rtsp_state == RTSP_TEARDOWN)
+  {
+    return TRUE;
+  }
+
+  if(response_code == -1)
+  {
+    MCUTRACE(1, trace_section << "unknown response " << status << ", state " << rtsp_state);
+    return FALSE;
+  }
+
+  if(response_code == FALSE)
+  {
+    MCUTRACE(1, trace_section << "error processing response " << status << ", error " << response_code << ", state " << rtsp_state);
+    return FALSE;
+  }
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCURtspConnection::OnRequestReceived(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
   int response_code = -1;
@@ -998,49 +1005,50 @@ int MCURtspConnection::OnRequestReceived(const msg_t *msg)
   PString method_name = sip->sip_request->rq_method_name;
 
   if(method_name != METHOD_OPTIONS && RtspCheckAuth(msg) == FALSE)
-  {
-    return 0;
-  }
+    return FALSE;
 
   if(method_name == METHOD_OPTIONS)
   {
     response_code = OnRequestOptions(msg);
   }
-  if(method_name == METHOD_DESCRIBE && rtsp_state == RTSP_NONE)
+  else if(method_name == METHOD_DESCRIBE && rtsp_state == RTSP_NONE)
   {
     response_code = OnRequestDescribe(msg);
   }
-  if(method_name == METHOD_SETUP && (rtsp_state == RTSP_DESCRIBE || rtsp_state == RTSP_SETUP))
+  else if(method_name == METHOD_SETUP && (rtsp_state == RTSP_DESCRIBE || rtsp_state == RTSP_SETUP))
   {
     response_code = OnRequestSetup(msg);
   }
-  if(method_name == METHOD_PLAY && rtsp_state == RTSP_SETUP)
+  else if(method_name == METHOD_PLAY && rtsp_state == RTSP_SETUP)
   {
     response_code = OnRequestPlay(msg);
   }
-  if(method_name == METHOD_TEARDOWN)
+  else if(method_name == METHOD_TEARDOWN)
   {
     response_code = OnRequestTeardown(msg);
   }
 
-  if(response_code != 1)
+  if(response_code == -1)
   {
-    if(response_code == -1)
-    {
-      MCUTRACE(1, trace_section << "unknown request " << method_name << ", state " << rtsp_state);
-    }
-
-    MCUTRACE(1, trace_section << "error processing request " << method_name << ", error " << response_code << ", state " << rtsp_state);
-    ProcessShutdown();
+    MCUTRACE(1, trace_section << "unknown request " << method_name << ", state " << rtsp_state);
+    return FALSE;
   }
 
-  return 0;
+  if(response_code == FALSE)
+  {
+    MCUTRACE(1, trace_section << "error processing request " << method_name << ", error " << response_code << ", state " << rtsp_state);
+    return FALSE;
+  }
+
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 int MCURtspConnection::OnReceived(int socket_fd, PString address, PString data)
 {
+  PWaitAndSignal m(connMutex);
+
   msg_t *msg = NULL;
   sip_t *sip = NULL;
 
@@ -1066,11 +1074,11 @@ int MCURtspConnection::OnReceived(int socket_fd, PString address, PString data)
     goto error;
   }
 
-  if(sip->sip_status)
-    OnResponseReceived(msg);
+  if(sip->sip_status && !OnResponseReceived(msg))
+    goto error;
 
-  if(sip->sip_request)
-    OnRequestReceived(msg);
+  if(sip->sip_request && !OnRequestReceived(msg))
+    goto error;
 
   msg_destroy(msg);
   return 1;
@@ -1094,7 +1102,6 @@ MCURtspServer::MCURtspServer(MCUH323EndPoint *_ep, MCUSipEndPoint *_sep)
 
 MCURtspServer::~MCURtspServer()
 {
-  PWaitAndSignal m(mutex);
   ClearListeners();
 }
 
@@ -1102,7 +1109,8 @@ MCURtspServer::~MCURtspServer()
 
 void MCURtspServer::InitListeners()
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(rtspMutex);
+
   ClearListeners();
 
   MCUConfig cfg("RTSP Parameters");
@@ -1144,7 +1152,8 @@ void MCURtspServer::AddListener(PString address)
     return;
   }
 
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(rtspMutex);
+
   MCUListener *listener = MCUListener::Create(address, OnReceived_wrap, this);
   if(listener)
     Listeners.insert(ListenersMapType::value_type(address, listener));
@@ -1158,7 +1167,8 @@ void MCURtspServer::RemoveListener(PString address)
   if(address.Find("tcp:") == P_MAX_INDEX)
     address = "tcp:"+address;
 
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(rtspMutex);
+
   for(ListenersMapType::iterator it = Listeners.begin(); it != Listeners.end(); ++it)
   {
     if(address == it->first)
@@ -1174,7 +1184,8 @@ void MCURtspServer::RemoveListener(PString address)
 
 void MCURtspServer::ClearListeners()
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(rtspMutex);
+
   for(ListenersMapType::iterator it = Listeners.begin(); it != Listeners.end(); )
   {
     delete it->second;
@@ -1186,6 +1197,8 @@ void MCURtspServer::ClearListeners()
 
 int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
 {
+  PWaitAndSignal m(rtspMutex);
+
   MCUTRACE(1, trace_section << "read from " << address << " "  << data.GetLength() << " bytes\n" << data);
 
   msg_t *msg = ParseMsg(data);
@@ -1203,6 +1216,8 @@ int MCURtspServer::OnReceived(int socket_fd, PString address, PString data)
 
 BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t *msg)
 {
+  PWaitAndSignal m(rtspMutex);
+
   if(ep->HasConnection(address))
   {
     MCUTRACE(1, trace_section << address << " connection already exists ");
@@ -1254,12 +1269,20 @@ BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t
   }
 
   PString callToken = address;
-  MCURtspConnection *rCon = new MCURtspConnection(sep, ep, callToken);
-  if(rCon->Connect(address, socket_fd, msg) == FALSE)
-  {
-    rCon->LeaveMCU();
+  MCURtspConnection *conn = new MCURtspConnection(sep, ep, callToken);
+  if(!conn->Connect(address, socket_fd, msg))
     return FALSE;
-  }
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+bool MCURtspServer::CreateConnection(const PString & room, const PString & address, const PString & callToken)
+{
+  MCURtspConnection *conn = new MCURtspConnection(sep, ep, callToken);
+  if(!conn->Connect(room, address))
+    return FALSE;
 
   return TRUE;
 }
@@ -1639,7 +1662,8 @@ BOOL MCUListener::CreateTCPClient()
   }
 
   // set socket non-blocking
-  fcntl(socket_fd, F_SETFL, O_NONBLOCK);
+  int flags = fcntl(socket_fd, F_GETFD);
+  fcntl(socket_fd, F_SETFD, flags | O_NONBLOCK);
 
   // recv timeout
   struct timeval tv;
@@ -1694,7 +1718,9 @@ void MCUListener::TCPListener(PThread &, INT)
       PString data;
       RecvSerialData(socket_fd, data);
 
-      if(errno != EAGAIN)
+      // EINTR - The receive was interrupted by delivery of a signal
+      // before any data were available
+      if(errno != EAGAIN && errno != EINTR)
       {
         MCUTRACE(1, trace_section << "error " << errno << " " << strerror(errno));
         callback(callback_context, -1, "", "");

@@ -19,20 +19,13 @@ class MCUListener;
 
 class MCURtspConnection : public MCUSipConnection
 {
-  public:
-    MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken);
-    ~MCURtspConnection();
+  friend class MCURtspServer;
 
+  public:
     virtual void CleanUpOnCallEnd();
     virtual void LeaveMCU();
 
-    void ProcessShutdown(CallEndReason reason = EndedByLocalUser);
-
-    BOOL Connect(PString room, PString address);
-    BOOL Connect(PString address, int socket_fd, const msg_t *msg);
-
   protected:
-    void CreateLocalSipCaps();
 
     enum RtspStates
     {
@@ -48,28 +41,39 @@ class MCURtspConnection : public MCUSipConnection
     };
     RtspStates rtsp_state;
 
-    int SendSetup(int pt);
-    int SendPlay();
-    int SendOptions();
-    int SendTeardown();
-    int SendDescribe();
+    MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken);
+    ~MCURtspConnection();
 
-    int OnResponseReceived(const msg_t *msg);
-    int OnResponseDescribe(const msg_t *msg);
-    int OnResponseSetup(const msg_t *msg);
-    int OnResponsePlay(const msg_t *msg);
+    BOOL Connect(PString room, PString address);
+    BOOL Connect(PString address, int socket_fd, const msg_t *msg);
 
-    int OnRequestReceived(const msg_t *msg);
-    int OnRequestDescribe(const msg_t *msg);
-    int OnRequestSetup(const msg_t *msg);
-    int OnRequestPlay(const msg_t *msg);
-    int OnRequestTeardown(const msg_t *msg);
-    int OnRequestOptions(const msg_t *msg);
+    void ProcessShutdown(CallEndReason reason = EndedByLocalUser);
+
+    void CreateLocalSipCaps();
+    BOOL CreateInboundCaps();
+
+    BOOL SendSetup(int pt);
+    BOOL SendPlay();
+    BOOL SendOptions();
+    BOOL SendTeardown();
+    BOOL SendDescribe();
+
+    BOOL OnResponseReceived(const msg_t *msg);
+    BOOL OnResponseDescribe(const msg_t *msg);
+    BOOL OnResponseSetup(const msg_t *msg);
+    BOOL OnResponsePlay(const msg_t *msg);
+
+    BOOL OnRequestReceived(const msg_t *msg);
+    BOOL OnRequestDescribe(const msg_t *msg);
+    BOOL OnRequestSetup(const msg_t *msg);
+    BOOL OnRequestPlay(const msg_t *msg);
+    BOOL OnRequestTeardown(const msg_t *msg);
+    BOOL OnRequestOptions(const msg_t *msg);
 
     BOOL RtspCheckAuth(const msg_t *msg);
     BOOL ParseTransportStr(SipCapability *sc, PString & transport_str);
     void AddHeaders(char *buffer, PString method_name="");
-    int SendRequest(char *buffer);
+    BOOL SendRequest(char *buffer);
 
     int cseq;
     PString rtsp_session_str;
@@ -90,6 +94,8 @@ class MCURtspServer
   public:
     MCURtspServer(MCUH323EndPoint *ep, MCUSipEndPoint *sep);
     ~MCURtspServer();
+
+    bool CreateConnection(const PString & room, const PString & address, const PString & callToken);
 
     void InitListeners();
 
@@ -113,7 +119,7 @@ class MCURtspServer
     MCUH323EndPoint *ep;
     MCUSipEndPoint *sep;
 
-    PMutex mutex;
+    PMutex rtspMutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
