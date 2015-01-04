@@ -14,8 +14,7 @@
 #define PCM_BUFFER_LEN_MS              480
 #define PCM_BUFFER_MAX_READ_LEN_MS     96 // AC3 16000
 #define PCM_BUFFER_MAX_WRITE_LEN_MS    40
-#define PCM_BUFFER_MAX_READ_LAG_MS     2
-#define PCM_BUFFER_MAX_WRITE_LAG_MS    2
+#define PCM_BUFFER_LAG_MS              2
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -1667,7 +1666,7 @@ void ConferenceAudioConnection::WriteAudio(const uint64_t & srcTimestamp, const 
   else
   {
     uint64_t writeTimestamp = startTimestamp + srcTimeIndex*1000 + frameTime*1000;
-    if(writeTimestamp + PCM_BUFFER_MAX_WRITE_LAG_MS*1000 < srcTimestamp)
+    if(writeTimestamp + PCM_BUFFER_LAG_MS*1000 < srcTimestamp)
     {
       srcTimeIndex = (srcTimestamp - startTimestamp)/1000 - frameTime;
       PTRACE(6, "ConferenceAudioConnection\tWriter has lost " << srcTimestamp - writeTimestamp << " microseconds");
@@ -1695,7 +1694,7 @@ void ConferenceAudioConnection::ReadAudio(ConferenceMember *member, const uint64
   if(amount == 0)
     return;
 
-  if(timeIndex < PCM_BUFFER_LEN_MS/2)
+  if(timeIndex < PCM_BUFFER_MAX_WRITE_LEN_MS + PCM_BUFFER_MAX_READ_LEN_MS + PCM_BUFFER_LAG_MS)
     return;
 
   int dstFrameTime = amount * 1000 / (dstSampleRate * dstChannels * 2);
@@ -1704,15 +1703,19 @@ void ConferenceAudioConnection::ReadAudio(ConferenceMember *member, const uint64
 
   // копия
   int srcTimeIndex = timeIndex;
-  //int srcFrameTime = maxFrameTime;
+  int srcFrameTime = maxFrameTime;
 
   uint64_t srcTimestamp = startTimestamp + srcTimeIndex*1000;
-  uint64_t readTimestamp = dstTimestamp - PCM_BUFFER_MAX_WRITE_LEN_MS*1000 - PCM_BUFFER_MAX_READ_LAG_MS*1000;
-  //uint64_t readTimestamp = dstTimestamp - srcFrameTime*1000 - PCM_BUFFER_MAX_READ_LAG_MS*1000;
+  //uint64_t readTimestamp = dstTimestamp - PCM_BUFFER_MAX_WRITE_LEN_MS*1000 - PCM_BUFFER_LAG_MS*1000;
+  uint64_t readTimestamp = dstTimestamp - srcFrameTime*1000 - PCM_BUFFER_LAG_MS*1000;
 
+  // Нет данных на это время, возможно запись прекращена
   if(readTimestamp > srcTimestamp)
     return;
 
+  // Еще проверки
+
+  // Позиция в буфере от которой будет чтение фрейма
   int dstTimeIndex = (readTimestamp - startTimestamp)/1000 - dstFrameTime;
 
   PBYTEArray dstBuffer;
