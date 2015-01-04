@@ -20,14 +20,7 @@ const unsigned char wavHeader[44] =
 ///////////////////////////////////////////////////////////////////////////
 
 ConferenceSoundCardMember::ConferenceSoundCardMember(Conference * _conference)
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4355)
-#endif
-  : ConferenceMember(_conference, this)
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
+  : ConferenceMember(_conference)
 {
   // open the default audio device
   PString deviceName = PSoundChannel::GetDefaultDevice(PSoundChannel::Player);
@@ -67,7 +60,7 @@ void ConferenceSoundCardMember::Thread(PThread &, INT)
   while (running) {
 
     // read a block of data
-    ReadAudio(pcmData.GetPointer(), pcmData.GetSize(), 8000, 1);
+    //ReadAudio(pcmData.GetPointer(), pcmData.GetSize(), 8000, 1);
 
     // write the data to the sound card
     if (soundDevice.IsOpen())
@@ -82,14 +75,7 @@ void ConferenceSoundCardMember::Thread(PThread &, INT)
 ///////////////////////////////////////////////////////////////////////////
 
 ConferenceFileMember::ConferenceFileMember(Conference * _conference, const PFilePath & _fn, PFile::OpenMode _mode)
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4355)
-#endif
-  : ConferenceMember(_conference, (void *)this), mode(_mode)
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
+  : ConferenceMember(_conference), mode(_mode)
 {
   filenames.push_back(_fn);
   Construct();
@@ -98,14 +84,7 @@ ConferenceFileMember::ConferenceFileMember(Conference * _conference, const PFile
 ///////////////////////////////////////////////////////////////////////////
 
 ConferenceFileMember::ConferenceFileMember(Conference * _conference, const FilenameList & _fns, PFile::OpenMode _mode)
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4355)
-#endif
-  : ConferenceMember(_conference, (void *)this), mode(_mode)
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
+  : ConferenceMember(_conference), mode(_mode)
 {
   filenames = _fns;
   Construct();
@@ -195,7 +174,7 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
     }
 
     // read a block of data
-    WriteAudio(pcmData.GetPointer(), pcmData.GetSize(), 8000, 1);
+    //WriteAudio(pcmData.GetPointer(), pcmData.GetSize(), 8000, 1);
 
     // and delay
     audioDelay.Delay(pcmData.GetSize() / 16);
@@ -207,14 +186,7 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ConferenceCacheMember::ConferenceCacheMember(Conference * _conference, unsigned _videoMixerNumber, const OpalMediaFormat & _format, const PString & _cacheName)
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4355)
-#endif
-  : ConferenceMember(_conference, (void *)this)
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
+  : ConferenceMember(_conference)
 {
   PTRACE(1,"ConferenceCacheMember\tConstruct");
 
@@ -412,14 +384,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ConferencePipeMember::ConferencePipeMember(Conference * _conference)
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4355)
-#endif
-  : ConferenceMember(_conference, (void *)this)
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
+  : ConferenceMember(_conference)
 {
   PTRACE(1,"ConferencePipeMember\tConstructor");
 
@@ -502,7 +467,6 @@ void ConferencePipeMember::AudioThread(PThread &, INT)
   PINDEX amountBytes = channels * 2 * sampleRate * AUDIO_EXPORT_PCM_BUFFER_SIZE_MS / 1000;
   unsigned msPerFrame = (amountBytes*1000)/(sampleRate*channels*sizeof(short));
   PBYTEArray pcmData(amountBytes);
-  PAdaptiveDelay audioDelay;
   int success=0;
 
 #ifdef _WIN32
@@ -520,10 +484,12 @@ void ConferencePipeMember::AudioThread(PThread &, INT)
   int SS=open(cname,O_WRONLY);
 #endif
 
+  MCUDelay audioDelay;
+
 //  write(SS, wavHeader, 44);
   while (running) {
     // read a block of data
-    ReadAudio(pcmData.GetPointer(), amountBytes, sampleRate, channels);
+    ReadAudio(audioDelay.GetDelayTimestampUsec(), pcmData.GetPointer(), amountBytes, sampleRate, channels);
 
     // write to the file
 #ifdef _WIN32
@@ -544,7 +510,7 @@ void ConferencePipeMember::AudioThread(PThread &, INT)
 #endif
 
     // and delay
-    audioDelay.Delay(msPerFrame);
+    audioDelay.DelayMsec(msPerFrame);
   }
 
 #ifdef _WIN32

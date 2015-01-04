@@ -20,9 +20,6 @@ class ConferenceSoundCardMember : public ConferenceMember
     ConferenceSoundCardMember(Conference * _conference);
     ~ConferenceSoundCardMember();
 
-    virtual ConferenceConnection * CreateConnection()
-    { return new ConferenceConnection(this); }
-
     virtual PString GetName() const
     { return "sound card listener"; }
 
@@ -52,9 +49,6 @@ class ConferenceFileMember : public ConferenceMember
     ConferenceFileMember(Conference * conference, const FilenameList & _fns, PFile::OpenMode mode);
 
     ~ConferenceFileMember();
-
-    virtual ConferenceConnection * CreateConnection()
-    { return new ConferenceConnection(this); }
 
     virtual PString GetName() const
     { return PString(mode == PFile::ReadOnly ? "file player" : "file recorder") & currentFilename; }
@@ -93,9 +87,6 @@ class ConferenceCacheMember : public ConferenceMember
   public:
     ConferenceCacheMember(Conference * conference, unsigned videoMixerNumber, const OpalMediaFormat & _format, const PString & cacheName);
     ~ConferenceCacheMember();
-
-    virtual ConferenceConnection * CreateConnection()
-    { return new ConferenceConnection(this); }
 
     virtual void Close();
 
@@ -154,9 +145,6 @@ class ConferencePipeMember : public ConferenceMember
   public:
     ConferencePipeMember(Conference * conference);
     ~ConferencePipeMember();
-
-    virtual ConferenceConnection * CreateConnection()
-    { return new ConferenceConnection(this); }
 
     virtual void Close();
 

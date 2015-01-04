@@ -76,6 +76,19 @@ msg_t * ParseMsg(PString & msg_str)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void ConferenceStreamMember::Close()
+{
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
+  if(conn != NULL)
+  {
+    conn->LeaveMCU();
+    conn->Unlock();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken)
   :MCUSipConnection(_sep, _ep, _callToken)
 {
@@ -793,11 +806,9 @@ BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
   sip_t *sip = sip_object(msg);
 
   // creating conference if needed
-  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-  ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-
-  conference = manager.MakeConferenceWithLock(requestedRoom);
-  conferenceMember = new ConferenceStreamMember(conference, ep, GetCallToken(), "RTSP "+rtsp_path+" ("+ruri_str+")");
+  ConferenceManager *manager = OpenMCU::Current().GetConferenceManager();
+  conference = manager->MakeConferenceWithLock(requestedRoom);
+  conferenceMember = new ConferenceStreamMember(conference, GetCallToken(), "RTSP "+rtsp_path+" ("+ruri_str+")");
 
    // unlock conference
   conference->Unlock();

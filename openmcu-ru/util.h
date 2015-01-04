@@ -141,6 +141,56 @@ PString GetPluginName(const PString & format);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class MCUDelay
+{
+  public:
+    MCUDelay()
+    {
+      Restart();
+    }
+
+    void Restart()
+    {
+      delay_time = GetSystemTimestampUsec();
+    }
+
+    void DelayMsec(unsigned delay_msec)
+    {
+      DelayUsec(delay_msec * 1000);
+    }
+
+    void DelayUsec(unsigned delay_usec)
+    {
+      delay_time += delay_usec;
+      now = GetSystemTimestampUsec();
+      if(now < delay_time)
+      {
+        struct timespec req = {0};
+        req.tv_nsec = (delay_time - now)*1000;
+        nanosleep(&req, NULL);
+      }
+      //else // restart
+      //  delay_time = now;
+    }
+
+    const uint64_t GetDelayTimestampUsec()
+    { return delay_time; }
+
+    static uint64_t GetSystemTimestampUsec()
+    {
+      struct timeval tv;
+      gettimeofday(&tv, NULL);
+      uint64_t timestamp = 1000000 * tv.tv_sec + tv.tv_usec;
+      return timestamp;
+    }
+
+  protected:
+    uint64_t delay_time;
+    uint64_t now;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class MCUReadWriteMutex : public PObject
 {
   public:

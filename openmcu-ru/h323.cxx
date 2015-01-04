@@ -2546,7 +2546,7 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
   conferenceIdentifier = conference->GetGUID();
 
   // crete member connection
-  conferenceMember = new H323Connection_ConferenceMember(conference, ep, GetCallToken(), this, isMCU);
+  conferenceMember = new H323Connection_ConferenceMember(conference, ep, GetCallToken(), isMCU);
   conference->Unlock();
 }
 
@@ -3804,7 +3804,7 @@ void MCUH323Connection::SetMemberName()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
+BOOL MCUH323Connection::OnIncomingAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
 /*
   // If record file is open, write data to it
@@ -3838,14 +3838,14 @@ BOOL MCUH323Connection::OnIncomingAudio(const void * buffer, PINDEX amount, unsi
   }
 
   else */ if (conferenceMember != NULL)
-    conferenceMember->WriteAudio(buffer, amount, sampleRate, channels);
+    conferenceMember->WriteAudio(timestamp, buffer, amount, sampleRate, channels);
 
   return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUH323Connection::OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
+BOOL MCUH323Connection::OnOutgoingAudio(const uint64_t & timestamp, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   // When the prodedure begins, play the welcome file
   if (welcomeState == NotStartedYet) {
@@ -3890,7 +3890,7 @@ BOOL MCUH323Connection::OnOutgoingAudio(void * buffer, PINDEX amount, unsigned s
   // If a we are connected to a conference and no wave
   //  is playing, read data from the conference
   if (conferenceMember != NULL) {
-    conferenceMember->ReadAudio(buffer, amount, sampleRate, channels);
+    conferenceMember->ReadAudio(timestamp, buffer, amount, sampleRate, channels);
     return TRUE;
   }
 
@@ -3933,8 +3933,8 @@ BOOL MCUH323Connection::GetPreMediaFrame(void * buffer, int width, int height, P
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, ConferenceMemberId _id, BOOL _isMCU)
-  : ConferenceMember(_conference, _id), ep(_ep)
+H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, BOOL _isMCU)
+  : ConferenceMember(_conference), ep(_ep)
 {
   if(_isMCU) memberType = MEMBER_TYPE_MCU;
   callToken = _callToken;
@@ -3981,7 +3981,7 @@ PString H323Connection_ConferenceMember::GetMonitorInfo(const PString & hdr)
 
 void H323Connection_ConferenceMember::SetName()
 {
-  if(id!=this)
+  if(!memberType & MEMBER_TYPE_GSYSTEM)
   {
     PTRACE(4,"H323\tSetName " << callToken);
     int connLock = 0;
@@ -4012,7 +4012,7 @@ void H323Connection_ConferenceMember::SetName()
 // signal to codec plugin for disable(enable) decoding incoming video from unvisible(visible) member
 void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
 {
-  if(id != this)
+  if(!memberType & MEMBER_TYPE_GSYSTEM)
   {
     cout << id << "->SetFreezeVideo(" << disable << ")\n";
     PTRACE(5,id << "->SetFreezeVideo(" << disable << ")");
@@ -4270,6 +4270,7 @@ OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, MCUH323Connection & _conn, unsi
   : ep(_ep), conn(_conn), sampleRate(_sampleRate), channels(_channels)
 {
   os_handle = 0;
+  lastReadCount = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4277,7 +4278,6 @@ OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, MCUH323Connection & _conn, unsi
 void OutgoingAudio::CreateSilence(void * buffer, PINDEX amount)
 {
   memset(buffer, 0, amount);
-  lastReadCount = amount;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4289,11 +4289,16 @@ BOOL OutgoingAudio::Read(void * buffer, PINDEX amount)
   if(!IsOpen())
     return FALSE;
 
-  if(!conn.OnOutgoingAudio(buffer, amount, sampleRate, channels))
-    CreateSilence(buffer, amount);
+  if(lastReadCount == 0)
+    delay.Restart();
+  else
+  {
+    unsigned delay_us = 1000000 * amount / (sampleRate * channels * 2);
+    delay.DelayUsec(delay_us);
+  }
 
-  unsigned msPerFrame = (amount*1000)/(sampleRate*channels*sizeof(short));
-  delay.Delay(msPerFrame);
+  if(!conn.OnOutgoingAudio(delay.GetDelayTimestampUsec(), buffer, amount, sampleRate, channels))
+    CreateSilence(buffer, amount);
 
   lastReadCount = amount;
   return TRUE;
@@ -4317,6 +4322,7 @@ IncomingAudio::IncomingAudio(H323EndPoint & _ep, MCUH323Connection & _conn, unsi
   : sampleRate(_sampleRate), channels(_channels), ep(_ep), conn(_conn)
 {
   os_handle = 0;
+  lastWriteCount = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4328,11 +4334,15 @@ BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
   if(!IsOpen())
     return FALSE;
 
-  conn.OnIncomingAudio(buffer, amount, sampleRate, channels);
+  if(lastWriteCount == 0)
+    delay.Restart();
 
-  unsigned msPerFrame = (amount*1000)/(sampleRate*channels*sizeof(short));
-  delay.Delay(msPerFrame);
+  conn.OnIncomingAudio(delay.GetDelayTimestampUsec(), buffer, amount, sampleRate, channels);
 
+  unsigned delay_us = 1000000 * amount / (sampleRate * channels * 2);
+  delay.DelayUsec(delay_us);
+
+  lastWriteCount = amount;
   return TRUE;
 }
 

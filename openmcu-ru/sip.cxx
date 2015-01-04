@@ -1722,11 +1722,24 @@ int MCUSipConnection::ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & Remo
 
       PString address;
       if(m->m_connections && m->m_connections->c_addrtype == sdp_addr_ip4 && m->m_connections->c_address)
+      {
         address = m->m_connections->c_address;
-      else if(sdp->sdp_connection && sdp->sdp_connection->c_addrtype == sdp_addr_ip4 && sdp->sdp_connection->c_address)
+        //PTRACE(6, trace_section << "SDP parsing info: media connection address: " << address);
+      }
+      if(!PIPSocket::Address(address).IsValid() && sdp->sdp_connection && sdp->sdp_connection->c_addrtype == sdp_addr_ip4 && sdp->sdp_connection->c_address)
+      {
         address = sdp->sdp_connection->c_address;
-      else
-      { PTRACE(1, trace_section << "SDP parsing error: incorrect or missing connection line, skip media"); continue; }
+        //PTRACE(6, trace_section << "SDP parsing info: sdp connection address: " << address);
+      }
+      if(!PIPSocket::Address(address).IsValid() && sdp->sdp_origin->o_address && sdp->sdp_origin->o_address->c_addrtype == sdp_addr_ip4 && sdp->sdp_origin->o_address->c_address)
+      {
+        address = sdp->sdp_origin->o_address->c_address;
+        //PTRACE(6, trace_section << "SDP parsing info: sdp origin address: " << address);
+      }
+      if(!PIPSocket::Address(address).IsValid())
+      {
+        PTRACE(1, trace_section << "SDP parsing warning: incorrect or missing address");
+      }
 
       int remote_port = 0;
       if(m->m_port) remote_port = m->m_port;

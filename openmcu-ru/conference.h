@@ -82,51 +82,24 @@ typedef std::map<long, AudioResampler *> AudioResamplerListType;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class AudioReader
-{
-  public:
-    AudioReader() { }
-    ~AudioReader() { }
-    int timeIndex;
-    PTime readTime;
-    PBYTEArray buffer;
-};
-typedef std::map<ConferenceMemberId, AudioReader *> AudioReaderListType;
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 class ConferenceConnection : public PObject {
   PCLASSINFO(ConferenceConnection, PObject);
   public:
-    ConferenceConnection(ConferenceMemberId _id)
+    ConferenceConnection(long _id)
       : id(_id)
     { }
 
     ~ConferenceConnection()
     { }
 
-    ConferenceMemberId GetID() const
+    long GetID() const
     { return id; }
 
-#ifdef _WIN32
-#pragma warning(push)
-#pragma warning(disable:4311)
-#endif
     virtual PString GetName() const
-#ifdef P_64BIT
-    { return psprintf("%lli", id); }
-#else
-    { return PString(PString::Unsigned, (unsigned)id); }
-#endif
-#ifdef _WIN32
-#pragma warning(pop)
-#endif
-
-    virtual void OnUserInputIndication(const PString &)
-    { }
+    { return id; }
 
   protected:
-    ConferenceMemberId id;
+    long id;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -136,11 +109,11 @@ class ConferenceAudioConnection : public ConferenceConnection
   PCLASSINFO(ConferenceAudioConnection, ConferenceConnection);
 
   public:
-    ConferenceAudioConnection(ConferenceMemberId _id, int _sampleRate = 8000, int _channels = 1);
+    ConferenceAudioConnection(long _id, int _sampleRate = 8000, int _channels = 1);
     ~ConferenceAudioConnection();
 
-    virtual void WriteAudio(const BYTE * data, int amount);
-    virtual void ReadAudio(ConferenceMember *member, BYTE * data, int amount, int dstSampleRate, int dstChannels);
+    virtual void WriteAudio(const uint64_t & srcTimestamp, const BYTE * data, int amount);
+    virtual void ReadAudio(ConferenceMember *member, const uint64_t & dstTimestamp, BYTE * data, int amount, int dstSampleRate, int dstChannels);
 
     int GetSampleRate() const
     { return sampleRate; }
@@ -155,10 +128,12 @@ class ConferenceAudioConnection : public ConferenceConnection
   protected:
     int sampleRate;
     int channels;
-    int timeSize;           // 1ms size
-    int timeIndex;          // current position ms
-    int timeBufferSize;     // size ms
-    int byteBufferSize;     // size bytes
+    int timeSize;            // 1ms size
+    int timeIndex;           // current position ms
+    int maxFrameTime;
+    uint64_t startTimestamp;
+
+    int byteBufferSize;      // size bytes
     PBYTEArray buffer;
 };
 
@@ -213,10 +188,10 @@ class ConferenceMember : public PObject
   public:
 
     /**
-      * create a new conference member. The single parameter is an "id" (usually a pointer) 
+      * create a new conference member.
       * that can used to identify this member unambiguously
       */
-    ConferenceMember(Conference * conference, ConferenceMemberId id);
+    ConferenceMember(Conference * conference);
 
     /**
       * destroy the conference member
@@ -276,13 +251,13 @@ class ConferenceMember : public PObject
     /**
       *  Called when the conference member want to send audio data to the cofnerence
       */
-    virtual void WriteAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
+    virtual void WriteAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
     /**
       *  Called when the conference member wants to read a block of audio from the conference
       *  By default, this calls ReadMemberAudio on the conference
       */
-    virtual void ReadAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
+    virtual void ReadAudio(const uint64_t & timestamp, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
     virtual void ReadAudioOutputGain(void * buffer, int amount);
 
@@ -346,11 +321,6 @@ class ConferenceMember : public PObject
     }
 #endif
 
-    /*
-     *  Used to create a conference connection for this member
-     */
-    virtual ConferenceConnection * CreateConnection() = 0;
-
     void WaitForClose()
     { lock.WaitForClose(); }
 
@@ -397,9 +367,6 @@ class ConferenceMember : public PObject
     AudioResamplerListType & GetAudioResamplerList()
     { return audioResamplerList; }
 
-    AudioReaderListType & GetAudioReaderList()
-    { return audioReaderList; }
-
     void ClearAudioReaderList(BOOL force = FALSE);
 
     BOOL autoDial;
@@ -438,7 +405,6 @@ class ConferenceMember : public PObject
 
     PMutex mutex;
 
-    AudioReaderListType audioReaderList;
     AudioResamplerListType audioResamplerList;
 
 #if MCU_VIDEO
@@ -549,9 +515,9 @@ class Conference : public PObject
     MCUVideoMixerList & GetVideoMixerList()
     { return videoMixerList; }
 
-    virtual void ReadMemberAudio(ConferenceMember * member, void * buffer, int amount, int sampleRate, int channels);
+    virtual void ReadMemberAudio(ConferenceMember * member, const uint64_t & timestamp, void * buffer, int amount, int sampleRate, int channels);
 
-    virtual void WriteMemberAudio(ConferenceMember * member, const void * buffer, int amount, int sampleRate, int channels);
+    virtual void WriteMemberAudio(ConferenceMember * member, const uint64_t & timestamp, const void * buffer, int amount, int sampleRate, int channels);
 
     virtual void WriteMemberAudioLevel(ConferenceMember * member, int audioLevel, int tint);
 

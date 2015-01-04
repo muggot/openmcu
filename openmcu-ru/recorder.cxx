@@ -77,7 +77,7 @@ AVCodecID GetCodecId(int media_type, PString codec_name)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ConferenceRecorder::ConferenceRecorder(Conference *_conference)
-  : ConferenceMember(_conference, (void *)this)
+  : ConferenceMember(_conference)
 {
   trace_section = "ConferenceRecorder: ";
   Reset();
@@ -604,11 +604,11 @@ BOOL ConferenceRecorder::Resampler()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL ConferenceRecorder::GetAudioFrame()
+BOOL ConferenceRecorder::GetAudioFrame(const uint64_t & timestamp)
 {
   AVCodecContext *context = audio_st->codec;
 
-  ReadAudio(src_samples_data[0], src_samples_size, context->sample_rate, context->channels);
+  ReadAudio(timestamp, src_samples_data[0], src_samples_size, context->sample_rate, context->channels);
   if(Resampler() == FALSE)
     return FALSE;
 
@@ -619,7 +619,7 @@ BOOL ConferenceRecorder::GetAudioFrame()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL ConferenceRecorder::WriteAudio()
+BOOL ConferenceRecorder::WriteAudio(const uint64_t & timestamp)
 {
   AVCodecContext *context = audio_st->codec;
   int ret = 0, got_packet = 0;
@@ -630,7 +630,7 @@ BOOL ConferenceRecorder::WriteAudio()
   // first, increase the counter, set PTS for packet
   audio_frame->pts = ++audio_frame_count;
 
-  if(GetAudioFrame() == FALSE)
+  if(GetAudioFrame(timestamp) == FALSE)
     return FALSE;
 
   ret = avcodec_encode_audio2(context, &pkt, audio_frame, &got_packet);
@@ -758,24 +758,13 @@ void ConferenceRecorder::RecorderAudio(PThread &, INT)
   if(delay_us <= 1000)
     delay_us = src_samples*1000000/audio_samplerate;
 
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  uint64_t record_time = 1000000 * tv.tv_sec + tv.tv_usec;
-  uint64_t now;
+  MCUDelay delay;
 
   running = TRUE;
   while(running)
   {
-    gettimeofday(&tv, NULL);
-    now = 1000000 * tv.tv_sec + tv.tv_usec;
-    if(now < record_time)
-    {
-      struct timespec req = {0};
-      req.tv_nsec = (record_time - now)*1000;
-      nanosleep(&req, NULL);
-    }
-    WriteAudio();
-    record_time += delay_us;
+    WriteAudio(delay.GetDelayTimestampUsec());
+    delay.DelayUsec(delay_us);
   }
   running = FALSE;
 
@@ -792,24 +781,13 @@ void ConferenceRecorder::RecorderVideo(PThread &, INT)
   if(delay_us <= 1000)
     delay_us = 1000000/video_framerate;
 
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  uint64_t record_time = 1000000 * tv.tv_sec + tv.tv_usec;
-  uint64_t now;
+  MCUDelay delay;
 
   running = TRUE;
   while(running)
   {
-    gettimeofday(&tv, NULL);
-    now = 1000000 * tv.tv_sec + tv.tv_usec;
-    if(now < record_time)
-    {
-      struct timespec req = {0};
-      req.tv_nsec = (record_time - now)*1000;
-      nanosleep(&req, NULL);
-    }
     WriteVideo();
-    record_time += delay_us;
+    delay.DelayUsec(delay_us);
   }
   running = FALSE;
 

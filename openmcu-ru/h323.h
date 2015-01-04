@@ -160,7 +160,7 @@ class OutgoingAudio : public PChannel
     unsigned int sampleRate;
     unsigned channels; //1=mono, 2=stereo
 
-    PAdaptiveDelay delay;
+    MCUDelay delay;
     PMutex audioChanMutex;
 };
 
@@ -183,8 +183,8 @@ class IncomingAudio : public PChannel
     H323EndPoint & ep;
     MCUH323Connection & conn;
 
+    MCUDelay delay;
     PMutex audioChanMutex;
-    PAdaptiveDelay delay;
 };
 
 ////////////////////////////////////////////////////
@@ -254,8 +254,8 @@ class MCUH323Connection : public H323Connection
     virtual BOOL StartControlNegotiations(BOOL renegotiate = FALSE);
     virtual void OnSetLocalCapabilities();
 
-    virtual BOOL OnIncomingAudio(const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
-    virtual BOOL OnOutgoingAudio(void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
+    virtual BOOL OnIncomingAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
+    virtual BOOL OnOutgoingAudio(const uint64_t & timestamp, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
     void SetRemoteName(const H323SignalPDU & pdu);
     void SetMemberName();
@@ -450,11 +450,8 @@ class H323Connection_ConferenceMember : public ConferenceMember
 {
   PCLASSINFO(H323Connection_ConferenceMember, ConferenceMember);
   public:
-    H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, ConferenceMemberId _id, BOOL isMCU);
+    H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, BOOL isMCU);
     ~H323Connection_ConferenceMember();
-
-    virtual ConferenceConnection * CreateConnection()
-    { return new ConferenceConnection(this); }
 
     virtual void Close();
 

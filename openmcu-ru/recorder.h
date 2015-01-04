@@ -45,9 +45,6 @@ class ConferenceRecorder : public ConferenceMember
 
     virtual void Close();
 
-    virtual ConferenceConnection * CreateConnection()
-    { return new ConferenceConnection(this); }
-
     virtual PString GetName() const
     { return "conference recorder"; }
 
@@ -127,8 +124,8 @@ class ConferenceRecorder : public ConferenceMember
     AVStream *AddStream(AVMediaType codec_type);
 
     BOOL OpenAudio();
-    BOOL GetAudioFrame();
-    BOOL WriteAudio();
+    BOOL GetAudioFrame(const uint64_t & timestamp);
+    BOOL WriteAudio(const uint64_t & timestamp);
 
     BOOL OpenVideo();
     BOOL GetVideoFrame();
