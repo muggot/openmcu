@@ -141,6 +141,32 @@ PString GetPluginName(const PString & format);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class MCUTime
+{
+  public:
+    MCUTime()
+    {
+      timestamp = GetTimestampUsec();
+    }
+
+    static uint64_t GetTimestampUsec()
+    {
+#ifdef _WIN32
+      PTimeInterval interval = PTimer::Tick();
+      return interval.GetMilliSeconds()*1000LL;
+#else
+      struct timespec ts;
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      return ts.tv_sec*1000000LL + ts.tv_nsec/1000LL;
+#endif
+    }
+
+  protected:
+    uint64_t timestamp;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class MCUDelay
 {
   public:
@@ -151,7 +177,7 @@ class MCUDelay
 
     void Restart()
     {
-      delay_time = GetSystemTimestampUsec();
+      delay_time = MCUTime::GetTimestampUsec();
     }
 
     void DelayMsec(unsigned delay_msec)
@@ -162,12 +188,12 @@ class MCUDelay
     void DelayUsec(unsigned delay_usec)
     {
       delay_time += delay_usec;
-      now = GetSystemTimestampUsec();
+      now = MCUTime::GetTimestampUsec();
       if(now < delay_time)
       {
-        struct timespec req = {0};
-        req.tv_nsec = (delay_time - now)*1000;
-        nanosleep(&req, NULL);
+        struct timespec ts = {0};
+        ts.tv_nsec = (delay_time - now)*1000;
+        nanosleep(&ts, NULL);
       }
       //else // restart
       //  delay_time = now;
@@ -175,14 +201,6 @@ class MCUDelay
 
     const uint64_t GetDelayTimestampUsec()
     { return delay_time; }
-
-    static uint64_t GetSystemTimestampUsec()
-    {
-      struct timeval tv;
-      gettimeofday(&tv, NULL);
-      uint64_t timestamp = 1000000 * tv.tv_sec + tv.tv_usec;
-      return timestamp;
-    }
 
   protected:
     uint64_t delay_time;

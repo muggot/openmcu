@@ -1668,7 +1668,7 @@ void ConferenceAudioConnection::WriteAudio(const uint64_t & srcTimestamp, const 
     uint64_t writeTimestamp = startTimestamp + srcTimeIndex*1000 + frameTime*1000;
     if(writeTimestamp + PCM_BUFFER_LAG_MS*1000 < srcTimestamp)
     {
-      srcTimeIndex = (srcTimestamp - startTimestamp)/1000 - frameTime;
+      srcTimeIndex = srcTimestamp/1000LL - startTimestamp/1000LL - frameTime;
       PTRACE(6, "ConferenceAudioConnection\tWriter has lost " << srcTimestamp - writeTimestamp << " microseconds");
     }
   }
@@ -1705,25 +1705,30 @@ void ConferenceAudioConnection::ReadAudio(ConferenceMember *member, const uint64
   int srcTimeIndex = timeIndex;
   int srcFrameTime = maxFrameTime;
 
-  uint64_t srcTimestamp = startTimestamp + srcTimeIndex*1000;
-  //uint64_t readTimestamp = dstTimestamp - PCM_BUFFER_MAX_WRITE_LEN_MS*1000 - PCM_BUFFER_LAG_MS*1000;
-  uint64_t readTimestamp = dstTimestamp - srcFrameTime*1000 - PCM_BUFFER_LAG_MS*1000;
+  // Позиция в буфере на время dstTimestamp
+  //int dstTimeIndex = dstTimestamp/1000LL - startTimestamp/1000LL - PCM_BUFFER_MAX_WRITE_LEN_MS - PCM_BUFFER_LAG_MS;
+  int dstTimeIndex = dstTimestamp/1000LL - startTimestamp/1000LL - srcFrameTime - PCM_BUFFER_LAG_MS;
 
-  // Нет данных на это время, возможно запись прекращена
-  if(readTimestamp > srcTimestamp)
+  // Что то пошло не так :(
+  // Позиция отрицательная или меньше размера фрейма
+  if(dstTimeIndex < dstFrameTime)
     return;
 
-  // Еще проверки
+  // Нет данных на это время, возможно запись прекращена
+  if(dstTimeIndex > srcTimeIndex)
+    return;
 
-  // Позиция в буфере от которой будет чтение фрейма
-  int dstTimeIndex = (readTimestamp - startTimestamp)/1000 - dstFrameTime;
+  // Время за пределами буфера(не хватает буфера). Проверка не точная,
+  // можно не проверять т.к. буфер "круговой", но результат будет на другое время.
+  if(srcTimeIndex - dstTimeIndex > PCM_BUFFER_LEN_MS - PCM_BUFFER_MAX_WRITE_LEN_MS - dstFrameTime)
+    return;
 
   PBYTEArray dstBuffer;
   int dstBufferSize = sampleRate * channels * 2 * dstFrameTime / 1000;
   if(dstBuffer.GetSize() < dstBufferSize)
     dstBuffer.SetSize(dstBufferSize);
 
-  int byteIndex = (dstTimeIndex % PCM_BUFFER_LEN_MS) * timeSize;
+  int byteIndex = ((dstTimeIndex - dstFrameTime) % PCM_BUFFER_LEN_MS) * timeSize;
   int byteLeft = dstFrameTime*timeSize;
   int byteOffset = 0;
   if(byteIndex + byteLeft > byteBufferSize)
