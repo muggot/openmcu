@@ -3100,7 +3100,7 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
 
     // check cache mode
     BOOL enableCache = FALSE;
-    if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_STREAM && codec.GetMediaFormat().Find("G.711") == P_MAX_INDEX)
+    if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_STREAM)
       enableCache = TRUE;
     if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_CACHE)
       enableCache = FALSE;
