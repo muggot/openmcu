@@ -1642,7 +1642,7 @@ BOOL MCUListener::CreateTCPServer()
   inet_pton(AF_INET, socket_host, &addr.sin_addr);
   addr.sin_port = htons(socket_port);
 
-  if(bind(socket_fd, (sockaddr *)&addr, addr_len) == -1)
+  if(::bind(socket_fd, (sockaddr *)&addr, addr_len) == -1)
   {
     MCUTRACE(1, trace_section << "socket bind error " << errno << " " << strerror(errno));
     return FALSE;

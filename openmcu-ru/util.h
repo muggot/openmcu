@@ -146,10 +146,47 @@ class MCUTime
   public:
     MCUTime()
     {
-      timestamp = GetTimestampUsec();
+      timestamp = GetRealTimestampUsec();
     }
 
-    static uint64_t GetTimestampUsec()
+    MCUTime(const uint64_t & _timestamp)
+    {
+      timestamp = _timestamp;
+    }
+
+    const uint64_t GetTimestamp() const
+    {
+      return timestamp;
+    }
+
+    const uint64_t GetMilliSeconds() const
+    {
+      return timestamp/1000LL;
+    }
+
+    const uint32_t GetSeconds() const
+    {
+      return timestamp/1000000LL;
+    }
+
+    operator uint64_t()
+    {
+      return timestamp;
+    }
+
+    static uint64_t GetRealTimestampUsec()
+    {
+#ifdef _WIN32
+      PTimeInterval interval = PTimer::Tick();
+      return interval.GetMilliSeconds()*1000LL;
+#else
+      struct timespec ts;
+      clock_gettime(CLOCK_REALTIME, &ts);
+      return ts.tv_sec*1000000L + ts.tv_nsec/1000L;
+#endif
+    }
+
+    static uint64_t GetMonoTimestampUsec()
     {
 #ifdef _WIN32
       PTimeInterval interval = PTimer::Tick();
@@ -157,12 +194,25 @@ class MCUTime
 #else
       struct timespec ts;
       clock_gettime(CLOCK_MONOTONIC, &ts);
-      return ts.tv_sec*1000000LL + ts.tv_nsec/1000LL;
+      return ts.tv_sec*1000000L + ts.tv_nsec/1000L;
+#endif
+    }
+
+    static uint64_t GetProcTimestampUsec()
+    {
+#ifdef _WIN32
+      PTimeInterval interval = PTimer::Tick();
+      return interval.GetMilliSeconds()*1000LL;
+#else
+      struct timespec ts;
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
+      return ts.tv_sec*1000000L + ts.tv_nsec/1000L;
 #endif
     }
 
   protected:
     uint64_t timestamp;
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -177,23 +227,26 @@ class MCUDelay
 
     void Restart()
     {
-      delay_time = MCUTime::GetTimestampUsec();
+      delay_time = MCUTime::GetMonoTimestampUsec();
     }
 
-    void DelayMsec(unsigned delay_msec)
+    void DelayMsec(uint32_t delay_msec)
     {
-      DelayUsec(delay_msec * 1000);
+      DelayUsec(delay_msec * 1000L);
     }
 
-    void DelayUsec(unsigned delay_usec)
+    void DelayUsec(uint32_t delay_usec)
     {
       delay_time += delay_usec;
-      now = MCUTime::GetTimestampUsec();
+      now = MCUTime::GetMonoTimestampUsec();
       if(now < delay_time)
       {
-        struct timespec ts = {0};
-        ts.tv_nsec = (delay_time - now)*1000;
-        nanosleep(&ts, NULL);
+        uint32_t interval = delay_time - now;
+        struct timespec req;
+        req.tv_sec = interval/1000000L;
+        req.tv_nsec = (interval % 1000000L) * 1000L;
+        while(nanosleep(&req, &req) == -1 && errno == EINTR)
+          ;
       }
       //else // restart
       //  delay_time = now;
