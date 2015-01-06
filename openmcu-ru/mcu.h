@@ -132,7 +132,15 @@ static const char RoomTimeLimitKey[]            = "Room time limit";
 static const char LockTemplateKey[]             = "Template locks conference by default";
 
 static const char ReceivedVFUDelayKey[]         = "Received VFU delay";
+static const char ReceivedVFUDelaySelect[]      = ",0/0,5/5,5/10,10/5,10/10";
 static const char SendVFUDelayKey[]             = "Send VFU delay";
+
+static const char RTPInputTimeoutKey[]          = "RTP Input Timeout";
+static const char RTPInputTimeoutSelect[]       = ",0,15,30,60,120,300";
+static const int  DefaultRTPInputTimeout        = 60;
+
+static const char PingIntervalKey[]             = "Ping interval";
+static const char PingIntervalSelect[]          = ",20,30,40,50,60,120,180,240,300,600";
 
 static PString DefaultConnectingWAVFile = PString(SYS_RESOURCE_DIR)+"/connecting.wav";
 static PString DefaultEnteringWAVFile   = PString(SYS_RESOURCE_DIR)+"/entering.wav";
@@ -169,6 +177,7 @@ static const char AddressKey[]             = "Address";
 static const char ExpiresKey[]             = "Expires";
 static const char TransportKey[]           = "Transport";
 static const char RtpProtoKey[]            = "RTP proto";
+static const char RtpProtoSelect[]         = ",RTP,ZRTP,SRTP,SRTP/RTP";
 static const char AudioCodecKey[]          = "Audio codec";
 static const char VideoCodecKey[]          = "Video codec";
 static const char VideoResolutionKey[]     = "Video resolution";

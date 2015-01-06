@@ -283,8 +283,6 @@ class MCUH323Connection : public H323Connection
       RTP_QOS * rtpqos = NULL            ///< QoS for RTP
     );
 
-    PString dtmfBuffer;
-
     PString GetEndpointParam(PString param, bool asterisk = true);
     PString GetEndpointParam(PString param, PString defaultValue, bool asterisk = true);
 
@@ -342,6 +340,10 @@ class MCUH323Connection : public H323Connection
 
     MCUConnectionTypes GetConnectionType() const
     { return connectionType; }
+
+    int rtpInputTimeout;
+    int rtpInputLostInterval;
+    int rtpInputBytes;
 
   protected:
 
@@ -437,6 +439,8 @@ class MCUH323Connection : public H323Connection
     unsigned int vfuLimit;         // limit requests for interval
     unsigned int vfuCount;         // count requests for interval
     unsigned int vfuTotalCount;    // count total requests
+
+    PString dtmfBuffer;
 
 #if MCU_VIDEO
     MCUPVideoInputDevice * videoGrabber;
@@ -724,8 +728,6 @@ class ConnectionMonitor : public PThread
     ConnectionMonitor(MCUH323EndPoint & _ep)
       : PThread(10000, NoAutoDeleteThread), ep(_ep)
     {
-      input_bytes = 0;
-      no_input_timeout = 0;
       Resume();
     }
 
@@ -736,10 +738,8 @@ class ConnectionMonitor : public PThread
     void RemoveConnection(const PString & callToken);
 
   protected:
-    int input_bytes;
-    int no_input_timeout;
-
     int Perform(MCUH323Connection * conn);
+    int RTPTimeoutMonitor(MCUH323Connection * conn);
 
     MCUH323EndPoint & ep;
     MCUSharedList<PString> monitorList;

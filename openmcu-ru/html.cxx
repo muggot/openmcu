@@ -782,6 +782,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString(BandwidthFromKey);
   optionNames.AppendString(BandwidthToKey);
   optionNames.AppendString(ReceivedVFUDelayKey);
+  optionNames.AppendString(RTPInputTimeoutKey);
   optionNames.AppendString(VideoCacheKey);
 
   optionNames.AppendString("Audio codec(receive)");
@@ -921,11 +922,12 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       // bandwidth to MCU
       s2 += rowArray+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // VFU delay
-      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 70)+"</tr>";
+      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      // RTP timeout
+      s2 += rowArray+"RTP Input Timeout"+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
       // Video cache
       s2 += rowArray+"Video cache"+SelectItem(name, scfg.GetString(VideoCacheKey), ",Enable,Disable", 70)+"</tr>";
       //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1078,6 +1080,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString(BandwidthFromKey);
   optionNames.AppendString(BandwidthToKey);
   optionNames.AppendString(ReceivedVFUDelayKey);
+  optionNames.AppendString(RTPInputTimeoutKey);
   optionNames.AppendString(VideoCacheKey);
 
   optionNames.AppendString(AudioCodecKey);
@@ -1176,7 +1179,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString("Ping interval", ""), ",20,30,40,50,60,120,180,240,300,600")+"</tr>";
+      s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString(PingIntervalKey, ""), PingIntervalSelect)+"</tr>";
       s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
       s2 += EndItemArray();
       s << s2;
@@ -1187,7 +1190,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+JsLocal("name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
       s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
-      s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString("Ping interval", ""), ",20,30,40,50,60,120,180,240,300,600")+"</tr>";
+      s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString(PingIntervalKey, ""), PingIntervalSelect)+"</tr>";
       s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
       s2 += EndItemArray();
       s << s2;
@@ -1204,7 +1207,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+JsLocal("name_transport")+SelectItem(name, scfg.GetString(TransportKey), ",udp,tcp")+"</tr>";
       //
-      s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), ",RTP,ZRTP,SRTP,SRTP/RTP")+"</tr>";
+      s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), RtpProtoSelect)+"</tr>";
       //
       s2 += rowArray+PString(NATRouterIPKey)+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
@@ -1230,11 +1233,12 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       // bandwidth to MCU
       s2 += rowArray+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // VFU delay
-      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ",0/0,5/5,5/10,10/5,10/10", 70)+"</tr>";
+      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      // RTP timeout
+      s2 += rowArray+"RTP Input Timeout"+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
       // Video cache
       s2 += rowArray+"Video cache"+SelectItem(name, scfg.GetString(VideoCacheKey), ",Enable,Disable", 70)+"</tr>";
       //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1318,6 +1322,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
 
   optionNames.AppendString(FrameRateFromKey);
   optionNames.AppendString(BandwidthFromKey);
+  optionNames.AppendString(RTPInputTimeoutKey);
 
   optionNames.AppendString(AudioCodecKey);
   optionNames.AppendString(VideoCodecKey);
@@ -1407,11 +1412,12 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 60)+"</tr>";
+      s2 += rowArray+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 60)+"</tr>";
+      s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
+      // RTP timeout
+      s2 += rowArray+"RTP Input Timeout"+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
       //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;

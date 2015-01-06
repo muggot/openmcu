@@ -2367,18 +2367,24 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
   vfuLimit = 0;
   vfuCount = 0;
   vfuTotalCount = 0;
-  audioReceiveCodecName = audioTransmitCodecName = "none";
+
+  rtpInputTimeout = DefaultRTPInputTimeout;
+  rtpInputLostInterval = 0;
+  rtpInputBytes = 0;
 
 #if MCU_VIDEO
   videoGrabber = NULL;
   videoDisplay = NULL;
-  videoReceiveCodecName = videoTransmitCodecName = "none";
 #endif
 
   audioReceiveChannel = NULL;
   videoReceiveChannel = NULL;
   audioTransmitChannel = NULL;
   videoTransmitChannel = NULL;
+
+  audioReceiveCodecName = audioTransmitCodecName = "none";
+  videoReceiveCodecName = videoTransmitCodecName = "none";
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4417,21 +4423,36 @@ void ConnectionMonitor::RemoveConnection(const PString & _callToken)
 
 int ConnectionMonitor::Perform(MCUH323Connection * conn)
 {
+  int ret = 0;
+  if((ret = RTPTimeoutMonitor(conn)) != 0)
+    return ret;
+
+  return 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int ConnectionMonitor::RTPTimeoutMonitor(MCUH323Connection * conn)
+{
+  conn->rtpInputTimeout = conn->GetEndpointParam(RTPInputTimeoutKey, PString(DefaultRTPInputTimeout)).AsInteger();
+  if(conn->rtpInputTimeout <= 0)
+    return 0;
+
   MCU_RTP_UDP *as = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultAudioSessionID);
   MCU_RTP_UDP *vs = (MCU_RTP_UDP *)conn->GetSession(RTP_Session::DefaultVideoSessionID);
   int count = 0;
   if(as) count += as->GetPacketsReceived() + as->GetRtpcReceived();
   if(vs) count += vs->GetPacketsReceived() + vs->GetRtpcReceived();
-  if((as || vs) && count == input_bytes)
+  if((as || vs) && count == conn->rtpInputBytes)
   {
-    no_input_timeout++;
+    conn->rtpInputLostInterval++;
   } else {
-    no_input_timeout = 0;
-    input_bytes = count;
+    conn->rtpInputLostInterval = 0;
+    conn->rtpInputBytes = count;
   }
-  if(no_input_timeout >= 9) // 3+27=30 sec timeout
+  if(conn->rtpInputLostInterval >= conn->rtpInputTimeout)
   {
-    PTRACE(1, "MCU\tConnection: " << conn->GetCallToken() << ", 30 sec timeout waiting incoming stream data.");
+    PTRACE(1, "MCU\tConnection: " << conn->GetCallToken() << ", " << conn->rtpInputTimeout << " sec timeout waiting incoming stream data.");
     return 1; // leave
   }
 
