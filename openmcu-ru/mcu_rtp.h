@@ -512,6 +512,9 @@ class MCU_RTP_UDP : public RTP_UDP
     DWORD rtpcReceived;
     DWORD packetsLostTx;
 
+    int socketWriteErrors;
+    MCUTime socketWriteErrorsTime;
+
     std::map<WORD, RTP_DataFrame *> frameQueue;
     PTime  lastWriteTime;
     DWORD  lastRcvdTimeStamp;

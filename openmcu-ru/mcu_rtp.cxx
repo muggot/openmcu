@@ -973,6 +973,9 @@ MCU_RTP_UDP::MCU_RTP_UDP(
   rtpcReceived = 0;
   packetsLostTx = 0;
 
+  socketWriteErrors = 0;
+  socketWriteErrorsTime = 0;
+
   zrtp_secured = FALSE;
   srtp_secured = FALSE;
 }
@@ -1075,13 +1078,18 @@ BOOL MCU_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
         PTRACE(2, "MCU_RTP_UDP\tSession " << sessionID << ", data port on remote not ready.");
         break;
       default:
-        PTRACE(1, "MCU_RTP_UDP\tSession " << sessionID
-               << ", Write error on data port ("
+        socketWriteErrors++;
+        if(socketWriteErrorsTime == 0)
+          socketWriteErrorsTime = MCUTime();
+        if(MCUTime().GetSeconds() - socketWriteErrorsTime.GetSeconds() < 60)
+          return TRUE;
+        PTRACE(1, "MCU_RTP_UDP\tSession " << sessionID << ", Write error on data port ("
                << dataSocket->GetErrorNumber(PChannel::LastWriteError) << "): "
                << dataSocket->GetErrorText(PChannel::LastWriteError));
         return FALSE;
     }
   }
+  socketWriteErrorsTime = 0;
   return TRUE;
 }
 
