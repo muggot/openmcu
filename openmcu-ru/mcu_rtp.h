@@ -485,6 +485,8 @@ class MCU_RTP_UDP : public RTP_UDP
     virtual BOOL PreWriteData(RTP_DataFrame & frame);
     virtual BOOL PostWriteData(RTP_DataFrame & frame);
 
+    virtual BOOL WriteControl(RTP_ControlFrame & frame);
+
     // non-virtual
     //BOOL ReadBufferedData(DWORD timestamp, RTP_DataFrame & frame);
 
@@ -512,8 +514,9 @@ class MCU_RTP_UDP : public RTP_UDP
     DWORD rtpcReceived;
     DWORD packetsLostTx;
 
-    int socketWriteErrors;
-    MCUTime socketWriteErrorsTime;
+    int writeDataTimeout;
+    int writeDataErrors;
+    MCUTime writeDataErrorsTime;
 
     std::map<WORD, RTP_DataFrame *> frameQueue;
     PTime  lastWriteTime;

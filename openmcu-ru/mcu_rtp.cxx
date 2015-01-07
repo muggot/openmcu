@@ -440,9 +440,19 @@ BOOL MCU_RTPChannel::ReadFrame(DWORD & rtpTimestamp, RTP_DataFrame & frame)
 
 BOOL MCU_RTPChannel::WriteFrame(RTP_DataFrame & frame)
 {
-  if(!((MCU_RTP_UDP &)rtpSession).PreWriteData(frame))
+  MCU_RTP_UDP & session = (MCU_RTP_UDP &)rtpSession;
+
+  if(!session.PreWriteData(frame))
+    goto error;
+
+  if(!session.WriteData(frame))
+    goto error;
+
+  return TRUE;
+
+  error:
+    ((MCUH323Connection &)connection).LeaveMCU();
     return FALSE;
-  return ((MCU_RTP_UDP &)rtpSession).WriteData(frame);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -973,8 +983,9 @@ MCU_RTP_UDP::MCU_RTP_UDP(
   rtpcReceived = 0;
   packetsLostTx = 0;
 
-  socketWriteErrors = 0;
-  socketWriteErrorsTime = 0;
+  writeDataTimeout = 60;
+  writeDataErrors = 0;
+  writeDataErrorsTime = 0;
 
   zrtp_secured = FALSE;
   srtp_secured = FALSE;
@@ -1069,8 +1080,13 @@ BOOL MCU_RTP_UDP::PreWriteData(RTP_DataFrame & frame)
 
 BOOL MCU_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
 {
+  int writeAttempts = 0;
   while(!dataSocket->WriteTo(frame.GetPointer(), frame.GetHeaderSize()+frame.GetPayloadSize(), remoteAddress, remoteDataPort))
   {
+    writeAttempts++;
+    if(writeAttempts == 5)
+      return TRUE;
+
     switch(dataSocket->GetErrorNumber())
     {
       case ECONNRESET :
@@ -1078,10 +1094,10 @@ BOOL MCU_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
         PTRACE(2, "MCU_RTP_UDP\tSession " << sessionID << ", data port on remote not ready.");
         break;
       default:
-        socketWriteErrors++;
-        if(socketWriteErrorsTime == 0)
-          socketWriteErrorsTime = MCUTime();
-        if(MCUTime().GetSeconds() - socketWriteErrorsTime.GetSeconds() < 60)
+        writeDataErrors++;
+        if(writeDataErrorsTime == 0)
+          writeDataErrorsTime = MCUTime();
+        if(MCUTime().GetSeconds() - writeDataErrorsTime.GetSeconds() < writeDataTimeout)
           return TRUE;
         PTRACE(1, "MCU_RTP_UDP\tSession " << sessionID << ", Write error on data port ("
                << dataSocket->GetErrorNumber(PChannel::LastWriteError) << "): "
@@ -1089,7 +1105,38 @@ BOOL MCU_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
         return FALSE;
     }
   }
-  socketWriteErrorsTime = 0;
+  writeDataErrorsTime = 0;
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCU_RTP_UDP::WriteControl(RTP_ControlFrame & frame)
+{
+  // Trying to send a PDU before we are set up!
+  if(!remoteAddress.IsValid() || remoteControlPort == 0)
+    return TRUE;
+
+  int writeAttempts = 0;
+  while(!controlSocket->WriteTo(frame.GetPointer(), frame.GetCompoundSize(), remoteAddress, remoteControlPort))
+  {
+    writeAttempts++;
+    if(writeAttempts == 5)
+      return TRUE;
+
+    switch(controlSocket->GetErrorNumber())
+    {
+      case ECONNRESET :
+      case ECONNREFUSED :
+        PTRACE(2, "RTP_UDP\tSession " << sessionID << ", control port on remote not ready.");
+        break;
+      default:
+        PTRACE(1, "RTP_UDP\tSession " << sessionID << ", Write error on control port ("
+               << controlSocket->GetErrorNumber(PChannel::LastWriteError) << "): "
+               << controlSocket->GetErrorText(PChannel::LastWriteError));
+    }
+  }
+
   return TRUE;
 }
 
