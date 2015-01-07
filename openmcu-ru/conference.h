@@ -46,30 +46,21 @@ class MCULock : public PObject
 
 class AudioResampler
 {
-  public:
-    AudioResampler()
-    {
-#if USE_SWRESAMPLE || USE_AVRESAMPLE || USE_LIBSAMPLERATE
-      swrc = NULL;
-#endif
-    }
-    ~AudioResampler()
-    {
-#if USE_SWRESAMPLE
-      if(swrc) swr_free(&swrc);
-#elif USE_AVRESAMPLE
-      if(swrc) avresample_free(&swrc);
-#elif USE_LIBSAMPLERATE
-      if(swrc) src_delete(swrc);
-#endif
-    }
+    AudioResampler(int _srcSampleRate, int _srcChannels, int _dstSampleRate, int _dstChannels);
+    BOOL Initialise();
 
-    PTime readTime;
-    PBYTEArray data;
+  public:
+    static AudioResampler * Create(int _srcSampleRate, int _srcChannels, int _dstSampleRate, int _dstChannels);
+    ~AudioResampler();
+
+    void Resample(const BYTE * src, int srcBytes, BYTE * dst, int dstBytes);
+
+  protected:
     int srcSampleRate;
     int srcChannels;
     int dstSampleRate;
     int dstChannels;
+
 #if USE_SWRESAMPLE
     struct SwrContext * swrc;
 #elif USE_AVRESAMPLE
@@ -78,7 +69,38 @@ class AudioResampler
     struct SRC_STATE_tag * swrc;
 #endif
 };
-typedef std::map<long, AudioResampler *> AudioResamplerListType;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class AudioBuffer
+{
+  public:
+    AudioBuffer(int _sampleRate, int _channels);
+    ~AudioBuffer();
+
+    int GetSampleRate() const
+    { return sampleRate; }
+
+    int GetChannels() const
+    { return channels; }
+
+    BYTE * GetPointer()
+    { return buffer.GetPointer(); }
+
+    int GetSize()
+    { return bufferSize; }
+
+    int GetTimeSize()
+    { return bufferTimeSize; }
+
+  protected:
+    int sampleRate;
+    int channels;
+
+    int bufferTimeSize;
+    int bufferSize;
+    PBYTEArray buffer;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -113,7 +135,9 @@ class ConferenceAudioConnection : public ConferenceConnection
     ~ConferenceAudioConnection();
 
     virtual void WriteAudio(const uint64_t & srcTimestamp, const BYTE * data, int amount);
-    virtual void ReadAudio(ConferenceMember *member, const uint64_t & dstTimestamp, BYTE * data, int amount, int dstSampleRate, int dstChannels);
+    virtual void ReadAudio(const uint64_t & dstTimestamp, BYTE * data, int amount, int dstSampleRate, int dstChannels);
+
+    AudioBuffer * GetBuffer(int _dstSampleRate, int _dstChannels);
 
     int GetSampleRate() const
     { return sampleRate; }
@@ -121,20 +145,22 @@ class ConferenceAudioConnection : public ConferenceConnection
     int GetChannels() const
     { return channels; }
 
-    void Mix(const BYTE * src, BYTE * dst, int count);
-    void Resample(BYTE * src, int srcBytes, int srcSampleRate, int srcChannels, AudioResampler *resampler, int dstBytes, int dstSampleRate, int dstChannels);
-    AudioResampler * CreateResampler(int srcSampleRate, int srcChannels, int dstSampleRate, int dstChannels);
+    static void Mix(const BYTE * src, BYTE * dst, int count);
 
   protected:
     int sampleRate;
     int channels;
-    int timeSize;            // 1ms size
-    int timeIndex;           // current position ms
     int maxFrameTime;
+    int timeIndex;           // current position ms
     uint64_t startTimestamp;
 
-    int byteBufferSize;      // size bytes
-    PBYTEArray buffer;
+    typedef std::map<long, AudioResampler *> AudioResamplerListType;
+    AudioResamplerListType audioResamplerList;
+
+    typedef MCUSharedList<AudioBuffer> MCUAudioBufferList;
+    MCUAudioBufferList audioBufferList;
+    // mutex только для добавления буфера в список
+    PMutex audioBufferListMutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -364,11 +390,6 @@ class ConferenceMember : public PObject
     virtual unsigned GetAudioLevel() const
     { return audioLevel;  }
 
-    AudioResamplerListType & GetAudioResamplerList()
-    { return audioResamplerList; }
-
-    void ClearAudioReaderList(BOOL force = FALSE);
-
     BOOL autoDial;
     unsigned muteMask;
     BOOL disableVAD;
@@ -404,8 +425,6 @@ class ConferenceMember : public PObject
     float currVolCoef;
 
     PMutex mutex;
-
-    AudioResamplerListType audioResamplerList;
 
 #if MCU_VIDEO
     PTime firstFrameSendTime;

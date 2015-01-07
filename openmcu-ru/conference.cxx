@@ -10,11 +10,26 @@
 #include <ptlib/vconvert.h>
 #endif
 
+////////////////////////////////////////////////////////////////////////////////////
+
 // size of a PCM data packet, in samples
 #define PCM_BUFFER_LEN_MS              480
 #define PCM_BUFFER_MAX_READ_LEN_MS     96 // AC3 16000
 #define PCM_BUFFER_MAX_WRITE_LEN_MS    40
 #define PCM_BUFFER_LAG_MS              2
+
+const static struct audio_resolution {
+  int samplerate;
+  int channels;
+} audio_resolutions[] = {
+  { 8000,  1 },
+  { 16000, 1 },
+  { 24000, 1 },
+  { 32000, 1 },
+  { 48000, 1 },
+  { 48000, 2 },
+  { 0 }
+};
 
 ////////////////////////////////////////////////////////////////////////////////////
 
@@ -1036,7 +1051,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, const uint64_t & tim
     }
     if(!skip) // default behaviour
     {
-      conn->ReadAudio(member, timestamp, (BYTE *)buffer, amount, sampleRate, channels);
+      conn->ReadAudio(timestamp, (BYTE *)buffer, amount, sampleRate, channels);
       member->ReadAudioOutputGain(buffer, amount);
     }
   }
@@ -1363,8 +1378,6 @@ ConferenceMember::~ConferenceMember()
 {
   muteMask|=15;
 
-  ClearAudioReaderList(TRUE);
-
 #if MCU_VIDEO
   if(videoMixer)
     delete videoMixer;
@@ -1503,8 +1516,6 @@ void ConferenceMember::ReadAudio(const uint64_t & timestamp, void * buffer, PIND
 
   if(conference != NULL)
     conference->ReadMemberAudio(this, timestamp, buffer, amount, sampleRate, channels);
-
-  ClearAudioReaderList();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1525,24 +1536,6 @@ void ConferenceMember::ReadAudioOutputGain(void * buffer, int amount)
       pos+=2;
       i--;
     }
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ConferenceMember::ClearAudioReaderList(BOOL force)
-{
-  PTime now;
-  for(AudioResamplerListType::iterator it = audioResamplerList.begin(); it != audioResamplerList.end(); )
-  {
-    if(force || now - it->second->readTime > 60000) // not used 60 sec
-    {
-      AudioResampler *resampler = it->second;
-      audioResamplerList.erase(it++);
-      delete resampler;
-      continue;
-    }
-    ++it;
   }
 }
 
@@ -1629,18 +1622,66 @@ ConferenceAudioConnection::ConferenceAudioConnection(long _id, int _sampleRate, 
   sampleRate = _sampleRate;
   channels = _channels;
   maxFrameTime = 0;
-  timeSize = 2 * channels * sampleRate / 1000;
-  byteBufferSize = PCM_BUFFER_LEN_MS * timeSize;
-  buffer.SetSize(byteBufferSize);
-  memset(buffer.GetPointer(), 0, byteBufferSize);
-  startTimestamp = 0;
   timeIndex = 0;
+  startTimestamp = 0;
+
+  // Создать все возможные варианты resampler'ов,
+  // создание занимает "значительное" время
+  for(int i = 0; audio_resolutions[i].samplerate != 0; ++i)
+  {
+    int dstSampleRate = audio_resolutions[i].samplerate;
+    int dstChannels = audio_resolutions[i].channels;
+    long resamplerKey = dstSampleRate + dstChannels;
+    AudioResampler *resampler = AudioResampler::Create(sampleRate, channels, dstSampleRate, dstChannels);
+    if(resampler)
+      audioResamplerList.insert(AudioResamplerListType::value_type(resamplerKey, resampler));
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ConferenceAudioConnection::~ConferenceAudioConnection()
 {
+  for(AudioResamplerListType::iterator it = audioResamplerList.begin(); it != audioResamplerList.end(); )
+  {
+    AudioResampler *resampler = it->second;
+    audioResamplerList.erase(it++);
+    delete resampler;
+  }
+  for(MCUAudioBufferList::shared_iterator it = audioBufferList.begin(); it != audioBufferList.end(); ++it)
+  {
+    AudioBuffer *audioBuffer = it.GetObject();
+    audioBufferList.Erase(it);
+    delete audioBuffer;
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+AudioBuffer * ConferenceAudioConnection::GetBuffer(int _dstSampleRate, int _dstChannels)
+{
+  AudioBuffer * audioBuffer = NULL;
+  long audioBufferKey = _dstSampleRate + _dstChannels;
+  MCUAudioBufferList::shared_iterator it = audioBufferList.Find(audioBufferKey);
+  if(it != audioBufferList.end())
+    audioBuffer = it.GetObject();
+  else
+  {
+    // mutex только для добавления буфера в список
+    PWaitAndSignal m(audioBufferListMutex);
+    // Повторная проверка
+    it = audioBufferList.Find(audioBufferKey);
+    if(it != audioBufferList.end())
+      audioBuffer = it.GetObject();
+    else
+    {
+      audioBuffer = new AudioBuffer(_dstSampleRate, _dstChannels);
+      audioBufferList.Insert(audioBufferKey, audioBuffer);
+      audioBufferList.Release(audioBufferKey);
+    }
+  }
+
+  return audioBuffer;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1650,7 +1691,7 @@ void ConferenceAudioConnection::WriteAudio(const uint64_t & srcTimestamp, const 
   if(amount == 0)
     return;
 
-  int frameTime = amount / timeSize;
+  int frameTime = amount * 1000 / (sampleRate * channels * 2);
   if(frameTime > PCM_BUFFER_MAX_WRITE_LEN_MS)
     return;
 
@@ -1673,23 +1714,42 @@ void ConferenceAudioConnection::WriteAudio(const uint64_t & srcTimestamp, const 
     }
   }
 
-  int byteIndex = (srcTimeIndex % PCM_BUFFER_LEN_MS) * timeSize;
-  int byteLeft = amount;
-  int byteOffset = 0;
-  if(byteIndex + byteLeft > byteBufferSize)
+  for(MCUAudioBufferList::shared_iterator it = audioBufferList.begin(); it != audioBufferList.end(); ++it)
   {
-    byteOffset = byteBufferSize - byteIndex;
-    memcpy(buffer.GetPointer() + byteIndex, data, byteOffset);
-    byteLeft -= byteOffset;
-    byteIndex = 0;
+    AudioBuffer *audioBuffer = it.GetObject();
+
+    long resamplerKey = audioBuffer->GetSampleRate() + audioBuffer->GetChannels();
+    AudioResamplerListType::iterator it = audioResamplerList.find(resamplerKey);
+    if(it == audioResamplerList.end())
+      continue;
+    AudioResampler * resampler = it->second;
+
+    PBYTEArray dstBuffer;
+    int dstBufferSize = frameTime * audioBuffer->GetTimeSize();
+    if(dstBuffer.GetSize() < dstBufferSize + 16)
+      dstBuffer.SetSize(dstBufferSize + 16);
+
+    resampler->Resample(data, amount, dstBuffer.GetPointer(), dstBufferSize);
+
+    int byteIndex = (srcTimeIndex % PCM_BUFFER_LEN_MS) * audioBuffer->GetTimeSize();
+    int byteLeft = dstBufferSize;
+    int byteOffset = 0;
+    if(byteIndex + byteLeft > audioBuffer->GetSize())
+    {
+      byteOffset = audioBuffer->GetSize() - byteIndex;
+      memcpy(audioBuffer->GetPointer() + byteIndex, dstBuffer.GetPointer(), byteOffset);
+      byteLeft -= byteOffset;
+      byteIndex = 0;
+    }
+    memcpy(audioBuffer->GetPointer() + byteIndex, dstBuffer.GetPointer() + byteOffset, byteLeft);
   }
-  memcpy(buffer.GetPointer() + byteIndex, data + byteOffset, byteLeft);
+
   timeIndex = srcTimeIndex + frameTime;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceAudioConnection::ReadAudio(ConferenceMember *member, const uint64_t & dstTimestamp, BYTE * data, int amount, int dstSampleRate, int dstChannels)
+void ConferenceAudioConnection::ReadAudio(const uint64_t & dstTimestamp, BYTE * data, int amount, int dstSampleRate, int dstChannels)
 {
   if(amount == 0)
     return;
@@ -1723,51 +1783,27 @@ void ConferenceAudioConnection::ReadAudio(ConferenceMember *member, const uint64
   if(srcTimeIndex - dstTimeIndex > PCM_BUFFER_LEN_MS - PCM_BUFFER_MAX_WRITE_LEN_MS - dstFrameTime)
     return;
 
+  // Найти или создать буфер
+  AudioBuffer * audioBuffer = GetBuffer(dstSampleRate, dstChannels);
+
   PBYTEArray dstBuffer;
-  int dstBufferSize = sampleRate * channels * 2 * dstFrameTime / 1000;
+  int dstBufferSize = dstFrameTime * audioBuffer->GetTimeSize();
   if(dstBuffer.GetSize() < dstBufferSize)
     dstBuffer.SetSize(dstBufferSize);
 
-  int byteIndex = ((dstTimeIndex - dstFrameTime) % PCM_BUFFER_LEN_MS) * timeSize;
-  int byteLeft = dstFrameTime*timeSize;
+  int byteIndex = ((dstTimeIndex - dstFrameTime) % PCM_BUFFER_LEN_MS) * audioBuffer->GetTimeSize();
+  int byteLeft = dstBufferSize;
   int byteOffset = 0;
-  if(byteIndex + byteLeft > byteBufferSize)
+  if(byteIndex + byteLeft > audioBuffer->GetSize())
   {
-    byteOffset = byteBufferSize - byteIndex;
-    memcpy(dstBuffer.GetPointer(), buffer.GetPointer() + byteIndex, byteOffset);
+    byteOffset = audioBuffer->GetSize() - byteIndex;
+    memcpy(dstBuffer.GetPointer(), audioBuffer->GetPointer() + byteIndex, byteOffset);
     byteLeft = dstBufferSize - byteOffset;
     byteIndex = 0;
   }
+  memcpy(dstBuffer.GetPointer() + byteOffset, audioBuffer->GetPointer() + byteIndex, byteLeft);
 
-  memcpy(dstBuffer.GetPointer() + byteOffset, buffer.GetPointer() + byteIndex, byteLeft);
-
-  if(sampleRate == dstSampleRate && channels == dstChannels)
-  {
-    Mix(dstBuffer.GetPointer(), data, dstBufferSize);
-  }
-  else
-  {
-    // ??? при использовании одного swrc для разных соединений появляются артефакты
-    long resamplerKey = (long)id + channels + sampleRate;
-    AudioResampler *resampler = NULL;
-    AudioResamplerListType & audioResamplerList = member->GetAudioResamplerList();
-    AudioResamplerListType::iterator it = audioResamplerList.find(resamplerKey);
-    if(it == audioResamplerList.end())
-    {
-      resampler = CreateResampler(sampleRate, channels, dstSampleRate, dstChannels);
-      audioResamplerList.insert(AudioResamplerListType::value_type(resamplerKey, resampler));
-    }
-    else
-      resampler = it->second;
-
-    resampler->readTime = PTime();
-
-    if(resampler->data.GetSize() < amount)
-      resampler->data.SetSize(amount + 16);
-
-    Resample(dstBuffer.GetPointer(), dstBufferSize, sampleRate, channels, resampler, amount, dstSampleRate, dstChannels);
-    Mix(resampler->data.GetPointer(), data, amount);
-  }
+  Mix(dstBuffer.GetPointer(), data, dstBufferSize);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1791,62 +1827,148 @@ void ConferenceAudioConnection::Mix(const BYTE * src, BYTE * dst, int count)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AudioResampler * ConferenceAudioConnection::CreateResampler(int srcSampleRate, int srcChannels, int dstSampleRate, int dstChannels)
+AudioBuffer::AudioBuffer(int _sampleRate, int _channels)
 {
-  AudioResampler * resampler = new AudioResampler();
-  resampler->srcSampleRate = srcSampleRate;
-  resampler->srcChannels = srcChannels;
-  resampler->dstSampleRate = dstSampleRate;
-  resampler->dstChannels = dstChannels;
-#if USE_SWRESAMPLE
-  resampler->swrc = swr_alloc_set_opts(NULL,
-    MCU_AV_CH_Layout_Selector[dstChannels], AV_SAMPLE_FMT_S16, dstSampleRate,
-    MCU_AV_CH_Layout_Selector[srcChannels], AV_SAMPLE_FMT_S16, srcSampleRate, 0, NULL);
-  swr_init(resampler->swrc);
-#elif USE_AVRESAMPLE
-  resampler->swrc = avresample_alloc_context();
-  av_opt_set_int(resampler->swrc, "out_channel_layout", MCU_AV_CH_Layout_Selector[dstChannels], 0);
-  av_opt_set_int(resampler->swrc, "out_sample_fmt",     AV_SAMPLE_FMT_S16, 0);
-  av_opt_set_int(resampler->swrc, "out_sample_rate",    dstSampleRate, 0);
-  av_opt_set_int(resampler->swrc, "in_channel_layout",  MCU_AV_CH_Layout_Selector[srcChannels], 0);
-  av_opt_set_int(resampler->swrc, "in_sample_fmt",      AV_SAMPLE_FMT_S16,0);
-  av_opt_set_int(resampler->swrc, "in_sample_rate",     srcSampleRate, 0);
-  avresample_open(resampler->swrc);
-#elif USE_LIBSAMPLERATE
-  resampler->swrc = src_new(SRC_LINEAR, 1, NULL);
+  sampleRate = _sampleRate;
+  channels = _channels;
+
+  bufferTimeSize = sampleRate * channels * 2 / 1000;
+  bufferSize = PCM_BUFFER_LEN_MS * bufferTimeSize;
+  buffer.SetSize(bufferSize);
+  memset(buffer.GetPointer(), 0, bufferSize);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+AudioBuffer::~AudioBuffer()
+{
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+AudioResampler::AudioResampler(int _srcSampleRate, int _srcChannels, int _dstSampleRate, int _dstChannels)
+{
+  srcSampleRate = _srcSampleRate;
+  srcChannels = _srcChannels;
+  dstSampleRate = _dstSampleRate;
+  dstChannels = _dstChannels;
+#if USE_SWRESAMPLE || USE_AVRESAMPLE || USE_LIBSAMPLERATE
+  swrc = NULL;
 #endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+AudioResampler::~AudioResampler()
+{
+#if USE_SWRESAMPLE
+  if(swrc) swr_free(&swrc);
+#elif USE_AVRESAMPLE
+  if(swrc) avresample_free(&swrc);
+#elif USE_LIBSAMPLERATE
+  if(swrc) src_delete(swrc);
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+AudioResampler * AudioResampler::Create(int _srcSampleRate, int _srcChannels, int _dstSampleRate, int _dstChannels)
+{
+  AudioResampler * resampler = new AudioResampler(_srcSampleRate, _srcChannels, _dstSampleRate, _dstChannels);
+  if(resampler->Initialise() == FALSE)
+  {
+    delete resampler;
+    resampler = NULL;
+  }
   return resampler;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceAudioConnection::Resample(BYTE * src, int srcBytes, int srcSampleRate, int srcChannels, AudioResampler *resampler, int dstBytes, int dstSampleRate, int dstChannels)
+BOOL AudioResampler::Initialise()
 {
+  if(srcSampleRate == dstSampleRate && srcChannels == dstChannels)
+    return TRUE;
+
 #if USE_SWRESAMPLE
-  void * to = resampler->data.GetPointer();
-  void * from = (void*)src;
-  swr_convert(resampler->swrc,
-                        (uint8_t **)&to,
-                        (dstBytes>>1)/dstChannels,
-                        (const uint8_t **)&from,
-                        (srcBytes>>1)/srcChannels);
+  swrc = swr_alloc_set_opts(NULL,
+    MCU_AV_CH_Layout_Selector[dstChannels], AV_SAMPLE_FMT_S16, dstSampleRate,
+    MCU_AV_CH_Layout_Selector[srcChannels], AV_SAMPLE_FMT_S16, srcSampleRate, 0, NULL);
+  if(swrc == NULL)
+  {
+    PTRACE(1, "AudioResampler\tcould not allocate resampler context");
+    return FALSE;
+  }
+  int ret = swr_init(swrc);
+  if(ret < 0)
+  {
+    PTRACE(1, "AudioResampler\tfailed to initialize the resampling context: " << ret << " " << AVErrorToString(ret));
+    return FALSE;
+  }
 #elif USE_AVRESAMPLE
-  void * to = resampler->data.GetPointer();
+  swrc = avresample_alloc_context();
+  if(swrc == NULL)
+  {
+    PTRACE(1, "AudioResampler\tcould not allocate resampler context");
+    return FALSE;
+  }
+  av_opt_set_int(swrc, "in_sample_fmt",      AV_SAMPLE_FMT_S16, 0);
+  av_opt_set_int(swrc, "in_channel_layout",  MCU_AV_CH_Layout_Selector[srcChannels], 0);
+  av_opt_set_int(swrc, "in_sample_rate",     srcSampleRate, 0);
+  av_opt_set_int(swrc, "out_sample_fmt",     AV_SAMPLE_FMT_S16, 0);
+  av_opt_set_int(swrc, "out_channel_layout", MCU_AV_CH_Layout_Selector[dstChannels], 0);
+  av_opt_set_int(swrc, "out_sample_rate",    dstSampleRate, 0);
+  int ret = avresample_open(swrc);
+  if(ret < 0)
+  {
+    PTRACE(1, "AudioResampler\tfailed to initialize the resampling context: " << ret << " " << AVErrorToString(ret));
+    return FALSE;
+  }
+#elif USE_LIBSAMPLERATE
+  swrc = src_new(SRC_LINEAR, 1, NULL);
+#endif
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void AudioResampler::Resample(const BYTE * src, int srcBytes, BYTE * dst, int dstBytes)
+{
+  if(srcSampleRate == dstSampleRate && srcChannels == dstChannels)
+  {
+    memcpy(dst, src, srcBytes);
+    return;
+  }
+#if USE_SWRESAMPLE
   void * from = (void*)src;
+  void * to = (void*)dst;
+  int srcSamples = (srcBytes>>1)/srcChannels;
+  int dstSamples = (dstBytes>>1)/dstChannels;
 
-  int out_samples = (dstBytes>>1)/dstChannels;
-  int out_linesize = dstBytes;
-  int in_samples = (srcBytes>>1)/srcChannels;
-  int in_linesize = srcBytes;
+  int ret = swr_convert(swrc, (uint8_t **)&to, dstSamples, (const uint8_t **)&from, srcSamples);
+  if(ret < 0)
+  {
+    PTRACE(1, "AudioResampler\terror while converting: " << ret << " " << AVErrorToString(ret));
+    memset(dst, 0, dstBytes);
+  }
+#elif USE_AVRESAMPLE
+  void * from = (void*)src;
+  void * to = (void*)dst;
+  int srcSamples = (srcBytes>>1)/srcChannels;
+  int dstSamples = (dstBytes>>1)/dstChannels;
 
-  avresample_convert(resampler->swrc, (uint8_t **)&to, out_linesize, out_samples,
-                                      (uint8_t **)&from, in_linesize, in_samples);
+  int ret = avresample_convert(swrc, (uint8_t **)&to, dstBytes, dstSamples, (uint8_t **)&from, srcBytes, srcSamples);
+  if(ret < 0)
+  {
+    PTRACE(1, "AudioResampler\terror while converting: " << ret << " " << AVErrorToString(ret));
+    memset(dst, 0, dstBytes);
+  }
 #elif USE_LIBSAMPLERATE
   SRC_DATA src_data;
-  long out_samples = dstBytes/(dstChannels*sizeof(short));
-  long in_samples = srcBytes/(srcChannels*sizeof(short));
-  float data_out[out_samples*sizeof(float)];
+  long in_samples = (srcBytes>>1)/srcChannels;
+  long out_samples = (dstBytes>>1)/dstChannels;
   float data_in[in_samples*sizeof(float)];
+  float data_out[out_samples*sizeof(float)];
   src_short_to_float_array((const short *)src, data_in, in_samples);
 
   src_data.data_in = data_in;
@@ -1855,35 +1977,37 @@ void ConferenceAudioConnection::Resample(BYTE * src, int srcBytes, int srcSample
   src_data.output_frames = out_samples;
   src_data.src_ratio = (double)out_samples/(double)in_samples;
 
-  int err = src_process(resampler->swrc, &src_data);
-  if (err)
+  int err = src_process(swrc, &src_data);
+  if(err)
   {
-    PTRACE(1, "libsamplerate error: " << src_strerror(err));
+    PTRACE(1, "AudioResampler\terror while converting: " << src_strerror(err));
+    memset(dst, 0, dstBytes);
     return;
   }
-  src_float_to_short_array(data_out, (short *)resampler->data.GetPointer(), src_data.output_frames_gen);
+  src_float_to_short_array(data_out, (short *)dst, src_data.output_frames_gen);
   //PTRACE(1, "libsamplerate: " << src_data.input_frames << " " << src_data.output_frames << " " << src_data.input_frames_used << " " << src_data.output_frames_gen);
 #else
   if(srcChannels == dstChannels && srcChannels == 1)
   {
-    for(PINDEX i=0;i<(dstBytes>>1);i++) ((short*)(resampler->data.GetPointer()))[i] = ((short*)src)[i*srcSampleRate/dstSampleRate];
+    for(int i=0;i<(dstBytes>>1);i++) ((short*)(dst))[i] = ((short*)src)[i*srcSampleRate/dstSampleRate];
     return;
   }
   if(srcChannels == dstChannels)
   {
-    for(unsigned i=0;i<((dstBytes>>1)/dstChannels);i++)
+    for(int i=0;i<((dstBytes>>1)/dstChannels);i++)
     {
       unsigned ofs=(i*srcSampleRate/dstSampleRate)*srcChannels;
-      for(unsigned j=0;j<srcChannels;j++) ((short*)(resampler->data.GetPointer()))[i*srcChannels+j] = ((short*)src)[ofs+j];
+      for(int j=0;j<srcChannels;j++) ((short*)(dst))[i*srcChannels+j] = ((short*)src)[ofs+j];
     }
     return;
   }
-  for(unsigned i=0;i<(dstBytes>>1)/dstChannels;i++)
+  for(int i=0;i<(dstBytes>>1)/dstChannels;i++)
   {
-    unsigned ofs=(i*srcSampleRate/dstSampleRate)*srcChannels, srcChan=0;
-    for(unsigned j=0;j<dstChannels;j++)
+    int srcChan=0;
+    unsigned ofs=(i*srcSampleRate/dstSampleRate)*srcChannels;
+    for(int j=0;j<dstChannels;j++)
     {
-      ((short*)(resampler->data.GetPointer()))[i*dstChannels+j] = ((short*)src)[ofs+srcChan];
+      ((short*)(dst))[i*dstChannels+j] = ((short*)src)[ofs+srcChan];
       srcChan++; if(srcChan>=srcChannels) srcChan=0;
     }
   }
