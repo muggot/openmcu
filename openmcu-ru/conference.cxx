@@ -1994,8 +1994,15 @@ void AudioResampler::Resample(const BYTE * src, int srcBytes, BYTE * dst, int ds
     return;
   }
   src_float_to_short_array(data_out, (short *)dst, src_data.output_frames_gen);
-  //PTRACE(1, "libsamplerate: " << src_data.input_frames << " " << src_data.output_frames << " " << src_data.input_frames_used << " " << src_data.output_frames_gen);
 #else
+  InternalResample(src, srcBytes, srcSampleRate, srcChannels, dst, dstBytes, dstSampleRate, dstChannels);
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void AudioResampler::InternalResample(const BYTE * src, int srcBytes, int srcSampleRate, int srcChannels, BYTE * dst, int dstBytes, int dstSampleRate, int dstChannels)
+{
   if(srcChannels == dstChannels && srcChannels == 1)
   {
     for(int i=0;i<(dstBytes>>1);i++) ((short*)(dst))[i] = ((short*)src)[i*srcSampleRate/dstSampleRate];
@@ -2020,7 +2027,6 @@ void AudioResampler::Resample(const BYTE * src, int srcBytes, BYTE * dst, int ds
       srcChan++; if(srcChan>=srcChannels) srcChan=0;
     }
   }
-#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

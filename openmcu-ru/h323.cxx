@@ -3370,6 +3370,16 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCUH323Connection::OnStartLogicalChannel(H323Channel & channel)
+{
+  if(connectionType == CONNECTION_TYPE_H323)
+    return H323Connection::OnStartLogicalChannel(channel);
+
+  return endpoint.OnStartLogicalChannel(*this, channel);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::OnClosedLogicalChannel(const H323Channel & channel)
 {
   PWaitAndSignal m(connMutex);

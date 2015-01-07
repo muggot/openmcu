@@ -54,6 +54,7 @@ class AudioResampler
     ~AudioResampler();
 
     void Resample(const BYTE * src, int srcBytes, BYTE * dst, int dstBytes);
+    static void InternalResample(const BYTE * src, int srcBytes, int srcSampleRate, int srcChannels, BYTE * dst, int dstBytes, int dstSampleRate, int dstChannels);
 
   protected:
     int srcSampleRate;
