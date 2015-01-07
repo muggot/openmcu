@@ -136,7 +136,7 @@ static const char ReceivedVFUDelaySelect[]      = ",0/0,5/5,5/10,10/5,10/10";
 static const char SendVFUDelayKey[]             = "Send VFU delay";
 
 static const char RTPInputTimeoutKey[]          = "RTP Input Timeout";
-static const char RTPInputTimeoutSelect[]       = ",0,15,30,60,120,300";
+static const char RTPInputTimeoutSelect[]       = ",Disable,15,30,60,120,300";
 static const int  DefaultRTPInputTimeout        = 60;
 
 static const char PingIntervalKey[]             = "Ping interval";

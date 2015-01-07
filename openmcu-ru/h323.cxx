@@ -4435,6 +4435,7 @@ int ConnectionMonitor::Perform(MCUH323Connection * conn)
 int ConnectionMonitor::RTPTimeoutMonitor(MCUH323Connection * conn)
 {
   conn->rtpInputTimeout = conn->GetEndpointParam(RTPInputTimeoutKey, PString(DefaultRTPInputTimeout)).AsInteger();
+  // Disable  == 0
   if(conn->rtpInputTimeout <= 0)
     return 0;
 
