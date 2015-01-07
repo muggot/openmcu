@@ -3853,6 +3853,7 @@ BOOL MCUH323Connection::OnIncomingAudio(const uint64_t & timestamp, const void *
 
 BOOL MCUH323Connection::OnOutgoingAudio(const uint64_t & timestamp, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
+/*
   // When the prodedure begins, play the welcome file
   if (welcomeState == NotStartedYet) {
     ChangeWelcomeState(PlayingWelcome);
@@ -3892,6 +3893,7 @@ BOOL MCUH323Connection::OnOutgoingAudio(const uint64_t & timestamp, void * buffe
     // We should repeat the loop now because the callback
     //  above might have started a new wave file
   }
+*/
 
   // If a we are connected to a conference and no wave
   //  is playing, read data from the conference

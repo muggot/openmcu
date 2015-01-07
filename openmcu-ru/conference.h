@@ -279,13 +279,15 @@ class ConferenceMember : public PObject
       */
     virtual void WriteAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
+    void WriteAudioAutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef, unsigned* signalLevel, float kManual);
+
     /**
       *  Called when the conference member wants to read a block of audio from the conference
       *  By default, this calls ReadMemberAudio on the conference
       */
     virtual void ReadAudio(const uint64_t & timestamp, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
-    virtual void ReadAudioOutputGain(void * buffer, int amount);
+    void ReadAudioGainControl(void * buffer, int amount);
 
 #if MCU_VIDEO
     /**

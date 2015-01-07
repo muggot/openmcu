@@ -1050,10 +1050,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, const uint64_t & tim
       }
     }
     if(!skip) // default behaviour
-    {
       conn->ReadAudio(timestamp, (BYTE *)buffer, amount, sampleRate, channels);
-      member->ReadAudioOutputGain(buffer, amount);
-    }
   }
 }
 
@@ -1426,7 +1423,7 @@ void ConferenceMember::RemoveAllConnections()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef, unsigned* signalLevel, float kManual)
+void ConferenceMember::WriteAudioAutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef, unsigned* signalLevel, float kManual)
 {
   unsigned samplesCount = samplesPerFrame*codecChannels;
   if(!samplesCount) return;
@@ -1487,20 +1484,26 @@ void AutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codec
   }
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ConferenceMember::WriteAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
   if(!(channelCheck&1))
     ChannelBrowserStateUpdate(1,TRUE);
 
-  // calculate average signal level for this member
-  unsigned signalLevel=0;
-  AutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 2000, &currVolCoef, &signalLevel, kManualGain);
-  audioLevel = ((signalLevel * 2) + audioLevel) / 3;
-
   if(conference != NULL)
   {
-    conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
+    // Автоматическая? регулировка усиления
+    // calculate average signal level for this member
+    unsigned signalLevel=0;
+    WriteAudioAutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 2000, &currVolCoef, &signalLevel, kManualGain);
+    audioLevel = ((signalLevel * 2) + audioLevel) / 3;
+
+    // Записать аудио в буфер
     conference->WriteMemberAudio(this, timestamp, buffer, amount, sampleRate, channels);
+
+    // Индикатор уровня, VAD
+    conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
   }
 }
 
@@ -1515,12 +1518,18 @@ void ConferenceMember::ReadAudio(const uint64_t & timestamp, void * buffer, PIND
   memset(buffer, 0, amount);
 
   if(conference != NULL)
+  {
+    // Получить аудио от участников
     conference->ReadMemberAudio(this, timestamp, buffer, amount, sampleRate, channels);
+
+    // Регулировка усиления
+    ReadAudioGainControl(buffer, amount);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceMember::ReadAudioOutputGain(void * buffer, int amount)
+void ConferenceMember::ReadAudioGainControl(void * buffer, int amount)
 {
   if(kOutputGainDB)
   {
