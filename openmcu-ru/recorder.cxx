@@ -3,32 +3,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
-  #define AV_CODEC_ID_NONE        CODEC_ID_NONE
-  #define AV_CODEC_ID_PCM_S16LE   CODEC_ID_PCM_S16LE
-  #define AV_CODEC_ID_AC3         CODEC_ID_AC3
-  #define AV_CODEC_ID_H264        CODEC_ID_H264
-  #define AV_CODEC_ID_MPEG4       CODEC_ID_MPEG4
-  #define AV_CODEC_ID_MSMPEG4V3   CODEC_ID_MSMPEG4V3
-  #define AV_CODEC_ID_VP8         CODEC_ID_VP8
-#endif
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 0, 0)
-  #define AV_PIX_FMT_YUV420P    PIX_FMT_YUV420P
-#endif
-
-#define ALIGN 1
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PString AVErrorToString(int errnum)
-{
-  char errbuf[64];
-  av_strerror(errnum, errbuf, 64);
-  return PString(errbuf);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PString GetRecorderCodecs(int media_type)
 {
   PString codecs = "Disabled";
@@ -503,9 +477,9 @@ BOOL ConferenceRecorder::OpenResampler()
     context->frame_size = context->sample_rate * av_q2d(audio_st->codec->time_base);
 
   src_samples = context->frame_size;
-  src_samples_size = av_samples_get_buffer_size(NULL, context->channels, src_samples, AV_SAMPLE_FMT_S16, ALIGN);
+  src_samples_size = av_samples_get_buffer_size(NULL, context->channels, src_samples, AV_SAMPLE_FMT_S16, AV_ALIGN);
   src_samples_data = (uint8_t **)av_malloc(context->channels * sizeof(uint8_t *));
-  ret = av_samples_alloc(src_samples_data, NULL, context->channels, src_samples, AV_SAMPLE_FMT_S16, ALIGN);
+  ret = av_samples_alloc(src_samples_data, NULL, context->channels, src_samples, AV_SAMPLE_FMT_S16, AV_ALIGN);
   if(ret < 0)
   {
     MCUTRACE(1, trace_section << "could not allocate source samples: " << src_samples << " " << ret << " " << AVErrorToString(ret));
@@ -553,9 +527,9 @@ BOOL ConferenceRecorder::OpenResampler()
 
   // allocate destination samples
   dst_samples = src_samples;
-  dst_samples_size = av_samples_get_buffer_size(NULL, context->channels, dst_samples, context->sample_fmt, ALIGN);
+  dst_samples_size = av_samples_get_buffer_size(NULL, context->channels, dst_samples, context->sample_fmt, AV_ALIGN);
   dst_samples_data = (uint8_t **)av_malloc(context->channels * sizeof(uint8_t *));
-  ret = av_samples_alloc(dst_samples_data, NULL, context->channels, dst_samples, context->sample_fmt, ALIGN);
+  ret = av_samples_alloc(dst_samples_data, NULL, context->channels, dst_samples, context->sample_fmt, AV_ALIGN);
   if(ret < 0)
   {
     MCUTRACE(1, trace_section << "could not allocate destination samples: " << dst_samples << " " << ret << " " << AVErrorToString(ret));
@@ -613,7 +587,7 @@ BOOL ConferenceRecorder::GetAudioFrame(const uint64_t & timestamp)
     return FALSE;
 
   audio_frame->nb_samples = dst_samples;
-  avcodec_fill_audio_frame(audio_frame, context->channels, context->sample_fmt, dst_samples_data[0], dst_samples_size, ALIGN);
+  avcodec_fill_audio_frame(audio_frame, context->channels, context->sample_fmt, dst_samples_data[0], dst_samples_size, AV_ALIGN);
   return TRUE;
 }
 

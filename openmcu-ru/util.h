@@ -8,6 +8,8 @@
 #include <typeinfo>
 #include <sofia-sip/msg_types.h>
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 extern "C"
 {
   #include "libavcodec/avcodec.h"
@@ -25,7 +27,29 @@ extern "C"
 #elif USE_LIBSAMPLERATE
   #include <samplerate.h>
 #endif
+#if USE_SWSCALE
+  #include "libswscale/swscale.h"
+#endif
 }
+
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
+  #define AV_CODEC_ID_NONE        CODEC_ID_NONE
+  #define AV_CODEC_ID_PCM_S16LE   CODEC_ID_PCM_S16LE
+  #define AV_CODEC_ID_AC3         CODEC_ID_AC3
+  #define AV_CODEC_ID_H264        CODEC_ID_H264
+  #define AV_CODEC_ID_MPEG4       CODEC_ID_MPEG4
+  #define AV_CODEC_ID_MSMPEG4V3   CODEC_ID_MSMPEG4V3
+  #define AV_CODEC_ID_VP8         CODEC_ID_VP8
+#endif
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 0, 0)
+  #define AV_PIX_FMT_YUV420P    PIX_FMT_YUV420P
+#endif
+
+#define AV_ALIGN 1
+
+PString AVErrorToString(int errnum);
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _WIN32
 #pragma warning(disable:4786)

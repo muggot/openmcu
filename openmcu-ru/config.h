@@ -95,9 +95,18 @@
 
 // enable/disable libyuv (optimized frame resize)
 #define USE_LIBYUV	1
+#if USE_LIBYUV
+  // libyuv filtering type: kFilterNone | kFilterBilinear | kFilterBox
+  #define LIBYUV_FILTER	kFilterBilinear
+#endif
 
-// libyuv filtering type: kFilterNone|kFilterBilinear|kFilterBox
-#define LIBYUV_FILTER	kFilterBilinear
+// enable/disable ffmpeg scale
+#define USE_SWSCALE	1
+#if USE_SWSCALE
+  // swscale filtering type: SWS_FAST_BILINEAR | SWS_BILINEAR | SWS_BICUBIC | ... swscale.h
+  #define SWSCALE_FILTER SWS_BILINEAR
+#endif
+
 
 #ifdef _WIN32
 #  undef  USE_SWRESAMPLE

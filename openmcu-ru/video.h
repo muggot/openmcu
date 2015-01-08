@@ -491,7 +491,7 @@ class MCUVideoMixer
     static void CopyRectIntoRect(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh);
     static void CopyRectFromFrame(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh);
     static void ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh);
-#if USE_LIBYUV==0
+#if !USE_LIBYUV && !USE_SWSCALE
     static void ConvertQCIFToCIF(const void * _src, void * _dst);
     static void ConvertCIFToCIF4(const void * _src, void * _dst);
     static void ConvertCIF4ToCIF16(const void * _src, void * _dst);

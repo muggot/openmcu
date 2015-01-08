@@ -1158,6 +1158,30 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
     /* dst_width */ (int)dw,                                    /* dst_height */   (int)dh,
     /* filtering */ OpenMCU::Current().GetScaleFilter()
   );
+#elif USE_SWSCALE
+  else
+  {
+    struct SwsContext *sws_ctx = sws_getContext(sw, sh, AV_PIX_FMT_YUV420P,
+                                                dw, dh, AV_PIX_FMT_YUV420P,
+                                                SWSCALE_FILTER, NULL, NULL, NULL);
+    if(sws_ctx == NULL)
+    {
+      MCUTRACE(1, "MCUVideoMixer\tImpossible to create scale context for the conversion "
+                  << sw << "x" << sh << "->" << dw << "x" << dh);
+      return;
+    }
+
+    // initialize linesize
+    AVPicture src_picture;
+    avpicture_fill(&src_picture, (uint8_t *)_src, AV_PIX_FMT_YUV420P, sw, sh);
+    AVPicture dst_picture;
+    avpicture_fill(&dst_picture, (uint8_t *)_dst, AV_PIX_FMT_YUV420P, dw, dh);
+
+    sws_scale(sws_ctx, src_picture.data, src_picture.linesize, 0, sh,
+                       dst_picture.data, dst_picture.linesize);
+
+    sws_freeContext(sws_ctx);
+  }
 #else
   else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==TCIF_WIDTH    && dh==TCIF_HEIGHT)   // CIF16 -> TCIF
     ConvertCIF16ToTCIF(_src,_dst);
@@ -1214,7 +1238,7 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
 #endif
 }
 
-#if USE_LIBYUV==0
+#if !USE_LIBYUV && !USE_SWSCALE
 void MCUVideoMixer::ConvertCIF4ToCIF(const void * _src, void * _dst)
 {
   unsigned char * src = (unsigned char *)_src;
@@ -2998,7 +3022,7 @@ void MCUVideoMixer::ConvertQCIFToCIF4(const void * _src, void * _dst)
     src += QCIF_WIDTH/2;
   }
 }
-#endif // #if USE_LIBYUV==0
+#endif // #if !USE_LIBYUV && !USE_SWSCALE
 
 void MCUVideoMixer::VideoSplitLines(void * dst, unsigned fw, unsigned fh){
  unsigned int i;
