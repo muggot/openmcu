@@ -451,7 +451,13 @@ BOOL MCU_RTPChannel::WriteFrame(RTP_DataFrame & frame)
   return TRUE;
 
   error:
-    ((MCUH323Connection &)connection).LeaveMCU();
+    // Завершать соединение только при ошибке записи,
+    // при закрытии канала(terminating) не завершать соединение, это не ошибка.
+    if(terminating == FALSE)
+    {
+      PTRACE(1, "MCU_RTPChannel\tTransmit " << (isAudio ? "audio" : "video") << " channel write error, shutdown connection");
+      ((MCUH323Connection &)connection).LeaveMCU();
+    }
     return FALSE;
 }
 
@@ -986,6 +992,7 @@ MCU_RTP_UDP::MCU_RTP_UDP(
   writeDataTimeout = 60;
   writeDataErrors = 0;
   writeDataErrorsTime = 0;
+  writeControlErrors = 0;
 
   zrtp_secured = FALSE;
   srtp_secured = FALSE;
@@ -1080,12 +1087,14 @@ BOOL MCU_RTP_UDP::PreWriteData(RTP_DataFrame & frame)
 
 BOOL MCU_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
 {
+  // Сделать несколько попыток записи, трассировка на последней попытке.
+  // Возвращает FALSE если невозможно записать в течении writeDataTimeout, в MCU_RTPChannel::WriteFrame обработка ошибки.
   int writeAttempts = 0;
   while(!dataSocket->WriteTo(frame.GetPointer(), frame.GetHeaderSize()+frame.GetPayloadSize(), remoteAddress, remoteDataPort))
   {
     writeAttempts++;
-    if(writeAttempts == 5)
-      return TRUE;
+    if(writeAttempts < 3)
+      continue;
 
     switch(dataSocket->GetErrorNumber())
     {
@@ -1094,17 +1103,21 @@ BOOL MCU_RTP_UDP::PostWriteData(RTP_DataFrame & frame)
         PTRACE(2, "MCU_RTP_UDP\tSession " << sessionID << ", data port on remote not ready.");
         break;
       default:
-        writeDataErrors++;
-        if(writeDataErrorsTime == 0)
-          writeDataErrorsTime = MCUTime();
-        if(MCUTime().GetSeconds() - writeDataErrorsTime.GetSeconds() < writeDataTimeout)
-          return TRUE;
         PTRACE(1, "MCU_RTP_UDP\tSession " << sessionID << ", Write error on data port ("
                << dataSocket->GetErrorNumber(PChannel::LastWriteError) << "): "
                << dataSocket->GetErrorText(PChannel::LastWriteError));
-        return FALSE;
     }
+
+    writeDataErrors++;
+    if(writeDataErrorsTime == 0)
+      writeDataErrorsTime = MCUTime();
+    if(MCUTime().GetSeconds() - writeDataErrorsTime.GetSeconds() < writeDataTimeout)
+      return TRUE;
+
+    PTRACE(1, "MCU_RTP_UDP\tSession " << sessionID << ", return error after timeout " << writeDataTimeout);
+    return FALSE;
   }
+
   writeDataErrorsTime = 0;
   return TRUE;
 }
@@ -1117,12 +1130,14 @@ BOOL MCU_RTP_UDP::WriteControl(RTP_ControlFrame & frame)
   if(!remoteAddress.IsValid() || remoteControlPort == 0)
     return TRUE;
 
+  // Сделать несколько попыток записи, трассировка на последней попытке.
+  // Всегда возвращает TRUE.
   int writeAttempts = 0;
   while(!controlSocket->WriteTo(frame.GetPointer(), frame.GetCompoundSize(), remoteAddress, remoteControlPort))
   {
     writeAttempts++;
-    if(writeAttempts == 5)
-      return TRUE;
+    if(writeAttempts < 3)
+      continue;
 
     switch(controlSocket->GetErrorNumber())
     {
@@ -1135,6 +1150,9 @@ BOOL MCU_RTP_UDP::WriteControl(RTP_ControlFrame & frame)
                << controlSocket->GetErrorNumber(PChannel::LastWriteError) << "): "
                << controlSocket->GetErrorText(PChannel::LastWriteError));
     }
+
+    writeControlErrors++;
+    return TRUE;
   }
 
   return TRUE;
