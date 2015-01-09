@@ -4115,15 +4115,17 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 #     endif
     }
     else if(pw*height<ph*width){
-      imageStores_operational_size(ph*width/height,ph,_IMGST+_IMGST1);
-      ResizeYUV420P((const BYTE *)buffer,    imageStore1.GetPointer(), width, height, ph*width/height, ph);
-      CopyRectFromFrame         (imageStore1.GetPointer(),imageStore.GetPointer() , (ph*width/height-pw)/2, 0, pw, ph, ph*width/height, ph);
+      int dstWidth = GetScaleFrameSizeWidth(width, height, ph);
+      imageStores_operational_size(dstWidth, ph, _IMGST+_IMGST1);
+      ResizeYUV420P((const BYTE *)buffer, imageStore1.GetPointer(), width, height, dstWidth, ph);
+      CopyRectFromFrame(imageStore1.GetPointer(), imageStore.GetPointer() , (dstWidth-pw)/2, 0, pw, ph, dstWidth, ph);
       ist=imageStore.GetPointer();
     }
     else if(pw*height>ph*width){
-      imageStores_operational_size(pw,pw*height/width,_IMGST+_IMGST1);
-      ResizeYUV420P((const BYTE *)buffer,    imageStore1.GetPointer(), width, height, pw, pw*height/width);
-      CopyRectFromFrame         (imageStore1.GetPointer(),imageStore.GetPointer() , 0, (pw*height/width-ph)/2, pw, ph, pw, pw*height/width);
+      int dstHeight = GetScaleFrameSizeHeight(width, height, pw);
+      imageStores_operational_size(pw, dstHeight, _IMGST+_IMGST1);
+      ResizeYUV420P((const BYTE *)buffer, imageStore1.GetPointer(), width, height, pw, dstHeight);
+      CopyRectFromFrame(imageStore1.GetPointer(),imageStore.GetPointer() , 0, (dstHeight-ph)/2, pw, ph, pw, dstHeight);
       ist=imageStore.GetPointer();
     }
     else { // fit. scale

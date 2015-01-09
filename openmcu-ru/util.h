@@ -165,6 +165,22 @@ PString GetPluginName(const PString & format);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+inline int GetScaleFrameSizeWidth(int srcWidth, int srcHeight, int dstHeight)
+{
+  int dstWidth = dstHeight * srcWidth / srcHeight;
+  dstWidth = (dstWidth / 2) * 2;
+  return dstWidth;
+}
+
+inline int GetScaleFrameSizeHeight(int srcWidth, int srcHeight, int dstWidth)
+{
+  int dstHeight = dstWidth * srcHeight / srcWidth;
+  dstHeight = (dstHeight / 2) * 2;
+  return dstHeight;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class MCUTime
 {
   public:
