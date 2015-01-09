@@ -197,6 +197,22 @@ static const char OPTION_ENCODER_CHANNELS[] = "Encoder Channels";
 static const char OPTION_DECODER_CHANNELS[] = "Decoder Channels";
 static const char OPTION_TX_KEY_FRAME_PERIOD[] = "Tx Key Frame Period";
 
+static PString MCUScaleFilterNames =
+                                  ""
+                                  ",libyuv|kFilterNone"
+                                  ",libyuv|kFilterBilinear"
+                                  ",libyuv|kFilterBox"
+                                  ",swscale|SWS_FAST_BILINEAR"
+                                  ",swscale|SWS_BILINEAR"
+                                  ",swscale|SWS_BICUBIC"
+                                  ",swscale|SWS_X"
+                                  ",swscale|SWS_POINT"
+                                  ",swscale|SWS_AREA"
+                                  ",swscale|SWS_BICUBLIN"
+                                  ",swscale|SWS_GAUSS"
+                                  ",swscale|SWS_SINC"
+                                  ",swscale|SWS_LANCZOS"
+                                  ",swscale|SWS_SPLINE";
 
 static const PTEACypher::Key CypherKey = {
   {
@@ -395,11 +411,62 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     virtual BOOL GetEmptyMediaFrame(void * buffer, int width, int height, PINDEX & amount)
     { return GetPreMediaFrame(buffer, width, height, amount); }
 
-#if USE_LIBYUV
-    virtual libyuv::FilterMode GetScaleFilter(){ return scaleFilter; }
-    virtual void SetScaleFilter(libyuv::FilterMode newScaleFilter){ scaleFilter=newScaleFilter; }
-#endif
+    PString SetScaleFilterType(int type)
+    {
+      scaleFilterType = type;
+      return GetScaleFilterName();
+    }
 
+    int GetScaleFilterType()
+    {
+      return scaleFilterType;
+    }
+
+    PString GetScaleFilterName()
+    {
+      return MCUScaleFilterNames.Tokenise(",")[scaleFilterType];
+    }
+
+    int GetScaleFilter()
+    {
+      switch(scaleFilterType)
+      {
+#if USE_LIBYUV
+        case(1):
+          return libyuv::kFilterNone; // 0
+        case(2):
+          return libyuv::kFilterBilinear; // 1
+        case(3):
+          return libyuv::kFilterBox; // 2
+#endif // USE_LIBYUV
+#if USE_SWSCALE
+        case(4):
+          return SWS_FAST_BILINEAR; // 1
+        case(5):
+          return SWS_BILINEAR; // 2
+        case(6):
+          return SWS_BICUBIC; // 4
+        case(7):
+          return SWS_X; // 8
+        case(8):
+          return SWS_POINT; // 0x10
+        case(9):
+          return SWS_AREA; // 0x20
+        case(10):
+          return SWS_BICUBLIN; // 0x40
+        case(11):
+          return SWS_GAUSS; // 0x80
+        case(12):
+          return SWS_SINC; // 0x100
+        case(13):
+          return SWS_LANCZOS; // 0x200
+        case(14):
+          return SWS_SPLINE; // 0x400
+#endif // USE_SWSCALE
+        default:
+          return -1;
+      }
+    }
 #endif
 
 #ifdef _WIN32
@@ -459,9 +526,7 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     PMutex     httpBufferMutex;
 
 #if MCU_VIDEO
-#if USE_LIBYUV
-    libyuv::FilterMode scaleFilter;
-#endif
+    int scaleFilterType;
 #endif
 };
 

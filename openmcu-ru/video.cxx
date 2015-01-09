@@ -1144,10 +1144,15 @@ void MCUVideoMixer::CopyRectFromFrame(const void * _src, void * _dst, int xpos, 
 
 void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh)
 {
+  int scaleFilterType = OpenMCU::Current().GetScaleFilterType();
+  int scaleFilter = OpenMCU::Current().GetScaleFilter();
+
   if(sw==dw && sh==dh) // same size
     memcpy(_dst,_src,dw*dh*3/2);
 #if USE_LIBYUV
-  else libyuv::I420Scale(
+  else if(scaleFilterType >= 1 && scaleFilterType <= 3)
+  {
+    libyuv::I420Scale(
     /* src_y */     (const uint8*)_src,                         /* src_stride_y */ sw,
     /* src_u */     (const uint8*)((long)_src+sw*sh),           /* src_stride_u */ (int)(sw >> 1),
     /* src_v */     (const uint8*)((long)_src+sw*sh*5/4),       /* src_stride_v */ (int)(sw >> 1),
@@ -1156,14 +1161,16 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
     /* dst_u */     (uint8*)((long)_dst+dw*dh),                 /* dst_stride_u */ (int)(dw >> 1),
     /* dst_v */     (uint8*)((long)_dst+dw*dh+(dw>>1)*(dh>>1)), /* dst_stride_v */ (int)(dw >> 1),
     /* dst_width */ (int)dw,                                    /* dst_height */   (int)dh,
-    /* filtering */ OpenMCU::Current().GetScaleFilter()
-  );
-#elif USE_SWSCALE
-  else
+    /* filtering */ (libyuv::FilterMode)scaleFilter
+    );
+  }
+#endif
+#if USE_SWSCALE
+  else if(scaleFilterType >= 4 && scaleFilterType <= 14)
   {
     struct SwsContext *sws_ctx = sws_getContext(sw, sh, AV_PIX_FMT_YUV420P,
                                                 dw, dh, AV_PIX_FMT_YUV420P,
-                                                SWSCALE_FILTER, NULL, NULL, NULL);
+                                                scaleFilter, NULL, NULL, NULL);
     if(sws_ctx == NULL)
     {
       MCUTRACE(1, "MCUVideoMixer\tImpossible to create scale context for the conversion "
@@ -1182,7 +1189,8 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
 
     sws_freeContext(sws_ctx);
   }
-#else
+#endif
+#if !USE_LIBYUV && !USE_SWSCALE
   else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==TCIF_WIDTH    && dh==TCIF_HEIGHT)   // CIF16 -> TCIF
     ConvertCIF16ToTCIF(_src,_dst);
   else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==Q3CIF16_WIDTH && dh==Q3CIF16_HEIGHT)// CIF16 -> Q3CIF16

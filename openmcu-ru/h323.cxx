@@ -1073,7 +1073,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
     r << "]"; // l3 close
 
 #if USE_LIBYUV
-    r << "," << OpenMCU::Current().GetScaleFilter();                      // [0][10] = libyuv resizer filter mode
+    r << "," << OpenMCU::Current().GetScaleFilterType();                      // [0][10] = libyuv resizer filter mode
 #else
     r << ",-1";
 #endif
@@ -1246,12 +1246,11 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   PString value = data("v");
   long v = value.AsInteger();
 
-#if USE_LIBYUV
+#if USE_LIBYUV || USE_SWSCALE
   if(action == OTFC_YUV_FILTER_MODE)
   {
-    if(v==1) OpenMCU::Current().SetScaleFilter(libyuv::kFilterBilinear);
-    else if(v==2) OpenMCU::Current().SetScaleFilter(libyuv::kFilterBox);
-    else OpenMCU::Current().SetScaleFilter(libyuv::kFilterNone);
+    PString filterName = OpenMCU::Current().SetScaleFilterType(v);
+    OpenMCU::Current().HttpWriteEventRoom("filter: "+filterName, room);
     PStringStream cmd;
     cmd << "conf[0][10]=" << v;
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
