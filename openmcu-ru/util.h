@@ -54,7 +54,7 @@ PString AVErrorToString(int errnum);
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
 BOOL MCU_AVEncodeFrame(CodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height);
 #else
-BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height)
+BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height);
 #endif
 BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, int & dst_width, int & dst_height);
 
