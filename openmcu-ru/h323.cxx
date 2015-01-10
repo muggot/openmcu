@@ -11,14 +11,6 @@
 #include <math.h>
 #include <stdio.h>
 
-#if MCU_VIDEO
-
-#if USE_LIBYUV
-#include <libyuv/scale.h>
-#endif
-
-#endif  // MCU_VIDEO
-
 #define new PNEW
 
 #ifdef _WIN32
@@ -1072,11 +1064,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 
     r << "]"; // l3 close
 
-#if USE_LIBYUV
-    r << "," << OpenMCU::Current().GetScaleFilterType();                      // [0][10] = libyuv resizer filter mode
-#else
-    r << ",-1";
-#endif
+  r << "," << OpenMCU::Current().GetScaleFilterType();                      // [0][10] = yuv resizer filter mode
 
   if(c.conferenceRecorder != NULL && c.conferenceRecorder->IsRunning()) r << ",1"; else r << ",0"; // [0][11] = video recording state (1=recording, 0=NO)
   if(c.lockedTemplate) r << ",1"; else r << ",0";                         // [0][12] = member list locked by template (1=yes, 0=no)
@@ -1246,7 +1234,6 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   PString value = data("v");
   long v = value.AsInteger();
 
-#if USE_LIBYUV || USE_SWSCALE
   if(action == OTFC_YUV_FILTER_MODE)
   {
     PString filterName = OpenMCU::Current().SetScaleFilterType(v);
@@ -1258,7 +1245,6 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     OpenMCU::Current().HttpWriteCmdRoom("alive()",room);
     return TRUE;
   }
-#endif
 
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
   MCUConferenceList::shared_iterator cit = conferenceList.Find(room);

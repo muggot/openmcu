@@ -1985,7 +1985,7 @@ BOOL WelcomePage::OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo
   PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
   if(!CheckAuthority(server, *req, connectInfo)) { delete req; return PServiceHTTPString::OnGET(server, url, info, connectInfo); }
   delete req;
-#if USE_LIBJPEG
+
   const PString & eb = connectInfo.GetEntityBody();
   long l = connectInfo.GetEntityBodyLength();
   if(l<1) return FALSE;
@@ -2056,7 +2056,7 @@ BOOL WelcomePage::OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo
   }
   server.flush();
   OpenMCU::Current().RemovePreMediaFrame();
-#endif
+
   return FALSE;
 }
 
@@ -2112,9 +2112,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
 
         << app.GetEndpoint().GetMonitorText() << "</pre></div>";
 
-#if USE_LIBJPEG
   shtml << "<br><form method=\"post\" enctype=\"multipart/form-data\"><script type=\"text/javascript\">document.write(window.l_welcome_logo);</script><img src=\"logo.jpeg\"><br><script type=\"text/javascript\">document.write(window.l_changelogo);</script><input name=\"image\" type=\"file\"><input type=\"submit\"></form>";
-#endif
 
   EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());
   { PStringStream message; PTime now; message
@@ -2279,8 +2277,6 @@ BOOL InvitePage::Post(PHTTPRequest & request,
 
 ///////////////////////////////////////////////////////////////
 
-#if USE_LIBJPEG
-
 JpegFrameHTTP::JpegFrameHTTP(OpenMCU & _app, PHTTPAuthority & auth)
   : PServiceHTTPString("Jpeg", "", "image/jpeg", auth),
     app(_app)
@@ -2326,6 +2322,11 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
       width=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_width;
       height=OpenMCU::vmcfg.vmconf[jpegMixer->GetPositionSet()].splitcfg.mockup_height;
     }
+
+    width = (width/2)*2;
+    height = (height/2)*2;
+
+#if USE_LIBJPEG
     struct my_jpeg_compress_struct cinfo;
     cinfo.context = this;
     struct jpeg_error_mgr jerr;
@@ -2364,7 +2365,20 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     jpeg_finish_compress(&cinfo);
     delete[] bitmap; delete cinfo.dest; cinfo.dest=NULL;
     jpeg_destroy_compress(&cinfo);
-    jpegMixer->jpegTime=t1;
+
+#else
+    int buffer_size = width * height * 3 / 2;
+    MCUBuffer buffer(buffer_size);
+    jpegMixer->ReadMixedFrame(buffer.GetPointer(), width, height, buffer_size);
+
+    int dst_size = 16384;
+    jpegMixer->jpegSize = 0;
+    jpegMixer->myjpeg.SetSize(dst_size);
+    if(MCU_AVEncodeFrame(AV_CODEC_ID_MJPEG, buffer.GetPointer(), buffer_size, jpegMixer->myjpeg.GetPointer(), dst_size, width, height))
+      jpegMixer->jpegSize = dst_size;
+#endif
+
+    jpegMixer->jpegTime = t1;
   }
 
   PTime now;
@@ -2389,7 +2403,6 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
 
   return TRUE;
 }
-#endif //#if USE_LIBJPEG
 
 ///////////////////////////////////////////////////////////////
 

@@ -38,6 +38,11 @@
 #include "mcu_caps.h"
 #include "mcu_codecs.h"
 
+#if USE_LIBYUV
+#include <libyuv/scale.h>
+#endif
+
+
 #if P_SSL
 #include <ptclib/shttpsvc.h>
 typedef PSecureHTTPServiceProcess OpenMCUProcessAncestor;

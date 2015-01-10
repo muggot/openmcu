@@ -42,10 +42,6 @@ BOOL ft_subtitles=FALSE;
 int ft_error=FT_INITIAL_ERROR;
 #endif // #if USE_FREETYPE
 
-#if USE_LIBYUV
-#include <libyuv/scale.h>
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////////////
 //
 //  declare a video capture (input) device for use with MCU

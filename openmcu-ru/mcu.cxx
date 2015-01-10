@@ -373,10 +373,8 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // Create video recording directory browser page:
   httpNameSpace.AddResource(new RecordsBrowserPage(*this, authConference), PHTTPSpace::Overwrite);
 
-#if USE_LIBJPEG
   // Create JPEG frame via HTTP
   httpNameSpace.AddResource(new JpegFrameHTTP(*this, authConference), PHTTPSpace::Overwrite);
-#endif
 
   httpNameSpace.AddResource(new InteractiveHTTP(*this, authConference), PHTTPSpace::Overwrite);
 
@@ -445,9 +443,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/png"                , "s32_ch.png");
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.ico");
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.gif");
-#if USE_LIBJPEG
   WEBSERVER_LINK_MIME_CFG("image/jpeg"           , "logo.jpeg");
-#endif
   WEBSERVER_LINK_MIME("image/png"                , "i16_close_gray.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_close_red.png");
   WEBSERVER_LINK_MIME("image/png"                , "i32_lock.png");

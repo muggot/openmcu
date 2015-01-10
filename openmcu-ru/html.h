@@ -856,13 +856,13 @@ class SectionPConfigPage : public DefaultPConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if USE_LIBJPEG
 class JpegFrameHTTP : public PServiceHTTPString
 {
   public:
     JpegFrameHTTP(OpenMCU & app, PHTTPAuthority & auth);
     BOOL OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo);
 
+#if USE_LIBJPEG
     struct my_jpeg_compress_struct : jpeg_compress_struct
     {
       JpegFrameHTTP *context;
@@ -899,13 +899,13 @@ class JpegFrameHTTP : public PServiceHTTPString
       my_jpeg_compress_struct *my_cinfo = static_cast<my_jpeg_compress_struct *>(cinfo);
       return my_cinfo->context->jpegMixer;
     }
+#endif
 
   private:
     OpenMCU & app;
     PMutex jpegMixerMutex;
     MCUSimpleVideoMixer *jpegMixer;
 };
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

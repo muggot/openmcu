@@ -5,10 +5,6 @@
 #include <ptlib/video.h>
 #include <ptlib/vconvert.h>
 
-#if USE_LIBYUV
-#include <libyuv/scale.h>
-#endif
-
 #include "config.h"
 #include "util.h"
 
@@ -257,9 +253,7 @@ class MCUVideoMixer
       : subImageWidth(0), subImageHeight(0)
     {
       conference = NULL;
-#if USE_LIBJPEG
       jpegTime=0; jpegSize=0;
-#endif
     }
 
     virtual ~MCUVideoMixer()
@@ -519,11 +513,11 @@ class MCUVideoMixer
     static void ConvertCIF4ToQCIF(const void * _src, void * _dst);
     static void ConvertCIFToSQCIF(const void * _src, void * _dst);
 #endif
-#if USE_LIBJPEG
+
     PBYTEArray myjpeg;
     PINDEX jpegSize;
     unsigned long jpegTime;
-#endif
+
     static void VideoSplitLines(void * dst, unsigned fw, unsigned fh);
     virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
 

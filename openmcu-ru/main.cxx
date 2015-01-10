@@ -44,7 +44,7 @@ class MyMCU : public OpenMCU
    BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount)
    {
      logo_mutex.Wait();
-#    if USE_LIBJPEG
+#if USE_LIBJPEG
        if(!logo)
        {
          struct jpeg_decompress_struct cinfo;
@@ -76,7 +76,25 @@ class MyMCU : public OpenMCU
            fclose(infile);
          }
        }
-#    endif
+#else
+      if(!logo)
+      {
+        int frame_size = 5000000;
+        int frame_width, frame_height;
+        MCUBuffer frame_buffer(frame_size);
+        PString filename = PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.jpeg";
+        if(MCU_AVDecodeFrameFromFile(filename, frame_buffer.GetPointer(), frame_size, frame_width, frame_height))
+        {
+          if(frame_width > 16 && frame_width % 2 == 0 && frame_height > 16 && frame_height % 2 == 0)
+          {
+            logo_width = frame_width;
+            logo_height = frame_height;
+            logo = new unsigned char[frame_size];
+            memcpy(logo, frame_buffer.GetPointer(), frame_size);
+          }
+        }
+      }
+#endif
 
      if(!logo)
      {

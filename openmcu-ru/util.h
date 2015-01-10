@@ -40,14 +40,23 @@ extern "C"
   #define AV_CODEC_ID_MPEG4       CODEC_ID_MPEG4
   #define AV_CODEC_ID_MSMPEG4V3   CODEC_ID_MSMPEG4V3
   #define AV_CODEC_ID_VP8         CODEC_ID_VP8
+  #define AV_CODEC_ID_MJPEG       CODEC_ID_MJPEG
 #endif
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 0, 0)
   #define AV_PIX_FMT_YUV420P    PIX_FMT_YUV420P
+  #define AV_PIX_FMT_YUVJ420P   PIX_FMT_YUVJ420P
+  #define AV_PIX_FMT_YUVJ444P   PIX_FMT_YUVJ444P
 #endif
 
 #define AV_ALIGN 1
 
 PString AVErrorToString(int errnum);
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
+BOOL MCU_AVEncodeFrame(CodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height);
+#else
+BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height)
+#endif
+BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, int & dst_width, int & dst_height);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -178,6 +187,77 @@ inline int GetScaleFrameSizeHeight(int srcWidth, int srcHeight, int dstWidth)
   dstHeight = (dstHeight / 2) * 2;
   return dstHeight;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUBuffer
+{
+  public:
+    MCUBuffer(int newsize = 2048, bool _aligned = true)
+    {
+      aligned = _aligned;
+      size = newsize;
+      buffer = (uint8_t *)aligned_malloc(size);
+    }
+
+    MCUBuffer(PixelFormat pix_fmt, int width, int height)
+    {
+      aligned = true;
+      size = avpicture_get_size(pix_fmt, width, height);
+      buffer = (uint8_t *)aligned_malloc(size);
+    }
+
+    ~MCUBuffer()
+    {
+      aligned_free(buffer);
+    }
+
+    int GetSize()
+    {
+      return size;
+    }
+
+    void SetSize(int newsize)
+    {
+      if(newsize < 0)
+        newsize = 0;
+
+      if(newsize == size)
+        return;
+
+      size = newsize;
+      aligned_free(buffer);
+      buffer = (uint8_t *)aligned_malloc(size);
+    }
+
+    uint8_t * GetPointer()
+    {
+      return buffer;
+    }
+
+    static void * aligned_malloc(int size)
+    {
+      void *ptr = NULL;
+#if HAVE_POSIX_MEMALIGN
+      if(posix_memalign(&ptr, 64, size))
+        ptr = NULL;
+#else
+      ptr = malloc(size);
+#endif
+      return ptr;
+    }
+
+    static void aligned_free(void *ptr)
+    {
+      free(ptr);
+    }
+
+  protected:
+    int size;
+    bool aligned;
+    __attribute__((aligned(64))) uint8_t *buffer;
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
