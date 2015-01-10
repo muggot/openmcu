@@ -92,7 +92,7 @@ window.l_welcome_logo ='\
 <b>Image de logo personnalisée</b>\
 </p>\
 <p>\
-Cette image est montrée en l\'absence de source vidéo dans le mixer. Format JPEG, maximum 500kB\
+Cette image est montrée en l\'absence de source vidéo dans le mixer. Format BMP, JPEG(maximum 500kB), PNG, GIF.\
 </p>\
 ';
 

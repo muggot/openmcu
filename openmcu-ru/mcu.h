@@ -495,6 +495,21 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     const PString & GetConnectingWAVFile() const
     { return connectingWAVFile; }
 
+    const PString & GetLogoFilename()
+    {
+      if(PFile::Exists(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.bmp"))
+        logoFilename = "logo.bmp";
+      else if(PFile::Exists(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.jpeg"))
+        logoFilename = "logo.jpeg";
+      else if(PFile::Exists(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.png"))
+        logoFilename = "logo.png";
+      else if(PFile::Exists(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.gif"))
+        logoFilename = "logo.gif";
+      else
+        logoFilename = "";
+      return logoFilename;
+    }
+
   protected:
 
     BOOL MCUHTTPListenerCreate(const PString & ip, unsigned port);
@@ -523,6 +538,8 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     PString connectingWAVFile;
     PString enteringWAVFile;
     PString leavingWAVFile;
+
+    PString logoFilename;
 
     int        httpBuffer, httpBufferIndex;
     PStringArray httpBufferedEvents;

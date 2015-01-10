@@ -347,7 +347,7 @@ resampler_ffmpeg=yes
 resampler_libav=yes
 resampler_libsamplerate=yes
 libfreetype=yes
-libjpeg=yes
+libjpeg=no
 libyuv=yes
 swscale=yes
 openssl=yes
@@ -361,7 +361,7 @@ AC_ARG_ENABLE(resampler-libav, [AS_HELP_STRING([--disable-resampler-libav],[Enab
 AC_ARG_ENABLE(resampler-libsamplerate, [AS_HELP_STRING([--disable-resampler-libsamplerate],[Enable check only libsamplerate resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="no" resampler_libsamplerate="yes"])
 AC_ARG_ENABLE(separator, [  ])
 AC_ARG_ENABLE(libfreetype, [AS_HELP_STRING([--disable-libfreetype],[Disable subtitles (default enabled)],[40],[100])], [libfreetype="$enableval"])
-AC_ARG_ENABLE(libjpeg, [AS_HELP_STRING([--disable-libjpeg],[Disable JPEG Frame Encoder for browser (default enabled)],[40],[100])], [libjpeg="$enableval"])
+AC_ARG_ENABLE(libjpeg, [AS_HELP_STRING([--enable-libjpeg],[Enable JPEG Frame Encoder for browser (default disabled)],[40],[100])], [libjpeg="$enableval"])
 AC_ARG_ENABLE(libyuv, [AS_HELP_STRING([--disable-libyuv],[Disable libyuv to resize video (default enabled)],[40],[100])], [libyuv="$enableval"])
 AC_ARG_ENABLE(swscale, [AS_HELP_STRING([--disable-swscale],[Disable ffmpeg swscale to resize video (default enabled)],[40],[100])], [swscale="$enableval"])
 AC_ARG_ENABLE(separator, [   ])

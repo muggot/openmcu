@@ -443,7 +443,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/png"                , "s32_ch.png");
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.ico");
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.gif");
-  WEBSERVER_LINK_MIME_CFG("image/jpeg"           , "logo.jpeg");
   WEBSERVER_LINK_MIME("image/png"                , "i16_close_gray.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_close_red.png");
   WEBSERVER_LINK_MIME("image/png"                , "i32_lock.png");
@@ -454,6 +453,14 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/png"                , "i16_status_red.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_minus.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_plus.png");
+
+  WEBSERVER_LINK_MIME_CFG("image/bmp"            , "logo.bmp");
+  WEBSERVER_LINK_MIME_CFG("image/jpeg"           , "logo.jpeg");
+  WEBSERVER_LINK_MIME_CFG("image/png"            , "logo.png");
+  WEBSERVER_LINK_MIME_CFG("image/gif"            , "logo.gif");
+
+  // determine logo filename
+  GetLogoFilename();
 
   for(PINDEX i=-1; i<rotationLevel; i++)
   {

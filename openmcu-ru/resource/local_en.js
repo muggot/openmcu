@@ -92,7 +92,7 @@ window.l_welcome_logo ='\
 <b>Custom logo iamge</b>\
 </p>\
 <p>\
-This image is shown when no input video in mixer. Accepted only JPEG, maximum 500kB.\
+This image is shown when no input video in mixer. Accepted only BMP, JPEG(maximum 500kB), PNG, GIF.\
 </p>\
 ';
 

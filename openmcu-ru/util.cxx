@@ -167,13 +167,13 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
 
   if((ret = avformat_open_input(&fmt_ctx, filename, 0, 0)) < 0)
   {
-    MCUTRACE(1, "Could not open input file " << filename);
+    MCUTRACE(1, "Could not open input file " << filename << " " << ret << " " << AVErrorToString(ret));
     goto end;
   }
 
   if((ret = avformat_find_stream_info(fmt_ctx, 0)) < 0)
   {
-    MCUTRACE(1, "Failed to retrieve input stream information from file " << filename);
+    MCUTRACE(1, "Failed to retrieve input stream information from file " << filename << " " << ret << " " << AVErrorToString(ret));
     goto end;
   }
 
@@ -199,13 +199,14 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
   ret = av_read_frame(fmt_ctx, &pkt);
   if(ret < 0)
   {
+    MCUTRACE(1, "Failed read frame from file " << filename << " " << ret << " " << AVErrorToString(ret));
     goto end;
   }
 
   context->codec = avcodec_find_decoder(context->codec_id);
   if(context->codec == NULL)
   {
-    MCUTRACE(1, "Could not find decoder");
+    MCUTRACE(1, "Could not find decoder " << context->codec_id);
     goto end;
   }
 

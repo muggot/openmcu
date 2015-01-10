@@ -1989,17 +1989,36 @@ BOOL WelcomePage::OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo
   const PString & eb = connectInfo.GetEntityBody();
   long l = connectInfo.GetEntityBodyLength();
   if(l<1) return FALSE;
-  PINDEX o = eb.Find("image/jpeg");
-  if(o != P_MAX_INDEX)
+
+  PINDEX o;
+  PString extension;
+  if((o = eb.Find("image/bmp")) != P_MAX_INDEX)
+  {
+    o += 10;
+    extension = "bmp";
+  }
+  else if((o = eb.Find("image/jpeg")) != P_MAX_INDEX)
   {
     o += 11;
+    extension = "jpeg";
+  }
+  else if((o = eb.Find("image/pjpeg")) != P_MAX_INDEX)
+  {
+    o += 12;
+    extension = "jpeg";
+  }
+  else if((o = eb.Find("image/png")) != P_MAX_INDEX)
+  {
+    o += 10;
+    extension = "png";
+  }
+  else if((o = eb.Find("image/gif")) != P_MAX_INDEX)
+  {
+    o += 10;
+    extension = "gif";
   }
   else
-  {
-    o = eb.Find("image/pjpeg");
-    if(o == P_MAX_INDEX) return FALSE;
-    o += 12;
-  }
+    return FALSE;
 
   PINDEX bs = 0, be = bs; // bs, be - boundary start, boundary end
   BYTE c = eb[be];
@@ -2038,15 +2057,23 @@ BOOL WelcomePage::OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo
   }
   if(o2<=o) return FALSE;
   size_t cl = o2-o; // content length
-  if(cl > 524288) return FALSE; // too big
+
+  if(extension == "jpeg" && cl > 524288)
+    return FALSE; // too big
+
+  // delete files
+  PFile::Remove(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.bmp");
+  PFile::Remove(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.jpeg");
+  PFile::Remove(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.png");
+  PFile::Remove(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.gif");
 
   FILE *f;
   size_t written=0;
-  f=fopen(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.jpeg","wb"); 
+  f=fopen(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo." + extension,"wb"); 
   if(f) written=fwrite((const void*)(((const char*)eb)+o), 1, (size_t)o2-o, f);
   fclose(f);
 
-  PTRACE(1,"HTML\tlogo.jpeg " << written << " byte(s) re-written");
+  PTRACE(1,"HTML\tlogo." << extension << " " << written << " byte(s) re-written");
 
   { PStringStream message; PTime now; message
       << "HTTP/1.1 302 Found\r\n"
@@ -2112,7 +2139,9 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
 
         << app.GetEndpoint().GetMonitorText() << "</pre></div>";
 
-  shtml << "<br><form method=\"post\" enctype=\"multipart/form-data\"><script type=\"text/javascript\">document.write(window.l_welcome_logo);</script><img src=\"logo.jpeg\"><br><script type=\"text/javascript\">document.write(window.l_changelogo);</script><input name=\"image\" type=\"file\"><input type=\"submit\"></form>";
+  shtml << "<br><form method=\"post\" enctype=\"multipart/form-data\"><script type=\"text/javascript\">"
+           "document.write(window.l_welcome_logo);</script><img src=\""+OpenMCU::Current().GetLogoFilename()+"\"><br><script type=\"text/javascript\">"
+           "document.write(window.l_changelogo);</script><input name=\"image\" type=\"file\"><input type=\"submit\"></form>";
 
   EndPage(shtml,OpenMCU::Current().GetHtmlCopyright());
   { PStringStream message; PTime now; message

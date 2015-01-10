@@ -92,7 +92,7 @@ window.l_welcome_logo ='\
 <b>Imagem do seu logotipo personalizado</b>\
 </p>\
 <p>\
-Esta imagem será apresentada quando não houver recepção de vídeo. Aceita somente JPEG com um máximo de 500KB.\
+Esta imagem será apresentada quando não houver recepção de vídeo. Aceita somente BMP, JPEG(com um máximo de 500KB), PNG, GIF.\
 </p>\
 ';
 
