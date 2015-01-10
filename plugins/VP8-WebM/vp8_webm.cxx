@@ -783,9 +783,11 @@ class VP8DecoderFFmpeg : public PluginVideoDecoder<CODEC>
     VP8DecoderFFmpeg(const PluginCodec_Definition * defn)
       : BaseClass(defn)
       , m_description(m_definition->descr)
+      , m_codec(NULL)
+      , m_context(NULL)
+      , m_outputFrame(NULL)
       , m_intraFrame(false)
     {
-      memset(&m_codec, 0, sizeof(m_codec));
       m_fullFrame.reserve(10000);
     }
 
@@ -797,7 +799,6 @@ class VP8DecoderFFmpeg : public PluginVideoDecoder<CODEC>
       if (m_context != NULL) av_free(m_context);
       if (m_outputFrame != NULL) av_free(m_outputFrame);
     }
-
 
     virtual bool Construct()
     {
