@@ -3,7 +3,7 @@
 #define _MCU_H323_H
 
 #include "config.h"
-#include "util.h"
+#include "utils.h"
 #include "mcu_caps.h"
 
 #include <ptlib.h>

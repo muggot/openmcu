@@ -50,9 +50,6 @@
 // specify certificates directory
 #define SYS_SSL_DIR "@MCU_SSL_DIR@"
 
-// specify ffmpeg path
-#define FFMPEG_PATH	"@FFMPEG_PATH@"
-
 // enable test rooms for video mixer
 #define ENABLE_TEST_ROOMS   1
 

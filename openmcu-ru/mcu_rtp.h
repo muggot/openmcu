@@ -10,7 +10,7 @@
 #include <h323con.h>
 
 #include "config.h"
-#include "util.h"
+#include "utils.h"
 
 #if MCUSIP_SRTP
   #include "srtp.h"

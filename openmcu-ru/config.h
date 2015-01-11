@@ -50,9 +50,6 @@
 // specify certificates directory
 #define SYS_SSL_DIR "/opt/openmcu-ru/ssl"
 
-// specify ffmpeg path
-#define FFMPEG_PATH	"/opt/bin/ffmpeg"
-
 // enable test rooms for video mixer
 #define ENABLE_TEST_ROOMS   1
 
@@ -91,7 +88,7 @@
 #define USE_FREETYPE	1
 
 // enable/disable libjpeg (live video frames in Room Control Page)
-#define USE_LIBJPEG	1
+#define USE_LIBJPEG	0
 
 // enable/disable libyuv (optimized frame resize)
 #define USE_LIBYUV	1

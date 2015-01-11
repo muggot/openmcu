@@ -3,7 +3,7 @@
 #define _MCU_FILEMEMBERS_H
 
 #include "config.h"
-#include "util.h"
+#include "utils.h"
 #include "conference.h"
 #include "mcu_rtp.h"
 

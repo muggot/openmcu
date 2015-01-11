@@ -349,7 +349,6 @@ resampler_libsamplerate=yes
 libfreetype=yes
 libjpeg=no
 libyuv=yes
-swscale=yes
 openssl=yes
 libsrtp=yes
 libzrtp=yes
@@ -363,7 +362,6 @@ AC_ARG_ENABLE(separator, [  ])
 AC_ARG_ENABLE(libfreetype, [AS_HELP_STRING([--disable-libfreetype],[Disable subtitles (default enabled)],[40],[100])], [libfreetype="$enableval"])
 AC_ARG_ENABLE(libjpeg, [AS_HELP_STRING([--enable-libjpeg],[Enable JPEG Frame Encoder for browser (default disabled)],[40],[100])], [libjpeg="$enableval"])
 AC_ARG_ENABLE(libyuv, [AS_HELP_STRING([--disable-libyuv],[Disable libyuv to resize video (default enabled)],[40],[100])], [libyuv="$enableval"])
-AC_ARG_ENABLE(swscale, [AS_HELP_STRING([--disable-swscale],[Disable ffmpeg swscale to resize video (default enabled)],[40],[100])], [swscale="$enableval"])
 AC_ARG_ENABLE(separator, [   ])
 AC_ARG_ENABLE(openssl, [AS_HELP_STRING([--disable-openssl],[Disable OpenSSL support (default enabled)],[40],[100])], [openssl="$enableval"])
 AC_ARG_ENABLE(libsrtp, [AS_HELP_STRING([--disable-libsrtp],[Disable SRTP support for SIP (default enabled)],[40],[100])], [libsrtp="$enableval"])
@@ -562,16 +560,20 @@ MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
 dnl ########################################################################
 dnl check for video library
 
-USE_AVCODEC=0
+AC_SUBST(USE_AVCODEC, 0)
+
 AC_LANG_PUSH([C])
-AC_CHECK_HEADERS([libavcodec/avcodec.h ffmpeg/libavcodec/avcodec.h libav/libavcodec/avcodec.h avcodec.h ffmpeg/avcodec.h libav/avcodec.h], USE_AVCODEC=1, [], [-])
+
+AC_CHECK_HEADERS([avcodec.h libavcodec/avcodec.h ffmpeg/avcodec.h libav/avcodec.h ffmpeg/libavcodec/avcodec.h libav/libavcodec/avcodec.h], USE_AVCODEC=1, [], [-])
 if test ${USE_AVCODEC} = 0; then
-  AC_MSG_ERROR(avcodec headers not found! Install Ffmpeg or Libav.)
+  AC_MSG_ERROR(avcodec headers not found! Install FFmpeg or Libav.)
 fi
+
 AC_CHECK_LIB(avcodec, avcodec_version, USE_AVCODEC=1, USE_AVCODEC=0)
 if test ${USE_AVCODEC} = 0; then
-  AC_MSG_ERROR(libavcodec library not found!)
+  AC_MSG_ERROR(libavcodec library not found! Install FFmpeg or Libav.)
 fi
+
 AC_LANG_POP([C])
 
 LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
@@ -587,18 +589,21 @@ dnl check for ffmpeg/libav swscale library
 
 AC_SUBST(USE_SWSCALE, 0)
 
-if test "${swscale}" = "yes"; then
-  AC_CHECK_HEADERS(libswscale/swscale.h, USE_SWSCALE=1, USE_SWSCALE=0, [-])
-  if test "${USE_SWSCALE}" = "1"; then
-    AC_CHECK_LIB(swscale, sws_scale, USE_SWSCALE=1, USE_SWSCALE=0)
-  fi
+AC_LANG_PUSH([C])
 
-  if test "${USE_SWSCALE}" = "1"; then
-    MCU_LDLIBS="$MCU_LDLIBS -lswscale"
-  else
-    AC_MSG_WARN(libswscale not found!)
-  fi
+AC_CHECK_HEADERS([swscale.h libswscale/swscale.h ffmpeg/swscale.h libav/swscale.h ffmpeg/libswscale/swscale.h libav/libswscale/swscale.h], USE_SWSCALE=1, [], [-])
+if test "${USE_SWSCALE}" = "0"; then
+  AC_MSG_ERROR(swscale headers not found! Install FFmpeg or Libav.)
 fi
+
+AC_CHECK_LIB(swscale, sws_scale, USE_SWSCALE=1, USE_SWSCALE=0)
+if test "${USE_SWSCALE}" = "0"; then
+  AC_MSG_ERROR(swscale library not found! Install FFmpeg or Libav.)
+fi
+
+AC_LANG_POP([C])
+
+MCU_LDLIBS="$MCU_LDLIBS -lswscale"
 
 dnl ########################################################################
 dnl check for resampling library
@@ -635,49 +640,6 @@ if test "${resample}" = "yes"; then
     MCU_LDLIBS="$MCU_LDLIBS -lsamplerate"
   else
     AC_MSG_WARN(libswresample/libavresample/libsamplerate not found!)
-  fi
-fi
-
-dnl ########################################################################
-dnl check for ffmpeg path
-
-AC_SUBST(FFMPEG_PATH)
-AC_SUBST(FILE_FOUND, 0)
-
-if test "${FILE_FOUND}" = "0"; then
-  AC_CHECK_FILE(${MCU_BIN_DIR}/ffmpeg, [FILE_FOUND=1], [FILE_FOUND=0])
-  if test "${FILE_FOUND}" = "1"; then
-    FFMPEG_PATH=${MCU_BIN_DIR}/ffmpeg
-  fi
-fi
-if test "${FILE_FOUND}" = "0"; then
-  AC_CHECK_FILE(/usr/bin/ffmpeg, [FILE_FOUND=1], [FILE_FOUND=0])
-  if test "${FILE_FOUND}" = "1"; then
-    FFMPEG_PATH=/usr/bin/ffmpeg
-  fi
-fi
-if test "${FILE_FOUND}" = "0"; then
-  AC_CHECK_FILE(/usr/local/bin/ffmpeg, [FILE_FOUND=1], [FILE_FOUND=0])
-  if test "${FILE_FOUND}" = "1"; then
-    FFMPEG_PATH=/usr/local/bin/ffmpeg
-  fi
-fi
-if test "${FILE_FOUND}" = "0"; then
-  AC_CHECK_FILE(${MCU_BIN_DIR}/avconv, [FILE_FOUND=1], [FILE_FOUND=0])
-  if test "${FILE_FOUND}" = "1"; then
-    FFMPEG_PATH=${MCU_BIN_DIR}/avconv
-  fi
-fi
-if test "${FILE_FOUND}" = "0"; then
-  AC_CHECK_FILE(/usr/bin/avconv, [FILE_FOUND=1], [FILE_FOUND=0])
-  if test "${FILE_FOUND}" = "1"; then
-    FFMPEG_PATH=/usr/bin/avconv
-  fi
-fi
-if test "${FILE_FOUND}" = "0"; then
-  AC_CHECK_FILE(/usr/local/bin/avconv, [FILE_FOUND=1], [FILE_FOUND=0])
-  if test "${FILE_FOUND}" = "1"; then
-    FFMPEG_PATH=/usr/local/bin/avconv
   fi
 fi
 
