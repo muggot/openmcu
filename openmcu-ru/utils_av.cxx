@@ -27,7 +27,7 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   int ret = 0;
   BOOL result = FALSE;
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,1,0)
   MCUBuffer pkt_buffer(dst_size);
 #endif
 
@@ -38,10 +38,10 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
     goto end;
   }
 
-#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
-  context = avcodec_alloc_context3(codec);
-#else
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53,8,0)
   context = avcodec_alloc_context();
+#else
+  context = avcodec_alloc_context3(codec);
 #endif
   if(context == NULL)
   {
@@ -59,10 +59,10 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
 
   // open codec
   avcodecMutex.Wait();
-#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
-  ret = avcodec_open2(context, codec, NULL);
-#else
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53,8,0)
   ret = avcodec_open(context, codec);
+#else
+  ret = avcodec_open2(context, codec, NULL);
 #endif
   avcodecMutex.Signal();
   if(ret < 0)
@@ -93,7 +93,7 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   }
 
   av_init_packet(&pkt);
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,1,0)
   ret = avcodec_encode_video(context, pkt_buffer.GetPointer(), pkt_buffer.GetSize(), &frame);
   if(ret >= 0)
   {
@@ -195,10 +195,10 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
 
   // open codec
   avcodecMutex.Wait();
-#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(53,8,0)
-  ret = avcodec_open2(context, context->codec, NULL);
-#else
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(53,8,0)
   ret = avcodec_open(context, context->codec);
+#else
+  ret = avcodec_open2(context, context->codec, NULL);
 #endif
   avcodecMutex.Signal();
   if(ret < 0)

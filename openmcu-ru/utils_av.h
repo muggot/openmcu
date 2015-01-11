@@ -28,10 +28,8 @@ extern "C"
 #endif
 }
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,25,0)
   #define AVCodecID               CodecID
-#endif
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
   #define AV_CODEC_ID_NONE        CODEC_ID_NONE
   #define AV_CODEC_ID_PCM_S16LE   CODEC_ID_PCM_S16LE
   #define AV_CODEC_ID_AC3         CODEC_ID_AC3
@@ -41,11 +39,13 @@ extern "C"
   #define AV_CODEC_ID_VP8         CODEC_ID_VP8
   #define AV_CODEC_ID_MJPEG       CODEC_ID_MJPEG
 #endif
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55, 0, 0)
+
+#if LIBAVUTILS_VERSION_INT < AV_VERSION_INT(51,42,0)
   #define AV_PIX_FMT_YUV420P    PIX_FMT_YUV420P
   #define AV_PIX_FMT_YUVJ420P   PIX_FMT_YUVJ420P
   #define AV_PIX_FMT_YUVJ444P   PIX_FMT_YUVJ444P
 #endif
+
 
 #define AV_ALIGN 1
 
@@ -251,7 +251,7 @@ inline PString AVErrorToString(int errnum)
 inline PString AVCodecGetName(AVCodecID id)
 {
   PString name = "id:" + PString(id);
-#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(54,26,0)
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54,26,1)
   const AVCodecDescriptor *cd = avcodec_descriptor_get(id);
   if(cd)
     name += " name:" + PString(cd->name);
