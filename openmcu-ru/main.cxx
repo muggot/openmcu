@@ -48,10 +48,11 @@ void MyMCU::RemovePreMediaFrame()
 BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount)
 {
   logo_mutex.Wait();
+/*
   if(!logo && logoFilename == "logo.bmp")
   {
     FILE *fs;
-    fs=fopen(PString(SYS_RESOURCE_DIR) + PATH_SEPARATOR + logoFilename,"r"); 
+    fs=fopen(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + logoFilename, "r");
     if(fs)
     {
       unsigned char *p_buffer;
@@ -76,13 +77,14 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
       delete p_buffer;
     }
   }
+*/
 #if USE_LIBJPEG
-       if(!logo)
+       if(!logo && logoFilename == "logo.jpeg")
        {
          struct jpeg_decompress_struct cinfo;
          struct jpeg_error_mgr err;
          FILE * infile;
-         if ((infile = fopen(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + "logo.jpeg", "rb")))
+         if ((infile = fopen(PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + logoFilename, "rb")))
          {
            jpeg_create_decompress(&cinfo);
            cinfo.err = jpeg_std_error(&err);
@@ -110,7 +112,7 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
        }
 #endif
 
-  if(!logo)
+  if(!logo && logoFilename != "")
   {
     PString filename = PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + logoFilename;
     if(PFile::Exists(filename))
