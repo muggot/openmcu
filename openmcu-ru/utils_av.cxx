@@ -6,12 +6,9 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
-BOOL MCU_AVEncodeFrame(CodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height)
-#else
 BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height)
-#endif
 {
+  PString trace_section = "MCU_AVEncodeFrame: ";
   AVCodecContext *context = NULL;
   AVCodec *codec = NULL;
   AVPacket pkt = { 0 };
@@ -37,7 +34,7 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   codec = avcodec_find_encoder(codec_id);
   if(codec == NULL)
   {
-    MCUTRACE(1, "Could not find encoder for mjpeg");
+    MCUTRACE(1, trace_section << "Could not find encoder " << AVCodecGetName(codec_id));
     goto end;
   }
 
@@ -48,7 +45,7 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
 #endif
   if(context == NULL)
   {
-    MCUTRACE(1, "Failed to allocate context");
+    MCUTRACE(1, trace_section << "Failed to allocate context");
     goto end;
   }
 
@@ -70,7 +67,7 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   avcodecMutex.Signal();
   if(ret < 0)
   {
-    MCUTRACE(1, "Could not open video codec: " << ret << " " << AVErrorToString(ret));
+    MCUTRACE(1, trace_section << "Could not open video codec: " << AVCodecGetName(codec_id) << " " << ret << " " << AVErrorToString(ret));
     goto end;
   }
 
@@ -80,7 +77,7 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
                                                 SWS_BILINEAR, NULL, NULL, NULL);
     if(sws_ctx == NULL)
     {
-      MCUTRACE(1, "MCUVideoMixer\tImpossible to create scale context for the conversion "
+      MCUTRACE(1, trace_section << "Impossible to create scale context for the conversion "
                   << src_width << "x" << src_height << "->" << src_width << "x" << src_height);
       goto end;
     }
@@ -107,17 +104,16 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   int got_packet;
   ret = avcodec_encode_video2(context, &pkt, &frame, &got_packet);
 #endif
-
   // if size is zero, it means the image was buffered
   if(ret < 0)
   {
-    MCUTRACE(1, "error encoding video frame: " << ret << " " << AVErrorToString(ret));
+    MCUTRACE(1, trace_section << "error encoding video frame: " << AVCodecGetName(codec_id) << " " << ret << " " << AVErrorToString(ret));
     goto end;
   }
 
   if(pkt.size > dst_size)
   {
-    MCUTRACE(1, "Picture size " << pkt.size << " is larger than the buffer size " << dst_size);
+    MCUTRACE(1, trace_section << "Picture size " << pkt.size << " is larger than the buffer size " << dst_size);
     goto end;
   }
 
@@ -142,6 +138,7 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
 
 BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, int & dst_width, int & dst_height)
 {
+  PString trace_section = "MCU_AVDecodeFrameFromFile: ";
   AVFormatContext *fmt_ctx = NULL;
   AVCodecContext *context = NULL;
   AVPacket pkt = { 0 };
@@ -153,13 +150,13 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
 
   if((ret = avformat_open_input(&fmt_ctx, filename, 0, 0)) < 0)
   {
-    MCUTRACE(1, "Could not open input file " << filename << " " << ret << " " << AVErrorToString(ret));
+    MCUTRACE(1, trace_section << "Could not open input file " << filename << " " << ret << " " << AVErrorToString(ret));
     goto end;
   }
 
   if((ret = avformat_find_stream_info(fmt_ctx, 0)) < 0)
   {
-    MCUTRACE(1, "Failed to retrieve input stream information from file " << filename << " " << ret << " " << AVErrorToString(ret));
+    MCUTRACE(1, trace_section << "Failed to retrieve input stream information from file " << filename << " " << ret << " " << AVErrorToString(ret));
     goto end;
   }
 
@@ -177,7 +174,7 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
 
   if(context == NULL)
   {
-    MCUTRACE(1, "Could not find video context in file " << filename);
+    MCUTRACE(1, trace_section << "Could not find video context in file " << filename);
     goto end;
   }
 
@@ -185,14 +182,14 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
   ret = av_read_frame(fmt_ctx, &pkt);
   if(ret < 0)
   {
-    MCUTRACE(1, "Failed read frame from file " << filename << " " << ret << " " << AVErrorToString(ret));
+    MCUTRACE(1, trace_section << "Failed read frame from file " << filename << " " << ret << " " << AVErrorToString(ret));
     goto end;
   }
 
   context->codec = avcodec_find_decoder(context->codec_id);
   if(context->codec == NULL)
   {
-    MCUTRACE(1, "Could not find decoder " << context->codec_id);
+    MCUTRACE(1, trace_section << "Could not find decoder " << AVCodecGetName(context->codec_id));
     goto end;
   }
 
@@ -206,7 +203,7 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
   avcodecMutex.Signal();
   if(ret < 0)
   {
-    MCUTRACE(1, "Could not open video codec: " << ret << " " << AVErrorToString(ret));
+    MCUTRACE(1, trace_section << "Could not open video codec: " << AVCodecGetName(context->codec_id) << " " << ret << " " << AVErrorToString(ret));
     goto end;
   }
 
@@ -214,7 +211,7 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
   ret = avcodec_decode_video2(context, &frame, &got_picture, &pkt);
   if(ret < 0 || got_picture == 0)
   {
-    MCUTRACE(1, "Error decoding video frame: " << ret << " " << AVErrorToString(ret));
+    MCUTRACE(1, trace_section << "Error decoding video frame: " << AVCodecGetName(context->codec_id) << " " << ret << " " << AVErrorToString(ret));
     goto end;
   }
 
@@ -222,7 +219,7 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
     int dst_picture_size = avpicture_get_size(AV_PIX_FMT_YUV420P, frame.width, frame.height);
     if(dst_picture_size > dst_size)
     {
-      MCUTRACE(1, "Picture size " << dst_picture_size << " is larger than the buffer size " << dst_size);
+      MCUTRACE(1, trace_section << "Picture size " << dst_picture_size << " is larger than the buffer size " << dst_size);
       goto end;
     }
 
@@ -231,7 +228,7 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
                                                 SWS_BILINEAR, NULL, NULL, NULL);
     if(sws_ctx == NULL)
     {
-      MCUTRACE(1, "MCUVideoMixer\tImpossible to create scale context for the conversion "
+      MCUTRACE(1, trace_section << "Impossible to create scale context for the conversion "
                   << frame.width << "x" << frame.height << "->" << frame.width << "x" << frame.height);
       goto end;
     }

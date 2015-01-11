@@ -29,6 +29,9 @@ extern "C"
 }
 
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
+  #define AVCodecID               CodecID
+#endif
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
   #define AV_CODEC_ID_NONE        CODEC_ID_NONE
   #define AV_CODEC_ID_PCM_S16LE   CODEC_ID_PCM_S16LE
   #define AV_CODEC_ID_AC3         CODEC_ID_AC3
@@ -48,11 +51,7 @@ extern "C"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
-BOOL MCU_AVEncodeFrame(CodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height);
-#else
 BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height);
-#endif
 BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, int & dst_width, int & dst_height);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -245,6 +244,19 @@ inline PString AVErrorToString(int errnum)
   char errbuf[64];
   av_strerror(errnum, errbuf, 64);
   return PString(errbuf);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+inline PString AVCodecGetName(AVCodecID id)
+{
+  PString name = "id:" + PString(id);
+#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(54,26,0)
+  const AVCodecDescriptor *cd = avcodec_descriptor_get(id);
+  if(cd)
+    name += " name:" + PString(cd->name);
+#endif
+  return name;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
