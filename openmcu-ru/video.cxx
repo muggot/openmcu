@@ -4119,15 +4119,17 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 #     endif
     }
     else if(pw*height<ph*width){
-      int dstWidth = GetScaleFrameSizeWidth(width, height, ph);
-      imageStores_operational_size(dstWidth, ph, _IMGST+_IMGST1);
+      int dstWidth = ph*width/height;
+      // Ширина/высота может быть не кратна 2, для swscale увеличить буфер +1
+      imageStores_operational_size(dstWidth+1, ph+1, _IMGST+_IMGST1);
       ResizeYUV420P((const BYTE *)buffer, imageStore1.GetPointer(), width, height, dstWidth, ph);
       CopyRectFromFrame(imageStore1.GetPointer(), imageStore.GetPointer() , (dstWidth-pw)/2, 0, pw, ph, dstWidth, ph);
       ist=imageStore.GetPointer();
     }
     else if(pw*height>ph*width){
-      int dstHeight = GetScaleFrameSizeHeight(width, height, pw);
-      imageStores_operational_size(pw, dstHeight, _IMGST+_IMGST1);
+      int dstHeight = pw*height/width;
+      // Ширина/высота может быть не кратна 2, для swscale увеличить буфер +1
+      imageStores_operational_size(pw+1, dstHeight+1, _IMGST+_IMGST1);
       ResizeYUV420P((const BYTE *)buffer, imageStore1.GetPointer(), width, height, pw, dstHeight);
       CopyRectFromFrame(imageStore1.GetPointer(),imageStore.GetPointer() , 0, (dstHeight-ph)/2, pw, ph, pw, dstHeight);
       ist=imageStore.GetPointer();
