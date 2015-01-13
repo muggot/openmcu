@@ -952,8 +952,6 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
   if(memberToRemove->IsVisible())
     visibleMemberCount--;
 
-  memberToRemove->RemoveAllConnections();
-
   // remove ConferenceConnection
   RemoveAudioConnection(memberToRemove);
 
@@ -1007,23 +1005,15 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ConferenceAudioConnection * Conference::AddAudioConnection(ConferenceMember * member, unsigned sampleRate, unsigned channels)
-{
-  if(member->GetType() & MEMBER_TYPE_GSYSTEM)
-    return NULL;
-  ConferenceAudioConnection * conn = new ConferenceAudioConnection((long)member->GetID(), sampleRate, channels);
-  audioConnectionList.Insert((long)member->GetID(), conn);
-  return conn;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void Conference::RemoveAudioConnection(ConferenceMember * member)
 {
-  ConferenceAudioConnection * conn = audioConnectionList((long)member->GetID());
-  audioConnectionList.Release((long)member->GetID());
-  audioConnectionList.Erase((long)member->GetID());
-  delete conn;
+  MCUAudioConnectionList::shared_iterator it = audioConnectionList.Find((long)member->GetID());
+  if(it != audioConnectionList.end())
+  {
+    ConferenceAudioConnection * conn = it.GetObject();
+    if(audioConnectionList.Erase(it))
+      delete conn;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1058,16 +1048,22 @@ void Conference::ReadMemberAudio(ConferenceMember * member, const uint64_t & tim
 
 void Conference::WriteMemberAudio(ConferenceMember * member, const uint64_t & timestamp, const void * buffer, int amount, int sampleRate, int channels)
 {
+  if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+    return;
+
   ConferenceAudioConnection * conn = audioConnectionList((long)member->GetID());
   if(conn && (conn->GetSampleRate() != sampleRate || conn->GetChannels() != channels))
   {
     audioConnectionList.Release((long)member->GetID());
-    audioConnectionList.Erase((long)member->GetID());
-    delete conn;
+    if(audioConnectionList.Erase((long)member->GetID()))
+      delete conn;
     conn = NULL;
   }
   if(conn == NULL)
-    conn = AddAudioConnection(member, sampleRate, channels);
+  {
+    conn = new ConferenceAudioConnection((long)member->GetID(), sampleRate, channels);
+    audioConnectionList.Insert((long)member->GetID(), conn);
+  }
   conn->WriteAudio(timestamp, (const BYTE *)buffer, amount);
   audioConnectionList.Release((long)member->GetID());
 }
@@ -1416,13 +1412,6 @@ void ConferenceMember::ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceMember::RemoveAllConnections()
-{
-  PTRACE(3, "Conference\tRemoving all members from connection " << id);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ConferenceMember::WriteAudioAutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef, unsigned* signalLevel, float kManual)
 {
   unsigned samplesCount = samplesPerFrame*codecChannels;
@@ -1715,7 +1704,7 @@ void ConferenceAudioConnection::WriteAudio(const uint64_t & srcTimestamp, const 
     startTimestamp = srcTimestamp - frameTime*1000;
   else
   {
-    uint64_t writeTimestamp = startTimestamp + srcTimeIndex*1000 + frameTime*1000;
+    uint64_t writeTimestamp = startTimestamp + (uint64_t)srcTimeIndex*1000 + frameTime*1000;
     if(writeTimestamp + PCM_BUFFER_LAG_MS*1000 < srcTimestamp)
     {
       srcTimeIndex = srcTimestamp/1000 - startTimestamp/1000 - frameTime;

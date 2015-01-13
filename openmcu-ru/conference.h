@@ -153,7 +153,7 @@ class ConferenceAudioConnection : public ConferenceConnection
     int channels;
     int maxFrameTime;
     int timeIndex;           // current position ms
-    uint64_t startTimestamp;
+    uint64_t startTimestamp; // us
 
     typedef std::map<long, AudioResampler *> AudioResamplerListType;
     AudioResamplerListType audioResamplerList;
@@ -259,8 +259,6 @@ class ConferenceMember : public PObject
       */
     Conference * GetConference()
     { return conference; }
-
-    virtual void RemoveAllConnections();
 
     /**
      * This is called when the conference member want to send a user input indication to the the conference.
@@ -598,7 +596,6 @@ class Conference : public PObject
     MCUMemberList memberList;
     MCUProfileList profileList;
 
-    ConferenceAudioConnection * AddAudioConnection(ConferenceMember * member, unsigned sampleRate = 8000, unsigned channels = 1);
     void RemoveAudioConnection(ConferenceMember * member);
     MCUAudioConnectionList audioConnectionList;
 

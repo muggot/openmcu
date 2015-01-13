@@ -204,12 +204,12 @@ class MCUTime
 
     const uint64_t GetMilliSeconds() const
     {
-      return timestamp/1000ULL;
+      return timestamp/1000;
     }
 
     const uint32_t GetSeconds() const
     {
-      return timestamp/1000000ULL;
+      return timestamp/1000000;
     }
 
     operator uint64_t()
