@@ -1718,8 +1718,10 @@ void ConferenceAudioConnection::WriteAudio(const uint64_t & srcTimestamp, const 
     uint64_t writeTimestamp = startTimestamp + srcTimeIndex*1000 + frameTime*1000;
     if(writeTimestamp + PCM_BUFFER_LAG_MS*1000 < srcTimestamp)
     {
-      srcTimeIndex = srcTimestamp/1000LL - startTimestamp/1000LL - frameTime;
-      PTRACE(6, "ConferenceAudioConnection\tWriter has lost " << srcTimestamp - writeTimestamp << " microseconds");
+      srcTimeIndex = srcTimestamp/1000 - startTimestamp/1000 - frameTime;
+      PTRACE(6, "ConferenceAudioConnection\tWriter has lost " << srcTimestamp - writeTimestamp << " us"
+                << ", start=" << startTimestamp << " write=" << writeTimestamp  << " src=" << srcTimestamp
+                << " index=" << timeIndex << " frame=" << frameTime);
     }
   }
 
@@ -1733,10 +1735,8 @@ void ConferenceAudioConnection::WriteAudio(const uint64_t & srcTimestamp, const 
       continue;
     AudioResampler * resampler = it->second;
 
-    PBYTEArray dstBuffer;
     int dstBufferSize = frameTime * audioBuffer->GetTimeSize();
-    if(dstBuffer.GetSize() < dstBufferSize + 16)
-      dstBuffer.SetSize(dstBufferSize + 16);
+    MCUBuffer dstBuffer(dstBufferSize);
 
     resampler->Resample(data, amount, dstBuffer.GetPointer(), dstBufferSize);
 
@@ -1775,8 +1775,8 @@ void ConferenceAudioConnection::ReadAudio(const uint64_t & dstTimestamp, BYTE * 
   int srcFrameTime = maxFrameTime;
 
   // Позиция в буфере на время dstTimestamp
-  //int dstTimeIndex = dstTimestamp/1000LL - startTimestamp/1000LL - PCM_BUFFER_MAX_WRITE_LEN_MS - PCM_BUFFER_LAG_MS;
-  int dstTimeIndex = dstTimestamp/1000LL - startTimestamp/1000LL - srcFrameTime - PCM_BUFFER_LAG_MS;
+  //int dstTimeIndex = dstTimestamp/1000 - startTimestamp/1000 - PCM_BUFFER_MAX_WRITE_LEN_MS - PCM_BUFFER_LAG_MS;
+  int dstTimeIndex = dstTimestamp/1000 - startTimestamp/1000 - srcFrameTime - PCM_BUFFER_LAG_MS;
 
   // Что то пошло не так :(
   // Позиция отрицательная или меньше размера фрейма
@@ -1795,10 +1795,8 @@ void ConferenceAudioConnection::ReadAudio(const uint64_t & dstTimestamp, BYTE * 
   // Найти или создать буфер
   AudioBuffer * audioBuffer = GetBuffer(dstSampleRate, dstChannels);
 
-  PBYTEArray dstBuffer;
   int dstBufferSize = dstFrameTime * audioBuffer->GetTimeSize();
-  if(dstBuffer.GetSize() < dstBufferSize)
-    dstBuffer.SetSize(dstBufferSize);
+  MCUBuffer dstBuffer(dstBufferSize);
 
   int byteIndex = ((dstTimeIndex - dstFrameTime) % PCM_BUFFER_LEN_MS) * audioBuffer->GetTimeSize();
   int byteLeft = dstBufferSize;

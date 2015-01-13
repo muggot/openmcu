@@ -112,6 +112,10 @@ class MCUBuffer
     MCUBuffer(int newsize = 2048, bool _aligned = true)
     {
       aligned = _aligned;
+
+      if(newsize < 0)
+        newsize = 0;
+
       size = newsize;
       buffer = (uint8_t *)aligned_malloc(size);
     }
@@ -153,6 +157,9 @@ class MCUBuffer
 
     static void * aligned_malloc(int size)
     {
+      if(size <= 0)
+        return NULL;
+
       void *ptr = NULL;
 #if HAVE_POSIX_MEMALIGN
       if(posix_memalign(&ptr, 64, size))
@@ -197,12 +204,12 @@ class MCUTime
 
     const uint64_t GetMilliSeconds() const
     {
-      return timestamp/1000LL;
+      return timestamp/1000ULL;
     }
 
     const uint32_t GetSeconds() const
     {
-      return timestamp/1000000LL;
+      return timestamp/1000000ULL;
     }
 
     operator uint64_t()
@@ -214,11 +221,11 @@ class MCUTime
     {
 #ifdef _WIN32
       PTimeInterval interval = PTimer::Tick();
-      return interval.GetMilliSeconds()*1000LL;
+      return interval.GetMilliSeconds()*1000ULL;
 #else
       struct timespec ts;
       clock_gettime(CLOCK_REALTIME, &ts);
-      return ts.tv_sec*1000000L + ts.tv_nsec/1000L;
+      return ts.tv_sec*1000000ULL + ts.tv_nsec/1000;
 #endif
     }
 
@@ -226,11 +233,11 @@ class MCUTime
     {
 #ifdef _WIN32
       PTimeInterval interval = PTimer::Tick();
-      return interval.GetMilliSeconds()*1000LL;
+      return interval.GetMilliSeconds()*1000ULL;
 #else
       struct timespec ts;
       clock_gettime(CLOCK_MONOTONIC, &ts);
-      return ts.tv_sec*1000000L + ts.tv_nsec/1000L;
+      return ts.tv_sec*1000000ULL + ts.tv_nsec/1000;
 #endif
     }
 
@@ -238,11 +245,11 @@ class MCUTime
     {
 #ifdef _WIN32
       PTimeInterval interval = PTimer::Tick();
-      return interval.GetMilliSeconds()*1000LL;
+      return interval.GetMilliSeconds()*1000ULL;
 #else
       struct timespec ts;
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
-      return ts.tv_sec*1000000L + ts.tv_nsec/1000L;
+      return ts.tv_sec*1000000ULL + ts.tv_nsec/1000;
 #endif
     }
 
@@ -268,7 +275,7 @@ class MCUDelay
 
     void DelayMsec(uint32_t delay_msec)
     {
-      DelayUsec(delay_msec * 1000L);
+      DelayUsec(delay_msec * 1000);
     }
 
     void DelayUsec(uint32_t delay_usec)
@@ -279,8 +286,8 @@ class MCUDelay
       {
         uint32_t interval = delay_time - now;
         struct timespec req;
-        req.tv_sec = interval/1000000L;
-        req.tv_nsec = (interval % 1000000L) * 1000L;
+        req.tv_sec = interval/1000000;
+        req.tv_nsec = (interval % 1000000) * 1000;
         while(nanosleep(&req, &req) == -1 && errno == EINTR)
           ;
       }
