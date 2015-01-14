@@ -1714,15 +1714,15 @@ void ConferenceAudioConnection::WriteAudio(const uint64_t & srcTimestamp, const 
     }
   }
 
-  for(MCUAudioBufferList::shared_iterator it = audioBufferList.begin(); it != audioBufferList.end(); ++it)
+  for(MCUAudioBufferList::shared_iterator r = audioBufferList.begin(); r != audioBufferList.end(); ++r)
   {
-    AudioBuffer *audioBuffer = it.GetObject();
+    AudioBuffer *audioBuffer = r.GetObject();
 
     long resamplerKey = audioBuffer->GetSampleRate() + audioBuffer->GetChannels();
-    AudioResamplerListType::iterator it = audioResamplerList.find(resamplerKey);
-    if(it == audioResamplerList.end())
+    AudioResamplerListType::iterator s = audioResamplerList.find(resamplerKey);
+    if(s == audioResamplerList.end())
       continue;
-    AudioResampler * resampler = it->second;
+    AudioResampler * resampler = s->second;
 
     int dstBufferSize = frameTime * audioBuffer->GetTimeSize();
     MCUBuffer dstBuffer(dstBufferSize);
