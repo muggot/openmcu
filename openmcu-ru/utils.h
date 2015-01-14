@@ -217,6 +217,15 @@ class MCUTime
       return timestamp;
     }
 
+    static void SleepUsec(uint32_t interval_usec)
+    {
+      struct timespec req;
+      req.tv_sec = interval_usec/1000000;
+      req.tv_nsec = (interval_usec % 1000000) * 1000;
+      while(nanosleep(&req, &req) == -1 && errno == EINTR)
+        ;
+    }
+
     static uint64_t GetRealTimestampUsec()
     {
 #ifdef _WIN32
@@ -271,6 +280,7 @@ class MCUDelay
     void Restart()
     {
       delay_time = MCUTime::GetMonoTimestampUsec();
+      PTRACE(6, "MCUDelay " << this << " now " << delay_time);
     }
 
     void DelayMsec(uint32_t delay_msec)
@@ -285,16 +295,25 @@ class MCUDelay
       if(now < delay_time)
       {
         uint32_t interval = delay_time - now;
-        struct timespec req;
-        req.tv_sec = interval/1000000;
-        req.tv_nsec = (interval % 1000000) * 1000;
-        while(nanosleep(&req, &req) == -1 && errno == EINTR)
-          ;
+        MCUTime::SleepUsec(interval);
       }
       //else // restart
       //  delay_time = now;
     }
 
+    // Для канала чтения RTP, последний timestamp или перезапуск
+    const uint64_t GetDelayTimestampUsec(uint32_t delay_usec, uint32_t jitter_usec = 0)
+    {
+      now = MCUTime::GetMonoTimestampUsec();
+      if(now > delay_time + delay_usec + jitter_usec)
+      {
+        PTRACE(6, "MCUDelay " << this << " now " << now << " before " << delay_time << " , jitter " << jitter_usec);
+        delay_time = now;
+      }
+      return delay_time;
+    }
+
+    // Для канала записи RTP, последний timestamp
     const uint64_t GetDelayTimestampUsec()
     { return delay_time; }
 

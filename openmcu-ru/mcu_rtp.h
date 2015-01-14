@@ -382,10 +382,14 @@ class MCU_RTPChannel : public H323_RTPChannel
     void SetIntraRequestPeriod(int period)
     { intraRequestPeriod = period; }
 
+    void SetAudioJitterEnable(bool enable)
+    { audioJitterEnable = enable; }
+
   protected:
     bool fastUpdate;
     bool freezeWrite;
     bool isAudio;
+    bool audioJitterEnable;
 
     int intraRefreshPeriod;
     int intraRequestPeriod;

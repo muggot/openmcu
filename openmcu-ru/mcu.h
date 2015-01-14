@@ -70,8 +70,9 @@ static const char UserNameKey[]           = "Username";
 static const char PasswordKey[]           = "Password";
 static const char DisplayNameKey[]        = "Display name";
 static const char RoomNameKey[]           = "Room";
-static const char EnableKey[]             = "Enable";
-static const char DisableKey[]            = "Disable";
+
+static PString EnableKey                  = "Enable";
+static PString DisableKey                 = "Disable";
 
 static const char HttpIPKey[]             = "HTTP IP";
 static const char HttpPortKey[]           = "HTTP Port";
@@ -146,6 +147,8 @@ static const int  DefaultRTPInputTimeout        = 60;
 
 static const char PingIntervalKey[]             = "Ping interval";
 static const char PingIntervalSelect[]          = ",20,30,40,50,60,120,180,240,300,600";
+
+static const char AudioDeJitterKey[]            = "Audio de-jitter";
 
 static PString DefaultConnectingWAVFile = PString(SYS_RESOURCE_DIR)+"/connecting.wav";
 static PString DefaultEnteringWAVFile   = PString(SYS_RESOURCE_DIR)+"/entering.wav";

@@ -3105,6 +3105,12 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
   } else {
     audioReceiveChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
     audioReceiveCodecName = codec.GetMediaFormat() + "@" + PString(sampleRate) + "/" +PString(channels);
+
+    if(GetEndpointParam(AudioDeJitterKey, EnableKey) == EnableKey)
+      audioReceiveChannel->SetAudioJitterEnable(true);
+    else
+      audioReceiveChannel->SetAudioJitterEnable(false);
+
     codec.AttachChannel(new IncomingAudio(ep, *this, sampleRate, channels), TRUE);
   }
 
@@ -4340,9 +4346,12 @@ BOOL IncomingAudio::Write(const void * buffer, PINDEX amount)
   if(lastWriteCount == 0)
     delay.Restart();
 
-  conn.OnIncomingAudio(delay.GetDelayTimestampUsec(), buffer, amount, sampleRate, channels);
-
   unsigned delay_us = 1000000 * amount / (sampleRate * channels * 2);
+  unsigned jitter_us = 0;
+  uint64_t timestamp = delay.GetDelayTimestampUsec(delay_us, jitter_us);
+
+  conn.OnIncomingAudio(timestamp, buffer, amount, sampleRate, channels);
+
   delay.DelayUsec(delay_us);
 
   lastWriteCount = amount;

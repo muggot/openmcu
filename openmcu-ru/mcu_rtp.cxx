@@ -272,6 +272,7 @@ MCU_RTPChannel::MCU_RTPChannel(H323Connection & conn, const H323Capability & cap
   isAudio = (capability->GetMainType() == MCUCapability::e_Audio);
   fastUpdate = true;
   freezeWrite = false;
+  audioJitterEnable = true;
 
   intraRefreshPeriod = 0;
   intraRequestPeriod = 0;
@@ -498,10 +499,12 @@ void MCU_RTPChannel::Receive()
   PTRACE(2, "MCU_RTPChannel\tReceive " << mediaFormat << " thread started.");
 
   // if jitter buffer required, start the thread that is on the other end of it
-  if(mediaFormat.NeedsJitterBuffer())
+  if(isAudio && audioJitterEnable && mediaFormat.NeedsJitterBuffer())
+  {
     rtpSession.SetJitterBufferSize(connection.GetMinAudioJitterDelay()*mediaFormat.GetTimeUnits(),
                                    connection.GetMaxAudioJitterDelay()*mediaFormat.GetTimeUnits(),
                                    endpoint.GetJitterThreadStackSize());
+  }
 
   // Keep time using th RTP timestamps.
   DWORD codecFrameRate = codec->GetFrameRate();
