@@ -285,7 +285,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
         totalVideoFramesSent = 0;
         MCUTRACE(1, "CacheRTP " << cacheName << " Down to sleep");
       }
-      PThread::Sleep(1000);
+      MCUTime::Sleep(1000);
     }
     if(running && status == 0)
     {
@@ -324,7 +324,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
     unsigned flags = 0;
     codec->Read(NULL, length, frame);
     PutCacheRTP(cache, frame, length, flags);
-    PThread::Sleep(1);
+    MCUTime::Sleep(1);
   }
 
   // must destroy videograbber and videochanell here? fix it
@@ -510,7 +510,7 @@ void ConferencePipeMember::AudioThread(PThread &, INT)
 #endif
 
     // and delay
-    audioDelay.DelayMsec(msPerFrame);
+    audioDelay.Delay(msPerFrame);
   }
 
 #ifdef _WIN32

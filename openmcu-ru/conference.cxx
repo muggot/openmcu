@@ -370,7 +370,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   while(members != 0)
   {
     MCUTRACE(0,"MCU\tOnDestroyConference " << number <<", waiting... members: " << members);
-    PThread::Sleep(100);
+    MCUTime::Sleep(100);
     members = memberList.GetCurrentSize();
   }
 
@@ -644,7 +644,12 @@ BOOL Conference::StartRecorder()
   }
 
   conferenceRecorder->Start();
-  for(int i = 0; i < 10; i++) if(conferenceRecorder->IsRunning()) break; else PThread::Sleep(100);
+
+  for(int i = 0; i < 10; i++)
+    if(conferenceRecorder->IsRunning()) break;
+  else
+    MCUTime::Sleep(100);
+
   if(!conferenceRecorder->IsRunning())
   {
     PTRACE(1,"MCU\tConference: " << number <<", failed to start recorder");

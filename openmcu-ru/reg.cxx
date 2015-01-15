@@ -396,7 +396,7 @@ void Registrar::AccountThread(PThread &, INT)
 {
   while(!terminating)
   {
-    PThread::Sleep(100);
+    MCUTime::Sleep(100);
     if(terminating)
       break;
 
@@ -420,7 +420,7 @@ void Registrar::ConnectionThread(PThread &, INT)
 {
   while(!terminating)
   {
-    PThread::Sleep(100);
+    MCUTime::Sleep(100);
     if(terminating)
       break;
 
@@ -510,7 +510,7 @@ void Registrar::BookThread(PThread &, INT)
 {
   while(!terminating)
   {
-    PThread::Sleep(1000);
+    MCUTime::Sleep(1000);
     if(terminating)
       break;
 
@@ -584,7 +584,7 @@ void Registrar::SubscriptionThread(PThread &, INT)
 {
   while(!terminating)
   {
-    PThread::Sleep(1000);
+    MCUTime::Sleep(1000);
     if(terminating)
       break;
 
@@ -630,7 +630,7 @@ void Registrar::AliveThread(PThread &, INT)
 {
   while(!terminating)
   {
-    PThread::Sleep(1000);
+    MCUTime::Sleep(1000);
     if(terminating)
       break;
 
@@ -655,7 +655,7 @@ void Registrar::QueueThread(PThread &, INT)
 {
   while(!terminating)
   {
-    PThread::Sleep(100);
+    MCUTime::Sleep(100);
     if(terminating)
       break;
 
@@ -1021,7 +1021,7 @@ void Registrar::MainLoop()
 {
   while(1)
   {
-    PThread::Sleep(100);
+    MCUTime::Sleep(100);
     if(terminating)
     {
       Terminating();

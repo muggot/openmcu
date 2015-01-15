@@ -303,8 +303,13 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
 
   s << SeparatorField("Video recorder setup");
   PString dirInfo;
-  if(!PDirectory::Exists(mcu.vr_ffmpegDir)) if(!PFile::Exists(mcu.vr_ffmpegDir)) { PDirectory::Create(mcu.vr_ffmpegDir,0700); PThread::Sleep(50); }
-  if(!PDirectory::Exists(mcu.vr_ffmpegDir)) dirInfo += "<b><font color=red>Directory does not exist: "+mcu.vr_ffmpegDir+"</font></b>";
+  if(!PDirectory::Exists(mcu.vr_ffmpegDir) && !PFile::Exists(mcu.vr_ffmpegDir))
+  {
+    PDirectory::Create(mcu.vr_ffmpegDir,0700);
+    MCUTime::Sleep(50);
+  }
+  if(!PDirectory::Exists(mcu.vr_ffmpegDir))
+    dirInfo += "<b><font color=red>Directory does not exist: "+mcu.vr_ffmpegDir+"</font></b>";
   else
   {
     PFileInfo info;
@@ -2539,7 +2544,7 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
     message = OpenMCU::Current().HttpGetEvents(idx,room);
     while (message.GetLength()==0 && count < 20){
       count++;
-      PThread::Sleep(100);
+      MCUTime::Sleep(100);
       message = OpenMCU::Current().HttpGetEvents(idx,room);
     }
     if(message.Find("<script>")==P_MAX_INDEX) message << "<script>p.alive()</script>\n";

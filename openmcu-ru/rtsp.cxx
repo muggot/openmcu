@@ -1408,7 +1408,7 @@ MCUListener::~MCUListener()
 
   // wait until all handler threads terminated
   while(handler_count > 0)
-    PThread::Sleep(100);
+    MCUTime::Sleep(100);
 
   MCUTRACE(1, trace_section << "close");
 }
@@ -1418,7 +1418,7 @@ MCUListener::~MCUListener()
 MCUListener *MCUListener::Create(PString address, mcu_listener_cb *callback, void *callback_context)
 {
   MCUListener *list = new MCUListener(address, callback, callback_context);
-  PThread::Sleep(100);
+  MCUTime::Sleep(100);
   if(list->IsRunning() == TRUE)
   {
     MCUTRACE(1, "MCU listener ("+address+"): " << "create");
@@ -1436,7 +1436,7 @@ MCUListener *MCUListener::Create(PString address, mcu_listener_cb *callback, voi
 MCUListener *MCUListener::Create(int client_fd, PString address, mcu_listener_cb *callback, void *callback_context)
 {
   MCUListener *list = new MCUListener(client_fd, address, callback, callback_context);
-  PThread::Sleep(100);
+  MCUTime::Sleep(100);
   if(list->IsRunning() == TRUE)
   {
     MCUTRACE(1, "MCU listener ("+address+"): " << "create");

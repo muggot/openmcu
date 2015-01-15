@@ -217,8 +217,18 @@ class MCUTime
       return timestamp;
     }
 
+    static void Sleep(uint32_t interval_msec)
+    {
+#ifdef _WIN32
+      ::Sleep(interval_msec);
+#else
+      SleepUsec(interval_msec*1000);
+#endif
+    }
+
     static void SleepUsec(uint32_t interval_usec)
     {
+      // win32 что?
       struct timespec req;
       req.tv_sec = interval_usec/1000000;
       req.tv_nsec = (interval_usec % 1000000) * 1000;
@@ -229,8 +239,7 @@ class MCUTime
     static uint64_t GetRealTimestampUsec()
     {
 #ifdef _WIN32
-      PTimeInterval interval = PTimer::Tick();
-      return interval.GetMilliSeconds()*1000ULL;
+      return PTime().GetTimestamp();
 #else
       struct timespec ts;
       clock_gettime(CLOCK_REALTIME, &ts);
@@ -241,8 +250,7 @@ class MCUTime
     static uint64_t GetMonoTimestampUsec()
     {
 #ifdef _WIN32
-      PTimeInterval interval = PTimer::Tick();
-      return interval.GetMilliSeconds()*1000ULL;
+      return PTime().GetTimestamp();
 #else
       struct timespec ts;
       clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -253,8 +261,7 @@ class MCUTime
     static uint64_t GetProcTimestampUsec()
     {
 #ifdef _WIN32
-      PTimeInterval interval = PTimer::Tick();
-      return interval.GetMilliSeconds()*1000ULL;
+      return PTime().GetTimestamp();
 #else
       struct timespec ts;
       clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
@@ -283,7 +290,7 @@ class MCUDelay
       PTRACE(6, "MCUDelay " << this << " now " << delay_time);
     }
 
-    void DelayMsec(uint32_t delay_msec)
+    void Delay(uint32_t delay_msec)
     {
       DelayUsec(delay_msec * 1000);
     }
@@ -1117,7 +1124,7 @@ class MCUQueueT
       if(stopped)
         return false;
       while(!queue.Insert((long)obj, obj))
-        PThread::Sleep(20);
+        MCUTime::Sleep(20);
       queue.Release((long)obj);
       return true;
     }
@@ -1137,7 +1144,7 @@ class MCUQueueT
     virtual void Stop()
     {
       stopped = true;
-      PThread::Sleep(2);
+      MCUTime::Sleep(2);
     }
 
   protected:

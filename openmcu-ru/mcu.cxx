@@ -776,14 +776,14 @@ ExternalVideoRecorderThread::ExternalVideoRecorderThread(PString roomName)
 
 void ExternalVideoRecorderThread::Main()
 {
-  while(running) PThread::Sleep(100);
+  while(running) MCUTime::Sleep(100);
   PTRACE(1,"EVRT\tStopping external recording thread" << flush);
 #ifdef _WIN32
   fputs("q\r\n",recordState);
 #else
   kill(recordPid, SIGINT);
 #endif
-  PThread::Sleep(200);
+  MCUTime::Sleep(200);
 #ifdef _WIN32
   _pclose(recordState);
 #endif

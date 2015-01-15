@@ -724,7 +724,7 @@ void MCU_RTPChannel::Transmit()
       {
         DetachCacheRTP(cache);
         while(!AttachCacheRTP(cache, cacheName, encoderSeqN))
-          PThread::Sleep(100);
+          MCUTime::Sleep(100);
       }
 
       unsigned flags = 0;
@@ -828,7 +828,7 @@ void MCU_RTPChannel::Transmit()
          break;
 
       if(!isAudio && !frame.GetMarker())
-        PThread::Sleep(1);
+        MCUTime::Sleep(1);
 
       // Reset flag for in talk burst
       if(isAudio)

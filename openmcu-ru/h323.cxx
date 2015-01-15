@@ -2432,7 +2432,7 @@ class TplCleanCheckThread : public PThread
     void Main()
     {
       PTRACE(2,"TplCleanCheckThread\tThread started, c=" << c << ", n=" << n << ", a=" << a);
-      PThread::Sleep(6000); // previous connection may still be actvie
+      MCUTime::Sleep(6000); // previous connection may still be actvie
       if(c!=NULL)
       {
         if(OpenMCU::Current().GetEndpoint().GetConferenceManager().FindConferenceWithLock(c))
@@ -4477,7 +4477,7 @@ void GatekeeperMonitor::Main()
 
     if(ep.GetListeners().IsEmpty())
     {
-      PThread::Sleep(500);
+      MCUTime::Sleep(500);
       continue;
     }
 
@@ -4525,7 +4525,7 @@ void GatekeeperMonitor::Main()
       OpenMCU::Current().HttpWriteEvent("<font color=blue>"+event+"</font>");
     }
 
-    PThread::Sleep(1000);
+    MCUTime::Sleep(1000);
   }
 
   if(ep.GetGatekeeper())

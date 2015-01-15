@@ -157,7 +157,7 @@ class CacheRTP
     void GetFrame(RTP_DataFrame & frame, unsigned & toLen, unsigned & num, unsigned & flags)
     {
       while(num >= seqN)
-        PThread::Sleep(10);
+        MCUTime::Sleep(10);
       CacheRTPUnitMap::iterator r = unitList.find(num);
       int i=0;
       while((r == unitList.end() || r->second->lock) && num < seqN)
@@ -170,7 +170,7 @@ class CacheRTP
       }
       while(r == unitList.end())
       {
-        PThread::Sleep(10);
+        MCUTime::Sleep(10);
         r = unitList.find(num);
       }
       r->second->GetFrame(frame);
