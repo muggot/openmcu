@@ -1032,7 +1032,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, const uint64_t & tim
       for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
-        if(mixer->GetPositionStatus(member->GetID()) >= 0)
+        if(mixer->GetPositionStatus((ConferenceMemberId)conn->GetID()) >= 0)
         {
           skip = FALSE;
           break;
