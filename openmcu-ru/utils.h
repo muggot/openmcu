@@ -81,7 +81,7 @@ enum MCUConnectionTypes
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define MCUTRACE(level, args) \
-  if(level > 0) PTrace::Begin(level, __FILE__, __LINE__) << args << PTrace::End; \
+  if(level > 0 && PTrace::CanTrace(level)) PTrace::Begin(level, __FILE__, __LINE__) << args << PTrace::End; \
   if(PTrace::CanTrace(level)) cout << setw(8) << PTime() - PProcess::Current().GetStartTime() << " " << args << endl
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

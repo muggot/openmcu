@@ -521,6 +521,7 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
 
     void InitialiseTrace();
     int currentLogLevel, currentTraceLevel;
+    PString trace_section;
     BOOL traceFileRotated;
     PINDEX rotationLevel;
     PString logFilename;

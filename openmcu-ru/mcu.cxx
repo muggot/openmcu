@@ -83,23 +83,24 @@ BOOL OpenMCU::OnStart()
 #endif
 
   SetConfigurationPath(CONFIG_PATH);
+  trace_section = "OpenMCU-ru ";
   InitialiseTrace();
 
 #ifdef GIT_REVISION
   #define _QUOTE_MACRO_VALUE1(x) #x
   #define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
-  PTRACE(1,"OpenMCU-ru git revision " << _QUOTE_MACRO_VALUE(GIT_REVISION));
+  PTRACE(0, trace_section << "git revision " << _QUOTE_MACRO_VALUE(GIT_REVISION));
   #undef _QUOTE_MACRO_VALUE
   #undef _QUOTE_MACRO_VALUE1
 #endif
 #ifdef __VERSION__
-  PTRACE(1,"OpenMCU-ru GCC version " << __VERSION__);
+  PTRACE(0, trace_section << "GCC version " << __VERSION__);
 #endif
 #ifdef PTLIB_VERSION
-  PTRACE(1,"OpenMCU-ru PTLib version " << PTLIB_VERSION);
+  PTRACE(0, trace_section << "PTLib version " << PTLIB_VERSION);
 #endif
 #ifdef OPENH323_VERSION
-  PTRACE(1,"OpenMCU-ru H323Plus version " << OPENH323_VERSION);
+  PTRACE(0, trace_section << "H323Plus version " << OPENH323_VERSION);
 #endif
 
   MCUPluginCodecManager::PopulateMediaFormats();
@@ -476,10 +477,10 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   if(MCUHTTPListenerCreate(ip, port))
   {
     PSYSTEMLOG(Info, "Opened master socket for HTTP: " << ip << ":" << port);
-    PTRACE(0, "Opened master socket for HTTP: " << ip << ":" << port);
+    PTRACE(0, trace_section << "Opened master socket for HTTP: " << ip << ":" << port);
   } else {
     PSYSTEMLOG(Fatal, "Failed open master socket: " <<  ip << ":" << port << " " << httpListeningSocket->GetErrorText());
-    PTRACE(0, "Failed open master socket: " <<  ip << ":" << port << " " << httpListeningSocket->GetErrorText());
+    PTRACE(0, trace_section << "Failed open master socket: " <<  ip << ":" << port << " " << httpListeningSocket->GetErrorText());
     return FALSE;
   }
 
@@ -540,6 +541,7 @@ void OpenMCU::InitialiseTrace()
     PTrace::Initialise(TraceLevel, PString(SERVER_LOGS) + PATH_SEPARATOR + "trace.txt");
     PTrace::SetOptions(PTrace::FileAndLine);
     currentTraceLevel = TraceLevel;
+    PTRACE(0, trace_section << "Trace Level " << currentTraceLevel);
   }
 #endif
 }
@@ -558,13 +560,13 @@ void OpenMCU::LogMessage(const PString & str)
   if (!logFile.IsOpen()) {
     if(!logFile.Open(logFilename, PFile::ReadWrite))
     {
-      PTRACE(1,"OpenMCU-ru\tCan not open log file: " << logFilename << "\n" << msg << flush);
+      PTRACE(1, trace_section << "Can not open log file: " << logFilename << "\n" << msg << flush);
       logMutex.Signal();
       return;
     }
     if(!logFile.SetPosition(0, PFile::End))
     {
-      PTRACE(1,"OpenMCU-ru\tCan not change log position, log file name: " << logFilename << "\n" << msg << flush);
+      PTRACE(1, trace_section << "Can not change log position, log file name: " << logFilename << "\n" << msg << flush);
       logFile.Close();
       logMutex.Signal();
       return;
@@ -573,7 +575,7 @@ void OpenMCU::LogMessage(const PString & str)
 
   if(!logFile.WriteLine(msg))
   {
-    PTRACE(1,"OpenMCU-ru\tCan not write to log file: " << logFilename << "\n" << msg << flush);
+    PTRACE(1, trace_section << "Can not write to log file: " << logFilename << "\n" << msg << flush);
   }
   logFile.Close();
   logMutex.Signal();
@@ -624,7 +626,7 @@ BOOL OpenMCU::MCUHTTPListenerCreate(const PString & ip, unsigned port)
 
   if(!listener->Listen(address, 5, 0, reuse))
   {
-    PTRACE(0, "OpenMCU\tListen on address " << ip << ":" << port << " failed: " << listener->GetErrorText());
+    PTRACE(0, trace_section << "Listen on address " << ip << ":" << port << " failed: " << listener->GetErrorText());
     return FALSE;
   }
 
@@ -646,7 +648,7 @@ void OpenMCU::MCUHTTPListenerClose()
   if(!httpListeningSocket->IsOpen())
     return;
 
-  PTRACE(0, "OpenMCU\tClosing listener socket");
+  PTRACE(0, trace_section << "Closing listener socket");
   httpListeningSocket->Close();
 }
 

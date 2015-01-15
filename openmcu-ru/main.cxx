@@ -142,8 +142,6 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
   }
   logo_mutex.Signal();
 
-PTRACE(0, "GetPreMediaFrame()!!!");
-
   MCUVideoMixer::ResizeYUV420P(ImageData, buffer, QCIF_WIDTH, QCIF_HEIGHT, width, height);
   return TRUE;
 }
