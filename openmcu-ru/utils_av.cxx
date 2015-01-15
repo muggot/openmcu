@@ -52,8 +52,8 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   context->pix_fmt       = frame_pix_fmt;
   context->width         = src_width;
   context->height        = src_height;
-  context->qmin          = 30;
-  context->qmax          = 31;
+  context->qmin          = 10;
+  context->qmax          = context->qmin + 1;
   context->time_base.num = 1;
   context->time_base.den = 1;
 
