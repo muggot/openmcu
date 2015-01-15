@@ -1556,18 +1556,16 @@ void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & 
   if(!firstFrameSendTime.IsValid())
     firstFrameSendTime = PTime();
 
-  if(lock.Wait())
+  if(conference != NULL)
   {
-    if(conference != NULL)
-    {
-      if(conference->UseSameVideoForAllMembers())
-        conference->ReadMemberVideo(this, buffer, width, height, amount);
-      else if(videoMixer != NULL)
-        videoMixer->ReadFrame(*this, buffer, width, height, amount);
-    }
-    lock.Signal();
+    if(conference->UseSameVideoForAllMembers())
+      conference->ReadMemberVideo(this, buffer, width, height, amount);
+    else if(videoMixer != NULL)
+      videoMixer->ReadFrame(*this, buffer, width, height, amount);
   }
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // called whenever the connection receives a frame of video
 void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PINDEX amount)
@@ -1581,28 +1579,26 @@ void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PI
   if (!firstFrameReceiveTime.IsValid())
     firstFrameReceiveTime = PTime();
 
-  if(lock.Wait())
-  {
-    if(conference != NULL)
-      conference->WriteMemberVideo(this, buffer, width, height, amount);
-    lock.Signal();
-  }
+  if(conference != NULL)
+    conference->WriteMemberVideo(this, buffer, width, height, amount);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ConferenceMember::OnExternalSendVideo(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount)
 {
-  if(lock.Wait())
-  {
-    videoMixer->WriteFrame(id, buffer, width, height, amount);
-    lock.Signal();
-  }
+  videoMixer->WriteFrame(id, buffer, width, height, amount);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL ConferenceMember::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
   PAssert(videoMixer != NULL, "attempt to add video source to NULL video mixer");
   return videoMixer->AddVideoSource(id, mbr);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ConferenceMember::RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
@@ -1611,6 +1607,8 @@ void ConferenceMember::RemoveVideoSource(ConferenceMemberId id, ConferenceMember
 }
 
 #endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString ConferenceMember::GetMonitorInfo(const PString & /*hdr*/)
 { 
@@ -2018,59 +2016,6 @@ void AudioResampler::InternalResample(const BYTE * src, int srcBytes, int srcSam
       ((short*)(dst))[i*dstChannels+j] = ((short*)src)[ofs+srcChan];
       srcChan++; if(srcChan>=srcChannels) srcChan=0;
     }
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-MCULock::MCULock()
-{
-  closing = FALSE;
-  count = 0;
-}
-
-BOOL MCULock::Wait(BOOL hard)
-{
-  mutex.Wait();
-  if (hard)
-    return TRUE;
-
-  BOOL ret = TRUE;
-  if (!closing)
-    count++;
-  else
-    ret = FALSE;
-
-  mutex.Signal();
-  return ret;
-}
-
-void MCULock::Signal(BOOL hard)
-{
-  if (hard) {
-    mutex.Signal();
-    return;
-  }
-
-  mutex.Wait();
-  if (count > 0)
-    count--;
-  if (closing)
-    closeSync.Signal();
-  mutex.Signal();
-}
-
-void MCULock::WaitForClose()
-{
-  mutex.Wait();
-  closing = TRUE;
-  BOOL wait = count > 0;
-  mutex.Signal();
-  while (wait) {
-    closeSync.Wait();
-    mutex.Wait();
-    wait = count > 0;
-    mutex.Signal();
   }
 }
 

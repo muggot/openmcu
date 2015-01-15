@@ -27,23 +27,6 @@ enum MemberTypes
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class MCULock : public PObject
-{
-  PCLASSINFO(MCULock, PObject);
-  public:
-    MCULock();
-    BOOL Wait(BOOL hard = FALSE);
-    void Signal(BOOL hard = FALSE);
-    void WaitForClose();
-  protected:
-    PMutex mutex;
-    BOOL closing;
-    int count;
-    PSyncPoint closeSync;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 class AudioResampler
 {
     AudioResampler(int _srcSampleRate, int _srcChannels, int _dstSampleRate, int _dstChannels);
@@ -348,9 +331,6 @@ class ConferenceMember : public PObject
     }
 #endif
 
-    void WaitForClose()
-    { lock.WaitForClose(); }
-
     /*
      * used to output monitor information for the member
      */
@@ -416,7 +396,6 @@ class ConferenceMember : public PObject
     Conference * conference;
     ConferenceMemberId id;
     BOOL memberIsJoined;
-    MCULock lock;
     PTime startTime;
     unsigned audioLevel;
     PString callToken;
@@ -651,7 +630,6 @@ class MemberDeleteThread : public PThread
     {
       if(member)
       {
-        member->WaitForClose();
         if(conference)
           conference->RemoveMember(member);
         delete member;
