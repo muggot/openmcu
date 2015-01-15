@@ -399,10 +399,10 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
 
     PString GetHtmlCopyright()
     {
-      PHTML html(PHTML::InBody);
+      PStringStream html;
       html << "Copyright &copy;"
        << compilationDate.AsString("yyyy") << " by "
-       << PHTML::HotLink(copyrightHomePage + "\" target=\"_blank\"")
+       << "<A HREF=\"" << copyrightHomePage << "\" target=\"_blank\"" << ">"
        << copyrightHolder;
       return html;
     }
