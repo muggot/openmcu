@@ -71,9 +71,22 @@ class MCUH323EndPoint : public H323EndPoint
     // overrides from H323EndPoint
     virtual H323Connection * CreateConnection(unsigned callReference,void * userData,H323Transport * transport,H323SignalPDU * setupPDU);
     virtual void TranslateTCPAddress(PIPSocket::Address &localAddr, const PIPSocket::Address &remoteAddr);
-    H323Connection * FindConnectionWithoutLock(const PString & token) { return FindConnectionWithoutLocks(token); }
 
+    MCUH323Connection * FindConnectionWithoutLock(const PString & token)
+    { return (MCUH323Connection *)H323EndPoint::FindConnectionWithoutLocks(token); }
+
+    MCUH323Connection * FindConnectionWithLock(const PString & token)
+    { return (MCUH323Connection *)H323EndPoint::FindConnectionWithLock(token); }
+
+    virtual BOOL HasConnection(const PString & token)
+    { return H323EndPoint::HasConnection(token); }
+
+    virtual H323Connection * OnIncomingConnection(H323Transport * transport, H323SignalPDU & setupPDU);
+    virtual BOOL ClearCall(const PString & token, H323Connection::CallEndReason reason = H323Connection::EndedByLocalUser);
     virtual void CleanUpConnections();
+
+    virtual void OnConnectionCleared(H323Connection & connection, const PString & token);
+    void OnConnectionCreated(MCUH323Connection * conn);
 
     void InitialiseCapability();
 
@@ -126,10 +139,18 @@ class MCUH323EndPoint : public H323EndPoint
     unsigned videoTxQuality;
 #endif
 
-    virtual void OnConnectionCleared(H323Connection & connection, const PString & token);
-    void OnConnectionCreated(MCUH323Connection * conn);
-
   protected:
+
+    virtual H323Connection * InternalMakeCall(
+      const PString & existingToken,/// Existing connection to be transferred
+      const PString & callIdentity, /// Call identity of the secondary call (if it exists)
+      unsigned capabilityLevel,     /// Intrusion capability level
+      const PString & remoteParty,  /// Remote party to call
+      H323Transport * transport,    /// Transport to use for call.
+      PString & token,              /// String to use/receive token for connection
+      void * userData               /// user data to pass to CreateConnection
+    );
+
     BOOL behind_masq;
     PIPSocket::Address *masqAddressPtr;
     PString nat_lag_ip;
@@ -146,7 +167,7 @@ class OutgoingAudio : public PChannel
   PCLASSINFO(OutgoingAudio, PChannel);
 
   public:
-    OutgoingAudio(H323EndPoint & ep, MCUH323Connection & conn, unsigned int sr, unsigned _channels);
+    OutgoingAudio(MCUH323Connection & conn, unsigned int sr, unsigned _channels);
 
     BOOL Read(void * buffer, PINDEX amount);
     BOOL Close();
@@ -154,7 +175,6 @@ class OutgoingAudio : public PChannel
   protected:
     void CreateSilence(void * buffer, PINDEX amount);
 
-    H323EndPoint & ep;
     MCUH323Connection & conn;
 
     unsigned int sampleRate;
@@ -171,17 +191,16 @@ class IncomingAudio : public PChannel
   PCLASSINFO(IncomingAudio, PChannel);
 
   public:
-    IncomingAudio(H323EndPoint & ep, MCUH323Connection & conn, unsigned int _sampleRate, unsigned _channels);
+    IncomingAudio(MCUH323Connection & conn, unsigned int _sampleRate, unsigned _channels);
 
     BOOL Write(const void * buffer, PINDEX amount);
     BOOL Close();
 
+  protected:
+    MCUH323Connection & conn;
+
     unsigned int sampleRate;
     unsigned channels; //1=mono, 2=stereo
-
-  protected:
-    H323EndPoint & ep;
-    MCUH323Connection & conn;
 
     MCUDelay delay;
     PMutex audioChanMutex;
@@ -239,10 +258,13 @@ class MCUH323Connection : public H323Connection
     virtual BOOL OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec);
     virtual void OpenVideoCache(const OpalMediaFormat & format, const PString & cacheName);
 #endif
+
+    virtual BOOL ClearCall(CallEndReason reason = EndedByLocalUser);
     virtual void CleanUpOnCallEnd();
     virtual void OnEstablished();
     virtual void OnCleared();
     virtual AnswerCallResponse OnAnswerCall(const PString &, const H323SignalPDU &, H323SignalPDU &);
+
     virtual void OnUserInputString(const PString & value);
     virtual BOOL OnReceivedSignalSetup(const H323SignalPDU & setupPDU);
     virtual BOOL OnReceivedCallProceeding(const H323SignalPDU & proceedingPDU);
@@ -351,7 +373,6 @@ class MCUH323Connection : public H323Connection
   protected:
 
     virtual void OnCreated();
-    virtual void LeaveConference();
     virtual void JoinConference(const PString & room);
     virtual void SetRequestedRoom();
 

@@ -467,15 +467,6 @@ PINDEX MCUH323EndPoint::AddCapabilitiesMCU(PINDEX descriptorNum, PINDEX simultan
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUH323EndPoint::SetConnectionActive(MCUH323Connection * conn)
-{
-  connectionsMutex.Wait();
-  connectionsActive.SetAt(conn->GetCallToken(), conn);
-  connectionsMutex.Signal();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PString MCUH323EndPoint::GetGatekeeperHostName()
 {
   PString host;
@@ -500,6 +491,13 @@ H323Connection * MCUH323EndPoint::CreateConnection(unsigned callReference, void 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCUH323EndPoint::ClearCall(const PString & token, H323Connection::CallEndReason reason)
+{
+  return H323EndPoint::ClearCall(token, reason);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
 {
   if(conn->GetCallToken() == "")
@@ -511,14 +509,15 @@ void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUH323EndPoint::OnConnectionCleared(H323Connection & connection, const PString & token)
+void MCUH323EndPoint::OnConnectionCleared(H323Connection & connection, const PString & callToken)
 {
-  connectionMonitor->RemoveConnection(token);
+  connectionMonitor->RemoveConnection(callToken);
+
+  Registrar *registrar = OpenMCU::Current().GetRegistrar();
+  registrar->ConnectionCleared(callToken);
 
   if(gatekeeper)
     ((MCUH323Gatekeeper *)gatekeeper)->RemoveIgnoreConnection(connection.GetCallReference());
-
-  H323EndPoint::OnConnectionCleared(connection, token);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -575,6 +574,33 @@ void MCUH323EndPoint::CleanUpConnections()
 
   // Signal thread that may be waiting on ClearAllCalls()
   connectionsAreCleaned.Signal();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+H323Connection * MCUH323EndPoint::OnIncomingConnection(H323Transport * transport, H323SignalPDU & setupPDU)
+{
+  H323Connection *conn = H323EndPoint::OnIncomingConnection(transport, setupPDU);
+  return conn;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+H323Connection * MCUH323EndPoint::InternalMakeCall(const PString & existingToken, const PString & callIdentity,
+                                                   unsigned capabilityLevel, const PString & remoteParty,
+                                                   H323Transport * transport, PString & token, void * userData)
+{
+  H323Connection *conn = H323EndPoint::InternalMakeCall(existingToken, callIdentity, capabilityLevel, remoteParty, transport, token, userData);
+  return conn;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323EndPoint::SetConnectionActive(MCUH323Connection * conn)
+{
+  connectionsMutex.Wait();
+  connectionsActive.SetAt(conn->GetCallToken(), conn);
+  connectionsMutex.Signal();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2449,6 +2475,13 @@ class TplCleanCheckThread : public PThread
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCUH323Connection::ClearCall(H323Connection::CallEndReason reason)
+{
+  return ep.ClearCall(callToken, reason);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::CleanUpOnCallEnd()
 {
   PTRACE(2, "MCUH323Connection\tCleanUpOnCallEnd" << callToken);
@@ -2466,7 +2499,7 @@ void MCUH323Connection::CleanUpOnCallEnd()
   audioTransmitChannel = NULL;
   videoTransmitChannel = NULL;
 
-  LeaveConference();
+  LogCall();
   H323Connection::CleanUpOnCallEnd();
 }
 
@@ -2475,10 +2508,8 @@ void MCUH323Connection::CleanUpOnCallEnd()
 void MCUH323Connection::OnCleared()
 {
   PTRACE(2, "MCUH323Connection\tOnCleared() " << callToken);
-  H323Connection::OnCleared();
 
-  Registrar *registrar = OpenMCU::Current().GetRegistrar();
-  registrar->ConnectionCleared(callToken);
+  ep.OnConnectionCleared(*this, callToken);
 
   // OnCleared executed after CleanUpOnCallEnd, before deleting connection
   // all the RTP channels is completed, start member delete thread
@@ -2491,19 +2522,8 @@ void MCUH323Connection::OnCleared()
 void MCUH323Connection::LeaveMCU()
 {
   PWaitAndSignal m(connMutex);
-
-  LeaveConference();
+  LogCall();
   ClearCall();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUH323Connection::LeaveConference()
-{
-  PWaitAndSignal m(connMutex);
-
-  if(conference && conferenceMember)
-    LogCall();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2570,7 +2590,7 @@ RTP_Session * MCUH323Connection::UseSession(unsigned sessionID,
 
   MCUH323_RTP_UDP * udp_session = new MCUH323_RTP_UDP(
 #ifdef H323_RTP_AGGREGATE
-                  useRTPAggregation ? endpoint.GetRTPAggregator() : NULL, 
+                  useRTPAggregation ? ep.GetRTPAggregator() : NULL, 
 #endif
                   sessionID, remoteIsNAT);
 
@@ -3100,7 +3120,7 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
       audioTransmitChannel->SetCacheMode(2);
     }
 
-    codec.AttachChannel(new OutgoingAudio(ep, *this, sampleRate, channels), TRUE);
+    codec.AttachChannel(new OutgoingAudio(*this, sampleRate, channels), TRUE);
 
   } else {
     audioReceiveChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
@@ -3111,7 +3131,7 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
     else
       audioReceiveChannel->SetAudioJitterEnable(false);
 
-    codec.AttachChannel(new IncomingAudio(ep, *this, sampleRate, channels), TRUE);
+    codec.AttachChannel(new IncomingAudio(*this, sampleRate, channels), TRUE);
   }
 
   return TRUE;
@@ -3366,7 +3386,7 @@ BOOL MCUH323Connection::OnStartLogicalChannel(H323Channel & channel)
   if(connectionType == CONNECTION_TYPE_H323)
     return H323Connection::OnStartLogicalChannel(channel);
 
-  return endpoint.OnStartLogicalChannel(*this, channel);
+  return ep.OnStartLogicalChannel(*this, channel);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4258,6 +4278,9 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
 
 void MCUH323Connection::LogCall(const BOOL accepted)
 {
+  if(!conference || !conferenceMember)
+    return;
+
   PStringStream stringStream, timeStream;
   timeStream << GetConnectionStartTime().AsString("hh:mm:ss");
   stringStream << " caller: " << memberName
@@ -4275,8 +4298,8 @@ void MCUH323Connection::LogCall(const BOOL accepted)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-OutgoingAudio::OutgoingAudio(H323EndPoint & _ep, MCUH323Connection & _conn, unsigned int _sampleRate, unsigned _channels)
-  : ep(_ep), conn(_conn), sampleRate(_sampleRate), channels(_channels)
+OutgoingAudio::OutgoingAudio(MCUH323Connection & _conn, unsigned int _sampleRate, unsigned _channels)
+  : conn(_conn), sampleRate(_sampleRate), channels(_channels)
 {
   os_handle = 0;
   lastReadCount = 0;
@@ -4327,8 +4350,8 @@ BOOL OutgoingAudio::Close()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-IncomingAudio::IncomingAudio(H323EndPoint & _ep, MCUH323Connection & _conn, unsigned int _sampleRate, unsigned _channels)
-  : sampleRate(_sampleRate), channels(_channels), ep(_ep), conn(_conn)
+IncomingAudio::IncomingAudio(MCUH323Connection & _conn, unsigned int _sampleRate, unsigned _channels)
+  : conn(_conn), sampleRate(_sampleRate), channels(_channels)
 {
   os_handle = 0;
   lastWriteCount = 0;

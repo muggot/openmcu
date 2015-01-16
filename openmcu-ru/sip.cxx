@@ -658,7 +658,7 @@ MCUSIP_RTP_UDP *MCUSipConnection::CreateRTPSession(MediaTypes media)
   {
     session = new MCUSIP_RTP_UDP(
 #ifdef H323_RTP_AGGREGATE
-                useRTPAggregation ? endpoint.GetRTPAggregator() : NULL,
+                useRTPAggregation ? ep.GetRTPAggregator() : NULL,
 #endif
                 id, remoteIsNAT);
 
@@ -668,7 +668,7 @@ MCUSIP_RTP_UDP *MCUSipConnection::CreateRTPSession(MediaTypes media)
     rtpSessions.AddSession(session);
 
     PIPSocket::Address localIP(nat_ip);
-    session->Open(localIP, endpoint.GetRtpIpPortBase(), endpoint.GetRtpIpPortMax(), endpoint.GetRtpIpTypeofService(), *this, (PNatMethod *)stun, NULL);
+    session->Open(localIP, ep.GetRtpIpPortBase(), ep.GetRtpIpPortMax(), ep.GetRtpIpTypeofService(), *this, (PNatMethod *)stun, NULL);
 
     if(media == MEDIA_TYPE_AUDIO)
       audio_rtp_port = session->GetLocalDataPort();
@@ -2706,7 +2706,7 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 
     // existing connection, possibly there is a bug
     callToken = GetSipCallToken(msg);
-    if(HasConnection(callToken))
+    if(ep->HasConnection(callToken))
     {
       msg_destroy(msg);
       return FALSE;
@@ -3077,7 +3077,7 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   //nta_leg_t *leg = nta_leg_by_call_id(agent, sip->sip_call_id->i_id);
   //MCUSipConnection *sCon = (MCUSipConnection *)nta_leg_magic(leg, NULL);
   PString callToken = GetSipCallToken(msg);
-  MCUSipConnection *sCon = FindConnectionWithLock(callToken);
+  MCUSipConnection *sCon = (MCUSipConnection *)ep->FindConnectionWithLock(callToken);
   if(!sCon)
     return SipReqReply(msg, NULL, SIP_500_INTERNAL_SERVER_ERROR);
 
@@ -3136,7 +3136,7 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
       return SipReqReply(msg, NULL, SIP_481_NO_TRANSACTION);
     // existing connection, repeated INVITE, possibly there is a bug
     PString callToken = GetSipCallToken(msg);
-    if(HasConnection(callToken))
+    if(ep->HasConnection(callToken))
       return 0;
     // redirect to the registrar
     return registrar->OnReceivedSipInvite(msg);
@@ -3575,7 +3575,7 @@ void MCUSipEndPoint::QueueInvite(const PString & data)
 
 void MCUSipEndPoint::QueueFastUpdate(const PString & data)
 {
-  MCUSipConnection *sCon = FindConnectionWithLock(data);
+  MCUSipConnection *sCon = (MCUSipConnection *)ep->FindConnectionWithLock(data);
   if(sCon)
   {
     sCon->SendVFU();
@@ -3587,7 +3587,7 @@ void MCUSipEndPoint::QueueFastUpdate(const PString & data)
 
 void MCUSipEndPoint::QueueBye(const PString & data)
 {
-  MCUSipConnection *sCon = FindConnectionWithLock(data);
+  MCUSipConnection *sCon = (MCUSipConnection *)ep->FindConnectionWithLock(data);
   if(sCon)
   {
     sCon->ProcessShutdown(MCUSipConnection::EndedByLocalUser);

@@ -294,7 +294,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
       if(isAudio)
       {
         int channels = format.GetOptionInteger(OPTION_ENCODER_CHANNELS, 1);
-        codec->AttachChannel(new OutgoingAudio(ep, *conn, wf.GetTimeUnits()*1000, channels), TRUE);
+        codec->AttachChannel(new OutgoingAudio(*conn, wf.GetTimeUnits()*1000, channels), TRUE);
       } else
         conn->RestartGrabber();
       firstFrameSendTime = PTime();

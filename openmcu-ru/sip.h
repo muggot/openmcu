@@ -448,15 +448,6 @@ class MCUSipEndPoint : public PThread
     su_root_t *root;
     nta_agent_t *agent;
 
-    MCUSipConnection * FindConnectionWithLock(const PString & callToken)
-    { return (MCUSipConnection *)ep->FindConnectionWithLock(callToken); }
-
-    BOOL HasConnection(const PString & callToken)
-    { return ep->HasConnection(callToken); }
-
-    MCUSipConnection * FindConnectionWithoutLock(const PString & callToken)
-    { return (MCUSipConnection *)ep->FindConnectionWithoutLock(callToken); }
-
     static int /*__attribute__((cdecl))*/ ProcessSipEventWrap_cb(nta_agent_magic_t *context, nta_agent_t *agent, msg_t *msg, sip_t *sip)
     { return ((MCUSipEndPoint *)context)->ProcessSipEvent_cb(agent, msg, sip); }
     int ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *sip);
