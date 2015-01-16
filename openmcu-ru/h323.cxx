@@ -92,163 +92,6 @@ MCUH323EndPoint::~MCUH323EndPoint()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-H323Gatekeeper * MCUH323EndPoint::CreateGatekeeper(H323Transport * transport)
-{
-  return new MCUH323Gatekeeper(*this, transport);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUH323EndPoint::InitialiseCapability()
-{
-  // Setup capabilities
-  if(capabilities.GetSize() == 0)
-  {
-    PTRACE(3, "MCUH323EndPoint\tAdd all capabilities");
-    H323CapabilityFactory::KeyList_T stdCaps = H323CapabilityFactory::GetKeyList();
-    for(H323CapabilityFactory::KeyList_T::const_iterator r = stdCaps.begin(); r != stdCaps.end(); ++r)
-    {
-      PString name = *r;
-      MCUCapability *capability = MCUCapability::Create(name);
-      if(capability)
-        AddCapability(capability);
-    }
-  }
-
-  unsigned rsConfig=1, tsConfig=1, rvConfig=1, tvConfig=1, saConfig=1, svConfig=1;
-  if(MCUConfig("RECEIVE_SOUND").GetKeys().GetSize() == 0) rsConfig = 0;
-  if(MCUConfig("TRANSMIT_SOUND").GetKeys().GetSize() == 0) tsConfig = 0;
-  if(MCUConfig("RECEIVE_VIDEO").GetKeys().GetSize() == 0) rvConfig = 0;
-  if(MCUConfig("TRANSMIT_VIDEO").GetKeys().GetSize() == 0) tvConfig = 0;
-  if(MCUConfig("SIP Audio").GetKeys().GetSize() == 0) saConfig = 0;
-  if(MCUConfig("SIP Video").GetKeys().GetSize() == 0) svConfig = 0;
-
-  for(PINDEX i = 0; i < capabilities.GetSize(); i++)
-  {
-    H323Capability *cap = &capabilities[i];
-    PString capname = cap->GetFormatName();
-
-    // H.323
-    if(rsConfig == 0 && cap->GetMainType() == 0)
-    {
-      if(capname.Right(4) == "{sw}")
-        MCUConfig("RECEIVE_SOUND").SetBoolean(capname, TRUE);
-      else
-        MCUConfig("RECEIVE_SOUND").SetBoolean(capname+"{sw}", TRUE);
-    }
-    if(tsConfig == 0 && cap->GetMainType() == 0)
-      MCUConfig("TRANSMIT_SOUND").SetBoolean(capname, TRUE);
-    if(rvConfig == 0 && cap->GetMainType() == 1)
-      MCUConfig("RECEIVE_VIDEO").SetBoolean(capname, TRUE);
-    if(tvConfig == 0 && cap->GetMainType() == 1)
-      MCUConfig("TRANSMIT_VIDEO").SetBoolean(capname, TRUE);
-
-    if(rsConfig == 1 && cap->GetMainType() == 0)
-    {
-      if(capname.Right(4) == "{sw}" && !MCUConfig("RECEIVE_SOUND").HasKey(capname))
-        MCUConfig("RECEIVE_SOUND").SetBoolean(capname, TRUE);
-      if(capname.Right(4) != "{sw}" && !MCUConfig("RECEIVE_SOUND").HasKey(capname+"{sw}"))
-        MCUConfig("RECEIVE_SOUND").SetBoolean(capname+"{sw}", TRUE);
-    }
-    if(tsConfig == 1 && cap->GetMainType() == 0 && !MCUConfig("TRANSMIT_SOUND").HasKey(capname))
-      MCUConfig("TRANSMIT_SOUND").SetBoolean(capname, TRUE);
-    if(rvConfig == 1 && cap->GetMainType() == 1 && !MCUConfig("RECEIVE_VIDEO").HasKey(capname))
-      MCUConfig("RECEIVE_VIDEO").SetBoolean(capname, TRUE);
-    if(tvConfig == 1 && cap->GetMainType() == 1 && !MCUConfig("TRANSMIT_VIDEO").HasKey(capname))
-      MCUConfig("TRANSMIT_VIDEO").SetBoolean(capname, TRUE);
-    // SIP
-    if(capname.Right(4) != "{sw}") capname += "{sw}";
-    if(saConfig == 0 && cap->GetMainType() == 0)
-      MCUConfig("SIP Audio").SetBoolean(capname, TRUE);
-    if(svConfig == 0 && cap->GetMainType() == 1)
-      MCUConfig("SIP Video").SetBoolean(capname, TRUE);
-    if(saConfig == 1 && cap->GetMainType() == 0 && !MCUConfig("SIP Audio").HasKey(capname))
-      MCUConfig("SIP Audio").SetBoolean(capname, TRUE);
-    if(svConfig == 1 && cap->GetMainType() == 1 && !MCUConfig("SIP Video").HasKey(capname))
-      MCUConfig("SIP Video").SetBoolean(capname, TRUE);
-  }
-
-  capabilities.RemoveAll();
-
-  int capsNum = 5;
-  capsNum += MCUConfig("RECEIVE_SOUND").GetKeys().GetSize()+
-             MCUConfig("TRANSMIT_SOUND").GetKeys().GetSize()+
-             MCUConfig("RECEIVE_VIDEO").GetKeys().GetSize()+
-             MCUConfig("TRANSMIT_VIDEO").GetKeys().GetSize();
-  rsCaps = (char **)calloc(capsNum,sizeof(char *));
-  tsCaps = (char **)calloc(capsNum,sizeof(char *));
-  rvCaps = (char **)calloc(capsNum,sizeof(char *));
-  tvCaps = (char **)calloc(capsNum,sizeof(char *));
-  listCaps = (char *)calloc(capsNum,64*sizeof(char));
-
-  char buf[64];
-  capsNum = 0;
-  PStringList keys;
-  keys = MCUConfig("RECEIVE_SOUND").GetKeys();
-  for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
-  {
-    if(MCUConfig("RECEIVE_SOUND").GetBoolean(keys[i]) != 1) continue;
-    strcpy(buf, keys[i]);
-    strcpy(&(listCaps[64*capsNum]),buf);
-    rsCaps[j]=&(listCaps[64*capsNum]);
-    j++; capsNum++;
-  }
-
-  keys = MCUConfig("TRANSMIT_SOUND").GetKeys();
-  for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
-  {
-    if(MCUConfig("TRANSMIT_SOUND").GetBoolean(keys[i]) != 1) continue;
-    strcpy(buf, keys[i]);
-    strcpy(&(listCaps[64*capsNum]),buf);
-    tsCaps[j]=&(listCaps[64*capsNum]);
-    j++; capsNum++;
-  }
-
-  keys = MCUConfig("RECEIVE_VIDEO").GetKeys();
-  for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
-  {
-    if(MCUConfig("RECEIVE_VIDEO").GetBoolean(keys[i]) != 1) continue;
-    if(SkipCapability(keys[i])) continue;
-    strcpy(buf, keys[i]);
-    strcpy(&(listCaps[64*capsNum]),buf);
-    rvCaps[j]=&(listCaps[64*capsNum]);
-    j++; capsNum++;
-  }
-
-  keys = MCUConfig("TRANSMIT_VIDEO").GetKeys();
-  for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
-  {
-    if(MCUConfig("TRANSMIT_VIDEO").GetBoolean(keys[i]) != 1) continue;
-    if(SkipCapability(keys[i], CONNECTION_TYPE_H323)) continue;
-    strcpy(buf, keys[i]);
-    strcpy(&(listCaps[64*capsNum]),buf);
-    tvCaps[j]=&(listCaps[64*capsNum]);
-    j++; capsNum++;
-  }
-
-  int listNum = 0;
-  cout << "[RECEIVE_SOUND]= "; listNum=0; 
-  while(rsCaps[listNum]!=NULL) { cout << rsCaps[listNum] << ", "; listNum++; }
-  cout << "\n";
-  cout << "[TRANSMIT_SOUND]= "; listNum=0; 
-  while(tsCaps[listNum]!=NULL) { cout << tsCaps[listNum] << ", "; listNum++; }
-  cout << "\n";
-  cout << "[RECEIVE_VIDEO]= "; listNum=0; 
-  while(rvCaps[listNum]!=NULL) { cout << rvCaps[listNum] << ", "; listNum++; }
-  cout << "\n";
-  cout << "[TRANSMIT_VIDEO]= "; listNum=0; 
-  while(tvCaps[listNum]!=NULL) { cout << tvCaps[listNum] << ", "; listNum++; }
-  cout << "\n";
-  AddCapabilitiesMCU(0,0,(const char **)rsCaps);
-  AddCapabilitiesMCU(0,1,(const char **)rvCaps);
-  AddCapabilitiesMCU();
-  cout << capabilities;
-
-  PTRACE(2, "MCU\tCodecs (in preference order):\n" << setprecision(2) << GetCapabilities());;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void MCUH323EndPoint::Initialise(PConfig & cfg)
 {
   InitialiseCapability();
@@ -353,126 +196,6 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
       gatekeeperMonitor = new GatekeeperMonitor(*this, gkMode, gkRetryInterval*1000);
   }
 
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUH323EndPoint::AddCapabilitiesMCU()
-{
-  // add fake VP8 capabilities, need only for H.323
-  if(CheckCapability("VP8{sw}"))
-  {
-    for(int i = 0; vp8_resolutions[i].width != 0; ++i)
-    {
-      if(vp8_resolutions[i].width == 352) // skip default capability
-        continue;
-      MCUCapability *new_cap = MCUCapability::Create("VP8{sw}");
-      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      SetFormatParams(wf, vp8_resolutions[i].width, vp8_resolutions[i].height);
-      AddCapability(new_cap);
-    }
-  }
-  // add fake H.264 capabilities, need only for H.323
-  if(CheckCapability("H.264{sw}"))
-  {
-    for(int i = 0; h264_profile_levels[i].level != 0; ++i)
-    {
-      if(h264_profile_levels[i].level_h241 == 29) // skip default capability
-        continue;
-      MCUCapability *new_cap = MCUCapability::Create("H.264{sw}");
-      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      wf.SetOptionInteger("Generic Parameter 42", h264_profile_levels[i].level_h241);
-      wf.SetOptionInteger(OPTION_MAX_BIT_RATE, h264_profile_levels[i].max_br);
-      AddCapability(new_cap);
-    }
-  }
-  // add fake H.263p capabilities, need only for H.323
-  if(CheckCapability("H.263p{sw}"))
-  {
-    for(int i = 0; h263_resolutions[i].width != 0; ++i)
-    {
-      if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
-        continue;
-      MCUCapability *new_cap = MCUCapability::Create("H.263p{sw}");
-      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
-      AddCapability(new_cap);
-    }
-  }
-  // add fake H.263 capabilities, need only for H.323
-  if(CheckCapability("H.263{sw}"))
-  {
-    for(int i = 0; h263_resolutions[i].width != 0; ++i)
-    {
-      if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
-        continue;
-      MCUCapability *new_cap = MCUCapability::Create("H.263{sw}");
-      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
-      AddCapability(new_cap);
-    }
-  }
-  // add fake H.261 capabilities, need only for H.323
-  if(CheckCapability("H.261{sw}"))
-  {
-    for(int i = 0; h263_resolutions[i].width != 0; ++i)
-    {
-      if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
-        continue;
-      if(PString(h263_resolutions[i].mpiname) != "QCIF")
-        continue;
-      MCUCapability *new_cap = MCUCapability::Create("H.261{sw}");
-      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
-      SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
-      AddCapability(new_cap);
-    }
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PINDEX MCUH323EndPoint::AddCapabilitiesMCU(PINDEX descriptorNum, PINDEX simultaneous, const char **caps)
-{
-  PINDEX reply = descriptorNum == P_MAX_INDEX ? P_MAX_INDEX : simultaneous;
-
-  int capNum = 0;
-  while(caps[capNum] != NULL)
-  {
-    PString capName(caps[capNum]);
-    OpalMediaFormat mediaFormat(capName);
-    if(!mediaFormat.IsValid() && (capName.Right(4) == "{sw}") && capName.GetLength() > 4)
-      mediaFormat = OpalMediaFormat(capName.Left(capName.GetLength()-4));
-    if(mediaFormat.IsValid())
-    {
-      // add the capability
-      MCUCapability * capability = MCUCapability::Create(capName);
-      PINDEX num = capabilities.SetCapability(descriptorNum, simultaneous, capability);
-      if(descriptorNum == P_MAX_INDEX)
-      {
-        reply = num;
-        descriptorNum = num;
-        simultaneous = P_MAX_INDEX;
-      }
-      else if (simultaneous == P_MAX_INDEX)
-      {
-        if(reply == P_MAX_INDEX)
-          reply = num;
-        simultaneous = num;
-      }
-    }
-    capNum++;
-  }
-  return reply;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PString MCUH323EndPoint::GetGatekeeperHostName()
-{
-  PString host;
-  if(gatekeeper)
-    host = gatekeeper->GetTransport().GetRemoteAddress().GetHostName();
-  return host;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -645,6 +368,283 @@ void MCUH323EndPoint::SetConnectionActive(MCUH323Connection * conn)
     connectionsActive.SetAt(conn->GetCallToken(), conn);
     connectionsMutex.Signal();
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PString MCUH323EndPoint::GetGatekeeperHostName()
+{
+  PString host;
+  if(gatekeeper)
+    host = gatekeeper->GetTransport().GetRemoteAddress().GetHostName();
+  return host;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+H323Gatekeeper * MCUH323EndPoint::CreateGatekeeper(H323Transport * transport)
+{
+  return new MCUH323Gatekeeper(*this, transport);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323EndPoint::InitialiseCapability()
+{
+  // Setup capabilities
+  if(capabilities.GetSize() == 0)
+  {
+    PTRACE(3, "MCUH323EndPoint\tAdd all capabilities");
+    H323CapabilityFactory::KeyList_T stdCaps = H323CapabilityFactory::GetKeyList();
+    for(H323CapabilityFactory::KeyList_T::const_iterator r = stdCaps.begin(); r != stdCaps.end(); ++r)
+    {
+      PString name = *r;
+      MCUCapability *capability = MCUCapability::Create(name);
+      if(capability)
+        AddCapability(capability);
+    }
+  }
+
+  unsigned rsConfig=1, tsConfig=1, rvConfig=1, tvConfig=1, saConfig=1, svConfig=1;
+  if(MCUConfig("RECEIVE_SOUND").GetKeys().GetSize() == 0) rsConfig = 0;
+  if(MCUConfig("TRANSMIT_SOUND").GetKeys().GetSize() == 0) tsConfig = 0;
+  if(MCUConfig("RECEIVE_VIDEO").GetKeys().GetSize() == 0) rvConfig = 0;
+  if(MCUConfig("TRANSMIT_VIDEO").GetKeys().GetSize() == 0) tvConfig = 0;
+  if(MCUConfig("SIP Audio").GetKeys().GetSize() == 0) saConfig = 0;
+  if(MCUConfig("SIP Video").GetKeys().GetSize() == 0) svConfig = 0;
+
+  for(PINDEX i = 0; i < capabilities.GetSize(); i++)
+  {
+    H323Capability *cap = &capabilities[i];
+    PString capname = cap->GetFormatName();
+
+    // H.323
+    if(rsConfig == 0 && cap->GetMainType() == 0)
+    {
+      if(capname.Right(4) == "{sw}")
+        MCUConfig("RECEIVE_SOUND").SetBoolean(capname, TRUE);
+      else
+        MCUConfig("RECEIVE_SOUND").SetBoolean(capname+"{sw}", TRUE);
+    }
+    if(tsConfig == 0 && cap->GetMainType() == 0)
+      MCUConfig("TRANSMIT_SOUND").SetBoolean(capname, TRUE);
+    if(rvConfig == 0 && cap->GetMainType() == 1)
+      MCUConfig("RECEIVE_VIDEO").SetBoolean(capname, TRUE);
+    if(tvConfig == 0 && cap->GetMainType() == 1)
+      MCUConfig("TRANSMIT_VIDEO").SetBoolean(capname, TRUE);
+
+    if(rsConfig == 1 && cap->GetMainType() == 0)
+    {
+      if(capname.Right(4) == "{sw}" && !MCUConfig("RECEIVE_SOUND").HasKey(capname))
+        MCUConfig("RECEIVE_SOUND").SetBoolean(capname, TRUE);
+      if(capname.Right(4) != "{sw}" && !MCUConfig("RECEIVE_SOUND").HasKey(capname+"{sw}"))
+        MCUConfig("RECEIVE_SOUND").SetBoolean(capname+"{sw}", TRUE);
+    }
+    if(tsConfig == 1 && cap->GetMainType() == 0 && !MCUConfig("TRANSMIT_SOUND").HasKey(capname))
+      MCUConfig("TRANSMIT_SOUND").SetBoolean(capname, TRUE);
+    if(rvConfig == 1 && cap->GetMainType() == 1 && !MCUConfig("RECEIVE_VIDEO").HasKey(capname))
+      MCUConfig("RECEIVE_VIDEO").SetBoolean(capname, TRUE);
+    if(tvConfig == 1 && cap->GetMainType() == 1 && !MCUConfig("TRANSMIT_VIDEO").HasKey(capname))
+      MCUConfig("TRANSMIT_VIDEO").SetBoolean(capname, TRUE);
+    // SIP
+    if(capname.Right(4) != "{sw}") capname += "{sw}";
+    if(saConfig == 0 && cap->GetMainType() == 0)
+      MCUConfig("SIP Audio").SetBoolean(capname, TRUE);
+    if(svConfig == 0 && cap->GetMainType() == 1)
+      MCUConfig("SIP Video").SetBoolean(capname, TRUE);
+    if(saConfig == 1 && cap->GetMainType() == 0 && !MCUConfig("SIP Audio").HasKey(capname))
+      MCUConfig("SIP Audio").SetBoolean(capname, TRUE);
+    if(svConfig == 1 && cap->GetMainType() == 1 && !MCUConfig("SIP Video").HasKey(capname))
+      MCUConfig("SIP Video").SetBoolean(capname, TRUE);
+  }
+
+  capabilities.RemoveAll();
+
+  int capsNum = 5;
+  capsNum += MCUConfig("RECEIVE_SOUND").GetKeys().GetSize()+
+             MCUConfig("TRANSMIT_SOUND").GetKeys().GetSize()+
+             MCUConfig("RECEIVE_VIDEO").GetKeys().GetSize()+
+             MCUConfig("TRANSMIT_VIDEO").GetKeys().GetSize();
+  rsCaps = (char **)calloc(capsNum,sizeof(char *));
+  tsCaps = (char **)calloc(capsNum,sizeof(char *));
+  rvCaps = (char **)calloc(capsNum,sizeof(char *));
+  tvCaps = (char **)calloc(capsNum,sizeof(char *));
+  listCaps = (char *)calloc(capsNum,64*sizeof(char));
+
+  char buf[64];
+  capsNum = 0;
+  PStringList keys;
+  keys = MCUConfig("RECEIVE_SOUND").GetKeys();
+  for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
+  {
+    if(MCUConfig("RECEIVE_SOUND").GetBoolean(keys[i]) != 1) continue;
+    strcpy(buf, keys[i]);
+    strcpy(&(listCaps[64*capsNum]),buf);
+    rsCaps[j]=&(listCaps[64*capsNum]);
+    j++; capsNum++;
+  }
+
+  keys = MCUConfig("TRANSMIT_SOUND").GetKeys();
+  for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
+  {
+    if(MCUConfig("TRANSMIT_SOUND").GetBoolean(keys[i]) != 1) continue;
+    strcpy(buf, keys[i]);
+    strcpy(&(listCaps[64*capsNum]),buf);
+    tsCaps[j]=&(listCaps[64*capsNum]);
+    j++; capsNum++;
+  }
+
+  keys = MCUConfig("RECEIVE_VIDEO").GetKeys();
+  for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
+  {
+    if(MCUConfig("RECEIVE_VIDEO").GetBoolean(keys[i]) != 1) continue;
+    if(SkipCapability(keys[i])) continue;
+    strcpy(buf, keys[i]);
+    strcpy(&(listCaps[64*capsNum]),buf);
+    rvCaps[j]=&(listCaps[64*capsNum]);
+    j++; capsNum++;
+  }
+
+  keys = MCUConfig("TRANSMIT_VIDEO").GetKeys();
+  for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
+  {
+    if(MCUConfig("TRANSMIT_VIDEO").GetBoolean(keys[i]) != 1) continue;
+    if(SkipCapability(keys[i], CONNECTION_TYPE_H323)) continue;
+    strcpy(buf, keys[i]);
+    strcpy(&(listCaps[64*capsNum]),buf);
+    tvCaps[j]=&(listCaps[64*capsNum]);
+    j++; capsNum++;
+  }
+
+  int listNum = 0;
+  cout << "[RECEIVE_SOUND]= "; listNum=0; 
+  while(rsCaps[listNum]!=NULL) { cout << rsCaps[listNum] << ", "; listNum++; }
+  cout << "\n";
+  cout << "[TRANSMIT_SOUND]= "; listNum=0; 
+  while(tsCaps[listNum]!=NULL) { cout << tsCaps[listNum] << ", "; listNum++; }
+  cout << "\n";
+  cout << "[RECEIVE_VIDEO]= "; listNum=0; 
+  while(rvCaps[listNum]!=NULL) { cout << rvCaps[listNum] << ", "; listNum++; }
+  cout << "\n";
+  cout << "[TRANSMIT_VIDEO]= "; listNum=0; 
+  while(tvCaps[listNum]!=NULL) { cout << tvCaps[listNum] << ", "; listNum++; }
+  cout << "\n";
+  AddCapabilitiesMCU(0,0,(const char **)rsCaps);
+  AddCapabilitiesMCU(0,1,(const char **)rvCaps);
+  AddCapabilitiesMCU();
+  cout << capabilities;
+
+  PTRACE(2, "MCU\tCodecs (in preference order):\n" << setprecision(2) << GetCapabilities());;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323EndPoint::AddCapabilitiesMCU()
+{
+  // add fake VP8 capabilities, need only for H.323
+  if(CheckCapability("VP8{sw}"))
+  {
+    for(int i = 0; vp8_resolutions[i].width != 0; ++i)
+    {
+      if(vp8_resolutions[i].width == 352) // skip default capability
+        continue;
+      MCUCapability *new_cap = MCUCapability::Create("VP8{sw}");
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      SetFormatParams(wf, vp8_resolutions[i].width, vp8_resolutions[i].height);
+      AddCapability(new_cap);
+    }
+  }
+  // add fake H.264 capabilities, need only for H.323
+  if(CheckCapability("H.264{sw}"))
+  {
+    for(int i = 0; h264_profile_levels[i].level != 0; ++i)
+    {
+      if(h264_profile_levels[i].level_h241 == 29) // skip default capability
+        continue;
+      MCUCapability *new_cap = MCUCapability::Create("H.264{sw}");
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      wf.SetOptionInteger("Generic Parameter 42", h264_profile_levels[i].level_h241);
+      wf.SetOptionInteger(OPTION_MAX_BIT_RATE, h264_profile_levels[i].max_br);
+      AddCapability(new_cap);
+    }
+  }
+  // add fake H.263p capabilities, need only for H.323
+  if(CheckCapability("H.263p{sw}"))
+  {
+    for(int i = 0; h263_resolutions[i].width != 0; ++i)
+    {
+      if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
+        continue;
+      MCUCapability *new_cap = MCUCapability::Create("H.263p{sw}");
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
+      AddCapability(new_cap);
+    }
+  }
+  // add fake H.263 capabilities, need only for H.323
+  if(CheckCapability("H.263{sw}"))
+  {
+    for(int i = 0; h263_resolutions[i].width != 0; ++i)
+    {
+      if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
+        continue;
+      MCUCapability *new_cap = MCUCapability::Create("H.263{sw}");
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
+      AddCapability(new_cap);
+    }
+  }
+  // add fake H.261 capabilities, need only for H.323
+  if(CheckCapability("H.261{sw}"))
+  {
+    for(int i = 0; h263_resolutions[i].width != 0; ++i)
+    {
+      if(PString(h263_resolutions[i].mpiname) == "CIF") // skip default capability
+        continue;
+      if(PString(h263_resolutions[i].mpiname) != "QCIF")
+        continue;
+      MCUCapability *new_cap = MCUCapability::Create("H.261{sw}");
+      OpalMediaFormat & wf = new_cap->GetWritableMediaFormat();
+      SetFormatParams(wf, h263_resolutions[i].width, h263_resolutions[i].height);
+      AddCapability(new_cap);
+    }
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PINDEX MCUH323EndPoint::AddCapabilitiesMCU(PINDEX descriptorNum, PINDEX simultaneous, const char **caps)
+{
+  PINDEX reply = descriptorNum == P_MAX_INDEX ? P_MAX_INDEX : simultaneous;
+
+  int capNum = 0;
+  while(caps[capNum] != NULL)
+  {
+    PString capName(caps[capNum]);
+    OpalMediaFormat mediaFormat(capName);
+    if(!mediaFormat.IsValid() && (capName.Right(4) == "{sw}") && capName.GetLength() > 4)
+      mediaFormat = OpalMediaFormat(capName.Left(capName.GetLength()-4));
+    if(mediaFormat.IsValid())
+    {
+      // add the capability
+      MCUCapability * capability = MCUCapability::Create(capName);
+      PINDEX num = capabilities.SetCapability(descriptorNum, simultaneous, capability);
+      if(descriptorNum == P_MAX_INDEX)
+      {
+        reply = num;
+        descriptorNum = num;
+        simultaneous = P_MAX_INDEX;
+      }
+      else if (simultaneous == P_MAX_INDEX)
+      {
+        if(reply == P_MAX_INDEX)
+          reply = num;
+        simultaneous = num;
+      }
+    }
+    capNum++;
+  }
+  return reply;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
