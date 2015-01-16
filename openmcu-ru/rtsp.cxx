@@ -79,7 +79,7 @@ msg_t * ParseMsg(PString & msg_str)
 void ConferenceStreamMember::Close()
 {
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
+  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
   if(conn != NULL)
   {
     conn->LeaveMCU();

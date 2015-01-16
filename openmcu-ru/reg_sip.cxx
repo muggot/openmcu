@@ -92,7 +92,7 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
   rconn = FindRegConnUsernameWithLock(username_in);
   if(rconn && rconn->state == CONN_MCU_ESTABLISHED)
   {
-    MCUH323Connection *conn = (MCUH323Connection *)ep->FindConnectionWithLock(rconn->callToken_in);
+    MCUH323Connection *conn = ep->FindConnectionWithLock(rconn->callToken_in);
     if(conn)
     {
       conn->OnUserInputString(sip->sip_payload->pl_data);

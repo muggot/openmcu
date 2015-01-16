@@ -342,7 +342,7 @@ void Registrar::IncomingCallAccept(RegistrarConnection *rconn)
   }
   else if(rconn->account_type_in == ACCOUNT_TYPE_H323)
   {
-    MCUH323Connection *conn = (MCUH323Connection *)ep->FindConnectionWithLock(rconn->callToken_in);
+    MCUH323Connection *conn = ep->FindConnectionWithLock(rconn->callToken_in);
     if(conn)
     {
       conn->AnsweringCall(H323Connection::AnswerCallNow);
@@ -375,7 +375,7 @@ void Registrar::Leave(int account_type, const PString & callToken)
   if(account_type == ACCOUNT_TYPE_SIP)
     conn = (MCUSipConnection *)ep->FindConnectionWithLock(callToken);
   else if(account_type == ACCOUNT_TYPE_H323)
-    conn = (MCUH323Connection *)ep->FindConnectionWithLock(callToken);
+    conn = ep->FindConnectionWithLock(callToken);
   if(conn)
   {
     conn->LeaveMCU();

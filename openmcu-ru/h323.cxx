@@ -482,11 +482,36 @@ H323Connection * MCUH323EndPoint::CreateConnection(unsigned callReference, void 
   MCUH323Connection *conn = new MCUH323Connection(*this, callReference, userData);
   if(gatekeeper)
   {
-    PString remote_host = transport->GetRemoteAddress().GetHostName();
-    if(remote_host != "*" && remote_host != GetGatekeeperHostName())
-      ((MCUH323Gatekeeper *)gatekeeper)->AddIgnoreConnection(callReference, conn);
+    MCUH323Gatekeeper *mcu_gk = dynamic_cast<MCUH323Gatekeeper *>(gatekeeper);
+    if(mcu_gk != NULL)
+    {
+      PString remote_host = transport->GetRemoteAddress().GetHostName();
+      if(remote_host != "*" && remote_host != GetGatekeeperHostName())
+        mcu_gk->AddIgnoreConnection(callReference, conn);
+    }
   }
   return conn;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUH323Connection * MCUH323EndPoint::FindConnectionWithoutLock(const PString & token)
+{
+  return (MCUH323Connection *)H323EndPoint::FindConnectionWithoutLocks(token);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUH323Connection * MCUH323EndPoint::FindConnectionWithLock(const PString & token)
+{
+  return (MCUH323Connection *)H323EndPoint::FindConnectionWithLock(token);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUH323EndPoint::HasConnection(const PString & token)
+{
+  return FindConnectionWithoutLock(token) != NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -517,7 +542,11 @@ void MCUH323EndPoint::OnConnectionCleared(H323Connection & connection, const PSt
   registrar->ConnectionCleared(callToken);
 
   if(gatekeeper)
-    ((MCUH323Gatekeeper *)gatekeeper)->RemoveIgnoreConnection(connection.GetCallReference());
+  {
+    MCUH323Gatekeeper *mcu_gk = dynamic_cast<MCUH323Gatekeeper *>(gatekeeper);
+    if(mcu_gk != NULL)
+      mcu_gk->RemoveIgnoreConnection(connection.GetCallReference());
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -551,7 +580,7 @@ void MCUH323EndPoint::CleanUpConnections()
 
     // And remove the connection instance itself from the dictionary which will
     // cause its destructor to be called.
-    MCUH323Connection * connectionToDelete = (MCUH323Connection *)connectionsActive.RemoveAt(token);
+    H323Connection * connectionToDelete = connectionsActive.RemoveAt(token);
 
     // Unlock the structures yet again to avoid possible race conditions when
     // deleting the connection as well as the delte of a conncetion descendent
@@ -560,7 +589,9 @@ void MCUH323EndPoint::CleanUpConnections()
     connectionsMutex.Signal();
 
     // connMutex
-    connectionToDelete->GetMutex().Wait();
+    MCUH323Connection *mcu_conn = dynamic_cast<MCUH323Connection *>(connectionToDelete);
+    if(mcu_conn != NULL)
+      mcu_conn->GetConnectionMutex().Wait();
 
     // Finally we get to delete it!
     delete connectionToDelete;
@@ -580,8 +611,13 @@ void MCUH323EndPoint::CleanUpConnections()
 
 H323Connection * MCUH323EndPoint::OnIncomingConnection(H323Transport * transport, H323SignalPDU & setupPDU)
 {
-  H323Connection *conn = H323EndPoint::OnIncomingConnection(transport, setupPDU);
-  return conn;
+  H323Connection *h323_conn = H323EndPoint::OnIncomingConnection(transport, setupPDU);
+
+  MCUH323Connection *mcu_conn = dynamic_cast<MCUH323Connection *>(h323_conn);
+  if(mcu_conn != NULL)
+    SetConnectionActive(mcu_conn);
+
+  return h323_conn;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -590,17 +626,25 @@ H323Connection * MCUH323EndPoint::InternalMakeCall(const PString & existingToken
                                                    unsigned capabilityLevel, const PString & remoteParty,
                                                    H323Transport * transport, PString & token, void * userData)
 {
-  H323Connection *conn = H323EndPoint::InternalMakeCall(existingToken, callIdentity, capabilityLevel, remoteParty, transport, token, userData);
-  return conn;
+  H323Connection *h323_conn = H323EndPoint::InternalMakeCall(existingToken, callIdentity, capabilityLevel, remoteParty, transport, token, userData);
+
+  MCUH323Connection *mcu_conn = dynamic_cast<MCUH323Connection *>(h323_conn);
+  if(mcu_conn != NULL)
+    SetConnectionActive(mcu_conn);
+
+  return h323_conn;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323EndPoint::SetConnectionActive(MCUH323Connection * conn)
 {
-  connectionsMutex.Wait();
-  connectionsActive.SetAt(conn->GetCallToken(), conn);
-  connectionsMutex.Signal();
+  if(conn->GetConnectionType() != CONNECTION_TYPE_H323)
+  {
+    connectionsMutex.Wait();
+    connectionsActive.SetAt(conn->GetCallToken(), conn);
+    connectionsMutex.Signal();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -723,7 +767,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         else if(member->GetType() == MEMBER_TYPE_STREAM)
         {
           duration = PTime() - member->GetStartTime();
-          conn = (MCUH323Connection *)FindConnectionWithLock(member->GetCallToken());
+          conn = FindConnectionWithLock(member->GetCallToken());
           if(conn)
           {
             audioCodecT = conn->GetAudioTransmitCodecName();
@@ -766,7 +810,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         }
         else // real (visible, external) endpoint
         {
-          conn = (MCUH323Connection *)FindConnectionWithLock(member->GetCallToken());
+          conn = FindConnectionWithLock(member->GetCallToken());
           if(conn!=NULL)
           {
               duration = now - conn->GetConnectionStartTime();
@@ -897,7 +941,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
 
         MCUH323Connection * conn = NULL;
         if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
-          conn = (MCUH323Connection *)FindConnectionWithLock(member->GetCallToken());
+          conn = FindConnectionWithLock(member->GetCallToken());
 
         PTime now;
 
@@ -1224,7 +1268,7 @@ BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMem
   if(member->GetType() & MEMBER_TYPE_GSYSTEM)
     return FALSE;
 
-  MCUH323Connection *conn = (MCUH323Connection *)FindConnectionWithoutLock(member->GetCallToken());
+  MCUH323Connection *conn = FindConnectionWithoutLock(member->GetCallToken());
   if(conn == NULL)
     return FALSE;
 
@@ -2068,8 +2112,6 @@ PString MCUH323EndPoint::GetMonitorText()
       if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
       {
         output << hdr << "callToken: " << member->GetCallToken() << "\n";
-        MCUH323Connection * conn = (MCUH323Connection *)FindConnectionWithoutLock(member->GetCallToken());
-        output << hdr << "Connection: " << hex << conn << "\n";
       }
       if(member->GetType() == MEMBER_TYPE_CACHE)
       {
@@ -2314,9 +2356,7 @@ void NotifyH245Thread::Main()
   // send H.245 message on each connection in turn
   PINDEX i;
   for (i = 0; i < tokens.GetSize(); ++i) {
-    H323Connection * conn = ep.FindConnectionWithLock(tokens[i]);
-    if (conn != NULL) {
-      MCUH323Connection * h323Conn = dynamic_cast<MCUH323Connection *>(conn);
+    MCUH323Connection * h323Conn = ep.FindConnectionWithLock(tokens[i]);
 
       H323ControlPDU pdu;
       H245_ConferenceIndication & ind = pdu.Build(H245_IndicationMessage::e_conferenceIndication);
@@ -2328,7 +2368,6 @@ void NotifyH245Thread::Main()
       h323Conn->WriteControlPDU(pdu);
 
       h323Conn->Unlock();
-    }
   }
 }
 
@@ -2461,6 +2500,7 @@ class TplCleanCheckThread : public PThread
       MCUTime::Sleep(6000); // previous connection may still be actvie
       if(c!=NULL)
       {
+        PTRACE(1,"TplCleanCheckThread\tFind conference " << c);
         if(OpenMCU::Current().GetEndpoint().GetConferenceManager().FindConferenceWithLock(c))
         {
           c->OnConnectionClean(n, a);
@@ -3981,7 +4021,7 @@ H323Connection_ConferenceMember::~H323Connection_ConferenceMember()
 
 void H323Connection_ConferenceMember::Close()
 {
-  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
+  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
   if (conn != NULL) {
     conn->LeaveMCU();
     conn->Unlock();
@@ -3993,7 +4033,7 @@ void H323Connection_ConferenceMember::Close()
 PString H323Connection_ConferenceMember::GetMonitorInfo(const PString & hdr)
 { 
   PStringStream output;
-  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
+  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
   if (conn != NULL) {
     output << hdr << "Remote Address: " << conn->GetRemotePartyAddress() << "\n"
            << hdr << "AudioCodecs: " << conn->GetAudioTransmitCodecName() << '/' << conn->GetAudioReceiveCodecName() << "\n"
@@ -4010,30 +4050,25 @@ PString H323Connection_ConferenceMember::GetMonitorInfo(const PString & hdr)
 
 void H323Connection_ConferenceMember::SetName()
 {
-  if(!memberType & MEMBER_TYPE_GSYSTEM)
+  if(memberType & MEMBER_TYPE_GSYSTEM)
+    return;
+
+  PTRACE(4,"H323\tSetName " << callToken);
+  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
+  if(conn == NULL)
+    return;
+
+  ConferenceMember * member = conn->GetConferenceMember();
+  if(member == this || member == NULL)
   {
-    PTRACE(4,"H323\tSetName " << callToken);
-    int connLock = 0;
-    MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
-    if(conn == NULL)
-    {
-      conn = (MCUH323Connection *)ep.FindConnectionWithoutLock(callToken);
-      if(conn == NULL) return;
-      PTRACE(1,"Could not lock connection in SetName(): " << callToken << flush);
-    }
-    else connLock = 1;
-
-    ConferenceMember * member = conn->GetConferenceMember();
-    if(member == this || member == NULL)
-    {
-      name = conn->GetMemberName();
-      nameID = MCUURL(name).GetMemberNameId();
-      PTRACE(1, "SetName name: " << name);
-    }
-    else PTRACE(1, "MCU\tWrong connection in SetName for " << callToken);
-
-    if(connLock != 0) conn->Unlock();
+    name = conn->GetMemberName();
+    nameID = MCUURL(name).GetMemberNameId();
+    PTRACE(1, "SetName name: " << name);
   }
+  else
+    PTRACE(1, "MCU\tWrong connection in SetName for " << callToken);
+
+  conn->Unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4041,43 +4076,39 @@ void H323Connection_ConferenceMember::SetName()
 // signal to codec plugin for disable(enable) decoding incoming video from unvisible(visible) member
 void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
 {
-  if(!memberType & MEMBER_TYPE_GSYSTEM)
-  {
-    cout << id << "->SetFreezeVideo(" << disable << ")\n";
-    PTRACE(5,id << "->SetFreezeVideo(" << disable << ")");
-    MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
-    if(conn == NULL)
-      return;
+  if(memberType & MEMBER_TYPE_GSYSTEM)
+    return;
 
-    ConferenceMember * member = conn->GetConferenceMember();
-    if(member == this || member == NULL)
-    {
-      MCU_RTPChannel *channel = conn->GetVideoReceiveChannel();
-      if(channel)
-        channel->SetFreeze(disable);
-    }
-    else
-      PTRACE(1, "MCU\tWrong connection in SetFreezeVideo for " << callToken);
-    conn->Unlock();
+  cout << id << "->SetFreezeVideo(" << disable << ")\n";
+  PTRACE(5,id << "->SetFreezeVideo(" << disable << ")");
+  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
+  if(conn == NULL)
+    return;
+
+  ConferenceMember * member = conn->GetConferenceMember();
+  if(member == this || member == NULL)
+  {
+    MCU_RTPChannel *channel = conn->GetVideoReceiveChannel();
+    if(channel)
+      channel->SetFreeze(disable);
   }
+  else
+    PTRACE(1, "MCU\tWrong connection in SetFreezeVideo for " << callToken);
+
+  conn->Unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void H323Connection_ConferenceMember::SendUserInputIndication(const PString & str)
-{ 
+{
+  if(memberType & MEMBER_TYPE_GSYSTEM)
+    return;
+
   PTRACE(3, "Conference\tConnection " << id << " sending user indication " << str);
-  int lockcount = 3;
-  MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
-  while(conn == NULL && lockcount > 0)
-  {
-   conn = (MCUH323Connection *)ep.FindConnectionWithoutLock(callToken);
-   if(conn == NULL) return;
-   conn = (MCUH323Connection *)ep.FindConnectionWithLock(callToken);
-   PTRACE(1, "MCU\tDeadlock in SendUserInputIndication for " << callToken);
-   lockcount--;
-  }
-  if(conn == NULL) return;
+  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
+  if(conn == NULL)
+    return;
 
   PStringStream msg;
   PStringStream utfmsg;
@@ -4117,6 +4148,8 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
   }
 
   PString sendmsg = "[" + conn->GetRemotePartyName() + "]: " + str;
+
+  // unlock
   conn->Unlock();
 
   if(str.GetLength()<10)
@@ -4165,7 +4198,7 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
 void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
-  MCUH323Connection * conn = (MCUH323Connection *)OpenMCU::Current().GetEndpoint().FindConnectionWithLock(callToken);
+  MCUH323Connection * conn = OpenMCU::Current().GetEndpoint().FindConnectionWithLock(callToken);
   if(conn == NULL) return;
   PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)
@@ -4222,7 +4255,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
 void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
-  MCUH323Connection * conn = (MCUH323Connection *)OpenMCU::Current().GetEndpoint().FindConnectionWithLock(callToken);
+  MCUH323Connection * conn = OpenMCU::Current().GetEndpoint().FindConnectionWithLock(callToken);
   if(conn == NULL) return;
   PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)
@@ -4407,7 +4440,7 @@ void ConnectionMonitor::Main()
     for(MCUSharedList<PString>::shared_iterator it = monitorList.begin(); it != monitorList.end(); ++it)
     {
       PString *callToken = *it;
-      MCUH323Connection * conn = (MCUH323Connection *)ep.FindConnectionWithLock(*callToken);
+      MCUH323Connection * conn = ep.FindConnectionWithLock(*callToken);
       if(conn == NULL)
       {
         if(monitorList.Erase(it))

@@ -419,10 +419,6 @@ class MCUSipEndPoint : public PThread
     MCUQueueMsg & GetMsgQueue()
     { return sipMsgQueue; }
 
-    void Lock()      { mutex.Wait(); }
-    void Unlock()    { mutex.Signal(); }
-    PMutex & GetMutex() { return mutex; }
-
   protected:
     void Main();
     void MainLoop();

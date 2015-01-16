@@ -1106,6 +1106,8 @@ typedef MCUSharedList<RegistrarAccount> MCURegistrarAccountList;
 typedef MCUSharedList<RegistrarConnection> MCURegistrarConnectionList;
 typedef MCUSharedList<RegistrarSubscription> MCURegistrarSubscriptionList;
 
+typedef MCUSharedList<MCUH323Connection> MCUConnectionList;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T>
