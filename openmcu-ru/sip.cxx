@@ -3118,12 +3118,12 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
     return 0;
 
   // wrong RequestURI
-  PString ruri_str = MCUURL_SIP(msg).GetUrl();
-  PString stun_server = GetSectionParamFromUrl(NATStunServerKey, ruri_str);
-  PString nat_ip = GetSectionParamFromUrl(NATRouterIPKey, ruri_str);
-  PString local_ip = sip->sip_request->rq_url->url_host;
-  if(stun_server == "" && ((nat_ip != "" && nat_ip != local_ip) || (nat_ip == "" && PIPSocket::IsLocalHost(local_ip) == FALSE)))
-    return SipReqReply(msg, NULL, SIP_400_BAD_REQUEST);
+  //PString ruri_str = MCUURL_SIP(msg).GetUrl();
+  //PString stun_server = GetSectionParamFromUrl(NATStunServerKey, ruri_str);
+  //PString nat_ip = GetSectionParamFromUrl(NATRouterIPKey, ruri_str);
+  //PString local_ip = sip->sip_request->rq_url->url_host;
+  //if(stun_server == "" && ((nat_ip != "" && nat_ip != local_ip) || (nat_ip == "" && PIPSocket::IsLocalHost(local_ip) == FALSE)))
+  //  return SipReqReply(msg, NULL, SIP_400_BAD_REQUEST);
 
   if(request == sip_method_invite)
   {
