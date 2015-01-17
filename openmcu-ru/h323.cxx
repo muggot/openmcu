@@ -4100,6 +4100,7 @@ void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
   ConferenceMember * member = conn->GetConferenceMember();
   if(member == this || member == NULL)
   {
+    PWaitAndSignal m(conn->GetChannelsMutex());
     MCU_RTPChannel *channel = conn->GetVideoReceiveChannel();
     if(channel)
       channel->SetFreeze(disable);
