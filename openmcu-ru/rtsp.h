@@ -41,7 +41,7 @@ class MCURtspConnection : public MCUSipConnection
     };
     RtspStates rtsp_state;
 
-    MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken);
+    MCURtspConnection(MCUH323EndPoint *_ep, PString _callToken);
     ~MCURtspConnection();
 
     BOOL Connect(PString room, PString address);

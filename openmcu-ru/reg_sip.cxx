@@ -190,10 +190,9 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     }
 
     // create MCU sip connection
-    MCUSipConnection *sCon = new MCUSipConnection(sep, ep, callToken);
-    if(sCon->Init(DIRECTION_INBOUND, msg) == FALSE)
+    MCUSipConnection *sCon = MCUSipConnection::CreateConnection(DIRECTION_INBOUND, callToken, msg);
+    if(sCon == NULL)
     {
-      sCon->LeaveMCU();
       response_code = 500; // SIP_500_INTERNAL_SERVER_ERROR
       goto return_response;
     }

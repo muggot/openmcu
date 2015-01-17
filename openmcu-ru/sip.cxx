@@ -376,9 +376,10 @@ void SipCapability::Print()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken)
-  :MCUH323Connection(*_ep, 0, NULL), sep(_sep)
+MCUSipConnection::MCUSipConnection(MCUH323EndPoint *_ep, const PString & _callToken)
+  :MCUH323Connection(*_ep, 0, NULL)
 {
+  sep = OpenMCU::Current().GetSipEndpoint();
   connectionState = NoConnectionActive;
   connectionType = CONNECTION_TYPE_SIP;
   direction = DIRECTION_INBOUND;
@@ -404,11 +405,20 @@ MCUSipConnection::MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, P
   scap = -1;
   vcap = -1;
 
-  // add to the list of connections
-  ep.SetConnectionActive(this);
-  OnCreated();
-
   MCUTRACE(1, trace_section << "constructor");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUSipConnection::~MCUSipConnection()
+{
+  ClearSipCaps(LocalSipCaps);
+  ClearSipCaps(RemoteSipCaps);
+
+  if(stun != NULL)
+    delete stun;
+
+  MCUTRACE(1, trace_section << "destructor");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -493,14 +503,20 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUSipConnection::~MCUSipConnection()
+MCUSipConnection * MCUSipConnection::CreateConnection(Directions _direction, const PString & _callToken, const msg_t *msg)
 {
-  ClearSipCaps(LocalSipCaps);
-  ClearSipCaps(RemoteSipCaps);
+  MCUH323EndPoint *ep = &OpenMCU::Current().GetEndpoint();
+  MCUSipConnection *conn = new MCUSipConnection(ep, _callToken);
+  if(!conn->Init(_direction, msg))
+  {
+    delete conn;
+    conn = NULL;
+  }
 
-  if(stun) delete stun;
+  if(conn != NULL)
+    conn->OnCreated();
 
-  MCUTRACE(1, trace_section << "destructor");
+  return conn;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -544,22 +560,15 @@ void MCUSipConnection::CleanUpOnCallEnd()
 
   connectionState = ShuttingDownConnection;
 
-  PWaitAndSignal m(connMutex);
-
+  connMutex.Wait();
   if(leg) nta_leg_destroy(leg);
   if(orq_invite) nta_outgoing_destroy(orq_invite);
   if(c_sip_msg) msg_destroy(c_sip_msg);
+  connMutex.Signal();
 
   StopTransmitChannels();
   StopReceiveChannels();
   DeleteChannels();
-
-  videoReceiveCodecName = videoTransmitCodecName = "none";
-
-  audioReceiveChannel = NULL;
-  videoReceiveChannel = NULL;
-  audioTransmitChannel = NULL;
-  videoTransmitChannel = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -776,15 +785,6 @@ int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
 
   MCUSIP_RTPChannel *channel =
     new MCUSIP_RTPChannel(*this, *cap, ((rtp_dir == 0) ? H323Channel::IsReceiver : H323Channel::IsTransmitter), *session);
-
-  if(cap->GetMainType() == MCUCapability::e_Audio && rtp_dir == 0)
-    audioReceiveChannel = channel;
-  if(cap->GetMainType() == MCUCapability::e_Video && rtp_dir == 0)
-    videoReceiveChannel = channel;
-  if(cap->GetMainType() == MCUCapability::e_Audio && rtp_dir == 1)
-    audioTransmitChannel = channel;
-  if(cap->GetMainType() == MCUCapability::e_Video && rtp_dir == 1)
-    videoTransmitChannel = channel;
 
   if(pt >= RTP_DataFrame::DynamicBase && pt <= RTP_DataFrame::MaxPayloadType)
     channel->SetDynamicRTPPayloadType(pt);
@@ -2168,8 +2168,7 @@ void MCUSipConnection::OnReceivedVFU()
   if(!CheckVFU())
     return;
 
-  PWaitAndSignal m(connMutex);
-
+  PWaitAndSignal m(channelsMutex);
   if(videoTransmitChannel)
     videoTransmitChannel->OnFastUpdatePicture();
 }
@@ -2713,20 +2712,20 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
     }
 
     // create connection
-    MCUSipConnection *sCon = new MCUSipConnection(this, ep, callToken);
-    sCon->Lock();
-    if(sCon->Init(DIRECTION_OUTBOUND, msg) == FALSE)
-    {
-      sCon->LeaveMCU();
-      sCon->Unlock();
-      msg_destroy(msg);
+    MCUSipConnection *sCon = MCUSipConnection::CreateConnection(DIRECTION_OUTBOUND, callToken, msg);
+    msg_destroy(msg);
+
+    if(sCon == NULL)
       return FALSE;
-    }
+
+    sCon = (MCUSipConnection *)ep->FindConnectionWithLock(callToken);
+    if(sCon == NULL)
+      return FALSE;
     sCon->auth_username = auth_username;
     sCon->auth_password = auth_password;
     BOOL ret = sCon->SendInvite();
     sCon->Unlock();
-    msg_destroy(msg);
+
     return ret;
 }
 

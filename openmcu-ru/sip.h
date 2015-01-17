@@ -222,11 +222,13 @@ void CreateSipCaps(SipCapMapType & SipCaps, PString audio_section, PString video
 
 class MCUSipConnection : public MCUH323Connection
 {
-  public:
-    MCUSipConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken);
-    ~MCUSipConnection();
-
+  protected:
+    MCUSipConnection(MCUH323EndPoint *_ep, const PString & _callToken);
     BOOL Init(Directions _direction, const msg_t *msg);
+
+  public:
+    static MCUSipConnection * CreateConnection(Directions _direction, const PString & _callToken, const msg_t *msg);
+    ~MCUSipConnection();
 
     virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);

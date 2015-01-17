@@ -89,8 +89,8 @@ void ConferenceStreamMember::Close()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep, PString _callToken)
-  :MCUSipConnection(_sep, _ep, _callToken)
+MCURtspConnection::MCURtspConnection(MCUH323EndPoint *_ep, PString _callToken)
+  :MCUSipConnection(_ep, _callToken)
 {
   connectionType = CONNECTION_TYPE_RTSP;
   trace_section = "RTSP Connection "+callToken+": ";
@@ -102,6 +102,8 @@ MCURtspConnection::MCURtspConnection(MCUSipEndPoint *_sep, MCUH323EndPoint *_ep,
 
   // create local capability list
   CreateLocalSipCaps();
+
+  OnCreated();
 
   PTRACE(1, trace_section << "constructor");
 }
@@ -157,7 +159,6 @@ void MCURtspConnection::CleanUpOnCallEnd()
   StopTransmitChannels();
   StopReceiveChannels();
   DeleteChannels();
-  videoReceiveCodecName = videoTransmitCodecName = "none";
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1280,7 +1281,7 @@ BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t
   }
 
   PString callToken = address;
-  MCURtspConnection *conn = new MCURtspConnection(sep, ep, callToken);
+  MCURtspConnection *conn = new MCURtspConnection(ep, callToken);
   if(!conn->Connect(address, socket_fd, msg))
     return FALSE;
 
@@ -1291,7 +1292,7 @@ BOOL MCURtspServer::CreateConnection(PString address, int socket_fd, const msg_t
 
 bool MCURtspServer::CreateConnection(const PString & room, const PString & address, const PString & callToken)
 {
-  MCURtspConnection *conn = new MCURtspConnection(sep, ep, callToken);
+  MCURtspConnection *conn = new MCURtspConnection(ep, callToken);
   if(!conn->Connect(room, address))
     return FALSE;
 

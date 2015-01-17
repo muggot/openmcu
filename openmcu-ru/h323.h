@@ -110,7 +110,6 @@ class MCUH323EndPoint : public H323EndPoint
 
     PString GetGatekeeperHostName();
     PString Invite(PString room, PString memberName);
-    void SetConnectionActive(MCUH323Connection * conn);
 
     void AddCapabilitiesMCU();
     PINDEX AddCapabilitiesMCU(PINDEX descriptorNum, PINDEX simultaneous, const char **caps);
@@ -134,6 +133,9 @@ class MCUH323EndPoint : public H323EndPoint
     unsigned videoTxQuality;
 #endif
 
+    MCUConnectionList & GetConnectionList()
+    { return connectionList; }
+
   protected:
 
     virtual H323Connection * InternalMakeCall(
@@ -153,6 +155,8 @@ class MCUH323EndPoint : public H323EndPoint
     ConferenceManager & conferenceManager;
     ConnectionMonitor * connectionMonitor;
     GatekeeperMonitor * gatekeeperMonitor;
+
+    MCUConnectionList connectionList;
 };
 
 ////////////////////////////////////////////////////
@@ -228,11 +232,29 @@ class MCUH323Connection : public H323Connection
     PMutex & GetConnectionMutex()
     { return connMutex; }
 
+    PMutex & GetChannelsMutex()
+    { return channelsMutex; }
+
+    PMutex & GetGatekeeperMutex()
+    { return gatekeeperMutex; }
+
     BOOL Lock()
-    { return H323Connection::Lock(); }
+    {
+      MCUConnectionList & connectionList = ep.GetConnectionList();
+      MCUConnectionList::shared_iterator it = connectionList.Find(callToken);
+      if(it != connectionList.end())
+      {
+        it.GetCapturedObject();
+        return TRUE;
+      }
+      return FALSE;
+    }
 
     void Unlock()
-    { H323Connection::Unlock(); }
+    {
+      MCUConnectionList & connectionList = ep.GetConnectionList();
+      connectionList.Release((long)this);
+    }
 
     virtual ConferenceMember * GetConferenceMember()
     { return conferenceMember; }
@@ -260,6 +282,7 @@ class MCUH323Connection : public H323Connection
     virtual void OpenVideoCache(const OpalMediaFormat & format, const PString & cacheName);
 #endif
 
+    virtual void OnCreated();
     virtual BOOL ClearCall(CallEndReason reason = EndedByLocalUser);
     virtual void CleanUpOnCallEnd();
     virtual void OnEstablished();
@@ -373,7 +396,6 @@ class MCUH323Connection : public H323Connection
 
   protected:
 
-    virtual void OnCreated();
     virtual void JoinConference(const PString & room);
     virtual void SetRequestedRoom();
 
@@ -471,7 +493,8 @@ class MCUH323Connection : public H323Connection
 #endif
 
     PMutex connMutex;
-
+    PMutex channelsMutex;
+    PMutex gatekeeperMutex;
 };
 
 ////////////////////////////////////////////////////

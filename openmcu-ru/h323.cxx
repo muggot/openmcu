@@ -32,7 +32,7 @@ void SpliceMacro(PString & text, const PString & token, const PString & value)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUH323EndPoint::MCUH323EndPoint(ConferenceManager & _conferenceManager)
-  : conferenceManager(_conferenceManager)
+  : conferenceManager(_conferenceManager), connectionList(1024)
 {
   rsCaps = NULL;
   tsCaps = NULL;
@@ -220,14 +220,20 @@ H323Connection * MCUH323EndPoint::CreateConnection(unsigned callReference, void 
 
 MCUH323Connection * MCUH323EndPoint::FindConnectionWithoutLock(const PString & token)
 {
-  return (MCUH323Connection *)H323EndPoint::FindConnectionWithoutLocks(token);
+  MCUConnectionList::shared_iterator it = connectionList.Find(token);
+  if(it != connectionList.end())
+    return it.GetObject();
+  return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUH323Connection * MCUH323EndPoint::FindConnectionWithLock(const PString & token)
 {
-  return (MCUH323Connection *)H323EndPoint::FindConnectionWithLock(token);
+  MCUConnectionList::shared_iterator it = connectionList.Find(token);
+  if(it != connectionList.end())
+    return it.GetCapturedObject();
+  return NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -248,11 +254,27 @@ BOOL MCUH323EndPoint::ClearCall(const PString & token, H323Connection::CallEndRe
 
 void MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
 {
-  if(conn->GetCallToken() == "")
-    return;
-  if(conn->GetCallToken().Left(4) == "tcp:")
-    return;
-  connectionMonitor->AddConnection(conn->GetCallToken());
+  connectionsMutex.Wait();
+
+  if(conn->GetConnectionType() != CONNECTION_TYPE_H323)
+  {
+    connectionsActive.SetAt(conn->GetCallToken(), conn);
+  }
+
+  MCUConnectionList::shared_iterator it = connectionList.Find(conn->GetCallToken());
+  if(it == connectionList.end())
+  {
+    connectionList.Insert((long)conn, conn, conn->GetCallToken());
+    connectionList.Release((long)conn);
+  }
+
+  Registrar *registrar = OpenMCU::Current().GetRegistrar();
+  registrar->ConnectionCreated(conn->GetCallToken());
+
+  connectionsMutex.Signal();
+
+  if(conn->GetCallToken().Left(4) != "tcp:")
+    connectionMonitor->AddConnection(conn->GetCallToken());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -298,6 +320,11 @@ void MCUH323EndPoint::CleanUpConnections()
     // Get the lock again as we remove the connection from our database
     connectionsMutex.Wait();
 
+    // Внутренний список
+    MCUConnectionList::shared_iterator it = connectionList.Find(token);
+    if(it != connectionList.end())
+      connectionList.Erase(it);
+
     // Remove the token from the set of connections to be cleaned up
     connectionsToBeCleaned -= token;
 
@@ -312,9 +339,9 @@ void MCUH323EndPoint::CleanUpConnections()
     connectionsMutex.Signal();
 
     // connMutex
-    MCUH323Connection *mcu_conn = dynamic_cast<MCUH323Connection *>(connectionToDelete);
-    if(mcu_conn != NULL)
-      mcu_conn->GetConnectionMutex().Wait();
+    //MCUH323Connection *mcu_conn = dynamic_cast<MCUH323Connection *>(connectionToDelete);
+    //if(mcu_conn != NULL)
+      //mcu_conn->GetConnectionMutex().Wait();
 
     // Finally we get to delete it!
     delete connectionToDelete;
@@ -338,7 +365,7 @@ H323Connection * MCUH323EndPoint::OnIncomingConnection(H323Transport * transport
 
   MCUH323Connection *mcu_conn = dynamic_cast<MCUH323Connection *>(h323_conn);
   if(mcu_conn != NULL)
-    SetConnectionActive(mcu_conn);
+    mcu_conn->OnCreated();
 
   return h323_conn;
 }
@@ -353,21 +380,9 @@ H323Connection * MCUH323EndPoint::InternalMakeCall(const PString & existingToken
 
   MCUH323Connection *mcu_conn = dynamic_cast<MCUH323Connection *>(h323_conn);
   if(mcu_conn != NULL)
-    SetConnectionActive(mcu_conn);
+    mcu_conn->OnCreated();
 
   return h323_conn;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUH323EndPoint::SetConnectionActive(MCUH323Connection * conn)
-{
-  if(conn->GetConnectionType() != CONNECTION_TYPE_H323)
-  {
-    connectionsMutex.Wait();
-    connectionsActive.SetAt(conn->GetCallToken(), conn);
-    connectionsMutex.Signal();
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -787,11 +802,14 @@ PString MCUH323EndPoint::GetRoomStatusJS()
               vprx=vSess->GetPacketsReceived(); vptx=vSess->GetPacketsSent();
               vplost = vSess->GetPacketsLost(); vplostTx = vSess->GetPacketsLostTx();
             }
+
+            conn->GetChannelsMutex().Wait();
             if(conn->GetVideoTransmitChannel() != NULL)
             {
               codecCacheMode = conn->GetVideoTransmitChannel()->GetCacheMode();
               formatString = conn->GetVideoTransmitChannel()->GetCacheName();
             }
+            conn->GetChannelsMutex().Signal();
 #endif
             ra = conn->GetRemoteApplication();
             conn->Unlock();
@@ -833,11 +851,15 @@ PString MCUH323EndPoint::GetRoomStatusJS()
                   vprx=vSess->GetPacketsReceived(); vptx=vSess->GetPacketsSent();
                   vplost = vSess->GetPacketsLost(); vplostTx = vSess->GetPacketsLostTx();
                 }
+
+                conn->GetChannelsMutex().Wait();
                 if(conn->GetVideoTransmitChannel() != NULL)
                 {
                   codecCacheMode = conn->GetVideoTransmitChannel()->GetCacheMode();
                   formatString = conn->GetVideoTransmitChannel()->GetCacheName();
                 }
+                conn->GetChannelsMutex().Signal();
+
 #             endif
               ra = conn->GetRemoteApplication();
               conn->Unlock();
@@ -948,6 +970,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         if(conn!=NULL)
         {
 #if MCU_VIDEO
+          conn->GetChannelsMutex().Wait();
           if(conn->GetVideoTransmitChannel() != NULL)
           {
             codecCacheMode = conn->GetVideoTransmitChannel()->GetCacheMode();
@@ -955,6 +978,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
           }
           else
             formatString="NO_CODEC";
+          conn->GetChannelsMutex().Signal();
 #endif
           PTimeInterval duration = now - conn->GetConnectionStartTime();
           PStringStream d;
@@ -1255,9 +1279,10 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 
 BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * member, unsigned newMixerNumber)
 {
-  // formatString: VIDEOCAP @ W x H : BITRATE x FRAMERATE _ ROOM / MIXER
-  unsigned oldMixerNumber = member->GetVideoMixerNumber();
-  if(oldMixerNumber == newMixerNumber)
+  if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+    return FALSE;
+
+  if(newMixerNumber == member->GetVideoMixerNumber())
     return TRUE;
 
   MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(&conference, newMixerNumber);
@@ -1265,27 +1290,23 @@ BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMem
     return FALSE;
   mixer->Unlock();
 
-  if(member->GetType() & MEMBER_TYPE_GSYSTEM)
-    return FALSE;
-
-  MCUH323Connection *conn = FindConnectionWithoutLock(member->GetCallToken());
+  MCUH323Connection *conn = FindConnectionWithLock(member->GetCallToken());
   if(conn == NULL)
     return FALSE;
 
-  if(conn->GetVideoTransmitChannel() == NULL)
+  conn->GetChannelsMutex().Wait();
+  if(conn->GetVideoTransmitChannel() != NULL)
   {
-    PTRACE(1,"MixerCtrl\tFail, transmit channel == NULL");
-    return FALSE;
+    member->SetVideoMixerNumber(newMixerNumber);
+    conn->videoMixerNumber = newMixerNumber;
+
+    MCU_RTPChannel *channel = conn->GetVideoTransmitChannel();
+    if(channel->GetCodec() != NULL && channel->GetCacheMode() == 2)
+      conn->OpenVideoChannel(TRUE, *((H323VideoCodec *)channel->GetCodec()));
   }
+  conn->GetChannelsMutex().Signal();
 
-  conn->videoMixerNumber = newMixerNumber;
-  conn->GetConferenceMember()->SetVideoMixerNumber(newMixerNumber);
-
-  MCU_RTPChannel *channel = conn->GetVideoTransmitChannel();
-  unsigned cacheMode = channel->GetCacheMode();
-  if(channel->GetCodec() != NULL && cacheMode == 2)
-    conn->OpenVideoChannel(TRUE, *((H323VideoCodec *)channel->GetCodec()));
-
+  conn->Unlock();
   return TRUE;
 }
 
@@ -2448,7 +2469,6 @@ MCUH323Connection::~MCUH323Connection()
 void MCUH323Connection::AttachSignalChannel(const PString & token, H323Transport * channel, BOOL answeringCall)
 {
   H323Connection::AttachSignalChannel(token, channel, answeringCall);
-  OnCreated();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2456,8 +2476,6 @@ void MCUH323Connection::AttachSignalChannel(const PString & token, H323Transport
 void MCUH323Connection::OnCreated()
 {
   ep.OnConnectionCreated(this);
-  Registrar *registrar = OpenMCU::Current().GetRegistrar();
-  registrar->ConnectionCreated(callToken);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2531,13 +2549,6 @@ void MCUH323Connection::CleanUpOnCallEnd()
     PTRACE(4,"MCUH323Connection\tStarting new thread which will check the connection later in template.cxx");
     new TplCleanCheckThread(conference, remotePartyName, remotePartyAddress);
   }
-
-  videoReceiveCodecName = videoTransmitCodecName = "none";
-
-  audioReceiveChannel = NULL;
-  videoReceiveChannel = NULL;
-  audioTransmitChannel = NULL;
-  videoTransmitChannel = NULL;
 
   LogCall();
   H323Connection::CleanUpOnCallEnd();
@@ -3080,6 +3091,7 @@ BOOL MCUH323Connection::OnH245_MiscellaneousCommand(const H245_MiscellaneousComm
     if(!CheckVFU())
       return TRUE;
 
+    PWaitAndSignal m(channelsMutex);
     if(videoTransmitChannel && videoTransmitChannel->GetCacheMode() != 0)
     {
       videoTransmitChannel->OnFastUpdatePicture();
@@ -3126,7 +3138,7 @@ void MCUH323Connection::SendLogicalChannelMiscIndication(H323Channel & channel, 
 
 BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize */, H323AudioCodec & codec)
 {
-  PWaitAndSignal m(connMutex);
+  PWaitAndSignal m(channelsMutex);
 
   const OpalMediaFormat & mf = codec.GetMediaFormat();
   unsigned sampleRate = mf.GetTimeUnits() * 1000;
@@ -3288,7 +3300,7 @@ PString MCUH323Connection::GetEndpointParam(PString param, bool asterisk)
 #if MCU_VIDEO
 BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec)
 {
-  PWaitAndSignal m(connMutex);
+  PWaitAndSignal m(channelsMutex);
 
   // get member video mixer
   if(conferenceMember && conferenceMember->IsVisible())
@@ -3433,7 +3445,7 @@ BOOL MCUH323Connection::OnStartLogicalChannel(H323Channel & channel)
 
 void MCUH323Connection::OnClosedLogicalChannel(const H323Channel & channel)
 {
-  PWaitAndSignal m(connMutex);
+  PWaitAndSignal m(channelsMutex);
 
   if(&channel == audioReceiveChannel)
   {
@@ -4203,6 +4215,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
   PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)
   {
+    PWaitAndSignal m(conn->GetChannelsMutex());
     MCU_RTPChannel * channel = conn->GetAudioReceiveChannel();
     if(channel)
     {
@@ -4214,6 +4227,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
   }
   if(mask & 2)
   {
+    PWaitAndSignal m(conn->GetChannelsMutex());
     MCU_RTPChannel * channel = conn->GetAudioTransmitChannel();
     if(channel)
     {
@@ -4225,6 +4239,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
   }
   if(mask & 4)
   {
+    PWaitAndSignal m(conn->GetChannelsMutex());
     MCU_RTPChannel * channel = conn->GetVideoReceiveChannel();
     if(channel)
     {
@@ -4236,6 +4251,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
   }
   if(mask & 8)
   {
+    PWaitAndSignal m(conn->GetChannelsMutex());
     MCU_RTPChannel * channel = conn->GetVideoTransmitChannel();
     if(channel)
     {
@@ -4260,6 +4276,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
   PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)
   {
+    PWaitAndSignal m(conn->GetChannelsMutex());
     MCU_RTPChannel * channel = conn->GetAudioReceiveChannel();
     if(channel)
     {
@@ -4271,6 +4288,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
   }
   if(mask & 2)
   {
+    PWaitAndSignal m(conn->GetChannelsMutex());
     MCU_RTPChannel * channel = conn->GetAudioTransmitChannel();
     if(channel)
     {
@@ -4282,6 +4300,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
   }
   if(mask & 4)
   {
+    PWaitAndSignal m(conn->GetChannelsMutex());
     MCU_RTPChannel * channel = conn->GetVideoReceiveChannel();
     if(channel)
     {
@@ -4293,6 +4312,7 @@ void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
   }
   if(mask & 8)
   {
+    PWaitAndSignal m(conn->GetChannelsMutex());
     MCU_RTPChannel * channel = conn->GetVideoTransmitChannel();
     if(channel)
     {
