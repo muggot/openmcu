@@ -52,10 +52,11 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   context->pix_fmt       = frame_pix_fmt;
   context->width         = src_width;
   context->height        = src_height;
-  context->qmin          = 10;
-  context->qmax          = context->qmin + 1;
+  context->qmin          = 2;
+  context->qmax          = 2;
   context->time_base.num = 1;
   context->time_base.den = 1;
+  //context->strict_std_compliance = FF_COMPLIANCE_UNOFFICIAL;
 
   // open codec
   avcodecMutex.Wait();

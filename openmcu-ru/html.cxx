@@ -2410,7 +2410,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     MCUBuffer buffer(buffer_size);
     jpegMixer->ReadMixedFrame(buffer.GetPointer(), width, height, buffer_size);
 
-    int dst_size = 16384;
+    int dst_size = 65536;
     jpegMixer->jpegSize = 0;
     jpegMixer->myjpeg.SetSize(dst_size);
     if(MCU_AVEncodeFrame(AV_CODEC_ID_MJPEG, buffer.GetPointer(), buffer_size, jpegMixer->myjpeg.GetPointer(), dst_size, width, height))
