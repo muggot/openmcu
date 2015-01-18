@@ -235,9 +235,6 @@ class MCUH323Connection : public H323Connection
     PMutex & GetChannelsMutex()
     { return channelsMutex; }
 
-    PMutex & GetGatekeeperMutex()
-    { return gatekeeperMutex; }
-
     BOOL Lock()
     {
       MCUConnectionList & connectionList = ep.GetConnectionList();
@@ -494,7 +491,6 @@ class MCUH323Connection : public H323Connection
 
     PMutex connMutex;
     PMutex channelsMutex;
-    PMutex gatekeeperMutex;
 };
 
 ////////////////////////////////////////////////////
