@@ -43,6 +43,9 @@ ConferenceManager::ConferenceManager()
 
 ConferenceManager::~ConferenceManager()
 {
+  // clear all conference and leave connections
+  ClearConferenceList();
+
   monitor->running = FALSE;
   monitor->WaitForTermination();
   delete monitor;

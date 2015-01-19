@@ -457,7 +457,7 @@ BOOL MCU_RTPChannel::WriteFrame(RTP_DataFrame & frame)
     if(terminating == FALSE)
     {
       PTRACE(1, "MCU_RTPChannel\tTransmit " << (isAudio ? "audio" : "video") << " channel write error, shutdown connection");
-      ((MCUH323Connection &)connection).LeaveMCU();
+      ((MCUH323Connection &)connection).ClearCall();
     }
     return FALSE;
 }

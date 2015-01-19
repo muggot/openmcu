@@ -234,14 +234,9 @@ class MCUSipConnection : public MCUH323Connection
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     virtual void SendUserInput(const PString & value);
     virtual void CleanUpOnCallEnd();
-    virtual void LeaveMCU();
 
     BOOL HadAnsweredCall() { return (direction=DIRECTION_INBOUND); }
-    BOOL IsAwaitingSignalConnect() { return connectionState == AwaitingSignalConnect; };
-    BOOL IsConnected() const { return connectionState == EstablishedConnection; }
-    BOOL IsEstablished() const { return connectionState == EstablishedConnection; }
 
-    void ProcessShutdown(CallEndReason reason = EndedByRemoteUser);
     int ProcessInvite(const msg_t *msg);
     int SendInvite();
     int SendVFU();
@@ -350,8 +345,6 @@ class MCUSipConnection : public MCUH323Connection
     unsigned int sdp_o_id;
     unsigned int sdp_o_ver;
 
-    PString trace_section;
-
     SipCapMapType LocalSipCaps;
     SipCapMapType RemoteSipCaps;
 
@@ -378,6 +371,7 @@ class MCUSipEndPoint : public PThread
       init_proxy_accounts = 0;
       init_caps = 0;
       init_stun = 0;
+      trace_section = "MCUSIP: ";
     }
 
     void SetTerminating()
@@ -410,6 +404,8 @@ class MCUSipEndPoint : public PThread
 
     PStringArray sipListenerArray;
     BOOL FindListener(PString addr);
+    void RemoveListeners();
+
     BOOL GetLocalSipAddress(PString & local_addr, const PString & ruri_str);
 
     PSTUNClient * CreateStun(PString address);
@@ -426,7 +422,7 @@ class MCUSipEndPoint : public PThread
     void MainLoop();
 
     void Terminating();
-    void InitListener();
+    void StartListeners();
 
     void InitProxyAccounts();
     void ClearProxyAccounts();
@@ -440,6 +436,8 @@ class MCUSipEndPoint : public PThread
     int init_proxy_accounts;
     int init_caps;
     int init_stun;
+
+    PString trace_section;
 
     MCUH323EndPoint *ep;
     su_home_t home;
@@ -465,7 +463,6 @@ class MCUSipEndPoint : public PThread
     void QueueClear();
     void QueueInvite(const PString & data);
     void QueueFastUpdate(const PString & data);
-    void QueueBye(const PString & data);
 
     void ProcessProxyAccount();
 
@@ -477,7 +474,7 @@ class MCUSipEndPoint : public PThread
     typedef std::map<PString /* address */, PSTUNClient *> StunMapType;
     StunMapType StunMap;
 
-    PMutex mutex;
+    PMutex sipMutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

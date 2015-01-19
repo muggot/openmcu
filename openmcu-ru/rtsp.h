@@ -23,7 +23,6 @@ class MCURtspConnection : public MCUSipConnection
 
   public:
     virtual void CleanUpOnCallEnd();
-    virtual void LeaveMCU();
 
   protected:
 
@@ -46,8 +45,6 @@ class MCURtspConnection : public MCUSipConnection
 
     BOOL Connect(PString room, PString address);
     BOOL Connect(PString address, int socket_fd, const msg_t *msg);
-
-    void ProcessShutdown(CallEndReason reason = EndedByLocalUser);
 
     void CreateLocalSipCaps();
     BOOL CreateInboundCaps();
@@ -97,12 +94,12 @@ class MCURtspServer
 
     bool CreateConnection(const PString & room, const PString & address, const PString & callToken);
 
-    void InitListeners();
-
-  protected:
+    void StartListeners();
     void AddListener(PString address);
     void RemoveListener(PString address);
-    void ClearListeners();
+    void RemoveListeners();
+
+  protected:
 
     BOOL CreateConnection(PString address, int socket_fd, const msg_t *msg);
     void SendResponse(int socket_fd, const PString & address, const msg_t *msg, const PString & status_str);

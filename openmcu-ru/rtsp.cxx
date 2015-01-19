@@ -82,7 +82,7 @@ void ConferenceStreamMember::Close()
   MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
   if(conn != NULL)
   {
-    conn->LeaveMCU();
+    conn->ClearCall();
     conn->Unlock();
   }
 }
@@ -113,32 +113,6 @@ MCURtspConnection::MCURtspConnection(MCUH323EndPoint *_ep, PString _callToken)
 MCURtspConnection::~MCURtspConnection()
 {
   PTRACE(1, trace_section << "destructor");
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCURtspConnection::ProcessShutdown(CallEndReason reason)
-{
-  PWaitAndSignal m(connMutex);
-
-  if(connectionState == ShuttingDownConnection)
-  {
-    MCUTRACE(1, trace_section << "shutdown connection process is already running");
-    return;
-  }
-  connectionState = ShuttingDownConnection;
-
-  MCUTRACE(1, trace_section << "shutdown connection");
-  callEndReason = reason;
-  // leave conference and delete connection
-  MCUH323Connection::LeaveMCU();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCURtspConnection::LeaveMCU()
-{
-  ProcessShutdown(EndedByLocalUser);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -205,7 +179,7 @@ BOOL MCURtspConnection::Connect(PString room, PString address)
   return TRUE;
 
   error:
-    ProcessShutdown();
+    ClearCall();
     return FALSE;
 }
 
@@ -269,7 +243,7 @@ BOOL MCURtspConnection::Connect(PString address, int socket_fd, const msg_t *msg
   return TRUE;
 
   error:
-    ProcessShutdown();
+    ClearCall();
     return FALSE;
 }
 
@@ -400,7 +374,7 @@ BOOL MCURtspConnection::SendSetup(int pt)
   if(sc->attr.GetAt("control") == NULL)
   {
     MCUTRACE(1, trace_section << "capability attribute \"control\" not found");
-    ProcessShutdown();
+    ClearCall();
     return FALSE;
   }
   PString control = sc->attr("control");
@@ -858,7 +832,7 @@ BOOL MCURtspConnection::OnRequestTeardown(const msg_t *msg)
 
   rtsp_state = RTSP_TEARDOWN;
 
-  ProcessShutdown(EndedByRemoteUser);
+  ClearCall(EndedByRemoteUser);
   return TRUE;
 }
 
@@ -924,7 +898,7 @@ BOOL MCURtspConnection::RtspCheckAuth(const msg_t *msg)
       SendRequest(buffer);
 
       MCUTRACE(1, trace_section << "authorization failure");
-      ProcessShutdown();
+      ClearCall();
       return FALSE;
     }
   }
@@ -938,7 +912,7 @@ BOOL MCURtspConnection::SendRequest(char *buffer)
 {
   if(listener->Send(buffer) == FALSE)
   {
-    ProcessShutdown();
+    ClearCall();
     return FALSE;
   }
 
@@ -1097,7 +1071,7 @@ int MCURtspConnection::OnReceived(int socket_fd, PString address, PString data)
 
   error:
     msg_destroy(msg);
-    ProcessShutdown(EndedByRemoteUser);
+    ClearCall(EndedByRemoteUser);
     return 0;
 }
 
@@ -1107,23 +1081,23 @@ MCURtspServer::MCURtspServer(MCUH323EndPoint *_ep, MCUSipEndPoint *_sep)
   :ep(_ep), sep(_sep)
 {
   trace_section = "RTSP server: ";
-  InitListeners();
+  StartListeners();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCURtspServer::~MCURtspServer()
 {
-  ClearListeners();
+  RemoveListeners();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCURtspServer::InitListeners()
+void MCURtspServer::StartListeners()
 {
   PWaitAndSignal m(rtspMutex);
 
-  ClearListeners();
+  RemoveListeners();
 
   MCUConfig cfg("RTSP Parameters");
   if(cfg.GetBoolean(EnableKey, TRUE) == FALSE)
@@ -1194,7 +1168,7 @@ void MCURtspServer::RemoveListener(PString address)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCURtspServer::ClearListeners()
+void MCURtspServer::RemoveListeners()
 {
   PWaitAndSignal m(rtspMutex);
 

@@ -7,7 +7,7 @@
 
 H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connection *conn)
 {
-  PTRACE(1, "Registrar\tOnReceivedH323Invite");
+  PTRACE(1, trace_section << "OnReceivedH323Invite");
 
   PWaitAndSignal m(mutex);
 
@@ -100,7 +100,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   H323GatekeeperRequest::Response response = H323GatekeeperServer::OnRegistration(info);
   if(response != H323GatekeeperRequest::Confirm)
   {
-    PTRACE(1, "Registrar H.323\tregistration failed");
+    PTRACE(1, trace_section << "registration failed");
     return response;
   }
 
@@ -149,12 +149,12 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   }
   if(username == "")
   {
-    PTRACE(1, "Registrar H.323\tcheck already endpoint registered " << h323id);
+    PTRACE(1, trace_section << "check already endpoint registered " << h323id);
     username = registrar->FindAccountNameFromH323Id(h323id);
   }
   if(username == "")
   {
-    PTRACE(1, "Registrar H.323\tunable to determine username");
+    PTRACE(1, trace_section << "unable to determine username");
     return H323GatekeeperRequest::Reject;
   }
   if(display_name == "")
@@ -179,7 +179,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
 
   if(!raccount || (raccount && !raccount->enable && requireH235))
   {
-    PTRACE(1, "Registrar H.323\tregistration failed");
+    PTRACE(1, trace_section << "registration failed");
     return H323GatekeeperRequest::Reject;
   }
 
@@ -200,7 +200,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
 
   raccount->Unlock();
 
-  PTRACE(1, "Registrar H.323\tendpoint registered, username " << username << ", id " << h323id);
+  PTRACE(1, trace_section << "endpoint registered, username " << username << ", id " << h323id);
   return response;
 }
 
@@ -241,7 +241,7 @@ BOOL RegistrarGk::AdmissionPolicyCheck(H323GatekeeperARQ & info)
   OpalGloballyUniqueID id = info.arq.m_callIdentifier.m_guid;
   if(id == NULL)
   {
-    //PTRACE(1, "Registrar H.323\tNo call identifier provided in ARQ!");
+    //PTRACE(1, trace_section << "No call identifier provided in ARQ!");
     info.SetRejectReason(H225_AdmissionRejectReason::e_undefinedReason);
     return FALSE;
   }
@@ -275,7 +275,7 @@ BOOL RegistrarGk::AdmissionPolicyCheck(H323GatekeeperARQ & info)
   }
   if(!accept)
   {
-    //PTRACE(1, "Registrar H.323\tARQ rejected, not allowed to answer call");
+    //PTRACE(1, trace_section << "ARQ rejected, not allowed to answer call");
     info.SetRejectReason(H225_AdmissionRejectReason::e_securityDenial);
   }
   return accept;
@@ -530,6 +530,7 @@ RegistrarGk::RegistrarGk(MCUH323EndPoint *ep, Registrar *_registrar)
   : H323GatekeeperServer(*ep), registrar(_registrar)
 {
   gkListener = NULL;
+  trace_section = "Registrar gk: ";
 
   requireH235 = TRUE;
   minTimeToLive = 60;

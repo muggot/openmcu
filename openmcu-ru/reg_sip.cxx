@@ -7,7 +7,7 @@
 
 int Registrar::OnReceivedSipRegister(const msg_t *msg)
 {
-  PTRACE(1, "Registrar\tOnReceivedSipRegister");
+  PTRACE(1, trace_section << "OnReceivedSipRegister");
 
   PWaitAndSignal m(mutex);
 
@@ -74,7 +74,7 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
 
 int Registrar::OnReceivedSipMessage(msg_t *msg)
 {
-  PTRACE(1, "Registrar\tOnReceivedSipMessage");
+  PTRACE(1, trace_section << "OnReceivedSipMessage");
 
   sip_t *sip = sip_object(msg);
   if(sip->sip_payload == NULL)
@@ -130,7 +130,7 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
 
 int Registrar::OnReceivedSipInvite(const msg_t *msg)
 {
-  PTRACE(1, "Registrar\tOnReceivedSipInvite");
+  PTRACE(1, trace_section << "OnReceivedSipInvite");
 
   PWaitAndSignal m(mutex);
 
@@ -236,7 +236,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
 
 int Registrar::OnReceivedSipSubscribe(msg_t *msg)
 {
-  PTRACE(1, "Registrar\tOnReceivedSipSubscribe");
+  PTRACE(1, trace_section << "OnReceivedSipSubscribe");
 
   PWaitAndSignal m(mutex);
 
@@ -313,7 +313,7 @@ int Registrar::OnReceivedSipOptionsResponse(const msg_t *msg)
 
 int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccount *raccount_in, RegistrarAccount *raccount_out)
 {
-  PTRACE(1, "Registrar\tSipPolicyCheck");
+  PTRACE(1, trace_section << "SipPolicyCheck");
   sip_t *sip = sip_object(msg);
 
   if(!raccount_in)
@@ -409,7 +409,7 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
 
 int Registrar::SipSendNotify(RegistrarSubscription *rsub)
 {
-  PTRACE(1, "MCUSIP\tSipSendNotify");
+  PTRACE(1, trace_section << "SipSendNotify");
 
   msg_t *msg_sub = rsub->GetSubMsgCopy();
   sip_t *sip_sub = sip_object(msg_sub);
@@ -488,7 +488,7 @@ int Registrar::SipSendNotify(RegistrarSubscription *rsub)
 
 int Registrar::SipSendMessage(RegistrarAccount *raccount_in, RegistrarAccount *raccount_out, const PString & message)
 {
-  PTRACE(1, "MCUSIP\tServerSendMessage");
+  PTRACE(1, trace_section << "SipSendMessage");
   msg_t *msg_reg_out = raccount_out->GetRegisterMsgCopy();
   sip_t *sip_reg_out = sip_object(msg_reg_out);
   if(sip_reg_out == NULL)

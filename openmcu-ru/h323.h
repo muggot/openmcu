@@ -76,12 +76,14 @@ class MCUH323EndPoint : public H323EndPoint
     MCUH323Connection * FindConnectionWithLock(const PString & token);
     virtual BOOL HasConnection(const PString & token);
 
-    virtual H323Connection * OnIncomingConnection(H323Transport * transport, H323SignalPDU & setupPDU);
     virtual BOOL ClearCall(const PString & token, H323Connection::CallEndReason reason = H323Connection::EndedByLocalUser);
+    virtual BOOL ClearCallSynchronous(const PString & token, H323Connection::CallEndReason reason, PSyncPoint * sync);
+    virtual void ClearAllCalls(H323Connection::CallEndReason reason = H323Connection::EndedByLocalUser, BOOL wait = TRUE);
+
     virtual void CleanUpConnections();
 
     virtual void OnConnectionCleared(H323Connection & connection, const PString & token);
-    void OnConnectionCreated(MCUH323Connection * conn);
+    BOOL OnConnectionCreated(MCUH323Connection * conn);
 
     void InitialiseCapability();
 
@@ -136,27 +138,24 @@ class MCUH323EndPoint : public H323EndPoint
     MCUConnectionList & GetConnectionList()
     { return connectionList; }
 
-  protected:
+    MCUConnectionList & GetConnectionDeleteList()
+    { return connectionDeleteList; }
 
-    virtual H323Connection * InternalMakeCall(
-      const PString & existingToken,/// Existing connection to be transferred
-      const PString & callIdentity, /// Call identity of the secondary call (if it exists)
-      unsigned capabilityLevel,     /// Intrusion capability level
-      const PString & remoteParty,  /// Remote party to call
-      H323Transport * transport,    /// Transport to use for call.
-      PString & token,              /// String to use/receive token for connection
-      void * userData               /// user data to pass to CreateConnection
-    );
+  protected:
 
     BOOL behind_masq;
     PIPSocket::Address *masqAddressPtr;
     PString nat_lag_ip;
 
+    PString trace_section;
+
     ConferenceManager & conferenceManager;
     ConnectionMonitor * connectionMonitor;
     GatekeeperMonitor * gatekeeperMonitor;
 
+    PMutex connectionListMutex;
     MCUConnectionList connectionList;
+    MCUConnectionList connectionDeleteList;
 };
 
 ////////////////////////////////////////////////////
@@ -259,8 +258,17 @@ class MCUH323Connection : public H323Connection
     virtual Conference * GetConference()
     { return conference; }
 
-     // leave conference and delete connection
-    virtual void LeaveMCU();
+    BOOL IsAwaitingSignalConnect()
+    { return connectionState == AwaitingSignalConnect; };
+
+    BOOL IsShuttingDown()
+    { return connectionState == ShuttingDownConnection; };
+
+    BOOL IsClearing()
+    { return clearing; };
+
+    void SetClearing()
+    { clearing = TRUE; };
 
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     virtual void SendLogicalChannelMiscIndication(H323Channel & channel, unsigned command);
@@ -284,6 +292,8 @@ class MCUH323Connection : public H323Connection
     virtual void CleanUpOnCallEnd();
     virtual void OnEstablished();
     virtual void OnCleared();
+    virtual void SetCallEndReason(CallEndReason reason, PSyncPoint * sync = NULL);
+
     virtual AnswerCallResponse OnAnswerCall(const PString &, const H323SignalPDU &, H323SignalPDU &);
 
     virtual void OnUserInputString(const PString & value);
@@ -446,6 +456,7 @@ class MCUH323Connection : public H323Connection
     PString memberName;
 
     MCUConnectionTypes connectionType;
+    BOOL clearing;
 
     // Wave file played during the welcome procedure.
     OpalWAVFile playFile;
@@ -481,6 +492,8 @@ class MCUH323Connection : public H323Connection
     unsigned int vfuLimit;         // limit requests for interval
     unsigned int vfuCount;         // count requests for interval
     unsigned int vfuTotalCount;    // count total requests
+
+    PString trace_section;
 
     PString dtmfBuffer;
 

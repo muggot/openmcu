@@ -729,14 +729,14 @@ class MCUSharedList
     // Find() возвращают захваченный объект
     // Освобождать функцией iterator.Release()
     shared_iterator Find(long id);
-    shared_iterator Find(const PString & name);
+    shared_iterator Find(PString name);
     shared_iterator Find(T * obj);
 
     // Операторы возвращают захваченный объект
     // Освобождать функцией list.Release(id)
     T * operator[] (int index);
     T * operator() (long id);
-    T * operator() (const PString & name);
+    T * operator() (PString name);
     T * operator() (T * obj);
 
   protected:
@@ -944,17 +944,10 @@ void MCUSharedList<T>::ReleaseWait(long * _captures, int treshold)
     if(i < 100)
       __asm__ __volatile__("pause":::"memory");
     else if(i < 1000)
-    {
-      struct timespec req = {0};
-      req.tv_nsec = 1000; // 1μs
-      nanosleep(&req, NULL);
-    }
+      MCUTime::SleepUsec(10);
     else
-    {
-      struct timespec req = {0};
-      req.tv_nsec = 1000000; // 1ms
-      nanosleep(&req, NULL);
-    }
+      MCUTime::SleepUsec(1000);
+
     if(i % 5000 == 0)
     {
       PTRACE(1, "ReleaseWait list: " << typeid(this).name() << ", captures: " << *_captures);
@@ -1016,7 +1009,7 @@ MCUSharedListSharedIterator<MCUSharedList<T>, T> MCUSharedList<T>::Find(long id)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-MCUSharedListSharedIterator<MCUSharedList<T>, T> MCUSharedList<T>::Find(const PString & name)
+MCUSharedListSharedIterator<MCUSharedList<T>, T> MCUSharedList<T>::Find(PString name)
 {
   PString *it = find(names, names_end, name);
   if(it != names_end)
@@ -1081,7 +1074,7 @@ T * MCUSharedList<T>::operator() (long id)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T>
-T * MCUSharedList<T>::operator() (const PString & name)
+T * MCUSharedList<T>::operator() (PString name)
 {
   return Find(name).GetCapturedObject();
 }

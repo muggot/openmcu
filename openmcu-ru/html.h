@@ -701,7 +701,7 @@ class RtspPConfigPage : public TablePConfigPage
     virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
     {
       BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
-      OpenMCU::Current().GetRtspServer()->InitListeners();
+      OpenMCU::Current().GetRtspServer()->StartListeners();
       return ret;
     }
 };

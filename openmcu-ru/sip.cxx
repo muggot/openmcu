@@ -521,24 +521,6 @@ MCUSipConnection * MCUSipConnection::CreateConnection(Directions _direction, con
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::ProcessShutdown(CallEndReason reason)
-{
-  callEndReason = reason;
-  // leave conference and delete connection
-  MCUH323Connection::LeaveMCU();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::LeaveMCU()
-{
-  PTRACE(1, trace_section << "LeaveMCU");
-  PString *bye = new PString("bye:"+callToken);
-  sep->GetQueue().Push(bye);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void MCUSipConnection::CleanUpOnCallEnd()
 {
   PTRACE(1, trace_section << "CleanUpOnCallEnd reason: " << callEndReason);
@@ -2376,8 +2358,7 @@ int MCUSipConnection::SendInvite()
   if(orq_invite == NULL)
   {
     PTRACE(1, trace_section << "error");
-    // use LeaveMCU(), calling this function can be outside
-    LeaveMCU();
+    ClearCall();
     return FALSE;
   }
 
@@ -2440,7 +2421,7 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
     if(response_code)
     {
       PTRACE(1, trace_section << "error " << response_code);
-      ProcessShutdown(EndedByLocalUser);
+      ClearCall();
       return response_code;
     }
     // create sdp for OK
@@ -2455,11 +2436,11 @@ int MCUSipConnection::invite_request_cb(nta_leg_t *leg, nta_incoming_t *irq, con
   }
   if(request == sip_method_bye)
   {
-    ProcessShutdown();
+    ClearCall(EndedByRemoteUser);
   }
   if(request == sip_method_cancel)
   {
-    ProcessShutdown();
+    ClearCall(EndedByRemoteUser);
   }
   if(request == sip_method_info)
   {
@@ -2515,7 +2496,7 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
     if(response_code)
     {
       PTRACE(1, trace_section << "error " << response_code);
-      ProcessShutdown(EndedByLocalUser);
+      ClearCall();
       return 0;
     }
     // is connected
@@ -2529,13 +2510,13 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
     if(auth_type != AUTH_NONE || auth_username == "" || auth_password == "")
     {
       PTRACE(1, trace_section << "error");
-      ProcessShutdown();
+      ClearCall(EndedByRemoteUser);
       return 0;
     }
     if(sep->ParseAuthMsg(msg, auth_type, auth_scheme, auth_realm, auth_nonce) == FALSE)
     {
       PTRACE(1, trace_section << "error");
-      ProcessShutdown();
+      ClearCall(EndedByRemoteUser);
       return 0;
     }
     SendInvite();
@@ -2543,7 +2524,7 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
   }
   if(status > 299)
   {
-    ProcessShutdown();
+    ClearCall(EndedByRemoteUser);
     return 0;
   }
 
@@ -2554,7 +2535,7 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
 
 PString MCUSipEndPoint::GetRoomAccess(const sip_t *sip)
 {
-    PTRACE(1, "MCUSIP\tGetRoomAccess");
+    PTRACE(1, trace_section << "GetRoomAccess");
     BOOL inRoom = FALSE;
     PString via = sip->sip_via->v_host;
     PString userName = sip->sip_from->a_url->url_user;
@@ -2603,7 +2584,7 @@ PString MCUSipEndPoint::GetRoomAccess(const sip_t *sip)
     else
       access = defaultAccess;
 
-    PTRACE(1, "MCUSIP\t"<< access << " access to room \"" << roomName << "\", from=" << userName+"@"+hostName << ", via=" << via);
+    PTRACE(1, trace_section << " " << access << " access to room \"" << roomName << "\", from=" << userName+"@"+hostName << ", via=" << via);
     return access;
 }
 
@@ -2611,7 +2592,7 @@ PString MCUSipEndPoint::GetRoomAccess(const sip_t *sip)
 
 BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 {
-    PTRACE(1, "MCUSIP\tSipMakeCall from:" << from << " to:" << to);
+    PTRACE(1, trace_section << "SipMakeCall from:" << from << " to:" << to);
 
     MCUURL url_to(to);
     if(url_to.GetHostName() == "")
@@ -2733,7 +2714,7 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 
 int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 {
-    PTRACE(1, "MCUSIP\tSipRegister");
+    PTRACE(1, trace_section << "SipRegister");
 
     // ruri
     PString ruri_str = "sip:"+proxy->username+"@"+proxy->host+":"+proxy->port;
@@ -2883,7 +2864,7 @@ BOOL MCUSipEndPoint::MakeMsgAuth(msg_t *msg_orq, const msg_t *msg)
 
 PString MCUSipEndPoint::MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce)
 {
-    PTRACE(1, "MCUSIP\tMakeAuthStr");
+    PTRACE(1, trace_section << "MakeAuthStr");
     const char *auth_str=NULL;
 
     auth_response_t ar[1] = {{ sizeof(ar) }};
@@ -2959,7 +2940,7 @@ int MCUSipEndPoint::response_cb1(nta_outgoing_t *orq, const sip_t *sip)
 
 int MCUSipEndPoint::SendAckBye(const msg_t *msg)
 {
-  PTRACE(1, "MCUSIP\tSendAckBye");
+  PTRACE(1, trace_section << "SendAckBye");
   sip_t *sip = sip_object(msg);
   if(!sip || !sip->sip_status) return 0;
 
@@ -3037,7 +3018,7 @@ int MCUSipEndPoint::SendMsg(msg_t *msg)
 
 int MCUSipEndPoint::SipReqReply(const msg_t *msg, msg_t *msg_reply, unsigned status, const char *status_phrase)
 {
-  PTRACE(1, "MCUSIP\tSipReqReply");
+  PTRACE(1, trace_section << "SipReqReply");
   sip_t *sip = sip_object(msg);
   if(sip == NULL) return 0;
 
@@ -3068,7 +3049,7 @@ int MCUSipEndPoint::SipReqReply(const msg_t *msg, msg_t *msg_reply, unsigned sta
 
 int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
 {
-  PTRACE(1, "MCUSIP\tCreateIncomingConnection");
+  PTRACE(1, trace_section << "CreateIncomingConnection");
   //sip_t *sip = sip_object(msg);
   //if(GetRoomAccess(sip) == "DENY")
     //return SipReqReply(msg, NULL, SIP_403_FORBIDDEN);
@@ -3084,7 +3065,7 @@ int MCUSipEndPoint::CreateIncomingConnection(const msg_t *msg)
   if(response_code)
   {
     SipReqReply(msg, NULL, response_code);
-    sCon->LeaveMCU();
+    sCon->ClearCall();
   }
   sCon->Unlock();
   return 0;
@@ -3194,7 +3175,7 @@ int MCUSipEndPoint::ProcessSipEvent_cb(nta_agent_t *agent, msg_t *msg, sip_t *si
 
 void MCUSipEndPoint::ProcessProxyAccount()
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(sipMutex);
 
   for(ProxyAccountMapType::iterator it=ProxyAccountMap.begin(); it!=ProxyAccountMap.end(); it++)
   {
@@ -3224,7 +3205,7 @@ void MCUSipEndPoint::ProcessProxyAccount()
 
 ProxyAccount * MCUSipEndPoint::FindProxyAccount(PString username, PString domain)
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(sipMutex);
 
   for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); ++it)
   {
@@ -3239,30 +3220,30 @@ ProxyAccount * MCUSipEndPoint::FindProxyAccount(PString username, PString domain
 
 void MCUSipEndPoint::ClearProxyAccounts()
 {
-  mutex.Wait();
+  sipMutex.Wait();
   for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); ++it)
   {
     if(it->second->status == 200)
       SipRegister(it->second, FALSE);
   }
-  mutex.Signal();
+  sipMutex.Signal();
 
   su_root_sleep(root, 500);
 
-  mutex.Wait();
+  sipMutex.Wait();
   for(ProxyAccountMapType::iterator it = ProxyAccountMap.begin(); it != ProxyAccountMap.end(); )
   {
     delete it->second;
     ProxyAccountMap.erase(it++);
   }
-  mutex.Signal();
+  sipMutex.Signal();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUSipEndPoint::InitProxyAccounts()
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(sipMutex);
 
   PString sectionPrefix = "SIP Proxy Account ";
   PStringList sect = MCUConfig("Parameters").GetSectionsPrefix(sectionPrefix);
@@ -3323,7 +3304,7 @@ void MCUSipEndPoint::InitProxyAccounts()
 
 void MCUSipEndPoint::CreateBaseSipCaps()
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(sipMutex);
   ClearSipCaps(BaseSipCaps);
   CreateSipCaps(BaseSipCaps, "SIP Audio", "SIP Video");
 }
@@ -3353,7 +3334,7 @@ PSTUNClient * MCUSipEndPoint::CreateStun(PString address)
 
 PSTUNClient * MCUSipEndPoint::GetPreferedStun(PString address)
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(sipMutex);
 
   PString stun_name;
   PSTUNClient *stun = NULL;
@@ -3393,7 +3374,7 @@ PSTUNClient * MCUSipEndPoint::GetPreferedStun(PString address)
 
 void MCUSipEndPoint::InitStunList()
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(sipMutex);
   ClearStunList();
 
   PStringArray stun_list = MCUConfig("SIP Parameters").GetString(NATStunListKey).Tokenise(",");
@@ -3413,7 +3394,7 @@ void MCUSipEndPoint::InitStunList()
 
 void MCUSipEndPoint::ClearStunList()
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(sipMutex);
   for(StunMapType::iterator it = StunMap.begin(); it != StunMap.end(); )
   {
     delete it->second;
@@ -3431,28 +3412,37 @@ BOOL MCUSipEndPoint::FindListener(PString addr)
   PString host = url.GetHostName();
   PString port = url.GetPort();
 
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(sipMutex);
   for(tport_t *tp = nta_agent_tports(agent); tp != NULL; tp = tport_next(tp))
   {
     tp_name_t const *tp_name = tport_name(tp);
     //PString proto = tp_name->tpn_proto;
     if(host == (PString)tp_name->tpn_host && port == (PString)tp_name->tpn_port)
     {
-      PTRACE(1, "MCUSIP\tSIP tport found: " << host << ":" << port);
+      PTRACE(1, trace_section << "tport found: " << host << ":" << port);
       return TRUE;
     }
   }
 
-  PTRACE(1, "MCUSIP\tSIP tport not found: " << host << ":" << port);
+  PTRACE(1, trace_section << "tport not found: " << host << ":" << port);
   return FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipEndPoint::InitListener()
+void MCUSipEndPoint::RemoveListeners()
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(sipMutex);
   nta_agent_close_tports(agent);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipEndPoint::StartListeners()
+{
+  PWaitAndSignal m(sipMutex);
+
+  RemoveListeners();
   for(PINDEX i = 0; i < sipListenerArray.GetSize(); i++)
   {
     PString listener = sipListenerArray[i];
@@ -3482,12 +3472,20 @@ void MCUSipEndPoint::InitListener()
     }
 */
   }
+
+  for(tport_t *tp = nta_agent_tports(agent); tp != NULL; tp = tport_next(tp))
+  {
+    tp_name_t const *tp_name = tport_name(tp);
+    PTRACE(1, trace_section << "Listener start " << tp_name->tpn_host << ":" << tp_name->tpn_port << ";transport=" << tp_name->tpn_proto);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCUSipEndPoint::GetLocalSipAddress(PString & local_addr, const PString & ruri_str)
 {
+  PWaitAndSignal m(sipMutex);
+
   tp_name_t tpn[1] = {{ NULL }};
   tport_t *tp = NULL;
   const tp_name_t *tp_name = NULL;
@@ -3525,8 +3523,6 @@ void MCUSipEndPoint::ProcessSipQueue()
       QueueInvite(cmd->Right(cmd->GetLength()-7));
     else if(cmd->Left(12) == "fast_update:")
       QueueFastUpdate(cmd->Right(cmd->GetLength()-12));
-    else if(cmd->Left(4) == "bye:")
-      QueueBye(cmd->Right(cmd->GetLength()-4));
     delete cmd;
   }
   for(;;)
@@ -3584,18 +3580,6 @@ void MCUSipEndPoint::QueueFastUpdate(const PString & data)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipEndPoint::QueueBye(const PString & data)
-{
-  MCUSipConnection *sCon = (MCUSipConnection *)ep->FindConnectionWithLock(data);
-  if(sCon)
-  {
-    sCon->ProcessShutdown(MCUSipConnection::EndedByLocalUser);
-    sCon->Unlock();
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void MCUSipEndPoint::MainLoop()
 {
   while(1)
@@ -3616,7 +3600,7 @@ void MCUSipEndPoint::MainLoop()
     if(init_config)
     {
       init_config = 0;
-      InitListener();
+      StartListeners();
       init_stun = 1;
     }
     if(init_proxy_accounts)
@@ -3637,7 +3621,7 @@ void MCUSipEndPoint::MainLoop()
     ProcessSipQueue();
     ProcessProxyAccount();
     su_root_sleep(root,500);
-    PTRACE(9, "MCUSIP\tSIP Down to sleep");
+    PTRACE(9, trace_section << "SIP Down to sleep");
   }
 }
 
@@ -3645,7 +3629,7 @@ void MCUSipEndPoint::MainLoop()
 
 void MCUSipEndPoint::Terminating()
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(sipMutex);
   QueueClear();
   ClearProxyAccounts();
   ClearSipCaps(BaseSipCaps);

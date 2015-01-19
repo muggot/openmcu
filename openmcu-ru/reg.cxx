@@ -378,7 +378,7 @@ void Registrar::Leave(int account_type, const PString & callToken)
     conn = ep->FindConnectionWithLock(callToken);
   if(conn)
   {
-    conn->LeaveMCU();
+    conn->ClearCall();
     conn->Unlock();
   }
 }
@@ -713,7 +713,7 @@ void Registrar::QueueInvite(const PString & data)
       if(url.GetHostName() == "" || gk_host == url.GetHostName())
       {
         to = url.GetUserName();
-        PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << to);
+        PTRACE(1, trace_section << "Found gatekeeper, change address " << url.GetUrl() << " -> " << to);
       }
       else
       {
@@ -937,7 +937,7 @@ void Registrar::Terminating()
   // stop alive refresh
   if(aliveThread)
   {
-    PTRACE(5,"Registrar\tWaiting for termination alive thread: " << aliveThread->GetThreadName());
+    PTRACE(5, trace_section << "Waiting for termination alive thread: " << aliveThread->GetThreadName());
     aliveThread->WaitForTermination();
     delete aliveThread;
     aliveThread = NULL;
@@ -946,7 +946,7 @@ void Registrar::Terminating()
   // stop abook refresh
   if(bookThread)
   {
-    PTRACE(5,"Registrar\tWaiting for termination book thread: " << bookThread->GetThreadName());
+    PTRACE(5, trace_section << "Waiting for termination book thread: " << bookThread->GetThreadName());
     bookThread->WaitForTermination();
     delete bookThread;
     bookThread = NULL;
@@ -955,7 +955,7 @@ void Registrar::Terminating()
   // stop subscriptions refresh
   if(subscriptionThread)
   {
-    PTRACE(5,"Registrar\tWaiting for termination book thread: " << connectionThread->GetThreadName());
+    PTRACE(5, trace_section << "Waiting for termination book thread: " << connectionThread->GetThreadName());
     subscriptionThread->WaitForTermination();
     delete subscriptionThread;
     subscriptionThread = NULL;
@@ -965,7 +965,7 @@ void Registrar::Terminating()
   QueueClear();
   if(queueThread)
   {
-    PTRACE(5,"Registrar\tWaiting for termination queue thread: " << queueThread->GetThreadName());
+    PTRACE(5, trace_section << "Waiting for termination queue thread: " << queueThread->GetThreadName());
     queueThread->WaitForTermination();
     delete queueThread;
     queueThread = NULL;
@@ -974,7 +974,7 @@ void Registrar::Terminating()
   // stop accounts refresh
   if(accountThread)
   {
-    PTRACE(5,"Registrar\tWaiting for termination accounts thread: " << accountThread->GetThreadName());
+    PTRACE(5, trace_section << "Waiting for termination accounts thread: " << accountThread->GetThreadName());
     accountThread->WaitForTermination();
     delete accountThread;
     accountThread = NULL;
@@ -983,7 +983,7 @@ void Registrar::Terminating()
   // stop connections refresh
   if(connectionThread)
   {
-    PTRACE(5,"Registrar\tWaiting for termination book thread: " << connectionThread->GetThreadName());
+    PTRACE(5, trace_section << "Waiting for termination book thread: " << connectionThread->GetThreadName());
     connectionThread->WaitForTermination();
     delete connectionThread;
     connectionThread = NULL;

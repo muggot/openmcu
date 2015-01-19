@@ -124,32 +124,35 @@ void OpenMCU::OnStop()
   // close http listener
   MCUHTTPListenerClose();
 
-  // stop registrar
-  registrar->SetTerminating();
-  registrar->WaitForTermination(10000);
+  // close endpoints listeners
+  rtspServer->RemoveListeners();
+  //sipendpoint->RemoveListeners();
+  endpoint->RemoveListener(NULL);
 
-  // clear all conference and leave connections
-  manager->ClearConferenceList();
+  // clear all calls
+  endpoint->ClearAllCalls();
 
-  // stop rtsp endpoint
+  // delete rtsp endpoint
   delete rtspServer;
 
-  // stop sip endpoint
+  // delete sip endpoint
   sipendpoint->SetTerminating();
   sipendpoint->WaitForTermination(10000);
-
-  // stop h323 endpoint
-  delete endpoint;
-  endpoint = NULL;
-
-  delete manager;
-  manager = NULL;
-
   delete sipendpoint;
   sipendpoint = NULL;
 
+  // delete h323 endpoint
+  delete endpoint;
+  endpoint = NULL;
+
+  // delete registrar
+  registrar->SetTerminating();
+  registrar->WaitForTermination(10000);
   delete registrar;
   registrar = NULL;
+
+  delete manager;
+  manager = NULL;
 
 #ifndef _WIN32
   CommonDestruct(); // save config

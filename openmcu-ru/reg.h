@@ -357,6 +357,8 @@ class RegistrarGk : public H323GatekeeperServer
     unsigned minTimeToLive;
     unsigned maxTimeToLive;
 
+    PString trace_section;
+
     H323Transactor *gkListener;
     Registrar *registrar;
 };
@@ -423,6 +425,7 @@ class Registrar : public PThread
       init_config = 0;
       init_accounts = 0;
       registrarGk = NULL;
+      trace_section = "Registrar: ";
     }
 
     void SetTerminating()
@@ -491,6 +494,8 @@ class Registrar : public PThread
     int terminating;
     int init_config;
     int init_accounts;
+
+    PString trace_section;
 
     BOOL allow_internal_calls;
     BOOL sip_require_password;
