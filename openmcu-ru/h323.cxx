@@ -351,7 +351,7 @@ BOOL MCUH323EndPoint::ClearCallSynchronous(const PString & callToken, H323Connec
   }
 
   // Добавить в список удаления
-  connectionDeleteList.Insert((long)connection, NULL, callToken);
+  connectionDeleteList.Insert(NULL, (long)connection, callToken);
   connectionDeleteList.Release((long)connection);
 
   // Поток удаления
@@ -397,14 +397,14 @@ BOOL MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
     // Удалить
     PTRACE(1, trace_section << "Error !");
     PString fakeToken = PGloballyUniqueID().AsString();
-    connectionList.Insert((long)conn, conn, fakeToken);
+    connectionList.Insert(conn, (long)conn, fakeToken);
     connectionList.Release((long)conn);
     ClearCall(fakeToken);
     return FALSE;
   }
 
   PTRACE(1, trace_section << "Insert connection " << conn->GetCallToken());
-  connectionList.Insert((long)conn, conn, conn->GetCallToken());
+  connectionList.Insert(conn, (long)conn, conn->GetCallToken());
   connectionList.Release((long)conn);
 
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
@@ -4527,14 +4527,13 @@ void ConnectionMonitor::Main()
     if(!running)
       break;
 
-    for(MCUSharedList<PString>::shared_iterator it = monitorList.begin(); it != monitorList.end(); ++it)
+    for(MCUConnectionList::shared_iterator it = monitorList.begin(); it != monitorList.end(); ++it)
     {
-      PString *callToken = *it;
-      MCUH323Connection * conn = ep.FindConnectionWithLock(*callToken);
+      PString callToken = it.GetName();
+      MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
       if(conn == NULL)
       {
-        if(monitorList.Erase(it))
-          delete callToken;
+        monitorList.Erase(it);
         continue;
       }
       int ret = Perform(conn);
@@ -4547,28 +4546,20 @@ void ConnectionMonitor::Main()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConnectionMonitor::AddConnection(const PString & _callToken)
+void ConnectionMonitor::AddConnection(const PString & callToken)
 {
   long id = monitorList.GetNextID();
-  PString *callToken = new PString(_callToken);
-  monitorList.Insert(id, callToken);
+  monitorList.Insert(NULL, id, callToken);
   monitorList.Release(id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConnectionMonitor::RemoveConnection(const PString & _callToken)
+void ConnectionMonitor::RemoveConnection(const PString & callToken)
 {
-  for(MCUSharedList<PString>::shared_iterator it = monitorList.begin(); it != monitorList.end(); ++it)
-  {
-    PString *callToken = *it;
-    if(*callToken == _callToken)
-    {
-      if(monitorList.Erase(it))
-        delete callToken;
-      break;
-    }
-  }
+  MCUConnectionList::shared_iterator it = monitorList.Find(callToken);
+  if(it != monitorList.end())
+    monitorList.Erase(it);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

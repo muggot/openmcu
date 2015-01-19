@@ -236,7 +236,7 @@ inline CacheRTP * CreateCacheRTP(const PString & key)
   {
     long id = cacheRTPList.GetNextID();
     CacheRTP *cache = new CacheRTP(id, key);
-    cacheRTPList.Insert(id, cache, key);
+    cacheRTPList.Insert(cache, id, key);
     return cache;
   }
   return NULL;

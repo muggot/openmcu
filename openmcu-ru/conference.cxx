@@ -100,7 +100,7 @@ Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PSt
     long id = conferenceList.GetNextID();
     OpalGloballyUniqueID conferenceID;
     conference = CreateConference(id, conferenceID, room, name);
-    conferenceList.Insert(id, conference, room);
+    conferenceList.Insert(conference, id, room);
     //
     OnCreateConference(conference);
     // set the conference count
@@ -277,7 +277,7 @@ int ConferenceManager::AddVideoMixer(Conference * conference)
   MCUSimpleVideoMixer *mixer = new MCUSimpleVideoMixer(TRUE);
   mixer->SetID(videoMixerList.GetNextID());
   mixer->SetConference(conference);
-  videoMixerList.Insert(mixer->GetID(), mixer);
+  videoMixerList.Insert(mixer, mixer->GetID());
   videoMixerList.Release(mixer->GetID());
   return videoMixerList.GetCurrentSize();
 }
@@ -569,7 +569,7 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
   {
     mixer->SetID(videoMixerList.GetNextID());
     mixer->SetConference(this);
-    videoMixerList.Insert(mixer->GetID(), mixer);
+    videoMixerList.Insert(mixer, mixer->GetID());
     videoMixerList.Release(mixer->GetID());
   }
 #endif
@@ -732,7 +732,7 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
   // memberList
   if(member)
   {
-    memberList.Insert((long)member->GetID(), member, name);
+    memberList.Insert(member, (long)member->GetID(), name);
     memberList.Release((long)member->GetID());
   }
 
@@ -754,7 +754,7 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
     }
   }
   ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, member);
-  profileList.Insert(profile->GetID(), profile, name);
+  profileList.Insert(profile, profile->GetID(), name);
   profileList.Release(profile->GetID());
 
   if(member)
@@ -807,7 +807,7 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
   if(member)
   {
     ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, NULL);
-    profileList.Insert(profile->GetID(), profile, name);
+    profileList.Insert(profile, profile->GetID(), name);
     profileList.Release(profile->GetID());
   }
 
@@ -1070,7 +1070,7 @@ void Conference::WriteMemberAudio(ConferenceMember * member, const uint64_t & ti
   if(conn == NULL)
   {
     conn = new ConferenceAudioConnection((long)member->GetID(), sampleRate, channels);
-    audioConnectionList.Insert((long)member->GetID(), conn);
+    audioConnectionList.Insert(conn, (long)member->GetID());
   }
   conn->WriteAudio(timestamp, (const BYTE *)buffer, amount);
   audioConnectionList.Release((long)member->GetID());
@@ -1680,7 +1680,7 @@ AudioBuffer * ConferenceAudioConnection::GetBuffer(int _dstSampleRate, int _dstC
     else
     {
       audioBuffer = new AudioBuffer(_dstSampleRate, _dstChannels);
-      audioBufferList.Insert(audioBufferKey, audioBuffer);
+      audioBufferList.Insert(audioBuffer, audioBufferKey);
       audioBufferList.Release(audioBufferKey);
     }
   }

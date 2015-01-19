@@ -784,7 +784,7 @@ class ConnectionMonitor : public PThread
   PCLASSINFO(ConnectionMonitor, PThread);
   public:
     ConnectionMonitor(MCUH323EndPoint & _ep)
-      : PThread(10000, NoAutoDeleteThread), ep(_ep)
+      : PThread(10000, NoAutoDeleteThread), ep(_ep), monitorList(1024)
     {
       Resume();
     }
@@ -800,7 +800,7 @@ class ConnectionMonitor : public PThread
     int RTPTimeoutMonitor(MCUH323Connection * conn);
 
     MCUH323EndPoint & ep;
-    MCUSharedList<PString> monitorList;
+    MCUConnectionList monitorList;
 };
 
 ////////////////////////////////////////////////////

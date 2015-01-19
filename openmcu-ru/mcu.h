@@ -422,7 +422,7 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     PString SetScaleFilterType(int type)
     {
       scaleFilterType = type;
-      return GetScaleFilterName();
+      return GetScaleFilterName(type);
     }
 
     int GetScaleFilterType()
@@ -430,14 +430,14 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
       return scaleFilterType;
     }
 
-    PString GetScaleFilterName()
+    static PString GetScaleFilterName(int type)
     {
-      return MCUScaleFilterNames.Tokenise(",")[scaleFilterType];
+      return MCUScaleFilterNames.Tokenise(",")[type];
     }
 
-    int GetScaleFilter()
+    static int GetScaleFilter(int type)
     {
-      switch(scaleFilterType)
+      switch(type)
       {
 #if USE_LIBYUV
         case(1):

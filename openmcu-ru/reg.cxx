@@ -69,7 +69,7 @@ RegistrarAccount * Registrar::InsertAccountWithLock(RegAccountTypes account_type
   long id = accountList.GetNextID();
   RegistrarAccount *raccount = new RegistrarAccount(this, id, account_type, username);
   PString name = PString(raccount->account_type)+":"+raccount->username;
-  accountList.Insert(id, raccount, name);
+  accountList.Insert(raccount, id, name);
   return raccount;
 }
 
@@ -101,7 +101,7 @@ RegistrarSubscription * Registrar::InsertSubWithLock(const PString & username_in
 {
   long id = accountList.GetNextID();
   RegistrarSubscription *rsub = new RegistrarSubscription(this, id, username_in, username_out);
-  subscriptionList.Insert(id, rsub, rsub->username_pair);
+  subscriptionList.Insert(rsub, id, rsub->username_pair);
   return rsub;
 }
 
@@ -121,7 +121,7 @@ RegistrarConnection * Registrar::InsertRegConnWithLock(const PString & callToken
 {
   long id = connectionList.GetNextID();
   RegistrarConnection *rconn = new RegistrarConnection(this, id, callToken, username_in, username_out);
-  connectionList.Insert(id, rconn, callToken);
+  connectionList.Insert(rconn, id, callToken);
   return rconn;
 }
 

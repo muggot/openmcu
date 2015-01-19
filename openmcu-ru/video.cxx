@@ -1141,7 +1141,6 @@ void MCUVideoMixer::CopyRectFromFrame(const void * _src, void * _dst, int xpos, 
 void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh)
 {
   int scaleFilterType = OpenMCU::Current().GetScaleFilterType();
-  int scaleFilter = OpenMCU::Current().GetScaleFilter();
 
   if(sw==dw && sh==dh) // same size
     memcpy(_dst,_src,dw*dh*3/2);
@@ -1157,7 +1156,7 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
     /* dst_u */     (uint8*)((long)_dst+dw*dh),                 /* dst_stride_u */ (int)(dw >> 1),
     /* dst_v */     (uint8*)((long)_dst+dw*dh+(dw>>1)*(dh>>1)), /* dst_stride_v */ (int)(dw >> 1),
     /* dst_width */ (int)dw,                                    /* dst_height */   (int)dh,
-    /* filtering */ (libyuv::FilterMode)scaleFilter
+    /* filtering */ (libyuv::FilterMode)OpenMCU::GetScaleFilter(scaleFilterType)
     );
   }
 #endif
@@ -1166,7 +1165,7 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
   {
     struct SwsContext *sws_ctx = sws_getContext(sw, sh, AV_PIX_FMT_YUV420P,
                                                 dw, dh, AV_PIX_FMT_YUV420P,
-                                                scaleFilter, NULL, NULL, NULL);
+                                                OpenMCU::GetScaleFilter(scaleFilterType), NULL, NULL, NULL);
     if(sws_ctx == NULL)
     {
       MCUTRACE(1, "MCUVideoMixer\tImpossible to create scale context for the conversion "
