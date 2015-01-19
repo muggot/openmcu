@@ -4148,9 +4148,10 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 
     int px=vmp.xpos*vf.width/CIF4_WIDTH; // pixel x&y of vmp-->fs
     int py=vmp.ypos*vf.height/CIF4_HEIGHT;
-    for(unsigned i=0;i<vmpcfg.blks;i++) CopyRFromRIntoR( ist, vf.data.GetPointer(), px, py, pw, ph,
-        vmpcfg.blk[i].posx*vf.width/CIF4_WIDTH, vmpcfg.blk[i].posy*vf.height/CIF4_HEIGHT,
-        vmpcfg.blk[i].width*vf.width/CIF4_WIDTH, vmpcfg.blk[i].height*vf.height/CIF4_HEIGHT,
+    for(unsigned i=0;i<vmpcfg.blks;i++)
+      CopyRFromRIntoR( ist, vf.data.GetPointer(), px, py, pw, ph,
+        AlignUp2(vmpcfg.blk[i].posx*vf.width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*vf.height/CIF4_HEIGHT),
+        AlignUp2(vmpcfg.blk[i].width*vf.width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*vf.height/CIF4_HEIGHT),
         vf.width, vf.height, pw, ph );
 
 //    frameStores.InvalidateExcept(vf.width, vf.height);
