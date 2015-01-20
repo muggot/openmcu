@@ -83,13 +83,8 @@ class ConferenceRecorder : public ConferenceMember
     int audio_frame_count;
     int video_frame_count;
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
-    CodecID audio_codec_id;
-    CodecID video_codec_id;
-#else
     AVCodecID audio_codec_id;
     AVCodecID video_codec_id;
-#endif
 
 #if USE_SWRESAMPLE
     struct SwrContext *swrc;

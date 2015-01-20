@@ -29,7 +29,11 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   else
     return FALSE;
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
   frame = avcodec_alloc_frame();
+#else
+  frame = av_frame_alloc();
+#endif
   if(frame == NULL)
   {
     PTRACE(1, trace_section << "Failed to allocate frame");
@@ -145,7 +149,15 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
       avcodecMutex.Signal();
     }
     if(frame)
-      av_free(frame);
+    {
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,28,0)
+      av_freep(&frame);
+#elif LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
+      avcodec_free_frame(&frame);
+#else
+      av_frame_free(&frame);
+#endif
+    }
 
     return result;
 }
@@ -164,7 +176,11 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
 
   av_register_all();
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
   frame = avcodec_alloc_frame();
+#else
+  frame = av_frame_alloc();
+#endif
   if(frame == NULL)
   {
     PTRACE(1, trace_section << "Failed to allocate frame");
@@ -284,7 +300,15 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
       avcodecMutex.Signal();
     }
     if(frame)
-      av_free(frame);
+    {
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,28,0)
+      av_freep(&frame);
+#elif LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
+      avcodec_free_frame(&frame);
+#else
+      av_frame_free(&frame);
+#endif
+    }
 
     return result;
 }

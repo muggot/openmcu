@@ -27,11 +27,7 @@ PString GetRecorderCodecs(int media_type)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54, 0, 0)
-CodecID GetCodecId(int media_type, PString codec_name)
-#else
 AVCodecID GetCodecId(int media_type, PString codec_name)
-#endif
 {
   if(codec_name == "")
   {
@@ -176,9 +172,25 @@ void ConferenceRecorder::Stop()
     av_free(video_outbuf);
 
   if(audio_frame)
-    av_free(audio_frame);
+  {
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,28,0)
+    av_freep(&audio_frame);
+#elif LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
+    avcodec_free_frame(&audio_frame);
+#else
+    av_frame_free(&audio_frame);
+#endif
+  }
   if(video_frame)
-    av_free(video_frame);
+  {
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,28,0)
+    av_freep(&video_frame);
+#elif LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
+    avcodec_free_frame(&video_frame);
+#else
+    av_frame_free(&video_frame);
+#endif
+  }
 
   Reset();
 }
@@ -447,8 +459,11 @@ BOOL ConferenceRecorder::OpenAudio()
     return FALSE;
   }
 
-  // allocate and init a frame
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
   audio_frame = avcodec_alloc_frame();
+#else
+  audio_frame = av_frame_alloc();
+#endif
   if(audio_frame == NULL)
   {
     MCUTRACE(1, trace_section << "could not allocate audio frame");
@@ -641,8 +656,11 @@ BOOL ConferenceRecorder::OpenVideo()
     return FALSE;
   }
 
-  // allocate and init a re-usable frame
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
   video_frame = avcodec_alloc_frame();
+#else
+  video_frame = av_frame_alloc();
+#endif
   if(video_frame == NULL)
   {
     MCUTRACE(1, trace_section << "could not allocate video frame");
@@ -693,10 +711,7 @@ BOOL ConferenceRecorder::WriteVideo()
 
   GetVideoFrame();
 
-  // encode the frame
-#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54, 0, 0)
-  ret = avcodec_encode_video2(context, &pkt, video_frame, &got_packet);
-#else
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,1,0)
   ret = avcodec_encode_video(context, video_outbuf, video_outbuf_size, video_frame);
   if(ret >= 0)
   {
@@ -704,6 +719,8 @@ BOOL ConferenceRecorder::WriteVideo()
     pkt.size = ret;
     pkt.data = video_outbuf;
   }
+#else
+  ret = avcodec_encode_video2(context, &pkt, video_frame, &got_packet);
 #endif
   // if size is zero, it means the image was buffered
   if(ret < 0)
