@@ -516,8 +516,8 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
   protected:
 
     BOOL MCUHTTPListenerCreate(const PString & ip, unsigned port);
-    void MCUHTTPListenerClose();
     void MCUHTTPListenerShutdown();
+    void MCUHTTPListenerDelete();
 
     void InitialiseTrace();
     int currentLogLevel, currentTraceLevel;

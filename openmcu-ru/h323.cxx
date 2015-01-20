@@ -2580,7 +2580,7 @@ class TplCleanCheckThread : public PThread
       if(c!=NULL)
       {
         PTRACE(1,"TplCleanCheckThread\tFind conference " << c);
-        if(OpenMCU::Current().GetEndpoint().GetConferenceManager().FindConferenceWithLock(c))
+        if(OpenMCU::Current().GetConferenceManager()->FindConferenceWithLock(c))
         {
           c->OnConnectionClean(n, a);
           c->Unlock();

@@ -2349,8 +2349,8 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   // lock!
   PWaitAndSignal m(jpegMixerMutex);
 
-  ConferenceManager & cm = app.GetEndpoint().GetConferenceManager();
-  jpegMixer = cm.FindVideoMixerWithLock(room, requestedMixer);
+  ConferenceManager *cm = app.GetConferenceManager();
+  jpegMixer = cm->FindVideoMixerWithLock(room, requestedMixer);
   if(jpegMixer == NULL) // no mixer found
     return FALSE;
 
@@ -2490,13 +2490,15 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
 
 //PTRACE(1,"!!!!!\tsha1('123')=" << PMessageDigestSHA1::Encode("123")); // sha1 works!! I'll try with websocket in future
 
-  Conference *conference = OpenMCU::Current().GetEndpoint().GetConferenceManager().FindConferenceWithLock(room);
+  ConferenceManager *cm = OpenMCU::Current().GetConferenceManager();
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+  Conference *conference = cm->FindConferenceWithLock(room);
   if(conference)
   {
     PStringStream conferenceOpts;
     conferenceOpts
-        << "p." << OpenMCU::Current().GetEndpoint().GetMemberListOptsJavascript(*conference) << "\n"
-        << "p." << OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*conference) << "\n"
+        << "p." << ep.GetMemberListOptsJavascript(*conference) << "\n"
+        << "p." << ep.GetConferenceOptsJavascript(*conference) << "\n"
         << "p.tl=Array" << conference->GetTemplateList() << "\n"
         << "p.seltpl=\"" << conference->GetSelectedTemplateName() << "\"\n";
 
@@ -2576,25 +2578,23 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
   }
 
-  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-  ConferenceManager & cm = ep.GetConferenceManager();
-
+  ConferenceManager *cm = OpenMCU::Current().GetConferenceManager();
   if(data.Contains("action") && !data("room").IsEmpty())
   {
     PString action = data("action");
     PString room = data("room");
     if(action == "create")
     {
-      Conference * conference = cm.MakeConferenceWithLock(room);
+      Conference * conference = cm->MakeConferenceWithLock(room);
       conference->Unlock();
     }
     else if(action == "delete")
     {
-      cm.RemoveConference(room);
+      cm->RemoveConference(room);
     }
     else if(action == "startRecorder")
     {
-      Conference * conference = cm.FindConferenceWithLock(room);
+      Conference * conference = cm->FindConferenceWithLock(room);
       if(conference)
       {
         conference->StartRecorder();
@@ -2603,7 +2603,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     }
     else if(action == "stopRecorder")
     {
-      Conference * conference = cm.FindConferenceWithLock(room);
+      Conference * conference = cm->FindConferenceWithLock(room);
       if(conference)
       {
         conference->StopRecorder();
@@ -2618,8 +2618,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   if(data.Contains("action")) html << "<script language='javascript'>location.href='Select';</script>";
 
   PString nextRoom;
-  ConferenceManager & manager = ep.GetConferenceManager();
-  MCUConferenceList & conferenceList = manager.GetConferenceList();
+  MCUConferenceList & conferenceList = cm->GetConferenceList();
   for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
   {
     Conference *conference = it.GetObject();

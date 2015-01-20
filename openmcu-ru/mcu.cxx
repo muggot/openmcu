@@ -105,8 +105,8 @@ BOOL OpenMCU::OnStart()
 
 void OpenMCU::OnStop()
 {
-  // close http listener
-  MCUHTTPListenerClose();
+  // shutdown http listener
+  MCUHTTPListenerShutdown();
 
   // close endpoints listeners
   rtspServer->RemoveListeners();
@@ -606,7 +606,7 @@ BOOL OpenMCU::MCUHTTPListenerCreate(const PString & ip, unsigned port)
   PSocket::Reusability reuse = PSocket::CanReuseAddress;
   PINDEX stackSize = 0x4000;
 
-  MCUHTTPListenerShutdown();
+  MCUHTTPListenerDelete();
 
   PIPSocket::Address address(ip);
   PTCPSocket *listener = new PTCPSocket(port);
@@ -627,7 +627,7 @@ BOOL OpenMCU::MCUHTTPListenerCreate(const PString & ip, unsigned port)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void OpenMCU::MCUHTTPListenerClose()
+void OpenMCU::MCUHTTPListenerShutdown()
 {
   if(httpListeningSocket == NULL)
     return;
@@ -637,33 +637,28 @@ void OpenMCU::MCUHTTPListenerClose()
 
   PTRACE(0, trace_section << "Closing listener socket");
   httpListeningSocket->Close();
+
+  httpThreadsMutex.Wait();
+  int threshold = 0;
+  for(PINDEX i = 0; i < httpThreads.GetSize(); ++i)
+  {
+    if(&httpThreads[i] != PThread::Current())
+      httpThreads[i].Close();
+    else
+      threshold = 1;
+  }
+  httpThreadsMutex.Signal();
+
+  while(httpThreads.GetSize() > threshold)
+    Sleep(10);
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void OpenMCU::MCUHTTPListenerShutdown()
+void OpenMCU::MCUHTTPListenerDelete()
 {
-  MCUHTTPListenerClose();
-
-  httpThreadsMutex.Wait();
-
-#if MCU_PTLIB_VERSION == MCU_PTLIB_VERSION_INT(2,0,1)
-  for(PINDEX i = 0; i < httpThreads.GetSize(); ++i)
-    httpThreads[i].Close();
-#else
-  for(ThreadList::iterator i = httpThreads.begin(); i != httpThreads.end(); ++i)
-    i->Close();
-#endif
-/*
-  while(httpThreads.GetSize() > 0)
-  {
-    httpThreadsMutex.Signal();
-    Sleep(1);
-    httpThreadsMutex.Wait();
-  }
-*/
-  httpThreadsMutex.Signal();
-
+  MCUHTTPListenerShutdown();
   delete httpListeningSocket;
   httpListeningSocket = NULL;
 }

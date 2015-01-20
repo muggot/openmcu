@@ -947,9 +947,9 @@ bool MCUSharedList<T_obj>::Erase(shared_iterator & it)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-void MCUSharedList<T_obj>::ReleaseWait(long * _captures, int treshold)
+void MCUSharedList<T_obj>::ReleaseWait(long * _captures, int threshold)
 {
-  for(int i = 0; *_captures != treshold; ++i)
+  for(int i = 0; *_captures != threshold; ++i)
   {
     if(i < 100)
       __asm__ __volatile__("pause":::"memory");
