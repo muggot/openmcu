@@ -16,6 +16,9 @@
 #pragma warning(disable:4100)
 #endif
 
+#define MCU_STRINGIFY(s) MCU_TOSTRING(s)
+#define MCU_TOSTRING(s)  #s
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class OpenMCU;

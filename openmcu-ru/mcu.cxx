@@ -85,23 +85,7 @@ BOOL OpenMCU::OnStart()
   SetConfigurationPath(CONFIG_PATH);
   trace_section = "OpenMCU-ru ";
   InitialiseTrace();
-
-#ifdef GIT_REVISION
-  #define _QUOTE_MACRO_VALUE1(x) #x
-  #define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
-  PTRACE(0, trace_section << "git revision " << _QUOTE_MACRO_VALUE(GIT_REVISION));
-  #undef _QUOTE_MACRO_VALUE
-  #undef _QUOTE_MACRO_VALUE1
-#endif
-#ifdef __VERSION__
-  PTRACE(0, trace_section << "GCC version " << __VERSION__);
-#endif
-#ifdef PTLIB_VERSION
-  PTRACE(0, trace_section << "PTLib version " << PTLIB_VERSION);
-#endif
-#ifdef OPENH323_VERSION
-  PTRACE(0, trace_section << "H323Plus version " << OPENH323_VERSION);
-#endif
+  PrintOnStartInfo();
 
   MCUPluginCodecManager::PopulateMediaFormats();
 
@@ -682,6 +666,60 @@ void OpenMCU::MCUHTTPListenerShutdown()
 
   delete httpListeningSocket;
   httpListeningSocket = NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void OpenMCU::PrintOnStartInfo()
+{
+#ifdef GIT_REVISION
+  #define _QUOTE_MACRO_VALUE1(x) #x
+  #define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
+  PTRACE(0, trace_section << "git revision: " << _QUOTE_MACRO_VALUE(GIT_REVISION));
+  #undef _QUOTE_MACRO_VALUE
+  #undef _QUOTE_MACRO_VALUE1
+#endif
+#ifdef __VERSION__
+  PTRACE(0, trace_section << "GCC " << __VERSION__);
+#endif
+#ifdef PTLIB_VERSION
+  PTRACE(0, trace_section << "PTLib " << PTLIB_VERSION);
+#endif
+#ifdef OPENH323_VERSION
+  PTRACE(0, trace_section << "H323Plus " << OPENH323_VERSION);
+#endif
+#ifdef SOFIA_SIP_VERSION
+  PTRACE(0, trace_section << "Sofia-SIP " << SOFIA_SIP_VERSION);
+#endif
+#ifdef LIBYUV_VERSION
+  PTRACE(0, trace_section << "libyuv " << LIBYUV_VERSION);
+#endif
+#ifdef LIBJPEG_TURBO_VERSION
+  PTRACE(0, trace_section << "libjpeg " << MCU_STRINGIFY(LIBJPEG_TURBO_VERSION));
+#endif
+
+#ifdef LIBAVCODEC_VERSION
+  PTRACE(0, trace_section << "libavcodec " << MCU_STRINGIFY(LIBAVCODEC_VERSION));
+#endif
+#ifdef LIBAVUTIL_VERSION
+  PTRACE(0, trace_section << "libavutil " << MCU_STRINGIFY(LIBAVUTIL_VERSION));
+#endif
+#ifdef LIBAVFORMAT_VERSION
+  PTRACE(0, trace_section << "libavformat " << MCU_STRINGIFY(LIBAVFORMAT_VERSION));
+#endif
+#ifdef LIBSWSCALE_VERSION
+  PTRACE(0, trace_section << "libswscale " << MCU_STRINGIFY(LIBSWSCALE_VERSION));
+#endif
+
+#ifdef LIBSWRESAMPLE_VERSION_INT
+  PTRACE(0, trace_section << "libswresample " << LIBSWRESAMPLE_VERSION_MAJOR << "." << LIBSWRESAMPLE_VERSION_MINOR << "." << LIBSWRESAMPLE_VERSION_MICRO);
+#endif
+#ifdef LIBAVRESAMPLE_VERSION
+  PTRACE(0, trace_section << "libavresample " << MCU_STRINGIFY(LIBAVRESAMPLE_VERSION));
+#endif
+#ifdef SAMPLERATE_H
+  PTRACE(0, trace_section << src_get_version());
+#endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

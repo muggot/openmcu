@@ -527,6 +527,8 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     PString logFilename;
     BOOL       copyWebLogToLog;
 
+    void PrintOnStartInfo();
+
     PFilePath executableFile;
     ConferenceManager * manager;
     MCUH323EndPoint * endpoint;
