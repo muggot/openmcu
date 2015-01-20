@@ -210,9 +210,6 @@ class ConferenceMember : public PObject
 
     void ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState);
 
-    PMutex & GetMutex()
-    { return mutex; }
-
     void Unlock();
 
     /**
@@ -403,8 +400,6 @@ class ConferenceMember : public PObject
     PString name;
     PString nameID;
     float currVolCoef;
-
-    PMutex mutex;
 
 #if MCU_VIDEO
     PTime firstFrameSendTime;

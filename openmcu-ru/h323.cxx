@@ -2639,11 +2639,7 @@ void MCUH323Connection::OnCleared()
   ep.OnConnectionCleared(*this, callToken);
 
   LogCall();
-
-  // OnCleared executed after CleanUpOnCallEnd, before deleting connection
-  // all the RTP channels is completed, start member delete thread
-  if(conference && conferenceMember)
-    new MemberDeleteThread(conference, conferenceMember);
+  LeaveConference();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2656,9 +2652,27 @@ void MCUH323Connection::SetRequestedRoom()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUH323Connection::LeaveConference()
+{
+  PTRACE(1, trace_section << "Leave conference: " << requestedRoom);
+
+  PWaitAndSignal m(connMutex);
+
+  if(conferenceMember)
+  {
+    if(conference)
+      conference->RemoveMember(conferenceMember);
+    delete conferenceMember;
+  }
+  conference = NULL;
+  conferenceMember = NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCUH323Connection::JoinConference(const PString & roomToJoin)
 {
-  PTRACE(1, trace_section << "JoinConference, room: " << roomToJoin << " remotePartyName: " << remotePartyName);
+  PTRACE(1, trace_section << "Join conference: " << roomToJoin << " remotePartyName: " << remotePartyName);
 
   PWaitAndSignal m(connMutex);
 
