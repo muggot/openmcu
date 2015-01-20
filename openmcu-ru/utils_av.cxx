@@ -11,25 +11,30 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   PString trace_section = "MCU_AVEncodeFrame: ";
   AVCodecContext *context = NULL;
   AVCodec *codec = NULL;
+  AVFrame *frame = NULL;
   AVPacket pkt = { 0 };
-
   PixelFormat frame_pix_fmt;
-  if(codec_id == AV_CODEC_ID_MJPEG)
-    frame_pix_fmt = AV_PIX_FMT_YUVJ420P;
-  else
-    return FALSE;
-
-  AVFrame frame;
-  int frame_buffer_size = avpicture_get_size(frame_pix_fmt, src_width, src_height);
-  MCUBuffer frame_buffer(frame_buffer_size);
-  avpicture_fill((AVPicture *)&frame, frame_buffer.GetPointer(), frame_pix_fmt, src_width, src_height);
-
-  int ret = 0;
-  BOOL result = FALSE;
-
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,1,0)
   MCUBuffer pkt_buffer(dst_size);
 #endif
+  MCUBuffer frame_buffer(0);
+  int ret = 0;
+  BOOL result = FALSE;
+
+  av_register_all();
+
+  if(codec_id == AV_CODEC_ID_MJPEG)
+    //frame_pix_fmt = AV_PIX_FMT_YUVJ420P;
+    frame_pix_fmt = AV_PIX_FMT_YUV420P;
+  else
+    return FALSE;
+
+  frame = avcodec_alloc_frame();
+  if(frame == NULL)
+  {
+    PTRACE(1, trace_section << "Failed to allocate frame");
+    goto end;
+  }
 
   codec = avcodec_find_encoder(codec_id);
   if(codec == NULL)
@@ -56,7 +61,7 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   context->qmax          = 2;
   context->time_base.num = 1;
   context->time_base.den = 1;
-  //context->strict_std_compliance = FF_COMPLIANCE_UNOFFICIAL;
+  context->strict_std_compliance = FF_COMPLIANCE_UNOFFICIAL;
 
   // open codec
   avcodecMutex.Wait();
@@ -72,7 +77,15 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
     goto end;
   }
 
+  if(frame_pix_fmt == AV_PIX_FMT_YUV420P)
   {
+    avpicture_fill((AVPicture *)frame, (uint8_t *)src, AV_PIX_FMT_YUV420P, src_width, src_height);
+  }
+  else
+  {
+    int frame_buffer_size = avpicture_get_size(frame_pix_fmt, src_width, src_height);
+    frame_buffer.SetSize(frame_buffer_size);
+
     struct SwsContext *sws_ctx = sws_getContext(src_width, src_height, AV_PIX_FMT_YUV420P,
                                                 src_width, src_height, frame_pix_fmt,
                                                 SWS_BILINEAR, NULL, NULL, NULL);
@@ -88,14 +101,14 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
     avpicture_fill(&src_picture, (uint8_t *)src, AV_PIX_FMT_YUV420P, src_width, src_height);
 
     sws_scale(sws_ctx, src_picture.data, src_picture.linesize, 0, src_height,
-                       frame.data, frame.linesize);
+                       frame->data, frame->linesize);
 
     sws_freeContext(sws_ctx);
   }
 
   av_init_packet(&pkt);
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,1,0)
-  ret = avcodec_encode_video(context, pkt_buffer.GetPointer(), pkt_buffer.GetSize(), &frame);
+  ret = avcodec_encode_video(context, pkt_buffer.GetPointer(), pkt_buffer.GetSize(), frame);
   if(ret >= 0)
   {
     pkt.size = ret;
@@ -103,7 +116,7 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   }
 #else
   int got_packet;
-  ret = avcodec_encode_video2(context, &pkt, &frame, &got_packet);
+  ret = avcodec_encode_video2(context, &pkt, frame, &got_packet);
 #endif
   // if size is zero, it means the image was buffered
   if(ret < 0)
@@ -131,6 +144,8 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
       avcodec_close(context);
       avcodecMutex.Signal();
     }
+    if(frame)
+      av_free(frame);
 
     return result;
 }
@@ -142,12 +157,19 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
   PString trace_section = "MCU_AVDecodeFrameFromFile: ";
   AVFormatContext *fmt_ctx = NULL;
   AVCodecContext *context = NULL;
+  AVFrame *frame = NULL;
   AVPacket pkt = { 0 };
-  AVFrame frame;
   int ret = 0;
   BOOL result = FALSE;
 
   av_register_all();
+
+  frame = avcodec_alloc_frame();
+  if(frame == NULL)
+  {
+    PTRACE(1, trace_section << "Failed to allocate frame");
+    goto end;
+  }
 
   if((ret = avformat_open_input(&fmt_ctx, filename, 0, 0)) < 0)
   {
@@ -209,7 +231,7 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
   }
 
   int got_picture;
-  ret = avcodec_decode_video2(context, &frame, &got_picture, &pkt);
+  ret = avcodec_decode_video2(context, frame, &got_picture, &pkt);
   if(ret < 0 || got_picture == 0)
   {
     MCUTRACE(1, trace_section << "Error decoding video frame: " << AVCodecGetName(context->codec_id) << " " << ret << " " << AVErrorToString(ret));
@@ -217,35 +239,35 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
   }
 
   {
-    int dst_picture_size = avpicture_get_size(AV_PIX_FMT_YUV420P, frame.width, frame.height);
+    int dst_picture_size = avpicture_get_size(AV_PIX_FMT_YUV420P, frame->width, frame->height);
     if(dst_picture_size > dst_size)
     {
       MCUTRACE(1, trace_section << "Picture size " << dst_picture_size << " is larger than the buffer size " << dst_size);
       goto end;
     }
 
-    struct SwsContext *sws_ctx = sws_getContext(frame.width, frame.height, (PixelFormat)frame.format,
-                                                frame.width, frame.height, AV_PIX_FMT_YUV420P,
+    struct SwsContext *sws_ctx = sws_getContext(frame->width, frame->height, (PixelFormat)frame->format,
+                                                frame->width, frame->height, AV_PIX_FMT_YUV420P,
                                                 SWS_BILINEAR, NULL, NULL, NULL);
     if(sws_ctx == NULL)
     {
       MCUTRACE(1, trace_section << "Impossible to create scale context for the conversion "
-                  << frame.width << "x" << frame.height << "->" << frame.width << "x" << frame.height);
+                  << frame->width << "x" << frame->height << "->" << frame->width << "x" << frame->height);
       goto end;
     }
 
     // initialize linesize
     MCUBuffer dst_buffer(dst_picture_size);
     AVPicture dst_picture;
-    avpicture_fill(&dst_picture, (uint8_t *)dst_buffer.GetPointer(), AV_PIX_FMT_YUV420P, frame.width, frame.height);
+    avpicture_fill(&dst_picture, (uint8_t *)dst_buffer.GetPointer(), AV_PIX_FMT_YUV420P, frame->width, frame->height);
 
-    sws_scale(sws_ctx, frame.data, frame.linesize, 0, frame.height,
+    sws_scale(sws_ctx, frame->data, frame->linesize, 0, frame->height,
                        dst_picture.data, dst_picture.linesize);
 
     sws_freeContext(sws_ctx);
 
-    dst_width = frame.width;
-    dst_height = frame.height;
+    dst_width = frame->width;
+    dst_height = frame->height;
     dst_size = dst_picture_size;
     memcpy(dst, dst_buffer.GetPointer(), dst_size);
 
@@ -261,6 +283,8 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
       avcodec_close(context);
       avcodecMutex.Signal();
     }
+    if(frame)
+      av_free(frame);
 
     return result;
 }
