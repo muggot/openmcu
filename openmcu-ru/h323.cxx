@@ -312,18 +312,14 @@ BOOL MCUH323EndPoint::ClearCallSynchronous(const PString & callToken, H323Connec
   }
 
   MCUH323Connection *connection = NULL;
+  MCUConnectionList::shared_iterator it = connectionList.Find(callToken);
+  if(it != connectionList.end())
   {
-    PWaitAndSignal m(connectionListMutex);
-    MCUConnectionList::shared_iterator it = connectionList.Find(callToken);
-    if(it != connectionList.end())
+    connection = *it;
+    if(!connection->SetClearing())
     {
-      connection = *it;
-      if(connection->IsClearing())
-      {
-        PTRACE(2, trace_section << "Cleaner process already running " << callToken << " thread " << PThread::Current()->GetThreadName());
-        return TRUE;
-      }
-      connection->SetClearing();
+      PTRACE(2, trace_section << "Cleaner process already running " << callToken << " thread " << PThread::Current()->GetThreadName());
+      return TRUE;
     }
   }
 
@@ -2457,7 +2453,7 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
   conferenceMember = NULL;
   welcomeState     = NotStartedYet;
   connectionType   = CONNECTION_TYPE_H323;
-  clearing         = FALSE;
+  clearing         = false;
 
 #if MCU_VIDEO
   videoMixerNumber = 0;

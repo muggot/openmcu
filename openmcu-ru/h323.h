@@ -267,8 +267,8 @@ class MCUH323Connection : public H323Connection
     BOOL IsClearing()
     { return clearing; };
 
-    void SetClearing()
-    { clearing = TRUE; };
+    BOOL SetClearing()
+    { return sync_bool_compare_and_swap(&clearing, false, true); };
 
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     virtual void SendLogicalChannelMiscIndication(H323Channel & channel, unsigned command);
@@ -458,7 +458,9 @@ class MCUH323Connection : public H323Connection
     PString memberName;
 
     MCUConnectionTypes connectionType;
-    BOOL clearing;
+
+    // атомарный
+    bool volatile clearing;
 
     // Wave file played during the welcome procedure.
     OpalWAVFile playFile;
