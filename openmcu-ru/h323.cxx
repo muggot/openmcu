@@ -2655,11 +2655,8 @@ void MCUH323Connection::LeaveConference()
   PWaitAndSignal m(connMutex);
 
   if(conferenceMember)
-  {
-    if(conference)
-      conference->RemoveMember(conferenceMember);
     delete conferenceMember;
-  }
+
   conference = NULL;
   conferenceMember = NULL;
 }
@@ -4105,6 +4102,8 @@ H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _c
 
 H323Connection_ConferenceMember::~H323Connection_ConferenceMember()
 {
+  if(conference)
+    conference->RemoveMember(this);
   PTRACE(4, "H323Connection_ConferenceMember deleted");
 }
 
