@@ -759,11 +759,11 @@ class MCUSharedList
     long idcounter;
     bool * volatile states;
     bool * states_end;
-    long * volatile ids;
+    long * ids;
     long * ids_end;
     PString * names;
     PString * names_end;
-    T_obj ** volatile objs;
+    T_obj ** objs;
     T_obj ** objs_end;
     long * volatile captures;
     bool * volatile locks;

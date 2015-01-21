@@ -217,7 +217,12 @@ ConferenceCacheMember::~ConferenceCacheMember()
     delete thread;
     thread = NULL;
   }
+
   DeleteCacheRTP(cache);
+
+  if(conference)
+    conference->RemoveMember(this);
+
   PTRACE(5,"ConferenceCacheMember\tTerminated: " << GetName());
 }
 
@@ -225,11 +230,7 @@ ConferenceCacheMember::~ConferenceCacheMember()
 
 void ConferenceCacheMember::Close()
 {
-  PWaitAndSignal m(mutex);
-  if(conference == NULL)
-    return;
-  new MemberDeleteThread(conference, this);
-  conference = NULL;
+  running = FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -239,16 +240,6 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
   MCUTRACE(1, "CacheRTP " << cacheName << " Thread starting");
 
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-
-  // lock
-  mutex.Wait();
-
-  if(conference == NULL)
-  {
-    MCUTRACE(1, "CacheRTP " << cacheName << " conference == NULL!");
-    mutex.Signal();
-    return;
-  }
 
   MCUCapability *cap = MCUCapability::Create(format);
   OpalMediaFormat & wf = cap->GetWritableMediaFormat();
@@ -266,9 +257,6 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
     conn->SetupCacheConnection(cacheName, conference, this);
     conn->OpenVideoChannel(TRUE, (H323VideoCodec &)*codec);
   }
-
-  // unlock
-  mutex.Signal();
 
   RTP_DataFrame frame;
   unsigned length = 0;
@@ -302,8 +290,6 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
     }
     if(running)
     {
-      PWaitAndSignal m(mutex);
-
       unsigned flags = 0;
       if(!isAudio)
       {
@@ -320,7 +306,6 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
   MCUTRACE(1, "CacheRTP " << cacheName << " Wait before deleting cache " << cacheName << ", active users " << GetCacheUsersNumber());
   while(GetCacheUsersNumber() != 0)
   {
-    PWaitAndSignal m(mutex);
     unsigned flags = 0;
     codec->Read(NULL, length, frame);
     PutCacheRTP(cache, frame, length, flags);
@@ -441,6 +426,10 @@ ConferencePipeMember::~ConferencePipeMember()
     delete video_thread;
     video_thread = NULL;
   }
+
+  if(conference)
+    conference->RemoveMember(this);
+
   PTRACE(5,"ConferencePipeMember\tTerminated: " << GetName());
 }
 
@@ -448,9 +437,7 @@ ConferencePipeMember::~ConferencePipeMember()
 
 void ConferencePipeMember::Close()
 {
-  Conference *c = conference;
-  conference = NULL;
-  new MemberDeleteThread(c, this);
+  running = FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

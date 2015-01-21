@@ -563,6 +563,8 @@ class Conference : public PObject
   protected:
     ConferenceManager & manager;
 
+    PString trace_section;
+
     // memberListMutex - используется при добавлении/удалении участника
     // предотвращает создание в списке двух одноименных участников
     PMutex memberListMutex;
@@ -608,32 +610,6 @@ class ConferenceMonitor : public PThread
   protected:
     int Perform(Conference * conference);
     ConferenceManager & manager;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class MemberDeleteThread : public PThread
-{
-  public:
-    MemberDeleteThread(Conference * _conference, ConferenceMember * _member)
-      : PThread(10000, AutoDeleteThread), conference(_conference), member(_member)
-    {
-      Resume();
-    }
-
-    void Main()
-    {
-      if(member)
-      {
-        if(conference)
-          conference->RemoveMember(member);
-        delete member;
-      }
-    }
-
-  protected:
-    Conference * conference;
-    ConferenceMember * member;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

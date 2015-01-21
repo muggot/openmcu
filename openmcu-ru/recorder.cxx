@@ -61,6 +61,8 @@ ConferenceRecorder::ConferenceRecorder(Conference *_conference)
 ConferenceRecorder::~ConferenceRecorder()
 {
   Stop();
+  if(conference)
+    conference->RemoveMember(this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -68,11 +70,7 @@ ConferenceRecorder::~ConferenceRecorder()
 void ConferenceRecorder::Close()
 {
   PWaitAndSignal m(mutex);
-  if(conference == NULL)
-    return;
   Stop();
-  new MemberDeleteThread(conference, this);
-  conference = NULL;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

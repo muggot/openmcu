@@ -354,12 +354,15 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   PTRACE(2,"MCU\tOnDestroyConference " << number);
   conference->stopping=TRUE;
 
+  MCUMemberList & memberList = conference->GetMemberList();
+  MCUProfileList & profileList = conference->GetProfileList();
+
   PString jsName(number);
   jsName.Replace("\"","\\x27",TRUE,0); jsName.Replace("'","\\x22",TRUE,0);
-  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(1,'" + jsName + "')", number);
 
+  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(1,'" + jsName + "')", number);
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", disconnect remote endpoints");
-  MCUMemberList & memberList = conference->GetMemberList();
+
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember * member = it.GetObject();
@@ -367,7 +370,22 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
       member->Close();
   }
 
-  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(2,'" + jsName + "')", number);
+  //OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(2,'" + jsName + "')", number);
+  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(3,'" + jsName + "')", number);
+  PTRACE(2,"MCU\tOnDestroyConference " << number <<", delete system members");
+
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  {
+    ConferenceMember * member = it.GetObject();
+    if(member->GetType() == MEMBER_TYPE_CACHE || member->GetType() == MEMBER_TYPE_PIPE ||
+       member->GetType() == MEMBER_TYPE_RECORDER)
+    {
+      it.Release();
+      delete member;
+    }
+  }
+
+  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(4,'" + jsName + "')", number);
 
   int members = memberList.GetCurrentSize();
   while(members != 0)
@@ -378,15 +396,12 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   }
 
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", clearing profile list");
-  MCUProfileList & profileList = conference->GetProfileList();
   for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
   {
     ConferenceProfile *profile = it.GetObject();
     if(profileList.Erase(it))
       delete profile;
   }
-
-  OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(3,'" + jsName + "')", number);
 
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(5,'" + jsName + "')", number);
 }
@@ -564,6 +579,7 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
   : manager(_manager), listID(_listID), guid(_guid), number(_number), name(_name)
 {
   stopping = FALSE;
+  trace_section = "Conference "+number+": ";
 #if MCU_VIDEO
   if(mixer)
   {
@@ -619,12 +635,12 @@ BOOL Conference::RecorderCheckSpace()
   DWORD cs;
   if(!pd.GetVolumeSpace(t, f, cs))
   {
-    PTRACE(1,"EVRT\tRecorder space check failed");
+    PTRACE(1, trace_section << "Recorder space check failed");
     return TRUE;
   }
   BOOL result = ((f>>20) >= OpenMCU::Current().vr_minimumSpaceMiB);
   if(!result) OpenMCU::Current().HttpWriteEvent("<b><font color='red'>Insufficient disk space</font>: Video Recorder DISABLED</b>");
-  PTRACE_IF(1,!result,"EVRT\tInsufficient disk space: Video Recorder DISABLED");
+  PTRACE_IF(1,!result, trace_section << "Insufficient disk space: Video Recorder DISABLED");
   return result;
 }
 
@@ -641,7 +657,7 @@ BOOL Conference::StartRecorder()
     return FALSE;
   if(!PDirectory::Exists(OpenMCU::Current().vr_ffmpegDir))
   {
-    PTRACE(1,"EVRT\tRecorder failed to start (check recorder directory)");
+    PTRACE(1, trace_section << "Recorder failed to start (check recorder directory)");
     OpenMCU::Current().HttpWriteEventRoom("Recorder failed to start (check recorder directory)", number);
     return FALSE;
   }
@@ -655,11 +671,11 @@ BOOL Conference::StartRecorder()
 
   if(!conferenceRecorder->IsRunning())
   {
-    PTRACE(1,"MCU\tConference: " << number <<", failed to start recorder");
+    PTRACE(1, trace_section << "failed to start recorder");
     return FALSE;
   }
 
-  PTRACE(1,"MCU\tConference: " << number <<", video recorder started");
+  PTRACE(1, trace_section << "video recorder started");
   OpenMCU::Current().HttpWriteEventRoom("video recording started", number);
   OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
   OpenMCU::Current().HttpWriteCmdRoom("build_page()", number);
@@ -676,7 +692,7 @@ BOOL Conference::StopRecorder()
     return TRUE;
   conferenceRecorder->Stop();
 
-  PTRACE(1,"MCU\tConference: " << number <<", video recorder stopped");
+  PTRACE(1, trace_section << "video recorder stopped");
   OpenMCU::Current().HttpWriteEventRoom("video recording stopped", number);
   OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
   OpenMCU::Current().HttpWriteCmdRoom("build_page()", number);
@@ -836,8 +852,8 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 {
   memberToAdd->SetName();
 
-  PTRACE(3, "Conference\t " << number << " Adding member: " << memberToAdd->GetName());
-  cout << "Conference " << number << " Adding member: " << memberToAdd->GetName() << endl;
+  PTRACE(3, trace_section << "Adding member: " << memberToAdd->GetName());
+  cout << trace_section << "Adding member: " << memberToAdd->GetName() << endl;
 
   // lock the member lists
   PWaitAndSignal m(memberListMutex);
@@ -845,7 +861,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   MCUMemberList::shared_iterator it = memberList.Find((long)memberToAdd->GetID());
   if(it != memberList.end())
   {
-    PTRACE(1, "Conference\t" << number << "Rejected duplicate member ID: " << (long)memberToAdd->GetID() << " " << memberToAdd->GetName());
+    PTRACE(1, trace_section << "Rejected duplicate member ID: " << (long)memberToAdd->GetID() << " " << memberToAdd->GetName());
     return FALSE;
   }
 
@@ -864,7 +880,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         PStringStream msg;
         msg << memberToAdd->GetNameHTML() << " REJECTED - DUPLICATE NAME";
         OpenMCU::Current().HttpWriteEventRoom(msg, number);
-        PTRACE(1, "Conference " << number << "\tRejected duplicate name: " << memberToAdd->GetName());
+        PTRACE(1, trace_section << "Rejected duplicate name: " << memberToAdd->GetName());
         return FALSE;
       }
       memberToAdd->SetName(memberName+" ##"+PString(i+2));
@@ -946,12 +962,12 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
 
   if(!memberToRemove->IsJoined())
   {
-    PTRACE(4, "Conference\t" << number << "No need to remove member " << memberToRemove->GetName());
+    PTRACE(4, trace_section << "No need to remove member " << memberToRemove->GetName());
     return FALSE;
   }
 
-  PTRACE(3, "Conference\t" << number << "Removing member " << memberToRemove->GetName());
-  cout << "Conference " << number << " Removing member " << memberToRemove->GetName() << endl;
+  PTRACE(3, trace_section << "Removing member " << memberToRemove->GetName());
+  cout << trace_section << "Removing member " << memberToRemove->GetName() << endl;
 
   // remove from all lists
   RemoveMemberFromList(memberToRemove->GetName(), memberToRemove);
@@ -1157,10 +1173,10 @@ void Conference::ReadMemberVideo(ConferenceMember * member, void * buffer, int w
       mixer = manager.GetVideoMixerWithLock(this);
     if(mixer == NULL)
     {
-      PTRACE(3,"Conference\tCould not get video");
+      PTRACE(3, trace_section << "Could not get video");
       return;
     } else  {
-      PTRACE(6,"Conference\tCould not get video mixer " << mixerNumber << ", reading 0 instead");
+      PTRACE(6, trace_section << "Could not get video mixer " << mixerNumber << ", reading 0 instead");
     }
   }
 
@@ -1286,14 +1302,14 @@ BOOL Conference::PutChosenVan()
 
 void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
 {
-  PTRACE(3,"Conference\tHandling feature access code " << fac << " from " << member.GetName());
+  PTRACE(3, trace_section << "Handling feature access code " << fac << " from " << member.GetName());
   PStringArray s = fac.Tokenise("*");
   if(s[0]=="1")
   {
     int posTo=0;
     if(s.GetSize() > 1)
       posTo=s[1].AsInteger();
-    PTRACE(4,"Conference\t" << "*1*" << posTo << "#: jump into video position " << posTo);
+    PTRACE(4, trace_section << "*1*" << posTo << "#: jump into video position " << posTo);
 
     if(videoMixerList.GetCurrentSize() == 0)
       return;
