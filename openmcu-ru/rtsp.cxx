@@ -117,6 +117,13 @@ MCURtspConnection::~MCURtspConnection()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCURtspConnection::ClearCall(H323Connection::CallEndReason reason)
+{
+  return MCUH323Connection::ClearCall(reason);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void MCURtspConnection::CleanUpOnCallEnd()
 {
   PTRACE(1, trace_section << "CleanUpOnCallEnd reason: " << callEndReason);

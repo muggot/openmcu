@@ -105,6 +105,7 @@ install:
 	mkdir -p $(DESTDIR)/opt/openmcu-ru/records
 	mkdir -p $(DESTDIR)/opt/openmcu-ru/resource
 	mkdir -p $(DESTDIR)/opt/openmcu-ru/ssl
+	mkdir -p $(DESTDIR)/opt/openmcu-ru/ssl/example
 	( for file in ${CONFIG_FILES}; \
 	    do install -m 644 conf/$$file $(DESTDIR)/opt/openmcu-ru/config; \
 	done )
@@ -119,8 +120,9 @@ install:
 	install -m 644 ../NEWS $(DESTDIR)/opt/openmcu-ru
 	install -m 644 ../README $(DESTDIR)/opt/openmcu-ru
 #	ln -sf $(DESTDIR)/opt/openmcu-ru/bin/$(PROG) /usr/local/bin/$(PROG)
-#	install -m 644 ssl/agent.pem $(DESTDIR)/opt/openmcu-ru/ssl
-#	install -m 644 ssl/cafile.pem $(DESTDIR)/opt/openmcu-ru/ssl
+	install -m 644 ssl/agent.pem $(DESTDIR)/opt/openmcu-ru/ssl
+	install -m 644 ssl/root.pem $(DESTDIR)/opt/openmcu-ru/ssl
+	install -m 755 ssl/example/make_cert.sh $(DESTDIR)/opt/openmcu-ru/ssl/example
 
 uninstall:
 	rm -rf $(DESTDIR)/opt/openmcu-ru/font

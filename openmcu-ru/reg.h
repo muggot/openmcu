@@ -58,8 +58,14 @@ class RegistrarAccount
       id = _id;
       account_type = _account_type;
       username = _username;
+      host = "";
+      if(account_type == ACCOUNT_TYPE_H323)
+        port = 1720;
+      else if(account_type == ACCOUNT_TYPE_SIP)
+        port = 5060;
+      else
+        port = 0;
       domain = "openmcu-ru";
-      port = 0;
       scheme = "Digest";
       algorithm = "MD5";
       expires = 0;
@@ -93,9 +99,6 @@ class RegistrarAccount
 
     PString GetUrl();
 
-    PString GetContact()
-    { return contact_str; }
-
     PString GetAuthStr();
 
     void SetRegisterMsg(const msg_t * msg)
@@ -125,7 +128,6 @@ class RegistrarAccount
     PString password;
     PString h323id;
 
-    PString contact_str;
     PString remote_application;
 
     PString sip_call_processing;
@@ -513,9 +515,9 @@ class Registrar : public PThread
     BOOL InternalMakeCall(RegistrarConnection *rconn, const PString & username_in, const PString & username_out);
     BOOL InternalMakeCall(RegistrarConnection *rconn, RegistrarAccount *raccount_in, RegistrarAccount *raccount_out);
 
-    int SipSendNotify(RegistrarSubscription *rsub);
-    int SipSendMessage(RegistrarAccount *raccount_in, RegistrarAccount *raccount_out, const PString & message);
-    int SipSendPing(RegistrarAccount *raccount);
+    BOOL SipSendNotify(RegistrarSubscription *rsub);
+    BOOL SipSendMessage(RegistrarAccount *raccount_in, RegistrarAccount *raccount_out, const PString & message);
+    BOOL SipSendPing(RegistrarAccount *raccount);
 
     void ProcessAccountList();
     void ProcessSubscriptionList();

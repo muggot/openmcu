@@ -435,20 +435,53 @@ class MCUURL : public PURL
     MCUURL();
     MCUURL(PString str);
 
-    void SetDisplayName(PString name) { display_name = name; }
+    const PString & GetUserName() const
+    { return username; }
 
-    virtual const PString & GetDisplayName() const { return display_name; }
-    virtual const PString & GetUrl() const { return url_party; }
-    virtual const PString GetPort() const { return PString(port); }
-    virtual const PString & GetTransport() const { return transport; }
-    virtual const PString GetMemberName() const { return display_name+" ["+url_party+"]"; }
-    virtual const PString GetMemberNameId() const
+    const PString & GetHostName() const
+    { return hostname; }
+
+    void SetDisplayName(const PString & name)
+    { display_name = name; }
+
+    const PString & GetDisplayName() const
+    { return display_name; }
+
+    const PString GetPort() const
+    { return PString(port); }
+
+    void SetTransport(const PString & _transport)
+    { transport = _transport; }
+
+    const PString & GetTransport() const
+    { return transport; }
+
+    const PString GetMemberName()
+    { return display_name+" ["+GetUrl()+"]"; }
+
+    const PString GetMemberNameId() const
     {
       PString id = url_scheme+":";
       if(username != "") id += username;
       else               id += hostname;
       return id;
     }
+
+    const PString & GetUrl()
+    {
+      if(url_scheme == "sip")
+      {
+        url_party = url_scheme+":"+username+"@"+hostname;
+        if(port != 0 && port != 5060)
+          url_party += ":"+PString(port);
+        if(transport != "" && transport != "*")
+          url_party += ";transport="+transport;
+      }
+      return url_party;
+    }
+
+    const PString & AsString()
+    { return GetUrl(); }
 
   protected:
     PString display_name;

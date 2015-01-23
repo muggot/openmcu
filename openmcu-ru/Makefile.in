@@ -105,6 +105,7 @@ install:
 	mkdir -p $(DESTDIR)@MCU_RECORDS_DIR@
 	mkdir -p $(DESTDIR)@MCU_RESOURCE_DIR@
 	mkdir -p $(DESTDIR)@MCU_SSL_DIR@
+	mkdir -p $(DESTDIR)@MCU_SSL_DIR@/example
 	( for file in ${CONFIG_FILES}; \
 	    do install -m 644 conf/$$file $(DESTDIR)@MCU_CONFIG_DIR@; \
 	done )
@@ -119,8 +120,9 @@ install:
 	install -m 644 ../NEWS $(DESTDIR)@MCU_DIR@
 	install -m 644 ../README $(DESTDIR)@MCU_DIR@
 #	ln -sf $(DESTDIR)@MCU_BIN_DIR@/$(PROG) /usr/local/bin/$(PROG)
-#	install -m 644 ssl/agent.pem $(DESTDIR)@MCU_SSL_DIR@
-#	install -m 644 ssl/cafile.pem $(DESTDIR)@MCU_SSL_DIR@
+	install -m 644 ssl/agent.pem $(DESTDIR)@MCU_SSL_DIR@
+	install -m 644 ssl/root.pem $(DESTDIR)@MCU_SSL_DIR@
+	install -m 755 ssl/example/make_cert.sh $(DESTDIR)@MCU_SSL_DIR@/example
 
 uninstall:
 	rm -rf $(DESTDIR)@MCU_FONT_DIR@

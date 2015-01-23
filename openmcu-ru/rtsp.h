@@ -22,6 +22,7 @@ class MCURtspConnection : public MCUSipConnection
   friend class MCURtspServer;
 
   public:
+    virtual BOOL ClearCall(CallEndReason reason = EndedByLocalUser);
     virtual void CleanUpOnCallEnd();
 
   protected:

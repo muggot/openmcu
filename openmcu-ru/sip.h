@@ -230,16 +230,18 @@ class MCUSipConnection : public MCUH323Connection
     static MCUSipConnection * CreateConnection(Directions _direction, const PString & _callToken, const msg_t *msg);
     ~MCUSipConnection();
 
+    virtual BOOL ClearCall(CallEndReason reason = EndedByLocalUser);
+    virtual void CleanUpOnCallEnd();
+
     virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     virtual void SendUserInput(const PString & value);
-    virtual void CleanUpOnCallEnd();
 
     BOOL HadAnsweredCall() { return (direction=DIRECTION_INBOUND); }
 
     int ProcessInvite(const msg_t *msg);
-    int SendInvite();
-    int SendVFU();
+    void SendInvite();
+    void SendRequest(sip_method_t method, const char *method_name, const char *payload = NULL);
 
     AuthTypes auth_type;
     PString auth_username;
@@ -257,9 +259,6 @@ class MCUSipConnection : public MCUH323Connection
     int ProcessAck();
     int ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & RemoteCaps, PString & sdp_str);
 
-    int SendBYE();
-    int SendACK();
-    nta_outgoing_t * SendRequest(sip_method_t method, const char *method_name, const char *payload = NULL);
     int ReqReply(const msg_t *msg, unsigned status, const char *status_phrase=NULL);
 
     int ProcessInfo(const msg_t *msg);
@@ -391,7 +390,7 @@ class MCUSipEndPoint : public PThread
 
     int CreateIncomingConnection(const msg_t *msg);
     int SipReqReply(const msg_t *msg, msg_t *msg_reply, unsigned status, const char *status_phrase=NULL);
-    int SendMsg(msg_t *msg);
+    int SendRequest(msg_t *msg);
     int SendAckBye(const msg_t *msg);
     BOOL SipMakeCall(PString from, PString to, PString & callToken);
 
@@ -411,11 +410,8 @@ class MCUSipEndPoint : public PThread
     PSTUNClient * CreateStun(PString address);
     PSTUNClient * GetPreferedStun(PString address);
 
-    MCUQueuePString & GetQueue()
+    MCUQueuePString & GetSipQueue()
     { return sipQueue; }
-
-    MCUQueueMsg & GetMsgQueue()
-    { return sipMsgQueue; }
 
   protected:
     void Main();
@@ -461,8 +457,6 @@ class MCUSipEndPoint : public PThread
     MCUQueueMsg sipMsgQueue;
     void ProcessSipQueue();
     void QueueClear();
-    void QueueInvite(const PString & data);
-    void QueueFastUpdate(const PString & data);
 
     void ProcessProxyAccount();
 

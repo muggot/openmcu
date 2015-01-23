@@ -252,7 +252,7 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
   {
     callToken = PGloballyUniqueID().AsString();
     PString *cmd = new PString("invite:"+room+","+address+","+callToken);
-    sep->GetQueue().Push(cmd);
+    sep->GetSipQueue().Push(cmd);
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
@@ -312,7 +312,7 @@ BOOL Registrar::InternalMakeCall(RegistrarConnection *rconn, RegistrarAccount *r
   {
     PString callToken = PGloballyUniqueID().AsString();
     PString *cmd = new PString("invite:"+rconn->username_in+","+address+","+callToken);
-    sep->GetQueue().Push(cmd);
+    sep->GetSipQueue().Push(cmd);
     rconn->callToken_out = callToken;
     return TRUE;
   }
@@ -892,6 +892,7 @@ void Registrar::InitAccounts()
     raccount->host = scfg.GetString(HostKey);
     if(port != 0)
       raccount->port = port;
+    raccount->transport = scfg.GetString(TransportKey);
     raccount->domain = registrar_domain;
     raccount->password = scfg.GetString(PasswordKey);
     raccount->display_name = scfg.GetString(DisplayNameKey);

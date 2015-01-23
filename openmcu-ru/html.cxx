@@ -1215,7 +1215,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+"SIP "+JsLocal("name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
       //
-      s2 += rowArray+JsLocal("name_transport")+SelectItem(name, scfg.GetString(TransportKey), ",udp,tcp")+"</tr>";
+      s2 += rowArray+JsLocal("name_transport")+SelectItem(name, scfg.GetString(TransportKey), ",udp,tcp,tls")+"</tr>";
       //
       s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), RtpProtoSelect)+"</tr>";
       //
@@ -1706,8 +1706,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
     PString transport = sipListener[i].Tokenise(";")[1];
     if(url == "") url = "0.0.0.0";
     item += StringItemArray(SipListenerKey, url, 150);
-    //item += SelectItem(SipListenerKey, transport, "transport=*,transport=udp,transport=tcp,transport=tls");
-    item += SelectItem(SipListenerKey, transport, "transport=*,transport=udp,transport=tcp");
+    item += SelectItem(SipListenerKey, transport, "transport=*,transport=udp,transport=tcp,transport=tls");
     if(url == "0.0.0.0") url += " :5060";
     sipListener[i] = "sip:"+url+";"+transport;
   }

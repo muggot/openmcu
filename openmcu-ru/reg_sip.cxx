@@ -37,7 +37,6 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
     if(raccount->display_name == "")
       raccount->display_name = url.GetDisplayName();
     raccount->remote_application = url.GetRemoteApplication();
-    raccount->contact_str = raccount->GetUrl();
     // save register message
     raccount->SetRegisterMsg(msg);
     // expires
@@ -52,8 +51,9 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
         raccount->expires = sip_reg_max_expires;
     }
     // add headers
+    sip_contact_t *sip_contact = sip_contact_create(sep->GetHome(), URL_STRING_MAKE((const char *)raccount->GetUrl()), NULL);
     sip_add_tl(msg_reply, sip_object(msg_reply),
-		   SIPTAG_CONTACT_STR((const char*)raccount->contact_str),
+		   SIPTAG_CONTACT(sip_contact),
 		   SIPTAG_EXPIRES_STR((const char*)PString(raccount->expires)),
   		   SIPTAG_EVENT_STR("registration"),
   		   SIPTAG_ALLOW_EVENTS_STR("presence"),
@@ -172,7 +172,6 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     if(raccount_in->display_name == "")
       raccount_in->display_name = url.GetDisplayName();
     raccount_in->remote_application = url.GetRemoteApplication();
-    raccount_in->contact_str = raccount_in->GetUrl();
   }
 
   {
@@ -182,8 +181,9 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
       sep->SipReqReply(msg, NULL, 100);
       sep->SipReqReply(msg, NULL, 180);
       // add headers
+      sip_contact_t *sip_contact = sip_contact_create(sep->GetHome(), URL_STRING_MAKE((const char *)raccount_out->GetUrl()), NULL);
       sip_add_tl(msg_reply, sip_object(msg_reply),
-		   SIPTAG_CONTACT_STR((const char*)raccount_out->GetUrl()),
+		   SIPTAG_CONTACT(sip_contact),
                    TAG_END());
       response_code = 302;
       goto return_response;
@@ -276,8 +276,9 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
     // save subscribe message
     rsub->SetSubMsg(msg);
     // add headers
+    sip_contact_t *sip_contact = sip_contact_create(sep->GetHome(), URL_STRING_MAKE((const char *)rsub->contact_str), NULL);
     sip_add_tl(msg_reply, sip_object(msg_reply),
-		   SIPTAG_CONTACT_STR((const char*)rsub->contact_str),
+		   SIPTAG_CONTACT(sip_contact),
 		   SIPTAG_EXPIRES_STR((const char*)PString(rsub->expires)),
                    TAG_END());
     response_code = 202; // SIP_202_ACCEPTED
@@ -349,9 +350,7 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   {
     if(!raccount_in->enable && sip_require_password)
       return 403; // SIP_403_FORBIDDEN
-    if(!sip_require_password)
-      return 0;
-    if(raccount_in->password == "")
+    if(!sip_require_password || raccount_in->password == "")
       return 0;
     // add headers
     sip_authorization_t *sip_www_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
@@ -379,9 +378,11 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   }
   if(request == sip_method_message)
   {
-    if(!raccount_out || (raccount_out && !raccount_out->registered) || (raccount_out && raccount_out->host == ""))
+    if(!raccount_in->enable && sip_require_password)
+      return 403; // SIP_403_FORBIDDEN
+    if(!raccount_out || (raccount_out->host == "" || raccount_out->port == 0))
       return 404; // SIP_404_NOT_FOUND
-    if(raccount_in->password == "")
+    if(!sip_require_password || raccount_in->password == "")
       return 0;
     // add headers
     sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
@@ -392,7 +393,9 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   }
   if(request == sip_method_subscribe)
   {
-    if(raccount_in->password == "")
+    if(!raccount_in->enable && sip_require_password)
+      return 403; // SIP_403_FORBIDDEN
+    if(!sip_require_password || raccount_in->password == "")
       return 0;
     // add headers
     sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
@@ -407,14 +410,14 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipSendNotify(RegistrarSubscription *rsub)
+BOOL Registrar::SipSendNotify(RegistrarSubscription *rsub)
 {
   PTRACE(1, trace_section << "SipSendNotify");
 
   msg_t *msg_sub = rsub->GetSubMsgCopy();
   sip_t *sip_sub = sip_object(msg_sub);
   if(sip_sub == NULL)
-    return 0;
+    return FALSE;
 
   PString basic;
   if(rsub->state == SUB_STATE_OPEN)
@@ -452,19 +455,19 @@ int Registrar::SipSendNotify(RegistrarSubscription *rsub)
 
   sip_payload_str += "</presence>";
 
-  url_string_t *ruri = (url_string_t *)(const char *)rsub->ruri_str;
-
   // cseq increment for incoming sub request
   sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), rsub->cseq++, SIP_METHOD_NOTIFY);
 
-  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_NOTIFY, ruri, NULL);
+  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_NOTIFY, URL_STRING_MAKE((const char *)rsub->ruri_str), NULL);
   sip_route_t* sip_route = sip_route_reverse(GetHome(), sip_sub->sip_record_route);
+
+  sip_contact_t *sip_contact = sip_contact_create(sep->GetHome(), URL_STRING_MAKE((const char *)rsub->contact_str), NULL);
 
   msg_t *msg_req = nta_msg_create(GetAgent(), 0);
   sip_add_tl(msg_req, sip_object(msg_req),
 			SIPTAG_FROM(sip_sub->sip_to),
 			SIPTAG_TO(sip_sub->sip_from),
-			SIPTAG_CONTACT_STR((const char*)rsub->contact_str),
+			SIPTAG_CONTACT(sip_contact),
 			SIPTAG_ROUTE(sip_route),
  			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_CSEQ(sip_cseq),
@@ -477,41 +480,40 @@ int Registrar::SipSendNotify(RegistrarSubscription *rsub)
 			SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
 			TAG_END());
 
-  if(!sep->GetMsgQueue().Push(msg_req))
-    msg_destroy(msg_req);
-
   msg_destroy(msg_sub);
-  return 1;
+  sep->SendRequest(msg_req);
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipSendMessage(RegistrarAccount *raccount_in, RegistrarAccount *raccount_out, const PString & message)
+BOOL Registrar::SipSendMessage(RegistrarAccount *raccount_in, RegistrarAccount *raccount_out, const PString & message)
 {
   PTRACE(1, trace_section << "SipSendMessage");
-  msg_t *msg_reg_out = raccount_out->GetRegisterMsgCopy();
-  sip_t *sip_reg_out = sip_object(msg_reg_out);
-  if(sip_reg_out == NULL)
-    return 0;
 
-  // do not use GetUrl() directly, "nta outgoing create: invalid URI"
-  PString ruri_str = raccount_out->GetUrl();
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
+  if(raccount_out->host == "" || raccount_out->port == 0)
+    return FALSE;
 
   PString url_from = "sip:"+raccount_in->username+"@"+raccount_out->domain;
-  sip_addr_t *sip_from = sip_from_create(GetHome(), (url_string_t *)(const char *)url_from);
+  sip_addr_t *sip_from = sip_from_create(GetHome(), URL_STRING_MAKE((const char *)url_from));
   sip_from_tag(GetHome(), sip_from, nta_agent_newtag(GetHome(), "tag=%s", GetAgent()));
 
   PString url_to = "sip:"+raccount_out->username+"@"+raccount_out->domain;
-  sip_addr_t *sip_to = sip_to_create(GetHome(), (url_string_t *)(const char *)url_to);
+  sip_addr_t *sip_to = sip_to_create(GetHome(), URL_STRING_MAKE((const char *)url_to));
 
   sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), 1, SIP_METHOD_MESSAGE);
-  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_MESSAGE, ruri, NULL);
+  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_MESSAGE, URL_STRING_MAKE((const char *)raccount_out->GetUrl()), NULL);
   sip_call_id_t* sip_call_id = sip_call_id_create(GetHome(), "");
 
   sip_route_t* sip_route = NULL;
-  if(sip_reg_out)
-    sip_route = sip_route_reverse(GetHome(), sip_reg_out->sip_record_route);
+  if(raccount_out->registered)
+  {
+    msg_t *msg_reg = raccount_out->GetRegisterMsgCopy();
+    sip_t *sip_reg = sip_object(msg_reg);
+    if(sip_reg)
+      sip_route = sip_route_reverse(GetHome(), sip_reg->sip_record_route);
+    msg_destroy(msg_reg);
+  }
 
   msg_t *msg_req = nta_msg_create(GetAgent(), 0);
   sip_add_tl(msg_req, sip_object(msg_req),
@@ -528,45 +530,36 @@ int Registrar::SipSendMessage(RegistrarAccount *raccount_in, RegistrarAccount *r
 			SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
 			TAG_END());
 
-  if(!sep->GetMsgQueue().Push(msg_req))
-    msg_destroy(msg_req);
-
-  msg_destroy(msg_reg_out);
-  return 1;
+  sep->SendRequest(msg_req);
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int Registrar::SipSendPing(RegistrarAccount *raccount)
+BOOL Registrar::SipSendPing(RegistrarAccount *raccount)
 {
   if(raccount->host == "" || raccount->port == 0)
     return FALSE;
 
-  msg_t *msg_reg = raccount->GetRegisterMsgCopy();
-  if(msg_reg == NULL)
-    return 0;
-
-  // do not use GetUrl() directly, "nta outgoing create: invalid URI"
-  PString ruri_str = raccount->GetUrl();
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
-
   PString url_from = "sip:keepalive@"+raccount->domain;
-  sip_addr_t *sip_from = sip_from_create(GetHome(), (url_string_t *)(const char *)url_from);
+  sip_addr_t *sip_from = sip_from_create(GetHome(), URL_STRING_MAKE((const char *)url_from));
   sip_from_tag(GetHome(), sip_from, nta_agent_newtag(GetHome(), "tag=%s", GetAgent()));
 
   PString url_to = "sip:"+raccount->username+"@"+raccount->domain;
-  sip_addr_t *sip_to = sip_to_create(GetHome(), (url_string_t *)(const char *)url_to);
+  sip_addr_t *sip_to = sip_to_create(GetHome(), URL_STRING_MAKE((const char *)url_to));
 
   sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), su_randint(0, 0x7fffffff), SIP_METHOD_OPTIONS);
-  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_OPTIONS, ruri, NULL);
+  sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_OPTIONS, URL_STRING_MAKE((const char *)raccount->GetUrl()), NULL);
   sip_call_id_t* sip_call_id = sip_call_id_make(GetHome(), PGloballyUniqueID().AsString());
 
   sip_route_t* sip_route = NULL;
   if(raccount->registered)
   {
+    msg_t *msg_reg = raccount->GetRegisterMsgCopy();
     sip_t *sip = sip_object(msg_reg);
     if(sip && sip->sip_record_route)
       sip_route = sip_route_reverse(GetHome(), sip->sip_record_route);
+    msg_destroy(msg_reg);
   }
 
   msg_t *msg_req = nta_msg_create(GetAgent(), 0);
@@ -579,11 +572,8 @@ int Registrar::SipSendPing(RegistrarAccount *raccount)
 			SIPTAG_CALL_ID(sip_call_id),
                         TAG_END());
 
-  if(!sep->GetMsgQueue().Push(msg_req))
-    msg_destroy(msg_req);
-
-  msg_destroy(msg_reg);
-  return 1;
+  sep->SendRequest(msg_req);
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

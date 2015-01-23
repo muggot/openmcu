@@ -90,21 +90,44 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Directions dir)
   else if(sip->sip_server && sip->sip_server->g_string)
     remote_application = sip->sip_server->g_string;
 
+  // hostname, port
+  if(sip->sip_contact->m_url && sip->sip_contact->m_url->url_host)
+    hostname = sip->sip_contact->m_url->url_host;
+  if(sip->sip_contact->m_url && sip->sip_contact->m_url->url_port)
+    port = PString(sip->sip_contact->m_url->url_port).AsInteger();
+  else
+    port = 5060;
+
+  //transport
+  if(PString(sip->sip_via->v_protocol).Find("UDP") != P_MAX_INDEX)
+    transport = "udp";
+  else if(PString(sip->sip_via->v_protocol).Find("TCP") != P_MAX_INDEX)
+    transport = "tcp";
+  else if(PString(sip->sip_via->v_protocol).Find("TLS") != P_MAX_INDEX)
+    transport = "tls";
+  else
+    transport = "*";
+
   // get hostname,port,transport from su_addrinfo_t
   // not available after msg_dup or msg_copy
   su_addrinfo_t *addrinfo = msg_addrinfo((msg_t *)msg);
   if(addrinfo->ai_addr)
   {
-    char ip[80] = {0};
-    getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, ip, (socklen_t)sizeof(ip), NULL, 0, NI_NUMERICHOST);
-    hostname = ip;
-    port = ntohs(((struct sockaddr_in *)addrinfo->ai_addr)->sin_port);
-    if(addrinfo->ai_protocol == TPPROTO_UDP)      transport = "udp";
-    else if(addrinfo->ai_protocol == TPPROTO_TCP) transport = "tcp";
-    else if(addrinfo->ai_protocol == TPPROTO_TLS) transport = "tls";
-    else                                          transport = "*";
+    if(hostname == "")
+    {
+      char ip[80] = {0};
+      getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, ip, (socklen_t)sizeof(ip), NULL, 0, NI_NUMERICHOST);
+      hostname = ip;
+    }
+    if(port == 0)
+      port = ntohs(((struct sockaddr_in *)addrinfo->ai_addr)->sin_port);
+    //if(addrinfo->ai_protocol == TPPROTO_UDP)      transport = "udp";
+    //else if(addrinfo->ai_protocol == TPPROTO_TCP) transport = "tls";
+    //else if(addrinfo->ai_protocol == TPPROTO_TLS) transport = "tls";
+    //else                                          transport = "*";
   }
 
+  // url_party
   url_scheme = "sip";
   url_party = url_scheme+":"+username+"@"+hostname;
   if(port != 0)
@@ -455,19 +478,25 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   // create local capability list
   CreateLocalSipCaps();
 
+  MCUURL local_url(contact_str);
+  MCUURL remote_url(ruri_str);
+
   // local contact
-  MCUURL lurl(contact_str);
-  local_user = lurl.GetUserName();
+  local_user = local_url.GetUserName();
   if(local_user == "")
   {
     local_user = OpenMCU::Current().GetDefaultRoomName();
-    lurl.SetUserName(local_user);
+    local_url.SetUserName(local_user);
   }
   // nat ip for contact
   if(nat_ip != local_ip)
-    lurl.SetHostName(nat_ip);
+    local_url.SetHostName(nat_ip);
+
+  // transport
+  local_url.SetTransport(remote_url.GetTransport());
+
   // final local contact
-  contact_str = lurl.AsString();
+  contact_str = local_url.GetUrl();
 
   // requested room
   requestedRoom = local_user;
@@ -521,11 +550,17 @@ MCUSipConnection * MCUSipConnection::CreateConnection(Directions _direction, con
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::CleanUpOnCallEnd()
+BOOL MCUSipConnection::ClearCall(H323Connection::CallEndReason reason)
 {
-  PTRACE(1, trace_section << "CleanUpOnCallEnd reason: " << callEndReason);
+  if(PThread::Current() != sep)
+  {
+    PString *cmd = new PString("clear_call:"+callToken+","+PString(reason));
+    MCUTRACE(1, trace_section << "added to sip queue: " << *cmd);
+    sep->GetSipQueue().Push(cmd);
+    return TRUE;
+  }
 
-  if(callEndReason == EndedByLocalUser)
+  if(reason == EndedByLocalUser)
   {
     if(connectionState == EstablishedConnection)
     {
@@ -539,6 +574,14 @@ void MCUSipConnection::CleanUpOnCallEnd()
         nta_outgoing_cancel(orq_invite);
     }
   }
+  return MCUH323Connection::ClearCall(reason);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::CleanUpOnCallEnd()
+{
+  PTRACE(1, trace_section << "CleanUpOnCallEnd reason: " << callEndReason);
 
   connectionState = ShuttingDownConnection;
 
@@ -2157,30 +2200,6 @@ void MCUSipConnection::OnReceivedVFU()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command)
-{
-  if(command == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
-  {
-    PTime now;
-    if(now < vfuSendTime + PTimeInterval(1000))
-      return;
-    vfuSendTime = now;
-
-    PString *cmd = new PString("fast_update:"+callToken);
-    sep->GetQueue().Push(cmd);
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::SendUserInput(const PString & value)
-{
-  PTRACE(6, trace_section << "SendUserInput");
-  SendRequest(SIP_METHOD_MESSAGE, value);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void MCUSipConnection::OnReceivedDTMF(PString sdp)
 {
   if(conference == NULL)
@@ -2220,9 +2239,17 @@ int MCUSipConnection::ProcessInfo(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, const char *payload)
+void MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, const char *payload)
 {
-  PTRACE(1, trace_section << "SendRequest request: " << method_name);
+  if(PThread::Current() != sep)
+  {
+    PString *cmd = new PString("connection_send_request:"+callToken+","+PString(method)+","+PString(method_name)+","+PString(payload));
+    PTRACE(1, trace_section << "added to sip queue: " << *cmd);
+    sep->GetSipQueue().Push(cmd);
+    return;
+  }
+
+  PTRACE(1, trace_section << "SendRequest: " << method_name);
 
   int stateless = 1;
   nta_response_f *callback = NULL;
@@ -2305,44 +2332,28 @@ nta_outgoing_t * MCUSipConnection::SendRequest(sip_method_t method, const char *
 			SIPTAG_MAX_FORWARDS_STR(SIP_MAX_FORWARDS),
 			SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
                         TAG_END());
+  if(a_orq == NULL)
+  {
+    PTRACE(1, trace_section << "error");
+    ClearCall();
+    return;
+  }
   if(stateless == 1)
   {
     nta_outgoing_destroy(a_orq);
     a_orq = NULL;
   }
-  return a_orq;
+  if(method == sip_method_invite)
+  {
+    if(orq_invite)
+      nta_outgoing_destroy(orq_invite);
+    orq_invite = a_orq;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::SendBYE()
-{
-  PTRACE(1, trace_section << "SendBYE");
-  SendRequest(SIP_METHOD_BYE);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int MCUSipConnection::SendVFU()
-{
-  PTRACE(1, trace_section << "SendVFU");
-  SendRequest(SIP_METHOD_INFO);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int MCUSipConnection::SendACK()
-{
-  PTRACE(1, trace_section << "SendACK");
-  SendRequest(SIP_METHOD_ACK);
-  return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-int MCUSipConnection::SendInvite()
+void MCUSipConnection::SendInvite()
 {
   // outgoing Invite direction outbound
   direction = DIRECTION_OUTBOUND;
@@ -2351,18 +2362,30 @@ int MCUSipConnection::SendInvite()
   // create sdp for invite
   CreateSdpInvite();
 
-  if(orq_invite)
-    nta_outgoing_destroy(orq_invite);
+  SendRequest(SIP_METHOD_INVITE);
+}
 
-  orq_invite = SendRequest(SIP_METHOD_INVITE);
-  if(orq_invite == NULL)
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command)
+{
+  if(command == H245_MiscellaneousCommand_type::e_videoFastUpdatePicture)
   {
-    PTRACE(1, trace_section << "error");
-    ClearCall();
-    return FALSE;
-  }
+    PTime now;
+    if(now < vfuSendTime + PTimeInterval(1000))
+      return;
+    vfuSendTime = now;
 
-  return TRUE;
+    SendRequest(SIP_METHOD_INFO);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUSipConnection::SendUserInput(const PString & value)
+{
+  PTRACE(6, trace_section << "SendUserInput");
+  SendRequest(SIP_METHOD_MESSAGE, value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2370,13 +2393,15 @@ int MCUSipConnection::SendInvite()
 int MCUSipConnection::ReqReply(const msg_t *msg, unsigned status, const char *status_phrase)
 {
   sip_t *sip = sip_object(msg);
+
   if(sip->sip_request->rq_method == sip_method_invite && status == 200)
   {
+    sip_contact_t *sip_contact = sip_contact_create(sep->GetHome(), (url_string_t *)(const char *)contact_str, NULL);
     nta_incoming_t *irq = nta_incoming_find(sep->GetAgent(), sip, sip->sip_via);
     if(irq)
     {
       nta_incoming_treply(irq, status, status_phrase,
-                   SIPTAG_CONTACT_STR((const char*)contact_str),
+                   SIPTAG_CONTACT(sip_contact),
                    SIPTAG_CONTENT_TYPE_STR("application/sdp"),
                    SIPTAG_PAYLOAD_STR((const char*)sdp_ok_str),
                    SIPTAG_SERVER_STR((const char*)(SIP_USER_AGENT)),
@@ -2387,7 +2412,7 @@ int MCUSipConnection::ReqReply(const msg_t *msg, unsigned status, const char *st
     {
       msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
       sip_add_tl(msg_reply, sip_object(msg_reply),
-                   SIPTAG_CONTACT_STR((const char*)contact_str),
+                   SIPTAG_CONTACT(sip_contact),
                    SIPTAG_CONTENT_TYPE_STR("application/sdp"),
                    SIPTAG_PAYLOAD_STR((const char*)sdp_ok_str),
                    TAG_END());
@@ -2481,7 +2506,7 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
     // repeated OK
     if(connectionState == EstablishedConnection)
     {
-      SendACK();
+      SendRequest(SIP_METHOD_ACK);
       return 0;
     }
     // add rtag to call leg from response
@@ -2502,7 +2527,7 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
     // is connected
     connectionState = EstablishedConnection;
     // send ACK
-    SendACK();
+    SendRequest(SIP_METHOD_ACK);
     return 0;
   }
   if(status == 401 || status == 407)
@@ -2592,7 +2617,7 @@ PString MCUSipEndPoint::GetRoomAccess(const sip_t *sip)
 
 BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 {
-    PTRACE(1, trace_section << "SipMakeCall from:" << from << " to:" << to);
+    PTRACE(1, trace_section << "SipMakeCall from: " << from << " to: " << to);
 
     MCUURL url_to(to);
     if(url_to.GetHostName() == "")
@@ -2648,14 +2673,12 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
     MCUURL lurl(contact_str);
     local_ip = lurl.GetHostName();
     lurl.SetUserName(local_user);
-    contact_str = lurl.AsString();
+    contact_str = lurl.GetUrl();
 
     if(local_domain == "")
       local_domain = local_ip;
     if(local_dname == "")
       local_dname = local_user;
-
-    url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
 
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)("sip:"+local_user+"@"+local_domain));
     sip_from_tag(&home, sip_from, nta_agent_newtag(&home, "tag=%s", agent));
@@ -2664,7 +2687,7 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
 
     sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)contact_str, NULL);
 
-    sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, ruri, NULL);
+    sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_INVITE, (url_string_t *)(const char *)ruri_str, NULL);
 
     // check callToken data
     PString call_id_str;
@@ -2704,10 +2727,10 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
       return FALSE;
     sCon->auth_username = auth_username;
     sCon->auth_password = auth_password;
-    BOOL ret = sCon->SendInvite();
+    sCon->SendInvite();
     sCon->Unlock();
 
-    return ret;
+    return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2727,8 +2750,6 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
     lurl.SetUserName(proxy->username);
     contact_str = lurl.AsString();
 
-    url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
-
     sip_addr_t *sip_from = sip_from_create(&home, (url_string_t *)(const char *)
 	("sip:"+proxy->username+"@"+proxy->domain));
     sip_from_tag(&home, sip_from, nta_agent_newtag(&home, "tag=%s", agent));
@@ -2740,7 +2761,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
     sip_contact_t *sip_contact = sip_contact_create(&home, (url_string_t *)(const char *)contact_str, NULL);
     sip_contact->m_display = proxy->roomname;
 
-    sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_REGISTER, ruri, NULL);
+    sip_request_t *sip_rq = sip_request_create(&home, SIP_METHOD_REGISTER, (url_string_t *)(const char *)ruri_str, NULL);
     sip_cseq_t *sip_cseq = sip_cseq_create(&home, proxy->cseq++, SIP_METHOD_REGISTER);
 
     sip_call_id_t* sip_call_id = NULL;
@@ -2756,7 +2777,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 
     msg_t *sip_msg = nta_msg_create(agent, 0);
     nta_outgoing_t *a_orq = nta_outgoing_mcreate(agent, wrap_response_cb1, (nta_outgoing_magic_t *)this,
-      			ruri,
+      			(url_string_t *)(const char *)ruri_str,
 			sip_msg,
 			SIPTAG_REQUEST(sip_rq),
 			SIPTAG_FROM(sip_from),
@@ -2946,7 +2967,6 @@ int MCUSipEndPoint::SendAckBye(const msg_t *msg)
 
   MCUURL_SIP url(msg, DIRECTION_OUTBOUND);
   PString ruri_str = url.GetUrl();
-  url_string_t *ruri = (url_string_t *)(const char *)ruri_str;
   sip_route_t* sip_route = sip_route_reverse(&home, sip->sip_record_route);
 
   msg_t *msg_req = nta_msg_create(agent, 0);
@@ -2961,11 +2981,11 @@ int MCUSipEndPoint::SendAckBye(const msg_t *msg)
 			TAG_END());
 
   // ACK
-  sip_request_t *sip_rq_ack = sip_request_create(&home, SIP_METHOD_ACK, ruri, NULL);
+  sip_request_t *sip_rq_ack = sip_request_create(&home, SIP_METHOD_ACK, (url_string_t *)(const char *)ruri_str, NULL);
   sip_cseq_t *sip_cseq_ack = sip_cseq_create(&home, sip->sip_cseq->cs_seq, SIP_METHOD_ACK);
   msg_t *msg_ack = msg_dup(msg_req);
   nta_outgoing_t *orq_ack = nta_outgoing_mcreate(agent, NULL, NULL,
-			ruri,
+			(url_string_t *)(const char *)ruri_str,
 			msg_ack,
 			NTATAG_BRANCH_KEY(sip->sip_via->v_branch),
  			SIPTAG_REQUEST(sip_rq_ack),
@@ -2977,11 +2997,11 @@ int MCUSipEndPoint::SendAckBye(const msg_t *msg)
   // BYE
   if(sip->sip_cseq->cs_method == sip_method_invite && sip->sip_status->st_status == 200)
   {
-    sip_request_t *sip_rq_bye = sip_request_create(&home, SIP_METHOD_BYE, ruri, NULL);
+    sip_request_t *sip_rq_bye = sip_request_create(&home, SIP_METHOD_BYE, (url_string_t *)(const char *)ruri_str, NULL);
     sip_cseq_t *sip_cseq_bye = sip_cseq_create(&home, 0x7fffffff, SIP_METHOD_BYE);
     msg_t *msg_bye = msg_dup(msg_req);
     nta_outgoing_t *orq_bye = nta_outgoing_mcreate(agent, NULL, NULL,
-			ruri,
+			(url_string_t *)(const char *)ruri_str,
 			msg_bye,
  			SIPTAG_REQUEST(sip_rq_bye),
 			SIPTAG_CSEQ(sip_cseq_bye),
@@ -2996,8 +3016,16 @@ int MCUSipEndPoint::SendAckBye(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipEndPoint::SendMsg(msg_t *msg)
+int MCUSipEndPoint::SendRequest(msg_t *msg)
 {
+  if(PThread::Current() != this)
+  {
+    if(sipMsgQueue.Push(msg))
+      return 1;
+    msg_destroy(msg);
+    return 0;
+  }
+
   sip_t *sip = sip_object(msg);
   if(sip == NULL || sip->sip_request == NULL)
   {
@@ -3450,27 +3478,27 @@ void MCUSipEndPoint::StartListeners()
     PString transport = url.GetTransport();
     if(transport != "tls")
       nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)listener), TAG_NULL());
-/*
+
     if(transport == "*" || transport == "tls")
     {
       PString certificatePath = PString(SYS_SSL_DIR);
       unsigned port = atoi(url.GetPort());
-      if(port == 5060) port++;
-      PString tlsListener = "sips:"+url.GetHostName()+":"+PString(port)+";transport=tls";
-      nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)tlsListener),
-                          //TPTAG_TLS_VERSION(0),
+      if(transport == "*")
+        port++;
+      listener = "sips:"+url.GetHostName()+":"+PString(port)+";transport=tls";
+      nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)listener),
                           TPTAG_CERTIFICATE(certificatePath),
-                          TPTAG_TLS_VERIFY_DATE(0),
-                          TPTAG_TLS_VERIFY_DEPTH(0),
-                          TPTAG_TLS_VERIFY_PEER(TPTLS_VERIFY_NONE),
-                          TPTAG_TLS_VERIFY_POLICY(TPTLS_VERIFY_NONE),
+                          //TPTAG_TLS_VERSION(0),
+                          //TPTAG_TLS_VERIFY_DATE(0),
+                          //TPTAG_TLS_VERIFY_DEPTH(0),
+                          //TPTAG_TLS_VERIFY_PEER(TPTLS_VERIFY_NONE),
+                          //TPTAG_TLS_VERIFY_POLICY(TPTLS_VERIFY_NONE),
                           //TPTAG_TLS_VERIFY_POLICY(TPTLS_VERIFY_ALL),
                           //TPTAG_TLS_VERIFY_POLICY(TPTLS_VERIFY_SUBJECTS_ALL),
                           //TPTAG_X509_SUBJECT(0),
                           //TPTAG_TLS_VERIFY_SUBJECTS(NULL),
                           TAG_NULL());
     }
-*/
   }
 
   for(tport_t *tp = nta_agent_tports(agent); tp != NULL; tp = tport_next(tp))
@@ -3493,7 +3521,7 @@ BOOL MCUSipEndPoint::GetLocalSipAddress(PString & local_addr, const PString & ru
   if(tport_name_by_url(&home, tpn, (url_string_t *)(const char *)ruri_str) == -1)
     goto error;
 
-  tp = tport_by_name(nta_agent_tports(agent), tpn);
+  tp = tport_primary_by_name(nta_agent_tports(agent), tpn);
   if(tp == NULL)
     goto error;
 
@@ -3519,10 +3547,44 @@ void MCUSipEndPoint::ProcessSipQueue()
     PString *cmd = sipQueue.Pop();
     if(cmd == NULL)
       break;
-    if(cmd->Left(7) == "invite:")
-      QueueInvite(cmd->Right(cmd->GetLength()-7));
-    else if(cmd->Left(12) == "fast_update:")
-      QueueFastUpdate(cmd->Right(cmd->GetLength()-12));
+    PINDEX pos = cmd->Find(":");
+    PString request = cmd->Left(pos);
+    PString data = cmd->Right(cmd->GetLength()-pos-1);
+    if(request == "invite")
+    {
+      PStringArray dataArray = data.Tokenise(",");
+      PString from = dataArray[0];
+      PString to = dataArray[1];
+      PString call_id = dataArray[2];
+      SipMakeCall(from, to, call_id);
+    }
+    else if(request == "clear_call")
+    {
+      PStringArray dataArray = data.Tokenise(",");
+      PString callToken = dataArray[0];
+      PString reason = dataArray[1];
+      MCUSipConnection *sCon = (MCUSipConnection *)ep->FindConnectionWithLock(callToken);
+      if(sCon)
+      {
+        sCon->ClearCall((H323Connection::CallEndReason)reason.AsInteger());
+        sCon->Unlock();
+      }
+    }
+    else if(request == "connection_send_request")
+    {
+      //connection_send_request:method,method_name,payload
+      PStringArray dataArray = data.Tokenise(",");
+      PString callToken = dataArray[0];
+      PString method = dataArray[1];
+      PString method_name = dataArray[2];
+      PString payload = dataArray[3];
+      MCUSipConnection *sCon = (MCUSipConnection *)ep->FindConnectionWithLock(callToken);
+      if(sCon)
+      {
+        sCon->SendRequest((sip_method_t)method.AsInteger(), method_name, payload);
+        sCon->Unlock();
+      }
+    }
     delete cmd;
   }
   for(;;)
@@ -3530,7 +3592,7 @@ void MCUSipEndPoint::ProcessSipQueue()
     msg_t *msg = sipMsgQueue.Pop();
     if(msg == NULL)
       break;
-    SendMsg(msg);
+    SendRequest(msg);
   }
 }
 
@@ -3553,28 +3615,6 @@ void MCUSipEndPoint::QueueClear()
     if(msg == NULL)
       break;
     msg_destroy(msg);
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipEndPoint::QueueInvite(const PString & data)
-{
-  PString from = data.Tokenise(",")[0];
-  PString to = data.Tokenise(",")[1];
-  PString call_id = data.Tokenise(",")[2];
-  SipMakeCall(from, to, call_id);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipEndPoint::QueueFastUpdate(const PString & data)
-{
-  MCUSipConnection *sCon = (MCUSipConnection *)ep->FindConnectionWithLock(data);
-  if(sCon)
-  {
-    sCon->SendVFU();
-    sCon->Unlock();
   }
 }
 
