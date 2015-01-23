@@ -351,7 +351,7 @@ libjpeg=no
 libyuv=yes
 openssl=yes
 libsrtp=yes
-libzrtp=yes
+libzrtp=no
 
 AC_ARG_ENABLE(separator, [ ])
 AC_ARG_ENABLE(resample, [AS_HELP_STRING([--disable-resample],[Disable resampling (default enabled)],[40],[100])], [resample="$enableval"])
@@ -365,7 +365,7 @@ AC_ARG_ENABLE(libyuv, [AS_HELP_STRING([--disable-libyuv],[Disable libyuv to resi
 AC_ARG_ENABLE(separator, [   ])
 AC_ARG_ENABLE(openssl, [AS_HELP_STRING([--disable-openssl],[Disable OpenSSL support (default enabled)],[40],[100])], [openssl="$enableval"])
 AC_ARG_ENABLE(libsrtp, [AS_HELP_STRING([--disable-libsrtp],[Disable SRTP support for SIP (default enabled)],[40],[100])], [libsrtp="$enableval"])
-AC_ARG_ENABLE(libzrtp, [AS_HELP_STRING([--disable-libzrtp],[Disable ZRTP support for SIP (default auto)],[40],[100])], [libzrtp="$enableval"])
+AC_ARG_ENABLE(libzrtp, [AS_HELP_STRING([--enable-libzrtp],[Disable ZRTP support for SIP (default disabled)],[40],[100])], [libzrtp="$enableval"])
 
 dnl ########################################################################
 dnl configure openssl
@@ -458,10 +458,34 @@ if test "${libzrtp}" = "yes"; then
   fi
   if test ${USE_LIBZRTP} = 0; then
     AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure.in, USE_LIBZRTP=1, USE_LIBZRTP=0)
+    AS_UNSET([$as_ac_File])
+    if test ${USE_LIBZRTP} = 0; then
+      AC_CHECK_FILE(${top_srcdir}/libs/libzrtp.tar.gz, SRC_LIBZRTP=1, SRC_LIBZRTP=0)
+      AS_UNSET([$as_ac_File])
+      if test ${SRC_LIBZRTP} = 0; then
+        wget --directory-prefix=libs http://openmcu.ru/public/OpenMCU-ru/libs/libzrtp.tar.gz
+        AC_CHECK_FILE(${top_srcdir}/libs/libzrtp.tar.gz, SRC_LIBZRTP=1, SRC_LIBZRTP=0)
+        AS_UNSET([$as_ac_File])
+      fi
+      if test ${SRC_LIBZRTP} = 1; then
+        tar -xf libs/libzrtp.tar.gz --directory=libs
+        AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure.in, USE_LIBZRTP=1, USE_LIBZRTP=0)
+        AS_UNSET([$as_ac_File])
+      fi
+    fi
     if test ${USE_LIBZRTP} = 1; then
-      AC_CONFIG_SUBDIRS(libs/libzrtp)
+      AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure, USE_LIBZRTP=1, USE_LIBZRTP=0)
+      AS_UNSET([$as_ac_File])
+      if test ${USE_LIBZRTP} = 0; then
+        $(cd ${top_srcdir}/libs/libzrtp/ && ./bootstrap.sh && cd ${top_srcdir})
+        AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure, USE_LIBZRTP=1, USE_LIBZRTP=0)
+        AS_UNSET([$as_ac_File])
+      fi
+    fi
+    if test ${USE_LIBZRTP} = 1; then
       MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libzrtp/include -I../libs/libzrtp/third_party/bnlib -I../libs/libzrtp/third_party/bgaes"
       MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libzrtp/.libs";
+      AC_CONFIG_SUBDIRS(libs/libzrtp)
       COMPILE_LIBZRTP=1
     fi
   fi
