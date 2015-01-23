@@ -365,7 +365,7 @@ AC_ARG_ENABLE(libyuv, [AS_HELP_STRING([--disable-libyuv],[Disable libyuv to resi
 AC_ARG_ENABLE(separator, [   ])
 AC_ARG_ENABLE(openssl, [AS_HELP_STRING([--disable-openssl],[Disable OpenSSL support (default enabled)],[40],[100])], [openssl="$enableval"])
 AC_ARG_ENABLE(libsrtp, [AS_HELP_STRING([--disable-libsrtp],[Disable SRTP support for SIP (default enabled)],[40],[100])], [libsrtp="$enableval"])
-AC_ARG_ENABLE(libzrtp, [AS_HELP_STRING([--disable-libzrtp],[Disable ZRTP support for SIP (default enabled)],[40],[100])], [libzrtp="$enableval"])
+AC_ARG_ENABLE(libzrtp, [AS_HELP_STRING([--disable-libzrtp],[Disable ZRTP support for SIP (default auto)],[40],[100])], [libzrtp="$enableval"])
 
 dnl ########################################################################
 dnl configure openssl
@@ -410,12 +410,15 @@ if test "${libsrtp}" = "yes"; then
       fi
     fi
   fi
+
   if test ${USE_LIBSRTP} = 0 ; then
-    AC_CONFIG_SUBDIRS(libs/srtp)
-    MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/srtp/include -I../libs/srtp/crypto/include"
-    MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/srtp";
-    USE_LIBSRTP=1
-    COMPILE_LIBSRTP=1
+    AC_CHECK_FILE(${top_srcdir}/libs/srtp/configure.in, USE_LIBSRTP=1, USE_LIBSRTP=0)
+    if test ${USE_LIBSRTP} = 1; then
+      AC_CONFIG_SUBDIRS(libs/srtp)
+      MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/srtp/include -I../libs/srtp/crypto/include"
+      MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/srtp";
+      COMPILE_LIBSRTP=1
+    fi
   fi
   if test ${USE_LIBSRTP} = 1 ; then
     MCU_LDLIBS="$MCU_LDLIBS -lsrtp"
@@ -431,12 +434,40 @@ AC_SUBST(COMPILE_LIBZRTP, 0)
 AC_SUBST(LIBZRTP_DIR, ${top_srcdir}/libs/libzrtp)
 
 if test "${libzrtp}" = "yes"; then
-  AC_CONFIG_SUBDIRS(libs/libzrtp)
-  MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libzrtp/include -I../libs/libzrtp/third_party/bnlib -I../libs/libzrtp/third_party/bgaes"
-  MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libzrtp/.libs";
-  MCU_LDLIBS="$MCU_LDLIBS -lzrtp"
-  USE_LIBZRTP=1
-  COMPILE_LIBZRTP=1
+  if test ${USE_LIBZRTP} = 0; then
+    AC_CHECK_FILE(/usr/include/libzrtp/zrtp.h, USE_LIBZRTP=1, USE_LIBZRTP=0)
+    if test ${USE_LIBZRTP} = 1; then
+      AC_CHECK_FILE(/usr/lib/libzrtp.so, USE_LIBZRTP=1, USE_LIBZRTP=0)
+      if test ${USE_LIBZRTP} = 1 ; then
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/include/libzrtp/";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
+      fi
+    fi
+  fi
+  if test ${USE_LIBZRTP} = 0; then
+    AC_CHECK_FILE(/usr/local/include/libzrtp/zrtp.h, USE_LIBZRTP=1, USE_LIBZRTP=0)
+    if test ${USE_LIBZRTP} = 1; then
+      AC_CHECK_FILE(/usr/local/lib/libzrtp.so, USE_LIBZRTP=1, USE_LIBZRTP=0)
+      if test ${USE_LIBZRTP} = 1 ; then
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/local/include/libzrtp/";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/local/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
+      fi
+    fi
+  fi
+  if test ${USE_LIBZRTP} = 0; then
+    AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure.in, USE_LIBZRTP=1, USE_LIBZRTP=0)
+    if test ${USE_LIBZRTP} = 1; then
+      AC_CONFIG_SUBDIRS(libs/libzrtp)
+      MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libzrtp/include -I../libs/libzrtp/third_party/bnlib -I../libs/libzrtp/third_party/bgaes"
+      MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libzrtp/.libs";
+      COMPILE_LIBZRTP=1
+    fi
+  fi
+  if test ${USE_LIBZRTP} = 1 ; then
+    MCU_LDLIBS="$MCU_LDLIBS -lzrtp"
+  fi
 fi
 AM_CONDITIONAL(COMPILER_USE_LIBZRTP, [test ${COMPILE_LIBZRTP} = 1])
 
@@ -516,10 +547,12 @@ if test "${libyuv}" = "yes"; then
     fi
   fi
   if test ${USE_LIBYUV} = 0 ; then
-    MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libyuv/include"
-    MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libyuv";
-    USE_LIBYUV=1
-    COMPILE_LIBYUV=1
+    AC_CHECK_FILE(${top_srcdir}/libs/libyuv/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
+    if test ${USE_LIBYUV} = 1; then
+      MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libyuv/include"
+      MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libyuv";
+      COMPILE_LIBYUV=1
+    fi
   fi
   if test ${USE_LIBYUV} = 1 ; then
     MCU_LDLIBS="$MCU_LDLIBS -lyuv"

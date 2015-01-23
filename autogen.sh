@@ -7,5 +7,10 @@ automake --add-missing --copy
 
 top_srcdir=`pwd`
 
-cd ${top_srcdir}/libs/libzrtp/ && ./bootstrap.sh
-cd ${top_srcdir}/plugins/G722.1/libg722_1/ && ./autogen.sh
+if [ -d ${top_srcdir}/libs/libzrtp ] ; then
+  cd ${top_srcdir}/libs/libzrtp/ && ./bootstrap.sh
+fi
+
+if [ -d ${top_srcdir}/plugins/G722.1/libg722_1 ] ; then
+  cd ${top_srcdir}/plugins/G722.1/libg722_1/ && ./autogen.sh
+fi
