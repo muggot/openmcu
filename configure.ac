@@ -353,22 +353,217 @@ openssl=yes
 libsrtp=yes
 libzrtp=no
 
+dnl ########################################################################
+dnl check for video library
+
+AC_SUBST(USE_AVCODEC, 0)
+AC_SUBST(USE_SWSCALE, 0)
+
+AC_LANG_PUSH([C])
+
+AC_CHECK_HEADERS([avcodec.h libavcodec/avcodec.h ffmpeg/avcodec.h libav/avcodec.h ffmpeg/libavcodec/avcodec.h libav/libavcodec/avcodec.h], USE_AVCODEC=1, [], [-])
+if test ${USE_AVCODEC} = 0; then
+  AC_MSG_ERROR(avcodec headers not found! Install FFmpeg or Libav.)
+fi
+
+AC_CHECK_LIB(avcodec, avcodec_version, USE_AVCODEC=1, USE_AVCODEC=0)
+if test ${USE_AVCODEC} = 0; then
+  AC_MSG_ERROR(libavcodec library not found! Install FFmpeg or Libav.)
+fi
+
+AC_CHECK_HEADERS([swscale.h libswscale/swscale.h ffmpeg/swscale.h libav/swscale.h ffmpeg/libswscale/swscale.h libav/libswscale/swscale.h], USE_SWSCALE=1, [], [-])
+if test "${USE_SWSCALE}" = "0"; then
+  AC_MSG_ERROR(swscale headers not found! Install FFmpeg or Libav.)
+fi
+
+AC_CHECK_LIB(swscale, sws_scale, USE_SWSCALE=1, USE_SWSCALE=0)
+if test "${USE_SWSCALE}" = "0"; then
+  AC_MSG_ERROR(swscale library not found! Install FFmpeg or Libav.)
+fi
+
+AC_LANG_POP([C])
+
+LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
+LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
+
+MCU_CPPFLAGS="$MCU_CPPFLAGS ${LIBAV_CPPFLAGS}"
+MCU_LDFLAGS="$MCU_LDFLAGS ${LIBAV_LDFLAGS}"
+MCU_RFLAGS="$MCU_RFLAGS ${LIBAV_LDFLAGS}"
+MCU_LDLIBS="$MCU_LDLIBS -lavcodec -lavutil -lavformat -lswscale"
+
+dnl ########################################################################
+dnl check for sofia-sip library
+
+AC_SUBST(USE_LIBSOFIA, 1)
+AC_SUBST(LIBSOFIA_DIR, ${top_srcdir}/libs/sofia-sip)
+AC_CONFIG_SUBDIRS(libs/sofia-sip)
+AM_CONDITIONAL(COMPILER_USE_LIBSOFIA, [test ${USE_LIBSOFIA} = 1])
+
+MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/sofia-sip/libsofia-sip-ua/.libs"
+MCU_LDLIBS="$MCU_LDLIBS -lsofia-sip-ua"
+MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
+                    -I../libs/sofia-sip/libsofia-sip-ua/docs \
+                    -I../libs/sofia-sip/libsofia-sip-ua/features \
+                    -I../libs/sofia-sip/libsofia-sip-ua/http \
+                    -I../libs/sofia-sip/libsofia-sip-ua/ipt \
+                    -I../libs/sofia-sip/libsofia-sip-ua/iptsec \
+                    -I../libs/sofia-sip/libsofia-sip-ua/msg \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nea \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nta \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nth \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nua \
+                    -I../libs/sofia-sip/libsofia-sip-ua/sdp \
+                    -I../libs/sofia-sip/libsofia-sip-ua/sip \
+                    -I../libs/sofia-sip/libsofia-sip-ua/soa \
+                    -I../libs/sofia-sip/libsofia-sip-ua/sresolv \
+                    -I../libs/sofia-sip/libsofia-sip-ua/stun \
+                    -I../libs/sofia-sip/libsofia-sip-ua/su \
+                    -I../libs/sofia-sip/libsofia-sip-ua/tport \
+                    -I../libs/sofia-sip/libsofia-sip-ua/url"
+
+dnl ########################################################################
+dnl check for resampling library
+
 AC_ARG_ENABLE(separator, [ ])
 AC_ARG_ENABLE(resample, [AS_HELP_STRING([--disable-resample],[Disable resampling (default enabled)],[40],[100])], [resample="$enableval"])
 AC_ARG_ENABLE(resampler-ffmpeg, [AS_HELP_STRING([--disable-resampler-ffmpeg],[Enable check only libswresample resampler(default auto)],[40],[100])], [resampler_ffmpeg="yes" resampler_libav="no" resampler_libsamplerate="no"])
 AC_ARG_ENABLE(resampler-libav, [AS_HELP_STRING([--disable-resampler-libav],[Enable check only libavresample resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="yes" resampler_libsamplerate="no"])
 AC_ARG_ENABLE(resampler-libsamplerate, [AS_HELP_STRING([--disable-resampler-libsamplerate],[Enable check only libsamplerate resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="no" resampler_libsamplerate="yes"])
+
+AC_SUBST(USE_SWRESAMPLE, 0)
+AC_SUBST(USE_AVRESAMPLE, 0)
+AC_SUBST(USE_LIBSAMPLERATE, 0)
+if test "${resample}" = "yes"; then
+  if test "${resampler_ffmpeg}" = "yes"; then
+    AC_CHECK_HEADERS(libswresample/swresample.h, SWRESAMPLE=1, SWRESAMPLE=0, [-])
+    if test "${SWRESAMPLE}" = "1"; then
+      AC_CHECK_LIB(swresample, swr_convert, SWRESAMPLE=1, SWRESAMPLE=0)
+    fi
+  fi
+  if test "${resampler_libav}" = "yes"; then
+    AC_CHECK_LIB(avresample, avresample_convert, AVRESAMPLE=1, AVRESAMPLE=0)
+  fi
+  if test "${resampler_libsamplerate}" = "yes"; then
+    AC_CHECK_LIB(samplerate, src_process, LIBSAMPLERATE=1, LIBSAMPLERATE=0)
+  fi
+
+  if test "${SWRESAMPLE}" = "1"; then
+    USE_SWRESAMPLE=1
+    MCU_LDLIBS="$MCU_LDLIBS -lswresample"
+  elif test "${AVRESAMPLE}" = "1"; then
+    USE_AVRESAMPLE=1
+    MCU_LDLIBS="$MCU_LDLIBS -lavresample"
+  elif test "${LIBSAMPLERATE}" = "1"; then
+    USE_LIBSAMPLERATE=1
+    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I samplerate`"
+    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L samplerate`"
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L samplerate`"
+    MCU_LDLIBS="$MCU_LDLIBS -lsamplerate"
+  else
+    AC_MSG_WARN(libswresample/libavresample/libsamplerate not found!)
+  fi
+fi
+
+dnl ########################################################################
+dnl check for freetype library
+
 AC_ARG_ENABLE(separator, [  ])
 AC_ARG_ENABLE(libfreetype, [AS_HELP_STRING([--disable-libfreetype],[Disable subtitles (default enabled)],[40],[100])], [libfreetype="$enableval"])
-AC_ARG_ENABLE(libjpeg, [AS_HELP_STRING([--enable-libjpeg],[Enable JPEG Frame Encoder for browser (default disabled)],[40],[100])], [libjpeg="$enableval"])
+
+AC_SUBST(USE_FREETYPE, 0)
+if test "${libfreetype}" = "yes"; then
+  AC_CHECK_HEADERS(freetype2/freetype/config/ftheader.h, USE_FREETYPE=1, USE_FREETYPE=0, [-])
+  if test ${USE_FREETYPE} = 0 ; then
+    AC_CHECK_HEADERS(freetype2/config/ftheader.h, USE_FREETYPE=1, USE_FREETYPE=0, [-])
+  fi
+  if test ${USE_FREETYPE} = 0 ; then
+    AC_MSG_ERROR(freetype headers not found!)
+  fi
+  AC_CHECK_LIB(freetype, FT_Library_Version, USE_FREETYPE=1, USE_FREETYPE=0)
+  if test ${USE_FREETYPE} = 0 ; then
+    AC_MSG_ERROR(freetype library not found!)
+  fi
+  if test ${USE_FREETYPE} = 1 ; then
+    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I freetype2`";
+    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L freetype2`";
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L freetype2`";
+    MCU_LDLIBS="$MCU_LDLIBS -lfreetype"
+  fi
+fi
+
+dnl ########################################################################
+dnl check for yuv library
+
 AC_ARG_ENABLE(libyuv, [AS_HELP_STRING([--disable-libyuv],[Disable libyuv to resize video (default enabled)],[40],[100])], [libyuv="$enableval"])
-AC_ARG_ENABLE(separator, [   ])
-AC_ARG_ENABLE(openssl, [AS_HELP_STRING([--disable-openssl],[Disable OpenSSL support (default enabled)],[40],[100])], [openssl="$enableval"])
-AC_ARG_ENABLE(libsrtp, [AS_HELP_STRING([--disable-libsrtp],[Disable SRTP support for SIP (default enabled)],[40],[100])], [libsrtp="$enableval"])
-AC_ARG_ENABLE(libzrtp, [AS_HELP_STRING([--enable-libzrtp],[Disable ZRTP support for SIP (default disabled)],[40],[100])], [libzrtp="$enableval"])
+
+AC_SUBST(USE_LIBYUV, 0)
+AC_SUBST(COMPILE_LIBYUV, 0)
+AC_SUBST(LIBYUV_DIR, ${top_srcdir}/libs/libyuv)
+if test "${libyuv}" = "yes"; then
+  if test ${USE_LIBYUV} = 0 ; then
+    AC_CHECK_FILE(/usr/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
+    if test ${USE_LIBYUV} = 1 ; then
+      AC_CHECK_FILE(/usr/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
+      if test ${USE_LIBYUV} = 1 ; then
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/include";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
+      fi
+    fi
+  fi
+  if test ${USE_LIBYUV} = 0 ; then
+    AC_CHECK_FILE(/usr/local/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
+    if test ${USE_LIBYUV} = 1 ; then
+      AC_CHECK_FILE(/usr/local/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
+      if test ${USE_LIBYUV} = 1 ; then
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/local/include";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/local/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
+      fi
+    fi
+  fi
+  if test ${USE_LIBYUV} = 0 ; then
+    AC_CHECK_FILE(${top_srcdir}/libs/libyuv/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
+    if test ${USE_LIBYUV} = 1; then
+      MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libyuv/include"
+      MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libyuv";
+      COMPILE_LIBYUV=1
+    fi
+  fi
+  if test ${USE_LIBYUV} = 1 ; then
+    MCU_LDLIBS="$MCU_LDLIBS -lyuv"
+  fi
+fi
+AM_CONDITIONAL(COMPILER_USE_LIBYUV, [test ${COMPILE_LIBYUV} = 1])
+
+dnl ########################################################################
+dnl check for jpeg library
+
+AC_ARG_ENABLE(libjpeg, [AS_HELP_STRING([--enable-libjpeg],[Enable JPEG Frame Encoder for browser (default disabled)],[40],[100])], [libjpeg="$enableval"])
+
+AC_SUBST(USE_LIBJPEG, 0)
+if test "${libjpeg}" = "yes"; then
+  AC_CHECK_HEADERS(jpeglib.h, USE_LIBJPEG=1, USE_LIBJPEG=0, [-])
+  if test ${USE_LIBJPEG} = 0 ; then
+    AC_MSG_ERROR(jpeg headers not found!)
+  fi
+  AC_CHECK_LIB(jpeg, jpeg_set_defaults, USE_LIBJPEG=1, USE_LIBJPEG=0)
+  if test ${USE_LIBJPEG} = 0 ; then
+    AC_MSG_ERROR(jpeg library not found!)
+  fi
+  if test ${USE_LIBJPEG} = 1 ; then
+    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libjpeg`";
+    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L libjpeg`";
+    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L libjpeg`";
+    MCU_LDLIBS="$MCU_LDLIBS -ljpeg"
+  fi
+fi
 
 dnl ########################################################################
 dnl configure openssl
+
+AC_ARG_ENABLE(separator, [   ])
+AC_ARG_ENABLE(openssl, [AS_HELP_STRING([--disable-openssl],[Disable OpenSSL support (default enabled)],[40],[100])], [openssl="$enableval"])
 
 AC_SUBST(USE_OPENSSL, 0)
 if test "${openssl}" = "yes"; then
@@ -383,10 +578,11 @@ fi
 dnl ########################################################################
 dnl configure srtp
 
+AC_ARG_ENABLE(libsrtp, [AS_HELP_STRING([--disable-libsrtp],[Disable SRTP support for SIP (default enabled)],[40],[100])], [libsrtp="$enableval"])
+
 AC_SUBST(USE_LIBSRTP, 0)
 AC_SUBST(COMPILE_LIBSRTP, 0)
 AC_SUBST(LIBSRTP_DIR, ${top_srcdir}/libs/srtp)
-
 if test "${libsrtp}" = "yes"; then
   if test ${USE_LIBSRTP} = 0 ; then
     AC_CHECK_FILE(/usr/include/srtp/srtp.h, USE_LIBSRTP=1, USE_LIBSRTP=0)
@@ -429,10 +625,11 @@ AM_CONDITIONAL(COMPILER_USE_LIBSRTP, [test ${COMPILE_LIBSRTP} = 1])
 dnl ########################################################################
 dnl configure srtp
 
+AC_ARG_ENABLE(libzrtp, [AS_HELP_STRING([--enable-libzrtp],[Disable ZRTP support for SIP (default disabled)],[40],[100])], [libzrtp="$enableval"])
+
 AC_SUBST(USE_LIBZRTP, 0)
 AC_SUBST(COMPILE_LIBZRTP, 0)
 AC_SUBST(LIBZRTP_DIR, ${top_srcdir}/libs/libzrtp)
-
 if test "${libzrtp}" = "yes"; then
   if test ${USE_LIBZRTP} = 0; then
     AC_CHECK_FILE(/usr/include/libzrtp/zrtp.h, USE_LIBZRTP=1, USE_LIBZRTP=0)
@@ -496,211 +693,6 @@ fi
 AM_CONDITIONAL(COMPILER_USE_LIBZRTP, [test ${COMPILE_LIBZRTP} = 1])
 
 dnl ########################################################################
-dnl check for freetype library
-
-AC_SUBST(USE_FREETYPE, 0)
-if test "${libfreetype}" = "yes"; then
-  AC_CHECK_HEADERS(freetype2/freetype/config/ftheader.h, USE_FREETYPE=1, USE_FREETYPE=0, [-])
-  if test ${USE_FREETYPE} = 0 ; then
-    AC_CHECK_HEADERS(freetype2/config/ftheader.h, USE_FREETYPE=1, USE_FREETYPE=0, [-])
-  fi
-  if test ${USE_FREETYPE} = 0 ; then
-    AC_MSG_ERROR(freetype headers not found!)
-  fi
-  AC_CHECK_LIB(freetype, FT_Library_Version, USE_FREETYPE=1, USE_FREETYPE=0)
-  if test ${USE_FREETYPE} = 0 ; then
-    AC_MSG_ERROR(freetype library not found!)
-  fi
-  if test ${USE_FREETYPE} = 1 ; then
-    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I freetype2`";
-    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L freetype2`";
-    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L freetype2`";
-    MCU_LDLIBS="$MCU_LDLIBS -lfreetype"
-  fi
-fi
-
-dnl ########################################################################
-dnl check for jpeg library
-
-AC_SUBST(USE_LIBJPEG, 0)
-if test "${libjpeg}" = "yes"; then
-  AC_CHECK_HEADERS(jpeglib.h, USE_LIBJPEG=1, USE_LIBJPEG=0, [-])
-  if test ${USE_LIBJPEG} = 0 ; then
-    AC_MSG_ERROR(jpeg headers not found!)
-  fi
-  AC_CHECK_LIB(jpeg, jpeg_set_defaults, USE_LIBJPEG=1, USE_LIBJPEG=0)
-  if test ${USE_LIBJPEG} = 0 ; then
-    AC_MSG_ERROR(jpeg library not found!)
-  fi
-  if test ${USE_LIBJPEG} = 1 ; then
-    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libjpeg`";
-    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L libjpeg`";
-    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L libjpeg`";
-    MCU_LDLIBS="$MCU_LDLIBS -ljpeg"
-  fi
-fi
-
-dnl ########################################################################
-dnl check for yuv library
-
-AC_SUBST(USE_LIBYUV, 0)
-AC_SUBST(COMPILE_LIBYUV, 0)
-AC_SUBST(LIBYUV_DIR, ${top_srcdir}/libs/libyuv)
-
-if test "${libyuv}" = "yes"; then
-  if test ${USE_LIBYUV} = 0 ; then
-    AC_CHECK_FILE(/usr/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
-    if test ${USE_LIBYUV} = 1 ; then
-      AC_CHECK_FILE(/usr/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
-      if test ${USE_LIBYUV} = 1 ; then
-        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/include";
-        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
-      fi
-    fi
-  fi
-  if test ${USE_LIBYUV} = 0 ; then
-    AC_CHECK_FILE(/usr/local/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
-    if test ${USE_LIBYUV} = 1 ; then
-      AC_CHECK_FILE(/usr/local/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
-      if test ${USE_LIBYUV} = 1 ; then
-        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/local/include";
-        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/local/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
-      fi
-    fi
-  fi
-  if test ${USE_LIBYUV} = 0 ; then
-    AC_CHECK_FILE(${top_srcdir}/libs/libyuv/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
-    if test ${USE_LIBYUV} = 1; then
-      MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libyuv/include"
-      MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libyuv";
-      COMPILE_LIBYUV=1
-    fi
-  fi
-  if test ${USE_LIBYUV} = 1 ; then
-    MCU_LDLIBS="$MCU_LDLIBS -lyuv"
-  fi
-fi
-AM_CONDITIONAL(COMPILER_USE_LIBYUV, [test ${COMPILE_LIBYUV} = 1])
-
-dnl ########################################################################
-dnl check for sofia-sip library
-
-AC_SUBST(USE_LIBSOFIA, 1)
-AC_SUBST(LIBSOFIA_DIR, ${top_srcdir}/libs/sofia-sip)
-AC_CONFIG_SUBDIRS(libs/sofia-sip)
-AM_CONDITIONAL(COMPILER_USE_LIBSOFIA, [test ${USE_LIBSOFIA} = 1])
-
-MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/sofia-sip/libsofia-sip-ua/.libs"
-MCU_LDLIBS="$MCU_LDLIBS -lsofia-sip-ua"
-MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
-                    -I../libs/sofia-sip/libsofia-sip-ua/docs \
-                    -I../libs/sofia-sip/libsofia-sip-ua/features \
-                    -I../libs/sofia-sip/libsofia-sip-ua/http \
-                    -I../libs/sofia-sip/libsofia-sip-ua/ipt \
-                    -I../libs/sofia-sip/libsofia-sip-ua/iptsec \
-                    -I../libs/sofia-sip/libsofia-sip-ua/msg \
-                    -I../libs/sofia-sip/libsofia-sip-ua/nea \
-                    -I../libs/sofia-sip/libsofia-sip-ua/nta \
-                    -I../libs/sofia-sip/libsofia-sip-ua/nth \
-                    -I../libs/sofia-sip/libsofia-sip-ua/nua \
-                    -I../libs/sofia-sip/libsofia-sip-ua/sdp \
-                    -I../libs/sofia-sip/libsofia-sip-ua/sip \
-                    -I../libs/sofia-sip/libsofia-sip-ua/soa \
-                    -I../libs/sofia-sip/libsofia-sip-ua/sresolv \
-                    -I../libs/sofia-sip/libsofia-sip-ua/stun \
-                    -I../libs/sofia-sip/libsofia-sip-ua/su \
-                    -I../libs/sofia-sip/libsofia-sip-ua/tport \
-                    -I../libs/sofia-sip/libsofia-sip-ua/url"
-
-dnl ########################################################################
-dnl check for video library
-
-AC_SUBST(USE_AVCODEC, 0)
-
-AC_LANG_PUSH([C])
-
-AC_CHECK_HEADERS([avcodec.h libavcodec/avcodec.h ffmpeg/avcodec.h libav/avcodec.h ffmpeg/libavcodec/avcodec.h libav/libavcodec/avcodec.h], USE_AVCODEC=1, [], [-])
-if test ${USE_AVCODEC} = 0; then
-  AC_MSG_ERROR(avcodec headers not found! Install FFmpeg or Libav.)
-fi
-
-AC_CHECK_LIB(avcodec, avcodec_version, USE_AVCODEC=1, USE_AVCODEC=0)
-if test ${USE_AVCODEC} = 0; then
-  AC_MSG_ERROR(libavcodec library not found! Install FFmpeg or Libav.)
-fi
-
-AC_LANG_POP([C])
-
-LIBAV_CPPFLAGS="$LIBAV_CPPFLAGS `pkg-config --silence-errors --cflags-only-I libavcodec`";
-LIBAV_LDFLAGS="$LIBAV_LDFLAGS `pkg-config --silence-errors --libs-only-L libavcodec`";
-
-MCU_CPPFLAGS="$MCU_CPPFLAGS ${LIBAV_CPPFLAGS}"
-MCU_LDFLAGS="$MCU_LDFLAGS ${LIBAV_LDFLAGS}"
-MCU_RFLAGS="$MCU_RFLAGS ${LIBAV_LDFLAGS}"
-MCU_LDLIBS="$MCU_LDLIBS -lavcodec -lavutil -lavformat"
-
-dnl ########################################################################
-dnl check for ffmpeg/libav swscale library
-
-AC_SUBST(USE_SWSCALE, 0)
-
-AC_LANG_PUSH([C])
-
-AC_CHECK_HEADERS([swscale.h libswscale/swscale.h ffmpeg/swscale.h libav/swscale.h ffmpeg/libswscale/swscale.h libav/libswscale/swscale.h], USE_SWSCALE=1, [], [-])
-if test "${USE_SWSCALE}" = "0"; then
-  AC_MSG_ERROR(swscale headers not found! Install FFmpeg or Libav.)
-fi
-
-AC_CHECK_LIB(swscale, sws_scale, USE_SWSCALE=1, USE_SWSCALE=0)
-if test "${USE_SWSCALE}" = "0"; then
-  AC_MSG_ERROR(swscale library not found! Install FFmpeg or Libav.)
-fi
-
-AC_LANG_POP([C])
-
-MCU_LDLIBS="$MCU_LDLIBS -lswscale"
-
-dnl ########################################################################
-dnl check for resampling library
-
-AC_SUBST(USE_SWRESAMPLE, 0)
-AC_SUBST(USE_AVRESAMPLE, 0)
-AC_SUBST(USE_LIBSAMPLERATE, 0)
-
-if test "${resample}" = "yes"; then
-  if test "${resampler_ffmpeg}" = "yes"; then
-    AC_CHECK_HEADERS(libswresample/swresample.h, SWRESAMPLE=1, SWRESAMPLE=0, [-])
-    if test "${SWRESAMPLE}" = "1"; then
-      AC_CHECK_LIB(swresample, swr_convert, SWRESAMPLE=1, SWRESAMPLE=0)
-    fi
-  fi
-  if test "${resampler_libav}" = "yes"; then
-    AC_CHECK_LIB(avresample, avresample_convert, AVRESAMPLE=1, AVRESAMPLE=0)
-  fi
-  if test "${resampler_libsamplerate}" = "yes"; then
-    AC_CHECK_LIB(samplerate, src_process, LIBSAMPLERATE=1, LIBSAMPLERATE=0)
-  fi
-
-  if test "${SWRESAMPLE}" = "1"; then
-    USE_SWRESAMPLE=1
-    MCU_LDLIBS="$MCU_LDLIBS -lswresample"
-  elif test "${AVRESAMPLE}" = "1"; then
-    USE_AVRESAMPLE=1
-    MCU_LDLIBS="$MCU_LDLIBS -lavresample"
-  elif test "${LIBSAMPLERATE}" = "1"; then
-    USE_LIBSAMPLERATE=1
-    MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I samplerate`"
-    MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L samplerate`"
-    MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L samplerate`"
-    MCU_LDLIBS="$MCU_LDLIBS -lsamplerate"
-  else
-    AC_MSG_WARN(libswresample/libavresample/libsamplerate not found!)
-  fi
-fi
-
-dnl ########################################################################
 dnl configuration plugins
 
 MCU_PLUGIN_DIR=${MCU_LIB_DIR}/ptlib
@@ -721,6 +713,7 @@ h263=yes
 h264=yes
 mpeg4=yes
 vp8=yes
+vp8_ffmpeg=yes
 g722=yes
 g7221=yes
 g7222=yes
@@ -738,6 +731,7 @@ AC_ARG_ENABLE(h263, [AS_HELP_STRING([--disable-h263],[Disable H.263 support (def
 AC_ARG_ENABLE(h264, [AS_HELP_STRING([--disable-h264],[Disable H.264 support (default enabled)],[40],[100])], [h264="$enableval"])
 AC_ARG_ENABLE(mpeg4, [AS_HELP_STRING([--disable-mpeg4],[Disable MPEG4 support (default enabled)],[40],[100])], [mpeg4="$enableval"])
 AC_ARG_ENABLE(vp8, [AS_HELP_STRING([--disable-vp8],[Disable VP8 support (default enabled)],[40],[100])], [vp8="$enableval"])
+AC_ARG_ENABLE(vp8_ffmpeg, [AS_HELP_STRING([--disable-vp8-ffmpeg],[Disable VP8 ffmpeg decoding (default enabled)],[40],[100])], [vp8_ffmpeg="$enableval"])
 AC_ARG_ENABLE(g722, [AS_HELP_STRING([--disable-g722],[Disable G.722 support (default enabled)],[40],[100])], [g722="$enableval"])
 AC_ARG_ENABLE(g7221, [AS_HELP_STRING([--disable-g7221],[Disable G.722.1 support (default enabled)],[40],[100])], [g7221="$enableval"])
 AC_ARG_ENABLE(g7222, [AS_HELP_STRING([--disable-g7222],[Disable G.722.2 support (default enabled)],[40],[100])], [g7222="$enableval"])
@@ -748,10 +742,6 @@ AC_ARG_ENABLE(ilbc, [AS_HELP_STRING([--disable-ilbc],[Disable iLBC support (defa
 AC_ARG_ENABLE(speex, [AS_HELP_STRING([--disable-speex],[Disable Speex support (default enabled)],[40],[100])], [speex="$enableval"])
 AC_ARG_ENABLE(silk, [AS_HELP_STRING([--disable-silk],[Disable SILK support (default enabled)],[40],[100])], [silk="$enableval"])
 AC_ARG_ENABLE(opus, [AS_HELP_STRING([--disable-opus],[Disable OPUS support (default enabled)],[40],[100])], [opus="$enableval"])
-
-vp8_ffmpeg=yes
-AC_ARG_ENABLE(separator, [    ])
-AC_ARG_ENABLE(vp8_ffmpeg, [AS_HELP_STRING([--disable-vp8-ffmpeg],[Disable VP8 ffmpeg decoding (default enabled)],[40],[100])], [vp8_ffmpeg="$enableval"])
 
 PLUGINS="h261 h263 h264 mpeg4 vp8 g722 g7221 g7222 g7231 g726 g729 ilbc silk opus"
 AC_SUBST(PLUGINS)
@@ -987,7 +977,6 @@ dnl configure static linking
 
 static=no
 AC_ARG_ENABLE(static, [AS_HELP_STRING([--enable-static],[build static linking with ptlib,h323plus (default disabled)],[40],[100])], [static="$enableval"])
-
 
 AC_SUBST(ENABLE_STATIC, 0)
 if test "${static}" = "yes"; then
