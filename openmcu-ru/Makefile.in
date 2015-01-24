@@ -29,58 +29,6 @@ PTLIBDIR        = @PTLIBDIR@
 include $(PTLIBDIR)/make/ptbuildopts.mak
 
 
-CONFIG_FILES= \
-layouts.conf \
-ffserver.conf \
-openmcu.ini
-
-RESOURCE_FILES= \
-i24_clr.gif \
-vad_chosenvan.gif \
-i20_close.gif \
-i24_left.gif \
-vad_disable.gif \
-i20_plus.gif \
-i24_mix.gif \
-mcu.gif \
-vad_vad.gif \
-i20_static.gif \
-i24_revert.gif \
-i15_inv.gif \
-i20_vad2.gif \
-i24_right.gif \
-launched.gif \
-i20_vad.gif \
-i24_shuff.gif \
-i15_getNoVideo.gif \
-logo_text.png \
-menu_left.png \
-connecting.wav \
-entering.wav \
-leaving.wav \
-template.html \
-control.js \
-status.js \
-local_en.js \
-local_fr.js \
-local_jp.js \
-local_pt.js \
-local_ru.js \
-local_uk.js \
-i16_close_gray.png \
-i16_close_red.png \
-main.css \
-i32_lock.png \
-i32_lockopen.png \
-s15_ch.png \
-s32_ch.png \
-i16_status_gray.png \
-i16_status_green.png \
-i16_status_blue.png \
-i16_status_red.png \
-i16_minus.png \
-i16_plus.png \
-
 OBJDIR	= ./obj
 OBJECTS = $(addprefix $(OBJDIR)/,$(patsubst %.c,%.o,$(patsubst %.cxx,%.o,$(notdir $(SOURCES)))))
 
@@ -105,30 +53,32 @@ install:
 	mkdir -p $(DESTDIR)@MCU_RECORDS_DIR@
 	mkdir -p $(DESTDIR)@MCU_RESOURCE_DIR@
 	mkdir -p $(DESTDIR)@MCU_SSL_DIR@
-	mkdir -p $(DESTDIR)@MCU_SSL_DIR@/example
-	( for file in ${CONFIG_FILES}; \
-	    do install -m 644 conf/$$file $(DESTDIR)@MCU_CONFIG_DIR@; \
+	mkdir -p $(DESTDIR)@MCU_DIR@/scripts
+	( for file in ./files/conf/*; do \
+	    install -m 644 $$file $(DESTDIR)@MCU_CONFIG_DIR@; \
 	done )
-	( for file in ${RESOURCE_FILES}; \
-	    do install -m 644 resource/$$file $(DESTDIR)@MCU_RESOURCE_DIR@; \
+	( for file in ./files/font/*; do \
+	    install -m 644 $$file $(DESTDIR)@MCU_FONT_DIR@; \
 	done )
-	install -m 755 conf/web_stream_start $(DESTDIR)@MCU_CONFIG_DIR@
+	( for file in ./files/resource/*; do \
+	    install -m 644 $$file $(DESTDIR)@MCU_RESOURCE_DIR@; \
+	done )
+	( for file in ./files/scripts/*; do \
+	    install -m 755 $$file $(DESTDIR)/opt/openmcu-ru/scripts; \
+	done )
 	install -m 755 $(OBJDIR)/$(PROG) $(DESTDIR)@MCU_BIN_DIR@
-	install -m 644 resource/Russo_One.ttf $(DESTDIR)@MCU_FONT_DIR@
+#	ln -sf $(DESTDIR)@MCU_BIN_DIR@/$(PROG) /usr/local/bin/$(PROG)
 	install -m 644 ../AUTHORS $(DESTDIR)@MCU_DIR@
 	install -m 644 ../COPYING $(DESTDIR)@MCU_DIR@
 	install -m 644 ../NEWS $(DESTDIR)@MCU_DIR@
 	install -m 644 ../README $(DESTDIR)@MCU_DIR@
-#	ln -sf $(DESTDIR)@MCU_BIN_DIR@/$(PROG) /usr/local/bin/$(PROG)
-	install -m 644 ssl/agent.pem $(DESTDIR)@MCU_SSL_DIR@
-	install -m 644 ssl/root.pem $(DESTDIR)@MCU_SSL_DIR@
-	install -m 755 ssl/example/make_cert.sh $(DESTDIR)@MCU_SSL_DIR@/example
 
 uninstall:
 	rm -rf $(DESTDIR)@MCU_FONT_DIR@
 	rm -rf $(DESTDIR)@MCU_LOG_DIR@
 	rm -rf $(DESTDIR)@MCU_PIPE_DIR@
 	rm -rf $(DESTDIR)@MCU_RESOURCE_DIR@
+	rm -rf $(DESTDIR)@MCU_DIR@/scripts
 	rm -f $(DESTDIR)@MCU_DIR@/AUTHORS
 	rm -f $(DESTDIR)@MCU_DIR@/COPYING
 	rm -f $(DESTDIR)@MCU_DIR@/NEWS
