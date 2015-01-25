@@ -376,6 +376,7 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
 
   s << NewRowColumn(JsLocal("name_roomname"));
   s << ColumnItem(JsLocal("name_auto_create"));
+  s << ColumnItem(RoomAutoCreateWhenConnectingKey);
   s << ColumnItem(JsLocal("name_force_split_video"));
   s << ColumnItem(JsLocal("name_auto_delete_empty"));
   s << ColumnItem(JsLocal("name_auto_record_start"));
@@ -384,6 +385,7 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
   s << ColumnItem(JsLocal("lock_tpl_default"));
   s << ColumnItem(JsLocal("name_time_limit"));
   optionNames.AppendString(RoomAutoCreateKey);
+  optionNames.AppendString(RoomAutoCreateWhenConnectingKey);
   optionNames.AppendString(ForceSplitVideoKey);
   optionNames.AppendString(RoomAutoDeleteEmptyKey);
   optionNames.AppendString(RoomAutoRecordStartKey);
@@ -412,6 +414,9 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
     // auto create
     if(name == "*") s << EmptyInputItem(name);
     else            s << SelectItem(name, scfg.GetString(RoomAutoCreateKey, ""), ",Enable,Disable");
+    // auto create when connecting
+    if(name == "*") s << SelectItem(name, scfg.GetString(RoomAutoCreateWhenConnectingKey, "Enable"), "Enable,Disable");
+    else            s << SelectItem(name, scfg.GetString(RoomAutoCreateWhenConnectingKey, ""), ",Enable,Disable");
     // split
     if(name == "*") s << SelectItem(name, scfg.GetString(ForceSplitVideoKey, "Enable"), "Enable,Disable");
     else            s << SelectItem(name, scfg.GetString(ForceSplitVideoKey, ""), ",Enable,Disable");
@@ -2584,8 +2589,9 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PString room = data("room");
     if(action == "create")
     {
-      Conference * conference = cm->MakeConferenceWithLock(room);
-      conference->Unlock();
+      Conference * conference = cm->MakeConferenceWithLock(room, "", TRUE);
+      if(conference)
+        conference->Unlock();
     }
     else if(action == "delete")
     {
@@ -2624,7 +2630,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PString room0 = conference->GetNumber().Trim();
 
       if(room0.IsEmpty()) continue;
-      if(room0.Left(MCU_INTERNAL_CALL_PREFIX.GetLength()) == MCU_INTERNAL_CALL_PREFIX) continue; // todo: use much more fast boolean check to determine int. call
+      if(room0.Find(MCU_INTERNAL_CALL_PREFIX) == 0) continue; // todo: use much more fast boolean check to determine int. call
       PINDEX lastCharPos=room0.GetLength()-1;
       PINDEX i, d1=-1, d2=-1;
       for (i=lastCharPos; i>=0; i--)

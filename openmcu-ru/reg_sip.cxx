@@ -147,18 +147,35 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   if(username_in == username_out)
     sep->SipReqReply(msg, NULL, 486); // SIP_486_BUSY_HERE
 
+  // default response
+  int response_code = 403; // SIP_403_FORBIDDEN
+
   RegistrarAccount *raccount_in = NULL;
   RegistrarAccount *raccount_out = NULL;
   RegistrarConnection *rconn = NULL;
 
   raccount_in = FindAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
+
   if(allow_internal_calls)
     raccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
 
-  if((!raccount_in && sip_allow_unauth_mcu_calls && !raccount_out) || (!raccount_in && sip_allow_unauth_internal_calls && raccount_out))
-    raccount_in = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
+  if(!raccount_out)
+  {
+    ConferenceManager *manager = OpenMCU::Current().GetConferenceManager();
+    if(!manager->CheckJoinConference(username_out))
+    {
+      response_code = 403; // SIP_403_FORBIDDEN
+      goto return_response;
+    }
+  }
 
-  int response_code = SipPolicyCheck(msg, msg_reply, raccount_in, raccount_out);
+  if((!raccount_in && sip_allow_unauth_mcu_calls && !raccount_out) ||
+     (!raccount_in && sip_allow_unauth_internal_calls && raccount_out))
+  {
+    raccount_in = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username_in);
+  }
+
+  response_code = SipPolicyCheck(msg, msg_reply, raccount_in, raccount_out);
   if(response_code)
     goto return_response;
 

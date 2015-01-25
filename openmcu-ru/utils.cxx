@@ -297,7 +297,7 @@ PString GetConferenceParam(PString room, PString param, PString defaultValue)
   }
 #endif
   // internal rooms
-  if(room.Left(MCU_INTERNAL_CALL_PREFIX.GetLength()) == MCU_INTERNAL_CALL_PREFIX)
+  if(room.Find(MCU_INTERNAL_CALL_PREFIX) == 0)
   {
     if(param == ForceSplitVideoKey)
       return "Disable";
@@ -615,25 +615,6 @@ void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height, unsi
   wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth*1000);
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-/*
-BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap)
-{
-  // creating conference if needed
-  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-  ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-  Conference *conference = manager.MakeConferenceWithLock(requestedRoom);
-
-  // starting new cache thread
-  unsigned videoMixerNumber=0;
-  new ConferenceCacheMember(conference, cap->GetMediaFormat(), videoMixerNumber);
-
-  // unlock conference
-  conference->Unlock();
-
-  return TRUE;
-}
-*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL CheckCapability(const PString & formatName)

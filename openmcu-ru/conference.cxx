@@ -90,12 +90,32 @@ Conference * ConferenceManager::FindConferenceWithLock(long id)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PString name)
+BOOL ConferenceManager::CheckJoinConference(const PString & room)
+{
+  Conference * conference = FindConferenceWithLock(room);
+  if(conference)
+  {
+    conference->Unlock();
+    return TRUE;
+  }
+  return GetConferenceParam(room, RoomAutoCreateWhenConnectingKey, TRUE);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PString name, BOOL ignoreRestriction)
 {
   PWaitAndSignal m(conferenceListMutex);
   Conference * conference = FindConferenceWithLock(room);
   if(conference == NULL)
   {
+    if(room.Find(MCU_INTERNAL_CALL_PREFIX) == 0)
+      ignoreRestriction = TRUE;
+    if(ignoreRestriction == FALSE && GetConferenceParam(room, RoomAutoCreateWhenConnectingKey, TRUE) == FALSE)
+    {
+      PTRACE(1, "error");
+      return NULL;
+    }
     // create the conference
     long id = conferenceList.GetNextID();
     OpalGloballyUniqueID conferenceID;

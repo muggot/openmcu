@@ -277,14 +277,12 @@ class MCUH323Connection : public H323Connection
     virtual BOOL OnH245_MiscellaneousCommand(const H245_MiscellaneousCommand & pdu /* Received PDU */ );
     virtual void AttachSignalChannel(const PString & token, H323Transport * channel, BOOL answeringCall);
     virtual BOOL OpenAudioChannel(BOOL, unsigned, H323AudioCodec & codec);
-    virtual void OpenAudioCache(const OpalMediaFormat & format, const PString & cacheName);
 
     virtual BOOL OnStartLogicalChannel(H323Channel & channel);
     virtual void OnClosedLogicalChannel(const H323Channel & channel);
 
 #if MCU_VIDEO
     virtual BOOL OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec);
-    virtual void OpenVideoCache(const OpalMediaFormat & format, const PString & cacheName);
 #endif
 
     virtual void OnCreated();
