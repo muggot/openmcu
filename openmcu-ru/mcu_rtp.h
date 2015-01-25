@@ -3,7 +3,6 @@
 #define _MCU_RTP_H
 
 #include <ptlib.h>
-#include <ptclib/cypher.h>
 
 #include <channels.h>
 #include <h323rtp.h>
@@ -11,32 +10,7 @@
 
 #include "config.h"
 #include "utils.h"
-
-#if MCUSIP_SRTP
-  #include "srtp.h"
-#endif
-
-#if MCUSIP_ZRTP
-  #include "zrtp.h"
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define STRP_TRACING 1
-#define STRP_TRACING_LEVEL 6
-
-#define ZTRP_TRACING 1
-#define ZTRP_TRACING_LEVEL 6
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-static const PString AES_CM_128_HMAC_SHA1_80("AES_CM_128_HMAC_SHA1_80");
-static const PString AES_CM_128_HMAC_SHA1_32("AES_CM_128_HMAC_SHA1_32");
-
-void sip_rtp_init();
-void sip_rtp_shutdown();
-
-PString srtp_get_random_keysalt();
+#include "mcu_rtp_secure.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -428,45 +402,6 @@ class MCUSIP_RTPChannel : public MCU_RTPChannel
     virtual BOOL Start();
     virtual void CleanUpOnTermination();
 };
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if MCUSIP_SRTP
-class SipSRTP
-{
-  public:
-    SipSRTP()
-    {
-      memset(&m_policy, 0, sizeof(m_policy));
-      m_policy.next = NULL;
-      SetCryptoPolicy(AES_CM_128_HMAC_SHA1_80);
-    };
-    ~SipSRTP()
-    {
-      srtp_dealloc(m_session);
-    };
-
-    BOOL Init(const PString & crypto, const PString & key_str);
-    BOOL SetCryptoPolicy(const PString & crypto);
-    BOOL SetKey(const PString & key_str);
-    BOOL SetKey(const PBYTEArray & key_salt);
-    void SetRandomKey();
-    PString GetKey() const;
-    srtp_t & GetSession() { return m_session; };
-
-  protected:
-    srtp_profile_t    m_profile;
-    srtp_t            m_session;
-    srtp_policy_t     m_policy;
-
-    PBYTEArray        m_key;
-    PBYTEArray        m_salt;
-    PINDEX            m_key_bits;
-    PINDEX            m_key_length;
-    PINDEX            m_salt_bits;
-    PINDEX            m_salt_length;
-};
-#endif // MCUSIP_SRTP
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

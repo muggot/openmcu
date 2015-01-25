@@ -768,11 +768,11 @@ int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
     }
     session->CreateZRTP();
   }
-  else if(sc->secure_type == SECURE_TYPE_DTLS_SRTP)
+  if(sc->secure_type == SECURE_TYPE_DTLS_SRTP)
   {
     //session->CreateDTLS(rtp_dir, sc->dtls_fp_type, sc->dtls_fp);
   }
-  else if(sc->secure_type == SECURE_TYPE_SRTP)
+  if(sc->secure_type == SECURE_TYPE_SRTP)
   {
     if(sc->srtp_local_key == "")
     {
@@ -1798,11 +1798,10 @@ int MCUSipConnection::ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & Remo
 
       SipSecureTypes secure_type = SECURE_TYPE_NONE;
       PString srtp_type, srtp_key, srtp_param, zrtp_hash, dtls_fp, dtls_fp_type;
-      if(rtp_proto == "ZRTP")
-        secure_type = SECURE_TYPE_ZRTP;
 
-      if(m_proto_name == "RTP/AVP" && secure_type == SECURE_TYPE_ZRTP)
+      if(m_proto_name == "RTP/AVP" && rtp_proto == "ZRTP")
       {
+        secure_type = SECURE_TYPE_ZRTP;
         sdp_attribute_t *a = sdp_attribute_find(m->m_attributes, "zrtp-hash");
         if(a && a->a_value)
           zrtp_hash = PString(a->a_value);

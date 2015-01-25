@@ -179,13 +179,21 @@ static const char DefaultProtocolKey[]    = "Default protocol for outgoing calls
 
 static const char RejectDuplicateNameKey[] = "Reject duplicate name";
 
+static const char RtpProtoKey[]            = "RTP proto";
+static const char RtpProtoSelect[]         = ",RTP"
+#if MCUSIP_SRTP
+                                             ",SRTP,SRTP/RTP"
+#endif
+#if MCUSIP_ZRTP
+                                             ",ZRTP"
+#endif
+                                             ;
+
 static const char HostKey[]                = "Host";
 static const char PortKey[]                = "Port";
 static const char AddressKey[]             = "Address";
 static const char ExpiresKey[]             = "Expires";
 static const char TransportKey[]           = "Transport";
-static const char RtpProtoKey[]            = "RTP proto";
-static const char RtpProtoSelect[]         = ",RTP,ZRTP,SRTP,SRTP/RTP";
 static const char AudioCodecKey[]          = "Audio codec";
 static const char VideoCodecKey[]          = "Video codec";
 static const char VideoResolutionKey[]     = "Video resolution";

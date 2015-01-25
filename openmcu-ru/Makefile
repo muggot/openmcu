@@ -8,7 +8,8 @@ MACHTYPE	= x86
 PROG		= openmcu-ru
 SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx \
                    utils.cxx utils_av.cxx \
-                   mcu_rtp.cxx reg.cxx reg_sip.cxx reg_h323.cxx rtsp.cxx recorder.cxx mcu_caps.cxx mcu_codecs.cxx
+                   mcu_rtp.cxx mcu_rtp_secure.cxx \
+                   reg.cxx reg_sip.cxx reg_h323.cxx rtsp.cxx recorder.cxx mcu_caps.cxx mcu_codecs.cxx
 
 CXX		= g++
 CFLAGS         += -g -g -O2 -Os
