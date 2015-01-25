@@ -3311,10 +3311,8 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
     audioReceiveChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
     audioReceiveCodecName = codec.GetMediaFormat() + "@" + PString(sampleRate) + "/" +PString(channels);
 
-    if(GetEndpointParam(AudioDeJitterKey, EnableKey) == EnableKey)
-      audioReceiveChannel->SetAudioJitterEnable(true);
-    else
-      audioReceiveChannel->SetAudioJitterEnable(false);
+    //if(GetEndpointParam(AudioDeJitterKey, EnableKey) == DisableKey)
+    //  audioReceiveChannel->SetAudioJitterEnable(false);
 
     codec.AttachChannel(new IncomingAudio(*this, sampleRate, channels), TRUE);
   }

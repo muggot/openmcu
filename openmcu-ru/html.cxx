@@ -789,7 +789,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(HostKey);
   optionNames.AppendString(PortKey);
-  optionNames.AppendString(AudioDeJitterKey);
 
   optionNames.AppendString(FrameRateFromKey);
   optionNames.AppendString(BandwidthFromKey);
@@ -918,8 +917,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       else            s2 += rowArray+JsLocal("name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
       //
       s2 += rowArray+"H.323 "+JsLocal("name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
-      // Audio de-jitter
-      s2 += rowArray+"Audio de-jitter"+SelectItem(name, scfg.GetString(AudioDeJitterKey), ",Enable,Disable", 70)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       //
