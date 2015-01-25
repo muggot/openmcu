@@ -100,8 +100,6 @@ int GetConferenceParam(PString room, PString param, int defaultValue);
 
 char * PStringToChar(PString str);
 
-//BOOL CreateCustomVideoCache(PString requestedRoom, H323Capability *cap);
-
 BOOL CheckCapability(const PString & formatName);
 BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionType = CONNECTION_TYPE_NONE);
 

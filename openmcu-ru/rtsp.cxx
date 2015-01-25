@@ -790,6 +790,9 @@ BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
   // creating conference if needed
   ConferenceManager *manager = OpenMCU::Current().GetConferenceManager();
   conference = manager->MakeConferenceWithLock(requestedRoom);
+  if(conference == NULL)
+    return FALSE;
+
   conferenceMember = new ConferenceStreamMember(conference, GetCallToken(), "RTSP "+rtsp_path+" ("+ruri_str+")");
 
    // unlock conference

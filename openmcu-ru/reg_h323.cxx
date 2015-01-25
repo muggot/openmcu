@@ -21,7 +21,8 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
   PString username_in = url.GetUserName();
   PString username_out = conn->GetRequestedRoom();
 
-  H323Connection::AnswerCallResponse response = H323Connection::AnswerCallDenied; // default response
+  // default response
+  H323Connection::AnswerCallResponse response = H323Connection::AnswerCallDenied;
 
   RegistrarAccount *raccount_in = NULL;
   RegistrarAccount *raccount_out = NULL;
@@ -38,6 +39,17 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
       goto return_response;
     }
   }
+
+  if(!raccount_out)
+  {
+    ConferenceManager *manager = OpenMCU::Current().GetConferenceManager();
+    if(!manager->CheckJoinConference(username_out))
+    {
+      response = H323Connection::AnswerCallDenied;
+      goto return_response;
+    }
+  }
+
   if((!raccount_in && h323_allow_unreg_mcu_calls && !raccount_out) ||
      (!raccount_in && h323_allow_unreg_internal_calls && raccount_out))
   {

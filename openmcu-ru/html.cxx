@@ -784,7 +784,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(HostKey);
   optionNames.AppendString(PortKey);
-  optionNames.AppendString(AudioDeJitterKey);
 
   optionNames.AppendString(FrameRateFromKey);
   optionNames.AppendString(BandwidthFromKey);
@@ -913,8 +912,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       else            s2 += rowArray+JsLocal("name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
       //
       s2 += rowArray+"H.323 "+JsLocal("name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
-      // Audio de-jitter
-      s2 += rowArray+"Audio de-jitter"+SelectItem(name, scfg.GetString(AudioDeJitterKey), ",Enable,Disable", 70)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       //
@@ -2584,8 +2581,9 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PString room = data("room");
     if(action == "create")
     {
-      Conference * conference = cm->MakeConferenceWithLock(room);
-      conference->Unlock();
+      Conference * conference = cm->MakeConferenceWithLock(room, "", TRUE);
+      if(conference)
+        conference->Unlock();
     }
     else if(action == "delete")
     {
@@ -2624,7 +2622,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PString room0 = conference->GetNumber().Trim();
 
       if(room0.IsEmpty()) continue;
-      if(room0.Left(MCU_INTERNAL_CALL_PREFIX.GetLength()) == MCU_INTERNAL_CALL_PREFIX) continue; // todo: use much more fast boolean check to determine int. call
+      if(room0.Find(MCU_INTERNAL_CALL_PREFIX) == 0) continue; // todo: use much more fast boolean check to determine int. call
       PINDEX lastCharPos=room0.GetLength()-1;
       PINDEX i, d1=-1, d2=-1;
       for (i=lastCharPos; i>=0; i--)

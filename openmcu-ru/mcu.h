@@ -69,7 +69,6 @@ static const char TraceRotateKey[]        = "Rotate trace files at startup";
 static const char UserNameKey[]           = "Username";
 static const char PasswordKey[]           = "Password";
 static const char DisplayNameKey[]        = "Display name";
-static const char RoomNameKey[]           = "Room";
 
 static PString EnableKey                  = "Enable";
 static PString DisableKey                 = "Disable";
@@ -85,7 +84,9 @@ static const char HTTPSecureKey[]           = "Enable HTTP secure";
 static const char HTTPCertificateFileKey[]  = "HTTP Certificate";
 static PString DefaultHTTPCertificateFile   = PString(SYS_SSL_DIR)+PString(PATH_SEPARATOR)+"http.pem";
 #endif
-static const char DefaultRoomKey[]          = "Default room";
+
+static const char RoomNameKey[]            = "Room";
+static const char DefaultRoomKey[]         = "Default room";
 
 static const char DefaultCallLogFilename[] = "mcu_log.txt"; 
 static const char DefaultRoom[]            = "room101";
@@ -129,6 +130,7 @@ static const int  DefaultRecorderAudioChans   = 1;
 // room parameters
 static const char ForceSplitVideoKey[]          = "Force split screen video";
 static const char RoomAutoCreateKey[]           = "Auto create";
+static const char RoomAutoCreateWhenConnectingKey[] = "Auto create when connecting";
 static const char RoomAutoDeleteEmptyKey[]      = "Auto delete empty";
 static const char RoomAutoRecordStartKey[]      = "Auto record start";
 static const char RoomAutoRecordStopKey[]       = "Auto record stop";

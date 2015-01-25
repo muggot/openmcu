@@ -3212,107 +3212,26 @@ void MCUH323Connection::SendLogicalChannelMiscIndication(H323Channel & channel, 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize */, H323AudioCodec & codec)
+PString MCUH323Connection::GetEndpointParam(PString param, PString defaultValue, bool asterisk)
 {
-  PWaitAndSignal m(channelsMutex);
+  PString value = GetEndpointParam(param, asterisk);
+  if(value == "")
+    return defaultValue;
+  return value;
+}
 
-  const OpalMediaFormat & mf = codec.GetMediaFormat();
-  unsigned sampleRate = mf.GetTimeUnits() * 1000;
-  unsigned channels = 1;
-  if(isEncoding)
-    channels = mf.GetOptionInteger(OPTION_ENCODER_CHANNELS, 1);
-  else
-    channels = mf.GetOptionInteger(OPTION_DECODER_CHANNELS, 1);
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  codec.SetSilenceDetectionMode(H323AudioCodec::NoSilenceDetection);
-
-  if(isEncoding)
+PString MCUH323Connection::GetEndpointParam(PString param, bool asterisk)
+{
+  PString url = remotePartyAddress;
+  if(connectionType == CONNECTION_TYPE_H323)
   {
-    audioTransmitChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
-    audioTransmitCodecName = mf + "@" + PString(sampleRate) + "/" +PString(channels);
-
-    // check cache mode
-    BOOL enableCache = FALSE;
-    if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_STREAM)
-      enableCache = TRUE;
-    if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_CACHE)
-      enableCache = FALSE;
-
-    // setup cache
-    if(enableCache)
-    {
-      // update format string
-      audioTransmitCodecName = audioTransmitCodecName + "_" + requestedRoom;
-      OpenAudioCache(mf, audioTransmitCodecName);
-      audioTransmitChannel->SetCacheName(audioTransmitCodecName);
-      audioTransmitChannel->SetCacheMode(2);
-    }
-
-    codec.AttachChannel(new OutgoingAudio(*this, sampleRate, channels), TRUE);
-
-  } else {
-    audioReceiveChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
-    audioReceiveCodecName = codec.GetMediaFormat() + "@" + PString(sampleRate) + "/" +PString(channels);
-
-    if(GetEndpointParam(AudioDeJitterKey, EnableKey) == EnableKey)
-      audioReceiveChannel->SetAudioJitterEnable(true);
-    else
-      audioReceiveChannel->SetAudioJitterEnable(false);
-
-    codec.AttachChannel(new IncomingAudio(*this, sampleRate, channels), TRUE);
+    PINDEX pos = url.Find("ip$");
+    if(pos != P_MAX_INDEX) url=url.Mid(pos+3);
+    url = GetRemoteNumber()+"@"+url;
   }
-
-  return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUH323Connection::OpenAudioCache(const OpalMediaFormat & format, const PString & cacheName)
-{
-  PWaitAndSignal m(cacheRTPListMutex);
-
-  if(FindCacheRTP(cacheName))
-    return;
-
-  ConferenceManager & manager = ep.GetConferenceManager();
-  Conference *c = manager.FindConferenceWithLock(conference);
-  if(c == NULL)
-    c = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
-
-  PTRACE(2, trace_section << "OpenAudioCache " << cacheName);
-
-  new ConferenceCacheMember(c, 0, format, cacheName);
-
-  // unlock conference
-  c->Unlock();
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUH323Connection::OpenVideoCache(const OpalMediaFormat & format, const PString & cacheName)
-{
-  PWaitAndSignal m(cacheRTPListMutex);
-
-  if(FindCacheRTP(cacheName))
-    return;
-
-  ConferenceManager & manager = ep.GetConferenceManager();
-  Conference *c = manager.FindConferenceWithLock(conference);
-  if(c == NULL)
-    c = manager.MakeConferenceWithLock(requestedRoom); // creating conference if needed
-
-  // starting new cache thread
-  unsigned videoMixerNumber = 0;
-  PINDEX slashPos = cacheName.Find("/");
-  if(slashPos != P_MAX_INDEX)
-    videoMixerNumber = atoi(cacheName.Mid(slashPos+1, P_MAX_INDEX));
-
-  PTRACE(2, trace_section << "OpenVideoCache " << cacheName);
-
-  new ConferenceCacheMember(c, videoMixerNumber, format, cacheName);
-
-  // unlock conference
-  c->Unlock();
+  return GetSectionParamFromUrl(param, url, asterisk);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3349,26 +3268,56 @@ void MCUH323Connection::SetEndpointDefaultVideoParams(H323VideoCodec & codec)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString MCUH323Connection::GetEndpointParam(PString param, PString defaultValue, bool asterisk)
+BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize */, H323AudioCodec & codec)
 {
-  PString value = GetEndpointParam(param, asterisk);
-  if(value == "")
-    return defaultValue;
-  return value;
-}
+  PWaitAndSignal m(channelsMutex);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+  const OpalMediaFormat & mf = codec.GetMediaFormat();
+  unsigned sampleRate = mf.GetTimeUnits() * 1000;
+  unsigned channels = 1;
+  if(isEncoding)
+    channels = mf.GetOptionInteger(OPTION_ENCODER_CHANNELS, 1);
+  else
+    channels = mf.GetOptionInteger(OPTION_DECODER_CHANNELS, 1);
 
-PString MCUH323Connection::GetEndpointParam(PString param, bool asterisk)
-{
-  PString url = remotePartyAddress;
-  if(connectionType == CONNECTION_TYPE_H323)
+  codec.SetSilenceDetectionMode(H323AudioCodec::NoSilenceDetection);
+
+  if(isEncoding)
   {
-    PINDEX pos = url.Find("ip$");
-    if(pos != P_MAX_INDEX) url=url.Mid(pos+3);
-    url = GetRemoteNumber()+"@"+url;
+    audioTransmitChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
+    audioTransmitCodecName = mf + "@" + PString(sampleRate) + "/" +PString(channels);
+
+    // check cache mode
+    BOOL enableCache = FALSE;
+    if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_STREAM)
+      enableCache = TRUE;
+    if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_CACHE)
+      enableCache = FALSE;
+
+    // setup cache
+    if(enableCache)
+    {
+      // update format string
+      audioTransmitCodecName = audioTransmitCodecName + "_" + requestedRoom;
+      if(!OpenAudioCache(requestedRoom, mf, audioTransmitCodecName))
+        return FALSE;
+      audioTransmitChannel->SetCacheName(audioTransmitCodecName);
+      audioTransmitChannel->SetCacheMode(2);
+    }
+
+    codec.AttachChannel(new OutgoingAudio(*this, sampleRate, channels), TRUE);
+
+  } else {
+    audioReceiveChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
+    audioReceiveCodecName = codec.GetMediaFormat() + "@" + PString(sampleRate) + "/" +PString(channels);
+
+    //if(GetEndpointParam(AudioDeJitterKey, EnableKey) == DisableKey)
+    //  audioReceiveChannel->SetAudioJitterEnable(false);
+
+    codec.AttachChannel(new IncomingAudio(*this, sampleRate, channels), TRUE);
   }
-  return GetSectionParamFromUrl(param, url, asterisk);
+
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3472,7 +3421,8 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     if(cacheMode == 2)
     {
       videoTransmitCodecName = videoTransmitCodecName + "_" + requestedRoom + "/" + (PString)videoMixerNumber;
-      OpenVideoCache(codec.GetMediaFormat(), videoTransmitCodecName);
+      if(!OpenVideoCache(requestedRoom, codec.GetMediaFormat(), videoTransmitCodecName))
+        return FALSE;
       videoTransmitChannel->SetCacheName(videoTransmitCodecName);
       videoTransmitChannel->SetCacheMode(2);
     }
