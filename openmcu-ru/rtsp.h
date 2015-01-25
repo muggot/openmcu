@@ -204,6 +204,8 @@ class ConferenceStreamMember : public ConferenceMember
     }
     ~ConferenceStreamMember()
     {
+      if(conference)
+        conference->RemoveMember(this);
     }
 
     virtual void Close();
