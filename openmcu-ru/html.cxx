@@ -783,10 +783,11 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
+  optionNames.AppendString(RoomNameKey);
+  optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(PasswordKey);
   optionNames.AppendString("H.323 call processing");
 
-  optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(HostKey);
   optionNames.AppendString(PortKey);
 
@@ -886,10 +887,9 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += NewItemArray(name, 25);
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+"H.323 call processing"+SelectItem(name, scfg.GetString("H.323 call processing", "direct"), "full,direct")+"</tr>";
       s2 += EndItemArray();
       s << s2;
@@ -898,10 +898,10 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += NewItemArray(name);
       s2 += rowArray+JsLocal("name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
       s2 += rowArray+JsLocal("name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
+      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
+      s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
       s2 += rowArray+"H.323 call processing"+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -909,9 +909,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     {
       PString s2;
       s2 += NewItemArray(name, 25);
-      //
-      if(name == "*") s2 += rowArray+JsLocal("name_display_name")+StringItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       //
       if(name == "*") s2 += rowArray+JsLocal("name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
       else            s2 += rowArray+JsLocal("name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
@@ -1076,6 +1073,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
+  optionNames.AppendString(RoomNameKey);
   optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(PasswordKey);
   optionNames.AppendString("Ping interval");
@@ -1189,6 +1187,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += NewItemArray(name, 25);
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString(PingIntervalKey, ""), PingIntervalSelect)+"</tr>";
@@ -1200,6 +1199,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += NewItemArray(name);
       s2 += rowArray+JsLocal("name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
       s2 += rowArray+JsLocal("name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
+      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
       s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString(PingIntervalKey, ""), PingIntervalSelect)+"</tr>";
@@ -1231,6 +1231,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
         stun_list = stun_name+","+stun_list;
       s2 += rowArray+PString(NATStunServerKey)+SelectItem(name, stun_name, stun_list)+"</tr>";
       //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1251,6 +1252,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       // Video cache
       s2 += rowArray+"Video cache"+SelectItem(name, scfg.GetString(VideoCacheKey), ",Enable,Disable", 70)+"</tr>";
       //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1290,6 +1292,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+(JsLocal("name_video")+" fmtp")+StringItem(name, scfg.GetString("Video fmtp"))+"</tr>";
       //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;

@@ -86,12 +86,11 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
   if(!raccount_out)
   {
     rconn->account_type_in = raccount_in->account_type;
-    rconn->roomname = conn->GetRequestedRoom();
     rconn->state = CONN_MCU_WAIT;
     response = H323Connection::AnswerCallNow;
   } else {
     rconn->roomname = MCU_INTERNAL_CALL_PREFIX + OpalGloballyUniqueID().AsString();
-    conn->SetRequestedRoom(rconn->roomname);
+    //conn->SetRequestedRoom(rconn->roomname);
     rconn->state = CONN_WAIT;
     response = H323Connection::AnswerCallPending;
   }

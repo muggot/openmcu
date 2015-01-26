@@ -142,6 +142,9 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username_in = url.GetUserName();
   PString username_out = sip->sip_to->a_url->url_user;
+  // remove prefix, maybe bug on the terminal
+  username_out.Replace("sip:","",TRUE,0);
+
   msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
 
   if(username_in == username_out)

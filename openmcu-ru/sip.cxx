@@ -482,12 +482,15 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   MCUURL remote_url(ruri_str);
 
   // local contact
-  local_user = local_url.GetUserName();
-  if(local_user == "")
-  {
-    local_user = OpenMCU::Current().GetDefaultRoomName();
-    local_url.SetUserName(local_user);
-  }
+  requestedRoom = local_url.GetUserName();
+  // remove prefix, maybe bug on the terminal
+  requestedRoom.Replace("sip:","",TRUE,0);
+  // default room name
+  if(requestedRoom == "")
+    requestedRoom = OpenMCU::Current().GetDefaultRoomName();
+  // set contact username
+  local_url.SetUserName(requestedRoom);
+
   // nat ip for contact
   if(nat_ip != local_ip)
     local_url.SetHostName(nat_ip);
@@ -497,9 +500,6 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
 
   // final local contact
   contact_str = local_url.GetUrl();
-
-  // requested room
-  requestedRoom = local_user;
 
   // create call leg
   leg = nta_leg_tcreate(sep->GetAgent(), wrap_invite_request_cb, (nta_leg_magic_t *)this,
@@ -1142,7 +1142,7 @@ PString MCUSipConnection::CreateSdpStr(SipCapMapType & LocalCaps)
   sess->sdp_connection = c;
   sess->sdp_subject = "Talk";
 
-  o->o_username = PStringToChar(local_user);
+  o->o_username = PStringToChar(requestedRoom);
   o->o_id = rand();
   o->o_version = 1;
   o->o_address = c;
@@ -2017,8 +2017,6 @@ int MCUSipConnection::ProcessConnect()
   SetMemberName();
   // override requested room from registrar
   SetRequestedRoom();
-  // remove prefix from requested room, maybe bug on the terminal
-  requestedRoom.Replace("sip:","",TRUE,0);
   // join conference
   OnEstablished();
   if(!conference || !conferenceMember || !conferenceMember->IsJoined())

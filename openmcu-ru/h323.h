@@ -495,6 +495,7 @@ class MCUH323Connection : public H323Connection
     unsigned int vfuCount;         // count requests for interval
     unsigned int vfuTotalCount;    // count total requests
 
+    Directions direction;
     PString trace_section;
 
     PString dtmfBuffer;

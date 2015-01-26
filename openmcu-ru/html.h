@@ -27,6 +27,8 @@ class TablePConfigPage : public PConfigPage
       firstEditRow = 1;
       firstDeleteRow = 1;
       tableId = 0;
+      PString itemSize = "16";
+      PString fontSize = "12";
       buttonUp = buttonDown = buttonClone = buttonDelete = FALSE;
       colStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-right:inherit;";
       rowStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
@@ -34,13 +36,13 @@ class TablePConfigPage : public PConfigPage
       itemStyle = "<td align='left' valign='top' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
       itemInfoStyle = "<td rowspan='%ROWSPAN%' align='left' valign='top' style='background-color:"+itemInfoColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
       textStyle = "font-size:13px;margin:2px 0px 2px 0px;padding:0px 3px 0px 3px;";
-      inputStyle = "font-size:12px;height:16px;margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;";
-      selectStyle = "font-size:12px;height:16px;margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
-      buttonStyle = "font-size:12px;height:auto;width:14px;margin:2px 1px 2px 1px;border-radius:0px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
+      inputStyle = "font-size:"+fontSize+"px;height:"+itemSize+"px;margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;";
+      selectStyle = "font-size:"+fontSize+"px;height:"+itemSize+"px;margin:2px 0px 2px 0px;padding:3px 3px 3px 3px;border-radius:0px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
+      buttonStyle = "font-size:"+fontSize+"px;height:"+itemSize+"px;width:14px;margin:2px 1px 2px 1px;padding:2px 4px 4px 4px;border-radius:0px;box-sizing:content-box;-ms-box-sizing:content-box;-moz-box-sizing:content-box;-webkit-box-sizing:content-box;";
       checkboxStyle = "margin-top:8px;margin-bottom:8px;margin-left:3px;";
       rowBorders = FALSE;
       rowBordersStyle = "3px ridge;";
-      rowArray = "<tr valign='middle'><td align='left' style='font-size:12px;background-color:"+itemColor+";padding:0px 4px 0px 4px;line-height:100%;'>";
+      rowArray = "<tr valign='middle'><td align='left' style='font-size:"+fontSize+"px;background-color:"+itemColor+";padding:0px 4px 0px 4px;line-height:100%;'>";
 
       js_filters =
         "function FilterIp(obj)     { obj.value = obj.value.replace(/[^0-9\\.]/g,''); }"

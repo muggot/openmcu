@@ -2521,6 +2521,11 @@ MCUH323Connection::~MCUH323Connection()
 
 void MCUH323Connection::AttachSignalChannel(const PString & token, H323Transport * channel, BOOL answeringCall)
 {
+  if(answeringCall)
+    direction = DIRECTION_INBOUND;
+  else
+    direction = DIRECTION_OUTBOUND;
+
   callToken = token;
   trace_section = "H323 Connection "+callToken+": ";
   OnCreated();
@@ -2642,6 +2647,9 @@ void MCUH323Connection::OnCleared()
 
 void MCUH323Connection::SetRequestedRoom()
 {
+  if(direction == DIRECTION_INBOUND)
+    requestedRoom = GetEndpointParam(RoomNameKey, requestedRoom);
+
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
   registrar->SetRequestedRoom(callToken, requestedRoom);
 }
@@ -3075,7 +3083,10 @@ BOOL MCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
   isMCU = setup.m_sourceInfo.m_mc;
 
   BOOL ret = H323Connection::OnReceivedSignalSetup(setupPDU);
+  // set endpoint name
   SetRemoteName(setupPDU);
+  // override requested room
+  SetRequestedRoom();
   return ret;
 }
 
@@ -3096,8 +3107,10 @@ BOOL MCUH323Connection::OnReceivedCallProceeding(const H323SignalPDU & proceedin
 BOOL MCUH323Connection::OnReceivedSignalConnect(const H323SignalPDU & pdu)
 {
   BOOL ret = H323Connection::OnReceivedSignalConnect(pdu);
+  // set endpoint name
   SetRemoteName(pdu);
-  SetRequestedRoom(); // override requested room from registrar
+  // override requested room
+  SetRequestedRoom();
   return ret;
 }
 
@@ -3107,7 +3120,7 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
 {
   requestedRoom = ep.IncomingConferenceRequest(*this, setupPDU, videoMixerNumber);
 
-  // remove prefix from requested room, maybe bug on the terminal
+  // remove prefix, maybe bug on the terminal
   // RealPresence "url_ID "h323:room101""
   requestedRoom.Replace("h323:","",TRUE,0);
 

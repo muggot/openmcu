@@ -47,12 +47,6 @@ enum SipSecureTypes
   SECURE_TYPE_DTLS_SRTP
 };
 
-enum Directions
-{
-  DIRECTION_INBOUND = 0,
-  DIRECTION_OUTBOUND = 1
-};
-
 enum AuthTypes
 {
   AUTH_NONE,
@@ -237,8 +231,6 @@ class MCUSipConnection : public MCUH323Connection
     virtual void SendLogicalChannelMiscCommand(H323Channel & channel, unsigned command);
     virtual void SendUserInput(const PString & value);
 
-    BOOL HadAnsweredCall() { return (direction=DIRECTION_INBOUND); }
-
     int ProcessInvite(const msg_t *msg);
     void SendInvite();
     void SendRequest(sip_method_t method, const char *method_name, const char *payload = NULL);
@@ -320,8 +312,6 @@ class MCUSipConnection : public MCUH323Connection
     PString ruri_str;
     PString contact_str;
 
-    Directions direction;
-    PString local_user;
     PString local_ip;
     PString nat_ip;
 
