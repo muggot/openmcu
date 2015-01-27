@@ -90,14 +90,7 @@ Conference * ConferenceManager::FindConferenceWithLock(long id)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL ConferenceManager::CheckJoinConference(const PString & room)
-{
-  return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PString name, BOOL ignoreRestriction)
+Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PString name)
 {
   PWaitAndSignal m(conferenceListMutex);
   Conference * conference = FindConferenceWithLock(room);

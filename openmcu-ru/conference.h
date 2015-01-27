@@ -626,8 +626,7 @@ class ConferenceManager : public PObject
     Conference * FindConferenceWithLock(long id);
     Conference * FindConferenceWithLock(const PString & room);
 
-    BOOL CheckJoinConference(const PString & number);
-    Conference * MakeConferenceWithLock(const PString & number, PString name = "", BOOL ignoreRestriction = FALSE);
+    Conference * MakeConferenceWithLock(const PString & number, PString name = "");
 
     ConferenceProfile * FindProfileWithLock(const PString & roomName, const PString & memberName);
     ConferenceProfile * FindProfileWithLock(Conference * conference, const PString & memberName);

@@ -40,16 +40,6 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
     }
   }
 
-  if(!raccount_out)
-  {
-    ConferenceManager *manager = OpenMCU::Current().GetConferenceManager();
-    if(!manager->CheckJoinConference(username_out))
-    {
-      response = H323Connection::AnswerCallDenied;
-      goto return_response;
-    }
-  }
-
   if((!raccount_in && h323_allow_unreg_mcu_calls && !raccount_out) ||
      (!raccount_in && h323_allow_unreg_internal_calls && raccount_out))
   {

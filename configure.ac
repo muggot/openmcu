@@ -1023,7 +1023,7 @@ if test "${rpath}" = "yes"; then
     done
     IFS=$OIFS
   else
-    LD_PATH=`ldconfig -v | grep "/" | awk -F: '{print $1}'`
+    LD_PATH=`ldconfig -v -N | grep "/" | awk -F: '{print $1}'`
   fi
 
   # RPATH keep only directories, which are not in ldconfig

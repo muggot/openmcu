@@ -159,16 +159,6 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   if(allow_internal_calls)
     raccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
 
-  if(!raccount_out)
-  {
-    ConferenceManager *manager = OpenMCU::Current().GetConferenceManager();
-    if(!manager->CheckJoinConference(username_out))
-    {
-      response_code = 403; // SIP_403_FORBIDDEN
-      goto return_response;
-    }
-  }
-
   if((!raccount_in && sip_allow_unauth_mcu_calls && !raccount_out) ||
      (!raccount_in && sip_allow_unauth_internal_calls && raccount_out))
   {
