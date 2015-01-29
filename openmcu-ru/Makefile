@@ -56,7 +56,7 @@ install:
 	mkdir -p $(DESTDIR)/opt/openmcu-ru/ssl
 	mkdir -p $(DESTDIR)/opt/openmcu-ru/scripts
 	( for file in ./files/conf/*; do \
-	    install -m 644 $$file $(DESTDIR)/opt/openmcu-ru/config; \
+	    install -m 644 --compare --backup=numbered $$file $(DESTDIR)/opt/openmcu-ru/config; \
 	done )
 	( for file in ./files/font/*; do \
 	    install -m 644 $$file $(DESTDIR)/opt/openmcu-ru/font; \
@@ -65,7 +65,7 @@ install:
 	    install -m 644 $$file $(DESTDIR)/opt/openmcu-ru/resource; \
 	done )
 	( for file in ./files/scripts/*; do \
-	    install -m 755 $$file $(DESTDIR)/opt/openmcu-ru/scripts; \
+	    install -m 755 --compare --backup=numbered $$file $(DESTDIR)/opt/openmcu-ru/scripts; \
 	done )
 	install -m 755 $(OBJDIR)/$(PROG) $(DESTDIR)/opt/openmcu-ru/bin
 #	ln -sf $(DESTDIR)/opt/openmcu-ru/bin/$(PROG) /usr/local/bin/$(PROG)
