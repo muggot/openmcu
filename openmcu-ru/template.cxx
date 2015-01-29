@@ -153,7 +153,14 @@ void Conference::LoadTemplate(PString tpl)
         PString value=l.Mid(space+1,P_MAX_INDEX).LeftTrim();
         if(cmd=="GLOBAL_MUTE") muteUnvisible=(value=="on");
         else if(cmd=="CONTROL_TYPE") moderated=(value=="manual");
-        else if(cmd=="VAD_VALUES") {PStringArray v=value.Tokenise(",");if(v.GetSize()==3){ VAdelay=(unsigned short int)(v[0].Trim().AsInteger()); VAtimeout=(unsigned short int)(v[1].Trim().AsInteger()); VAlevel=(unsigned short int)(v[2].Trim().AsInteger());}}
+        else if(cmd=="VAD_VALUES")
+        {
+          PStringArray v=value.Tokenise(","); if(v.GetSize()==3)
+          {
+            VAdelay=(unsigned short int)(v[0].Trim().AsInteger());
+            VAtimeout=(unsigned short int)(v[1].Trim().AsInteger());
+            VAlevel=(unsigned short int)(v[2].Trim().AsInteger());
+        } }
         else if(cmd=="MIXER")
         {
           mixerId=value.AsInteger();
@@ -161,7 +168,13 @@ void Conference::LoadTemplate(PString tpl)
           if(maxMixerId<mixerId) maxMixerId=mixerId;
           vmpN=0;
         }
-        else if(cmd=="LAYOUT") {if(mixer!=NULL) {PStringArray v=value.Tokenise(","); if(v.GetSize()==2) mixer->MyChangeLayout(v[0].Trim().AsInteger()); }}
+        else if(cmd=="LAYOUT")
+        {
+          if(mixer!=NULL)
+          {
+            PStringArray v=value.Tokenise(",");
+            if(v.GetSize()==2) mixer->MyChangeLayout(v[0].Trim().AsInteger());
+        } }
         else if(cmd=="SKIP")
         { unsigned skipping=value.AsInteger();
           while(skipping>0)
@@ -188,7 +201,14 @@ void Conference::LoadTemplate(PString tpl)
               {
                 if(s->second!=NULL) // online
                 {
-                  if(MCUURL(name).GetUrlId() == MCUURL(s->first).GetUrlId())
+
+// name:                        ВАСИЛИЙ ИВАНОВИЧ [h323:undefined@1.2.3.55]
+// s->first:                    ВАСИЛИЙ ИВАНОВИЧ [h323:undefined@1.2.4.55]
+// MCUURL(name).GetUrlId():     h323:undefined
+// MCUURL(s->first).GetUrlId(): h323:undefined
+
+//                  if(MCUURL(name).GetUrlId() == MCUURL(s->first).GetUrlId())
+                  if(name == s->first)
                     break;
                 }
               }
