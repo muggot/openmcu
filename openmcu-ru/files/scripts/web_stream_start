@@ -16,6 +16,8 @@ DIR_BIN="/opt/openmcu-ru/bin"
 DIR_CONF="/opt/openmcu-ru/config"
 DIR_PIPE="/opt/openmcu-ru/pipe"
 
+export LD_LIBRARY_PATH="/opt/openmcu-ru/lib"
+
 $DIR_BIN/ffserver -f $DIR_CONF/ffserver.conf &
 
 $DIR_BIN/ffmpeg -y\
