@@ -156,6 +156,12 @@ class MCUListener
     PString GetAddress()
     { return socket_address; }
 
+    PString GetSocketHost()
+    { return socket_host; }
+
+    PString GetSocketPort()
+    { return socket_port; }
+
     ListenerType GetType()
     { return listener_type; }
 

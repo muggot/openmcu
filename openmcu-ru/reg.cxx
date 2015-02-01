@@ -11,7 +11,7 @@ PString RegistrarAccount::GetUrl()
   if(account_type == ACCOUNT_TYPE_SIP)
   {
     url = "sip:"+username+"@"+host;
-    if(port != 0 && port != 5060)
+    if(port != 0)
       url += ":"+PString(port);
     if(transport != "" && transport != "*")
       url += ";transport="+transport;
@@ -19,7 +19,7 @@ PString RegistrarAccount::GetUrl()
   else if(account_type == ACCOUNT_TYPE_H323)
   {
     url = "h323:"+username+"@"+host;
-    if(port != 0 && port != 1720)
+    if(port != 0)
       url += ":"+PString(port);
   }
   else if(account_type == ACCOUNT_TYPE_RTSP)

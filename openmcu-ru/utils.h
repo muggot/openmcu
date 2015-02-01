@@ -9,6 +9,15 @@
 #include <typeinfo>
 #include <sofia-sip/msg_types.h>
 
+#include <sys/types.h>
+
+#ifdef _WIN32
+#  include <winsock2.h>
+#  include <ws2tcpip.h>
+#else
+#  include <sys/socket.h>
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _WIN32
@@ -70,6 +79,14 @@ extern PMutex avcodecMutex;
 // cacheRTPListMutex - используется при создании кэшей
 // предотвращает создание в списке двух одноименных кэшей
 extern PMutex cacheRTPListMutex;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum Directions
+{
+  DIRECTION_INBOUND = 0,
+  DIRECTION_OUTBOUND = 1
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -470,7 +487,7 @@ class MCUURL : public PURL
       if(url_scheme == "sip")
       {
         url_party = url_scheme+":"+username+"@"+hostname;
-        if(port != 0 && port != 5060)
+        if(port != 0)
           url_party += ":"+PString(port);
         if(transport != "" && transport != "*")
           url_party += ";transport="+transport;
@@ -522,6 +539,15 @@ class MCUStringDictionary
     PString delim1, delim2;
     PStringArray keys;
     PStringArray values;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUSocket
+{
+  public:
+   static BOOL GetFromIP(PString & local_ip, PString remote_host, PString remote_port);
+   static BOOL GetHostIP(PString & ip, PString host, PString port = "");
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

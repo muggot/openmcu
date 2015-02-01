@@ -2521,6 +2521,11 @@ MCUH323Connection::~MCUH323Connection()
 
 void MCUH323Connection::AttachSignalChannel(const PString & token, H323Transport * channel, BOOL answeringCall)
 {
+  if(answeringCall)
+    direction = DIRECTION_INBOUND;
+  else
+    direction = DIRECTION_OUTBOUND;
+
   callToken = token;
   trace_section = "H323 Connection "+callToken+": ";
   OnCreated();
@@ -3075,7 +3080,10 @@ BOOL MCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
   isMCU = setup.m_sourceInfo.m_mc;
 
   BOOL ret = H323Connection::OnReceivedSignalSetup(setupPDU);
+  // set endpoint name
   SetRemoteName(setupPDU);
+  // override requested room
+  SetRequestedRoom();
   return ret;
 }
 
@@ -3096,8 +3104,10 @@ BOOL MCUH323Connection::OnReceivedCallProceeding(const H323SignalPDU & proceedin
 BOOL MCUH323Connection::OnReceivedSignalConnect(const H323SignalPDU & pdu)
 {
   BOOL ret = H323Connection::OnReceivedSignalConnect(pdu);
+  // set endpoint name
   SetRemoteName(pdu);
-  SetRequestedRoom(); // override requested room from registrar
+  // override requested room
+  SetRequestedRoom();
   return ret;
 }
 
@@ -3107,7 +3117,7 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
 {
   requestedRoom = ep.IncomingConferenceRequest(*this, setupPDU, videoMixerNumber);
 
-  // remove prefix from requested room, maybe bug on the terminal
+  // remove prefix, maybe bug on the terminal
   // RealPresence "url_ID "h323:room101""
   requestedRoom.Replace("h323:","",TRUE,0);
 
@@ -3887,14 +3897,13 @@ void MCUH323Connection::SetMemberName()
       port = host.Tokenise(":")[1];
       host = host.Tokenise(":")[0];
     }
-    if(!HadAnsweredCall() && port != "" && port != "1720") host += ":"+port;
-
     alias = GetRemoteNumber();
 
     //PRegularExpression RegEx("[^A-Za-z0-9._-]");
     //if(alias.FindRegEx(RegEx) != P_MAX_INDEX) alias = "invalid_name";
 
     address = "h323:"+alias+"@"+host;
+    if(!HadAnsweredCall() && port != "") address += ":"+port;
   }
 
   memberName = remotePartyName+" ["+address+"]";
