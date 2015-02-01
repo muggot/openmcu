@@ -3900,14 +3900,13 @@ void MCUH323Connection::SetMemberName()
       port = host.Tokenise(":")[1];
       host = host.Tokenise(":")[0];
     }
-    if(!HadAnsweredCall() && port != "" && port != "1720") host += ":"+port;
-
     alias = GetRemoteNumber();
 
     //PRegularExpression RegEx("[^A-Za-z0-9._-]");
     //if(alias.FindRegEx(RegEx) != P_MAX_INDEX) alias = "invalid_name";
 
     address = "h323:"+alias+"@"+host;
+    if(!HadAnsweredCall() && port != "") address += ":"+port;
   }
 
   memberName = remotePartyName+" ["+address+"]";

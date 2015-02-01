@@ -487,7 +487,7 @@ class MCUURL : public PURL
       if(url_scheme == "sip")
       {
         url_party = url_scheme+":"+username+"@"+hostname;
-        if(port != 0 && port != 5060)
+        if(port != 0)
           url_party += ":"+PString(port);
         if(transport != "" && transport != "*")
           url_party += ";transport="+transport;
