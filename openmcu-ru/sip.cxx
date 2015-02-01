@@ -2202,6 +2202,7 @@ void MCUSipConnection::SendRequest(sip_method_t method, const char *method_name,
   nta_response_f *callback = NULL;
   nta_outgoing_magic_t *magic = NULL;
   const char *via_branch_key = NULL;
+  sip_call_id_t *sip_call_id = NULL;
   sip_cseq_t *sip_cseq = NULL;
   sip_route_t* sip_route = NULL;
   sip_contact_t *sip_contact = NULL;
@@ -2247,6 +2248,7 @@ void MCUSipConnection::SendRequest(sip_method_t method, const char *method_name,
   }
   if(method == sip_method_message)
   {
+    sip_call_id = sip_call_id_create(sep->GetHome(), "");
     sip_content = sip_content_type_make(sep->GetHome(), "text/plain");
     sip_payload = sip_payload_format(sep->GetHome(), payload);
     sip_date = sip_date_create(sep->GetHome(), sip_now());
@@ -2267,6 +2269,7 @@ void MCUSipConnection::SendRequest(sip_method_t method, const char *method_name,
                         method, method_name,
                         request_ruri,
    		        NTATAG_STATELESS(stateless),
+   		        SIPTAG_CALL_ID(sip_call_id),
 			SIPTAG_CSEQ(sip_cseq),
                         NTATAG_BRANCH_KEY(via_branch_key),
 			SIPTAG_ROUTE(sip_route),
@@ -2331,6 +2334,8 @@ void MCUSipConnection::SendLogicalChannelMiscCommand(H323Channel & channel, unsi
 
 void MCUSipConnection::SendUserInput(const PString & value)
 {
+  if(connectionType != CONNECTION_TYPE_SIP)
+    return;
   PTRACE(6, trace_section << "SendUserInput");
   SendRequest(SIP_METHOD_MESSAGE, value);
 }
