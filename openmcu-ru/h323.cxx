@@ -2689,7 +2689,7 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
   conferenceIdentifier = conference->GetGUID();
 
   // crete member connection
-  conferenceMember = new H323Connection_ConferenceMember(conference, ep, GetCallToken(), isMCU);
+  conferenceMember = new MCUConnection_ConferenceMember(conference, ep, GetCallToken(), isMCU);
   conference->Unlock();
 }
 
@@ -4049,7 +4049,7 @@ BOOL MCUH323Connection::GetPreMediaFrame(void * buffer, int width, int height, P
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, BOOL _isMCU)
+MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, BOOL _isMCU)
   : ConferenceMember(_conference), ep(_ep)
 {
   if(_isMCU) memberType = MEMBER_TYPE_MCU;
@@ -4059,16 +4059,16 @@ H323Connection_ConferenceMember::H323Connection_ConferenceMember(Conference * _c
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-H323Connection_ConferenceMember::~H323Connection_ConferenceMember()
+MCUConnection_ConferenceMember::~MCUConnection_ConferenceMember()
 {
   if(conference)
     conference->RemoveMember(this);
-  PTRACE(4, "H323Connection_ConferenceMember deleted");
+  PTRACE(4, "MCUConnection_ConferenceMember deleted");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void H323Connection_ConferenceMember::Close()
+void MCUConnection_ConferenceMember::Close()
 {
   MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
   if (conn != NULL) {
@@ -4079,7 +4079,7 @@ void H323Connection_ConferenceMember::Close()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString H323Connection_ConferenceMember::GetMonitorInfo(const PString & hdr)
+PString MCUConnection_ConferenceMember::GetMonitorInfo(const PString & hdr)
 { 
   PStringStream output;
   MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
@@ -4097,7 +4097,7 @@ PString H323Connection_ConferenceMember::GetMonitorInfo(const PString & hdr)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void H323Connection_ConferenceMember::SetName()
+void MCUConnection_ConferenceMember::SetName()
 {
   if(memberType & MEMBER_TYPE_GSYSTEM)
     return;
@@ -4123,7 +4123,7 @@ void H323Connection_ConferenceMember::SetName()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // signal to codec plugin for disable(enable) decoding incoming video from unvisible(visible) member
-void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
+void MCUConnection_ConferenceMember::SetFreezeVideo(BOOL disable) const
 {
   if(memberType & MEMBER_TYPE_GSYSTEM)
     return;
@@ -4150,7 +4150,7 @@ void H323Connection_ConferenceMember::SetFreezeVideo(BOOL disable) const
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void H323Connection_ConferenceMember::SendUserInputIndication(const PString & str)
+void MCUConnection_ConferenceMember::SendUserInputIndication(const PString & str)
 {
   if(memberType & MEMBER_TYPE_GSYSTEM)
     return;
@@ -4245,7 +4245,7 @@ void H323Connection_ConferenceMember::SendUserInputIndication(const PString & st
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
+void MCUConnection_ConferenceMember::SetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
   MCUH323Connection * conn = OpenMCU::Current().GetEndpoint().FindConnectionWithLock(callToken);
@@ -4306,7 +4306,7 @@ void H323Connection_ConferenceMember::SetChannelPauses(unsigned mask)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void H323Connection_ConferenceMember::UnsetChannelPauses(unsigned mask)
+void MCUConnection_ConferenceMember::UnsetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
   MCUH323Connection * conn = OpenMCU::Current().GetEndpoint().FindConnectionWithLock(callToken);

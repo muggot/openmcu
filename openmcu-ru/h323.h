@@ -511,12 +511,12 @@ class MCUH323Connection : public H323Connection
 
 ////////////////////////////////////////////////////
 
-class H323Connection_ConferenceMember : public ConferenceMember
+class MCUConnection_ConferenceMember : public ConferenceMember
 {
-  PCLASSINFO(H323Connection_ConferenceMember, ConferenceMember);
+  PCLASSINFO(MCUConnection_ConferenceMember, ConferenceMember);
   public:
-    H323Connection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, BOOL isMCU);
-    ~H323Connection_ConferenceMember();
+    MCUConnection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, BOOL isMCU);
+    ~MCUConnection_ConferenceMember();
 
     virtual void Close();
 
@@ -530,9 +530,9 @@ class H323Connection_ConferenceMember : public ConferenceMember
     virtual void SendUserInputIndication(const PString & str);
 
     virtual void OnReceivedUserInputIndication(const PString & str)
-    { 
+    {
       PTRACE(2, "h323.cxx\tFCWL from OnReceivedUserInputIndication:" << callToken);
-      H323Connection * conn = ep.FindConnectionWithLock(callToken);
+      MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
       if (conn != NULL)
       {
         conn->SendUserInput(str); 

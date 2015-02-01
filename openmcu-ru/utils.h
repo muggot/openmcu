@@ -49,7 +49,7 @@ class ConferenceRecorder;
 class Conference;
 class ConferenceManager;
 
-class H323Connection_ConferenceMember;
+class MCUConnection_ConferenceMember;
 class MCUPVideoInputDevice;
 class MCUPVideoOutputDevice;
 
