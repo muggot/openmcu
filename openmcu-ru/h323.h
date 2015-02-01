@@ -308,6 +308,8 @@ class MCUH323Connection : public H323Connection
     virtual BOOL StartControlNegotiations(BOOL renegotiate = FALSE);
     virtual void OnSetLocalCapabilities();
 
+    virtual void SendUserInput(const PString & value);
+
     virtual BOOL OnIncomingAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
     virtual BOOL OnOutgoingAudio(const uint64_t & timestamp, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 

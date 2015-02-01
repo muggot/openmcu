@@ -3918,6 +3918,15 @@ void MCUH323Connection::SetMemberName()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void MCUH323Connection::SendUserInput(const PString & value)
+{
+  if(connectionType != CONNECTION_TYPE_H323)
+    return;
+  H323Connection::SendUserInput(value);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323Connection::OnIncomingAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
 /*

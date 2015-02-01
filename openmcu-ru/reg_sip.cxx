@@ -80,6 +80,9 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
   if(sip->sip_payload == NULL)
     return sep->SipReqReply(msg, NULL, 415); // SIP_415_UNSUPPORTED_MEDIA
 
+  if(sip->sip_content_type == NULL || sip->sip_content_type->c_type == NULL || PString(sip->sip_content_type->c_type) != "text/plain")
+    return sep->SipReqReply(msg, NULL, 200); // SIP_200_OK
+
   PString username_in = sip->sip_from->a_url->url_user;
   PString username_out = sip->sip_to->a_url->url_user;
   msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
