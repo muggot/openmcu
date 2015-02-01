@@ -3622,7 +3622,12 @@ void MCUSipEndPoint::MainLoop()
 void MCUSipEndPoint::Terminating()
 {
   PWaitAndSignal m(sipMutex);
+
+  sipQueue.Stop();
+  sipMsgQueue.Stop();
+  ProcessSipQueue();
   QueueClear();
+
   ClearProxyAccounts();
   ClearSipCaps(BaseSipCaps);
   ClearStunList();

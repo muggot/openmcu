@@ -367,7 +367,7 @@ void MCUH323EndPoint::ClearAllCalls(H323Connection::CallEndReason reason, BOOL w
   for(MCUConnectionList::shared_iterator it = connectionList.begin(); it != connectionList.end(); ++it)
   {
     MCUH323Connection *conn = *it;
-    ClearCall(conn->GetCallToken(), reason);
+    conn->ClearCall(reason);
   }
   connectionListMutex.Signal();
 

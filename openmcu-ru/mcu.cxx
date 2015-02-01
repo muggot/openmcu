@@ -114,7 +114,8 @@ void OpenMCU::OnStop()
   endpoint->RemoveListener(NULL);
 
   // clear all calls
-  endpoint->ClearAllCalls();
+  manager->ClearConferenceList();
+  //endpoint->ClearAllCalls();
 
   // delete rtsp endpoint
   delete rtspServer;
