@@ -624,7 +624,7 @@ BOOL CheckCapability(const PString & formatName)
   return FALSE;
 }
 
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionType)
 {
@@ -654,4 +654,103 @@ BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionTyp
   return FALSE;
 }
 
-///////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSocket::GetFromIP(PString & local_ip, PString remote_host, PString remote_port)
+{
+  PTRACE(1, "GetFromIP host:" << remote_host << " port:" << remote_port);
+  if(remote_host == "" || remote_port == "")
+    return FALSE;
+
+  int err = 0;
+  int sock = socket(AF_INET, SOCK_DGRAM, 0);
+  if(sock == -1)
+  {
+    PTRACE(1, "GetFromIP error " << errno << " " << strerror(errno));
+    return FALSE;
+  }
+
+  struct addrinfo serv;
+  struct addrinfo *res = NULL;
+  memset((void *)&serv, 0, sizeof(serv));
+  serv.ai_family = AF_INET;
+  serv.ai_socktype = SOCK_DGRAM;
+  err = getaddrinfo((const char *)remote_host, (const char *)remote_port, &serv, &res);
+  if(err != 0 || res == NULL)
+  {
+    PTRACE(1, "GetFromIP error " << errno << " " << strerror(errno));
+    return FALSE;
+  }
+
+  err = connect(sock, res->ai_addr, res->ai_addrlen);
+  if(err == -1)
+  {
+    PTRACE(1, "GetFromIP error " << errno << " " << strerror(errno));
+    return FALSE;
+  }
+
+  sockaddr_in name;
+  socklen_t namelen = sizeof(name);
+  err = getsockname(sock, (sockaddr*) &name, &namelen);
+  if(err == -1)
+  {
+    PTRACE(1, "GetFromIP error " << errno << " " << strerror(errno));
+    return FALSE;
+  }
+
+#ifndef _WIN32
+  char buffer[16] = {0};
+  inet_ntop(AF_INET, (const void *)&name.sin_addr, buffer, 16);
+  close(sock);
+  local_ip = buffer;
+#else
+  local_ip = PIPSocket::Address(name.sin_addr);
+  closesocket(sock);
+#endif
+
+  PTRACE(1, "GetFromIP ip: " << local_ip);
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSocket::GetHostIP(PString & ip, PString host, PString port)
+{
+  PTRACE(1, "GetHostIP host:" << host << " port:" << port);
+  if(host == "")
+    return FALSE;
+
+  int err = 0;
+  int sock = socket(AF_INET, SOCK_DGRAM, 0);
+  if(sock == -1)
+  {
+    PTRACE(1, "GetHostIP error " << errno << " " << strerror(errno));
+    return FALSE;
+  }
+
+  struct addrinfo serv;
+  struct addrinfo *res=NULL;
+  memset((void *)&serv, 0, sizeof(serv));
+  serv.ai_family = AF_INET;
+  serv.ai_socktype = SOCK_DGRAM;
+  err = getaddrinfo((const char *)host, (const char *)port, &serv, &res);
+  if(err != 0 || res == NULL)
+  {
+    PTRACE(1, "GetHostIP error " << errno << " " << strerror(errno));
+    return FALSE;
+  }
+
+  char buffer[80] = {0};
+  err = getnameinfo(res->ai_addr, res->ai_addrlen, buffer, (socklen_t)sizeof(buffer), NULL, 0, NI_NUMERICHOST);
+  if(err != 0)
+  {
+    PTRACE(1, "GetHostIP error " << errno << " " << strerror(errno));
+    return FALSE;
+  }
+
+  ip = buffer;
+  PTRACE(1, "GetHostIP ip: " << ip);
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////

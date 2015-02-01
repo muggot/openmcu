@@ -682,7 +682,7 @@ BOOL MCURtspConnection::ParseTransportStr(SipCapability *sc, PString & transport
   } else {
     sc->remote_ip = transport_dict("source");
     if(sc->remote_ip == "")
-      sc->remote_ip = MCUURL(ruri_str).GetHostName();
+      sc->remote_ip = listener->GetSocketHost();
     remote_ports = transport_dict("server_port");
     sc->remote_port = remote_ports.Tokenise("-")[0].AsInteger();
   }
@@ -1324,7 +1324,7 @@ MCUListener::MCUListener(PString address, mcu_listener_cb *_callback, void *_cal
 
   trace_section = "MCU listener ("+socket_address+"): ";
 
-  if(socket_host != "0.0.0.0" && PIPSocket::Address(socket_host).IsValid() == FALSE)
+  if(socket_host != "0.0.0.0" && MCUSocket::GetHostIP(socket_host, socket_host) == FALSE)
   {
     MCUTRACE(1, trace_section << "incorrect socket host " << socket_host);
     return;

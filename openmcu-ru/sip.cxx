@@ -1,53 +1,11 @@
 
 #include <ptlib.h>
-#include <sys/types.h>
-#ifdef _WIN32
-#  include <winsock2.h>
-#  include <ws2tcpip.h>
-#  define setenv(n,v,f) _putenv(n "=" v)
-#else
-#  include <sys/socket.h>
-#endif
 
 #include "mcu.h"
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PString GetFromIp(PString toAddr, PString toPort)
-{
-    PTRACE(1, "MCUSIP\tGetFromIp address:" << toAddr << " port:" << toPort);
-    if(toAddr == "" || toPort == "") return "";
-    int sock = socket(AF_INET, SOCK_DGRAM, 0);
-    if(sock == -1) return "";
-
-    struct addrinfo serv;
-    struct addrinfo *res=NULL;
-    memset((void *)&serv, 0, sizeof(serv));
-    serv.ai_family = AF_INET;
-    serv.ai_socktype=SOCK_DGRAM;
-    int err=getaddrinfo((const char *)toAddr, (const char *)toPort, &serv, &res);
-    if (err != 0 || res == NULL) return "";
-
-    err = connect(sock, res->ai_addr, res->ai_addrlen);
-    if(err == -1) return "";
-
-    sockaddr_in name;
-    socklen_t namelen = sizeof(name);
-    err = getsockname(sock, (sockaddr*) &name, &namelen);
-    if(err == -1) return "";
-
-#ifndef _WIN32
-    char buffer[16];
-    inet_ntop(AF_INET, (const void *)&name.sin_addr, buffer, 16);
-    close(sock);
-    PTRACE(1, "MCUSIP\tGetFromIp from IP:" << buffer);
-    return (PString)buffer;
-#else
-    PString buffer0 = PIPSocket::Address(name.sin_addr);
-    closesocket(sock);
-    return buffer0;
+#ifdef _WIN32
+  #define setenv(n,v,f) _putenv(n "=" v)
 #endif
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -90,41 +48,30 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Directions dir)
   else if(sip->sip_server && sip->sip_server->g_string)
     remote_application = sip->sip_server->g_string;
 
-  // hostname, port
-  if(sip->sip_contact->m_url && sip->sip_contact->m_url->url_host)
-    hostname = sip->sip_contact->m_url->url_host;
-  if(sip->sip_contact->m_url && sip->sip_contact->m_url->url_port)
-    port = PString(sip->sip_contact->m_url->url_port).AsInteger();
-  else
-    port = 5060;
-
-  //transport
-  if(PString(sip->sip_via->v_protocol).Find("UDP") != P_MAX_INDEX)
-    transport = "udp";
-  else if(PString(sip->sip_via->v_protocol).Find("TCP") != P_MAX_INDEX)
-    transport = "tcp";
-  else if(PString(sip->sip_via->v_protocol).Find("TLS") != P_MAX_INDEX)
-    transport = "tls";
-  else
-    transport = "*";
-
   // get hostname,port,transport from su_addrinfo_t
   // not available after msg_dup or msg_copy
   su_addrinfo_t *addrinfo = msg_addrinfo((msg_t *)msg);
   if(addrinfo->ai_addr)
   {
-    if(hostname == "")
-    {
-      char ip[80] = {0};
-      getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, ip, (socklen_t)sizeof(ip), NULL, 0, NI_NUMERICHOST);
-      hostname = ip;
-    }
-    if(port == 0)
-      port = ntohs(((struct sockaddr_in *)addrinfo->ai_addr)->sin_port);
-    //if(addrinfo->ai_protocol == TPPROTO_UDP)      transport = "udp";
-    //else if(addrinfo->ai_protocol == TPPROTO_TCP) transport = "tls";
+    // hostname
+    char ip[80] = {0};
+    getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, ip, (socklen_t)sizeof(ip), NULL, 0, NI_NUMERICHOST);
+    hostname = ip;
+    // port
+    port = ntohs(((struct sockaddr_in *)addrinfo->ai_addr)->sin_port);
+    // transport
+    if(addrinfo->ai_protocol == TPPROTO_UDP)      transport = "udp";
+    else if(addrinfo->ai_protocol == TPPROTO_TCP) transport = "tcp";
     //else if(addrinfo->ai_protocol == TPPROTO_TLS) transport = "tls";
-    //else                                          transport = "*";
+    else                                          transport = "*";
+  }
+
+  if(transport == "tcp")
+  {
+    if(PString(sip->sip_via->v_protocol).Find("TLS") != P_MAX_INDEX)
+      transport = "tls";
+    if(sip->sip_request && sip->sip_via->v_port)
+      port = PString(sip->sip_via->v_port).AsInteger();
   }
 
   // url_party
@@ -134,6 +81,8 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Directions dir)
     url_party += ":"+PString(port);
   if(transport != "" && transport != "*")
     url_party += ";transport="+transport;
+
+  PTRACE(1, "MCUURL_SIP url: " << url_party);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -492,8 +441,7 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   local_url.SetUserName(requestedRoom);
 
   // nat ip for contact
-  if(nat_ip != local_ip)
-    local_url.SetHostName(nat_ip);
+  local_url.SetHostName(nat_ip);
 
   // transport
   local_url.SetTransport(remote_url.GetTransport());
@@ -606,8 +554,7 @@ BOOL MCUSipConnection::DetermineLocalIp(const PString & _address)
 
   PString remote_host = MCUURL(address).GetHostName();
   PString remote_port = MCUURL(address).GetPort();
-  local_ip = GetFromIp(remote_host, remote_port);
-  if(PIPSocket::Address(local_ip).IsValid() == FALSE)
+  if(MCUSocket::GetFromIP(local_ip, remote_host, remote_port) == FALSE)
   {
     MCUTRACE(1, trace_section << "unable to determine the local IP address for " << address);
     return FALSE;
@@ -648,10 +595,6 @@ BOOL MCUSipConnection::DetermineNAT()
   }
 #endif
 
-  // if empty nat_ip set as local_ip
-  if(nat_ip == "")
-    nat_ip = local_ip;
-
   // remoteIsNAT ???
   remoteIsNAT = FALSE;
 
@@ -663,13 +606,20 @@ BOOL MCUSipConnection::DetermineNAT()
 
 BOOL MCUSipConnection::CreateDefaultRTPSessions()
 {
-  // local ip
-  if(DetermineLocalIp() == FALSE)
-    return FALSE;
-
   // NAT
   if(DetermineNAT() == FALSE)
     return FALSE;
+
+  // if empty nat_ip set as local_ip
+  if(nat_ip == "")
+  {
+    // local ip
+    if(DetermineLocalIp() == FALSE)
+      return FALSE;
+    nat_ip = local_ip;
+  }
+  else
+    local_ip = nat_ip;
 
   MCUSIP_RTP_UDP *session = NULL;
 
@@ -2007,10 +1957,10 @@ int MCUSipConnection::ProcessConnect()
     ProxyAccount *proxy = sep->FindProxyAccount(sip->sip_to->a_url->url_user, sip->sip_from->a_url->url_host);
     if(proxy) requestedRoom = proxy->roomname;
   }
+
   MCUURL_SIP url(c_sip_msg, direction);
   if(remotePartyName == "")
     remotePartyName = url.GetDisplayName();
-  remotePartyAddress = url.GetUrl();
   remoteApplication = url.GetRemoteApplication();
 
   // set endpoint member name
