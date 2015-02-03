@@ -37,6 +37,7 @@
 #include "recorder.h"
 #include "mcu_caps.h"
 #include "mcu_codecs.h"
+#include "sockets.h"
 
 #if USE_LIBYUV
 #include <libyuv/scale.h>

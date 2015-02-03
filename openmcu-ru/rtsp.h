@@ -2,6 +2,8 @@
 #ifndef _MCU_RTSP_H
 #define _MCU_RTSP_H
 
+#include "sockets.h"
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 static const PString METHOD_OPTIONS    = "OPTIONS";
@@ -10,10 +12,7 @@ static const PString METHOD_SETUP      = "SETUP";
 static const PString METHOD_PLAY       = "PLAY";
 static const PString METHOD_TEARDOWN   = "TEARDOWN";
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 class ConferenceStreamMember;
-class MCUListener;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -45,7 +44,7 @@ class MCURtspConnection : public MCUSipConnection
     ~MCURtspConnection();
 
     BOOL Connect(PString room, PString address);
-    BOOL Connect(PString address, int socket_fd, const msg_t *msg);
+    BOOL Connect(MCUSocket *socket, const msg_t *msg);
 
     void CreateLocalSipCaps();
     BOOL CreateInboundCaps();
@@ -78,9 +77,9 @@ class MCURtspConnection : public MCUSipConnection
     PString rtsp_path;
     PString luri_str;
 
-    static int OnReceived_wrap(void *context, int socket_fd, PString address, PString data)
-    { return ((MCURtspConnection *)context)->OnReceived(socket_fd, address, data); }
-    int OnReceived(int socket_fd, PString address, PString data);
+    static int OnReceived_wrap(void *context, MCUSocket *socket, PString data)
+    { return ((MCURtspConnection *)context)->OnReceived(socket, data); }
+    int OnReceived(MCUSocket *socket, PString data);
 
     MCUListener *listener;
 };
@@ -102,14 +101,14 @@ class MCURtspServer
 
   protected:
 
-    BOOL CreateConnection(PString address, int socket_fd, const msg_t *msg);
-    void SendResponse(int socket_fd, const PString & address, const msg_t *msg, const PString & status_str);
+    BOOL CreateConnection(MCUSocket *socket, const msg_t *msg);
+    void SendResponse(MCUSocket *socket, const msg_t *msg, const PString & status_str);
 
     PString trace_section;
 
-    static int OnReceived_wrap(void *context, int socket_fd, PString address, PString data)
-    { return ((MCURtspServer *)context)->OnReceived(socket_fd, address, data); }
-    int OnReceived(int socket_fd, PString address, PString data);
+    static int OnReceived_wrap(void *context, MCUSocket *socket, PString data)
+    { return ((MCURtspServer *)context)->OnReceived(socket, data); }
+    int OnReceived(MCUSocket *socket, PString data);
 
     typedef std::map<PString /* address */, MCUListener *> ListenersMapType;
     ListenersMapType Listeners;
@@ -118,80 +117,6 @@ class MCURtspServer
     MCUSipEndPoint *sep;
 
     PMutex rtspMutex;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-typedef int mcu_listener_cb(void *callback_context, int socket_fd, PString address, PString data);
-
-class MCUListener
-{
-  public:
-    MCUListener(PString address, mcu_listener_cb *callback, void *callback_context);
-    MCUListener(int socket_fd, PString address, mcu_listener_cb *callback, void *callback_context);
-    ~MCUListener();
-
-    enum ListenerType
-    {
-      TCP_LISTENER_CLIENT,
-      TCP_LISTENER_SERVER
-    };
-
-    static MCUListener * Create(PString address, mcu_listener_cb *callback, void *callback_context);
-    static MCUListener * Create(int client_fd, PString address, mcu_listener_cb *callback, void *callback_context);
-
-    BOOL Send(char *buffer);
-
-    static BOOL Send(int fd, char *buffer);
-    static int ReadData(int fd, char *buffer, int buffer_size);
-    static int RecvData(int fd, char *buffer, int buffer_size);
-    static BOOL ReadSerialData(int fd, PString & data);
-    static BOOL RecvSerialData(int fd, PString & data);
-    static BOOL TestSocket(int fd);
-    static BOOL GetSocketAddress(int fd, PString & address);
-
-    BOOL IsRunning()
-    { return running; }
-
-    PString GetAddress()
-    { return socket_address; }
-
-    PString GetSocketHost()
-    { return socket_host; }
-
-    PString GetSocketPort()
-    { return socket_port; }
-
-    ListenerType GetType()
-    { return listener_type; }
-
-    int GetSocket()
-    { return socket_fd; }
-
-  protected:
-    BOOL CreateTCPServer();
-    BOOL CreateTCPClient();
-
-    BOOL running;
-    PString trace_section;
-
-    ListenerType listener_type;
-    PString socket_address;
-
-    PString socket_host;
-    unsigned socket_port;
-    unsigned socket_timeout_sec;
-    unsigned socket_timeout_usec;
-
-    int socket_fd;
-    mcu_listener_cb *callback;
-    void *callback_context;
-
-    int handler_count; // handler threads count
-    PDECLARE_NOTIFIER(PThread, MCUListener, TCPConnectionHandler);
-
-    PThread *tcp_thread;
-    PDECLARE_NOTIFIER(PThread, MCUListener, TCPListener);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

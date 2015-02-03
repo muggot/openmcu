@@ -2188,6 +2188,9 @@ int MCUSipConnection::ProcessInfo(const msg_t *msg)
 
 void MCUSipConnection::SendRequest(sip_method_t method, const char *method_name, const char *payload)
 {
+  if(connectionType != CONNECTION_TYPE_SIP)
+    return;
+
   if(PThread::Current() != sep)
   {
     PString *cmd = new PString("connection_send_request:"+callToken+","+PString(method)+","+PString(method_name)+","+PString(payload));
