@@ -706,9 +706,9 @@ ExportPConfigPage::ExportPConfigPage(PHTTPServiceProcess & app,const PString & t
   s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
 
   s << BoolField("Enable export", JsLocal("enable_export"), cfg.GetBoolean("Enable export", FALSE));
-  s << IntegerField(VideoFrameWidthKey, JsLocal("video_frame_rate"), cfg.GetInteger(VideoFrameWidthKey, 704), 176, 1920);
-  s << IntegerField(VideoFrameHeightKey, JsLocal("video_frame_width"), cfg.GetInteger(VideoFrameHeightKey, 576), 144, 1152);
-  s << IntegerField(VideoFrameRateKey, JsLocal("video_frame_height"), cfg.GetInteger(VideoFrameRateKey, 10), 1, 30);
+  s << IntegerField(VideoFrameWidthKey, JsLocal("video_frame_width"), cfg.GetInteger(VideoFrameWidthKey, 704), 176, 1920);
+  s << IntegerField(VideoFrameHeightKey, JsLocal("video_frame_height"), cfg.GetInteger(VideoFrameHeightKey, 576), 144, 1152);
+  s << IntegerField(VideoFrameRateKey, JsLocal("video_frame_rate"), cfg.GetInteger(VideoFrameRateKey, 10), 1, 30);
   s << SelectField(AudioSampleRateKey, JsLocal("audio_sample_rate"), cfg.GetInteger(AudioSampleRateKey, 16000), "8000,16000,32000,48000");
   s << SelectField(AudioChannelsKey, JsLocal("audio_channels"), cfg.GetInteger(AudioChannelsKey, 1), "1,2,3,4,5,6,7,8");
 
