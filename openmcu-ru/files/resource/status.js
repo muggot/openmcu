@@ -209,7 +209,8 @@ function member_get_nice_codecs(m)
   if(!m[0]) return "-";
   if(m[1]==RECORDER_NAME) return "-";
   if(m[1]==FILE_RECORDER_NAME) return "-";
-  if(m[1]==CACHE_NAME) return "<nobr><b>" + VIDEO_OUT_STR + ":</b> " + m[14] + "</nobr>";
+  if(m[1]==CACHE_NAME && m[27] == 0) return "<nobr><b>" + VIDEO_OUT_STR + ":</b> " + m[14] + "</nobr>";
+  if(m[1]==CACHE_NAME && m[27] == 1) return "<nobr><b>" + AUDIO_OUT_STR + ":</b> " + m[14] + "</nobr>";
 
   return member_get_nice_stream(1,0         ,AUDIO_IN_STR ,m[ 9], AI_NEG_ERR ) + "<br>" +
          member_get_nice_stream(1,0         ,AUDIO_OUT_STR,m[10], AO_NEG_ERR) + "<br>" +
@@ -337,7 +338,8 @@ function member_get_nice_fps(m)
   if(m[4]<=0) return "-";
   if(m[1]==RECORDER_NAME) return "-";
   if(m[1]==FILE_RECORDER_NAME) return "-";
-  if(m[1]==CACHE_NAME) return "<nobr><b><font color='green'>" + m[17] + " x</font> </b>" + integer_pad_float(m[16], 2) + "</nobr>";
+  if(m[1]==CACHE_NAME && m[27] == 0) return "<nobr><b><font color='green'>" + m[17] + " x</font> </b>" + integer_pad_float(m[16], 2) + "</nobr>";
+  if(m[1]==CACHE_NAME && m[27] == 1) return "<nobr><b><font color='green'>" + m[17] + "</font> </b></nobr>";
   var s="<br><br>" +  integer_pad_float(m[15], 2) + "<br>";
   if(m[13]==2)
   {
