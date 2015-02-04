@@ -117,6 +117,9 @@ class ConferenceCacheMember : public ConferenceMember
     const H323Codec * GetCodec() const
     { return codec; }
 
+    bool IsAudio()
+    { return isAudio; }
+
     PDECLARE_NOTIFIER(PThread, ConferenceCacheMember, CacheThread);
 
   protected:

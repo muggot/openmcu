@@ -258,3 +258,75 @@ window.l_startdatetime                             = "Дата і час поч�
 window.l_lock_tpl_default                          = "Відключати термінали, що відсутні у шаблоні (замкнути конференцію)";
 window.l_name_force_split_video        = "Кешування і керування через браузер";
 window.l_name_auto_record_stop         = 'Автоматичний запис (зупинити)';
+
+///
+window.l_restore_defaults                          = "Восстановить значения по умолчанию";
+window.l_language                                  = "Language";
+window.l_server_id                                 = "OpenMCU-ru идентификатор сервера";
+window.l_default_protocol_for_outgoing_calls       = "Протокол по умолчанию для исходящих звонков";
+window.l_http_secure                               = "HTTPS";
+window.l_http_certificate                          = "HTTPS сертификат";
+window.l_http_ip                                   = "HTTP IP-адрес";
+window.l_http_port                                 = "HTTP порт";
+window.l_rtp_base_port                             = "RTP Base Port";
+window.l_rtp_max_port                              = "RTP Max Port";
+window.l_trace_level                               = "Trace level";
+window.l_rotate_trace                              = "Rotate trace files at startup";
+window.l_log_level                                 = "Log Level";
+window.l_call_log_filename                         = "Call log filename";
+window.l_room_control_event_buffer_size            = "Room control event buffer size";
+window.l_copy_web_log                              = "Copy web log to call log";
+window.l_default_room                              = "Default room";
+window.l_reject_duplicate_name                     = "Reject duplicate name";
+window.l_allow_loopback_calls                      = "Allow loopback calls";
+///
+window.l_allow_internal_calls                      = "Разрешить внутренние звонки";
+window.l_sip_allow_reg_without_auth                = "SIP разрешить регистрацию без аутентификации";
+window.l_sip_allow_mcu_calls_without_auth          = "SIP разрешить звонки в MCU без аутентификации";
+window.l_sip_allow_internal_calls_without_auth     = "SIP разрешить внутренние звонки без аутентификации";
+window.l_sip_registrar_minimum_expiration          = "SIP минимальный интервал регистрации";
+window.l_sip_registrar_maximum_expiration          = "SIP максимальный интервал регистрации";
+window.l_h323_gatekeeper_enable                    = "H.323 включить гейткипер";
+window.l_h323_allow_reg_without_auth               = "H.323 разрешить регистрацию без аутентификации";
+window.l_h323_allow_mcu_calls_without_reg          = "H.323 разрешить звонки в MCU без регистрации";
+window.l_h323_allow_internal_calls_without_reg     = "H.323 разрешить внутренние звонки без регистрации";
+window.l_h323_gatekeeper_minimum_ttl               = "H.323 минимальный интервал регистрации";
+window.l_h323_gatekeeper_maximum_ttl               = "H.323 максимальный интервал регистрации";
+///
+window.l_enable_video                              = "Включить видео";
+window.l_video_frame_rate                          = "Частота кадров видео";
+window.l_max_bit_rate                              = "Максимальный битрейт";
+window.l_tx_key_frame_period                       = "Интервал отправки опорных кадров";
+window.l_encoding_threads                          = "Количество потоков кодирования";
+window.l_encoding_cpu_used                         = "Использование процессора для кодирования";
+///
+window.l_enable_export                             = "Enable export";
+window.l_video_frame_width                         = "Video frame width";
+window.l_video_frame_height                        = "Video frame height";
+window.l_audio_sample_rate                         = "Audio sample rate";
+window.l_audio_channels                            = "Audio channels";
+///
+window.l_listener                                  = "Listener";
+window.l_interface                                 = "Interface";
+window.l_nat_router_ip                             = "NAT Router IP";
+window.l_treat_as_global_for_nat                   = "Treat as global for NAT";
+window.l_disable_fast_start                        = "Disable Fast-Start";
+window.l_disable_h245_tunneling                    = "Disable H.245 Tunneling";
+window.l_gk_mode                                   = "Gatekeeper Mode";
+window.l_gk_reg_ttl                                = "Gatekeeper registration TTL(Time To Live)";
+window.l_gk_reg_retry_interval                     = "Gatekeeper request retry interval";
+window.l_gk_host                                   = "Gatekeeper host";
+window.l_gk_username                               = "Gatekeeper username";
+window.l_gk_password                               = "Gatekeeper password";
+window.l_gk_room_names                             = "Gatekeeper room names";
+///
+window.l_stun_server                               = "STUN сервер";
+window.l_stun_server_list                          = "STUN сервера";
+///
+window.l_rtp_input_timeout                         = "RTP таймаут";
+window.l_received_vfu_delay                        = "Ограничение VFU";
+window.l_video_cache                               = "Видео кэширование";
+window.l_ping_options_interval                     = "ping/options интервал";
+window.l_internal_call_processing                  = "Внутренние звонки";
+window.l_room_auto_create_when_connecting          = "Автоматическое создание при подключении";
+///

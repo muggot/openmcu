@@ -32,7 +32,7 @@ class TablePConfigPage : public PConfigPage
       buttonUp = buttonDown = buttonClone = buttonDelete = FALSE;
       colStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-right:inherit;";
       rowStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
-      rowFieldStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;width:300px;'>";
+      rowFieldStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;width:350px;'>";
       itemStyle = "<td align='left' valign='top' style='background-color:"+itemColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
       itemInfoStyle = "<td rowspan='%ROWSPAN%' align='left' valign='top' style='background-color:"+itemInfoColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
       textStyle = "font-size:13px;margin:2px 0px 2px 0px;padding:0px 3px 0px 3px;";
@@ -138,41 +138,41 @@ class TablePConfigPage : public PConfigPage
      PString s = "<tr><td align='left' colspan='3' style='background-color:white;padding:0px;'><p style='text-align:center;"+textStyle+"'><b>"+name+"</b></p></td>";
      return s;
    }
-   PString StringField(PString name, PString value, int width=0, PString info="", PINDEX rowSpan=1)
+   PString StringField(PString key, PString name, PString value, int width=0, PString info="", PINDEX rowSpan=1)
    {
-     return NewRowField(name) + StringItem(name, value, width) + InfoItem(info, rowSpan);
+     return NewRowField(key, name) + StringItem(key, value, width) + InfoItem(info, rowSpan);
    }
-   PString AccountField(PString name, PString value, int width=0, PString info="", PINDEX rowSpan=1)
+   PString AccountField(PString key, PString name, PString value, int width=0, PString info="", PINDEX rowSpan=1)
    {
-     return NewRowField(name) + AccountItem(name, value, width) + InfoItem(info, rowSpan);
+     return NewRowField(key, name) + AccountItem(key, value, width) + InfoItem(info, rowSpan);
    }
-   PString PasswordField(PString name, PString value, int width=0, PString info="", PINDEX rowSpan=1)
+   PString PasswordField(PString key, PString name, PString value, int width=0, PString info="", PINDEX rowSpan=1)
    {
-     return NewRowField(name) + PasswordItem(name, value, width) + InfoItem(info, rowSpan);
+     return NewRowField(key, name) + PasswordItem(key, value, width) + InfoItem(info, rowSpan);
    }
-   PString IntegerField(PString name, PString value, int min, int max, int width=0, PString info="", PINDEX rowSpan=1)
+   PString IntegerField(PString key, PString name, PString value, int min, int max, int width=0, PString info="", PINDEX rowSpan=1)
    {
-     return NewRowField(name) + IntegerItem(name, value, min, max, width) + InfoItem(info, rowSpan);
+     return NewRowField(key, name) + IntegerItem(key, value, min, max, width) + InfoItem(info, rowSpan);
    }
-   PString BoolField(PString name, BOOL value, PString info="", PINDEX rowSpan=1)
+   PString BoolField(PString key, PString name, BOOL value, PString info="", PINDEX rowSpan=1)
    {
-     return NewRowField(name) + BoolItem(name, value) + InfoItem(info, rowSpan);
+     return NewRowField(key, name) + BoolItem(key, value) + InfoItem(info, rowSpan);
    }
-   PString SelectField(PString name, PString value, PString values, int width=0, PString info="", PINDEX rowSpan=1)
+   PString SelectField(PString key, PString name, PString value, PString values, int width=0, PString info="", PINDEX rowSpan=1)
    {
-     return NewRowField(name) + SelectItem(name, value, values, width) + InfoItem(info, rowSpan);
+     return NewRowField(key, name) + SelectItem(key, value, values, width) + InfoItem(info, rowSpan);
    }
-   PString ArrayField(PString name, PString values, int width=0, PString info="", PINDEX rowSpan=1)
+   PString ArrayField(PString key, PString name, PString values, int width=0, PString info="", PINDEX rowSpan=1)
    {
      PStringArray data = values.Tokenise(separator);
-     PString s = NewRowText(name);
-     s += NewItemArray(name);
+     PString s = NewRowText(key, name);
+     s += NewItemArray(key);
      if(data.GetSize() == 0)
      {
-       s += StringItemArray(name, "", width);
+       s += StringItemArray(key, "", width);
      } else {
        for(PINDEX i = 0; i < data.GetSize(); i++)
-         s += StringItemArray(name, data[i], width);
+         s += StringItemArray(key, data[i], width);
      }
      s += EndItemArray();
      s += InfoItem(info, rowSpan);
@@ -198,18 +198,22 @@ class TablePConfigPage : public PConfigPage
      PString s = Row();
      return s+colStyle+"width:"+w+"'><p style='"+textStyle+";width:"+w+"'>"+name+"</p>";
    }
-   PString NewRowText(PString name)
+   PString NewRowText(PString key, PString name = "")
    {
+     if(name == "")
+       name = key;
      PString s = Row();
-     s += rowStyle+"<input name='"+name+"' value='"+name+"' type='hidden'><p style='"+textStyle+"'>"+name+"</p>";
+     s += rowStyle+"<input name='"+key+"' value='"+key+"' type='hidden'><p style='"+textStyle+"'>"+name+"</p>";
      s += "</td>";
      if(buttons() != "") s += rowStyle+buttons()+"</td>";
      return s;
    }
-   PString NewRowField(PString name)
+   PString NewRowField(PString key, PString name = "")
    {
+     if(name == "")
+       name = key;
      PString s = Row();
-     s += rowFieldStyle+"<input name='"+name+"' value='"+name+"' type='hidden'><p style='"+textStyle+"'>"+name+"</p>";
+     s += rowFieldStyle+"<input name='"+key+"' value='"+key+"' type='hidden'><p style='"+textStyle+"'>"+name+"</p>";
      s += "</td>";
      if(buttons() != "") s += rowStyle+buttons()+"</td>";
      return s;

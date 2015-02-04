@@ -500,11 +500,11 @@ class Registrar : public PThread
     PString trace_section;
 
     BOOL allow_internal_calls;
-    BOOL sip_require_password;
+    BOOL sip_allow_unauth_reg;
     BOOL sip_allow_unauth_mcu_calls;
     BOOL sip_allow_unauth_internal_calls;
     BOOL enable_gatekeeper;
-    BOOL h323_require_h235;
+    BOOL h323_allow_unauth_reg;
     BOOL h323_allow_unreg_mcu_calls;
     BOOL h323_allow_unreg_internal_calls;
     int sip_reg_min_expires;

@@ -19,7 +19,7 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
   RegistrarAccount *raccount = NULL;
 
   raccount = FindAccountWithLock(ACCOUNT_TYPE_SIP, username);
-  if(!raccount && !sip_require_password)
+  if(!raccount && sip_allow_unauth_reg)
     raccount = InsertAccountWithLock(ACCOUNT_TYPE_SIP, username);
 
   int response_code = SipPolicyCheck(msg, msg_reply, raccount, NULL);
@@ -371,9 +371,9 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
 
   if(request == sip_method_register)
   {
-    if(!raccount_in->enable && sip_require_password)
+    if(!raccount_in->enable && !sip_allow_unauth_reg)
       return 403; // SIP_403_FORBIDDEN
-    if(!sip_require_password || raccount_in->password == "")
+    if(sip_allow_unauth_reg || raccount_in->password == "")
       return 0;
     // add headers
     sip_authorization_t *sip_www_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
@@ -401,11 +401,11 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   }
   if(request == sip_method_message)
   {
-    if(!raccount_in->enable && sip_require_password)
+    if(!raccount_in->enable && !sip_allow_unauth_reg)
       return 403; // SIP_403_FORBIDDEN
     if(!raccount_out || (raccount_out->host == "" || raccount_out->port == 0))
       return 404; // SIP_404_NOT_FOUND
-    if(!sip_require_password || raccount_in->password == "")
+    if(sip_allow_unauth_reg || raccount_in->password == "")
       return 0;
     // add headers
     sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
@@ -416,9 +416,9 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   }
   if(request == sip_method_subscribe)
   {
-    if(!raccount_in->enable && sip_require_password)
+    if(!raccount_in->enable && !sip_allow_unauth_reg)
       return 403; // SIP_403_FORBIDDEN
-    if(!sip_require_password || raccount_in->password == "")
+    if(sip_allow_unauth_reg || raccount_in->password == "")
       return 0;
     // add headers
     sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());

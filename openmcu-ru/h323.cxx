@@ -823,6 +823,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         int codecCacheMode=-1, cacheUsersNumber=-1;
         MCUH323Connection * conn = NULL;
         DWORD orx=0, otx=0, vorx=0, votx=0, prx=0, ptx=0, vprx=0, vptx=0, plost=0, vplost=0, plostTx=0, vplostTx=0;
+        bool isAudioCache = false;
         if(member->GetType() == MEMBER_TYPE_PIPE)
         {
           duration = now - member->GetStartTime();
@@ -872,6 +873,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
           ConferenceCacheMember * cacheMember = dynamic_cast<ConferenceCacheMember *>(member);
           if(cacheMember)
           {
+            isAudioCache = cacheMember->IsAudio();
             formatString = cacheMember->GetCacheName();
             cacheUsersNumber = cacheMember->GetCacheUsersNumber();
             codecCacheMode = 1;
@@ -931,6 +933,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
           << "," << prx << "," << ptx << "," << vprx << "," << vptx            // c[r][4][m][18-21]: prx, ptx, vprx, vptx
           << "," << JsQuoteScreen(ra)                                          // c[r][4][m][22]: remote application name
           << "," << plost << "," << vplost << "," << plostTx << "," << vplostTx// c[r][4][m][23-26]: rx & tx_from_RTCP packets lost (audio, video)
+          << "," << isAudioCache                                               // c[r][4][m][27]: audio cache
           << ")";
         firstMember = FALSE;
       }
@@ -945,6 +948,8 @@ PString MCUH323EndPoint::GetRoomStatusJS()
   str += ")";
   return str;
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323EndPoint::GetRoomStatusJSStart()
 {
