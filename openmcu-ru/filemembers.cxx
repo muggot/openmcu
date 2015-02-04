@@ -307,7 +307,7 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
   while(GetCacheUsersNumber() != 0)
   {
     unsigned flags = 0;
-    codec->Read(NULL, length, frame);
+    codec->Read(frame.GetPayloadPtr(), length, frame);
     PutCacheRTP(cache, frame, length, flags);
     MCUTime::Sleep(1);
   }
