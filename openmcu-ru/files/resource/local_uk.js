@@ -178,8 +178,8 @@ window.l_name_time_limit               = 'Обмежити за часом';
 
 window.l_name_display_name                         = "Ім'я, що відображається";
 window.l_name_frame_rate_from_mcu                  = 'Частота кадрів від MCU';
-window.l_name_bandwidth_from_mcu                   = 'Бітрейт від MCU';
-window.l_name_bandwidth_to_mcu                     = 'Бітрейт до MCU';
+window.l_name_bandwidth_from_mcu                   = 'Бітрейт від MCU, Кбіт/с';
+window.l_name_bandwidth_to_mcu                     = 'Бітрейт до MCU, Кбіт/с';
 window.l_name_transport                            = 'Транспортний протокол';
 window.l_name_port                                 = 'Порт';
 
@@ -262,20 +262,20 @@ window.l_name_auto_record_stop         = 'Автоматичний запис (�
 ///
 window.l_restore_defaults                          = "Відновити налаштування за замовчуванням";
 window.l_language                                  = "Мова";
-window.l_server_id                                 = "OpenMCU-ru ідентифікатор сервера";
+window.l_server_id                                 = "Ідентифікатор сервера OpenMCU-ru";
 window.l_default_protocol_for_outgoing_calls       = "Протокол за замовчуванням для вихідних дзвінків";
 window.l_http_secure                               = "HTTPS";
 window.l_http_certificate                          = "HTTPS сертифікат";
 window.l_http_ip                                   = "HTTP IP-адреса";
 window.l_http_port                                 = "HTTP порт";
-window.l_rtp_base_port                             = "RTP Base Port";
-window.l_rtp_max_port                              = "RTP Max Port";
+window.l_rtp_base_port                             = "RTP початковий порт";
+window.l_rtp_max_port                              = "RTP максимальний порт";
 window.l_trace_level                               = "Рівень трасировки";
 window.l_rotate_trace                              = "Ротація файлів трасировки при запуску";
-window.l_log_level                                 = "Рівень журналу (логу)";
+window.l_log_level                                 = "Рівень системного журналу (логу)";
 window.l_call_log_filename                         = "Файл журналу дзвінків";
-window.l_room_control_event_buffer_size            = "Room control event buffer size";
-window.l_copy_web_log                              = "Копіювати web log (текст чату) у файл журналу дзвінків";
+window.l_room_control_event_buffer_size            = "Розмір буфера подій веб-журналу";
+window.l_copy_web_log                              = "Копіювати веб-журнал у файл журналу дзвінків";
 window.l_default_room                              = "Кімната за замовчуванням";
 window.l_reject_duplicate_name                     = "Відхилити дзвінки терміналів з однаковими іменами";
 window.l_allow_loopback_calls                      = "Дозволити дзвінки самому собі (loopback)";
@@ -294,21 +294,21 @@ window.l_h323_gatekeeper_minimum_ttl               = "H.323 мінімальни
 window.l_h323_gatekeeper_maximum_ttl               = "H.323 максимальний інтервал реєстрації";
 ///
 window.l_enable_video                              = "Включити відео";
-window.l_video_frame_rate                          = "Частота кадрів відео";
+window.l_video_frame_rate                          = "Відео частота кадрів";
 window.l_max_bit_rate                              = "Максимальний бітрейт";
 window.l_tx_key_frame_period                       = "Інтервал відправки опорних кадрів";
 window.l_encoding_threads                          = "Кількість потоків кодування";
 window.l_encoding_cpu_used                         = "Використання процесора для кодування";
 ///
 window.l_enable_export                             = "Включити експорт";
-window.l_video_frame_width                         = "Ширина відео кадрів";
-window.l_video_frame_height                        = "Висота відео кадрів";
-window.l_audio_sample_rate                         = "Частота дискретизації аудіо";
-window.l_audio_channels                            = "Аудіо канали";
+window.l_video_frame_width                         = "Відео ширина кадрів";
+window.l_video_frame_height                        = "Відео висота кадрів";
+window.l_audio_sample_rate                         = "Аудіо частота дискретизації";
+window.l_audio_channels                            = "Аудіо кількість каналів";
 ///
-window.l_listener                                  = "Listener";
-window.l_interface                                 = "Interface";
-window.l_nat_router_ip                             = "NAT Router IP";
+window.l_listener                                  = "Слухати (Listener)";
+window.l_interface                                 = "Інтерфейс";
+window.l_nat_router_ip                             = "NAT IP-адреса роутера";
 window.l_treat_as_global_for_nat                   = "Treat as global for NAT";
 window.l_disable_fast_start                        = "Disable Fast-Start";
 window.l_disable_h245_tunneling                    = "Disable H.245 Tunneling";
