@@ -378,13 +378,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   // create monitoring page
   PString monitorText =
-#  ifdef GIT_REVISION
-#    define _QUOTE_MACRO_VALUE1(x) #x
-#    define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
-                        (PString("OpenMCU-ru REVISION ") + _QUOTE_MACRO_VALUE(GIT_REVISION) +"\n\n") +
-#    undef _QUOTE_MACRO_VALUE
-#    undef _QUOTE_MACRO_VALUE1
-#  endif
+#ifdef GIT_REVISION
+                        (PString("OpenMCU-ru REVISION ") + MCU_STRINGIFY(GIT_REVISION) +"\n\n") +
+#endif
                         "<!--#equival monitorinfo-->"
                         "<!--#equival mcuinfo-->";
   httpNameSpace.AddResource(new PServiceHTTPString("monitor.txt", monitorText, "text/plain", authConference), PHTTPSpace::Overwrite);
@@ -670,11 +666,7 @@ void OpenMCU::MCUHTTPListenerDelete()
 void OpenMCU::PrintOnStartInfo()
 {
 #ifdef GIT_REVISION
-  #define _QUOTE_MACRO_VALUE1(x) #x
-  #define _QUOTE_MACRO_VALUE(x) _QUOTE_MACRO_VALUE1(x)
-  PTRACE(0, trace_section << "git revision: " << _QUOTE_MACRO_VALUE(GIT_REVISION));
-  #undef _QUOTE_MACRO_VALUE
-  #undef _QUOTE_MACRO_VALUE1
+  PTRACE(0, trace_section << "git revision: " << MCU_STRINGIFY(GIT_REVISION));
 #endif
 #ifdef __VERSION__
   PTRACE(0, trace_section << "GCC " << __VERSION__);

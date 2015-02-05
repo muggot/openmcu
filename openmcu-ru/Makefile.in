@@ -22,8 +22,8 @@ STDCXXFLAGS    += @STDCXXFLAGS@
 CPPFLAGS       += @MCU_CPPFLAGS@
 OPTCCFLAGS      =$(CPPFLAGS)
 
-git_revision        = $(shell git rev-list master --max-count=1 HEAD)
-#git_revision_number = $(shell git rev-list master | wc -l)
+git_revision        = $(shell git rev-list HEAD --max-count=1)
+#git_revision_number = $(shell git rev-list HEAD | wc -l)
 STDCCFLAGS     +=-D GIT_REVISION=$(git_revision)
 
 PTLIBDIR        = @PTLIBDIR@

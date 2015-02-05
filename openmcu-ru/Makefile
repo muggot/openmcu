@@ -22,8 +22,8 @@ STDCXXFLAGS    +=
 CPPFLAGS       += -I../libs/h323plus/include -I../libs/libyuv/include -I../libs/ptlib/include -I../libs/sofia-sip/libsofia-sip-ua/bnf -I../libs/sofia-sip/libsofia-sip-ua/docs -I../libs/sofia-sip/libsofia-sip-ua/features -I../libs/sofia-sip/libsofia-sip-ua/http -I../libs/sofia-sip/libsofia-sip-ua/ipt -I../libs/sofia-sip/libsofia-sip-ua/iptsec -I../libs/sofia-sip/libsofia-sip-ua/msg -I../libs/sofia-sip/libsofia-sip-ua/nea -I../libs/sofia-sip/libsofia-sip-ua/nta -I../libs/sofia-sip/libsofia-sip-ua/nth -I../libs/sofia-sip/libsofia-sip-ua/nua -I../libs/sofia-sip/libsofia-sip-ua/sdp -I../libs/sofia-sip/libsofia-sip-ua/sip -I../libs/sofia-sip/libsofia-sip-ua/soa -I../libs/sofia-sip/libsofia-sip-ua/sresolv -I../libs/sofia-sip/libsofia-sip-ua/stun -I../libs/sofia-sip/libsofia-sip-ua/su -I../libs/sofia-sip/libsofia-sip-ua/tport -I../libs/sofia-sip/libsofia-sip-ua/url -I/opt/include -I/opt/openmcu-ru/include -I/usr/include -I/usr/include/freetype2 -I/usr/include/srtp/ -I/usr/local/include
 OPTCCFLAGS      =$(CPPFLAGS)
 
-git_revision        = $(shell git rev-list master --max-count=1 HEAD)
-#git_revision_number = $(shell git rev-list master | wc -l)
+git_revision    = $(shell git rev-list HEAD --max-count=1)
+#git_revision_number = $(shell git rev-list HEAD | wc -l)
 STDCCFLAGS     +=-D GIT_REVISION=$(git_revision)
 
 PTLIBDIR        = /opt/git/test/libs/ptlib
