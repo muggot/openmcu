@@ -898,9 +898,9 @@ void Registrar::InitAccounts()
     raccount->display_name = scfg.GetString(DisplayNameKey);
     if(account_type == ACCOUNT_TYPE_SIP)
     {
-      raccount->keep_alive_interval = scfg.GetString("Ping interval").AsInteger();
+      raccount->keep_alive_interval = scfg.GetString(PingIntervalKey).AsInteger();
       if(raccount->keep_alive_interval == 0)
-        raccount->keep_alive_interval = gcfg.GetString("Ping interval").AsInteger();
+        raccount->keep_alive_interval = gcfg.GetString(PingIntervalKey).AsInteger();
       if(raccount->keep_alive_interval != 0)
         raccount->keep_alive_enable = TRUE;
       else

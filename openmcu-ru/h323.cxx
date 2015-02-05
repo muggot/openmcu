@@ -3142,7 +3142,7 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
 BOOL MCUH323Connection::CheckVFU()
 {
   PString delay = GetEndpointParam(ReceivedVFUDelayKey, "");
-  if(delay == "")
+  if(delay == "" || delay == DisableKey)
     return TRUE;
   if(delay == "0/0")
     return FALSE;

@@ -180,8 +180,8 @@ window.l_name_time_limit               = 'Ограничение по време
 
 window.l_name_display_name                         = 'Отображаемое имя';
 window.l_name_frame_rate_from_mcu                  = 'Частота кадров от MCU';
-window.l_name_bandwidth_from_mcu                   = 'Битрейт от MCU, Kbit/s';
-window.l_name_bandwidth_to_mcu                     = 'Битрейт к MCU, Kbit/s';
+window.l_name_bandwidth_from_mcu                   = 'Битрейт от MCU, Кбит/с';
+window.l_name_bandwidth_to_mcu                     = 'Битрейт к MCU, Кбит/с';
 window.l_name_transport                            = 'Транспорт';
 window.l_name_port                                 = 'порт';
 
@@ -264,23 +264,23 @@ window.l_startdatetime                             = "Дата и время н�
 ///
 window.l_restore_defaults                          = "Восстановить значения по умолчанию";
 window.l_language                                  = "Language";
-window.l_server_id                                 = "OpenMCU-ru идентификатор сервера";
+window.l_server_id                                 = "Идентификатор сервера OpenMCU-ru";
 window.l_default_protocol_for_outgoing_calls       = "Протокол по умолчанию для исходящих звонков";
 window.l_http_secure                               = "HTTPS";
 window.l_http_certificate                          = "HTTPS сертификат";
 window.l_http_ip                                   = "HTTP IP-адрес";
 window.l_http_port                                 = "HTTP порт";
-window.l_rtp_base_port                             = "RTP Base Port";
-window.l_rtp_max_port                              = "RTP Max Port";
-window.l_trace_level                               = "Trace level";
-window.l_rotate_trace                              = "Rotate trace files at startup";
-window.l_log_level                                 = "Log Level";
-window.l_call_log_filename                         = "Call log filename";
-window.l_room_control_event_buffer_size            = "Room control event buffer size";
-window.l_copy_web_log                              = "Copy web log to call log";
-window.l_default_room                              = "Default room";
-window.l_reject_duplicate_name                     = "Reject duplicate name";
-window.l_allow_loopback_calls                      = "Allow loopback calls";
+window.l_rtp_base_port                             = "RTP начальный порт";
+window.l_rtp_max_port                              = "RTP максимальный порт";
+window.l_trace_level                               = "Уровень трассировки";
+window.l_rotate_trace                              = "Ротация файлов трассировки при запуске";
+window.l_log_level                                 = "Уровень системного лога";
+window.l_call_log_filename                         = "Файл журнала звонков";
+window.l_room_control_event_buffer_size            = "Размер буфера событий веб-журнала";
+window.l_copy_web_log                              = "Копировать веб-журнал в журнал звонков";
+window.l_default_room                              = "Комната по умолчанию";
+window.l_reject_duplicate_name                     = "Отклонить повторяющееся имя участника";
+window.l_allow_loopback_calls                      = "Разрешить loopback звонки";
 ///
 window.l_allow_internal_calls                      = "Разрешить внутренние звонки";
 window.l_sip_allow_reg_without_auth                = "SIP разрешить регистрацию без аутентификации";
@@ -296,21 +296,21 @@ window.l_h323_gatekeeper_minimum_ttl               = "H.323 минимальны
 window.l_h323_gatekeeper_maximum_ttl               = "H.323 максимальный интервал регистрации";
 ///
 window.l_enable_video                              = "Включить видео";
-window.l_video_frame_rate                          = "Частота кадров видео";
 window.l_max_bit_rate                              = "Максимальный битрейт";
 window.l_tx_key_frame_period                       = "Интервал отправки опорных кадров";
 window.l_encoding_threads                          = "Количество потоков кодирования";
 window.l_encoding_cpu_used                         = "Использование процессора для кодирования";
 ///
-window.l_enable_export                             = "Enable export";
-window.l_video_frame_width                         = "Video frame width";
-window.l_video_frame_height                        = "Video frame height";
-window.l_audio_sample_rate                         = "Audio sample rate";
-window.l_audio_channels                            = "Audio channels";
+window.l_enable_export                             = "Включить экспорт";
+window.l_video_frame_rate                          = "Видео частота кадров";
+window.l_video_frame_width                         = "Видео ширина кадра";
+window.l_video_frame_height                        = "Видео высота кадра";
+window.l_audio_sample_rate                         = "Аудио частота дискретизации";
+window.l_audio_channels                            = "Аудио количество каналов";
 ///
-window.l_listener                                  = "Listener";
-window.l_interface                                 = "Interface";
-window.l_nat_router_ip                             = "NAT Router IP";
+window.l_listener                                  = "Слушатель(listener)";
+window.l_interface                                 = "Интерфейс";
+window.l_nat_router_ip                             = "NAT IP-адрес роутера";
 window.l_treat_as_global_for_nat                   = "Treat as global for NAT";
 window.l_disable_fast_start                        = "Disable Fast-Start";
 window.l_disable_h245_tunneling                    = "Disable H.245 Tunneling";
@@ -326,7 +326,7 @@ window.l_stun_server                               = "STUN сервер";
 window.l_stun_server_list                          = "STUN сервера";
 ///
 window.l_rtp_input_timeout                         = "RTP таймаут";
-window.l_received_vfu_delay                        = "Ограничение VFU";
+window.l_received_vfu_delay                        = "Ограничение VFU, з/с";
 window.l_video_cache                               = "Видео кэширование";
 window.l_ping_options_interval                     = "ping/options интервал";
 window.l_internal_call_processing                  = "Внутренние звонки";

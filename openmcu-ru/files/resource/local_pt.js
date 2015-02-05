@@ -316,7 +316,7 @@ window.l_stun_server                               = "STUN server";
 window.l_stun_server_list                          = "STUN server list";
 ///
 window.l_rtp_input_timeout                         = "RTP Input Timeout";
-window.l_received_vfu_delay                        = "Received VFU delay";
+window.l_received_vfu_delay                        = "Limitation VFU, r/s";
 window.l_video_cache                               = "Video cache";
 window.l_ping_options_interval                     = "ping/options interval";
 window.l_internal_call_processing                  = "Internal call processing";

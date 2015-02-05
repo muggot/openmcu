@@ -253,7 +253,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // Reset section
   s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
   // Language
-  s << SelectField("Language", JsLocal("language"), cfg.GetString("Language"), ",EN,FR,JP,PT,RU,UK");
+  //s << SelectField("Language", JsLocal("language"), cfg.GetString("Language"), ",EN,FR,JP,PT,RU,UK");
+  s << SelectField("Language", "Language", cfg.GetString("Language"), ",EN,FR,JP,PT,RU,UK");
   // MCU Server Id
   s << StringField(ServerIdKey, JsLocal("server_id"), OpenMCU::Current().GetServerId(), 250);
 
@@ -468,17 +469,35 @@ RegistrarPConfigPage::RegistrarPConfigPage(PHTTPServiceProcess & app,const PStri
 
   // bak 2014.06.03 ////////////////////////////////////
   if(cfg.HasKey("SIP registrar required password authorization"))
+  {
     cfg.SetBoolean("SIP allow registration without authentication", !cfg.GetBoolean("SIP registrar required password authorization"));
+    cfg.DeleteKey("SIP registrar required password authorization");
+  }
   if(cfg.HasKey("SIP allow unauthorized MCU calls"))
+  {
     cfg.SetBoolean("SIP allow MCU calls without authentication", cfg.GetBoolean("SIP allow unauthorized MCU calls"));
+    cfg.DeleteKey("SIP allow unauthorized MCU calls");
+  }
   if(cfg.HasKey("SIP allow unauthorized internal calls"))
+  {
     cfg.SetBoolean("SIP allow internal calls without authentication", cfg.GetBoolean("SIP allow unauthorized internal calls"));
+    cfg.DeleteKey("SIP allow unauthorized internal calls");
+  }
   if(cfg.HasKey("H.323 gatekeeper required password authorization"))
+  {
     cfg.SetBoolean("H.323 allow registration without authentication", !cfg.GetBoolean("H.323 gatekeeper required password authorization"));
+    cfg.DeleteKey("H.323 gatekeeper required password authorization");
+  }
   if(cfg.HasKey("H.323 allow unregistered MCU calls"))
+  {
     cfg.SetBoolean("H.323 allow MCU calls without registration", cfg.GetBoolean("H.323 allow unregistered MCU calls"));
+    cfg.DeleteKey("H.323 allow unregistered MCU calls");
+  }
   if(cfg.HasKey("H.323 allow unregistered internal calls"))
+  {
     cfg.SetBoolean("H.323 allow internal calls without registration", cfg.GetBoolean("H.323 allow unregistered internal calls"));
+    cfg.DeleteKey("H.323 allow unregistered internal calls");
+  }
   //////////////////////////////////////////////////////
 
   s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
@@ -939,11 +958,14 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       // bandwidth to MCU
       s2 += rowArray+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // VFU delay
-      s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey, DisableKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ","+ReceivedVFUDelaySelect, 70)+"</tr>";
       // RTP timeout
-      s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
       // Video cache
-      s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ",Enable,Disable", 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey, EnableKey), EnableSelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ","+EnableSelect, 70)+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;
@@ -1198,7 +1220,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+JsLocal("ping_options_interval")+SelectItem(name, scfg.GetString(PingIntervalKey, ""), PingIntervalSelect)+"</tr>";
+      s2 += rowArray+JsLocal("ping_options_interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
       s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
       s2 += EndItemArray();
       s << s2;
@@ -1210,7 +1232,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
-      s2 += rowArray+JsLocal("ping_options_interval")+SelectItem(name, scfg.GetString(PingIntervalKey, ""), PingIntervalSelect)+"</tr>";
+      s2 += rowArray+JsLocal("ping_options_interval")+SelectItem(name, scfg.GetString(PingIntervalKey), ","+PingIntervalSelect)+"</tr>";
       s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
       s2 += EndItemArray();
       s << s2;
@@ -1227,7 +1249,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+JsLocal("name_transport")+SelectItem(name, scfg.GetString(TransportKey), ",udp,tcp,tls")+"</tr>";
       //
-      s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), RtpProtoSelect)+"</tr>";
+      if(name == "*") s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey, "RTP"), RtpProtoSelect)+"</tr>";
+      else            s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), ","+RtpProtoSelect)+"</tr>";
       //
       s2 += rowArray+JsLocal("nat_router_ip")+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
@@ -1254,11 +1277,14 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       // bandwidth to MCU
       s2 += rowArray+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // VFU delay
-      s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey, DisableKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ","+ReceivedVFUDelaySelect, 70)+"</tr>";
       // RTP timeout
-      s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
       // Video cache
-      s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ",Enable,Disable", 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey, EnableKey), EnableSelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ","+EnableSelect, 70)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
