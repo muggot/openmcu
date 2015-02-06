@@ -17,12 +17,13 @@
 enum MemberTypes
 {
   MEMBER_TYPE_NONE       = 0,
-  MEMBER_TYPE_MCU        = 1,
-  MEMBER_TYPE_PIPE       = 2,
+  MEMBER_TYPE_MCU        = 2,
+  //
+  MEMBER_TYPE_GSYSTEM    = 1, // MEMBER_TYPE_PIPE|MEMBER_TYPE_CACHE|MEMBER_TYPE_RECORDER|MEMBER_TYPE_STREAM
+  MEMBER_TYPE_PIPE       = 1,
   MEMBER_TYPE_CACHE      = 3,
-  MEMBER_TYPE_RECORDER   = 4,
-  MEMBER_TYPE_STREAM     = 5,
-  MEMBER_TYPE_GSYSTEM    = (MEMBER_TYPE_PIPE|MEMBER_TYPE_CACHE|MEMBER_TYPE_RECORDER|MEMBER_TYPE_STREAM)
+  MEMBER_TYPE_RECORDER   = 7,
+  MEMBER_TYPE_STREAM     = 15,
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -626,7 +627,8 @@ class ConferenceManager : public PObject
     Conference * FindConferenceWithLock(long id);
     Conference * FindConferenceWithLock(const PString & room);
 
-    Conference * MakeConferenceWithLock(const PString & number, PString name = "");
+    BOOL CheckJoinConference(const PString & number);
+    Conference * MakeConferenceWithLock(const PString & number, PString name = "", BOOL ignoreRestriction = FALSE);
 
     ConferenceProfile * FindProfileWithLock(const PString & roomName, const PString & memberName);
     ConferenceProfile * FindProfileWithLock(Conference * conference, const PString & memberName);

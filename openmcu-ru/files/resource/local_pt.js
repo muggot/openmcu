@@ -115,7 +115,7 @@ e baixar as mesmas.';
 window.l_info_connections ='\
 Esta página mostra as conexões existentes e parâmteros dos terminais.\
 ';
-window.l_info_param_general ='Parâmetros globais do servidor. Para restaurar configuração por defeito - Marque "RESTORE DEFAULTS" na checkbox and clique Aceita.';
+window.l_info_param_general ='Parâmetros globais do servidor.';
 window.l_info_param_registrar = '';
 window.l_info_param_conference ='';
 window.l_info_param_managing_users = '';
@@ -206,9 +206,9 @@ window.l_name_parameters_for_sending               = "Parâmetros para envio";
 window.l_name_codec_parameters                     = "Parâmetros de Codec<br>(sobrepõe o recebido)";
 window.l_name_default_parameters                   = "Parâmetros por defeito";
 
-window.l_room_invite_all_inactive_members          = 'Convida TODOS os membros inactivos?';
-window.l_room_drop_all_active_members              = 'Desliga TODAS conexões activas?';
-window.l_room_remove_all_inactive_members          = 'Remove TODOS membros inactivos da lista?';
+window.l_room_invite_all_inactive_members          = 'Convida TODOS os membros inactivos';
+window.l_room_drop_all_active_members              = 'Desliga TODAS conexões activas';
+window.l_room_remove_all_inactive_members          = 'Remove TODOS membros inactivos da lista';
 window.l_room_drop_connection_with                 = 'Desliga conexões com';
 window.l_room_remove_from_list                     = 'Remove da lista';
 
@@ -250,3 +250,80 @@ window.l_startdatetime                             = "Start Date/Time";
 window.l_lock_tpl_default                          = "Template locks conference by default";
 window.l_name_force_split_video        = "Caching and control via browser";
 window.l_name_auto_record_stop         = 'Auto record (stop)';
+
+///
+window.l_restore_defaults                          = "RESTORE DEFAULTS";
+window.l_language                                  = "Language";
+window.l_server_id                                 = "OpenMCU-ru Server Id";
+window.l_default_protocol_for_outgoing_calls       = "Default protocol for outgoing calls";
+window.l_http_secure                               = "HTTP secure";
+window.l_http_certificate                          = "HTTP certificate";
+window.l_http_ip                                   = "HTTP IP";
+window.l_http_port                                 = "HTTP Port";
+window.l_rtp_base_port                             = "RTP Base Port";
+window.l_rtp_max_port                              = "RTP Max Port";
+window.l_trace_level                               = "Trace level";
+window.l_rotate_trace                              = "Rotate trace files at startup";
+window.l_log_level                                 = "Log Level";
+window.l_call_log_filename                         = "Call log filename";
+window.l_room_control_event_buffer_size            = "Room control event buffer size";
+window.l_copy_web_log                              = "Copy web log to call log";
+window.l_default_room                              = "Default room";
+window.l_reject_duplicate_name                     = "Reject duplicate name";
+window.l_allow_loopback_calls                      = "Allow loopback calls";
+///
+window.l_allow_internal_calls                      = "Allow internal calls";
+window.l_sip_allow_reg_without_auth                = "SIP allow registration without authentication";
+window.l_sip_allow_mcu_calls_without_auth          = "SIP allow MCU calls without authentication";
+window.l_sip_allow_internal_calls_without_auth     = "SIP allow internal calls without authentication";
+window.l_sip_registrar_minimum_expiration          = "SIP registrar minimum expiration";
+window.l_sip_registrar_maximum_expiration          = "SIP registrar maximum expiration";
+window.l_h323_gatekeeper_enable                    = "H.323 gatekeeper enable";
+window.l_h323_allow_reg_without_auth               = "H.323 allow registration without authentication";
+window.l_h323_allow_mcu_calls_without_reg          = "H.323 allow MCU calls without registration";
+window.l_h323_allow_internal_calls_without_reg     = "H.323 allow internal calls without registration";
+window.l_h323_gatekeeper_minimum_ttl               = "H.323 gatekeeper minimum Time To Live";
+window.l_h323_gatekeeper_maximum_ttl               = "H.323 gatekeeper maximum Time To Live";
+///
+window.l_enable_video                              = "Enable video";
+window.l_max_bit_rate                              = "Max bit rate";
+window.l_tx_key_frame_period                       = "Tx key frame period";
+window.l_encoding_threads                          = "Encoding threads";
+window.l_encoding_cpu_used                         = "Encoding CPU used";
+///
+window.l_enable_export                             = "Enable export";
+window.l_video_frame_rate                          = "Video frame rate";
+window.l_video_frame_width                         = "Video frame width";
+window.l_video_frame_height                        = "Video frame height";
+window.l_audio_sample_rate                         = "Audio sample rate";
+window.l_audio_channels                            = "Audio channels";
+window.l_video_bitrate                             = "Video bitrate";
+window.l_audio_bitrate                             = "Audio bitrate";
+///
+window.l_listener                                  = "Listener";
+window.l_interface                                 = "Interface";
+window.l_nat_router_ip                             = "NAT Router IP";
+window.l_treat_as_global_for_nat                   = "Treat as global for NAT";
+window.l_disable_fast_start                        = "Disable Fast-Start";
+window.l_disable_h245_tunneling                    = "Disable H.245 Tunneling";
+window.l_gk_mode                                   = "Gatekeeper Mode";
+window.l_gk_reg_ttl                                = "Gatekeeper registration TTL(Time To Live)";
+window.l_gk_reg_retry_interval                     = "Gatekeeper request retry interval";
+window.l_gk_host                                   = "Gatekeeper host";
+window.l_gk_username                               = "Gatekeeper username";
+window.l_gk_password                               = "Gatekeeper password";
+window.l_gk_room_names                             = "Gatekeeper room names";
+///
+window.l_server                                    = "Server";
+window.l_server_list                               = "Server list";
+///
+window.l_directory                                 = "Directory";
+window.l_rtp_input_timeout                         = "RTP Input Timeout";
+window.l_received_vfu_delay                        = "Limitation VFU, r/s";
+window.l_video_cache                               = "Video cache";
+window.l_ping_options_interval                     = "ping/options interval";
+window.l_internal_call_processing                  = "Internal call processing";
+window.l_room_auto_create_when_connecting          = "Auto create when connecting";
+window.l_enter_template_name                       = "Enter template id";
+window.l_disconnect                                = "Disconnect";
+///

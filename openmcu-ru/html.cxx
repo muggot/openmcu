@@ -251,57 +251,62 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << BeginTable();
 
   // Reset section
-  s << BoolField("RESTORE DEFAULTS", FALSE);
+  s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
   // Language
-  s << SelectField("Language", cfg.GetString("Language"), ",EN,FR,JP,PT,RU,UK");
+  //s << SelectField("Language", JsLocal("language"), cfg.GetString("Language"), ",EN,FR,JP,PT,RU,UK");
+  s << SelectField("Language", "Select Language", cfg.GetString("Language"), ",EN,FR,JP,PT,RU,UK");
   // MCU Server Id
-  s << StringField(ServerIdKey, OpenMCU::Current().GetServerId(), 250);
+  s << StringField(ServerIdKey, JsLocal("server_id"), OpenMCU::Current().GetServerId(), 250);
 
-  s << SelectField(DefaultProtocolKey, cfg.GetString(DefaultProtocolKey, "sip"), "h323,sip");
+  s << SelectField(DefaultProtocolKey, JsLocal("default_protocol_for_outgoing_calls"), cfg.GetString(DefaultProtocolKey, "sip"), "h323,sip");
 
+  s << SeparatorField("");
+  s << SeparatorField("");
+  // HTTP Port number to use.
+  s << StringField(HttpIPKey, JsLocal("http_ip"), cfg.GetString(HttpIPKey, "0.0.0.0"));
+  s << IntegerField(HttpPortKey, JsLocal("http_port"), cfg.GetInteger(HttpPortKey, DefaultHTTPPort), 1, 32767);
 #if P_SSL
-  s << SeparatorField("Security");
-  s << BoolField(HTTPSecureKey, cfg.GetBoolean(HTTPSecureKey, FALSE));
-  s << StringField(HTTPCertificateFileKey, cfg.GetString(HTTPCertificateFileKey, DefaultHTTPCertificateFile), 250);
+  s << BoolField(HTTPSecureKey, JsLocal("http_secure"), cfg.GetBoolean(HTTPSecureKey, FALSE));
+  s << StringField(HTTPCertificateFileKey, JsLocal("http_certificate"), cfg.GetString(HTTPCertificateFileKey, DefaultHTTPCertificateFile), 250);
 #endif
 
-  s << SeparatorField("Port setup");
-  // HTTP Port number to use.
-  s << SeparatorField();
-  s << StringField(HttpIPKey, cfg.GetString(HttpIPKey, "0.0.0.0"));
-  s << IntegerField(HttpPortKey, cfg.GetInteger(HttpPortKey, DefaultHTTPPort), 1, 32767);
+  s << SeparatorField("");
+  s << SeparatorField("");
   // RTP Port Setup
-  s << IntegerField(RTPPortBaseKey, cfg.GetInteger(RTPPortBaseKey, 0), 0, 65535, 0, "0 = auto, Example: base=5000, max=6000");
-  s << IntegerField(RTPPortMaxKey, cfg.GetInteger(RTPPortMaxKey, 0), 0, 65535);
+  s << IntegerField(RTPPortBaseKey, JsLocal("rtp_base_port"), cfg.GetInteger(RTPPortBaseKey, 0), 0, 65535, 0, "0 = auto, Example: base=5000, max=6000");
+  s << IntegerField(RTPPortMaxKey, JsLocal("rtp_max_port"), cfg.GetInteger(RTPPortMaxKey, 0), 0, 65535);
 
-  s << SeparatorField("Log setup");
+  s << SeparatorField("");
+  s << SeparatorField("");
 #if PTRACING
   // Trace level
-  s << SelectField(TraceLevelKey, cfg.GetString(TraceLevelKey, DEFAULT_TRACE_LEVEL), "0,1,2,3,4,5,6", 0, "0=No tracing ... 6=Very detailed");
-  s << IntegerField(TraceRotateKey, cfg.GetInteger(TraceRotateKey, 0), 0, 250, 0, "0 (don't rotate) ... 200");
+  s << SelectField(TraceLevelKey, JsLocal("trace_level"), cfg.GetString(TraceLevelKey, DEFAULT_TRACE_LEVEL), "0,1,2,3,4,5,6", 0, "0=No tracing ... 6=Very detailed");
+  s << IntegerField(TraceRotateKey, JsLocal("rotate_trace"), cfg.GetInteger(TraceRotateKey, 0), 0, 250, 0, "0 (don't rotate) ... 200");
 #endif
 #ifdef SERVER_LOGS
   // Log level for messages
-  s << SelectField(LogLevelKey, cfg.GetString(LogLevelKey, DEFAULT_LOG_LEVEL), "0,1,2,3,4,5", 0, "1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug");
+  s << SelectField(LogLevelKey, JsLocal("log_level"), cfg.GetString(LogLevelKey, DEFAULT_LOG_LEVEL), "0,1,2,3,4,5", 0, "1=Fatal only, 2=Errors, 3=Warnings, 4=Info, 5=Debug");
   // Log filename
-  s << StringField(CallLogFilenameKey, cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename), 250);
+  s << StringField(CallLogFilenameKey, JsLocal("call_log_filename"), cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename), 250);
 #endif
   // Buffered events
-  s << IntegerField(HttpLinkEventBufferKey, cfg.GetInteger(HttpLinkEventBufferKey, 100), 10, 1000, 0, "range: 10...1000");
+  s << IntegerField(HttpLinkEventBufferKey, JsLocal("room_control_event_buffer_size"), cfg.GetInteger(HttpLinkEventBufferKey, 100), 10, 1000, 0, "range: 10...1000");
   // Copy web log from Room Control Page to call log
-  s << BoolField("Copy web log to call log", cfg.GetBoolean("Copy web log to call log", FALSE), "check if you want to store event log from Room Control Page");
+  s << BoolField("Copy web log to call log", JsLocal("copy_web_log"), cfg.GetBoolean("Copy web log to call log", FALSE), "check if you want to store event log from Room Control Page");
 
-  s << SeparatorField("Room setup");
+  s << SeparatorField("");
+  s << SeparatorField("");
   // Default room
   if(cfg.GetString(DefaultRoomKey) == "")
     cfg.SetString(DefaultRoomKey, DefaultRoom);
-  s << AccountField(DefaultRoomKey, cfg.GetString(DefaultRoomKey, DefaultRoom));
+  s << AccountField(DefaultRoomKey, JsLocal("default_room"), cfg.GetString(DefaultRoomKey, DefaultRoom));
   // reject duplicate name
-  s << BoolField(RejectDuplicateNameKey, cfg.GetBoolean(RejectDuplicateNameKey, FALSE));
+  s << BoolField(RejectDuplicateNameKey, JsLocal("reject_duplicate_name"), cfg.GetBoolean(RejectDuplicateNameKey, FALSE));
   // allow/disallow self-invite:
-  s << BoolField(AllowLoopbackCallsKey, cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
+  s << BoolField(AllowLoopbackCallsKey, JsLocal("allow_loopback_calls"), cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
 
-  s << SeparatorField("Video recorder setup");
+  s << SeparatorField("");
+  s << SeparatorField("");
   PString dirInfo;
   if(!PDirectory::Exists(mcu.vr_ffmpegDir) && !PFile::Exists(mcu.vr_ffmpegDir))
   {
@@ -319,8 +324,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
     else if(!(info.permissions & 0222)) dirInfo += "<b><font color=red>output directory permissions check failed</font></b>";
   }
 
-  s << StringField(RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 250, dirInfo);
-  s << SelectField(RecorderVideoCodecKey, cfg.GetString(RecorderVideoCodecKey, RecorderDefaultVideoCodec), GetRecorderCodecs(1));
+  s << StringField(RecorderFfmpegDirKey, "Recorder "+JsLocal("directory"), mcu.vr_ffmpegDir, 250, dirInfo);
+  s << SelectField(RecorderVideoCodecKey, "Recorder "+JsLocal("name_video_codec"), cfg.GetString(RecorderVideoCodecKey, RecorderDefaultVideoCodec), GetRecorderCodecs(1));
 
   // bak 2014.10.20 ////////////////////////////////////
   PString RecorderFrameWidthKey  = "Video Recorder frame width";
@@ -339,13 +344,13 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   for(int i = 0; recorder_resolutions[i].macroblocks != 0; ++i)
     resolutions += ","+PString(recorder_resolutions[i].width)+"x"+PString(recorder_resolutions[i].height);
   PString res = cfg.GetString(RecorderResolutionKey, PString(DefaultRecorderFrameWidth)+"x"+PString(DefaultRecorderFrameHeight));
-  s << SelectField(RecorderResolutionKey, res, resolutions);
+  s << SelectField(RecorderResolutionKey, "Recorder "+JsLocal("name_video_resolution"), res, resolutions);
 
-  s << IntegerField(RecorderFrameRateKey, cfg.GetInteger(RecorderFrameRateKey, DefaultRecorderFrameRate), 1, 30);
-  s << IntegerField(RecorderVideoBitrateKey, cfg.GetInteger(RecorderVideoBitrateKey), 0, 4000, 0, "kbit/s, 0 - auto");
-  s << SelectField(RecorderAudioCodecKey, cfg.GetString(RecorderAudioCodecKey, RecorderDefaultAudioCodec), GetRecorderCodecs(0));
-  s << SelectField(RecorderSampleRateKey, cfg.GetString(RecorderSampleRateKey, DefaultRecorderSampleRate), "8000,16000,32000,48000");
-  s << SelectField(RecorderAudioChansKey, cfg.GetString(RecorderAudioChansKey, DefaultRecorderAudioChans), "1,2,3,4,5,6,7,8");
+  s << IntegerField(RecorderFrameRateKey, "Recorder "+JsLocal("video_frame_rate"), cfg.GetInteger(RecorderFrameRateKey, DefaultRecorderFrameRate), 1, 30);
+  s << IntegerField(RecorderVideoBitrateKey, "Recorder "+JsLocal("video_bitrate"), cfg.GetInteger(RecorderVideoBitrateKey), 0, 4000, 0, "kbit/s, 0 - auto");
+  s << SelectField(RecorderAudioCodecKey, "Recorder "+JsLocal("name_audio_codec"), cfg.GetString(RecorderAudioCodecKey, RecorderDefaultAudioCodec), GetRecorderCodecs(0));
+  s << SelectField(RecorderSampleRateKey, "Recorder "+JsLocal("audio_sample_rate"), cfg.GetString(RecorderSampleRateKey, DefaultRecorderSampleRate), "8000,16000,32000,48000");
+  s << SelectField(RecorderAudioChansKey, "Recorder "+JsLocal("audio_channels"), cfg.GetString(RecorderAudioChansKey, DefaultRecorderAudioChans), "1,2,3,4,5,6,7,8");
 
   // get WAV file played to a user when they enter a conference
   //s << StringField(ConnectingWAVFileKey, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile));
@@ -376,6 +381,7 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
 
   s << NewRowColumn(JsLocal("name_roomname"));
   s << ColumnItem(JsLocal("name_auto_create"));
+  s << ColumnItem(JsLocal("room_auto_create_when_connecting"));
   s << ColumnItem(JsLocal("name_force_split_video"));
   s << ColumnItem(JsLocal("name_auto_delete_empty"));
   s << ColumnItem(JsLocal("name_auto_record_start"));
@@ -384,6 +390,7 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
   s << ColumnItem(JsLocal("lock_tpl_default"));
   s << ColumnItem(JsLocal("name_time_limit"));
   optionNames.AppendString(RoomAutoCreateKey);
+  optionNames.AppendString(RoomAutoCreateWhenConnectingKey);
   optionNames.AppendString(ForceSplitVideoKey);
   optionNames.AppendString(RoomAutoDeleteEmptyKey);
   optionNames.AppendString(RoomAutoRecordStartKey);
@@ -412,6 +419,9 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
     // auto create
     if(name == "*") s << EmptyInputItem(name);
     else            s << SelectItem(name, scfg.GetString(RoomAutoCreateKey, ""), ",Enable,Disable");
+    // auto create when connecting
+    if(name == "*") s << SelectItem(name, scfg.GetString(RoomAutoCreateWhenConnectingKey, "Enable"), "Enable,Disable");
+    else            s << SelectItem(name, scfg.GetString(RoomAutoCreateWhenConnectingKey, ""), ",Enable,Disable");
     // split
     if(name == "*") s << SelectItem(name, scfg.GetString(ForceSplitVideoKey, "Enable"), "Enable,Disable");
     else            s << SelectItem(name, scfg.GetString(ForceSplitVideoKey, ""), ",Enable,Disable");
@@ -462,29 +472,55 @@ RegistrarPConfigPage::RegistrarPConfigPage(PHTTPServiceProcess & app,const PStri
   s << BeginTable();
 
   // bak 2014.06.03 ////////////////////////////////////
-  if(cfg.HasKey("SIP proxy required password authorization"))
-    cfg.SetBoolean("SIP registrar required password authorization", cfg.GetBoolean("SIP proxy required password authorization"));
-  if(cfg.HasKey("H.323 gatekeeper default TTL(Time To Live)"))
-    cfg.SetString("H.323 gatekeeper maximum Time To Live", cfg.GetString("H.323 gatekeeper default TTL(Time To Live)"));
+  if(cfg.HasKey("SIP registrar required password authorization"))
+  {
+    cfg.SetBoolean("SIP allow registration without authentication", !cfg.GetBoolean("SIP registrar required password authorization"));
+    cfg.DeleteKey("SIP registrar required password authorization");
+  }
+  if(cfg.HasKey("SIP allow unauthorized MCU calls"))
+  {
+    cfg.SetBoolean("SIP allow MCU calls without authentication", cfg.GetBoolean("SIP allow unauthorized MCU calls"));
+    cfg.DeleteKey("SIP allow unauthorized MCU calls");
+  }
+  if(cfg.HasKey("SIP allow unauthorized internal calls"))
+  {
+    cfg.SetBoolean("SIP allow internal calls without authentication", cfg.GetBoolean("SIP allow unauthorized internal calls"));
+    cfg.DeleteKey("SIP allow unauthorized internal calls");
+  }
+  if(cfg.HasKey("H.323 gatekeeper required password authorization"))
+  {
+    cfg.SetBoolean("H.323 allow registration without authentication", !cfg.GetBoolean("H.323 gatekeeper required password authorization"));
+    cfg.DeleteKey("H.323 gatekeeper required password authorization");
+  }
+  if(cfg.HasKey("H.323 allow unregistered MCU calls"))
+  {
+    cfg.SetBoolean("H.323 allow MCU calls without registration", cfg.GetBoolean("H.323 allow unregistered MCU calls"));
+    cfg.DeleteKey("H.323 allow unregistered MCU calls");
+  }
+  if(cfg.HasKey("H.323 allow unregistered internal calls"))
+  {
+    cfg.SetBoolean("H.323 allow internal calls without registration", cfg.GetBoolean("H.323 allow unregistered internal calls"));
+    cfg.DeleteKey("H.323 allow unregistered internal calls");
+  }
   //////////////////////////////////////////////////////
 
-  s << BoolField("RESTORE DEFAULTS", FALSE);
-  s << BoolField("Allow internal calls", cfg.GetBoolean("Allow internal calls", TRUE));
+  s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
+  s << BoolField("Allow internal calls", JsLocal("allow_internal_calls"), cfg.GetBoolean("Allow internal calls", TRUE));
 
   s << SeparatorField("SIP");
-  s << BoolField("SIP registrar required password authorization", cfg.GetBoolean("SIP registrar required password authorization", FALSE));
-  s << BoolField("SIP allow unauthorized MCU calls", cfg.GetBoolean("SIP allow unauthorized MCU calls", TRUE));
-  s << BoolField("SIP allow unauthorized internal calls", cfg.GetBoolean("SIP allow unauthorized internal calls", TRUE));
-  s << SelectField("SIP registrar minimum expiration", cfg.GetString("SIP registrar minimum expiration", "60"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
-  s << SelectField("SIP registrar maximum expiration", cfg.GetString("SIP registrar maximum expiration", "600"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
+  s << BoolField("SIP allow registration without authentication", JsLocal("sip_allow_reg_without_auth"), cfg.GetBoolean("SIP allow registration without authentication", TRUE));
+  s << BoolField("SIP allow MCU calls without authentication", JsLocal("sip_allow_mcu_calls_without_auth"), cfg.GetBoolean("SIP allow MCU calls without authentication", TRUE));
+  s << BoolField("SIP allow internal calls without authentication", JsLocal("sip_allow_internal_calls_without_auth"), cfg.GetBoolean("SIP allow internal calls without authentication", TRUE));
+  s << SelectField("SIP registrar minimum expiration", JsLocal("sip_registrar_minimum_expiration"), cfg.GetString("SIP registrar minimum expiration", "60"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
+  s << SelectField("SIP registrar maximum expiration", JsLocal("sip_registrar_maximum_expiration"), cfg.GetString("SIP registrar maximum expiration", "600"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
 
   s << SeparatorField("H.323");
-  s << BoolField("H.323 gatekeeper enable", cfg.GetBoolean("H.323 gatekeeper enable", TRUE));
-  s << BoolField("H.323 gatekeeper required password authorization", cfg.GetBoolean("H.323 gatekeeper required password authorization", FALSE));
-  s << BoolField("H.323 allow unregistered MCU calls", cfg.GetBoolean("H.323 allow unregistered MCU calls", TRUE));
-  s << BoolField("H.323 allow unregistered internal calls", cfg.GetBoolean("H.323 allow unregistered internal calls", TRUE));
-  s << SelectField("H.323 gatekeeper minimum Time To Live", cfg.GetString("H.323 gatekeeper minimum Time To Live", "60"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
-  s << SelectField("H.323 gatekeeper maximum Time To Live", cfg.GetString("H.323 gatekeeper maximum Time To Live", "600"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
+  s << BoolField("H.323 gatekeeper enable", JsLocal("h323_gatekeeper_enable"), cfg.GetBoolean("H.323 gatekeeper enable", TRUE));
+  s << BoolField("H.323 allow registration without authentication", JsLocal("h323_allow_reg_without_auth"), cfg.GetBoolean("H.323 allow registration without authentication", TRUE));
+  s << BoolField("H.323 allow MCU calls without registration", JsLocal("h323_allow_mcu_calls_without_reg"), cfg.GetBoolean("H.323 allow MCU calls without registration", TRUE));
+  s << BoolField("H.323 allow internal calls without registration", JsLocal("h323_allow_internal_calls_without_reg"), cfg.GetBoolean("H.323 allow internal calls without registration", TRUE));
+  s << SelectField("H.323 gatekeeper minimum Time To Live", JsLocal("h323_gatekeeper_minimum_ttl"), cfg.GetString("H.323 gatekeeper minimum Time To Live", "60"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
+  s << SelectField("H.323 gatekeeper maximum Time To Live", JsLocal("h323_gatekeeper_maximum_ttl"), cfg.GetString("H.323 gatekeeper maximum Time To Live", "600"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
 
   s << EndTable();
   BuildHTML("");
@@ -649,29 +685,29 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
-  s << BoolField("RESTORE DEFAULTS", FALSE);
+  s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
 
 #if MCU_VIDEO
-  s << BoolField("Enable video", cfg.GetBoolean("Enable video", TRUE));
+  s << BoolField("Enable video", JsLocal("enable_video"), cfg.GetBoolean("Enable video", TRUE));
 #endif
-  s << IntegerField("Video frame rate", cfg.GetString("Video frame rate", DefaultVideoFrameRate), 1, MCU_MAX_FRAME_RATE, 0, "range: 1.."+PString(MCU_MAX_FRAME_RATE)+" (for outgoing video)");
+  s << IntegerField("Video frame rate", JsLocal("video_frame_rate"), cfg.GetString("Video frame rate", DefaultVideoFrameRate), 1, MCU_MAX_FRAME_RATE, 0, "range: 1.."+PString(MCU_MAX_FRAME_RATE)+" (for outgoing video)");
 
   s << SeparatorField("H.263");
-  s << IntegerField("H.263 Max Bit Rate", cfg.GetString("H.263 Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
-  s << IntegerField("H.263 Tx Key Frame Period", cfg.GetString("H.263 Tx Key Frame Period"), 0, 600, 0, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
+  s << IntegerField("H.263 Max Bit Rate", "H.263 "+JsLocal("max_bit_rate"), cfg.GetString("H.263 Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.263 Tx Key Frame Period", "H.263 "+JsLocal("tx_key_frame_period"), cfg.GetString("H.263 Tx Key Frame Period"), 0, 600, 0, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
   s << SeparatorField("H.263p");
-  s << IntegerField("H.263p Max Bit Rate", cfg.GetString("H.263p Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
-  s << IntegerField("H.263p Tx Key Frame Period", cfg.GetString("H.263p Tx Key Frame Period"), 0, 600, 0, "range 0..600, default 125 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
+  s << IntegerField("H.263p Max Bit Rate", "H.263p "+JsLocal("max_bit_rate"), cfg.GetString("H.263p Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.263p Tx Key Frame Period", "H.263p "+JsLocal("tx_key_frame_period"), cfg.GetString("H.263p Tx Key Frame Period"), 0, 600, 0, "range 0..600, default 125 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");
 
   s << SeparatorField("H.264");
-  s << IntegerField("H.264 Max Bit Rate", cfg.GetString("H.264 Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
-  s << IntegerField("H.264 Encoding Threads", cfg.GetString("H.264 Encoding Threads"), 0, 64, 0, "range 0..64 (0 auto)");
+  s << IntegerField("H.264 Max Bit Rate", "H.264 "+JsLocal("max_bit_rate"), cfg.GetString("H.264 Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
+  s << IntegerField("H.264 Encoding Threads", "H.264 "+JsLocal("encoding_threads"), cfg.GetString("H.264 Encoding Threads"), 0, 64, 0, "range 0..64 (0 auto)");
 
   s << SeparatorField("VP8");
-  s << IntegerField("VP8 Max Bit Rate", cfg.GetString("VP8 Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
-  s << IntegerField("VP8 Encoding Threads", cfg.GetString("VP8 Encoding Threads"), 0, 64, 0, "range 0..64 (0 default)");
-  s << IntegerField("VP8 Encoding CPU Used", cfg.GetString("VP8 Encoding CPU Used"), 0, 16, 0, "range: 0..16 (Values greater than 0 will increase encoder speed at the expense of quality)");
+  s << IntegerField("VP8 Max Bit Rate", "VP8 "+JsLocal("max_bit_rate"), cfg.GetString("VP8 Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
+  s << IntegerField("VP8 Encoding Threads", "VP8 "+JsLocal("encoding_threads"), cfg.GetString("VP8 Encoding Threads"), 0, 64, 0, "range 0..64 (0 default)");
+  s << IntegerField("VP8 Encoding CPU Used", "VP8 "+JsLocal("encoding_cpu_used"), cfg.GetString("VP8 Encoding CPU Used"), 0, 16, 0, "range: 0..16 (Values greater than 0 will increase encoder speed at the expense of quality)");
 
   s << EndTable();
   BuildHTML("");
@@ -690,14 +726,14 @@ ExportPConfigPage::ExportPConfigPage(PHTTPServiceProcess & app,const PString & t
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
-  s << BoolField("RESTORE DEFAULTS", FALSE);
+  s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
 
-  s << BoolField("Enable export", cfg.GetBoolean("Enable export", FALSE));
-  s << IntegerField(VideoFrameWidthKey, cfg.GetInteger(VideoFrameWidthKey, 704), 176, 1920);
-  s << IntegerField(VideoFrameHeightKey, cfg.GetInteger(VideoFrameHeightKey, 576), 144, 1152);
-  s << IntegerField(VideoFrameRateKey, cfg.GetInteger(VideoFrameRateKey, 10), 1, 30);
-  s << SelectField(AudioSampleRateKey, cfg.GetInteger(AudioSampleRateKey, 16000), "8000,16000,32000,48000");
-  s << SelectField(AudioChannelsKey, cfg.GetInteger(AudioChannelsKey, 1), "1,2,3,4,5,6,7,8");
+  s << BoolField("Enable export", JsLocal("enable_export"), cfg.GetBoolean("Enable export", FALSE));
+  s << IntegerField(VideoFrameWidthKey, JsLocal("video_frame_width"), cfg.GetInteger(VideoFrameWidthKey, 704), 176, 1920);
+  s << IntegerField(VideoFrameHeightKey, JsLocal("video_frame_height"), cfg.GetInteger(VideoFrameHeightKey, 576), 144, 1152);
+  s << IntegerField(VideoFrameRateKey, JsLocal("video_frame_rate"), cfg.GetInteger(VideoFrameRateKey, 10), 1, 30);
+  s << SelectField(AudioSampleRateKey, JsLocal("audio_sample_rate"), cfg.GetInteger(AudioSampleRateKey, 16000), "8000,16000,32000,48000");
+  s << SelectField(AudioChannelsKey, JsLocal("audio_channels"), cfg.GetInteger(AudioChannelsKey, 1), "1,2,3,4,5,6,7,8");
 
   s << EndTable();
   BuildHTML("");
@@ -778,10 +814,11 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
+  optionNames.AppendString(RoomNameKey);
+  optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(PasswordKey);
   optionNames.AppendString("H.323 call processing");
 
-  optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(HostKey);
   optionNames.AppendString(PortKey);
 
@@ -881,11 +918,10 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += NewItemArray(name, 25);
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+"H.323 call processing"+SelectItem(name, scfg.GetString("H.323 call processing", "direct"), "full,direct")+"</tr>";
+      s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", "direct"), "full,direct")+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
@@ -893,10 +929,10 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += NewItemArray(name);
       s2 += rowArray+JsLocal("name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
       s2 += rowArray+JsLocal("name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
+      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
+      s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
-      s2 += rowArray+"H.323 call processing"+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -904,9 +940,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     {
       PString s2;
       s2 += NewItemArray(name, 25);
-      //
-      if(name == "*") s2 += rowArray+JsLocal("name_display_name")+StringItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       //
       if(name == "*") s2 += rowArray+JsLocal("name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
       else            s2 += rowArray+JsLocal("name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
@@ -929,11 +962,14 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       // bandwidth to MCU
       s2 += rowArray+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // VFU delay
-      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey, DisableKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ","+ReceivedVFUDelaySelect, 70)+"</tr>";
       // RTP timeout
-      s2 += rowArray+"RTP Input Timeout"+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
       // Video cache
-      s2 += rowArray+"Video cache"+SelectItem(name, scfg.GetString(VideoCacheKey), ",Enable,Disable", 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey, EnableKey), EnableSelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ","+EnableSelect, 70)+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;
@@ -1071,6 +1107,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 
   optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
+  optionNames.AppendString(RoomNameKey);
   optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(PasswordKey);
   optionNames.AppendString("Ping interval");
@@ -1184,10 +1221,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += NewItemArray(name, 25);
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString(PingIntervalKey, ""), PingIntervalSelect)+"</tr>";
-      s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
+      s2 += rowArray+JsLocal("ping_options_interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
+      s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
@@ -1195,10 +1233,11 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += NewItemArray(name);
       s2 += rowArray+JsLocal("name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
       s2 += rowArray+JsLocal("name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
+      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
-      s2 += rowArray+"ping/options interval"+SelectItem(name, scfg.GetString(PingIntervalKey, ""), PingIntervalSelect)+"</tr>";
-      s2 += rowArray+"SIP call processing"+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
+      s2 += rowArray+JsLocal("ping_options_interval")+SelectItem(name, scfg.GetString(PingIntervalKey), ","+PingIntervalSelect)+"</tr>";
+      s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1214,9 +1253,10 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+JsLocal("name_transport")+SelectItem(name, scfg.GetString(TransportKey), ",udp,tcp,tls")+"</tr>";
       //
-      s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), RtpProtoSelect)+"</tr>";
+      if(name == "*") s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey, "RTP"), RtpProtoSelect)+"</tr>";
+      else            s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), ","+RtpProtoSelect)+"</tr>";
       //
-      s2 += rowArray+PString(NATRouterIPKey)+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
+      s2 += rowArray+JsLocal("nat_router_ip")+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
       PString stun_name = scfg.GetString(NATStunServerKey);
       PString stun_list = MCUConfig("SIP Parameters").GetString(NATStunListKey);
@@ -1224,8 +1264,9 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
         stun_list = ",auto,"+stun_list;
       if(stun_list.Find(stun_name) == P_MAX_INDEX)
         stun_list = stun_name+","+stun_list;
-      s2 += rowArray+PString(NATStunServerKey)+SelectItem(name, stun_name, stun_list)+"</tr>";
+      s2 += rowArray+"STUN "+JsLocal("server")+SelectItem(name, stun_name, stun_list)+"</tr>";
       //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1240,12 +1281,16 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       // bandwidth to MCU
       s2 += rowArray+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // VFU delay
-      s2 += rowArray+"Received VFU delay"+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey, DisableKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ","+ReceivedVFUDelaySelect, 70)+"</tr>";
       // RTP timeout
-      s2 += rowArray+"RTP Input Timeout"+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
       // Video cache
-      s2 += rowArray+"Video cache"+SelectItem(name, scfg.GetString(VideoCacheKey), ",Enable,Disable", 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey, EnableKey), EnableSelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ","+EnableSelect, 70)+"</tr>";
       //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1285,6 +1330,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       //
       s2 += rowArray+(JsLocal("name_video")+" fmtp")+StringItem(name, scfg.GetString("Video fmtp"))+"</tr>";
       //
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
@@ -1399,7 +1445,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      s2 += rowArray+PString(NATRouterIPKey)+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
+      s2 += rowArray+JsLocal("nat_router_ip")+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
       PString stun_name = scfg.GetString(NATStunServerKey);
       PString stun_list = MCUConfig("SIP Parameters").GetString(NATStunListKey);
@@ -1407,7 +1453,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
         stun_list = ",auto,"+stun_list;
       if(stun_list.Find(stun_name) == P_MAX_INDEX)
         stun_list = stun_name+","+stun_list;
-      s2 += rowArray+(PString(NATStunServerKey)+" (from SIP)")+SelectItem(name, stun_name, stun_list)+"</tr>";
+      s2 += rowArray+"STUN "+JsLocal("server")+SelectItem(name, stun_name, stun_list)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
@@ -1423,7 +1469,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       // bandwidth from MCU
       s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // RTP timeout
-      s2 += rowArray+"RTP Input Timeout"+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
+      s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
@@ -1623,10 +1669,10 @@ RtspPConfigPage::RtspPConfigPage(PHTTPServiceProcess & app,const PString & title
   PStringStream html_begin, html_end, html_page, s;
 
   s << BeginTable();
-  s << BoolField("RESTORE DEFAULTS", FALSE);
+  s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
 
-  s << BoolField("Enable", cfg.GetBoolean("Enable", TRUE));
-  s << ArrayField("Listener", cfg.GetString("Listener", "0.0.0.0:1554"), 150);
+  s << BoolField("Enable", "RTSP "+JsLocal("name_enable"), cfg.GetBoolean("Enable", TRUE));
+  s << ArrayField("Listener", "RTSP "+JsLocal("listener"), cfg.GetString("Listener", "0.0.0.0:1554"), 150);
 
   s << EndTable();
   BuildHTML("");
@@ -1648,24 +1694,24 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
 
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
-  s << BoolField("RESTORE DEFAULTS", FALSE);
+  s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
 
-  s << ArrayField(InterfaceKey, cfg.GetString(InterfaceKey), 150);
+  s << ArrayField(InterfaceKey, "H.323 "+JsLocal("listener"), cfg.GetString(InterfaceKey), 150);
 
-  s << StringField(NATRouterIPKey, cfg.GetString(NATRouterIPKey));
-  s << StringField(NATTreatAsGlobalKey, cfg.GetString(NATTreatAsGlobalKey));
+  s << StringField(NATRouterIPKey, JsLocal("nat_router_ip"), cfg.GetString(NATRouterIPKey));
+  s << StringField(NATTreatAsGlobalKey, JsLocal("treat_as_global_for_nat"), cfg.GetString(NATTreatAsGlobalKey));
 
-  s << BoolField(DisableFastStartKey, cfg.GetBoolean(DisableFastStartKey, TRUE));
-  s << BoolField(DisableH245TunnelingKey, cfg.GetBoolean(DisableH245TunnelingKey, FALSE));
+  s << BoolField(DisableFastStartKey, JsLocal("disable_fast_start"), cfg.GetBoolean(DisableFastStartKey, TRUE));
+  s << BoolField(DisableH245TunnelingKey, JsLocal("disable_h245_tunneling"), cfg.GetBoolean(DisableH245TunnelingKey, FALSE));
 
   PString labels = "No gatekeeper,Find gatekeeper,Use gatekeeper";
-  s << SelectField(GatekeeperModeKey, cfg.GetString(GatekeeperModeKey, labels[0]), labels, 150);
-  s << SelectField(GatekeeperTTLKey, cfg.GetString(GatekeeperTTLKey), ",60,120,180,240,300,600,1200,1800,2400,3000,3600");
-  s << SelectField(GatekeeperRetryIntervalKey, cfg.GetString(GatekeeperRetryIntervalKey, "30"), "10,20,30,40,50,60,120,180,240,300");
-  s << StringField(GatekeeperKey, cfg.GetString(GatekeeperKey));
-  s << StringField(GatekeeperUserNameKey, cfg.GetString(GatekeeperUserNameKey, "MCU"));
-  s << PasswordField(GatekeeperPasswordKey, cfg.GetString(GatekeeperPasswordKey));
-  s << ArrayField(GatekeeperAliasKey, cfg.GetString(GatekeeperAliasKey), 150);
+  s << SelectField(GatekeeperModeKey, JsLocal("gk_mode"), cfg.GetString(GatekeeperModeKey, labels[0]), labels, 150);
+  s << SelectField(GatekeeperTTLKey, JsLocal("gk_reg_ttl"), cfg.GetString(GatekeeperTTLKey), ",60,120,180,240,300,600,1200,1800,2400,3000,3600");
+  s << SelectField(GatekeeperRetryIntervalKey, JsLocal("gk_reg_retry_interval"), cfg.GetString(GatekeeperRetryIntervalKey, "30"), "10,20,30,40,50,60,120,180,240,300");
+  s << StringField(GatekeeperKey, JsLocal("gk_host"), cfg.GetString(GatekeeperKey));
+  s << StringField(GatekeeperUserNameKey, JsLocal("gk_username"), cfg.GetString(GatekeeperUserNameKey, "MCU"));
+  s << PasswordField(GatekeeperPasswordKey, JsLocal("gk_password"), cfg.GetString(GatekeeperPasswordKey));
+  s << ArrayField(GatekeeperAliasKey, JsLocal("gk_room_names"), cfg.GetString(GatekeeperAliasKey), 150);
 
   s << EndTable();
   BuildHTML("");
@@ -1684,7 +1730,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   cfg = MCUConfig(section);
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
-  s << BoolField("RESTORE DEFAULTS", FALSE);
+  s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
 
   PStringArray sipListener;
   PStringArray data = cfg.GetString(SipListenerKey, "0.0.0.0,transport=*").Tokenise(",");
@@ -1695,7 +1741,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
     j++;
   }
 
-  PString item = NewRowText(SipListenerKey);
+  PString item = NewRowText(SipListenerKey, "SIP "+JsLocal("listener"));
   item += NewItemArray(SipListenerKey);
   for(PINDEX i = 0; i < sipListener.GetSize(); i++)
   {
@@ -1711,8 +1757,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   item += InfoItem("");
   s << item;
 
-  //s << StringField(NATRouterIPKey, cfg.GetString(NATRouterIPKey));
-  s << ArrayField(NATStunListKey, cfg.GetString(NATStunListKey), 150);
+  s << ArrayField(NATStunListKey, "STUN "+JsLocal("server_list"), cfg.GetString(NATStunListKey), 150);
 
   mcu.GetSipEndpoint()->sipListenerArray = sipListener;
 
@@ -2577,7 +2622,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PString room = data("room");
     if(action == "create")
     {
-      Conference * conference = cm->MakeConferenceWithLock(room);
+      Conference * conference = cm->MakeConferenceWithLock(room, "", TRUE);
       if(conference)
         conference->Unlock();
     }

@@ -800,21 +800,21 @@ void Registrar::InitConfig()
   }
 
   // SIP parameters
-  sip_require_password = cfg.GetBoolean("SIP registrar required password authorization", FALSE);
-  sip_allow_unauth_mcu_calls = cfg.GetBoolean("SIP allow unauthorized MCU calls", TRUE);
-  sip_allow_unauth_internal_calls = cfg.GetBoolean("SIP allow unauthorized internal calls", TRUE);
+  sip_allow_unauth_reg = cfg.GetBoolean("SIP allow registration without authentication", TRUE);
+  sip_allow_unauth_mcu_calls = cfg.GetBoolean("SIP allow MCU calls without authentication", TRUE);
+  sip_allow_unauth_internal_calls = cfg.GetBoolean("SIP allow internal calls without authentication", TRUE);
   sip_reg_min_expires = cfg.GetInteger("SIP registrar minimum expiration", 60);
   sip_reg_max_expires = cfg.GetInteger("SIP registrar maximum expiration", 600);
 
   // H.323 parameters
-  h323_require_h235 = cfg.GetBoolean("H.323 gatekeeper required password authorization", FALSE);
-  h323_allow_unreg_mcu_calls = cfg.GetBoolean("H.323 allow unregistered MCU calls", TRUE);
-  h323_allow_unreg_internal_calls = cfg.GetBoolean("H.323 allow unregistered internal calls", TRUE);
+  h323_allow_unauth_reg = cfg.GetBoolean("H.323 allow registration without authentication", TRUE);
+  h323_allow_unreg_mcu_calls = cfg.GetBoolean("H.323 allow MCU calls without registration", TRUE);
+  h323_allow_unreg_internal_calls = cfg.GetBoolean("H.323 allow internal calls without registration", TRUE);
   h323_min_time_to_live = cfg.GetInteger("H.323 gatekeeper minimum Time To Live", 60);
   h323_max_time_to_live = cfg.GetInteger("H.323 gatekeeper maximum Time To Live", 600);
   if(registrarGk)
   {
-    registrarGk->SetRequireH235(h323_require_h235);
+    registrarGk->SetRequireH235(!h323_allow_unauth_reg);
     registrarGk->SetMinTimeToLive(h323_min_time_to_live);
     registrarGk->SetMaxTimeToLive(h323_max_time_to_live);
     registrarGk->SetTimeToLive(h323_max_time_to_live);
@@ -841,13 +841,13 @@ void Registrar::InitAccounts()
     if(raccount->account_type == ACCOUNT_TYPE_SIP)
     {
       raccount->enable = MCUConfig(sipSectionPrefix+raccount->username).GetBoolean("Registrar", FALSE);
-      if(!raccount->enable && sip_require_password)
+      if(!raccount->enable && !sip_allow_unauth_reg)
         raccount->registered = FALSE;
     }
     if(raccount->account_type == ACCOUNT_TYPE_H323)
     {
       raccount->enable = MCUConfig(h323SectionPrefix+raccount->username).GetBoolean("Registrar", FALSE);
-      if(!raccount->enable && h323_require_h235)
+      if(!raccount->enable && !h323_allow_unauth_reg)
         raccount->registered = FALSE;
     }
   }
@@ -898,9 +898,9 @@ void Registrar::InitAccounts()
     raccount->display_name = scfg.GetString(DisplayNameKey);
     if(account_type == ACCOUNT_TYPE_SIP)
     {
-      raccount->keep_alive_interval = scfg.GetString("Ping interval").AsInteger();
+      raccount->keep_alive_interval = scfg.GetString(PingIntervalKey).AsInteger();
       if(raccount->keep_alive_interval == 0)
-        raccount->keep_alive_interval = gcfg.GetString("Ping interval").AsInteger();
+        raccount->keep_alive_interval = gcfg.GetString(PingIntervalKey).AsInteger();
       if(raccount->keep_alive_interval != 0)
         raccount->keep_alive_enable = TRUE;
       else

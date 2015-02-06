@@ -2652,6 +2652,9 @@ void MCUH323Connection::OnCleared()
 
 void MCUH323Connection::SetRequestedRoom()
 {
+  if(direction == DIRECTION_INBOUND)
+    requestedRoom = GetEndpointParam(RoomNameKey, requestedRoom);
+
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
   registrar->SetRequestedRoom(callToken, requestedRoom);
 }
@@ -3139,7 +3142,7 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
 BOOL MCUH323Connection::CheckVFU()
 {
   PString delay = GetEndpointParam(ReceivedVFUDelayKey, "");
-  if(delay == "")
+  if(delay == "" || delay == DisableKey)
     return TRUE;
   if(delay == "0/0")
     return FALSE;
@@ -4262,7 +4265,7 @@ void MCUConnection_ConferenceMember::SendUserInputIndication(const PString & str
 void MCUConnection_ConferenceMember::SetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
-  MCUH323Connection * conn = OpenMCU::Current().GetEndpoint().FindConnectionWithLock(callToken);
+  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
   if(conn == NULL) return;
   PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)
@@ -4323,7 +4326,7 @@ void MCUConnection_ConferenceMember::SetChannelPauses(unsigned mask)
 void MCUConnection_ConferenceMember::UnsetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
-  MCUH323Connection * conn = OpenMCU::Current().GetEndpoint().FindConnectionWithLock(callToken);
+  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
   if(conn == NULL) return;
   PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)

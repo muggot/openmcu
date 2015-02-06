@@ -37,6 +37,7 @@
 #include "recorder.h"
 #include "mcu_caps.h"
 #include "mcu_codecs.h"
+#include "sockets.h"
 
 #if USE_LIBYUV
 #include <libyuv/scale.h>
@@ -72,6 +73,7 @@ static const char DisplayNameKey[]        = "Display name";
 
 static PString EnableKey                  = "Enable";
 static PString DisableKey                 = "Disable";
+static PString EnableSelect               = "Enable,Disable";
 
 static const char HttpIPKey[]             = "HTTP IP";
 static const char HttpPortKey[]           = "HTTP Port";
@@ -140,15 +142,15 @@ static const char RoomTimeLimitKey[]            = "Room time limit";
 static const char LockTemplateKey[]             = "Template locks conference by default";
 
 static const char ReceivedVFUDelayKey[]         = "Received VFU delay";
-static const char ReceivedVFUDelaySelect[]      = ",0/0,5/5,5/10,10/5,10/10";
+static PString ReceivedVFUDelaySelect           = "Disable,0/0,5/5,5/10,10/5,10/10";
 static const char SendVFUDelayKey[]             = "Send VFU delay";
 
 static const char RTPInputTimeoutKey[]          = "RTP Input Timeout";
-static const char RTPInputTimeoutSelect[]       = ",Disable,15,30,60,120,300";
+static PString RTPInputTimeoutSelect            = "Disable,15,30,60,120,300";
 static const int  DefaultRTPInputTimeout        = 60;
 
 static const char PingIntervalKey[]             = "Ping interval";
-static const char PingIntervalSelect[]          = ",20,30,40,50,60,120,180,240,300,600";
+static PString PingIntervalSelect               = "Disable,20,30,40,50,60,120,180,240,300,600";
 
 static const char AudioDeJitterKey[]            = "Audio de-jitter";
 
@@ -182,7 +184,7 @@ static const char DefaultProtocolKey[]    = "Default protocol for outgoing calls
 static const char RejectDuplicateNameKey[] = "Reject duplicate name";
 
 static const char RtpProtoKey[]            = "RTP proto";
-static const char RtpProtoSelect[]         = ",RTP"
+static PString RtpProtoSelect              = "RTP"
 #if MCUSIP_SRTP
                                              ",SRTP,SRTP/RTP"
 #endif

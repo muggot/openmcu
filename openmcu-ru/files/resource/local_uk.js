@@ -178,8 +178,8 @@ window.l_name_time_limit               = 'Обмежити за часом';
 
 window.l_name_display_name                         = "Ім'я, що відображається";
 window.l_name_frame_rate_from_mcu                  = 'Частота кадрів від MCU';
-window.l_name_bandwidth_from_mcu                   = 'Бітрейт від MCU';
-window.l_name_bandwidth_to_mcu                     = 'Бітрейт до MCU';
+window.l_name_bandwidth_from_mcu                   = 'Бітрейт від MCU, Кбіт/с';
+window.l_name_bandwidth_to_mcu                     = 'Бітрейт до MCU, Кбіт/с';
 window.l_name_transport                            = 'Транспортний протокол';
 window.l_name_port                                 = 'Порт';
 
@@ -258,3 +258,80 @@ window.l_startdatetime                             = "Дата і час поч�
 window.l_lock_tpl_default                          = "Відключати термінали, що відсутні у шаблоні (замкнути конференцію)";
 window.l_name_force_split_video        = "Кешування і керування через браузер";
 window.l_name_auto_record_stop         = 'Автоматичний запис (зупинити)';
+
+///
+window.l_restore_defaults                          = "Відновити налаштування за замовчуванням";
+window.l_language                                  = "Мова";
+window.l_server_id                                 = "Ідентифікатор сервера OpenMCU-ru";
+window.l_default_protocol_for_outgoing_calls       = "Протокол за замовчуванням для вихідних дзвінків";
+window.l_http_secure                               = "HTTPS";
+window.l_http_certificate                          = "HTTPS сертифікат";
+window.l_http_ip                                   = "HTTP IP-адреса";
+window.l_http_port                                 = "HTTP порт";
+window.l_rtp_base_port                             = "RTP початковий порт";
+window.l_rtp_max_port                              = "RTP максимальний порт";
+window.l_trace_level                               = "Рівень трасировки";
+window.l_rotate_trace                              = "Ротація файлів трасировки при запуску";
+window.l_log_level                                 = "Рівень системного журналу (логу)";
+window.l_call_log_filename                         = "Файл журналу дзвінків";
+window.l_room_control_event_buffer_size            = "Розмір буфера подій веб-журналу";
+window.l_copy_web_log                              = "Копіювати веб-журнал у файл журналу дзвінків";
+window.l_default_room                              = "Кімната за замовчуванням";
+window.l_reject_duplicate_name                     = "Відхилити дзвінки терміналів з однаковими іменами";
+window.l_allow_loopback_calls                      = "Дозволити дзвінки самому собі (loopback)";
+///
+window.l_allow_internal_calls                      = "Дозволити внутрішні дзвінки";
+window.l_sip_allow_reg_without_auth                = "SIP дозволити реєстрацію без аутентифікації";
+window.l_sip_allow_mcu_calls_without_auth          = "SIP дозволити дзвінки в MCU без аутентифікації";
+window.l_sip_allow_internal_calls_without_auth     = "SIP дозволити внутрішні дзвінки без аутентифікації";
+window.l_sip_registrar_minimum_expiration          = "SIP мінімальний інтервал реєстрації";
+window.l_sip_registrar_maximum_expiration          = "SIP максимальний інтервал реєстрації";
+window.l_h323_gatekeeper_enable                    = "H.323 включити гейткіпер";
+window.l_h323_allow_reg_without_auth               = "H.323 дозволити реєстрацію без аутентифікації";
+window.l_h323_allow_mcu_calls_without_reg          = "H.323 дозволити дзвінки в MCU без реєстрації";
+window.l_h323_allow_internal_calls_without_reg     = "H.323 дозволити внутрішні дзвінки без реєстрації";
+window.l_h323_gatekeeper_minimum_ttl               = "H.323 мінімальний інтервал реєстрації";
+window.l_h323_gatekeeper_maximum_ttl               = "H.323 максимальний інтервал реєстрації";
+///
+window.l_enable_video                              = "Включити відео";
+window.l_max_bit_rate                              = "Максимальний бітрейт";
+window.l_tx_key_frame_period                       = "Інтервал відправки опорних кадрів";
+window.l_encoding_threads                          = "Кількість потоків кодування";
+window.l_encoding_cpu_used                         = "Використання процесора для кодування";
+///
+window.l_enable_export                             = "Включити експорт";
+window.l_video_frame_rate                          = "Відео частота кадрів";
+window.l_video_frame_width                         = "Відео ширина кадрів";
+window.l_video_frame_height                        = "Відео висота кадрів";
+window.l_audio_sample_rate                         = "Аудіо частота дискретизації";
+window.l_audio_channels                            = "Аудіо кількість каналів";
+window.l_video_bitrate                             = "Відео бітрейт";
+window.l_audio_bitrate                             = "Аудіо бітрейт";
+///
+window.l_listener                                  = "Слухати (Listener)";
+window.l_interface                                 = "Інтерфейс";
+window.l_nat_router_ip                             = "NAT IP-адреса роутера";
+window.l_treat_as_global_for_nat                   = "Treat as global for NAT";
+window.l_disable_fast_start                        = "Disable Fast-Start";
+window.l_disable_h245_tunneling                    = "Disable H.245 Tunneling";
+window.l_gk_mode                                   = "Gatekeeper Mode";
+window.l_gk_reg_ttl                                = "Gatekeeper registration TTL(Time To Live)";
+window.l_gk_reg_retry_interval                     = "Gatekeeper request retry interval";
+window.l_gk_host                                   = "Gatekeeper host";
+window.l_gk_username                               = "Gatekeeper username";
+window.l_gk_password                               = "Gatekeeper password";
+window.l_gk_room_names                             = "Gatekeeper room names";
+///
+window.l_server                                    = "Сервер";
+window.l_server_list                               = "Список серверiв";
+///
+window.l_directory                                 = "Директорія";
+window.l_rtp_input_timeout                         = "RTP таймаут";
+window.l_received_vfu_delay                        = "Обмеження VFU (запит/сек)";
+window.l_video_cache                               = "Відео кешування";
+window.l_ping_options_interval                     = "ping/options інтервал";
+window.l_internal_call_processing                  = "Внутрішні дзвінки";
+window.l_room_auto_create_when_connecting          = "Автоматичне створення при підключенні";
+window.l_enter_template_name                       = "Введіть ім'я шаблону";
+window.l_disconnect                                = "Відключити";
+///

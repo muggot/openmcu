@@ -501,11 +501,11 @@ function chosenvan_yes_no(obj,mid,cvan){ obj.style.color='#ff0'; queue_otf_reque
 
 function kick_confirm(obj,mid,mname){ if(confirm(window.l_room_drop_connection_with+" \""+decodeURIComponent(mname)+"\" ?")) {queue_otf_request(OTFC_DROP_MEMBER,mid); obj.src='launched.gif'; }}
 
-function drop_all0(obj){ if(confirm(window.l_room_drop_all_active_members)) {queue_otf_request(OTFC_DROP_ALL_ACTIVE_MEMBERS,0); }}
+function drop_all0(obj){ if(confirm(window.l_room_drop_all_active_members+"?")) {queue_otf_request(OTFC_DROP_ALL_ACTIVE_MEMBERS,0); }}
 
-function invite_all(obj){ if(confirm(window.l_room_invite_all_inactive_members)) {queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,0); }}
+function invite_all(obj){ if(confirm(window.l_room_invite_all_inactive_members+"?")) {queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,0); }}
 
-function remove_all0(obj){ if(confirm(window.l_room_remove_all_inactive_members)) {queue_otf_request(OTFC_REMOVE_ALL_INACT_MMBRS,0); }}
+function remove_all0(obj){ if(confirm(window.l_room_remove_all_inactive_members+"?")) {queue_otf_request(OTFC_REMOVE_ALL_INACT_MMBRS,0); }}
 
 function highlight(id, state)
 {
@@ -724,8 +724,8 @@ function format_mmbr_button(m,st)
   else
   mixerb ="<div "+b3style+" onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi'>#"+mixer+"</div>";
   levelb ="<div "+b4style+" class='vlevel' id='srpan_"+id+"'>&nbsp;</div>";
-  invite ="<img "+b1style+" onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i15_inv.gif' alt='Invite'>";
-  remove ="<img "+b1style+" onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i16_close_gray.png' alt='Remove'>";
+  invite ="<img "+b1style+" onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i15_inv.gif' alt='Invite' title='"+window.l_invite+"'>";
+  remove ="<img "+b1style+" onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i16_close_gray.png' alt='Remove' title='"+l_room_remove_from_list+"'>";
 
   var dpre="<div class='mbrpos1' style='left:";
   var dpre2="<div class='mbrpos11' style='left:";
@@ -846,7 +846,7 @@ function invite_panel(){
   var button_posx = input_posx + input_width;
   s+=dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;border-radius:0px;' onclick='javascript:{if(this.innerHTML==\"h323\")this.innerHTML=\"rtsp\";else if(this.innerHTML==\"rtsp\")this.innerHTML=\"sip\";else if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>";
   s+=dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;border-radius:0px;border-right:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"binpinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_input(document.getElementById(\"binpinv\"));mlgctr1=1;}}' /></div>";
-  s+=dpre+button_posx+"px'>"+dbutton+"width:"+(bwidth)+"px' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='Invite' /></div></div>";
+  s+=dpre+button_posx+"px'>"+dbutton+"width:"+(bwidth)+"px' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='"+window.l_invite+"' /></div></div>";
   s+="</form>";
   return s;
 }
@@ -860,9 +860,9 @@ function additional_panel(){
   var s="<form onsubmit='return false' id='additional_panel' style='display:block;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;margin:0px'>"
    +dpre+"2px;'>"+dbutton+"width:"+bwidth+"px' onmousedown='queue_otf_request("+OTFC_MUTE_ALL+")'><div class='mutespr30' style='margin-left:7px'></div></div></div>"
    +dpre+"34px;'>"+dbutton+"width:"+bwidth+"px' onmousedown='queue_otf_request("+OTFC_UNMUTE_ALL+")'><div class='mutespr31' style='margin-left:7px'></div></div></div>"
-   +dpre+"66px;'>"+dbutton+"width:"+bwidth+"px' onclick='invite_all(this)'><img width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif'></div></div>"
-   +dpre+"98px;'>"+dbutton+"width:"+bwidth+"px' onclick='remove_all0(this)'><img width=16 height=16 src='i16_close_gray.png'></div></div>"
-   +dpre+"130px;'>"+dbutton+"width:"+(2*PANEL_ICON_WIDTH)+"px;' onclick='drop_all0(this)'><img width=16 height=16 src='i16_close_red.png'></div></div>"
+   +dpre+"66px;'>"+dbutton+"width:"+bwidth+"px' onclick='invite_all(this)' title='"+window.l_room_invite_all_inactive_members+"'><img width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif'></div></div>"
+   +dpre+"98px;'>"+dbutton+"width:"+bwidth+"px' onclick='remove_all0(this)' title='"+window.l_room_remove_all_inactive_members+"'><img width=16 height=16 src='i16_close_gray.png'></div></div>"
+   +dpre+"130px;'>"+dbutton+"width:"+(2*PANEL_ICON_WIDTH)+"px;' onclick='drop_all0(this)' title='"+window.l_room_drop_all_active_members+"'><img width=16 height=16 src='i16_close_red.png'></div></div>"
 //   +dpre+"0px;'>"+dbutton+"width:20px' id='rpan_0' name='rpan_0' onmousedown='ddstart(event,this,\"panel_top\",0)'>[ ]</div></div>"
 //   +dpre+"23px;'>"+dbutton+"width:30px' id='rpan__1' name='rpan__1' onmousedown='ddstart(event,this,\"panel_top\",-1)'>VAD</div></div>"
 //   +dpre+"56px;'>"+dbutton+"width:36px' id='rpan__2' name='rpan__2' onmousedown='ddstart(event,this,\"panel_top\",-2)'>VAD2</div></div>"
@@ -1393,7 +1393,7 @@ function top_panel()
       c+=">"+tl[i]+"</option>";
     }
   c+="</select>";
-  c+="<input onclick='javascript:{save_template();}' type='button' class='btn btn-large btn-inverse' value='Save'>";
+  c+="<input onclick='javascript:{save_template();}' type='button' class='btn btn-large btn-inverse' value='"+window.l_name_save+"'>";
   c+="</form>";
 
   c+="</nobr></td></tr></table>";
@@ -1420,13 +1420,13 @@ function save_template(finalName)
 
   var s=""
     + "<table border=0 cellpadding=0 cellspacing=0 width='100%'><tr><td width='20%' valign='middle'>"
-    + "<b>SAVING ROOM TEMPLATE</b></td><td width='80%' align='right' valign='middle'>"
-    + "<input type='button' disabled class='btn-large btn-info' value='Enter template id: '>"
+    + "<b></b></td><td width='80%' align='right' valign='middle'>"
+    + "<input type='button' disabled class='btn-large btn-info' value='"+window.l_enter_template_name+": '>"
     + "<input name='tplname' id='tplname' class='btn btn-large' value=\"" + tDefName + "\" style='width:60px'"
     + " onkeyup='javascript:{if(event.keyCode==13){save_template(document.getElementById(\"tplname\").value);}else if(event.keyCode==27){tpl_save_mode=false;top_panel();}}'"
     + ">"
-    + "<input type='button' onclick='javascript:{save_template(document.getElementById(\"tplname\").value);}' type='button' class='btn btn-large btn-danger' value='Save'>"
-    + "<input type='button' onclick='javascript:{tpl_save_mode=false;top_panel();}' class='btn btn-large btn-inverse' value='Cancel'>";
+    + "<input type='button' onclick='javascript:{save_template(document.getElementById(\"tplname\").value);}' type='button' class='btn btn-large btn-danger' value='"+window.l_name_save+"'>"
+    + "<input type='button' onclick='javascript:{tpl_save_mode=false;top_panel();}' class='btn btn-large btn-inverse' value='"+window.l_name_cancel+"'>";
     + "</td></tr></table>";
 
   document.getElementById('cb1').innerHTML=s;

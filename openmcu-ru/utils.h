@@ -11,13 +11,6 @@
 
 #include <sys/types.h>
 
-#ifdef _WIN32
-#  include <winsock2.h>
-#  include <ws2tcpip.h>
-#else
-#  include <sys/socket.h>
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _WIN32
@@ -539,15 +532,6 @@ class MCUStringDictionary
     PString delim1, delim2;
     PStringArray keys;
     PStringArray values;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class MCUSocket
-{
-  public:
-   static BOOL GetFromIP(PString & local_ip, PString remote_host, PString remote_port);
-   static BOOL GetHostIP(PString & ip, PString host, PString port = "");
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
