@@ -17,30 +17,41 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Directions dir)
   if(sip == NULL || home == NULL)
     return;
 
-  sip_addr_t *sip_addr;
-  if(dir == DIRECTION_INBOUND) sip_addr = sip->sip_from;
-  else                         sip_addr = sip->sip_to;
+  sip_addr_t *sip_from;
+  sip_addr_t *sip_to;
+  if(dir == DIRECTION_INBOUND)
+  {
+    sip_from = sip->sip_from;
+    sip_to = sip->sip_to;
+  }
+  else
+  {
+    sip_from = sip->sip_to;
+    sip_to = sip->sip_from;
+  }
 
   // username
-  if(sip_addr->a_url->url_user && PString(sip_addr->a_url->url_user) != "")
-    username = sip_addr->a_url->url_user;
+  if(sip_from->a_url->url_user && PString(sip_from->a_url->url_user) != "")
+    username = sip_from->a_url->url_user;
   else if(sip->sip_contact && sip->sip_contact->m_url && PString(sip->sip_contact->m_url->url_user) != "")
     username = sip->sip_contact->m_url->url_user;
+  username.Replace("sip:","",TRUE,0);
   username.Replace("\"","",TRUE,0);
   username = PURL::UntranslateString(username, PURL::QueryTranslation);
 
   // display name
-  if(sip_addr->a_display && PString(sip_addr->a_display) != "")
-    display_name = sip_addr->a_display;
+  if(sip_from->a_display && PString(sip_from->a_display) != "")
+    display_name = sip_from->a_display;
   else if(sip->sip_contact && sip->sip_contact->m_display && PString(sip->sip_contact->m_display) != "")
     display_name = sip->sip_contact->m_display;
   else
     display_name = username;
+  display_name.Replace("sip:","",TRUE,0);
   display_name.Replace("\"","",TRUE,0);
   display_name = PURL::UntranslateString(display_name, PURL::QueryTranslation);
 
   // domain
-  domain_name = sip_addr->a_url->url_host;
+  domain_name = sip_from->a_url->url_host;
 
   // remote application
   if(sip->sip_user_agent && sip->sip_user_agent->g_string)
@@ -54,9 +65,10 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Directions dir)
   if(addrinfo->ai_addr)
   {
     // hostname
-    char ip[80] = {0};
-    getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, ip, (socklen_t)sizeof(ip), NULL, 0, NI_NUMERICHOST);
-    hostname = ip;
+    char ip[INET_ADDRSTRLEN] = {0};
+    int ret = getnameinfo(addrinfo->ai_addr, addrinfo->ai_addrlen, ip, (socklen_t)sizeof(ip), NULL, 0, NI_NUMERICHOST);
+    if(ret == 0)
+      hostname = ip;
     // port
     port = ntohs(((struct sockaddr_in *)addrinfo->ai_addr)->sin_port);
     // transport
@@ -82,7 +94,27 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Directions dir)
   if(transport != "" && transport != "*")
     url_party += ";transport="+transport;
 
-  PTRACE(1, "MCUURL_SIP url: " << url_party);
+  // username_to
+  if(dir == DIRECTION_INBOUND && sip->sip_request && sip->sip_request->rq_url->url_user && PString(sip->sip_request->rq_url->url_user) != "")
+    username_to = sip->sip_request->rq_url->url_user;
+  else if(sip_to->a_url->url_user && PString(sip_to->a_url->url_user) != "")
+    username_to = sip_to->a_url->url_user;
+  username_to.Replace("sip:","",TRUE,0);
+  username_to.Replace("\"","",TRUE,0);
+  username_to = PURL::UntranslateString(username_to, PURL::QueryTranslation);
+
+  // hostname_to
+  if(dir == DIRECTION_INBOUND && sip->sip_request && sip->sip_request->rq_url->url_host && PString(sip->sip_request->rq_url->url_host) != "")
+    hostname_to = sip->sip_request->rq_url->url_host;
+  else if(sip_to->a_url->url_host && PString(sip_to->a_url->url_host) != "")
+    hostname_to = sip_to->a_url->url_host;
+
+  // url_to
+  url_to = url_scheme+":"+username_to+"@"+hostname_to;
+  if(transport != "" && transport != "*")
+    url_to += ";transport="+transport;
+
+  PTRACE(1, "MCUURL_SIP url: " << url_party << " url_to: " << url_to);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -405,9 +437,10 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   sip_addr_t *sip_to = NULL;
   if(direction == DIRECTION_INBOUND)
   {
-    ruri_str = MCUURL_SIP(msg).GetUrl();
+    MCUURL_SIP url(msg, DIRECTION_INBOUND);
+    ruri_str = url.GetUrl();
     remotePartyAddress = ruri_str;
-    contact_str = url_as_string(home, sip->sip_request->rq_url);
+    contact_str = url.GetUrlTo();
     sip_from = sip->sip_to;
     sip_to = sip->sip_from;
   }
@@ -432,8 +465,6 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
 
   // local contact
   requestedRoom = local_url.GetUserName();
-  // remove prefix, maybe bug on the terminal
-  requestedRoom.Replace("sip:","",TRUE,0);
   // default room name
   if(requestedRoom == "")
     requestedRoom = OpenMCU::Current().GetDefaultRoomName();

@@ -73,9 +73,15 @@ class MCUURL_SIP : public MCUURL
 {
   public:
     MCUURL_SIP(const msg_t *msg, Directions dir = DIRECTION_INBOUND);
+    const PString & GetUserNameTo() const { return username_to; }
+    const PString & GetHostNameTo() const { return hostname_to; }
+    const PString & GetUrlTo() const { return url_to; }
     const PString & GetRemoteApplication() const { return remote_application; }
     const PString & GetDomainName() const { return domain_name; }
   protected:
+    PString username_to;
+    PString hostname_to;
+    PString url_to;
     PString domain_name;
     PString remote_application;
 };
