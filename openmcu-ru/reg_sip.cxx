@@ -85,9 +85,7 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
 
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username_in = url.GetUserName();
-  PString username_out = sip->sip_to->a_url->url_user;
-  // remove prefix, maybe bug on the terminal
-  username_out.Replace("sip:","",TRUE,0);
+  PString username_out = url.GetUserNameTo();
 
   if(username_in == username_out)
     return sep->SipReqReply(msg, NULL, 406); // SIP_406_NOT_ACCEPTABLE
@@ -151,9 +149,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
 
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username_in = url.GetUserName();
-  PString username_out = sip->sip_to->a_url->url_user;
-  // remove prefix, maybe bug on the terminal
-  username_out.Replace("sip:","",TRUE,0);
+  PString username_out = url.GetUserNameTo();
 
   if(username_in == username_out)
     return sep->SipReqReply(msg, NULL, 406); // SIP_406_NOT_ACCEPTABLE
@@ -276,9 +272,7 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
 
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username_in = url.GetUserName();
-  PString username_out = sip->sip_to->a_url->url_user;
-  // remove prefix, maybe bug on the terminal
-  username_out.Replace("sip:","",TRUE,0);
+  PString username_out = url.GetUserNameTo();
   PString username_pair = username_in+"@"+username_out;
 
   if(username_in == username_out)
