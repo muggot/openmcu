@@ -11,21 +11,27 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+enum MCUListenerType
+{
+  NONE = 0,
+  MCU_LISTENER_TCP_CLIENT,
+  MCU_LISTENER_TCP_SERVER
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class MCUSocket
 {
   public:
     MCUSocket(int fd, int proto, PString host, int port);
     ~MCUSocket();
 
-    enum SocketType
-    {
-      NONE = 0,
-      TCP_CLIENT,
-      TCP_SERVER
-    };
-
     static MCUSocket * Create(int proto, PString host, int port);
     static MCUSocket * Create(int fd);
+
+    BOOL Open();
+    BOOL Connect();
+    BOOL Listen();
 
     MCUSocket * Accept();
 
@@ -51,20 +57,12 @@ class MCUSocket
     int GetProto()
     { return socket_proto; }
 
-    SocketType GetType()
-    { return socket_type; }
-
     int GetSocket()
     { return socket_fd; }
 
   protected:
-    BOOL Open();
-    BOOL Connect();
-    BOOL Listen();
-
     PString trace_section;
 
-    SocketType socket_type;
     PString socket_address;
     PString socket_host;
     int socket_port;
@@ -82,11 +80,11 @@ typedef int mcu_listener_cb(void *callback_context, MCUSocket *socket, PString d
 class MCUListener
 {
   public:
-    MCUListener(MCUSocket *_socket, mcu_listener_cb *callback, void *callback_context);
+    MCUListener(MCUListenerType type, MCUSocket *_socket, mcu_listener_cb *callback, void *callback_context);
     ~MCUListener();
 
-    static MCUListener * Create(int proto, const PString & host, int port, mcu_listener_cb *callback, void *callback_context);
-    static MCUListener * Create(MCUSocket *socket, mcu_listener_cb *callback, void *callback_context);
+    static MCUListener * Create(MCUListenerType type, const PString & host, int port, mcu_listener_cb *callback, void *callback_context);
+    static MCUListener * Create(MCUListenerType type, MCUSocket *socket, mcu_listener_cb *callback, void *callback_context);
 
     BOOL Send(char *buffer);
 
@@ -102,10 +100,14 @@ class MCUListener
     PString GetSocketPort()
     { return socket->GetPort(); }
 
+    MCUListenerType GetType()
+    { return listener_type; }
+
   protected:
     BOOL running;
     PString trace_section;
 
+    MCUListenerType listener_type;
     MCUSocket *socket;
 
     mcu_listener_cb *callback;

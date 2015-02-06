@@ -97,6 +97,7 @@ class MCURtspServer
     void StartListeners();
     void AddListener(PString address);
     void RemoveListener(PString address);
+    BOOL HasListener(PString host, PString port);
     void RemoveListeners();
 
   protected:

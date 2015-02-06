@@ -71,6 +71,7 @@ class MCUH323EndPoint : public H323EndPoint
     // overrides from H323EndPoint
     virtual H323Connection * CreateConnection(unsigned callReference,void * userData,H323Transport * transport,H323SignalPDU * setupPDU);
     virtual void TranslateTCPAddress(PIPSocket::Address &localAddr, const PIPSocket::Address &remoteAddr);
+    BOOL HasListener(PString host, PString port);
 
     MCUH323Connection * FindConnectionWithoutLock(const PString & token);
     MCUH323Connection * FindConnectionWithLock(const PString & token);

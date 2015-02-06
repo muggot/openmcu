@@ -3387,7 +3387,7 @@ void MCUSipEndPoint::ClearStunList()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSipEndPoint::FindListener(PString addr)
+BOOL MCUSipEndPoint::HasListener(PString addr)
 {
   if(addr.Left(4) != "sip:") addr = "sip:"+addr;
   if(addr.Find("@") == P_MAX_INDEX) addr.Replace("sip:","sip:@",TRUE,0);
