@@ -171,7 +171,7 @@ BOOL MCURtspConnection::Connect(PString room, PString address)
   auth_password = GetEndpointParam(PasswordKey, url.GetPassword());
 
   // create listener
-  listener = MCUListener::Create(SOCK_STREAM, url.GetHostName(), rtsp_port.AsInteger(), OnReceived_wrap, this);
+  listener = MCUListener::Create(MCU_LISTENER_TCP_CLIENT, url.GetHostName(), rtsp_port.AsInteger(), OnReceived_wrap, this);
   if(listener == NULL)
     goto error;
 
@@ -236,7 +236,7 @@ BOOL MCURtspConnection::Connect(MCUSocket *socket, const msg_t *msg)
   }
 
   // create listener
-  listener = MCUListener::Create(socket, OnReceived_wrap, this);
+  listener = MCUListener::Create(MCU_LISTENER_TCP_CLIENT, socket, OnReceived_wrap, this);
   if(listener == NULL)
     goto error;
 
@@ -1146,7 +1146,7 @@ void MCURtspServer::AddListener(PString address)
 
   PWaitAndSignal m(rtspMutex);
 
-  MCUListener *listener = MCUListener::Create(SOCK_STREAM, socket_host, socket_port, OnReceived_wrap, this);
+  MCUListener *listener = MCUListener::Create(MCU_LISTENER_TCP_SERVER, socket_host, socket_port, OnReceived_wrap, this);
   if(listener)
     Listeners.insert(ListenersMapType::value_type(address, listener));
 }
@@ -1170,6 +1170,25 @@ void MCURtspServer::RemoveListener(PString address)
       break;
     }
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCURtspServer::HasListener(PString host, PString port)
+{
+  PWaitAndSignal m(rtspMutex);
+
+  for(ListenersMapType::iterator it = Listeners.begin(); it != Listeners.end(); ++it)
+  {
+    if(it->second->GetSocketPort() == port)
+    {
+      if(it->second->GetSocketHost() == host)
+        return TRUE;
+      if(it->second->GetSocketHost() == "0.0.0.0" && PIPSocket::IsLocalHost(host))
+        return TRUE;
+    }
+  }
+  return FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

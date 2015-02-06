@@ -240,6 +240,19 @@ void MCUH323EndPoint::Initialise(PConfig & cfg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCUH323EndPoint::HasListener(PString host, PString port)
+{
+  PString address = "ip$"+host+":"+port;
+  for(PINDEX i = 0; i < listeners.GetSize(); i++)
+  {
+    if(listeners[i].GetTransportAddress().Find(address) == 0)
+      return TRUE;
+  }
+  return FALSE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 H323Connection * MCUH323EndPoint::CreateConnection(unsigned callReference, void * userData, H323Transport * transport, H323SignalPDU *)
 {
   MCUH323Connection *conn = new MCUH323Connection(*this, callReference, userData);
@@ -2265,49 +2278,50 @@ PString MCUH323EndPoint::Invite(PString room, PString memberName)
   if(url.GetUserName() == "" && url.GetHostName() == "")
     return "";
 
-  // get url from memberName
-  PString address = url.GetUrl();
-
-  BOOL allowLoopbackCalls = MCUConfig("Parameters").GetBoolean(AllowLoopbackCallsKey, FALSE);
-  if(!allowLoopbackCalls)
-  {
-    if(url.GetScheme() == "sip")
-    {
-      MCUSipEndPoint * sep = OpenMCU::Current().GetSipEndpoint();
-      if(sep->FindListener(address))
-      {
-        PTRACE(1, trace_section << "InviteMember Loopback call rejected, address=" << address);
-        return "";
-      }
-    }
-    else if(url.GetScheme() == "h323")
-    {
-      PString hostport = url.GetHostName()+":"+url.GetPort();
-      for(PINDEX i = 0; i < listeners.GetSize(); i++)
-      {
-        if(listeners[i].GetTransportAddress().Find("ip$"+hostport) == 0)
-        {
-          PTRACE(1, trace_section << "InviteMember Loopback call rejected (" << listeners[i].GetTransportAddress() << "), address=" << address);
-          return "";
-        }
-      }
-    }
-  }
-
   PString callToken;
-  Registrar *registrar = OpenMCU::Current().GetRegistrar();
-  registrar->MakeCall(room, address, callToken);
-
+  PString address = url.GetUrl();
   PStringStream msg;
-  msg << "Inviting: " << address;
-  if(callToken == "") msg << ", failed";
-  OpenMCU::Current().HttpWriteEventRoom(msg,room);
-  if(callToken == "")
+  msg << "Inviting: " << address << " ";
+
+  if(url.GetScheme() == "h323")
   {
-    PTRACE(6, trace_section << "Invite error, address: " << address);
-    return "";
+    BOOL allowLoopbackCalls = MCUConfig("Parameters").GetBoolean(AllowLoopbackCallsKey, FALSE);
+    if(!allowLoopbackCalls && HasListener(url.GetHostName(), url.GetPort()))
+    {
+      msg << "failed, Loopback call rejected";
+      goto end;
+    }
   }
-  return callToken;
+  else if(url.GetScheme() == "sip")
+  {
+    MCUSipEndPoint * sep = OpenMCU::Current().GetSipEndpoint();
+    if(sep->HasListener(address))
+    {
+      msg << "failed, Loopback call rejected";
+      goto end;
+    }
+  }
+  else if(url.GetScheme() == "rtsp")
+  {
+    MCURtspServer *rtsp = OpenMCU::Current().GetRtspServer();
+    if(rtsp->HasListener(url.GetHostName(), url.GetPort()))
+    {
+      msg << "failed, Loopback call rejected";
+      goto end;
+    }
+  }
+
+  {
+    Registrar *registrar = OpenMCU::Current().GetRegistrar();
+    registrar->MakeCall(room, address, callToken);
+    if(callToken == "")
+      msg << ", failed";
+  }
+
+  end:
+    PTRACE(1, trace_section << msg);
+    OpenMCU::Current().HttpWriteEventRoom(msg, room);
+    return callToken;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

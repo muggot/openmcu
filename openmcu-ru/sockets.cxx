@@ -126,14 +126,8 @@ MCUSocket::MCUSocket(int fd, int proto, PString host, int port)
   socket_timeout_sec = 0;
   socket_timeout_usec = 250000;
 
-  if(proto == SOCK_STREAM)
-  {
+  if(socket_proto == SOCK_STREAM)
     socket_address += "tcp:";
-    if(socket_host == "0.0.0.0" || PIPSocket::IsLocalHost(socket_host) == TRUE)
-      socket_type = TCP_SERVER;
-    else
-      socket_type = TCP_CLIENT;
-  }
   else
     socket_address += "udp:";
 
@@ -169,14 +163,7 @@ MCUSocket * MCUSocket::Create(int proto, PString host, int port)
     return NULL;
   }
 
-  MCUSocket *socket = new MCUSocket(-1, proto, host, port);
-  if(socket->GetType() == MCUSocket::TCP_SERVER && socket->Listen())
-    return socket;
-  else if(socket->GetType() == MCUSocket::TCP_CLIENT && socket->Connect())
-    return socket;
-
-  delete socket;
-  return NULL;
+  return new MCUSocket(-1, proto, host, port);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -450,10 +437,11 @@ void MCUListenerHandler::Main()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUListener::MCUListener(MCUSocket *_socket, mcu_listener_cb *_callback, void *_callback_context)
+MCUListener::MCUListener(MCUListenerType type, MCUSocket *_socket, mcu_listener_cb *_callback, void *_callback_context)
 {
   running = FALSE;
 
+  listener_type = type;
   callback = _callback;
   callback_context = _callback_context;
   tcp_thread = NULL;
@@ -489,23 +477,40 @@ MCUListener::~MCUListener()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUListener * MCUListener::Create(int proto, const PString & host, int port, mcu_listener_cb *callback, void *callback_context)
+MCUListener * MCUListener::Create(MCUListenerType type, const PString & host, int port, mcu_listener_cb *callback, void *callback_context)
 {
+  int proto;
+  if(type == MCU_LISTENER_TCP_SERVER || type == MCU_LISTENER_TCP_CLIENT)
+    proto = SOCK_STREAM;
+  else
+    proto = SOCK_DGRAM;
+
   MCUSocket *socket = MCUSocket::Create(proto, host, port);
   if(socket == NULL)
   {
-    MCUTRACE(1, "MCU listener cannot create listener");
+    MCUTRACE(1, "MCU listener cannot create socket");
     return NULL;
   }
-  return MCUListener::Create(socket, callback, callback_context);
+  if(type == MCU_LISTENER_TCP_SERVER && !socket->Listen())
+  {
+    MCUTRACE(1, "MCU listener cannot create socket");
+    return NULL;
+  }
+  if(type == MCU_LISTENER_TCP_CLIENT && !socket->Connect())
+  {
+    MCUTRACE(1, "MCU listener cannot create socket");
+    return NULL;
+  }
+
+  return MCUListener::Create(type, socket, callback, callback_context);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUListener * MCUListener::Create(MCUSocket *socket, mcu_listener_cb *callback, void *callback_context)
+MCUListener * MCUListener::Create(MCUListenerType type, MCUSocket *socket, mcu_listener_cb *callback, void *callback_context)
 {
   MCUTRACE(1, "MCU listener ("+socket->GetAddress()+"): " << "create");
-  MCUListener *list = new MCUListener(socket, callback, callback_context);
+  MCUListener *list = new MCUListener(type, socket, callback, callback_context);
   return list;
 }
 
@@ -523,7 +528,7 @@ void MCUListener::ListenerThread(PThread &, INT)
   signal(SIGPIPE, SIG_IGN);
 
   running = TRUE;
-  if(socket->GetType() == MCUSocket::TCP_SERVER)
+  if(listener_type == MCU_LISTENER_TCP_SERVER)
   {
     while(running)
     {
@@ -535,7 +540,7 @@ void MCUListener::ListenerThread(PThread &, INT)
       new MCUListenerHandler(callback, callback_context, client_socket, &handler_count);
     }
   }
-  else if(socket->GetType() == MCUSocket::TCP_CLIENT)
+  else if(listener_type == MCU_LISTENER_TCP_CLIENT)
   {
     while(running)
     {

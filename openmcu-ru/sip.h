@@ -392,7 +392,7 @@ class MCUSipEndPoint : public PThread
     SipCapMapType & GetBaseSipCaps() { return BaseSipCaps; }
 
     PStringArray sipListenerArray;
-    BOOL FindListener(PString addr);
+    BOOL HasListener(PString addr);
     void RemoveListeners();
 
     BOOL GetLocalSipAddress(PString & local_addr, const PString & ruri_str);
