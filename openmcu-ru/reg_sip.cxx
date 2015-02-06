@@ -83,8 +83,15 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
   if(sip->sip_content_type == NULL || sip->sip_content_type->c_type == NULL || PString(sip->sip_content_type->c_type) != "text/plain")
     return sep->SipReqReply(msg, NULL, 200); // SIP_200_OK
 
-  PString username_in = sip->sip_from->a_url->url_user;
+  MCUURL_SIP url(msg, DIRECTION_INBOUND);
+  PString username_in = url.GetUserName();
   PString username_out = sip->sip_to->a_url->url_user;
+  // remove prefix, maybe bug on the terminal
+  username_out.Replace("sip:","",TRUE,0);
+
+  if(username_in == username_out)
+    return sep->SipReqReply(msg, NULL, 406); // SIP_406_NOT_ACCEPTABLE
+
   msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
 
   int response_code = 0;
@@ -148,10 +155,10 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
   // remove prefix, maybe bug on the terminal
   username_out.Replace("sip:","",TRUE,0);
 
-  msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
-
   if(username_in == username_out)
-    sep->SipReqReply(msg, NULL, 486); // SIP_486_BUSY_HERE
+    return sep->SipReqReply(msg, NULL, 406); // SIP_406_NOT_ACCEPTABLE
+
+  msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
 
   // default response
   int response_code = 403; // SIP_403_FORBIDDEN
@@ -270,7 +277,13 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username_in = url.GetUserName();
   PString username_out = sip->sip_to->a_url->url_user;
+  // remove prefix, maybe bug on the terminal
+  username_out.Replace("sip:","",TRUE,0);
   PString username_pair = username_in+"@"+username_out;
+
+  if(username_in == username_out)
+    return sep->SipReqReply(msg, NULL, 406); // SIP_406_NOT_ACCEPTABLE
+
   msg_t *msg_reply = nta_msg_create(sep->GetAgent(), 0);
 
   RegistrarAccount *raccount_in = NULL;

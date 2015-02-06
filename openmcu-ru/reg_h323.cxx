@@ -21,6 +21,12 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
   PString username_in = url.GetUserName();
   PString username_out = conn->GetRequestedRoom();
 
+  if(username_in == username_out)
+  {
+    PTRACE(1, trace_section << "error " << username_in);
+    return H323Connection::AnswerCallDenied;
+  }
+
   // default response
   H323Connection::AnswerCallResponse response = H323Connection::AnswerCallDenied;
 
