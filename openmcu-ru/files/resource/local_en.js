@@ -115,7 +115,7 @@ and allows to download them.';
 window.l_info_connections ='\
 Page shows current connections and terminal parameters.\
 ';
-window.l_info_param_general ='Global server parameters. To reset all settings to defaults - check "RESTORE DEFAULTS" checkbox and click Accept.';
+window.l_info_param_general ='Global server parameters.';
 window.l_info_param_registrar = '';
 window.l_info_param_conference ='';
 window.l_info_param_managing_users = '';
@@ -209,9 +209,9 @@ window.l_name_parameters_for_sending               = "Parameters for sending";
 window.l_name_codec_parameters                     = "Codec parameters<br>(override received)";
 window.l_name_default_parameters                   = "Default parameters";
 
-window.l_room_invite_all_inactive_members          = 'Invite ALL inactive members?';
-window.l_room_drop_all_active_members              = 'Drop ALL active connections?';
-window.l_room_remove_all_inactive_members          = 'Remove ALL inactive members from list?';
+window.l_room_invite_all_inactive_members          = 'Invite ALL inactive members';
+window.l_room_drop_all_active_members              = 'Drop ALL active connections';
+window.l_room_remove_all_inactive_members          = 'Remove ALL inactive members from list';
 window.l_room_drop_connection_with                 = 'Drop connection with';
 window.l_room_remove_from_list                     = 'Remove from list';
 
@@ -288,17 +288,19 @@ window.l_h323_gatekeeper_minimum_ttl               = "H.323 gatekeeper minimum T
 window.l_h323_gatekeeper_maximum_ttl               = "H.323 gatekeeper maximum Time To Live";
 ///
 window.l_enable_video                              = "Enable video";
-window.l_video_frame_rate                          = "Video frame rate";
 window.l_max_bit_rate                              = "Max bit rate";
 window.l_tx_key_frame_period                       = "Tx key frame period";
 window.l_encoding_threads                          = "Encoding threads";
 window.l_encoding_cpu_used                         = "Encoding CPU used";
 ///
 window.l_enable_export                             = "Enable export";
+window.l_video_frame_rate                          = "Video frame rate";
 window.l_video_frame_width                         = "Video frame width";
 window.l_video_frame_height                        = "Video frame height";
 window.l_audio_sample_rate                         = "Audio sample rate";
 window.l_audio_channels                            = "Audio channels";
+window.l_video_bitrate                             = "Video bitrate";
+window.l_audio_bitrate                             = "Audio bitrate";
 ///
 window.l_listener                                  = "Listener";
 window.l_interface                                 = "Interface";
@@ -314,13 +316,16 @@ window.l_gk_username                               = "Gatekeeper username";
 window.l_gk_password                               = "Gatekeeper password";
 window.l_gk_room_names                             = "Gatekeeper room names";
 ///
-window.l_stun_server                               = "STUN server";
-window.l_stun_server_list                          = "STUN server list";
+window.l_server                                    = "Server";
+window.l_server_list                               = "Server list";
 ///
+window.l_directory                                 = "Directory";
 window.l_rtp_input_timeout                         = "RTP Input Timeout";
 window.l_received_vfu_delay                        = "Limitation VFU, r/s";
 window.l_video_cache                               = "Video cache";
 window.l_ping_options_interval                     = "ping/options interval";
 window.l_internal_call_processing                  = "Internal call processing";
 window.l_room_auto_create_when_connecting          = "Auto create when connecting";
+window.l_enter_template_name                       = "Enter template id";
+window.l_disconnect                                = "Disconnect";
 ///

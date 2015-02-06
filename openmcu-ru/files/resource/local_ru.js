@@ -122,7 +122,7 @@ window.l_info_records ='\
 window.l_info_connections ='\
 Страница позволяет просматривать текущие соединения с сервером и параметры подключенных терминалов.\
 ';
-window.l_info_param_general ='Общие параметры работы сервера. Для сброса всех параметров на начальные - установите флаг "RESTORE DEFAULTS" и нажмите Accept.';
+window.l_info_param_general ='Общие параметры работы сервера.';
 window.l_info_param_registrar = '';
 window.l_info_param_conference ='';
 window.l_info_param_managing_users ='';
@@ -216,9 +216,9 @@ window.l_name_parameters_for_sending               = "Параметры для 
 window.l_name_codec_parameters                     = "Параметры кодека<br>(переопределить полученные)";
 window.l_name_default_parameters                   = "Параметры по умолчанию";
 
-window.l_room_invite_all_inactive_members          = 'Позвонить всем неактивным участникам?';
-window.l_room_drop_all_active_members              = 'Отключить всех активных участников?';
-window.l_room_remove_all_inactive_members          = 'Удалить всех неактивных участников из списка?';
+window.l_room_invite_all_inactive_members          = 'Позвонить всем неактивным участникам';
+window.l_room_drop_all_active_members              = 'Отключить всех активных участников';
+window.l_room_remove_all_inactive_members          = 'Удалить всех неактивных участников из списка';
 window.l_room_drop_connection_with                 = 'Разорвать соединение с';
 window.l_room_remove_from_list                     = 'Удалить из списка';
 
@@ -252,7 +252,7 @@ window.l_totaldrivesize                            = "Общий размер д
 window.l_recordstakesup                            = "Видеозаписи занимают:           * ГиБ (%).";
 window.l_freespaceleft                             = "Свободно:                       * ГиБ (%).";
 window.l_delete                                    = "Удалить";
-window.l_recwilldeleted                            = "Видеозапись * будет удаена!";
+window.l_recwilldeleted                            = "Видеозапись * будет удалена!";
 window.l_recwilldeleted_ok                         = "[Подтверждаю]";
 window.l_recwilldeleted_cancel                     = "Отмена";
 window.l_recwasdeleted                             = "Видеозапись * удалена";
@@ -280,7 +280,7 @@ window.l_room_control_event_buffer_size            = "Размер буфера 
 window.l_copy_web_log                              = "Копировать веб-журнал в журнал звонков";
 window.l_default_room                              = "Комната по умолчанию";
 window.l_reject_duplicate_name                     = "Отклонить повторяющееся имя участника";
-window.l_allow_loopback_calls                      = "Разрешить loopback звонки";
+window.l_allow_loopback_calls                      = "Разрешить вызывать самого себя";
 ///
 window.l_allow_internal_calls                      = "Разрешить внутренние звонки";
 window.l_sip_allow_reg_without_auth                = "SIP разрешить регистрацию без аутентификации";
@@ -307,8 +307,10 @@ window.l_video_frame_width                         = "Видео ширина к
 window.l_video_frame_height                        = "Видео высота кадра";
 window.l_audio_sample_rate                         = "Аудио частота дискретизации";
 window.l_audio_channels                            = "Аудио количество каналов";
+window.l_video_bitrate                             = "Видео битрейт";
+window.l_audio_bitrate                             = "Аудио битрейт";
 ///
-window.l_listener                                  = "Слушатель(listener)";
+window.l_listener                                  = "Прослушиватель(listener)";
 window.l_interface                                 = "Интерфейс";
 window.l_nat_router_ip                             = "NAT IP-адрес роутера";
 window.l_treat_as_global_for_nat                   = "Treat as global for NAT";
@@ -322,13 +324,16 @@ window.l_gk_username                               = "Gatekeeper username";
 window.l_gk_password                               = "Gatekeeper password";
 window.l_gk_room_names                             = "Gatekeeper room names";
 ///
-window.l_stun_server                               = "STUN сервер";
-window.l_stun_server_list                          = "STUN сервера";
+window.l_server                                    = "Сервер";
+window.l_server_list                               = "Список серверов";
 ///
+window.l_directory                                 = "Директория";
 window.l_rtp_input_timeout                         = "RTP таймаут";
 window.l_received_vfu_delay                        = "Ограничение VFU, з/с";
 window.l_video_cache                               = "Видео кэширование";
 window.l_ping_options_interval                     = "ping/options интервал";
 window.l_internal_call_processing                  = "Внутренние звонки";
 window.l_room_auto_create_when_connecting          = "Автоматическое создание при подключении";
+window.l_enter_template_name                       = "Введите имя шаблона";
+window.l_disconnect                                = "Отключить";
 ///

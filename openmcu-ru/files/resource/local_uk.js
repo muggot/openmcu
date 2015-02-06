@@ -294,17 +294,19 @@ window.l_h323_gatekeeper_minimum_ttl               = "H.323 мінімальни
 window.l_h323_gatekeeper_maximum_ttl               = "H.323 максимальний інтервал реєстрації";
 ///
 window.l_enable_video                              = "Включити відео";
-window.l_video_frame_rate                          = "Відео частота кадрів";
 window.l_max_bit_rate                              = "Максимальний бітрейт";
 window.l_tx_key_frame_period                       = "Інтервал відправки опорних кадрів";
 window.l_encoding_threads                          = "Кількість потоків кодування";
 window.l_encoding_cpu_used                         = "Використання процесора для кодування";
 ///
 window.l_enable_export                             = "Включити експорт";
+window.l_video_frame_rate                          = "Відео частота кадрів";
 window.l_video_frame_width                         = "Відео ширина кадрів";
 window.l_video_frame_height                        = "Відео висота кадрів";
 window.l_audio_sample_rate                         = "Аудіо частота дискретизації";
 window.l_audio_channels                            = "Аудіо кількість каналів";
+window.l_video_bitrate                             = "Відео бітрейт";
+window.l_audio_bitrate                             = "Аудіо бітрейт";
 ///
 window.l_listener                                  = "Слухати (Listener)";
 window.l_interface                                 = "Інтерфейс";
@@ -320,13 +322,16 @@ window.l_gk_username                               = "Gatekeeper username";
 window.l_gk_password                               = "Gatekeeper password";
 window.l_gk_room_names                             = "Gatekeeper room names";
 ///
-window.l_stun_server                               = "STUN сервер";
-window.l_stun_server_list                          = "STUN сервера";
+window.l_server                                    = "Сервер";
+window.l_server_list                               = "Список серверiв";
 ///
+window.l_directory                                 = "Директорія";
 window.l_rtp_input_timeout                         = "RTP таймаут";
 window.l_received_vfu_delay                        = "Обмеження VFU (запит/сек)";
 window.l_video_cache                               = "Відео кешування";
 window.l_ping_options_interval                     = "ping/options інтервал";
 window.l_internal_call_processing                  = "Внутрішні дзвінки";
 window.l_room_auto_create_when_connecting          = "Автоматичне створення при підключенні";
+window.l_enter_template_name                       = "Введіть ім'я шаблону";
+window.l_disconnect                                = "Відключити";
 ///

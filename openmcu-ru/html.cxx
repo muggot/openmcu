@@ -254,28 +254,30 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
   // Language
   //s << SelectField("Language", JsLocal("language"), cfg.GetString("Language"), ",EN,FR,JP,PT,RU,UK");
-  s << SelectField("Language", "Language", cfg.GetString("Language"), ",EN,FR,JP,PT,RU,UK");
+  s << SelectField("Language", "Select Language", cfg.GetString("Language"), ",EN,FR,JP,PT,RU,UK");
   // MCU Server Id
   s << StringField(ServerIdKey, JsLocal("server_id"), OpenMCU::Current().GetServerId(), 250);
 
   s << SelectField(DefaultProtocolKey, JsLocal("default_protocol_for_outgoing_calls"), cfg.GetString(DefaultProtocolKey, "sip"), "h323,sip");
 
+  s << SeparatorField("");
+  s << SeparatorField("");
+  // HTTP Port number to use.
+  s << StringField(HttpIPKey, JsLocal("http_ip"), cfg.GetString(HttpIPKey, "0.0.0.0"));
+  s << IntegerField(HttpPortKey, JsLocal("http_port"), cfg.GetInteger(HttpPortKey, DefaultHTTPPort), 1, 32767);
 #if P_SSL
-  s << SeparatorField("Security");
   s << BoolField(HTTPSecureKey, JsLocal("http_secure"), cfg.GetBoolean(HTTPSecureKey, FALSE));
   s << StringField(HTTPCertificateFileKey, JsLocal("http_certificate"), cfg.GetString(HTTPCertificateFileKey, DefaultHTTPCertificateFile), 250);
 #endif
 
-  s << SeparatorField("Port setup");
-  // HTTP Port number to use.
-  s << SeparatorField();
-  s << StringField(HttpIPKey, JsLocal("http_ip"), cfg.GetString(HttpIPKey, "0.0.0.0"));
-  s << IntegerField(HttpPortKey, JsLocal("http_port"), cfg.GetInteger(HttpPortKey, DefaultHTTPPort), 1, 32767);
+  s << SeparatorField("");
+  s << SeparatorField("");
   // RTP Port Setup
   s << IntegerField(RTPPortBaseKey, JsLocal("rtp_base_port"), cfg.GetInteger(RTPPortBaseKey, 0), 0, 65535, 0, "0 = auto, Example: base=5000, max=6000");
   s << IntegerField(RTPPortMaxKey, JsLocal("rtp_max_port"), cfg.GetInteger(RTPPortMaxKey, 0), 0, 65535);
 
-  s << SeparatorField("Log setup");
+  s << SeparatorField("");
+  s << SeparatorField("");
 #if PTRACING
   // Trace level
   s << SelectField(TraceLevelKey, JsLocal("trace_level"), cfg.GetString(TraceLevelKey, DEFAULT_TRACE_LEVEL), "0,1,2,3,4,5,6", 0, "0=No tracing ... 6=Very detailed");
@@ -292,7 +294,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // Copy web log from Room Control Page to call log
   s << BoolField("Copy web log to call log", JsLocal("copy_web_log"), cfg.GetBoolean("Copy web log to call log", FALSE), "check if you want to store event log from Room Control Page");
 
-  s << SeparatorField("Room setup");
+  s << SeparatorField("");
+  s << SeparatorField("");
   // Default room
   if(cfg.GetString(DefaultRoomKey) == "")
     cfg.SetString(DefaultRoomKey, DefaultRoom);
@@ -302,7 +305,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // allow/disallow self-invite:
   s << BoolField(AllowLoopbackCallsKey, JsLocal("allow_loopback_calls"), cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
 
-  s << SeparatorField("Video recorder setup");
+  s << SeparatorField("");
+  s << SeparatorField("");
   PString dirInfo;
   if(!PDirectory::Exists(mcu.vr_ffmpegDir) && !PFile::Exists(mcu.vr_ffmpegDir))
   {
@@ -320,8 +324,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
     else if(!(info.permissions & 0222)) dirInfo += "<b><font color=red>output directory permissions check failed</font></b>";
   }
 
-  s << StringField(RecorderFfmpegDirKey, RecorderFfmpegDirKey, mcu.vr_ffmpegDir, 250, dirInfo);
-  s << SelectField(RecorderVideoCodecKey, RecorderVideoCodecKey, cfg.GetString(RecorderVideoCodecKey, RecorderDefaultVideoCodec), GetRecorderCodecs(1));
+  s << StringField(RecorderFfmpegDirKey, "Recorder "+JsLocal("directory"), mcu.vr_ffmpegDir, 250, dirInfo);
+  s << SelectField(RecorderVideoCodecKey, "Recorder "+JsLocal("name_video_codec"), cfg.GetString(RecorderVideoCodecKey, RecorderDefaultVideoCodec), GetRecorderCodecs(1));
 
   // bak 2014.10.20 ////////////////////////////////////
   PString RecorderFrameWidthKey  = "Video Recorder frame width";
@@ -340,13 +344,13 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   for(int i = 0; recorder_resolutions[i].macroblocks != 0; ++i)
     resolutions += ","+PString(recorder_resolutions[i].width)+"x"+PString(recorder_resolutions[i].height);
   PString res = cfg.GetString(RecorderResolutionKey, PString(DefaultRecorderFrameWidth)+"x"+PString(DefaultRecorderFrameHeight));
-  s << SelectField(RecorderResolutionKey, RecorderResolutionKey, res, resolutions);
+  s << SelectField(RecorderResolutionKey, "Recorder "+JsLocal("name_video_resolution"), res, resolutions);
 
-  s << IntegerField(RecorderFrameRateKey, RecorderFrameRateKey, cfg.GetInteger(RecorderFrameRateKey, DefaultRecorderFrameRate), 1, 30);
-  s << IntegerField(RecorderVideoBitrateKey, RecorderVideoBitrateKey, cfg.GetInteger(RecorderVideoBitrateKey), 0, 4000, 0, "kbit/s, 0 - auto");
-  s << SelectField(RecorderAudioCodecKey, RecorderAudioCodecKey, cfg.GetString(RecorderAudioCodecKey, RecorderDefaultAudioCodec), GetRecorderCodecs(0));
-  s << SelectField(RecorderSampleRateKey, RecorderSampleRateKey, cfg.GetString(RecorderSampleRateKey, DefaultRecorderSampleRate), "8000,16000,32000,48000");
-  s << SelectField(RecorderAudioChansKey, RecorderAudioChansKey, cfg.GetString(RecorderAudioChansKey, DefaultRecorderAudioChans), "1,2,3,4,5,6,7,8");
+  s << IntegerField(RecorderFrameRateKey, "Recorder "+JsLocal("video_frame_rate"), cfg.GetInteger(RecorderFrameRateKey, DefaultRecorderFrameRate), 1, 30);
+  s << IntegerField(RecorderVideoBitrateKey, "Recorder "+JsLocal("video_bitrate"), cfg.GetInteger(RecorderVideoBitrateKey), 0, 4000, 0, "kbit/s, 0 - auto");
+  s << SelectField(RecorderAudioCodecKey, "Recorder "+JsLocal("name_audio_codec"), cfg.GetString(RecorderAudioCodecKey, RecorderDefaultAudioCodec), GetRecorderCodecs(0));
+  s << SelectField(RecorderSampleRateKey, "Recorder "+JsLocal("audio_sample_rate"), cfg.GetString(RecorderSampleRateKey, DefaultRecorderSampleRate), "8000,16000,32000,48000");
+  s << SelectField(RecorderAudioChansKey, "Recorder "+JsLocal("audio_channels"), cfg.GetString(RecorderAudioChansKey, DefaultRecorderAudioChans), "1,2,3,4,5,6,7,8");
 
   // get WAV file played to a user when they enter a conference
   //s << StringField(ConnectingWAVFileKey, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile));
@@ -1260,7 +1264,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
         stun_list = ",auto,"+stun_list;
       if(stun_list.Find(stun_name) == P_MAX_INDEX)
         stun_list = stun_name+","+stun_list;
-      s2 += rowArray+JsLocal("stun_server")+SelectItem(name, stun_name, stun_list)+"</tr>";
+      s2 += rowArray+"STUN "+JsLocal("server")+SelectItem(name, stun_name, stun_list)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
@@ -1441,7 +1445,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      s2 += rowArray+PString(NATRouterIPKey)+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
+      s2 += rowArray+JsLocal("nat_router_ip")+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
       PString stun_name = scfg.GetString(NATStunServerKey);
       PString stun_list = MCUConfig("SIP Parameters").GetString(NATStunListKey);
@@ -1449,7 +1453,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
         stun_list = ",auto,"+stun_list;
       if(stun_list.Find(stun_name) == P_MAX_INDEX)
         stun_list = stun_name+","+stun_list;
-      s2 += rowArray+(PString(NATStunServerKey)+" (from SIP)")+SelectItem(name, stun_name, stun_list)+"</tr>";
+      s2 += rowArray+"STUN "+JsLocal("server")+SelectItem(name, stun_name, stun_list)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
@@ -1465,7 +1469,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       // bandwidth from MCU
       s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // RTP timeout
-      s2 += rowArray+"RTP Input Timeout"+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
+      s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
@@ -1667,8 +1671,8 @@ RtspPConfigPage::RtspPConfigPage(PHTTPServiceProcess & app,const PString & title
   s << BeginTable();
   s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
 
-  s << BoolField("Enable", JsLocal("name_enable"), cfg.GetBoolean("Enable", TRUE));
-  s << ArrayField("Listener", JsLocal("listener"), cfg.GetString("Listener", "0.0.0.0:1554"), 150);
+  s << BoolField("Enable", "RTSP "+JsLocal("name_enable"), cfg.GetBoolean("Enable", TRUE));
+  s << ArrayField("Listener", "RTSP "+JsLocal("listener"), cfg.GetString("Listener", "0.0.0.0:1554"), 150);
 
   s << EndTable();
   BuildHTML("");
@@ -1753,7 +1757,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
   item += InfoItem("");
   s << item;
 
-  s << ArrayField(NATStunListKey, JsLocal("stun_server_list"), cfg.GetString(NATStunListKey), 150);
+  s << ArrayField(NATStunListKey, "STUN "+JsLocal("server_list"), cfg.GetString(NATStunListKey), 150);
 
   mcu.GetSipEndpoint()->sipListenerArray = sipListener;
 
