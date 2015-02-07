@@ -214,9 +214,9 @@ window.l_name_parameters_for_sending               = "Параметри для 
 window.l_name_codec_parameters                     = "Параметри кодека <br> (перевизначити отримані)";
 window.l_name_default_parameters                   = "Параметри за замовчуванням";
 
-window.l_room_invite_all_inactive_members          = 'Викликати всіх відключених учасників?';
-window.l_room_drop_all_active_members              = 'Відключити всіх активних учасників?';
-window.l_room_remove_all_inactive_members          = 'Видалити всіх відключених учасників зі списку?';
+window.l_room_invite_all_inactive_members          = 'Викликати всіх відключених учасників';
+window.l_room_drop_all_active_members              = 'Відключити всіх активних учасників';
+window.l_room_remove_all_inactive_members          = 'Видалити всіх відключених учасників зі списку';
 window.l_room_drop_connection_with                 = 'Розірвати з’єднання з';
 window.l_room_remove_from_list                     = 'Видалити зі списку';
 
