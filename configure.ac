@@ -307,24 +307,28 @@ if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 3; then
   PTLIB_LIBDIR="${PTLIBDIR}/lib_${OSTYPE}_${MACHTYPE}"
   PTLIB_SO_FILE="libpt.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
   PTLIB_A_FILE="libpt_s.a"
+  PTLIB_AD_FILE="libpt_d_s.a"
   PTLIB_LINK_FILE="pt"
   H323PLUS_LIBDIR="${H323PLUSDIR}/lib"
   H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_.so.${H323PLUS_MAJOR_VERSION}.${H323PLUS_MINOR_VERSION}.${H323PLUS_BUILD_NUMBER}"
   H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}__s.a"
+  H323PLUS_AD_FILE="libh323_${OSTYPE}_${MACHTYPE}__d_s.a"
   H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_"
 else
   PTLIB_LIBDIR="${PTLIBDIR}/lib"
   PTLIB_SO_FILE="libpt_${OSTYPE}_${MACHTYPE}_r.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
   PTLIB_A_FILE="libpt_${OSTYPE}_${MACHTYPE}_r_s.a"
+  PTLIB_AD_FILE="libpt_${OSTYPE}_${MACHTYPE}_d_s.a"
   PTLIB_LINK_FILE="pt_${OSTYPE}_${MACHTYPE}_r"
   H323PLUS_LIBDIR="${H323PLUSDIR}/lib"
   H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_r.so.${H323PLUS_MAJOR_VERSION}.${H323PLUS_MINOR_VERSION}.${H323PLUS_BUILD_NUMBER}"
   H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}_r_s.a"
+  H323PLUS_AD_FILE="libh323_${OSTYPE}_${MACHTYPE}_d_s.a"
   H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_r"
 fi
 
 if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
-  H323BUILDOPTS="PTLIBDIR=\"${PTLIBDIR}\""
+  H323PLUS_BUILDOPTS="PTLIBDIR=\"${PTLIBDIR}\""
 fi
 
 AC_SUBST(PTLIB_LIBDIR)
@@ -336,8 +340,9 @@ AC_SUBST(H323PLUS_SO_FILE)
 AC_SUBST(H323PLUS_A_FILE)
 AC_SUBST(H323PLUS_LINK_FILE)
 
-AC_SUBST(H323BUILDOPTS)
-AC_SUBST(MCUBUILDOPTS)
+AC_SUBST(PTLIB_BUILDOPTS)
+AC_SUBST(H323PLUS_BUILDOPTS)
+AC_SUBST(MCU_BUILDOPTS)
 
 dnl ########################################################################
 dnl arg
@@ -969,36 +974,40 @@ dnl configure rpath stage1
 
 rpath=yes
 AC_ARG_ENABLE(separator, [      ])
-AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="$enableval"])
+AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[Do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="$enableval"])
 
 
 dnl ########################################################################
 dnl configure static linking
 
 static=no
-AC_ARG_ENABLE(static, [AS_HELP_STRING([--enable-static],[build static linking with ptlib,h323plus (default disabled)],[40],[100])], [static="$enableval"])
+debug=no
+AC_ARG_ENABLE(static, [AS_HELP_STRING([--enable-static],[Build static linking with ptlib,h323plus (default disabled)],[40],[100])], [static="$enableval"])
+AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug],[Enable debugging information (default disabled)],[40],[100])], [debug="$enableval"])
+
+CFLAGS="-g $CFLAGS"
+MCU_LDLIBS_STATIC="$MCU_LDLIBS"
+MCU_LDLIBS_DEBUG="$MCU_LDLIBS"
+MCU_SFLAGS_STATIC="${MCU_SFLAGS} -Wl,--start-group ${PTLIB_LIBDIR}/${PTLIB_A_FILE} ${H323PLUS_LIBDIR}/${H323PLUS_A_FILE} -Wl,--end-group"
+MCU_SFLAGS_DEBUG="${MCU_SFLAGS} -Wl,--start-group ${PTLIB_LIBDIR}/${PTLIB_AD_FILE} ${H323PLUS_LIBDIR}/${H323PLUS_AD_FILE} -Wl,--end-group"
+
+MCU_LDFLAGS="${MCU_LDFLAGS} -L${PTLIB_LIBDIR} -L${H323PLUS_LIBDIR}"
+MCU_LDLIBS="${MCU_LDLIBS} -l${H323PLUS_LINK_FILE} -l${PTLIB_LINK_FILE}"
 
 AC_SUBST(ENABLE_STATIC, 0)
-if test "${static}" = "yes"; then
-  MCU_SFLAGS="${MCU_SFLAGS} -Wl,--start-group ${PTLIB_LIBDIR}/${PTLIB_A_FILE} ${H323PLUS_LIBDIR}/${H323PLUS_A_FILE} -Wl,--end-group"
-  MCU_LDLIBS="$MCU_LDLIBS"
-  ENABLE_STATIC=1
-else
-  MCU_LDFLAGS="${MCU_LDFLAGS} -L${PTLIB_LIBDIR} -L${H323PLUS_LIBDIR}"
-  MCU_LDLIBS="${MCU_LDLIBS} -l${H323PLUS_LINK_FILE} -l${PTLIB_LINK_FILE}"
-  ENABLE_STATIC=0
-fi
-AM_CONDITIONAL(COMPILER_NO_STATIC, [test ${ENABLE_STATIC} = 0])
-
-dnl ########################################################################
-dnl configure debugging
-
-debug=yes
-AC_ARG_ENABLE(debug, [AS_HELP_STRING([--disable-debug],[Disable debugging information (default enabled)],[40],[100])], [debug="$enableval"])
-
 if test "${debug}" = "yes"; then
-  CFLAGS="-g $CFLAGS"
+  PTLIB_BUILDOPTS="debug ${PTLIB_BUILDOPTS}"
+  H323PLUS_BUILDOPTS="debug ${H323PLUS_BUILDOPTS}"
+  MCU_BUILDOPTS="debug ${MCU_BUILDOPTS}"
+  ENABLE_STATIC=1
+elif test "${static}" = "yes"; then
+  PTLIB_BUILDOPTS="opt ${PTLIB_BUILDOPTS}"
+  H323PLUS_BUILDOPTS="opt ${H323PLUS_BUILDOPTS}"
+  MCU_BUILDOPTS="static ${MCU_BUILDOPTS}"
+  ENABLE_STATIC=1
 fi
+
+AM_CONDITIONAL(COMPILER_NO_STATIC, [test ${ENABLE_STATIC} = 0])
 
 dnl ########################################################################
 dnl configure rpath stage2
@@ -1074,10 +1083,14 @@ AC_SUBST(LIBVPX_LDFLAGS)
 
 AC_SUBST(MCU_LDFLAGS)
 AC_SUBST(MCU_LDLIBS)
+AC_SUBST(MCU_LDLIBS_STATIC)
+AC_SUBST(MCU_LDLIBS_DEBUG)
 AC_SUBST(MCU_CPPFLAGS)
 
 AC_SUBST(RPATH)
 AC_SUBST(MCU_SFLAGS)
+AC_SUBST(MCU_SFLAGS_STATIC)
+AC_SUBST(MCU_SFLAGS_DEBUG)
 
 AC_SUBST(STDCCFLAGS)
 AC_SUBST(STDCXXFLAGS)

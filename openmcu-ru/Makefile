@@ -17,7 +17,11 @@ CFLAGS         += -g -g -O2 -Os
 LDFLAGS        += -L../libs/libyuv -L../libs/sofia-sip/libsofia-sip-ua/.libs -L/opt/git/test/libs/h323plus/lib -L/opt/git/test/libs/ptlib/lib -L/opt/lib -L/opt/openmcu-ru/lib -L/usr/lib -L/usr/local/lib
 RFLAGS         += -Wl,-R/opt/openmcu-ru/lib,-R/opt/openmcu-ru/lib
 SFLAGS         += 
-LDLIBS	       +=  -lssl -lsrtp -lfreetype -lyuv -lsofia-sip-ua -lavcodec -lavutil -lavformat -lswscale -lswresample -lh323_linux_x86_r -lpt_linux_x86_r
+SFLAGS_STATIC  +=  -Wl,--start-group /opt/git/test/libs/ptlib/lib/libpt_linux_x86_r_s.a /opt/git/test/libs/h323plus/lib/libh323_linux_x86_r_s.a -Wl,--end-group
+SFLAGS_DEBUG   +=  -Wl,--start-group /opt/git/test/libs/ptlib/lib/libpt_linux_x86_d_s.a /opt/git/test/libs/h323plus/lib/libh323_linux_x86_d_s.a -Wl,--end-group
+LDLIBS	       +=  -lavcodec -lavutil -lavformat -lswscale -lsofia-sip-ua -lswresample -lfreetype -lyuv -lssl -lsrtp -lh323_linux_x86_r -lpt_linux_x86_r
+LDLIBS_STATIC  +=  -lavcodec -lavutil -lavformat -lswscale -lsofia-sip-ua -lswresample -lfreetype -lyuv -lssl -lsrtp
+LDLIBS_DEBUG   +=  -lavcodec -lavutil -lavformat -lswscale -lsofia-sip-ua -lswresample -lfreetype -lyuv -lssl -lsrtp
 STDCCFLAGS     +=  -D__STDC_CONSTANT_MACROS -Wall
 STDCXXFLAGS    += 
 CPPFLAGS       += -I../libs/h323plus/include -I../libs/libyuv/include -I../libs/ptlib/include -I../libs/sofia-sip/libsofia-sip-ua/bnf -I../libs/sofia-sip/libsofia-sip-ua/docs -I../libs/sofia-sip/libsofia-sip-ua/features -I../libs/sofia-sip/libsofia-sip-ua/http -I../libs/sofia-sip/libsofia-sip-ua/ipt -I../libs/sofia-sip/libsofia-sip-ua/iptsec -I../libs/sofia-sip/libsofia-sip-ua/msg -I../libs/sofia-sip/libsofia-sip-ua/nea -I../libs/sofia-sip/libsofia-sip-ua/nta -I../libs/sofia-sip/libsofia-sip-ua/nth -I../libs/sofia-sip/libsofia-sip-ua/nua -I../libs/sofia-sip/libsofia-sip-ua/sdp -I../libs/sofia-sip/libsofia-sip-ua/sip -I../libs/sofia-sip/libsofia-sip-ua/soa -I../libs/sofia-sip/libsofia-sip-ua/sresolv -I../libs/sofia-sip/libsofia-sip-ua/stun -I../libs/sofia-sip/libsofia-sip-ua/su -I../libs/sofia-sip/libsofia-sip-ua/tport -I../libs/sofia-sip/libsofia-sip-ua/url -I/opt/include -I/opt/openmcu-ru/include -I/usr/include -I/usr/include/freetype2 -I/usr/include/srtp/ -I/usr/local/include
@@ -39,10 +43,15 @@ $(OBJDIR)/%.o : %.cxx
 	@echo [CC] $@
 	@$(CXX) $(STDCCFLAGS) $(OPTCCFLAGS) $(CFLAGS) $(STDCXXFLAGS) -c $< -o $@
 
-all: $(OBJDIR)/$(PROG)
+all: $(OBJECTS)
+	$(CXX) $(LDSO) -o $(OBJDIR)/$(PROG) $^ $(CFLAGS) $(LDFLAGS) $(SFLAGS) $(RFLAGS) $(OBJS) $(LDLIBS) $(ENDLDLIBS) $(ENDLDFLAGS)
 
-$(OBJDIR)/$(PROG): $(OBJECTS)
-	$(CXX) $(LDSO) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(SFLAGS) $(RFLAGS) $(OBJS) $(LDLIBS) $(ENDLDLIBS) $(ENDLDFLAGS)
+static: $(OBJECTS)
+	$(CXX) $(LDSO) -o $(OBJDIR)/$(PROG) $^ $(CFLAGS) $(LDFLAGS) $(SFLAGS_STATIC) $(RFLAGS) $(OBJS) $(LDLIBS_STATIC) $(ENDLDLIBS) $(ENDLDFLAGS)
+
+debug: $(OBJECTS)
+	$(CXX) $(LDSO) -o $(OBJDIR)/$(PROG) $^ $(CFLAGS) $(LDFLAGS) $(SFLAGS_DEBUG) $(RFLAGS) $(OBJS) $(LDLIBS_DEBUG) $(ENDLDLIBS) $(ENDLDFLAGS)
+
 
 install:
 	mkdir -p $(DESTDIR)/opt/openmcu-ru
