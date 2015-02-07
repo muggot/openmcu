@@ -446,6 +446,7 @@ class MCUVideoMixer
     virtual ConferenceMemberId GetPositionId(int pos) = 0;
     virtual ConferenceMemberId GetHonestId(int pos) = 0;
     virtual void Exchange(int pos1, int pos2) = 0;
+    virtual ConferenceMemberId TryOnVADPosition(ConferenceMember * member) = 0;
     virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout) = 0;
     virtual BOOL SetVAD2Position(ConferenceMember * member) = 0;
 
@@ -584,6 +585,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual ConferenceMemberId GetPositionId(int pos);
     virtual ConferenceMemberId GetHonestId(int pos);
     virtual void Exchange(int pos1, int pos2);
+    virtual ConferenceMemberId TryOnVADPosition(ConferenceMember * member);
     virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout);
     virtual BOOL SetVAD2Position(ConferenceMember * member);
 //    virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }

@@ -3709,11 +3709,46 @@ ConferenceMemberId MCUSimpleVideoMixer::GetHonestId(int pos)
   return NULL;
 }
 
+
+ConferenceMemberId MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * member)
+{
+  VideoMixPosition *VADvmp=NULL;
+  PWaitAndSignal m(mutex);
+  VideoMixPosition *r = vmpList->next;
+  long orderKey=0;
+  while(r != NULL)
+  {
+    VideoMixPosition & vmp = *r;
+    if((vmp.type!=2)&&(vmp.type!=3)) {r=r->next; continue;}
+    if(((long)vmp.id<0)||((long)vmp.id>=100)) {r=r->next; continue;}
+    long currentOrderKey=((long)vmp.type<<16)-(long)vmp.id; //at least 128K-x where x=0..99
+    if(currentOrderKey>orderKey)
+    {
+      orderKey=currentOrderKey;
+      VADvmp=r;
+    }
+    r=r->next;
+  }
+  if(!(VADvmp&&orderKey)) return (ConferenceMemberId)(void*)-1;
+
+  ConferenceMemberId result = VADvmp->id;
+
+  VADvmp->id=member->GetID();
+  VADvmp->status=0;
+  VADvmp->chosenVan=member->chosenVan;
+  VADvmp->endpointName=member->GetName();
+#if USE_FREETYPE
+  RemoveSubtitles(*VADvmp);
+#endif
+
+  return result;
+}
+
 ConferenceMemberId MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout)
 {
- int maxStatus=0;
- ConferenceMemberId maxId=(void *)(-1);
- VideoMixPosition *VADvmp=NULL;
+  int maxStatus=0;
+  ConferenceMemberId maxId=(void *)(-1);
+  VideoMixPosition *VADvmp=NULL;
  
   PWaitAndSignal m(mutex);
   

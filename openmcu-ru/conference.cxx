@@ -920,6 +920,13 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     maxMemberCount = PMAX(maxMemberCount, visibleMemberCount);
   }
 
+  // notify that member is joined
+  memberToAdd->SetJoined(TRUE);
+
+  // template
+  if(!memberToAdd->GetType() & MEMBER_TYPE_GSYSTEM)
+    PullMemberOptionsFromTemplate(memberToAdd, confTpl);
+
   if(UseSameVideoForAllMembers())
   {
     if(moderated == FALSE
@@ -932,6 +939,16 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
         MCUSimpleVideoMixer * mixer = manager.GetVideoMixerWithLock(this);
         mixer->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
         mixer->Unlock();
+      }
+    }
+    else
+    {
+      if(memberToAdd->IsVisible())
+      if(!memberToAdd->disableVAD)
+      for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+      {
+        MCUSimpleVideoMixer *mixer = it.GetObject();
+        mixer->TryOnVADPosition(memberToAdd);
       }
     }
   }
@@ -959,13 +976,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     // trigger H245 thread for join message
     //new NotifyH245Thread(*this, TRUE, memberToAdd);
   }
-
-  // notify that member is joined
-  memberToAdd->SetJoined(TRUE);
-
-  // template
-  if(!memberToAdd->GetType() & MEMBER_TYPE_GSYSTEM)
-    PullMemberOptionsFromTemplate(memberToAdd, confTpl);
 
   return TRUE;
 }
