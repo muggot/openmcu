@@ -324,8 +324,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
     else if(!(info.permissions & 0222)) dirInfo += "<b><font color=red>output directory permissions check failed</font></b>";
   }
 
-  s << StringField(RecorderFfmpegDirKey, "Recorder "+JsLocal("directory"), mcu.vr_ffmpegDir, 250, dirInfo);
-  s << SelectField(RecorderVideoCodecKey, "Recorder "+JsLocal("name_video_codec"), cfg.GetString(RecorderVideoCodecKey, RecorderDefaultVideoCodec), GetRecorderCodecs(1));
+  s << StringField(RecorderFfmpegDirKey, JsLocal("param_record")+": "+JsLocal("directory"), mcu.vr_ffmpegDir, 250, dirInfo);
+  s << SelectField(RecorderVideoCodecKey, JsLocal("param_record")+": "+JsLocal("name_video_codec"), cfg.GetString(RecorderVideoCodecKey, RecorderDefaultVideoCodec), GetRecorderCodecs(1));
 
   // bak 2014.10.20 ////////////////////////////////////
   PString RecorderFrameWidthKey  = "Video Recorder frame width";
@@ -344,13 +344,13 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   for(int i = 0; recorder_resolutions[i].macroblocks != 0; ++i)
     resolutions += ","+PString(recorder_resolutions[i].width)+"x"+PString(recorder_resolutions[i].height);
   PString res = cfg.GetString(RecorderResolutionKey, PString(DefaultRecorderFrameWidth)+"x"+PString(DefaultRecorderFrameHeight));
-  s << SelectField(RecorderResolutionKey, "Recorder "+JsLocal("name_video_resolution"), res, resolutions);
+  s << SelectField(RecorderResolutionKey, JsLocal("param_record")+": "+JsLocal("name_video_resolution"), res, resolutions);
 
-  s << IntegerField(RecorderFrameRateKey, "Recorder "+JsLocal("video_frame_rate"), cfg.GetInteger(RecorderFrameRateKey, DefaultRecorderFrameRate), 1, 30);
-  s << IntegerField(RecorderVideoBitrateKey, "Recorder "+JsLocal("video_bitrate"), cfg.GetInteger(RecorderVideoBitrateKey), 0, 4000, 0, "kbit/s, 0 - auto");
-  s << SelectField(RecorderAudioCodecKey, "Recorder "+JsLocal("name_audio_codec"), cfg.GetString(RecorderAudioCodecKey, RecorderDefaultAudioCodec), GetRecorderCodecs(0));
-  s << SelectField(RecorderSampleRateKey, "Recorder "+JsLocal("audio_sample_rate"), cfg.GetString(RecorderSampleRateKey, DefaultRecorderSampleRate), "8000,16000,32000,48000");
-  s << SelectField(RecorderAudioChansKey, "Recorder "+JsLocal("audio_channels"), cfg.GetString(RecorderAudioChansKey, DefaultRecorderAudioChans), "1,2,3,4,5,6,7,8");
+  s << IntegerField(RecorderFrameRateKey, JsLocal("param_record")+": "+JsLocal("video_frame_rate"), cfg.GetInteger(RecorderFrameRateKey, DefaultRecorderFrameRate), 1, 30);
+  s << IntegerField(RecorderVideoBitrateKey, JsLocal("param_record")+": "+JsLocal("video_bitrate"), cfg.GetInteger(RecorderVideoBitrateKey), 0, 4000, 0, "kbit/s, 0 - auto");
+  s << SelectField(RecorderAudioCodecKey, JsLocal("param_record")+": "+JsLocal("name_audio_codec"), cfg.GetString(RecorderAudioCodecKey, RecorderDefaultAudioCodec), GetRecorderCodecs(0));
+  s << SelectField(RecorderSampleRateKey, JsLocal("param_record")+": "+JsLocal("audio_sample_rate"), cfg.GetString(RecorderSampleRateKey, DefaultRecorderSampleRate), "8000,16000,32000,48000");
+  s << SelectField(RecorderAudioChansKey, JsLocal("param_record")+": "+JsLocal("audio_channels"), cfg.GetString(RecorderAudioChansKey, DefaultRecorderAudioChans), "1,2,3,4,5,6,7,8");
 
   // get WAV file played to a user when they enter a conference
   //s << StringField(ConnectingWAVFileKey, cfg.GetString(ConnectingWAVFileKey, DefaultConnectingWAVFile));
@@ -1706,8 +1706,8 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
 
   PString labels = "No gatekeeper,Find gatekeeper,Use gatekeeper";
   s << SelectField(GatekeeperModeKey, JsLocal("gk_mode"), cfg.GetString(GatekeeperModeKey, labels[0]), labels, 150);
-  s << SelectField(GatekeeperTTLKey, JsLocal("gk_reg_ttl"), cfg.GetString(GatekeeperTTLKey), ",60,120,180,240,300,600,1200,1800,2400,3000,3600");
   s << SelectField(GatekeeperRetryIntervalKey, JsLocal("gk_reg_retry_interval"), cfg.GetString(GatekeeperRetryIntervalKey, "30"), "10,20,30,40,50,60,120,180,240,300");
+  s << SelectField(GatekeeperTTLKey, JsLocal("gk_reg_ttl"), cfg.GetString(GatekeeperTTLKey), ",60,120,180,240,300,600,1200,1800,2400,3000,3600");
   s << StringField(GatekeeperKey, JsLocal("gk_host"), cfg.GetString(GatekeeperKey));
   s << StringField(GatekeeperUserNameKey, JsLocal("gk_username"), cfg.GetString(GatekeeperUserNameKey, "MCU"));
   s << PasswordField(GatekeeperPasswordKey, JsLocal("gk_password"), cfg.GetString(GatekeeperPasswordKey));

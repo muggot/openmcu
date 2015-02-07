@@ -142,7 +142,6 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
 
   PWaitAndSignal m(mutex);
 
-  sip_t *sip = sip_object(msg);
   PString callToken = GetSipCallToken(msg);
   if(HasRegConn(callToken))
     return 1;

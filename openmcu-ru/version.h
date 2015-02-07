@@ -8,7 +8,6 @@
 #define BUILD_NUMBER  1
 
 
-
 #endif  // _MCU_VERSION_H
 
 
