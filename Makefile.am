@@ -5,8 +5,8 @@ SUBDIRS 	= @PTLIBDIR@ @H323PLUSDIR@ @MCUDIR@
 ####################################################################################################
 
 all:
-	($(MAKE) $(MAKEFLAGS) opt -C @PTLIBDIR@) || exit $$?
-	($(MAKE) $(MAKEFLAGS)     -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?
+	($(MAKE) $(MAKEFLAGS) @PTLIB_BUILDOPTS@    -C @PTLIBDIR@) || exit $$?
+	($(MAKE) $(MAKEFLAGS) @H323PLUS_BUILDOPTS@ -C @H323PLUSDIR@) || exit $$?
 if COMPILER_USE_LIBYUV
 	cd @LIBYUV_DIR@ && \
 	( for file in source/*.cc; do \
@@ -34,7 +34,7 @@ endif
 if COMPILER_USE_LIBG7221
 	($(MAKE) $(MAKEFLAGS)     -C @LIBG7221_DIR@) || exit $$?
 endif
-	($(MAKE) $(MAKEFLAGS)     -C @MCUDIR@ @MCUBUILDOPTS@) || exit $$?
+	($(MAKE) $(MAKEFLAGS) @MCU_BUILDOPTS@      -C @MCUDIR@) || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) $(MAKEFLAGS) -C $$dir) || exit $$?; \
 	done )
@@ -42,7 +42,7 @@ endif
 ####################################################################################################
 
 install:
-	($(MAKE) install -C @MCUDIR@ @MCUBUILDOPTS@) || exit $$?
+	($(MAKE) install -C @MCUDIR@) || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) install -C $$dir) || exit $$?; \
 	done )
@@ -72,7 +72,7 @@ endif
 ####################################################################################################
 
 uninstall:
-	($(MAKE) uninstall -C @MCUDIR@ @MCUBUILDOPTS@) || exit $$?
+	($(MAKE) uninstall -C @MCUDIR@) || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) uninstall -C $$dir) || exit $$?; \
 	done )
@@ -121,8 +121,8 @@ if COMPILER_USE_LIBG7221
 	($(MAKE) clean -C @LIBG7221_DIR@) || exit $$?
 endif
 	($(MAKE) clean -C @PTLIBDIR@) || exit $$?
-	($(MAKE) clean -C @H323PLUSDIR@ @H323BUILDOPTS@) || exit $$?
-	($(MAKE) clean -C @MCUDIR@ @MCUBUILDOPTS@) || exit $$?
+	($(MAKE) clean -C @H323PLUSDIR@) || exit $$?
+	($(MAKE) clean -C @MCUDIR@) || exit $$?
 	( for dir in @PLUGIN_DIRS@; \
 		do ($(MAKE) clean -C $$dir) || exit $$?; \
 	done )
