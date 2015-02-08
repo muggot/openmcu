@@ -13,7 +13,7 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
                    reg.cxx reg_sip.cxx reg_h323.cxx rtsp.cxx recorder.cxx mcu_caps.cxx mcu_codecs.cxx
 
 CXX		= g++
-CFLAGS         += @CFLAGS@ -Os
+CFLAGS         += @CFLAGS@
 LDFLAGS        += @MCU_LDFLAGS@
 RFLAGS         += @RPATH@
 SFLAGS         += @MCU_SFLAGS@

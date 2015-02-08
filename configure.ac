@@ -5,11 +5,14 @@ AC_INIT([OpenMCU-ru],[3.49],[OpenMCU-ru])
 AC_CANONICAL_TARGET()
 AM_INIT_AUTOMAKE()
 
-AC_PROG_CXX
-AC_LANG(C++)
-
 AC_SUBST(PRODUCT, OpenMCU-ru)
 AC_SUBST(PROG, openmcu-ru)
+
+AC_LANG(C++)
+
+OLD_CFLAGS=${CFLAGS}
+AC_PROG_CXX
+CFLAGS=${OLD_CFLAGS}
 
 #AM_MAINTAINER_MODE
 
@@ -968,24 +971,16 @@ if test "${opus}" = "yes"; then
 fi
 AM_CONDITIONAL(COMPILER_USE_LIBOPUS, [test ${COMPILE_LIBOPUS} = 1])
 
-
-dnl ########################################################################
-dnl configure rpath stage1
-
-rpath=yes
-AC_ARG_ENABLE(separator, [      ])
-AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[Do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="$enableval"])
-
-
 dnl ########################################################################
 dnl configure static linking
 
 static=no
 debug=no
+AC_ARG_ENABLE(separator, [      ])
 AC_ARG_ENABLE(static, [AS_HELP_STRING([--enable-static],[Build static linking with ptlib,h323plus (default disabled)],[40],[100])], [static="$enableval"])
 AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug],[Enable debugging information (default disabled)],[40],[100])], [debug="$enableval"])
 
-CFLAGS="-g $CFLAGS"
+CFLAGS="-g -O2 $CFLAGS"
 MCU_LDLIBS_STATIC="$MCU_LDLIBS"
 MCU_LDLIBS_DEBUG="$MCU_LDLIBS"
 MCU_SFLAGS_STATIC="${MCU_SFLAGS} -Wl,--start-group ${PTLIB_LIBDIR}/${PTLIB_A_FILE} ${H323PLUS_LIBDIR}/${H323PLUS_A_FILE} -Wl,--end-group"
@@ -1010,7 +1005,10 @@ fi
 AM_CONDITIONAL(COMPILER_NO_STATIC, [test ${ENABLE_STATIC} = 0])
 
 dnl ########################################################################
-dnl configure rpath stage2
+dnl configure rpath
+
+rpath=yes
+AC_ARG_ENABLE(rpath, [AS_HELP_STRING([--disable-rpath],[Do not hardcode runtime library paths (default auto)],[40],[100])], [rpath="$enableval"])
 
 RPATH=
 if test "${OSTYPE}" != "linux" && test "${OSTYPE}" != "FreeBSD"; then
@@ -1035,6 +1033,8 @@ if test "${rpath}" = "yes"; then
     LD_PATH=`ldconfig -v -N | grep "/" | awk -F: '{print $1}'`
   fi
 
+  # removing duplicate paths
+  RPATH_LDFLAGS=$(echo $(printf '%s\n' ${RPATH_LDFLAGS} | sort -u))
   # RPATH keep only directories, which are not in ldconfig
   RPATH="-Wl"
   for r_path in ${RPATH_LDFLAGS}; do

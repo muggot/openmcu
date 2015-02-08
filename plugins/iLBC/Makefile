@@ -74,7 +74,7 @@ CC	 	=gcc
 CXX	 	=g++
 LDSO	 	=-shared -Wl,-soname,$(SONAME)
 PLUGINEXT	=so
-CFLAGS	       +=-g  -O2
+CFLAGS	       +=-g -O2 
 STDCCFLAGS	=-fPIC -D__STDC_CONSTANT_MACROS
 LDFLAGS	       +=
 
