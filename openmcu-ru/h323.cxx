@@ -1376,6 +1376,11 @@ int MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMemb
   conn->GetChannelsMutex().Signal();
 
   conn->Unlock();
+
+  PStringStream cmd;
+  cmd << "chmix(" << (long)member << "," << newMixerNumber << ")";
+  OpenMCU::Current().HttpWriteCmdRoom(cmd, conference.GetNumber());
+
   return newMixerNumber;
 }
 
@@ -2020,8 +2025,6 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     int newMixerNumber = SetMemberVideoMixer(*conference, member, option);
     if(newMixerNumber == -1)
       return FALSE;
-    cmd << "chmix(" << v << "," << newMixerNumber << ")";
-    OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
     return TRUE;
   }
 
@@ -2115,8 +2118,14 @@ void MCUH323EndPoint::UnmoderateConference(Conference & conference)
   }
 
   MCUVideoMixerList & videoMixerList = conference.GetVideoMixerList();
-  while(videoMixerList.GetCurrentSize() > 1)
-    conferenceManager.DeleteVideoMixer(&conference, videoMixerList.GetCurrentSize()-1);
+  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+  {
+    MCUSimpleVideoMixer * _mixer = *it;
+    if(_mixer == mixer)
+      continue;
+    if(videoMixerList.Erase(it))
+      delete _mixer;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

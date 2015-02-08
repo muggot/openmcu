@@ -1227,14 +1227,11 @@ void Conference::ReadMemberVideo(ConferenceMember * member, void * buffer, int w
   MCUSimpleVideoMixer * mixer = manager.FindVideoMixerWithLock(this, mixerNumber);
   if(mixer == NULL)
   {
-    if(mixerNumber != 0)
-      mixer = manager.GetVideoMixerWithLock(this);
+    mixer = manager.GetVideoMixerWithLock(this);
     if(mixer == NULL)
     {
       PTRACE(3, trace_section << "Could not get video");
       return;
-    } else  {
-      PTRACE(6, trace_section << "Could not get video mixer " << mixerNumber << ", reading 0 instead");
     }
   }
 
