@@ -10,11 +10,11 @@ CC		=gcc -std=gnu99
 CXX		=g++
 LDSO		=-shared
 PLUGINEXT	=so
-CFLAGS	       +=-g  -O2
+CFLAGS	       +=-g -O2 
 STDCCFLAGS	=-fPIC -D__STDC_CONSTANT_MACROS -DOPUS_BUILD -DVAR_ARRAYS
 EXTRACFLAGS     =
-LDFLAGS        +=-L../../libs/opus/.libs -lopus
-CPPFLAGS       +=-I../../libs/opus/include
+LDFLAGS        += -L/usr/lib -lopus
+CPPFLAGS       += -I/usr/include/opus
 OPTCCFLAGS      =$(CPPFLAGS)
 
 SRCS	= opuscodec.cxx

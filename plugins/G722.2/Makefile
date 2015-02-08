@@ -9,7 +9,7 @@ CC		= gcc
 CXX		= g++
 LDSO		= -shared -Wl,-soname,$(SONAME)
 PLUGINEXT	= so
-CFLAGS	       += -g  -Os
+CFLAGS	       += -g -O2 
 STDCCFLAGS	= -fPIC -D__STDC_CONSTANT_MACROS
 LDFLAGS	       +=
 CPPFLAGS       +=
@@ -36,11 +36,9 @@ SRCS   := g7222.cxx \
           enc_util.c \
           if_rom.c
 
-
 vpath	%.cxx .
 vpath	%.c   $(SRCDIR)
 vpath	%.o   $(OBJDIR)
-
 
 $(OBJDIR)/%.o : %.c
 	@mkdir -p $(OBJDIR) >/dev/null 2>&1

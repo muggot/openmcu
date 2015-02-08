@@ -13,9 +13,9 @@ SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cx
                    reg.cxx reg_sip.cxx reg_h323.cxx rtsp.cxx recorder.cxx mcu_caps.cxx mcu_codecs.cxx
 
 CXX		= g++
-CFLAGS         += -g -g -O2 -Os
+CFLAGS         += -g -O2 
 LDFLAGS        += -L../libs/libyuv -L../libs/sofia-sip/libsofia-sip-ua/.libs -L/opt/git/test/libs/h323plus/lib -L/opt/git/test/libs/ptlib/lib -L/opt/lib -L/opt/openmcu-ru/lib -L/usr/lib -L/usr/local/lib
-RFLAGS         += -Wl,-R/opt/openmcu-ru/lib,-R/opt/openmcu-ru/lib
+RFLAGS         += -Wl,-R/opt/openmcu-ru/lib
 SFLAGS         += 
 SFLAGS_STATIC  +=  -Wl,--start-group /opt/git/test/libs/ptlib/lib/libpt_linux_x86_r_s.a /opt/git/test/libs/h323plus/lib/libh323_linux_x86_r_s.a -Wl,--end-group
 SFLAGS_DEBUG   +=  -Wl,--start-group /opt/git/test/libs/ptlib/lib/libpt_linux_x86_d_s.a /opt/git/test/libs/h323plus/lib/libh323_linux_x86_d_s.a -Wl,--end-group
