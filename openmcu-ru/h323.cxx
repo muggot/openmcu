@@ -1239,7 +1239,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
   for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
   {
     MCUSimpleVideoMixer *mixer = it.GetObject();
-    r << "," << GetVideoMixerConfiguration(mixer);
+    r << "," << GetVideoMixerConfiguration(mixer, it.GetIndex());
   }
 
   r << "];"; //l1 close
@@ -1248,7 +1248,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer)
+PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer, int number)
 {
   if(mixer == NULL)
     return "[]";
@@ -1261,6 +1261,7 @@ PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer)
   r << "["                                                // a[0]: base parameters:
     << split.mockup_width << "," << split.mockup_height   //   a[0][0-1] = mw * mh
     << "," << n                                           //   a[0][2]   = position set (layout)
+    << "," << number                                      //   a[0][3]   = number
     << "],[";
 
   for(unsigned i=0;i<split.vidnum;i++)
@@ -1282,8 +1283,6 @@ PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer)
 PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
 {
   if(!member) return "[]";
-  PString mixerData;
-  if(member->videoMixer) mixerData = GetVideoMixerConfiguration(member->videoMixer);
   PStringStream r;
   r
 /* 0*/  << "[1"                                           // [i][ 0] = 1 : ONLINE
@@ -1298,7 +1297,7 @@ PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
 /* 9*/  << "," << (unsigned short)member->channelCheck    // [i][ 9] = RTP channels checking bit mask 0000vVaA
 /*10*/  << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
 /*11*/  << "," << member->kOutputGainDB                   // [i][11] = Output audio gain, integer: -20..60
-/*12*/  << "," << GetVideoMixerConfiguration(member->videoMixer) // [i][12] = mixer configuration
+/*12*/  << "," << GetVideoMixerConfiguration(member->videoMixer, 0) // [i][12] = mixer configuration
         << "]";
   return r;
 }

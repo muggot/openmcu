@@ -254,10 +254,9 @@ MCUSimpleVideoMixer * ConferenceManager::FindVideoMixerWithLock(const PString & 
 MCUSimpleVideoMixer * ConferenceManager::FindVideoMixerWithLock(Conference * conference, long number)
 {
   MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-  if(videoMixerList.GetCurrentSize() != 0)
+  if(conference->UseSameVideoForAllMembers())
   {
-    MCUVideoMixerList::shared_iterator it(&videoMixerList, number);
-    return it.GetCapturedObject();
+    return videoMixerList[number];
   }
   else
   {
@@ -308,11 +307,12 @@ int ConferenceManager::DeleteVideoMixer(Conference * conference, int number)
   if(videoMixerList.GetCurrentSize() == 1)
     return videoMixerList.GetCurrentSize();
 
-  MCUVideoMixerList::shared_iterator it(&videoMixerList, number);
-  if(it != videoMixerList.end())
+  MCUSimpleVideoMixer *mixer = videoMixerList[number];
+  if(mixer != NULL)
   {
-    MCUSimpleVideoMixer *mixer = it.GetObject();
-    if(videoMixerList.Erase(it))
+    long id = mixer->GetID();
+    videoMixerList.Release(id);
+    if(videoMixerList.Erase(id))
       delete mixer;
   }
   return videoMixerList.GetCurrentSize();
