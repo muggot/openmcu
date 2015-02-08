@@ -290,6 +290,34 @@ MCUSimpleVideoMixer * ConferenceManager::GetVideoMixerWithLock(Conference * conf
   return NULL;
 }
 
+MCUSimpleVideoMixer * ConferenceManager::GetVideoMixerWithLock(Conference * conference, int & number)
+{
+  MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
+  if(videoMixerList.GetCurrentSize() == 0)
+    return NULL;
+  if(number < 0 || number >= videoMixerList.GetSize())
+    number = 0;
+  for(int i = number; i < videoMixerList.GetSize(); ++i)
+  {
+    MCUSimpleVideoMixer *mixer = videoMixerList[i];
+    if(mixer)
+    {
+      number = i;
+      return mixer;
+    }
+  }
+  for(int i = 0; i < number; ++i)
+  {
+    MCUSimpleVideoMixer *mixer = videoMixerList[i];
+    if(mixer)
+    {
+      number = i;
+      return mixer;
+    }
+  }
+  return NULL;
+}
+
 int ConferenceManager::AddVideoMixer(Conference * conference)
 {
   MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();

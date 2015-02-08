@@ -1346,22 +1346,22 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * member, unsigned newMixerNumber)
+int MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * member, int newMixerNumber)
 {
   if(member->GetType() & MEMBER_TYPE_GSYSTEM)
     return FALSE;
 
-  if(newMixerNumber == member->GetVideoMixerNumber())
+  if(newMixerNumber == (int)member->GetVideoMixerNumber())
     return TRUE;
 
-  MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(&conference, newMixerNumber);
+  MCUSimpleVideoMixer *mixer = conferenceManager.GetVideoMixerWithLock(&conference, newMixerNumber);
   if(mixer == NULL)
-    return FALSE;
+    return -1;
   mixer->Unlock();
 
   MCUH323Connection *conn = FindConnectionWithLock(member->GetCallToken());
   if(conn == NULL)
-    return FALSE;
+    return -1;
 
   conn->GetChannelsMutex().Wait();
   if(conn->GetVideoTransmitChannel() != NULL)
@@ -1376,7 +1376,7 @@ BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMem
   conn->GetChannelsMutex().Signal();
 
   conn->Unlock();
-  return TRUE;
+  return newMixerNumber;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2016,22 +2016,13 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_SET_MEMBER_VIDEO_MIXER)
   {
-    if(conference->GetVideoMixerList().GetCurrentSize() == 0)
+    int option = data("o").AsInteger();
+    int newMixerNumber = SetMemberVideoMixer(*conference, member, option);
+    if(newMixerNumber == -1)
       return FALSE;
-    unsigned option = data("o").AsInteger();
-    if(SetMemberVideoMixer(*conference,member,option))
-    {
-      cmd << "chmix(" << v << "," << option << ")";
-      OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-      return TRUE;
-    }
-    if(SetMemberVideoMixer(*conference,member,0)) // rotate back to 0
-    {
-      cmd << "chmix(" << v << ",0)";
-      OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-      return TRUE;
-    }
-    return FALSE;
+    cmd << "chmix(" << v << "," << newMixerNumber << ")";
+    OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
+    return TRUE;
   }
 
   return FALSE;
