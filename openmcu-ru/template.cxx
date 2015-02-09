@@ -191,11 +191,33 @@ void Conference::LoadTemplate(PString tpl)
         }
         else if(cmd=="LAYOUT")
         {
-          if(mixer!=NULL)
+          if(mixer)
           {
             PStringArray v=value.Tokenise(",");
             if(v.GetSize()==2)
-              mixer->MyChangeLayout(v[0].Trim().AsInteger());
+            { 
+              PString layoutName = v[1].Trim();
+              if(!layoutName.IsEmpty())
+              {
+                unsigned layoutNumber = v[0].Trim().AsInteger();
+                PString layoutNameRef;
+                if(layoutNumber < OpenMCU::vmcfg.vmconfs)
+                  layoutNameRef = OpenMCU::vmcfg.vmconf[layoutNumber].splitcfg.Id;
+                if((layoutName == layoutNameRef) && (layoutNumber < OpenMCU::vmcfg.vmconfs))
+                  mixer->MyChangeLayout(layoutNumber);
+                else
+                {
+                  for(unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
+                  {
+                    if(!strcmp((const char*)OpenMCU::vmcfg.vmconf[i].splitcfg.Id,(const char*)layoutName))
+                    {
+                      mixer->MyChangeLayout(i);
+                      break;
+                    }
+                  }
+                }
+              }
+            }
           }
         }
         else if(cmd=="SKIP")

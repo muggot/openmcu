@@ -3825,6 +3825,7 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
 
 void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
 {
+  if(newLayout>=OpenMCU::vmcfg.vmconfs) return;
   int newCount=OpenMCU::vmcfg.vmconf[newLayout].splitcfg.vidnum;
   PWaitAndSignal m(mutex); specialLayout=newLayout; NullAllFrameStores();
   VideoMixPosition *r = vmpList->next; while(r!=NULL)
