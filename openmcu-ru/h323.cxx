@@ -1834,7 +1834,8 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     int type = data("o2").AsInteger();
     if((type<1)||(type>3)) type=2;
     long id = (long)mixer->GetHonestId(pos);
-    if((type==1)&&(id>=0)&&(id<100)) //static but no member
+//    if((type==1)&&(id>=0)&&(id<100)) //static but no member
+    if((id>=0)&&(id<100)) //just no member (and we want to add him for some reason)
     {
       BOOL setup = FALSE;
       MCUMemberList & memberList = conference->GetMemberList();
@@ -1843,9 +1844,9 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
         ConferenceMember * member = *it;
         if(member->IsVisible())
         {
-          if(mixer->VMPListFindVMP(member->GetID()) == NULL)
+          if(  (mixer->VMPListFindVMP(member->GetID()) == NULL)  &&  ((type==1)||(!member->disableVAD))  )
           {
-            mixer->PositionSetup(pos, 1, member);
+            mixer->PositionSetup(pos, type, member);
             member->SetFreezeVideo(FALSE);
             setup = TRUE;
             break;
@@ -1853,10 +1854,10 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
         }
       }
       if(setup == FALSE)
-        mixer->PositionSetup(pos,1,NULL);
+        mixer->PositionSetup(pos,type,NULL);
     }
-    else if((id>=0)&&(id<100))
-      mixer->PositionSetup(pos,type,NULL);
+//    else if((id>=0)&&(id<100))
+//      mixer->PositionSetup(pos,type,NULL);
     else
       mixer->SetPositionType(pos,type);
     mixer->Unlock();
