@@ -12,7 +12,7 @@ $pull_out_from='en';
 // But for uk - from ru :) Но для uk - из ru :)
 $pull_out_from_specials=Array('uk'=>'ru');
 
-$res_dir='../openmcu-ru/resource';
+$res_dir='../openmcu-ru/files/resource';
 
 $htmlcxxmask='SelectField("Language", cfg.GetString("Language"), ",*");';
 
@@ -39,8 +39,8 @@ foreach($localizations as $language)
   my_diff_handler($reference, $language, my_compare($tokens, $l_tokens));
 }
 
-check_presence('../openmcu-ru/Makefile',$localizations);
-check_presence('../openmcu-ru/Makefile.in',$localizations);
+//check_presence('../openmcu-ru/Makefile',$localizations);
+//check_presence('../openmcu-ru/Makefile.in',$localizations);
 check_presence('../openmcu-ru/mcu.cxx',$localizations);
 check_template_html($res_dir.'/template.html',$localizations);
 check_html_cxx('../openmcu-ru/html.cxx',$localizations);
