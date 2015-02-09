@@ -3825,7 +3825,6 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
 
 void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
 {
-  if(newLayout>=OpenMCU::vmcfg.vmconfs) return;
   int newCount=OpenMCU::vmcfg.vmconf[newLayout].splitcfg.vidnum;
   PWaitAndSignal m(mutex); specialLayout=newLayout; NullAllFrameStores();
   VideoMixPosition *r = vmpList->next; while(r!=NULL)
@@ -3912,7 +3911,16 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
       {
         if(v->chosenVan) return;
         NullRectangle(v->xpos, v->ypos, v->width, v->height, v->border);
-        v->id=(void*)(long)v->n;
+        BOOL disableVAD=FALSE;
+        if(id)disableVAD=member->disableVAD;
+        if(id && (!disableVAD))
+        {
+          v->id=id;
+          v->status=0;
+          v->chosenVan=member->chosenVan;
+          v->endpointName=member->GetName();
+        }
+        else v->id=(void*)(long)v->n;
 #if USE_FREETYPE
         RemoveSubtitles(*v);
 #endif

@@ -1883,7 +1883,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     if(mixer == NULL)
       return FALSE;
     int pos = data("o2").AsInteger();
-    mixer->PositionSetup(pos, 1, member);
+    mixer->PositionSetup(pos, 1001, member);
     mixer->Unlock();
     member->SetFreezeVideo(FALSE);
     OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
