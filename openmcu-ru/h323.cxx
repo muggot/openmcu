@@ -1934,9 +1934,10 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
         for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
         {
           MCUSimpleVideoMixer *mixer = it.GetObject();
-          int oldPos = mixer->GetPositionNum(member->GetID());
+          ConferenceMemberId id = member->GetID();
+          int oldPos = mixer->GetPositionNum(id);
           if(oldPos != -1)
-            mixer->MyRemoveVideoSource(oldPos, TRUE);
+            mixer->MyRemoveVideoSource(oldPos, (mixer->GetPositionType(id) & 2) != 2);
         }
       }
       else // classic MCU mode
@@ -1946,8 +1947,9 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
         {
           ConferenceMember * member = *it;
           MCUVideoMixer * mixer = member->videoMixer;
-          int oldPos = mixer->GetPositionNum(member->GetID());
-          if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, TRUE);
+          ConferenceMemberId id = member->GetID();
+          int oldPos = mixer->GetPositionNum(id);
+          if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, (mixer->GetPositionType(id) & 2) != 2);
         }
       }
       if(!member->GetType() & MEMBER_TYPE_GSYSTEM)
