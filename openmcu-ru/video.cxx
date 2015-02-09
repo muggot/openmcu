@@ -3825,6 +3825,7 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
 
 void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
 {
+  if(newLayout>=OpenMCU::vmcfg.vmconfs) return;
   int newCount=OpenMCU::vmcfg.vmconf[newLayout].splitcfg.vidnum;
   PWaitAndSignal m(mutex); specialLayout=newLayout; NullAllFrameStores();
   VideoMixPosition *r = vmpList->next; while(r!=NULL)
@@ -3980,6 +3981,16 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
 
   if(v1==NULL)
   {
+    BOOL isVAD = ((v2->type&~1)==2);
+    VideoMixPosition * newPosition = NULL;
+    if(isVAD) // VAD or VAD2
+    {
+      newPosition               = CreateVideoMixPosition((void *)(long)v2->n, v2->xpos, v2->ypos, v2->width, v2->height);
+      newPosition->type         = v2->type;
+      newPosition->n            = v2->n;
+      newPosition->endpointName = "Voice-activated " + PString(newPosition->type-1);
+      newPosition->border       = v2->border;
+    }
     VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[pos1];
     NullRectangle(v2->xpos, v2->ypos, v2->width, v2->height, v2->border);
     v2->xpos=o.posx;
@@ -3991,30 +4002,47 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
 #if USE_FREETYPE
     RemoveSubtitles(*v2);
 #endif
+    if(isVAD)
+    {
+#     if USE_FREETYPE
+        RemoveSubtitles(*newPosition);
+#     endif
+      if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
+        VMPListInsVMP(newPosition);
+      else VMPListAddVMP(newPosition);
+    }
     return;
   }
 
   ConferenceMemberId id0=v1->id;
   PString tn0=v1->endpointName;
-  int t=v1->type, st=v1->status;
+//  int t=v1->type, st=v1->status;
 
   v1->id           = v2->id;
-  v1->type         = v2->type;
-  v1->status       = v2->status;
+//  v1->type         = v2->type;
+//  v1->status       = v2->status;
   v1->endpointName = v2->endpointName;
 #if USE_FREETYPE
   RemoveSubtitles(*v1);
 #endif
-  if( (((unsigned long)v1->id)&(~(unsigned long)255)) < 100) NullRectangle(v1->xpos, v1->ypos, v1->width, v1->height, v1->border);
+  if((unsigned long)v1->id < 100)
+  {
+    if(v1->type==1) MyRemoveVideoSource(v1->n, TRUE); //static
+    else NullRectangle(v1->xpos, v1->ypos, v1->width, v1->height, v1->border);
+  }
 
   v2->id=id0;
-  v2->type         = t;
-  v2->status       = st;
+//  v2->type         = t;
+//  v2->status       = st;
   v2->endpointName=tn0;
 #if USE_FREETYPE
   RemoveSubtitles(*v2);
 #endif
-  if( (((unsigned long)v2->id)&(~(unsigned long)255)) < 100) NullRectangle(v2->xpos, v2->ypos, v2->width, v2->height, v2->border);
+  if((unsigned long)v2->id < 100)
+  {
+    if(v2->type==1) MyRemoveVideoSource(v2->n, TRUE); //static
+    else NullRectangle(v2->xpos, v2->ypos, v2->width, v2->height, v2->border);
+  }
 }
 
 void MCUSimpleVideoMixer::MyRemoveVideoSource(int pos, BOOL flag)

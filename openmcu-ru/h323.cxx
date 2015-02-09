@@ -1812,8 +1812,8 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       ConferenceMemberId id2 = mixer2->GetHonestId(pos2); if(((long)id2<100)&&((long)id2>=0)) id2=NULL;
       ConferenceMember *member1 = conferenceManager.FindMemberWithLock(conference, (long)id);
       ConferenceMember *member2 = conferenceManager.FindMemberWithLock(conference, (long)id2);
-      mixer2->PositionSetup(pos2, 1, member1);
-      mixer1->PositionSetup(pos1, 1, member2);
+      mixer2->PositionSetup(pos2, 1001, member1);
+      mixer1->PositionSetup(pos1, 1001, member2);
       if(member1)
         member1->Unlock();
       if(member2)
