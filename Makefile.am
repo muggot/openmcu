@@ -23,7 +23,7 @@ if COMPILER_USE_LIBZRTP
 	($(MAKE) $(MAKEFLAGS)     -C @LIBZRTP_DIR@) || exit $$?
 endif
 if COMPILER_USE_LIBSOFIA
-	($(MAKE) $(MAKEFLAGS)     -C @LIBSOFIA_DIR@) || exit $$?
+	($(MAKE) $(MAKEFLAGS) @SOFIASIP_BUILDOPTS@ -C @LIBSOFIA_DIR@) || exit $$?
 endif
 if COMPILER_USE_LIBSPEEX
 	($(MAKE) $(MAKEFLAGS)     -C @LIBSPEEX_DIR@) || exit $$?
