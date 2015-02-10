@@ -402,6 +402,11 @@ MCU_LDLIBS="$MCU_LDLIBS -lavcodec -lavutil -lavformat -lswscale"
 dnl ########################################################################
 dnl check for sofia-sip library
 
+AC_SUBST(SOFIASIP_BUILDOPTS)
+if test ${GXX_MINOR} -ge 8; then
+  SOFIASIP_BUILDOPTS="CFLAGS=-fno-aggressive-loop-optimizations"
+fi
+
 AC_SUBST(USE_LIBSOFIA, 1)
 AC_SUBST(LIBSOFIA_DIR, ${top_srcdir}/libs/sofia-sip)
 AC_CONFIG_SUBDIRS(libs/sofia-sip)
