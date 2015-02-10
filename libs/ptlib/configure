@@ -4894,11 +4894,6 @@ $as_echo "no" >&6; }
 fi
 
 
-if test -z "$BISON" ; then
-        { { $as_echo "$as_me:$LINENO: error: PTLib needs the GNU Project parser generator bison" >&5
-$as_echo "$as_me: error: PTLib needs the GNU Project parser generator bison" >&2;}
-   { (exit 1); exit 1; }; }
-fi
 
 { $as_echo "$as_me:$LINENO: checking if readdir_r has 2 parms" >&5
 $as_echo_n "checking if readdir_r has 2 parms... " >&6; }

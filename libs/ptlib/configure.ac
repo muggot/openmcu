@@ -484,9 +484,6 @@ fi
 dnl ########################################################################
 dnl we need bison, so we better make sure it's there
 AC_PATH_PROG(BISON, bison)
-if test -z "$BISON" ; then
-        AC_MSG_ERROR(PTLib needs the GNU Project parser generator bison, 1)
-fi
 
 dnl ########################################################################
 dnl check for number of parms to readdir

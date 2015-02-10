@@ -767,8 +767,6 @@ ifneq ($(HAS_REGEX),1)
 OBJS	= $(OBJDIR)/regcomp.o $(OBJDIR)/regexec.o $(OBJDIR)/regerror.o $(OBJDIR)/regfree.o
 endif
 
-CLEAN_FILES = $(GETDATE_SOURCE)
-
 
 #######################################################
 
