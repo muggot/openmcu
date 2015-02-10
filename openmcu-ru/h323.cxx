@@ -1694,6 +1694,28 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
     return TRUE;
   }
+  if(action == OTFC_REMOVE_VMP_MEMBER)
+  {
+    unsigned pos = data("o").AsInteger();
+    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
+    if(mixer == NULL)
+      return FALSE;
+    ConferenceMemberId id=mixer->GetHonestId(pos);
+    int type=-1; if(id!=NULL) type=mixer->GetPositionType(id);
+    if((type==2)||(type==3))
+    {
+      if((unsigned long)id<100) //empty VAD pos, operator probably wants to remove it completely
+        mixer->MyRemoveVideoSource(pos,TRUE);
+      else
+        mixer->MyRemoveVideoSource(pos,FALSE);
+    }
+    else mixer->MyRemoveVideoSource(pos,TRUE);
+    mixer->Unlock();
+    conference->FreezeVideo(NULL);
+    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
+    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
+    return TRUE;
+  }
   if(action == OTFC_MIXER_ARRANGE_VMP)
   {
     MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);

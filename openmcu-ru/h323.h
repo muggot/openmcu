@@ -36,6 +36,7 @@
 #define OTFC_TEMPLATE_RECALL          23
 #define OTFC_SAVE_TEMPLATE            24
 #define OTFC_DELETE_TEMPLATE          25
+#define OTFC_REMOVE_VMP_MEMBER        26
 #define OTFC_INVITE                   32
 #define OTFC_REMOVE_OFFLINE_MEMBER    33
 #define OTFC_DROP_ALL_ACTIVE_MEMBERS  64

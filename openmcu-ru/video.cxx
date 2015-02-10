@@ -3925,7 +3925,8 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
 #if USE_FREETYPE
         RemoveSubtitles(*v);
 #endif
-        v->endpointName="Voice-activated " + PString(type-1);
+        if(id)v->endpointName = member->GetName();
+        else v->endpointName="Voice-activated " + PString(type-1);
         return;
       }
 
@@ -3981,14 +3982,15 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
 
   if(v1==NULL)
   {
-    BOOL isVAD = ((v2->type&~1)==2);
+    BOOL isVAD = (v2->type == 2) || (v2->type == 3);
+    BOOL isVADtoNULL = (unsigned long)v2->id<100;
     VideoMixPosition * newPosition = NULL;
-    if(isVAD) // VAD or VAD2
+    if(isVAD&&(!isVADtoNULL)) // VAD or VAD2
     {
       newPosition               = CreateVideoMixPosition((void *)(long)v2->n, v2->xpos, v2->ypos, v2->width, v2->height);
-      newPosition->type         = v2->type;
+      newPosition->type         = 2 /* v2->type */ ; //force VAD1
       newPosition->n            = v2->n;
-      newPosition->endpointName = "Voice-activated " + PString(newPosition->type-1);
+      newPosition->endpointName = "Voice-activated " + PString(newPosition->type-1); //just VAD with no any member
       newPosition->border       = v2->border;
     }
     VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[pos1];
@@ -3999,10 +4001,11 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
     v2->height=o.height;
     v2->border=o.border;
     v2->n=pos1;
+    if((long)v2->id < 100) v2->id=(ConferenceMemberId)pos1; //this fixes empty VAD Id
 #if USE_FREETYPE
     RemoveSubtitles(*v2);
 #endif
-    if(isVAD)
+    if(isVAD&&(!isVADtoNULL))
     {
 #     if USE_FREETYPE
         RemoveSubtitles(*newPosition);
@@ -4038,7 +4041,7 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
 #if USE_FREETYPE
   RemoveSubtitles(*v2);
 #endif
-  if((unsigned long)v2->id < 100)
+  if((unsigned long)id0 < 100)
   {
     if(v2->type==1) MyRemoveVideoSource(v2->n, TRUE); //static
     else NullRectangle(v2->xpos, v2->ypos, v2->width, v2->height, v2->border);

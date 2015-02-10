@@ -47,6 +47,7 @@ var OTFC_SET_VAD_VALUES          = 22;
 var OTFC_TEMPLATE_RECALL         = 23;
 var OTFC_SAVE_TEMPLATE           = 24;
 var OTFC_DELETE_TEMPLATE         = 25;
+var OTFC_REMOVE_VMP_MEMBER       = 26;
 var OTFC_INVITE                  = 32;
 var OTFC_REMOVE_OFFLINE_MEMBER   = 33;
 var OTFC_DROP_ALL_ACTIVE_MEMBERS = 64;
@@ -265,7 +266,7 @@ function dd_do_it(s1, p1, s2, p2)
   { queue_otf_request(OTFC_SET_VMP_STATIC,p1,s2,p2); return true; }
 
   if((s2==='panel')||(s2==='panel_top'))
-  { queue_otf_request(OTFC_REMOVE_VMP,s1,p1); return true; }
+  { queue_otf_request(OTFC_REMOVE_VMP_MEMBER,s1,p1); return true; }
 
   queue_otf_request(OTFC_MOVE_VMP,s1,p1,s2,p2);
 }
@@ -1451,7 +1452,7 @@ function vad_setup(){
   var sfx="</span>&nbsp;&nbsp;&nbsp;";
   
   var c ="<div style='border-radius:15px;background-color:#dec;border:1px solid #acb;padding-left:15px'><form name='fakeform2'><div class='input-prepend input-append'>";
-    c  +="<br><b>Voice Activation Volume:</b> "+inputst+"name='vad1' id='vad1' value='"+vad1+"' size=5 maxlength=5>"+pfx3+"level: 0...65535"+sfx;
+    c  +="<br><b>Voice Activation Volume:</b> "+inputst+"name='vad1' id='vad1' value='"+vad1+"' size=5 maxlength=5>"+pfx3+"level: 25...25000"+sfx;
     c  +="<b>Delay:</b> " +inputst+"name='vad2' id='vad2' value='"+vad2+"' size=5 maxlength=5>"+pfx3+"ms: 0...65535"   +sfx;
     c  +="<b>Timeout:</b> "          +inputst+"name='vad3' id='vad3' value='"+vad3+"' size=5 maxlength=5>"+pfx3+"ms: 0...65535"   +sfx;
   c+="<input type='button' onclick='javascript:vad_save()' class='btn btn-danger' value='Save'> ";
