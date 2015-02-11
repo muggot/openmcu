@@ -261,6 +261,30 @@ inline PString AVCodecGetName(AVCodecID id)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+inline AVFrame * AVFrameAlloc()
+{
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
+  return avcodec_alloc_frame();
+#else
+  return av_frame_alloc();
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+inline void AVFrameFree(AVFrame **frame)
+{
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,28,0)
+    av_freep(frame);
+#elif LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
+    avcodec_free_frame(frame);
+#else
+    av_frame_free(frame);
+#endif
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 inline int AlignUp2(int size)
 {
   return ((size + 1) & ~1);

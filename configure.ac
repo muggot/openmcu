@@ -348,18 +348,39 @@ AC_SUBST(H323PLUS_BUILDOPTS)
 AC_SUBST(MCU_BUILDOPTS)
 
 dnl ########################################################################
-dnl arg
+dnl check for sofia-sip library
 
-resample=yes
-resampler_ffmpeg=yes
-resampler_libav=yes
-resampler_libsamplerate=yes
-libfreetype=yes
-libjpeg=no
-libyuv=yes
-openssl=yes
-libsrtp=yes
-libzrtp=no
+AC_SUBST(SOFIASIP_BUILDOPTS)
+if test ${GXX_MINOR} -ge 8; then
+  SOFIASIP_BUILDOPTS="CFLAGS=-fno-aggressive-loop-optimizations"
+fi
+
+AC_SUBST(USE_LIBSOFIA, 1)
+AC_SUBST(LIBSOFIA_DIR, ${top_srcdir}/libs/sofia-sip)
+AC_CONFIG_SUBDIRS(libs/sofia-sip)
+AM_CONDITIONAL(COMPILER_USE_LIBSOFIA, [test ${USE_LIBSOFIA} = 1])
+
+MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/sofia-sip/libsofia-sip-ua/.libs"
+MCU_LDLIBS="$MCU_LDLIBS -lsofia-sip-ua"
+MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
+                    -I../libs/sofia-sip/libsofia-sip-ua/docs \
+                    -I../libs/sofia-sip/libsofia-sip-ua/features \
+                    -I../libs/sofia-sip/libsofia-sip-ua/http \
+                    -I../libs/sofia-sip/libsofia-sip-ua/ipt \
+                    -I../libs/sofia-sip/libsofia-sip-ua/iptsec \
+                    -I../libs/sofia-sip/libsofia-sip-ua/msg \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nea \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nta \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nth \
+                    -I../libs/sofia-sip/libsofia-sip-ua/nua \
+                    -I../libs/sofia-sip/libsofia-sip-ua/sdp \
+                    -I../libs/sofia-sip/libsofia-sip-ua/sip \
+                    -I../libs/sofia-sip/libsofia-sip-ua/soa \
+                    -I../libs/sofia-sip/libsofia-sip-ua/sresolv \
+                    -I../libs/sofia-sip/libsofia-sip-ua/stun \
+                    -I../libs/sofia-sip/libsofia-sip-ua/su \
+                    -I../libs/sofia-sip/libsofia-sip-ua/tport \
+                    -I../libs/sofia-sip/libsofia-sip-ua/url"
 
 dnl ########################################################################
 dnl check for video library
@@ -400,39 +421,18 @@ MCU_RFLAGS="$MCU_RFLAGS ${LIBAV_LDFLAGS}"
 MCU_LDLIBS="$MCU_LDLIBS -lavcodec -lavutil -lavformat -lswscale"
 
 dnl ########################################################################
-dnl check for sofia-sip library
+dnl arg
 
-AC_SUBST(SOFIASIP_BUILDOPTS)
-if test ${GXX_MINOR} -ge 8; then
-  SOFIASIP_BUILDOPTS="CFLAGS=-fno-aggressive-loop-optimizations"
-fi
-
-AC_SUBST(USE_LIBSOFIA, 1)
-AC_SUBST(LIBSOFIA_DIR, ${top_srcdir}/libs/sofia-sip)
-AC_CONFIG_SUBDIRS(libs/sofia-sip)
-AM_CONDITIONAL(COMPILER_USE_LIBSOFIA, [test ${USE_LIBSOFIA} = 1])
-
-MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/sofia-sip/libsofia-sip-ua/.libs"
-MCU_LDLIBS="$MCU_LDLIBS -lsofia-sip-ua"
-MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
-                    -I../libs/sofia-sip/libsofia-sip-ua/docs \
-                    -I../libs/sofia-sip/libsofia-sip-ua/features \
-                    -I../libs/sofia-sip/libsofia-sip-ua/http \
-                    -I../libs/sofia-sip/libsofia-sip-ua/ipt \
-                    -I../libs/sofia-sip/libsofia-sip-ua/iptsec \
-                    -I../libs/sofia-sip/libsofia-sip-ua/msg \
-                    -I../libs/sofia-sip/libsofia-sip-ua/nea \
-                    -I../libs/sofia-sip/libsofia-sip-ua/nta \
-                    -I../libs/sofia-sip/libsofia-sip-ua/nth \
-                    -I../libs/sofia-sip/libsofia-sip-ua/nua \
-                    -I../libs/sofia-sip/libsofia-sip-ua/sdp \
-                    -I../libs/sofia-sip/libsofia-sip-ua/sip \
-                    -I../libs/sofia-sip/libsofia-sip-ua/soa \
-                    -I../libs/sofia-sip/libsofia-sip-ua/sresolv \
-                    -I../libs/sofia-sip/libsofia-sip-ua/stun \
-                    -I../libs/sofia-sip/libsofia-sip-ua/su \
-                    -I../libs/sofia-sip/libsofia-sip-ua/tport \
-                    -I../libs/sofia-sip/libsofia-sip-ua/url"
+resample=yes
+resampler_ffmpeg=yes
+resampler_libav=yes
+resampler_libsamplerate=yes
+libfreetype=yes
+libjpeg=no
+libyuv=yes
+openssl=yes
+libsrtp=yes
+libzrtp=no
 
 dnl ########################################################################
 dnl check for resampling library
@@ -448,26 +448,29 @@ AC_SUBST(USE_AVRESAMPLE, 0)
 AC_SUBST(USE_LIBSAMPLERATE, 0)
 if test "${resample}" = "yes"; then
   if test "${resampler_ffmpeg}" = "yes"; then
-    AC_CHECK_HEADERS(libswresample/swresample.h, SWRESAMPLE=1, SWRESAMPLE=0, [-])
-    if test "${SWRESAMPLE}" = "1"; then
-      AC_CHECK_LIB(swresample, swr_convert, SWRESAMPLE=1, SWRESAMPLE=0)
+    AC_LANG_PUSH([C])
+    AC_CHECK_HEADERS([libswresample/swresample.h], USE_SWRESAMPLE=1, [], [-])
+    AC_LANG_POP([C])
+    if test "${USE_SWRESAMPLE}" = "1"; then
+      AC_CHECK_LIB(swresample, swr_convert, USE_SWRESAMPLE=1, USE_SWRESAMPLE=0)
     fi
   fi
-  if test "${resampler_libav}" = "yes"; then
-    AC_CHECK_LIB(avresample, avresample_convert, AVRESAMPLE=1, AVRESAMPLE=0)
+  if test "${resampler_libav}" = "yes" && test "${USE_SWRESAMPLE}" = "0"; then
+    if test "${USE_SWRESAMPLE}" = "0"; then
+      AC_CHECK_LIB(avresample, avresample_convert, USE_AVRESAMPLE=1, USE_AVRESAMPLE=0)
+    fi
   fi
   if test "${resampler_libsamplerate}" = "yes"; then
-    AC_CHECK_LIB(samplerate, src_process, LIBSAMPLERATE=1, LIBSAMPLERATE=0)
+    if test "${USE_SWRESAMPLE}" = "0" && test "${USE_AVRESAMPLE}" = "0"; then
+      AC_CHECK_LIB(samplerate, src_process, USE_LIBSAMPLERATE=1, USE_LIBSAMPLERATE=0)
+    fi
   fi
 
-  if test "${SWRESAMPLE}" = "1"; then
-    USE_SWRESAMPLE=1
+  if test "${USE_SWRESAMPLE}" = "1"; then
     MCU_LDLIBS="$MCU_LDLIBS -lswresample"
-  elif test "${AVRESAMPLE}" = "1"; then
-    USE_AVRESAMPLE=1
+  elif test "${USE_AVRESAMPLE}" = "1"; then
     MCU_LDLIBS="$MCU_LDLIBS -lavresample"
-  elif test "${LIBSAMPLERATE}" = "1"; then
-    USE_LIBSAMPLERATE=1
+  elif test "${USE_LIBSAMPLERATE}" = "1"; then
     MCU_CPPFLAGS="$MCU_CPPFLAGS `pkg-config --silence-errors --cflags-only-I samplerate`"
     MCU_LDFLAGS="$MCU_LDFLAGS `pkg-config --silence-errors --libs-only-L samplerate`"
     MCU_RFLAGS="$MCU_RFLAGS `pkg-config --silence-errors --libs-only-L samplerate`"
