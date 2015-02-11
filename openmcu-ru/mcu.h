@@ -433,6 +433,12 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
 
     PString SetScaleFilterType(int type)
     {
+      if(type < 1 || type > 14)
+        type = 1;
+#if !USE_LIBYUV
+      if(type >= 1 && type <= 3)
+        type = 4;
+#endif
       scaleFilterType = type;
       return GetScaleFilterName(type);
     }
@@ -484,7 +490,7 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
           return SWS_SPLINE; // 0x400
 #endif // USE_SWSCALE
         default:
-          return -1;
+          return 0;
       }
     }
 #endif
