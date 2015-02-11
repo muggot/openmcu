@@ -2443,7 +2443,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
     jpeg_destroy_compress(&cinfo);
 
 #else
-    int buffer_size = width * height * 3 / 2;
+    PINDEX buffer_size = width * height * 3 / 2;
     MCUBuffer buffer(buffer_size);
     jpegMixer->ReadMixedFrame(buffer.GetPointer(), width, height, buffer_size);
 

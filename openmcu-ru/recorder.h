@@ -102,7 +102,7 @@ class ConferenceRecorder : public ConferenceMember
 
     uint8_t *video_framebuf;
     uint8_t *video_outbuf;
-    int video_framebuf_size;
+    PINDEX video_framebuf_size;
     int video_outbuf_size;
 
     AVFrame *audio_frame;

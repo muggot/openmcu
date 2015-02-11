@@ -4,9 +4,10 @@
 
 PREFIX          = /opt
 OSTYPE          = linux
+UNAME          := $(shell uname)
 MACHTYPE	= x86
 PROG		= openmcu-ru
-SOURCES		:= main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx \
+SOURCES	       := main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx \
                    utils.cxx utils_av.cxx \
                    mcu_rtp.cxx mcu_rtp_cache.cxx mcu_rtp_secure.cxx \
                    sockets.cxx \
@@ -33,6 +34,22 @@ STDCCFLAGS     +=-D GIT_REVISION=$(git_revision)
 
 PTLIBDIR        = /opt/git/test/libs/ptlib
 include $(PTLIBDIR)/make/ptbuildopts.mak
+
+INSTALL = install
+INSTALL_BACKUP_OPTS =
+ifeq ($(UNAME), Linux)
+  INSTALL = install
+  INSTALL_BACKUP_OPTS = --compare --backup=numbered
+endif
+ifeq ($(UNAME), FreeBSD)
+ifeq (, $(shell which ginstall))
+  INSTALL = install
+  INSTALL_BACKUP_OPTS = -C -b
+else
+  INSTALL = ginstall
+  INSTALL_BACKUP_OPTS = --compare --backup=numbered
+endif
+endif
 
 
 OBJDIR	= ./obj
@@ -66,23 +83,23 @@ install:
 	mkdir -p $(DESTDIR)/opt/openmcu-ru/ssl
 	mkdir -p $(DESTDIR)/opt/openmcu-ru/scripts
 	( for file in ./files/conf/*; do \
-	    install -m 644 --compare --backup=numbered $$file $(DESTDIR)/opt/openmcu-ru/config; \
+	    $(INSTALL) -m 644 $(INSTALL_BACKUP_OPTS) $$file $(DESTDIR)/opt/openmcu-ru/config; \
 	done )
 	( for file in ./files/font/*; do \
-	    install -m 644 $$file $(DESTDIR)/opt/openmcu-ru/font; \
+	    $(INSTALL) -m 644 $$file $(DESTDIR)/opt/openmcu-ru/font; \
 	done )
 	( for file in ./files/resource/*; do \
-	    install -m 644 $$file $(DESTDIR)/opt/openmcu-ru/resource; \
+	    $(INSTALL) -m 644 $$file $(DESTDIR)/opt/openmcu-ru/resource; \
 	done )
 	( for file in ./files/scripts/*; do \
-	    install -m 755 --compare --backup=numbered $$file $(DESTDIR)/opt/openmcu-ru/scripts; \
+	    $(INSTALL) -m 755 $(INSTALL_BACKUP_OPTS) $$file $(DESTDIR)/opt/openmcu-ru/scripts; \
 	done )
-	install -m 755 $(OBJDIR)/$(PROG) $(DESTDIR)/opt/openmcu-ru/bin
+	$(INSTALL) -m 755 $(OBJDIR)/$(PROG) $(DESTDIR)/opt/openmcu-ru/bin
 #	ln -sf $(DESTDIR)/opt/openmcu-ru/bin/$(PROG) /usr/local/bin/$(PROG)
-	install -m 644 ../AUTHORS $(DESTDIR)/opt/openmcu-ru
-	install -m 644 ../COPYING $(DESTDIR)/opt/openmcu-ru
-	install -m 644 ../NEWS $(DESTDIR)/opt/openmcu-ru
-	install -m 644 ../README $(DESTDIR)/opt/openmcu-ru
+	$(INSTALL) -m 644 ../AUTHORS $(DESTDIR)/opt/openmcu-ru
+	$(INSTALL) -m 644 ../COPYING $(DESTDIR)/opt/openmcu-ru
+	$(INSTALL) -m 644 ../NEWS $(DESTDIR)/opt/openmcu-ru
+	$(INSTALL) -m 644 ../README $(DESTDIR)/opt/openmcu-ru
 
 uninstall:
 	rm -rf $(DESTDIR)/opt/openmcu-ru/font
