@@ -170,25 +170,9 @@ void ConferenceRecorder::Stop()
     av_free(video_outbuf);
 
   if(audio_frame)
-  {
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,28,0)
-    av_freep(&audio_frame);
-#elif LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
-    avcodec_free_frame(&audio_frame);
-#else
-    av_frame_free(&audio_frame);
-#endif
-  }
+    AVFrameFree(&audio_frame);
   if(video_frame)
-  {
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,28,0)
-    av_freep(&video_frame);
-#elif LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
-    avcodec_free_frame(&video_frame);
-#else
-    av_frame_free(&video_frame);
-#endif
-  }
+    AVFrameFree(&video_frame);
 
   Reset();
 }
@@ -457,11 +441,7 @@ BOOL ConferenceRecorder::OpenAudio()
     return FALSE;
   }
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
-  audio_frame = avcodec_alloc_frame();
-#else
-  audio_frame = av_frame_alloc();
-#endif
+  audio_frame = AVFrameAlloc();
   if(audio_frame == NULL)
   {
     MCUTRACE(1, trace_section << "could not allocate audio frame");
@@ -654,11 +634,7 @@ BOOL ConferenceRecorder::OpenVideo()
     return FALSE;
   }
 
-#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,0)
-  video_frame = avcodec_alloc_frame();
-#else
-  video_frame = av_frame_alloc();
-#endif
+  video_frame = AVFrameAlloc();
   if(video_frame == NULL)
   {
     MCUTRACE(1, trace_section << "could not allocate video frame");
