@@ -2260,9 +2260,9 @@ PString MCUH323EndPoint::GetMonitorText()
         while(r!=NULL)
         {
           output << hdr << "[Position " << r->n << "]\n"
-                 << hdr << "  Conference Member Id: " << r->id << "\n"
-                 << hdr << "  Position type: " << r->type << "\n"
-                 << hdr << "  Position status: " << r->status << "\n";
+                 << hdr << "  Member Id: " << r->id << "\n"
+                 << hdr << "  Type: " << r->type << ", status: " << r->status << "\n"
+                 << hdr << "  Frame: " << r->width << "*" << r->height << " at (" << r->xpos << "," << r->ypos << ")\n";
           r=r->next;
         }
       }
@@ -2283,9 +2283,9 @@ PString MCUH323EndPoint::GetMonitorText()
       while(r != NULL)
       {
         output << "  [Position " << r->n << "]\n"
-               << "    Conference Member Id: " << r->id << "\n"
-               << "    Position type: " << r->type << "\n"
-               << "    Position status: " << r->status << "\n";
+               << "    Member Id: " << r->id << "\n"
+               << "    Type: " << r->type << ", status: " << r->status << "\n"
+               << "    Frame: " << r->width << "*" << r->height << " at (" << r->xpos << "," << r->ypos << ")\n";
         r=r->next;
       }
     }
