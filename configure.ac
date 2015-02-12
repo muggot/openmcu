@@ -508,51 +508,6 @@ if test "${libfreetype}" = "yes"; then
 fi
 
 dnl ########################################################################
-dnl check for yuv library
-
-AC_ARG_ENABLE(libyuv, [AS_HELP_STRING([--disable-libyuv],[Disable libyuv to resize video (default enabled)],[40],[100])], [libyuv="$enableval"])
-
-AC_SUBST(USE_LIBYUV, 0)
-AC_SUBST(COMPILE_LIBYUV, 0)
-AC_SUBST(LIBYUV_DIR, ${top_srcdir}/libs/libyuv)
-if test "${libyuv}" = "yes"; then
-  if test ${USE_LIBYUV} = 0 ; then
-    AC_CHECK_FILE(/usr/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
-    if test ${USE_LIBYUV} = 1 ; then
-      AC_CHECK_FILE(/usr/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
-      if test ${USE_LIBYUV} = 1 ; then
-        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/include";
-        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
-      fi
-    fi
-  fi
-  if test ${USE_LIBYUV} = 0 ; then
-    AC_CHECK_FILE(/usr/local/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
-    if test ${USE_LIBYUV} = 1 ; then
-      AC_CHECK_FILE(/usr/local/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
-      if test ${USE_LIBYUV} = 1 ; then
-        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/local/include";
-        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/local/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
-      fi
-    fi
-  fi
-  if test ${USE_LIBYUV} = 0 ; then
-    AC_CHECK_FILE(${top_srcdir}/libs/libyuv/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
-    if test ${USE_LIBYUV} = 1; then
-      MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libyuv/include"
-      MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libyuv";
-      COMPILE_LIBYUV=1
-    fi
-  fi
-  if test ${USE_LIBYUV} = 1 ; then
-    MCU_LDLIBS="$MCU_LDLIBS -lyuv"
-  fi
-fi
-AM_CONDITIONAL(COMPILER_USE_LIBYUV, [test ${COMPILE_LIBYUV} = 1])
-
-dnl ########################################################################
 dnl check for jpeg library
 
 AC_ARG_ENABLE(libjpeg, [AS_HELP_STRING([--enable-libjpeg],[Enable JPEG Frame Encoder for browser (default disabled)],[40],[100])], [libjpeg="$enableval"])
@@ -574,6 +529,63 @@ if test "${libjpeg}" = "yes"; then
     MCU_LDLIBS="$MCU_LDLIBS -ljpeg"
   fi
 fi
+
+dnl ########################################################################
+dnl check for yuv library
+
+AC_ARG_ENABLE(libyuv, [AS_HELP_STRING([--disable-libyuv],[Disable libyuv to resize video (default enabled)],[40],[100])], [libyuv="$enableval"])
+
+AC_SUBST(USE_LIBYUV, 0)
+AC_SUBST(COMPILE_LIBYUV, 0)
+AC_SUBST(LIBYUV_DIR, ${top_srcdir}/libs/libyuv)
+if test "${libyuv}" = "yes"; then
+  if test ${USE_LIBYUV} = 0 ; then
+    AC_CHECK_FILE(/usr/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
+    if test ${USE_LIBYUV} = 1 ; then
+      AC_CHECK_FILE(/usr/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
+      if test ${USE_LIBYUV} = 1 ; then
+        if test ${USE_LIBJPEG} = 0 ; then
+          LDDJPEG=$(ldd /usr/lib/libyuv.so | grep libjpeg)
+          if test "${LDDJPEG}" != ""; then
+            MCU_LDLIBS="$MCU_LDLIBS -ljpeg"
+          fi
+        fi
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/include";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
+      fi
+    fi
+  fi
+  if test ${USE_LIBYUV} = 0 ; then
+    AC_CHECK_FILE(/usr/local/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
+    if test ${USE_LIBYUV} = 1 ; then
+      AC_CHECK_FILE(/usr/local/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
+      if test ${USE_LIBYUV} = 1 ; then
+        if test ${USE_LIBJPEG} = 0 ; then
+          LDDJPEG=$(ldd /usr/local/lib/libyuv.so | grep libjpeg)
+          if test "${LDDJPEG}" != ""; then
+            MCU_LDLIBS="$MCU_LDLIBS -ljpeg"
+          fi
+        fi
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/local/include";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/local/lib";
+        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
+      fi
+    fi
+  fi
+  if test ${USE_LIBYUV} = 0 ; then
+    AC_CHECK_FILE(${top_srcdir}/libs/libyuv/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
+    if test ${USE_LIBYUV} = 1; then
+      MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libyuv/include"
+      MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libyuv";
+      COMPILE_LIBYUV=1
+    fi
+  fi
+  if test ${USE_LIBYUV} = 1 ; then
+    MCU_LDLIBS="$MCU_LDLIBS -lyuv"
+  fi
+fi
+AM_CONDITIONAL(COMPILER_USE_LIBYUV, [test ${COMPILE_LIBYUV} = 1])
 
 dnl ########################################################################
 dnl configure openssl
