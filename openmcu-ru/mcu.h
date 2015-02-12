@@ -218,7 +218,7 @@ static const char OPTION_DECODER_CHANNELS[] = "Decoder Channels";
 static const char OPTION_TX_KEY_FRAME_PERIOD[] = "Tx Key Frame Period";
 
 static PString MCUScaleFilterNames =
-                                  ""
+                                  "openmcu-ru built-in"
                                   ",libyuv|kFilterNone"
                                   ",libyuv|kFilterBilinear"
                                   ",libyuv|kFilterBox"
@@ -433,8 +433,8 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
 
     PString SetScaleFilterType(int type)
     {
-      if(type < 1 || type > 14)
-        type = 1;
+      if(type < 0 || type > 14)
+        type = 0;
 #if !USE_LIBYUV
       if(type >= 1 && type <= 3)
         type = 4;

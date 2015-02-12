@@ -1372,7 +1372,7 @@ function top_panel()
 
   var i; try{ i=conf[0][10]; }catch(e){i=0;} //if((i<1)||(i>3))i=0;
   title=window.l_filtermode[i-1];
-  c+="<button title='" + title + "' onclick='javascript:{queue_otf_request(" + OTFC_YUV_FILTER_MODE + "," + (i%14+1) + ");return false;}' class='fltspr" + ((i-1)%3) + "'></button>";
+  c+="<button title='" + title + "' onclick='javascript:{queue_otf_request(" + OTFC_YUV_FILTER_MODE + "," + ((i+1)%15) + ");return false;}' class='fltspr" + ((i-1)%3) + "'></button>";
 
   try{ recState=conf[0][11]; } catch(e) { recState=0; }
   if(recState==1) title=window.l_videorecorderstop; else title=window.l_videorecorder;

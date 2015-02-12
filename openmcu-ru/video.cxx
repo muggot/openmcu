@@ -1185,7 +1185,6 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
     sws_freeContext(sws_ctx);
   }
 #endif
-#if !USE_LIBYUV && !USE_SWSCALE
   else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==TCIF_WIDTH    && dh==TCIF_HEIGHT)   // CIF16 -> TCIF
     ConvertCIF16ToTCIF(_src,_dst);
   else if(sw==CIF16_WIDTH && sh==CIF16_HEIGHT && dw==Q3CIF16_WIDTH && dh==Q3CIF16_HEIGHT)// CIF16 -> Q3CIF16
@@ -1238,10 +1237,9 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
     Convert2To1(_src, _dst, sw, sh);
 
   else ConvertFRAMEToCUSTOM_FRAME(_src,_dst,sw,sh,dw,dh);
-#endif
 }
 
-#if !USE_LIBYUV && !USE_SWSCALE
+//#if !USE_LIBYUV && !USE_SWSCALE
 void MCUVideoMixer::ConvertCIF4ToCIF(const void * _src, void * _dst)
 {
   unsigned char * src = (unsigned char *)_src;
@@ -3025,7 +3023,7 @@ void MCUVideoMixer::ConvertQCIFToCIF4(const void * _src, void * _dst)
     src += QCIF_WIDTH/2;
   }
 }
-#endif // #if !USE_LIBYUV && !USE_SWSCALE
+//#endif // #if !USE_LIBYUV && !USE_SWSCALE
 
 void MCUVideoMixer::VideoSplitLines(void * dst, unsigned fw, unsigned fh){
  unsigned int i;
