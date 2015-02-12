@@ -62,6 +62,12 @@ OpenMCU::OpenMCU()
   currentLogLevel   = -1;
   currentTraceLevel = -1;
   traceFileRotated  = FALSE;
+
+  memset(&videoResizeDeltaTSC, 0, sizeof(videoResizeDeltaTSC));
+  videoResizeDeltaTSCIndex=0;
+  videoResizeDeltaTSCSum=0;
+  videoResizeDeltaTSCAverage=0;
+  videoResizeDeltaTSCReportTime=0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

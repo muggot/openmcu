@@ -2167,3 +2167,8 @@ function getLeftPos(el) {
   for (var leftPos=0; el!=null; leftPos+=el.offsetLeft, el=el.offsetParent);
   return leftPos;
 }
+
+function resize_timing(s)
+{
+//  my_alert(s);
+}

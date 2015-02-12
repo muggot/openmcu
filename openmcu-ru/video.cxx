@@ -1138,8 +1138,16 @@ void MCUVideoMixer::CopyRectFromFrame(const void * _src, void * _dst, int xpos, 
    { memcpy(dst, src, width/2); dst += width/2; src += fw/2; }
 }
 
+extern __inline__ uint64_t rdtsc()
+{
+  uint64_t x;
+  __asm__ volatile ("rdtsc\n\tshl $32, %%rdx\n\tor %%rdx, %%rax" : "=a" (x) : : "rdx");
+  return x;
+}
+
 void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh)
 {
+  uint64_t TSC0=rdtsc();
   int scaleFilterType = OpenMCU::Current().GetScaleFilterType();
 
   if(sw==dw && sh==dh) // same size
@@ -1237,6 +1245,25 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
     Convert2To1(_src, _dst, sw, sh);
 
   else ConvertFRAMEToCUSTOM_FRAME(_src,_dst,sw,sh,dw,dh);
+
+  {
+    OpenMCU::Current().videoResizeDeltaTSCMutex.Wait();
+    OpenMCU::Current().videoResizeDeltaTSC[ OpenMCU::Current().videoResizeDeltaTSCIndex ] = (unsigned long)(rdtsc()-TSC0);
+    OpenMCU::Current().videoResizeDeltaTSCSum += OpenMCU::Current().videoResizeDeltaTSC[ OpenMCU::Current().videoResizeDeltaTSCIndex ];
+    OpenMCU::Current().videoResizeDeltaTSCIndex = (OpenMCU::Current().videoResizeDeltaTSCIndex + 1) & 0x0FF;
+    OpenMCU::Current().videoResizeDeltaTSCSum -= OpenMCU::Current().videoResizeDeltaTSC[ OpenMCU::Current().videoResizeDeltaTSCIndex ];
+    OpenMCU::Current().videoResizeDeltaTSCAverage = ((OpenMCU::Current().videoResizeDeltaTSCAverage << 10) + OpenMCU::Current().videoResizeDeltaTSCSum) / 1280;
+    if(time(NULL)-OpenMCU::Current().videoResizeDeltaTSCReportTime >= 3)
+    {
+      OpenMCU::Current().videoResizeDeltaTSCReportTime=time(NULL);
+      OpenMCU::Current().videoResizeDeltaTSCMutex.Signal();
+      PStringStream msg;
+      msg << "resize_timing(" << std::dec << OpenMCU::Current().videoResizeDeltaTSCAverage << ")";
+      OpenMCU::Current().HttpWriteCmd(msg);
+    }
+    else
+      OpenMCU::Current().videoResizeDeltaTSCMutex.Signal();
+  }
 }
 
 //#if !USE_LIBYUV && !USE_SWSCALE

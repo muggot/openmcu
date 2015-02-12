@@ -531,6 +531,13 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
       return logoFilename;
     }
 
+    PMutex videoResizeDeltaTSCMutex;
+    unsigned long videoResizeDeltaTSC[256];
+    unsigned short videoResizeDeltaTSCIndex;
+    unsigned long videoResizeDeltaTSCSum;
+    unsigned long videoResizeDeltaTSCAverage;
+    time_t videoResizeDeltaTSCReportTime;
+
   protected:
 
     BOOL MCUHTTPListenerCreate(const PString & ip, unsigned port);
