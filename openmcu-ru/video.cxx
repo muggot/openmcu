@@ -1247,23 +1247,23 @@ void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int s
   else ConvertFRAMEToCUSTOM_FRAME(_src,_dst,sw,sh,dw,dh);
 
   {
-    OpenMCU::Current().videoResizeDeltaTSCMutex.Wait();
-    OpenMCU::Current().videoResizeDeltaTSC[ OpenMCU::Current().videoResizeDeltaTSCIndex ] = (unsigned long)(rdtsc()-TSC0);
-    OpenMCU::Current().videoResizeDeltaTSCSum += OpenMCU::Current().videoResizeDeltaTSC[ OpenMCU::Current().videoResizeDeltaTSCIndex ];
-    OpenMCU::Current().videoResizeDeltaTSCIndex = (OpenMCU::Current().videoResizeDeltaTSCIndex + 1) & 0x0FF;
-    OpenMCU::Current().videoResizeDeltaTSCSum -= OpenMCU::Current().videoResizeDeltaTSC[ OpenMCU::Current().videoResizeDeltaTSCIndex ];
-    OpenMCU::Current().videoResizeDeltaTSCAverage = ((OpenMCU::Current().videoResizeDeltaTSCAverage << 10) + OpenMCU::Current().videoResizeDeltaTSCSum) / 1280;
-    if(time(NULL)-OpenMCU::Current().videoResizeDeltaTSCReportTime >= 3)
+    PWaitAndSignal m(OpenMCU::Current().videoResizeDeltaTSCMutex);
+    OpenMCU::Current().videoResizeDeltaTSCSum += (unsigned long)(rdtsc()-TSC0);
+    OpenMCU::Current().videoResizeDeltaTSCCounter++;
+    time_t t0 = time(NULL);
+    if(t0 - OpenMCU::Current().videoResizeDeltaTSCReportTime >= 3)
     {
-      OpenMCU::Current().videoResizeDeltaTSCReportTime=time(NULL);
-      OpenMCU::Current().videoResizeDeltaTSCMutex.Signal();
       PStringStream msg;
-      msg << "resize_timing(" << std::dec << OpenMCU::Current().videoResizeDeltaTSCAverage << ")";
+      msg << "resize_timing("
+        << std::dec << (OpenMCU::Current().videoResizeDeltaTSCSum / OpenMCU::Current().videoResizeDeltaTSCCounter)
+        << ")";
       OpenMCU::Current().HttpWriteCmd(msg);
+      OpenMCU::Current().videoResizeDeltaTSCSum = 0;
+      OpenMCU::Current().videoResizeDeltaTSCCounter = 0;
+      OpenMCU::Current().videoResizeDeltaTSCReportTime = t0;
     }
-    else
-      OpenMCU::Current().videoResizeDeltaTSCMutex.Signal();
   }
+
 }
 
 //#if !USE_LIBYUV && !USE_SWSCALE

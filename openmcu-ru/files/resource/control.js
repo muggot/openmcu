@@ -1370,13 +1370,13 @@ function top_panel()
   title=window.l_vadsetup;
   c+="<button title='" + title + "' onclick='javascript:{if(checkcontrol())vad_setup();return false;}' class='vadsetupspr'></button>";
 
-  var i; try{ i=conf[0][10]; }catch(e){i=0;} //if((i<1)||(i>3))i=0;
-  title=window.l_filtermode[i-1];
-  c+="<button title='" + title + "' onclick='javascript:{queue_otf_request(" + OTFC_YUV_FILTER_MODE + "," + ((i+1)%15) + ");return false;}' class='fltspr" + ((i-1)%3) + "'></button>";
-
   try{ recState=conf[0][11]; } catch(e) { recState=0; }
   if(recState==1) title=window.l_videorecorderstop; else title=window.l_videorecorder;
-  c+="<button title='" + title + "' onclick='javascript:{queue_otf_request(OTFC_VIDEO_RECORDER_" + (recState?"STOP":"START") + ",0);return false;}' class='recordspr" + recState + "'></button>";
+  c+=" <button title='" + title + "' onclick='javascript:{queue_otf_request(OTFC_VIDEO_RECORDER_" + (recState?"STOP":"START") + ",0);return false;}' class='recordspr" + recState + "'></button>";
+
+  var i; try{ i=conf[0][10]; }catch(e){i=0;} //if((i<1)||(i>3))i=0;
+  title=window.l_filtermode[i-1];
+  c+=' '+ get_resizer(i);
 
   c+="</td><td width='30%' align=right id='savetpl' name='savetpl'><nobr>";
 
@@ -2170,5 +2170,42 @@ function getLeftPos(el) {
 
 function resize_timing(s)
 {
-//  my_alert(s);
+  document.getElementById('ScaleTiming').innerHTML=Math.floor(s/1000)+'K cycles of CPU avg.';
+  alive();
+}
+
+function get_resizer(i)
+{
+  var a=[
+    'openmcu-ru built-in',
+    "libyuv|kFilterNone",
+    "libyuv|kFilterBilinear",
+    "libyuv|kFilterBox",
+    "swscale|SWS_FAST_BILINEAR",
+    "swscale|SWS_BILINEAR",
+    "swscale|SWS_BICUBIC",
+    "swscale|SWS_X",
+    "swscale|SWS_POINT",
+    "swscale|SWS_AREA",
+    "swscale|SWS_BICUBLIN",
+    "swscale|SWS_GAUSS",
+    "swscale|SWS_SINC",
+    "swscale|SWS_LANCZOS",
+    "swscale|SWS_SPLINE"
+  ];
+  
+  var r = "&nbsp;Resize algorythm: <select class='btn btn-small' style='height:28px;' name='FilterSelector' onchange='{queue_otf_request("
+    + OTFC_YUV_FILTER_MODE + ",this.value);return false;}'>";
+  
+  for(j=0;j<a.length;j++)
+  {
+    r+="<option value=\""+j+"\"";
+    if(i==j) r+=" selected";
+    r+=">"+a[j]+"</option>";
+  }
+  r+="</select>";
+
+  r+="&nbsp;<span id='ScaleTiming'>-</span>";
+
+  return r;
 }

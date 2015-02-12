@@ -532,10 +532,8 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     }
 
     PMutex videoResizeDeltaTSCMutex;
-    unsigned long videoResizeDeltaTSC[256];
-    unsigned short videoResizeDeltaTSCIndex;
     unsigned long videoResizeDeltaTSCSum;
-    unsigned long videoResizeDeltaTSCAverage;
+    unsigned short videoResizeDeltaTSCCounter;
     time_t videoResizeDeltaTSCReportTime;
 
   protected:
