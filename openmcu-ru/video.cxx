@@ -1140,9 +1140,11 @@ void MCUVideoMixer::CopyRectFromFrame(const void * _src, void * _dst, int xpos, 
 
 extern __inline__ uint64_t rdtsc()
 {
-  uint64_t x;
-  __asm__ volatile ("rdtsc\n\tshl $32, %%rdx\n\tor %%rdx, %%rax" : "=a" (x) : : "rdx");
-  return x;
+  // https://www.kernel.org/doc/Documentation/prctl/disable-tsc-test.c
+  uint32_t lo, hi;
+  // We cannot use "=A", since this would use %rax on x86_64
+  __asm__ __volatile__ ("rdtsc" : "=a" (lo), "=d" (hi));
+  return (uint64_t)hi << 32 | lo;
 }
 
 void MCUVideoMixer::ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh)
