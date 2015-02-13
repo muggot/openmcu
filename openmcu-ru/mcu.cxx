@@ -527,8 +527,11 @@ void OpenMCU::InitialiseTrace()
       traceFileRotated = TRUE;
     }
 
-    PTrace::Initialise(TraceLevel, PString(SERVER_LOGS) + PATH_SEPARATOR + "trace.txt");
-    PTrace::SetOptions(PTrace::FileAndLine);
+    PTrace::Initialise(TraceLevel, PString(SERVER_LOGS) + PATH_SEPARATOR + "trace.txt", PTrace::Timestamp | PTrace::Thread | PTrace::FileAndLine);
+    // PTRACE_BLOCK gkserver.cxx
+    if(TraceLevel >= 3)
+      PTrace::SetOptions(PTrace::Blocks);
+
     currentTraceLevel = TraceLevel;
     PTRACE(0, trace_section << "Trace Level " << currentTraceLevel);
   }
