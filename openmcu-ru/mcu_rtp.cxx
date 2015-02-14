@@ -304,7 +304,7 @@ void MCU_RTPChannel::Receive()
       ok = codec->Write(NULL, 0, frame, written);
       rtpTimestamp += codecFrameRate;
     } else {
-      silenceStartTick = PTimer::Tick();
+      silenceStartTick = PTimer::Tick().GetMilliSeconds();
 
       BOOL isCodecPacket = TRUE;
 
@@ -520,7 +520,7 @@ void MCU_RTPChannel::Transmit()
       frame.SetTimestamp(rtpTimestamp);
     else
     {
-      silenceStartTick = PTimer::Tick();
+      silenceStartTick = PTimer::Tick().GetMilliSeconds();
 
       // If first read frame in packet, set timestamp for it
       if(frameOffset == 0)
@@ -1204,7 +1204,7 @@ RTP_Session::SendReceiveStatus MCU_RTP_UDP::OnReceiveData(const RTP_DataFrame & 
     }
   }
 
-  lastReceivedPacketTime = tick;
+  lastReceivedPacketTime = tick.GetMilliSeconds();
 
   octetsReceived += frame.GetPayloadSize();
   packetsReceived++;

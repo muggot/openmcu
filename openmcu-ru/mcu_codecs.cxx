@@ -302,12 +302,17 @@ BOOL MCUFramedAudioCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame &
 
   length = rawDataChannel->GetLastReadCount();
 
+#if MCU_OPENH323_VERSION < MCU_OPENH323_VERSION_INT(1,26,0)
   for(PINDEX i = 0; i < filters.GetSize(); i++)
   {
     FilterInfo info(*this, sampleBuffer.GetPointer(samplesPerFrame * channels), numBytes, length);
     filters[i](info, 0);
     length = info.bufferLength;
   }
+#else
+  for(PINDEX i = 0; i < filters.GetSize(); i++)
+    length = filters[i].ProcessFilter(sampleBuffer.GetPointer(samplesPerFrame * channels), numBytes, length);
+#endif
 
   if(length != numBytes)
   {
@@ -377,12 +382,17 @@ BOOL MCUFramedAudioCodec::Write(const BYTE * buffer, unsigned length, const RTP_
     return FALSE;
   }
 
+#if MCU_OPENH323_VERSION < MCU_OPENH323_VERSION_INT(1,26,0)
   for(PINDEX i = 0; i < filters.GetSize(); i++)
   {
     FilterInfo info(*this, sampleBuffer.GetPointer(), bytesDecoded, bytesDecoded);
     filters[i](info, 0);
     bytesDecoded = info.bufferLength;
   }
+#else
+  for(PINDEX i = 0; i < filters.GetSize(); i++)
+    length = filters[i].ProcessFilter(sampleBuffer.GetPointer(samplesPerFrame * channels), bytesDecoded, bytesDecoded);
+#endif
 
 #if MCU_PTLIB_VERSION < MCU_PTLIB_VERSION_INT(2,9,0)
   if(!rawDataChannel->Write(sampleBuffer.GetPointer(), bytesDecoded))
