@@ -1,7 +1,7 @@
 dnl #######################################################################
 dnl INIT
 
-AC_INIT([OpenMCU-ru],[3.49],[OpenMCU-ru])
+AC_INIT([OpenMCU-ru],[4.0],[OpenMCU-ru])
 AC_CANONICAL_TARGET()
 AM_INIT_AUTOMAKE()
 
@@ -14,47 +14,13 @@ OLD_CFLAGS=${CFLAGS}
 AC_PROG_CXX
 CFLAGS=${OLD_CFLAGS}
 
+AC_PROG_INSTALL
+
 #AM_MAINTAINER_MODE
-
-dnl ########################################################################
-dnl OpenMCU-ru version
-
-MAJOR_VERSION=`cat openmcu-ru/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
-MINOR_VERSION=`cat openmcu-ru/version.h | grep MINOR_VERSION | cut -f3 -d' '`
-BUILD_NUMBER=`cat openmcu-ru/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
-BUILD_TYPE=`cat openmcu-ru/version.h | grep BUILD_TYPE | cut -f 3 -d ' ' | sed 's/BetaCode/-beta/' | sed 's/AlphaCode/-alpha/' | sed 's/ReleaseCode/\./'`
-MCU_VERSION=$MAJOR_VERSION.$MINOR_VERSION.$BUILD_NUMBER
-AC_SUBST(MAJOR_VERSION)
-AC_SUBST(MINOR_VERSION)
-AC_SUBST(BUILD_NUMBER)
-AC_SUBST(BUILD_TYPE)
-AC_SUBST(MCU_VERSION)
-
-dnl ########################################################################
-dnl PTLib version
-
-PTLIB_MAJOR_VERSION=`cat libs/ptlib/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
-PTLIB_MINOR_VERSION=`cat libs/ptlib/version.h | grep MINOR_VERSION | cut -f3 -d' '`
-PTLIB_BUILD_NUMBER=`cat libs/ptlib/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
-AC_SUBST(PTLIB_MAJOR_VERSION)
-AC_SUBST(PTLIB_MINOR_VERSION)
-AC_SUBST(PTLIB_BUILD_NUMBER)
-
-dnl ########################################################################
-dnl H323Plus version
-
-
-H323PLUS_MAJOR_VERSION=`cat libs/h323plus/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
-H323PLUS_MINOR_VERSION=`cat libs/h323plus/version.h | grep MINOR_VERSION | cut -f3 -d' '`
-H323PLUS_BUILD_NUMBER=`cat libs/h323plus/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
-AC_SUBST(H323PLUS_MAJOR_VERSION)
-AC_SUBST(H323PLUS_MINOR_VERSION)
-AC_SUBST(H323PLUS_BUILD_NUMBER)
 
 dnl #######################################################################
 
 top_srcdir=`pwd`
-
 
 dnl ########################################################################
 dnl install PREFIX
@@ -67,28 +33,36 @@ else
 fi
 AC_SUBST(INSTALLPREFIX)
 
-RPATH_LDFLAGS="${LDFLAGS}"
+dnl ########################################################################
+dnl flags
+
+RPATH_LDFLAGS="${RPATH_LDFLAGS} ${LDFLAGS}"
 
 LIBAV_CPPFLAGS="${LIBAV_CPPFLAGS} ${CPPFLAGS}";
 LIBAV_LDFLAGS="${LIBAV_LDFLAGS} ${LDFLAGS}";
 LIBVPX_CPPFLAGS="${LIBVPX_CPPFLAGS} ${CPPFLAGS}";
 LIBVPX_LDFLAGS="${LIBVPX_LDFLAGS} ${LDFLAGS}";
 
-MCU_CPPFLAGS="${CPPFLAGS} -I${INSTALLPREFIX}/include -I${INSTALLPREFIX}/${PROG}/include -I/usr/include -I/usr/local/include"
-MCU_LDFLAGS="${LDFLAGS} -L${INSTALLPREFIX}/lib -L${INSTALLPREFIX}/${PROG}/lib -L/usr/lib -L/usr/local/lib"
-MCU_LDLIBS="${LDLIBS}"
+MCU_CPPFLAGS="-I${INSTALLPREFIX}/${PROG}/include ${CPPFLAGS} -I/usr/include -I/usr/local/include"
+MCU_LDFLAGS="-L${INSTALLPREFIX}/${PROG}/lib ${LDFLAGS} -L/usr/lib -L/usr/local/lib"
+MCU_LDLIBS="${MCU_LDLIBS} ${LDLIBS}"
 
+# AC_CHECK_HEADERS
+OLD_CPPFLAGS=${CPPFLAGS}
 export CPPFLAGS=${MCU_CPPFLAGS}
+# AC_CHECK_LIBS
+OLD_LDFLAGS=${LDFLAGS}
 export LDFLAGS=${MCU_LDFLAGS}
 
-export PKG_CONFIG_PATH=${INSTALLPREFIX}/lib/pkgconfig:${INSTALLPREFIX}/${PROG}/lib/pkgconfig:${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
-export LD_LIBRARY_PATH=${INSTALLPREFIX}/lib:${INSTALLPREFIX}/${PROG}/lib:${LD_LIBRARY_PATH}:/usr/lib:/usr/local/lib
+#pkg-config
+export PKG_CONFIG_PATH=${INSTALLPREFIX}/${PROG}/lib/pkgconfig:${PKG_CONFIG_PATH}:/usr/lib/pkgconfig:/usr/local/lib/pkgconfig
+export LD_LIBRARY_PATH=${INSTALLPREFIX}/${PROG}/lib:${LD_LIBRARY_PATH}:/usr/lib:/usr/local/lib
 
 dnl ########################################################################
 dnl LIBDIR accordingly
+
 LIBDIR=${libdir}
 AC_SUBST(LIBDIR)
-
 
 dnl ########################################################################
 dnl set the OSTYPE and MACHTYPE
@@ -222,6 +196,18 @@ if test "${USE_GCC}" = "yes"; then
 fi
 
 dnl ########################################################################
+dnl OpenMCU-ru version
+
+MCU_MAJOR_VERSION=`cat openmcu-ru/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
+MCU_MINOR_VERSION=`cat openmcu-ru/version.h | grep MINOR_VERSION | cut -f3 -d' '`
+MCU_BUILD_NUMBER=`cat openmcu-ru/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
+MCU_VERSION=$MAJOR_VERSION.$MINOR_VERSION.$BUILD_NUMBER
+AC_SUBST(MCU_MAJOR_VERSION)
+AC_SUBST(MCU_MINOR_VERSION)
+AC_SUBST(MCU_BUILD_NUMBER)
+AC_SUBST(MCU_VERSION)
+
+dnl ########################################################################
 dnl configuration openmcu-ru
 
 AC_ARG_WITH(separator,[  ])
@@ -278,91 +264,157 @@ AC_CONFIG_FILES(openmcu-ru/Makefile)
 AC_CONFIG_FILES(openmcu-ru/config.h)
 
 dnl ########################################################################
-dnl configuration ptlib
+dnl configuration ptlib/h323plus
 
-PWLIBDIR=${top_srcdir}/libs/ptlib
-PTLIBDIR="${PWLIBDIR}"
-PTLIB_CONFIG=${PWLIBDIR}/make/ptlib-config
+AC_SUBST(USE_SRC_PTLIB, 1)
+AC_SUBST(USE_SYSTEM_PTLIB, 0)
+AC_SUBST(PTLIBDIR, ${top_srcdir}/libs/ptlib)
+AC_SUBST(PWLIBDIR, ${PTLIBDIR})
+AC_SUBST(H323PLUSDIR, ${top_srcdir}/libs/h323plus)
+AC_SUBST(PTLIB_SYSTEM_DIRS, "${INSTALLPREFIX}/${PROG} /usr /usr/local")
 
-export PWLIBDIR=${PWLIBDIR}
-export PTLIBDIR=${PTLIBDIR}
-export PTLIB_CONFIG=${PTLIB_CONFIG}
+AC_SUBST(PTLIB_BUILDOPTS)
+AC_SUBST(H323PLUS_BUILDOPTS)
 
-AC_SUBST(PWLIBDIR)
-AC_SUBST(PTLIBDIR)
-AC_SUBST(PTLIB_CONFIG)
-
-AC_CONFIG_SUBDIRS(libs/ptlib)
-AC_CONFIG_FILES(libs/ptlib/Makefile)
-
-dnl ########################################################################
-dnl configuration h323plus
-
-H323PLUSDIR=${top_srcdir}/libs/h323plus
-AC_SUBST(H323PLUSDIR)
-AC_CONFIG_SUBDIRS(libs/h323plus)
-AC_CONFIG_FILES(libs/h323plus/Makefile)
-
-dnl ########################################################################
-dnl h323plus/ptlib
-
-if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 3; then
-  PTLIB_LIBDIR="${PTLIBDIR}/lib_${OSTYPE}_${MACHTYPE}"
-  PTLIB_SO_FILE="libpt.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
-  PTLIB_A_FILE="libpt_s.a"
-  PTLIB_AD_FILE="libpt_d_s.a"
-  PTLIB_LINK_FILE="pt"
-  H323PLUS_LIBDIR="${H323PLUSDIR}/lib"
-  H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_.so.${H323PLUS_MAJOR_VERSION}.${H323PLUS_MINOR_VERSION}.${H323PLUS_BUILD_NUMBER}"
-  H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}__s.a"
-  H323PLUS_AD_FILE="libh323_${OSTYPE}_${MACHTYPE}__d_s.a"
-  H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_"
-else
-  PTLIB_LIBDIR="${PTLIBDIR}/lib"
-  PTLIB_SO_FILE="libpt_${OSTYPE}_${MACHTYPE}_r.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
-  PTLIB_A_FILE="libpt_${OSTYPE}_${MACHTYPE}_r_s.a"
-  PTLIB_AD_FILE="libpt_${OSTYPE}_${MACHTYPE}_d_s.a"
-  PTLIB_LINK_FILE="pt_${OSTYPE}_${MACHTYPE}_r"
-  H323PLUS_LIBDIR="${H323PLUSDIR}/lib"
-  H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_r.so.${H323PLUS_MAJOR_VERSION}.${H323PLUS_MINOR_VERSION}.${H323PLUS_BUILD_NUMBER}"
-  H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}_r_s.a"
-  H323PLUS_AD_FILE="libh323_${OSTYPE}_${MACHTYPE}_d_s.a"
-  H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_r"
-fi
-
-if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
-  H323PLUS_BUILDOPTS="PTLIBDIR=\"${PTLIBDIR}\""
-fi
-
-AC_SUBST(PTLIB_LIBDIR)
+AC_SUBST(PTLIB_BUILDDIR)
 AC_SUBST(PTLIB_SO_FILE)
 AC_SUBST(PTLIB_A_FILE)
 AC_SUBST(PTLIB_LINK_FILE)
-AC_SUBST(H323PLUS_LIBDIR)
+AC_SUBST(H323PLUS_BUILDDIR)
 AC_SUBST(H323PLUS_SO_FILE)
 AC_SUBST(H323PLUS_A_FILE)
 AC_SUBST(H323PLUS_LINK_FILE)
 
-AC_SUBST(PTLIB_BUILDOPTS)
-AC_SUBST(H323PLUS_BUILDOPTS)
-AC_SUBST(MCU_BUILDOPTS)
+AC_SUBST(PTLIB_MAJOR_VERSION)
+AC_SUBST(PTLIB_MINOR_VERSION)
+AC_SUBST(PTLIB_BUILD_NUMBER)
+AC_SUBST(H323PLUS_MAJOR_VERSION)
+AC_SUBST(H323PLUS_MINOR_VERSION)
+AC_SUBST(H323PLUS_BUILD_NUMBER)
+
+# check source 1
+if test ${USE_SYSTEM_PTLIB} = 0 ; then
+  AC_CHECK_FILE(${PTLIBDIR}/make/ptbuildopts.mak, USE_SRC_PTLIB=1, USE_SRC_PTLIB=1)
+  AS_UNSET([$as_ac_File])
+fi
+# system library
+if test ${USE_SRC_PTLIB} = 0 ; then
+  for dir in ${PTLIB_SYSTEM_DIRS} ; do
+    AC_CHECK_FILE(${dir}/share/ptlib/make/ptbuildopts.mak, USE_SYSTEM_PTLIB=1, USE_SYSTEM_PTLIB=0, [-])
+    if test "${USE_SYSTEM_PTLIB}" = "1"; then
+      PTLIBDIR=${dir}/share/ptlib/
+      MCU_CPPFLAGS="${MCU_CPPFLAGS} -I${dir}/include/ptlib -I${dir}/include/openh323"
+      PTLIB_BUILDDIR="${dir}/lib"
+      H323PLUS_BUILDDIR="${dir}/lib"
+    fi
+  done
+  #AC_CHECK_HEADERS([h323ep.h openh323/h323.h ], USE_SYSTEM_PTLIB=1, USE_SYSTEM_PTLIB=0, [-])
+  #if test "${USE_SYSTEM_PTLIB}" = "0"; then
+  #  AC_MSG_ERROR(h323plus headers not found!)
+  #fi
+  PTLIB_LINK_FILE="pt"
+  H323PLUS_LINK_FILE="h323"
+fi
+# check source 2
+if test ${USE_SYSTEM_PTLIB} = 0 && test ${USE_SRC_PTLIB} = 0 ; then
+  AC_CHECK_FILE(${PTLIBDIR}/make/ptbuildopts.mak, USE_SRC_PTLIB=1, USE_SRC_PTLIB=1)
+  AS_UNSET([$as_ac_File])
+fi
+# compile from source
+if test ${USE_SRC_PTLIB} = 1 ; then
+  PTLIB_MAJOR_VERSION=`cat libs/ptlib/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
+  PTLIB_MINOR_VERSION=`cat libs/ptlib/version.h | grep MINOR_VERSION | cut -f3 -d' '`
+  PTLIB_BUILD_NUMBER=`cat libs/ptlib/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
+
+  H323PLUS_MAJOR_VERSION=`cat libs/h323plus/version.h | grep MAJOR_VERSION | cut -f3 -d' '`
+  H323PLUS_MINOR_VERSION=`cat libs/h323plus/version.h | grep MINOR_VERSION | cut -f3 -d' '`
+  H323PLUS_BUILD_NUMBER=`cat libs/h323plus/version.h | grep BUILD_NUMBER | cut -f3 -d' '`
+
+  if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 3; then
+    PTLIB_BUILDDIR="${PTLIBDIR}/lib_${OSTYPE}_${MACHTYPE}"
+    PTLIB_SO_FILE="libpt.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
+    PTLIB_A_FILE="libpt_s.a"
+    PTLIB_AD_FILE="libpt_d_s.a"
+    PTLIB_LINK_FILE="pt"
+    H323PLUS_BUILDDIR="${H323PLUSDIR}/lib"
+    H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_.so.${H323PLUS_MAJOR_VERSION}.${H323PLUS_MINOR_VERSION}.${H323PLUS_BUILD_NUMBER}"
+    H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}__s.a"
+    H323PLUS_AD_FILE="libh323_${OSTYPE}_${MACHTYPE}__d_s.a"
+    H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_"
+  else
+    PTLIB_BUILDDIR="${PTLIBDIR}/lib"
+    PTLIB_SO_FILE="libpt_${OSTYPE}_${MACHTYPE}_r.so.${PTLIB_MAJOR_VERSION}.${PTLIB_MINOR_VERSION}.${PTLIB_BUILD_NUMBER}"
+    PTLIB_A_FILE="libpt_${OSTYPE}_${MACHTYPE}_r_s.a"
+    PTLIB_AD_FILE="libpt_${OSTYPE}_${MACHTYPE}_d_s.a"
+    PTLIB_LINK_FILE="pt_${OSTYPE}_${MACHTYPE}_r"
+    H323PLUS_BUILDDIR="${H323PLUSDIR}/lib"
+    H323PLUS_SO_FILE="libh323_${OSTYPE}_${MACHTYPE}_r.so.${H323PLUS_MAJOR_VERSION}.${H323PLUS_MINOR_VERSION}.${H323PLUS_BUILD_NUMBER}"
+    H323PLUS_A_FILE="libh323_${OSTYPE}_${MACHTYPE}_r_s.a"
+    H323PLUS_AD_FILE="libh323_${OSTYPE}_${MACHTYPE}_d_s.a"
+    H323PLUS_LINK_FILE="h323_${OSTYPE}_${MACHTYPE}_r"
+  fi
+
+  if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
+    H323PLUS_BUILDOPTS="PTLIBDIR=\"${PTLIBDIR}\""
+  fi
+
+  MCU_CPPFLAGS="${MCU_CPPFLAGS} -I../libs/ptlib/include -I../libs/h323plus/include"
+  export PTLIBDIR=${PTLIBDIR}
+  export PWLIBDIR=${PTLIBDIR}
+  #export PTLIB_CONFIG=${PTLIB_CONFIG}
+  AC_CONFIG_SUBDIRS(libs/ptlib)
+  #AC_CONFIG_FILES(libs/ptlib/Makefile)
+  AC_CONFIG_SUBDIRS(libs/h323plus)
+  #AC_CONFIG_FILES(libs/h323plus/Makefile)
+fi
+# result
+if test ${USE_SRC_PTLIB} = 0 && test ${USE_SYSTEM_PTLIB} = 0 ; then
+  AC_MSG_ERROR(ptbuildopts.mak not found!)
+fi
+
+PWLIBDIR=${PTLIBDIR}
+AM_CONDITIONAL(COMPILE_PTLIB, [test ${USE_SYSTEM_PTLIB} = 0])
 
 dnl ########################################################################
 dnl check for sofia-sip library
 
-AC_SUBST(SOFIASIP_BUILDOPTS)
-if test ${GXX_MINOR} -ge 8; then
-  SOFIASIP_BUILDOPTS="CFLAGS=-fno-aggressive-loop-optimizations"
-fi
-
-AC_SUBST(USE_LIBSOFIA, 1)
+AC_SUBST(USE_SRC_SOFIASIP, 0)
+AC_SUBST(USE_SYSTEM_SOFIASIP, 1)
 AC_SUBST(LIBSOFIA_DIR, ${top_srcdir}/libs/sofia-sip)
-AC_CONFIG_SUBDIRS(libs/sofia-sip)
-AM_CONDITIONAL(COMPILER_USE_LIBSOFIA, [test ${USE_LIBSOFIA} = 1])
+AC_SUBST(LIBSOFIA_SYSTEM_DIRS, "${INSTALLPREFIX}/${PROG} /usr /usr/local")
+AC_SUBST(SOFIASIP_BUILDOPTS)
 
-MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/sofia-sip/libsofia-sip-ua/.libs"
-MCU_LDLIBS="$MCU_LDLIBS -lsofia-sip-ua"
-MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
+# check source 1
+if test ${USE_SYSTEM_SOFIASIP} = 0 ; then
+  AC_CHECK_FILE(${LIBSOFIA_DIR}/configure, USE_SRC_SOFIASIP=1, USE_SRC_SOFIASIP=0)
+  AS_UNSET([$as_ac_File])
+fi
+# system library
+if test ${USE_SRC_SOFIASIP} = 0 ; then
+  for dir in ${LIBSOFIA_SYSTEM_DIRS} ; do
+    AC_CHECK_FILE(${dir}/include/sofia-sip-1.12/sofia-sip/sip.h, USE_SYSTEM_SOFIASIP=1, USE_SYSTEM_SOFIASIP=0)
+    if test ${USE_SYSTEM_SOFIASIP} = 1 ; then
+      AC_CHECK_FILE(${dir}/lib/libsofia-sip-ua.so, USE_SYSTEM_SOFIASIP=1, USE_SYSTEM_SOFIASIP=0)
+      if test ${USE_SYSTEM_SOFIASIP} = 1 ; then
+        MCU_CPPFLAGS="$MCU_CPPFLAGS -I${dir}/include/sofia-sip-1.12";
+        MCU_LDFLAGS="$MCU_LDFLAGS -L${dir}/lib";
+        break
+      fi
+    fi
+  done
+fi
+# check source 2
+if test ${USE_SYSTEM_SOFIASIP} = 0 && test ${USE_SRC_SOFIASIP} = 0 ; then
+  AC_CHECK_FILE(${LIBSOFIA_DIR}/configure, USE_SRC_SOFIASIP=1, USE_SRC_SOFIASIP=0)
+  AS_UNSET([$as_ac_File])
+fi
+# compile from source
+if test ${USE_SRC_SOFIASIP} = 1 ; then
+  if test ${GXX_MINOR} -ge 8; then
+    SOFIASIP_BUILDOPTS="CFLAGS=-fno-aggressive-loop-optimizations"
+  fi
+  MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/sofia-sip/libsofia-sip-ua/.libs"
+  MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
                     -I../libs/sofia-sip/libsofia-sip-ua/docs \
                     -I../libs/sofia-sip/libsofia-sip-ua/features \
                     -I../libs/sofia-sip/libsofia-sip-ua/http \
@@ -381,6 +433,16 @@ MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/sofia-sip/libsofia-sip-ua/bnf \
                     -I../libs/sofia-sip/libsofia-sip-ua/su \
                     -I../libs/sofia-sip/libsofia-sip-ua/tport \
                     -I../libs/sofia-sip/libsofia-sip-ua/url"
+
+  AC_CONFIG_SUBDIRS(libs/sofia-sip)
+fi
+# result
+if test ${USE_SRC_SOFIASIP} = 0 && test ${USE_SYSTEM_SOFIASIP} = 0 ; then
+  AC_MSG_ERROR(libsofia-sip-ua not found!)
+fi
+
+MCU_LDLIBS="$MCU_LDLIBS -lsofia-sip-ua"
+AM_CONDITIONAL(COMPILE_SOFIASIP, [test ${USE_SRC_SOFIASIP} = 1])
 
 dnl ########################################################################
 dnl check for video library
@@ -535,57 +597,59 @@ dnl check for yuv library
 
 AC_ARG_ENABLE(libyuv, [AS_HELP_STRING([--disable-libyuv],[Disable libyuv to resize video (default enabled)],[40],[100])], [libyuv="$enableval"])
 
+AC_SUBST(USE_SRC_LIBYUV, 0)
+AC_SUBST(USE_SYSTEM_LIBYUV, 1)
 AC_SUBST(USE_LIBYUV, 0)
-AC_SUBST(COMPILE_LIBYUV, 0)
 AC_SUBST(LIBYUV_DIR, ${top_srcdir}/libs/libyuv)
+AC_SUBST(LIBYUV_SYSTEM_DIRS, "${INSTALLPREFIX}/${PROG} /usr /usr/local")
+
 if test "${libyuv}" = "yes"; then
-  if test ${USE_LIBYUV} = 0 ; then
-    AC_CHECK_FILE(/usr/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
-    if test ${USE_LIBYUV} = 1 ; then
-      AC_CHECK_FILE(/usr/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
-      if test ${USE_LIBYUV} = 1 ; then
-        if test ${USE_LIBJPEG} = 0 ; then
-          LDDJPEG=$(ldd /usr/lib/libyuv.so | grep libjpeg)
-          if test "${LDDJPEG}" != ""; then
-            MCU_LDLIBS="$MCU_LDLIBS -ljpeg"
+  # check source 1
+  if test ${USE_SYSTEM_LIBYUV} = 0 ; then
+    AC_CHECK_FILE(${LIBYUV_DIR}/include/libyuv/scale.h, USE_SRC_LIBYUV=1, USE_SRC_LIBYUV=0)
+    AS_UNSET([$as_ac_File])
+  fi
+  # system library
+  if test ${USE_SRC_LIBYUV} = 0 ; then
+    for dir in ${LIBYUV_SYSTEM_DIRS} ; do
+      AC_CHECK_FILE(${dir}/include/libyuv/scale.h, USE_SYSTEM_LIBYUV=1, USE_SYSTEM_LIBYUV=0)
+      if test ${USE_SYSTEM_LIBYUV} = 1 ; then
+        AC_CHECK_FILE(${dir}/lib/libyuv.so, USE_SYSTEM_LIBYUV=1, USE_SYSTEM_LIBYUV=0)
+        if test ${USE_SYSTEM_LIBYUV} = 1 ; then
+          if test ${USE_LIBJPEG} = 0 ; then
+            LDDJPEG=$(ldd ${dir}/lib/libyuv.so | grep libjpeg)
+            if test "${LDDJPEG}" != ""; then
+              MCU_LDLIBS="$MCU_LDLIBS -ljpeg"
+            fi
           fi
+          MCU_CPPFLAGS="$MCU_CPPFLAGS -I${dir}/include";
+          MCU_LDFLAGS="$MCU_LDFLAGS -L${dir}/lib";
+          MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
+          break
         fi
-        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/include";
-        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
       fi
-    fi
+    done
   fi
-  if test ${USE_LIBYUV} = 0 ; then
-    AC_CHECK_FILE(/usr/local/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
-    if test ${USE_LIBYUV} = 1 ; then
-      AC_CHECK_FILE(/usr/local/lib/libyuv.so, USE_LIBYUV=1, USE_LIBYUV=0)
-      if test ${USE_LIBYUV} = 1 ; then
-        if test ${USE_LIBJPEG} = 0 ; then
-          LDDJPEG=$(ldd /usr/local/lib/libyuv.so | grep libjpeg)
-          if test "${LDDJPEG}" != ""; then
-            MCU_LDLIBS="$MCU_LDLIBS -ljpeg"
-          fi
-        fi
-        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/local/include";
-        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/local/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
-      fi
-    fi
+  # check source 2
+  if test ${USE_SYSTEM_LIBYUV} = 0 && test ${USE_SRC_LIBYUV} = 0 ; then
+    AC_CHECK_FILE(${LIBYUV_DIR}/include/libyuv/scale.h, USE_SRC_LIBYUV=1, USE_SRC_LIBYUV=0)
+    AS_UNSET([$as_ac_File])
   fi
-  if test ${USE_LIBYUV} = 0 ; then
-    AC_CHECK_FILE(${top_srcdir}/libs/libyuv/include/libyuv/scale.h, USE_LIBYUV=1, USE_LIBYUV=0)
-    if test ${USE_LIBYUV} = 1; then
-      MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libyuv/include"
-      MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libyuv";
-      COMPILE_LIBYUV=1
-    fi
+  # compile from source
+  if test ${USE_SRC_LIBYUV} = 1 ; then
+    MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libyuv/include"
+    MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libyuv";
   fi
-  if test ${USE_LIBYUV} = 1 ; then
-    MCU_LDLIBS="$MCU_LDLIBS -lyuv"
+  # result
+  if test ${USE_SRC_LIBYUV} = 0 && test ${USE_SYSTEM_LIBYUV} = 0 ; then
+    AC_MSG_ERROR(libyuv not found!)
   fi
+
+  USE_LIBYUV=1
+  MCU_LDLIBS="$MCU_LDLIBS -lyuv"
 fi
-AM_CONDITIONAL(COMPILER_USE_LIBYUV, [test ${COMPILE_LIBYUV} = 1])
+
+AM_CONDITIONAL(COMPILE_LIBYUV, [test ${USE_SRC_LIBYUV} = 1])
 
 dnl ########################################################################
 dnl configure openssl
@@ -608,117 +672,132 @@ dnl configure srtp
 
 AC_ARG_ENABLE(libsrtp, [AS_HELP_STRING([--disable-libsrtp],[Disable SRTP support for SIP (default enabled)],[40],[100])], [libsrtp="$enableval"])
 
+AC_SUBST(USE_SRC_SRTP, 0)
+AC_SUBST(USE_SYSTEM_SRTP, 1)
 AC_SUBST(USE_LIBSRTP, 0)
-AC_SUBST(COMPILE_LIBSRTP, 0)
 AC_SUBST(LIBSRTP_DIR, ${top_srcdir}/libs/srtp)
+AC_SUBST(LIBSRTP_SYSTEM_DIRS, "${INSTALLPREFIX}/${PROG} /usr /usr/local")
+
 if test "${libsrtp}" = "yes"; then
-  if test ${USE_LIBSRTP} = 0 ; then
-    AC_CHECK_FILE(/usr/include/srtp/srtp.h, USE_LIBSRTP=1, USE_LIBSRTP=0)
-    if test ${USE_LIBSRTP} = 1 ; then
-      AC_CHECK_FILE(/usr/lib/libsrtp.so, USE_LIBSRTP=1, USE_LIBSRTP=0)
-      if test ${USE_LIBSRTP} = 1 ; then
-        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/include/srtp/";
-        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
-      fi
-    fi
+  # check source 1
+  if test ${USE_SYSTEM_SRTP} = 0 ; then
+    AC_CHECK_FILE(${LIBSRTP_DIR}/configure, USE_SRC_SRTP=1, USE_SRC_SRTP=0)
+    AS_UNSET([$as_ac_File])
   fi
-  if test ${USE_LIBSRTP} = 0 ; then
-    AC_CHECK_FILE(/usr/local/include/srtp/srtp.h, USE_LIBSRTP=1, USE_LIBSRTP=0)
-    if test ${USE_LIBSRTP} = 1 ; then
-      AC_CHECK_FILE(/usr/local/lib/libsrtp.so, USE_LIBSRTP=1, USE_LIBSRTP=0)
-      if test ${USE_LIBSRTP} = 1 ; then
-        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/local/include/srtp/";
-        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/local/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
+  # system library
+  if test ${USE_SRC_SRTP} = 0 ; then
+    for dir in ${LIBSRTP_SYSTEM_DIRS} ; do
+      AC_CHECK_FILE(${dir}/include/srtp/srtp.h, USE_SYSTEM_SRTP=1, USE_SYSTEM_SRTP=0)
+      if test ${USE_SYSTEM_SRTP} = 1 ; then
+        AC_CHECK_FILE(${dir}/lib/libsrtp.so, USE_SYSTEM_SRTP=1, USE_SYSTEM_SRTP=0)
+        if test ${USE_SYSTEM_SRTP} = 1 ; then
+          MCU_CPPFLAGS="$MCU_CPPFLAGS -I${dir}/include/srtp/";
+          MCU_LDFLAGS="$MCU_LDFLAGS -L${dir}/lib";
+          MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
+          break
+        fi
       fi
-    fi
+    done
+  fi
+  # check source 2
+  if test ${USE_SYSTEM_SRTP} = 0 && test ${USE_SRC_SRTP} = 0 ; then
+    AC_CHECK_FILE(${LIBSRTP_DIR}/configure, USE_SRC_SRTP=1, USE_SRC_SRTP=0)
+    AS_UNSET([$as_ac_File])
+  fi
+  # compile from source
+  if test ${USE_SRC_SRTP} = 1 ; then
+    MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/srtp/include -I../libs/srtp/crypto/include"
+    MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/srtp";
+    AC_CONFIG_SUBDIRS(libs/srtp)
+  fi
+  # result
+  if test ${USE_SRC_SRTP} = 0 && test ${USE_SYSTEM_SRTP} = 0 ; then
+    AC_MSG_ERROR(libsrtp not found!)
   fi
 
-  if test ${USE_LIBSRTP} = 0 ; then
-    AC_CHECK_FILE(${top_srcdir}/libs/srtp/configure.in, USE_LIBSRTP=1, USE_LIBSRTP=0)
-    if test ${USE_LIBSRTP} = 1; then
-      AC_CONFIG_SUBDIRS(libs/srtp)
-      MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/srtp/include -I../libs/srtp/crypto/include"
-      MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/srtp";
-      COMPILE_LIBSRTP=1
-    fi
-  fi
-  if test ${USE_LIBSRTP} = 1 ; then
-    MCU_LDLIBS="$MCU_LDLIBS -lsrtp"
-  fi
+  USE_LIBSRTP=1
+  MCU_LDLIBS="$MCU_LDLIBS -lsrtp"
 fi
-AM_CONDITIONAL(COMPILER_USE_LIBSRTP, [test ${COMPILE_LIBSRTP} = 1])
+
+AM_CONDITIONAL(COMPILE_LIBSRTP, [test ${USE_SRC_SRTP} = 1])
 
 dnl ########################################################################
-dnl configure srtp
+dnl configure zrtp
 
 AC_ARG_ENABLE(libzrtp, [AS_HELP_STRING([--enable-libzrtp],[Disable ZRTP support for SIP (default disabled)],[40],[100])], [libzrtp="$enableval"])
 
+AC_SUBST(USE_SRC_ZRTP, 0)
+AC_SUBST(USE_SYSTEM_ZRTP, 1)
 AC_SUBST(USE_LIBZRTP, 0)
-AC_SUBST(COMPILE_LIBZRTP, 0)
 AC_SUBST(LIBZRTP_DIR, ${top_srcdir}/libs/libzrtp)
+AC_SUBST(LIBZRTP_SYSTEM_DIRS, "${INSTALLPREFIX}/${PROG} /usr /usr/local")
+
 if test "${libzrtp}" = "yes"; then
-  if test ${USE_LIBZRTP} = 0; then
-    AC_CHECK_FILE(/usr/include/libzrtp/zrtp.h, USE_LIBZRTP=1, USE_LIBZRTP=0)
-    if test ${USE_LIBZRTP} = 1; then
-      AC_CHECK_FILE(/usr/lib/libzrtp.so, USE_LIBZRTP=1, USE_LIBZRTP=0)
-      if test ${USE_LIBZRTP} = 1 ; then
-        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/include/libzrtp/";
-        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
-      fi
-    fi
-  fi
-  if test ${USE_LIBZRTP} = 0; then
-    AC_CHECK_FILE(/usr/local/include/libzrtp/zrtp.h, USE_LIBZRTP=1, USE_LIBZRTP=0)
-    if test ${USE_LIBZRTP} = 1; then
-      AC_CHECK_FILE(/usr/local/lib/libzrtp.so, USE_LIBZRTP=1, USE_LIBZRTP=0)
-      if test ${USE_LIBZRTP} = 1 ; then
-        MCU_CPPFLAGS="$MCU_CPPFLAGS -I/usr/local/include/libzrtp/";
-        MCU_LDFLAGS="$MCU_LDFLAGS -L/usr/local/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
-      fi
-    fi
-  fi
-  if test ${USE_LIBZRTP} = 0; then
-    AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure.in, USE_LIBZRTP=1, USE_LIBZRTP=0)
+  # check source 1
+  if test ${USE_SYSTEM_ZRTP} = 0 ; then
+    AC_CHECK_FILE(${LIBZRTP_DIR}/configure.in, USE_SRC_ZRTP=1, USE_SRC_ZRTP=0)
     AS_UNSET([$as_ac_File])
-    if test ${USE_LIBZRTP} = 0; then
-      AC_CHECK_FILE(${top_srcdir}/libs/libzrtp.tar.gz, SRC_LIBZRTP=1, SRC_LIBZRTP=0)
+  fi
+  # system library
+  if test ${USE_SRC_ZRTP} = 0; then
+    for dir in ${LIBZRTP_SYSTEM_DIRS} ; do
+      AC_CHECK_FILE(${dir}/include/libzrtp/zrtp.h, USE_SYSTEM_ZRTP=1, USE_SYSTEM_ZRTP=0)
+      if test ${USE_SYSTEM_ZRTP} = 1; then
+        AC_CHECK_FILE(${dir}/lib/libzrtp.so, USE_SYSTEM_ZRTP=1, USE_SYSTEM_ZRTP=0)
+        if test ${USE_SYSTEM_ZRTP} = 1 ; then
+          MCU_CPPFLAGS="$MCU_CPPFLAGS -I${dir}/include/libzrtp/";
+          MCU_LDFLAGS="$MCU_LDFLAGS -L${dir}/lib";
+          MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
+          break
+        fi
+      fi
+    done
+  fi
+  # check source 2
+  if test ${USE_SYSTEM_ZRTP} = 0 && test ${USE_SRC_ZRTP} = 0 ; then
+    AC_CHECK_FILE(${LIBZRTP_DIR}/configure.in, USE_SRC_ZRTP=1, USE_SRC_ZRTP=0)
+    AS_UNSET([$as_ac_File])
+  fi
+  # download the source code
+  if test ${USE_SRC_ZRTP} = 0 && test ${USE_SYSTEM_ZRTP} = 0; then
+    AC_CHECK_FILE(${top_srcdir}/libs/libzrtp.tar.gz, USE_SRC_ZRTP=1, USE_SRC_ZRTP=0)
+    AS_UNSET([$as_ac_File])
+    if test ${USE_SRC_ZRTP} = 0; then
+      (wget --directory-prefix=libs http://openmcu.ru/public/OpenMCU-ru/libs/libzrtp.tar.gz)
+      AC_CHECK_FILE(${top_srcdir}/libs/libzrtp.tar.gz, USE_SRC_ZRTP=1, USE_SRC_ZRTP=0)
       AS_UNSET([$as_ac_File])
-      if test ${SRC_LIBZRTP} = 0; then
-        wget --directory-prefix=libs http://openmcu.ru/public/OpenMCU-ru/libs/libzrtp.tar.gz
-        AC_CHECK_FILE(${top_srcdir}/libs/libzrtp.tar.gz, SRC_LIBZRTP=1, SRC_LIBZRTP=0)
-        AS_UNSET([$as_ac_File])
-      fi
-      if test ${SRC_LIBZRTP} = 1; then
-        tar -xf libs/libzrtp.tar.gz --directory=libs
-        AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure.in, USE_LIBZRTP=1, USE_LIBZRTP=0)
-        AS_UNSET([$as_ac_File])
-      fi
     fi
-    if test ${USE_LIBZRTP} = 1; then
-      AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure, USE_LIBZRTP=1, USE_LIBZRTP=0)
+    if test ${USE_SRC_ZRTP} = 1; then
+      (tar -xf libs/libzrtp.tar.gz --directory=libs)
+      AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure.in, USE_SRC_ZRTP=1, USE_SRC_ZRTP=0)
       AS_UNSET([$as_ac_File])
-      if test ${USE_LIBZRTP} = 0; then
-        $(cd ${top_srcdir}/libs/libzrtp/ && ./bootstrap.sh && cd ${top_srcdir})
-        AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure, USE_LIBZRTP=1, USE_LIBZRTP=0)
-        AS_UNSET([$as_ac_File])
-      fi
-    fi
-    if test ${USE_LIBZRTP} = 1; then
-      MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libzrtp/include -I../libs/libzrtp/third_party/bnlib -I../libs/libzrtp/third_party/bgaes"
-      MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libzrtp/.libs";
-      AC_CONFIG_SUBDIRS(libs/libzrtp)
-      COMPILE_LIBZRTP=1
     fi
   fi
-  if test ${USE_LIBZRTP} = 1 ; then
-    MCU_LDLIBS="$MCU_LDLIBS -lzrtp"
+  # config
+  if test ${USE_SRC_ZRTP} = 1; then
+    AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure, USE_SRC_ZRTP=1, USE_SRC_ZRTP=0)
+    AS_UNSET([$as_ac_File])
+    if test ${USE_SRC_ZRTP} = 0; then
+      (cd ${top_srcdir}/libs/libzrtp/ && ./bootstrap.sh)
+      AC_CHECK_FILE(${top_srcdir}/libs/libzrtp/configure, USE_SRC_ZRTP=1, USE_SRC_ZRTP=0)
+      AS_UNSET([$as_ac_File])
+    fi
   fi
+  # compile from source
+  if test ${USE_SRC_ZRTP} = 1; then
+    MCU_CPPFLAGS="$MCU_CPPFLAGS -I../libs/libzrtp/include -I../libs/libzrtp/third_party/bnlib -I../libs/libzrtp/third_party/bgaes"
+    MCU_LDFLAGS="$MCU_LDFLAGS -L../libs/libzrtp/.libs";
+    AC_CONFIG_SUBDIRS(libs/libzrtp)
+  fi
+  # result
+  if test ${USE_SRC_ZRTP} = 0 && test ${USE_SYSTEM_ZRTP} = 0 ; then
+    AC_MSG_ERROR(libzrtp not found!)
+  fi
+
+  USE_LIBZRTP=1
+  MCU_LDLIBS="$MCU_LDLIBS -lzrtp"
 fi
-AM_CONDITIONAL(COMPILER_USE_LIBZRTP, [test ${COMPILE_LIBZRTP} = 1])
+AM_CONDITIONAL(COMPILE_LIBZRTP, [test ${USE_SRC_ZRTP} = 1])
 
 dnl ########################################################################
 dnl configuration plugins
@@ -839,16 +918,20 @@ if test "${g722}" = "yes"; then
     PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_G722_DIR} "
 fi
 
-AC_SUBST(COMPILE_LIBG722_1, 0)
-AC_SUBST(LIBG7221_DIR, ${top_srcdir}/plugins/G722.1/libg722_1)
+AC_SUBST(USE_SRC_LIBG7221, 0)
+AC_SUBST(LIBG7221_DIR, ${top_srcdir}/libs/libg722_1)
 AC_SUBST(PLUGIN_G7221_DIR, ${top_srcdir}/plugins/G722.1)
+AC_SUBST(LIBG7221_CPPFLAGS)
+AC_SUBST(LIBG7221_LDFLAGS)
 if test "${g7221}" = "yes"; then
+    LIBG7221_CPPFLAGS="-I../../libs/libg722_1/src";
+    LIBG7221_LDFLAGS="-Wl,--start-group ../../libs/libg722_1/src/.libs/libg722_1.a -Wl,--end-group";
+    AC_CONFIG_SUBDIRS(libs/libg722_1)
     AC_CONFIG_FILES(plugins/G722.1/Makefile)
-    AC_CONFIG_SUBDIRS(plugins/G722.1/libg722_1)
     PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_G7221_DIR} "
-    COMPILE_LIBG7221=1
+    USE_SRC_LIBG7221=1
 fi
-AM_CONDITIONAL(COMPILER_USE_LIBG7221, [test ${COMPILE_LIBG7221} = 1])
+AM_CONDITIONAL(COMPILE_LIBG7221, [test ${USE_SRC_LIBG7221} = 1])
 
 PLUGIN_G7222_DIR=${top_srcdir}/plugins/G722.2
 AC_SUBST(PLUGIN_G7222_DIR)
@@ -895,101 +978,114 @@ fi
 dnl ########################################################################
 dnl plugin SPEEX
 
-AC_SUBST(USE_LIBSPEEX, 0)
-AC_SUBST(COMPILE_LIBSPEEX, 0)
+AC_SUBST(USE_SRC_SPEEX, 0)
+AC_SUBST(USE_SYSTEM_SPEEX, 1)
 AC_SUBST(PLUGIN_SPEEX_DIR, ${top_srcdir}/plugins/Speex)
+AC_SUBST(LIBSPEEX_DIR, ${top_srcdir}/libs/speex)
+AC_SUBST(LIBSPEEX_SYSTEM_DIRS, "${INSTALLPREFIX}/${PROG} /usr /usr/local")
 
 AC_SUBST(SPEEX_LDFLAGS)
 AC_SUBST(SPEEX_CPPFLAGS)
 
 if test "${speex}" = "yes"; then
-  if test ${USE_LIBSPEEX} = 0 ; then
-    AC_CHECK_FILE(/usr/include/speex/speex.h, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
-    if test ${USE_LIBSPEEX} = 1 ; then
-      AC_CHECK_FILE(/usr/lib/libspeex.so, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
-      if test ${USE_LIBSPEEX} = 1 ; then
-        SPEEX_CPPFLAGS="$SPEEX_CPPFLAGS -I/usr/include";
-        SPEEX_LDFLAGS="$SPEEX_LDFLAGS -L/usr/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
-      fi
-    fi
+  # check source 1
+  if test ${USE_SYSTEM_SPEEX} = 0 ; then
+    AC_CHECK_FILE(${LIBSPEEX_DIR}/configure, USE_SRC_SPEEX=1, USE_SRC_SPEEX=0)
+    AS_UNSET([$as_ac_File])
   fi
-  if test ${USE_LIBSPEEX} = 0 ; then
-    AC_CHECK_FILE(/usr/local/include/speex/speex.h, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
-    if test ${USE_LIBSPEEX} = 1 ; then
-      AC_CHECK_FILE(/usr/local/lib/libspeex.so, USE_LIBSPEEX=1, USE_LIBSPEEX=0)
-      if test ${USE_LIBSPEEX} = 1 ; then
-        SPEEX_CPPFLAGS="$SPEEX_CPPFLAGS -I/usr/local/include";
-        SPEEX_LDFLAGS="$SPEEX_LDFLAGS -L/usr/local/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
+  # system library
+  if test ${USE_SRC_SPEEX} = 0; then
+    for dir in ${LIBSPEEX_SYSTEM_DIRS} ; do
+      AC_CHECK_FILE(${dir}/include/speex/speex.h, USE_SYSTEM_SPEEX=1, USE_SYSTEM_SPEEX=0)
+      if test ${USE_SYSTEM_SPEEX} = 1 ; then
+        AC_CHECK_FILE(${dir}/lib/libspeex.so, USE_SYSTEM_SPEEX=1, USE_SYSTEM_SPEEX=0)
+        if test ${USE_SYSTEM_SPEEX} = 1 ; then
+          SPEEX_CPPFLAGS="$SPEEX_CPPFLAGS -I${dir}/include";
+          SPEEX_LDFLAGS="$SPEEX_LDFLAGS -L${dir}/lib";
+          MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
+          break
+        fi
       fi
-    fi
+    done
   fi
-  if test ${USE_LIBSPEEX} = 0 ; then
+  # check source 2
+  if test ${USE_SYSTEM_SPEEX} = 0 && test ${USE_SRC_SPEEX} = 0 ; then
+    AC_CHECK_FILE(${LIBSPEEX_DIR}/configure, USE_SRC_SPEEX=1, USE_SRC_SPEEX=0)
+    AS_UNSET([$as_ac_File])
+  fi
+  # compile from source
+  if test ${USE_SRC_SPEEX} = 1 ; then
     SPEEX_CPPFLAGS="$SPEEX_CPPFLAGS -I../../libs/speex/include"
     SPEEX_LDFLAGS="$SPEEX_LDFLAGS -L../../libs/speex/libspeex/.libs"
-    AC_SUBST(LIBSPEEX_DIR, ${top_srcdir}/libs/speex)
     AC_CONFIG_SUBDIRS(libs/speex)
-    USE_LIBSPEEX=1
-    COMPILE_LIBSPEEX=1
   fi
-  if test ${USE_LIBSPEEX} = 1 ; then
-    SPEEX_LDFLAGS="$SPEEX_LDFLAGS -lspeex"
+  # result
+  if test ${USE_SRC_SPEEX} = 0 && test ${USE_SYSTEM_SPEEX} = 0 ; then
+    AC_MSG_ERROR(libspeex not found!)
   fi
+
+  SPEEX_LDFLAGS="$SPEEX_LDFLAGS -lspeex"
   AC_CONFIG_FILES(plugins/Speex/Makefile)
   PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_SPEEX_DIR} "
 fi
-AM_CONDITIONAL(COMPILER_USE_LIBSPEEX, [test ${COMPILE_LIBSPEEX} = 1])
 
+AM_CONDITIONAL(COMPILE_LIBSPEEX, [test ${USE_SRC_SPEEX} = 1])
 
 dnl ########################################################################
 dnl plugin OPUS
 
-AC_SUBST(USE_LIBOPUS, 0)
-AC_SUBST(COMPILE_LIBOPUS, 0)
+AC_SUBST(USE_SRC_OPUS, 0)
+AC_SUBST(USE_SYSTEM_OPUS, 1)
 AC_SUBST(PLUGIN_OPUS_DIR, ${top_srcdir}/plugins/OPUS)
+AC_SUBST(LIBOPUS_DIR, ${top_srcdir}/libs/opus)
+AC_SUBST(LIBOPUS_SYSTEM_DIRS, "${INSTALLPREFIX}/${PROG} /usr /usr/local")
 
 AC_SUBST(OPUS_LDFLAGS)
 AC_SUBST(OPUS_CPPFLAGS)
 
 if test "${opus}" = "yes"; then
-  if test ${USE_LIBOPUS} = 0 ; then
-    AC_CHECK_FILE(/usr/include/opus/opus.h, USE_LIBOPUS=1, USE_LIBOPUS=0)
-    if test ${USE_LIBOPUS} = 1 ; then
-      AC_CHECK_FILE(/usr/lib/libopus.so, USE_LIBOPUS=1, USE_LIBOPUS=0)
-      if test ${USE_LIBOPUS} = 1 ; then
-        OPUS_CPPFLAGS="$OPUS_CPPFLAGS -I/usr/include/opus";
-        OPUS_LDFLAGS="$OPUS_LDFLAGS -L/usr/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/lib";
-      fi
-    fi
+  # check source 1
+  if test ${USE_SYSTEM_OPUS} = 0 ; then
+    AC_CHECK_FILE(${LIBOPUS_DIR}/configure, USE_SRC_OPUS=1, USE_SRC_OPUS=0)
+    AS_UNSET([$as_ac_File])
   fi
-  if test ${USE_LIBOPUS} = 0 ; then
-    AC_CHECK_FILE(/usr/local/include/opus/opus.h, USE_LIBOPUS=1, USE_LIBOPUS=0)
-    if test ${USE_LIBOPUS} = 1 ; then
-      AC_CHECK_FILE(/usr/local/lib/libopus.so, USE_LIBOPUS=1, USE_LIBOPUS=0)
-      if test ${USE_LIBOPUS} = 1 ; then
-        OPUS_CPPFLAGS="$OPUS_CPPFLAGS -I/usr/local/include/opus";
-        OPUS_LDFLAGS="$OPUS_LDFLAGS -L/usr/local/lib";
-        MCU_RFLAGS="$MCU_RFLAGS -L/usr/local/lib";
+  # system library
+  if test ${USE_SRC_OPUS} = 0 ; then
+    for dir in ${LIBOPUS_SYSTEM_DIRS} ; do
+      AC_CHECK_FILE(${dir}/include/opus/opus.h, USE_SYSTEM_OPUS=1, USE_SYSTEM_OPUS=0)
+      if test ${USE_SYSTEM_OPUS} = 1 ; then
+        AC_CHECK_FILE(${dir}/lib/libopus.so, USE_SYSTEM_OPUS=1, USE_SYSTEM_OPUS=0)
+        if test ${USE_SYSTEM_OPUS} = 1 ; then
+          OPUS_CPPFLAGS="$OPUS_CPPFLAGS -I${dir}/include/opus";
+          OPUS_LDFLAGS="$OPUS_LDFLAGS -L${dir}/lib";
+          MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
+          break
+        fi
       fi
-    fi
+    done
   fi
-  if test ${USE_LIBOPUS} = 0 ; then
+  # check source 2
+  if test ${USE_SYSTEM_OPUS} = 0 && test ${USE_SRC_OPUS} = 0 ; then
+    AC_CHECK_FILE(${LIBOPUS_DIR}/configure, USE_SRC_OPUS=1, USE_SRC_OPUS=0)
+    AS_UNSET([$as_ac_File])
+  fi
+  # compile from source
+  if test ${USE_SRC_OPUS} = 1 ; then
     OPUS_CPPFLAGS="$OPUS_CPPFLAGS -I../../libs/opus/include"
     OPUS_LDFLAGS="$OPUS_LDFLAGS -L../../libs/opus/.libs"
-    AC_SUBST(LIBOPUS_DIR, ${top_srcdir}/libs/opus)
     AC_CONFIG_SUBDIRS(libs/opus)
-    USE_LIBOPUS=1
-    COMPILE_LIBOPUS=1
   fi
-  if test ${USE_LIBOPUS} = 1 ; then
-    OPUS_LDFLAGS="$OPUS_LDFLAGS -lopus"
+  # result
+  if test ${USE_SRC_OPUS} = 0 && test ${USE_SYSTEM_OPUS} = 0 ; then
+    AC_MSG_ERROR(libopus not found!)
   fi
+
+  OPUS_LDFLAGS="$OPUS_LDFLAGS -lopus"
   AC_CONFIG_FILES(plugins/OPUS/Makefile)
-  PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_OPUS_DIR}"
+  PLUGIN_DIRS="$PLUGIN_DIRS ${PLUGIN_OPUS_DIR} "
 fi
-AM_CONDITIONAL(COMPILER_USE_LIBOPUS, [test ${COMPILE_LIBOPUS} = 1])
+
+AM_CONDITIONAL(COMPILE_LIBOPUS, [test ${USE_SRC_OPUS} = 1])
 
 dnl ########################################################################
 dnl configure static linking
@@ -1003,13 +1099,15 @@ AC_ARG_ENABLE(debug, [AS_HELP_STRING([--enable-debug],[Enable debugging informat
 CFLAGS="-g -O2 $CFLAGS"
 MCU_LDLIBS_STATIC="$MCU_LDLIBS"
 MCU_LDLIBS_DEBUG="$MCU_LDLIBS"
-MCU_SFLAGS_STATIC="${MCU_SFLAGS} -Wl,--start-group ${PTLIB_LIBDIR}/${PTLIB_A_FILE} ${H323PLUS_LIBDIR}/${H323PLUS_A_FILE} -Wl,--end-group"
-MCU_SFLAGS_DEBUG="${MCU_SFLAGS} -Wl,--start-group ${PTLIB_LIBDIR}/${PTLIB_AD_FILE} ${H323PLUS_LIBDIR}/${H323PLUS_AD_FILE} -Wl,--end-group"
+MCU_SFLAGS_STATIC="${MCU_SFLAGS} -Wl,--start-group ${PTLIB_BUILDDIR}/${PTLIB_A_FILE} ${H323PLUS_BUILDDIR}/${H323PLUS_A_FILE} -Wl,--end-group"
+MCU_SFLAGS_DEBUG="${MCU_SFLAGS} -Wl,--start-group ${PTLIB_BUILDDIR}/${PTLIB_AD_FILE} ${H323PLUS_BUILDDIR}/${H323PLUS_AD_FILE} -Wl,--end-group"
 
-MCU_LDFLAGS="${MCU_LDFLAGS} -L${PTLIB_LIBDIR} -L${H323PLUS_LIBDIR}"
+MCU_LDFLAGS="${MCU_LDFLAGS} -L${PTLIB_BUILDDIR} -L${H323PLUS_BUILDDIR}"
 MCU_LDLIBS="${MCU_LDLIBS} -l${H323PLUS_LINK_FILE} -l${PTLIB_LINK_FILE}"
 
 AC_SUBST(ENABLE_STATIC, 0)
+AC_SUBST(MCU_BUILDOPTS)
+
 if test "${debug}" = "yes"; then
   PTLIB_BUILDOPTS="debug ${PTLIB_BUILDOPTS}"
   H323PLUS_BUILDOPTS="debug ${H323PLUS_BUILDOPTS}"
@@ -1022,7 +1120,7 @@ elif test "${static}" = "yes"; then
   ENABLE_STATIC=1
 fi
 
-AM_CONDITIONAL(COMPILER_NO_STATIC, [test ${ENABLE_STATIC} = 0])
+AM_CONDITIONAL(COMPILE_PTLIB_NO_STATIC, [test ${ENABLE_STATIC} = 0])
 
 dnl ########################################################################
 dnl configure rpath
@@ -1081,9 +1179,7 @@ dnl removing duplicate paths
 
 MCU_LDFLAGS="${MCU_LDFLAGS} -L${MCU_LIB_DIR}"
 
-MCU_CPPFLAGS="-I../libs/ptlib/include -I../libs/h323plus/include ${MCU_CPPFLAGS}"
 MCU_CPPFLAGS=$(echo $(printf '%s\n' $MCU_CPPFLAGS | sort -u))
-
 MCU_LDFLAGS=$(echo $(printf '%s\n' $MCU_LDFLAGS | sort -u))
 
 LIBAV_CPPFLAGS=$(echo $(printf '%s\n' $LIBAV_CPPFLAGS | sort -u))
@@ -1120,7 +1216,9 @@ AC_SUBST(CPPFLAGS)
 AC_SUBST(LDFLAGS)
 AC_SUBST(LDLIBS)
 AC_SUBST(DEBUG_FLAG)
-AC_PROG_INSTALL
+
+CPPFLAGS=${OLD_CPPFLAGS}
+LDFLAGS=${OLD_LDFLAGS}
 
 AC_OUTPUT(Makefile)
 
@@ -1133,8 +1231,10 @@ sed -i -r 's/all: all-recursive/all: all/g' Makefile
 dnl ########################################################################
 dnl replace default install path
 
-if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
-  sed -i -r "s#${PTLIBDIR}#${PTLIBDIR}\\nPTLIBDIR\\t= ${PTLIBDIR}#g" ${H323PLUSDIR}/openh323u.mak
+if test "${USE_SYSTEM_PTLIB}" = "0"; then
+  if test ${PTLIB_MAJOR_VERSION} -eq 2 && test ${PTLIB_MINOR_VERSION} -gt 0; then
+    sed -i -r "s#${PTLIBDIR}#${PTLIBDIR}\\nPTLIBDIR\\t= ${PTLIBDIR}#g" ${H323PLUSDIR}/openh323u.mak
+  fi
 fi
 
 dnl ########################################################################
