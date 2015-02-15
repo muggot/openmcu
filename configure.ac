@@ -294,14 +294,14 @@ AC_SUBST(H323PLUS_BUILD_NUMBER)
 
 # check source 1
 if test ${USE_SYSTEM_PTLIB} = 0 ; then
-  AC_CHECK_FILE(${PTLIBDIR}/make/ptbuildopts.mak, USE_SRC_PTLIB=1, USE_SRC_PTLIB=1)
+  AC_CHECK_FILE(${PTLIBDIR}/make/ptbuildopts.mak, USE_SRC_PTLIB=1, USE_SRC_PTLIB=0)
   AS_UNSET([$as_ac_File])
 fi
 # system library
 if test ${USE_SRC_PTLIB} = 0 ; then
   for dir in ${PTLIB_SYSTEM_DIRS} ; do
-    AC_CHECK_FILE(${dir}/share/ptlib/make/ptbuildopts.mak, USE_SYSTEM_PTLIB=1, USE_SYSTEM_PTLIB=0, [-])
-    if test "${USE_SYSTEM_PTLIB}" = "1"; then
+    AC_CHECK_FILE(${dir}/share/ptlib/make/ptbuildopts.mak, USE_SYSTEM_PTLIB=1, USE_SYSTEM_PTLIB=0)
+    if test ${USE_SYSTEM_PTLIB} = 1; then
       PTLIBDIR=${dir}/share/ptlib/
       MCU_CPPFLAGS="${MCU_CPPFLAGS} -I${dir}/include/ptlib -I${dir}/include/openh323"
       PTLIB_BUILDDIR="${dir}/lib"
@@ -317,7 +317,7 @@ if test ${USE_SRC_PTLIB} = 0 ; then
 fi
 # check source 2
 if test ${USE_SYSTEM_PTLIB} = 0 && test ${USE_SRC_PTLIB} = 0 ; then
-  AC_CHECK_FILE(${PTLIBDIR}/make/ptbuildopts.mak, USE_SRC_PTLIB=1, USE_SRC_PTLIB=1)
+  AC_CHECK_FILE(${PTLIBDIR}/make/ptbuildopts.mak, USE_SRC_PTLIB=1, USE_SRC_PTLIB=0)
   AS_UNSET([$as_ac_File])
 fi
 # compile from source
