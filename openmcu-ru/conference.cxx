@@ -254,10 +254,9 @@ MCUSimpleVideoMixer * ConferenceManager::FindVideoMixerWithLock(const PString & 
 MCUSimpleVideoMixer * ConferenceManager::FindVideoMixerWithLock(Conference * conference, long number)
 {
   MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-  if(videoMixerList.GetCurrentSize() != 0)
+  if(conference->UseSameVideoForAllMembers())
   {
-    MCUVideoMixerList::shared_iterator it(&videoMixerList, number);
-    return it.GetCapturedObject();
+    return videoMixerList[number];
   }
   else
   {
@@ -291,6 +290,34 @@ MCUSimpleVideoMixer * ConferenceManager::GetVideoMixerWithLock(Conference * conf
   return NULL;
 }
 
+MCUSimpleVideoMixer * ConferenceManager::GetVideoMixerWithLock(Conference * conference, int & number)
+{
+  MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
+  if(videoMixerList.GetCurrentSize() == 0)
+    return NULL;
+  if(number < 0 || number >= videoMixerList.GetSize())
+    number = 0;
+  for(int i = number; i < videoMixerList.GetSize(); ++i)
+  {
+    MCUSimpleVideoMixer *mixer = videoMixerList[i];
+    if(mixer)
+    {
+      number = i;
+      return mixer;
+    }
+  }
+  for(int i = 0; i < number; ++i)
+  {
+    MCUSimpleVideoMixer *mixer = videoMixerList[i];
+    if(mixer)
+    {
+      number = i;
+      return mixer;
+    }
+  }
+  return NULL;
+}
+
 int ConferenceManager::AddVideoMixer(Conference * conference)
 {
   MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
@@ -308,11 +335,12 @@ int ConferenceManager::DeleteVideoMixer(Conference * conference, int number)
   if(videoMixerList.GetCurrentSize() == 1)
     return videoMixerList.GetCurrentSize();
 
-  MCUVideoMixerList::shared_iterator it(&videoMixerList, number);
-  if(it != videoMixerList.end())
+  MCUSimpleVideoMixer *mixer = videoMixerList[number];
+  if(mixer != NULL)
   {
-    MCUSimpleVideoMixer *mixer = it.GetObject();
-    if(videoMixerList.Erase(it))
+    long id = mixer->GetID();
+    videoMixerList.Release(id);
+    if(videoMixerList.Erase(id))
       delete mixer;
   }
   return videoMixerList.GetCurrentSize();
@@ -1137,14 +1165,11 @@ void Conference::ReadMemberVideo(ConferenceMember * member, void * buffer, int w
   MCUSimpleVideoMixer * mixer = manager.FindVideoMixerWithLock(this, mixerNumber);
   if(mixer == NULL)
   {
-    if(mixerNumber != 0)
-      mixer = manager.GetVideoMixerWithLock(this);
+    mixer = manager.GetVideoMixerWithLock(this);
     if(mixer == NULL)
     {
       PTRACE(3, trace_section << "Could not get video");
       return;
-    } else  {
-      PTRACE(6, trace_section << "Could not get video mixer " << mixerNumber << ", reading 0 instead");
     }
   }
 

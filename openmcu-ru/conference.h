@@ -645,6 +645,7 @@ class ConferenceManager : public PObject
     MCUSimpleVideoMixer * FindVideoMixerWithLock(Conference * conference, long number);
     MCUSimpleVideoMixer * GetVideoMixerWithLock(const PString & room);
     MCUSimpleVideoMixer * GetVideoMixerWithLock(Conference * conference);
+    MCUSimpleVideoMixer * GetVideoMixerWithLock(Conference * conference, int & number);
     int AddVideoMixer(Conference * conference);
     int DeleteVideoMixer(Conference * conference, int number);
 

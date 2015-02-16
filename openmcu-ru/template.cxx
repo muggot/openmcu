@@ -14,10 +14,10 @@ PString Conference::SaveTemplate(PString tplName)
     << "  VAD_VALUES " << VAdelay << ", " << VAtimeout << ", " << VAlevel << "\n";
 
 
-  int mixer_number = 0;
-  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it, ++mixer_number)
+  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
   {
     MCUSimpleVideoMixer & m = *it.GetObject();
+    int mixer_number = it.GetIndex();
 
     t << "  MIXER " << mixer_number << "\n"
       << "  {\n";

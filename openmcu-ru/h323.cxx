@@ -1239,7 +1239,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
   for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
   {
     MCUSimpleVideoMixer *mixer = it.GetObject();
-    r << "," << GetVideoMixerConfiguration(mixer);
+    r << "," << GetVideoMixerConfiguration(mixer, it.GetIndex());
   }
 
   r << "];"; //l1 close
@@ -1248,7 +1248,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer)
+PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer, int number)
 {
   if(mixer == NULL)
     return "[]";
@@ -1261,6 +1261,7 @@ PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer)
   r << "["                                                // a[0]: base parameters:
     << split.mockup_width << "," << split.mockup_height   //   a[0][0-1] = mw * mh
     << "," << n                                           //   a[0][2]   = position set (layout)
+    << "," << number                                      //   a[0][3]   = number
     << "],[";
 
   for(unsigned i=0;i<split.vidnum;i++)
@@ -1282,8 +1283,6 @@ PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer)
 PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
 {
   if(!member) return "[]";
-  PString mixerData;
-  if(member->videoMixer) mixerData = GetVideoMixerConfiguration(member->videoMixer);
   PStringStream r;
   r
 /* 0*/  << "[1"                                           // [i][ 0] = 1 : ONLINE
@@ -1298,7 +1297,7 @@ PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
 /* 9*/  << "," << (unsigned short)member->channelCheck    // [i][ 9] = RTP channels checking bit mask 0000vVaA
 /*10*/  << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
 /*11*/  << "," << member->kOutputGainDB                   // [i][11] = Output audio gain, integer: -20..60
-/*12*/  << "," << GetVideoMixerConfiguration(member->videoMixer) // [i][12] = mixer configuration
+/*12*/  << "," << GetVideoMixerConfiguration(member->videoMixer, 0) // [i][12] = mixer configuration
         << "]";
   return r;
 }
@@ -1365,22 +1364,22 @@ PString MCUH323EndPoint::GetAddressBookOptsJavascript()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * member, unsigned newMixerNumber)
+int MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * member, int newMixerNumber)
 {
   if(member->GetType() & MEMBER_TYPE_GSYSTEM)
-    return FALSE;
+    return -1;
 
-  if(newMixerNumber == member->GetVideoMixerNumber())
-    return TRUE;
+  if(newMixerNumber == (int)member->GetVideoMixerNumber())
+    return newMixerNumber;
 
-  MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(&conference, newMixerNumber);
+  MCUSimpleVideoMixer *mixer = conferenceManager.GetVideoMixerWithLock(&conference, newMixerNumber);
   if(mixer == NULL)
-    return FALSE;
+    return -1;
   mixer->Unlock();
 
   MCUH323Connection *conn = FindConnectionWithLock(member->GetCallToken());
   if(conn == NULL)
-    return FALSE;
+    return -1;
 
   conn->GetChannelsMutex().Wait();
   if(conn->GetVideoTransmitChannel() != NULL)
@@ -1395,7 +1394,12 @@ BOOL MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMem
   conn->GetChannelsMutex().Signal();
 
   conn->Unlock();
-  return TRUE;
+
+  PStringStream cmd;
+  cmd << "chmix(" << (long)member << "," << newMixerNumber << ")";
+  OpenMCU::Current().HttpWriteCmdRoom(cmd, conference.GetNumber());
+
+  return newMixerNumber;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2030,22 +2034,11 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_SET_MEMBER_VIDEO_MIXER)
   {
-    if(conference->GetVideoMixerList().GetCurrentSize() == 0)
+    int option = data("o").AsInteger();
+    int newMixerNumber = SetMemberVideoMixer(*conference, member, option);
+    if(newMixerNumber == -1)
       return FALSE;
-    unsigned option = data("o").AsInteger();
-    if(SetMemberVideoMixer(*conference,member,option))
-    {
-      cmd << "chmix(" << v << "," << option << ")";
-      OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-      return TRUE;
-    }
-    if(SetMemberVideoMixer(*conference,member,0)) // rotate back to 0
-    {
-      cmd << "chmix(" << v << ",0)";
-      OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-      return TRUE;
-    }
-    return FALSE;
+    return TRUE;
   }
 
   return FALSE;
@@ -2138,8 +2131,14 @@ void MCUH323EndPoint::UnmoderateConference(Conference & conference)
   }
 
   MCUVideoMixerList & videoMixerList = conference.GetVideoMixerList();
-  while(videoMixerList.GetCurrentSize() > 1)
-    conferenceManager.DeleteVideoMixer(&conference, videoMixerList.GetCurrentSize()-1);
+  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+  {
+    MCUSimpleVideoMixer * _mixer = *it;
+    if(_mixer == mixer)
+      continue;
+    if(videoMixerList.Erase(it))
+      delete _mixer;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
