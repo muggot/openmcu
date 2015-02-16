@@ -617,7 +617,7 @@ class MCUSharedListSharedIterator
     {
       if(captured)
         return list->ids[index];
-      return -1;
+      return 0;
     }
 
     PString GetName()
@@ -776,6 +776,7 @@ class MCUSharedList
 
     // Release() - освободить объект
     void Release(long id);
+    void Release(shared_iterator & it);
 
     // Find() возвращают захваченный объект
     // Освобождать функцией iterator.Release()
@@ -819,7 +820,7 @@ MCUSharedList<T_obj>::MCUSharedList(int _size)
 {
   size = _size;
   current_size = 0;
-  idcounter = 0;
+  idcounter = 1;
   states = new bool [size];
   states_end = states + size;
   ids = new long [size];
@@ -833,7 +834,7 @@ MCUSharedList<T_obj>::MCUSharedList(int _size)
   for(int i = 0; i < size; ++i)
   {
     states[i] = false;
-    ids[i] = -1;
+    ids[i] = 0;
     objs[i] = NULL;
     captures[i] = 0;
     locks[i] = false;
@@ -925,7 +926,7 @@ bool MCUSharedList<T_obj>::Erase(long id)
           // ждать освобождения объекта
           ReleaseWait(&captures[index], 0);
           // запись объекта
-          ids[index] = -1;
+          ids[index] = 0;
           names[index] = "";
           objs[index] = NULL;
           erase = true;
@@ -968,7 +969,7 @@ bool MCUSharedList<T_obj>::Erase(shared_iterator & it)
         // 1 захват в итераторе
         ReleaseWait(&captures[index], 1);
         // запись объекта
-        ids[index] = -1;
+        ids[index] = 0;
         names[index] = "";
         objs[index] = NULL;
         erase = true;
@@ -1018,6 +1019,16 @@ void MCUSharedList<T_obj>::Release(long id)
     int index = it - ids;
     ReleaseInternal(index);
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T_obj>
+void MCUSharedList<T_obj>::Release(shared_iterator & it)
+{
+  // освободить объект и
+  // запретить получение объекта из итератора
+  it.Release();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1151,6 +1162,8 @@ typedef MCUSharedList<RegistrarConnection> MCURegistrarConnectionList;
 typedef MCUSharedList<RegistrarSubscription> MCURegistrarSubscriptionList;
 
 typedef MCUSharedList<MCUH323Connection> MCUConnectionList;
+
+typedef MCUSharedList<PString> MCUPStringList;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

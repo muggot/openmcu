@@ -437,8 +437,6 @@ class Conference : public PObject
     ConferenceManager & GetManager()
     { return manager; }
 
-    void RefreshAddressBook();
-
     /**
       * add the specified member to the conference
       */
@@ -678,8 +676,6 @@ class ConferenceManager : public PObject
     { return maxConferenceCount; }
 
     void ClearConferenceList();
-
-    void ManagerRefreshAddressBook();
 
   protected:
     virtual Conference * CreateConference(long _id, const OpalGloballyUniqueID & _guid, const PString & _number, const PString & _name);
