@@ -11,8 +11,8 @@ LDSO		= -shared -Wl,-soname,$(SONAME)
 PLUGINEXT	= so
 CFLAGS	       += @CFLAGS@
 STDCCFLAGS	= -fPIC -D__STDC_CONSTANT_MACROS
-LDFLAGS	       += -Wl,--start-group ./libg722_1/src/.libs/libg722_1.a -Wl,--end-group
-CPPFLAGS       += -I./libg722_1/src
+LDFLAGS	       += @LIBG7221_LDFLAGS@
+CPPFLAGS       += @LIBG7221_CPPFLAGS@
 OPTCCFLAGS      = $(CPPFLAGS)
 EXTRACFLAGS     =
 

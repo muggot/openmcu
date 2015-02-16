@@ -10,8 +10,8 @@ aclocal
 autoconf
 automake --add-missing --copy
 
-if [ -d ${top_srcdir}/plugins/G722.1/libg722_1 ] ; then
-  cd ${top_srcdir}/plugins/G722.1/libg722_1/ && ./autogen.sh
+if [ -d ${top_srcdir}/libs/libg722_1 ] ; then
+  cd ${top_srcdir}/libs/libg722_1/ && ./autogen.sh
 fi
 
 if [ "$UNAME" = "FreeBSD" ] ; then
