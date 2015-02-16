@@ -66,7 +66,6 @@ var OTFC_TOGGLE_TPL_LOCK         = 77;
 var OTFC_UNMUTE_ALL              = 78;
 var OTFC_AUDIO_GAIN_LEVEL_SET    = 79;
 var OTFC_OUTPUT_GAIN_SET         = 80;
-var OTFC_REFRESH_ABOOK           = 90;
 
 var mmw = -1; // build_page() initializer
 var visible_ids='';
@@ -934,7 +933,6 @@ function on_tab_abook(){
   document.getElementById('tab_abook').style.backgroundColor = "#E6E6FA";
   document.getElementById('additional_panel').style.display = "none";
   document.getElementById('additional_panel_abook').style.display = "block";
-  queue_otf_request(OTFC_REFRESH_ABOOK);
   abook_refresh();
 }
 
@@ -1004,14 +1002,13 @@ function members_refresh()
  return true;
 }
 
-function abr()
+function abook_refresh()
 {
-  abook_refresh();
-  alive();
-}
-
-function abook_refresh(){
-  if(typeof addressbook==='undefined') return true;
+  if(typeof addressbook==='undefined')
+  {
+    document.getElementById('members_pan').innerHTML='ERROR: <i>addressbook</i> variable not set';
+    return false;
+  }
 
   var tab_height = 23;
   var invite_panel_height = 27;
@@ -1050,6 +1047,25 @@ function abook_refresh(){
   var abook=document.getElementById("right_scroller_abook");
   if(abook.innerHTML!=result) abook.innerHTML=result;
   return true;
+}
+
+function abook_change(account)
+{
+  if(account[0] == "1")
+  {
+    addressbook[addressbook.length] = account;
+  } else {
+    for(i=0;i<addressbook.length;i++)
+    {
+      if(addressbook[i][1] == account[1])
+      {
+        addressbook[i] = account;
+        break;
+      }
+    }
+  }
+  alive();
+  abook_refresh();
 }
 
 function inviteall(){

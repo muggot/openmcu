@@ -347,8 +347,6 @@ void Conference::LoadTemplate(PString tpl)
       delete profile;
     }
   }
-
-  RefreshAddressBook();
 }
 
 PString Conference::GetTemplateList()

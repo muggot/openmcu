@@ -55,7 +55,6 @@
 #define OTFC_UNMUTE_ALL               78
 #define OTFC_AUDIO_GAIN_LEVEL_SET     79
 #define OTFC_OUTPUT_GAIN_SET          80
-#define OTFC_REFRESH_ABOOK            90
 
 ////////////////////////////////////////////////////
 
@@ -99,6 +98,7 @@ class MCUH323EndPoint : public H323EndPoint
     PString GetActiveMemberDataJS(ConferenceMember * member);
     PString GetConferenceOptsJavascript(Conference & c);
     PString GetMemberListOptsJavascript(Conference & conference);
+    PString GetAddressBookOptsJavascript();
     int SetMemberVideoMixer(Conference & conference, ConferenceMember * victim, int newVideoMixer);
     BOOL OTFControl(const PString room, const PStringToString & data);
     PString GetRoomList(const PString & block);

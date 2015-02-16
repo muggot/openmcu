@@ -1163,6 +1163,8 @@ typedef MCUSharedList<RegistrarSubscription> MCURegistrarSubscriptionList;
 
 typedef MCUSharedList<MCUH323Connection> MCUConnectionList;
 
+typedef MCUSharedList<PString> MCUPStringList;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T_obj>

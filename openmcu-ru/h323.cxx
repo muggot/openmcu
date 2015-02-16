@@ -1346,6 +1346,24 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+PString MCUH323EndPoint::GetAddressBookOptsJavascript()
+{
+  PStringStream msg;
+  msg = "addressbook=Array(";
+  MCUPStringList & statusList = OpenMCU::Current().GetRegistrar()->GetStatusList();
+  int i = 0;
+  for(MCUPStringList::shared_iterator it = statusList.begin(); it != statusList.end(); ++it, ++i)
+  {
+    if(i > 0)
+      msg << ",";
+    msg << "Array(" << **it << ")";
+  }
+  msg << ");";
+  return msg;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 int MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * member, int newMixerNumber)
 {
   if(member->GetType() & MEMBER_TYPE_GSYSTEM)
@@ -1417,11 +1435,6 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     return FALSE;
   Conference *conference = *cit;
 
-  if(action == OTFC_REFRESH_ABOOK)
-  {
-    conference->RefreshAddressBook();
-    return TRUE;
-  }
   if(action == OTFC_REFRESH_VIDEO_MIXERS)
   {
     OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);

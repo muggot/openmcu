@@ -534,18 +534,6 @@ void ConferenceManager::ClearConferenceList()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceManager::ManagerRefreshAddressBook()
-{
-  // refresh Address Book
-  for(MCUConferenceList::shared_iterator it = conferenceList.begin(); it != conferenceList.end(); ++it)
-  {
-    Conference *conference = *it;
-    conference->RefreshAddressBook();
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void ConferenceMonitor::Main()
 {
   running = TRUE;
@@ -745,46 +733,6 @@ BOOL Conference::StopRecorder()
   OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this), number);
   OpenMCU::Current().HttpWriteCmdRoom("build_page()", number);
   return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Conference::RefreshAddressBook()
-{
-  PStringArray abook = OpenMCU::Current().GetRegistrar()->GetAccountStatusList();
-  PStringStream msg;
-  msg = "addressbook=Array(";
-  for(PINDEX i = 0; i < abook.GetSize(); i++)
-  {
-    PString memberName = abook[i].Tokenise(",")[0];
-    PString memberNameId = MCUURL(memberName).GetMemberNameId();
-    PString abook_enable = abook[i].Tokenise(",")[1];
-    PString remote_application = abook[i].Tokenise(",")[2];
-    PString reg_state = abook[i].Tokenise(",")[3];
-    PString reg_info = abook[i].Tokenise(",")[4];
-    PString conn_state = abook[i].Tokenise(",")[5];
-    PString conn_info = abook[i].Tokenise(",")[6];
-    PString ping_state = abook[i].Tokenise(",")[7];
-    PString ping_info = abook[i].Tokenise(",")[8];
-    if(i>0) msg << ",";
-    memberName.Replace("&","&amp;",TRUE,0);
-    memberName.Replace("\"","&quot;",TRUE,0);
-    msg << "Array("
-        << "0"
-        << ",\"" << memberNameId << "\""
-        << ",\"" << memberName << "\""
-        << ",\"" << abook_enable << "\""
-        << ",\"" << remote_application << "\""
-        << ",\"" << reg_state << "\""
-        << ",\"" << reg_info << "\""
-        << ",\"" << conn_state << "\""
-        << ",\"" << conn_info << "\""
-        << ",\"" << ping_state << "\""
-        << ",\"" << ping_info << "\""
-        << ")";
-  }
-  msg << ");p.abr()";
-  OpenMCU::Current().HttpWriteCmdRoom(msg,number);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

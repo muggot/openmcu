@@ -2545,6 +2545,7 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
     conferenceOpts
         << "p." << ep.GetMemberListOptsJavascript(*conference) << "\n"
         << "p." << ep.GetConferenceOptsJavascript(*conference) << "\n"
+        << "p." << ep.GetAddressBookOptsJavascript() << "\n"
         << "p.tl=Array" << conference->GetTemplateList() << "\n"
         << "p.seltpl=\"" << conference->GetSelectedTemplateName() << "\"\n";
 

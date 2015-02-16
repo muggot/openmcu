@@ -420,7 +420,7 @@ class Registrar : public PThread
   public:
     Registrar(MCUH323EndPoint *_ep, MCUSipEndPoint *_sep):
       PThread(10000,NoAutoDeleteThread,NormalPriority,"Registrar:%0x"),
-      ep(_ep), sep(_sep), regQueue(1000)
+      ep(_ep), sep(_sep), regQueue(1000), statusList(1000)
     {
       restart = 1;
       terminating = 0;
@@ -442,7 +442,6 @@ class Registrar : public PThread
     const PString & GetRegistrarDomain() const { return registrar_domain; };
 
     void RefreshAccountStatusList();
-    PStringArray GetAccountStatusList();
 
     void ConnectionCreated(const PString & callToken);
     void ConnectionEstablished(const PString & callToken);
@@ -477,6 +476,9 @@ class Registrar : public PThread
 
     MCURegistrarConnectionList & GetConnectionList()
     { return connectionList; }
+
+    MCUPStringList & GetStatusList()
+    { return statusList; }
 
   protected:
     void Main();
@@ -556,7 +558,6 @@ class Registrar : public PThread
 
     PDECLARE_NOTIFIER(PThread, Registrar, BookThread);
     PThread * bookThread;
-    PStringArray account_status_list;
 
     PDECLARE_NOTIFIER(PThread, Registrar, AliveThread);
     PThread * aliveThread;
@@ -569,6 +570,7 @@ class Registrar : public PThread
     MCURegistrarAccountList accountList;
     MCURegistrarSubscriptionList subscriptionList;
     MCURegistrarConnectionList connectionList;
+    MCUPStringList statusList;
 
     // mutex - используется в функциях OnReceived, MakeCall
     // предотвращает создание в списках двух одноименных объектов
