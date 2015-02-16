@@ -1367,10 +1367,10 @@ PString MCUH323EndPoint::GetAddressBookOptsJavascript()
 int MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMember * member, int newMixerNumber)
 {
   if(member->GetType() & MEMBER_TYPE_GSYSTEM)
-    return FALSE;
+    return -1;
 
   if(newMixerNumber == (int)member->GetVideoMixerNumber())
-    return TRUE;
+    return newMixerNumber;
 
   MCUSimpleVideoMixer *mixer = conferenceManager.GetVideoMixerWithLock(&conference, newMixerNumber);
   if(mixer == NULL)
