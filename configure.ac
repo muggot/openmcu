@@ -272,6 +272,7 @@ AC_SUBST(PTLIBDIR, ${top_srcdir}/libs/ptlib)
 AC_SUBST(PWLIBDIR, ${PTLIBDIR})
 AC_SUBST(H323PLUSDIR, ${top_srcdir}/libs/h323plus)
 AC_SUBST(PTLIB_SYSTEM_DIRS, "${INSTALLPREFIX}/${PROG} /usr /usr/local")
+AC_SUBST(H323PLUS_SYSTEM_DIRS, "${INSTALLPREFIX}/${PROG} /usr /usr/local")
 
 AC_SUBST(PTLIB_BUILDOPTS)
 AC_SUBST(H323PLUS_BUILDOPTS)
@@ -299,21 +300,42 @@ if test ${USE_SYSTEM_PTLIB} = 0 ; then
 fi
 # system library
 if test ${USE_SRC_PTLIB} = 0 ; then
+  PTLIB_SYSTEM_DIR=
+  OPENH323_SYSTEM_DIR=
   for dir in ${PTLIB_SYSTEM_DIRS} ; do
     AC_CHECK_FILE(${dir}/share/ptlib/make/ptbuildopts.mak, USE_SYSTEM_PTLIB=1, USE_SYSTEM_PTLIB=0)
     if test ${USE_SYSTEM_PTLIB} = 1; then
-      PTLIBDIR=${dir}/share/ptlib/
-      MCU_CPPFLAGS="${MCU_CPPFLAGS} -I${dir}/include/ptlib -I${dir}/include/openh323"
-      PTLIB_BUILDDIR="${dir}/lib"
-      H323PLUS_BUILDDIR="${dir}/lib"
+      AC_CHECK_LIB(pt, main, USE_SYSTEM_PTLIB=1, USE_SYSTEM_PTLIB=0)
+      if test ${USE_SYSTEM_PTLIB} = 1; then
+        PTLIB_SYSTEM_DIR=$dir
+      fi
+      break
     fi
   done
-  #AC_CHECK_HEADERS([h323ep.h openh323/h323.h ], USE_SYSTEM_PTLIB=1, USE_SYSTEM_PTLIB=0, [-])
-  #if test "${USE_SYSTEM_PTLIB}" = "0"; then
-  #  AC_MSG_ERROR(h323plus headers not found!)
-  #fi
-  PTLIB_LINK_FILE="pt"
-  H323PLUS_LINK_FILE="h323"
+  for dir in ${H323PLUS_SYSTEM_DIRS} ; do
+    AC_CHECK_FILE(${dir}/include/openh323/codec/opalplugin.h, USE_SYSTEM_PTLIB=1, USE_SYSTEM_PTLIB=0)
+    if test ${USE_SYSTEM_PTLIB} = 1; then
+      AC_CHECK_LIB(h323, main, USE_SYSTEM_PTLIB=1, USE_SYSTEM_PTLIB=0)
+      if test ${USE_SYSTEM_PTLIB} = 1; then
+        H323PLUS_SYSTEM_DIR=$dir
+      fi
+      break
+    fi
+  done
+  if test ${USE_SYSTEM_PTLIB} = 1; then
+    MCU_CPPFLAGS="${MCU_CPPFLAGS} -I${PTLIB_SYSTEM_DIR}/include/ptlib -I${H323PLUS_SYSTEM_DIR}/include/openh323"
+    MCU_LDFLAGS="$MCU_LDFLAGS -L${PTLIB_SYSTEM_DIR}/lib -L${H323PLUS_SYSTEM_DIR}/lib";
+    MCU_RFLAGS="$MCU_RFLAGS -L${PTLIB_SYSTEM_DIR}/lib -L${H323PLUS_SYSTEM_DIR}/lib";
+    PTLIBDIR=${dir}/share/ptlib/
+    PTLIB_BUILDDIR="${PTLIB_SYSTEM_DIR}/lib"
+    H323PLUS_BUILDDIR="${H323PLUS_SYSTEM_DIR}/lib"
+    PTLIB_LINK_FILE="pt"
+    PTLIB_A_FILE="libpt_s.a"
+    PTLIB_AD_FILE="libpt_d_s.a"
+    H323PLUS_LINK_FILE="h323"
+    H323PLUS_A_FILE="libh323_s.a"
+    H323PLUS_AD_FILE="libh323_d_s.a"
+  fi
 fi
 # check source 2
 if test ${USE_SYSTEM_PTLIB} = 0 && test ${USE_SRC_PTLIB} = 0 ; then
@@ -373,7 +395,7 @@ if test ${USE_SRC_PTLIB} = 0 && test ${USE_SYSTEM_PTLIB} = 0 ; then
 fi
 
 PWLIBDIR=${PTLIBDIR}
-AM_CONDITIONAL(COMPILE_PTLIB, [test ${USE_SYSTEM_PTLIB} = 0])
+AM_CONDITIONAL(COMPILE_PTLIB, [test ${USE_SRC_PTLIB} = 1])
 
 dnl ########################################################################
 dnl check for sofia-sip library
@@ -394,12 +416,13 @@ if test ${USE_SRC_SOFIASIP} = 0 ; then
   for dir in ${LIBSOFIA_SYSTEM_DIRS} ; do
     AC_CHECK_FILE(${dir}/include/sofia-sip-1.12/sofia-sip/sip.h, USE_SYSTEM_SOFIASIP=1, USE_SYSTEM_SOFIASIP=0)
     if test ${USE_SYSTEM_SOFIASIP} = 1 ; then
-      AC_CHECK_FILE(${dir}/lib/libsofia-sip-ua.so, USE_SYSTEM_SOFIASIP=1, USE_SYSTEM_SOFIASIP=0)
+      AC_CHECK_LIB(sofia-sip-ua, nta_agent_create, USE_SYSTEM_SOFIASIP=1, USE_SYSTEM_SOFIASIP=0)
       if test ${USE_SYSTEM_SOFIASIP} = 1 ; then
         MCU_CPPFLAGS="$MCU_CPPFLAGS -I${dir}/include/sofia-sip-1.12";
         MCU_LDFLAGS="$MCU_LDFLAGS -L${dir}/lib";
-        break
+        MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
       fi
+      break
     fi
   done
 fi
@@ -614,19 +637,19 @@ if test "${libyuv}" = "yes"; then
     for dir in ${LIBYUV_SYSTEM_DIRS} ; do
       AC_CHECK_FILE(${dir}/include/libyuv/scale.h, USE_SYSTEM_LIBYUV=1, USE_SYSTEM_LIBYUV=0)
       if test ${USE_SYSTEM_LIBYUV} = 1 ; then
-        AC_CHECK_FILE(${dir}/lib/libyuv.so, USE_SYSTEM_LIBYUV=1, USE_SYSTEM_LIBYUV=0)
+        AC_CHECK_LIB(yuv, I420Scale, USE_SYSTEM_LIBYUV=1, USE_SYSTEM_LIBYUV=0)
         if test ${USE_SYSTEM_LIBYUV} = 1 ; then
+          MCU_CPPFLAGS="$MCU_CPPFLAGS -I${dir}/include";
+          MCU_LDFLAGS="$MCU_LDFLAGS -L${dir}/lib";
+          MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
           if test ${USE_LIBJPEG} = 0 ; then
             LDDJPEG=$(ldd ${dir}/lib/libyuv.so | grep libjpeg)
             if test "${LDDJPEG}" != ""; then
               MCU_LDLIBS="$MCU_LDLIBS -ljpeg"
             fi
           fi
-          MCU_CPPFLAGS="$MCU_CPPFLAGS -I${dir}/include";
-          MCU_LDFLAGS="$MCU_LDFLAGS -L${dir}/lib";
-          MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
-          break
         fi
+        break
       fi
     done
   fi
@@ -689,13 +712,13 @@ if test "${libsrtp}" = "yes"; then
     for dir in ${LIBSRTP_SYSTEM_DIRS} ; do
       AC_CHECK_FILE(${dir}/include/srtp/srtp.h, USE_SYSTEM_SRTP=1, USE_SYSTEM_SRTP=0)
       if test ${USE_SYSTEM_SRTP} = 1 ; then
-        AC_CHECK_FILE(${dir}/lib/libsrtp.so, USE_SYSTEM_SRTP=1, USE_SYSTEM_SRTP=0)
+        AC_CHECK_LIB(srtp, srtp_protect, USE_SYSTEM_SRTP=1, USE_SYSTEM_SRTP=0)
         if test ${USE_SYSTEM_SRTP} = 1 ; then
           MCU_CPPFLAGS="$MCU_CPPFLAGS -I${dir}/include/srtp/";
           MCU_LDFLAGS="$MCU_LDFLAGS -L${dir}/lib";
           MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
-          break
         fi
+        break
       fi
     done
   fi
@@ -748,8 +771,8 @@ if test "${libzrtp}" = "yes"; then
           MCU_CPPFLAGS="$MCU_CPPFLAGS -I${dir}/include/libzrtp/";
           MCU_LDFLAGS="$MCU_LDFLAGS -L${dir}/lib";
           MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
-          break
         fi
+        break
       fi
     done
   fi
@@ -998,13 +1021,13 @@ if test "${speex}" = "yes"; then
     for dir in ${LIBSPEEX_SYSTEM_DIRS} ; do
       AC_CHECK_FILE(${dir}/include/speex/speex.h, USE_SYSTEM_SPEEX=1, USE_SYSTEM_SPEEX=0)
       if test ${USE_SYSTEM_SPEEX} = 1 ; then
-        AC_CHECK_FILE(${dir}/lib/libspeex.so, USE_SYSTEM_SPEEX=1, USE_SYSTEM_SPEEX=0)
+        AC_CHECK_LIB(speex, speex_encoder_init, USE_SYSTEM_SPEEX=1, USE_SYSTEM_SPEEX=0)
         if test ${USE_SYSTEM_SPEEX} = 1 ; then
           SPEEX_CPPFLAGS="$SPEEX_CPPFLAGS -I${dir}/include";
           SPEEX_LDFLAGS="$SPEEX_LDFLAGS -L${dir}/lib";
           MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
-          break
         fi
+        break
       fi
     done
   fi
@@ -1054,13 +1077,13 @@ if test "${opus}" = "yes"; then
     for dir in ${LIBOPUS_SYSTEM_DIRS} ; do
       AC_CHECK_FILE(${dir}/include/opus/opus.h, USE_SYSTEM_OPUS=1, USE_SYSTEM_OPUS=0)
       if test ${USE_SYSTEM_OPUS} = 1 ; then
-        AC_CHECK_FILE(${dir}/lib/libopus.so, USE_SYSTEM_OPUS=1, USE_SYSTEM_OPUS=0)
+        AC_CHECK_LIB(opus, opus_encoder_init, USE_SYSTEM_OPUS=1, USE_SYSTEM_OPUS=0)
         if test ${USE_SYSTEM_OPUS} = 1 ; then
           OPUS_CPPFLAGS="$OPUS_CPPFLAGS -I${dir}/include/opus";
           OPUS_LDFLAGS="$OPUS_LDFLAGS -L${dir}/lib";
           MCU_RFLAGS="$MCU_RFLAGS -L${dir}/lib";
-          break
         fi
+        break
       fi
     done
   fi
