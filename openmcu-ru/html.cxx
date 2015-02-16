@@ -2490,9 +2490,13 @@ InteractiveHTTP::InteractiveHTTP(OpenMCU & _app, PHTTPAuthority & auth)
 
 BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo & info, const PHTTPConnectionInfo & connectInfo)
 {
+  PTRACE(5,"WebCtrl\tComm flow init");
+
   PHTTPRequest * req = CreateRequest(url, info, connectInfo.GetMultipartFormInfo(), server); // check authorization
   if(!CheckAuthority(server, *req, connectInfo)) {delete req; return FALSE;}
   delete req;
+
+  PTRACE(5,"WebCtrl\tComm flow auth passed");
 
   PString request=url.AsString();
   PINDEX q;
@@ -2522,6 +2526,8 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
   server.Write((const char*)message,message.GetLength());
   server.flush();
 
+  PTRACE(5,"WebCtrl\tComm flow headers sent");
+
   message="<html><body style='font-size:9px;font-family:Verdana,Arial;padding:0px;margin:1px;color:#000'><script>p=parent</script>\n";
   message << OpenMCU::Current().HttpStartEventReading(idx,room);
 
@@ -2529,6 +2535,9 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
 
   ConferenceManager *cm = OpenMCU::Current().GetConferenceManager();
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+
+  PTRACE(5,"WebCtrl\tComm flow find with lock");
+
   Conference *conference = cm->FindConferenceWithLock(room);
   if(conference)
   {
@@ -2541,6 +2550,7 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
 
     // unlock conference
     conference->Unlock();
+    PTRACE(5,"WebCtrl\tComm flow found, unlocked");
 
     message << "<script>p.splitdata=Array(";
     for (unsigned i=0;i<OpenMCU::vmcfg.vmconfs;i++)
@@ -2574,21 +2584,28 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
     message << "<script>top.location.href='/';</script>\n";
     server.Write((const char*)message,message.GetLength());
     server.flush();
+    PTRACE(5,"WebCtrl\tComm flow not found, not locked, stopped");
     return FALSE;
   }
 
-  while(server.Write((const char*)message,message.GetLength())) {
+  PTRACE(5,"WebCtrl\tComm flow is ready");
+
+  while(server.Write((const char*)message,message.GetLength()))
+  {
     server.flush();
-    int count=0;
+    int cnt=0;
     message = OpenMCU::Current().HttpGetEvents(idx,room);
-    while (message.GetLength()==0 && count < 20){
-      count++;
+    while (message.GetLength()==0 && cnt < 20)
+    {
+      cnt++;
       MCUTime::Sleep(100);
       message = OpenMCU::Current().HttpGetEvents(idx,room);
     }
     if(message.Find("<script>")==P_MAX_INDEX) message << "<script>p.alive()</script>\n";
   }
   return FALSE;
+
+  PTRACE(5,"WebCtrl\tComm flow stopped");
 }
 
 ///////////////////////////////////////////////////////////////
