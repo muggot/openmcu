@@ -771,31 +771,6 @@ void MCUH323EndPoint::TranslateTCPAddress(PIPSocket::Address &localAddr, const P
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString JsQuoteScreen(PString s)
-{
-  PString r="\"";
-  for(PINDEX i=0; i<s.GetLength(); i++)
-  { BYTE c=(BYTE)s[i];
-    if(c>31)
-    { if     (c==0x22) r+="\\x22"; // "
-      else if(c==0x5c) r+="\\x5c"; // backslash
-      else if(c=='<') r+="&lt;";
-      else if(c=='>') r+="&gt;";
-      else r+=(char)c;
-    }
-    else
-    {
-      if(c==9) r+="&nbsp;|&nbsp;"; //tab
-      if(c==10) if(r.Right(1)!=" ") r+=" ";
-      if(c==13) if(r.Right(1)!=" ") r+=" ";
-    }
-  }
-  r+="\"";
-  return r;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PString MCUH323EndPoint::GetRoomStatusJS()
 {
   PString str = "Array(";
@@ -1348,17 +1323,16 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 
 PString MCUH323EndPoint::GetAddressBookOptsJavascript()
 {
-  PStringStream msg;
-  msg = "addressbook=Array(";
-  MCUPStringList & statusList = OpenMCU::Current().GetRegistrar()->GetStatusList();
+  PString msg = "addressbook=Array(";
+  MCUStringArrayList & statusList = OpenMCU::Current().GetRegistrar()->GetStatusList();
   int i = 0;
-  for(MCUPStringList::shared_iterator it = statusList.begin(); it != statusList.end(); ++it, ++i)
+  for(MCUStringArrayList::shared_iterator it = statusList.begin(); it != statusList.end(); ++it, ++i)
   {
     if(i > 0)
-      msg << ",";
-    msg << "Array(" << **it << ")";
+      msg += ",";
+    msg += it->AsJsArray();
   }
-  msg << ");";
+  msg += ");";
   return msg;
 }
 

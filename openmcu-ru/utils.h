@@ -115,6 +115,8 @@ BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionTyp
 
 PString GetPluginName(const PString & format);
 
+PString JsQuoteScreen(PString s);
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUBuffer
@@ -774,6 +776,8 @@ class MCUSharedList
     // Erase(iterator)
     bool Erase(shared_iterator & it);
 
+    T_obj * /* old_obj */ Replace(int index, T_obj * obj);
+
     // Release() - освободить объект
     void Release(long id);
     void Release(shared_iterator & it);
@@ -989,6 +993,40 @@ bool MCUSharedList<T_obj>::Erase(shared_iterator & it)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
+T_obj * MCUSharedList<T_obj>::Replace(int index, T_obj *obj)
+{
+  T_obj *old_obj = NULL;
+  if(states[index] == true )
+  {
+    // блокировка записи
+    if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
+    {
+      // повторная проверка после блокировки
+      if(states[index] == true)
+      {
+        // запретить получение объекта
+        states[index] = false;
+        sync_decrement(&current_size);
+        // ждать освобождения объекта
+        ReleaseWait(&captures[index], 0);
+        // старый объект
+        old_obj = objs[index];
+        // запись объекта
+        objs[index] = obj;
+        // разрешить получение объекта
+        states[index] = true;
+      }
+      // разблокировка записи
+      sync_bool_compare_and_swap(&locks[index], true, false);
+    }
+  }
+
+  return old_obj;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T_obj>
 void MCUSharedList<T_obj>::ReleaseWait(long * _captures, int threshold)
 {
   for(int i = 0; *_captures != threshold; ++i)
@@ -1163,8 +1201,6 @@ typedef MCUSharedList<RegistrarSubscription> MCURegistrarSubscriptionList;
 
 typedef MCUSharedList<MCUH323Connection> MCUConnectionList;
 
-typedef MCUSharedList<PString> MCUPStringList;
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T_obj>
@@ -1215,7 +1251,75 @@ typedef MCUQueueT<PString> MCUQueuePString;
 typedef MCUQueueT<msg_t> MCUQueueMsg;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUStringArray
+{
+  public:
+
+    ~MCUStringArray()
+    {
+      for(MCUSharedList<PString>::shared_iterator it = list.begin(); it != list.end(); ++it)
+      {
+        PString *str = *it;
+        if(list.Erase(it))
+          delete str;
+      }
+    }
+
+    void Insert(PString str, PString key = "")
+    {
+      if(key == "")
+        key = str;
+      PString *newstr = new PString(str);
+      long id = list.GetNextID();
+      list.Insert(newstr, id, key);
+      list.Release(id);
+    }
+
+    void Replace(int index, PString str)
+    {
+      PString *new_str = new PString(str);
+      PString *old_str = list.Replace(index, new_str);
+      if(old_str)
+        delete old_str;
+      else
+        delete new_str;
+    }
+
+    PString AsString()
+    {
+      PString str;
+      int i = 0;
+      for(MCUSharedList<PString>::shared_iterator it = list.begin(); it != list.end(); ++it, ++i)
+      {
+        if(i > 0)
+          str += ",";
+        str += **it;
+      }
+      return str;
+    }
+
+    PString AsJsArray()
+    {
+      PString str = "Array(";
+      int i = 0;
+      for(MCUSharedList<PString>::shared_iterator it = list.begin(); it != list.end(); ++it, ++i)
+      {
+        PString js_str = JsQuoteScreen(**it);
+        if(i > 0)
+          str += ",";
+        str += js_str;
+      }
+      str += ")";
+      return str;
+    }
+
+  protected:
+    MCUSharedList<PString> list;
+};
+
+typedef MCUSharedList<MCUStringArray> MCUStringArrayList;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif // _MCU_UTILS_H

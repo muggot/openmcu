@@ -554,39 +554,41 @@ void Registrar::BookThread(PThread &, INT)
       PString memberName = raccount->display_name+" ["+raccount->GetUrl()+"]";
       PString memberNameID = MCUURL(memberName).GetMemberNameId();
 
-      PStringStream data;
-      data         << "\"***\""
-                   << ",\"" << memberNameID << "\""
-                   << ",\"" << memberName << "\""
-                   << ",\"" << PString(raccount->abook_enable) << "\""
-                   << ",\"" << remote_application << "\""
-                   << ",\"" << PString(reg_state) << "\""
-                   << ",\"" << reg_info << "\""
-                   << ",\"" << PString(conn_state) << "\""
-                   << ",\"" << conn_info << "\""
-                   << ",\"" << PString(ping_state) << "\""
-                   << ",\"" << ping_info << "\"";
+      MCUStringArray *data = new MCUStringArray();
+      data->Insert("***");
+      data->Insert(memberNameID);
+      data->Insert(memberName);
+      data->Insert(raccount->abook_enable);
+      data->Insert(remote_application);
+      data->Insert(reg_state);
+      data->Insert(reg_info);
+      data->Insert(conn_state);
+      data->Insert(conn_info);
+      data->Insert(ping_state);
+      data->Insert(ping_info);
 
-      MCUPStringList::shared_iterator r = statusList.Find(key);
-      PString *olddata = *r;
-      if(r == statusList.end() || *olddata != data)
+      MCUStringArrayList::shared_iterator r = statusList.Find(key);
+      MCUStringArray *olddata = *r;
+      if(r == statusList.end() || (olddata && olddata->AsString() != data->AsString()))
       {
         if(olddata && statusList.Erase(r))
           delete olddata;
         long id = statusList.GetNextID();
-        statusList.Insert(new PString(data), id, key);
+        statusList.Insert(data, id, key);
         statusList.Release(id);
 
         if(r == statusList.end())
-          data.Replace("***","1");
+          data->Replace(0, "1");
         PStringStream msg;
-        msg << "abook_change(Array(" << data << "));";
+        msg << "abook_change(" << data->AsJsArray() << ");";
 
         ConferenceManager *cm = OpenMCU::Current().GetConferenceManager();
         MCUConferenceList & conferenceList = cm->GetConferenceList();
         for(MCUConferenceList::shared_iterator s = conferenceList.begin(); s != conferenceList.end(); ++s)
           OpenMCU::Current().HttpWriteCmdRoom(msg, s->GetNumber());
       }
+      else
+        delete data;
     }
   }
 }
@@ -965,11 +967,11 @@ void Registrar::Terminating()
     delete bookThread;
     bookThread = NULL;
   }
-  for(MCUPStringList::shared_iterator it = statusList.begin(); it != statusList.end(); ++it)
+  for(MCUStringArrayList::shared_iterator it = statusList.begin(); it != statusList.end(); ++it)
   {
-    PString *str = *it;
+    MCUStringArray *arr = *it;
     if(statusList.Erase(it))
-      delete str;
+      delete arr;
   }
 
   // stop subscriptions refresh

@@ -477,7 +477,7 @@ class Registrar : public PThread
     MCURegistrarConnectionList & GetConnectionList()
     { return connectionList; }
 
-    MCUPStringList & GetStatusList()
+    MCUStringArrayList & GetStatusList()
     { return statusList; }
 
   protected:
@@ -570,7 +570,7 @@ class Registrar : public PThread
     MCURegistrarAccountList accountList;
     MCURegistrarSubscriptionList subscriptionList;
     MCURegistrarConnectionList connectionList;
-    MCUPStringList statusList;
+    MCUStringArrayList statusList;
 
     // mutex - используется в функциях OnReceived, MakeCall
     // предотвращает создание в списках двух одноименных объектов
