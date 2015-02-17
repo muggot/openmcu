@@ -92,7 +92,7 @@ install:
 	    $(INSTALL) -m 644 $$file $(DESTDIR)@MCU_RESOURCE_DIR@; \
 	done )
 	( for file in ./files/scripts/*; do \
-	    $(INSTALL) -m 755 $(INSTALL_BACKUP_OPTS) $$file $(DESTDIR)/opt/openmcu-ru/scripts; \
+	    $(INSTALL) -m 755 $(INSTALL_BACKUP_OPTS) $$file $(DESTDIR)@MCU_DIR@/scripts; \
 	done )
 	$(INSTALL) -m 755 $(OBJDIR)/$(PROG) $(DESTDIR)@MCU_BIN_DIR@
 #	ln -sf $(DESTDIR)@MCU_BIN_DIR@/$(PROG) /usr/local/bin/$(PROG)
