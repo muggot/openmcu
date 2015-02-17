@@ -3008,7 +3008,6 @@ int MCUSipEndPoint::SendRequest(msg_t *msg)
   {
     if(sipMsgQueue.Push(msg))
       return 1;
-    msg_destroy(msg);
     return 0;
   }
 
@@ -3584,28 +3583,6 @@ void MCUSipEndPoint::ProcessSipQueue()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipEndPoint::QueueClear()
-{
-  sipQueue.Stop();
-  for(;;)
-  {
-    PString *cmd = sipQueue.Pop();
-    if(cmd == NULL)
-      break;
-    delete cmd;
-  }
-  sipMsgQueue.Stop();
-  for(;;)
-  {
-    msg_t *msg = sipMsgQueue.Pop();
-    if(msg == NULL)
-      break;
-    msg_destroy(msg);
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void MCUSipEndPoint::MainLoop()
 {
   while(1)
@@ -3656,12 +3633,7 @@ void MCUSipEndPoint::MainLoop()
 void MCUSipEndPoint::Terminating()
 {
   PWaitAndSignal m(sipMutex);
-
-  sipQueue.Stop();
-  sipMsgQueue.Stop();
   ProcessSipQueue();
-  QueueClear();
-
   ClearProxyAccounts();
   ClearSipCaps(BaseSipCaps);
   ClearStunList();

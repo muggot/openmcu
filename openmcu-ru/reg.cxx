@@ -692,20 +692,6 @@ void Registrar::QueueThread(PThread &, INT)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Registrar::QueueClear()
-{
-  regQueue.Stop();
-  for(;;)
-  {
-    PString *cmd = regQueue.Pop();
-    if(cmd == NULL)
-      break;
-    delete cmd;
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void Registrar::QueueInvite(const PString & data)
 {
   PString from = data.Tokenise(",")[0];
@@ -984,7 +970,6 @@ void Registrar::Terminating()
   }
 
   // stop queue thread
-  QueueClear();
   if(queueThread)
   {
     PTRACE(5, trace_section << "Waiting for termination queue thread: " << queueThread->GetThreadName());

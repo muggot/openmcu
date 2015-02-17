@@ -7,7 +7,8 @@
 
 #include <algorithm>
 #include <typeinfo>
-#include <sofia-sip/msg_types.h>
+
+#include <sofia-sip/sip_util.h>
 
 #include <sys/types.h>
 
@@ -501,42 +502,6 @@ class MCUURL : public PURL
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class MCUStringDictionary
-{
-  public:
-    MCUStringDictionary(const PString & str="");
-    MCUStringDictionary(const PString & str, const PString & _delim1, const PString & _delim2);
-
-    void Parse(const PString & str);
-    void SetKeyDelim(const PString & _delim1)
-    { delim1 = _delim1; }
-    void SetValueDelim(const PString & _delim2)
-    { delim2 = _delim2; }
-
-    PINDEX GetSize()
-    { return keys.GetSize(); }
-
-    void Append(PString name, const PString & value);
-    void Remove(const PString & name);
-
-    void SetValueAt(PINDEX index, const PString & value);
-    PString GetKeyAt(PINDEX index);
-    PString GetValueAt(PINDEX index);
-
-    PString AsString(const PString & _delim1, const PString & _delim2);
-    PString AsString()
-    { return AsString(delim1, delim2); }
-
-    PString operator()(const PString & key, const char *defvalue="") const;
-
-  protected:
-    PString delim1, delim2;
-    PStringArray keys;
-    PStringArray values;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -591,12 +556,12 @@ class MCUSharedListSharedIterator
 
     // Пустой итератор
     MCUSharedListSharedIterator()
-      : list(NULL), index(-1), captured(false)
+      : list(NULL), index(INT_MAX), captured(false)
     { }
 
     // Итератор n-го доступного объекта в списке
     MCUSharedListSharedIterator(T_list * _list, int _number)
-      : list(_list), index(-1), captured(false)
+      : list(_list), index(INT_MAX), captured(false)
     {
       IteratorIncrement(_number);
     }
@@ -613,13 +578,17 @@ class MCUSharedListSharedIterator
     }
 
     int GetIndex()
-    { return index; }
+    {
+      if(captured)
+        return index;
+      return INT_MAX;
+    }
 
     long GetID()
     {
       if(captured)
         return list->ids[index];
-      return 0;
+      return LONG_MAX;
     }
 
     PString GetName()
@@ -705,12 +674,17 @@ class MCUSharedListSharedIterator
     {
       if(list == NULL)
         return false;
-      ++index;
+
+      if(index == INT_MAX)
+        index = 0;
+      else
+        ++index;
       if(index < 0 || index >= list->size)
       {
-        index = list->size;
+        index = INT_MAX;
         return false;
       }
+
       int i = -1;
       for(bool *it = find(list->states + index, list->states_end, true); it != list->states_end; it = find(++it, list->states_end, true))
       {
@@ -724,7 +698,7 @@ class MCUSharedListSharedIterator
         // освободить если нет объекта
         Release();
       }
-      index = list->size;
+      index = INT_MAX;
       return false;
     }
 
@@ -750,7 +724,7 @@ class MCUSharedList
 
     // begin() - первый доступный объект
     shared_iterator begin() { return shared_iterator(this, 0); }
-    // end() - постоянный index = size
+    // end() - постоянный index = INT_MAX
     const shared_iterator & end() const { return iterator_end; }
 
     // Максимальный размер списка
@@ -776,7 +750,10 @@ class MCUSharedList
     // Erase(iterator)
     bool Erase(shared_iterator & it);
 
-    T_obj * /* old_obj */ Replace(int index, T_obj * obj);
+    // Replace() возвращает старый объект если объект заменен
+    // Не захватывает новый объект
+    T_obj * Replace(int index, T_obj * obj, long id, PString name = "");
+    T_obj * Replace(PString name, T_obj * obj);
 
     // Release() - освободить объект
     void Release(long id);
@@ -800,6 +777,11 @@ class MCUSharedList
     void ReleaseInternal(int index);
     void ReleaseWait(long * _captures, int threshold);
 
+    // GetIndex() возвращает захваченный индекс
+    int GetIndex(long id);
+    int GetIndex(PString name);
+    int GetIndex(T_obj * obj);
+
     int size;
     long current_size;
     long idcounter;
@@ -820,11 +802,11 @@ class MCUSharedList
 
 template <class T_obj>
 MCUSharedList<T_obj>::MCUSharedList(int _size)
-  : iterator_end(NULL, _size, false)
+  : iterator_end(NULL, INT_MAX, false)
 {
   size = _size;
   current_size = 0;
-  idcounter = 1;
+  idcounter = 0;
   states = new bool [size];
   states_end = states + size;
   ids = new long [size];
@@ -838,7 +820,7 @@ MCUSharedList<T_obj>::MCUSharedList(int _size)
   for(int i = 0; i < size; ++i)
   {
     states[i] = false;
-    ids[i] = 0;
+    ids[i] = LONG_MAX;
     objs[i] = NULL;
     captures[i] = 0;
     locks[i] = false;
@@ -930,7 +912,7 @@ bool MCUSharedList<T_obj>::Erase(long id)
           // ждать освобождения объекта
           ReleaseWait(&captures[index], 0);
           // запись объекта
-          ids[index] = 0;
+          ids[index] = LONG_MAX;
           names[index] = "";
           objs[index] = NULL;
           erase = true;
@@ -973,7 +955,7 @@ bool MCUSharedList<T_obj>::Erase(shared_iterator & it)
         // 1 захват в итераторе
         ReleaseWait(&captures[index], 1);
         // запись объекта
-        ids[index] = 0;
+        ids[index] = LONG_MAX;
         names[index] = "";
         objs[index] = NULL;
         erase = true;
@@ -993,35 +975,46 @@ bool MCUSharedList<T_obj>::Erase(shared_iterator & it)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-T_obj * MCUSharedList<T_obj>::Replace(int index, T_obj *obj)
+T_obj * MCUSharedList<T_obj>::Replace(int index, T_obj *obj, long id, PString name)
 {
   T_obj *old_obj = NULL;
-  if(states[index] == true )
+  // блокировка записи
+  if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
   {
-    // блокировка записи
-    if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
+    if(states[index] == true)
     {
-      // повторная проверка после блокировки
-      if(states[index] == true)
-      {
-        // запретить получение объекта
-        states[index] = false;
-        sync_decrement(&current_size);
-        // ждать освобождения объекта
-        ReleaseWait(&captures[index], 0);
-        // старый объект
-        old_obj = objs[index];
-        // запись объекта
-        objs[index] = obj;
-        // разрешить получение объекта
-        states[index] = true;
-      }
-      // разблокировка записи
-      sync_bool_compare_and_swap(&locks[index], true, false);
+      // запретить получение объекта
+      states[index] = false;
+      sync_decrement(&current_size);
+      // ждать освобождения объекта
+      ReleaseWait(&captures[index], 0);
+      // старый объект
+      old_obj = objs[index];
     }
+    // запись объекта
+    objs[index] = obj;
+    ids[index] = id;
+    names[index] = name;
+    // разрешить получение объекта
+    states[index] = true;
+    sync_increment(&current_size);
+    // разблокировка записи
+    sync_bool_compare_and_swap(&locks[index], true, false);
   }
 
   return old_obj;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T_obj>
+T_obj * MCUSharedList<T_obj>::Replace(PString name, T_obj *obj)
+{
+  int index = GetIndex(name);
+  if(index == INT_MAX)
+    return NULL;
+  ReleaseInternal(index);
+  return Replace(index, obj, ids[index], name);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1090,7 +1083,7 @@ void MCUSharedList<T_obj>::CaptureInternal(int index)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Find(long id)
+int MCUSharedList<T_obj>::GetIndex(long id)
 {
   long *it = find(ids, ids_end, id);
   if(it != ids_end)
@@ -1099,17 +1092,17 @@ MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::F
     CaptureInternal(index);
     // повторная проверка после захвата
     if(ids[index] == id && states[index] == true)
-      return shared_iterator(this, index, true);
+      return index;
     // освободить если нет объекта
     ReleaseInternal(index);
   }
-  return iterator_end;
+  return INT_MAX;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Find(PString name)
+int MCUSharedList<T_obj>::GetIndex(PString name)
 {
   PString *it = find(names, names_end, name);
   if(it != names_end)
@@ -1118,17 +1111,17 @@ MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::F
     CaptureInternal(index);
     // повторная проверка после захвата
     if(names[index] == name && states[index] == true)
-      return shared_iterator(this, index, true);
+      return index;
     // освободить если нет объекта
     ReleaseInternal(index);
   }
-  return iterator_end;
+  return INT_MAX;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Find(T_obj * obj)
+int MCUSharedList<T_obj>::GetIndex(T_obj * obj)
 {
   T_obj **it = find(objs, objs_end, obj);
   if(it != objs_end)
@@ -1137,11 +1130,44 @@ MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::F
     CaptureInternal(index);
     // повторная проверка после захвата
     if(objs[index] == obj && states[index] == true)
-      return shared_iterator(this, index, true);
+      return index;
     // освободить если нет объекта
     ReleaseInternal(index);
   }
-  return iterator_end;
+  return INT_MAX;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T_obj>
+MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Find(long id)
+{
+  int index = GetIndex(id);
+  if(index == INT_MAX)
+    return iterator_end;
+  return shared_iterator(this, index, true);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T_obj>
+MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Find(PString name)
+{
+  int index = GetIndex(name);
+  if(index == INT_MAX)
+    return iterator_end;
+  return shared_iterator(this, index, true);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T_obj>
+MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Find(T_obj * obj)
+{
+  int index = GetIndex(obj);
+  if(index == INT_MAX)
+    return iterator_end;
+  return shared_iterator(this, index, true);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1168,7 +1194,10 @@ T_obj * MCUSharedList<T_obj>::operator[] (int index)
 template <class T_obj>
 T_obj * MCUSharedList<T_obj>::operator() (long id)
 {
-  return Find(id).GetCapturedObject();
+  int index = GetIndex(id);
+  if(index == INT_MAX)
+    return NULL;
+  return objs[index];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1176,7 +1205,10 @@ T_obj * MCUSharedList<T_obj>::operator() (long id)
 template <class T_obj>
 T_obj * MCUSharedList<T_obj>::operator() (PString name)
 {
-  return Find(name).GetCapturedObject();
+  int index = GetIndex(name);
+  if(index == INT_MAX)
+    return NULL;
+  return objs[index];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1184,7 +1216,10 @@ T_obj * MCUSharedList<T_obj>::operator() (PString name)
 template <class T_obj>
 T_obj * MCUSharedList<T_obj>::operator() (T_obj * obj)
 {
-  return Find(obj).GetCapturedObject();
+  int index = GetIndex(obj);
+  if(index == INT_MAX)
+    return NULL;
+  return objs[index];
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1204,57 +1239,95 @@ typedef MCUSharedList<MCUH323Connection> MCUConnectionList;
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T_obj>
-class MCUQueueT
+class MCUQueue
 {
   public:
-    MCUQueueT(int _size = 256)
-      : queue(_size)
-    {
-      stopped = false;
-    }
-    ~MCUQueueT() { }
+    MCUQueue(int _size = 1024)
+      : list(_size)
+    { }
 
     virtual bool Push(T_obj *obj)
     {
-      if(stopped)
-        return false;
-      while(!queue.Insert(obj, (long)obj))
-        MCUTime::Sleep(20);
-      queue.Release((long)obj);
-      return true;
+      for(int i = 0; i < 100; ++i)
+      {
+        if(list.Insert(obj, (long)obj))
+        {
+          list.Release((long)obj);
+          return true;
+        }
+        MCUTime::Sleep(10);
+      }
+      return false;
     }
+
     virtual T_obj * Pop()
     {
-      for(int i = 0; i < queue.GetSize(); ++i)
-      {
-        T_obj *obj = queue[i];
-        if(obj == NULL)
-          continue;
-        queue.Release((long)obj);
-        queue.Erase((long)obj);
+      MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> it = list.begin();
+      T_obj *obj = *it;
+      if(list.Erase(it))
         return obj;
-      }
       return NULL;
-    }
-    virtual void Stop()
-    {
-      stopped = true;
-      MCUTime::Sleep(2);
     }
 
   protected:
-    bool stopped;
-    MCUSharedList<T_obj> queue;
+    MCUSharedList<T_obj> list;
 };
 
-typedef MCUQueueT<PString> MCUQueuePString;
-typedef MCUQueueT<msg_t> MCUQueueMsg;
+class MCUQueuePString : public MCUQueue<PString>
+{
+  public:
+    MCUQueuePString(int _size = 1024)
+      : MCUQueue<PString>(_size)
+    { }
+
+    ~MCUQueuePString()
+    {
+      PString *str = NULL;
+      while((str = Pop()))
+        delete str;
+    }
+
+    virtual bool Push(PString *str)
+    {
+      if(MCUQueue<PString>::Push(str))
+        return true;
+      delete str;
+      return false;
+    }
+};
+
+class MCUQueueMsg : public MCUQueue<msg_t>
+{
+  public:
+    MCUQueueMsg(int _size = 1024)
+      : MCUQueue<msg_t>(_size)
+    { }
+
+    ~MCUQueueMsg()
+    {
+      msg_t *msg = NULL;
+      while((msg = Pop()))
+        msg_destroy(msg);
+    }
+
+    virtual bool Push(msg_t *msg)
+    {
+      if(MCUQueue<msg_t>::Push(msg))
+        return true;
+      msg_destroy(msg);
+      return false;
+    }
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCUStringArray
 {
   public:
+
+    MCUStringArray(int size = 1024)
+      : list(size)
+    { }
 
     ~MCUStringArray()
     {
@@ -1266,20 +1339,26 @@ class MCUStringArray
       }
     }
 
-    void Insert(PString str, PString key = "")
+    void Insert(const PString & str)
     {
-      if(key == "")
-        key = str;
-      PString *newstr = new PString(str);
+      PString *new_str = new PString(str);
       long id = list.GetNextID();
-      list.Insert(newstr, id, key);
+      list.Insert(new_str, id);
       list.Release(id);
     }
 
-    void Replace(int index, PString str)
+    void Remove(const PString & str)
+    {
+      MCUSharedList<PString>::shared_iterator it = list.Find(str);
+      PString *old_str = *it;
+      if(list.Erase(it))
+        delete old_str;
+    }
+
+    void Replace(int index, const PString & str)
     {
       PString *new_str = new PString(str);
-      PString *old_str = list.Replace(index, new_str);
+      PString *old_str = list.Replace(index, new_str, list.GetNextID());
       if(old_str)
         delete old_str;
       else
@@ -1289,13 +1368,8 @@ class MCUStringArray
     PString AsString()
     {
       PString str;
-      int i = 0;
-      for(MCUSharedList<PString>::shared_iterator it = list.begin(); it != list.end(); ++it, ++i)
-      {
-        if(i > 0)
-          str += ",";
+      for(MCUSharedList<PString>::shared_iterator it = list.begin(); it != list.end(); ++it)
         str += **it;
-      }
       return str;
     }
 
@@ -1314,11 +1388,66 @@ class MCUStringArray
       return str;
     }
 
+    MCUStringArray & operator+= (const PString & str)
+    {
+      Insert(str);
+      return *this;
+    }
+
+    bool operator == (MCUStringArray & arr)
+    { return (AsString() == arr.AsString()); }
+
+    bool operator != (MCUStringArray & arr)
+    { return (AsString() != arr.AsString()); }
+
+    operator PString()
+    {
+      return AsString();
+    }
+
   protected:
     MCUSharedList<PString> list;
 };
 
 typedef MCUSharedList<MCUStringArray> MCUStringArrayList;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUStringDictionary
+{
+  public:
+    MCUStringDictionary(const PString & str="");
+    MCUStringDictionary(const PString & str, const PString & _delim1, const PString & _delim2);
+
+    void Parse(const PString & str);
+
+    void SetKeyDelim(const PString & _delim1)
+    { delim1 = _delim1; }
+
+    void SetValueDelim(const PString & _delim2)
+    { delim2 = _delim2; }
+
+    PINDEX GetSize()
+    { return keys.GetSize(); }
+
+    void Append(PString name, const PString & value);
+    void Remove(const PString & name);
+
+    void SetValueAt(PINDEX index, const PString & value);
+    PString GetKeyAt(PINDEX index);
+    PString GetValueAt(PINDEX index);
+
+    PString AsString(const PString & _delim1, const PString & _delim2);
+    PString AsString()
+    { return AsString(delim1, delim2); }
+
+    PString operator()(const PString & key, const char *defvalue="") const;
+
+  protected:
+    PString delim1, delim2;
+    PStringArray keys;
+    PStringArray values;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
