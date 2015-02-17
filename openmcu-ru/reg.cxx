@@ -841,15 +841,24 @@ void Registrar::InitAccounts()
     RegistrarAccount *raccount = *it;
     if(raccount->account_type == ACCOUNT_TYPE_SIP)
     {
-      raccount->enable = MCUConfig(sipSectionPrefix+raccount->username).GetBoolean("Registrar", FALSE);
+      MCUConfig scfg(sipSectionPrefix+raccount->username);
+      raccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
+      raccount->enable = scfg.GetBoolean("Registrar", FALSE);
       if(!raccount->enable && !sip_allow_unauth_reg)
         raccount->registered = FALSE;
     }
-    if(raccount->account_type == ACCOUNT_TYPE_H323)
+    else if(raccount->account_type == ACCOUNT_TYPE_H323)
     {
-      raccount->enable = MCUConfig(h323SectionPrefix+raccount->username).GetBoolean("Registrar", FALSE);
+      MCUConfig scfg(h323SectionPrefix+raccount->username);
+      raccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
+      raccount->enable = scfg.GetBoolean("Registrar", FALSE);
       if(!raccount->enable && !h323_allow_unauth_reg)
         raccount->registered = FALSE;
+    }
+    else if(raccount->account_type == ACCOUNT_TYPE_RTSP)
+    {
+      MCUConfig scfg(rtspSectionPrefix+raccount->username);
+      raccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
     }
   }
 
@@ -879,7 +888,7 @@ void Registrar::InitAccounts()
       gcfg = MCUConfig(rtspSectionPrefix+"*");
     }
 
-    if(username == "*" || username == "")
+    if(username == "*" || username == "" || username == "empty")
       continue;
 
     unsigned port = scfg.GetInteger(PortKey);
