@@ -420,6 +420,31 @@ char * PStringToChar(PString str)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+PString JsQuoteScreen(PString s)
+{
+  PString r="\"";
+  for(PINDEX i=0; i<s.GetLength(); i++)
+  { BYTE c=(BYTE)s[i];
+    if(c>31)
+    { if     (c==0x22) r+="\\x22"; // "
+      else if(c==0x5c) r+="\\x5c"; // backslash
+      else if(c=='<') r+="&lt;";
+      else if(c=='>') r+="&gt;";
+      else r+=(char)c;
+    }
+    else
+    {
+      if(c==9) r+="&nbsp;|&nbsp;"; //tab
+      if(c==10) if(r.Right(1)!=" ") r+=" ";
+      if(c==13) if(r.Right(1)!=" ") r+=" ";
+    }
+  }
+  r+="\"";
+  return r;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 unsigned GetVideoMacroBlocks(unsigned width, unsigned height)
 {
   if(width == 0 || height == 0) return 0;
