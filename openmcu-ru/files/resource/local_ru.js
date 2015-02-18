@@ -337,5 +337,6 @@ window.l_room_auto_create_when_connecting          = "Автоматическо
 window.l_enter_template_name                       = "Введите имя шаблона";
 window.l_disconnect                                = "Отключить";
 window.l_add_to_abook                              = "Добавить в адресную книгу";
+window.l_accounts                                  = "Учетные записи";
 window.l_show_all_accounts                         = "Показать все учетные записи";
 ///
