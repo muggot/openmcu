@@ -833,9 +833,9 @@ function format_mmbr_abook(num,mmbr)
   if(reg_state == 1)       reg_icon = "<img src='i16_status_gray.png' width='"+width+"' height='"+height+"'>";
   else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
 
-  var abook_icon = "";
+  var save_icon = "";
   if(abook_enable == 0)      save_icon = "<img src='i16_abook_plus.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_add_to_abook+"' >";
-  else if(abook_enable == 1) save_icon = "<img src='i16_save.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_name_save+"' >";
+  //else if(abook_enable == 1) save_icon = "<img src='i16_save.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_name_save+"' >";
 
   var posx_check  = 8;
   var posx_invite = posx_check       + width + 16;
