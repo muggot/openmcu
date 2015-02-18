@@ -830,8 +830,8 @@ function format_mmbr_abook(num,mmbr)
   else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
 
   var abook_icon = "";
-  if(abook_enable == 0)      save_icon = "<img src='i16_plus.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_add_to_abook+"' >";
-  else if(abook_enable == 1) save_icon = "<img src='i16_save.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_save_to_abook+"' >";
+  if(abook_enable == 0)      save_icon = "<img src='i16_abook_plus.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_add_to_abook+"' >";
+  else if(abook_enable == 1) save_icon = "<img src='i16_save.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_name_save+"' >";
 
   var posx_check  = 8;
   var posx_invite = posx_check       + width + 16;
@@ -876,7 +876,7 @@ function invite_panel(){
   s+=dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;border-radius:0px;' onclick='javascript:{if(this.innerHTML==\"h323\")this.innerHTML=\"rtsp\";else if(this.innerHTML==\"rtsp\")this.innerHTML=\"sip\";else if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>";
   s+=dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;border-radius:0px;border-right:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"binpinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_input(document.getElementById(\"binpinv\"));mlgctr1=1;}}' /></div>";
   s+=dpre+b1x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='"+window.l_invite+"' /></div></div>";
-  s+=dpre+b2x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='add_to_abook()'><img src='i16_plus.png' title='"+window.l_add_to_abook+"' /></div></div>";
+  s+=dpre+b2x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='add_to_abook()'><img src='i16_abook_plus.png' title='"+window.l_add_to_abook+"' /></div></div>";
   s+="</form>";
   return s;
 }

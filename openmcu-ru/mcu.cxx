@@ -344,6 +344,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/png"                , "i16_minus.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_plus.png");
   WEBSERVER_LINK_MIME("image/png"                , "i16_save.png");
+  WEBSERVER_LINK_MIME("image/png"                , "i16_abook_plus.png");
 
   WEBSERVER_LINK_MIME_CFG("image/bmp"            , "logo.bmp");
   WEBSERVER_LINK_MIME_CFG("image/jpeg"           , "logo.jpeg");
