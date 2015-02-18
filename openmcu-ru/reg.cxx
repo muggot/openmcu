@@ -328,6 +328,13 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
     raccount_out->Unlock();
     // update url
     url = MCUURL(address);
+  } else {
+    raccount_out = InsertAccountWithLock(account_type, username_out);
+    raccount_out->host = url.GetHostName();
+    raccount_out->port = url.GetPort().AsInteger();
+    raccount_out->transport = url.GetTransport();
+    raccount_out->display_name = url.GetDisplayName();
+    raccount_out->Unlock();
   }
   // initial username_out, can be empty
   username_out = url.GetUserName();
