@@ -119,6 +119,8 @@ class RegistrarAccount
       return msg;
     }
 
+    void SaveConfig();
+
     PString display_name;
     PString username;
     PString host;
@@ -438,6 +440,8 @@ class Registrar : public PThread
 
     void SetInitAccounts()
     { init_accounts = 1; }
+
+    BOOL SaveAccount(const PString & address);
 
     const PString & GetRegistrarDomain() const { return registrar_domain; };
 

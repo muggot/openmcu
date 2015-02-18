@@ -334,4 +334,7 @@ window.l_internal_call_processing                  = "Внутрішні дзв�
 window.l_room_auto_create_when_connecting          = "Автоматичне створення при підключенні";
 window.l_enter_template_name                       = "Введіть ім'я шаблону";
 window.l_disconnect                                = "Відключити";
+window.l_add_to_abook                              = "Добавить в адресную книгу";
+window.l_save_to_abook                             = "Сохранить в адресной книге";
+window.l_show_all_accounts                         = "Показать все учетные записи";
 ///

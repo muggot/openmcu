@@ -66,6 +66,8 @@ var OTFC_TOGGLE_TPL_LOCK         = 77;
 var OTFC_UNMUTE_ALL              = 78;
 var OTFC_AUDIO_GAIN_LEVEL_SET    = 79;
 var OTFC_OUTPUT_GAIN_SET         = 80;
+var OTFC_ADD_TO_ABOOK            = 90;
+var OTFC_SAVE_TO_ABOOK           = 91;
 
 var mmw = -1; // build_page() initializer
 var visible_ids='';
@@ -567,10 +569,11 @@ function invite_checked_abook(obj){
     }
   }
 }
-function dial_from_input(obj)
+function get_dial_input_address(obj)
 {
   if(!document.getElementById("invite_input")) return;
-  var addr = document.getElementById("invite_input").value; if(addr=="") return;
+  var addr = document.getElementById("invite_input").value;
+  if(addr=="") return;
   var setProto = (addr.substr(0,5).toLowerCase()=='h323:') || (addr.substr(0,5).toLowerCase()=='rtsp:') || (addr.substr(0,4).toLowerCase()=='sip:');
   if(!setProto)
   {
@@ -581,7 +584,25 @@ function dial_from_input(obj)
     else if(document.getElementById('divInvProto').innerHTML=='sip')
       addr='sip:'+addr;
   }
+  return addr;
+}
+function dial_from_input(obj)
+{
+  var addr = get_dial_input_address(obj);
+  if(!addr) return;
   inviteoffline(obj,addr);
+}
+
+function save_to_abook(obj, addr)
+{
+  if(!addr) return;
+  queue_otf_request(OTFC_SAVE_TO_ABOOK, addr);
+}
+function add_to_abook(obj)
+{
+  var addr = get_dial_input_address(obj);
+  if(!addr) return;
+  queue_otf_request(OTFC_ADD_TO_ABOOK, addr);
 }
 
 function rtp_state(id,cc)
@@ -808,14 +829,19 @@ function format_mmbr_abook(num,mmbr)
   if(reg_state == 1)       reg_icon = "<img src='i16_status_gray.png' width='"+width+"' height='"+height+"'>";
   else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
 
+  var abook_icon = "";
+  if(abook_enable == 0)      save_icon = "<img src='i16_plus.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_add_to_abook+"' >";
+  else if(abook_enable == 1) save_icon = "<img src='i16_save.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_save_to_abook+"' >";
+
   var posx_check  = 8;
   var posx_invite = posx_check       + width + 16;
   var posx_status = posx_invite      + width + 16;
   var posx_name   = posx_status      + width + 10;
-  var free        = (panel_width)    - posx_name - SCROLLER_WIDTH;
-  var width_ip    = free/2           + SCROLLER_WIDTH;
-  var width_name  = free/2           - SCROLLER_WIDTH - 10;
-  var posx_ip     = panel_width      - width_ip - SCROLLER_WIDTH;
+  var free        = panel_width      - posx_name - SCROLLER_WIDTH;
+  var width_name  = free/2 - 16 - 8;
+  var width_ip    = free/2 - 8;
+  var posx_ip     = posx_name        + width_name + 8;
+  var posx_abook  = panel_width      - SCROLLER_WIDTH - 16;
 
   if(width_name<10){my_alert('Exception: maybe screen resolution too low?'); if(width_name<1)width_name=1;}
 
@@ -826,6 +852,8 @@ function format_mmbr_abook(num,mmbr)
   s+=dpre+(posx_status+8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+reg_icon+"</div></div>";
   s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'><nobr>"+name+"</nobr></div></div>";
   s+=dpre+posx_ip+"px'><div style='overflow:hidden;font-size:10px;width:"+width_ip+"px;'>"+ip+"</div></div>";
+  s+=dpre+posx_abook+"px'><div style='width:"+width+"px;height:"+height+"px'>"+save_icon+"</div></div>";
+
   s+='</div>';
   return s;
 }
@@ -841,12 +869,14 @@ function invite_panel(){
   var proto_posx = 2;
   var proto_width = 50;
   var input_posx = proto_posx+proto_width;
-  var input_width = panel_width - input_posx - 5 - 32;
+  var input_width = panel_width - input_posx - (bwidth*2) - 4;
   if(input_width > 250) input_width = 250;
-  var button_posx = input_posx + input_width;
+  var b1x = input_posx + input_width;
+  var b2x = b1x + bwidth;
   s+=dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;border-radius:0px;' onclick='javascript:{if(this.innerHTML==\"h323\")this.innerHTML=\"rtsp\";else if(this.innerHTML==\"rtsp\")this.innerHTML=\"sip\";else if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>";
   s+=dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;border-radius:0px;border-right:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"binpinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_input(document.getElementById(\"binpinv\"));mlgctr1=1;}}' /></div>";
-  s+=dpre+button_posx+"px'>"+dbutton+"width:"+(bwidth)+"px' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='"+window.l_invite+"' /></div></div>";
+  s+=dpre+b1x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='"+window.l_invite+"' /></div></div>";
+  s+=dpre+b2x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='add_to_abook()'><img src='i16_plus.png' title='"+window.l_add_to_abook+"' /></div></div>";
   s+="</form>";
   return s;
 }
@@ -900,7 +930,7 @@ function additional_panel_abook(){
   var s="<form onsubmit='return false' id='additional_panel_abook' style='display:none;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;'>";
   s+=dpre+"2px;'>"+dbutton+"width:"+bwidth+"px;' ><input id='abook_check_all' onclick='on_abook_check_all(this)' type='checkbox' height="+height+" style='margin:2px;' /></div></div>";
   s+=dpre+"34px;'>"+dbutton+"width:"+bwidth+"px;' onclick='invite_checked_abook(this)'><img style='opacity:1;' width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif' /></div></div>";
-  s+=dpre+"66px;'>"+dbutton+"width:"+bwidth+"px;' onclick='addressbook_view()'><img style='opacity:1;' src='i16_plus.png' id='addressbook_view_button'/></div></div>";
+  s+=dpre+"66px;'>"+dbutton+"width:"+bwidth+"px;' onclick='addressbook_view()'><img style='opacity:1;' src='i16_plus.png' id='addressbook_view_button' title='"+window.l_show_all_accounts+"' /></div></div>";
 
   s+="</form>";
   return s;

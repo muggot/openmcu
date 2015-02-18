@@ -1402,6 +1402,11 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     OpenMCU::Current().HttpWriteCmdRoom("alive()",room);
     return TRUE;
   }
+  if(action == OTFC_ADD_TO_ABOOK || action == OTFC_SAVE_TO_ABOOK)
+  {
+    OpenMCU::Current().GetRegistrar()->SaveAccount(value);
+    return TRUE;
+  }
 
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
   MCUConferenceList::shared_iterator cit = conferenceList.Find(room);

@@ -50,6 +50,48 @@ void RegistrarAccount::Unlock()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void RegistrarAccount::SaveConfig()
+{
+  PString section_prefix;
+  if(account_type == ACCOUNT_TYPE_H323)
+    section_prefix = "H323 Endpoint ";
+  else if(account_type == ACCOUNT_TYPE_RTSP)
+    section_prefix = "RTSP Endpoint ";
+  else if(account_type == ACCOUNT_TYPE_SIP)
+    section_prefix = "SIP Endpoint ";
+  else
+    return;
+
+  MCUConfig scfg(section_prefix + username);
+  scfg.SetBoolean("Address book", abook_enable);
+  scfg.SetString(HostKey, host);
+  scfg.SetString(DisplayNameKey, display_name);
+  if(account_type == ACCOUNT_TYPE_H323)
+  {
+    if(port != 1720)
+      scfg.SetInteger(PortKey, port);
+  }
+  else if(account_type == ACCOUNT_TYPE_RTSP)
+  {
+  }
+  else if(account_type == ACCOUNT_TYPE_SIP)
+  {
+    if(port != 5060)
+      scfg.SetInteger(PortKey, port);
+    if(transport != "*")
+      scfg.SetString(TransportKey, transport);
+  }
+
+  if(account_type == ACCOUNT_TYPE_H323)
+    OpenMCU::Current().CreateHTTPResource("H323EndpointsParameters");
+  else if(account_type == ACCOUNT_TYPE_RTSP)
+    OpenMCU::Current().CreateHTTPResource("RtspEndpoints");
+  else if(account_type == ACCOUNT_TYPE_SIP)
+    OpenMCU::Current().CreateHTTPResource("SipEndpointsParameters");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void RegistrarConnection::Unlock()
 {
   registrar->GetConnectionList().Release(id);
@@ -200,6 +242,48 @@ void Registrar::SetRequestedRoom(const PString & callToken, PString & requestedR
       requestedRoom = rconn->roomname;
     rconn->Unlock();
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL Registrar::SaveAccount(const PString & address)
+{
+  MCUURL url(address);
+  PString username = url.GetUserName();
+  if(username == "")
+    return FALSE;
+
+  RegAccountTypes account_type;
+  if(url.GetScheme() == "h323")
+    account_type = ACCOUNT_TYPE_H323;
+  else if(url.GetScheme() == "rtsp")
+    account_type = ACCOUNT_TYPE_RTSP;
+  else if(url.GetScheme() == "sip")
+    account_type = ACCOUNT_TYPE_SIP;
+  else
+    return FALSE;
+
+  mutex.Wait();
+  RegistrarAccount *raccount = FindAccountWithLock(account_type, username);
+  if(raccount)
+    raccount->abook_enable = TRUE;
+  else
+  {
+    raccount = InsertAccountWithLock(account_type, username);
+    raccount->abook_enable = TRUE;
+    raccount->host = url.GetHostName();
+    raccount->domain = registrar_domain;
+    raccount->display_name = url.GetDisplayName();
+    raccount->port = url.GetPort().AsInteger();
+    raccount->transport = url.GetTransport();
+  }
+  mutex.Signal();
+
+  raccount->SaveConfig();
+  raccount->Unlock();
+
+  MCUTRACE(6, trace_section << "Save account: " << address);
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

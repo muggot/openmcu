@@ -326,4 +326,7 @@ window.l_internal_call_processing                  = "Internal call processing";
 window.l_room_auto_create_when_connecting          = "Auto create when connecting";
 window.l_enter_template_name                       = "Enter template id";
 window.l_disconnect                                = "Disconnect";
+window.l_add_to_abook                              = "Add to address book";
+window.l_save_to_abook                             = "Save in address book";
+window.l_show_all_accounts                         = "Show all accounts";
 ///

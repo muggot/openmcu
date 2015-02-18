@@ -531,6 +531,8 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
       return logoFilename;
     }
 
+    void CreateHTTPResource(const PString & name);
+
     PMutex videoResizeDeltaTSCMutex;
     unsigned long videoResizeDeltaTSCSum;
     unsigned short videoResizeDeltaTSCCounter;
