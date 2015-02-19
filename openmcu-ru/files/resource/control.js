@@ -1083,7 +1083,7 @@ function abook_refresh()
   addressbook.sort(abook_sort_name_asc_func);
 
   var imr='';
-  for(i=0,j=0;i<addressbook.length;i++)
+  for(i=0,j=0,k=0;i<addressbook.length;i++)
   {
     mmbr = addressbook[i];
     var is_abook = mmbr[3];
@@ -1091,7 +1091,7 @@ function abook_refresh()
     if(abook_list_display == 1 && is_abook)
       imr+=format_mmbr_abook(j++,mmbr);
     if(abook_list_display == 2 && is_account)
-      imr+=format_mmbr_abook(i,mmbr);
+      imr+=format_mmbr_abook(k++,mmbr);
   }
   result="<div style='width:"+panel_width+"px' id='right_pan_abook'>"+imr+"</div>";
 

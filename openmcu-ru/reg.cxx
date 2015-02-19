@@ -281,17 +281,20 @@ void Registrar::SetRequestedRoom(const PString & callToken, PString & requestedR
 BOOL Registrar::AddAbookAccount(const PString & address)
 {
   MCUURL url(address);
-  if(url.GetUserName() == "" || url.GetHostName() == "")
-    return FALSE;
-
   RegAccountTypes account_type;
   if(url.GetScheme() == "h323")
     account_type = ACCOUNT_TYPE_H323;
   else if(url.GetScheme() == "rtsp")
+  {
     account_type = ACCOUNT_TYPE_RTSP;
+    url.SetUserName(url.GetUrl());
+  }
   else if(url.GetScheme() == "sip")
     account_type = ACCOUNT_TYPE_SIP;
   else
+    return FALSE;
+
+  if(url.GetUserName() == "" || url.GetHostName() == "")
     return FALSE;
 
   PWaitAndSignal m(mutex);
@@ -333,17 +336,20 @@ BOOL Registrar::AddAbookAccount(const PString & address)
 BOOL Registrar::RemoveAbookAccount(const PString & address)
 {
   MCUURL url(address);
-  if(url.GetUserName() == "" || url.GetHostName() == "")
-    return FALSE;
-
   RegAccountTypes account_type;
   if(url.GetScheme() == "h323")
     account_type = ACCOUNT_TYPE_H323;
   else if(url.GetScheme() == "rtsp")
+  {
     account_type = ACCOUNT_TYPE_RTSP;
+    url.SetUserName(url.GetUrl());
+  }
   else if(url.GetScheme() == "sip")
     account_type = ACCOUNT_TYPE_SIP;
   else
+    return FALSE;
+
+  if(url.GetUserName() == "" || url.GetHostName() == "")
     return FALSE;
 
   PWaitAndSignal m(mutex);
