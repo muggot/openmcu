@@ -919,6 +919,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", "direct"), "full,direct")+"</tr>";
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
@@ -929,6 +930,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
       s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
+      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1258,7 +1260,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
         stun_list = stun_name+","+stun_list;
       s2 += rowArray+"STUN "+JsLocal("server")+SelectItem(name, stun_name, stun_list)+"</tr>";
       //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1282,7 +1283,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       if(name == "*") s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey, EnableKey), EnableSelect, 70)+"</tr>";
       else            s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ","+EnableSelect, 70)+"</tr>";
       //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
