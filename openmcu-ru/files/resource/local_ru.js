@@ -338,5 +338,4 @@ window.l_enter_template_name                       = "Введите имя ша
 window.l_disconnect                                = "Отключить";
 window.l_add_to_abook                              = "Добавить в адресную книгу";
 window.l_accounts                                  = "Учетные записи";
-window.l_show_all_accounts                         = "Показать все учетные записи";
 ///

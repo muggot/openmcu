@@ -578,15 +578,21 @@ function get_dial_input_address(obj)
   if(!document.getElementById("invite_input")) return;
   var addr = document.getElementById("invite_input").value;
   if(addr=="") return;
-  var setProto = (addr.substr(0,5).toLowerCase()=='h323:') || (addr.substr(0,5).toLowerCase()=='rtsp:') || (addr.substr(0,4).toLowerCase()=='sip:');
+
+  var delim = addr.indexOf("[");
+  if(delim == -1) delim = addr.indexOf("<");
+  if(delim == -1) delim = 0;
+  else            delim++;
+
+  var setProto = (addr.substr(delim,5).toLowerCase()=='h323:') || (addr.substr(delim,5).toLowerCase()=='rtsp:') || (addr.substr(delim,4).toLowerCase()=='sip:');
   if(!setProto)
   {
     if(document.getElementById('divInvProto').innerHTML=='h323')
-      addr='h323:'+addr;
+      addr = addr.substr(0,delim)+'h323:'+addr.substr(delim);
     else if(document.getElementById('divInvProto').innerHTML=='rtsp')
-      addr='rtsp://'+addr;
+      addr = addr.substr(0,delim)+'rtsp://'+addr.substr(delim);
     else if(document.getElementById('divInvProto').innerHTML=='sip')
-      addr='sip:'+addr;
+      addr = addr.substr(0,delim)+'sip:'+addr.substr(delim);
   }
   return addr;
 }
