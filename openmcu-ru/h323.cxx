@@ -1324,9 +1324,9 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 PString MCUH323EndPoint::GetAddressBookOptsJavascript()
 {
   PString msg = "addressbook=Array(";
-  MCUStringArrayList & statusList = OpenMCU::Current().GetRegistrar()->GetStatusList();
+  MCUAbookList & abookList = OpenMCU::Current().GetRegistrar()->GetAbookList();
   int i = 0;
-  for(MCUStringArrayList::shared_iterator it = statusList.begin(); it != statusList.end(); ++it, ++i)
+  for(MCUAbookList::shared_iterator it = abookList.begin(); it != abookList.end(); ++it, ++i)
   {
     if(i > 0)
       msg += ",";
@@ -1402,9 +1402,14 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     OpenMCU::Current().HttpWriteCmdRoom("alive()",room);
     return TRUE;
   }
-  if(action == OTFC_ADD_TO_ABOOK || action == OTFC_SAVE_TO_ABOOK)
+  if(action == OTFC_ADD_TO_ABOOK)
   {
-    OpenMCU::Current().GetRegistrar()->SaveAccount(value);
+    OpenMCU::Current().GetRegistrar()->AddAbookAccount(value);
+    return TRUE;
+  }
+  if(action == OTFC_REMOVE_FROM_ABOOK)
+  {
+    OpenMCU::Current().GetRegistrar()->RemoveAbookAccount(value);
     return TRUE;
   }
 

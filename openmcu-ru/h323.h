@@ -56,7 +56,7 @@
 #define OTFC_AUDIO_GAIN_LEVEL_SET     79
 #define OTFC_OUTPUT_GAIN_SET          80
 #define OTFC_ADD_TO_ABOOK             90
-#define OTFC_SAVE_TO_ABOOK            91
+#define OTFC_REMOVE_FROM_ABOOK        91
 
 ////////////////////////////////////////////////////
 

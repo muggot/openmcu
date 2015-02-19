@@ -41,6 +41,28 @@ enum RegSubscriptionStates
   SUB_STATE_BUSY
 };
 
+inline RegAccountTypes GetAccountTypeFromScheme(const PString & scheme)
+{
+  if(scheme == "h323")
+    return ACCOUNT_TYPE_H323;
+  else if(scheme == "rtsp")
+    return ACCOUNT_TYPE_RTSP;
+  else if(scheme == "sip")
+    return ACCOUNT_TYPE_SIP;
+  return ACCOUNT_TYPE_UNKNOWN;
+}
+inline PString GetSchemeFromAccountType(RegAccountTypes type)
+{
+  PString scheme;
+  if(type == ACCOUNT_TYPE_H323)
+    return "h323";
+  else if(type == ACCOUNT_TYPE_RTSP)
+    return "rtsp";
+  else if(type == ACCOUNT_TYPE_SIP)
+    return "sip";
+  return "";
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class Registrar;
@@ -69,9 +91,9 @@ class RegistrarAccount
       scheme = "Digest";
       algorithm = "MD5";
       expires = 0;
-      enable = FALSE;
+      is_saved_account = FALSE;
+      allow_registrar = FALSE;
       registered = FALSE;
-      abook_enable = FALSE;
       keep_alive_enable = FALSE;
       keep_alive_interval = 0;
       keep_alive_time_request = PTime(3600);
@@ -119,8 +141,6 @@ class RegistrarAccount
       return msg;
     }
 
-    void SaveConfig();
-
     PString display_name;
     PString username;
     PString host;
@@ -147,9 +167,9 @@ class RegistrarAccount
 
     OpalGloballyUniqueID h323CallIdentifier; // h323 incoming call
 
-    BOOL enable;
+    BOOL is_saved_account;
+    BOOL allow_registrar;
     BOOL registered;
-    BOOL abook_enable;
 
     RegAccountTypes account_type;
 
@@ -159,6 +179,117 @@ class RegistrarAccount
 
     PTimedMutex account_mutex;
     Registrar *registrar;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class AbookAccount
+{
+  public:
+    AbookAccount()
+    {
+      Clear();
+    }
+    AbookAccount(RegAccountTypes _account_type, PString _username)
+    {
+      Clear();
+      account_type = _account_type;
+      username = _username;
+      host = "";
+      if(account_type == ACCOUNT_TYPE_H323)
+        port = 1720;
+      else if(account_type == ACCOUNT_TYPE_SIP)
+        port = 5060;
+      else
+        port = 0;
+    }
+
+    void Clear()
+    {
+      is_abook = false;
+      is_account = false;
+      is_saved_account = false;
+      account_type = ACCOUNT_TYPE_UNKNOWN;
+      username = "";
+      host = "";
+      port = 0;
+      transport = "";
+      display_name = "";
+      remote_application = "";
+      reg_state = 0;
+      reg_info = "";
+      conn_state = 0;
+      conn_info = "";
+      ping_state = 0;
+      ping_info = "";
+    }
+
+    void Set(const AbookAccount & ab)
+    {
+      is_abook = ab.is_abook;
+      is_account = ab.is_account;
+      is_saved_account = ab.is_saved_account;
+      account_type = ab.account_type;
+      username = ab.username;
+      host = ab.host;
+      port = ab.port;
+      transport = ab.transport;
+      display_name = ab.display_name;
+      remote_application = ab.remote_application;
+      reg_state = ab.reg_state;
+      reg_info = ab.reg_info;
+      conn_state = ab.conn_state;
+      conn_info = ab.conn_info;
+      ping_state = ab.ping_state;
+      ping_info = ab.ping_info;
+    }
+
+    void Send(int state = 0);
+    void SaveConfig();
+    PString GetUrl();
+
+    bool is_abook;
+    bool is_account;
+    bool is_saved_account;
+    RegAccountTypes account_type;
+    PString username;
+    PString host;
+    unsigned port;
+    PString transport;
+    PString display_name;
+    PString remote_application;
+
+    int reg_state;
+    PString reg_info;
+    int conn_state;
+    PString conn_info;
+    int ping_state;
+    PString ping_info;
+
+    PString AsJsArray(int state = 0)
+    {
+      PString memberName = display_name+" ["+GetUrl()+"]";
+      PString memberNameID = MCUURL(memberName).GetMemberNameId();
+
+      PStringStream str;
+      str << "Array(";
+      str        << state;
+      str << "," << JsQuoteScreen(memberNameID);
+      str << "," << JsQuoteScreen(memberName);
+      str << "," << is_abook;
+      str << "," << JsQuoteScreen(remote_application);
+      str << "," << reg_state;
+      str << "," << "\"" << reg_info << "\"";
+      str << "," << conn_state;
+      str << "," << "\"" << conn_info << "\"";
+      str << "," << ping_state;
+      str << "," << "\"" << ping_info << "\"";
+      str << "," << is_account;
+      str << "," << is_saved_account;
+
+      str << ")";
+      return str;
+    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -441,7 +572,8 @@ class Registrar : public PThread
     void SetInitAccounts()
     { init_accounts = 1; }
 
-    BOOL SaveAccount(const PString & address);
+    BOOL AddAbookAccount(const PString & address);
+    BOOL RemoveAbookAccount(const PString & address);
 
     const PString & GetRegistrarDomain() const { return registrar_domain; };
 
@@ -481,8 +613,8 @@ class Registrar : public PThread
     MCURegistrarConnectionList & GetConnectionList()
     { return connectionList; }
 
-    MCUStringArrayList & GetStatusList()
-    { return statusList; }
+    MCUAbookList & GetAbookList()
+    { return abookList; }
 
   protected:
     void Main();
@@ -491,6 +623,7 @@ class Registrar : public PThread
     void Terminating();
     void InitConfig();
     void InitAccounts();
+    void InitAbook();
 
     MCUH323EndPoint *ep;
     MCUSipEndPoint *sep;
@@ -573,7 +706,7 @@ class Registrar : public PThread
     MCURegistrarAccountList accountList;
     MCURegistrarSubscriptionList subscriptionList;
     MCURegistrarConnectionList connectionList;
-    MCUStringArrayList statusList;
+    MCUAbookList abookList;
 
     // mutex - используется в функциях OnReceived, MakeCall
     // предотвращает создание в списках двух одноименных объектов

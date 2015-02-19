@@ -812,7 +812,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   s << ColumnItem(JsLocal("name_video"));
   s << ColumnItem(JsLocal("name_codec"));
 
-  optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
   optionNames.AppendString(RoomNameKey);
   optionNames.AppendString(DisplayNameKey);
@@ -879,7 +878,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PStringArray params = bcfg.GetString(keys[i]).Tokenise(",");
       scfg.SetString("Host", host);
       scfg.SetString("Port", params[1]);
-      scfg.SetString("Address book", params[2]);
       scfg.SetString("Display name", params[3]);
       scfg.SetString("Frame rate from MCU", params[4]);
       scfg.SetString("Bandwidth from MCU", params[5]);
@@ -917,7 +915,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
@@ -927,7 +924,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     } else {
       PString s2;
       s2 += NewItemArray(name);
-      s2 += rowArray+JsLocal("name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
       s2 += rowArray+JsLocal("name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
       s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
@@ -1105,7 +1101,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   s << ColumnItem(JsLocal("name_video"));
   s << ColumnItem(JsLocal("name_codec"));
 
-  optionNames.AppendString("Address book");
   optionNames.AppendString("Registrar");
   optionNames.AppendString(RoomNameKey);
   optionNames.AppendString(DisplayNameKey);
@@ -1184,7 +1179,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       scfg.SetString("Host", host);
       scfg.SetString("Port", params[1]);
       scfg.SetString("Transport", params[0].Tokenise("=")[1]);
-      scfg.SetString("Address book", params[2]);
       scfg.SetString("Display name", params[3]);
       scfg.SetString("Frame rate from MCU", params[4]);
       scfg.SetString("Bandwidth from MCU", params[5]);
@@ -1220,7 +1214,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
@@ -1231,7 +1224,6 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     } else {
       PString s2;
       s2 += NewItemArray(name);
-      s2 += rowArray+JsLocal("name_address_book")+BoolItem(name, scfg.GetBoolean("Address book"))+"</tr>";
       s2 += rowArray+JsLocal("name_register")+BoolItem(name, scfg.GetBoolean("Registrar"))+"</tr>";
       s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";

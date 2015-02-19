@@ -67,7 +67,7 @@ var OTFC_UNMUTE_ALL              = 78;
 var OTFC_AUDIO_GAIN_LEVEL_SET    = 79;
 var OTFC_OUTPUT_GAIN_SET         = 80;
 var OTFC_ADD_TO_ABOOK            = 90;
-var OTFC_SAVE_TO_ABOOK           = 91;
+var OTFC_REMOVE_FROM_ABOOK       = 91;
 
 var mmw = -1; // build_page() initializer
 var visible_ids='';
@@ -603,16 +603,21 @@ function dial_from_input(obj)
   inviteoffline(obj,addr);
 }
 
-function save_to_abook(obj, addr)
+function add_to_abook(obj, addr)
 {
   if(!addr) return;
-  queue_otf_request(OTFC_SAVE_TO_ABOOK, addr);
+  queue_otf_request(OTFC_ADD_TO_ABOOK, addr);
 }
-function add_to_abook(obj)
+function add_to_abook_input(obj)
 {
   var addr = get_dial_input_address(obj);
   if(!addr) return;
   queue_otf_request(OTFC_ADD_TO_ABOOK, addr);
+}
+function remove_from_abook(obj, addr)
+{
+  if(!addr) return;
+  queue_otf_request(OTFC_REMOVE_FROM_ABOOK, addr);
 }
 
 function rtp_state(id,cc)
@@ -793,7 +798,9 @@ function format_mmbr_abook(num,mmbr)
   var height = PANEL_ICON_HEIGHT; //15
   var width = PANEL_ICON_WIDTH; // 15
 
-  var abook_enable = mmbr[3];
+  var is_abook = mmbr[3];
+  var is_account = mmbr[11];
+  var is_saved_account = mmbr[12];
   var remote_application = mmbr[4];
   var reg_state = mmbr[5]; // 1=unregistered, 2=registered
   var reg_info = mmbr[6];
@@ -840,8 +847,14 @@ function format_mmbr_abook(num,mmbr)
   else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
 
   var save_icon = "";
-  if(abook_enable == 0)      save_icon = "<img src='i16_abook_plus.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_add_to_abook+"' >";
-  //else if(abook_enable == 1) save_icon = "<img src='i16_save.png' style='cursor:pointer' onclick='save_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_name_save+"' >";
+  if(!is_abook)
+    save_icon = "<img src='i16_abook_plus.png' style='cursor:pointer' onclick='add_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_add_to_abook+"' >";
+  else if(is_abook && abook_list_display == 1)
+    save_icon = "<img src='i16_close_red.png' style='cursor:pointer' onclick='remove_from_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_delete+"' >";
+
+  var ip_decor = "";
+  if(!is_saved_account && abook_list_display == 2)
+    ip_decor = "text-decoration:line-through;";
 
   var posx_check  = 8;
   var posx_invite = posx_check       + width + 16;
@@ -860,8 +873,8 @@ function format_mmbr_abook(num,mmbr)
   s+=dpre+posx_invite+"px'><div style='width:"+width+"px;height:"+height+"px'>"+invite+"</div></div>";
   s+=dpre+(posx_status-8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+ping_icon+"</div></div>";
   s+=dpre+(posx_status+8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+reg_icon+"</div></div>";
-  s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'><nobr>"+name+"</nobr></div></div>";
-  s+=dpre+posx_ip+"px'><div style='overflow:hidden;font-size:10px;width:"+width_ip+"px;'>"+ip+"</div></div>";
+  s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'>"+name+"</div></div>";
+  s+=dpre+posx_ip+"px'><div style='overflow:hidden;color:#576;font-size:10px;"+ip_decor+"width:"+width_ip+"px;'>"+ip+"</div></div>";
   s+=dpre+posx_abook+"px'><div style='width:"+width+"px;height:"+height+"px'>"+save_icon+"</div></div>";
 
   s+='</div>';
@@ -886,7 +899,7 @@ function invite_panel(){
   s+=dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;border-radius:0px;' onclick='javascript:{if(this.innerHTML==\"h323\")this.innerHTML=\"rtsp\";else if(this.innerHTML==\"rtsp\")this.innerHTML=\"sip\";else if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>";
   s+=dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;border-radius:0px;border-right:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"binpinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_input(document.getElementById(\"binpinv\"));mlgctr1=1;}}' /></div>";
   s+=dpre+b1x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='"+window.l_invite+"' /></div></div>";
-  s+=dpre+b2x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='add_to_abook()'><img src='i16_abook_plus.png' title='"+window.l_add_to_abook+"' /></div></div>";
+  s+=dpre+b2x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='add_to_abook_input()'><img src='i16_abook_plus.png' title='"+window.l_add_to_abook+"' /></div></div>";
   s+="</form>";
   return s;
 }
@@ -1072,19 +1085,15 @@ function abook_refresh()
   addressbook.sort(abook_sort_name_asc_func);
 
   var imr='';
-  for(i=0;i<addressbook.length;i++)
+  for(i=0,j=0;i<addressbook.length;i++)
   {
     mmbr = addressbook[i];
-    if(abook_list_display == 1)
-    {
-      // mmbr[3] - 1=address book enable
-      // mmbr[5] - registrar state. 1=unregistered, 2=registered
-      var abook_enable = mmbr[3];
-      var reg_state = mmbr[5];
-      if(abook_enable == 0 && reg_state != 2)
-        continue;
-    }
-    imr+=format_mmbr_abook(i,mmbr);
+    var is_abook = mmbr[3];
+    var is_account = mmbr[11];
+    if(abook_list_display == 1 && is_abook)
+      imr+=format_mmbr_abook(j++,mmbr);
+    if(abook_list_display == 2 && is_account)
+      imr+=format_mmbr_abook(i,mmbr);
   }
   result="<div style='width:"+panel_width+"px' id='right_pan_abook'>"+imr+"</div>";
 
@@ -1097,18 +1106,28 @@ function abook_refresh()
 
 function abook_change(account)
 {
-  if(account[0] == "1")
+  if(account[0] == 2)
   {
-    addressbook[addressbook.length] = account;
+    for(i=0;i<addressbook.length;i++)
+    {
+      if(addressbook[i][1] == account[1])
+      {
+        addressbook.splice(i,1);
+        break;
+      }
+    }
   } else {
     for(i=0;i<addressbook.length;i++)
     {
       if(addressbook[i][1] == account[1])
       {
         addressbook[i] = account;
+        account = null
         break;
       }
     }
+    if(account != null)
+      addressbook[addressbook.length] = account;
   }
   alive();
   abook_refresh();
