@@ -750,11 +750,6 @@ class MCUSharedList
     // Erase(iterator)
     bool Erase(shared_iterator & it);
 
-    // Replace() возвращает старый объект если объект заменен
-    // Не захватывает новый объект
-    T_obj * Replace(int index, T_obj * obj, long id, PString name = "");
-    T_obj * Replace(PString name, T_obj * obj);
-
     // Release() - освободить объект
     void Release(long id);
     void Release(shared_iterator & it);
@@ -970,51 +965,6 @@ bool MCUSharedList<T_obj>::Erase(shared_iterator & it)
   it.Release();
 
   return erase;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template <class T_obj>
-T_obj * MCUSharedList<T_obj>::Replace(int index, T_obj *obj, long id, PString name)
-{
-  T_obj *old_obj = NULL;
-  // блокировка записи
-  if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
-  {
-    if(states[index] == true)
-    {
-      // запретить получение объекта
-      states[index] = false;
-      sync_decrement(&current_size);
-      // ждать освобождения объекта
-      ReleaseWait(&captures[index], 0);
-      // старый объект
-      old_obj = objs[index];
-    }
-    // запись объекта
-    objs[index] = obj;
-    ids[index] = id;
-    names[index] = name;
-    // разрешить получение объекта
-    states[index] = true;
-    sync_increment(&current_size);
-    // разблокировка записи
-    sync_bool_compare_and_swap(&locks[index], true, false);
-  }
-
-  return old_obj;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-template <class T_obj>
-T_obj * MCUSharedList<T_obj>::Replace(PString name, T_obj *obj)
-{
-  int index = GetIndex(name);
-  if(index == INT_MAX)
-    return NULL;
-  ReleaseInternal(index);
-  return Replace(index, obj, ids[index], name);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1236,6 +1186,9 @@ typedef MCUSharedList<RegistrarSubscription> MCURegistrarSubscriptionList;
 
 typedef MCUSharedList<MCUH323Connection> MCUConnectionList;
 
+class AbookAccount;
+typedef MCUSharedList<AbookAccount> MCUAbookList;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <typename T_obj>
@@ -1318,98 +1271,6 @@ class MCUQueueMsg : public MCUQueue<msg_t>
       return false;
     }
 };
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-class MCUStringArray
-{
-  public:
-
-    MCUStringArray(int size = 1024)
-      : list(size)
-    { }
-
-    ~MCUStringArray()
-    {
-      for(MCUSharedList<PString>::shared_iterator it = list.begin(); it != list.end(); ++it)
-      {
-        PString *str = *it;
-        if(list.Erase(it))
-          delete str;
-      }
-    }
-
-    void Insert(const PString & str)
-    {
-      PString *new_str = new PString(str);
-      long id = list.GetNextID();
-      list.Insert(new_str, id);
-      list.Release(id);
-    }
-
-    void Remove(const PString & str)
-    {
-      MCUSharedList<PString>::shared_iterator it = list.Find(str);
-      PString *old_str = *it;
-      if(list.Erase(it))
-        delete old_str;
-    }
-
-    void Replace(int index, const PString & str)
-    {
-      PString *new_str = new PString(str);
-      PString *old_str = list.Replace(index, new_str, list.GetNextID());
-      if(old_str)
-        delete old_str;
-      else
-        delete new_str;
-    }
-
-    PString AsString()
-    {
-      PString str;
-      for(MCUSharedList<PString>::shared_iterator it = list.begin(); it != list.end(); ++it)
-        str += **it;
-      return str;
-    }
-
-    PString AsJsArray()
-    {
-      PString str = "Array(";
-      int i = 0;
-      for(MCUSharedList<PString>::shared_iterator it = list.begin(); it != list.end(); ++it, ++i)
-      {
-        PString js_str = JsQuoteScreen(**it);
-        if(i > 0)
-          str += ",";
-        str += js_str;
-      }
-      str += ")";
-      return str;
-    }
-
-    MCUStringArray & operator+= (const PString & str)
-    {
-      Insert(str);
-      return *this;
-    }
-
-    bool operator == (MCUStringArray & arr)
-    { return (AsString() == arr.AsString()); }
-
-    bool operator != (MCUStringArray & arr)
-    { return (AsString() != arr.AsString()); }
-
-    operator PString()
-    {
-      return AsString();
-    }
-
-  protected:
-    MCUSharedList<PString> list;
-};
-
-typedef MCUSharedList<MCUStringArray> MCUStringArrayList;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

@@ -377,7 +377,7 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
 
   if(request == sip_method_register)
   {
-    if(!raccount_in->enable && !sip_allow_unauth_reg)
+    if(!raccount_in->allow_registrar && !sip_allow_unauth_reg)
       return 403; // SIP_403_FORBIDDEN
     if(sip_allow_unauth_reg || raccount_in->password == "")
       return 0;
@@ -407,7 +407,7 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   }
   if(request == sip_method_message)
   {
-    if(!raccount_in->enable && !sip_allow_unauth_reg)
+    if(!raccount_in->allow_registrar && !sip_allow_unauth_reg)
       return 403; // SIP_403_FORBIDDEN
     if(!raccount_out || (raccount_out->host == "" || raccount_out->port == 0))
       return 404; // SIP_404_NOT_FOUND
@@ -422,7 +422,7 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   }
   if(request == sip_method_subscribe)
   {
-    if(!raccount_in->enable && !sip_allow_unauth_reg)
+    if(!raccount_in->allow_registrar && !sip_allow_unauth_reg)
       return 403; // SIP_403_FORBIDDEN
     if(sip_allow_unauth_reg || raccount_in->password == "")
       return 0;

@@ -371,7 +371,8 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .fltspr0 {width:24px;height:24px;background:url(s32_ch.png)   -5px -37px}
 .fltspr1 {width:24px;height:24px;background:url(s32_ch.png)  -37px -37px}
 .fltspr2 {width:24px;height:24px;background:url(s32_ch.png)  -69px -37px}
-.fltspr0,.fltspr1,.fltspr2{cursor:pointer;vertical-align:middle;border-radius:3px;overflow:hidden;border:2px solid #288;margin:2px;background-color:#cef}
+.fltspr-1 {width:24px;height:24px;background:url(s32_ch.png)  -5px -37px}
+.fltspr0,.fltspr1,.fltspr2,.fltspr-1{cursor:pointer;vertical-align:middle;border-radius:3px;overflow:hidden;border:2px solid #288;margin:2px;background-color:#cef}
 
 .recordspr0 {width:24px;height:24px;background:url(s32_ch.png) -133px  -69px; border:2px solid #f00; background-color:#ccc}
 .recordspr1 {width:24px;height:24px;background:url(s32_ch.png) -165px  -69px; border:2px solid #f00; background-color:#ccc}

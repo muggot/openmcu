@@ -336,4 +336,6 @@ window.l_internal_call_processing                  = "Внутренние зв�
 window.l_room_auto_create_when_connecting          = "Автоматическое создание при подключении";
 window.l_enter_template_name                       = "Введите имя шаблона";
 window.l_disconnect                                = "Отключить";
+window.l_add_to_abook                              = "Добавить в адресную книгу";
+window.l_accounts                                  = "Учетные записи";
 ///

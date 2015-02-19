@@ -33,6 +33,34 @@ PString RegistrarAccount::GetUrl()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+PString AbookAccount::GetUrl()
+{
+  PString url;
+  if(account_type == ACCOUNT_TYPE_SIP)
+  {
+    url = "sip:"+username+"@"+host;
+    if(port != 0)
+      url += ":"+PString(port);
+    if(transport != "" && transport != "*")
+      url += ";transport="+transport;
+  }
+  else if(account_type == ACCOUNT_TYPE_H323)
+  {
+    url = "h323:"+username+"@"+host;
+    if(port != 0)
+      url += ":"+PString(port);
+  }
+  else if(account_type == ACCOUNT_TYPE_RTSP)
+  {
+    if(username.Left(7) != "rtsp://")
+      url += "rtsp://";
+    url += username;
+  }
+  return url;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 PString RegistrarAccount::GetAuthStr()
 {
   if(nonce == "")
@@ -46,6 +74,52 @@ PString RegistrarAccount::GetAuthStr()
 void RegistrarAccount::Unlock()
 {
   registrar->GetAccountList().Release(id);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void AbookAccount::SaveConfig()
+{
+  MCUConfig scfg("Address book "+username);
+  if(!is_abook)
+    scfg.DeleteSection();
+  else
+  {
+    scfg.SetString("Scheme", GetSchemeFromAccountType(account_type));
+    scfg.SetString(HostKey, host);
+    scfg.SetString(DisplayNameKey, display_name);
+    if(account_type == ACCOUNT_TYPE_H323)
+    {
+      if(port != 1720)
+        scfg.SetInteger(PortKey, port);
+    }
+    else if(account_type == ACCOUNT_TYPE_RTSP)
+    {
+    }
+    else if(account_type == ACCOUNT_TYPE_SIP)
+    {
+      if(port != 5060)
+        scfg.SetInteger(PortKey, port);
+      if(transport != "*")
+        scfg.SetString(TransportKey, transport);
+    }
+  }
+
+  MCUTRACE(6, "Address book: " << GetUrl() << " save config");
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void AbookAccount::Send(int state)
+{
+  PStringStream msg;
+  msg << "abook_change(" << AsJsArray(state) << ");";
+  ConferenceManager *cm = OpenMCU::Current().GetConferenceManager();
+  MCUConferenceList & conferenceList = cm->GetConferenceList();
+  for(MCUConferenceList::shared_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
+    OpenMCU::Current().HttpWriteCmdRoom(msg, r->GetNumber());
+
+  //MCUTRACE(6, "Address book: " << GetUrl() << " send");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -204,6 +278,94 @@ void Registrar::SetRequestedRoom(const PString & callToken, PString & requestedR
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL Registrar::AddAbookAccount(const PString & address)
+{
+  MCUURL url(address);
+  if(url.GetUserName() == "" || url.GetHostName() == "")
+    return FALSE;
+
+  RegAccountTypes account_type;
+  if(url.GetScheme() == "h323")
+    account_type = ACCOUNT_TYPE_H323;
+  else if(url.GetScheme() == "rtsp")
+    account_type = ACCOUNT_TYPE_RTSP;
+  else if(url.GetScheme() == "sip")
+    account_type = ACCOUNT_TYPE_SIP;
+  else
+    return FALSE;
+
+  PWaitAndSignal m(mutex);
+
+  PString key = PString(account_type)+":"+url.GetUserName();
+  MCUAbookList::shared_iterator it = abookList.Find(key);
+  if(it != abookList.end())
+  {
+    if(!it->is_abook)
+    {
+      it->is_abook = true;
+      it->SaveConfig();
+      it->Send();
+    }
+    return TRUE;
+  }
+
+  AbookAccount *ab = new AbookAccount();
+  ab->is_abook = true;
+  ab->account_type = account_type;
+  ab->username = url.GetUserName();
+  ab->host = url.GetHostName();
+  ab->port = url.GetPort().AsInteger();
+  ab->transport = url.GetTransport();
+  ab->display_name = url.GetDisplayName();
+  ab->SaveConfig();
+  ab->Send();
+
+  long id = abookList.GetNextID();
+  abookList.Insert(ab, id, key);
+  abookList.Release(id);
+
+  MCUTRACE(6, "Address book: " << address << " insert");
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL Registrar::RemoveAbookAccount(const PString & address)
+{
+  MCUURL url(address);
+  if(url.GetUserName() == "" || url.GetHostName() == "")
+    return FALSE;
+
+  RegAccountTypes account_type;
+  if(url.GetScheme() == "h323")
+    account_type = ACCOUNT_TYPE_H323;
+  else if(url.GetScheme() == "rtsp")
+    account_type = ACCOUNT_TYPE_RTSP;
+  else if(url.GetScheme() == "sip")
+    account_type = ACCOUNT_TYPE_SIP;
+  else
+    return FALSE;
+
+  PWaitAndSignal m(mutex);
+
+  PString key = PString(account_type)+":"+url.GetUserName();
+  MCUAbookList::shared_iterator it = abookList.Find(key);
+  if(it == abookList.end())
+    return FALSE;
+
+  AbookAccount *ab = *it;
+  ab->is_abook = false;
+  ab->SaveConfig();
+  ab->Send(2);
+  if(abookList.Erase(it))
+    delete ab;
+
+  MCUTRACE(6, "Address book: " << address << " remove");
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & callToken)
 {
   // the default protocol H.323
@@ -212,8 +374,8 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
 
   PWaitAndSignal m(mutex);
 
-  PString address = to;
-  MCUURL url(address);
+  MCUURL url(to);
+  PString address = url.GetUrl();
 
   RegAccountTypes account_type = ACCOUNT_TYPE_UNKNOWN;
   if(url.GetScheme() == "sip")
@@ -244,6 +406,16 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
     raccount_out->Unlock();
     // update url
     url = MCUURL(address);
+  } else {
+    if(url.GetHostName() != "")
+    {
+      raccount_out = InsertAccountWithLock(account_type, username_out);
+      raccount_out->host = url.GetHostName();
+      raccount_out->port = url.GetPort().AsInteger();
+      raccount_out->transport = url.GetTransport();
+      raccount_out->display_name = url.GetDisplayName();
+      raccount_out->Unlock();
+    }
   }
   // initial username_out, can be empty
   username_out = url.GetUserName();
@@ -507,32 +679,80 @@ void Registrar::BookThread(PThread &, INT)
     if(terminating)
       break;
 
-    for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
+    for(MCURegistrarAccountList::shared_iterator r = accountList.begin(); r != accountList.end(); ++r)
     {
-      RegistrarAccount *raccount = *it;
+      RegistrarAccount *raccount = *r;
 
-      int reg_state = 0;
-      int conn_state = 0;
-      int ping_state = 0;
-      PString remote_application = raccount->remote_application;
-      PString reg_info;
-      PString conn_info;
-      PString ping_info;
+      PString key = PString(raccount->account_type)+":"+raccount->username;
+      MCUAbookList::shared_iterator s = abookList.Find(key);
+      if(s != abookList.end())
+        continue;
 
+      AbookAccount *ab = new AbookAccount();
+      ab->is_abook = false;
+      ab->is_account = true;
+      ab->is_saved_account = raccount->is_saved_account;
+      ab->account_type = raccount->account_type;
+      ab->username = raccount->username;
+      ab->host = raccount->host;
+      ab->port = raccount->port;
+      ab->transport = raccount->transport;
+      ab->display_name = raccount->display_name;
+      ab->Send();
+
+      long id = abookList.GetNextID();
+      abookList.Insert(ab, id, key);
+      abookList.Release(id);
+    }
+
+    AbookAccount oldab;
+    for(MCUAbookList::shared_iterator r = abookList.begin(); r != abookList.end(); ++r)
+    {
+      AbookAccount *ab = *r;
+      oldab.Clear();
+      oldab.Set(*ab);
+
+      MCURegistrarAccountList::shared_iterator s = accountList.Find(PString(r->account_type)+":"+r->username);
+      if(s == accountList.end())
+      {
+        ab->is_account = false;
+        ab->is_saved_account = false;
+        if(oldab.AsJsArray() != ab->AsJsArray())
+          ab->Send();
+        continue;
+      }
+      RegistrarAccount *raccount = *s;
+
+      ab->is_account = true;
+      ab->is_saved_account = raccount->is_saved_account;
+      ab->host = raccount->host;
+      ab->port = raccount->port;
+      ab->transport = raccount->transport;
+      ab->display_name = raccount->display_name;
+      ab->remote_application = raccount->remote_application;
+      ab->reg_state = 0;
+      ab->reg_info = "";
+      ab->conn_state = 0;
+      ab->conn_info = "";
+      ab->ping_state = 0;
+      ab->ping_info = "";
+
+      if(raccount->allow_registrar)
+        ab->reg_state = 1;
       if(raccount->registered)
-        reg_state = 2;
-      else if(raccount->enable)
-        reg_state = 1;
+        ab->reg_state = 2;
+      if(ab->reg_state != 0 && raccount->start_time != PTime(0))
+        ab->reg_info = raccount->start_time.AsString("hh:mm:ss dd.MM.yyyy");
 
       RegistrarConnection *rconn = FindRegConnUsernameWithLock(raccount->username);
       if(rconn)
       {
         if(rconn->state == CONN_WAIT || rconn->state == CONN_MCU_WAIT)
-            conn_state = 1;
+          ab->conn_state = 1;
         else if(rconn->state == CONN_ESTABLISHED || rconn->state == CONN_MCU_ESTABLISHED)
         {
-          conn_state = 2;
-          conn_info = it->start_time.AsString("hh:mm:ss dd.MM.yyyy");
+          ab->conn_state = 2;
+          ab->conn_info = rconn->start_time.AsString("hh:mm:ss dd.MM.yyyy");
         }
         rconn->Unlock();
       }
@@ -540,55 +760,17 @@ void Registrar::BookThread(PThread &, INT)
       if(raccount->keep_alive_enable)
       {
         if(raccount->keep_alive_time_response > raccount->keep_alive_time_request-PTimeInterval(raccount->keep_alive_interval*1000-2000))
-          ping_state = 1;
+          ab->ping_state = 1;
         else
-          ping_state = 2;
+        {
+          ab->ping_state = 2;
+          ab->ping_info = raccount->keep_alive_time_response.AsString("hh:mm:ss dd.MM.yyyy");
+        }
       }
 
-      if(reg_state != 0 && raccount->start_time != PTime(0))
-        reg_info = raccount->start_time.AsString("hh:mm:ss dd.MM.yyyy");
-      if(ping_state == 2)
-        ping_info = raccount->keep_alive_time_response.AsString("hh:mm:ss dd.MM.yyyy");
+      if(ab->AsJsArray() != oldab.AsJsArray())
+        ab->Send();
 
-      PString key = PString(raccount->account_type)+":"+raccount->username;
-      PString memberName = raccount->display_name+" ["+raccount->GetUrl()+"]";
-      PString memberNameID = MCUURL(memberName).GetMemberNameId();
-
-      MCUStringArray *data = new MCUStringArray();
-      data->Insert("***");
-      data->Insert(memberNameID);
-      data->Insert(memberName);
-      data->Insert(raccount->abook_enable);
-      data->Insert(remote_application);
-      data->Insert(reg_state);
-      data->Insert(reg_info);
-      data->Insert(conn_state);
-      data->Insert(conn_info);
-      data->Insert(ping_state);
-      data->Insert(ping_info);
-
-      MCUStringArrayList::shared_iterator r = statusList.Find(key);
-      MCUStringArray *olddata = *r;
-      if(r == statusList.end() || (olddata && olddata->AsString() != data->AsString()))
-      {
-        if(olddata && statusList.Erase(r))
-          delete olddata;
-        long id = statusList.GetNextID();
-        statusList.Insert(data, id, key);
-        statusList.Release(id);
-
-        if(r == statusList.end())
-          data->Replace(0, "1");
-        PStringStream msg;
-        msg << "abook_change(" << data->AsJsArray() << ");";
-
-        ConferenceManager *cm = OpenMCU::Current().GetConferenceManager();
-        MCUConferenceList & conferenceList = cm->GetConferenceList();
-        for(MCUConferenceList::shared_iterator s = conferenceList.begin(); s != conferenceList.end(); ++s)
-          OpenMCU::Current().HttpWriteCmdRoom(msg, s->GetNumber());
-      }
-      else
-        delete data;
     }
   }
 }
@@ -824,6 +1006,44 @@ void Registrar::InitConfig()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void Registrar::InitAbook()
+{
+  if(abookList.GetCurrentSize() > 0)
+    return;
+
+  MCUConfig cfg("Registrar Parameters");
+  PStringList sect = cfg.GetSections();
+  for(PINDEX i = 0; i < sect.GetSize(); i++)
+  {
+    if(sect[i].Find("Address book ") != 0)
+      continue;
+
+    MCUConfig scfg(sect[i]);
+    PString username = sect[i].Right(sect[i].GetLength()-PString("Address book ").GetLength());
+    PString host = scfg.GetString(HostKey);
+    RegAccountTypes account_type = GetAccountTypeFromScheme(scfg.GetString("Scheme"));
+
+    if(username == "" || host == "" || account_type == ACCOUNT_TYPE_UNKNOWN)
+      continue;
+
+    AbookAccount *ab = new AbookAccount();
+    ab->is_abook = true;
+    ab->account_type = account_type;
+    ab->username = username;
+    ab->host = host;
+    ab->port = scfg.GetInteger(PortKey);
+    ab->transport = scfg.GetString(TransportKey);
+    ab->display_name = scfg.GetString(DisplayNameKey);
+
+    PString key = PString(ab->account_type)+":"+ab->username;
+    long id = abookList.GetNextID();
+    abookList.Insert(ab, id, key);
+    abookList.Release(id);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Registrar::InitAccounts()
 {
   PWaitAndSignal m(mutex);
@@ -841,24 +1061,37 @@ void Registrar::InitAccounts()
     RegistrarAccount *raccount = *it;
     if(raccount->account_type == ACCOUNT_TYPE_SIP)
     {
-      MCUConfig scfg(sipSectionPrefix+raccount->username);
-      raccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
-      raccount->enable = scfg.GetBoolean("Registrar", FALSE);
-      if(!raccount->enable && !sip_allow_unauth_reg)
+      PString section = sipSectionPrefix+raccount->username;
+      if(!MCUConfig::HasSection(section))
+      {
+        raccount->is_saved_account = FALSE;
+        raccount->allow_registrar = FALSE;
+      } else {
+        MCUConfig scfg(sipSectionPrefix+raccount->username);
+        raccount->allow_registrar = scfg.GetBoolean("Registrar", FALSE);
+      }
+      if(!raccount->allow_registrar && !sip_allow_unauth_reg)
         raccount->registered = FALSE;
     }
     else if(raccount->account_type == ACCOUNT_TYPE_H323)
     {
-      MCUConfig scfg(h323SectionPrefix+raccount->username);
-      raccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
-      raccount->enable = scfg.GetBoolean("Registrar", FALSE);
-      if(!raccount->enable && !h323_allow_unauth_reg)
+      PString section = h323SectionPrefix+raccount->username;
+      if(!MCUConfig::HasSection(section))
+      {
+        raccount->is_saved_account = FALSE;
+        raccount->allow_registrar = FALSE;
+      } else {
+        MCUConfig scfg(section);
+        raccount->allow_registrar = scfg.GetBoolean("Registrar", FALSE);
+      }
+      if(!raccount->allow_registrar && !h323_allow_unauth_reg)
         raccount->registered = FALSE;
     }
-    else if(raccount->account_type == ACCOUNT_TYPE_RTSP)
+    else if(raccount->account_type == ACCOUNT_TYPE_H323)
     {
-      MCUConfig scfg(rtspSectionPrefix+raccount->username);
-      raccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
+      PString section = rtspSectionPrefix+raccount->username;
+      if(!MCUConfig::HasSection(section))
+        raccount->is_saved_account = FALSE;
     }
   }
 
@@ -897,8 +1130,8 @@ void Registrar::InitAccounts()
     RegistrarAccount *raccount = FindAccountWithLock(account_type, username);
     if(!raccount)
       raccount = InsertAccountWithLock(account_type, username);
-    raccount->enable = scfg.GetBoolean("Registrar", FALSE);
-    raccount->abook_enable = scfg.GetBoolean("Address book", FALSE);
+    raccount->is_saved_account = TRUE;
+    raccount->allow_registrar = scfg.GetBoolean("Registrar", FALSE);
     raccount->host = scfg.GetString(HostKey);
     if(port != 0)
       raccount->port = port;
@@ -932,7 +1165,6 @@ void Registrar::InitAccounts()
     }
     else if(account_type == ACCOUNT_TYPE_RTSP)
     {
-      raccount->abook_enable = TRUE;
     }
     raccount->Unlock();
   }
@@ -962,11 +1194,11 @@ void Registrar::Terminating()
     delete bookThread;
     bookThread = NULL;
   }
-  for(MCUStringArrayList::shared_iterator it = statusList.begin(); it != statusList.end(); ++it)
+  for(MCUAbookList::shared_iterator it = abookList.begin(); it != abookList.end(); ++it)
   {
-    MCUStringArray *arr = *it;
-    if(statusList.Erase(it))
-      delete arr;
+    AbookAccount *acc = *it;
+    if(abookList.Erase(it))
+      delete acc;
   }
 
   // stop subscriptions refresh
@@ -1035,6 +1267,7 @@ void Registrar::Terminating()
 
 void Registrar::MainLoop()
 {
+  InitAbook();
   while(1)
   {
     MCUTime::Sleep(100);
