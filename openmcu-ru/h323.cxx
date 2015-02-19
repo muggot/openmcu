@@ -2295,9 +2295,8 @@ PString MCUH323EndPoint::Invite(PString room, PString memberName)
     return "";
 
   PString callToken;
-  PString address = url.GetUrl();
   PStringStream msg;
-  msg << "Inviting: " << address << " ";
+  msg << "Inviting: " << memberName << " ";
 
   if(url.GetScheme() == "h323")
   {
@@ -2311,7 +2310,7 @@ PString MCUH323EndPoint::Invite(PString room, PString memberName)
   else if(url.GetScheme() == "sip")
   {
     MCUSipEndPoint * sep = OpenMCU::Current().GetSipEndpoint();
-    if(sep->HasListener(address))
+    if(sep->HasListener(url.GetUrl()))
     {
       msg << "failed, Loopback call rejected";
       goto end;
@@ -2329,7 +2328,7 @@ PString MCUH323EndPoint::Invite(PString room, PString memberName)
 
   {
     Registrar *registrar = OpenMCU::Current().GetRegistrar();
-    registrar->MakeCall(room, address, callToken);
+    registrar->MakeCall(room, memberName, callToken);
     if(callToken == "")
       msg << ", failed";
   }

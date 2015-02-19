@@ -296,8 +296,8 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
 
   PWaitAndSignal m(mutex);
 
-  PString address = to;
-  MCUURL url(address);
+  MCUURL url(to);
+  PString address = url.GetUrl();
 
   RegAccountTypes account_type = ACCOUNT_TYPE_UNKNOWN;
   if(url.GetScheme() == "sip")
