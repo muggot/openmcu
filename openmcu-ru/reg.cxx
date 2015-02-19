@@ -249,8 +249,7 @@ void Registrar::SetRequestedRoom(const PString & callToken, PString & requestedR
 BOOL Registrar::SaveAccount(const PString & address)
 {
   MCUURL url(address);
-  PString username = url.GetUserName();
-  if(username == "")
+  if(url.GetUserName() == "" || url.GetHostName() == "")
     return FALSE;
 
   RegAccountTypes account_type;
@@ -264,12 +263,12 @@ BOOL Registrar::SaveAccount(const PString & address)
     return FALSE;
 
   mutex.Wait();
-  RegistrarAccount *raccount = FindAccountWithLock(account_type, username);
+  RegistrarAccount *raccount = FindAccountWithLock(account_type, url.GetUserName());
   if(raccount)
     raccount->abook_enable = TRUE;
   else
   {
-    raccount = InsertAccountWithLock(account_type, username);
+    raccount = InsertAccountWithLock(account_type, url.GetUserName());
     raccount->abook_enable = TRUE;
     raccount->host = url.GetHostName();
     raccount->domain = registrar_domain;
@@ -329,12 +328,15 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
     // update url
     url = MCUURL(address);
   } else {
-    raccount_out = InsertAccountWithLock(account_type, username_out);
-    raccount_out->host = url.GetHostName();
-    raccount_out->port = url.GetPort().AsInteger();
-    raccount_out->transport = url.GetTransport();
-    raccount_out->display_name = url.GetDisplayName();
-    raccount_out->Unlock();
+    if(url.GetHostName() != "")
+    {
+      raccount_out = InsertAccountWithLock(account_type, username_out);
+      raccount_out->host = url.GetHostName();
+      raccount_out->port = url.GetPort().AsInteger();
+      raccount_out->transport = url.GetTransport();
+      raccount_out->display_name = url.GetDisplayName();
+      raccount_out->Unlock();
+    }
   }
   // initial username_out, can be empty
   username_out = url.GetUserName();
