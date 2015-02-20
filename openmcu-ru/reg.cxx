@@ -294,7 +294,7 @@ BOOL Registrar::AddAbookAccount(const PString & address)
   else
     return FALSE;
 
-  if(url.GetUserName() == "" || url.GetHostName() == "")
+  if(url.GetUserName() == "")
     return FALSE;
 
   PWaitAndSignal m(mutex);
@@ -349,7 +349,7 @@ BOOL Registrar::RemoveAbookAccount(const PString & address)
   else
     return FALSE;
 
-  if(url.GetUserName() == "" || url.GetHostName() == "")
+  if(url.GetUserName() == "")
     return FALSE;
 
   PWaitAndSignal m(mutex);
