@@ -1999,9 +1999,11 @@ int MCUSipConnection::ProcessConnect()
   // override requested room from registrar
   SetRequestedRoom();
   // join conference
-  OnEstablished();
+  JoinConference(requestedRoom);
   if(!conference || !conferenceMember || !conferenceMember->IsJoined())
     return 600;
+  //
+  OnEstablished();
 
   return 0;
 }

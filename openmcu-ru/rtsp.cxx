@@ -461,12 +461,14 @@ BOOL MCURtspConnection::OnResponsePlay(const msg_t *msg)
   // override requested room from registrar
   SetRequestedRoom();
   // join conference
-  OnEstablished();
+  JoinConference(requestedRoom);
   if(!conference || !conferenceMember || !conferenceMember->IsJoined())
   {
     MCUTRACE(1, trace_section << "error");
     return FALSE;
   }
+  //
+  OnEstablished();
 
   // create and start channels
   CreateMediaChannel(scap, 0);

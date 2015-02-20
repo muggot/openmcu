@@ -633,7 +633,6 @@ class ConferenceManager : public PObject
 
     ConferenceMember * FindMemberWithLock(const PString & roomName, const PString & memberName);
     ConferenceMember * FindMemberWithLock(Conference * conference, const PString & memberName);
-    ConferenceMember * FindMemberWithoutLock(Conference * conference, const PString & memberName);
 
     ConferenceMember * FindMemberNameIDWithLock(const PString & roomName, const PString & memberName);
     ConferenceMember * FindMemberNameIDWithLock(Conference * conference, const PString & memberName);

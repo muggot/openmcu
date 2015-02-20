@@ -2585,22 +2585,8 @@ void MCUH323Connection::OnEstablished()
 {
   H323Connection::OnEstablished();
 
-  if(requestedRoom == "")
-    requestedRoom = OpenMCU::Current().GetDefaultRoomName();
-
-  JoinConference(requestedRoom);
-
-  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
-  {
-    if(connectionType == CONNECTION_TYPE_H323)
-      ClearCall();
-  }
-
-  if(conference && conferenceMember && conferenceMember->IsJoined())
-  {
-    Registrar *registrar = OpenMCU::Current().GetRegistrar();
-    registrar->ConnectionEstablished(callToken);
-  }
+  Registrar *registrar = OpenMCU::Current().GetRegistrar();
+  registrar->ConnectionEstablished(callToken);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2719,12 +2705,13 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
   if(conference != NULL || conferenceMember != NULL)
     return;
 
-  if(roomToJoin.IsEmpty())
-    return;
+  requestedRoom = roomToJoin;
+  if(requestedRoom == "")
+    requestedRoom = OpenMCU::Current().GetDefaultRoomName();
 
   // create or join the conference
   ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
-  conference = manager.MakeConferenceWithLock(roomToJoin);
+  conference = manager.MakeConferenceWithLock(requestedRoom);
   if(!conference)
     return;
 
@@ -3126,6 +3113,11 @@ BOOL MCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
   SetRemoteName(setupPDU);
   // override requested room
   SetRequestedRoom();
+  // join conference
+  JoinConference(requestedRoom);
+  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
+    return FALSE;
+
   return ret;
 }
 
@@ -3150,6 +3142,11 @@ BOOL MCUH323Connection::OnReceivedSignalConnect(const H323SignalPDU & pdu)
   SetRemoteName(pdu);
   // override requested room
   SetRequestedRoom();
+  // join conference
+  JoinConference(requestedRoom);
+  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
+    return FALSE;
+
   return ret;
 }
 
