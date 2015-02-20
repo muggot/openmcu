@@ -18,6 +18,10 @@
 #define	MAX_PAYLOAD_TYPE_MISMATCHES 8
 #define RTP_TRACE_DISPLAY_RATE 16000 // 2 seconds
 
+// cacheRTPListMutex - используется при создании кэшей
+// предотвращает создание в списке двух одноименных кэшей
+extern PMutex cacheRTPListMutex;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class MCU_RTPChannel : public H323_RTPChannel

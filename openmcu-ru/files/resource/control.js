@@ -848,7 +848,7 @@ function format_mmbr_abook(num,mmbr)
   if(!is_abook)
     save_icon = "<img src='i16_abook_plus.png' style='cursor:pointer' onclick='add_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_add_to_abook+"' >";
   else if(is_abook && abook_list_display == 1)
-    save_icon = "<img src='i16_close_red.png' style='cursor:pointer' onclick='remove_from_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_delete+"' >";
+    save_icon = "<img src='i16_close_gray.png' style='cursor:pointer' onclick='remove_from_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_delete+"' >";
 
   var ip_decor = "";
   if(!is_saved_account && abook_list_display == 2)
@@ -871,7 +871,7 @@ function format_mmbr_abook(num,mmbr)
   s+=dpre+posx_invite+"px'><div style='width:"+width+"px;height:"+height+"px'>"+invite+"</div></div>";
   s+=dpre+(posx_status-8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+ping_icon+"</div></div>";
   s+=dpre+(posx_status+8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+reg_icon+"</div></div>";
-  s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'>"+name+"</div></div>";
+  s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'><nobr>"+name+"</nobr></div></div>";
   s+=dpre+posx_ip+"px'><div style='overflow:hidden;color:#576;font-size:10px;"+ip_decor+"width:"+width_ip+"px;'>"+ip+"</div></div>";
   s+=dpre+posx_abook+"px'><div style='width:"+width+"px;height:"+height+"px'>"+save_icon+"</div></div>";
 

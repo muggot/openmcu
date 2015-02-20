@@ -3,6 +3,7 @@
 #define _MCU_UTILS_AV_H
 
 #include "config.h"
+#include "utils_type.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -28,6 +29,8 @@ extern "C"
 #endif
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,25,0)
   #define AVCodecID               CodecID
   #define AV_CODEC_ID_NONE        CODEC_ID_NONE
@@ -49,12 +52,14 @@ extern "C"
 
 #define AV_ALIGN 1
 
+// avcodecMutex - используется при создании/удалении кодеков
+// insufficient thread locking around avcodec_open/close()
+extern PMutex avcodecMutex;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height);
 BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, int & dst_width, int & dst_height);
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 unsigned GetVideoMacroBlocks(unsigned width, unsigned height);
 BOOL GetParamsH263(PString & mpiname, unsigned & width, unsigned & height);
