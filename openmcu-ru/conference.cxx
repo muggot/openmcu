@@ -190,13 +190,6 @@ ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference
   MCUMemberList & memberList = conference->GetMemberList();
   return memberList(memberName);
 }
-ConferenceMember * ConferenceManager::FindMemberWithoutLock(Conference * conference, const PString & memberName)
-{
-  ConferenceMember *member = FindMemberWithLock(conference, memberName);
-  if(member)
-    member->Unlock();
-  return member;
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
