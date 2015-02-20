@@ -13,6 +13,10 @@
 #define FRAME_BUF_SIZE	0x2000
 #define FRAME_OFFSET	0x100
 
+// cacheRTPListMutex - используется при создании кэшей
+// предотвращает создание в списке двух одноименных кэшей
+extern PMutex cacheRTPListMutex;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL OpenAudioCache(const PString & room, const OpalMediaFormat & format, const PString & cacheName);

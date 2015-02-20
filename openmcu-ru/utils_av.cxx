@@ -4,6 +4,205 @@
 #include "config.h"
 #include "mcu.h"
 
+PMutex avcodecMutex;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+unsigned GetVideoMacroBlocks(unsigned width, unsigned height)
+{
+  if(width == 0 || height == 0) return 0;
+  return ((width+15)/16) * ((height+15)/16);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL GetParamsH263(PString & mpiname, unsigned & width, unsigned & height)
+{
+  for(int i = 0; h263_resolutions[i].width != 0; ++i)
+  {
+    // from mpiname
+    if(mpiname != "" && mpiname != h263_resolutions[i].mpiname)
+      continue;
+    // from width && height
+    if(width && height && width != h263_resolutions[i].width && height != h263_resolutions[i].height)
+      continue;
+    mpiname = h263_resolutions[i].mpiname;
+    width = h263_resolutions[i].width;
+    height = h263_resolutions[i].height;
+    return TRUE;
+  }
+  return FALSE;
+}
+
+BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs)
+{
+  unsigned width = 0, height = 0;
+  return GetParamsMpeg4(profile_level, profile, level, max_fs, width, height);
+}
+BOOL GetParamsMpeg4(unsigned & profile_level, unsigned & profile, unsigned & level, unsigned & max_fs, unsigned & width, unsigned & height)
+{
+  for(int i = 0; mpeg4_profile_levels[i].level != 0; ++i)
+  {
+    // from profile_level
+    if(profile_level && profile_level != mpeg4_profile_levels[i].profile_level && mpeg4_profile_levels[i+1].level != 0)
+      continue;
+    // from max_fs
+    if(max_fs && max_fs > mpeg4_profile_levels[i].max_fs && mpeg4_profile_levels[i+1].level != 0)
+      continue;
+    if(!profile) profile = mpeg4_profile_levels[i].profile;
+    if(!level) level = mpeg4_profile_levels[i].level;
+    if(!max_fs) max_fs = mpeg4_profile_levels[i].max_fs;
+    if(!width) width = mpeg4_profile_levels[i].width;
+    if(!height) height = mpeg4_profile_levels[i].height;
+    return TRUE;
+  }
+  return FALSE;
+}
+
+BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs)
+{
+  unsigned max_mbps = 0, max_br = 0;
+  return GetParamsH264(level, level_h241, max_fs, max_mbps, max_br);
+}
+BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br)
+{
+  unsigned width = 0, height = 0;
+  return GetParamsH264(level, level_h241, max_fs, max_mbps, max_br, width, height);
+}
+BOOL GetParamsH264(unsigned & level, unsigned & level_h241, unsigned & max_fs, unsigned & max_mbps, unsigned & max_br, unsigned & width, unsigned & height)
+{
+  for(int i = 0; h264_profile_levels[i].level != 0; ++i)
+  {
+    // from level
+    if(level && level > h264_profile_levels[i].level && h264_profile_levels[i+1].level != 0)
+      continue;
+    // from level h241
+    if(level_h241 && level_h241 > h264_profile_levels[i].level_h241 && h264_profile_levels[i+1].level != 0)
+      continue;
+    // from max_fs
+    if(max_fs && max_fs > h264_profile_levels[i].max_fs && h264_profile_levels[i+1].level != 0)
+      continue;
+    if(!level) level = h264_profile_levels[i].level;
+    if(!level_h241) level_h241 = h264_profile_levels[i].level_h241;
+    if(!max_fs) max_fs = h264_profile_levels[i].max_fs;
+    if(!max_mbps) max_mbps = h264_profile_levels[i].max_mbps;
+    if(!max_br) max_br = h264_profile_levels[i].max_br;
+    break;
+  }
+  for(int i = 0; h264_resolutions[i].macroblocks != 0; ++i)
+  {
+    if(max_fs < h264_resolutions[i].macroblocks)
+      continue;
+    width = h264_resolutions[i].width;
+    height = h264_resolutions[i].height;
+    break;
+  }
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParamsH261(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  SetFormatParamsH263(wf, width, height);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParamsH263(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  PString mpiname;
+  GetParamsH263(mpiname, width, height);
+  if(mpiname != "")
+  {
+    wf.SetOptionInteger("SQCIF MPI", 0);
+    wf.SetOptionInteger("QCIF MPI", 0);
+    wf.SetOptionInteger("CIF MPI", 0);
+    wf.SetOptionInteger("CIF4 MPI", 0);
+    wf.SetOptionInteger("CIF16 MPI", 0);
+    wf.SetOptionInteger(mpiname+" MPI", 1);
+  }
+  wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+  wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParamsH264(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  unsigned level = 0, level_h241 = 0, max_fs = 0, max_mbps = 0, max_br = 0;
+  max_fs = GetVideoMacroBlocks(width, height);
+  GetParamsH264(level, level_h241, max_fs, max_mbps, max_br);
+  wf.SetOptionInteger("Generic Parameter 42", level_h241);
+  wf.SetOptionInteger("Generic Parameter 4", (max_fs/256)+1);
+  wf.SetOptionInteger("Generic Parameter 3", max_mbps/500);
+  wf.SetOptionInteger("Generic Parameter 6", max_br/25000);
+  wf.SetOptionInteger("Custom Resolution", 1);
+  wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+  wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParamsMPEG4(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  unsigned profile_level = 0, profile = 0, level = 0, max_fs = 0;
+  max_fs = GetVideoMacroBlocks(width, height);
+  GetParamsMpeg4(profile_level, profile, level, max_fs);
+  wf.SetOptionInteger("profile", profile);
+  wf.SetOptionInteger("level", level);
+  wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+  wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParamsVP8(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  wf.SetOptionInteger("Generic Parameter 1", width);
+  wf.SetOptionInteger("Generic Parameter 2", height);
+  wf.SetOptionInteger(OPTION_FRAME_WIDTH, width);
+  wf.SetOptionInteger(OPTION_FRAME_HEIGHT, height);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height)
+{
+  unsigned frame_rate = 0, bandwidth = 0;
+  SetFormatParams(wf, width, height, frame_rate, bandwidth);
+}
+
+void SetFormatParams(OpalMediaFormat & wf, unsigned width, unsigned height, unsigned frame_rate, unsigned bandwidth)
+{
+  if(width != 0 && height != 0)
+  {
+    if(wf.Find("H.261") == 0)
+      SetFormatParamsH261(wf, width, height);
+    else if(wf.Find("H.263") == 0)
+      SetFormatParamsH263(wf, width, height);
+    else if(wf.Find("H.264") == 0)
+      SetFormatParamsH264(wf, width, height);
+    else if(wf.Find("MP4V-ES") == 0)
+      SetFormatParamsMPEG4(wf, width, height);
+    else if(wf.Find("VP8") == 0)
+      SetFormatParamsVP8(wf, width, height);
+  }
+
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+
+  if(frame_rate == 0) frame_rate = ep.GetVideoFrameRate();
+  if(frame_rate < 1) frame_rate = 1;
+  if(frame_rate > MCU_MAX_FRAME_RATE) frame_rate = MCU_MAX_FRAME_RATE;
+  wf.SetOptionInteger(OPTION_FRAME_RATE, frame_rate);
+  wf.SetOptionInteger(OPTION_FRAME_TIME, 90000/frame_rate);
+
+  if(bandwidth == 0) bandwidth = 256;
+  if(bandwidth < MCU_MIN_BIT_RATE/1000) bandwidth = MCU_MIN_BIT_RATE/1000;
+  if(bandwidth > MCU_MAX_BIT_RATE/1000) bandwidth = MCU_MAX_BIT_RATE/1000;
+  wf.SetOptionInteger(OPTION_MAX_BIT_RATE, bandwidth*1000);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height)

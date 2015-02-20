@@ -1,0 +1,490 @@
+
+#ifndef _MCU_UTILS_TYPE_H
+#define _MCU_UTILS_TYPE_H
+
+#include "config.h"
+
+#include <sys/types.h>
+
+#ifdef _WIN32
+#pragma warning(disable:4786)
+#pragma warning(disable:4100)
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class OpenMCU;
+class OpenMCUMonitor;
+
+class MCUH323EndPoint;
+class MCUSipEndPoint;
+
+class MCUH323Connection;
+class MCUSipConnnection;
+class SipRTP_UDP;
+
+class MCUSimpleVideoMixer;
+
+class ConferenceAudioConnection;
+class ConferenceProfile;
+class ConferenceMember;
+class ConferenceRecorder;
+class Conference;
+class ConferenceManager;
+
+class MCUConnection_ConferenceMember;
+class MCUPVideoInputDevice;
+class MCUPVideoOutputDevice;
+
+class GatekeeperMonitor;
+class ConnectionMonitor;
+class ConnectionMonitorInfo;
+class ConferenceMonitorInfo;
+
+class RegistrarAccount;
+class RegistrarConnection;
+class RegistrarSubscription;
+class AbookAccount;
+
+class MCU_RTPChannel;
+class MCUSIP_RTPChannel;
+class MCUH323_RTPChannel;
+class MCU_RTP_UDP;
+class MCUSIP_RTP_UDP;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+typedef void * ConferenceMemberId;
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum Directions
+{
+  DIRECTION_INBOUND = 0,
+  DIRECTION_OUTBOUND = 1
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+enum MCUConnectionTypes
+{
+  CONNECTION_TYPE_NONE,
+  CONNECTION_TYPE_H323,
+  CONNECTION_TYPE_SIP,
+  CONNECTION_TYPE_RTSP
+};
+
+#define MCU_STRINGIFY(s) MCU_TOSTRING(s)
+#define MCU_TOSTRING(s)  #s
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#ifdef _WIN32
+#define sync_val_compare_and_swap(ptr, oldval, newval) InterlockedCompareExchange(ptr, newval, oldval)
+//inline bool sync_bool_compare_and_swap(bool *ptr, bool oldval, bool newval)
+//{
+//  if(InterlockedCompareExchange(ptr, newval, oldval) == oldval)
+//    return true;
+//  else
+//    return false;
+//}
+#define sync_fetch_and_add(value, addvalue) InterlockedExchangeAdd(value, addvalue)
+#define sync_fetch_and_sub(value, subvalue) InterlockedExchangeAdd(value, subvalue*(-1))
+#define sync_increment(value) InterlockedIncrement(value)
+#define sync_decrement(value) InterlockedDecrement(value)
+#else
+// returns the contents of *ptr before the operation
+#define sync_val_compare_and_swap(ptr, oldval, newval) __sync_val_compare_and_swap(ptr, oldval, newval)
+// returns true if the comparison is successful and newval was written
+#define sync_bool_compare_and_swap(ptr, oldval, newval) __sync_bool_compare_and_swap(ptr, oldval, newval)
+#define sync_fetch_and_add(value, addvalue) __sync_fetch_and_add(value, addvalue);
+#define sync_fetch_and_sub(value, subvalue) __sync_fetch_and_sub(value, subvalue)
+#define sync_increment(value) __sync_fetch_and_add(value, 1)
+#define sync_decrement(value) __sync_fetch_and_sub(value, 1)
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#define MCUTRACE(level, args) \
+  if(level > 0 && PTrace::CanTrace(level)) PTrace::Begin(level, __FILE__, __LINE__) << args << PTrace::End; \
+  if(PTrace::CanTrace(level)) cout << setw(8) << PTime() - PProcess::Current().GetStartTime() << " " << args << endl
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUBuffer
+{
+  public:
+    MCUBuffer(int newsize = 2048, bool _aligned = true)
+    {
+      aligned = _aligned;
+
+      if(newsize < 0)
+        newsize = 0;
+
+      size = newsize;
+      buffer = (uint8_t *)aligned_malloc(size);
+    }
+
+    ~MCUBuffer()
+    {
+      aligned_free(buffer);
+    }
+
+    int GetSize()
+    {
+      return size;
+    }
+
+    void SetSize(int newsize)
+    {
+      if(newsize < 0)
+        newsize = 0;
+
+      if(newsize == size)
+        return;
+
+      size = newsize;
+      aligned_free(buffer);
+      buffer = (uint8_t *)aligned_malloc(size);
+    }
+
+    uint8_t * GetPointer()
+    {
+      return buffer;
+    }
+
+    static void * aligned_malloc(int size)
+    {
+      if(size <= 0)
+        return NULL;
+
+      void *ptr = NULL;
+#if HAVE_POSIX_MEMALIGN
+      if(posix_memalign(&ptr, 64, size))
+        ptr = NULL;
+#else
+      ptr = malloc(size);
+#endif
+      return ptr;
+    }
+
+    static void aligned_free(void *ptr)
+    {
+      free(ptr);
+    }
+
+  protected:
+    int size;
+    bool aligned;
+    uint8_t *buffer;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUTime
+{
+  public:
+    MCUTime()
+    {
+      timestamp = GetRealTimestampUsec();
+    }
+
+    MCUTime(const uint64_t & _timestamp)
+    {
+      timestamp = _timestamp;
+    }
+
+    const uint64_t GetTimestamp() const
+    {
+      return timestamp;
+    }
+
+    const uint64_t GetMilliSeconds() const
+    {
+      return timestamp/1000;
+    }
+
+    const uint32_t GetSeconds() const
+    {
+      return timestamp/1000000;
+    }
+
+    operator uint64_t()
+    {
+      return timestamp;
+    }
+
+    static void Sleep(uint32_t interval_msec)
+    {
+#ifdef _WIN32
+      ::Sleep(interval_msec);
+#else
+      SleepUsec(interval_msec*1000);
+#endif
+    }
+
+    static void SleepUsec(uint32_t interval_usec)
+    {
+      // win32 что?
+      struct timespec req;
+      req.tv_sec = interval_usec/1000000;
+      req.tv_nsec = (interval_usec % 1000000) * 1000;
+      while(nanosleep(&req, &req) == -1 && errno == EINTR)
+        ;
+    }
+
+    static uint64_t GetRealTimestampUsec()
+    {
+#ifdef _WIN32
+      return PTime().GetTimestamp();
+#else
+      struct timespec ts;
+      clock_gettime(CLOCK_REALTIME, &ts);
+      return ts.tv_sec*1000000ULL + ts.tv_nsec/1000;
+#endif
+    }
+
+    static uint64_t GetMonoTimestampUsec()
+    {
+#ifdef _WIN32
+      return PTime().GetTimestamp();
+#else
+      struct timespec ts;
+      clock_gettime(CLOCK_MONOTONIC, &ts);
+      return ts.tv_sec*1000000ULL + ts.tv_nsec/1000;
+#endif
+    }
+
+    static uint64_t GetProcTimestampUsec()
+    {
+#ifdef _WIN32
+      return PTime().GetTimestamp();
+#else
+      struct timespec ts;
+      clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &ts);
+      return ts.tv_sec*1000000ULL + ts.tv_nsec/1000;
+#endif
+    }
+
+  protected:
+    uint64_t timestamp;
+
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUDelay
+{
+  public:
+    MCUDelay()
+    {
+      Restart();
+    }
+
+    void Restart()
+    {
+      delay_time = MCUTime::GetMonoTimestampUsec();
+      PTRACE(6, "MCUDelay " << this << " now " << delay_time);
+    }
+
+    void Delay(uint32_t delay_msec)
+    {
+      DelayUsec(delay_msec * 1000);
+    }
+
+    void DelayUsec(uint32_t delay_usec)
+    {
+      delay_time += delay_usec;
+      now = MCUTime::GetMonoTimestampUsec();
+      if(now < delay_time)
+      {
+        uint32_t interval = delay_time - now;
+        MCUTime::SleepUsec(interval);
+      }
+      //else // restart
+      //  delay_time = now;
+    }
+
+    // Для канала чтения RTP, последний timestamp или перезапуск
+    const uint64_t GetDelayTimestampUsec(uint32_t delay_usec, uint32_t jitter_usec = 0)
+    {
+      now = MCUTime::GetMonoTimestampUsec();
+      if(now > delay_time + delay_usec + jitter_usec)
+      {
+        PTRACE(6, "MCUDelay " << this << " now " << now << " before " << delay_time << " , jitter " << jitter_usec);
+        delay_time = now;
+      }
+      return delay_time;
+    }
+
+    // Для канала записи RTP, последний timestamp
+    const uint64_t GetDelayTimestampUsec()
+    { return delay_time; }
+
+  protected:
+    uint64_t delay_time;
+    uint64_t now;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUReadWriteMutex : public PObject
+{
+  public:
+    MCUReadWriteMutex(unsigned max = 64)
+      : reader(max, max) { }
+    void ReadWait()
+    {
+      reader.Wait();
+    }
+    void ReadSignal()
+    {
+      reader.Signal();
+    }
+    void WriteWait()
+    {
+      writeMutex.Wait();
+#ifdef _WIN32
+      for(unsigned i = 0; i < reader.GetMaxCountVal(); ++i)
+#else
+      for(unsigned i = 0; i < reader.GetMaxCount(); ++i)
+#endif
+        reader.Wait();
+    }
+    void WriteSignal()
+    {
+#ifdef _WIN32
+      for(unsigned i = 0; i < reader.GetMaxCountVal(); ++i)
+#else
+      for(unsigned i = 0; i < reader.GetMaxCount(); ++i)
+#endif
+        reader.Signal();
+      writeMutex.Signal();
+    }
+  protected:
+    PSemaphore reader;
+    PMutex writeMutex;
+};
+class MCUReadWaitAndSignal
+{
+  public:
+    MCUReadWaitAndSignal(MCUReadWriteMutex & _mutex)
+      : mutex(_mutex)
+    { mutex.ReadWait(); }
+    ~MCUReadWaitAndSignal()
+    { mutex.ReadSignal(); }
+  protected:
+    MCUReadWriteMutex & mutex;
+};
+class MCUWriteWaitAndSignal
+{
+  public:
+    MCUWriteWaitAndSignal(MCUReadWriteMutex & _mutex)
+      : mutex(_mutex)
+    { mutex.WriteWait(); }
+    ~MCUWriteWaitAndSignal()
+    { mutex.WriteSignal(); }
+  protected:
+    MCUReadWriteMutex & mutex;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUConfig: public PConfig
+{
+ public:
+   MCUConfig()
+    : PConfig() { };
+   MCUConfig(const PString & section)
+    : PConfig(CONFIG_PATH, section) { };
+
+   static PStringList GetSectionsPrefix(PString prefix)
+   {
+     MCUConfig cfg;
+     PStringList sect = cfg.GetSections();
+     for(PINDEX i = 0; i < sect.GetSize(); )
+     {
+       if(sect[i].Left(prefix.GetLength()) != prefix)
+         sect.RemoveAt(i);
+       else
+        i++;
+     }
+     return sect;
+   }
+   static BOOL HasSection(PString section)
+   {
+     MCUConfig cfg;
+     PStringList sect = cfg.GetSections();
+     if(sect.GetStringsIndex(section) != P_MAX_INDEX)
+       return TRUE;
+     return FALSE;
+   }
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUURL : public PURL
+{
+  public:
+    MCUURL() { }
+    MCUURL(PString str);
+
+    const PString & GetUserName() const
+    { return username; }
+
+    const PString & GetHostName() const
+    { return hostname; }
+
+    void SetDisplayName(const PString & name)
+    { display_name = name; }
+
+    const PString & GetDisplayName() const
+    { return display_name; }
+
+    const PString GetPort() const
+    { return PString(port); }
+
+    void SetTransport(const PString & _transport)
+    { transport = _transport; }
+
+    const PString & GetTransport() const
+    { return transport; }
+
+    const PString GetMemberName()
+    { return display_name+" ["+GetUrl()+"]"; }
+
+    const PString GetMemberNameId() const
+    {
+      PString id = url_scheme+":";
+      if(username != "") id += username;
+      else               id += hostname;
+      return id;
+    }
+
+    const PString & GetUrl()
+    {
+      if(url_scheme == "sip")
+      {
+        url_party = url_scheme+":"+username+"@"+hostname;
+        if(port != 0)
+          url_party += ":"+PString(port);
+        if(transport != "" && transport != "*")
+          url_party += ";transport="+transport;
+      }
+      return url_party;
+    }
+
+    const PString & AsString()
+    { return GetUrl(); }
+
+  protected:
+    PString display_name;
+    PString url_scheme;
+    PString url_party;
+    PString transport;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#endif // _MCU_UTILS_TYPE_H
