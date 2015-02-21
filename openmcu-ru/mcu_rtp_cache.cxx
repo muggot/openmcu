@@ -24,7 +24,8 @@ BOOL OpenAudioCache(const PString & room, const OpalMediaFormat & format, const 
 
   PTRACE(2, "OpenAudioCache " << cacheName);
 
-  new ConferenceCacheMember(conference, 0, format, cacheName);
+  ConferenceCacheMember *member = new ConferenceCacheMember(conference, 0, format, cacheName);
+  conference->AddMember(member);
 
   // unlock conference
   conference->Unlock();
@@ -54,7 +55,8 @@ BOOL OpenVideoCache(const PString & room, const OpalMediaFormat & format, const 
 
   PTRACE(2, "OpenVideoCache " << cacheName);
 
-  new ConferenceCacheMember(conference, videoMixerNumber, format, cacheName);
+  ConferenceCacheMember *member = new ConferenceCacheMember(conference, videoMixerNumber, format, cacheName);
+  conference->AddMember(member);
 
   // unlock conference
   conference->Unlock();

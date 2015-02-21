@@ -786,7 +786,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
     c << "Array("
         << JsQuoteScreen(conference->GetNumber())                              // c[r][0]: room name
         << "," << conference->GetMemberList().GetCurrentSize()                 // c[r][1]: memberList size
-        << "," << conference->GetProfileList().GetCurrentSize()                 // c[r][2]: profileList size
+        << "," << conference->GetMemberList().GetCurrentSize()                 // c[r][2]: profileList size
         << "," << PString((now - conference->GetStartTime()).GetMilliSeconds())// c[r][3]: duration
         << ",Array("                                                           // c[r][4]: member descriptors
     ;
@@ -797,6 +797,8 @@ PString MCUH323EndPoint::GetRoomStatusJS()
       for(MCUMemberList::shared_iterator it2 = memberList.begin(); it2 != memberList.end(); ++it2)
       {
         ConferenceMember * member = *it2;
+        if(member->GetType() == MEMBER_TYPE_OFFLINE)
+          continue;
 
         if(!firstMember) c << ",";
         c << "Array("                                                          // c[r][4][m]: member m descriptor
@@ -986,10 +988,9 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
 #endif
                  "</tr>";
 
-    size_t profileListSize = 0;
+    MCUMemberList & memberList = conference->GetMemberList();
     PStringArray targets, subses, errors;
     {
-      MCUMemberList & memberList = conference->GetMemberList();
       for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
       {
         ConferenceMember * member = *it;
@@ -1003,7 +1004,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         else
           members
             << (visible? "" : "<b>[Hidden]</b> ")
-            << (member->GetType() == MEMBER_TYPE_MCU ? "<b>[MCU]</b> " : "")
+            << (member->IsMCU() ? "<b>[MCU]</b> " : "")
             << member->GetName() << "</td>";
 
         MCUH323Connection * conn = NULL;
@@ -1141,17 +1142,6 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
           << "</tr>";
       }
 
-      MCUProfileList & profileList = conference->GetProfileList();
-      profileListSize = profileList.GetCurrentSize();
-      for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
-      {
-        ConferenceMember *member = it->GetMember();
-#if MCU_VIDEO
-        if(member == NULL) {members << "<tr><td colspan='7'><b>[Offline]</b> <font color='gray'>" << it->GetName() << "</font></td></tr>"; continue; }
-#else
-        if(member == NULL) {members << "<tr><td colspan='6'><b>[Offline]</b> <font color='gray'>" << it->GetName() << "</font></td></tr>"; continue; }
-#endif
-      }
     }
 
     members << "</table>";
@@ -1164,7 +1154,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
     }
 
     SpliceMacro(insert, "RoomName",        conference->GetNumber());
-    SpliceMacro(insert, "RoomMemberCount", PString(PString::Unsigned, profileListSize));
+    SpliceMacro(insert, "RoomMemberCount", PString(PString::Unsigned, memberList.GetCurrentSize()));
     SpliceMacro(insert, "RoomMembers",     members);
     substitution += insert;
   }
@@ -1260,15 +1250,15 @@ PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
   if(!member) return "[]";
   PStringStream r;
   r
-/* 0*/  << "[1"                                           // [i][ 0] = 1 : ONLINE
+/* 0*/  << "[" << member->IsVisible()                     // [i][ 0] = 1 : ONLINE
 /* 1*/  << ",\"" << dec << (long)member->GetID() << "\""  // [i][ 1] = long id
-/* 2*/  << ",\"" << member->GetNameHTML() << "\""         // [i][ 2] = name [ip]
+/* 2*/  << "," << JsQuoteScreen(member->GetName())        // [i][ 2] = name [ip]
 /* 3*/  << "," << member->muteMask                        // [i][ 3] = mute
 /* 4*/  << "," << member->disableVAD                      // [i][ 4] = disable vad
 /* 5*/  << "," << member->chosenVan                       // [i][ 5] = chosen van
 /* 6*/  << "," << member->GetAudioLevel()                 // [i][ 6] = audiolevel (peak)
 /* 7*/  << "," << member->GetVideoMixerNumber()           // [i][ 7] = number of mixer member receiving
-/* 8*/  << ",\"" << member->GetNameID() << "\""           // [i][ 8] = memberName id
+/* 8*/  << "," << JsQuoteScreen(member->GetNameID())      // [i][ 8] = memberName id
 /* 9*/  << "," << (unsigned short)member->channelCheck    // [i][ 9] = RTP channels checking bit mask 0000vVaA
 /*10*/  << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
 /*11*/  << "," << member->kOutputGainDB                   // [i][11] = Output audio gain, integer: -20..60
@@ -1285,34 +1275,16 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
   members << "members=[";
   BOOL firstMember = TRUE;
 
-  MCUProfileList & profileList = conference.GetProfileList();
-  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  MCUMemberList & memberList = conference.GetMemberList();
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
-    ConferenceProfile *profile = it.GetObject();
-    ConferenceMember *member = profile->GetMember();
-    if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+    ConferenceMember *member = *it;
+    if(member->GetType() & MEMBER_TYPE_GSYSTEM)
       continue;
     if(!firstMember)
       members << ",";
-    if(member == NULL) // inactive member
-    {
-      members
-/* 0*/  << "[0"
-/* 1*/  << ",0"
-/* 2*/  << ",\"" << profile->GetNameHTML() << "\""
-/* 3*/  << ",0"
-/* 4*/  << ",0"
-/* 5*/  << ",0"
-/* 6*/  << ",0"
-/* 7*/  << ",0"
-/* 8*/  << ",\"" << profile->GetNameID() << "\""
-        << "]";
-    }
-    else // active member
-    {
-      members << GetActiveMemberDataJS(member);
-    }
     firstMember = FALSE;
+    members << GetActiveMemberDataJS(member);
   }
 
   members << "];";
@@ -1351,23 +1323,22 @@ int MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMemb
     return -1;
   mixer->Unlock();
 
+  member->SetVideoMixerNumber(newMixerNumber);
+
   MCUH323Connection *conn = FindConnectionWithLock(member->GetCallToken());
-  if(conn == NULL)
-    return -1;
-
-  conn->GetChannelsMutex().Wait();
-  if(conn->GetVideoTransmitChannel() != NULL)
+  if(conn)
   {
-    member->SetVideoMixerNumber(newMixerNumber);
-    conn->videoMixerNumber = newMixerNumber;
-
-    MCU_RTPChannel *channel = conn->GetVideoTransmitChannel();
-    if(channel->GetCodec() != NULL && channel->GetCacheMode() == 2)
-      conn->OpenVideoChannel(TRUE, *((H323VideoCodec *)channel->GetCodec()));
+    conn->GetChannelsMutex().Wait();
+    if(conn->GetVideoTransmitChannel() != NULL)
+    {
+      conn->videoMixerNumber = newMixerNumber;
+      MCU_RTPChannel *channel = conn->GetVideoTransmitChannel();
+      if(channel->GetCodec() != NULL && channel->GetCacheMode() == 2)
+        conn->OpenVideoChannel(TRUE, *((H323VideoCodec *)channel->GetCodec()));
+    }
+    conn->GetChannelsMutex().Signal();
+    conn->Unlock();
   }
-  conn->GetChannelsMutex().Signal();
-
-  conn->Unlock();
 
   PStringStream cmd;
   cmd << "chmix(" << (long)member << "," << newMixerNumber << ")";
@@ -1465,7 +1436,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
         << "p.tl=Array" << conference->GetTemplateList() << "\n"
         << "p.seltpl=\"" << conference->GetSelectedTemplateName() << "\"\n"
         << "p.build_page()";
-      OpenMCU::Current().HttpWriteCmdRoom(msg,room);
+    OpenMCU::Current().HttpWriteCmdRoom(msg,room);
     return TRUE;
   }
   if(action == OTFC_SAVE_TEMPLATE)
@@ -1521,17 +1492,36 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_ADD_AND_INVITE)
   {
-    conference->AddMemberToList(value, NULL);
     PString username(value);
-    username.Replace("&","&amp;",TRUE,0); username.Replace("\"","&quot;",TRUE,0);
-    PString id = MCUURL(username).GetMemberNameId();
-    OpenMCU::Current().HttpWriteCmdRoom("addmmbr(0,0,'"+username+"',0,0,0,0,0,'"+id+"',0)", room);
+    PString nameID = MCUURL(username).GetMemberNameId();
+    MCUConnection_ConferenceMember *member = new MCUConnection_ConferenceMember(conference, username, "");
+    conference->AddMember(member);
+    PStringStream msg;
+    msg  << "addmmbr("
+         << "0,0"
+         << "," << JsQuoteScreen(username)
+         << ",0,0,0,0,0"
+         << "," << JsQuoteScreen(nameID)
+         << ",0,0,0"
+         << ")";
+    OpenMCU::Current().HttpWriteCmdRoom(msg, room);
     Invite(conference->GetNumber(), value);
     return TRUE;
   }
   if(action == OTFC_REMOVE_OFFLINE_MEMBER)
   {
-    conference->RemoveMemberFromList(value, NULL);
+    PWaitAndSignal m(conference->GetMemberListMutex());
+    MCUMemberList & memberList = conference->GetMemberList();
+    MCUMemberList::shared_iterator it = memberList.Find(value);
+    if(it != memberList.end())
+    {
+      ConferenceMember *member = *it;
+      if(member->GetType() == MEMBER_TYPE_OFFLINE)
+      {
+        if(memberList.Erase(it))
+          delete member;
+      }
+    }
     PStringStream msg;
     msg << GetMemberListOptsJavascript(*conference) << "\n"
         << "p.members_refresh()";
@@ -1540,13 +1530,13 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_DROP_ALL_ACTIVE_MEMBERS)
   {
+    PWaitAndSignal m(conference->GetMemberListMutex());
     MCUMemberList & memberList = conference->GetMemberList();
     for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
       ConferenceMember * member = *it;
-      if(member->GetType() & MEMBER_TYPE_GSYSTEM)
-        continue;
-      member->Close();
+      if(member->GetType() == MEMBER_TYPE_ONLINE)
+        member->Close();
     }
     OpenMCU::Current().HttpWriteEventRoom("Active members dropped by operator",room);
     OpenMCU::Current().HttpWriteCmdRoom("drop_all()",room);
@@ -1567,24 +1557,26 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_INVITE_ALL_INACT_MMBRS)
   {
-    MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    PWaitAndSignal m(conference->GetMemberListMutex());
+    MCUMemberList & memberList = conference->GetMemberList();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
-      if(it->GetMember() == NULL)
+      if(it->GetType() == MEMBER_TYPE_OFFLINE)
         Invite(room, it->GetName());
     }
     return TRUE;
   }
   if(action == OTFC_REMOVE_ALL_INACT_MMBRS)
   {
-    MCUProfileList & profileList = conference->GetProfileList();
-    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    PWaitAndSignal m(conference->GetMemberListMutex());
+    MCUMemberList & memberList = conference->GetMemberList();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
-      ConferenceProfile *profile = it.GetObject();
-      if(profile->GetMember() == NULL)
+      ConferenceMember *member = *it;
+      if(it->GetType() == MEMBER_TYPE_OFFLINE)
       {
-        if(profileList.Erase(it))
-          delete profile;
+        if(memberList.Erase(it))
+          delete member;
       }
     }
     OpenMCU::Current().HttpWriteEventRoom("Offline members removed by operator",room);
@@ -2688,7 +2680,17 @@ void MCUH323Connection::LeaveConference()
   PWaitAndSignal m(connMutex);
 
   if(conferenceMember)
-    delete conferenceMember;
+  {
+    if(conferenceMember->GetType() == MEMBER_TYPE_STREAM)
+    {
+      conference->RemoveMember(conferenceMember);
+      delete conferenceMember;
+    } else {
+      conference->RemoveMember(conferenceMember, FALSE);
+      conferenceMember->SetVisible(FALSE);
+      conferenceMember->SetCallToken("");
+    }
+  }
 
   conference = NULL;
   conferenceMember = NULL;
@@ -2714,11 +2716,36 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
   conference = manager.MakeConferenceWithLock(requestedRoom);
   if(!conference)
     return;
-
   conferenceIdentifier = conference->GetGUID();
 
-  // crete member connection
-  conferenceMember = new MCUConnection_ConferenceMember(conference, ep, GetCallToken(), isMCU);
+  PString memberNameID = MCUURL(memberName).GetMemberNameId();
+
+  conference->GetMemberListMutex().Wait();
+  MCUMemberList & memberList = conference->GetMemberList();
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  {
+    MCUConnection_ConferenceMember *member = dynamic_cast<MCUConnection_ConferenceMember *>(*it);
+    if(member == NULL || member->IsJoined() || member->GetNameID() != memberNameID || member->GetType() & MEMBER_TYPE_GSYSTEM)
+      continue;
+    if(memberList.Erase(it))
+    {
+      conferenceMember = member;
+      member->SetVisible(TRUE);
+      member->SetCallToken(callToken);
+      member->ResetCounters();
+      conference->AddMember(conferenceMember);
+      break;
+    }
+  }
+  conference->GetMemberListMutex().Signal();
+
+  // create member connection
+  if(conferenceMember == NULL)
+  {
+    conferenceMember = new MCUConnection_ConferenceMember(conference, memberName, callToken, isMCU);
+    conference->AddMember(conferenceMember);
+  }
+
   conference->Unlock();
 }
 
@@ -4097,20 +4124,21 @@ BOOL MCUH323Connection::GetPreMediaFrame(void * buffer, int width, int height, P
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, BOOL _isMCU)
-  : ConferenceMember(_conference), ep(_ep)
+MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _conference, const PString & _memberName, const PString & _callToken, BOOL _isMCU)
+  : ConferenceMember(_conference), ep(OpenMCU::Current().GetEndpoint())
 {
-  if(_isMCU) memberType = MEMBER_TYPE_MCU;
   callToken = _callToken;
-  conference->AddMember(this);
+  if(callToken != "")
+    memberType = MEMBER_TYPE_ONLINE;
+  isMCU = _isMCU;
+  name = _memberName;
+  nameID = MCUURL(name).GetMemberNameId();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUConnection_ConferenceMember::~MCUConnection_ConferenceMember()
 {
-  if(conference)
-    conference->RemoveMember(this);
   PTRACE(4, "MCUConnection_ConferenceMember deleted");
 }
 
@@ -4141,31 +4169,6 @@ PString MCUConnection_ConferenceMember::GetMonitorInfo(const PString & hdr)
     conn->Unlock();
   }
   return output;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUConnection_ConferenceMember::SetName()
-{
-  if(memberType & MEMBER_TYPE_GSYSTEM)
-    return;
-
-  PTRACE(4,"H323\tSetName " << callToken);
-  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
-  if(conn == NULL)
-    return;
-
-  ConferenceMember * member = conn->GetConferenceMember();
-  if(member == this || member == NULL)
-  {
-    name = conn->GetMemberName();
-    nameID = MCUURL(name).GetMemberNameId();
-    PTRACE(1, "SetName name: " << name);
-  }
-  else
-    PTRACE(1, "MCU\tWrong connection in SetName for " << callToken);
-
-  conn->Unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4297,57 +4300,73 @@ void MCUConnection_ConferenceMember::SetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
   MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
-  if(conn == NULL) return;
-  PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)
   {
-    PWaitAndSignal m(conn->GetChannelsMutex());
-    MCU_RTPChannel * channel = conn->GetAudioReceiveChannel();
-    if(channel)
+    if(conn)
     {
-      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-      channel->SetFreeze(true);
-      ConferenceMember::muteMask |= 1;
-      sumMask |= 1;
+      PWaitAndSignal m(conn->GetChannelsMutex());
+      MCU_RTPChannel * channel = conn->GetAudioReceiveChannel();
+      if(channel)
+      {
+        channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+        channel->SetFreeze(true);
+      }
     }
+    ConferenceMember::muteMask |= 1;
+    sumMask |= 1;
   }
   if(mask & 2)
   {
-    PWaitAndSignal m(conn->GetChannelsMutex());
-    MCU_RTPChannel * channel = conn->GetAudioTransmitChannel();
-    if(channel)
+    if(conn)
     {
-      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-      channel->SetFreeze(true);
-      ConferenceMember::muteMask |= 2;
-      sumMask |= 2;
+      PWaitAndSignal m(conn->GetChannelsMutex());
+      MCU_RTPChannel * channel = conn->GetAudioTransmitChannel();
+      if(channel)
+      {
+        channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+        channel->SetFreeze(true);
+      }
     }
+    ConferenceMember::muteMask |= 2;
+    sumMask |= 2;
   }
   if(mask & 4)
   {
-    PWaitAndSignal m(conn->GetChannelsMutex());
-    MCU_RTPChannel * channel = conn->GetVideoReceiveChannel();
-    if(channel)
+    if(conn)
     {
-      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-      channel->SetFreeze(true);
-      ConferenceMember::muteMask |= 4;
-      sumMask |= 4;
+      PWaitAndSignal m(conn->GetChannelsMutex());
+      MCU_RTPChannel * channel = conn->GetVideoReceiveChannel();
+      if(channel)
+      {
+        channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+        channel->SetFreeze(true);
+      }
     }
+    ConferenceMember::muteMask |= 4;
+    sumMask |= 4;
   }
   if(mask & 8)
   {
-    PWaitAndSignal m(conn->GetChannelsMutex());
-    MCU_RTPChannel * channel = conn->GetVideoTransmitChannel();
-    if(channel)
+    if(conn)
     {
-      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
-      channel->SetFreeze(true);
-      ConferenceMember::muteMask |= 8;
-      sumMask |= 8;
+      PWaitAndSignal m(conn->GetChannelsMutex());
+      MCU_RTPChannel * channel = conn->GetVideoTransmitChannel();
+      if(channel)
+      {
+        channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelInactive);
+        channel->SetFreeze(true);
+      }
     }
+    ConferenceMember::muteMask |= 8;
+    sumMask |= 8;
   }
-  conn->Unlock();
+
+  if(conn)
+    conn->Unlock();
+
+  PString room;
+  if(conference)
+    room = conference->GetNumber();
   PStringStream cmd; cmd << "imute(" << dec << (long)id << "," << sumMask << ")";
   if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
 }
@@ -4358,57 +4377,73 @@ void MCUConnection_ConferenceMember::UnsetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
   MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
-  if(conn == NULL) return;
-  PString room; { Conference * c = ConferenceMember::conference; if(c) room = c->GetNumber(); }
   if(mask & 1)
   {
-    PWaitAndSignal m(conn->GetChannelsMutex());
-    MCU_RTPChannel * channel = conn->GetAudioReceiveChannel();
-    if(channel)
+    if(conn)
     {
-      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-      channel->SetFreeze(false);
-      ConferenceMember::muteMask &= ~1;
-      sumMask |= 1;
+      PWaitAndSignal m(conn->GetChannelsMutex());
+      MCU_RTPChannel * channel = conn->GetAudioReceiveChannel();
+      if(channel)
+      {
+        channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+        channel->SetFreeze(false);
+      }
     }
+    ConferenceMember::muteMask &= ~1;
+    sumMask |= 1;
   }
   if(mask & 2)
   {
-    PWaitAndSignal m(conn->GetChannelsMutex());
-    MCU_RTPChannel * channel = conn->GetAudioTransmitChannel();
-    if(channel)
+    if(conn)
     {
-      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-      channel->SetFreeze(false);
-      ConferenceMember::muteMask &= ~2;
-      sumMask |= 2;
+      PWaitAndSignal m(conn->GetChannelsMutex());
+      MCU_RTPChannel * channel = conn->GetAudioTransmitChannel();
+      if(channel)
+      {
+        channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+        channel->SetFreeze(false);
+      }
     }
+    ConferenceMember::muteMask &= ~2;
+    sumMask |= 2;
   }
   if(mask & 4)
   {
-    PWaitAndSignal m(conn->GetChannelsMutex());
-    MCU_RTPChannel * channel = conn->GetVideoReceiveChannel();
-    if(channel)
+    if(conn)
     {
-      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-      channel->SetFreeze(false);
-      ConferenceMember::muteMask &= ~4;
-      sumMask |= 4;
+      PWaitAndSignal m(conn->GetChannelsMutex());
+      MCU_RTPChannel * channel = conn->GetVideoReceiveChannel();
+      if(channel)
+      {
+        channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+        channel->SetFreeze(false);
+      }
     }
+    ConferenceMember::muteMask &= ~4;
+    sumMask |= 4;
   }
   if(mask & 8)
   {
-    PWaitAndSignal m(conn->GetChannelsMutex());
-    MCU_RTPChannel * channel = conn->GetVideoTransmitChannel();
-    if(channel)
+    if(conn)
     {
-      channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
-      channel->SetFreeze(false);
-      ConferenceMember::muteMask &= ~8;
-      sumMask |= 8;
+      PWaitAndSignal m(conn->GetChannelsMutex());
+      MCU_RTPChannel * channel = conn->GetVideoTransmitChannel();
+      if(channel)
+      {
+        channel->SendMiscIndication(H245_MiscellaneousIndication_type::e_logicalChannelActive);
+        channel->SetFreeze(false);
+      }
     }
+    ConferenceMember::muteMask &= ~8;
+    sumMask |= 8;
   }
-  conn->Unlock();
+
+  if(conn)
+    conn->Unlock();
+
+  PString room;
+  if(conference)
+    room = conference->GetNumber();
   PStringStream cmd; cmd << "iunmute(" << dec << (long)id << "," << sumMask << ")";
   if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
 }

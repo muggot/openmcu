@@ -22,6 +22,7 @@ const unsigned char wavHeader[44] =
 ConferenceSoundCardMember::ConferenceSoundCardMember(Conference * _conference)
   : ConferenceMember(_conference)
 {
+  memberType = MEMBER_TYPE_PIPE;
   // open the default audio device
   PString deviceName = PSoundChannel::GetDefaultDevice(PSoundChannel::Player);
   soundDevice.Open(deviceName, PSoundChannel::Player, 1, 8000, 16);
@@ -34,8 +35,6 @@ ConferenceSoundCardMember::ConferenceSoundCardMember(Conference * _conference)
 
   running = TRUE;
   thread = PThread::Create(PCREATE_NOTIFIER(Thread), 0, PThread::AutoDeleteThread);
-
-  conference->AddMember(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -68,8 +67,6 @@ void ConferenceSoundCardMember::Thread(PThread &, INT)
 
     audioDelay.Delay(pcmData.GetSize() / 16);
   }
-
-  conference->RemoveMember(this);
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -77,6 +74,7 @@ void ConferenceSoundCardMember::Thread(PThread &, INT)
 ConferenceFileMember::ConferenceFileMember(Conference * _conference, const PFilePath & _fn, PFile::OpenMode _mode)
   : ConferenceMember(_conference), mode(_mode)
 {
+  memberType = MEMBER_TYPE_PIPE;
   filenames.push_back(_fn);
   Construct();
 }
@@ -86,6 +84,7 @@ ConferenceFileMember::ConferenceFileMember(Conference * _conference, const PFile
 ConferenceFileMember::ConferenceFileMember(Conference * _conference, const FilenameList & _fns, PFile::OpenMode _mode)
   : ConferenceMember(_conference), mode(_mode)
 {
+  memberType = MEMBER_TYPE_PIPE;
   filenames = _fns;
   Construct();
 }
@@ -106,7 +105,6 @@ void ConferenceFileMember::Construct()
   roomName=conference->GetNumber();
 
   running = TRUE;
-  conference->AddMember(this);
 
   if(mode == PFile::WriteOnly)
   {
@@ -179,8 +177,6 @@ void ConferenceFileMember::ReadThread(PThread &, INT)
     // and delay
     audioDelay.Delay(pcmData.GetSize() / 16);
   }
-
-  conference->RemoveMember(this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -190,6 +186,7 @@ ConferenceCacheMember::ConferenceCacheMember(Conference * _conference, unsigned 
 {
   PTRACE(1,"ConferenceCacheMember\tConstruct");
 
+  memberType = MEMBER_TYPE_CACHE;
   roomName = conference->GetNumber();
   videoMixerNumber = _videoMixerNumber;
   format = _format;
@@ -197,8 +194,6 @@ ConferenceCacheMember::ConferenceCacheMember(Conference * _conference, unsigned 
 
   codec = NULL;
   cache = CreateCacheRTP(cacheName);
-
-  conference->AddMember(this);
 
   running = TRUE;
   thread = PThread::Create(PCREATE_NOTIFIER(CacheThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "cache:%0x");
@@ -219,9 +214,6 @@ ConferenceCacheMember::~ConferenceCacheMember()
   }
 
   DeleteCacheRTP(cache);
-
-  if(conference)
-    conference->RemoveMember(this);
 
   PTRACE(5,"ConferenceCacheMember\tTerminated: " << GetName());
 }
@@ -373,6 +365,7 @@ ConferencePipeMember::ConferencePipeMember(Conference * _conference)
 {
   PTRACE(1,"ConferencePipeMember\tConstructor");
 
+  memberType = MEMBER_TYPE_PIPE;
   running = FALSE;
   audio_thread = NULL;
   video_thread = NULL;
@@ -384,7 +377,6 @@ ConferencePipeMember::ConferencePipeMember(Conference * _conference)
   trace_section = "ConferencePipeMember "+roomName+": ";
 
   running = TRUE;
-  conference->AddMember(this);
 
   audio_thread = PThread::Create(PCREATE_NOTIFIER(AudioThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "pipe_audio:%0x");
   video_thread = PThread::Create(PCREATE_NOTIFIER(VideoThread), 0, PThread::NoAutoDeleteThread, PThread::NormalPriority, "pipe_video:%0x");
@@ -426,9 +418,6 @@ ConferencePipeMember::~ConferencePipeMember()
     delete video_thread;
     video_thread = NULL;
   }
-
-  if(conference)
-    conference->RemoveMember(this);
 
   PTRACE(5,"ConferencePipeMember\tTerminated: " << GetName());
 }

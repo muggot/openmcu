@@ -48,14 +48,8 @@ class ConferenceRecorder : public ConferenceMember
     virtual PString GetName() const
     { return "conference recorder"; }
 
-    virtual MemberTypes GetType()
-    { return MEMBER_TYPE_RECORDER; }
-
     virtual PTime GetStartTime() const
     { return (running ? startTime : PTime()); }
-
-    virtual BOOL IsVisible() const
-    { return FALSE; }
 
     BOOL IsRunning()
     { return running; }

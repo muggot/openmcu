@@ -521,13 +521,16 @@ class MCUConnection_ConferenceMember : public ConferenceMember
 {
   PCLASSINFO(MCUConnection_ConferenceMember, ConferenceMember);
   public:
-    MCUConnection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, BOOL isMCU);
+    MCUConnection_ConferenceMember(Conference * _conference, const PString & _memberName, const PString & _callToken, BOOL _isMCU = FALSE);
     ~MCUConnection_ConferenceMember();
 
     virtual void Close();
 
-    virtual void SetName();
-    virtual void SetName(PString newName) { name = newName; }
+    virtual void SetName(PString newName)
+    {
+      name = newName;
+      nameID = MCUURL(name).GetMemberNameId();
+    }
 
     virtual void SetFreezeVideo(BOOL) const;
 

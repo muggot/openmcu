@@ -50,9 +50,8 @@ ConferenceRecorder::ConferenceRecorder(Conference *_conference)
   : ConferenceMember(_conference)
 {
   trace_section = "ConferenceRecorder: ";
+  memberType = MEMBER_TYPE_RECORDER;
   Reset();
-  conference->AddMember(this);
-
   MCUTRACE(1, trace_section << "create");
 }
 
@@ -61,8 +60,6 @@ ConferenceRecorder::ConferenceRecorder(Conference *_conference)
 ConferenceRecorder::~ConferenceRecorder()
 {
   Stop();
-  if(conference)
-    conference->RemoveMember(this);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

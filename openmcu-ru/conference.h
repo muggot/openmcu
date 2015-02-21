@@ -16,8 +16,8 @@
 
 enum MemberTypes
 {
-  MEMBER_TYPE_NONE       = 0,
-  MEMBER_TYPE_MCU        = 2,
+  MEMBER_TYPE_OFFLINE    = 0,
+  MEMBER_TYPE_ONLINE     = 2,
   //
   MEMBER_TYPE_GSYSTEM    = 1, // MEMBER_TYPE_PIPE|MEMBER_TYPE_CACHE|MEMBER_TYPE_RECORDER|MEMBER_TYPE_STREAM
   MEMBER_TYPE_PIPE       = 1,
@@ -150,49 +150,6 @@ class ConferenceAudioConnection : public ConferenceConnection
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class ConferenceProfile : public PObject
-{
-  PCLASSINFO(ConferenceProfile, PObject);
-
-  public:
-    ConferenceProfile(long _listID, const PString & _name, Conference * _conference, ConferenceMember * member);
-
-    ~ConferenceProfile()
-    { }
-
-    void Unlock();
-
-    long GetID()
-    { return listID; }
-
-    const PString & GetName() const
-    { return name; }
-
-    const PString & GetNameID() const
-    { return nameID; }
-
-    const PString & GetNameHTML() const
-    { return nameHTML; }
-
-    ConferenceMemberId GetID() const
-    { return (ConferenceMemberId)this; }
-
-    ConferenceMember * GetMember()
-    { return member; }
-
-  protected:
-    long listID;
-    PString name;
-    PString nameHTML;
-    PString nameID;
-
-    Conference *conference;
-    ConferenceMember *member;
-    PMutex mutex;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 class ConferenceMember : public PObject
 {
   PCLASSINFO(ConferenceMember, PObject);
@@ -223,8 +180,16 @@ class ConferenceMember : public PObject
       * If this returns TRUE, the conference member will be visible in all publically displayed
       * conference lists. It will always be visible in the console displays
       */
-    virtual BOOL IsVisible() const
-    { return TRUE; }
+    void SetVisible(BOOL enable)
+    {
+      if(memberType & MEMBER_TYPE_GSYSTEM)
+        return;
+      if(enable) memberType = MEMBER_TYPE_ONLINE;
+      else       memberType = MEMBER_TYPE_OFFLINE;
+    }
+
+    BOOL IsVisible() const
+    { return (memberType == MEMBER_TYPE_ONLINE); }
 
     /**
       * return the conference member ID
@@ -340,7 +305,6 @@ class ConferenceMember : public PObject
     BOOL IsJoined() const
     { return memberIsJoined; }
 
-    virtual void SetName() {}
     virtual void SetName(PString newName) {}
 
     virtual PString GetName() const
@@ -349,25 +313,33 @@ class ConferenceMember : public PObject
     virtual PString GetNameID() const
     { return nameID; }
 
-    PString GetNameHTML() const
-    {
-      PString _name = name;
-      _name.Replace("&","&amp;",TRUE,0);
-      _name.Replace("\"","&quot;",TRUE,0);
-      return _name;
-    }
-
     virtual PString GetCallToken() const
     { return callToken; }
 
-    virtual MemberTypes GetType()
+    virtual void SetCallToken(const PString & token)
+    { callToken = token; }
+
+    MemberTypes GetType()
     { return memberType; }
+
+    BOOL IsMCU()
+    { return isMCU; }
 
     virtual void SetFreezeVideo(BOOL) const
     { }
 
     virtual unsigned GetAudioLevel() const
     { return audioLevel;  }
+
+    void ResetCounters()
+    {
+      totalVideoFramesSent = 0;
+      firstFrameSendTime = -1;
+      totalVideoFramesReceived = 0;
+      firstFrameReceiveTime = -1;
+      rxFrameWidth = 0;
+      rxFrameHeight = 0;
+    }
 
     BOOL autoDial;
     unsigned muteMask;
@@ -388,6 +360,7 @@ class ConferenceMember : public PObject
     virtual void SetChannelPauses(unsigned mask) {};
     virtual void UnsetChannelPauses(unsigned mask) {};
 
+    void SendRoomControl(int state);
 
   protected:
     unsigned videoMixerNumber;
@@ -401,6 +374,7 @@ class ConferenceMember : public PObject
     PString name;
     PString nameID;
     float currVolCoef;
+    BOOL isMCU;
 
 #if MCU_VIDEO
     PTime firstFrameSendTime;
@@ -440,7 +414,7 @@ class Conference : public PObject
     /**
       * add the specified member to the conference
       */
-    BOOL AddMember(ConferenceMember * member);
+    BOOL AddMember(ConferenceMember * member, BOOL addToList = TRUE);
 
     /**
      * remove the specifed member from the conference.
@@ -449,19 +423,16 @@ class Conference : public PObject
      * 
      * @return if TRUE, the conference is now empty
      */
-    BOOL RemoveMember(ConferenceMember * member);
+    BOOL RemoveMember(ConferenceMember * member, BOOL removeFromList = TRUE);
 
     MCUMemberList & GetMemberList()
     { return memberList; }
 
-    MCUProfileList & GetProfileList()
-    { return profileList; }
+    PMutex & GetMemberListMutex()
+    { return memberListMutex; }
 
-    void AddMemberToList(const PString & name, ConferenceMember *member);
-    void RemoveMemberFromList(const PString & name, ConferenceMember *member);
-
-    int GetMemberCount() const
-    { return memberCount; }
+    int GetMemberCount()
+    { return memberList.GetCurrentSize(); }
 
     int GetVisibleMemberCount() const
     { return visibleMemberCount; }
@@ -569,14 +540,12 @@ class Conference : public PObject
     PMutex memberListMutex;
 
     MCUMemberList memberList;
-    MCUProfileList profileList;
 
     void RemoveAudioConnection(ConferenceMember * member);
     MCUAudioConnectionList audioConnectionList;
 
     MCUVideoMixerList videoMixerList;
 
-    PINDEX memberCount;
     PINDEX visibleMemberCount;
     PINDEX maxMemberCount;
 
@@ -627,9 +596,6 @@ class ConferenceManager : public PObject
 
     BOOL CheckJoinConference(const PString & number);
     Conference * MakeConferenceWithLock(const PString & number, PString name = "", BOOL ignoreRestriction = FALSE);
-
-    ConferenceProfile * FindProfileWithLock(const PString & roomName, const PString & memberName);
-    ConferenceProfile * FindProfileWithLock(Conference * conference, const PString & memberName);
 
     ConferenceMember * FindMemberWithLock(const PString & roomName, const PString & memberName);
     ConferenceMember * FindMemberWithLock(Conference * conference, const PString & memberName);

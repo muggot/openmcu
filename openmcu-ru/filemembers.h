@@ -53,9 +53,6 @@ class ConferenceFileMember : public ConferenceMember
     virtual PString GetName() const
     { return PString(mode == PFile::ReadOnly ? "file player" : "file recorder") & currentFilename; }
 
-    virtual MemberTypes GetType()
-    { return MEMBER_TYPE_NONE; }
-
     virtual BOOL IsVisible() const
     { return FALSE; }
 
@@ -92,9 +89,6 @@ class ConferenceCacheMember : public ConferenceMember
 
     virtual PString GetName() const
     { return "cache"; }
-
-    virtual MemberTypes GetType()
-    { return MEMBER_TYPE_CACHE; }
 
     virtual BOOL IsVisible() const
     { return FALSE; }
@@ -151,12 +145,6 @@ class ConferencePipeMember : public ConferenceMember
 
     virtual PString GetName() const
     { return PString("file recorder"); }
-
-    virtual MemberTypes GetType()
-    { return MEMBER_TYPE_PIPE; }
-
-    virtual BOOL IsVisible() const
-    { return FALSE; }
 
     virtual PString GetFormat()
     { return GetName(); }

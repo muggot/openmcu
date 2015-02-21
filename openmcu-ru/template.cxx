@@ -99,45 +99,18 @@ PString Conference::SaveTemplate(PString tplName)
     else if(skipCounter>1) t << "    SKIP " << skipCounter << "\n";
     t << "  }\n";
   }
-
-  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
-    ConferenceProfile *profile = it.GetObject();
-    ConferenceMember *member = profile->GetMember();
-    if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+    ConferenceMember *member = *it;
+    if(member->GetType() & MEMBER_TYPE_GSYSTEM)
       continue;
-    if(member)
-    {
-      t << "  MEMBER "
-        << (member->autoDial?"1":"0") << ", "
-        << member->muteMask << "/" << (member->kManualGainDB+20) << "/" << (member->kOutputGainDB+20) << ", "
-        << (member->disableVAD?"1":"0") << ", "
-        << (member->chosenVan?"1":"0") << ", "
-        << member->GetVideoMixerNumber() << ", "
-        << member->GetName() << "\n";
-    }
-    else
-    {
-      BOOL memberFound = FALSE;
-      for(PINDEX previous_i=0; previous_i<previousTemplate.GetSize(); previous_i++)
-      { PString prev_l=previousTemplate[previous_i].Trim();
-        PINDEX space=prev_l.Find(" ");
-        if(space!=P_MAX_INDEX)
-        { PString cmd=prev_l.Left(space);
-          if(cmd=="MEMBER")
-          { PString value=prev_l.Mid(space+1,P_MAX_INDEX).LeftTrim();
-            PStringArray options=value.Tokenise(',',TRUE);
-            if(options.GetSize()==6)
-            if(options[5].LeftTrim()==PString(profile->GetName()).LeftTrim())
-            { t << "  MEMBER " << value << "\n";
-              memberFound = TRUE;
-              break;
-            }
-          }
-        }
-      }
-      if(!memberFound) t << "  MEMBER 0, 0, 0, 0, 0, " << profile->GetName() << "\n";
-    }
+    t << "  MEMBER "
+      << (member->autoDial?"1":"0") << ", "
+      << member->muteMask << "/" << (member->kManualGainDB+20) << "/" << (member->kOutputGainDB+20) << ", "
+      << (member->disableVAD?"1":"0") << ", "
+      << (member->chosenVan?"1":"0") << ", "
+      << member->GetVideoMixerNumber() << ", "
+      << member->GetName() << "\n";
   }
   t << "}\n\n";
 
@@ -292,7 +265,8 @@ void Conference::LoadTemplate(PString tpl)
           }
           else
           {
-            AddMemberToList(memberInternalName, NULL);
+            member = new MCUConnection_ConferenceMember(this, memberInternalName, "");
+            AddMember(member);
             if(memberAutoDial) // finally: offline and have to be called
             {
               PString token;
@@ -325,28 +299,21 @@ void Conference::LoadTemplate(PString tpl)
 
   if(!lockedTemplate) return; // room not locked - don't touch member list
 
-  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
-    ConferenceProfile *profile = it.GetObject();
-    ConferenceMember *member = profile->GetMember();
-    if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+    ConferenceMember *member = *it;
+    if(member->GetType() & MEMBER_TYPE_GSYSTEM)
       continue;
-    PString name = profile->GetName();
+    PString name = member->GetName();
     if(validatedMembers.GetStringsIndex(name) == P_MAX_INDEX) // remove unwanted members
     {
-      if(member)
-      {
-        ConferenceMemberId id = member->GetID();
-        PTRACE(6,"Conference\tLoading template - closing connection with " << name << " (id " << id << ")" << flush);
-        //PTRACE(6,"Conference\tLoading template - removing " << name << " from memberList" << flush);
-        member->Close();
-      } else {
-        PTRACE(6,"Conference\tLoading template - removing offline member " << name << " from memberNameList" << flush);
-      }
-      profileList.Erase(it);
-      delete profile;
+      ConferenceMemberId id = member->GetID();
+      PTRACE(6,"Conference\tLoading template - closing connection with " << name << " (id " << id << ")" << flush);
+      member->Close();
     }
   }
+
 }
 
 PString Conference::GetTemplateList()
@@ -669,31 +636,31 @@ void Conference::OnConnectionClean(const PString & remotePartyName, const PStrin
     name += '[' + url +']';
   }
 
-  ConferenceProfile *profile = manager.FindProfileWithLock(this, name);
-  if(profile)
-    profile->Unlock();
-  if(profile == NULL)
+
+  ConferenceMember *member = manager.FindMemberWithLock(this, name);
+  if(member)
+    member->Unlock();
+  if(member == NULL)
   {
-    for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
-      ConferenceProfile *p = it.GetObject();
-      if(p->GetName().FindLast(name) != P_MAX_INDEX)
+      ConferenceMember *m = *it;
+      if(m->GetName().FindLast(name) != P_MAX_INDEX)
       {
-        profile = p;
-        name = profile->GetName();
+        member = m;
+        name = member->GetName();
         break;
       }
     }
   }
-  if(profile == NULL)
+  if(member == NULL)
   {
     PTRACE(1,"Conference\tCould not match party name: " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
     return;
   }
-  if(profile->GetMember() != NULL)
+  if(member->IsVisible())
   {
     PTRACE(2,"Conference\tMember found in the list, but it's not offine (nothing to do): " << remotePartyName << ", address: " << remotePartyAddress << ", result: " << name);
-    profile->Unlock();
     return;
   }
 

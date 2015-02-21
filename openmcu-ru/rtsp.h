@@ -130,26 +130,19 @@ class ConferenceStreamMember : public ConferenceMember
     ConferenceStreamMember(Conference *_conference, const PString & _callToken, const PString & _name)
       : ConferenceMember(_conference)
     {
+      memberType = MEMBER_TYPE_STREAM;
       callToken = _callToken;
       name = _name;
-      conference->AddMember(this);
+      nameID = MCUURL(name).GetMemberNameId();
     }
     ~ConferenceStreamMember()
     {
-      if(conference)
-        conference->RemoveMember(this);
     }
 
     virtual void Close();
 
     virtual PString GetName() const
     { return "stream "+name; }
-
-    virtual MemberTypes GetType()
-    { return MEMBER_TYPE_STREAM; }
-
-    virtual BOOL IsVisible() const
-    { return FALSE; }
 
 };
 

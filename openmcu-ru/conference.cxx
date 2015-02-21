@@ -159,23 +159,6 @@ BOOL ConferenceManager::HasConference(const OpalGloballyUniqueID & conferenceID,
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ConferenceProfile * ConferenceManager::FindProfileWithLock(const PString & roomName, const PString & memberName)
-{
-  Conference *conference = FindConferenceWithLock(roomName);
-  if(conference == NULL)
-    return NULL;
-  ConferenceProfile *profile = FindProfileWithLock(conference, memberName);
-  conference->Unlock();
-  return profile;
-}
-ConferenceProfile * ConferenceManager::FindProfileWithLock(Conference * conference, const PString & memberName)
-{
-  MCUProfileList & profileList = conference->GetProfileList();
-  return profileList(memberName);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ConferenceMember * ConferenceManager::FindMemberWithLock(const PString & roomName, const PString & memberName)
 {
   Conference *conference = FindConferenceWithLock(roomName);
@@ -344,12 +327,16 @@ int ConferenceManager::DeleteVideoMixer(Conference * conference, int number)
 void ConferenceManager::OnCreateConference(Conference * conference)
 {
   if(MCUConfig("Export Parameters").GetBoolean("Enable export", FALSE) == TRUE)
+  {
     conference->pipeMember = new ConferencePipeMember(conference);
+    conference->AddMember(conference->pipeMember);
+  }
 
   // add file recorder member
   if(GetConferenceParam(conference->GetNumber(), RoomAllowRecordKey, TRUE))
   {
     conference->conferenceRecorder = new ConferenceRecorder(conference);
+    conference->AddMember(conference->conferenceRecorder);
   }
 
   if(!conference->GetForceScreenSplit())
@@ -396,7 +383,6 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   conference->stopping=TRUE;
 
   MCUMemberList & memberList = conference->GetMemberList();
-  MCUProfileList & profileList = conference->GetProfileList();
 
   PString jsName(number);
   jsName.Replace("\"","\\x27",TRUE,0); jsName.Replace("'","\\x22",TRUE,0);
@@ -407,43 +393,32 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember * member = it.GetObject();
-    if(member)
-      member->Close();
+    member->Close();
   }
 
   //OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(2,'" + jsName + "')", number);
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(3,'" + jsName + "')", number);
-  PTRACE(2,"MCU\tOnDestroyConference " << number <<", delete system members");
+  MCUTRACE(0,"MCU\tOnDestroyConference " << number <<", waiting... members: " << memberList.GetCurrentSize());
 
-  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  while(true)
   {
-    ConferenceMember * member = it.GetObject();
-    if(member->GetType() == MEMBER_TYPE_CACHE || member->GetType() == MEMBER_TYPE_PIPE ||
-       member->GetType() == MEMBER_TYPE_RECORDER)
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
-      it.Release();
-      delete member;
+      ConferenceMember * member = it.GetObject();
+      if(member->IsVisible())
+        continue;
+      if(member->GetType() == MEMBER_TYPE_STREAM)
+        continue;
+      conference->RemoveMember(member, FALSE);
+      if(memberList.Erase(it))
+        delete member;
     }
+    if(memberList.GetCurrentSize() == 0)
+      break;
+    MCUTime::Sleep(100);
   }
 
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(4,'" + jsName + "')", number);
-
-  int members = memberList.GetCurrentSize();
-  while(members != 0)
-  {
-    MCUTRACE(0,"MCU\tOnDestroyConference " << number <<", waiting... members: " << members);
-    MCUTime::Sleep(100);
-    members = memberList.GetCurrentSize();
-  }
-
-  PTRACE(2,"MCU\tOnDestroyConference " << number <<", clearing profile list");
-  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
-  {
-    ConferenceProfile *profile = it.GetObject();
-    if(profileList.Erase(it))
-      delete profile;
-  }
-
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(5,'" + jsName + "')", number);
 }
 
@@ -618,7 +593,6 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
     videoMixerList.Release(mixer->GetID());
   }
 #endif
-  memberCount = 0;
   visibleMemberCount = 0;
   maxMemberCount = 0;
   moderated = FALSE;
@@ -730,117 +704,8 @@ BOOL Conference::StopRecorder()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
+BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
 {
-  PWaitAndSignal m(memberListMutex);
-
-  // memberList
-  if(member)
-  {
-    memberList.Insert(member, (long)member->GetID(), name);
-    memberList.Release((long)member->GetID());
-  }
-
-  if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
-    return;
-
-  // profileList
-  PString nameID = MCUURL(name).GetMemberNameId();
-  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
-  {
-    ConferenceProfile *profile = it.GetObject();
-    if(profile->GetMember())
-      continue;
-    if(profile->GetNameID() == nameID)
-    {
-      if(profileList.Erase(it))
-        delete profile;
-      break;
-    }
-  }
-  ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, member);
-  profileList.Insert(profile, profile->GetID(), name);
-  profileList.Release(profile->GetID());
-
-  if(member)
-  {
-    PStringStream msg;
-    msg << "<font color=green><b>+</b>" << member->GetName() << "</font>";
-    OpenMCU::Current().HttpWriteEventRoom(msg, number);
-    msg = "addmmbr(1";
-    msg << "," << (long)member->GetID()
-        << ",\"" << member->GetNameHTML() << "\""
-        << "," << member->muteMask
-        << "," << member->disableVAD
-        << "," << member->chosenVan
-        << "," << member->GetAudioLevel()
-        << "," << member->GetVideoMixerNumber()
-        << ",\"" << member->GetNameID() << "\""
-        << "," << dec << (unsigned)member->channelCheck
-        << "," << member->kManualGainDB
-        << "," << member->kOutputGainDB
-        << ")";
-    OpenMCU::Current().HttpWriteCmdRoom(msg, number);
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *member)
-{
-  PWaitAndSignal m(memberListMutex);
-
-  // memberList
-  if(member)
-    memberList.Erase((long)member->GetID());
-
-  if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
-    return;
-
-  // profileList
-  for(MCUProfileList::shared_iterator it = profileList.begin(); it != profileList.end(); ++it)
-  {
-    ConferenceProfile *profile = it.GetObject();
-    if(profile->GetName() == name && profile->GetMember() == member)
-    {
-      if(profileList.Erase(it))
-        delete profile;
-      break;
-    }
-  }
-
-  if(member)
-  {
-    ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, NULL);
-    profileList.Insert(profile, profile->GetID(), name);
-    profileList.Release(profile->GetID());
-  }
-
-  if(member)
-  {
-    PStringStream msg;
-    msg << "<font color=red><b>-</b>" << member->GetName() << "</font>";
-    OpenMCU::Current().HttpWriteEventRoom(msg, number);
-    msg = "remmmbr(0";
-    msg << ","  << (long)member->GetID()
-        << ",\"" << member->GetNameHTML() << "\""
-        << ","  << member->muteMask
-        << "," << member->disableVAD
-        << ","  << member->chosenVan
-        << ","  << member->GetAudioLevel()
-        << ",\"" << member->GetNameID() << "\"";
-    msg << ",0";
-    msg << ")";
-    OpenMCU::Current().HttpWriteCmdRoom(msg, number);
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BOOL Conference::AddMember(ConferenceMember * memberToAdd)
-{
-  memberToAdd->SetName();
-
   PTRACE(3, trace_section << "Adding member: " << memberToAdd->GetName());
   cout << trace_section << "Adding member: " << memberToAdd->GetName() << endl;
 
@@ -867,7 +732,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
       if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
       {
         PStringStream msg;
-        msg << memberToAdd->GetNameHTML() << " REJECTED - DUPLICATE NAME";
+        msg << JsQuoteScreen(memberToAdd->GetName()) << " REJECTED - DUPLICATE NAME";
         OpenMCU::Current().HttpWriteEventRoom(msg, number);
         PTRACE(1, trace_section << "Rejected duplicate name: " << memberToAdd->GetName());
         return FALSE;
@@ -876,18 +741,21 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
     }
   }
 
-  if(!UseSameVideoForAllMembers())
+  if(!UseSameVideoForAllMembers() && !memberToAdd->videoMixer)
     memberToAdd->videoMixer = new MCUSimpleVideoMixer();
 
-  // add to all lists
-  AddMemberToList(memberToAdd->GetName(), memberToAdd);
-
-  memberCount++;
+  // add to list
+  if(addToList)
+  {
+    memberList.Insert(memberToAdd, (long)memberToAdd->GetID(), memberToAdd->GetName());
+    memberList.Release((long)memberToAdd->GetID());
+  }
   if(memberToAdd->IsVisible())
   {
     visibleMemberCount++;
     maxMemberCount = PMAX(maxMemberCount, visibleMemberCount);
   }
+  memberToAdd->SendRoomControl(1);
 
   // notify that member is joined
   memberToAdd->SetJoined(TRUE);
@@ -951,29 +819,29 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL Conference::RemoveMember(ConferenceMember * memberToRemove)
+BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFromList)
 {
   if(memberToRemove == NULL)
     return TRUE;
 
+  PTRACE(3, trace_section << "Removing member " << memberToRemove->GetName());
+  cout << trace_section << "Removing member " << memberToRemove->GetName() << endl;
+
   // lock memberList
   PWaitAndSignal m(memberListMutex);
+
+  // first remove from list
+  if(removeFromList)
+    memberList.Erase((long)memberToRemove->GetID());
+  if(memberToRemove->IsVisible())
+    visibleMemberCount--;
+  memberToRemove->SendRoomControl(0);
 
   if(!memberToRemove->IsJoined())
   {
     PTRACE(4, trace_section << "No need to remove member " << memberToRemove->GetName());
     return FALSE;
   }
-
-  PTRACE(3, trace_section << "Removing member " << memberToRemove->GetName());
-  cout << trace_section << "Removing member " << memberToRemove->GetName() << endl;
-
-  // remove from all lists
-  RemoveMemberFromList(memberToRemove->GetName(), memberToRemove);
-
-  memberCount--;
-  if(memberToRemove->IsVisible())
-    visibleMemberCount--;
 
   // remove ConferenceConnection
   RemoveAudioConnection(memberToRemove);
@@ -1333,32 +1201,12 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ConferenceProfile::ConferenceProfile(long _listID, const PString & _name, Conference * _conference, ConferenceMember *_member)
-{
-  listID = _listID;
-  member = _member;
-  conference = _conference;
-  name = _name;
-  nameID = MCUURL(name).GetMemberNameId();
-  nameHTML = name;
-  nameHTML.Replace("&","&amp;",TRUE,0);
-  nameHTML.Replace("\"","&quot;",TRUE,0);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ConferenceProfile::Unlock()
-{
-  conference->GetProfileList().Release(listID);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 ConferenceMember::ConferenceMember(Conference * _conference)
   : conference(_conference)
 {
+  memberType = MEMBER_TYPE_OFFLINE;
+  isMCU = FALSE;
   id = this;
-  memberType = MEMBER_TYPE_NONE;
   channelCheck=0;
   audioLevel = 0;
   audioCounter = 0;
@@ -1402,6 +1250,57 @@ ConferenceMember::~ConferenceMember()
 void ConferenceMember::Unlock()
 {
   conference->GetMemberList().Release((long)GetID());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferenceMember::SendRoomControl(int state)
+{
+  if(GetType() & MEMBER_TYPE_GSYSTEM)
+    return;
+  if(state == 0)
+  {
+    PStringStream msg;
+    msg << "<font color=red><b>-</b>" << GetName() << "</font>";
+    OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
+    msg = "remmmbr(";
+    msg  << state
+         << "," << (long)GetID()
+         << "," << JsQuoteScreen(GetName())
+         << "," << muteMask
+         << "," << disableVAD
+         << "," << chosenVan
+         << "," << GetAudioLevel()
+         << "," << GetVideoMixerNumber()
+         << "," << JsQuoteScreen(GetNameID())
+         << "," << dec << (unsigned)channelCheck
+         << "," << kManualGainDB
+         << "," << kOutputGainDB
+         << ")";
+    OpenMCU::Current().HttpWriteCmdRoom(msg, conference->GetNumber());
+  }
+  else if(state == 1)
+  {
+    PStringStream msg;
+    msg << "<font color=green><b>+</b>" << GetName() << "</font>";
+    OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
+    msg = "addmmbr(";
+    msg  << state
+         << "," << (long)GetID()
+         << "," << JsQuoteScreen(GetName())
+         << "," << muteMask
+         << "," << disableVAD
+         << "," << chosenVan
+         << "," << GetAudioLevel()
+         << "," << GetVideoMixerNumber()
+         << "," << JsQuoteScreen(GetNameID())
+         << "," << dec << (unsigned)channelCheck
+         << "," << kManualGainDB
+         << "," << kOutputGainDB
+         << ")";
+    OpenMCU::Current().HttpWriteCmdRoom(msg, conference->GetNumber());
+  }
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

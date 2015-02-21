@@ -780,7 +780,6 @@ typedef MCUSharedList<Conference> MCUConferenceList;
 typedef MCUSharedList<ConferenceAudioConnection> MCUAudioConnectionList;
 typedef MCUSharedList<MCUSimpleVideoMixer> MCUVideoMixerList;
 typedef MCUSharedList<ConferenceMember> MCUMemberList;
-typedef MCUSharedList<ConferenceProfile> MCUProfileList;
 
 typedef MCUSharedList<RegistrarAccount> MCURegistrarAccountList;
 typedef MCUSharedList<RegistrarConnection> MCURegistrarConnectionList;
