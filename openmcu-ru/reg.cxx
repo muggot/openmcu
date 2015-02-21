@@ -389,7 +389,10 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
   else if(url.GetScheme() == "h323")
     account_type = ACCOUNT_TYPE_H323;
   else if(url.GetScheme() == "rtsp")
+  {
     account_type = ACCOUNT_TYPE_RTSP;
+    url.SetUserName(url.GetUrl());
+  }
   else
     return FALSE;
 
@@ -424,7 +427,7 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
     }
   }
   // initial username_out, can be empty
-  username_out = url.GetUserName();
+  //username_out = url.GetUserName();
 
   if(account_type == ACCOUNT_TYPE_SIP)
   {
@@ -440,7 +443,7 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
   }
   else if(account_type == ACCOUNT_TYPE_RTSP)
   {
-    PString callToken = PGloballyUniqueID().AsString();
+    callToken = PGloballyUniqueID().AsString();
     MCURtspServer *rtsp = OpenMCU::Current().GetRtspServer();
     if(!rtsp->CreateConnection(room, address, callToken))
       return FALSE;
