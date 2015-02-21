@@ -127,7 +127,7 @@ class ConferenceStreamMember : public ConferenceMember
   PCLASSINFO(ConferenceStreamMember, ConferenceMember);
 
   public:
-    ConferenceStreamMember(Conference *_conference, const PString & _callToken, const PString & _name)
+    ConferenceStreamMember(Conference *_conference, const PString & _name, const PString & _callToken)
       : ConferenceMember(_conference)
     {
       memberType = MEMBER_TYPE_STREAM;
@@ -142,7 +142,7 @@ class ConferenceStreamMember : public ConferenceMember
     virtual void Close();
 
     virtual PString GetName() const
-    { return "stream "+name; }
+    { return name; }
 
 };
 

@@ -404,10 +404,10 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   {
     for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
+      // lock member list
+      PWaitAndSignal m(conference->GetMemberListMutex());
       ConferenceMember * member = it.GetObject();
-      if(member->IsVisible())
-        continue;
-      if(member->GetType() == MEMBER_TYPE_STREAM)
+      if(member->IsOnline())
         continue;
       conference->RemoveMember(member, FALSE);
       if(memberList.Erase(it))
@@ -717,7 +717,7 @@ BOOL Conference::AddMemberToList(ConferenceMember * memberToAdd, BOOL addToList)
   }
 
   // check for duplicate name or very fast reconnect
-  if(!memberToAdd->GetType() & MEMBER_TYPE_GSYSTEM)
+  if(!memberToAdd->IsSystem())
   {
     // check for duplicate name or very fast reconnect
     PString memberName = memberToAdd->GetName();
@@ -751,7 +751,7 @@ BOOL Conference::AddMemberToList(ConferenceMember * memberToAdd, BOOL addToList)
   memberToAdd->SendRoomControl(1);
 
   // template
-  if(!memberToAdd->GetType() & MEMBER_TYPE_GSYSTEM)
+  if(!memberToAdd->IsSystem())
     PullMemberOptionsFromTemplate(memberToAdd, confTpl);
 
   return TRUE;
@@ -770,14 +770,16 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
   if(!AddMemberToList(memberToAdd, addToList))
     return FALSE;
 
-  if(!memberToAdd->IsVisible() || memberToAdd->IsJoined())
+  // notify that member is joined
+  if(memberToAdd->IsJoined())
   {
-    PTRACE(4, trace_section << "No need to add member " << memberToAdd->GetName());
+    PTRACE(4, trace_section << "member already joined " << memberToAdd->GetName());
     return TRUE;
   }
-
-  // notify that member is joined
   memberToAdd->SetJoined(TRUE);
+
+  if(!memberToAdd->IsVisible())
+    return TRUE;
 
   if(UseSameVideoForAllMembers())
   {
@@ -842,11 +844,16 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   }
   memberToRemove->SendRoomControl(0);
 
-  if(!memberToRemove->IsVisible() || !memberToRemove->IsJoined())
+  // notify that member is not joined anymore
+  if(!memberToRemove->IsJoined())
   {
-    PTRACE(4, trace_section << "No need to remove member " << memberToRemove->GetName());
-    return FALSE;
+    PTRACE(4, trace_section << "member not joined " << memberToRemove->GetName());
+    return TRUE;
   }
+  memberToRemove->SetJoined(FALSE);
+
+  if(!memberToRemove->IsVisible())
+    return TRUE;
 
   // remove ConferenceConnection
   RemoveAudioConnection(memberToRemove);
@@ -887,9 +894,6 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
 
   // trigger H245 thread for leave message
   //new NotifyH245Thread(*this, FALSE, memberToRemove);
-
-  // notify that member is not joined anymore
-  memberToRemove->SetJoined(FALSE);
 
   return TRUE;
 }
@@ -939,7 +943,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, const uint64_t & tim
 
 void Conference::WriteMemberAudio(ConferenceMember * member, const uint64_t & timestamp, const void * buffer, int amount, int sampleRate, int channels)
 {
-  if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+  if(member->IsSystem())
     return;
 
   ConferenceAudioConnection * conn = audioConnectionList((long)member->GetID());
@@ -1204,7 +1208,8 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
 ConferenceMember::ConferenceMember(Conference * _conference)
   : conference(_conference)
 {
-  memberType = MEMBER_TYPE_OFFLINE;
+  memberType = MEMBER_TYPE_NONE;
+  visible = FALSE;
   isMCU = FALSE;
   id = this;
   channelCheck=0;
@@ -1260,51 +1265,35 @@ void ConferenceMember::Unlock()
 
 void ConferenceMember::SendRoomControl(int state)
 {
-  if(GetType() & MEMBER_TYPE_GSYSTEM)
+  if(IsSystem())
     return;
-  if(state == 0)
+  PStringStream msg;
+  if(state == 1)
   {
-    PStringStream msg;
-    msg << "<font color=red><b>-</b>" << GetName() << "</font>";
-    OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
-    msg = "remmmbr(";
-    msg  << state
-         << "," << (long)GetID()
-         << "," << JsQuoteScreen(GetName())
-         << "," << muteMask
-         << "," << disableVAD
-         << "," << chosenVan
-         << "," << GetAudioLevel()
-         << "," << GetVideoMixerNumber()
-         << "," << JsQuoteScreen(GetNameID())
-         << "," << dec << (unsigned)channelCheck
-         << "," << kManualGainDB
-         << "," << kOutputGainDB
-         << ")";
-    OpenMCU::Current().HttpWriteCmdRoom(msg, conference->GetNumber());
-  }
-  else if(state == 1)
-  {
-    PStringStream msg;
     msg << "<font color=green><b>+</b>" << GetName() << "</font>";
     OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
     msg = "addmmbr(";
-    msg  << IsVisible()
-         << "," << (long)GetID()
-         << "," << JsQuoteScreen(GetName())
-         << "," << muteMask
-         << "," << disableVAD
-         << "," << chosenVan
-         << "," << GetAudioLevel()
-         << "," << GetVideoMixerNumber()
-         << "," << JsQuoteScreen(GetNameID())
-         << "," << dec << (unsigned)channelCheck
-         << "," << kManualGainDB
-         << "," << kOutputGainDB
-         << ")";
-    OpenMCU::Current().HttpWriteCmdRoom(msg, conference->GetNumber());
+  } else {
+    msg << "<font color=red><b>-</b>" << GetName() << "</font>";
+    OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
+    msg = "remmmbr(";
   }
-
+  msg  << state
+       << "," << (long)GetID()
+       << "," << JsQuoteScreen(GetName())
+       << "," << muteMask
+       << "," << disableVAD
+       << "," << chosenVan
+       << "," << GetAudioLevel()
+       << "," << GetVideoMixerNumber()
+       << "," << JsQuoteScreen(GetNameID())
+       << "," << dec << (unsigned)channelCheck
+       << "," << kManualGainDB
+       << "," << kOutputGainDB
+       << ",[]"
+       << "," << memberType
+       << ")";
+  OpenMCU::Current().HttpWriteCmdRoom(msg, conference->GetNumber());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

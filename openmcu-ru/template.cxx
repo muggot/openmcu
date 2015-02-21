@@ -72,7 +72,7 @@ PString Conference::SaveTemplate(PString tplName)
                   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
                   {
                     ConferenceMember * member = *it;
-                    if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+                    if(member->IsSystem())
                       continue;
                     if(("1, "+(member->GetName())) == value)
                     {
@@ -102,7 +102,7 @@ PString Conference::SaveTemplate(PString tplName)
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember *member = *it;
-    if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+    if(member->IsSystem())
       continue;
     t << "  MEMBER "
       << (member->autoDial?"1":"0") << ", "
@@ -307,7 +307,7 @@ void Conference::LoadTemplate(PString tpl)
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember *member = *it;
-    if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+    if(member->IsSystem())
       continue;
     PString name = member->GetName();
     if(validatedMembers.GetStringsIndex(name) == P_MAX_INDEX) // remove unwanted members

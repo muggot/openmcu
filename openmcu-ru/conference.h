@@ -16,14 +16,14 @@
 
 enum MemberTypes
 {
-  MEMBER_TYPE_OFFLINE    = 0,
-  MEMBER_TYPE_ONLINE     = 2,
+  MEMBER_TYPE_NONE       = 0,
+  MEMBER_TYPE_CONN       = 2,
+  MEMBER_TYPE_STREAM     = 4,
   //
-  MEMBER_TYPE_GSYSTEM    = 1, // MEMBER_TYPE_PIPE|MEMBER_TYPE_CACHE|MEMBER_TYPE_RECORDER|MEMBER_TYPE_STREAM
+  MEMBER_TYPE_GSYSTEM    = 1, // MEMBER_TYPE_PIPE|MEMBER_TYPE_CACHE|MEMBER_TYPE_RECORDER
   MEMBER_TYPE_PIPE       = 1,
   MEMBER_TYPE_CACHE      = 3,
   MEMBER_TYPE_RECORDER   = 7,
-  MEMBER_TYPE_STREAM     = 15,
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -182,14 +182,15 @@ class ConferenceMember : public PObject
       */
     void SetVisible(BOOL enable)
     {
-      if(memberType & MEMBER_TYPE_GSYSTEM)
-        return;
-      if(enable) memberType = MEMBER_TYPE_ONLINE;
-      else       memberType = MEMBER_TYPE_OFFLINE;
+      if(memberType == MEMBER_TYPE_CONN)
+        visible = enable;
     }
 
     BOOL IsVisible() const
-    { return (memberType == MEMBER_TYPE_ONLINE); }
+    { return visible; }
+
+    BOOL IsOnline() const
+    { return (callToken != ""); }
 
     BOOL IsSystem() const
     { return (memberType & MEMBER_TYPE_GSYSTEM); }
@@ -377,6 +378,7 @@ class ConferenceMember : public PObject
     PString name;
     PString nameID;
     float currVolCoef;
+    BOOL visible;
     BOOL isMCU;
 
 #if MCU_VIDEO

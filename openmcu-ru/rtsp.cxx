@@ -214,6 +214,8 @@ BOOL MCURtspConnection::Connect(MCUSocket *socket, const msg_t *msg)
   // used in GetEndpointParam
   remotePartyAddress = "RTSP Server "+rtsp_path;
 
+  memberName = "rtsp stream "+rtsp_path+" ["+ruri_str+"]";
+
   // requested room
   requestedRoom = GetEndpointParam(RoomNameKey);
 
@@ -785,16 +787,9 @@ BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
-  // creating conference if needed
-  ConferenceManager *manager = OpenMCU::Current().GetConferenceManager();
-  conference = manager->MakeConferenceWithLock(requestedRoom);
-  if(conference == NULL)
+  JoinConference(requestedRoom);
+  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
     return FALSE;
-
-  conferenceMember = new ConferenceStreamMember(conference, GetCallToken(), "RTSP "+rtsp_path+" ("+ruri_str+")");
-  conference->AddMember(conferenceMember);
-   // unlock conference
-  conference->Unlock();
 
   // start rtp channels
   CreateMediaChannel(scap, 1);
