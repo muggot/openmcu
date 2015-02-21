@@ -741,7 +741,7 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
     memberList.Release((long)member->GetID());
   }
 
-  if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+  if(member && member->IsSystem())
     return;
 
   // profileList
@@ -769,16 +769,18 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
     OpenMCU::Current().HttpWriteEventRoom(msg, number);
     msg = "addmmbr(1";
     msg << "," << (long)member->GetID()
-        << ",\"" << member->GetNameHTML() << "\""
+        << "," << JsQuoteScreen(member->GetName())
         << "," << member->muteMask
         << "," << member->disableVAD
         << "," << member->chosenVan
         << "," << member->GetAudioLevel()
         << "," << member->GetVideoMixerNumber()
-        << ",\"" << member->GetNameID() << "\""
+        << "," << JsQuoteScreen(member->GetNameID())
         << "," << dec << (unsigned)member->channelCheck
         << "," << member->kManualGainDB
         << "," << member->kOutputGainDB
+        << ",[]"
+        << "," << member->GetType()
         << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg, number);
   }
@@ -794,7 +796,7 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
   if(member)
     memberList.Erase((long)member->GetID());
 
-  if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+  if(member && member->IsSystem())
     return;
 
   // profileList
@@ -809,9 +811,10 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
     }
   }
 
-  if(member)
+  ConferenceProfile *profile = NULL;
+  if(member && member->GetType() != MEMBER_TYPE_STREAM)
   {
-    ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, NULL);
+    profile = new ConferenceProfile(profileList.GetNextID(), name, this, NULL);
     profileList.Insert(profile, profile->GetID(), name);
     profileList.Release(profile->GetID());
   }
@@ -823,14 +826,14 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
     OpenMCU::Current().HttpWriteEventRoom(msg, number);
     msg = "remmmbr(0";
     msg << ","  << (long)member->GetID()
-        << ",\"" << member->GetNameHTML() << "\""
+        << "," << JsQuoteScreen(member->GetName())
         << ","  << member->muteMask
         << "," << member->disableVAD
         << ","  << member->chosenVan
         << ","  << member->GetAudioLevel()
-        << ",\"" << member->GetNameID() << "\"";
-    msg << ",0";
-    msg << ")";
+        << "," << JsQuoteScreen(member->GetNameID())
+        << "," << (profile == NULL)
+        << ")";
     OpenMCU::Current().HttpWriteCmdRoom(msg, number);
   }
 }
@@ -855,7 +858,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   }
 
   // check for duplicate name or very fast reconnect
-  if(!memberToAdd->GetType() & MEMBER_TYPE_GSYSTEM)
+  if(!memberToAdd->IsSystem())
   {
     // check for duplicate name or very fast reconnect
     PString memberName = memberToAdd->GetName();
@@ -867,7 +870,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
       if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
       {
         PStringStream msg;
-        msg << memberToAdd->GetNameHTML() << " REJECTED - DUPLICATE NAME";
+        msg << JsQuoteScreen(memberToAdd->GetName()) << " REJECTED - DUPLICATE NAME";
         OpenMCU::Current().HttpWriteEventRoom(msg, number);
         PTRACE(1, trace_section << "Rejected duplicate name: " << memberToAdd->GetName());
         return FALSE;
@@ -933,7 +936,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd)
   memberToAdd->SetJoined(TRUE);
 
   // template
-  if(!memberToAdd->GetType() & MEMBER_TYPE_GSYSTEM)
+  if(!memberToAdd->IsSystem())
     PullMemberOptionsFromTemplate(memberToAdd, confTpl);
 
   return TRUE;
@@ -1061,7 +1064,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, const uint64_t & tim
 
 void Conference::WriteMemberAudio(ConferenceMember * member, const uint64_t & timestamp, const void * buffer, int amount, int sampleRate, int channels)
 {
-  if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+  if(member->IsSystem())
     return;
 
   ConferenceAudioConnection * conn = audioConnectionList((long)member->GetID());
@@ -1330,9 +1333,6 @@ ConferenceProfile::ConferenceProfile(long _listID, const PString & _name, Confer
   conference = _conference;
   name = _name;
   nameID = MCUURL(name).GetMemberNameId();
-  nameHTML = name;
-  nameHTML.Replace("&","&amp;",TRUE,0);
-  nameHTML.Replace("\"","&quot;",TRUE,0);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

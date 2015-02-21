@@ -23,7 +23,7 @@ enum MemberTypes
   MEMBER_TYPE_PIPE       = 1,
   MEMBER_TYPE_CACHE      = 3,
   MEMBER_TYPE_RECORDER   = 7,
-  MEMBER_TYPE_STREAM     = 15,
+  MEMBER_TYPE_STREAM     = 4,
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -171,9 +171,6 @@ class ConferenceProfile : public PObject
     const PString & GetNameID() const
     { return nameID; }
 
-    const PString & GetNameHTML() const
-    { return nameHTML; }
-
     ConferenceMemberId GetID() const
     { return (ConferenceMemberId)this; }
 
@@ -183,7 +180,6 @@ class ConferenceProfile : public PObject
   protected:
     long listID;
     PString name;
-    PString nameHTML;
     PString nameID;
 
     Conference *conference;
@@ -225,6 +221,12 @@ class ConferenceMember : public PObject
       */
     virtual BOOL IsVisible() const
     { return TRUE; }
+
+    BOOL IsSystem()
+    { return (GetType() & MEMBER_TYPE_GSYSTEM); }
+
+    BOOL IsOnline()
+    { return (callToken != ""); }
 
     /**
       * return the conference member ID
@@ -348,14 +350,6 @@ class ConferenceMember : public PObject
 
     virtual PString GetNameID() const
     { return nameID; }
-
-    PString GetNameHTML() const
-    {
-      PString _name = name;
-      _name.Replace("&","&amp;",TRUE,0);
-      _name.Replace("\"","&quot;",TRUE,0);
-      return _name;
-    }
 
     virtual PString GetCallToken() const
     { return callToken; }

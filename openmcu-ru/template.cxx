@@ -72,7 +72,7 @@ PString Conference::SaveTemplate(PString tplName)
                   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
                   {
                     ConferenceMember * member = *it;
-                    if(member->GetType() & MEMBER_TYPE_GSYSTEM)
+                    if(member->IsSystem())
                       continue;
                     if(("1, "+(member->GetName())) == value)
                     {
@@ -104,7 +104,7 @@ PString Conference::SaveTemplate(PString tplName)
   {
     ConferenceProfile *profile = it.GetObject();
     ConferenceMember *member = profile->GetMember();
-    if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+    if(member && member->IsSystem())
       continue;
     if(member)
     {
@@ -307,7 +307,7 @@ void Conference::LoadTemplate(PString tpl)
   {
     ConferenceProfile *profile = it.GetObject();
     ConferenceMember *member = profile->GetMember();
-    if(member && member->GetType() & MEMBER_TYPE_GSYSTEM)
+    if(member && member->IsSystem())
       continue;
     PString name = profile->GetName();
     if(validatedMembers.GetStringsIndex(name) == P_MAX_INDEX) // remove unwanted members

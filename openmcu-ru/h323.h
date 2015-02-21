@@ -325,8 +325,6 @@ class MCUH323Connection : public H323Connection
 
     void SetEndpointDefaultVideoParams(H323VideoCodec & codec);
 
-    virtual void LeaveConference();
-
     virtual void SetupCacheConnection(PString & format,Conference * conf, ConferenceMember * memb);
 
     virtual RTP_Session * UseSession(

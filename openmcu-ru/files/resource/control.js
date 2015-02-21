@@ -766,7 +766,9 @@ function format_mmbr_button(m,st)
 
   s+=dpre+"2px'><div class='mmbrname' "+namestyle+">"+uname+"</div></div>";
   s+=dpre2+"2px'><div class='mmbrip' "+namestyle+">"+ip+"</div></div>";
-  if(st) // online
+
+  var mtype=m[13];
+  if(st && mtype!=4)
   {
     s+=dpre+(width-9*bwidth)+"px'>"+levelb+"</div>";
     s+=dpre+(width-8*bwidth)+"px'>"+kdb+"</div>";
@@ -774,15 +776,21 @@ function format_mmbr_button(m,st)
     s+=dpre+(width-5*bwidth)+"px'>"+mute4+"</div>";
     s+=dpre+(width-4*bwidth)+"px'>"+vad+"</div>";
     s+=dpre+(width-3*bwidth)+"px'>"+hide+"</div>";
-    s+=dpre+(width-2*bwidth)+"px'>"+kick+"</div>";
+  }
+  if(!st && mtype!=4)
+    s+=dpre+(width-2*bwidth)+"px'>"+invite+"</div>";
+  if(st && mtype!=4)
+  {
     s+=dpre2+(width-8*bwidth)+"px'>"+kdbo+"</div>";
     s+=dpre2+(width-6*bwidth)+"px'>"+mute2+"</div>";
     s+=dpre2+(width-5*bwidth)+"px'>"+mute8+"</div>";
     s+=dpre2+(width-4*bwidth)+"px'>"+mixerb+"</div>";
-  } else { // offline
-    s+=dpre+(width-3*bwidth)+"px'>"+invite+"</div>";
-    s+=dpre+(width-2*bwidth)+"px'>"+remove+"</div>";
   }
+  if(!st)
+    s+=dpre2+(width-2*bwidth)+"px'>"+remove+"</div>";
+  if(st)
+    s+=dpre2+(width-2*bwidth)+"px'>"+kick+"</div>";
+
   s+="</div>";
   return s;
 }
@@ -1204,7 +1212,7 @@ function get_addr_url_without_param(addr){
   return url;
 }
 
-function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og)
+function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og,mixconf,mtype)
 {
   if(typeof members==='undefined') return alive();
   var j=members.length;
@@ -1237,7 +1245,7 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og)
   j=members.length;
   dmsg('l2='+j);
 
-  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og);
+  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og,mixconf,mtype);
   alive();
   members_refresh();
   top_panel();
@@ -1268,8 +1276,17 @@ function remmmbr(st,id,name,mute,dvad,cvan,al,membername_id,clear){
   if(typeof members==='undefined') return alive();
   var found=0; var j=members.length;
   for(var i=j-1;i>=0;i--)
-  if((members[i][2]==name)||(members[i][1]==id))
-  if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
+  {
+    if((members[i][2]==name)||(members[i][1]==id))
+    {
+      if(clear)
+        members.splice(i,1)
+      else
+      {
+        if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
+      }
+    }
+  }
   if(!clear)members[j]=Array(st,0,name,mute,dvad,cvan,al,0,membername_id);
   alive();
   members_refresh();

@@ -214,6 +214,8 @@ BOOL MCURtspConnection::Connect(MCUSocket *socket, const msg_t *msg)
   // used in GetEndpointParam
   remotePartyAddress = "RTSP Server "+rtsp_path;
 
+  memberName = "rtsp stream "+rtsp_path+" ["+ruri_str+"]";
+
   // requested room
   requestedRoom = GetEndpointParam(RoomNameKey);
 
@@ -791,7 +793,7 @@ BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
   if(conference == NULL)
     return FALSE;
 
-  conferenceMember = new ConferenceStreamMember(conference, GetCallToken(), "RTSP "+rtsp_path+" ("+ruri_str+")");
+  conferenceMember = new ConferenceStreamMember(conference, memberName, callToken);
 
    // unlock conference
   conference->Unlock();
