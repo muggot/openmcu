@@ -1976,7 +1976,8 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_DROP_MEMBER )
   {
-    member->Close();
+    if(member->IsOnline())
+      member->Close();
     return TRUE;
   }
   if(action == OTFC_VAD_NORMAL)
