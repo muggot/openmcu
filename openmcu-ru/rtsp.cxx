@@ -793,16 +793,8 @@ BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
 
   conferenceMember = new ConferenceStreamMember(conference, GetCallToken(), "RTSP "+rtsp_path+" ("+ruri_str+")");
   conference->AddMember(conferenceMember);
-
    // unlock conference
   conference->Unlock();
-
-  if(!conferenceMember->IsJoined())
-  {
-    delete conferenceMember;
-    conferenceMember = NULL;
-    return FALSE;
-  }
 
   // start rtp channels
   CreateMediaChannel(scap, 1);

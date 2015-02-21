@@ -266,7 +266,11 @@ void Conference::LoadTemplate(PString tpl)
           else
           {
             member = new MCUConnection_ConferenceMember(this, memberInternalName, "");
-            AddMember(member);
+            if(!AddMemberToList(member))
+            {
+              delete member;
+              member = NULL;
+            }
             if(memberAutoDial) // finally: offline and have to be called
             {
               PString token;

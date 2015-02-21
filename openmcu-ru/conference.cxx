@@ -704,11 +704,8 @@ BOOL Conference::StopRecorder()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
+BOOL Conference::AddMemberToList(ConferenceMember * memberToAdd, BOOL addToList)
 {
-  PTRACE(3, trace_section << "Adding member: " << memberToAdd->GetName());
-  cout << trace_section << "Adding member: " << memberToAdd->GetName() << endl;
-
   // lock the member lists
   PWaitAndSignal m(memberListMutex);
 
@@ -740,29 +737,47 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
       memberToAdd->SetName(memberName+" ##"+PString(i+2));
     }
   }
-
-  if(!UseSameVideoForAllMembers() && !memberToAdd->videoMixer)
-    memberToAdd->videoMixer = new MCUSimpleVideoMixer();
-
   // add to list
   if(addToList)
   {
     memberList.Insert(memberToAdd, (long)memberToAdd->GetID(), memberToAdd->GetName());
     memberList.Release((long)memberToAdd->GetID());
-  }
-  if(memberToAdd->IsVisible())
-  {
-    visibleMemberCount++;
-    maxMemberCount = PMAX(maxMemberCount, visibleMemberCount);
+    if(memberToAdd->IsVisible())
+    {
+      visibleMemberCount++;
+      maxMemberCount = PMAX(maxMemberCount, visibleMemberCount);
+    }
   }
   memberToAdd->SendRoomControl(1);
-
-  // notify that member is joined
-  memberToAdd->SetJoined(TRUE);
 
   // template
   if(!memberToAdd->GetType() & MEMBER_TYPE_GSYSTEM)
     PullMemberOptionsFromTemplate(memberToAdd, confTpl);
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
+{
+  MCUTRACE(3, trace_section << "Adding member: " << memberToAdd << " " << memberToAdd->GetName() << " type:" << memberToAdd->GetType() << " joined:" << memberToAdd->IsJoined());
+
+  // lock the member lists
+  PWaitAndSignal m(memberListMutex);
+
+  // first add to list
+  if(!AddMemberToList(memberToAdd, addToList))
+    return FALSE;
+
+  if(!memberToAdd->IsVisible() || memberToAdd->IsJoined())
+  {
+    PTRACE(4, trace_section << "No need to add member " << memberToAdd->GetName());
+    return TRUE;
+  }
+
+  // notify that member is joined
+  memberToAdd->SetJoined(TRUE);
 
   if(UseSameVideoForAllMembers())
   {
@@ -771,16 +786,12 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
        || number == "testroom")
 #endif
     {
-      if(memberToAdd->IsVisible())
-      {
-        MCUSimpleVideoMixer * mixer = manager.GetVideoMixerWithLock(this);
-        mixer->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
-        mixer->Unlock();
-      }
+      MCUSimpleVideoMixer * mixer = manager.GetVideoMixerWithLock(this);
+      mixer->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
+      mixer->Unlock();
     }
     else
     {
-      if(memberToAdd->IsVisible())
       if(!memberToAdd->disableVAD)
       for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
@@ -801,18 +812,14 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
       {
         if(member->IsVisible())
           memberToAdd->AddVideoSource(member->GetID(), *member);
-        if(memberToAdd->IsVisible())
-          member->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
+        member->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
       }
     }
   }
 
   // update the statistics
-  if(memberToAdd->IsVisible())
-  {
-    // trigger H245 thread for join message
-    //new NotifyH245Thread(*this, TRUE, memberToAdd);
-  }
+  // trigger H245 thread for join message
+  //new NotifyH245Thread(*this, TRUE, memberToAdd);
 
   return TRUE;
 }
@@ -821,23 +828,21 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
 
 BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFromList)
 {
-  if(memberToRemove == NULL)
-    return TRUE;
-
-  PTRACE(3, trace_section << "Removing member " << memberToRemove->GetName());
-  cout << trace_section << "Removing member " << memberToRemove->GetName() << endl;
+  MCUTRACE(3, trace_section << "Removing member: " << memberToRemove << " " << memberToRemove->GetName() << " type:" << memberToRemove->GetType() << " joined:" << memberToRemove->IsJoined());
 
   // lock memberList
   PWaitAndSignal m(memberListMutex);
 
   // first remove from list
   if(removeFromList)
+  {
     memberList.Erase((long)memberToRemove->GetID());
-  if(memberToRemove->IsVisible())
-    visibleMemberCount--;
+    if(memberToRemove->IsVisible())
+      visibleMemberCount--;
+  }
   memberToRemove->SendRoomControl(0);
 
-  if(!memberToRemove->IsJoined())
+  if(!memberToRemove->IsVisible() || !memberToRemove->IsJoined())
   {
     PTRACE(4, trace_section << "No need to remove member " << memberToRemove->GetName());
     return FALSE;
@@ -850,12 +855,9 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   {
     if(moderated == FALSE || number == "testroom")
     {
-      if(memberToRemove->IsVisible())
-      {
-        MCUSimpleVideoMixer *mixer = manager.GetVideoMixerWithLock(this);
-        mixer->RemoveVideoSource(memberToRemove->GetID(), *memberToRemove);
-        mixer->Unlock();
-      }
+      MCUSimpleVideoMixer *mixer = manager.GetVideoMixerWithLock(this);
+      mixer->RemoveVideoSource(memberToRemove->GetID(), *memberToRemove);
+      mixer->Unlock();
     }
     else
     {
@@ -875,8 +877,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
       ConferenceMember *member = it.GetObject();
       if(member != memberToRemove)
       {
-        if(memberToRemove->IsVisible())
-          member->RemoveVideoSource(memberToRemove->GetID(), *memberToRemove);
+        member->RemoveVideoSource(memberToRemove->GetID(), *memberToRemove);
         if(member->IsVisible())
           memberToRemove->RemoveVideoSource(member->GetID(), *member);
       }
@@ -885,8 +886,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
 
 
   // trigger H245 thread for leave message
-  //if (memberToRemove->IsVisible())
-  //  new NotifyH245Thread(*this, FALSE, memberToRemove);
+  //new NotifyH245Thread(*this, FALSE, memberToRemove);
 
   // notify that member is not joined anymore
   memberToRemove->SetJoined(FALSE);
@@ -1218,7 +1218,11 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   memberIsJoined = FALSE;
 
 #if MCU_VIDEO
-  videoMixer = NULL;
+  if(conference->UseSameVideoForAllMembers())
+    videoMixer = NULL;
+  else
+    videoMixer = new MCUSimpleVideoMixer();
+
   totalVideoFramesReceived = 0;
   firstFrameReceiveTime = -1;
   totalVideoFramesSent = 0;
@@ -1285,7 +1289,7 @@ void ConferenceMember::SendRoomControl(int state)
     msg << "<font color=green><b>+</b>" << GetName() << "</font>";
     OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
     msg = "addmmbr(";
-    msg  << state
+    msg  << IsVisible()
          << "," << (long)GetID()
          << "," << JsQuoteScreen(GetName())
          << "," << muteMask

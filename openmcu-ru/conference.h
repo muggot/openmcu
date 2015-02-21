@@ -191,6 +191,9 @@ class ConferenceMember : public PObject
     BOOL IsVisible() const
     { return (memberType == MEMBER_TYPE_ONLINE); }
 
+    BOOL IsSystem() const
+    { return (memberType & MEMBER_TYPE_GSYSTEM); }
+
     /**
       * return the conference member ID
       */
@@ -415,6 +418,7 @@ class Conference : public PObject
       * add the specified member to the conference
       */
     BOOL AddMember(ConferenceMember * member, BOOL addToList = TRUE);
+    BOOL AddMemberToList(ConferenceMember * member, BOOL addToList = TRUE);
 
     /**
      * remove the specifed member from the conference.

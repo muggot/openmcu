@@ -1494,17 +1494,18 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   {
     PString username(value);
     PString nameID = MCUURL(username).GetMemberNameId();
-    MCUConnection_ConferenceMember *member = new MCUConnection_ConferenceMember(conference, username, "");
-    conference->AddMember(member);
-    PStringStream msg;
-    msg  << "addmmbr("
-         << "0,0"
-         << "," << JsQuoteScreen(username)
-         << ",0,0,0,0,0"
-         << "," << JsQuoteScreen(nameID)
-         << ",0,0,0"
-         << ")";
-    OpenMCU::Current().HttpWriteCmdRoom(msg, room);
+    ConferenceMember *member = conferenceManager.FindMemberNameIDWithLock(conference, username);
+    if(member)
+      member->Unlock();
+    else
+    {
+      member = new MCUConnection_ConferenceMember(conference, username, "");
+      if(!conference->AddMemberToList(member))
+      {
+        delete member;
+        return FALSE;
+      }
+    }
     Invite(conference->GetNumber(), value);
     return TRUE;
   }
@@ -2725,16 +2726,18 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     MCUConnection_ConferenceMember *member = dynamic_cast<MCUConnection_ConferenceMember *>(*it);
-    if(member == NULL || member->IsJoined() || member->GetNameID() != memberNameID || member->GetType() & MEMBER_TYPE_GSYSTEM)
-      continue;
-    if(memberList.Erase(it))
+    if(member && member->GetType() == MEMBER_TYPE_OFFLINE && member->GetNameID() == memberNameID)
     {
-      conferenceMember = member;
-      member->SetVisible(TRUE);
-      member->SetCallToken(callToken);
-      member->ResetCounters();
-      conference->AddMember(conferenceMember);
-      break;
+      if(memberList.Erase(it))
+      {
+        conferenceMember = member;
+        member->ResetCounters();
+        member->SetName(memberName);
+        member->SetCallToken(callToken);
+        member->SetVisible(TRUE);
+        conference->AddMember(conferenceMember);
+        break;
+      }
     }
   }
   conference->GetMemberListMutex().Signal();
