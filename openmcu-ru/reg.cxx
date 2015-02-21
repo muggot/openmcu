@@ -110,7 +110,7 @@ void AbookAccount::SaveConfig()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void AbookAccount::Send(int state)
+void AbookAccount::SendRoomControl(int state)
 {
   PStringStream msg;
   msg << "abook_change(" << AsJsArray(state) << ");";
@@ -307,7 +307,7 @@ BOOL Registrar::AddAbookAccount(const PString & address)
     {
       it->is_abook = true;
       it->SaveConfig();
-      it->Send();
+      it->SendRoomControl();
     }
     return TRUE;
   }
@@ -321,7 +321,7 @@ BOOL Registrar::AddAbookAccount(const PString & address)
   ab->transport = url.GetTransport();
   ab->display_name = url.GetDisplayName();
   ab->SaveConfig();
-  ab->Send();
+  ab->SendRoomControl();
 
   long id = abookList.GetNextID();
   abookList.Insert(ab, id, key);
@@ -362,7 +362,7 @@ BOOL Registrar::RemoveAbookAccount(const PString & address)
   AbookAccount *ab = *it;
   ab->is_abook = false;
   ab->SaveConfig();
-  ab->Send(2);
+  ab->SendRoomControl(2);
   if(abookList.Erase(it))
     delete ab;
 
@@ -389,7 +389,10 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
   else if(url.GetScheme() == "h323")
     account_type = ACCOUNT_TYPE_H323;
   else if(url.GetScheme() == "rtsp")
+  {
     account_type = ACCOUNT_TYPE_RTSP;
+    url.SetUserName(url.GetUrl());
+  }
   else
     return FALSE;
 
@@ -424,7 +427,7 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
     }
   }
   // initial username_out, can be empty
-  username_out = url.GetUserName();
+  //username_out = url.GetUserName();
 
   if(account_type == ACCOUNT_TYPE_SIP)
   {
@@ -440,7 +443,7 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
   }
   else if(account_type == ACCOUNT_TYPE_RTSP)
   {
-    PString callToken = PGloballyUniqueID().AsString();
+    callToken = PGloballyUniqueID().AsString();
     MCURtspServer *rtsp = OpenMCU::Current().GetRtspServer();
     if(!rtsp->CreateConnection(room, address, callToken))
       return FALSE;
@@ -704,7 +707,7 @@ void Registrar::BookThread(PThread &, INT)
       ab->port = raccount->port;
       ab->transport = raccount->transport;
       ab->display_name = raccount->display_name;
-      ab->Send();
+      ab->SendRoomControl();
 
       long id = abookList.GetNextID();
       abookList.Insert(ab, id, key);
@@ -724,7 +727,7 @@ void Registrar::BookThread(PThread &, INT)
         ab->is_account = false;
         ab->is_saved_account = false;
         if(oldab.AsJsArray() != ab->AsJsArray())
-          ab->Send();
+          ab->SendRoomControl();
         continue;
       }
       RegistrarAccount *raccount = *s;
@@ -775,7 +778,7 @@ void Registrar::BookThread(PThread &, INT)
       }
 
       if(ab->AsJsArray() != oldab.AsJsArray())
-        ab->Send();
+        ab->SendRoomControl();
 
     }
   }

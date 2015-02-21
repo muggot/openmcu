@@ -244,7 +244,7 @@ class AbookAccount
       ping_info = ab.ping_info;
     }
 
-    void Send(int state = 0);
+    void SendRoomControl(int state = 0);
     void SaveConfig();
     PString GetUrl();
 
