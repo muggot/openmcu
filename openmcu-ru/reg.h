@@ -244,6 +244,7 @@ class AbookAccount
       ping_info = ab.ping_info;
     }
 
+    PString AsJsArray(int state = 0);
     void SendRoomControl(int state = 0);
     void SaveConfig();
     PString GetUrl();
@@ -265,31 +266,6 @@ class AbookAccount
     PString conn_info;
     int ping_state;
     PString ping_info;
-
-    PString AsJsArray(int state = 0)
-    {
-      PString memberName = display_name+" ["+GetUrl()+"]";
-      PString memberNameID = MCUURL(memberName).GetMemberNameId();
-
-      PStringStream str;
-      str << "Array(";
-      str        << state;
-      str << "," << JsQuoteScreen(memberNameID);
-      str << "," << JsQuoteScreen(memberName);
-      str << "," << is_abook;
-      str << "," << JsQuoteScreen(remote_application);
-      str << "," << reg_state;
-      str << "," << "\"" << reg_info << "\"";
-      str << "," << conn_state;
-      str << "," << "\"" << conn_info << "\"";
-      str << "," << ping_state;
-      str << "," << "\"" << ping_info << "\"";
-      str << "," << is_account;
-      str << "," << is_saved_account;
-
-      str << ")";
-      return str;
-    }
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -512,7 +488,6 @@ class MCUH323Gatekeeper : public H323Gatekeeper
     void AddIgnoreConnection(unsigned ref, MCUH323Connection *conn)
     {
       ignoreList.Insert(conn, (long)ref);
-      ignoreList.Release((long)ref);
     }
 
     void RemoveIgnoreConnection(unsigned ref)

@@ -361,7 +361,6 @@ BOOL MCUH323EndPoint::ClearCallSynchronous(const PString & callToken, H323Connec
 
   // Добавить в список удаления
   connectionDeleteList.Insert(NULL, (long)connection, callToken);
-  connectionDeleteList.Release((long)connection);
 
   // Поток удаления
   new MCUConnectionCleaner(this, callToken);
@@ -386,7 +385,7 @@ void MCUH323EndPoint::ClearAllCalls(H323Connection::CallEndReason reason, BOOL w
 
   if(wait)
   {
-    while(connectionDeleteList.GetCurrentSize() != 0)
+    while(connectionDeleteList.GetSize() != 0)
       MCUTime::Sleep(10);
   }
 }
@@ -407,14 +406,12 @@ BOOL MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
     PTRACE(1, trace_section << "Error !");
     PString fakeToken = PGloballyUniqueID().AsString();
     connectionList.Insert(conn, (long)conn, fakeToken);
-    connectionList.Release((long)conn);
     ClearCall(fakeToken);
     return FALSE;
   }
 
   PTRACE(1, trace_section << "Insert connection " << conn->GetCallToken());
   connectionList.Insert(conn, (long)conn, conn->GetCallToken());
-  connectionList.Release((long)conn);
 
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
   registrar->ConnectionCreated(conn->GetCallToken());
@@ -785,8 +782,8 @@ PString MCUH323EndPoint::GetRoomStatusJS()
 
     c << "Array("
         << JsQuoteScreen(conference->GetNumber())                              // c[r][0]: room name
-        << "," << conference->GetMemberList().GetCurrentSize()                 // c[r][1]: memberList size
-        << "," << conference->GetMemberList().GetCurrentSize()                 // c[r][2]: profileList size
+        << "," << conference->GetMemberList().GetSize()                        // c[r][1]: memberList size
+        << "," << conference->GetMemberList().GetSize()                        // c[r][2]: profileList size
         << "," << PString((now - conference->GetStartTime()).GetMilliSeconds())// c[r][3]: duration
         << ",Array("                                                           // c[r][4]: member descriptors
     ;
@@ -1154,7 +1151,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
     }
 
     SpliceMacro(insert, "RoomName",        conference->GetNumber());
-    SpliceMacro(insert, "RoomMemberCount", PString(PString::Unsigned, memberList.GetCurrentSize()));
+    SpliceMacro(insert, "RoomMemberCount", PString(PString::Unsigned, memberList.GetSize()));
     SpliceMacro(insert, "RoomMembers",     members);
     substitution += insert;
   }
@@ -1169,7 +1166,7 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
   PStringStream r; //conf[0]=[videoMixerCount,bfw,bfh):
   PString jsRoom=c.GetNumber(); jsRoom.Replace("&","&amp;",TRUE,0); jsRoom.Replace("\"","&quot;",TRUE,0);
   r << "conf=[[" //l1&l2 open
-    << c.GetVideoMixerList().GetCurrentSize()                           // [0][0]  = mixerCount
+    << c.GetVideoMixerList().GetSize()                                  // [0][0]  = mixerCount
     << "," << OpenMCU::vmcfg.bfw                                        // [0][1]  = base frame width
     << "," << OpenMCU::vmcfg.bfh                                        // [0][2]  = base frame height
     << ",\"" << jsRoom << "\""                                          // [0][3]  = room name
@@ -1624,7 +1621,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_ADD_VIDEO_MIXER)
   {
-    if(conference->GetVideoMixerList().GetCurrentSize() == 0)
+    if(conference->GetVideoMixerList().GetSize() == 0)
       return FALSE;
     if(conference->IsModerated()=="+")
     {
@@ -1639,11 +1636,11 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_DELETE_VIDEO_MIXER)
   {
-    if(conference->GetVideoMixerList().GetCurrentSize() == 0)
+    if(conference->GetVideoMixerList().GetSize() == 0)
       return FALSE;
     if(conference->IsModerated()=="+")
     {
-      unsigned n_old = conference->GetVideoMixerList().GetCurrentSize();
+      unsigned n_old = conference->GetVideoMixerList().GetSize();
       unsigned n = conferenceManager.DeleteVideoMixer(conference, v);
       if(n_old != n)
       {
@@ -1666,7 +1663,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     mixer->Unlock();
     conference->PutChosenVan();
     conference->FreezeVideo(NULL);
-    if(conference->GetVideoMixerList().GetCurrentSize() != 0)
+    if(conference->GetVideoMixerList().GetSize() != 0)
       OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
     else
       OpenMCU::Current().HttpWriteCmdRoom(GetMemberListOptsJavascript(*conference),room);
@@ -1943,7 +1940,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     if(conference->IsModerated()=="+")
     {
       MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-      if(videoMixerList.GetCurrentSize() != 0)
+      if(videoMixerList.GetSize() != 0)
       {
         for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
         {
@@ -2008,7 +2005,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     {
       ConferenceMemberId id = member->GetID();
       MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-      if(videoMixerList.GetCurrentSize() != 0)
+      if(videoMixerList.GetSize() != 0)
       {
         for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
         {
@@ -2187,7 +2184,7 @@ PString MCUH323EndPoint::GetMonitorText()
 
   MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
 
-  output << "Room Count: " << conferenceList.GetCurrentSize() << "\n"
+  output << "Room Count: " << conferenceList.GetSize() << "\n"
          << "Max Room Count: " << conferenceManager.GetMaxConferenceCount() << "\n";
 
   PINDEX confNum = 0;
@@ -2200,7 +2197,7 @@ PString MCUH323EndPoint::GetMonitorText()
            << "Title: "            << conference->GetNumber() << "\n"
            << "ID: "               << conference->GetID() << "\n"
            << "Duration: "         << (PTime() - conference->GetStartTime()) << "\n"
-           << "Member Count: "     << conference->GetMemberList().GetCurrentSize() << "\n"
+           << "Member Count: "     << conference->GetMemberList().GetSize() << "\n"
            << "Max Member Count: " << conference->GetMaxMemberCount() << "\n";
 
     PINDEX num = 0;
@@ -3356,6 +3353,10 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
     audioTransmitChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
     audioTransmitCodecName = mf + "@" + PString(sampleRate) + "/" +PString(channels);
 
+    // mute
+    if(conferenceMember && conferenceMember->muteMask & 2)
+      conferenceMember->SetChannelPauses(2);
+
     // check cache mode
     BOOL enableCache = FALSE;
     if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_STREAM)
@@ -3379,6 +3380,10 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
   } else {
     audioReceiveChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
     audioReceiveCodecName = codec.GetMediaFormat() + "@" + PString(sampleRate) + "/" +PString(channels);
+
+    // mute
+    if(conferenceMember && conferenceMember->muteMask & 1)
+      conferenceMember->SetChannelPauses(1);
 
     //if(GetEndpointParam(AudioDeJitterKey, EnableKey) == DisableKey)
     //  audioReceiveChannel->SetAudioJitterEnable(false);
@@ -3404,6 +3409,10 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
   {
     videoTransmitChannel = ((MCUVideoCodec &)codec).GetLogicalChannel();
     videoTransmitCodecName = codec.GetMediaFormat();
+
+    // mute
+    if(conferenceMember && conferenceMember->muteMask & 8)
+      conferenceMember->SetChannelPauses(8);
 
     // cache mode
     // forceScreenSplit не изменяется в созданной конференции
@@ -3503,6 +3512,10 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
 
     videoReceiveChannel = ((MCUVideoCodec &)codec).GetLogicalChannel();
     videoReceiveCodecName = codec.GetMediaFormat();
+
+    // mute
+    if(conferenceMember && conferenceMember->muteMask & 4)
+      conferenceMember->SetChannelPauses(4);
 
     if(conference && conference->IsModerated() == "+")
       conference->FreezeVideo(this);
@@ -4588,7 +4601,6 @@ void ConnectionMonitor::AddConnection(const PString & callToken)
 {
   long id = monitorList.GetNextID();
   monitorList.Insert(NULL, id, callToken);
-  monitorList.Release(id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

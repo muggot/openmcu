@@ -209,20 +209,20 @@ class MCUSharedList
     const shared_iterator & end() const { return iterator_end; }
 
     // Максимальный размер списка
-    int GetSize()
+    int GetMaxSize()
     { return size; }
 
     // Количество доступных объектов
-    int GetCurrentSize()
+    int GetSize()
     { return (int)current_size; }
 
     // Уникальный идентификатор для объектов
     long GetNextID()
     { return sync_increment(&idcounter); }
 
-    // Insert вохвращает false если нет свободного места
-    // Insert() - после добавления объект захвачен
-    bool Insert(T_obj * obj, long id, PString name = "");
+    // Insert вохвращает end() если нет свободного места
+    // Insert() - после добавления объект захвачен в итераторе
+    shared_iterator Insert(T_obj * obj, long id, PString name = "");
 
     // Erase возвращает false если объекта нет в списке или Erase выполняется другим потоком
     // Обязательно проверять результат выполнения перед удалением объекта!
@@ -332,7 +332,7 @@ MCUSharedList<T_obj>::~MCUSharedList()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-bool MCUSharedList<T_obj>::Insert(T_obj * obj, long id, PString name)
+MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Insert(T_obj * obj, long id, PString name)
 {
   bool insert = false;
   for(bool *it = find(states, states_end, false); it != states_end; it = find(++it, states_end, false))
@@ -358,10 +358,10 @@ bool MCUSharedList<T_obj>::Insert(T_obj * obj, long id, PString name)
       // разблокировка записи
       sync_bool_compare_and_swap(&locks[index], true, false);
       if(insert)
-        return true;
+        return shared_iterator(this, index, true);
     }
   }
-  return false;
+  return iterator_end;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -667,11 +667,9 @@ class MCUQueue
     {
       for(int i = 0; i < 100; ++i)
       {
-        if(list.Insert(obj, (long)obj))
-        {
-          list.Release((long)obj);
+        MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> it = list.Insert(obj, (long)obj);
+        if(it != list.end())
           return true;
-        }
         MCUTime::Sleep(10);
       }
       return false;

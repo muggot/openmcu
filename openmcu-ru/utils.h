@@ -4,6 +4,7 @@
 
 #include "config.h"
 #include "utils_av.h"
+#include "utils_json.h"
 #include "utils_list.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,8 +24,6 @@ BOOL CheckCapability(const PString & formatName);
 BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionType = CONNECTION_TYPE_NONE);
 
 PString GetPluginName(const PString & format);
-
-PString JsQuoteScreen(PString s);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

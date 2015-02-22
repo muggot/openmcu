@@ -72,10 +72,9 @@ CacheRTP * CreateCacheRTP(const PString & key)
   {
     long id = cacheRTPList.GetNextID();
     CacheRTP *cache = new CacheRTP(id, key);
-    cacheRTPList.Insert(cache, id, key);
-    return cache;
+    it = cacheRTPList.Insert(cache, id, key);
   }
-  return NULL;
+  return it.GetCapturedObject();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

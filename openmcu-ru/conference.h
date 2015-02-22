@@ -438,7 +438,7 @@ class Conference : public PObject
     { return memberListMutex; }
 
     int GetMemberCount()
-    { return memberList.GetCurrentSize(); }
+    { return memberList.GetSize(); }
 
     int GetVisibleMemberCount() const
     { return visibleMemberCount; }
@@ -497,7 +497,7 @@ class Conference : public PObject
     virtual BOOL WriteMemberVideo(ConferenceMember * member, const void * buffer, int width, int height, PINDEX amount);
 
     virtual BOOL UseSameVideoForAllMembers()
-    { return videoMixerList.GetCurrentSize() > 0; }
+    { return videoMixerList.GetSize() > 0; }
 
     virtual void FreezeVideo(ConferenceMemberId id);
     virtual BOOL PutChosenVan();
