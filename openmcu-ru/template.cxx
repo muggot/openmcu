@@ -290,7 +290,7 @@ void Conference::LoadTemplate(PString tpl)
   } // for(i=0; i<lines.GetSize()
 
   BOOL tracingFirst=FALSE;
-  int videoMixerCount = videoMixerList.GetCurrentSize();
+  int videoMixerCount = videoMixerList.GetSize();
   for(unsigned i = videoMixerCount-1; i > maxMixerId; i--) // remove reduntant mixers
   {
     if(!tracingFirst)

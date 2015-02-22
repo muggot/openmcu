@@ -106,8 +106,8 @@ BOOL ConferenceManager::CheckJoinConference(const PString & room)
 Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PString name, BOOL ignoreRestriction)
 {
   PWaitAndSignal m(conferenceListMutex);
-  Conference * conference = FindConferenceWithLock(room);
-  if(conference == NULL)
+  MCUConferenceList::shared_iterator it = conferenceList.Find(room);
+  if(it == conferenceList.end())
   {
     if(room.Find(MCU_INTERNAL_CALL_PREFIX) == 0)
       ignoreRestriction = TRUE;
@@ -119,14 +119,14 @@ Conference * ConferenceManager::MakeConferenceWithLock(const PString & room, PSt
     // create the conference
     long id = conferenceList.GetNextID();
     OpalGloballyUniqueID conferenceID;
-    conference = CreateConference(id, conferenceID, room, name);
-    conferenceList.Insert(conference, id, room);
+    Conference *conference = CreateConference(id, conferenceID, room, name);
+    it = conferenceList.Insert(conference, id, room);
     //
     OnCreateConference(conference);
     // set the conference count
-    maxConferenceCount = PMAX(maxConferenceCount, conferenceList.GetCurrentSize());
+    maxConferenceCount = PMAX(maxConferenceCount, conferenceList.GetSize());
   }
-  return conference;
+  return it.GetCapturedObject();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -286,11 +286,11 @@ MCUSimpleVideoMixer * ConferenceManager::GetVideoMixerWithLock(Conference * conf
 MCUSimpleVideoMixer * ConferenceManager::GetVideoMixerWithLock(Conference * conference, int & number)
 {
   MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-  if(videoMixerList.GetCurrentSize() == 0)
+  if(videoMixerList.GetSize() == 0)
     return NULL;
-  if(number < 0 || number >= videoMixerList.GetSize())
+  if(number < 0 || number >= videoMixerList.GetMaxSize())
     number = 0;
-  for(int i = number; i < videoMixerList.GetSize(); ++i)
+  for(int i = number; i < videoMixerList.GetMaxSize(); ++i)
   {
     MCUSimpleVideoMixer *mixer = videoMixerList[i];
     if(mixer)
@@ -318,15 +318,14 @@ int ConferenceManager::AddVideoMixer(Conference * conference)
   mixer->SetID(videoMixerList.GetNextID());
   mixer->SetConference(conference);
   videoMixerList.Insert(mixer, mixer->GetID());
-  videoMixerList.Release(mixer->GetID());
-  return videoMixerList.GetCurrentSize();
+  return videoMixerList.GetSize();
 }
 
 int ConferenceManager::DeleteVideoMixer(Conference * conference, int number)
 {
   MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-  if(videoMixerList.GetCurrentSize() == 1)
-    return videoMixerList.GetCurrentSize();
+  if(videoMixerList.GetSize() == 1)
+    return videoMixerList.GetSize();
 
   MCUSimpleVideoMixer *mixer = videoMixerList[number];
   if(mixer != NULL)
@@ -336,7 +335,7 @@ int ConferenceManager::DeleteVideoMixer(Conference * conference, int number)
     if(videoMixerList.Erase(id))
       delete mixer;
   }
-  return videoMixerList.GetCurrentSize();
+  return videoMixerList.GetSize();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -428,12 +427,12 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
 
   OpenMCU::Current().HttpWriteCmdRoom("notice_deletion(4,'" + jsName + "')", number);
 
-  int members = memberList.GetCurrentSize();
+  int members = memberList.GetSize();
   while(members != 0)
   {
     MCUTRACE(0,"MCU\tOnDestroyConference " << number <<", waiting... members: " << members);
     MCUTime::Sleep(100);
-    members = memberList.GetCurrentSize();
+    members = memberList.GetSize();
   }
 
   PTRACE(2,"MCU\tOnDestroyConference " << number <<", clearing profile list");
@@ -615,7 +614,6 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
     mixer->SetID(videoMixerList.GetNextID());
     mixer->SetConference(this);
     videoMixerList.Insert(mixer, mixer->GetID());
-    videoMixerList.Release(mixer->GetID());
   }
 #endif
   memberCount = 0;
@@ -736,10 +734,7 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
 
   // memberList
   if(member)
-  {
     memberList.Insert(member, (long)member->GetID(), name);
-    memberList.Release((long)member->GetID());
-  }
 
   if(member && member->IsSystem())
     return;
@@ -760,7 +755,6 @@ void Conference::AddMemberToList(const PString & name, ConferenceMember *member)
   }
   ConferenceProfile *profile = new ConferenceProfile(profileList.GetNextID(), name, this, member);
   profileList.Insert(profile, profile->GetID(), name);
-  profileList.Release(profile->GetID());
 
   if(member)
   {
@@ -816,7 +810,6 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
   {
     profile = new ConferenceProfile(profileList.GetNextID(), name, this, NULL);
     profileList.Insert(profile, profile->GetID(), name);
-    profileList.Release(profile->GetID());
   }
 
   if(member)
@@ -1067,21 +1060,21 @@ void Conference::WriteMemberAudio(ConferenceMember * member, const uint64_t & ti
   if(member->IsSystem())
     return;
 
-  ConferenceAudioConnection * conn = audioConnectionList((long)member->GetID());
+  MCUAudioConnectionList::shared_iterator it = audioConnectionList.Find((long)member->GetID());
+  ConferenceAudioConnection *conn = *it;
   if(conn && (conn->GetSampleRate() != sampleRate || conn->GetChannels() != channels))
   {
-    audioConnectionList.Release((long)member->GetID());
-    if(audioConnectionList.Erase((long)member->GetID()))
+    if(audioConnectionList.Erase(it))
       delete conn;
     conn = NULL;
   }
   if(conn == NULL)
   {
     conn = new ConferenceAudioConnection((long)member->GetID(), sampleRate, channels);
-    audioConnectionList.Insert(conn, (long)member->GetID());
+    it = audioConnectionList.Insert(conn, (long)member->GetID());
+    conn = *it;
   }
   conn->WriteAudio(timestamp, (const BYTE *)buffer, amount);
-  audioConnectionList.Release((long)member->GetID());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1149,7 +1142,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
 
 void Conference::ReadMemberVideo(ConferenceMember * member, void * buffer, int width, int height, PINDEX & amount)
 {
-  if(videoMixerList.GetCurrentSize() == 0)
+  if(videoMixerList.GetSize() == 0)
     return;
 
   long mixerNumber;
@@ -1300,7 +1293,7 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
       posTo=s[1].AsInteger();
     PTRACE(4, trace_section << "*1*" << posTo << "#: jump into video position " << posTo);
 
-    if(videoMixerList.GetCurrentSize() == 0)
+    if(videoMixerList.GetSize() == 0)
       return;
 
     ConferenceMemberId id=member.GetID();
@@ -1683,7 +1676,6 @@ AudioBuffer * ConferenceAudioConnection::GetBuffer(int _dstSampleRate, int _dstC
     {
       audioBuffer = new AudioBuffer(_dstSampleRate, _dstChannels);
       audioBufferList.Insert(audioBuffer, audioBufferKey);
-      audioBufferList.Release(audioBufferKey);
     }
   }
 

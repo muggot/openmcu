@@ -512,7 +512,6 @@ class MCUH323Gatekeeper : public H323Gatekeeper
     void AddIgnoreConnection(unsigned ref, MCUH323Connection *conn)
     {
       ignoreList.Insert(conn, (long)ref);
-      ignoreList.Release((long)ref);
     }
 
     void RemoveIgnoreConnection(unsigned ref)

@@ -143,8 +143,8 @@ RegistrarAccount * Registrar::InsertAccountWithLock(RegAccountTypes account_type
   long id = accountList.GetNextID();
   RegistrarAccount *raccount = new RegistrarAccount(this, id, account_type, username);
   PString name = PString(raccount->account_type)+":"+raccount->username;
-  accountList.Insert(raccount, id, name);
-  return raccount;
+  MCURegistrarAccountList::shared_iterator it = accountList.Insert(raccount, id, name);
+  return it.GetCapturedObject();
 }
 
 RegistrarAccount * Registrar::FindAccountWithLock(RegAccountTypes account_type, const PString & username)
@@ -175,8 +175,8 @@ RegistrarSubscription * Registrar::InsertSubWithLock(const PString & username_in
 {
   long id = accountList.GetNextID();
   RegistrarSubscription *rsub = new RegistrarSubscription(this, id, username_in, username_out);
-  subscriptionList.Insert(rsub, id, rsub->username_pair);
-  return rsub;
+  MCURegistrarSubscriptionList::shared_iterator it = subscriptionList.Insert(rsub, id, rsub->username_pair);
+  return it.GetCapturedObject();
 }
 
 RegistrarSubscription *Registrar::FindSubWithLock(const PString & username_pair)
@@ -195,8 +195,8 @@ RegistrarConnection * Registrar::InsertRegConnWithLock(const PString & callToken
 {
   long id = connectionList.GetNextID();
   RegistrarConnection *rconn = new RegistrarConnection(this, id, callToken, username_in, username_out);
-  connectionList.Insert(rconn, id, callToken);
-  return rconn;
+  MCURegistrarConnectionList::shared_iterator it = connectionList.Insert(rconn, id, callToken);
+  return it.GetCapturedObject();
 }
 
 RegistrarConnection * Registrar::FindRegConnWithLock(const PString & callToken)
@@ -325,7 +325,6 @@ BOOL Registrar::AddAbookAccount(const PString & address)
 
   long id = abookList.GetNextID();
   abookList.Insert(ab, id, key);
-  abookList.Release(id);
 
   MCUTRACE(6, "Address book: " << address << " insert");
   return TRUE;
@@ -711,7 +710,6 @@ void Registrar::BookThread(PThread &, INT)
 
       long id = abookList.GetNextID();
       abookList.Insert(ab, id, key);
-      abookList.Release(id);
     }
 
     AbookAccount oldab;
@@ -1017,7 +1015,7 @@ void Registrar::InitConfig()
 
 void Registrar::InitAbook()
 {
-  if(abookList.GetCurrentSize() > 0)
+  if(abookList.GetSize() > 0)
     return;
 
   MCUConfig cfg("Registrar Parameters");
@@ -1047,7 +1045,6 @@ void Registrar::InitAbook()
     PString key = PString(ab->account_type)+":"+ab->username;
     long id = abookList.GetNextID();
     abookList.Insert(ab, id, key);
-    abookList.Release(id);
   }
 }
 
