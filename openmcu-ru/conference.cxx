@@ -735,16 +735,12 @@ BOOL Conference::AddMemberToList(ConferenceMember * memberToAdd, BOOL addToList)
       memberToAdd->SetName(memberName+" ##"+PString(i+2));
     }
   }
+
   // add to list
   if(addToList)
-  {
     memberList.Insert(memberToAdd, (long)memberToAdd->GetID(), memberToAdd->GetName());
-    if(memberToAdd->IsVisible())
-    {
-      visibleMemberCount++;
-      maxMemberCount = PMAX(maxMemberCount, visibleMemberCount);
-    }
-  }
+
+  // send event
   memberToAdd->SendRoomControl(1);
 
   // template
@@ -763,10 +759,6 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
   // lock the member lists
   PWaitAndSignal m(memberListMutex);
 
-  // first add to list
-  if(!AddMemberToList(memberToAdd, addToList))
-    return FALSE;
-
   // notify that member is joined
   if(memberToAdd->IsJoined())
   {
@@ -775,8 +767,17 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
   }
   memberToAdd->SetJoined(TRUE);
 
+  // first add to list
+  if(!AddMemberToList(memberToAdd, addToList))
+    return FALSE;
+
+  // nothing more!
   if(!memberToAdd->IsVisible())
     return TRUE;
+
+  // counter visible members
+  visibleMemberCount++;
+  maxMemberCount = PMAX(maxMemberCount, visibleMemberCount);
 
   if(UseSameVideoForAllMembers())
   {
@@ -832,15 +833,6 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   // lock memberList
   PWaitAndSignal m(memberListMutex);
 
-  // first remove from list
-  if(removeFromList)
-  {
-    memberList.Erase((long)memberToRemove->GetID());
-    if(memberToRemove->IsVisible())
-      visibleMemberCount--;
-  }
-  memberToRemove->SendRoomControl(0);
-
   // notify that member is not joined anymore
   if(!memberToRemove->IsJoined())
   {
@@ -849,8 +841,19 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   }
   memberToRemove->SetJoined(FALSE);
 
+  // first remove from list
+  if(removeFromList)
+    memberList.Erase((long)memberToRemove->GetID());
+
+  // send event
+  memberToRemove->SendRoomControl(0);
+
+  // nothing more!
   if(!memberToRemove->IsVisible())
     return TRUE;
+
+  // counter visible members
+  visibleMemberCount--;
 
   // remove ConferenceConnection
   RemoveAudioConnection(memberToRemove);
