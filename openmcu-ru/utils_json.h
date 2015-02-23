@@ -41,8 +41,8 @@ class MCUJSON
     static MCUJSON * Double(double value);
     static MCUJSON * String(const char *key, const char *value);
     static MCUJSON * String(const char *value);
-    static MCUJSON * Array(const char *key = NULL);
-    static MCUJSON * Object(const char *key = NULL);
+    static MCUJSON * Array(const char *key = NULL, int size = 256);
+    static MCUJSON * Object(const char *key = NULL, int size = 256);
 
     bool Insert(MCUJSON *json);
     bool Insert(const char *key, bool value);

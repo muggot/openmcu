@@ -139,17 +139,17 @@ MCUJSON * MCUJSON::String(const char *value)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Array(const char *key)
+MCUJSON * MCUJSON::Array(const char *key, int size)
 {
-  MCUJSON *json = new MCUJSON(JSON_ARRAY, key);
+  MCUJSON *json = new MCUJSON(JSON_ARRAY, key, size);
   return json;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Object(const char *key)
+MCUJSON * MCUJSON::Object(const char *key, int size)
 {
-  MCUJSON *json = new MCUJSON(JSON_OBJECT, key);
+  MCUJSON *json = new MCUJSON(JSON_OBJECT, key, size);
   return json;
 }
 
