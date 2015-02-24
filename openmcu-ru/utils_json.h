@@ -7,7 +7,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString JsQuoteScreen(PString s);
+std::string   JsQuoteScreen(const std::string &str);
+std::string & JsQuoteScreen(const std::string &str, std::string &r);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -37,6 +38,14 @@ class MCUJSON
     static MCUJSON * Bool(bool value);
     static MCUJSON * Int(const char *key, int value);
     static MCUJSON * Int(int value);
+    static MCUJSON * Int(const char *key, unsigned int value);
+    static MCUJSON * Int(unsigned int value);
+    static MCUJSON * Int(const char *key, long value);
+    static MCUJSON * Int(long value);
+    static MCUJSON * Int(const char *key, unsigned long value);
+    static MCUJSON * Int(unsigned long value);
+    static MCUJSON * Int(const char *key, int64_t value);
+    static MCUJSON * Int(int64_t value);
     static MCUJSON * Double(const char *key, double value);
     static MCUJSON * Double(double value);
     static MCUJSON * String(const char *key, const char *value);
@@ -49,6 +58,14 @@ class MCUJSON
     bool Insert(bool value);
     bool Insert(const char *key, int value);
     bool Insert(int value);
+    bool Insert(const char *key, unsigned int value);
+    bool Insert(unsigned int value);
+    bool Insert(const char *key, long value);
+    bool Insert(long value);
+    bool Insert(const char *key, unsigned long value);
+    bool Insert(unsigned long value);
+    bool Insert(const char *key, int64_t value);
+    bool Insert(int64_t value);
     bool Insert(const char *key, double value);
     bool Insert(double value);
     bool Insert(const char *key, const char *value);
@@ -56,13 +73,16 @@ class MCUJSON
     bool Insert(const char *key, const PString & value);
     bool Insert(const PString & value);
 
-    bool Remove(const char *key);
     bool Replace(const char *key, const char *value);
+    bool Remove(const char *key);
     shared_iterator Find(const char *key);
-    PString AsString();
 
     MCUJSON & operator = (bool value);
     MCUJSON & operator = (int value);
+    MCUJSON & operator = (unsigned int value);
+    MCUJSON & operator = (long value);
+    MCUJSON & operator = (unsigned long value);
+    MCUJSON & operator = (int64_t value);
     MCUJSON & operator = (double value);
     MCUJSON & operator = (const char *value);
     MCUJSON & operator = (MCUSharedList<MCUJSON> *value);
@@ -77,13 +97,16 @@ class MCUJSON
     friend ostream & operator << (ostream &ostr, MCUJSON &json)
     { ostr << json.AsString(); return ostr; }
 
+    std::string   AsString();
+    std::string & ToString(std::string &str);
+
   protected:
     PString json_key;
     JsonTypes json_type;
     shared_iterator iterator_end;
 
     bool value_bool;
-    int value_int;
+    int64_t value_int;
     double value_double;
     PString value_string;
     MCUSharedList<MCUJSON> * value_array;
