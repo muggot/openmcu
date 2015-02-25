@@ -44,8 +44,8 @@ class MCUJSON
     static MCUJSON * Int(long value);
     static MCUJSON * Int(const char *key, unsigned long value);
     static MCUJSON * Int(unsigned long value);
-    static MCUJSON * Int(const char *key, int64_t value);
-    static MCUJSON * Int(int64_t value);
+    static MCUJSON * Int(const char *key, long long value);
+    static MCUJSON * Int(long long value);
     static MCUJSON * Double(const char *key, double value);
     static MCUJSON * Double(double value);
     static MCUJSON * String(const char *key, const char *value);
@@ -64,8 +64,8 @@ class MCUJSON
     bool Insert(long value);
     bool Insert(const char *key, unsigned long value);
     bool Insert(unsigned long value);
-    bool Insert(const char *key, int64_t value);
-    bool Insert(int64_t value);
+    bool Insert(const char *key, long long value);
+    bool Insert(long long value);
     bool Insert(const char *key, double value);
     bool Insert(double value);
     bool Insert(const char *key, const char *value);
@@ -82,7 +82,7 @@ class MCUJSON
     MCUJSON & operator = (unsigned int value);
     MCUJSON & operator = (long value);
     MCUJSON & operator = (unsigned long value);
-    MCUJSON & operator = (int64_t value);
+    MCUJSON & operator = (long long value);
     MCUJSON & operator = (double value);
     MCUJSON & operator = (const char *value);
     MCUJSON & operator = (MCUSharedList<MCUJSON> *value);
@@ -106,7 +106,7 @@ class MCUJSON
     shared_iterator iterator_end;
 
     bool value_bool;
-    int64_t value_int;
+    long long value_int;
     double value_double;
     PString value_string;
     MCUSharedList<MCUJSON> * value_array;

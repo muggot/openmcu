@@ -165,13 +165,13 @@ MCUJSON * MCUJSON::Int(unsigned long value)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Int(const char *key, int64_t value)
+MCUJSON * MCUJSON::Int(const char *key, long long value)
 {
   MCUJSON *json = new MCUJSON(JSON_INT, key);
   json->value_int = value;
   return json;
 }
-MCUJSON * MCUJSON::Int(int64_t value)
+MCUJSON * MCUJSON::Int(long long value)
 {
   return MCUJSON::Int(NULL, value);
 }
@@ -279,11 +279,11 @@ bool MCUJSON::Insert(unsigned long value)
   return Insert(MCUJSON::Int(NULL, value));
 }
 
-bool MCUJSON::Insert(const char *key, int64_t value)
+bool MCUJSON::Insert(const char *key, long long value)
 {
   return Insert(MCUJSON::Int(key, value));
 }
-bool MCUJSON::Insert(int64_t value)
+bool MCUJSON::Insert(long long value)
 {
   return Insert(MCUJSON::Int(NULL, value));
 }
@@ -395,7 +395,7 @@ MCUJSON & MCUJSON::operator = (unsigned long value)
   return *this;
 }
 
-MCUJSON & MCUJSON::operator = (int64_t value)
+MCUJSON & MCUJSON::operator = (long long value)
 {
   if(json_type == JSON_INT)
     value_int = value;
