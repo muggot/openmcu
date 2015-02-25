@@ -145,25 +145,56 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   unsigned expires = info.rcf.m_timeToLive;
 
   PString h323id = info.rcf.m_endpointIdentifier.GetValue();
-  PString username;
-  PString display_name;
+//  PString remote_application = H323GetApplicationInfo(info.rrq.m_endpointVendor);
+  PString remote_application = info.rrq.m_endpointVendor.m_productId.AsString()+" "+
+                               info.rrq.m_endpointVendor.m_versionId.AsString();
+
+  H225_AliasAddress *alias_username = NULL;
+  H225_AliasAddress *alias_display_name = NULL;
   if(info.rrq.HasOptionalField(H225_RegistrationRequest::e_terminalAlias))
   {
     for(PINDEX i = 0; i < info.rrq.m_terminalAlias.GetSize(); i++)
     {
-      if(username == "" && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_dialedDigits) // E.164
-        username = H323GetAliasAddressString(info.rrq.m_terminalAlias[i]);
-      if(display_name == "" && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_h323_ID)
-        display_name = H323GetAliasAddressString(info.rrq.m_terminalAlias[i]);
+      if(!alias_username && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_dialedDigits) // E.164
+        alias_username = &info.rrq.m_terminalAlias[i];
+      if(!alias_display_name && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_h323_ID)
+        alias_display_name = &info.rrq.m_terminalAlias[i];
     }
-    if(username == "")
+    if(!alias_username)
     {
       if(info.rrq.m_terminalAlias.GetSize() == 1)
-        username = H323GetAliasAddressString(info.rrq.m_terminalAlias[0]);
+        alias_username = &info.rrq.m_terminalAlias[0];
       else if(info.rrq.m_terminalAlias.GetSize() > 1)
-        username = H323GetAliasAddressString(info.rrq.m_terminalAlias[1]);
+        alias_display_name = &info.rrq.m_terminalAlias[1];
     }
   }
+
+  PString username;
+  if(alias_username)
+  {
+    if(remote_application.Find("RealPresence") == 0 && alias_username->GetTag() == H225_AliasAddress::e_h323_ID)
+      username = PWORDArrayToPString((const PASN_BMPString &)*alias_username);
+    else
+      username = H323GetAliasAddressString(*alias_username);
+
+    if(remote_application.Find("MyPhone") == 0 || remote_application.Find("Polycom ViaVideo Release 8.0") == 0)
+      username = convert_ucs2_to_utf8(username);
+  }
+
+  PString display_name;
+  if(alias_display_name)
+  {
+    if(remote_application.Find("RealPresence") == 0 && alias_username->GetTag() == H225_AliasAddress::e_h323_ID)
+      display_name = PWORDArrayToPString((const PASN_BMPString &)*alias_display_name);
+    else
+      display_name = H323GetAliasAddressString(*alias_display_name);
+
+    if(remote_application.Find("MyPhone") == 0 || remote_application.Find("Polycom ViaVideo Release 8.0") == 0)
+      display_name = convert_ucs2_to_utf8(display_name);
+  }
+  else
+    display_name = username;
+
   if(username == "")
   {
     PTRACE(1, trace_section << "check already endpoint registered " << h323id);
@@ -173,20 +204,6 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   {
     PTRACE(1, trace_section << "unable to determine username");
     return H323GatekeeperRequest::Reject;
-  }
-  if(display_name == "")
-    display_name = username;
-
-//  PString remote_application = H323GetApplicationInfo(info.rrq.m_endpointVendor);
-  PString remote_application = info.rrq.m_endpointVendor.m_productId.AsString()+" "+
-                               info.rrq.m_endpointVendor.m_versionId.AsString();
-
-  if(remote_application.Find("MyPhone") != P_MAX_INDEX
-     || remote_application.Find("Polycom ViaVideo\tRelease 8.0") != P_MAX_INDEX
-    )
-  {
-    username = convert_ucs2_to_utf8(username);
-    display_name = convert_ucs2_to_utf8(display_name);
   }
 
   // check account
