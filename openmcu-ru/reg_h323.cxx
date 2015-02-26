@@ -184,12 +184,12 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   PString display_name;
   if(alias_display_name)
   {
-    if(remote_application.Find("RealPresence") == 0 && alias_username->GetTag() == H225_AliasAddress::e_h323_ID)
+    if(remote_application.Find("RealPresence") != P_MAX_INDEX && alias_username->GetTag() == H225_AliasAddress::e_h323_ID)
       display_name = PWORDArrayToPString((const PASN_BMPString &)*alias_display_name);
     else
       display_name = H323GetAliasAddressString(*alias_display_name);
 
-    if(remote_application.Find("MyPhone") == 0 || remote_application.Find("Polycom ViaVideo Release 8.0") == 0)
+    if(remote_application.Find("MyPhone") != P_MAX_INDEX || remote_application.Find("Polycom ViaVideo Release 8.0") != P_MAX_INDEX)
       display_name = convert_ucs2_to_utf8(display_name);
   }
   else
