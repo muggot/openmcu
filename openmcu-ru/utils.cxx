@@ -243,13 +243,23 @@ PString convert_ucs2_to_utf8(PString str)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-char * PStringToChar(PString str)
+char * PStringToChar(const PString & str)
 {
   if(str.GetLength() == 0)
     return NULL;
   char *data = (char *)malloc((str.GetLength()+1) * sizeof(char));
   strcpy(data, str);
   return data;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+PString PWORDArrayToPString(const PWORDArray & ar)
+{
+  PString str;
+  for(int i = 0; i < ar.GetSize(); ++i)
+    str += ar[i];
+  return str;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

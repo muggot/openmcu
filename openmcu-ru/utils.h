@@ -17,7 +17,8 @@ PString GetSectionParamFromUrl(PString param, PString url, PString defaultValue,
 PString GetConferenceParam(PString room, PString param, PString defaultValue);
 int GetConferenceParam(PString room, PString param, int defaultValue);
 
-char * PStringToChar(PString str);
+char * PStringToChar(const PString & str);
+PString PWORDArrayToPString(const PWORDArray & ar);
 
 BOOL CheckCapability(const PString & formatName);
 BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionType = CONNECTION_TYPE_NONE);
