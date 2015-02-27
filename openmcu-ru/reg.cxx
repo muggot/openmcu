@@ -156,8 +156,6 @@ void AbookAccount::SendRoomControl(int state)
   MCUConferenceList & conferenceList = cm->GetConferenceList();
   for(MCUConferenceList::shared_iterator r = conferenceList.begin(); r != conferenceList.end(); ++r)
     OpenMCU::Current().HttpWriteCmdRoom(msg, r->GetNumber());
-
-  //MCUTRACE(6, "Address book: " << GetUrl() << " send");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1174,6 +1172,8 @@ void Registrar::InitAccounts()
     RegistrarAccount *raccount = FindAccountWithLock(account_type, username);
     if(!raccount)
       raccount = InsertAccountWithLock(account_type, username);
+    if(!raccount)
+      continue;
     raccount->is_saved_account = TRUE;
     raccount->allow_registrar = scfg.GetBoolean("Registrar", FALSE);
     raccount->host = scfg.GetString(HostKey);

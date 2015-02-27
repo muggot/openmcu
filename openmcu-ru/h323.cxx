@@ -1256,7 +1256,7 @@ PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
 /* 6*/  << "," << member->GetAudioLevel()                 // [i][ 6] = audiolevel (peak)
 /* 7*/  << "," << member->GetVideoMixerNumber()           // [i][ 7] = number of mixer member receiving
 /* 8*/  << "," << JsQuoteScreen(member->GetNameID())      // [i][ 8] = memberName id
-/* 9*/  << "," << (unsigned short)member->channelCheck    // [i][ 9] = RTP channels checking bit mask 0000vVaA
+/* 9*/  << "," << member->channelMask                     // [i][ 9] = RTP channels checking bit mask 0000vVaA
 /*10*/  << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
 /*11*/  << "," << member->kOutputGainDB                   // [i][11] = Output audio gain, integer: -20..60
 /*12*/  << "," << GetVideoMixerConfiguration(member->videoMixer, 0) // [i][12] = mixer configuration
@@ -2661,8 +2661,11 @@ void MCUH323Connection::OnCleared()
   PWaitAndSignal m(connMutex);
   if(conferenceMember)
   {
+    // Удалить из конференции без удаления из списка
     conference->RemoveMember(conferenceMember, FALSE);
     conferenceMember->SetVisible(FALSE);
+    // В последнюю очередь очистить callToken
+    // проверяется при удалении в IsOnline()
     conferenceMember->SetCallToken("");
   }
   conference = NULL;
@@ -3241,6 +3244,51 @@ BOOL MCUH323Connection::OnH245_MiscellaneousCommand(const H245_MiscellaneousComm
     }
   }
   return H323Connection::OnH245_MiscellaneousCommand(pdu);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#include "h323neg.h"
+BOOL MCUH323Connection::OnH245_MiscellaneousIndication(const H245_MiscellaneousIndication & pdu)
+{
+  if(pdu.m_type.GetTag() == H245_MiscellaneousIndication_type::e_logicalChannelActive || pdu.m_type.GetTag() == H245_MiscellaneousIndication_type::e_logicalChannelInactive)
+  {
+    H323Channel * chan = logicalChannels->FindChannel((unsigned)pdu.m_logicalChannelNumber, TRUE);
+    if(chan != NULL)
+    {
+      unsigned mask = 0;
+      if(chan == audioReceiveChannel)
+        mask = 16;
+      else if(chan == audioTransmitChannel)
+        mask = 32;
+      else if(chan == videoReceiveChannel)
+        mask = 64;
+      else if(chan == videoTransmitChannel)
+        mask = 128;
+
+      if(mask != 0)
+      {
+        PWaitAndSignal m(connMutex);
+        if(conferenceMember)
+        {
+          PStringStream cmd;
+          if(pdu.m_type.GetTag() == H245_MiscellaneousIndication_type::e_logicalChannelInactive)
+          {
+            conferenceMember->channelMask |= mask;
+            cmd << "omute(" << dec << (long)conferenceMember->GetID() << "," << mask << ")";
+          }
+          else if(pdu.m_type.GetTag() == H245_MiscellaneousIndication_type::e_logicalChannelActive)
+          {
+            conferenceMember->channelMask &= ~mask;
+            cmd << "ounmute(" << dec << (long)conferenceMember->GetID() << "," << mask << ")";
+          }
+          OpenMCU::Current().HttpWriteCmdRoom(cmd, requestedRoom);
+        }
+      }
+    }
+  }
+
+  return H323Connection::OnH245_MiscellaneousIndication(pdu);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -845,6 +845,9 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   if(removeFromList)
     memberList.Erase((long)memberToRemove->GetID());
 
+  // Обнулить до отправки event
+  memberToRemove->channelMask = 0;
+
   // send event
   memberToRemove->SendRoomControl(0);
 
@@ -1212,7 +1215,7 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   visible = FALSE;
   isMCU = FALSE;
   id = this;
-  channelCheck=0;
+  channelMask = 0;
   audioLevel = 0;
   audioCounter = 0;
   previousAudioLevel = 65535;
@@ -1287,7 +1290,7 @@ void ConferenceMember::SendRoomControl(int state)
        << "," << GetAudioLevel()
        << "," << GetVideoMixerNumber()
        << "," << JsQuoteScreen(GetNameID())
-       << "," << dec << (unsigned)channelCheck
+       << "," << dec << channelMask
        << "," << kManualGainDB
        << "," << kOutputGainDB
        << ",[]"
@@ -1302,16 +1305,16 @@ void ConferenceMember::ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState)
 {
   if(bitState)
   {
-    channelCheck|=bitMask;
+    channelMask|=bitMask;
   }
   else
   {
-    channelCheck&=~bitMask;
+    channelMask&=~bitMask;
   }
 
   PStringStream msg;
-  msg << "rtp_state(" << dec << (long)id << ", " << (unsigned)channelCheck << ")";
-  PTRACE(1,"channelCheck change: " << (bitState?"+":"-") << (unsigned)bitMask << ". Result: " << (unsigned)channelCheck << ", conference=" << conference << ", msg=" << msg);
+  msg << "rtp_state(" << dec << (long)id << ", " << channelMask << ")";
+  PTRACE(1,"channelCheck change: " << (bitState?"+":"-") << (unsigned)bitMask << ". Result: " << channelMask << ", conference=" << conference << ", msg=" << msg);
 
   if(!conference)
   {
@@ -1389,7 +1392,7 @@ void ConferenceMember::WriteAudioAutoGainControl(const short * pcm, unsigned sam
 
 void ConferenceMember::WriteAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-  if(!(channelCheck&1))
+  if(!(channelMask&1))
     ChannelBrowserStateUpdate(1,TRUE);
 
   if(conference != NULL)
@@ -1412,7 +1415,7 @@ void ConferenceMember::WriteAudio(const uint64_t & timestamp, const void * buffe
 
 void ConferenceMember::ReadAudio(const uint64_t & timestamp, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-  if(!(channelCheck&2))
+  if(!(channelMask&2))
     ChannelBrowserStateUpdate(2,TRUE);
 
   // First, set the buffer to empty.
@@ -1456,7 +1459,7 @@ void ConferenceMember::ReadAudioGainControl(void * buffer, int amount)
 // called whenever the connection needs a frame of video to send
 void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & amount)
 {
-  if(!(channelCheck&8))
+  if(!(channelMask&8))
     ChannelBrowserStateUpdate(8,TRUE);
 
   ++totalVideoFramesSent;
@@ -1477,7 +1480,7 @@ void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & 
 // called whenever the connection receives a frame of video
 void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PINDEX amount)
 {
-  if(!(channelCheck&4))
+  if(!(channelMask&4))
     ChannelBrowserStateUpdate(4,TRUE);
 
   ++totalVideoFramesReceived;

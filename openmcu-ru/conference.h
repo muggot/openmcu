@@ -343,17 +343,18 @@ class ConferenceMember : public PObject
       firstFrameReceiveTime = -1;
       rxFrameWidth = 0;
       rxFrameHeight = 0;
+      channelMask = 0;
     }
 
     BOOL autoDial;
     unsigned muteMask;
+    unsigned channelMask;
     BOOL disableVAD;
     BOOL chosenVan; // allways visible, but can change place on frame, used in 5+1 layout
     int vad;
     unsigned long audioCounter;
     unsigned audioLevelIndicator;
     unsigned previousAudioLevel;
-    BYTE channelCheck;
 
     MCUSimpleVideoMixer * videoMixer;
 

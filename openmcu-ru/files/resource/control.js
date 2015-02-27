@@ -760,7 +760,7 @@ function format_mmbr_button(m,st)
   if(classicMode) mixerb='';
   else
   mixerb ="<div "+b3style+" onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi'>#"+mixer+"</div>";
-  levelb ="<div "+b4style+" class='vlevel' id='srpan_"+id+"'>&nbsp;</div>";
+  levelb ="<div "+b4style+" class='"+((m[9]&16)?"mutespr30":"vlevel")+"' id='srpan_"+id+"'>&nbsp;</div>";
   invite ="<img "+b1style+" onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i15_inv.gif' alt='Invite' title='"+window.l_invite+"'>";
   remove ="<img "+b1style+" onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i16_close_gray.png' alt='Remove' title='"+l_room_remove_from_list+"'>";
 
@@ -1214,7 +1214,7 @@ function get_addr_url_without_param(addr){
   return url;
 }
 
-function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og,mixconf,mtype)
+function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype)
 {
   if(typeof members==='undefined') return alive();
   var j=members.length;
@@ -1247,7 +1247,7 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og,mixcon
   j=members.length;
   dmsg('l2='+j);
 
-  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og,mixconf,mtype);
+  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype,chmask);
   alive();
   members_refresh();
   top_panel();
@@ -1273,13 +1273,13 @@ function chmix(id,mx){
   alive();
 }
 
-function remmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og,mixconf,mtype){
+function remmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype){
   if(typeof members==='undefined') return alive();
   var found=0; var j=members.length;
   for(var i=j-1;i>=0;i--)
   if((members[i][2]==name)||(members[i][1]==id))
   if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
-  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,cc,gl,og,mixconf,mtype);
+  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype);
   alive();
   members_refresh();
   top_panel();
@@ -1357,6 +1357,31 @@ function iunmute(id,mask){
   }
   return alive();
 }
+
+function omute(id,mask)
+{
+  for(var i=0;i<members.length;i++)
+    if(members[i][1]==id)
+    {
+      members[i][9]|=mask;
+      if(mask&16) if((o=object_return('srpan_' ,id))!==false) { o.className='mutespr30'; }
+      break;
+    }
+  return alive();
+}
+
+function ounmute(id,mask)
+{
+  for(var i=0;i<members.length;i++)
+    if(members[i][1]==id)
+    {
+      members[i][9]&=(255-mask)
+      if(mask&16) if((o=object_return('srpan_' ,id))!==false) { o.className='vlevel'; }
+      break;
+    }
+  return alive();
+}
+
 
 function ivad(id,v){
   dmsg('Executing VAD switch for member id '+id+': new VAD value is '+v);
