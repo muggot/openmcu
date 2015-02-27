@@ -282,6 +282,7 @@ window.l_h323_gatekeeper_enable                    = "H.323 gatekeeper enable";
 window.l_h323_allow_reg_without_auth               = "H.323 allow registration without authentication";
 window.l_h323_allow_mcu_calls_without_reg          = "H.323 allow MCU calls without registration";
 window.l_h323_allow_internal_calls_without_reg     = "H.323 allow internal calls without registration";
+window.l_h323_allow_duplicate_aliases              = "H.323 allow duplicate aliases";
 window.l_h323_gatekeeper_minimum_ttl               = "H.323 gatekeeper minimum Time To Live";
 window.l_h323_gatekeeper_maximum_ttl               = "H.323 gatekeeper maximum Time To Live";
 ///

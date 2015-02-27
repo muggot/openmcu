@@ -440,6 +440,9 @@ class RegistrarGk : public H323GatekeeperServer
 
     BOOL IsGatekeeperRouted() const { return isGatekeeperRouted; }
 
+    void SetAllowDuplicateAlias(BOOL enable)
+    { canHaveDuplicateAlias = enable; }
+
   protected:
 
     PString GetAdmissionSrcUsername(H323GatekeeperARQ & info);

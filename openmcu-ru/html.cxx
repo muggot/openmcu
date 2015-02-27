@@ -519,6 +519,7 @@ RegistrarPConfigPage::RegistrarPConfigPage(PHTTPServiceProcess & app,const PStri
   s << BoolField("H.323 allow registration without authentication", JsLocal("h323_allow_reg_without_auth"), cfg.GetBoolean("H.323 allow registration without authentication", TRUE));
   s << BoolField("H.323 allow MCU calls without registration", JsLocal("h323_allow_mcu_calls_without_reg"), cfg.GetBoolean("H.323 allow MCU calls without registration", TRUE));
   s << BoolField("H.323 allow internal calls without registration", JsLocal("h323_allow_internal_calls_without_reg"), cfg.GetBoolean("H.323 allow internal calls without registration", TRUE));
+  s << BoolField("H.323 allow duplicate aliases", JsLocal("h323_allow_duplicate_aliases"), cfg.GetBoolean("H.323 allow duplicate aliases", FALSE));
   s << SelectField("H.323 gatekeeper minimum Time To Live", JsLocal("h323_gatekeeper_minimum_ttl"), cfg.GetString("H.323 gatekeeper minimum Time To Live", "60"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
   s << SelectField("H.323 gatekeeper maximum Time To Live", JsLocal("h323_gatekeeper_maximum_ttl"), cfg.GetString("H.323 gatekeeper maximum Time To Live", "600"), "60,120,180,240,300,600,1200,1800,2400,3000,3600");
 
