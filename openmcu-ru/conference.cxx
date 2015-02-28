@@ -1129,9 +1129,9 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
         if(status >= 0) // increase silence counter
           mixer->SetPositionStatus(member->GetID(),status + tint);
       }
-      if(audioLevel > VAlevel && status == 0 && member->disableVAD == FALSE && member->vad-VAdelay > 500)
-        member->vad = VAdelay;
     }
+    if(audioLevel > VAlevel && status == 0 && member->disableVAD == FALSE && member->vad-VAdelay > 500)
+      member->vad = VAdelay;
   }
 #endif // MCU_VIDEO
 }
