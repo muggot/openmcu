@@ -60,7 +60,7 @@ std::string & JsQuoteScreen(const std::string &str, std::string &r)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON::MCUJSON(JsonTypes type, const char *key, int size)
+MCUJSON::MCUJSON(JsonTypes type, const std::string &key, int size)
   : value_bool(false), value_int(0), value_double(0), value_array(NULL)
 {
   if(type == JSON_ARRAY || type == JSON_OBJECT)
@@ -99,7 +99,7 @@ MCUJSON * MCUJSON::Null()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Bool(const char *key, bool value)
+MCUJSON * MCUJSON::Bool(const std::string &key, bool value)
 {
   MCUJSON *json = new MCUJSON(JSON_BOOL, key);
   json->value_bool = value;
@@ -108,12 +108,12 @@ MCUJSON * MCUJSON::Bool(const char *key, bool value)
 
 MCUJSON * MCUJSON::Bool(bool value)
 {
-  return MCUJSON::Bool(NULL, value);
+  return MCUJSON::Bool("", value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Int(const char *key, int value)
+MCUJSON * MCUJSON::Int(const std::string &key, int value)
 {
   MCUJSON *json = new MCUJSON(JSON_INT, key);
   json->value_int = value;
@@ -121,12 +121,12 @@ MCUJSON * MCUJSON::Int(const char *key, int value)
 }
 MCUJSON * MCUJSON::Int(int value)
 {
-  return MCUJSON::Int(NULL, value);
+  return MCUJSON::Int("", value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Int(const char *key, unsigned int value)
+MCUJSON * MCUJSON::Int(const std::string &key, unsigned int value)
 {
   MCUJSON *json = new MCUJSON(JSON_INT, key);
   json->value_int = value;
@@ -134,12 +134,12 @@ MCUJSON * MCUJSON::Int(const char *key, unsigned int value)
 }
 MCUJSON * MCUJSON::Int(unsigned int value)
 {
-  return MCUJSON::Int(NULL, value);
+  return MCUJSON::Int("", value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Int(const char *key, long value)
+MCUJSON * MCUJSON::Int(const std::string &key, long value)
 {
   MCUJSON *json = new MCUJSON(JSON_INT, key);
   json->value_int = value;
@@ -147,12 +147,12 @@ MCUJSON * MCUJSON::Int(const char *key, long value)
 }
 MCUJSON * MCUJSON::Int(long value)
 {
-  return MCUJSON::Int(NULL, value);
+  return MCUJSON::Int("", value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Int(const char *key, unsigned long value)
+MCUJSON * MCUJSON::Int(const std::string &key, unsigned long value)
 {
   MCUJSON *json = new MCUJSON(JSON_INT, key);
   json->value_int = value;
@@ -160,12 +160,12 @@ MCUJSON * MCUJSON::Int(const char *key, unsigned long value)
 }
 MCUJSON * MCUJSON::Int(unsigned long value)
 {
-  return MCUJSON::Int(NULL, value);
+  return MCUJSON::Int("", value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Int(const char *key, long long value)
+MCUJSON * MCUJSON::Int(const std::string &key, long long value)
 {
   MCUJSON *json = new MCUJSON(JSON_INT, key);
   json->value_int = value;
@@ -173,12 +173,12 @@ MCUJSON * MCUJSON::Int(const char *key, long long value)
 }
 MCUJSON * MCUJSON::Int(long long value)
 {
-  return MCUJSON::Int(NULL, value);
+  return MCUJSON::Int("", value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Double(const char *key, double value)
+MCUJSON * MCUJSON::Double(const std::string &key, double value)
 {
   MCUJSON *json = new MCUJSON(JSON_DOUBLE, key);
   json->value_double = value;
@@ -186,32 +186,32 @@ MCUJSON * MCUJSON::Double(const char *key, double value)
 }
 MCUJSON * MCUJSON::Double(double value)
 {
-  return MCUJSON::Double(NULL, value);
+  return MCUJSON::Double("", value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::String(const char *key, const char *value)
+MCUJSON * MCUJSON::String(const std::string &key, const std::string &value)
 {
   MCUJSON *json = new MCUJSON(JSON_STRING, key);
   json->value_string = value;
   return json;
 }
-MCUJSON * MCUJSON::String(const char *value)
+MCUJSON * MCUJSON::String(const std::string &value)
 {
-  return MCUJSON::String(NULL, value);
+  return MCUJSON::String("", value);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Array(const char *key, int size)
+MCUJSON * MCUJSON::Array(const std::string &key, int size)
 {
   return new MCUJSON(JSON_ARRAY, key, size);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON * MCUJSON::Object(const char *key, int size)
+MCUJSON * MCUJSON::Object(const std::string &key, int size)
 {
   return new MCUJSON(JSON_OBJECT, key, size);
 }
@@ -225,7 +225,7 @@ bool MCUJSON::Insert(MCUJSON *json)
     delete json;
     return false;
   }
-  shared_iterator it = value_array->Insert(json, value_array->GetNextID(), json->json_key);
+  shared_iterator it = value_array->Pushback(json, value_array->GetNextID(), json->json_key);
   if(it == value_array->end())
   {
     delete json;
@@ -234,90 +234,99 @@ bool MCUJSON::Insert(MCUJSON *json)
   return true;
 }
 
-bool MCUJSON::Insert(const char *key, bool value)
+bool MCUJSON::Insert(const std::string &key, bool value)
 {
   return Insert(MCUJSON::Bool(key, value));
 }
 bool MCUJSON::Insert(bool value)
 {
-  return Insert(MCUJSON::Bool(NULL, value));
+  return Insert(MCUJSON::Bool("", value));
 }
 
-bool MCUJSON::Insert(const char *key, int value)
+bool MCUJSON::Insert(const std::string &key, int value)
 {
   return Insert(MCUJSON::Int(key, value));
 }
 bool MCUJSON::Insert(int value)
 {
-  return Insert(MCUJSON::Int(NULL, value));
+  return Insert(MCUJSON::Int("", value));
 }
 
-bool MCUJSON::Insert(const char *key, unsigned int value)
+bool MCUJSON::Insert(const std::string &key, unsigned int value)
 {
   return Insert(MCUJSON::Int(key, value));
 }
 bool MCUJSON::Insert(unsigned int value)
 {
-  return Insert(MCUJSON::Int(NULL, value));
+  return Insert(MCUJSON::Int("", value));
 }
 
-bool MCUJSON::Insert(const char *key, long value)
+bool MCUJSON::Insert(const std::string &key, long value)
 {
   return Insert(MCUJSON::Int(key, value));
 }
 bool MCUJSON::Insert(long value)
 {
-  return Insert(MCUJSON::Int(NULL, value));
+  return Insert(MCUJSON::Int("", value));
 }
 
-bool MCUJSON::Insert(const char *key, unsigned long value)
+bool MCUJSON::Insert(const std::string &key, unsigned long value)
 {
   return Insert(MCUJSON::Int(key, value));
 }
 bool MCUJSON::Insert(unsigned long value)
 {
-  return Insert(MCUJSON::Int(NULL, value));
+  return Insert(MCUJSON::Int("", value));
 }
 
-bool MCUJSON::Insert(const char *key, long long value)
+bool MCUJSON::Insert(const std::string &key, long long value)
 {
   return Insert(MCUJSON::Int(key, value));
 }
 bool MCUJSON::Insert(long long value)
 {
-  return Insert(MCUJSON::Int(NULL, value));
+  return Insert(MCUJSON::Int("", value));
 }
 
-bool MCUJSON::Insert(const char *key, double value)
+bool MCUJSON::Insert(const std::string &key, double value)
 {
   return Insert(MCUJSON::Double(key, value));
 }
 bool MCUJSON::Insert(double value)
 {
-  return Insert(MCUJSON::Double(NULL, value));
+  return Insert(MCUJSON::Double("", value));
 }
 
-bool MCUJSON::Insert(const char *key, const char *value)
+bool MCUJSON::Insert(const std::string &key, const char *value)
 {
   return Insert(MCUJSON::String(key, value));
 }
 bool MCUJSON::Insert(const char *value)
 {
-  return Insert(MCUJSON::String(NULL, value));
+  return Insert(MCUJSON::String("", value));
 }
 
-bool MCUJSON::Insert(const char *key, const PString & value)
+bool MCUJSON::Insert(const std::string &key, const std::string &value)
 {
   return Insert(MCUJSON::String(key, value));
 }
-bool MCUJSON::Insert(const PString & value)
+bool MCUJSON::Insert(const std::string &value)
 {
-  return Insert(MCUJSON::String(NULL, value));
+  return Insert(MCUJSON::String("", value));
+}
+
+bool MCUJSON::Insert(const std::string &key, const PString &value)
+{
+  return Insert(MCUJSON::String(key, value));
+}
+bool MCUJSON::Insert(const PString &value)
+{
+  return Insert(MCUJSON::String("", value));
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool MCUJSON::Replace(const char *key, const char *value)
+bool MCUJSON::Replace(const std::string &key, const std::string &value)
 {
   if(value_array)
   {
@@ -331,7 +340,7 @@ bool MCUJSON::Replace(const char *key, const char *value)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-bool MCUJSON::Remove(const char *key)
+bool MCUJSON::Remove(const std::string &key)
 {
   if(value_array)
   {
@@ -351,7 +360,7 @@ bool MCUJSON::Remove(const char *key)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUSharedListSharedIterator<MCUSharedList<MCUJSON>, MCUJSON> MCUJSON::Find(const char *key)
+MCUSharedListSharedIterator<MCUSharedList<MCUJSON>, MCUJSON> MCUJSON::Find(const std::string &key)
 {
   if(value_array)
     return value_array->Find(key);
@@ -412,7 +421,22 @@ MCUJSON & MCUJSON::operator = (double value)
 MCUJSON & MCUJSON::operator = (const char *value)
 {
   if(json_type == JSON_STRING)
+    if(value)
+      value_string = value;
+  return *this;
+}
+
+MCUJSON & MCUJSON::operator = (const std::string &value)
+{
+  if(json_type == JSON_STRING)
     value_string = value;
+  return *this;
+}
+
+MCUJSON & MCUJSON::operator = (const PString &value)
+{
+  if(json_type == JSON_STRING)
+    value_string = (const char *)value;
   return *this;
 }
 
@@ -450,7 +474,7 @@ MCUJSON & MCUJSON::operator = (MCUJSON &json)
       return (*this)=json.value_double;
       break;
     case(JSON_STRING):
-      return (*this)=(const char *)json.value_string;
+      return (*this)=json.value_string;
       break;
     case(JSON_ARRAY):
     case(JSON_OBJECT):
@@ -472,7 +496,7 @@ std::string MCUJSON::AsString()
 
 std::string & MCUJSON::ToString(std::string &str)
 {
-  if(json_key != "")
+  if(!json_key.empty())
   {
     JsQuoteScreen(json_key, str);
     str.push_back(':');

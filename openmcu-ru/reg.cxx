@@ -1038,7 +1038,7 @@ void Registrar::InitConfig()
   h323_allow_unreg_internal_calls = cfg.GetBoolean("H.323 allow internal calls without registration", TRUE);
   h323_min_time_to_live = cfg.GetInteger("H.323 gatekeeper minimum Time To Live", 60);
   h323_max_time_to_live = cfg.GetInteger("H.323 gatekeeper maximum Time To Live", 600);
-  BOOL h323_allow_duplicate_aliases = cfg.GetBoolean("H.323 allow duplicate aliases", TRUE);
+  BOOL h323_allow_duplicate_aliases = cfg.GetBoolean("H.323 allow duplicate aliases", FALSE);
   if(registrarGk)
   {
     registrarGk->SetRequireH235(!h323_allow_unauth_reg);
