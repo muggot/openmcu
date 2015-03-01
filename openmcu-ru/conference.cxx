@@ -1098,6 +1098,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
     else
       member->vad = 0;
 
+    BOOL resetMemberVad = FALSE;
     for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
     {
       MCUSimpleVideoMixer *mixer = it.GetObject();
@@ -1129,8 +1130,10 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
         if(status >= 0) // increase silence counter
           mixer->SetPositionStatus(member->GetID(),status + tint);
       }
+      if(audioLevel > VAlevel && status == 0 && member->disableVAD == FALSE && member->vad-VAdelay > 500)
+        resetMemberVad = TRUE;
     }
-    if(audioLevel > VAlevel && status == 0 && member->disableVAD == FALSE && member->vad-VAdelay > 500)
+    if(resetMemberVad)
       member->vad = VAdelay;
   }
 #endif // MCU_VIDEO
