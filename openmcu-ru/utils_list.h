@@ -213,7 +213,7 @@ class MCUSharedList
 
     // Уникальный идентификатор для объектов
     long GetNextID()
-    { return sync_increment(&idcounter); }
+    { return sync_increment(&id_counter); }
 
     // Insert добавляет в первую свободную позицию с начала списка
     // Возвращает false(end) если нет свободного места, после добавления объект захвачен(в итераторе)
@@ -251,18 +251,19 @@ class MCUSharedList
   protected:
     void CaptureInternal(int index);
     void ReleaseInternal(int index);
-    void ReleaseWait(long * _captures, int threshold);
+    void ReleaseWait(int index, int threshold);
 
     // GetIndex() возвращает захваченный индекс
     int GetIndex(const long id);
     int GetIndex(const std::string &name);
     int GetIndex(const T_obj * obj);
 
+    bool EraseInternal(int index);
     void UpdatePushbackIndex(int new_index);
 
     const int size;
     long current_size;
-    long idcounter;
+    long id_counter;
     int pushback_index;
     bool * volatile states;
     bool * states_end;
@@ -281,7 +282,7 @@ class MCUSharedList
 
 template <class T_obj>
 MCUSharedList<T_obj>::MCUSharedList(int _size)
-  : size(_size), current_size(0), idcounter(0), pushback_index(0)
+  : size(_size), current_size(0), id_counter(0), pushback_index(0)
 {
   states = new bool [size];
   states_end = states + size;
@@ -428,36 +429,11 @@ MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::P
 template <class T_obj>
 bool MCUSharedList<T_obj>::Erase(long id)
 {
-  bool erase = false;
-  long *it = find(ids, ids_end, id);
-  if(it != ids_end)
-  {
-    int index = it - ids;
-    if(ids[index] == id && states[index] == true )
-    {
-      // блокировка записи
-      if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
-      {
-        // повторная проверка после блокировки
-        if(ids[index] == id && states[index] == true)
-        {
-          // запретить получение объекта
-          states[index] = false;
-          sync_decrement(&current_size);
-          // ждать освобождения объекта
-          ReleaseWait(&captures[index], 0);
-          // запись объекта
-          ids[index] = LONG_MAX;
-          if(names[index])
-            names[index]->clear();
-          objs[index] = NULL;
-          erase = true;
-        }
-        // разблокировка записи
-        sync_bool_compare_and_swap(&locks[index], true, false);
-      }
-    }
-  }
+  int index = GetIndex(id);
+  if(index == INT_MAX)
+    return false;
+  bool erase = EraseInternal(index);
+  ReleaseInternal(index);
   return erase;
 }
 
@@ -469,64 +445,54 @@ bool MCUSharedList<T_obj>::Erase(shared_iterator & it)
   // итератор должен быть захвачен
   if(it.captured == false)
     return false;
-
-  int index = it.GetIndex();
-  // пустой итератор
-  if(index < 0 || index >= size)
-    return false;
-
-  bool erase = false;
-  if(states[index] == true)
-  {
-    // блокировка записи
-    if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
-    {
-      // повторная проверка после блокировки
-      if(states[index] == true)
-      {
-        // запретить получение объекта
-        states[index] = false;
-        sync_decrement(&current_size);
-        // ждать освобождения объекта
-        // 1 захват в итераторе
-        ReleaseWait(&captures[index], 1);
-        // запись объекта
-        ids[index] = LONG_MAX;
-        if(names[index])
-          names[index]->clear();
-        objs[index] = NULL;
-        erase = true;
-      }
-      // разблокировка записи
-      sync_bool_compare_and_swap(&locks[index], true, false);
-    }
-  }
-
-  // освободить объект и
-  // запретить получение объекта из итератора
+  bool erase = EraseInternal(it.GetIndex());
   it.Release();
-
   return erase;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-void MCUSharedList<T_obj>::ReleaseWait(long * _captures, int threshold)
+bool MCUSharedList<T_obj>::EraseInternal(int index)
 {
-  for(int i = 0; *_captures != threshold; ++i)
+  // блокировка записи
+  if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
   {
-    if(i < 100)
+    // запретить получение объекта
+    states[index] = false;
+    sync_decrement(&current_size);
+    // ждать освобождения объекта
+    ReleaseWait(index, 1);
+    // запись объекта
+    ids[index] = LONG_MAX;
+    if(names[index])
+      names[index]->clear();
+    objs[index] = NULL;
+    // разблокировка записи
+    sync_bool_compare_and_swap(&locks[index], true, false);
+    return true;
+  }
+  return false;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T_obj>
+void MCUSharedList<T_obj>::ReleaseWait(int index, int threshold)
+{
+  for(int i = 0; captures[index] != threshold; ++i)
+  {
+    if(i < 4000)
       __asm__ __volatile__("pause":::"memory");
-    else if(i < 1000)
+    else if(i < 9000) // +50msec
       MCUTime::SleepUsec(10);
     else
-      MCUTime::SleepUsec(1000);
-
-    if(i % 5000 == 0)
     {
-      PTRACE(1, "ReleaseWait list: " << typeid(this).name() << ", captures: " << *_captures);
-      cout << "ReleaseWait list: " << typeid(this).name() << ", captures: " << *_captures << "\n";
+      if(i % 5000 == 0)
+        MCUTRACE(1, "ReleaseWait: " << typeid(*this).name() << " index=" << index <<
+                    " obj=" << objs[index] << " id=" << ids[index] << " name=" << (names[index] ? *names[index] : "") <<
+                    " captures=" << captures[index]);
+      MCUTime::SleepUsec(1000);
     }
   }
 }
