@@ -744,7 +744,7 @@ void Registrar::BookThread(PThread &, INT)
       ab->ping_state = 0;
       ab->ping_info = "";
 
-      if(raccount->allow_registrar)
+      if(raccount->is_saved_account)
         ab->reg_state = 1;
       if(raccount->registered)
         ab->reg_state = 2;
@@ -1067,29 +1067,21 @@ void Registrar::InitAccounts()
     if(raccount->account_type == ACCOUNT_TYPE_SIP)
     {
       PString section = sipSectionPrefix+raccount->username;
-      if(!MCUConfig::HasSection(section))
-      {
+      if(MCUConfig::HasSection(section))
+        raccount->is_saved_account = TRUE;
+      else
         raccount->is_saved_account = FALSE;
-        raccount->allow_registrar = FALSE;
-      } else {
-        MCUConfig scfg(sipSectionPrefix+raccount->username);
-        raccount->allow_registrar = scfg.GetBoolean("Registrar", FALSE);
-      }
-      if(!raccount->allow_registrar && !sip_allow_unauth_reg)
+      if(!raccount->is_saved_account && !sip_allow_unauth_reg)
         raccount->registered = FALSE;
     }
     else if(raccount->account_type == ACCOUNT_TYPE_H323)
     {
       PString section = h323SectionPrefix+raccount->username;
-      if(!MCUConfig::HasSection(section))
-      {
+      if(MCUConfig::HasSection(section))
+        raccount->is_saved_account = TRUE;
+      else
         raccount->is_saved_account = FALSE;
-        raccount->allow_registrar = FALSE;
-      } else {
-        MCUConfig scfg(section);
-        raccount->allow_registrar = scfg.GetBoolean("Registrar", FALSE);
-      }
-      if(!raccount->allow_registrar && !h323_allow_unauth_reg)
+      if(!raccount->is_saved_account && !h323_allow_unauth_reg)
         raccount->registered = FALSE;
     }
     else if(raccount->account_type == ACCOUNT_TYPE_H323)
@@ -1138,7 +1130,6 @@ void Registrar::InitAccounts()
     if(!raccount)
       continue;
     raccount->is_saved_account = TRUE;
-    raccount->allow_registrar = scfg.GetBoolean("Registrar", FALSE);
     raccount->host = scfg.GetString(HostKey);
     if(port != 0)
       raccount->port = port;

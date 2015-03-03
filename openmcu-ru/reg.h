@@ -92,7 +92,6 @@ class RegistrarAccount
       algorithm = "MD5";
       expires = 0;
       is_saved_account = FALSE;
-      allow_registrar = FALSE;
       registered = FALSE;
       keep_alive_enable = FALSE;
       keep_alive_interval = 0;
@@ -168,7 +167,6 @@ class RegistrarAccount
     OpalGloballyUniqueID h323CallIdentifier; // h323 incoming call
 
     BOOL is_saved_account;
-    BOOL allow_registrar;
     BOOL registered;
 
     RegAccountTypes account_type;
