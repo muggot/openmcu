@@ -1056,8 +1056,7 @@ void Registrar::InitAbook()
   if(abookList.GetSize() > 0)
     return;
 
-  MCUConfig cfg("Registrar Parameters");
-  PStringList sect = cfg.GetSections();
+  PStringList sect = MCUConfig().GetSections();
   for(PINDEX i = 0; i < sect.GetSize(); i++)
   {
     if(sect[i].Find("Address book ") != 0)
@@ -1068,7 +1067,7 @@ void Registrar::InitAbook()
     PString host = scfg.GetString(HostKey);
     RegAccountTypes account_type = GetAccountTypeFromScheme(scfg.GetString("Scheme"));
 
-    if(username == "" || host == "" || account_type == ACCOUNT_TYPE_UNKNOWN)
+    if(username == "" || account_type == ACCOUNT_TYPE_UNKNOWN)
       continue;
 
     AbookAccount *ab = new AbookAccount();
