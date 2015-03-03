@@ -395,7 +395,7 @@ class MCUConfig: public PConfig
 {
  public:
    MCUConfig()
-    : PConfig() { };
+    : PConfig(CONFIG_PATH, "Options") { };
    MCUConfig(const PString & section)
     : PConfig(CONFIG_PATH, section) { };
 
