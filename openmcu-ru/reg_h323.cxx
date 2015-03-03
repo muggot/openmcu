@@ -37,14 +37,7 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
   raccount_in = FindAccountWithLock(ACCOUNT_TYPE_H323, username_in);
 
   if(allow_internal_calls)
-  {
     raccount_out = FindAccountWithLock(ACCOUNT_TYPE_UNKNOWN, username_out);
-    if(raccount_out && !raccount_out->allow_registrar && !raccount_out->registered)
-    {
-      response = H323Connection::AnswerCallDenied;
-      goto return_response;
-    }
-  }
 
   if(!raccount_out)
   {
@@ -56,8 +49,8 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
     }
   }
 
-  if((!raccount_in && h323_allow_unreg_mcu_calls && !raccount_out) ||
-     (!raccount_in && h323_allow_unreg_internal_calls && raccount_out))
+  if((!raccount_in && !raccount_out && h323_allow_unreg_mcu_calls) ||
+     (!raccount_in && raccount_out && h323_allow_unreg_internal_calls))
   {
     raccount_in = InsertAccountWithLock(ACCOUNT_TYPE_H323, username_in);
   }
@@ -211,7 +204,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   if(!raccount && !requireH235)
     raccount = registrar->InsertAccountWithLock(ACCOUNT_TYPE_H323, username);
 
-  if(!raccount || (raccount && !raccount->allow_registrar && requireH235))
+  if(!raccount || (raccount && !raccount->is_saved_account && requireH235))
   {
     PTRACE(1, trace_section << "registration failed");
     return H323GatekeeperRequest::Reject;
