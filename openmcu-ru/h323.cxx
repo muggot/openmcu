@@ -3401,10 +3401,6 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
     audioTransmitChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
     audioTransmitCodecName = mf + "@" + PString(sampleRate) + "/" +PString(channels);
 
-    // mute
-    if(conferenceMember && conferenceMember->muteMask & 2)
-      conferenceMember->SetChannelPauses(2);
-
     // check cache mode
     BOOL enableCache = FALSE;
     if(conferenceMember && conferenceMember->GetType() == MEMBER_TYPE_STREAM)
@@ -3425,18 +3421,28 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
 
     codec.AttachChannel(new OutgoingAudio(*this, sampleRate, channels), TRUE);
 
+    if(conferenceMember)
+    {
+      conferenceMember->ChannelBrowserStateUpdate(2, TRUE);
+      if(conferenceMember->muteMask & 2)
+        conferenceMember->SetChannelPauses(2);
+    }
+
   } else {
     audioReceiveChannel = ((MCUFramedAudioCodec &)codec).GetLogicalChannel();
     audioReceiveCodecName = codec.GetMediaFormat() + "@" + PString(sampleRate) + "/" +PString(channels);
-
-    // mute
-    if(conferenceMember && conferenceMember->muteMask & 1)
-      conferenceMember->SetChannelPauses(1);
 
     //if(GetEndpointParam(AudioDeJitterKey, EnableKey) == DisableKey)
     //  audioReceiveChannel->SetAudioJitterEnable(false);
 
     codec.AttachChannel(new IncomingAudio(*this, sampleRate, channels), TRUE);
+
+    if(conferenceMember)
+    {
+      conferenceMember->ChannelBrowserStateUpdate(1, TRUE);
+      if(conferenceMember->muteMask & 1)
+        conferenceMember->SetChannelPauses(1);
+    }
   }
 
   return TRUE;
@@ -3457,10 +3463,6 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
   {
     videoTransmitChannel = ((MCUVideoCodec &)codec).GetLogicalChannel();
     videoTransmitCodecName = codec.GetMediaFormat();
-
-    // mute
-    if(conferenceMember && conferenceMember->muteMask & 8)
-      conferenceMember->SetChannelPauses(8);
 
     // cache mode
     // forceScreenSplit не изменяется в созданной конференции
@@ -3554,16 +3556,16 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     }
 
     if(conferenceMember)
-      conferenceMember->ChannelBrowserStateUpdate(8,TRUE);
+    {
+      conferenceMember->ChannelBrowserStateUpdate(8, TRUE);
+      if(conferenceMember->muteMask & 8)
+        conferenceMember->SetChannelPauses(8);
+    }
 
   } else {
 
     videoReceiveChannel = ((MCUVideoCodec &)codec).GetLogicalChannel();
     videoReceiveCodecName = codec.GetMediaFormat();
-
-    // mute
-    if(conferenceMember && conferenceMember->muteMask & 4)
-      conferenceMember->SetChannelPauses(4);
 
     if(conference && conference->IsModerated() == "+")
       conference->FreezeVideo(this);
@@ -3582,6 +3584,13 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     channel->AttachVideoPlayer(videoDisplay);
     if (!codec.AttachChannel(channel,TRUE))
       return FALSE;
+
+    if(conferenceMember)
+    {
+      conferenceMember->ChannelBrowserStateUpdate(4, TRUE);
+      if(conferenceMember->muteMask & 4)
+        conferenceMember->SetChannelPauses(4);
+    }
   }
 
   return TRUE;
@@ -3607,21 +3616,29 @@ void MCUH323Connection::OnClosedLogicalChannel(const H323Channel & channel)
   {
     audioReceiveChannel = NULL;
     audioReceiveCodecName = "none";
+    if(conferenceMember)
+      conferenceMember->ChannelBrowserStateUpdate(1, TRUE);
   }
   else if(&channel == audioTransmitChannel)
   {
     audioTransmitChannel = NULL;
     audioTransmitCodecName = "none";
+    if(conferenceMember)
+      conferenceMember->ChannelBrowserStateUpdate(2, TRUE);
   }
   else if(&channel == videoReceiveChannel)
   {
     videoReceiveChannel = NULL;
     videoReceiveCodecName = "none";
+    if(conferenceMember)
+      conferenceMember->ChannelBrowserStateUpdate(4, FALSE);
   }
   else if(&channel == videoTransmitChannel)
   {
     videoTransmitChannel = NULL;
     videoTransmitCodecName = "none";
+    if(conferenceMember)
+      conferenceMember->ChannelBrowserStateUpdate(8, FALSE);
   }
 }
 

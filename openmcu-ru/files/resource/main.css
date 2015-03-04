@@ -387,11 +387,11 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .mmbr0  {border-bottom:1px solid #000    ;background-color:#d3d4d5}
 .mmbr1  {border-bottom:1px solid green   ;background-color:#f5fffa;cursor:move}
 .mmbr2  {border-bottom:1px solid magenta ;background-color:#f5ccff;cursor:move}
-.mmbrp1 {border-bottom:1px solid green   ;background-color:#f5fffa;cursor:move}
-.mmbrp2 {border-bottom:1px solid magenta ;background-color:#f5ccff;cursor:move}
 .mmbrp15{border-bottom:1px solid red     ;background-color:#ffaaaa;cursor:move}
-/*.mmbrp1 {border-bottom:1px solid #070    ;background-color:#9a9   ;cursor:move}*/
-/*.mmbrp2 {border-bottom:1px solid #707    ;background-color:#a5a   ;cursor:move}*/
+.mmbrp1 {border-bottom:1px solid #070    ;background-color:#9a9   ;cursor:move}
+.mmbrp2 {border-bottom:1px solid #707    ;background-color:#a5a   ;cursor:move}
+/*.mmbrp1 {border-bottom:1px solid green   ;background-color:#f5fffa;cursor:move}*/
+/*.mmbrp2 {border-bottom:1px solid magenta ;background-color:#f5ccff;cursor:move}*/
 .mbrpos1{width:0px;height:0px;position:relative;top:0px}
 .mbrpos11{width:0px;height:0px;position:relative;top:16px}
 .vlevel{overflow:hidden;width:15px;height:15px;line-height:15px}

@@ -1311,20 +1311,16 @@ void ConferenceMember::SendRoomControl(int state)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceMember::ChannelBrowserStateUpdate(BYTE bitMask, BOOL bitState)
+void ConferenceMember::ChannelBrowserStateUpdate(unsigned bitMask, BOOL bitState)
 {
   if(bitState)
-  {
     channelMask|=bitMask;
-  }
   else
-  {
     channelMask&=~bitMask;
-  }
 
   PStringStream msg;
   msg << "rtp_state(" << dec << (long)id << ", " << channelMask << ")";
-  PTRACE(1,"channelCheck change: " << (bitState?"+":"-") << (unsigned)bitMask << ". Result: " << channelMask << ", conference=" << conference << ", msg=" << msg);
+  PTRACE(1,"channelCheck change: " << (bitState?"+":"-") << bitMask << ". Result: " << channelMask << ", conference=" << conference << ", msg=" << msg);
 
   if(!conference)
   {
@@ -1402,9 +1398,6 @@ void ConferenceMember::WriteAudioAutoGainControl(const short * pcm, unsigned sam
 
 void ConferenceMember::WriteAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-  if(!(channelMask&1))
-    ChannelBrowserStateUpdate(1,TRUE);
-
   if(conference != NULL)
   {
     // Автоматическая? регулировка усиления
@@ -1425,9 +1418,6 @@ void ConferenceMember::WriteAudio(const uint64_t & timestamp, const void * buffe
 
 void ConferenceMember::ReadAudio(const uint64_t & timestamp, void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-  if(!(channelMask&2))
-    ChannelBrowserStateUpdate(2,TRUE);
-
   // First, set the buffer to empty.
   memset(buffer, 0, amount);
 
@@ -1469,9 +1459,6 @@ void ConferenceMember::ReadAudioGainControl(void * buffer, int amount)
 // called whenever the connection needs a frame of video to send
 void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & amount)
 {
-  if(!(channelMask&8))
-    ChannelBrowserStateUpdate(8,TRUE);
-
   ++totalVideoFramesSent;
   if(!firstFrameSendTime.IsValid())
     firstFrameSendTime = PTime();
@@ -1490,9 +1477,6 @@ void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & 
 // called whenever the connection receives a frame of video
 void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PINDEX amount)
 {
-  if(!(channelMask&4))
-    ChannelBrowserStateUpdate(4,TRUE);
-
   ++totalVideoFramesReceived;
   rxFrameWidth = width;
   rxFrameHeight = height;
