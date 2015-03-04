@@ -409,6 +409,8 @@ class MCUH323Connection : public H323Connection
 
   protected:
 
+    virtual void InternalEstablishedConnectionCheck();
+
     virtual void JoinConference(const PString & room);
     virtual void SetRequestedRoom();
 

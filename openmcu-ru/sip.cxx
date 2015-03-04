@@ -1996,11 +1996,9 @@ int MCUSipConnection::ProcessConnect()
 
   // set endpoint member name
   SetMemberName();
-  // override requested room from registrar
-  SetRequestedRoom();
   // join conference
   JoinConference(requestedRoom);
-  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
+  if(!conferenceMember || !conferenceMember->IsJoined())
     return 600;
   //
   OnEstablished();

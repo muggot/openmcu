@@ -460,11 +460,9 @@ BOOL MCURtspConnection::OnResponsePlay(const msg_t *msg)
 {
   // set endpoint member name
   SetMemberName();
-  // override requested room from registrar
-  SetRequestedRoom();
   // join conference
   JoinConference(requestedRoom);
-  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
+  if(!conferenceMember || !conferenceMember->IsJoined())
   {
     MCUTRACE(1, trace_section << "error");
     return FALSE;
