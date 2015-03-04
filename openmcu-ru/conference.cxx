@@ -741,7 +741,7 @@ BOOL Conference::AddMemberToList(ConferenceMember * memberToAdd, BOOL addToList)
     memberList.Insert(memberToAdd, (long)memberToAdd->GetID(), memberToAdd->GetName());
 
   // send event
-  memberToAdd->SendRoomControl(1);
+  memberToAdd->SendRoomControl(memberToAdd->IsOnline());
 
   // template
   if(!memberToAdd->IsSystem())
@@ -1273,17 +1273,24 @@ void ConferenceMember::SendRoomControl(int state)
 {
   if(IsSystem())
     return;
+
   PStringStream msg;
-  if(state == 1)
+  if(IsOnline())
   {
-    msg << "<font color=green><b>+</b>" << GetName() << "</font>";
-    OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
-    msg = "addmmbr(";
-  } else {
-    msg << "<font color=red><b>-</b>" << GetName() << "</font>";
-    OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
-    msg = "remmmbr(";
+    if(state == 1)
+    {
+      msg << "<font color=green><b>+</b>" << GetName() << "</font>";
+      OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
+    } else {
+      msg << "<font color=red><b>-</b>" << GetName() << "</font>";
+      OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
+    }
   }
+
+  if(state == 1)
+    msg = "addmmbr(";
+  else
+    msg = "remmmbr(";
   msg  << state
        << "," << (long)GetID()
        << "," << JsQuoteScreen(GetName())
