@@ -17,7 +17,6 @@
 enum MemberTypes
 {
   MEMBER_TYPE_NONE       = 0,
-  MEMBER_TYPE_MCU        = 2,
   //
   MEMBER_TYPE_GSYSTEM    = 1, // MEMBER_TYPE_PIPE|MEMBER_TYPE_CACHE|MEMBER_TYPE_RECORDER|MEMBER_TYPE_STREAM
   MEMBER_TYPE_PIPE       = 1,
@@ -342,7 +341,6 @@ class ConferenceMember : public PObject
     BOOL IsJoined() const
     { return memberIsJoined; }
 
-    virtual void SetName() {}
     virtual void SetName(PString newName) {}
 
     virtual PString GetName() const
@@ -356,6 +354,9 @@ class ConferenceMember : public PObject
 
     virtual MemberTypes GetType()
     { return memberType; }
+
+    BOOL IsMCU()
+    { return isMCU; }
 
     virtual void SetFreezeVideo(BOOL) const
     { }
@@ -395,6 +396,7 @@ class ConferenceMember : public PObject
     PString name;
     PString nameID;
     float currVolCoef;
+    BOOL isMCU;
 
 #if MCU_VIDEO
     PTime firstFrameSendTime;

@@ -742,7 +742,7 @@ function format_mmbr_button(m,st)
   var b1style="style='cursor:pointer;width:"+w+"px;height:"+h+"px;'";
   var b2style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+(kdb_width)+"px;height:"+(h-1)+"px;font-size:10px;'";
   var b3style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+(kdb_width)+"px;height:"+(h-1)+"px;font-size:11px;'";
-  var b4style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+(w)+"px;height:"+(h-1)+"px;'";
+  var b4style="style='border:1px inset #E6E6FA;width:"+(w)+"px;height:"+(h-1)+"px;'";
   var namestyle="style='width:"+name_width+"px;height:"+h+"px;line-height:"+h+"px'";
 
   mute   ="<div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",1)' class='mutespr3"+((m[3]&1)?"0":"1")+"' title='"+((m[3]&1)?"Unmute":"Mute")+"' id='mrpan_" +id+"'></div>";

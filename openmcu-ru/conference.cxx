@@ -835,8 +835,6 @@ void Conference::RemoveMemberFromList(const PString & name, ConferenceMember *me
 
 BOOL Conference::AddMember(ConferenceMember * memberToAdd)
 {
-  memberToAdd->SetName();
-
   PTRACE(3, trace_section << "Adding member: " << memberToAdd->GetName());
   cout << trace_section << "Adding member: " << memberToAdd->GetName() << endl;
 

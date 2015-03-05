@@ -460,11 +460,9 @@ BOOL MCURtspConnection::OnResponsePlay(const msg_t *msg)
 {
   // set endpoint member name
   SetMemberName();
-  // override requested room from registrar
-  SetRequestedRoom();
   // join conference
   JoinConference(requestedRoom);
-  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
+  if(!conferenceMember || !conferenceMember->IsJoined())
   {
     MCUTRACE(1, trace_section << "error");
     return FALSE;
@@ -787,16 +785,9 @@ BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
 {
   sip_t *sip = sip_object(msg);
 
-  // creating conference if needed
-  ConferenceManager *manager = OpenMCU::Current().GetConferenceManager();
-  conference = manager->MakeConferenceWithLock(requestedRoom);
-  if(conference == NULL)
+  JoinConference(requestedRoom);
+  if(!conferenceMember || !conferenceMember->IsJoined())
     return FALSE;
-
-  conferenceMember = new ConferenceStreamMember(conference, memberName, callToken);
-
-   // unlock conference
-  conference->Unlock();
 
   // start rtp channels
   CreateMediaChannel(scap, 1);

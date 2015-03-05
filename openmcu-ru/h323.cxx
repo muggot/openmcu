@@ -1000,7 +1000,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
         else
           members
             << (visible? "" : "<b>[Hidden]</b> ")
-            << (member->GetType() == MEMBER_TYPE_MCU ? "<b>[MCU]</b> " : "")
+            << (member->IsMCU() ? "<b>[MCU]</b> " : "")
             << member->GetName() << "</td>";
 
         MCUH323Connection * conn = NULL;
@@ -2667,20 +2667,28 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
   if(conference != NULL || conferenceMember != NULL)
     return;
 
-  requestedRoom = roomToJoin;
+  // ignore roomToJoin
+  //requestedRoom = roomToJoin;
   if(requestedRoom == "")
     requestedRoom = OpenMCU::Current().GetDefaultRoomName();
+  // override requested room from registrar
+  SetRequestedRoom();
+  if(requestedRoom == "")
+    return;
 
   // create or join the conference
   ConferenceManager & manager = ((MCUH323EndPoint &)ep).GetConferenceManager();
   conference = manager.MakeConferenceWithLock(requestedRoom);
   if(!conference)
     return;
-
   conferenceIdentifier = conference->GetGUID();
 
-  // crete member connection
-  conferenceMember = new MCUConnection_ConferenceMember(conference, ep, GetCallToken(), isMCU);
+  // create member connection
+  if(memberName.Find("rtsp stream") == 0)
+    conferenceMember = new ConferenceStreamMember(conference, memberName, callToken);
+  else
+    conferenceMember = new MCUConnection_ConferenceMember(conference, memberName, callToken, isMCU);
+
   conference->Unlock();
 }
 
@@ -3069,18 +3077,8 @@ BOOL MCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
 {
   const H225_Setup_UUIE & setup = setupPDU.m_h323_uu_pdu.m_h323_message_body;
   isMCU = setup.m_sourceInfo.m_mc;
-
-  BOOL ret = H323Connection::OnReceivedSignalSetup(setupPDU);
-  // set endpoint name
-  SetRemoteName(setupPDU);
-  // override requested room
-  SetRequestedRoom();
-  // join conference
-  JoinConference(requestedRoom);
-  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
-    return FALSE;
-
-  return ret;
+  // called OnAnswerCall
+  return H323Connection::OnReceivedSignalSetup(setupPDU);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3089,8 +3087,8 @@ BOOL MCUH323Connection::OnReceivedCallProceeding(const H323SignalPDU & proceedin
 {
   const H225_CallProceeding_UUIE & proceeding = proceedingPDU.m_h323_uu_pdu.m_h323_message_body;
   isMCU = proceeding.m_destinationInfo.m_mc;
-
   BOOL ret = H323Connection::OnReceivedCallProceeding(proceedingPDU);
+  // set endpoint name
   SetRemoteName(proceedingPDU);
   return ret;
 }
@@ -3102,13 +3100,6 @@ BOOL MCUH323Connection::OnReceivedSignalConnect(const H323SignalPDU & pdu)
   BOOL ret = H323Connection::OnReceivedSignalConnect(pdu);
   // set endpoint name
   SetRemoteName(pdu);
-  // override requested room
-  SetRequestedRoom();
-  // join conference
-  JoinConference(requestedRoom);
-  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
-    return FALSE;
-
   return ret;
 }
 
@@ -3125,10 +3116,31 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
   if(requestedRoom.IsEmpty())
     return AnswerCallDenied;
 
+  // set endpoint name
   SetRemoteName(setupPDU);
+  // redirect to registrar
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
   return registrar->OnReceivedH323Invite(this);
 }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCUH323Connection::InternalEstablishedConnectionCheck()
+{
+  PTRACE(3, trace_section << "connection state " << connectionState);
+  if(!conferenceMember && connectionState == HasExecutedSignalConnect)
+  {
+    // join conference
+    JoinConference(requestedRoom);
+    if(!conferenceMember || !conferenceMember->IsJoined())
+    {
+      ClearCall();
+      return;
+    }
+  }
+  H323Connection::InternalEstablishedConnectionCheck();
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -4075,11 +4087,13 @@ BOOL MCUH323Connection::GetPreMediaFrame(void * buffer, int width, int height, P
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _conference, MCUH323EndPoint & _ep, const PString & _callToken, BOOL _isMCU)
-  : ConferenceMember(_conference), ep(_ep)
+MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _conference, const PString & _memberName, const PString & _callToken, BOOL _isMCU)
+  : ConferenceMember(_conference), ep(OpenMCU::Current().GetEndpoint())
 {
-  if(_isMCU) memberType = MEMBER_TYPE_MCU;
   callToken = _callToken;
+  isMCU = _isMCU;
+  name = _memberName;
+  nameID = MCUURL(name).GetMemberNameId();
   conference->AddMember(this);
 }
 
@@ -4119,28 +4133,6 @@ PString MCUConnection_ConferenceMember::GetMonitorInfo(const PString & hdr)
     conn->Unlock();
   }
   return output;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUConnection_ConferenceMember::SetName()
-{
-  PTRACE(4,"H323\tSetName " << callToken);
-  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
-  if(conn == NULL)
-    return;
-
-  ConferenceMember * member = conn->GetConferenceMember();
-  if(member == this || member == NULL)
-  {
-    name = conn->GetMemberName();
-    nameID = MCUURL(name).GetMemberNameId();
-    PTRACE(1, "SetName name: " << name);
-  }
-  else
-    PTRACE(1, "MCU\tWrong connection in SetName for " << callToken);
-
-  conn->Unlock();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
