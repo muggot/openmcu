@@ -89,7 +89,6 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
     response = H323Connection::AnswerCallNow;
   } else {
     rconn->roomname = MCU_INTERNAL_CALL_PREFIX + OpalGloballyUniqueID().AsString();
-    //conn->SetRequestedRoom(rconn->roomname);
     rconn->state = CONN_WAIT;
     response = H323Connection::AnswerCallPending;
   }
@@ -361,25 +360,31 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
   if(AdmissionPolicyCheck(info) == FALSE)
     return H323GatekeeperRequest::Reject;
 
+  BOOL direct = FALSE;
+  H323TransportAddress dstHost;
   PString srcUsername = GetAdmissionSrcUsername(info);
   PString dstUsername = GetAdmissionDstUsername(info);
-
-  if(dstUsername == "" && info.arq.HasOptionalField(H225_AdmissionRequest::e_destCallSignalAddress))
-  {
-    H323TransportAddress dstHost(info.arq.m_destCallSignalAddress);
-    return OnAdmissionDirect(info, dstUsername, dstHost);
-  }
-
   if(srcUsername == dstUsername)
   {
     info.SetRejectReason(H225_AdmissionRejectReason::e_undefinedReason);
     return H323GatekeeperRequest::Reject;
   }
 
-  if(srcUsername != "" && dstUsername != "")
+  RegistrarAccount *raccount_in = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
+  RegistrarAccount *raccount_out = NULL;
+
+  // set call identifier for security check incoming call
+  if(raccount_in)
+    raccount_in->h323CallIdentifier = info.arq.m_callIdentifier.m_guid;
+
+  // direct
+  if(dstUsername == "" && info.arq.HasOptionalField(H225_AdmissionRequest::e_destCallSignalAddress))
   {
-    BOOL direct = FALSE;
-    H323TransportAddress dstHost;
+    dstHost = info.arq.m_destCallSignalAddress;
+    direct = TRUE;
+  }
+  else if(raccount_in && dstUsername != "")
+  {
     //
     PString dstPrefix = dstUsername;
     if(dstUsername.Find("*") != P_MAX_INDEX)
@@ -388,9 +393,8 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
       dstUsername = dstUsername.Right(dstUsername.GetLength()-dstPrefix.GetLength()-1);
     }
     //
-    RegistrarAccount *raccount_in = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
-    //RegistrarAccount *raccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstUsername);
-    RegistrarAccount *raccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstPrefix);
+    //raccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstUsername);
+    raccount_out = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, dstPrefix);
     if(raccount_in && raccount_out && raccount_out->account_type == ACCOUNT_TYPE_H323 &&
        raccount_out->host != "" && raccount_out->port != 0 &&
        raccount_in->h323_call_processing != "full" && raccount_out->h323_call_processing != "full"
@@ -399,13 +403,13 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmission(H323GatekeeperARQ & inf
       dstHost = H323TransportAddress(raccount_out->host, raccount_out->port);
       direct = TRUE;
     }
-    if(raccount_in) raccount_in->Unlock();
-    if(raccount_out) raccount_out->Unlock();
-
-    if(direct)
-      return OnAdmissionDirect(info, dstUsername, dstHost);
   }
 
+  if(raccount_in) raccount_in->Unlock();
+  if(raccount_out) raccount_out->Unlock();
+
+  if(direct)
+    return OnAdmissionDirect(info, dstUsername, dstHost);
   return OnAdmissionMCU(info);
 }
 
@@ -491,17 +495,6 @@ H323GatekeeperRequest::Response RegistrarGk::OnAdmissionMCU(H323GatekeeperARQ & 
     //statusInquiry = FALSE
     //setupAcknowledge = FALSE
     //notify = FALSE
-  }
-
-  // set call identifier for security check incoming call
-  if(srcUsername != "")
-  {
-    RegistrarAccount *raccount = registrar->FindAccountWithLock(ACCOUNT_TYPE_H323, srcUsername);
-    if(raccount)
-    {
-      raccount->h323CallIdentifier = info.arq.m_callIdentifier.m_guid;
-      raccount->Unlock();
-    }
   }
 
   return H323GatekeeperRequest::Confirm;
