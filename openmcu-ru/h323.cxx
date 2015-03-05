@@ -2737,7 +2737,7 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
   // create member connection
   if(conferenceMember == NULL)
   {
-    if(connectionType == CONNECTION_TYPE_RTSP)
+    if(memberName.Find("rtsp stream") == 0)
       conferenceMember = new ConferenceStreamMember(conference, memberName, callToken);
     else
       conferenceMember = new MCUConnection_ConferenceMember(conference, memberName, callToken, isMCU);
