@@ -1311,24 +1311,19 @@ void ConferenceMember::SendRoomControl(int state)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceMember::ChannelBrowserStateUpdate(unsigned bitMask, BOOL bitState)
+void ConferenceMember::ChannelStateUpdate(unsigned bit, BOOL state)
 {
-  if(bitState)
-    channelMask|=bitMask;
+  if(state)
+    channelMask|=bit;
   else
-    channelMask&=~bitMask;
+    channelMask&=~bit;
 
   PStringStream msg;
-  msg << "rtp_state(" << dec << (long)id << ", " << channelMask << ")";
-  PTRACE(1,"channelCheck change: " << (bitState?"+":"-") << bitMask << ". Result: " << channelMask << ", conference=" << conference << ", msg=" << msg);
+  msg << "rtp_state(" << dec << (long)id << "," << bit << "," << state << ")";
+  PTRACE(1, name << " " << msg);
 
-  if(!conference)
-  {
-    OpenMCU::Current().HttpWriteCmd(msg);
-    return;
-  }
-
-  OpenMCU::Current().HttpWriteCmdRoom(msg,conference->GetNumber());
+  if(conference)
+    OpenMCU::Current().HttpWriteCmdRoom(msg, conference->GetNumber());
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

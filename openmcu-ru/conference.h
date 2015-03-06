@@ -166,7 +166,7 @@ class ConferenceMember : public PObject
       */
     ~ConferenceMember();
 
-    void ChannelBrowserStateUpdate(unsigned mask, BOOL bitState);
+    void ChannelStateUpdate(unsigned bit, BOOL state);
 
     void Unlock();
 

@@ -3273,24 +3273,15 @@ BOOL MCUH323Connection::OnH245_MiscellaneousIndication(const H245_MiscellaneousI
         mask = 64;
       else if(chan == videoTransmitChannel)
         mask = 128;
-
       if(mask != 0)
       {
         PWaitAndSignal m(connMutex);
         if(conferenceMember)
         {
-          PStringStream cmd;
           if(pdu.m_type.GetTag() == H245_MiscellaneousIndication_type::e_logicalChannelInactive)
-          {
-            conferenceMember->channelMask |= mask;
-            cmd << "omute(" << dec << (long)conferenceMember->GetID() << "," << mask << ")";
-          }
+            conferenceMember->ChannelStateUpdate(mask, TRUE);
           else if(pdu.m_type.GetTag() == H245_MiscellaneousIndication_type::e_logicalChannelActive)
-          {
-            conferenceMember->channelMask &= ~mask;
-            cmd << "ounmute(" << dec << (long)conferenceMember->GetID() << "," << mask << ")";
-          }
-          OpenMCU::Current().HttpWriteCmdRoom(cmd, requestedRoom);
+            conferenceMember->ChannelStateUpdate(mask, FALSE);
         }
       }
     }
@@ -3431,7 +3422,7 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
 
     if(conferenceMember)
     {
-      conferenceMember->ChannelBrowserStateUpdate(2, TRUE);
+      conferenceMember->ChannelStateUpdate(2, TRUE);
       if(conferenceMember->muteMask & 2)
         conferenceMember->SetChannelPauses(2);
     }
@@ -3447,7 +3438,7 @@ BOOL MCUH323Connection::OpenAudioChannel(BOOL isEncoding, unsigned /* bufferSize
 
     if(conferenceMember)
     {
-      conferenceMember->ChannelBrowserStateUpdate(1, TRUE);
+      conferenceMember->ChannelStateUpdate(1, TRUE);
       if(conferenceMember->muteMask & 1)
         conferenceMember->SetChannelPauses(1);
     }
@@ -3565,7 +3556,7 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
 
     if(conferenceMember)
     {
-      conferenceMember->ChannelBrowserStateUpdate(8, TRUE);
+      conferenceMember->ChannelStateUpdate(8, TRUE);
       if(conferenceMember->muteMask & 8)
         conferenceMember->SetChannelPauses(8);
     }
@@ -3595,7 +3586,7 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
 
     if(conferenceMember)
     {
-      conferenceMember->ChannelBrowserStateUpdate(4, TRUE);
+      conferenceMember->ChannelStateUpdate(4, TRUE);
       if(conferenceMember->muteMask & 4)
         conferenceMember->SetChannelPauses(4);
     }
@@ -3625,28 +3616,28 @@ void MCUH323Connection::OnClosedLogicalChannel(const H323Channel & channel)
     audioReceiveChannel = NULL;
     audioReceiveCodecName = "none";
     if(conferenceMember)
-      conferenceMember->ChannelBrowserStateUpdate(1, TRUE);
+      conferenceMember->ChannelStateUpdate(1, FALSE);
   }
   else if(&channel == audioTransmitChannel)
   {
     audioTransmitChannel = NULL;
     audioTransmitCodecName = "none";
     if(conferenceMember)
-      conferenceMember->ChannelBrowserStateUpdate(2, TRUE);
+      conferenceMember->ChannelStateUpdate(2, FALSE);
   }
   else if(&channel == videoReceiveChannel)
   {
     videoReceiveChannel = NULL;
     videoReceiveCodecName = "none";
     if(conferenceMember)
-      conferenceMember->ChannelBrowserStateUpdate(4, FALSE);
+      conferenceMember->ChannelStateUpdate(4, FALSE);
   }
   else if(&channel == videoTransmitChannel)
   {
     videoTransmitChannel = NULL;
     videoTransmitCodecName = "none";
     if(conferenceMember)
-      conferenceMember->ChannelBrowserStateUpdate(8, FALSE);
+      conferenceMember->ChannelStateUpdate(8, FALSE);
   }
 }
 
