@@ -226,12 +226,24 @@ class MCUTime
 
     static void SleepUsec(uint32_t interval_usec)
     {
-      // win32 что?
-      struct timespec req;
-      req.tv_sec = interval_usec/1000000;
-      req.tv_nsec = (interval_usec % 1000000) * 1000;
-      while(nanosleep(&req, &req) == -1 && errno == EINTR)
-        ;
+#     ifdef _WIN32
+        uint32_t ms=interval_usec / 1000;
+        uint32_t us=interval_usec % 1000;
+        if(ms) ::Sleep(ms);
+        if(us)
+        {
+          __int64 time1=0, time2=0, freq=0;
+          QueryPerformanceCounter((LARGE_INTEGER*)&time1);
+          QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+          do { QueryPerformanceCounter((LARGE_INTEGER*)&time2); } while((time2-time1) < us);
+        }
+#     else
+        struct timespec req;
+        req.tv_sec = interval_usec/1000000;
+        req.tv_nsec = (interval_usec % 1000000) * 1000;
+        while(nanosleep(&req, &req) == -1 && errno == EINTR)
+          ;
+#     endif
     }
 
     static uint64_t GetRealTimestampUsec()
