@@ -1,3 +1,4 @@
+#include <ptlib.h>
 
 #include "mcu.h"
 #include "mcu_caps.h"
