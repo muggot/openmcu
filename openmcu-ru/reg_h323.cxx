@@ -524,6 +524,15 @@ unsigned RegistrarGk::AllocateBandwidth(unsigned newBandwidth, unsigned oldBandw
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void RegistrarGk::SendUnregister(const PString & alias, int reason)
+{
+  PSafePtr<H323RegisteredEndPoint> rep = FindEndPointByAliasString(alias);
+  if(rep)
+    rep->Unregister(reason);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 H323Transactor * RegistrarGk::CreateListener(H323Transport * transport)
 {
   gkListener = H323GatekeeperServer::CreateListener(transport);
@@ -537,6 +546,17 @@ H323Transactor * RegistrarGk::CreateListener(H323Transport * transport)
 
 RegistrarGk::~RegistrarGk()
 {
+  MCURegistrarAccountList & accountList = registrar->GetAccountList();
+  for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
+  {
+    RegistrarAccount *raccount = *it;
+    if(raccount->account_type == ACCOUNT_TYPE_H323 && raccount->registered)
+    {
+      SendUnregister(raccount->username);
+      raccount->registered = FALSE;
+    }
+  }
+
   if(gkListener)
   {
     delete gkListener;

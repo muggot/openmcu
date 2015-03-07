@@ -1175,6 +1175,13 @@ void Registrar::InitAccounts()
 
 void Registrar::Terminating()
 {
+  // delete gatekeeper
+  if(registrarGk)
+  {
+    delete registrarGk;
+    registrarGk = NULL;
+  }
+
   // stop alive refresh
   if(aliveThread)
   {
@@ -1252,12 +1259,6 @@ void Registrar::Terminating()
     RegistrarSubscription *rsub = *it;
     if(subscriptionList.Erase(it))
       delete rsub;
-  }
-
-  if(registrarGk)
-  {
-    delete registrarGk;
-    registrarGk = NULL;
   }
 }
 
