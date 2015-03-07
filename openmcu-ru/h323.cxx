@@ -85,8 +85,12 @@ MCUH323EndPoint::MCUH323EndPoint(ConferenceManager & _conferenceManager)
   connectionMonitor = new ConnectionMonitor(*this);
 
   gatekeeperRequestTimeout = PTimeInterval(1000);
-  gatekeeperRequestRetries = 2;
+  gatekeeperRequestRetries = 1;
   gatekeeperMonitor = NULL;
+
+  // gatekeeper
+  rasRequestTimeout = PTimeInterval(1000);
+  rasRequestRetries = 1;
 
 #if MCU_VIDEO
   terminalType = e_MCUWithAVMP;

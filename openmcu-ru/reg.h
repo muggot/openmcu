@@ -441,6 +441,8 @@ class RegistrarGk : public H323GatekeeperServer
     void SetAllowDuplicateAlias(BOOL enable)
     { canHaveDuplicateAlias = enable; }
 
+    void SendUnregister(const PString & alias, int reason = H225_UnregRequestReason::e_maintenance);
+
   protected:
 
     PString GetAdmissionSrcUsername(H323GatekeeperARQ & info);
