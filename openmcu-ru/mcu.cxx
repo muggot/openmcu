@@ -62,6 +62,11 @@ OpenMCU::OpenMCU()
   currentLogLevel   = -1;
   currentTraceLevel = -1;
   traceFileRotated  = FALSE;
+
+  vmcfg.go(vmcfg.bfw,vmcfg.bfh);
+
+  httpBufferIndex = 0;
+  httpBufferComplete = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -89,16 +94,23 @@ BOOL OpenMCU::OnStart()
 
   MCUPluginCodecManager::PopulateMediaFormats();
 
-  httpNameSpace.AddResource(new PHTTPDirectory("data", "data"));
-  httpNameSpace.AddResource(new PServiceHTTPDirectory("html", "html"));
-
   manager  = new ConferenceManager();
   endpoint = new MCUH323EndPoint(*manager);
   sipendpoint = new MCUSipEndPoint(endpoint);
   registrar = new Registrar(endpoint, sipendpoint);
   rtspServer = new MCURtspServer(endpoint, sipendpoint);
 
-  return PHTTPServiceProcess::OnStart();
+  //
+  httpNameSpace.AddResource(new PHTTPDirectory("data", "data"));
+  httpNameSpace.AddResource(new PServiceHTTPDirectory("html", "html"));
+  // Initialise()
+  BOOL ret = PHTTPServiceProcess::OnStart();
+
+  // start threads
+  sipendpoint->Resume();
+  registrar->Resume();
+
+  return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -120,19 +132,23 @@ void OpenMCU::OnStop()
   // delete rtsp endpoint
   delete rtspServer;
 
-  // delete sip endpoint
+  // stop sip
   sipendpoint->SetTerminating();
   sipendpoint->WaitForTermination(10000);
-  delete sipendpoint;
-  sipendpoint = NULL;
+
+  // stop registrar
+  registrar->SetTerminating();
+  registrar->WaitForTermination(10000);
 
   // delete h323 endpoint
   delete endpoint;
   endpoint = NULL;
 
+  // delete sip
+  delete sipendpoint;
+  sipendpoint = NULL;
+
   // delete registrar
-  registrar->SetTerminating();
-  registrar->WaitForTermination(10000);
   delete registrar;
   registrar = NULL;
 
@@ -193,8 +209,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   InitialiseTrace();
 
-  vmcfg.go(vmcfg.bfw,vmcfg.bfh);
-
 #ifdef SERVER_LOGS
   // default log file name
   logFilename = cfg.GetString(CallLogFilenameKey, DefaultCallLogFilename);
@@ -209,7 +223,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   // Buffered events
   httpBuffer=cfg.GetInteger(HttpLinkEventBufferKey, 100);
   httpBufferedEvents.SetSize(httpBuffer);
-  httpBufferIndex=0; httpBufferComplete=0;
 
 #if MCU_VIDEO
   endpoint->enableVideo = cfg.GetBoolean("Enable video", TRUE);
@@ -387,10 +400,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
       }
     }
   }
-
-  // start threads
-  registrar->Resume();
-  sipendpoint->Resume();
 
   PSYSTEMLOG(Info, "Service " << GetName() << ' ' << initMsg);
   return TRUE;
