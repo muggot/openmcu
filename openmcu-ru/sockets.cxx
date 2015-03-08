@@ -65,7 +65,7 @@ BOOL MCUSocket::GetFromIP(PString & local_ip, PString remote_host, PString remot
   close(sock);
   local_ip = buffer;
 #else
-  local_ip = PIPSocket::Address(name.sin_addr);
+  local_ip = PIPSocket::Address(name.sin_addr).AsString();
   closesocket(sock);
 #endif
 
@@ -218,7 +218,11 @@ BOOL MCUSocket::Connect()
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
-  bzero(&addr, sizeof(addr));
+# ifndef _WIN32
+    bzero(&addr, sizeof(addr));
+# else
+    memset(&addr, 0, sizeof(addr));
+# endif
   addr.sin_family = AF_INET;
   inet_pton(AF_INET, socket_host, &addr.sin_addr);
   addr.sin_port = htons(socket_port);
@@ -243,7 +247,11 @@ BOOL MCUSocket::Listen()
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
-  bzero(&addr, sizeof(addr));
+# ifndef _WIN32
+    bzero(&addr, sizeof(addr));
+# else
+    memset(&addr, 0, sizeof(addr));
+# endif
   addr.sin_family = AF_INET;
   inet_pton(AF_INET, socket_host, &addr.sin_addr);
   addr.sin_port = htons(socket_port);

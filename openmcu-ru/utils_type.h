@@ -83,7 +83,7 @@ enum MCUConnectionTypes
 #define sync_val_compare_and_swap(ptr, oldval, newval) InterlockedCompareExchange(ptr, newval, oldval)
 //FIXME: NEEDS TO CHANGE BOOLEAN TO INTEGER AT WHOLE!
 //fixme: НУЖНО ПЕРЕЙТИ С BOOLEAN НА INTEGER ПОЛНОСТЬЮ!
-inline bool sync_bool_compare_and_swap(bool *ptr, bool oldval, bool newval)
+inline bool sync_bool_compare_and_swap(volatile bool *ptr, bool oldval, bool newval)
 {
 #pragma message("slow compare_and_swap_32")
   bool res = false;

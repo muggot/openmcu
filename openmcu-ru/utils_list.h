@@ -343,7 +343,11 @@ void MCUSharedList<T_obj>::UpdatePushbackIndex(int new_index)
     new_index = 0;
   int old_index = pushback_index;
   if(new_index > pushback_index || old_index == size - 1)
+#  ifdef _WIN32
+    sync_val_compare_and_swap((volatile unsigned *)(&pushback_index), (unsigned)old_index, (unsigned)new_index);
+#  else
     sync_val_compare_and_swap(&pushback_index, old_index, new_index);
+#  endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -483,7 +487,11 @@ void MCUSharedList<T_obj>::ReleaseWait(int index, int threshold)
   for(int i = 0; captures[index] != threshold; ++i)
   {
     if(i < 4000)
+#   ifdef _WIN32
+      YieldProcessor();
+#   else
       __asm__ __volatile__("pause":::"memory");
+#   endif
     else if(i < 9000) // +50msec
       MCUTime::SleepUsec(10);
     else
