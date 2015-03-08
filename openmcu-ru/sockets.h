@@ -1,3 +1,4 @@
+#include <ptlib.h>
 
 #ifndef _MCU_SOCKET_H
 #define _MCU_SOCKET_H

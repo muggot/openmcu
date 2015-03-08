@@ -258,7 +258,11 @@ BOOL MCUSocket::Listen()
 
   // allows other sockets to bind() to this port, unless there is an active listening socket bound to the port already
   int reuse = 1;
+#ifdef _WIN32
+  if(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const char*)(&reuse), sizeof(int)) == -1)
+#else
   if(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) == -1)
+#endif
   {
     MCUTRACE(1, trace_section << "setsockopt error " << errno << " " << strerror(errno));
     return FALSE;
@@ -319,7 +323,11 @@ BOOL MCUSocket::GetSocketAddress(int fd, int & proto, PString & host, int & port
   port = ntohs(addr.sin_port);
 
   socklen_t proto_len = sizeof(int);
+#ifdef _WIN32
+  if(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char*)(&proto), &proto_len) == -1)
+#else
   if(getsockopt(fd, SOL_SOCKET, SO_TYPE, &proto, &proto_len) == -1)
+#endif
     return FALSE;
 
   return TRUE;
@@ -533,7 +541,9 @@ BOOL MCUListener::Send(char *buffer)
 
 void MCUListener::ListenerThread(PThread &, INT)
 {
+#ifndef _WIN32
   signal(SIGPIPE, SIG_IGN);
+#endif
 
   running = TRUE;
   if(listener_type == MCU_LISTENER_TCP_SERVER)

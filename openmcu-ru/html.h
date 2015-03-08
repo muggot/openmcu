@@ -1,3 +1,5 @@
+#include <ptlib.h>
+
 #ifndef _MCU_HTML_H
 #define _MCU_HTML_H
 
@@ -7,7 +9,10 @@ extern "C" {
 };
 #endif
 
-#include <ptlib.h>
+#include <ptclib/httpsvc.h>
+#include "mcu.h"
+#include "utils_type.h"
+#include "utils_list.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
