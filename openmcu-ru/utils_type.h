@@ -81,13 +81,22 @@ enum MCUConnectionTypes
 
 #ifdef _WIN32
 #define sync_val_compare_and_swap(ptr, oldval, newval) InterlockedCompareExchange(ptr, newval, oldval)
-//inline bool sync_bool_compare_and_swap(bool *ptr, bool oldval, bool newval)
-//{
-//  if(InterlockedCompareExchange(ptr, newval, oldval) == oldval)
-//    return true;
-//  else
-//    return false;
-//}
+//FIXME: NEEDS TO CHANGE BOOLEAN TO INTEGER AT WHOLE!
+//fixme: НУЖНО ПЕРЕЙТИ С BOOLEAN НА INTEGER ПОЛНОСТЬЮ!
+inline bool sync_bool_compare_and_swap(bool *ptr, bool oldval, bool newval)
+{
+#pragma message("slow compare_and_swap_32")
+  bool res = false;
+#pragma omp critical
+  {
+    if(*ptr == oldval)
+    {
+      *ptr = newval;
+      res = true;
+    }
+  }
+  return res;
+}
 #define sync_fetch_and_add(value, addvalue) InterlockedExchangeAdd(value, addvalue)
 #define sync_fetch_and_sub(value, subvalue) InterlockedExchangeAdd(value, subvalue*(-1))
 #define sync_increment(value) InterlockedIncrement(value)
