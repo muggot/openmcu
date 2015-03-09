@@ -110,11 +110,7 @@ class RegistrarAccount
       }
     }
 
-#ifdef _WIN32
     PTimedMutex & GetMutex()
-#else
-    PMutex & GetMutex()
-#endif
     { return account_mutex; }
 
     void Unlock();
@@ -299,11 +295,7 @@ class RegistrarConnection
       }
     }
 
-#ifdef _WIN32
     PTimedMutex & GetMutex()
-#else
-    PMutex & GetMutex()
-#endif
     { return conn_mutex; }
 
     void Unlock();
@@ -381,11 +373,7 @@ class RegistrarSubscription
       }
     }
 
-#ifdef _WIN32
     PTimedMutex & GetMutex()
-#else
-    PMutex & GetMutex()
-#endif
     { return sub_mutex; }
 
     void Unlock();
