@@ -26,7 +26,7 @@ class MCUSharedListSharedIterator
     typedef MCUSharedListSharedIterator<T_list, T_obj> shared_iterator;
 
     // Только для внутреннего пользования
-    MCUSharedListSharedIterator(T_list * _list, int _index, bool _captured)
+    MCUSharedListSharedIterator(T_list * _list, long _index, bool _captured)
       : list(_list), index(_index), captured(_captured)
     {
       Capture();
@@ -36,12 +36,12 @@ class MCUSharedListSharedIterator
 
     // Пустой итератор
     MCUSharedListSharedIterator()
-      : list(NULL), index(INT_MAX), captured(false)
+      : list(NULL), index(LONG_MAX), captured(false)
     { }
 
     // Итератор n-го доступного объекта в списке
-    MCUSharedListSharedIterator(T_list * _list, int _number)
-      : list(_list), index(INT_MAX), captured(false)
+    MCUSharedListSharedIterator(T_list * _list, long _number)
+      : list(_list), index(LONG_MAX), captured(false)
     {
       Next(_number);
     }
@@ -57,11 +57,11 @@ class MCUSharedListSharedIterator
       Release();
     }
 
-    int GetIndex()
+    long GetIndex()
     {
       if(captured)
         return index;
-      return INT_MAX;
+      return LONG_MAX;
     }
 
     long GetID()
@@ -149,7 +149,7 @@ class MCUSharedListSharedIterator
     }
 
     // Только для внутреннего пользования
-    bool Next(int number = 0)
+    bool Next(long number = 0)
     {
       if(list == NULL)
         goto end;
@@ -160,7 +160,7 @@ class MCUSharedListSharedIterator
       else
         ++index;
 
-      for(bool *it = find(list->states + index, list->states_end, true); it != list->states_end; it = find(++it, list->states_end, true), --number)
+      for(sync_bool *it = find(list->states + index, list->states_end, true); it != list->states_end; it = find(++it, list->states_end, true), --number)
       {
         if(number > 0)
           continue;
@@ -174,12 +174,12 @@ class MCUSharedListSharedIterator
       }
 
       end:
-        index = INT_MAX;
+        index = LONG_MAX;
         return false;
     }
 
     T_list * list;
-    int index;
+    long index;
     bool captured;
 };
 
@@ -191,7 +191,7 @@ class MCUSharedList
     template<class _T_list, class _T_obj> friend class MCUSharedListSharedIterator;
 
   public:
-    MCUSharedList(int init_size = 256);
+    MCUSharedList(long init_size = 256);
     ~MCUSharedList();
 
     // В новом итераторе объект захвачен
@@ -200,16 +200,16 @@ class MCUSharedList
 
     // begin() - первый доступный объект
     shared_iterator begin() { return shared_iterator(this, 0); }
-    // end() - постоянный index = INT_MAX
+    // end() - постоянный index = LONG_MAX
     const shared_iterator & end() const { return iterator_end; }
 
     // Максимальный размер списка
-    int GetMaxSize()
+    long GetMaxSize()
     { return size; }
 
     // Количество доступных объектов
-    int GetSize()
-    { return (int)current_size; }
+    long GetSize()
+    { return current_size; }
 
     // Уникальный идентификатор для объектов
     long GetNextID()
@@ -217,7 +217,7 @@ class MCUSharedList
 
     // Insert добавляет в первую свободную позицию с начала списка
     // Возвращает false(end) если нет свободного места, после добавления объект захвачен(в итераторе)
-    bool Insert(int index, T_obj * obj, long id, const std::string &name = "");
+    bool Insert(long index, T_obj * obj, long id, const std::string &name = "");
     shared_iterator Insert(T_obj * obj, long id, const std::string &name = "");
 
     // Pushback добавляет в конец списка или в первую свободную позицию
@@ -243,30 +243,30 @@ class MCUSharedList
 
     // Операторы возвращают захваченный объект
     // Освобождать функцией list.Release(id)
-    T_obj * operator[] (int index);
+    T_obj * operator[] (long index);
     T_obj * operator() (long id);
     T_obj * operator() (std::string name);
     T_obj * operator() (const T_obj * obj);
 
   protected:
-    void CaptureInternal(int index);
-    void ReleaseInternal(int index);
-    void ReleaseWait(int index, int threshold);
+    void CaptureInternal(long index);
+    void ReleaseInternal(long index);
+    void ReleaseWait(long index, long threshold);
 
     // GetIndex() возвращает захваченный индекс
-    int GetIndex(const long id);
-    int GetIndex(const std::string &name);
-    int GetIndex(const T_obj * obj);
+    long GetIndex(const long id);
+    long GetIndex(const std::string &name);
+    long GetIndex(const T_obj * obj);
 
-    bool EraseInternal(int index);
-    void UpdatePushbackIndex(int new_index);
+    bool EraseInternal(long index);
+    void UpdatePushbackIndex(long new_index);
 
-    const int size;
-    long current_size;
-    long id_counter;
-    int pushback_index;
-    bool * volatile states;
-    bool * states_end;
+    const long size;
+    long volatile current_size;
+    long volatile id_counter;
+    long volatile pushback_index;
+    sync_bool * volatile states;
+    sync_bool * states_end;
     long * ids;
     long * ids_end;
     std::string ** names;
@@ -274,17 +274,17 @@ class MCUSharedList
     T_obj ** objs;
     T_obj ** objs_end;
     long * volatile captures;
-    bool * volatile locks;
+    sync_bool * volatile locks;
     const shared_iterator iterator_end;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-MCUSharedList<T_obj>::MCUSharedList(int _size)
+MCUSharedList<T_obj>::MCUSharedList(long _size)
   : size(_size), current_size(0), id_counter(0), pushback_index(0)
 {
-  states = new bool [size];
+  states = new sync_bool [size];
   states_end = states + size;
   ids = new long [size];
   ids_end = ids + size;
@@ -293,8 +293,8 @@ MCUSharedList<T_obj>::MCUSharedList(int _size)
   objs = new T_obj * [size];
   objs_end = objs + size;
   captures = new long [size];
-  locks = new bool [size];
-  for(int i = 0; i < size; ++i)
+  locks = new sync_bool [size];
+  for(long i = 0; i < size; ++i)
   {
     states[i] = false;
     ids[i] = LONG_MAX;
@@ -316,12 +316,12 @@ MCUSharedList<T_obj>::~MCUSharedList()
   delete [] ids;
   ids = NULL;
 
-  for(int i = 0; i < size; ++i)
+  for(long i = 0; i < size; ++i)
     delete names[i];
   delete [] names;
   names = NULL;
 
-  for(int i = 0; i < size; ++i)
+  for(long i = 0; i < size; ++i)
     objs[i] = NULL;
   delete [] objs;
   objs = NULL;
@@ -336,24 +336,20 @@ MCUSharedList<T_obj>::~MCUSharedList()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-void MCUSharedList<T_obj>::UpdatePushbackIndex(int new_index)
+void MCUSharedList<T_obj>::UpdatePushbackIndex(long new_index)
 {
   new_index++;
   if(new_index == size)
     new_index = 0;
-  int old_index = pushback_index;
+  long old_index = pushback_index;
   if(new_index > pushback_index || old_index == size - 1)
-#  ifdef _WIN32
-    sync_val_compare_and_swap((volatile unsigned *)(&pushback_index), (unsigned)old_index, (unsigned)new_index);
-#  else
     sync_val_compare_and_swap(&pushback_index, old_index, new_index);
-#  endif
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-bool MCUSharedList<T_obj>::Insert(int index, T_obj * obj, long id, const std::string &name)
+bool MCUSharedList<T_obj>::Insert(long index, T_obj * obj, long id, const std::string &name)
 {
   bool insert = false;
   // блокировка записи
@@ -392,9 +388,9 @@ bool MCUSharedList<T_obj>::Insert(int index, T_obj * obj, long id, const std::st
 template <class T_obj>
 MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Insert(T_obj * obj, long id, const std::string &name)
 {
-  for(bool *it = find(states, states_end, false); it != states_end; it = find(++it, states_end, false))
+  for(sync_bool *it = find(states, states_end, false); it != states_end; it = find(++it, states_end, false))
   {
-    int index = it - states;
+    long index = it - states;
     if(Insert(index, obj, id, name))
       return shared_iterator(this, index, true);
   }
@@ -406,9 +402,9 @@ MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::I
 template <class T_obj>
 MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Pushback(T_obj * obj, long id, const std::string &name)
 {
-  bool *pb_end = states_end;
-  bool *pb_begin = states + pushback_index;
-  bool *it = pb_begin - 1;
+  sync_bool *pb_end = states_end;
+  sync_bool *pb_begin = states + pushback_index;
+  sync_bool *it = pb_begin - 1;
   while(true)
   {
     it = find(++it, pb_end, false);
@@ -421,7 +417,7 @@ MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::P
       it = pb_begin - 1;
       continue;
     }
-    int index = it - states;
+    long index = it - states;
     if(Insert(index, obj, id, name))
       return shared_iterator(this, index, true);
   }
@@ -433,8 +429,8 @@ MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::P
 template <class T_obj>
 bool MCUSharedList<T_obj>::Erase(long id)
 {
-  int index = GetIndex(id);
-  if(index == INT_MAX)
+  long index = GetIndex(id);
+  if(index == LONG_MAX)
     return false;
   bool erase = EraseInternal(index);
   ReleaseInternal(index);
@@ -457,7 +453,7 @@ bool MCUSharedList<T_obj>::Erase(shared_iterator & it)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-bool MCUSharedList<T_obj>::EraseInternal(int index)
+bool MCUSharedList<T_obj>::EraseInternal(long index)
 {
   // блокировка записи
   if(sync_bool_compare_and_swap(&locks[index], false, true) == true)
@@ -482,9 +478,9 @@ bool MCUSharedList<T_obj>::EraseInternal(int index)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-void MCUSharedList<T_obj>::ReleaseWait(int index, int threshold)
+void MCUSharedList<T_obj>::ReleaseWait(long index, long threshold)
 {
-  for(int i = 0; captures[index] != threshold; ++i)
+  for(long i = 0; captures[index] != threshold; ++i)
   {
     if(i < 4000)
 #   ifdef _WIN32
@@ -513,7 +509,7 @@ void MCUSharedList<T_obj>::Release(long id)
   long *it = find(ids, ids_end, id);
   if(it != ids_end)
   {
-    int index = it - ids;
+    long index = it - ids;
     ReleaseInternal(index);
   }
 }
@@ -531,7 +527,7 @@ void MCUSharedList<T_obj>::Release(shared_iterator & it)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-void MCUSharedList<T_obj>::ReleaseInternal(int index)
+void MCUSharedList<T_obj>::ReleaseInternal(long index)
 {
   //PTRACE(6, "release index=" << index << " captures=" << captures[index] << " id=" << ids[index] << " obj=" << (objs[index] == NULL ? 0 : objs[index]) << " thread=" << PThread::Current() << " " << PThread::Current()->GetThreadName()<< "\ttype=" << typeid(objs[index]).name());
   sync_decrement(&captures[index]);
@@ -540,7 +536,7 @@ void MCUSharedList<T_obj>::ReleaseInternal(int index)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-void MCUSharedList<T_obj>::CaptureInternal(int index)
+void MCUSharedList<T_obj>::CaptureInternal(long index)
 {
   //PTRACE(6, "capture index=" << index << " captures=" << captures[index] << " id=" << ids[index] << " obj=" << (objs[index] == NULL ? 0 : objs[index]) << " thread=" << PThread::Current() << " " << PThread::Current()->GetThreadName()<< "\ttype=" << typeid(objs[index]).name());
   sync_increment(&captures[index]);
@@ -549,12 +545,12 @@ void MCUSharedList<T_obj>::CaptureInternal(int index)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-int MCUSharedList<T_obj>::GetIndex(const long id)
+long MCUSharedList<T_obj>::GetIndex(const long id)
 {
   long *it = find(ids, ids_end, id);
   if(it != ids_end)
   {
-    int index = it - ids;
+    long index = it - ids;
     CaptureInternal(index);
     // повторная проверка после захвата
     if(ids[index] == id && states[index] == true)
@@ -562,7 +558,7 @@ int MCUSharedList<T_obj>::GetIndex(const long id)
     // освободить если нет объекта
     ReleaseInternal(index);
   }
-  return INT_MAX;
+  return LONG_MAX;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -576,12 +572,12 @@ struct string_equal_pointers
 };
 
 template <class T_obj>
-int MCUSharedList<T_obj>::GetIndex(const std::string &name)
+long MCUSharedList<T_obj>::GetIndex(const std::string &name)
 {
   std::string **it = find_if(names, names_end, string_equal_pointers(&name));
   if(it != names_end)
   {
-    int index = it - names;
+    long index = it - names;
     CaptureInternal(index);
     // повторная проверка после захвата
     if(*names[index] == name && states[index] == true)
@@ -589,18 +585,18 @@ int MCUSharedList<T_obj>::GetIndex(const std::string &name)
     // освободить если нет объекта
     ReleaseInternal(index);
   }
-  return INT_MAX;
+  return LONG_MAX;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-int MCUSharedList<T_obj>::GetIndex(const T_obj * obj)
+long MCUSharedList<T_obj>::GetIndex(const T_obj * obj)
 {
   T_obj **it = find(objs, objs_end, obj);
   if(it != objs_end)
   {
-    int index = it - objs;
+    long index = it - objs;
     CaptureInternal(index);
     // повторная проверка после захвата
     if(objs[index] == obj && states[index] == true)
@@ -608,7 +604,7 @@ int MCUSharedList<T_obj>::GetIndex(const T_obj * obj)
     // освободить если нет объекта
     ReleaseInternal(index);
   }
-  return INT_MAX;
+  return LONG_MAX;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -616,8 +612,8 @@ int MCUSharedList<T_obj>::GetIndex(const T_obj * obj)
 template <class T_obj>
 MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Find(long id)
 {
-  int index = GetIndex(id);
-  if(index == INT_MAX)
+  long index = GetIndex(id);
+  if(index == LONG_MAX)
     return iterator_end;
   return shared_iterator(this, index, true);
 }
@@ -627,8 +623,8 @@ MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::F
 template <class T_obj>
 MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Find(std::string name)
 {
-  int index = GetIndex(name);
-  if(index == INT_MAX)
+  long index = GetIndex(name);
+  if(index == LONG_MAX)
     return iterator_end;
   return shared_iterator(this, index, true);
 }
@@ -638,8 +634,8 @@ MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::F
 template <class T_obj>
 MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::Find(const T_obj * obj)
 {
-  int index = GetIndex(obj);
-  if(index == INT_MAX)
+  long index = GetIndex(obj);
+  if(index == LONG_MAX)
     return iterator_end;
   return shared_iterator(this, index, true);
 }
@@ -647,7 +643,7 @@ MCUSharedListSharedIterator<MCUSharedList<T_obj>, T_obj> MCUSharedList<T_obj>::F
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
-T_obj * MCUSharedList<T_obj>::operator[] (int index)
+T_obj * MCUSharedList<T_obj>::operator[] (long index)
 {
   if(index < 0 || index >= size)
     return NULL;
@@ -668,8 +664,8 @@ T_obj * MCUSharedList<T_obj>::operator[] (int index)
 template <class T_obj>
 T_obj * MCUSharedList<T_obj>::operator() (long id)
 {
-  int index = GetIndex(id);
-  if(index == INT_MAX)
+  long index = GetIndex(id);
+  if(index == LONG_MAX)
     return NULL;
   return objs[index];
 }
@@ -679,8 +675,8 @@ T_obj * MCUSharedList<T_obj>::operator() (long id)
 template <class T_obj>
 T_obj * MCUSharedList<T_obj>::operator() (std::string name)
 {
-  int index = GetIndex(name);
-  if(index == INT_MAX)
+  long index = GetIndex(name);
+  if(index == LONG_MAX)
     return NULL;
   return objs[index];
 }
@@ -690,8 +686,8 @@ T_obj * MCUSharedList<T_obj>::operator() (std::string name)
 template <class T_obj>
 T_obj * MCUSharedList<T_obj>::operator() (const T_obj * obj)
 {
-  int index = GetIndex(obj);
-  if(index == INT_MAX)
+  long index = GetIndex(obj);
+  if(index == LONG_MAX)
     return NULL;
   return objs[index];
 }

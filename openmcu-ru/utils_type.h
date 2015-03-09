@@ -80,28 +80,18 @@ enum MCUConnectionTypes
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _WIN32
+#define sync_bool long
 #define sync_val_compare_and_swap(ptr, oldval, newval) InterlockedCompareExchange(ptr, newval, oldval)
-//FIXME: NEEDS TO CHANGE BOOLEAN TO INTEGER AT WHOLE!
-//fixme: НУЖНО ПЕРЕЙТИ С BOOLEAN НА INTEGER ПОЛНОСТЬЮ!
-inline bool sync_bool_compare_and_swap(volatile bool *ptr, bool oldval, bool newval)
+inline bool sync_bool_compare_and_swap(volatile long *ptr, long oldval, long newval)
 {
-#pragma message("slow compare_and_swap_32")
-  bool res = false;
-#pragma omp critical
-  {
-    if(*ptr == oldval)
-    {
-      *ptr = newval;
-      res = true;
-    }
-  }
-  return res;
+  return sync_val_compare_and_swap(ptr, oldval, newval) == oldval;
 }
 #define sync_fetch_and_add(value, addvalue) InterlockedExchangeAdd(value, addvalue)
 #define sync_fetch_and_sub(value, subvalue) InterlockedExchangeAdd(value, subvalue*(-1))
 #define sync_increment(value) InterlockedIncrement(value)
 #define sync_decrement(value) InterlockedDecrement(value)
 #else
+#define sync_bool bool
 // returns the contents of *ptr before the operation
 #define sync_val_compare_and_swap(ptr, oldval, newval) __sync_val_compare_and_swap(ptr, oldval, newval)
 // returns true if the comparison is successful and newval was written

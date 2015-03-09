@@ -465,8 +465,8 @@ class MCUH323Connection : public H323Connection
 
     MCUConnectionTypes connectionType;
 
-    // атомарный
-    bool volatile clearing;
+    // sync_bool_compare_and_swap
+    sync_bool volatile clearing;
 
     // Wave file played during the welcome procedure.
     OpalWAVFile playFile;
