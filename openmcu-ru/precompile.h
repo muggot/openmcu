@@ -2,6 +2,14 @@
 #ifndef _MCU_PRECOMPILE_H
 #define _MCU_PRECOMPILE_H
 
+// msvc warnings
+#ifdef _WIN32
+#pragma warning(disable:4100)
+#pragma warning(disable:4786)
+#pragma warning(disable:4805) // long == true/false
+#endif
+
+// config
 #include <ptlib.h>
 #include "config.h"
 #include "version.h"

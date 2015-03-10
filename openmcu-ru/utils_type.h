@@ -4,11 +4,6 @@
 #ifndef _MCU_UTILS_TYPE_H
 #define _MCU_UTILS_TYPE_H
 
-#ifdef _WIN32
-#pragma warning(disable:4786)
-#pragma warning(disable:4100)
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class OpenMCU;

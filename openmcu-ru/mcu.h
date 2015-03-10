@@ -4,10 +4,6 @@
 #ifndef _MCU_MCU_H
 #define _MCU_MCU_H
 
-#ifdef _WIN32
-#pragma warning(disable:4786)
-#endif
-
 #include "conference.h"
 #include "filemembers.h"
 #include "h323.h"
