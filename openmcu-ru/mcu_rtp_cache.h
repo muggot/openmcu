@@ -1,10 +1,9 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_RTP_CACHE_H
 #define _MCU_RTP_CACHE_H
 
-#include <ptlib.h>
-
-#include "config.h"
 #include "utils.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

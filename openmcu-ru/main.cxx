@@ -1,11 +1,6 @@
 
-#include <ptlib.h>
+#include "precompile.h"
 #include "mcu.h"
-#if USE_LIBJPEG
-extern "C" {
-#include <jpeglib.h>
-}
-#endif
 
 extern unsigned char ImageData[];
 unsigned char *logo = NULL;

@@ -1,14 +1,9 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_RTP_H
 #define _MCU_RTP_H
 
-#include <ptlib.h>
-
-#include <channels.h>
-#include <h323rtp.h>
-#include <h323con.h>
-
-#include "config.h"
 #include "utils.h"
 #include "mcu_rtp_cache.h"
 #include "mcu_rtp_secure.h"

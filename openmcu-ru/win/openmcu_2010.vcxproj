@@ -45,8 +45,8 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\libs\libzrtp\third_party\bnlib;..\..\libs\libzrtp\third_party\bgaes;..\..\libs\libzrtp\include;..\..\libs\srtp\crypto\include;..\..\libs\srtp\include;..\..\libs\ptlib\include;..\..\libs\h323plus\include;..\..\libjpeg-turbo;..\..\yuvlib\trunk\include;..\..\libs\sofia-sip\libsofia-sip-ua\su;..\..\libs\sofia-sip\libsofia-sip-ua\tport;..\..\libs\sofia-sip\win32;..\..\libs\sofia-sip\libsofia-sip-ua\nta;..\..\libs\sofia-sip\libsofia-sip-ua\sip;..\..\libs\sofia-sip\libsofia-sip-ua\msg;..\..\libs\sofia-sip\libsofia-sip-ua\url;..\..\libs\sofia-sip\libsofia-sip-ua\stun;..\..\libs\sofia-sip\libsofia-sip-ua\iptsec;..\..\libs\sofia-sip\libsofia-sip-ua\features;..\..\libs\sofia-sip\libsofia-sip-ua\sdp;..\..\libs\sofia-sip\libsofia-sip-ua\sresolv;..\..\freetype-2.5.0.1\include;$(ProgramFiles)\GnuWin32\include;$(ProgramFiles)\GnuWin32\include\freetype2;$(IncludePath)</IncludePath>
-    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release;..\..\libs\libzrtp\projects\win\Release;..\..\libs\srtp\Release;..\..\libs\ptlib\Lib;..\..\libs\h323plus\lib;..\..\libjpeg-turbo\release;..\..\yuvlib\trunk\build\Release;..\..\freetype-2.5.0.1\objs\win32\vc2010;..\..\libs\sofia-sip\win32\libsofia-sip-ua\Release;$(ProgramFiles)\GnuWin32\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\libs\libzrtp\third_party\bnlib;..\..\libs\libzrtp\third_party\bgaes;..\..\libs\libzrtp\include;..\..\libs\srtp\crypto\include;..\..\libs\srtp\include;..\..\libs\ptlib\include;..\..\libs\h323plus\include;..\..\libjpeg-turbo;..\..\yuvlib\trunk\include;..\..\libs\sofia-sip\libsofia-sip-ua\su;..\..\libs\sofia-sip\libsofia-sip-ua\tport;..\..\libs\sofia-sip\win32;..\..\libs\sofia-sip\libsofia-sip-ua\nta;..\..\libs\sofia-sip\libsofia-sip-ua\sip;..\..\libs\sofia-sip\libsofia-sip-ua\msg;..\..\libs\sofia-sip\libsofia-sip-ua\url;..\..\libs\sofia-sip\libsofia-sip-ua\stun;..\..\libs\sofia-sip\libsofia-sip-ua\iptsec;..\..\libs\sofia-sip\libsofia-sip-ua\features;..\..\libs\sofia-sip\libsofia-sip-ua\sdp;..\..\libs\sofia-sip\libsofia-sip-ua\sresolv;..\..\freetype-2.5.0.1\include;$(ProgramFiles)\GnuWin32\include;$(ProgramFiles)\GnuWin32\include\freetype2;..\..\mingw\msys\1.0\local\include;$(IncludePath)</IncludePath>
+    <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release;..\..\libs\libzrtp\projects\win\Release;..\..\libs\srtp\Release;..\..\libs\ptlib\Lib;..\..\libs\h323plus\lib;..\..\libjpeg-turbo\release;..\..\yuvlib\trunk\build\Release;..\..\freetype-2.5.0.1\objs\win32\vc2010;..\..\libs\sofia-sip\win32\libsofia-sip-ua\Release;$(ProgramFiles)\GnuWin32\lib;..\..\mingw\msys\1.0\local\bin;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -56,8 +56,8 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>ptlib.h</PrecompiledHeaderFile>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeaderFile>precompile.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
     </ClCompile>
@@ -75,59 +75,72 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>ptlib.h</PrecompiledHeaderFile>
+      <PrecompiledHeader>Create</PrecompiledHeader>
+      <PrecompiledHeaderFile>precompile.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Winmm.lib;h323plus.lib;ptlibs.lib;turbojpeg-static.lib;libyuv.lib;freetype250MT.lib;libsofia_sip_ua.lib;Ws2_32.lib;libSRTP.lib;libzrtp.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Winmm.lib;h323plus.lib;ptlibs.lib;turbojpeg-static.lib;libyuv.lib;freetype250MT.lib;libsofia_sip_ua.lib;Ws2_32.lib;libSRTP.lib;libzrtp.lib;avcodec.lib;avutil.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)openmcu.exe</OutputFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <OptimizeReferences>true</OptimizeReferences>
+      <OptimizeReferences>false</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\conference.cxx" />
-    <ClCompile Include="..\custom.cxx">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="..\custom.cxx" />
     <ClCompile Include="..\filemembers.cxx" />
     <ClCompile Include="..\h323.cxx" />
     <ClCompile Include="..\html.cxx" />
     <ClCompile Include="..\main.cxx" />
     <ClCompile Include="..\mcu.cxx" />
     <ClCompile Include="..\mcu_rtp.cxx" />
-    <ClCompile Include="..\precompile.cxx">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="..\mcu_caps.cxx" />
+    <ClCompile Include="..\mcu_codecs.cxx" />
+    <ClCompile Include="..\mcu_rtp_cache.cxx" />
+    <ClCompile Include="..\mcu_rtp_secure.cxx" />
+    <ClCompile Include="..\recorder.cxx" />
+    <ClCompile Include="..\precompile.cxx" />
     <ClCompile Include="..\reg.cxx" />
     <ClCompile Include="..\reg_h323.cxx" />
     <ClCompile Include="..\reg_sip.cxx" />
     <ClCompile Include="..\rtsp.cxx" />
     <ClCompile Include="..\sip.cxx" />
-    <ClCompile Include="..\util.cxx" />
+    <ClCompile Include="..\utils.cxx" />
+    <ClCompile Include="..\utils_av.cxx" />
+    <ClCompile Include="..\utils_list.cxx" />
+    <ClCompile Include="..\utils_type.cxx" />
     <ClCompile Include="..\video.cxx" />
     <ClCompile Include="..\template.cxx" />
+    <ClCompile Include="..\sockets.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\conference.h" />
     <ClInclude Include="..\config.h" />
     <ClInclude Include="..\filemembers.h" />
     <ClInclude Include="..\h323.h" />
+    <ClInclude Include="..\html.h" />
     <ClInclude Include="..\mcu.h" />
     <ClInclude Include="..\mcu_rtp.h" />
+    <ClInclude Include="..\mcu_caps.h" />
+    <ClInclude Include="..\mcu_codecs.h" />
+    <ClInclude Include="..\mcu_rtp_cache.h" />
+    <ClInclude Include="..\mcu_rtp_secure.h" />
+    <ClInclude Include="..\recorder.h" />
+    <ClInclude Include="..\precompile.h" />
     <ClInclude Include="..\reg.h" />
     <ClInclude Include="..\rtsp.h" />
     <ClInclude Include="..\sip.h" />
-    <ClInclude Include="..\util.h" />
+    <ClInclude Include="..\utils.h" />
+    <ClInclude Include="..\utils_av.h" />
+    <ClInclude Include="..\utils_list.h" />
+    <ClInclude Include="..\utils_type.h" />
+    <ClInclude Include="..\sockets.h" />
+    <ClInclude Include="..\video.h" />
     <ClInclude Include="..\version.h" />
   </ItemGroup>
   <ItemGroup>

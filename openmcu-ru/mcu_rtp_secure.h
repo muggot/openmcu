@@ -1,20 +1,10 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_RTP_SECURE_H
 #define _MCU_RTP_SECURE_H
 
-#include <ptlib.h>
-#include <ptclib/cypher.h>
-
-#include "config.h"
 #include "utils.h"
-
-#if MCUSIP_SRTP
-  #include "srtp.h"
-#endif
-
-#if MCUSIP_ZRTP
-  #include "zrtp.h"
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

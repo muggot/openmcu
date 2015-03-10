@@ -1,9 +1,6 @@
 
-#include <ptlib.h>
-
-#include "version.h"
+#include "precompile.h"
 #include "mcu.h"
-#include "h323.h"
 #include "html.h"
 
 #define new PNEW
@@ -14,6 +11,7 @@ VideoMixConfigurator OpenMCU::vmcfg;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#ifndef _WIN32
 void MCUSignalHandler(int sig)
 {
   PProcess & process = PProcess::Current();
@@ -31,6 +29,7 @@ void MCUSignalHandler(int sig)
       return;
   }
 }
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -63,8 +62,6 @@ OpenMCU::OpenMCU()
   currentTraceLevel = -1;
   traceFileRotated  = FALSE;
 
-  vmcfg.go(vmcfg.bfw,vmcfg.bfh);
-
   httpBufferIndex = 0;
   httpBufferComplete = 0;
 }
@@ -91,6 +88,8 @@ BOOL OpenMCU::OnStart()
   trace_section = "OpenMCU-ru ";
   InitialiseTrace();
   PrintOnStartInfo();
+
+  vmcfg.go(vmcfg.bfw,vmcfg.bfh);
 
   MCUPluginCodecManager::PopulateMediaFormats();
 

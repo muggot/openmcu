@@ -1,11 +1,9 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_VIDEO_H
 #define _MCU_VIDEO_H
 
-#include <ptlib/video.h>
-#include <ptlib/vconvert.h>
-
-#include "config.h"
 #include "utils.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

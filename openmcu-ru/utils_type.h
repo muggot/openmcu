@@ -1,15 +1,8 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_UTILS_TYPE_H
 #define _MCU_UTILS_TYPE_H
-
-#include "config.h"
-
-#include <sys/types.h>
-
-#ifdef _WIN32
-#pragma warning(disable:4786)
-#pragma warning(disable:4100)
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -77,22 +70,25 @@ enum MCUConnectionTypes
 #define MCU_STRINGIFY(s) MCU_TOSTRING(s)
 #define MCU_TOSTRING(s)  #s
 
+#ifdef _WIN32
+  #define setenv(n,v,f) _putenv(n "=" v)
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _WIN32
+#define sync_bool long
 #define sync_val_compare_and_swap(ptr, oldval, newval) InterlockedCompareExchange(ptr, newval, oldval)
-//inline bool sync_bool_compare_and_swap(bool *ptr, bool oldval, bool newval)
-//{
-//  if(InterlockedCompareExchange(ptr, newval, oldval) == oldval)
-//    return true;
-//  else
-//    return false;
-//}
+inline bool sync_bool_compare_and_swap(volatile long *ptr, long oldval, long newval)
+{
+  return sync_val_compare_and_swap(ptr, oldval, newval) == oldval;
+}
 #define sync_fetch_and_add(value, addvalue) InterlockedExchangeAdd(value, addvalue)
 #define sync_fetch_and_sub(value, subvalue) InterlockedExchangeAdd(value, subvalue*(-1))
 #define sync_increment(value) InterlockedIncrement(value)
 #define sync_decrement(value) InterlockedDecrement(value)
 #else
+#define sync_bool bool
 // returns the contents of *ptr before the operation
 #define sync_val_compare_and_swap(ptr, oldval, newval) __sync_val_compare_and_swap(ptr, oldval, newval)
 // returns true if the comparison is successful and newval was written
@@ -226,12 +222,24 @@ class MCUTime
 
     static void SleepUsec(uint32_t interval_usec)
     {
-      // win32 что?
-      struct timespec req;
-      req.tv_sec = interval_usec/1000000;
-      req.tv_nsec = (interval_usec % 1000000) * 1000;
-      while(nanosleep(&req, &req) == -1 && errno == EINTR)
-        ;
+#     ifdef _WIN32
+        uint32_t ms=interval_usec / 1000;
+        uint32_t us=interval_usec % 1000;
+        if(ms) ::Sleep(ms);
+        if(us)
+        {
+          __int64 time1=0, time2=0, freq=0;
+          QueryPerformanceCounter((LARGE_INTEGER*)&time1);
+          QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
+          do { QueryPerformanceCounter((LARGE_INTEGER*)&time2); } while((time2-time1) < us);
+        }
+#     else
+        struct timespec req;
+        req.tv_sec = interval_usec/1000000;
+        req.tv_nsec = (interval_usec % 1000000) * 1000;
+        while(nanosleep(&req, &req) == -1 && errno == EINTR)
+          ;
+#     endif
     }
 
     static uint64_t GetRealTimestampUsec()

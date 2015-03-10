@@ -1,4 +1,5 @@
 
+#include "precompile.h"
 #include "mcu.h"
 #include "mcu_codecs.h"
 

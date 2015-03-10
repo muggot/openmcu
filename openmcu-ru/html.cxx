@@ -1,8 +1,7 @@
-#include <ptlib.h>
+
+#include "precompile.h"
 #include "mcu.h"
 #include "html.h"
-#include <stdio.h>
-#include <string.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 

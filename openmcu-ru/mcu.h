@@ -1,31 +1,8 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_MCU_H
 #define _MCU_MCU_H
-
-#ifdef _WIN32
-#pragma warning(disable:4786)
-#endif
-
-#include <ptlib.h>
-#include <ptclib/httpsvc.h>
-#include <ptclib/guid.h>
-
-#ifdef _WIN32
-#include <h323pluginmgr.h>
-#endif
-
-#ifdef __FreeBSD__
-#  include <signal.h>
-#endif
-
-#include "config.h"
-
-#include <map>
-#include <h323.h>
-#include <h323ep.h>
-#include <h323rtp.h>
-#include <h323pdu.h>
-#include <h245.h>
 
 #include "conference.h"
 #include "filemembers.h"
@@ -39,16 +16,9 @@
 #include "mcu_codecs.h"
 #include "sockets.h"
 
-#if USE_LIBYUV
-#include <libyuv/scale.h>
-#endif
-
-
 #if P_SSL
-#include <ptclib/shttpsvc.h>
 typedef PSecureHTTPServiceProcess OpenMCUProcessAncestor;
 #else
-#include <ptclib/httpsvc.h>
 typedef PHTTPServiceProcess OpenMCUProcessAncestor;
 #endif
 

@@ -1,11 +1,6 @@
 
-#include <ptlib.h>
-
+#include "precompile.h"
 #include "mcu.h"
-
-#ifdef _WIN32
-  #define setenv(n,v,f) _putenv(n "=" v)
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -3472,7 +3467,7 @@ void MCUSipEndPoint::StartListeners()
         port++;
       listener = "sips:"+url.GetHostName()+":"+PString(port)+";transport=tls";
       nta_agent_add_tport(agent, URL_STRING_MAKE((const char*)listener),
-                          TPTAG_CERTIFICATE(certificatePath),
+                          TPTAG_CERTIFICATE((const char*)certificatePath),
                           //TPTAG_TLS_VERSION(0),
                           //TPTAG_TLS_VERIFY_DATE(0),
                           //TPTAG_TLS_VERIFY_DEPTH(0),

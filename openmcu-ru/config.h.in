@@ -139,11 +139,10 @@
 #  define RECORDS_DIR       "records"
 #  undef  SYS_SSL_DIR
 #  define SYS_SSL_DIR       "ssl"
+#  undef  MCU_PLUGIN_DIR
+#  define MCU_PLUGIN_DIR    "."
 #endif
 
-#ifndef SYS_CONFIG_DIR
-#  define SYS_CONFIG_DIR "."
-#endif
 #define CONFIG_PATH PString(SYS_CONFIG_DIR)+PATH_SEPARATOR+"openmcu.ini"
 
 

@@ -1,6 +1,5 @@
 
-#include <ptlib.h>
-
+#include "precompile.h"
 #include "mcu.h"
 
 #ifdef _WIN32
@@ -65,7 +64,7 @@ BOOL MCUSocket::GetFromIP(PString & local_ip, PString remote_host, PString remot
   close(sock);
   local_ip = buffer;
 #else
-  local_ip = PIPSocket::Address(name.sin_addr);
+  local_ip = PIPSocket::Address(name.sin_addr).AsString();
   closesocket(sock);
 #endif
 
@@ -218,7 +217,11 @@ BOOL MCUSocket::Connect()
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
+# ifndef _WIN32
   bzero(&addr, sizeof(addr));
+# else
+  memset(&addr, 0, sizeof(addr));
+# endif
   addr.sin_family = AF_INET;
   inet_pton(AF_INET, socket_host, &addr.sin_addr);
   addr.sin_port = htons(socket_port);
@@ -243,14 +246,18 @@ BOOL MCUSocket::Listen()
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
 
+# ifndef _WIN32
   bzero(&addr, sizeof(addr));
+# else
+  memset(&addr, 0, sizeof(addr));
+# endif
   addr.sin_family = AF_INET;
   inet_pton(AF_INET, socket_host, &addr.sin_addr);
   addr.sin_port = htons(socket_port);
 
   // allows other sockets to bind() to this port, unless there is an active listening socket bound to the port already
   int reuse = 1;
-  if(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(int)) == -1)
+  if(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse, sizeof(int)) == -1)
   {
     MCUTRACE(1, trace_section << "setsockopt error " << errno << " " << strerror(errno));
     return FALSE;
@@ -311,7 +318,7 @@ BOOL MCUSocket::GetSocketAddress(int fd, int & proto, PString & host, int & port
   port = ntohs(addr.sin_port);
 
   socklen_t proto_len = sizeof(int);
-  if(getsockopt(fd, SOL_SOCKET, SO_TYPE, &proto, &proto_len) == -1)
+  if(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&proto, &proto_len) == -1)
     return FALSE;
 
   return TRUE;
@@ -525,7 +532,9 @@ BOOL MCUListener::Send(char *buffer)
 
 void MCUListener::ListenerThread(PThread &, INT)
 {
+#ifndef _WIN32
   signal(SIGPIPE, SIG_IGN);
+#endif
 
   running = TRUE;
   if(listener_type == MCU_LISTENER_TCP_SERVER)

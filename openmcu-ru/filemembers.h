@@ -1,15 +1,12 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_FILEMEMBERS_H
 #define _MCU_FILEMEMBERS_H
 
-#include "config.h"
 #include "utils.h"
 #include "conference.h"
 #include "mcu_rtp.h"
-
-#include <ptlib/sound.h>
-#include <opalwavfile.h>
-#include <deque>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

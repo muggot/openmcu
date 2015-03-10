@@ -1,10 +1,5 @@
 
-#include <ptlib.h>
-
-#ifndef _WIN32
-#include <unistd.h>
-#endif
-
+#include "precompile.h"
 #include "mcu.h"
 
 #define AUDIO_EXPORT_PCM_BUFFER_SIZE_MS    30

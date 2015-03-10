@@ -1,13 +1,8 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_REGISTRAR_H
 #define _MCU_REGISTRAR_H
-
-#include <sofia-sip/nta.h>
-#include <sofia-sip/sip_header.h>
-
-#include "h323.h"
-#include "gkserver.h"
-#include "gkclient.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -110,7 +105,7 @@ class RegistrarAccount
       }
     }
 
-    PMutex & GetMutex()
+    PTimedMutex & GetMutex()
     { return account_mutex; }
 
     void Unlock();
@@ -319,7 +314,7 @@ class RegistrarConnection
       }
     }
 
-    PMutex & GetMutex()
+    PTimedMutex & GetMutex()
     { return conn_mutex; }
 
     void Unlock();
@@ -397,7 +392,7 @@ class RegistrarSubscription
       }
     }
 
-    PMutex & GetMutex()
+    PTimedMutex & GetMutex()
     { return sub_mutex; }
 
     void Unlock();

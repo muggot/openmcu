@@ -1,13 +1,8 @@
+
+#include "precompile.h"
+
 #ifndef _MCU_HTML_H
 #define _MCU_HTML_H
-
-#if USE_LIBJPEG
-extern "C" {
-  #include <jpeglib.h>
-};
-#endif
-
-#include <ptlib.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

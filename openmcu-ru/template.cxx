@@ -1,4 +1,5 @@
-#include <ptlib.h>
+
+#include "precompile.h"
 #include "conference.h"
 #include "mcu.h"
 
