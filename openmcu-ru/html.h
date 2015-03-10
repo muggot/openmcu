@@ -1,15 +1,9 @@
-#include <ptlib.h>
+
+#include "precompile.h"
 
 #ifndef _MCU_HTML_H
 #define _MCU_HTML_H
 
-#if USE_LIBJPEG
-extern "C" {
-  #include <jpeglib.h>
-};
-#endif
-
-#include <ptclib/httpsvc.h>
 #include "mcu.h"
 #include "utils_type.h"
 #include "utils_list.h"

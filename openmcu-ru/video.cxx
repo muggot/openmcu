@@ -1,24 +1,19 @@
 
-#include <ptlib.h>
+#include "precompile.h"
 
 #ifdef _WIN32
 #pragma warning(disable:4786)
 #endif
 
-#include "config.h"
-
 #if MCU_VIDEO
 
 #include "mcu.h"
 #include "h323.h"
-#include <ptlib/vconvert.h>
 
 #define MAX_SUBFRAMES        100
 #define FRAMESTORE_TIMEOUT 60 /* s */
 
 #if USE_FREETYPE
-#include <ft2build.h>
-#include FT_FREETYPE_H
 FT_Library ft_library;
 FT_Face ft_face;
 PMutex ft_mutex;

@@ -1,13 +1,5 @@
 
-#ifdef RC_INVOKED
-#include <winver.h>
-#else
-#include <ptlib.h>
-#include <ptclib/httpsvc.h>
-#endif
-
-#include "version.h"
-
+#include "precompile.h"
 
 ////////////////////////////////////////////////////
 //
@@ -113,6 +105,3 @@ PHTTPServiceProcess::Info ProductInfo = {
 
 
 #endif
-
-
-// End of File ///////////////////////////////////////////////////////////////

@@ -1,19 +1,6 @@
 
-#include <ptlib.h>
-
+#include "precompile.h"
 #include "mcu.h"
-
-#ifdef _WIN32
-  //fcntl.h
-# define FD_CLOEXEC     1       /* posix */
-# define F_DUPFD        0       /* Duplicate fildes */
-# define F_GETFD        1       /* Get fildes flags (close on exec) */
-# define F_SETFD        2       /* Set fildes flags (close on exec) */
-# define F_GETFL        3       /* Get file flags */
-# define F_SETFL        4       /* Set file flags */
-# define O_NONBLOCK     0x4000
-  inline int fcntl (int, int, ...) {return -1;}
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

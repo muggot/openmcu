@@ -1,15 +1,7 @@
 
-#include <ptlib.h>
-#include <ptlib/video.h>
-
-#include "version.h"
+#include "precompile.h"
 #include "mcu.h"
-#include "h323.h"
 #include "html.h"
-
-#include <h323pdu.h>
-#include <math.h>
-#include <stdio.h>
 
 #define new PNEW
 

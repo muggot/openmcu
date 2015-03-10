@@ -1,15 +1,10 @@
-#include <ptlib.h>
+
+#include "precompile.h"
 
 #ifndef _MCU_CAPS_H
 #define _MCU_CAPS_H
 
-#include "config.h"
 #include "mcu_codecs.h"
-
-#include <ptlib/pluginmgr.h>
-
-#include <h323caps.h>
-#include <codec/opalplugin.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

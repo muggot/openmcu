@@ -1,9 +1,6 @@
 
-#include <ptlib.h>
-
-#include "version.h"
+#include "precompile.h"
 #include "mcu.h"
-#include "h323.h"
 #include "html.h"
 
 #define new PNEW

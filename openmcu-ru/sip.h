@@ -1,30 +1,8 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_SIP_H
 #define _MCU_SIP_H
-
-#include "config.h"
-
-#include <map>
-#include <ptlib.h>
-#include <ptclib/pstun.h>
-#include <time.h>
-
-#include <sofia-sip/su.h>
-#include <sofia-sip/nta.h>
-#include <sofia-sip/nta_stateless.h>
-#include <sofia-sip/stun_tag.h>
-#include <sofia-sip/sip_status.h>
-#include <sofia-sip/sip_header.h>
-#include <sofia-sip/sip_util.h>
-#include <sofia-sip/su_log.h>
-#include <sofia-sip/auth_digest.h>
-#include <sofia-sip/sofia_features.h>
-#include <sofia-sip/nta_tport.h>
-#include <sofia-sip/tport.h>
-#include <sofia-sip/sdp.h>
-#include <sofia-sip/msg_addr.h>
-#include <sofia-sip/sres_sip.h>
-#include <sofia-sip/su_uniqueid.h>
 
 #include "h323.h"
 #include "mcu_rtp.h"

@@ -1,10 +1,8 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_UTILS_TYPE_H
 #define _MCU_UTILS_TYPE_H
-
-#include "config.h"
-
-#include <sys/types.h>
 
 #ifdef _WIN32
 #pragma warning(disable:4786)

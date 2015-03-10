@@ -1,14 +1,11 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_H323_H
 #define _MCU_H323_H
 
-#include "config.h"
 #include "utils.h"
 #include "mcu_caps.h"
-
-#include <ptlib.h>
-#include <ptlib/videoio.h>
-#include <opalwavfile.h>
 
 // don't forget to add the same into quote.txt:
 #define OTFC_UNMUTE                    0

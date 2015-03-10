@@ -1,14 +1,9 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_CONFERENCE_H
 #define _MCU_CONFERENCE_H
 
-#include <ptlib/sound.h>
-#include <ptclib/delaychan.h>
-
-#include <set>
-#include <map>
-
-#include "config.h"
 #include "utils.h"
 #include "video.h"
 

@@ -1,5 +1,5 @@
-#include <ptlib.h>
 
+#include "precompile.h"
 #include "mcu.h"
 #include "mcu_caps.h"
 #include "mcu_codecs.h"

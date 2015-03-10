@@ -1,14 +1,10 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_UTILS_LIST_H
 #define _MCU_UTILS_LIST_H
 
-#include "config.h"
 #include "utils_type.h"
-
-#include <algorithm>
-#include <typeinfo>
-
-#include <sofia-sip/sip_util.h>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 //

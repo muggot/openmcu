@@ -1,14 +1,6 @@
 
-#include <ptlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#include "conference.h"
+#include "precompile.h"
 #include "mcu.h"
-
-#if MCU_VIDEO
-#include <ptlib/vconvert.h>
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////
 

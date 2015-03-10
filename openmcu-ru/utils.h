@@ -1,4 +1,6 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_UTILS_H
 #define _MCU_UTILS_H
 

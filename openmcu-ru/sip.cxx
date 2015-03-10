@@ -1,6 +1,5 @@
 
-#include <ptlib.h>
-
+#include "precompile.h"
 #include "mcu.h"
 
 #ifdef _WIN32

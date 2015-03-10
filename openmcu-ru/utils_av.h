@@ -1,33 +1,10 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_UTILS_AV_H
 #define _MCU_UTILS_AV_H
 
-#include "config.h"
 #include "utils_type.h"
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-extern "C"
-{
-  #include "libavcodec/avcodec.h"
-  #include "libavformat/avformat.h"
-  #include "libavutil/avutil.h"
-  #include "libavutil/opt.h"
-  #include "libavutil/mem.h"
-  #include "libavutil/mathematics.h"
-  #include "libavutil/audioconvert.h"
-#if USE_SWSCALE
-  #include "libswscale/swscale.h"
-#endif
-#if USE_SWRESAMPLE
-  #include <libswresample/swresample.h>
-#elif USE_AVRESAMPLE
-  #include <libavresample/avresample.h>
-  #include <libavutil/samplefmt.h>
-#elif USE_LIBSAMPLERATE
-  #include <samplerate.h>
-#endif
-}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

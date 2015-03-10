@@ -1,8 +1,9 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_UTILS_JSON_H
 #define _MCU_UTILS_JSON_H
 
-#include "config.h"
 #include "utils_list.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

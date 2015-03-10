@@ -1,16 +1,9 @@
 
+#include "precompile.h"
+
 #ifndef _MCU_CODECS_H
 #define _MCU_CODECS_H
 
-#include <ptlib.h>
-#include <ptlib/video.h>
-#include <ptlib/vconvert.h>
-#include <ptlib/pluginmgr.h>
-#include <codec/opalplugin.h>
-
-#include <codecs.h>
-
-#include "config.h"
 #include "utils.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
