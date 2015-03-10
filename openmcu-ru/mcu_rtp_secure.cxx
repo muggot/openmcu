@@ -323,7 +323,9 @@ PString SipSRTP::GetKey() const
 void sip_rtp_init()
 {
 #if MCUSIP_SRTP
+  PTRACE(2,"MCU\tBegin of srtp_init()");
   srtp_init();
+  PTRACE(2,"MCU\tEnd of srtp_init()");
 #endif
 #if MCUSIP_ZRTP
   sip_zrtp_init();
