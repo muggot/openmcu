@@ -70,8 +70,6 @@ OpenMCU::OpenMCU()
   videoResizeDeltaTSCCounter=0;
   videoResizeDeltaTSCReportTime=0;
 
-  vmcfg.go(vmcfg.bfw,vmcfg.bfh);
-
   httpBufferIndex = 0;
   httpBufferComplete = 0;
 }
@@ -98,6 +96,8 @@ BOOL OpenMCU::OnStart()
   trace_section = "OpenMCU-ru ";
   InitialiseTrace();
   PrintOnStartInfo();
+
+  vmcfg.go(vmcfg.bfw,vmcfg.bfh);
 
   MCUPluginCodecManager::PopulateMediaFormats();
 

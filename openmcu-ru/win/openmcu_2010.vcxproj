@@ -56,7 +56,7 @@
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>precompile.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>EditAndContinue</DebugInformationFormat>
@@ -75,7 +75,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <RuntimeTypeInfo>true</RuntimeTypeInfo>
-      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeader>Create</PrecompiledHeader>
       <PrecompiledHeaderFile>precompile.h</PrecompiledHeaderFile>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
@@ -85,19 +85,14 @@
       <OutputFile>$(OutDir)openmcu.exe</OutputFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
-      <OptimizeReferences>true</OptimizeReferences>
+      <OptimizeReferences>false</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\conference.cxx" />
-    <ClCompile Include="..\custom.cxx">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="..\custom.cxx" />
     <ClCompile Include="..\filemembers.cxx" />
     <ClCompile Include="..\h323.cxx" />
     <ClCompile Include="..\html.cxx" />
@@ -109,10 +104,7 @@
     <ClCompile Include="..\mcu_rtp_cache.cxx" />
     <ClCompile Include="..\mcu_rtp_secure.cxx" />
     <ClCompile Include="..\recorder.cxx" />
-    <ClCompile Include="..\precompile.cxx">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
-    </ClCompile>
+    <ClCompile Include="..\precompile.cxx" />
     <ClCompile Include="..\reg.cxx" />
     <ClCompile Include="..\reg_h323.cxx" />
     <ClCompile Include="..\reg_sip.cxx" />
@@ -132,25 +124,25 @@
     <ClInclude Include="..\config.h" />
     <ClInclude Include="..\filemembers.h" />
     <ClInclude Include="..\h323.h" />
-    <ClCompile Include="..\html.h" />
+    <ClInclude Include="..\html.h" />
     <ClInclude Include="..\mcu.h" />
     <ClInclude Include="..\mcu_rtp.h" />
-    <ClCompile Include="..\mcu_caps.h" />
-    <ClCompile Include="..\mcu_codecs.h" />
-    <ClCompile Include="..\mcu_rtp_cache.h" />
-    <ClCompile Include="..\mcu_rtp_secure.h" />
-    <ClCompile Include="..\recorder.h" />
+    <ClInclude Include="..\mcu_caps.h" />
+    <ClInclude Include="..\mcu_codecs.h" />
+    <ClInclude Include="..\mcu_rtp_cache.h" />
+    <ClInclude Include="..\mcu_rtp_secure.h" />
+    <ClInclude Include="..\recorder.h" />
     <ClInclude Include="..\precompile.h" />
     <ClInclude Include="..\reg.h" />
     <ClInclude Include="..\rtsp.h" />
     <ClInclude Include="..\sip.h" />
     <ClInclude Include="..\utils.h" />
-    <ClCompile Include="..\utils_av.h" />
-    <ClCompile Include="..\utils_json.h" />
-    <ClCompile Include="..\utils_list.h" />
-    <ClCompile Include="..\utils_type.h" />
-    <ClCompile Include="..\sockets.h" />
-    <ClCompile Include="..\video.h" />
+    <ClInclude Include="..\utils_av.h" />
+    <ClInclude Include="..\utils_json.h" />
+    <ClInclude Include="..\utils_list.h" />
+    <ClInclude Include="..\utils_type.h" />
+    <ClInclude Include="..\sockets.h" />
+    <ClInclude Include="..\video.h" />
     <ClInclude Include="..\version.h" />
   </ItemGroup>
   <ItemGroup>
