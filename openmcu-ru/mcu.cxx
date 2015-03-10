@@ -5,10 +5,6 @@
 
 #define new PNEW
 
-#ifdef _WIN32
-  #define setenv(n,v,f) _putenv(n "=" v)
-#endif
-
 ///////////////////////////////////////////////////////////////
 
 VideoMixConfigurator OpenMCU::vmcfg;

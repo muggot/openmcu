@@ -2,10 +2,6 @@
 #include "precompile.h"
 #include "mcu.h"
 
-#ifdef _WIN32
-  #define setenv(n,v,f) _putenv(n "=" v)
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Directions dir)

@@ -4,7 +4,6 @@
 #ifndef _MCU_UTILS_H
 #define _MCU_UTILS_H
 
-#include "config.h"
 #include "utils_av.h"
 #include "utils_json.h"
 #include "utils_list.h"

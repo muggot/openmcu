@@ -70,6 +70,10 @@ enum MCUConnectionTypes
 #define MCU_STRINGIFY(s) MCU_TOSTRING(s)
 #define MCU_TOSTRING(s)  #s
 
+#ifdef _WIN32
+  #define setenv(n,v,f) _putenv(n "=" v)
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef _WIN32

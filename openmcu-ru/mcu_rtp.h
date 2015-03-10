@@ -4,7 +4,6 @@
 #ifndef _MCU_RTP_H
 #define _MCU_RTP_H
 
-#include "config.h"
 #include "utils.h"
 #include "mcu_rtp_cache.h"
 #include "mcu_rtp_secure.h"

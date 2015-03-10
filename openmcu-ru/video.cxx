@@ -4,7 +4,6 @@
 #if MCU_VIDEO
 
 #include "mcu.h"
-#include "h323.h"
 
 #define MAX_SUBFRAMES        100
 #define FRAMESTORE_TIMEOUT 60 /* s */
