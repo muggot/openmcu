@@ -112,7 +112,10 @@ extern "C" {
 
 // srtp
 #if MCUSIP_SRTP
+extern "C" {
   #include "srtp.h"
+  #include "crypto_kernel.h"
+};
 #endif
 
 // zrtp
