@@ -765,11 +765,41 @@ function format_mmbr_button(m,st)
   var bwidth=20;
   var name_width=width-9*bwidth; if(name_width<10) name_width=10;
 
+  var dpre="<div class='mbrpos1' style='left:";
+  var dpre2="<div class='mbrpos11' style='left:";
   var b1style="style='cursor:pointer;width:"+w+"px;height:"+h+"px;'";
   var b2style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+(kdb_width)+"px;height:"+(h-1)+"px;font-size:10px;'";
   var b3style="style='border:1px inset #E6E6FA;cursor:pointer;width:"+(kdb_width)+"px;height:"+(h-1)+"px;font-size:11px;'";
   var b4style="style='border:1px inset #E6E6FA;width:"+(w)+"px;height:"+(h-1)+"px;'";
   var namestyle="style='width:"+name_width+"px;height:"+h+"px;line-height:"+h+"px'";
+
+  // states
+  reg_state = 0;
+  conn_state = 0;
+  ping_state = 0;
+  for(var i=0;i<addressbook.length;i++)
+  {
+    //if(addressbook[i][2]==m[2])
+    nameid = get_addr_nameid(addressbook[i][2]);
+    if(nameid==m[8])
+    {
+      reg_state = addressbook[i][5];
+      conn_state = addressbook[i][7];
+      ping_state = addressbook[i][9];
+      break;
+    }
+  }
+  reg_icon = "";
+  if(reg_state == 1)       reg_icon = "<img src='i16_status_gray.png' width='16' height='16'>";
+  else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' width='16' height='16'>";
+  conn_icon = "";
+  if(conn_state == 1)      conn_icon = "<img src='i16_status_blue.png' width='16' height='16'>";
+  else if(conn_state == 2) conn_icon = "<img src='i16_status_red.png' width='16' height='16'>";
+  else if(reg_state != 0)  conn_icon = "<img src='i16_status_gray.png' width='16' height='16'>";
+  ping_icon = "";
+  if(ping_state == 1)      ping_icon = "<img src='i16_status_green.png' width='16' height='16'>";
+  else if(ping_state == 2) ping_icon = "<img src='i16_status_red.png' width='16' height='16'>";
+  //
 
   mute1  ="<div id='mrpanb1_"+id+"' style='border:1px red "+((!st||m[9]&1)?"none":"solid")+";'><div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",1)' class='mutespr3"+((m[3]&1)?"0":"1")+"' title='"+((m[3]&1)?"Unmute":"Mute")+"' id='mrpan_" +id+"'></div></div>";
   mute2  ="<div id='mrpanb2_"+id+"' style='border:1px red "+((!st||m[9]&2)?"none":"solid")+";'><div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",2)' class='mutespr4"+((m[3]&2)?"0":"1")+"' title='"+((m[3]&2)?"Unmute":"Mute")+"' id='mrpan2_"+id+"'></div></div>";
@@ -780,15 +810,10 @@ function format_mmbr_button(m,st)
   hide   ="<img "+b1style+" src='i15_getNoVideo.gif' title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>";
   kdb    ="<div "+b2style+" id='agl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+"  );return false;}'>"+nice_db(m[10])+"</div>";
   kdbo   ="<div "+b2style+" id='ogl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+",1);return false;}'>"+nice_db(m[11])+"</div>";
-  if(classicMode) mixerb='';
-  else
   mixerb ="<div "+b3style+" onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi'>#"+mixer+"</div>";
   levelb ="<div "+b4style+" class='"+((m[9]&16)?"mutespr30":"vlevel")+"' id='srpan_"+id+"'>&nbsp;</div>";
   invite ="<img "+b1style+" onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i15_inv.gif' alt='Invite' title='"+window.l_invite+"'>";
   remove ="<img "+b1style+" onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i16_close_gray.png' alt='Remove' title='"+l_room_remove_from_list+"'>";
-
-  var dpre="<div class='mbrpos1' style='left:";
-  var dpre2="<div class='mbrpos11' style='left:";
 
   s+=dpre+"2px'><div class='mmbrname' "+namestyle+">"+uname+"</div></div>";
   s+=dpre2+"2px'><div class='mmbrip' "+namestyle+">"+ip+"</div></div>";
@@ -797,24 +822,31 @@ function format_mmbr_button(m,st)
 
   if(mtype!=4)
   {
-    s+=dpre+(width-9*bwidth)+"px'>"+levelb+"</div>";
+    if(st)
+      s+=dpre+(width-9*bwidth)+"px'>"+levelb+"</div>";
     s+=dpre+(width-8*bwidth)+"px'>"+kdb+"</div>";
     s+=dpre+(width-6*bwidth)+"px'>"+mute1+"</div>";
     s+=dpre+(width-5*bwidth)+"px'>"+mute4+"</div>";
     s+=dpre+(width-4*bwidth)+"px'>"+vad+"</div>";
+    if(st)
+      s+=dpre+(width-3*bwidth)+"px'>"+hide+"</div>";
+    if(!st)
+      s+=dpre+(width-2*bwidth)+"px'>"+invite+"</div>";
   }
-  if(st && mtype!=4)
-    s+=dpre+(width-3*bwidth)+"px'>"+hide+"</div>";
-  if(!st && mtype!=4)
-    s+=dpre+(width-2*bwidth)+"px'>"+invite+"</div>";
     s+=dpre2+(width-8*bwidth)+"px'>"+kdbo+"</div>";
     s+=dpre2+(width-6*bwidth)+"px'>"+mute2+"</div>";
     s+=dpre2+(width-5*bwidth)+"px'>"+mute8+"</div>";
+  if(!classicMode)
     s+=dpre2+(width-4*bwidth)+"px'>"+mixerb+"</div>";
   if(!st)
     s+=dpre2+(width-2*bwidth)+"px'>"+remove+"</div>";
   if(st)
     s+=dpre2+(width-2*bwidth)+"px'>"+kick+"</div>";
+
+  spos=width-8*bwidth-2;
+  s+=dpre2+(spos-16)+"px'>"+conn_icon+"</div>";
+  s+=dpre2+(spos-32)+"px'>"+reg_icon+"</div>";
+  s+=dpre2+(spos-48)+"px'>"+ping_icon+"</div>";
 
   s+="</div>";
   return s;
@@ -826,8 +858,8 @@ function format_mmbr_abook(num,mmbr)
   var state_color;
   var bgcolor=bgcolors[num&1];
 
-  var height = PANEL_ICON_HEIGHT; //15
-  var width = PANEL_ICON_WIDTH; // 15
+  var height = 16;
+  var width = 16;
 
   var is_abook = mmbr[3];
   var is_account = mmbr[11];
@@ -864,7 +896,7 @@ function format_mmbr_abook(num,mmbr)
     if(check_box && check_box.checked) checked = "checked";
 
     check="<input id='abook_check_"+mmbr[1]+"' onclick='on_abook_check(this)' type='checkbox' "+checked+" width="+width+" height="+height+" style='margin:2px;'>";
-    invite="<img id='abook_inv_"+mmbr[1]+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
+    invite="<img id='abook_inv_"+mmbr[1]+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width='15' height='15' alt='Invite'>";
   }
   else if(conn_state == 1) invite = "<img src='i16_status_blue.png' width='"+width+"' height='"+height+"'>";
   else if(conn_state == 2) invite = "<img src='i16_status_red.png' width='"+width+"' height='"+height+"'>";
@@ -889,8 +921,8 @@ function format_mmbr_abook(num,mmbr)
 
   var posx_check  = 8;
   var posx_invite = posx_check       + width + 16;
-  var posx_status = posx_invite      + width + 16;
-  var posx_name   = posx_status      + width + 10;
+  var posx_status = posx_invite      + width;
+  var posx_name   = posx_status      + 38;
   var free        = panel_width      - posx_name - SCROLLER_WIDTH;
   var width_name  = free/2 - 16 - 8;
   var width_ip    = free/2 - 8;
@@ -900,13 +932,13 @@ function format_mmbr_abook(num,mmbr)
   if(width_name<10){my_alert('Exception: maybe screen resolution too low?'); if(width_name<1)width_name=1;}
 
   var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
-  s+=dpre+posx_check+"px'><div style='width:"+width+"px;height:"+height+"px'>"+check+"</div></div>";
-  s+=dpre+posx_invite+"px'><div style='width:"+width+"px;height:"+height+"px'>"+invite+"</div></div>";
-  s+=dpre+(posx_status-8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+ping_icon+"</div></div>";
-  s+=dpre+(posx_status+8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+reg_icon+"</div></div>";
+  s+=dpre+posx_check+"px'>"+check+"</div>";
+  s+=dpre+posx_invite+"px'>"+invite+"</div>";
+  s+=dpre+(posx_status+2)+"px'>"+ping_icon+"</div>";
+  s+=dpre+(posx_status+20)+"px'>"+reg_icon+"</div>";
   s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'><nobr>"+name+"</nobr></div></div>";
   s+=dpre+posx_ip+"px'><div style='overflow:hidden;color:#576;font-size:10px;"+ip_decor+"width:"+width_ip+"px;'>"+ip+"</div></div>";
-  s+=dpre+posx_abook+"px'><div style='width:"+width+"px;height:"+height+"px'>"+save_icon+"</div></div>";
+  s+=dpre+posx_abook+"px'>"+save_icon+"</div>";
 
   s+='</div>';
   return s;
@@ -1161,6 +1193,7 @@ function abook_change(account)
       addressbook[addressbook.length] = account;
   }
   alive();
+  members_refresh();
   abook_refresh();
 }
 
@@ -1235,6 +1268,11 @@ function get_addr_url_without_param(addr){
   if(url.lastIndexOf(";") != -1)
     url = url.substring(0, url.lastIndexOf(';'));
   return url;
+}
+function get_addr_nameid(addr)
+{
+  url = get_addr_url_without_param(addr)
+  return url.substring(0, url.indexOf('@'));
 }
 
 function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype)
