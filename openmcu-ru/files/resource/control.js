@@ -801,25 +801,25 @@ function format_mmbr_abook(num,mmbr)
   var state_color;
   var bgcolor=bgcolors[num&1];
 
-  var height = PANEL_ICON_HEIGHT; //15
-  var width = PANEL_ICON_WIDTH; // 15
+  var height = 16;
+  var width = 16;
 
   var is_abook = mmbr[3];
   var is_account = mmbr[11];
   var is_saved_account = mmbr[12];
   var remote_application = mmbr[4];
   var reg_state = mmbr[5]; // 1=unregistered, 2=registered
-  var reg_info = mmbr[6];
+  var reg_info = window.l_name_registered+": "+mmbr[6];
   var conn_state = mmbr[7]; // 1=wait, 2=busy
-  var conn_info = mmbr[8];
+  var conn_info = window.l_name_connected+": "+mmbr[8];
   var ping_state = mmbr[9]; // 0=disable, 1=online, 2=offline
-  var ping_info = mmbr[10];
+  var ping_info = window.l_name_last_ping_response+": "+mmbr[10];
 
   var info = "";
   if(remote_application != "") { info += remote_application; }
-  if(reg_info != "") { if(info != "") info += "&#10;"; info += window.l_name_registered+": "+reg_info; }
-  if(conn_info != "") { if(info != "") info += "&#10;"; info += window.l_name_connected+": "+conn_info; }
-  if(ping_info != "") { if(info != "") info += "&#10;"; info += window.l_name_last_ping_response+": "+ping_info; }
+  if(reg_info != "") { if(info != "") info += "&#10;"; info += reg_info; }
+  if(conn_info != "") { if(info != "") info += "&#10;"; info += conn_info; }
+  if(ping_info != "") { if(info != "") info += "&#10;"; info += ping_info; }
 
   var s=
     "<div title='"+info+"' "+
@@ -831,6 +831,7 @@ function format_mmbr_abook(num,mmbr)
   var name=get_addr_name(uname);
   var ip=get_addr_url_without_param(uname);
 
+  st_style = "style='width:16px;height:16px;cursor:help'";
   var invite = "", check = "";
   if(conn_state == 0)
   {
@@ -839,18 +840,18 @@ function format_mmbr_abook(num,mmbr)
     if(check_box && check_box.checked) checked = "checked";
 
     check="<input id='abook_check_"+mmbr[1]+"' onclick='on_abook_check(this)' type='checkbox' "+checked+" width="+width+" height="+height+" style='margin:2px;'>";
-    invite="<img id='abook_inv_"+mmbr[1]+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" alt='Invite'>";
+    invite="<img id='abook_inv_"+mmbr[1]+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width='15' height='15' alt='Invite'>";
   }
-  else if(conn_state == 1) invite = "<img src='i16_status_blue.png' width='"+width+"' height='"+height+"'>";
-  else if(conn_state == 2) invite = "<img src='i16_status_red.png' width='"+width+"' height='"+height+"'>";
+  else if(conn_state == 1) invite = "<img src='i16_status_blue.png' title='"+conn_info+"' "+st_style+">";
+  else if(conn_state == 2) invite = "<img src='i16_status_red.png' title='"+conn_info+"' "+st_style+">";
 
   var ping_icon = "";
-  if(ping_state == 1)      ping_icon = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
-  else if(ping_state == 2) ping_icon = "<img src='i16_status_red.png' width='"+width+"' height='"+height+"'>";
+  if(ping_state == 1)      ping_icon = "<img src='i16_status_green.png' title='"+ping_info+"' "+st_style+">";
+  else if(ping_state == 2) ping_icon = "<img src='i16_status_red.png' title='"+ping_info+"' "+st_style+">";
 
   var reg_icon = "";
-  if(reg_state == 1)       reg_icon = "<img src='i16_status_gray.png' width='"+width+"' height='"+height+"'>";
-  else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
+  if(reg_state == 1)       reg_icon = "<img src='i16_status_gray.png' title='"+reg_info+"' "+st_style+">";
+  else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' title='"+reg_info+"' "+st_style+">";
 
   var save_icon = "";
   if(!is_abook)
@@ -864,8 +865,8 @@ function format_mmbr_abook(num,mmbr)
 
   var posx_check  = 8;
   var posx_invite = posx_check       + width + 16;
-  var posx_status = posx_invite      + width + 16;
-  var posx_name   = posx_status      + width + 10;
+  var posx_status = posx_invite      + width;
+  var posx_name   = posx_status      + 38;
   var free        = panel_width      - posx_name - SCROLLER_WIDTH;
   var width_name  = free/2 - 16 - 8;
   var width_ip    = free/2 - 8;
@@ -875,13 +876,13 @@ function format_mmbr_abook(num,mmbr)
   if(width_name<10){my_alert('Exception: maybe screen resolution too low?'); if(width_name<1)width_name=1;}
 
   var dpre="<div style='width:0px;height:0px;position:relative;top:0px;left:";
-  s+=dpre+posx_check+"px'><div style='width:"+width+"px;height:"+height+"px'>"+check+"</div></div>";
-  s+=dpre+posx_invite+"px'><div style='width:"+width+"px;height:"+height+"px'>"+invite+"</div></div>";
-  s+=dpre+(posx_status-8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+ping_icon+"</div></div>";
-  s+=dpre+(posx_status+8)+"px'><div style='width:"+width+"px;height:"+height+"px'>"+reg_icon+"</div></div>";
+  s+=dpre+posx_check+"px'>"+check+"</div>";
+  s+=dpre+posx_invite+"px'>"+invite+"</div>";
+  s+=dpre+(posx_status+2)+"px'>"+ping_icon+"</div>";
+  s+=dpre+(posx_status+20)+"px'>"+reg_icon+"</div>";
   s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'><nobr>"+name+"</nobr></div></div>";
   s+=dpre+posx_ip+"px'><div style='overflow:hidden;color:#576;font-size:10px;"+ip_decor+"width:"+width_ip+"px;'>"+ip+"</div></div>";
-  s+=dpre+posx_abook+"px'><div style='width:"+width+"px;height:"+height+"px'>"+save_icon+"</div></div>";
+  s+=dpre+posx_abook+"px'>"+save_icon+"</div>";
 
   s+='</div>';
   return s;

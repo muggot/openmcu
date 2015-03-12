@@ -773,10 +773,8 @@ void Registrar::BookThread(PThread &, INT)
         if(raccount->keep_alive_time_response > raccount->keep_alive_time_request-PTimeInterval(raccount->keep_alive_interval*1000-2000))
           ab->ping_state = 1;
         else
-        {
           ab->ping_state = 2;
-          ab->ping_info = raccount->keep_alive_time_response.AsString("hh:mm:ss dd.MM.yyyy");
-        }
+        ab->ping_info = raccount->keep_alive_time_response.AsString("hh:mm:ss dd.MM.yyyy");
       }
 
       if(ab->AsJsArray() != oldab.AsJsArray())
