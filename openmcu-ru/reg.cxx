@@ -740,7 +740,11 @@ void Registrar::BookThread(PThread &, INT)
       ab->host = raccount->host;
       ab->port = raccount->port;
       ab->transport = raccount->transport;
-      ab->display_name = raccount->display_name;
+      if(raccount->display_name_saved != "")
+        ab->display_name = raccount->display_name_saved;
+      else
+        ab->display_name = raccount->display_name;
+      ab->remote_application = raccount->remote_application;
       ab->SendRoomControl();
 
       long id = abookList.GetNextID();
@@ -770,7 +774,10 @@ void Registrar::BookThread(PThread &, INT)
       ab->host = raccount->host;
       ab->port = raccount->port;
       ab->transport = raccount->transport;
-      ab->display_name = raccount->display_name;
+      if(raccount->display_name_saved != "")
+        ab->display_name = raccount->display_name_saved;
+      else
+        ab->display_name = raccount->display_name;
       ab->remote_application = raccount->remote_application;
       ab->reg_state = 0;
       ab->reg_info = "";
@@ -1101,31 +1108,22 @@ void Registrar::InitAccounts()
   for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
   {
     RegistrarAccount *raccount = *it;
-    if(raccount->account_type == ACCOUNT_TYPE_SIP)
+    PString section;
+    if(raccount->account_type == ACCOUNT_TYPE_H323)
+      section = h323SectionPrefix+raccount->username;
+    else if(raccount->account_type == ACCOUNT_TYPE_RTSP)
+      section = rtspSectionPrefix+raccount->username;
+    else if(raccount->account_type == ACCOUNT_TYPE_SIP)
+      section = sipSectionPrefix+raccount->username;
+
+    if(MCUConfig::HasSection(section))
+      raccount->is_saved_account = TRUE;
+    else
     {
-      PString section = sipSectionPrefix+raccount->username;
-      if(MCUConfig::HasSection(section))
-        raccount->is_saved_account = TRUE;
-      else
-        raccount->is_saved_account = FALSE;
-      if(!raccount->is_saved_account && !sip_allow_unauth_reg)
+      raccount->is_saved_account = FALSE;
+      raccount->display_name_saved = "";
+      if((raccount->account_type == ACCOUNT_TYPE_SIP && !sip_allow_unauth_reg) || (raccount->account_type == ACCOUNT_TYPE_H323 && !h323_allow_unauth_reg))
         raccount->registered = FALSE;
-    }
-    else if(raccount->account_type == ACCOUNT_TYPE_H323)
-    {
-      PString section = h323SectionPrefix+raccount->username;
-      if(MCUConfig::HasSection(section))
-        raccount->is_saved_account = TRUE;
-      else
-        raccount->is_saved_account = FALSE;
-      if(!raccount->is_saved_account && !h323_allow_unauth_reg)
-        raccount->registered = FALSE;
-    }
-    else if(raccount->account_type == ACCOUNT_TYPE_H323)
-    {
-      PString section = rtspSectionPrefix+raccount->username;
-      if(!MCUConfig::HasSection(section))
-        raccount->is_saved_account = FALSE;
     }
   }
 
@@ -1173,7 +1171,7 @@ void Registrar::InitAccounts()
     raccount->transport = scfg.GetString(TransportKey);
     raccount->domain = registrar_domain;
     raccount->password = scfg.GetString(PasswordKey);
-    raccount->display_name = scfg.GetString(DisplayNameKey);
+    raccount->display_name_saved = scfg.GetString(DisplayNameKey);
     if(account_type == ACCOUNT_TYPE_SIP)
     {
       raccount->keep_alive_interval = scfg.GetString(PingIntervalKey).AsInteger();

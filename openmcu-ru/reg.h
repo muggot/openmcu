@@ -136,6 +136,7 @@ class RegistrarAccount
     }
 
     PString display_name;
+    PString display_name_saved;
     PString username;
     PString host;
     PString domain;

@@ -33,8 +33,7 @@ int Registrar::OnReceivedSipRegister(const msg_t *msg)
     raccount->domain = url.GetDomainName();
     raccount->port = atoi(url.GetPort());
     raccount->transport = url.GetTransport();
-    if(raccount->display_name == "")
-      raccount->display_name = url.GetDisplayName();
+    raccount->display_name = url.GetDisplayName();
     raccount->remote_application = url.GetRemoteApplication();
     // save register message
     raccount->SetRegisterMsg(msg);
@@ -193,8 +192,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     raccount_in->domain = url.GetDomainName();
     raccount_in->port = atoi(url.GetPort());
     raccount_in->transport = url.GetTransport();
-    if(raccount_in->display_name == "")
-      raccount_in->display_name = url.GetDisplayName();
+    raccount_in->display_name = url.GetDisplayName();
     raccount_in->remote_application = url.GetRemoteApplication();
   }
 

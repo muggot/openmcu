@@ -73,8 +73,7 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
   {
     raccount_in->host = url.GetHostName();
     raccount_in->domain = raccount_in->host;
-    if(raccount_in->display_name == "")
-      raccount_in->display_name = url.GetDisplayName();
+    raccount_in->display_name = url.GetDisplayName();
     raccount_in->remote_application = conn->GetRemoteApplication();
   }
 
@@ -213,8 +212,7 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   raccount->domain = raccount->host;
   if(port != 0)
     raccount->port = port;
-  if(raccount->display_name == "")
-    raccount->display_name = display_name;
+  raccount->display_name = display_name;
   raccount->remote_application = remote_application;
   raccount->h323id = h323id;
 
