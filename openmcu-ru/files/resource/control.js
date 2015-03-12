@@ -775,8 +775,11 @@ function format_mmbr_button(m,st)
 
   // states
   reg_state = 0;
+  reg_info = "";
   conn_state = 0;
+  conn_info = "";
   ping_state = 0;
+  ping_info = "";
   for(var i=0;i<addressbook.length;i++)
   {
     //if(addressbook[i][2]==m[2])
@@ -784,21 +787,25 @@ function format_mmbr_button(m,st)
     if(nameid==m[8])
     {
       reg_state = addressbook[i][5];
+      reg_info = window.l_name_registered+": "+addressbook[i][6];
       conn_state = addressbook[i][7];
+      conn_info = window.l_name_connected+": "+addressbook[i][8];
       ping_state = addressbook[i][9];
+      ping_info = window.l_name_last_ping_response+": "+addressbook[i][10];
       break;
     }
   }
   reg_icon = "";
-  if(reg_state == 1)       reg_icon = "<img src='i16_status_gray.png' width='16' height='16'>";
-  else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' width='16' height='16'>";
+  st_style = "style='width:16px;height:16px;cursor:help'";
+  if(reg_state == 1)       reg_icon = "<img src='i16_status_gray.png' title='"+reg_info+"' "+st_style+">";
+  else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' title='"+reg_info+"' "+st_style+">";
   conn_icon = "";
-  if(conn_state == 1)      conn_icon = "<img src='i16_status_blue.png' width='16' height='16'>";
-  else if(conn_state == 2) conn_icon = "<img src='i16_status_red.png' width='16' height='16'>";
-  else if(reg_state != 0)  conn_icon = "<img src='i16_status_gray.png' width='16' height='16'>";
+  if(conn_state == 1)      conn_icon = "<img src='i16_status_blue.png' title='"+conn_info+"' "+st_style+">";
+  else if(conn_state == 2) conn_icon = "<img src='i16_status_red.png' title='"+conn_info+"' "+st_style+">";
+  else if(reg_state != 0)  conn_icon = "<img src='i16_status_gray.png' title='"+conn_info+"' "+st_style+">";
   ping_icon = "";
-  if(ping_state == 1)      ping_icon = "<img src='i16_status_green.png' width='16' height='16'>";
-  else if(ping_state == 2) ping_icon = "<img src='i16_status_red.png' width='16' height='16'>";
+  if(ping_state == 1)      ping_icon = "<img src='i16_status_green.png' title='"+ping_info+"' "+st_style+">";
+  else if(ping_state == 2) ping_icon = "<img src='i16_status_red.png' title='"+ping_info+"' "+st_style+">";
   //
 
   mute1  ="<div id='mrpanb1_"+id+"' style='border:1px red "+((!st||m[9]&1)?"none":"solid")+";'><div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",1)' class='mutespr3"+((m[3]&1)?"0":"1")+"' title='"+((m[3]&1)?"Unmute":"Mute")+"' id='mrpan_" +id+"'></div></div>";
@@ -866,17 +873,17 @@ function format_mmbr_abook(num,mmbr)
   var is_saved_account = mmbr[12];
   var remote_application = mmbr[4];
   var reg_state = mmbr[5]; // 1=unregistered, 2=registered
-  var reg_info = mmbr[6];
+  var reg_info = window.l_name_registered+": "+mmbr[6];
   var conn_state = mmbr[7]; // 1=wait, 2=busy
-  var conn_info = mmbr[8];
+  var conn_info = window.l_name_connected+": "+mmbr[8];
   var ping_state = mmbr[9]; // 0=disable, 1=online, 2=offline
-  var ping_info = mmbr[10];
+  var ping_info = window.l_name_last_ping_response+": "+mmbr[10];
 
   var info = "";
   if(remote_application != "") { info += remote_application; }
-  if(reg_info != "") { if(info != "") info += "&#10;"; info += window.l_name_registered+": "+reg_info; }
-  if(conn_info != "") { if(info != "") info += "&#10;"; info += window.l_name_connected+": "+conn_info; }
-  if(ping_info != "") { if(info != "") info += "&#10;"; info += window.l_name_last_ping_response+": "+ping_info; }
+  if(reg_info != "") { if(info != "") info += "&#10;"; info += reg_info; }
+  if(conn_info != "") { if(info != "") info += "&#10;"; info += conn_info; }
+  if(ping_info != "") { if(info != "") info += "&#10;"; info += ping_info; }
 
   var s=
     "<div title='"+info+"' "+
@@ -888,6 +895,7 @@ function format_mmbr_abook(num,mmbr)
   var name=get_addr_name(uname);
   var ip=get_addr_url_without_param(uname);
 
+  st_style = "style='width:16px;height:16px;cursor:help'";
   var invite = "", check = "";
   if(conn_state == 0)
   {
@@ -898,16 +906,16 @@ function format_mmbr_abook(num,mmbr)
     check="<input id='abook_check_"+mmbr[1]+"' onclick='on_abook_check(this)' type='checkbox' "+checked+" width="+width+" height="+height+" style='margin:2px;'>";
     invite="<img id='abook_inv_"+mmbr[1]+"' onclick='inviteoffline(this,\""+encodeURIComponent(mmbr[2])+"\",1)' style='cursor:pointer' src='i15_inv.gif' width='15' height='15' alt='Invite'>";
   }
-  else if(conn_state == 1) invite = "<img src='i16_status_blue.png' width='"+width+"' height='"+height+"'>";
-  else if(conn_state == 2) invite = "<img src='i16_status_red.png' width='"+width+"' height='"+height+"'>";
+  else if(conn_state == 1) invite = "<img src='i16_status_blue.png' title='"+conn_info+"' "+st_style+">";
+  else if(conn_state == 2) invite = "<img src='i16_status_red.png' title='"+conn_info+"' "+st_style+">";
 
   var ping_icon = "";
-  if(ping_state == 1)      ping_icon = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
-  else if(ping_state == 2) ping_icon = "<img src='i16_status_red.png' width='"+width+"' height='"+height+"'>";
+  if(ping_state == 1)      ping_icon = "<img src='i16_status_green.png' title='"+ping_info+"' "+st_style+">";
+  else if(ping_state == 2) ping_icon = "<img src='i16_status_red.png' title='"+ping_info+"' "+st_style+">";
 
   var reg_icon = "";
-  if(reg_state == 1)       reg_icon = "<img src='i16_status_gray.png' width='"+width+"' height='"+height+"'>";
-  else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' width='"+width+"' height='"+height+"'>";
+  if(reg_state == 1)       reg_icon = "<img src='i16_status_gray.png' title='"+reg_info+"' "+st_style+">";
+  else if(reg_state == 2)  reg_icon = "<img src='i16_status_green.png' title='"+reg_info+"' "+st_style+">";
 
   var save_icon = "";
   if(!is_abook)
