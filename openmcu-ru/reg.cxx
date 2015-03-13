@@ -844,12 +844,25 @@ void Registrar::AliveThread(PThread &, INT)
     for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
     {
       RegistrarAccount *raccount = *it;
-      if(raccount->account_type != ACCOUNT_TYPE_SIP)
-        continue;
       if(raccount->keep_alive_enable && now > raccount->keep_alive_time_request+PTimeInterval(raccount->keep_alive_interval*1000))
       {
-        raccount->keep_alive_time_request = now;
-        SipSendPing(raccount);
+        if(raccount->account_type == ACCOUNT_TYPE_H323)
+        {
+          raccount->keep_alive_time_request = PTime();
+          if(raccount->host == "" || raccount->port == 0)
+            continue;
+          H323TransportTCP transport(OpenMCU::Current().GetEndpoint());
+          if(!transport.SetRemoteAddress(raccount->host+":"+PString(raccount->port)))
+            continue;
+          PBYTEArray rawData;
+          if(transport.Connect() && transport.WritePDU(rawData))
+            raccount->keep_alive_time_response = raccount->keep_alive_time_request;
+        }
+        else if(raccount->account_type == ACCOUNT_TYPE_SIP)
+        {
+          raccount->keep_alive_time_request = now;
+          SipSendPing(raccount);
+        }
       }
     }
   }

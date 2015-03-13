@@ -814,6 +814,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString(RoomNameKey);
   optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(PasswordKey);
+  optionNames.AppendString(PingIntervalKey);
   optionNames.AppendString("H.323 call processing");
 
   optionNames.AppendString(HostKey);
@@ -915,6 +916,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += rowArray+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
       s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", "direct"), "full,direct")+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
@@ -926,6 +928,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
+      s2 += rowArray+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey), PingIntervalSelect)+"</tr>";
       s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
@@ -1104,7 +1107,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString(RoomNameKey);
   optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(PasswordKey);
-  optionNames.AppendString("Ping interval");
+  optionNames.AppendString(PingIntervalKey);
   optionNames.AppendString("SIP call processing");
 
   optionNames.AppendString(HostKey);
@@ -1215,7 +1218,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
       s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+JsLocal("ping_options_interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
+      s2 += rowArray+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
       s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
@@ -1226,7 +1229,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
       s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
-      s2 += rowArray+JsLocal("ping_options_interval")+SelectItem(name, scfg.GetString(PingIntervalKey), ","+PingIntervalSelect)+"</tr>";
+      s2 += rowArray+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey), ","+PingIntervalSelect)+"</tr>";
       s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
