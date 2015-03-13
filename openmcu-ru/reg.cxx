@@ -1106,20 +1106,24 @@ void Registrar::InitAccounts()
   for(MCURegistrarAccountList::shared_iterator it = accountList.begin(); it != accountList.end(); ++it)
   {
     RegistrarAccount *raccount = *it;
-    PString section;
+    PString sectionPrefix;
     if(raccount->account_type == ACCOUNT_TYPE_H323)
-      section = h323SectionPrefix+raccount->username;
+      sectionPrefix = h323SectionPrefix;
     else if(raccount->account_type == ACCOUNT_TYPE_RTSP)
-      section = rtspSectionPrefix+raccount->username;
+      sectionPrefix = rtspSectionPrefix;
     else if(raccount->account_type == ACCOUNT_TYPE_SIP)
-      section = sipSectionPrefix+raccount->username;
+      sectionPrefix = sipSectionPrefix;
 
-    if(MCUConfig::HasSection(section))
+    if(MCUConfig::HasSection(sectionPrefix+raccount->username))
       raccount->is_saved_account = TRUE;
     else
     {
       raccount->is_saved_account = FALSE;
       raccount->display_name_saved = "";
+      raccount->password = "";
+      raccount->sip_call_processing = MCUConfig(sectionPrefix+"*").GetString("SIP call processing", "redirect");
+      raccount->h323_call_processing = MCUConfig(sectionPrefix+"*").GetString("H.323 call processing", "direct");
+      raccount->keep_alive_enable = FALSE;
       if((raccount->account_type == ACCOUNT_TYPE_SIP && !sip_allow_unauth_reg) || (raccount->account_type == ACCOUNT_TYPE_H323 && !h323_allow_unauth_reg))
         raccount->registered = FALSE;
     }
@@ -1170,33 +1174,25 @@ void Registrar::InitAccounts()
     raccount->domain = registrar_domain;
     raccount->password = scfg.GetString(PasswordKey);
     raccount->display_name_saved = scfg.GetString(DisplayNameKey);
-    if(account_type == ACCOUNT_TYPE_SIP)
-    {
-      raccount->keep_alive_interval = scfg.GetString(PingIntervalKey).AsInteger();
-      if(raccount->keep_alive_interval == 0)
-        raccount->keep_alive_interval = gcfg.GetString(PingIntervalKey).AsInteger();
-      if(raccount->keep_alive_interval != 0)
-        raccount->keep_alive_enable = TRUE;
-      else
-        raccount->keep_alive_enable = FALSE;
-
-      PString sip_call_processing = scfg.GetString("SIP call processing");
-      if(sip_call_processing == "")
-        sip_call_processing = gcfg.GetString("SIP call processing", "redirect");
-      raccount->sip_call_processing = sip_call_processing;
-    }
-    else if(account_type == ACCOUNT_TYPE_H323)
-    {
-      PString h323_call_processing = scfg.GetString("H.323 call processing");
-      if(h323_call_processing == "")
-        h323_call_processing = gcfg.GetString("H.323 call processing", "direct");
-      raccount->h323_call_processing = h323_call_processing;
-
+    // keep alive
+    raccount->keep_alive_interval = scfg.GetString(PingIntervalKey).AsInteger();
+    if(raccount->keep_alive_interval == 0)
+      raccount->keep_alive_interval = gcfg.GetString(PingIntervalKey).AsInteger();
+    if(raccount->keep_alive_interval != 0)
+      raccount->keep_alive_enable = TRUE;
+    else
+      raccount->keep_alive_enable = FALSE;
+    // sip call processing
+    raccount->sip_call_processing = scfg.GetString("SIP call processing");
+    if(raccount->sip_call_processing == "")
+      raccount->sip_call_processing = gcfg.GetString("SIP call processing", "redirect");
+    // h323 call processing
+    raccount->h323_call_processing = scfg.GetString("H.323 call processing");
+    if(raccount->h323_call_processing == "")
+      raccount->h323_call_processing = gcfg.GetString("H.323 call processing", "direct");
+    // password
+    if(account_type == ACCOUNT_TYPE_H323)
       h323Passwords.Insert(PString(username), new PString(raccount->password));
-    }
-    else if(account_type == ACCOUNT_TYPE_RTSP)
-    {
-    }
     raccount->Unlock();
   }
   // set gatekeeper parameters
