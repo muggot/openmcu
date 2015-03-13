@@ -632,20 +632,17 @@ BOOL MCUSipConnection::DetermineNAT()
 
 BOOL MCUSipConnection::CreateDefaultRTPSessions()
 {
+  // local ip
+  if(DetermineLocalIp() == FALSE)
+    return FALSE;
+
   // NAT
   if(DetermineNAT() == FALSE)
     return FALSE;
 
   // if empty nat_ip set as local_ip
   if(nat_ip == "")
-  {
-    // local ip
-    if(DetermineLocalIp() == FALSE)
-      return FALSE;
     nat_ip = local_ip;
-  }
-  else
-    local_ip = nat_ip;
 
   MCUSIP_RTP_UDP *session = NULL;
 
@@ -677,7 +674,7 @@ MCUSIP_RTP_UDP *MCUSipConnection::CreateRTPSession(MediaTypes media)
     // add session to RTP_SessionManager()
     rtpSessions.AddSession(session);
 
-    PIPSocket::Address localIP(nat_ip);
+    PIPSocket::Address localIP(local_ip);
     session->Open(localIP, ep.GetRtpIpPortBase(), ep.GetRtpIpPortMax(), ep.GetRtpIpTypeofService(), *this, (PNatMethod *)stun, NULL);
 
     if(media == MEDIA_TYPE_AUDIO)
