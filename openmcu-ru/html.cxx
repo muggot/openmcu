@@ -815,7 +815,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString(RoomNameKey);
   optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(PasswordKey);
-  optionNames.AppendString("Ping interval");
+  optionNames.AppendString(PingIntervalKey);
   optionNames.AppendString("H.323 call processing");
 
   optionNames.AppendString(HostKey);
@@ -1108,7 +1108,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString(RoomNameKey);
   optionNames.AppendString(DisplayNameKey);
   optionNames.AppendString(PasswordKey);
-  optionNames.AppendString("Ping interval");
+  optionNames.AppendString(PingIntervalKey);
   optionNames.AppendString("SIP call processing");
 
   optionNames.AppendString(HostKey);
