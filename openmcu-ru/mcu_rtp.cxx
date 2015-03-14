@@ -732,6 +732,9 @@ MCU_RTP_UDP::MCU_RTP_UDP(
       id, remoteIsNat
                          )
 {
+  ignoreOtherSources = TRUE;
+  ignoreOutOfOrderPackets = TRUE;
+
   freezeRead = false;
 
   rtpcReceived = 0;
