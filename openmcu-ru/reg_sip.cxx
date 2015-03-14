@@ -95,7 +95,7 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
   RegistrarAccount *raccount_out = NULL;
   RegistrarConnection *rconn = NULL;
 
-  rconn = FindRegConnUsernameWithLock(username_in);
+  rconn = FindRegConnWithLock(ACCOUNT_TYPE_SIP, username_in);
   if(rconn && rconn->state == CONN_MCU_ESTABLISHED)
   {
     MCUH323Connection *conn = ep->FindConnectionWithLock(rconn->callToken_in);

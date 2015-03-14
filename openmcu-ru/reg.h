@@ -671,9 +671,9 @@ class Registrar : public PThread
 
     RegistrarConnection * InsertRegConnWithLock(const PString & callToken, const PString & username_in, const PString & username_out);
     RegistrarConnection * FindRegConnWithLock(const PString & callToken);
-    RegistrarConnection * FindRegConnUsernameWithLock(const PString & username);
+    RegistrarConnection * FindRegConnWithLock(RegAccountTypes account_type, const PString & username);
     bool HasRegConn(const PString & callToken);
-    bool HasRegConnUsername(const PString & username);
+    bool HasRegConn(RegAccountTypes account_type, const PString & username);
 
     PDECLARE_NOTIFIER(PThread, Registrar, AccountThread);
     PThread * accountThread;
