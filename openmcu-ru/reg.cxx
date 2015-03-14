@@ -246,14 +246,13 @@ RegistrarConnection * Registrar::FindRegConnWithLock(const PString & callToken)
   return NULL;
 }
 
-RegistrarConnection * Registrar::FindRegConnUsernameWithLock(const PString & username)
+RegistrarConnection * Registrar::FindRegConnWithLock(RegAccountTypes account_type, const PString & username)
 {
   for(MCURegistrarConnectionList::shared_iterator it = connectionList.begin(); it != connectionList.end(); ++it)
   {
-    if(it->username_in == username || it->username_out == username)
-    {
+    if((it->account_type_in == account_type && it->username_in == username) ||
+       (it->account_type_out == account_type && it->username_out == username))
       return it.GetCapturedObject();
-    }
   }
   return NULL;
 }
@@ -266,11 +265,12 @@ bool Registrar::HasRegConn(const PString & callToken)
   return false;
 }
 
-bool Registrar::HasRegConnUsername(const PString & username)
+bool Registrar::HasRegConn(RegAccountTypes account_type, const PString & username)
 {
   for(MCURegistrarConnectionList::shared_iterator it = connectionList.begin(); it != connectionList.end(); ++it)
   {
-    if(it->username_in == username || it->username_out == username)
+    if((it->account_type_in == account_type && it->username_in == username) ||
+       (it->account_type_out == account_type && it->username_out == username))
       return true;
   }
   return false;
@@ -793,7 +793,7 @@ void Registrar::BookThread(PThread &, INT)
       if(ab->reg_state != 0 && raccount->start_time != PTime(0))
         ab->reg_info = raccount->start_time.AsString("hh:mm:ss dd.MM.yyyy");
 
-      RegistrarConnection *rconn = FindRegConnUsernameWithLock(raccount->username);
+      RegistrarConnection *rconn = FindRegConnWithLock(raccount->account_type, raccount->username);
       if(rconn)
       {
         if(rconn->state == CONN_WAIT || rconn->state == CONN_MCU_WAIT)
@@ -851,7 +851,7 @@ void Registrar::SubscriptionThread(PThread &, INT)
       if(raccount_out && raccount_out->registered)
       {
         state_new = SUB_STATE_OPEN;
-        if(HasRegConnUsername(raccount_out->username))
+        if(HasRegConn(raccount_out->account_type, raccount_out->username))
           state_new = SUB_STATE_BUSY;
       } else {
         state_new = SUB_STATE_CLOSED;
