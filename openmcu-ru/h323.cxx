@@ -4194,8 +4194,9 @@ MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _con
   : ConferenceMember(_conference), ep(OpenMCU::Current().GetEndpoint())
 {
   memberType = MEMBER_TYPE_CONN;
-  visible = TRUE;
   callToken = _callToken;
+  if(callToken != "")
+    visible = TRUE;
   isMCU = _isMCU;
   name = _memberName;
   nameID = MCUURL(name).GetMemberNameId();

@@ -222,13 +222,14 @@ class MCUSharedList
 
     // Erase возвращает false если объекта нет в списке или Erase выполняется другим потоком
     // Обязательно проверять результат выполнения перед удалением объекта!
-    // Erase(id) - перед Erase освободить(если захвачен)
+    // Erase(id/obj) - перед Erase освободить(если захвачен)
     bool Erase(long id);
-    // Erase(iterator)
+    bool Erase(const T_obj * obj);
     bool Erase(shared_iterator & it);
 
     // Release() - освободить объект
     void Release(long id);
+    void Release(const T_obj * obj);
     void Release(shared_iterator & it);
 
     // Find() возвращают захваченный объект
@@ -436,6 +437,19 @@ bool MCUSharedList<T_obj>::Erase(long id)
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 template <class T_obj>
+bool MCUSharedList<T_obj>::Erase(const T_obj *obj)
+{
+  long index = GetIndex(obj);
+  if(index == LONG_MAX)
+    return false;
+  bool erase = EraseInternal(index);
+  ReleaseInternal(index);
+  return erase;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T_obj>
 bool MCUSharedList<T_obj>::Erase(shared_iterator & it)
 {
   // итератор должен быть захвачен
@@ -506,6 +520,19 @@ void MCUSharedList<T_obj>::Release(long id)
   if(it != ids_end)
   {
     long index = it - ids;
+    ReleaseInternal(index);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+template <class T_obj>
+void MCUSharedList<T_obj>::Release(const T_obj *obj)
+{
+  T_obj **it = find(objs, objs_end, obj);
+  if(it != objs_end)
+  {
+    long index = it - objs;
     ReleaseInternal(index);
   }
 }

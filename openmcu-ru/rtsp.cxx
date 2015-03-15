@@ -772,7 +772,7 @@ BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
   sip_t *sip = sip_object(msg);
 
   JoinConference(requestedRoom);
-  if(!conference || !conferenceMember || !conferenceMember->IsJoined())
+  if(!conferenceMember || !conferenceMember->IsJoined())
     return FALSE;
 
   // start rtp channels
