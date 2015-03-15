@@ -2194,7 +2194,7 @@ PString MCUH323EndPoint::GetMonitorText()
       {
         output << hdr << "callToken: " << member->GetCallToken() << "\n";
       }
-      if(member->GetType() == MEMBER_TYPE_CACHE)
+      if(member->GetType() == MEMBER_TYPE_PIPE)
       {
         ConferencePipeMember * pipeMember = dynamic_cast<ConferencePipeMember *>(member);
         if(pipeMember!=NULL)
@@ -2203,7 +2203,7 @@ PString MCUH323EndPoint::GetMonitorText()
           output << hdr << "IsVisible: " << pipeMember->IsVisible() << "\n";
         }
       }
-      if(member->GetType() == MEMBER_TYPE_PIPE)
+      if(member->GetType() == MEMBER_TYPE_CACHE)
       {
         ConferenceCacheMember * cacheMember = dynamic_cast<ConferenceCacheMember *>(member);
         if(cacheMember!=NULL)
@@ -2211,9 +2211,6 @@ PString MCUH323EndPoint::GetMonitorText()
           output << hdr << "Format: " << cacheMember->GetMediaFormat() << "\n";
           output << hdr << "IsVisible: " << cacheMember->IsVisible() << "\n";
           output << hdr << "Status: " << (cacheMember->GetStatus()?"Awake":"Sleeping") << "\n";
-//#ifndef _WIN32
-//            if(fileMember->codec) output << hdr << "EncoderSeqN: " << dec << fileMember->codec->GetEncoderSeqN() << "\n";
-//#endif
         }
       }
       if(member->videoMixer!=NULL)
