@@ -563,11 +563,9 @@ void MCUSipConnection::CleanUpOnCallEnd()
   if(leg) nta_leg_destroy(leg);
   if(orq_invite) nta_outgoing_destroy(orq_invite);
   if(c_sip_msg) msg_destroy(c_sip_msg);
-  connMutex.Signal();
 
-  StopTransmitChannels();
-  StopReceiveChannels();
-  DeleteChannels();
+  connMutex.Signal();
+  DeleteMediaChannels();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -703,17 +701,19 @@ MCUSIP_RTP_UDP *MCUSipConnection::CreateRTPSession(SipCapability *sc)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
+BOOL MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
 {
-  if(pt < 0) return 0;
+  if(pt < 0) return TRUE;
   SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
-  if(!sc) return 0;
+  if(!sc) return FALSE;
 
   MCUCapability * cap = sc->cap;
-  if(!cap) return 0;
+  if(!cap) return FALSE;
 
   if(PIPSocket::Address(sc->remote_ip).IsValid() == FALSE || sc->remote_port == 0)
-    return 0;
+    return FALSE;
+
+  PTRACE(1, trace_section << "create " << ((rtp_dir == 0) ? "receive" : "transmit") << " channel " << pt);
 
   // При исходящем вызове payload случайный, терминал может указать в ответе другой payload.
   // Для исходящего потока использовать payload полученный от терминала, для входящего исходный payload.
@@ -729,7 +729,7 @@ int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
 
   MCUSIP_RTP_UDP *session = CreateRTPSession(sc);
   if(session == NULL)
-    return 0;
+    return FALSE;
 
   if(sc->secure_type == SECURE_TYPE_ZRTP)
   {
@@ -792,12 +792,12 @@ int MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
   else
     sc->outChan = channel;
 
-  return 0;
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::CreateLogicalChannels()
+void MCUSipConnection::CreateMediaChannels()
 {
   CreateMediaChannel(scap, 0);
   CreateMediaChannel(scap, 1);
@@ -807,7 +807,7 @@ void MCUSipConnection::CreateLogicalChannels()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::StartChannel(int pt, int dir)
+void MCUSipConnection::StartMediaChannel(int pt, int dir)
 {
   if(pt < 0) return;
   SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
@@ -819,66 +819,34 @@ void MCUSipConnection::StartChannel(int pt, int dir)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::StartReceiveChannels()
+void MCUSipConnection::StartMediaChannels()
 {
-  StartChannel(scap,0);
-  StartChannel(vcap,0);
+  StartMediaChannel(scap,0);
+  StartMediaChannel(scap,1);
+  StartMediaChannel(vcap,0);
+  StartMediaChannel(vcap,1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::StartTransmitChannels()
-{
-  StartChannel(scap,1);
-  StartChannel(vcap,1);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::StopChannel(int pt, int dir)
+void MCUSipConnection::DeleteMediaChannel(int pt, int dir)
 {
   if(pt < 0) return;
   SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
   if(!sc) return;
-  PTRACE(1, trace_section << "stop " << ((dir == 0) ? "receive" : "transmit") << " channel " << pt);
-  if(dir==0 && sc->inpChan) sc->inpChan->CleanUpOnTermination();
-  if(dir==1 && sc->outChan) sc->outChan->CleanUpOnTermination();
+  PTRACE(1, trace_section << "delete " << ((dir == 0) ? "receive" : "transmit") << " channel " << pt);
+  if(dir==0 && sc->inpChan) { sc->inpChan->CleanUpOnTermination(); delete sc->inpChan; sc->inpChan = NULL; }
+  if(dir==1 && sc->outChan) { sc->outChan->CleanUpOnTermination(); delete sc->outChan; sc->outChan = NULL; }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::StopTransmitChannels()
+void MCUSipConnection::DeleteMediaChannels()
 {
-  StopChannel(scap,1);
-  StopChannel(vcap,1);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::StopReceiveChannels()
-{
-  StopChannel(scap,0);
-  StopChannel(vcap,0);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::DeleteMediaChannels(int pt)
-{
-  if(pt < 0) return;
-  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
-  if(!sc) return;
-  PTRACE(1, trace_section << "delete media channels " << pt);
-  if(sc->inpChan) { delete sc->inpChan; sc->inpChan = NULL; }
-  if(sc->outChan) { delete sc->outChan; sc->outChan = NULL; }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUSipConnection::DeleteChannels()
-{
-  DeleteMediaChannels(scap);
-  DeleteMediaChannels(vcap);
+  DeleteMediaChannel(scap, 0);
+  DeleteMediaChannel(scap, 1);
+  DeleteMediaChannel(vcap, 0);
+  DeleteMediaChannel(vcap, 1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2026,7 +1994,7 @@ int MCUSipConnection::ProcessInvite(const msg_t *msg)
   if(direction == DIRECTION_INBOUND)
   {
     // create logical channels
-    CreateLogicalChannels();
+    CreateMediaChannels();
     // add to_tag in sip_to header
     // added here because CANCEL request does not contain to_tag
     if(!sip->sip_to->a_tag)
@@ -2040,10 +2008,9 @@ int MCUSipConnection::ProcessInvite(const msg_t *msg)
   else if(direction == DIRECTION_OUTBOUND)
   {
     // create logical channels
-    CreateLogicalChannels();
+    CreateMediaChannels();
     // for incoming connection start channels after ACK
-    StartReceiveChannels(); // start receive logical channels
-    StartTransmitChannels(); // start transmit logical channels
+    StartMediaChannels();
   }
 
   return 0;
@@ -2087,9 +2054,8 @@ int MCUSipConnection::ProcessReInvite(const msg_t *msg)
   }
   if(sflag && cur_scap >= 0)
   {
-    StopChannel(cur_scap,1);
-    StopChannel(cur_scap,0);
-    DeleteMediaChannels(cur_scap);
+    DeleteMediaChannel(cur_scap, 0);
+    DeleteMediaChannel(cur_scap, 1);
   }
 
   int vflag = 1; // 0 - no changes
@@ -2105,9 +2071,8 @@ int MCUSipConnection::ProcessReInvite(const msg_t *msg)
   }
   if(vflag && cur_vcap >= 0)
   {
-    StopChannel(cur_vcap,1);
-    StopChannel(cur_vcap,0);
-    DeleteMediaChannels(cur_vcap);
+    DeleteMediaChannel(cur_vcap, 0);
+    DeleteMediaChannel(cur_vcap, 1);
   }
 
   if(!sflag && !vflag) // nothing changed
@@ -2117,6 +2082,7 @@ int MCUSipConnection::ProcessReInvite(const msg_t *msg)
   }
 
   // update remote sip caps
+  ClearSipCaps(RemoteSipCaps);
   RemoteSipCaps = SipCaps;
 
   if(sflag && scap >= 0)
@@ -2148,8 +2114,7 @@ int MCUSipConnection::ProcessAck()
     return 0;
 
   // for incoming connection start channels after ACK
-  StartReceiveChannels(); // start receive logical channels
-  StartTransmitChannels(); // start transmit logical channels
+  StartMediaChannels();
 
   // is connected
   connectionState = EstablishedConnection;
