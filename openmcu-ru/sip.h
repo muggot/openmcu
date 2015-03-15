@@ -241,16 +241,12 @@ class MCUSipConnection : public MCUH323Connection
     void OnReceivedVFU();
     void OnReceivedDTMF(PString payload);
 
-    void StartTransmitChannels();
-    void StartReceiveChannels();
-    void StartChannel(int pt, int rtp_dir);
-    void StopChannel(int pt, int rtp_dir);
-    void StopTransmitChannels();
-    void StopReceiveChannels();
-    void DeleteMediaChannels(int pt);
-    void DeleteChannels();
-    void CreateLogicalChannels();
-    int CreateMediaChannel(int pt, int rtp_dir);
+    void StartMediaChannel(int pt, int rtp_dir);
+    void StartMediaChannels();
+    void DeleteMediaChannel(int pt, int rtp_dir);
+    void DeleteMediaChannels();
+    BOOL CreateMediaChannel(int pt, int rtp_dir);
+    void CreateMediaChannels();
     BOOL CreateDefaultRTPSessions();
     MCUSIP_RTP_UDP *CreateRTPSession(MediaTypes media);
     MCUSIP_RTP_UDP *CreateRTPSession(SipCapability *sc);

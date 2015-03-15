@@ -124,9 +124,7 @@ void MCURtspConnection::CleanUpOnCallEnd()
     delete listener;
   listener = NULL;
 
-  StopTransmitChannels();
-  StopReceiveChannels();
-  DeleteChannels();
+  DeleteMediaChannels();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -460,7 +458,8 @@ BOOL MCURtspConnection::OnResponsePlay(const msg_t *msg)
   // create and start channels
   CreateMediaChannel(scap, 0);
   CreateMediaChannel(vcap, 0);
-  StartReceiveChannels();
+  StartMediaChannel(scap, 0);
+  StartMediaChannel(vcap, 0);
 
   // is connected
   connectionState = EstablishedConnection;
@@ -779,7 +778,8 @@ BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
   // start rtp channels
   CreateMediaChannel(scap, 1);
   CreateMediaChannel(vcap, 1);
-  StartTransmitChannels();
+  StartMediaChannel(scap, 1);
+  StartMediaChannel(vcap, 1);
 
   // is connected
   connectionState = EstablishedConnection;
