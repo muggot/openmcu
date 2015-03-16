@@ -3879,8 +3879,9 @@ H323Capability * H323Capabilities::FindCapability(const H245_VideoCapability & v
    if(subType==5) //h.264 //vp8 only for openmcu.ru
    {
      {
-       PStringStream cap; cap << video; //vp8
-       if(cap.Find("standard 1.3.6.1.4.1.17091.1.9.1") != P_MAX_INDEX)
+       PStringStream cap_str; cap_str << video; //vp8
+       PINDEX fake_vp8 = cap_str.Find("capabilityIdentifier = standard 1.3.6.1.4.1.17091.1.9.");
+       if(fake_vp8 != P_MAX_INDEX)
        {
          int width = 0, height = 0;
          for(PINDEX i = 0; i < table.GetSize(); i++)
@@ -3888,14 +3889,32 @@ H323Capability * H323Capabilities::FindCapability(const H245_VideoCapability & v
            H323Capability & capability = table[i];
            if(capability.GetMainType() == H323Capability::e_Video && capability.GetFormatName().Find("VP8")==0)
            {
-             if(width == 0 && height == 0)
+             // new format
+             if(width == 0 || height == 0)
              {
-               H323GenericVideoCapability * cap = (H323GenericVideoCapability *) capability.Clone();
+               H323GenericVideoCapability * cap = (H323GenericVideoCapability *)capability.Clone();
                cap->OnReceivedPDU(video, (H323Capability::CommandType)0);
                const OpalMediaFormat & mf = cap->GetMediaFormat();
                width = mf.GetOptionInteger("Generic Parameter 1");
                height = mf.GetOptionInteger("Generic Parameter 2");
+               delete cap;
              }
+             // old format
+             if(width == 0 || height == 0)
+             {
+               PINDEX resolutionId = cap_str.Mid(fake_vp8+54,2).AsInteger();
+               if(     resolutionId ==  0) { width = 176;  height = 144; }  // "VP8-QCIF"
+               else if(resolutionId ==  1) { width = 352;  height = 288; }  // "VP8-CIF"
+               else if(resolutionId ==  2) { width = 704;  height = 576; }  // "VP8-4CIF"
+               else if(resolutionId == 10) { width = 852;  height = 480; }  // "VP8-480P"
+               else if(resolutionId == 11) { width = 1280; height = 720; }  // "VP8-720P"
+               else if(resolutionId == 12) { width = 1920; height = 1080; } // "VP8-1080P"
+               else if(resolutionId == 21) { width = 424;  height = 240; }  // "VP8-240P"
+               else if(resolutionId == 22) { width = 640;  height = 360; }  // "VP8-360P"
+               else if(resolutionId == 23) { width = 1364; height = 768; }  // "VP8-768P"
+             }
+             if(width == 0 || height == 0)
+               return NULL;
              const OpalMediaFormat & mf = capability.GetMediaFormat();
              int cap_width = mf.GetOptionInteger("Generic Parameter 1");
              int cap_height = mf.GetOptionInteger("Generic Parameter 2");
