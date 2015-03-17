@@ -980,7 +980,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString rv_codec = scfg.GetString("Video codec(receive)");
       PString tv_codec = scfg.GetString("Video codec(transmit)");
       // bak 13.06.2014, restore resolution from capability
-      if(SkipCapability(rv_codec))
+      if(SkipCapability(rv_codec, CONNECTION_TYPE_H323))
       {
         PString res;
         VideoResolutionRestore(rv_codec, res);
@@ -988,7 +988,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
         if(scfg.GetString("Video resolution(receive)") == "")
           scfg.SetString("Video resolution(receive)", res);
       }
-      if(SkipCapability(tv_codec))
+      if(SkipCapability(tv_codec, CONNECTION_TYPE_H323))
       {
         PString res;
         VideoResolutionRestore(tv_codec, res);

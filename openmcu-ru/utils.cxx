@@ -304,7 +304,7 @@ BOOL SkipCapability(const PString & formatName, MCUConnectionTypes connectionTyp
      ||(formatName.Find("H.263-") == 0 && CheckCapability("H.263"))
      ||(formatName.Find("H.263p-") == 0 && CheckCapability("H.263p"))
      ||(formatName.Find("H.264-") == 0 && CheckCapability("H.264"))
-     ||(formatName.Find("VP8-") == 0 && CheckCapability("VP8"))
+     ||(formatName.Find("VP8-") == 0 && CheckCapability("VP8") && connectionType != CONNECTION_TYPE_H323)
     )
   {
     return TRUE;
