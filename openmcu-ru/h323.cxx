@@ -571,7 +571,7 @@ void MCUH323EndPoint::InitialiseCapability()
   for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
   {
     if(MCUConfig("RECEIVE_VIDEO").GetBoolean(keys[i]) != 1) continue;
-    if(SkipCapability(keys[i])) continue;
+    if(SkipCapability(keys[i], CONNECTION_TYPE_H323)) continue;
     strcpy(buf, keys[i]);
     strcpy(&(listCaps[64*capsNum]),buf);
     rvCaps[j]=&(listCaps[64*capsNum]);
