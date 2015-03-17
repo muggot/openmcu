@@ -989,7 +989,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
         if(scfg.GetString("Video resolution(receive)") == "")
           scfg.SetString("Video resolution(receive)", res);
       }
-      if(SkipCapability(tv_codec, CONNECTION_TYPE_H323))
+      if(SkipCapability(tv_codec))
       {
         PString res;
         VideoResolutionRestore(tv_codec, res);
