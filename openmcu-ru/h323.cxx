@@ -571,7 +571,6 @@ void MCUH323EndPoint::InitialiseCapability()
   for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
   {
     if(MCUConfig("RECEIVE_VIDEO").GetBoolean(keys[i]) != 1) continue;
-    if(SkipCapability(keys[i], CONNECTION_TYPE_H323)) continue;
     strcpy(buf, keys[i]);
     strcpy(&(listCaps[64*capsNum]),buf);
     rvCaps[j]=&(listCaps[64*capsNum]);
@@ -582,7 +581,6 @@ void MCUH323EndPoint::InitialiseCapability()
   for(PINDEX i = 0, j = 0; i < keys.GetSize(); i++)
   {
     if(MCUConfig("TRANSMIT_VIDEO").GetBoolean(keys[i]) != 1) continue;
-    if(SkipCapability(keys[i], CONNECTION_TYPE_H323)) continue;
     strcpy(buf, keys[i]);
     strcpy(&(listCaps[64*capsNum]),buf);
     tvCaps[j]=&(listCaps[64*capsNum]);
@@ -2861,7 +2859,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
     }
     else if(localCapabilities[i].GetMainType() == MCUCapability::e_Video && video_cap != "")
     {
-      if(capname != video_cap)
+      if(GetPluginName(capname) != GetPluginName(video_cap))
       {
         localCapabilities.Remove(&localCapabilities[i]);
         continue;
