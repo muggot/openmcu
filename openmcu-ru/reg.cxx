@@ -471,16 +471,32 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
-    callToken = PGloballyUniqueID().AsString();
-    PString *cmd = new PString("invite:"+room+","+address+","+callToken);
-    regQueue.Push(cmd);
+    H323Transport * transport = NULL;
+    if(ep->GetGatekeeper())
+    {
+      PString gk_host = ep->GetGatekeeperHostName();
+      if(url.GetHostName() == "" || gk_host == url.GetHostName())
+      {
+        address = url.GetUserName();
+        PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << address);
+      }
+      else
+      {
+        H323TransportAddress taddr(url.GetHostName()+":"+url.GetPort());
+        transport = taddr.CreateTransport(*ep);
+        transport->SetRemoteAddress(taddr);
+      }
+    }
+    void *userData = new PString(room);
+    if(!ep->MakeCall(address, transport, callToken, userData))
+      callToken = "";
   }
   else if(account_type == ACCOUNT_TYPE_RTSP)
   {
     callToken = PGloballyUniqueID().AsString();
     MCURtspServer *rtsp = OpenMCU::Current().GetRtspServer();
     if(!rtsp->CreateConnection(room, address, callToken))
-      return FALSE;
+      callToken = "";
   }
 
   if(callToken != "")

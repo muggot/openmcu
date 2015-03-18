@@ -242,11 +242,21 @@ void Conference::LoadTemplate(PString tpl)
           PString memberAddress = MCUURL(memberInternalName).GetUrl();
 
           ConferenceMember *member = manager.FindMemberNameIDWithLock(this, memberInternalName);
+          if(!member)
+          {
+            member = new MCUConnection_ConferenceMember(this, memberInternalName, "");
+            if(!AddMemberToList(member))
+            {
+              delete member;
+              member = NULL;
+            }
+            member = manager.FindMemberNameIDWithLock(this, memberInternalName);
+          }
           if(member)
           {
             PStringArray maskAndGain = v[1].Tokenise("/");
             BOOL hasGainOptions = (maskAndGain.GetSize() > 1);
-            member->autoDial        = memberAutoDial;
+            member->SetAutoDial(memberAutoDial);
             if(hasGainOptions)
             {
               member->muteMask      = maskAndGain[0].AsInteger();
@@ -264,14 +274,9 @@ void Conference::LoadTemplate(PString tpl)
             OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
             member->Unlock();
           }
+          /*
           else
           {
-            member = new MCUConnection_ConferenceMember(this, memberInternalName, "");
-            if(!AddMemberToList(member))
-            {
-              delete member;
-              member = NULL;
-            }
             if(memberAutoDial) // finally: offline and have to be called
             {
               PString token;
@@ -280,6 +285,7 @@ void Conference::LoadTemplate(PString tpl)
               OpenMCU::Current().GetEndpoint().Invite(numberWithMixer, memberAddress);
             }
           }
+          */
           validatedMembers.AppendString(memberInternalName);
 
         } // else if(cmd=="MEMBER")
@@ -432,7 +438,7 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
       {
         PStringArray maskAndGain = v[1].Tokenise("/");
         BOOL hasGainOptions = (maskAndGain.GetSize() > 1);
-        member->autoDial     = (v[0] == "1");
+        member->SetAutoDial((v[0] == "1"));
         member->muteMask     = v[1].AsInteger();
         if(hasGainOptions)
         {

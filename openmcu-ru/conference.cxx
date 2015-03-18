@@ -384,6 +384,7 @@ void ConferenceManager::OnDestroyConference(Conference * conference)
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember * member = it.GetObject();
+    member->SetAutoDial(FALSE);
     member->Close();
   }
 
@@ -556,6 +557,20 @@ int ConferenceMonitor::Perform(Conference * conference)
       conference->StopRecorder();
     else if(autoRecordStart != "Disable" && autoRecordStart.AsInteger() > autoRecordStop.AsInteger() && visibleMembers >= autoRecordStart.AsInteger())
       conference->StartRecorder();
+  }
+
+  // autodial
+  MCUMemberList & memberList = conference->GetMemberList();
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  {
+    ConferenceMember *member = *it;
+    PWaitAndSignal m(member->GetAutoDialMutex());
+    if(!member->autoDial || member->IsSystem() || member->IsOnline())
+      continue;
+    MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+    if(member->autoDialToken != "" && ep.HasConnection(member->autoDialToken))
+      continue;
+    member->autoDialToken = ep.Invite(conference->GetNumber(), member->GetName());
   }
 
   return 0;
@@ -1257,6 +1272,23 @@ ConferenceMember::~ConferenceMember()
 void ConferenceMember::Unlock()
 {
   conference->GetMemberList().Release((long)GetID());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferenceMember::SetAutoDial(BOOL enable)
+{
+  PWaitAndSignal m(autoDialMutex);
+  if(!enable && autoDial && autoDialToken != "" && !IsOnline())
+  {
+    MCUH323Connection *conn = OpenMCU::Current().GetEndpoint().FindConnectionWithLock(autoDialToken);
+    if(conn)
+    {
+      conn->ClearCall();
+      conn->Unlock();
+    }
+  }
+  autoDial = enable;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

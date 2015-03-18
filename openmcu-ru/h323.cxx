@@ -2631,11 +2631,11 @@ void MCUH323Connection::CleanUpOnCallEnd()
 {
   PTRACE(2, trace_section << "CleanUpOnCallEnd");
 
-  if(conference && !conference->stopping)
-  {
-    PTRACE(4, trace_section << "Starting new thread which will check the connection later in template.cxx");
-    new TplCleanCheckThread(conference, remotePartyName, remotePartyAddress);
-  }
+//  if(conference && !conference->stopping)
+//  {
+//    PTRACE(4, trace_section << "Starting new thread which will check the connection later in template.cxx");
+//    new TplCleanCheckThread(conference, remotePartyName, remotePartyAddress);
+//  }
 
   H323Connection::CleanUpOnCallEnd();
 }

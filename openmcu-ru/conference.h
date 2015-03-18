@@ -341,7 +341,15 @@ class ConferenceMember : public PObject
       channelMask = 0;
     }
 
+    virtual void SetAutoDial(BOOL enable);
+
+    PMutex & GetAutoDialMutex()
+    { return autoDialMutex; }
+
     BOOL autoDial;
+    PString autoDialToken;
+    PMutex autoDialMutex;
+
     unsigned muteMask;
     unsigned channelMask;
     BOOL disableVAD;
