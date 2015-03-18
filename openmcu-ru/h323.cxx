@@ -2945,7 +2945,7 @@ void MCUH323Connection::OnSetLocalCapabilities()
           const OpalMediaFormat & mf = localCapabilities[i].GetMediaFormat();
           unsigned cap_width = mf.GetOptionInteger("Generic Parameter 1");
           unsigned cap_height = mf.GetOptionInteger("Generic Parameter 2");
-          if(width != cap_width && height != cap_height)
+          if(width != cap_width || height != cap_height)
           { localCapabilities.Remove(&localCapabilities[i]); continue; }
         }
       }
