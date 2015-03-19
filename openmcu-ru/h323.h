@@ -94,7 +94,7 @@ class MCUH323EndPoint : public H323EndPoint
     PString GetRoomStatusJS();
     PString GetRoomStatusJSStart();
     PString GetVideoMixerConfiguration(MCUVideoMixer * mixer, int number);
-    PString GetActiveMemberDataJS(ConferenceMember * member);
+    MCUJSON* GetActiveMemberDataJS(ConferenceMember * member);
     PString GetConferenceOptsJavascript(Conference & c);
     PString GetMemberListOptsJavascript(Conference & conference);
     PString GetAddressBookOptsJavascript();

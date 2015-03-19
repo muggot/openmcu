@@ -1236,51 +1236,43 @@ PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer, int n
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
+MCUJSON* MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
 {
-  if(!member) return "[]";
-  PStringStream r;
-  r
-/* 0*/  << "[" << member->IsOnline()                      // [i][ 0] = 1 : ONLINE
-/* 1*/  << ",\"" << dec << (long)member->GetID() << "\""  // [i][ 1] = long id
-/* 2*/  << "," << JsQuoteScreen(member->GetName())        // [i][ 2] = name [ip]
-/* 3*/  << "," << member->muteMask                        // [i][ 3] = mute
-/* 4*/  << "," << member->disableVAD                      // [i][ 4] = disable vad
-/* 5*/  << "," << member->chosenVan                       // [i][ 5] = chosen van
-/* 6*/  << "," << member->GetAudioLevel()                 // [i][ 6] = audiolevel (peak)
-/* 7*/  << "," << member->GetVideoMixerNumber()           // [i][ 7] = number of mixer member receiving
-/* 8*/  << "," << JsQuoteScreen(member->GetNameID())      // [i][ 8] = memberName id
-/* 9*/  << "," << member->channelMask                     // [i][ 9] = RTP channels checking bit mask 0000vVaA
-/*10*/  << "," << member->kManualGainDB                   // [i][10] = Audio level gain for manual tune, integer: -20..60
-/*11*/  << "," << member->kOutputGainDB                   // [i][11] = Output audio gain, integer: -20..60
-/*12*/  << "," << GetVideoMixerConfiguration(member->videoMixer, 0) // [i][12] = mixer configuration
-/*13*/  << "," << member->GetType()
-        << "]";
-  return r;
+  MCUJSON* a = new MCUJSON(MCUJSON::JSON_ARRAY);
+  if(!member) return a;
+  a->Insert(member->IsOnline()); //0: 1=online
+  a->Insert((long)member->GetID()); //1: long id
+  a->Insert(member->GetName()); //2: name [ip]
+  a->Insert(member->muteMask); //3: mute
+  a->Insert(member->disableVAD); //4
+  a->Insert(member->chosenVan); //5
+  a->Insert(member->GetAudioLevel()); //6: audio level
+  a->Insert(member->GetVideoMixerNumber()); //7: number of mixer member receiving
+  a->Insert(member->GetNameID()); //8: memberName id
+  a->Insert(member->channelMask); //9: RTP channels check bit mask 0000vVaA
+  a->Insert(member->kManualGainDB); //10: Audio level gain for manual tune, integer: -20..60
+  a->Insert(member->kOutputGainDB); //11: Output audio gain, integer: -20..60
+  a->Insert(GetVideoMixerConfiguration(member->videoMixer, 0)); //12: mixer configuration
+  a->Insert(member->GetType()); //13
+  a->Insert(member->autoDial); //14
+  return a;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
 {
-  PStringStream members;
-  members << "members=[";
-  BOOL firstMember = TRUE;
-
+  MCUJSON a(MCUJSON::JSON_ARRAY);
   MCUMemberList & memberList = conference.GetMemberList();
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember *member = *it;
     if(member->IsSystem())
       continue;
-    if(!firstMember)
-      members << ",";
-    firstMember = FALSE;
-    members << GetActiveMemberDataJS(member);
+    a.Insert(GetActiveMemberDataJS(member));
   }
 
-  members << "];";
-  return members;
+  return "members=" + a.AsString();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
