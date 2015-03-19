@@ -819,7 +819,11 @@ function format_mmbr_button(m,st)
   kdbo   ="<div "+b2style+" id='ogl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+",1);return false;}'>"+nice_db(m[11])+"</div>";
   mixerb ="<div "+b3style+" onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi'>#"+mixer+"</div>";
   levelb ="<div "+b4style+" class='"+((m[9]&16)?"mutespr30":"vlevel")+"' id='srpan_"+id+"'>&nbsp;</div>";
-  invite ="<img "+b1style+" onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i15_inv.gif' alt='Invite' title='"+window.l_invite+"'>";
+  var invite, autoDial=m[14], adspr="adspr"+(st?"1":"0")+(m[14]?"1":"0");
+  if(st)
+    invite = "<div class='"+adspr+"'></div>";
+  else
+    invite = "<img "+b1style+" onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i15_inv.gif' alt='Invite' title='"+window.l_invite+"'>";
   remove ="<img "+b1style+" onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i16_close_gray.png' alt='Remove' title='"+l_room_remove_from_list+"'>";
 
   s+=dpre+"2px'><div class='mmbrname' "+namestyle+">"+uname+"</div></div>";
@@ -837,7 +841,7 @@ function format_mmbr_button(m,st)
     s+=dpre+(width-4*bwidth)+"px'>"+vad+"</div>";
     if(st)
       s+=dpre+(width-3*bwidth)+"px'>"+hide+"</div>";
-    if(!st)
+//    if(!st)
       s+=dpre+(width-2*bwidth)+"px'>"+invite+"</div>";
   }
     s+=dpre2+(width-8*bwidth)+"px'>"+kdbo+"</div>";

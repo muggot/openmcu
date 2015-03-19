@@ -398,3 +398,9 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .mmbrname{vertical-align:-1px;overflow:hidden;}
 .mmbrip{vertical-align:-1px;overflow:hidden;}
 .mmbrmi{cursor:pointer;font-size:11px;border-radius:0px;text-align:center;background-color:#aaf;color:#505;overflow:hidden;width:34px}
+
+.adspr00  {width:16px;height:16px;background:url(s32_ch.png) -168px -104px;cursor:pointer}
+.adspr01  {width:16px;height:16px;background:url(s32_ch.png) -104px  -40px;cursor:pointer}
+.adspr10  {width:16px;height:16px;background:url(s32_ch.png) -198px -103px;cursor:pointer}
+.adspr11  {width:16px;height:16px;background:url(s32_ch.png)   -8px -136px;cursor:pointer}
+.adsprBusy{width:16px;height:16px;background:url(s32_ch.png) -232px -104px;cursor:pointer}
