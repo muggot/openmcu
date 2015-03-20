@@ -139,52 +139,23 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
   PString remote_application = info.rrq.m_endpointVendor.m_productId.AsString()+" "+
                                info.rrq.m_endpointVendor.m_versionId.AsString();
 
-  H225_AliasAddress *alias_username = NULL;
-  H225_AliasAddress *alias_display_name = NULL;
+  PString username;
+  PString display_name;
   if(info.rrq.HasOptionalField(H225_RegistrationRequest::e_terminalAlias))
   {
-    for(PINDEX i = 0; i < info.rrq.m_terminalAlias.GetSize(); i++)
-    {
-      if(!alias_username && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_dialedDigits) // E.164
-        alias_username = &info.rrq.m_terminalAlias[i];
-      if(!alias_display_name && info.rrq.m_terminalAlias[i].GetTag() == H225_AliasAddress::e_h323_ID)
-        alias_display_name = &info.rrq.m_terminalAlias[i];
-    }
-    if(!alias_username)
-    {
-      if(info.rrq.m_terminalAlias.GetSize() == 1)
-        alias_username = &info.rrq.m_terminalAlias[0];
-      else if(info.rrq.m_terminalAlias.GetSize() > 1)
-        alias_display_name = &info.rrq.m_terminalAlias[1];
-    }
-  }
-
-  PString username;
-  if(alias_username)
-  {
-    if(remote_application.Find("RealPresence") != P_MAX_INDEX && alias_username->GetTag() == H225_AliasAddress::e_h323_ID)
-      username = PWORDArrayToPString((const PASN_BMPString &)*alias_username);
-    else
-      username = H323GetAliasAddressString(*alias_username);
-
+    username = H323GetAliasUserName(info.rrq.m_terminalAlias);
+    display_name = H323GetAliasDisplayName(info.rrq.m_terminalAlias);
     if(remote_application.Find("MyPhone") != P_MAX_INDEX || remote_application.Find("Polycom ViaVideo Release 8.0") != P_MAX_INDEX)
+    {
       username = convert_ucs2_to_utf8(username);
-  }
-
-  PString display_name;
-  if(alias_display_name)
-  {
-    if(remote_application.Find("RealPresence") != P_MAX_INDEX && alias_username->GetTag() == H225_AliasAddress::e_h323_ID)
-      display_name = PWORDArrayToPString((const PASN_BMPString &)*alias_display_name);
-    else
-      display_name = H323GetAliasAddressString(*alias_display_name);
-
-    if(remote_application.Find("MyPhone") != P_MAX_INDEX || remote_application.Find("Polycom ViaVideo Release 8.0") != P_MAX_INDEX)
       display_name = convert_ucs2_to_utf8(display_name);
+    }
+    if(remote_application.Find("RealPresence") != P_MAX_INDEX)
+    {
+      username = PWORDArrayToPString(username.AsUCS2());
+      display_name = PWORDArrayToPString(display_name.AsUCS2());
+    }
   }
-  else
-    display_name = username;
-
   if(username == "")
   {
     PTRACE(1, trace_section << "check already endpoint registered " << h323id);
@@ -310,20 +281,12 @@ PString RegistrarGk::GetAdmissionSrcUsername(H323GatekeeperARQ & info)
 {
   PWaitAndSignal m(mutex);
   PString username;
-  username = H323GetAliasAddressE164(info.arq.m_srcInfo);
-  if(username == "")
-  {
-    if(info.arq.m_srcInfo.GetSize() == 1)
-      username = H323GetAliasAddressString(info.arq.m_srcInfo[0]);
-    else if(info.arq.m_srcInfo.GetSize() > 1)
-      username = H323GetAliasAddressString(info.arq.m_srcInfo[1]);
-  }
+  username = H323GetAliasUserName(info.arq.m_srcInfo);
   // myphone BUG
   PINDEX pos = username.FindLast(" [");
   if(pos != P_MAX_INDEX) username = username.Left(pos);
   // remove host from alias
   username = username.Tokenise("@")[0];
-
   return username;
 }
 
@@ -334,16 +297,7 @@ PString RegistrarGk::GetAdmissionDstUsername(H323GatekeeperARQ & info)
   PWaitAndSignal m(mutex);
   PString username;
   if(info.arq.HasOptionalField(H225_AdmissionRequest::e_destinationInfo))
-  {
-    username = H323GetAliasAddressE164(info.arq.m_destinationInfo);
-    if(username == "")
-    {
-      if(info.arq.m_destinationInfo.GetSize() == 1)
-        username = H323GetAliasAddressString(info.arq.m_destinationInfo[0]);
-      else if(info.arq.m_destinationInfo.GetSize() > 1)
-        username = H323GetAliasAddressString(info.arq.m_destinationInfo[1]);
-    }
-  }
+    username = H323GetAliasUserName(info.arq.m_destinationInfo);
   return username;
 }
 
