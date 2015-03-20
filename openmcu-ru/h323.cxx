@@ -1236,7 +1236,7 @@ PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer, int n
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUJSON* MCUH323EndPoint::GetActiveMemberDataJS(ConferenceMember * member)
+MCUJSON* MCUH323EndPoint::GetMemberDataJS(ConferenceMember * member)
 {
   MCUJSON* a = new MCUJSON(MCUJSON::JSON_ARRAY);
   if(!member) return a;
@@ -1269,7 +1269,7 @@ PString MCUH323EndPoint::GetMemberListOptsJavascript(Conference & conference)
     ConferenceMember *member = *it;
     if(member->IsSystem())
       continue;
-    a.Insert(GetActiveMemberDataJS(member));
+    a.Insert(GetMemberDataJS(member));
   }
 
   return "members=" + a.AsString();
@@ -1871,6 +1871,15 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   ConferenceMember * member = *mit;
   PStringStream cmd;
 
+  if(action == OTFC_DIAL)
+  {
+    if(!member->IsOnline())
+      Invite(conference->GetNumber(), member->GetName());
+    member->SetAutoDial(!member->autoDial);
+    cmd << "dspr(" << (long)member->GetID() << ",'" << (member->IsOnline()?"1":"0") << (member->autoDial?"1":"0") << "')";
+    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
+    return TRUE;
+  }
   if(action == OTFC_SET_VMP_STATIC )
   {
     if(member->IsSystem())

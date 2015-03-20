@@ -36,6 +36,7 @@
 #define OTFC_REMOVE_VMP_MEMBER        26
 #define OTFC_INVITE                   32
 #define OTFC_REMOVE_OFFLINE_MEMBER    33
+#define OTFC_DIAL                     34
 #define OTFC_DROP_ALL_ACTIVE_MEMBERS  64
 #define OTFC_INVITE_ALL_INACT_MMBRS   65
 #define OTFC_REMOVE_ALL_INACT_MMBRS   66
@@ -94,7 +95,7 @@ class MCUH323EndPoint : public H323EndPoint
     PString GetRoomStatusJS();
     PString GetRoomStatusJSStart();
     PString GetVideoMixerConfiguration(MCUVideoMixer * mixer, int number);
-    MCUJSON* GetActiveMemberDataJS(ConferenceMember * member);
+    MCUJSON* GetMemberDataJS(ConferenceMember * member);
     PString GetConferenceOptsJavascript(Conference & c);
     PString GetMemberListOptsJavascript(Conference & conference);
     PString GetAddressBookOptsJavascript();

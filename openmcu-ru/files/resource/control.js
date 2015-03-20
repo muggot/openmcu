@@ -50,6 +50,7 @@ var OTFC_DELETE_TEMPLATE         = 25;
 var OTFC_REMOVE_VMP_MEMBER       = 26;
 var OTFC_INVITE                  = 32;
 var OTFC_REMOVE_OFFLINE_MEMBER   = 33;
+var OTFC_DIAL                    = 34;
 var OTFC_DROP_ALL_ACTIVE_MEMBERS = 64;
 var OTFC_INVITE_ALL_INACT_MMBRS  = 65;
 var OTFC_REMOVE_ALL_INACT_MMBRS  = 66;
@@ -819,11 +820,8 @@ function format_mmbr_button(m,st)
   kdbo   ="<div "+b2style+" id='ogl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+",1);return false;}'>"+nice_db(m[11])+"</div>";
   mixerb ="<div "+b3style+" onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi'>#"+mixer+"</div>";
   levelb ="<div "+b4style+" class='"+((m[9]&16)?"mutespr30":"vlevel")+"' id='srpan_"+id+"'>&nbsp;</div>";
-  var invite, autoDial=m[14], adspr="adspr"+(st?"1":"0")+(m[14]?"1":"0");
-  if(st)
-    invite = "<div class='"+adspr+"'></div>";
-  else
-    invite = "<img "+b1style+" onclick='inviteoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i15_inv.gif' alt='Invite' title='"+window.l_invite+"'>";
+  var autoDial=m[14], adspr="adspr"+(st?"1":"0")+(m[14]?"1":"0");
+  var invite = "<div onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='queue_otf_request(" + OTFC_DIAL + "," + id + ")' id='dial_"+id+"' class='"+adspr+"'></div>";
   remove ="<img "+b1style+" onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i16_close_gray.png' alt='Remove' title='"+l_room_remove_from_list+"'>";
 
   s+=dpre+"2px'><div class='mmbrname' "+namestyle+">"+uname+"</div></div>";
@@ -1287,7 +1285,7 @@ function get_addr_nameid(addr)
   return url.substring(0, url.indexOf('@'));
 }
 
-function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype)
+function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype,autoDial)
 {
   if(typeof members==='undefined') return alive();
   var j=members.length;
@@ -1320,7 +1318,7 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mi
   j=members.length;
   dmsg('l2='+j);
 
-  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype,chmask);
+  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype,autoDial);
   alive();
   members_refresh();
   top_panel();
@@ -1346,13 +1344,13 @@ function chmix(id,mx){
   alive();
 }
 
-function remmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype){
+function remmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype,autoDial){
   if(typeof members==='undefined') return alive();
   var found=0; var j=members.length;
   for(var i=j-1;i>=0;i--)
   if((members[i][2]==name)||(members[i][1]==id))
   if(found){ members.splice(i,1); j--; } else { found=1; j=i; }
-  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype);
+  members[j]=Array(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mixconf,mtype,autoDial);
   alive();
   members_refresh();
   top_panel();
@@ -2369,4 +2367,11 @@ function get_resizer(i)
   r+="&nbsp;<span id='ScaleTiming'>-</span>";
 
   return r;
+}
+
+function dspr(id,spr)
+{
+  var o=document.getElementById('dial_'+idid(id));
+  if(o)o.className='adspr'+spr;
+  alive();
 }

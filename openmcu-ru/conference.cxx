@@ -1329,6 +1329,7 @@ void ConferenceMember::SendRoomControl(int state)
        << "," << kOutputGainDB
        << ",[]"
        << "," << memberType
+       << "," << autoDial
        << ")";
   OpenMCU::Current().HttpWriteCmdRoom(msg, conference->GetNumber());
 }
