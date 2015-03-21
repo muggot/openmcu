@@ -185,6 +185,15 @@ PString convert_cp1251_to_utf8(PString str)
   PStringStream utf8;
   for(PINDEX i = 0; i < str.GetLength(); i++)
   {
+    // check utf8 А-Яа-Я
+    unsigned int n = (BYTE)str[i]*1000 + (BYTE)str[i+1];
+    if((n >= 208144 && n <= 208191) || (n >= 209128 && n <= 209143))
+    {
+      utf8 << str[i];
+      utf8 << str[++i];
+      continue;
+    }
+    //
     unsigned int charcode=(BYTE)str[i];
     if(charcode&128)
     {
