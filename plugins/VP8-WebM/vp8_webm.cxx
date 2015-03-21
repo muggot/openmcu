@@ -956,61 +956,63 @@ static unsigned int PayloadType                       = 0;
 #define VP8_MediaFmt                        "VP8"
 #define VP8_WIDTH                           "352"
 #define VP8_HEIGHT                          "288"
-#define VP8_TARGETBITRATE                   "64000"
 
-#define OpalPluginCodec_Identifer_VP8_QCIF  "1.3.6.1.4.1.17091.1.9.0"
 #define VP8_QCIF_MediaFmt                   "VP8-QCIF"
 #define VP8_QCIF_WIDTH                      "176"
 #define VP8_QCIF_HEIGHT                     "144"
-#define VP8_QCIF_TARGETBITRATE              "64000"
 
-#define OpalPluginCodec_Identifer_VP8_CIF   "1.3.6.1.4.1.17091.1.9.1"
 #define VP8_CIF_MediaFmt                    "VP8-CIF"
 #define VP8_CIF_WIDTH                       "352"
 #define VP8_CIF_HEIGHT                      "288"
-#define VP8_CIF_TARGETBITRATE               "64000"
 
-#define OpalPluginCodec_Identifer_VP8_4CIF  "1.3.6.1.4.1.17091.1.9.2"
 #define VP8_4CIF_MediaFmt                   "VP8-4CIF"
 #define VP8_4CIF_WIDTH                      "704"
 #define VP8_4CIF_HEIGHT                     "576"
-#define VP8_4CIF_TARGETBITRATE              "128000"
 
-#define OpalPluginCodec_Identifer_VP8_240P  "1.3.6.1.4.1.17091.1.9.21"
 #define VP8_240P_MediaFmt                   "VP8-240P"
 #define VP8_240P_WIDTH                      "424"
 #define VP8_240P_HEIGHT                     "240"
-#define VP8_240P_TARGETBITRATE              "60000"
 
-#define OpalPluginCodec_Identifer_VP8_360P  "1.3.6.1.4.1.17091.1.9.22"
 #define VP8_360P_MediaFmt                   "VP8-360P"
 #define VP8_360P_WIDTH                      "640"
 #define VP8_360P_HEIGHT                     "360"
-#define VP8_360P_TARGETBITRATE              "80000"
 
-#define OpalPluginCodec_Identifer_VP8_480P  "1.3.6.1.4.1.17091.1.9.10"
 #define VP8_480P_MediaFmt                   "VP8-480P"
 #define VP8_480P_WIDTH                      "852"
 #define VP8_480P_HEIGHT                     "480"
-#define VP8_480P_TARGETBITRATE              "128000"
 
-#define OpalPluginCodec_Identifer_VP8_720P  "1.3.6.1.4.1.17091.1.9.11"
 #define VP8_720P_MediaFmt                   "VP8-720P"
 #define VP8_720P_WIDTH                      "1280"
 #define VP8_720P_HEIGHT                     "720"
-#define VP8_720P_TARGETBITRATE              "256000"
 
-#define OpalPluginCodec_Identifer_VP8_768P  "1.3.6.1.4.1.17091.1.9.23"
 #define VP8_768P_MediaFmt                   "VP8-768P"
 #define VP8_768P_WIDTH                      "1364"
 #define VP8_768P_HEIGHT                     "768"
-#define VP8_768P_TARGETBITRATE              "200000"
 
-#define OpalPluginCodec_Identifer_VP8_1080P "1.3.6.1.4.1.17091.1.9.12"
 #define VP8_1080P_MediaFmt                  "VP8-1080P"
 #define VP8_1080P_WIDTH                     "1920"
 #define VP8_1080P_HEIGHT                    "1080"
-#define VP8_1080P_TARGETBITRATE             "512000"
+
+#define VP8_QVGA_MediaFmt                   "VP8-QVGA"
+#define VP8_QVGA_WIDTH                      "320"
+#define VP8_QVGA_HEIGHT                     "240"
+
+#define VP8_VGA_MediaFmt                    "VP8-VGA"
+#define VP8_VGA_WIDTH                       "640"
+#define VP8_VGA_HEIGHT                      "480"
+
+#define VP8_SVGA_MediaFmt                   "VP8-SVGA"
+#define VP8_SVGA_WIDTH                      "800"
+#define VP8_SVGA_HEIGHT                     "600"
+
+#define VP8_XGA_MediaFmt                    "VP8-XGA"
+#define VP8_XGA_WIDTH                       "1024"
+#define VP8_XGA_HEIGHT                      "768"
+
+#define VP8_SXGA_MediaFmt                   "VP8-SXGA"
+#define VP8_SXGA_WIDTH                      "1280"
+#define VP8_SXGA_HEIGHT                     "1024"
+
 
 #define VP8PLUGIN_CODEC(prefix) \
 static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323params[] = \
@@ -1021,7 +1023,7 @@ static const struct PluginCodec_H323GenericParameterDefinition prefix##_h323para
 }; \
 static struct PluginCodec_H323GenericCodecData prefix##_Cap = \
 { \
-  OpalPluginCodec_Identifer_##prefix, \
+  OpalPluginCodec_Identifer_VP8, \
   0, \
   2, \
   prefix##_h323params \
@@ -1051,19 +1053,6 @@ static struct PluginCodec_Option const prefix##_FrameHeight = \
   0,                                  /* H.245 generic capability code and bit mask */ \
   prefix##_HEIGHT,                    /* Minimum value */ \
   prefix##_HEIGHT                     /* Maximum value */ \
-}; \
-static struct PluginCodec_Option const prefix##_TargetBitRate = \
-{ \
-  PluginCodec_IntegerOption,          /* Option type */ \
-  "Target Bit Rate",                  /* User visible name */ \
-  false,                              /* User Read/Only flag */ \
-  PluginCodec_AlwaysMerge,            /* Merge mode */ \
-  prefix##_TARGETBITRATE,             /* Initial value */ \
-  NULL,                               /* FMTP option name */ \
-  NULL,                               /* FMTP default value */ \
-  0,                                  /* H.245 generic capability code and bit mask */ \
-  prefix##_TARGETBITRATE,             /* Minimum value */ \
-  prefix##_TARGETBITRATE              /* Maximum value */ \
 }; \
 static struct PluginCodec_Option const prefix##_EncodingThreads = \
 { \
@@ -1095,7 +1084,6 @@ static struct PluginCodec_Option const * prefix##_OptionTable[] = \
 { \
   &prefix##_FrameWidth, \
   &prefix##_FrameHeight, \
-  &prefix##_TargetBitRate, \
   &prefix##_EncodingCPUUsed, \
   &prefix##_EncodingThreads, \
   &MaxFR, \
@@ -1170,6 +1158,11 @@ VP8PLUGIN_CODEC(VP8_480P);
 VP8PLUGIN_CODEC(VP8_720P);
 VP8PLUGIN_CODEC(VP8_768P);
 VP8PLUGIN_CODEC(VP8_1080P);
+VP8PLUGIN_CODEC(VP8_QVGA);
+VP8PLUGIN_CODEC(VP8_VGA);
+VP8PLUGIN_CODEC(VP8_SVGA);
+VP8PLUGIN_CODEC(VP8_XGA);
+VP8PLUGIN_CODEC(VP8_SXGA);
 
 DECLARE_CONTROLS_TABLE(VP8EncoderRFC, VP8DecoderRFC);
 
@@ -1178,15 +1171,20 @@ DECLARE_CONTROLS_TABLE(VP8EncoderRFC, VP8DecoderRFC);
 static struct PluginCodec_Definition VP8CodecDefinition[] =
 {
   PLUGINCODEC_VIDEO_CODEC_CXX(VP8_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_QCIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_CIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_4CIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_240P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_360P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_480P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_720P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_768P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
-  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_1080P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_QCIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_CIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_4CIF_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_240P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_360P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_480P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_720P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_768P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_1080P_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_QVGA_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_VGA_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_SVGA_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_XGA_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
+//  PLUGINCODEC_VIDEO_CODEC_CXX(VP8_SXGA_MediaFormatInfo, VP8EncoderRFC, VP8DecoderRFC),
 //
 //  PLUGINCODEC_VIDEO_CODEC_CXX(VP8MediaFormatInfoRFC, VP8EncoderRFC, VP8DecoderRFC),
 };
