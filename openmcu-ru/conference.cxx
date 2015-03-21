@@ -1276,6 +1276,22 @@ void ConferenceMember::Unlock()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void ConferenceMember::Dial(BOOL _autoDial)
+{
+  if(IsSystem())
+    return;
+  PWaitAndSignal m(autoDialMutex);
+  autoDial = _autoDial;
+  if(autoDial || IsOnline())
+    return;
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+  if(autoDialToken != "" && ep.HasConnection(autoDialToken))
+    return;
+  autoDialToken = ep.Invite(conference->GetNumber(), GetName());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ConferenceMember::SetAutoDial(BOOL enable)
 {
   PWaitAndSignal m(autoDialMutex);

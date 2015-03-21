@@ -1910,9 +1910,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
 
   if(action == OTFC_DIAL)
   {
-    if(!member->IsOnline())
-      Invite(conference->GetNumber(), member->GetName());
-    member->SetAutoDial(!member->autoDial);
+    member->Dial(!member->autoDial);
     cmd << "dspr(" << (long)member->GetID() << ",'" << (member->IsOnline()?"1":"0") << (member->autoDial?"1":"0") << "')";
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
     return TRUE;
