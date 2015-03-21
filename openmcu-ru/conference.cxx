@@ -564,13 +564,13 @@ int ConferenceMonitor::Perform(Conference * conference)
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
     ConferenceMember *member = *it;
-    PWaitAndSignal m(member->GetAutoDialMutex());
+    PWaitAndSignal m(member->GetDialMutex());
     if(!member->autoDial || member->IsSystem() || member->IsOnline())
       continue;
     MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-    if(member->autoDialToken != "" && ep.HasConnection(member->autoDialToken))
+    if(member->dialToken != "" && ep.HasConnection(member->dialToken))
       continue;
-    member->autoDialToken = ep.Invite(conference->GetNumber(), member->GetName());
+    member->dialToken = ep.Invite(conference->GetNumber(), member->GetName());
   }
 
   return 0;
@@ -1276,34 +1276,61 @@ void ConferenceMember::Unlock()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceMember::Dial(BOOL _autoDial)
+void ConferenceMember::Close()
 {
   if(IsSystem())
     return;
-  PWaitAndSignal m(autoDialMutex);
-  autoDial = _autoDial;
-  if(autoDial || IsOnline())
-    return;
+
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-  if(autoDialToken != "" && ep.HasConnection(autoDialToken))
-    return;
-  autoDialToken = ep.Invite(conference->GetNumber(), GetName());
-}
+  PWaitAndSignal m(dialMutex);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void ConferenceMember::SetAutoDial(BOOL enable)
-{
-  PWaitAndSignal m(autoDialMutex);
-  if(!enable && autoDial && autoDialToken != "" && !IsOnline())
+  if(!IsOnline() && dialToken != "")
   {
-    MCUH323Connection *conn = OpenMCU::Current().GetEndpoint().FindConnectionWithLock(autoDialToken);
+    MCUH323Connection *conn = ep.FindConnectionWithLock(dialToken);
     if(conn)
     {
       conn->ClearCall();
       conn->Unlock();
     }
   }
+  MCUH323Connection *conn = ep.FindConnectionWithLock(callToken);
+  if(conn != NULL)
+  {
+    conn->ClearCall();
+    conn->Unlock();
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferenceMember::Dial()
+{
+  Dial(autoDial);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferenceMember::Dial(BOOL _autoDial)
+{
+  if(IsSystem())
+    return;
+  PWaitAndSignal m(dialMutex);
+  autoDial = _autoDial;
+  if(autoDial || IsOnline())
+    return;
+  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+  if(dialToken != "" && ep.HasConnection(dialToken))
+    return;
+  dialToken = ep.Invite(conference->GetNumber(), GetName());
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferenceMember::SetAutoDial(BOOL enable)
+{
+  PWaitAndSignal m(dialMutex);
+  if(!enable && autoDial && dialToken != "" && !IsOnline())
+    Close();
   autoDial = enable;
 }
 

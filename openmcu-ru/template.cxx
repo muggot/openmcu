@@ -274,18 +274,6 @@ void Conference::LoadTemplate(PString tpl)
             OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
             member->Unlock();
           }
-          /*
-          else
-          {
-            if(memberAutoDial) // finally: offline and have to be called
-            {
-              PString token;
-              PString numberWithMixer=number;
-              if(v[4]!="0") numberWithMixer+="/"+v[4];
-              OpenMCU::Current().GetEndpoint().Invite(numberWithMixer, memberAddress);
-            }
-          }
-          */
           validatedMembers.AppendString(memberInternalName);
 
         } // else if(cmd=="MEMBER")

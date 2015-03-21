@@ -168,8 +168,7 @@ class ConferenceMember : public PObject
     /**
       * used to pre-emptively close a members connection
       */
-    virtual void Close()
-    { }
+    virtual void Close();
 
     /**
       * If this returns TRUE, the conference member will be visible in all publically displayed
@@ -341,16 +340,17 @@ class ConferenceMember : public PObject
       channelMask = 0;
     }
 
-    void Dial(BOOL _autoDial = FALSE);
+    void Dial();
+    void Dial(int _autoDial);
+    void ClearDial();
+    void SetAutoDial(BOOL enable);
 
-    virtual void SetAutoDial(BOOL enable);
-
-    PMutex & GetAutoDialMutex()
-    { return autoDialMutex; }
+    PMutex & GetDialMutex()
+    { return dialMutex; }
 
     BOOL autoDial;
-    PString autoDialToken;
-    PMutex autoDialMutex;
+    PString dialToken;
+    PMutex dialMutex;
 
     unsigned muteMask;
     unsigned channelMask;

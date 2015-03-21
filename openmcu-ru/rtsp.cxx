@@ -63,19 +63,6 @@ msg_t * ParseMsg(PString & msg_str)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceStreamMember::Close()
-{
-  MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
-  if(conn != NULL)
-  {
-    conn->ClearCall();
-    conn->Unlock();
-  }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 MCURtspConnection::MCURtspConnection(MCUH323EndPoint *_ep, PString _callToken)
   :MCUSipConnection(_ep, _callToken)
 {

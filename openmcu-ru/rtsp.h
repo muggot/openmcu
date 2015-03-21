@@ -141,8 +141,6 @@ class ConferenceStreamMember : public ConferenceMember
     {
     }
 
-    virtual void Close();
-
     virtual PString GetName() const
     { return name; }
 

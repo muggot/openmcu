@@ -529,8 +529,6 @@ class MCUConnection_ConferenceMember : public ConferenceMember
     MCUConnection_ConferenceMember(Conference * _conference, const PString & _memberName, const PString & _callToken, BOOL _isMCU = FALSE);
     ~MCUConnection_ConferenceMember();
 
-    virtual void Close();
-
     virtual void SetName(PString newName)
     {
       name = newName;

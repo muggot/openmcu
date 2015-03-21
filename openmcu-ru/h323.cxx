@@ -1508,17 +1508,17 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_INVITE)
   {
-    Invite(conference->GetNumber(), value);
-    return TRUE;
+    action = OTFC_ADD_AND_INVITE;
   }
   if(action == OTFC_ADD_AND_INVITE)
   {
     PString username(value);
     PString nameID = MCUURL(username).GetMemberNameId();
-    ConferenceMember *member = conferenceManager.FindMemberNameIDWithLock(conference, username);
-    if(member)
-      member->Unlock();
-    else
+    ConferenceMember *member = NULL;
+    member = conferenceManager.FindMemberWithLock(conference, username);
+    if(member == NULL)
+      member = conferenceManager.FindMemberNameIDWithLock(conference, username);
+    if(member == NULL)
     {
       member = new MCUConnection_ConferenceMember(conference, username, "");
       if(!conference->AddMemberToList(member))
@@ -1526,9 +1526,15 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
         delete member;
         return FALSE;
       }
+      member = conferenceManager.FindMemberWithLock(conference, username);
     }
-    Invite(conference->GetNumber(), value);
-    return TRUE;
+    if(member)
+    {
+      member->Dial();
+      member->Unlock();
+      return TRUE;
+    }
+    return FALSE;
   }
   if(action == OTFC_REMOVE_OFFLINE_MEMBER)
   {
@@ -1540,6 +1546,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       ConferenceMember *member = *it;
       if(!member->IsSystem() && !member->IsOnline())
       {
+        member->Close();
         if(memberList.Erase(it))
           delete member;
       }
@@ -1585,7 +1592,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     {
       ConferenceMember * member = *it;
       if(!member->IsSystem() && !member->IsOnline())
-        Invite(room, member->GetName());
+        member->Dial();
     }
     return TRUE;
   }
@@ -1598,6 +1605,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       ConferenceMember *member = *it;
       if(!member->IsSystem() && !member->IsOnline())
       {
+        member->Close();
         if(memberList.Erase(it))
           delete member;
       }
@@ -4194,17 +4202,6 @@ MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _con
 MCUConnection_ConferenceMember::~MCUConnection_ConferenceMember()
 {
   PTRACE(4, "MCUConnection_ConferenceMember deleted");
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCUConnection_ConferenceMember::Close()
-{
-  MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
-  if (conn != NULL) {
-    conn->ClearCall();
-    conn->Unlock();
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
