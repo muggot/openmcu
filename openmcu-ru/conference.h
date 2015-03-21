@@ -526,7 +526,6 @@ class Conference : public PObject
     virtual void SetLastUsedTemplate(PString tplName);
     virtual void DeleteTemplate(PString tplName);
     virtual BOOL RewriteMembersConf();
-    virtual void OnConnectionClean(const PString & remotePartyName, const PString & remotePartyAddress);
 
     ConferenceRecorder * conferenceRecorder;
     ConferenceMember * pipeMember;

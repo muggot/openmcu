@@ -2613,35 +2613,6 @@ void MCUH323Connection::OnEstablished()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class TplCleanCheckThread : public PThread
-{
-  public:
-    TplCleanCheckThread(Conference * _c, const PString & _n, const PString & _a)
-      : PThread(10000, AutoDeleteThread), c(_c), n(_n), a(_a)
-    {
-      Resume();
-    }
-    void Main()
-    {
-      PTRACE(2,"TplCleanCheckThread\tThread started, c=" << c << ", n=" << n << ", a=" << a);
-      MCUTime::Sleep(6000); // previous connection may still be actvie
-      if(c!=NULL)
-      {
-        PTRACE(1,"TplCleanCheckThread\tFind conference " << c);
-        if(OpenMCU::Current().GetConferenceManager()->FindConferenceWithLock(c))
-        {
-          c->OnConnectionClean(n, a);
-          c->Unlock();
-        }
-      }
-    }
-  protected:
-    Conference * c;
-    PString n, a;
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void MCUH323Connection::SetCallEndReason(CallEndReason reason, PSyncPoint * sync)
 {
   if(connectionType == CONNECTION_TYPE_H323)
@@ -2668,13 +2639,6 @@ BOOL MCUH323Connection::ClearCall(H323Connection::CallEndReason reason)
 void MCUH323Connection::CleanUpOnCallEnd()
 {
   PTRACE(2, trace_section << "CleanUpOnCallEnd");
-
-//  if(conference && !conference->stopping)
-//  {
-//    PTRACE(4, trace_section << "Starting new thread which will check the connection later in template.cxx");
-//    new TplCleanCheckThread(conference, remotePartyName, remotePartyAddress);
-//  }
-
   H323Connection::CleanUpOnCallEnd();
 }
 
