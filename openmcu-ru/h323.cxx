@@ -1564,8 +1564,12 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
       ConferenceMember * member = *it;
-      if(!member->IsSystem() && member->IsOnline())
-        member->Close();
+      if(!member->IsSystem())
+      {
+        member->SetAutoDial(FALSE);
+        if(member->IsOnline())
+          member->Close();
+      }
     }
     OpenMCU::Current().HttpWriteEventRoom("Active members dropped by operator",room);
     OpenMCU::Current().HttpWriteCmdRoom("drop_all()",room);
@@ -1591,8 +1595,13 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
       ConferenceMember * member = *it;
-      if(!member->IsSystem() && !member->IsOnline())
-        member->Dial();
+      if(!member->IsSystem())
+      {
+        if(!member->IsOnline())
+          member->Dial(TRUE);
+        else
+          member->SetAutoDial(TRUE);
+      }
     }
     return TRUE;
   }
@@ -1919,7 +1928,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   if(action == OTFC_DIAL)
   {
     member->Dial(!member->autoDial);
-    cmd << "dspr(" << (long)member->GetID() << ",'" << (member->IsOnline()?"1":"0") << (member->autoDial?"1":"0") << "')";
+    cmd << "dspr(" << (long)member->GetID() << ",'" << member->IsOnline() << member->autoDial << "')";
     OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
     return TRUE;
   }
@@ -2011,6 +2020,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_DROP_MEMBER )
   {
+    member->SetAutoDial(FALSE);
     if(member->IsOnline())
       member->Close();
     return TRUE;

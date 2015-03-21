@@ -410,13 +410,15 @@ function otf_fail(){
  my_alert('On-the-Fly Control request cancelled by timeout.');
 }
 
-function member_modify_by_id(id,index,value){
- if(typeof members==='undefined') return false;
- for(var i=0;i<members.length;i++) if(members[i][0]) if(members[i][1]==id){
+function member_modify_by_id(id,index,value)
+{
+  if(typeof members==='undefined') return false;
+  for(var i=0;i<members.length;i++) if(members[i][1]==id)
+  {
     members[i][index]=value;
     return true;
- }
- return false;
+  }
+  return false;
 }
 
 function member_read_by_id(id,index){
@@ -2373,5 +2375,10 @@ function dspr(id,spr)
 {
   var o=document.getElementById('dial_'+idid(id));
   if(o)o.className='adspr'+spr;
+  var ad=spr.charAt(1);
+  var r='other_sprite';
+  if(ad=='1') r=member_modify_by_id(id,14,1);
+  if(ad=='0') r=member_modify_by_id(id,14,0);
+  dmsg('dial sprite['+id+']='+ad+', result: '+r);
   alive();
 }

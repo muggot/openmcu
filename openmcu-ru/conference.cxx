@@ -751,8 +751,8 @@ BOOL Conference::AddMemberToList(ConferenceMember * memberToAdd, BOOL addToList)
   memberToAdd->SendRoomControl(memberToAdd->IsOnline());
 
   // template
-  if(!memberToAdd->IsSystem())
-    PullMemberOptionsFromTemplate(memberToAdd, confTpl);
+//  if(!memberToAdd->IsSystem())
+//    PullMemberOptionsFromTemplate(memberToAdd, confTpl);
 
   return TRUE;
 }
