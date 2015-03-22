@@ -102,8 +102,14 @@ inline bool sync_bool_compare_and_swap(volatile long *ptr, long oldval, long new
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define MCUTRACE(level, args) \
-  if(level > 0 && PTrace::CanTrace(level)) PTrace::Begin(level, __FILE__, __LINE__) << args << PTrace::End; \
-  if(PTrace::CanTrace(level)) cout << setw(8) << PTime() - PProcess::Current().GetStartTime() << " " << args << endl
+  if(PTrace::CanTrace(level)) \
+  { \
+    if(level > 0) PTrace::Begin(level, __FILE__, __LINE__) << args << PTrace::End; \
+    cout << setw(8) << PTime() - PProcess::Current().GetStartTime() << " " << args << endl; \
+  }
+
+#define MCUTRACE_IF(level, cond, args) \
+  if(PTrace::CanTrace(level) && (cond)) MCUTRACE(level, args);
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
