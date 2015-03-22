@@ -2752,7 +2752,7 @@ BOOL MCUSipEndPoint::ParseAuthMsg(const msg_t *msg, AuthTypes & auth_type, PStri
     auth_scheme = sip->sip_www_authenticate->au_scheme;
     auth_realm = msg_params_find(sip->sip_www_authenticate->au_params, "realm=");
     auth_nonce = msg_params_find(sip->sip_www_authenticate->au_params, "nonce=");
-    if(auth_scheme == "")
+    if(auth_scheme == "" || auth_realm == "")
       return FALSE;
   }
   else if(status == 407 && sip->sip_proxy_authenticate && sip->sip_proxy_authenticate->au_scheme && sip->sip_proxy_authenticate->au_params)
@@ -2761,7 +2761,7 @@ BOOL MCUSipEndPoint::ParseAuthMsg(const msg_t *msg, AuthTypes & auth_type, PStri
     auth_scheme = sip->sip_proxy_authenticate->au_scheme;
     auth_realm = msg_params_find(sip->sip_proxy_authenticate->au_params, "realm=");
     auth_nonce = msg_params_find(sip->sip_proxy_authenticate->au_params, "nonce=");
-    if(auth_scheme == "")
+    if(auth_scheme == "" || auth_realm == "")
       return FALSE;
   }
   else

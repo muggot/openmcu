@@ -966,7 +966,7 @@ BOOL MCURtspConnection::OnRequestReceived(const msg_t *msg)
   PString method_name = sip->sip_request->rq_method_name;
 
   if(method_name != METHOD_OPTIONS && RtspCheckAuth(msg) == FALSE)
-    return FALSE;
+    return TRUE; // send 401 Unauthorized
 
   if(method_name == METHOD_OPTIONS)
   {
