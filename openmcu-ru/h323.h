@@ -74,7 +74,6 @@ class MCUH323EndPoint : public H323EndPoint
     // overrides from H323EndPoint
     virtual H323Connection * CreateConnection(unsigned callReference,void * userData,H323Transport * transport,H323SignalPDU * setupPDU);
     virtual void TranslateTCPAddress(PIPSocket::Address &localAddr, const PIPSocket::Address &remoteAddr);
-    BOOL HasListener(PString host, PString port);
 
     MCUH323Connection * FindConnectionWithoutLock(const PString & token);
     MCUH323Connection * FindConnectionWithLock(const PString & token);
@@ -89,10 +88,13 @@ class MCUH323EndPoint : public H323EndPoint
     virtual void OnConnectionCleared(H323Connection & connection, const PString & token);
     BOOL OnConnectionCreated(MCUH323Connection * conn);
 
-    void InitialiseCapability();
+    virtual BOOL OnConnectionForwarded(H323Connection & connection, const PString & forwardParty, const H323SignalPDU & pdu);
 
     // new functions
     void Initialise(PConfig & cfg);
+    void InitialiseCapability();
+
+    BOOL HasListener(PString host, PString port);
 
     PString GetRoomStatus(const PString & block);
     PString GetRoomStatusJS();
@@ -163,7 +165,36 @@ class MCUH323EndPoint : public H323EndPoint
     MCUConnectionList connectionDeleteList;
 };
 
-////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class H225CallThread : public PThread
+{
+  PCLASSINFO(H225CallThread, PThread)
+  public:
+    H225CallThread(H323EndPoint & endpoint, H323Connection & c, H323Transport & t, const PString & a, const H323TransportAddress & addr)
+      : PThread(endpoint.GetSignallingThreadStackSize(), NoAutoDeleteThread, NormalPriority, "H225 Caller:%0x"),
+        connection(c), transport(t), alias(a), address(addr)
+    {
+#ifdef H323_SIGNAL_AGGREGATE
+      useAggregator = endpoint.GetSignallingAggregator() != NULL;
+      if(!useAggregator)
+#endif
+        transport.AttachThread(this);
+      Resume();
+    }
+
+  protected:
+    void Main();
+    H323Connection     & connection;
+    H323Transport      & transport;
+    PString              alias;
+    H323TransportAddress address;
+#ifdef H323_SIGNAL_AGGREGATE
+    BOOL                 useAggregator;
+#endif
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
 
 class OutgoingAudio : public PChannel
 {
