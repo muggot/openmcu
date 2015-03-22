@@ -84,6 +84,7 @@ class MCUConnectionCleaner : public PThread
         {
           conn->CleanUpOnCallEnd();
           conn->OnCleared();
+          ep->OnConnectionCleared(*conn, callToken);
           delete conn;
           MCUConnectionList::shared_iterator s = connectionDeleteList.Find(callToken);
           if(s != connectionDeleteList.end())
@@ -97,6 +98,35 @@ class MCUConnectionCleaner : public PThread
     PString callToken;
     MCUH323EndPoint *ep;
 };
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void H225CallThread::Main()
+{
+  PTRACE(3, "H225\tStarted call thread");
+  if(connection.Lock())
+  {
+    H323Connection::CallEndReason reason = connection.SendSignalSetup(alias, address);
+    // Special case, if we aborted the call then already will be unlocked
+    if(reason != H323Connection::EndedByCallerAbort)
+      connection.Unlock();
+    // Check if had an error, clear call if so
+    if(reason != H323Connection::NumCallEndReasons)
+      connection.ClearCall(reason);
+    else
+    {
+#ifdef H323_SIGNAL_AGGREGATE
+      if(useAggregator)
+      {
+        connection.AggregateSignalChannel(&transport);
+        SetAutoDelete(AutoDeleteThread);
+        return;
+      }
+#endif
+      connection.HandleSignallingChannel();
+    }
+  }
+}
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -337,6 +367,84 @@ MCUH323Connection * MCUH323EndPoint::FindConnectionWithLock(const PString & toke
 BOOL MCUH323EndPoint::HasConnection(const PString & token)
 {
   return FindConnectionWithoutLock(token) != NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+H323Connection * MCUH323EndPoint::InternalMakeCall(const PString & trasferFromToken, const PString & callIdentity, unsigned capabilityLevel, const PString & remoteParty, H323Transport * transport, PString & newToken, void * userData)
+{
+  PTRACE(2, trace_section << "Making call to: " << remoteParty);
+
+  PString alias;
+  H323TransportAddress address;
+  if(!ParsePartyName(remoteParty, alias, address))
+  {
+    PTRACE(2, trace_section << "Could not parse \"" << remoteParty << '"');
+    return NULL;
+  }
+
+  if(transport == NULL)
+  {
+    if(gatekeeper != NULL)
+      transport = gatekeeper->GetTransport().GetRemoteAddress().CreateTransport(*this);
+    else
+      transport = address.CreateTransport(*this);
+    if(transport == NULL)
+    {
+      PTRACE(1, trace_section << "Invalid transport in \"" << remoteParty << '"');
+      return NULL;
+    }
+  }
+
+  // remove the previous call
+  if(!newToken.IsEmpty())
+  {
+    PTRACE(3, trace_section << "Clear call " << newToken);
+    ClearCall(newToken);
+  }
+
+  unsigned lastReference;
+  H323Connection * connection = NULL;
+  {
+    PWaitAndSignal m(connectionsMutex);
+    do {
+      lastReference = Q931::GenerateCallReference();
+      newToken = BuildConnectionToken(*transport, lastReference, FALSE);
+    } while (connectionsActive.Contains(newToken));
+    PTRACE(3, trace_section << "Build new connection token " << newToken);
+
+    connection = CreateConnection(lastReference, userData, transport, NULL);
+    if(connection == NULL)
+    {
+      PTRACE(1, trace_section << "CreateConnection returned NULL");
+      return NULL;
+    }
+    connection->Lock();
+    connectionsActive.SetAt(newToken, connection);
+  }
+
+  connection->AttachSignalChannel(newToken, transport, FALSE);
+
+#ifdef H323_H450
+  if(capabilityLevel == UINT_MAX)
+    connection->HandleTransferCall(trasferFromToken, callIdentity);
+  else
+  {
+    connection->HandleIntrudeCall(trasferFromToken, callIdentity);
+    connection->IntrudeCall(capabilityLevel);
+  }
+#endif
+
+  PTRACE(3, trace_section << "Created new connection: " << newToken);
+  new H225CallThread(*this, *connection, *transport, alias, address);
+  return connection;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUH323EndPoint::OnConnectionForwarded(H323Connection & connection, const PString & forwardParty, const H323SignalPDU & pdu)
+{
+  return TRUE; // disable forwarding
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2603,11 +2711,11 @@ void MCUH323Connection::AttachSignalChannel(const PString & token, H323Transport
   else
     direction = DIRECTION_OUTBOUND;
 
+  H323Connection::AttachSignalChannel(token, channel, answeringCall);
+
   callToken = token;
   trace_section = "H323 Connection "+callToken+": ";
   OnCreated();
-
-  H323Connection::AttachSignalChannel(token, channel, answeringCall);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2664,7 +2772,6 @@ void MCUH323Connection::OnCleared()
 {
   PTRACE(2, trace_section << "OnCleared");
 
-  ep.OnConnectionCleared(*this, callToken);
   LogCall();
 
   PWaitAndSignal m(connMutex);
