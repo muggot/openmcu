@@ -502,10 +502,9 @@ void MCUSharedList<T_obj>::ReleaseWait(long index, long threshold)
       MCUTime::SleepUsec(10);
     else
     {
-      if(i % 5000 == 0)
-        MCUTRACE(1, "ReleaseWait: " << typeid(*this).name() << " index=" << index <<
-                    " obj=" << objs[index] << " id=" << ids[index] << " name=" << (names[index] ? *names[index] : "") <<
-                    " captures=" << captures[index]);
+      MCUTRACE_IF(1, (i % 5000 == 0), "ReleaseWait: " << typeid(*this).name() << " index=" << index <<
+                  " obj=" << objs[index] << " id=" << ids[index] << " name=" << (names[index] ? *names[index] : "") <<
+                  " captures=" << captures[index]);
       MCUTime::SleepUsec(1000);
     }
   }
