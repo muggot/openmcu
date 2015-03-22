@@ -2719,25 +2719,41 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
     return;
   conferenceIdentifier = conference->GetGUID();
 
-  PString memberNameID = MCUURL(memberName).GetMemberNameId();
-
   // lock member list
   conference->GetMemberListMutex().Wait();
   MCUMemberList & memberList = conference->GetMemberList();
-  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
-    ConferenceMember *member = *it;
-    if(!member->IsSystem() && !member->IsOnline() && member->GetNameID() == memberNameID)
+    MCUMemberList::shared_iterator it;
+    if(direction == DIRECTION_OUTBOUND)
     {
+      for(it = memberList.begin(); it != memberList.end(); ++it)
+        if(!it->IsOnline() && it->dialToken == callToken)
+          break;
+    }
+    if(it == memberList.end())
+    {
+      for(it = memberList.begin(); it != memberList.end(); ++it)
+        if(!it->IsOnline() && it->GetName() == memberName)
+          break;
+    }
+    if(it == memberList.end())
+    {
+      PString memberNameID = MCUURL(memberName).GetMemberNameId();
+      for(it = memberList.begin(); it != memberList.end(); ++it)
+        if(!it->IsOnline() && it->GetNameID() == memberNameID)
+          break;
+    }
+    if(it != memberList.end())
+    {
+      ConferenceMember *member = *it;
       if(memberList.Erase(it))
       {
         conferenceMember = member;
-        member->ResetCounters();
-        member->SetName(memberName);
-        member->SetCallToken(callToken);
-        member->SetVisible(TRUE);
-        conference->AddMember(conferenceMember);
-        break;
+        conferenceMember->ResetCounters();
+        conferenceMember->SetName(memberName);
+        conferenceMember->SetVisible(TRUE);
+        conferenceMember->SetCallToken(callToken);
+        conferenceMember->dialToken = "";
       }
     }
   }
@@ -2750,9 +2766,9 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
       conferenceMember = new ConferenceStreamMember(conference, memberName, callToken);
     else
       conferenceMember = new MCUConnection_ConferenceMember(conference, memberName, callToken, isMCU);
-    conference->AddMember(conferenceMember);
   }
 
+  conference->AddMember(conferenceMember);
   conference->Unlock();
 }
 
