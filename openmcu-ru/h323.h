@@ -171,11 +171,11 @@ class MCUH323EndPoint : public H323EndPoint
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-class H225CallThread : public PThread
+class H323CallThread : public PThread
 {
-  PCLASSINFO(H225CallThread, PThread)
+  PCLASSINFO(H323CallThread, PThread)
   public:
-    H225CallThread(H323EndPoint & endpoint, H323Connection & c, H323Transport & t, const PString & a, const H323TransportAddress & addr)
+    H323CallThread(H323EndPoint & endpoint, H323Connection & c, H323Transport & t, const PString & a, const H323TransportAddress & addr)
       : PThread(endpoint.GetSignallingThreadStackSize(), NoAutoDeleteThread, NormalPriority, "H225 Caller:%0x"),
         connection(c), transport(t), alias(a), address(addr)
     {

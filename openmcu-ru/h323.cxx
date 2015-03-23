@@ -101,7 +101,7 @@ class MCUConnectionCleaner : public PThread
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void H225CallThread::Main()
+void H323CallThread::Main()
 {
   PTRACE(3, "H225\tStarted call thread");
   if(connection.Lock())
@@ -436,7 +436,7 @@ H323Connection * MCUH323EndPoint::InternalMakeCall(const PString & trasferFromTo
 #endif
 
   PTRACE(3, trace_section << "Created new connection: " << newToken);
-  new H225CallThread(*this, *connection, *transport, alias, address);
+  new H323CallThread(*this, *connection, *transport, alias, address);
   return connection;
 }
 
@@ -444,7 +444,8 @@ H323Connection * MCUH323EndPoint::InternalMakeCall(const PString & trasferFromTo
 
 BOOL MCUH323EndPoint::OnConnectionForwarded(H323Connection & connection, const PString & forwardParty, const H323SignalPDU & pdu)
 {
-  return TRUE; // disable forwarding
+  //return TRUE; // disable forwarding
+  return FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
