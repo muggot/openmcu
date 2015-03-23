@@ -1700,15 +1700,19 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   {
     PWaitAndSignal m(conference->GetMemberListMutex());
     MCUMemberList & memberList = conference->GetMemberList();
+    BOOL dial=(v==1);
     for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
       ConferenceMember * member = *it;
       if(!member->IsSystem())
       {
         if(!member->IsOnline())
-          member->Dial(TRUE);
+          member->Dial(dial);
         else
-          member->SetAutoDial(TRUE);
+        {
+          if(dial)
+            member->SetAutoDial(TRUE);
+        }
       }
     }
     return TRUE;

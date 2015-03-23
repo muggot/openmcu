@@ -14,7 +14,7 @@ $pull_out_from_specials=Array('uk'=>'ru');
 
 $res_dir='../openmcu-ru/files/resource';
 
-$htmlcxxmask='SelectField("Language", cfg.GetString("Language"), ",*");';
+$htmlcxxmask='  s << SelectField("Language", "Select Language", cfg.GetString("Language"), ",*");';
 
 $lf="\n"; if(strtolower(substr(PHP_OS, 0, 3))==='win') $lf="\r\n";
 
@@ -232,7 +232,7 @@ function check_html_cxx($filename, $localizations)
   foreach($f as $k => $s)
   {
     $sp=strpos($s, $mask[0]);
-    if($sp)
+    if($sp!==false)
     {
       $q=strlen($mask[0])+$sp;
       $w=explode(',',strtolower(substr($s,$q,strlen($s)-strlen($mask[1])-$q-1)));

@@ -338,3 +338,6 @@ window.l_disconnect                                = "Відключити";
 window.l_add_to_abook                              = "Додати до адресної книги";
 window.l_accounts                                  = "Облікові записи";
 ///
+window.l_room_mute_all                             = 'Отключить звук от всех участников (микрофоны)';
+window.l_room_unmute_all                           = 'Восстановить звук от всех участников (микрофоны)';
+window.l_room_dial_all_members                     = 'Дозвон всем участникам';

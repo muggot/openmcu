@@ -404,3 +404,6 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .adspr10  {width:16px;height:16px;background:url(s32_ch.png) -198px -103px;cursor:pointer}
 .adspr11  {width:16px;height:16px;background:url(s32_ch.png)   -6px -135px;cursor:pointer}
 .adsprBusy{width:16px;height:16px;background:url(s32_ch.png) -232px -104px;cursor:pointer}
+
+.xsgray   {width:16px;height:16px;background:url(s32_ch.png) -169px  -39px;cursor:pointer}
+.xsred    {width:16px;height:16px;background:url(s32_ch.png) -137px  -39px;cursor:pointer}

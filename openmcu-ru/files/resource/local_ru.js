@@ -216,7 +216,10 @@ window.l_name_parameters_for_sending               = "Параметры для 
 window.l_name_codec_parameters                     = "Параметры кодека<br>(переопределить полученные)";
 window.l_name_default_parameters                   = "Параметры по умолчанию";
 
+window.l_room_mute_all                             = 'Отключить звук от всех участников (микрофоны)';
+window.l_room_unmute_all                           = 'Восстановить звук от всех участников (микрофоны)';
 window.l_room_invite_all_inactive_members          = 'Позвонить всем неактивным участникам';
+window.l_room_dial_all_members                     = 'Дозвон всем участникам';
 window.l_room_drop_all_active_members              = 'Отключить всех активных участников';
 window.l_room_remove_all_inactive_members          = 'Удалить всех неактивных участников из списка';
 window.l_room_drop_connection_with                 = 'Разорвать соединение с';

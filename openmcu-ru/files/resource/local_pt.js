@@ -330,3 +330,6 @@ window.l_disconnect                                = "Disconnect";
 window.l_add_to_abook                              = "Add to address book";
 window.l_accounts                                  = "Accounts";
 ///
+window.l_room_mute_all                             = 'Mute all participants (microphones)';
+window.l_room_unmute_all                           = 'Unmute all participants (microphones)';
+window.l_room_dial_all_members                     = 'Run continuous dialing ALL members';

@@ -511,9 +511,33 @@ function chosenvan_yes_no(obj,mid,cvan){ obj.style.color='#ff0'; queue_otf_reque
 
 function kick_confirm(obj,mid,mname){ if(confirm(window.l_room_drop_connection_with+" \""+decodeURIComponent(mname)+"\" ?")) {queue_otf_request(OTFC_DROP_MEMBER,mid); obj.src='launched.gif'; }}
 
-function drop_all0(obj){ if(confirm(window.l_room_drop_all_active_members+"?")) {queue_otf_request(OTFC_DROP_ALL_ACTIVE_MEMBERS,0); }}
+function drop_all0(obj)
+{
+  if(confirm(window.l_room_drop_all_active_members+"?"))
+  {
+    for(var i=0;i<members.length;i++) members[i][14]=0;
+    queue_otf_request(OTFC_DROP_ALL_ACTIVE_MEMBERS,0);
+  }
+  members_refresh();
+}
 
-function invite_all(obj){ if(confirm(window.l_room_invite_all_inactive_members+"?")) {queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,0); }}
+function invite_all(obj,startDial)
+{
+  if(typeof startDial!='undefined') if(startDial)
+  {
+    if(confirm(window.l_room_dial_all_members+"?"))
+    {
+      for(var i=0;i<members.length;i++) members[i][14]=1;
+      queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,1);
+    }
+    members_refresh();
+    return;
+  }
+  if(confirm(window.l_room_invite_all_inactive_members+"?"))
+  {
+    queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,0);
+  }
+}
 
 function remove_all0(obj){ if(confirm(window.l_room_remove_all_inactive_members+"?")) {queue_otf_request(OTFC_REMOVE_ALL_INACT_MMBRS,0); }}
 
@@ -986,11 +1010,12 @@ function additional_panel(){
   var bwidth = 28;
   var dbutton="<div class='btn btn-small' style='border-width:1px;border-radius:0px;padding:2px 0px 2px 0px;height:"+(height+1)+"px;line-height:"+(height+1)+"px;text-align:center;cursor:pointer;";
   var s="<form onsubmit='return false' id='additional_panel' style='display:block;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;margin:0px'>"
-   +dpre+"2px;'>"+dbutton+"width:"+bwidth+"px' onmousedown='queue_otf_request("+OTFC_MUTE_ALL+")'><div class='mutespr30' style='margin-left:7px'></div></div></div>"
-   +dpre+"34px;'>"+dbutton+"width:"+bwidth+"px' onmousedown='queue_otf_request("+OTFC_UNMUTE_ALL+")'><div class='mutespr31' style='margin-left:7px'></div></div></div>"
-   +dpre+"66px;'>"+dbutton+"width:"+bwidth+"px' onclick='invite_all(this)' title='"+window.l_room_invite_all_inactive_members+"'><img width="+width+" height="+height+" alt='Inv.' src='i15_inv.gif'></div></div>"
-   +dpre+"98px;'>"+dbutton+"width:"+bwidth+"px' onclick='remove_all0(this)' title='"+window.l_room_remove_all_inactive_members+"'><img width=16 height=16 src='i16_close_gray.png'></div></div>"
-   +dpre+"130px;'>"+dbutton+"width:"+(2*PANEL_ICON_WIDTH)+"px;' onclick='drop_all0(this)' title='"+window.l_room_drop_all_active_members+"'><img width=16 height=16 src='i16_close_red.png'></div></div>"
+   +dpre+ "2px;'>"+dbutton+"width:"+bwidth+"px' onclick='queue_otf_request("+OTFC_MUTE_ALL+")' title='"+window.l_room_mute_all+"'><div class='mutespr30' style='margin-left:7px'></div></div></div>"
+   +dpre+"34px;'>"+dbutton+"width:"+bwidth+"px' onclick='queue_otf_request("+OTFC_UNMUTE_ALL+")' title='"+window.l_room_unmute_all+"'><div class='mutespr31' style='margin-left:7px'></div></div></div>"
+   +dpre+"66px;'>"+dbutton+"width:"+bwidth+"px' onclick='invite_all(this)' title='"+window.l_room_invite_all_inactive_members+"'><div class='adspr00' style='margin-left:6px'></div></div></div>"
+   +dpre+"98px;'>"+dbutton+"width:"+bwidth+"px' onclick='invite_all(this,1)' title='"+window.l_room_dial_all_members+"'><div class='adspr01' style='margin-left:6px'></div></div></div>"
+   +dpre+"130px;'>"+dbutton+"width:"+bwidth+"px' onclick='remove_all0(this)' title='"+window.l_room_remove_all_inactive_members+"'><div class='xsgray' style='margin-left:7px'></div></div></div>"
+   +dpre+"162px;'>"+dbutton+"width:"+(2*PANEL_ICON_WIDTH)+"px;' onclick='drop_all0(this)' title='"+window.l_room_drop_all_active_members+"'><div class='xsred' style='margin-left:7px'></div></div></div>"
 //   +dpre+"0px;'>"+dbutton+"width:20px' id='rpan_0' name='rpan_0' onmousedown='ddstart(event,this,\"panel_top\",0)'>[ ]</div></div>"
 //   +dpre+"23px;'>"+dbutton+"width:30px' id='rpan__1' name='rpan__1' onmousedown='ddstart(event,this,\"panel_top\",-1)'>VAD</div></div>"
 //   +dpre+"56px;'>"+dbutton+"width:36px' id='rpan__2' name='rpan__2' onmousedown='ddstart(event,this,\"panel_top\",-2)'>VAD2</div></div>"

@@ -209,7 +209,10 @@ window.l_name_parameters_for_sending               = "Parameters for sending";
 window.l_name_codec_parameters                     = "Codec parameters<br>(override received)";
 window.l_name_default_parameters                   = "Default parameters";
 
+window.l_room_mute_all                             = 'Mute all participants (microphones)';
+window.l_room_unmute_all                           = 'Unmute all participants (microphones)';
 window.l_room_invite_all_inactive_members          = 'Invite ALL inactive members';
+window.l_room_dial_all_members                     = 'Run continuous dialing ALL members';
 window.l_room_drop_all_active_members              = 'Drop ALL active connections';
 window.l_room_remove_all_inactive_members          = 'Remove ALL inactive members from list';
 window.l_room_drop_connection_with                 = 'Drop connection with';
