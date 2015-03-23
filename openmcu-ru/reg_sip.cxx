@@ -351,24 +351,24 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
 
   if(sip->sip_authorization)
   {
-    PString reg_response = msg_params_find(sip->sip_authorization->au_params, "response=");
-    PString reg_uri = msg_params_find(sip->sip_authorization->au_params, "uri=");
-
-    PString sip_auth_str = sep->MakeAuthStr(raccount_in->username, raccount_in->password, reg_uri, method_name, raccount_in->scheme, raccount_in->domain, raccount_in->nonce);
-    MCUStringDictionary dict(sip_auth_str, ", ", "=");
-    PString www_response = dict("response");
-    if(www_response == reg_response)
+    PString response = msg_params_find(sip->sip_authorization->au_params, "response=");
+    response.Replace("\"","",TRUE,0);
+    HTTPAuth auth_copy(raccount_in->auth);
+    auth_copy.method = method_name;
+    auth_copy.uri = msg_params_find(sip->sip_authorization->au_params, "uri=");
+    PString auth_response = auth_copy.MakeResponse();
+    if(auth_response == response)
       return 0;
   }
   else if(sip->sip_proxy_authorization)
   {
-    PString reg_response = msg_params_find(sip->sip_proxy_authorization->au_params, "response=");
-    PString reg_uri = msg_params_find(sip->sip_proxy_authorization->au_params, "uri=");
-
-    PString sip_auth_str = sep->MakeAuthStr(raccount_in->username, raccount_in->password, reg_uri, method_name, raccount_in->scheme, raccount_in->domain, raccount_in->nonce);
-    MCUStringDictionary dict(sip_auth_str, ", ", "=");
-    PString proxy_response = dict("response");
-    if(proxy_response == reg_response)
+    PString response = msg_params_find(sip->sip_proxy_authorization->au_params, "response=");
+    response.Replace("\"","",TRUE,0);
+    HTTPAuth auth_copy(raccount_in->auth);
+    auth_copy.method = method_name;
+    auth_copy.uri = msg_params_find(sip->sip_proxy_authorization->au_params, "uri=");
+    PString auth_response = auth_copy.MakeResponse();
+    if(auth_response == response)
       return 0;
   }
 
@@ -376,10 +376,10 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   {
     if(!raccount_in->is_saved_account && !sip_allow_unauth_reg)
       return 403; // SIP_403_FORBIDDEN
-    if(sip_allow_unauth_reg || raccount_in->password == "")
+    if(sip_allow_unauth_reg || raccount_in->auth.password == "")
       return 0;
     // add headers
-    sip_authorization_t *sip_www_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
+    sip_authorization_t *sip_www_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->auth.MakeAuthenticateStr());
     sip_add_tl(msg_reply, sip_object(msg_reply),
                    SIPTAG_WWW_AUTHENTICATE(sip_www_auth),
                    TAG_END());
@@ -397,10 +397,10 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
       return 403; // SIP_403_FORBIDDEN
     if(raccount_out && sip_allow_unauth_internal_calls)
       return 0;
-    if(raccount_in->password == "")
+    if(raccount_in->auth.password == "")
       return 0;
     // add headers
-    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
+    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->auth.MakeAuthenticateStr());
     sip_add_tl(msg_reply, sip_object(msg_reply),
                    SIPTAG_PROXY_AUTHENTICATE(sip_proxy_auth),
                    TAG_END());
@@ -412,10 +412,10 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
       return 404; // SIP_404_NOT_FOUND
     if(!raccount_in->is_saved_account && !sip_allow_unauth_reg)
       return 403; // SIP_403_FORBIDDEN
-    if(sip_allow_unauth_reg || raccount_in->password == "")
+    if(sip_allow_unauth_reg || raccount_in->auth.password == "")
       return 0;
     // add headers
-    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
+    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->auth.MakeAuthenticateStr());
     sip_add_tl(msg_reply, sip_object(msg_reply),
                    SIPTAG_PROXY_AUTHENTICATE(sip_proxy_auth),
                    TAG_END());
@@ -425,10 +425,10 @@ int Registrar::SipPolicyCheck(const msg_t *msg, msg_t *msg_reply, RegistrarAccou
   {
     if(!raccount_in->is_saved_account && !sip_allow_unauth_reg)
       return 403; // SIP_403_FORBIDDEN
-    if(sip_allow_unauth_reg || raccount_in->password == "")
+    if(sip_allow_unauth_reg || raccount_in->auth.password == "")
       return 0;
     // add headers
-    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->GetAuthStr());
+    sip_authorization_t *sip_proxy_auth = sip_authorization_make(msg_home(msg_reply), raccount_in->auth.MakeAuthenticateStr());
     sip_add_tl(msg_reply, sip_object(msg_reply),
                    SIPTAG_PROXY_AUTHENTICATE(sip_proxy_auth),
                    TAG_END());

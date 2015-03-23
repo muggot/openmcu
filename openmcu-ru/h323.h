@@ -150,6 +150,8 @@ class MCUH323EndPoint : public H323EndPoint
 
   protected:
 
+    virtual H323Connection * InternalMakeCall(const PString & trasferFromToken, const PString & callIdentity, unsigned capabilityLevel, const PString & remoteParty, H323Transport * transport, PString & newToken, void * userData);
+
     BOOL behind_masq;
     PIPSocket::Address *masqAddressPtr;
     PString nat_lag_ip;

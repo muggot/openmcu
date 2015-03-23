@@ -25,13 +25,6 @@ enum SipSecureTypes
   SECURE_TYPE_DTLS_SRTP
 };
 
-enum AuthTypes
-{
-  AUTH_NONE,
-  AUTH_WWW,
-  AUTH_PROXY
-};
-
 enum MediaTypes
 {
   MEDIA_TYPE_UNKNOWN,
@@ -62,6 +55,54 @@ class MCUURL_SIP : public MCUURL
     PString url_to;
     PString domain_name;
     PString remote_application;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class HTTPAuth
+{
+  public:
+    enum AuthTypes
+    {
+      AUTH_NONE,
+      AUTH_WWW,
+      AUTH_PROXY
+    };
+
+    HTTPAuth()
+    {
+      type = AUTH_NONE;
+      scheme = "Digest";
+      realm = "openmcu-ru";
+      nonce = PGloballyUniqueID().AsString();
+      algorithm = "MD5";
+    }
+    HTTPAuth(const HTTPAuth & auth)
+    {
+      type = auth.type;
+      scheme = auth.scheme;
+      username = auth.username;
+      password = auth.password;
+      method = auth.method;
+      uri = auth.uri;
+      realm = auth.realm;
+      nonce = auth.nonce;
+      algorithm = auth.algorithm;
+    }
+
+    PString MakeResponse();
+    PString MakeAuthorizationStr();
+    PString MakeAuthenticateStr();
+
+    AuthTypes type;
+    PString scheme;
+    PString username;
+    PString password;
+    PString method;
+    PString uri;
+    PString realm;
+    PString nonce;
+    PString algorithm;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -219,12 +260,7 @@ class MCUSipConnection : public MCUH323Connection
     void SendInvite();
     void SendRequest(sip_method_t method, const char *method_name, const char *payload = NULL);
 
-    AuthTypes auth_type;
-    PString auth_username;
-    PString auth_password;
-    PString auth_scheme;
-    PString auth_realm;
-    PString auth_nonce;
+    HTTPAuth auth;
 
   protected:
     BOOL DetermineNAT();
@@ -357,6 +393,7 @@ class MCUSipEndPoint : public PThread
 
     nta_agent_t *GetAgent() { return agent; };
     su_home_t *GetHome() { return &home; };
+    su_root_t *GetRoot() { return root; }
 
     int CreateIncomingConnection(const msg_t *msg);
     int SipReqReply(const msg_t *msg, msg_t *msg_reply, unsigned status, const char *status_phrase=NULL);
@@ -365,8 +402,7 @@ class MCUSipEndPoint : public PThread
     BOOL SipMakeCall(PString from, PString to, PString & callToken);
 
     BOOL MakeMsgAuth(msg_t *msg_orq, const msg_t *msg);
-    PString MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce);
-    BOOL ParseAuthMsg(const msg_t *msg, AuthTypes & auth_type, PString & auth_scheme, PString & auth_realm, PString & auth_nonce);
+    BOOL ParseAuthMsg(const msg_t *msg, HTTPAuth & auth);
     ProxyAccount *FindProxyAccount(PString username, PString domain);
 
     SipCapMapType & GetBaseSipCaps() { return BaseSipCaps; }

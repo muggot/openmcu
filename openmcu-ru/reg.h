@@ -75,6 +75,7 @@ class RegistrarAccount
       id = _id;
       account_type = _account_type;
       username = _username;
+      auth.username = username;
       host = "";
       if(account_type == ACCOUNT_TYPE_H323)
         port = 1720;
@@ -83,8 +84,6 @@ class RegistrarAccount
       else
         port = 0;
       domain = "openmcu-ru";
-      scheme = "Digest";
-      algorithm = "MD5";
       expires = 0;
       is_saved_account = FALSE;
       registered = FALSE;
@@ -115,8 +114,6 @@ class RegistrarAccount
 
     PString GetUrl();
 
-    PString GetAuthStr();
-
     void SetRegisterMsg(const msg_t * msg)
     {
       PWaitAndSignal m(account_mutex);
@@ -142,7 +139,6 @@ class RegistrarAccount
     PString domain;
     unsigned port;
     PString transport;
-    PString password;
     PString h323id;
 
     PString remote_application;
@@ -150,7 +146,7 @@ class RegistrarAccount
     PString sip_call_processing;
     PString h323_call_processing;
 
-    PString scheme, nonce, algorithm;
+    HTTPAuth auth;
 
     PTime start_time;
     time_t expires;

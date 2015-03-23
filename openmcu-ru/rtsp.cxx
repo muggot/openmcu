@@ -152,8 +152,8 @@ BOOL MCURtspConnection::Connect(PString room, PString address)
   remotePartyName = GetEndpointParam(DisplayNameKey, url.GetPathStr());
 
   // auth
-  auth_username = GetEndpointParam(UserNameKey, url.GetUserName());
-  auth_password = GetEndpointParam(PasswordKey, url.GetPassword());
+  auth.username = GetEndpointParam(UserNameKey, url.GetUserName());
+  auth.password = GetEndpointParam(PasswordKey, url.GetPassword());
 
   // create listener
   listener = MCUListener::Create(MCU_LISTENER_TCP_CLIENT, url.GetHostName(), rtsp_port.AsInteger(), OnReceived_wrap, this);
@@ -212,15 +212,11 @@ BOOL MCURtspConnection::Connect(MCUSocket *socket, const msg_t *msg)
     goto error;
 
   // auth
-  auth_username = GetEndpointParam(UserNameKey);
-  auth_password = GetEndpointParam(PasswordKey);
-  if(auth_password != "")
-  {
-    auth_type = AUTH_WWW;
-    auth_scheme = "Digest";
-    auth_realm = "openmcu-ru";
-    auth_nonce = PGloballyUniqueID().AsString();
-  }
+  auth.scheme = "Digest";
+  auth.username = GetEndpointParam(UserNameKey);
+  auth.password = GetEndpointParam(PasswordKey);
+  if(auth.password != "")
+    auth.type = HTTPAuth::AUTH_WWW;
 
   // create listener
   listener = MCUListener::Create(MCU_LISTENER_TCP_CLIENT, socket, OnReceived_wrap, this);
@@ -828,9 +824,11 @@ BOOL MCURtspConnection::OnRequestTeardown(const msg_t *msg)
 
 void MCURtspConnection::AddHeaders(char *buffer, PString method_name)
 {
-  if(direction == DIRECTION_OUTBOUND && auth_type != AUTH_NONE && method_name != METHOD_OPTIONS)
+  if(direction == DIRECTION_OUTBOUND && auth.type != HTTPAuth::AUTH_NONE && method_name != METHOD_OPTIONS)
   {
-    PString auth_str = sep->MakeAuthStr(auth_username, auth_password, ruri_str, method_name, auth_scheme, auth_realm, auth_nonce);
+    HTTPAuth auth_copy(auth);
+    auth_copy.method = method_name;
+    PString auth_str = auth_copy.MakeAuthorizationStr();
     strcat(buffer, (const char *)PString("Authorization: "+auth_str+"\r\n"));
   }
 
@@ -846,42 +844,57 @@ void MCURtspConnection::AddHeaders(char *buffer, PString method_name)
 
 BOOL MCURtspConnection::RtspCheckAuth(const msg_t *msg)
 {
-  if(auth_type == AUTH_NONE)
+  if(auth.type == HTTPAuth::AUTH_NONE)
     return TRUE;
 
   sip_t *sip = sip_object(msg);
+  PString method_name = sip->sip_request->rq_method_name;
+  if(method_name == METHOD_OPTIONS)
+    return TRUE;
+
   if(sip->sip_authorization == NULL)
   {
-    PString auth_str = auth_scheme+" realm=\""+auth_realm+"\",nonce=\""+auth_nonce+"\",algorithm=MD5";
+    PString auth_str = auth.MakeAuthenticateStr();
     char buffer[1024];
     snprintf(buffer, 1024,
   	   "RTSP/1.0 401 Unauthorized\r\n"
 	   "CSeq: %d %s\r\n"
 	   "Date: %s\r\n"
 	   "WWW-Authenticate: %s\r\n"
-	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), (const char *)auth_str);
+	   , sip->sip_cseq->cs_seq, (const char *)method_name, (const char *)PTime().AsString(), (const char *)auth_str);
     AddHeaders(buffer);
     SendRequest(buffer);
     return FALSE;
   }
   else
   {
-    PString method_name = sip->sip_request->rq_method_name;
-    PString username = msg_params_find(sip->sip_authorization->au_params, "username=");
-    PString response = msg_params_find(sip->sip_authorization->au_params, "response=");
-    PString uri = msg_params_find(sip->sip_authorization->au_params, "uri=");
-
-    PString auth_str = sep->MakeAuthStr(auth_username, auth_password, uri, method_name, auth_scheme, auth_realm, auth_nonce);
-    MCUStringDictionary dict(auth_str, ", ", "=");
-    PString auth_response = dict("response");
-    if(auth_response != response)
+    BOOL auth_passed = FALSE;
+    if(auth.scheme == "Basic")
+    {
+      PString response = sip->sip_authorization->au_params[0];
+      PString auth_response = auth.MakeResponse();
+      if(auth_response == response)
+        auth_passed = TRUE;
+    }
+    else if(auth.scheme == "Digest")
+    {
+      PString response = msg_params_find(sip->sip_authorization->au_params, "response=");
+      response.Replace("\"","",TRUE,0);
+      HTTPAuth auth_copy(auth);
+      auth_copy.method = sip->sip_request->rq_method_name;
+      auth_copy.uri = msg_params_find(sip->sip_authorization->au_params, "uri=");
+      PString auth_response = auth_copy.MakeResponse();
+      if(auth_response == response)
+        auth_passed = TRUE;
+    }
+    if(!auth_passed)
     {
       char buffer[1024];
       snprintf(buffer, 1024,
   	   "RTSP/1.0 403 Forbidden\r\n"
 	   "CSeq: %d %s\r\n"
 	   "Date: %s\r\n"
-	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString());
+	   , sip->sip_cseq->cs_seq, (const char *)method_name, (const char *)PTime().AsString());
       AddHeaders(buffer);
       SendRequest(buffer);
 
@@ -925,12 +938,12 @@ BOOL MCURtspConnection::OnResponseReceived(const msg_t *msg)
     }
     else if(status == 401)
     {
-      if(auth_type != AUTH_NONE || auth_username == "" || auth_password == "")
+      if(auth.username == "" || auth.password == "")
       {
         MCUTRACE(1, trace_section << "error");
         return FALSE;
       }
-      if(sep->ParseAuthMsg(msg, auth_type, auth_scheme, auth_realm, auth_nonce) == FALSE)
+      if(sep->ParseAuthMsg(msg, auth) == FALSE)
       {
         MCUTRACE(1, trace_section << "error");
         return FALSE;
@@ -973,13 +986,12 @@ BOOL MCURtspConnection::OnResponseReceived(const msg_t *msg)
 
 BOOL MCURtspConnection::OnRequestReceived(const msg_t *msg)
 {
+  if(RtspCheckAuth(msg) == FALSE)
+    return TRUE; // send 401 Unauthorized
+
   sip_t *sip = sip_object(msg);
   int response_code = -1;
-
   PString method_name = sip->sip_request->rq_method_name;
-
-  if(method_name != METHOD_OPTIONS && RtspCheckAuth(msg) == FALSE)
-    return TRUE; // send 401 Unauthorized
 
   if(method_name == METHOD_OPTIONS)
   {

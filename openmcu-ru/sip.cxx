@@ -375,6 +375,58 @@ void SipCapability::Print()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+PString HTTPAuth::MakeResponse()
+{
+  if(scheme == "Basic")
+  {
+    return PBase64::Encode(username+":"+password);
+  }
+  else if(scheme == "Digest")
+  {
+    auth_response_t ar[1] = {{ sizeof(ar) }};
+    auth_hexmd5_t ha1, hresponse;
+    ar->ar_username = username;
+    ar->ar_realm = realm;
+    ar->ar_nonce = nonce;
+    ar->ar_uri = uri;
+    //auth_digest_ha1(ha1, username, realm, password);
+    auth_digest_a1(ar, ha1, password);
+    auth_digest_response(ar, hresponse, ha1, method, NULL, 0);
+    return hresponse;
+  }
+  return "";
+}
+
+PString HTTPAuth::MakeAuthorizationStr()
+{
+  if(scheme == "Basic")
+  {
+    return scheme+" "+MakeResponse();
+  }
+  else if(scheme == "Digest")
+  {
+    return scheme
+           +" username=\""+username+"\""
+           +",realm="+realm
+           +",nonce="+nonce
+           +",response=\""+MakeResponse()+"\""
+           +",uri=\""+uri+"\""
+           +",algorithm="+algorithm;
+  }
+  return "";
+}
+
+PString HTTPAuth::MakeAuthenticateStr()
+{
+  if(scheme == "Basic")
+    return scheme+" realm=\""+realm+"\"";
+  else if(scheme == "Digest")
+    return scheme+" realm=\""+realm+"\",nonce=\""+nonce+"\",algorithm="+algorithm;
+  return "";
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 MCUSipConnection::MCUSipConnection(MCUH323EndPoint *_ep, const PString & _callToken)
   :MCUH323Connection(*_ep, 0, NULL)
 {
@@ -399,7 +451,6 @@ MCUSipConnection::MCUSipConnection(MCUH323EndPoint *_ep, const PString & _callTo
   c_sip_msg = NULL;
   leg = NULL;
   orq_invite = NULL;
-  auth_type = AUTH_NONE;
 
   scap = -1;
   vcap = -1;
@@ -2245,13 +2296,14 @@ void MCUSipConnection::SendRequest(sip_method_t method, const char *method_name,
     sip_date = sip_date_create(sep->GetHome(), sip_now());
   }
 
-  if(auth_type != AUTH_NONE)
+  if(auth.type != HTTPAuth::AUTH_NONE)
   {
-    PString uri = "sip:"+PString(auth_realm); uri.Replace("\"","",true,0);
-    PString auth_str = sep->MakeAuthStr(auth_username, auth_password, uri, method_name, auth_scheme, auth_realm, auth_nonce);
-    if(auth_type == AUTH_WWW)
+    HTTPAuth auth_copy(auth);
+    auth_copy.method = method_name;
+    PString auth_str = auth_copy.MakeAuthorizationStr();
+    if(auth.type == HTTPAuth::AUTH_WWW)
       sip_auth = sip_authorization_make(sep->GetHome(), auth_str);
-    else if(auth_type == AUTH_PROXY)
+    else if(auth.type == HTTPAuth::AUTH_PROXY)
       sip_proxy_auth = sip_proxy_authorization_make(sep->GetHome(), auth_str);
   }
 
@@ -2475,13 +2527,13 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
   }
   if(status == 401 || status == 407)
   {
-    if(auth_type != AUTH_NONE || auth_username == "" || auth_password == "")
+    if(auth.username == "" || auth.password == "")
     {
       PTRACE(1, trace_section << "error");
       ClearCall(EndedByRemoteUser);
       return 0;
     }
-    if(sep->ParseAuthMsg(msg, auth_type, auth_scheme, auth_realm, auth_nonce) == FALSE)
+    if(sep->ParseAuthMsg(msg, auth) == FALSE)
     {
       PTRACE(1, trace_section << "error");
       ClearCall(EndedByRemoteUser);
@@ -2668,8 +2720,8 @@ BOOL MCUSipEndPoint::SipMakeCall(PString from, PString to, PString & callToken)
     sCon = (MCUSipConnection *)ep->FindConnectionWithLock(callToken);
     if(sCon == NULL)
       return FALSE;
-    sCon->auth_username = auth_username;
-    sCon->auth_password = auth_password;
+    sCon->auth.username = auth_username;
+    sCon->auth.password = auth_password;
     sCon->SendInvite();
     sCon->Unlock();
 
@@ -2739,7 +2791,7 @@ int MCUSipEndPoint::SipRegister(ProxyAccount *proxy, BOOL enable)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSipEndPoint::ParseAuthMsg(const msg_t *msg, AuthTypes & auth_type, PString & auth_scheme, PString & auth_realm, PString & auth_nonce)
+BOOL MCUSipEndPoint::ParseAuthMsg(const msg_t *msg, HTTPAuth & auth)
 {
   sip_t *sip = sip_object(msg);
 
@@ -2748,20 +2800,22 @@ BOOL MCUSipEndPoint::ParseAuthMsg(const msg_t *msg, AuthTypes & auth_type, PStri
 
   if(status == 401 && sip->sip_www_authenticate && sip->sip_www_authenticate->au_scheme && sip->sip_www_authenticate->au_params)
   {
-    auth_type = AUTH_WWW;
-    auth_scheme = sip->sip_www_authenticate->au_scheme;
-    auth_realm = msg_params_find(sip->sip_www_authenticate->au_params, "realm=");
-    auth_nonce = msg_params_find(sip->sip_www_authenticate->au_params, "nonce=");
-    if(auth_scheme == "" || auth_realm == "")
+    auth.type = HTTPAuth::AUTH_WWW;
+    auth.scheme = sip->sip_www_authenticate->au_scheme;
+    auth.realm = msg_params_find(sip->sip_www_authenticate->au_params, "realm=");
+    auth.nonce = msg_params_find(sip->sip_www_authenticate->au_params, "nonce=");
+    auth.uri = "sip:"+PString(auth.realm); auth.uri.Replace("\"","",true,0);
+    if(auth.scheme == "" || auth.realm == "")
       return FALSE;
   }
   else if(status == 407 && sip->sip_proxy_authenticate && sip->sip_proxy_authenticate->au_scheme && sip->sip_proxy_authenticate->au_params)
   {
-    auth_type = AUTH_PROXY;
-    auth_scheme = sip->sip_proxy_authenticate->au_scheme;
-    auth_realm = msg_params_find(sip->sip_proxy_authenticate->au_params, "realm=");
-    auth_nonce = msg_params_find(sip->sip_proxy_authenticate->au_params, "nonce=");
-    if(auth_scheme == "" || auth_realm == "")
+    auth.type = HTTPAuth::AUTH_PROXY;
+    auth.scheme = sip->sip_proxy_authenticate->au_scheme;
+    auth.realm = msg_params_find(sip->sip_proxy_authenticate->au_params, "realm=");
+    auth.nonce = msg_params_find(sip->sip_proxy_authenticate->au_params, "nonce=");
+    auth.uri = "sip:"+PString(auth.realm); auth.uri.Replace("\"","",true,0);
+    if(auth.scheme == "" || auth.realm == "")
       return FALSE;
   }
   else
@@ -2799,21 +2853,22 @@ BOOL MCUSipEndPoint::MakeMsgAuth(msg_t *msg_orq, const msg_t *msg)
   sip_cseq_t *sip_cseq = sip_cseq_create(&home, cseq, sip_orq->sip_cseq->cs_method, sip_orq->sip_cseq->cs_method_name);
   msg_header_replace(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_orq->sip_cseq, (msg_header_t *)sip_cseq);
 
-  AuthTypes auth_type = AUTH_NONE;
-  PString auth_scheme, auth_realm, auth_nonce;
-  if(ParseAuthMsg(msg, auth_type, auth_scheme, auth_realm, auth_nonce) == FALSE)
+  HTTPAuth auth;
+  if(ParseAuthMsg(msg, auth) == FALSE)
     return FALSE;
 
-  PString uri = "sip:"+PString(auth_realm); uri.Replace("\"","",true,0);
-  PString auth_str = MakeAuthStr(proxy->username, proxy->password, uri, sip->sip_cseq->cs_method_name, auth_scheme, auth_realm, auth_nonce);
+  auth.username = proxy->username;
+  auth.password = proxy->password;
+  auth.method = sip->sip_cseq->cs_method_name;
+  PString auth_str = auth.MakeAuthorizationStr();
 
   // add headers
-  if(auth_type == AUTH_WWW)
+  if(auth.type == HTTPAuth::AUTH_WWW)
   {
     sip_authorization_t *sip_auth = sip_authorization_make(&home, auth_str);
     msg_header_insert(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_auth);
   }
-  else if(auth_type == AUTH_PROXY)
+  else if(auth.type == HTTPAuth::AUTH_PROXY)
   {
     sip_authorization_t *sip_proxy_auth = sip_proxy_authorization_make(&home, auth_str);
     msg_header_insert(msg_orq, (msg_pub_t *)sip_orq, (msg_header_t *)sip_proxy_auth);
@@ -2822,33 +2877,6 @@ BOOL MCUSipEndPoint::MakeMsgAuth(msg_t *msg_orq, const msg_t *msg)
     return FALSE;
 
   return TRUE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-PString MCUSipEndPoint::MakeAuthStr(PString username, PString password, PString uri, const char *method, const char *scheme, const char *realm, const char *nonce)
-{
-    PTRACE(1, trace_section << "MakeAuthStr");
-    const char *auth_str=NULL;
-
-    auth_response_t ar[1] = {{ sizeof(ar) }};
-    auth_hexmd5_t ha1, hresponse;
-    ar->ar_username = username;
-    ar->ar_realm = realm;
-    ar->ar_nonce = nonce;
-    ar->ar_uri = uri;
-    //auth_digest_ha1(ha1, username, realm, password);
-    auth_digest_a1(ar, ha1, password);
-    auth_digest_response(ar, hresponse, ha1, method, NULL, 0);
-    auth_str = su_sprintf(&home, "%s %s\"%s\", %s%s, %s%s, %s\"%s\", %s\"%s\", %s",
-			    scheme,
-			    "username=", ar->ar_username,
-			    "realm=", realm,
-			    "nonce=", nonce,
-			    "response=", hresponse,
-			    "uri=", ar->ar_uri,
-			    "algorithm=MD5");
-    return auth_str;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
