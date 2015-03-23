@@ -4219,8 +4219,9 @@ MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _con
 {
   callToken = _callToken;
   isMCU = _isMCU;
-  name = _memberName;
-  nameID = MCUURL(name).GetMemberNameId();
+  MCUURL url(_memberName);
+  name = url.GetMemberName();
+  nameID = url.GetMemberNameId();
   conference->AddMember(this);
 }
 

@@ -190,18 +190,20 @@ ConferenceMember * ConferenceManager::FindMemberNameIDWithLock(const PString & r
   Conference *conference = FindConferenceWithLock(roomName);
   if(conference == NULL)
     return NULL;
-  ConferenceMember *member = FindMemberWithLock(conference, memberName);
+  ConferenceMember *member = FindMemberNameIDWithLock(conference, memberName);
   conference->Unlock();
   return member;
 }
 ConferenceMember * ConferenceManager::FindMemberNameIDWithLock(Conference * conference, const PString & memberName)
 {
-  PString memberNameID = MCUURL(memberName).GetMemberNameId();
   MCUMemberList & memberList = conference->GetMemberList();
+  ConferenceMember *member = memberList(memberName);
+  if(member)
+    return member;
+  PString memberNameID = MCUURL(memberName).GetMemberNameId();
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
-    ConferenceMember *member = it.GetObject();
-    if(member->GetNameID() == memberNameID)
+    if(it->GetNameID() == memberNameID)
       return it.GetCapturedObject();
   }
   return NULL;
