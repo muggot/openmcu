@@ -466,7 +466,13 @@ class MCUURL : public PURL
     { return transport; }
 
     const PString GetMemberName()
-    { return display_name+" ["+GetUrl()+"]"; }
+    {
+      PString memberName;
+      if(display_name != "")
+        memberName += display_name+" ";
+      memberName += "["+GetUrl()+"]";
+      return memberName;
+    }
 
     const PString GetMemberNameId() const
     {

@@ -426,7 +426,7 @@ class Conference : public PObject
       * add the specified member to the conference
       */
     BOOL AddMember(ConferenceMember * member, BOOL addToList = TRUE);
-    BOOL AddMemberToList(ConferenceMember * member, BOOL addToList = TRUE);
+    MCUMemberList::shared_iterator AddMemberToList(ConferenceMember * member, BOOL addToList = TRUE);
 
     /**
      * remove the specifed member from the conference.

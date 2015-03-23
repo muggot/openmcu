@@ -173,18 +173,20 @@ ConferenceMember * ConferenceManager::FindMemberNameIDWithLock(const PString & r
   Conference *conference = FindConferenceWithLock(roomName);
   if(conference == NULL)
     return NULL;
-  ConferenceMember *member = FindMemberWithLock(conference, memberName);
+  ConferenceMember *member = FindMemberNameIDWithLock(conference, memberName);
   conference->Unlock();
   return member;
 }
 ConferenceMember * ConferenceManager::FindMemberNameIDWithLock(Conference * conference, const PString & memberName)
 {
-  PString memberNameID = MCUURL(memberName).GetMemberNameId();
   MCUMemberList & memberList = conference->GetMemberList();
+  ConferenceMember *member = memberList(memberName);
+  if(member)
+    return member;
+  PString memberNameID = MCUURL(memberName).GetMemberNameId();
   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
-    ConferenceMember *member = it.GetObject();
-    if(member->GetNameID() == memberNameID)
+    if(it->GetNameID() == memberNameID)
       return it.GetCapturedObject();
   }
   return NULL;
@@ -709,16 +711,16 @@ BOOL Conference::StopRecorder()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL Conference::AddMemberToList(ConferenceMember * memberToAdd, BOOL addToList)
+MCUMemberList::shared_iterator Conference::AddMemberToList(ConferenceMember * memberToAdd, BOOL addToList)
 {
   // lock the member lists
   PWaitAndSignal m(memberListMutex);
+  MCUMemberList::shared_iterator it;
 
-  MCUMemberList::shared_iterator it = memberList.Find((long)memberToAdd->GetID());
-  if(it != memberList.end())
+  if(memberList.Find((long)memberToAdd->GetID()) != memberList.end())
   {
     PTRACE(1, trace_section << "Rejected duplicate member ID: " << (long)memberToAdd->GetID() << " " << memberToAdd->GetName());
-    return FALSE;
+    return it;
   }
 
   // check for duplicate name or very fast reconnect
@@ -737,7 +739,7 @@ BOOL Conference::AddMemberToList(ConferenceMember * memberToAdd, BOOL addToList)
         msg << JsQuoteScreen(memberToAdd->GetName()) << " REJECTED - DUPLICATE NAME";
         OpenMCU::Current().HttpWriteEventRoom(msg, number);
         PTRACE(1, trace_section << "Rejected duplicate name: " << memberToAdd->GetName());
-        return FALSE;
+        return it;
       }
       memberToAdd->SetName(memberName+" ##"+PString(i+2));
     }
@@ -745,16 +747,16 @@ BOOL Conference::AddMemberToList(ConferenceMember * memberToAdd, BOOL addToList)
 
   // add to list
   if(addToList)
-    memberList.Insert(memberToAdd, (long)memberToAdd->GetID(), memberToAdd->GetName());
+    it = memberList.Insert(memberToAdd, (long)memberToAdd->GetID(), memberToAdd->GetName());
 
   // send event
-  memberToAdd->SendRoomControl(memberToAdd->IsOnline());
+  memberToAdd->SendRoomControl(1);
 
   // template
 //  if(!memberToAdd->IsSystem())
 //    PullMemberOptionsFromTemplate(memberToAdd, confTpl);
 
-  return TRUE;
+  return it;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -775,7 +777,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
   memberToAdd->SetJoined(TRUE);
 
   // first add to list
-  if(!AddMemberToList(memberToAdd, addToList))
+  if(AddMemberToList(memberToAdd, addToList) == memberList.end())
     return FALSE;
 
   // nothing more!
@@ -1358,7 +1360,7 @@ void ConferenceMember::SendRoomControl(int state)
     msg = "addmmbr(";
   else
     msg = "remmmbr(";
-  msg  << state
+  msg  << (state && IsOnline())
        << "," << (long)GetID()
        << "," << JsQuoteScreen(GetName())
        << "," << muteMask

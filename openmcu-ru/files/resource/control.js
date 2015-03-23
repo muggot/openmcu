@@ -1330,11 +1330,11 @@ function addmmbr(st,id,name,mute,dvad,cvan,al,mixr,membername_id,chmask,gl,og,mi
     { // нормальный:
       if(online)
       {
-        if((members[i][1] == id) || (members[i][8] == membername_id)) members.splice(i,1);
+        if((members[i][1] == id) || (members[i][2] == name)) members.splice(i,1);
       }
       else
       { // offline: skip id check
-        if(members[i][8] == membername_id) members.splice(i,1);
+        if(members[i][2] == name) members.splice(i,1);
       }
     }
     else

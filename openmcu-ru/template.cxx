@@ -235,28 +235,26 @@ void Conference::LoadTemplate(PString tpl)
           PStringArray v=value.Tokenise(",");
           if(v.GetSize()>4) for(int i=0; i<=4;i++) v[i]=v[i].Trim();
 
-          BOOL memberAutoDial = (v[0]=="1");
-
           PString memberInternalName = v[5].Trim();
           for(int i=6; i<v.GetSize(); i++) memberInternalName += "," + v[i];
-          PString memberAddress = MCUURL(memberInternalName).GetUrl();
 
           ConferenceMember *member = manager.FindMemberNameIDWithLock(this, memberInternalName);
-          if(!member)
+          if(member == NULL)
           {
-            member = new MCUConnection_ConferenceMember(this, memberInternalName, "");
-            if(!AddMemberToList(member))
+            ConferenceMember *member = new MCUConnection_ConferenceMember(this, memberInternalName, "");
+            MCUMemberList::shared_iterator it = AddMemberToList(member);
+            if(it == memberList.end())
             {
               delete member;
               member = NULL;
             }
-            member = manager.FindMemberNameIDWithLock(this, memberInternalName);
+            else
+              member = it.GetCapturedObject();
           }
           if(member)
           {
             PStringArray maskAndGain = v[1].Tokenise("/");
             BOOL hasGainOptions = (maskAndGain.GetSize() > 1);
-            member->SetAutoDial(memberAutoDial);
             if(hasGainOptions)
             {
               member->muteMask      = maskAndGain[0].AsInteger();
@@ -272,6 +270,7 @@ void Conference::LoadTemplate(PString tpl)
             member->disableVAD      = (v[2]=="1");
             member->chosenVan       = (v[3]=="1");
             OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
+            member->SetAutoDial((v[0]=="1"));
             member->Unlock();
           }
           validatedMembers.AppendString(memberInternalName);

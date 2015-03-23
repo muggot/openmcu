@@ -1620,21 +1620,21 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
   }
   if(action == OTFC_ADD_AND_INVITE)
   {
-    PString username(value);
-    PString nameID = MCUURL(username).GetMemberNameId();
-    ConferenceMember *member = NULL;
-    member = conferenceManager.FindMemberWithLock(conference, username);
-    if(member == NULL)
-      member = conferenceManager.FindMemberNameIDWithLock(conference, username);
+    PString memberName = value;
+    if(memberName.Find("[") == P_MAX_INDEX)
+      memberName = "["+memberName+"]";
+    ConferenceMember *member = conferenceManager.FindMemberWithLock(conference, memberName);
     if(member == NULL)
     {
-      member = new MCUConnection_ConferenceMember(conference, username, "");
-      if(!conference->AddMemberToList(member))
+      member = new MCUConnection_ConferenceMember(conference, memberName, "");
+      MCUMemberList::shared_iterator it = conference->AddMemberToList(member);
+      if(it == conference->GetMemberList().end())
       {
         delete member;
-        return FALSE;
+        member = NULL;
       }
-      member = conferenceManager.FindMemberWithLock(conference, username);
+      else
+        member = it.GetCapturedObject();
     }
     if(member)
     {
@@ -4330,8 +4330,9 @@ MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _con
   if(callToken != "")
     visible = TRUE;
   isMCU = _isMCU;
-  name = _memberName;
-  nameID = MCUURL(name).GetMemberNameId();
+  MCUURL url(_memberName);
+  name = url.GetMemberName();
+  nameID = url.GetMemberNameId();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
