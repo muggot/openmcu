@@ -60,16 +60,6 @@ PString AbookAccount::GetUrl()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString RegistrarAccount::GetAuthStr()
-{
-  if(nonce == "")
-    nonce = PGloballyUniqueID().AsString();
-  PString sip_auth_str = scheme+" "+"realm=\""+domain+"\",nonce=\""+nonce+"\",algorithm="+algorithm;
-  return sip_auth_str;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 void RegistrarAccount::Unlock()
 {
   registrar->GetAccountList().Release(id);
@@ -1149,7 +1139,7 @@ void Registrar::InitAccounts()
     {
       raccount->is_saved_account = FALSE;
       raccount->display_name_saved = "";
-      raccount->password = "";
+      raccount->auth.password = "";
       raccount->sip_call_processing = MCUConfig(sectionPrefix+"*").GetString("SIP call processing", "redirect");
       raccount->h323_call_processing = MCUConfig(sectionPrefix+"*").GetString("H.323 call processing", "direct");
       raccount->keep_alive_enable = FALSE;
@@ -1201,7 +1191,7 @@ void Registrar::InitAccounts()
       raccount->port = port;
     raccount->transport = scfg.GetString(TransportKey);
     raccount->domain = registrar_domain;
-    raccount->password = scfg.GetString(PasswordKey);
+    raccount->auth.password = scfg.GetString(PasswordKey);
     raccount->display_name_saved = scfg.GetString(DisplayNameKey);
     // keep alive
     raccount->keep_alive_interval = scfg.GetString(PingIntervalKey).AsInteger();
@@ -1221,7 +1211,7 @@ void Registrar::InitAccounts()
       raccount->h323_call_processing = gcfg.GetString("H.323 call processing", "direct");
     // password
     if(account_type == ACCOUNT_TYPE_H323)
-      h323Passwords.Insert(PString(username), new PString(raccount->password));
+      h323Passwords.Insert(PString(username), new PString(raccount->auth.password));
     raccount->Unlock();
   }
   // set gatekeeper parameters

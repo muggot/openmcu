@@ -444,8 +444,7 @@ H323Connection * MCUH323EndPoint::InternalMakeCall(const PString & trasferFromTo
 
 BOOL MCUH323EndPoint::OnConnectionForwarded(H323Connection & connection, const PString & forwardParty, const H323SignalPDU & pdu)
 {
-  //return TRUE; // disable forwarding
-  return FALSE;
+  return TRUE; // disable forwarding
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
