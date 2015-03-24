@@ -1706,13 +1706,10 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
       ConferenceMember * member = *it;
       if(!member->IsSystem())
       {
-        if(!member->IsOnline())
-          member->Dial(dial);
+        if(member->IsOnline())
+          member->SetAutoDial(dial);
         else
-        {
-          if(dial)
-            member->SetAutoDial(TRUE);
-        }
+          member->Dial(dial);
       }
     }
     return TRUE;

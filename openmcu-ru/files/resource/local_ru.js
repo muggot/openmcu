@@ -259,7 +259,6 @@ window.l_recwilldeleted                            = "Видеозапись * �
 window.l_recwilldeleted_ok                         = "[Подтверждаю]";
 window.l_recwilldeleted_cancel                     = "Отмена";
 window.l_recwasdeleted                             = "Видеозапись * удалена";
-window.l_lock_tpl_default                          = "Отключать терминалы, отсутствующие в шаблоне (запереть конференцию)";
 window.l_filesize                                  = "Размер файла";
 window.l_resolution                                = "Разрешение";
 window.l_startdatetime                             = "Дата и время начала";

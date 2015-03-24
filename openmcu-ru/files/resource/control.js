@@ -521,22 +521,28 @@ function drop_all0(obj)
   members_refresh();
 }
 
-function invite_all(obj,startDial)
+function invite_all(obj, startDial)
 {
-  if(typeof startDial!='undefined') if(startDial)
+  var
+    dial = 0,
+    question = window.l_room_invite_all_inactive_members + "?",
+    borderBackup;
+  if(obj)
   {
-    if(confirm(window.l_room_dial_all_members+"?"))
+    borderBackup = obj.style.border;
+    obj.style.border = '1px dotted red';
+  }
+  if(typeof startDial != 'undefined')
+    if(startDial)
     {
-      for(var i=0;i<members.length;i++) members[i][14]=1;
-      queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,1);
+      dial = 1;
+      question = window.l_room_dial_all_members + "?";
     }
-    members_refresh();
-    return;
-  }
-  if(confirm(window.l_room_invite_all_inactive_members+"?"))
-  {
-    queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,0);
-  }
+  if(!confirm(question)) return;
+  for(var i = 0; i < members.length; i++) members[i][14] = dial;
+  queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS, dial);
+  if(obj) obj.style.border=borderBackup;
+  members_refresh();
 }
 
 function remove_all0(obj){ if(confirm(window.l_room_remove_all_inactive_members+"?")) {queue_otf_request(OTFC_REMOVE_ALL_INACT_MMBRS,0); }}
