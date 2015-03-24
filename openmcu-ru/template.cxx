@@ -241,7 +241,7 @@ void Conference::LoadTemplate(PString tpl)
           ConferenceMember *member = manager.FindMemberNameIDWithLock(this, memberInternalName);
           if(member == NULL)
           {
-            ConferenceMember *member = new MCUConnection_ConferenceMember(this, memberInternalName, "");
+            member = new MCUConnection_ConferenceMember(this, memberInternalName, "");
             MCUMemberList::shared_iterator it = AddMemberToList(member);
             if(it == memberList.end())
             {
