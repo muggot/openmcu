@@ -442,7 +442,7 @@ class MCUURL : public PURL
 {
   public:
     MCUURL() { }
-    MCUURL(PString str);
+    MCUURL(const PString & str);
 
     const PString & GetUserName() const
     { return username; }
@@ -471,6 +471,7 @@ class MCUURL : public PURL
       if(display_name != "")
         memberName += display_name+" ";
       memberName += "["+GetUrl()+"]";
+      memberName += memberNameSuffix;
       return memberName;
     }
 
@@ -484,7 +485,7 @@ class MCUURL : public PURL
 
     const PString & GetUrl()
     {
-      if(url_scheme == "sip")
+      if(url_scheme == "h323" || url_scheme == "sip")
       {
         url_party = url_scheme+":"+username+"@"+hostname;
         if(port != 0)
@@ -503,6 +504,7 @@ class MCUURL : public PURL
     PString url_scheme;
     PString url_party;
     PString transport;
+    PString memberNameSuffix;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

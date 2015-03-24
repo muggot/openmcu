@@ -337,6 +337,7 @@ class MCUH323Connection : public H323Connection
     virtual AnswerCallResponse OnAnswerCall(const PString &, const H323SignalPDU &, H323SignalPDU &);
 
     virtual void OnUserInputString(const PString & value);
+    virtual CallEndReason SendSignalSetup(const PString & alias, const H323TransportAddress & address);
     virtual BOOL OnReceivedSignalSetup(const H323SignalPDU & setupPDU);
     virtual BOOL OnReceivedCallProceeding(const H323SignalPDU & proceedingPDU);
     virtual BOOL OnReceivedSignalConnect(const H323SignalPDU & pdu);
@@ -564,8 +565,9 @@ class MCUConnection_ConferenceMember : public ConferenceMember
 
     virtual void SetName(PString newName)
     {
-      name = newName;
-      nameID = MCUURL(name).GetMemberNameId();
+      MCUURL url(newName);
+      name = url.GetMemberName();
+      nameID = url.GetMemberNameId();
     }
 
     virtual void SetFreezeVideo(BOOL) const;

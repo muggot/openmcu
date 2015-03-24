@@ -4,12 +4,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUURL::MCUURL(PString str)
+MCUURL::MCUURL(const PString & str)
 {
   PINDEX delim1 = str.FindLast("[");
   PINDEX delim2 = str.FindLast("]");
   PINDEX delim3 = str.FindLast("<sip:");
   PINDEX delim4 = str.FindLast(">");
+  PINDEX pos;
 
   if(delim3 != P_MAX_INDEX && delim4 != P_MAX_INDEX)
   {
@@ -23,6 +24,12 @@ MCUURL::MCUURL(PString str)
     url_party = str.Mid(delim1+1, delim2-delim1-1);
   } else {
     url_party = str;
+  }
+
+  pos = str.Find(" ##");
+  if(pos != P_MAX_INDEX)
+  {
+    memberNameSuffix = str.Mid(pos, str.GetLength()-1);
   }
 
   if(url_party.Left(4) == "sip:") url_scheme = "sip";
