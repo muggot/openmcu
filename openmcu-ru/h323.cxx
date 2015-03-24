@@ -3208,6 +3208,16 @@ BOOL MCUH323Connection::StartControlNegotiations(BOOL renegotiate)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+H323Connection::CallEndReason MCUH323Connection::SendSignalSetup(const PString & alias, const H323TransportAddress & address)
+{
+  CallEndReason reason = H323Connection::SendSignalSetup(alias, address);
+  if(alias != "")
+    remotePartyNumber = alias;
+  return reason;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
 {
   const H225_Setup_UUIE & setup = setupPDU.m_h323_uu_pdu.m_h323_message_body;
