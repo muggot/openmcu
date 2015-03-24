@@ -221,8 +221,11 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   av_register_all();
 
   if(codec_id == AV_CODEC_ID_MJPEG)
-    //frame_pix_fmt = AV_PIX_FMT_YUVJ420P;
-    frame_pix_fmt = AV_PIX_FMT_YUV420P;
+#if LIBAVCODEC_VERSION_MICRO == 100
+    frame_pix_fmt = AV_PIX_FMT_YUV420P; // ffmpeg
+#else
+    frame_pix_fmt = AV_PIX_FMT_YUVJ420P; // libav
+#endif
   else
     return FALSE;
 
@@ -282,6 +285,7 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   {
     int frame_buffer_size = avpicture_get_size(frame_pix_fmt, src_width, src_height);
     frame_buffer.SetSize(frame_buffer_size);
+    avpicture_fill((AVPicture *)frame, frame_buffer.GetPointer(), frame_pix_fmt, src_width, src_height);
 
     struct SwsContext *sws_ctx = sws_getContext(src_width, src_height, AV_PIX_FMT_YUV420P,
                                                 src_width, src_height, frame_pix_fmt,
