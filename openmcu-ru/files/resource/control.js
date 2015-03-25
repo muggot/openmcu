@@ -538,7 +538,11 @@ function invite_all(obj, startDial)
       dial = 1;
       question = window.l_room_dial_all_members + "?";
     }
-  if(!confirm(question)) return;
+  if(!confirm(question))
+  {
+    if(obj) obj.style.border=borderBackup;
+    return;
+  }
   for(var i = 0; i < members.length; i++) members[i][14] = dial;
   queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS, dial);
   if(obj) obj.style.border=borderBackup;
