@@ -437,8 +437,8 @@ MCUSipConnection::MCUSipConnection(MCUH323EndPoint *_ep, const PString & _callTo
   callToken = _callToken;
   trace_section = "SIP Connection "+callToken+": ";
 
-  remotePartyName = "";
-  remotePartyNumber = "";
+  remoteUserName = "";
+  remoteDisplayName = "";
   remoteApplication = "SIP terminal";
   requestedRoom = OpenMCU::Current().GetDefaultRoomName();
   connectedTime = PTime();
@@ -549,7 +549,6 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   // endpoint parameters
   rtp_proto = GetEndpointParam(RtpProtoKey, "RTP");
   remote_bw = GetEndpointParam(BandwidthToKey, "0").AsInteger();
-  remotePartyName = GetEndpointParam(DisplayNameKey);
 
   MCUTRACE(1, trace_section << "contact: " << contact_str << " ruri: " << ruri_str);
   return TRUE;
@@ -2001,8 +2000,7 @@ int MCUSipConnection::ProcessConnect()
   }
 
   MCUURL_SIP url(c_sip_msg, direction);
-  if(remotePartyName == "")
-    remotePartyName = url.GetDisplayName();
+  remoteDisplayName = url.GetDisplayName();
   remoteApplication = url.GetRemoteApplication();
 
   // set endpoint member name

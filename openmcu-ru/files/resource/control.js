@@ -983,7 +983,7 @@ function format_mmbr_abook(num,mmbr)
   s+=dpre+(posx_status+2)+"px'>"+ping_icon+"</div>";
   s+=dpre+(posx_status+20)+"px'>"+reg_icon+"</div>";
   s+=dpre+posx_name+"px'><div style='overflow:hidden;font-size:12px;width:"+width_name+"px;'><nobr>"+name+"</nobr></div></div>";
-  s+=dpre+posx_ip+"px'><div style='overflow:hidden;color:#576;font-size:10px;"+ip_decor+"width:"+width_ip+"px;'>"+ip+"</div></div>";
+  s+=dpre+posx_ip+"px'><div style='overflow:hidden;color:#576;font-size:10px;"+ip_decor+"width:"+width_ip+"px;'><nobr>"+ip+"</nobr></div></div>";
   s+=dpre+posx_abook+"px'>"+save_icon+"</div>";
 
   s+='</div>';
