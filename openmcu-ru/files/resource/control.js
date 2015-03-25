@@ -1255,50 +1255,19 @@ function audio(id,vol)
   for(var i=0;i<members.length;i++) if(members[i][1]==id)
   {
     members[i][6]=vol;
-    var o='rpan_'; id+=''; if(id.substr(0,1)=='-')o+='_'+id.substr(1);else o+=id;
+    var o='rpan_'+idid(id), o2;
     try
     {
-      if(document.getElementById(o)==='undefined')return;
-      if(document.getElementById('s'+o)==='undefined')return;
+      if(document.getElementById(o)==='undefined')return alive();
+      if(document.getElementById('s'+o)==='undefined')return alive();
       o2=document.getElementById('s'+o);
       o=document.getElementById(o);
-    } catch(e) { return; }
-    var shadowcolors=Array('#000','green','magenta');
-    var status=members[i][0];
-    if(status)if(visible_ids.indexOf(','+id+',')>=0)status=2;
-    if(status==2){var mr=0xf5; var mg=0x00; var mb=0x00ff;} else {var mr=0x00; var mg=0xff; var mb=0x00;}
-    var brd=1;
-    var clr=shadowcolors[members[i][0]];
-    var dtd='dotted';
-    var o2value='&nbsp;';
-    if(vol>10)
-    {
-      var vol0=1; var vol1=Math.floor(vol/256); while(vol1>0){vol0++;vol1=Math.floor(vol1/2);}if(vol0>8)vol0=8;
-      var l=(8-vol0)/7;
-      o2value='<font color=';
-      if(status==2)o2value+='green'; else o2value+='red';
-      o2value+='><b>&#960'+vol0+';</b></font> ';
-      mr=Math.round((255-mr)*l)+mr;
-      mg=Math.round((255-mg)*l)+mg;
-      mb=Math.round((255-mb)*l)+mb;
-      mr=mr.toString(16);
-      mg=mg.toString(16);
-      mb=mb.toString(16);
-      if(mr.length < 2) mr='0'+mr;
-      if(mg.length < 2) mg='0'+mg;
-      if(mb.length < 2) mb='0'+mb;
-      if(vol>100) brd=2;
-      clr='#'+mr+mg+mb;
-      var dtd='solid';
-    }
-    try
-    {
-//      o.style.borderBottom=brd+'px '+dtd+' '+clr;
-//      o.style.borderRight=brd+'px '+dtd+' '+clr;
-//      o.style.paddingBottom=''+(2-brd)+'px';
-//      o.style.paddingRight=''+(2-brd)+'px';
-      o2.innerHTML=o2value;
-    } catch(e) { dmsg('Audio visualisation failed'); return alive(); }
+    } catch(e) { return alive(); }
+
+    var v16=Math.floor(vol/1928), htmlCode;
+    if(v16==0) htmlCode='';
+    else htmlCode="<div style='position:relative;top:" + (16-v16) + "px' class='audl" + v16 + "'></div>";
+    try { o2.innerHTML=htmlCode; } catch(e) {}
     break;
   }
   alive();
