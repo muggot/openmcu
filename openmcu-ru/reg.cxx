@@ -439,19 +439,16 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
     raccount_out->Unlock();
     // update url
     url = MCUURL(address);
+    PTRACE(1, "Registrar MakeCall: found the account, changed address " << address);
   } else {
-    if(url.GetHostName() != "")
-    {
-      raccount_out = InsertAccountWithLock(account_type, username_out);
-      raccount_out->host = url.GetHostName();
-      raccount_out->port = url.GetPort().AsInteger();
-      raccount_out->transport = url.GetTransport();
-      raccount_out->display_name = url.GetDisplayName();
-      raccount_out->Unlock();
-    }
+    raccount_out = InsertAccountWithLock(account_type, username_out);
+    raccount_out->host = url.GetHostName();
+    raccount_out->port = url.GetPort().AsInteger();
+    raccount_out->transport = url.GetTransport();
+    raccount_out->display_name = url.GetDisplayName();
+    PTRACE(1, "Registrar MakeCall: create new account " << raccount_out->GetUrl());
+    raccount_out->Unlock();
   }
-  // initial username_out, can be empty
-  //username_out = url.GetUserName();
 
   if(account_type == ACCOUNT_TYPE_SIP)
   {
@@ -461,6 +458,13 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
+    // Звонок по IP адресу
+    if(url.GetHostName() == "")
+    {
+      address = url.GetUserName();
+      PTRACE(1, "Registrar MakeCall: changed address " << address);
+    }
+    // gatekeeper
     H323Transport * transport = NULL;
     if(ep->GetGatekeeper())
     {
@@ -468,13 +472,14 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
       if(url.GetHostName() == "" || gk_host == url.GetHostName())
       {
         address = url.GetUserName();
-        PTRACE(1, "Found gatekeeper, change address " << url.GetUrl() << " -> " << address);
+        PTRACE(1, "Registrar MakeCall: changed address " << address);
       }
       else
       {
         H323TransportAddress taddr(url.GetHostName()+":"+url.GetPort());
         transport = taddr.CreateTransport(*ep);
         transport->SetRemoteAddress(taddr);
+        PTRACE(1, "Registrar MakeCall: use transport " << taddr);
       }
     }
     void *userData = new PString(room);
@@ -990,6 +995,30 @@ void Registrar::QueueEstablished(const PString & data)
   RegistrarConnection *rconn = FindRegConnWithLock(callToken);
   if(rconn == NULL)
     return;
+
+  // update account data ???
+  RegistrarAccount *raccount = NULL;
+  if(rconn->callToken_out == callToken)
+    raccount = FindAccountWithLock(rconn->account_type_out, rconn->username_out);
+  if(raccount)
+  {
+    if(!raccount->registered)
+    {
+      MCUH323Connection *conn = ep->FindConnectionWithLock(callToken);
+      if(conn)
+      {
+        MCUURL url(conn->GetMemberName());
+        raccount->host = url.GetHostName();
+        raccount->port = url.GetPort().AsInteger();
+        raccount->transport = url.GetTransport();
+        raccount->display_name = url.GetDisplayName();
+        raccount->remote_application = conn->GetRemoteApplication();
+        conn->Unlock();
+      }
+    }
+    raccount->Unlock();
+  }
+
   if(rconn->state == CONN_MCU_WAIT)
     rconn->state = CONN_MCU_ESTABLISHED;
   if(rconn->state == CONN_WAIT && rconn->callToken_out == callToken)

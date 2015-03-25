@@ -8,23 +8,24 @@ MCUURL::MCUURL(const PString & str)
 {
   PINDEX delim1 = str.FindLast("[");
   PINDEX delim2 = str.FindLast("]");
-  PINDEX delim3 = str.FindLast("<sip:");
+  PINDEX delim3 = str.FindLast("<");
   PINDEX delim4 = str.FindLast(">");
   PINDEX pos;
 
-  if(delim3 != P_MAX_INDEX && delim4 != P_MAX_INDEX)
+  if(delim1 != P_MAX_INDEX && delim2 != P_MAX_INDEX)
+  {
+    display_name = str.Left(delim1-1);
+    display_name.Replace("\"","",TRUE,0);
+    url_party = str.Mid(delim1+1, delim2-delim1-1);
+  }
+  else if(delim3 != P_MAX_INDEX && delim4 != P_MAX_INDEX)
   {
     display_name = str.Left(delim3-1);
     display_name.Replace("\"","",TRUE,0);
     url_party = str.Mid(delim3+1, delim4-delim3-1);
   }
-  else if(delim1 != P_MAX_INDEX && delim2 != P_MAX_INDEX)
-  {
-    display_name = str.Left(delim1-1);
-    url_party = str.Mid(delim1+1, delim2-delim1-1);
-  } else {
+  else
     url_party = str;
-  }
 
   pos = str.Find(" ##");
   if(pos != P_MAX_INDEX)
@@ -33,7 +34,7 @@ MCUURL::MCUURL(const PString & str)
   }
 
   if(url_party.Left(4) == "sip:") url_scheme = "sip";
-  else if(url_party.Left(4) == "sips:") url_scheme = "sip";
+  else if(url_party.Left(5) == "sips:") url_scheme = "sip";
   else if(url_party.Left(5) == "h323:") url_scheme = "h323";
   else if(url_party.Left(5) == "rtsp:") url_scheme = "rtsp";
   else if(url_party.Left(5) == "http:") url_scheme = "http";
