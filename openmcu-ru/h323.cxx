@@ -2795,7 +2795,7 @@ void MCUH323Connection::SetRequestedRoom()
 
 void MCUH323Connection::JoinConference(const PString & roomToJoin)
 {
-  PTRACE(1, trace_section << "Join conference: " << roomToJoin << " remotePartyName: " << remotePartyName);
+  PTRACE(1, trace_section << "Join conference: " << roomToJoin << " memberName: " << memberName);
 
   PWaitAndSignal m(connMutex);
 
@@ -2896,7 +2896,8 @@ H323Channel * MCUH323Connection::CreateRealTimeLogicalChannel(const H323Capabili
 
 void MCUH323Connection::SetupCacheConnection(PString & format, Conference * conf, ConferenceMember * memb)
 {
- remotePartyName = format;
+ remoteUserName = format;
+ remoteDisplayName = format;
  conference = conf;
  conferenceIdentifier = conference->GetGUID();
  conferenceMember = memb;
@@ -3212,7 +3213,7 @@ H323Connection::CallEndReason MCUH323Connection::SendSignalSetup(const PString &
 {
   CallEndReason reason = H323Connection::SendSignalSetup(alias, address);
   if(alias != "")
-    remotePartyNumber = alias;
+    remoteUserName = alias;
   return reason;
 }
 
@@ -3222,6 +3223,8 @@ BOOL MCUH323Connection::OnReceivedSignalSetup(const H323SignalPDU & setupPDU)
 {
   const H225_Setup_UUIE & setup = setupPDU.m_h323_uu_pdu.m_h323_message_body;
   isMCU = setup.m_sourceInfo.m_mc;
+  // set endpoint name
+  SetRemoteName(setupPDU);
   // called OnAnswerCall
   return H323Connection::OnReceivedSignalSetup(setupPDU);
 }
@@ -3232,20 +3235,18 @@ BOOL MCUH323Connection::OnReceivedCallProceeding(const H323SignalPDU & proceedin
 {
   const H225_CallProceeding_UUIE & proceeding = proceedingPDU.m_h323_uu_pdu.m_h323_message_body;
   isMCU = proceeding.m_destinationInfo.m_mc;
-  BOOL ret = H323Connection::OnReceivedCallProceeding(proceedingPDU);
   // set endpoint name
   SetRemoteName(proceedingPDU);
-  return ret;
+  return H323Connection::OnReceivedCallProceeding(proceedingPDU);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCUH323Connection::OnReceivedSignalConnect(const H323SignalPDU & pdu)
 {
-  BOOL ret = H323Connection::OnReceivedSignalConnect(pdu);
   // set endpoint name
   SetRemoteName(pdu);
-  return ret;
+  return H323Connection::OnReceivedSignalConnect(pdu);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3261,8 +3262,6 @@ H323Connection::AnswerCallResponse MCUH323Connection::OnAnswerCall(const PString
   if(requestedRoom.IsEmpty())
     return AnswerCallDenied;
 
-  // set endpoint name
-  SetRemoteName(setupPDU);
   // redirect to registrar
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
   return registrar->OnReceivedH323Invite(this);
@@ -3397,7 +3396,7 @@ PString MCUH323Connection::GetEndpointParam(PString param, bool asterisk)
   {
     PINDEX pos = url.Find("ip$");
     if(pos != P_MAX_INDEX) url=url.Mid(pos+3);
-    url = GetRemoteNumber()+"@"+url;
+    url = GetRemoteUserName()+"@"+url;
   }
   return GetSectionParamFromUrl(param, url, asterisk);
 }
@@ -3406,9 +3405,6 @@ PString MCUH323Connection::GetEndpointParam(PString param, bool asterisk)
 
 void MCUH323Connection::SetEndpointDefaultVideoParams(H323VideoCodec & codec)
 {
-  if(GetRemotePartyAddress() == "")
-    return;
-
   OpalMediaFormat & mf = codec.GetWritableMediaFormat();
 
   mf.SetOptionInteger(OPTION_ENCODER_QUALITY, DefaultVideoQuality);
@@ -3780,10 +3776,7 @@ void MCUH323Connection::OnUserInputString(const PString & str)
       if(params[1] != "") text = params[1];
       else text = params[0];
     }
-    if(connectionType == CONNECTION_TYPE_SIP)
-      name = GetRemotePartyName()+" ["+GetRemotePartyAddress()+"]";
-    else
-      name = GetRemotePartyName();
+    name = memberName;
     codeMsg << "<font color=blue><b>" << name << "</b>: " << text;
 
     if(codeRoom == "")
@@ -3949,66 +3942,68 @@ void MCUH323Connection::OnWelcomeWaveEnded()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString MCUH323Connection::GetRemoteNumber()
+PString MCUH323Connection::GetRemoteUserName()
 {
-  PString number;
+  PString username;
   if(connectionType == CONNECTION_TYPE_H323)
   {
     if(ep.IsRegisteredWithGatekeeper() && remotePartyAddress.Left(4) == "url:")
     {
       PURL url(remotePartyAddress.Right(remotePartyAddress.GetLength()-4), "h323");
-      number = url.GetUserName();
+      username = url.GetUserName();
     }
-    if(number == "")
-      number = remotePartyNumber;
   }
-  else
-    number = MCUURL(remotePartyAddress).GetUserName();
-  if(number == "")
-    number = "undefined";
-  return number;
+  if(username == "")
+    username = remoteUserName;
+  if(username == "")
+    username = "undefined";
+  return username;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
 {
-  // remotePartyNumber
+  // remoteUserName
   switch(pdu.m_h323_uu_pdu.m_h323_message_body.GetTag())
   {
     case(H225_H323_UU_PDU_h323_message_body::e_setup):
-      pdu.GetQ931().GetCallingPartyNumber(remotePartyNumber);
-      if(remotePartyNumber == "")
+      pdu.GetQ931().GetCallingPartyNumber(remoteUserName);
+      if(remoteUserName == "")
       {
         const H225_Setup_UUIE & setup = pdu.m_h323_uu_pdu.m_h323_message_body;
         if(setup.HasOptionalField(H225_Setup_UUIE::e_sourceAddress))
-          remotePartyNumber = H323GetAliasUserName(setup.m_sourceAddress);
+          remoteUserName = H323GetAliasUserName(setup.m_sourceAddress);
       }
       break;
     case(H225_H323_UU_PDU_h323_message_body::e_callProceeding):
     case(H225_H323_UU_PDU_h323_message_body::e_alerting):
     case(H225_H323_UU_PDU_h323_message_body::e_connect):
-      if(remotePartyNumber == "")
-        pdu.GetQ931().GetCalledPartyNumber(remotePartyNumber);
+      if(remoteUserName == "")
+        pdu.GetQ931().GetCalledPartyNumber(remoteUserName);
       break;
   }
-  if(remotePartyNumber == "")
-    remotePartyNumber = signallingChannel->GetRemoteAddress().GetHostName();
+  if(remoteUserName == "")
+    remoteUserName = signallingChannel->GetRemoteAddress().GetHostName();
 
-  // remotePartyName
-  remotePartyName = pdu.GetQ931().GetDisplayName();
-  if(remotePartyName == "" && pdu.m_h323_uu_pdu.m_h323_message_body.GetTag() == H225_H323_UU_PDU_h323_message_body::e_setup)
+  // remoteDisplayName
+  remoteDisplayName = pdu.GetQ931().GetDisplayName();
+  if(remoteDisplayName == "" && pdu.m_h323_uu_pdu.m_h323_message_body.GetTag() == H225_H323_UU_PDU_h323_message_body::e_setup)
   {
     const H225_Setup_UUIE & setup = pdu.m_h323_uu_pdu.m_h323_message_body;
     if(setup.HasOptionalField(H225_Setup_UUIE::e_sourceAddress))
-      remotePartyName = H323GetAliasDisplayName(setup.m_sourceAddress);
+      remoteDisplayName = H323GetAliasDisplayName(setup.m_sourceAddress);
   }
-  if(remotePartyName == "")
-    remotePartyName = remotePartyNumber;
+  if(remoteDisplayName == "")
+    remoteDisplayName = remoteUserName;
+
+  // remotePartyAddress
+  if(remotePartyAddress == "")
+    remotePartyAddress = signallingChannel->GetRemoteAddress();
 
   // ??? h323plus 1.25.0
-  remotePartyNumber.Replace("h323:", "", TRUE, 0);
-  remotePartyName.Replace("h323:", "", TRUE, 0);
+  remoteUserName.Replace("h323:", "", TRUE, 0);
+  remoteDisplayName.Replace("h323:", "", TRUE, 0);
   remotePartyAddress.Replace("h323:", "", TRUE, 0);
   for(int i = 0; i < remoteAliasNames.GetSize(); ++i)
     remoteAliasNames[i].Replace("h323:", "", TRUE, 0);
@@ -4016,17 +4011,12 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
   if(remoteApplication.Find("MyPhone") != P_MAX_INDEX || remoteApplication.Find("Polycom ViaVideo\tRelease 8.0") != P_MAX_INDEX)
   {
     // convert
-    remotePartyNumber = convert_cp1251_to_utf8(remotePartyNumber);
-    remotePartyName = convert_cp1251_to_utf8(remotePartyName);
+    remoteUserName = convert_cp1251_to_utf8(remoteUserName);
+    remoteDisplayName = convert_cp1251_to_utf8(remoteDisplayName);
   }
 
-  // display name
-  PString displayName = GetEndpointParam(DisplayNameKey);
-  if(displayName != "")
-    remotePartyName = displayName;
-
-  PTRACE(1, trace_section << "SetRemoteName remotePartyNumber: " << remotePartyNumber);
-  PTRACE(1, trace_section << "SetRemoteName remotePartyName: " << remotePartyName);
+  PTRACE(1, trace_section << "SetRemoteName remoteUserName: " << remoteUserName);
+  PTRACE(1, trace_section << "SetRemoteName remoteDisplayName: " << remoteDisplayName);
   SetMemberName();
 }
 
@@ -4043,7 +4033,7 @@ void MCUH323Connection::SetMemberName()
   {
     address = remotePartyAddress;
   }
-  else
+  else if(connectionType == CONNECTION_TYPE_H323)
   {
     PString alias, host, port;
     if(remotePartyAddress.Left(4) == "url:" && ep.IsRegisteredWithGatekeeper())
@@ -4066,17 +4056,20 @@ void MCUH323Connection::SetMemberName()
       port = host.Tokenise(":")[1];
       host = host.Tokenise(":")[0];
     }
-    alias = GetRemoteNumber();
+    alias = GetRemoteUserName();
 
     address = "h323:"+alias+"@"+host;
     if(!HadAnsweredCall() && port != "") address += ":"+port;
   }
 
-  memberName = remotePartyName+" ["+address+"]";
+  // remoteDisplayName
+  remoteDisplayName = GetEndpointParam(DisplayNameKey, remoteDisplayName);
 
-  PTRACE(1, trace_section << "SetMemberName remote account: " << GetRemoteNumber());
-  PTRACE(1, trace_section << "SetMemberName remotePartyName: " << remotePartyName);
-  PTRACE(1, trace_section << "SetMemberName remotePartyNumber: " << remotePartyNumber);
+  memberName = remoteDisplayName+" ["+address+"]";
+
+  PTRACE(1, trace_section << "SetMemberName remote account: " << GetRemoteUserName());
+  PTRACE(1, trace_section << "SetMemberName remoteUserName: " << remoteUserName);
+  PTRACE(1, trace_section << "SetMemberName remoteDisplayName: " << remoteDisplayName);
   PTRACE(1, trace_section << "SetMemberName remotePartyAddress: " << remotePartyAddress);
   PTRACE(1, trace_section << "SetMemberName remotePartyAliases: " << remoteAliasNames);
   PTRACE(1, trace_section << "SetMemberName memberName: " << memberName);
@@ -4344,7 +4337,7 @@ void MCUConnection_ConferenceMember::SendUserInputIndication(const PString & str
     return;
   }
 
-  PString sendmsg = "[" + conn->GetRemotePartyName() + "]: " + str;
+  PString sendmsg = "[" + conn->GetRemoteUserName() + "]: " + str;
 
   // unlock
   conn->Unlock();

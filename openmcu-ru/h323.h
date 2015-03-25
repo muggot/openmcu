@@ -354,7 +354,11 @@ class MCUH323Connection : public H323Connection
 
     void SetRemoteName(const H323SignalPDU & pdu);
     void SetMemberName();
-    PString GetRemoteNumber();
+
+    PString GetRemoteUserName();
+
+    PString GetRemoteDisplayName()
+    { return remoteDisplayName; }
 
     virtual PString GetMemberName() const
     { return memberName; }
@@ -494,6 +498,8 @@ class MCUH323Connection : public H323Connection
     //  stopped. Use welcomeState to know the current state.
     virtual void OnWelcomeWaveEnded();
 
+    PString remoteUserName;
+    PString remoteDisplayName;
     PString memberName;
 
     MCUConnectionTypes connectionType;

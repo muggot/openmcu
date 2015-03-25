@@ -149,7 +149,7 @@ BOOL MCURtspConnection::Connect(PString room, PString address)
     goto error;
 
   // display name
-  remotePartyName = GetEndpointParam(DisplayNameKey, url.GetPathStr());
+  remoteDisplayName = GetEndpointParam(DisplayNameKey, url.GetPathStr());
 
   // auth
   auth.username = GetEndpointParam(UserNameKey, url.GetUserName());
