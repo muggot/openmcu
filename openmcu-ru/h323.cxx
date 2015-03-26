@@ -3211,9 +3211,9 @@ BOOL MCUH323Connection::StartControlNegotiations(BOOL renegotiate)
 
 H323Connection::CallEndReason MCUH323Connection::SendSignalSetup(const PString & alias, const H323TransportAddress & address)
 {
-  CallEndReason reason = H323Connection::SendSignalSetup(alias, address);
   if(alias != "")
     remoteUserName = alias;
+  CallEndReason reason = H323Connection::SendSignalSetup(alias, address);
   return reason;
 }
 
