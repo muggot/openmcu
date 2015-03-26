@@ -4025,7 +4025,7 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
     v2->height=o.height;
     v2->border=o.border;
     v2->n=pos1;
-    if((long)v2->id < 100) v2->id=(ConferenceMemberId)pos1; //this fixes empty VAD Id
+    if((unsigned long)v2->id < 100) v2->id=(ConferenceMemberId)pos1; //this fixes empty VAD Id
 #if USE_FREETYPE
     RemoveSubtitles(*v2);
 #endif
