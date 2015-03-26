@@ -219,7 +219,7 @@ void Conference::LoadTemplate(PString tpl)
               ConferenceMember *member = manager.FindMemberNameIDWithLock(this, name);
               if(member)
               {
-                if(mixer)
+                if(mixer && member->IsVisible())
                 {
                   mixer->PositionSetup(vmpN, 1, member);
                   member->SetFreezeVideo(FALSE);
