@@ -828,12 +828,12 @@ function format_mmbr_button(m,st)
   var vad=vad_button(m);
   kick   ="<img "+b1style+" src='i16_close_red.png' onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\");' onmouseover='prvnt=1' onmouseout='prvnt=0' alt='Drop'>";
   hide   ="<img "+b1style+" src='i15_getNoVideo.gif' title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>";
-  kdb    ="<div "+b2style+" id='agl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+"  );return false;}'>"+nice_db(m[10])+"</div>";
-  kdbo   ="<div "+b2style+" id='ogl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+",1);return false;}'>"+nice_db(m[11])+"</div>";
+  kdb    ="<div "+b2style+" id='agl_"+id+"' class='kdb'" + prCode + " onclick='javascript:{gain_selector(this,"+m[1]+"  );return false;}'>"+nice_db(m[10])+"</div>";
+  kdbo   ="<div "+b2style+" id='ogl_"+id+"' class='kdb'" + prCode + " onclick='javascript:{gain_selector(this,"+m[1]+",1);return false;}'>"+nice_db(m[11])+"</div>";
   mixerb ="<div "+b3style+" onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi'>#"+mixer+"</div>";
   levelb ="<div "+b4style+" class='"+((m[9]&16)?"mutespr30":"vlevel")+"' id='srpan_"+id+"'>&nbsp;</div>";
   var autoDial=m[14], adspr="adspr"+(st?"1":"0")+(m[14]?"1":"0");
-  var invite = "<div onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='queue_otf_request(" + OTFC_DIAL + "," + m[1] + ")' id='dial_"+id+"' class='"+adspr+"'></div>";
+  var invite = "<div" + prCode + " onclick='this.className=\"launchspr\";queue_otf_request(" + OTFC_DIAL + "," + m[1] + ")' id='dial_"+id+"' class='"+adspr+"'></div>";
   remove ="<img "+b1style+" onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i16_close_gray.png' alt='Remove' title='"+l_room_remove_from_list+"'>";
 
   s+=dpre+"2px'><div class='mmbrname' "+namestyle+">"+uname+"</div></div>";
