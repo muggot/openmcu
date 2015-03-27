@@ -428,22 +428,28 @@ function member_read_by_id(id,index){
  return false;
 }
 
-function muteunmute(obj,mid,mask){
+function muteunmute(obj,mid,mask)
+{
   dmsg('Executing MUTE for member id '+mid);
   var cmd, mute=member_read_by_id(mid,3)&mask;
   if(!mute)cmd=OTFC_MUTE;else cmd=OTFC_UNMUTE;
-  obj.src='launched.gif';
+  if(obj)obj.className='launchspr';
   queue_otf_request(cmd,mid,mask);
   return false;
 }
 
-function vadoptions(obj,mid){
- var disv=member_read_by_id(mid,4);
- var cvan=member_read_by_id(mid,5);
- if(!(cvan|disv))var cmd=OTFC_VAD_CHOSEN_VAN; else if(cvan)var cmd=OTFC_VAD_DISABLE_VAD;else var cmd=OTFC_VAD_NORMAL;
- queue_otf_request(cmd,mid);
- obj.src='launched.gif';
- return false;
+function vadoptions(obj,mid)
+{
+  var
+    disv=member_read_by_id(mid,4),
+    cvan=member_read_by_id(mid,5),
+    cmd;
+  if(!(cvan|disv)) cmd=OTFC_VAD_CHOSEN_VAN;
+  else if(cvan) cmd=OTFC_VAD_DISABLE_VAD;
+  else cmd=OTFC_VAD_NORMAL;
+  if(obj) obj.className='launchspr';
+  queue_otf_request(cmd,mid);
+  return false;
 }
 
 function checking_failed(){
@@ -670,14 +676,14 @@ function rtp_state(id, bit, state)
         members[i][9]&=~bit;
       if(bit < 16)
       {
-        obj=object_return('mrpanb'+bit+'_',id);
+        obj=object_return('mrpan'+bit+'_',idid(id));
         if(obj)
           if(state) obj.style.borderStyle='none';
           else      obj.style.borderStyle='solid';
       }
       else if(bit&16)
       {
-        obj=object_return('srpan_',id);
+        obj=object_return('srpan_',idid(id));
         if(obj)
           if(state) obj.className='mutespr30';
           else      obj.className='vlevel';
@@ -780,6 +786,35 @@ function setogl(id, level)
 
 function idid(id){ if(id<0) return '_'+(-id); return ''+id; }
 
+function mute_button(member, st, bitN)
+{
+  var id=idid(member[1]);
+  return "<div"
+    + " id='mrpan" + bitN + "_" + id + "'"
+    + " style='border:1px red " + ((!st||member[9]&bitN)?"none":"solid") + ";'"
+    + " onmouseover='prvnt=1'"
+    + " onmouseout='prvnt=0'"
+    + " onclick='muteunmute(this," + member[1] + "," + bitN + ")'"
+    + " class='mutespr" + bitN + ((member[3]&1)?"0":"1") + "'"
+    + " title='" + ((member[3]&bitN)?"Unmute":"Mute") + "'"
+  + "></div>";
+}
+
+function vad_button(member)
+{
+  var cmd=10;
+  if(!(member[4]|member[5])) cmd=8;
+  else if(member[5]) cmd=9;
+  return "<div"
+    + " id='vrpan_" + idid(member[1]) + "'"
+    + " class='vadspr" + cmd + "'"
+    + " onmouseover='prvnt=1'"
+    + " onmouseout='prvnt=0'"
+    + " onclick='vadoptions(this," + member[1] + ")'"
+    + " title='" + ((cmd==8)?"VAD":"") + ((cmd==9)?"Chosen Van":"") + ((cmd==10)?"VAD disabled":"") + "'"
+  + "></div>";
+}
+
 function format_mmbr_button(m,st)
 {
   var sname='mmbr', id=idid(m[1]), memberName=''+m[2];
@@ -791,10 +826,9 @@ function format_mmbr_button(m,st)
 
   var ip=get_addr_url_without_param(memberName);
   var uname=get_addr_name(memberName);
-  var mute, vad, kick, hide, kdb, kdb2, mixer=m[7], cmd=10, mute2, mute4, mute8, mixerb, levelb, remove, invite;
+  var kick, hide, kdb, kdb2, mixer=m[7], mixerb, levelb, remove, invite;
 
   if(mixer==-1) mixer='va';
-  if(!(m[4]|m[5])) cmd=8; else if(m[5]) cmd=9;
   ip="<span style='color:"+((st==0)?"#576":"blue")+";font-size:10px'>"+ip+"</span>";
 
   var kdb_width=35, w=15, h=15, sp=5;
@@ -845,11 +879,13 @@ function format_mmbr_button(m,st)
   else if(ping_state == 2) ping_icon = "<img src='i16_status_red.png' title='"+ping_info+"' "+st_style+">";
   //
 
-  mute1  ="<div id='mrpanb1_"+id+"' style='border:1px red "+((!st||m[9]&1)?"none":"solid")+";'><div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",1)' class='mutespr3"+((m[3]&1)?"0":"1")+"' title='"+((m[3]&1)?"Unmute":"Mute")+"' id='mrpan_" +id+"'></div></div>";
-  mute2  ="<div id='mrpanb2_"+id+"' style='border:1px red "+((!st||m[9]&2)?"none":"solid")+";'><div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",2)' class='mutespr4"+((m[3]&2)?"0":"1")+"' title='"+((m[3]&2)?"Unmute":"Mute")+"' id='mrpan2_"+id+"'></div></div>";
-  mute4  ="<div id='mrpanb4_"+id+"' style='border:1px red "+((!st||m[9]&4)?"none":"solid")+";'><div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",4)' class='mutespr2"+((m[3]&4)?"0":"1")+"' title='"+((m[3]&4)?"Unmute":"Mute")+"' id='mrpan4_"+id+"'></div></div>";
-  mute8  ="<div id='mrpanb8_"+id+"' style='border:1px red "+((!st||m[9]&8)?"none":"solid")+";'><div "+b1style+" onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='muteunmute(this,"+m[1]+",8)' class='mutespr1"+((m[3]&8)?"0":"1")+"' title='"+((m[3]&8)?"Unmute":"Mute")+"' id='mrpan8_"+id+"'></div></div>";
-  vad    ="<img "+b1style+" src='vad_"+((cmd==8)?"vad":"")+((cmd==9)?"chosenvan":"")+((cmd==10)?"disable":"")+".gif' onclick='vadoptions(this,"+m[1]+")' alt='"+((cmd==8)?"Normal":"")+((cmd==9)?"Van":"")+((cmd==10)?"AD disabled":"")+"' id='vrpan_"+id+"'>";
+  var prCode = " onmouseover='prvnt=1' onmouseout='prvnt=0'";
+
+  var mute1=mute_button(m, st, 1);
+  var mute2=mute_button(m, st, 2);
+  var mute4=mute_button(m, st, 4);
+  var mute8=mute_button(m, st, 8);
+  var vad=vad_button(m);
   kick   ="<img "+b1style+" src='i16_close_red.png' onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\");' onmouseover='prvnt=1' onmouseout='prvnt=0' alt='Drop'>";
   hide   ="<img "+b1style+" src='i15_getNoVideo.gif' title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'>";
   kdb    ="<div "+b2style+" id='agl_"+id+"' class='kdb' onmouseover='prvnt=1' onmouseout='prvnt=0' onclick='javascript:{gain_selector(this,"+m[1]+"  );return false;}'>"+nice_db(m[10])+"</div>";
@@ -1020,8 +1056,8 @@ function additional_panel(){
   var bwidth = 28;
   var dbutton="<div class='btn btn-small' style='border-width:1px;border-radius:0px;padding:2px 0px 2px 0px;height:"+(height+1)+"px;line-height:"+(height+1)+"px;text-align:center;cursor:pointer;";
   var s="<form onsubmit='return false' id='additional_panel' style='display:block;width:"+panel_width+"px;height:22px;padding:0px 0px 4px 0px;border-bottom:1px solid #E6E6FA;margin:0px'>"
-   +dpre+ "2px;'>"+dbutton+"width:"+bwidth+"px' onclick='queue_otf_request("+OTFC_MUTE_ALL+")' title='"+window.l_room_mute_all+"'><div class='mutespr30' style='margin-left:7px'></div></div></div>"
-   +dpre+"34px;'>"+dbutton+"width:"+bwidth+"px' onclick='queue_otf_request("+OTFC_UNMUTE_ALL+")' title='"+window.l_room_unmute_all+"'><div class='mutespr31' style='margin-left:7px'></div></div></div>"
+   +dpre+ "2px;'>"+dbutton+"width:"+bwidth+"px' onclick='queue_otf_request("+OTFC_MUTE_ALL+")' title='"+window.l_room_mute_all+"'><div class='mutespr10' style='margin-left:7px'></div></div></div>"
+   +dpre+"34px;'>"+dbutton+"width:"+bwidth+"px' onclick='queue_otf_request("+OTFC_UNMUTE_ALL+")' title='"+window.l_room_unmute_all+"'><div class='mutespr11' style='margin-left:7px'></div></div></div>"
    +dpre+"66px;'>"+dbutton+"width:"+bwidth+"px' onclick='invite_all(this)' title='"+window.l_room_invite_all_inactive_members+"'><div class='adspr00' style='margin-left:6px'></div></div></div>"
    +dpre+"98px;'>"+dbutton+"width:"+bwidth+"px' onclick='invite_all(this,1)' title='"+window.l_room_dial_all_members+"'><div class='adspr01' style='margin-left:6px'></div></div></div>"
    +dpre+"130px;'>"+dbutton+"width:"+bwidth+"px' onclick='remove_all0(this)' title='"+window.l_room_remove_all_inactive_members+"'><div class='xsgray' style='margin-left:7px'></div></div></div>"
@@ -1265,6 +1301,8 @@ function audio(id,vol)
     } catch(e) { return alive(); }
 
     var v16=Math.floor(vol/1928), htmlCode;
+    var v17=0,vol0=vol; while(vol0>0){vol0=vol0>>1;v17++;}
+    v16=Math.floor((v16+v17)/2+1);
     if(v16==0) htmlCode='';
     else htmlCode="<div style='position:relative;top:" + (16-v16) + "px' class='audl" + v16 + "'></div>";
     try { o2.innerHTML=htmlCode; } catch(e) {}
@@ -1397,55 +1435,95 @@ function object_return(o,id){
   return o;
 }
 
-function imute(id,mask){
+function set_mute_sprite(bitMask,id,value)
+{
+  var o=document.getElementById('mrpan'+bitMask+'_'+idid(id));
+  if(!o) return;
+  if(value)
+  {
+    o.className='mutespr'+bitMask+'0';
+    o.title='Unmute';
+  }
+  else
+  {
+    o.className='mutespr'+bitMask+'1';
+    o.title='Mute';
+  }
+}
+
+function imute(id,mask)
+{
+  for(var i=0;i<members.length;i++)
+    if(members[i][1]==id)
+    {
+      members[i][3]|=mask;
+      for(var bit=1;bit<32;bit=bit<<1)
+        if(mask&bit) set_mute_sprite(bit,id,bit);
+    }
+  alive();
+}
+
+function imute_all(v,mask0)
+{
+  var mask=1; if(typeof mask0!='undefined') mask=mask0;
+  var cl='mutespr' + mask + (v?'0':'1');
+  for(var i=0;i<members.length;i++)
+  {
+    if(v)
+    {
+      members[i][3]|=mask;
+      set_mute_sprite(mask,members[i][1],mask);
+    }
+    else
+    {
+      members[i][3]&=(~mask);
+      set_mute_sprite(mask,members[i][1],0);
+    }
+  }
+  return alive();
+}
+
+function iunmute(id,mask)
+{
+  for(var i=0;i<members.length;i++)
+    if(members[i][1]==id)
+    {
+      members[i][3]&=(~mask);
+      for(var bit=1;bit<32;bit=bit<<1)
+        if(mask&bit) set_mute_sprite(bit,id,0);
+    }
+  alive();
+}
+
+function ivad(id,v)
+{
+  dmsg('VAD switch for id '+id+', value '+v);
   for(var i=0;i<members.length;i++)
   if(members[i][1]==id)
-  { members[i][3]|=mask;
-    if(mask&1) if((o=object_return('mrpan_' ,id))!==false) { o.className='mutespr30'; o.title='Unmute'; }
-    if(mask&2) if((o=object_return('mrpan2_',id))!==false) { o.className='mutespr40'; o.title='Unmute'; }
-    if(mask&4) if((o=object_return('mrpan4_',id))!==false) { o.className='mutespr20'; o.title='Unmute'; }
-    if(mask&8) if((o=object_return('mrpan8_',id))!==false) { o.className='mutespr10'; o.title='Unmute'; }
+  {
+    var o = document.getElementById('vrpan_'+idid(id));
+    if(o) o.className='vadspr'+(v+8);
+    if(v==2) //disable vad
+    {
+      members[i][4]=1;
+      members[i][5]=0;
+      if(o) o.title='VAD disabled';
+    }
+    else if(v==1)
+    {
+      members[i][4]=0;
+      members[i][5]=1;
+      if(o) o.title='Chosen Van';
+    }
+    else
+    {
+      members[i][4]=0;
+      members[i][5]=0;
+      if(o) o.title='VAD';
+    }
     break;
   }
-  return alive();
-}
-
-function imute_all(v)
-{ var cl='mutespr30'; if(!v) cl='mutespr31';
-  for(var i=0;i<members.length;i++)
-  if(members[i][0])
-  { if(v)members[i][3]|=1; else members[i][3]&=14;
-    if((o=object_return('mrpan_',members[i][1]))===false) continue;
-    o.className=cl;
-    if(v)o.title='Unmute'; else o.title='Mute';
-  }
-  return alive();
-}
-
-function iunmute(id,mask){
-  for(var i=0;i<members.length;i++)
-  if(members[i][1]==id)
-  { members[i][3]&=(15-mask);
-    if(mask&1) if((o=object_return('mrpan_' ,id))!==false) { o.className='mutespr31'; o.title='Mute'; }
-    if(mask&2) if((o=object_return('mrpan2_',id))!==false) { o.className='mutespr41'; o.title='Mute'; }
-    if(mask&4) if((o=object_return('mrpan4_',id))!==false) { o.className='mutespr21'; o.title='Mute'; }
-    if(mask&8) if((o=object_return('mrpan8_',id))!==false) { o.className='mutespr11'; o.title='Mute'; }
-    break;
-  }
-  return alive();
-}
-
-function ivad(id,v){
-  dmsg('Executing VAD switch for member id '+id+': new VAD value is '+v);
-  for(var i=0;i<members.length;i++) if(members[i][1]==id){
-    var src='vad_vad.gif';
-    if(v==2){members[i][4]=1;members[i][5]=0;src='vad_disable.gif';}
-    else if(v==1){members[i][4]=0;members[i][5]=1;src='vad_chosenvan.gif';}
-    else {members[i][4]=0;members[i][5]=0;}
-    if((o=object_return('vrpan_',id))===false) return alive();
-    o.src=src;
-    return alive();
-  }
+  alive();
 }
 
 function button_control()

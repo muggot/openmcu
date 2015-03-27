@@ -356,14 +356,14 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .kdb0{background-color:#fff;border-bottom:1px solid #777;border-right:1px solid #777;}
 .kdbs{background-color:#009;color:#fff;border-bottom:1px dotted #ccc;border-right:1px dotted #ccc;cursor:default}
 
-.mutespr11{width:15px;height:15px;background:url(s15_ch.png)    0px   0px;cursor:pointer}
-.mutespr10{width:15px;height:15px;background:url(s15_ch.png)  -15px   0px;cursor:pointer}
-.mutespr21{width:15px;height:15px;background:url(s15_ch.png)  -30px   0px;cursor:pointer}
-.mutespr20{width:15px;height:15px;background:url(s15_ch.png)  -45px   0px;cursor:pointer}
-.mutespr31{width:15px;height:15px;background:url(s15_ch.png)  -60px   0px;cursor:pointer}
-.mutespr30{width:15px;height:15px;background:url(s15_ch.png)  -75px   0px;cursor:pointer}
-.mutespr41{width:15px;height:15px;background:url(s15_ch.png)  -90px   0px;cursor:pointer}
-.mutespr40{width:15px;height:15px;background:url(s15_ch.png) -105px   0px;cursor:pointer}
+.mutespr11{width:15px;height:15px;background:url(s15_ch.png)  -60px   0px;cursor:pointer}
+.mutespr10{width:15px;height:15px;background:url(s15_ch.png)  -75px   0px;cursor:pointer}
+.mutespr21{width:15px;height:15px;background:url(s15_ch.png)  -90px   0px;cursor:pointer}
+.mutespr20{width:15px;height:15px;background:url(s15_ch.png) -105px   0px;cursor:pointer}
+.mutespr41{width:15px;height:15px;background:url(s15_ch.png)  -30px   0px;cursor:pointer}
+.mutespr40{width:15px;height:15px;background:url(s15_ch.png)  -45px   0px;cursor:pointer}
+.mutespr81{width:15px;height:15px;background:url(s15_ch.png)    0px   0px;cursor:pointer}
+.mutespr80{width:15px;height:15px;background:url(s15_ch.png)  -15px   0px;cursor:pointer}
 .lgalspr  {width:18px;height:17px;background:url(s15_ch.png)  -90px -15px;cursor:pointer;border:1px solid #000;vertical-align:middle;margin:0px;background-color:#fff}
 .humanspr {width:24px;height:24px;background:url(s32_ch.png) -229px -69px;cursor:pointer;border:2px solid #0f0;vertical-align:middle;margin:2px;background-color:#0ff;border-radius:3px;overflow:hidden}
 .robotspr {width:24px;height:24px;background:url(s32_ch.png) -197px -69px;cursor:pointer;border:2px solid #007;vertical-align:middle;margin:2px;background-color:#ccf;border-radius:3px;overflow:hidden}
@@ -424,3 +424,9 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .audl14   {width:16px;height:14px;background:url(s32_ch.png) -137px -108px}
 .audl15   {width:16px;height:15px;background:url(s32_ch.png) -137px -107px}
 .audl16   {width:16px;height:16px;background:url(s32_ch.png) -137px -106px}
+
+.launchspr{width:15px;height:15px;background:url(s32_ch.png)  -40px -138px}
+
+.vadspr8  {width:15px;height:15px;background:url(s32_ch.png)  -73px -138px;cursor:pointer}
+.vadspr9  {width:15px;height:15px;background:url(s32_ch.png) -105px -138px;cursor:pointer}
+.vadspr10 {width:15px;height:15px;background:url(s32_ch.png) -137px -138px;cursor:pointer}
