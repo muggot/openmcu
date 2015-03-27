@@ -82,9 +82,6 @@ var abook_list_display = 0;
 
 if(debug)document.write('<div style="width:100%;height:80px;overflow:auto;border:1px dotted red" id="debug1"></div>'); function dmsg(s){if(debug){document.getElementById('debug1').innerHTML+=s+'. ';document.getElementById('debug1').scrollTop=document.getElementById('debug1').scrollHeight;}}
 
-var fv_ids=Array('room','tag','moderated','vidmemnum','muteUnvisible','VAdelay','VAtimeout','VAlevel');
-var idsl=fv_ids.length;
-for(var i=0;i<max_subframes;i++)fv_ids[i+idsl]='usr'+i;
 var dd_in_progress=false;
 var query_active=false;
 var appendedflying=false;
@@ -98,30 +95,21 @@ var mrefreshing=false;
 var staticMemberSelecting=false;
 var selectingObject=0;
 
-var query_gas = 0; // query status for 'form_gather_and_send()'
-var query_gas_result = 0; // query result of 'form_gather_and_send()': 0=OK; -1=FAIL; 1=in progress
-
 var otfrq=Array(); // on the fly control command queue
 var otf_in_progress = false; // on the fly control request flag
-
-var invall=false;
 
 var dd_flying_idx=false; // position for d&d
 var dd_flying_substance=0; // panel marker for d&d
 var dd_ex_marker=0;
 
-var recallflag=false;
-var offliners=false;
-
 var vad_setup_mode=false;
 var tpl_save_mode=false;
-var vad1=100; var vad2=1000; var vad3=10000;
+var vad1=100, vad2=1000, vad3=10000;
 
 var hl_links=[];
 var hl_id = -1;
 var hl_state = -1;
 
-var abgctr1=0;
 var mlgctr1=0;
 
 var isTemplateLocked=0;
@@ -147,22 +135,12 @@ function index_exists(a, i)
   return false;
 }
 
-function uncheck_recall(){
- document.cookie='autorec=false';
- document.getElementById('autorecall').checked=false;
-}
-
-function getcookie(name){
+function getcookie(name)
+{
   var regexp=new RegExp("(?:; )?"+name+"=([^;]*);?");
   if (regexp.test(document.cookie)) return decodeURIComponent(RegExp["$1"]);
   return false;
 }
-
-function descreen1(s){ s+="";return s.replace(/\%7C/g,'|').replace(/\%23/g,'#'); }
-
-function screen1(s){ s+=""; return s.replace(/\|/g,'%7C').replace(/\#/g,'%23'); }
-
-function pstrip(s){ return s.replace(/[^А-Яа-яA-Z0-9a-z-_]/gi,''); }
 
 function my_trim(s){ s+=""; return s.replace(/(^[\s\t\n\r]+)|([\s\t\n\r]+$)/g, ""); }
 
@@ -173,12 +151,15 @@ function checkcontrol()
   return false;
 }
 
-function ddstart(e,o,substance,idx){
+function ddstart(e,o,substance,idx)
+{
   if(prvnt) return false;
   if(!checkcontrol()) return false;
   if(e.preventDefault)e.preventDefault(); else e.returnValue=false;
 //something like mutex:
-  if(dd_in_progress)return false; if(query_active)return false; dd_in_progress=true;
+  if(dd_in_progress)return false;
+  if(query_active)return false;
+  dd_in_progress=true;
 
   dd_flying_idx=idx; dd_flying_substance=substance;
 
@@ -277,59 +258,6 @@ function dd_do_it(s1, p1, s2, p2)
   queue_otf_request(OTFC_MOVE_VMP,s1,p1,s2,p2);
 }
 
-function form_gather_and_send(){
- if(query_gas) return false; query_gas=1; var d=document.forms[0];
- query_gas_result=1;
- var cmd='room=' + d.room.value;
- if(d.moderated.checked)cmd+='&moderated=%2B';
- if(d.muteUnvisible.checked)cmd+='&muteUnvisible=%2B';
- cmd
- +='&VAlevel='      + d.VAlevel.value
-  +'&VAdelay='      + d.VAdelay.value
-  +'&VAtimeout='    + d.VAtimeout.value
-  +'&vidmemnum='    + d.vidmemnum.value
- ;
- for(var i=0;i<max_subframes;i++) eval('if(document.forms[0].usr'+i+')cmd+="&usr"+i+"="+document.forms[0].usr'+i+'.value;else cmd+="&usr"+i+"=0";');
- cmd=cmd.replace(/\+/g,'%2B');
- cro_gas=createRequestObject();
- cro_gas.open('POST','Select',true);
- cro_gas.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
- cro_gas.setRequestHeader("Content-length", cmd.length);
- cro_gas.setRequestHeader("Connection", "close");
- cro_gas.onreadystatechange=gas_result;
- cro_gas.send(cmd);
-}
-
-function gas_result(){
- try {
-  if (cro_gas.readyState==4) {
-   if (cro_gas.status==200) query_gas_result=0; else query_gas_result=-1;
-   cro_gas.abort();
-   query_gas=0;
-  }
- } catch (e) { ; }
-}
-
-function set_create_usr_value(n,id){
-// alert('scuv('+n+','+id+')');
- var d=false; eval('if(document.forms[0].usr'+n+')d=document.forms[0].usr'+n);
- if(d===false) return false;
- if(d.type!='select-one') return false;
- var flag=false;
- for(var i=0;i<d.length;i++)if(d.options[i].value==id) {flag=true;d.selectedIndex=i;break;}
- if (flag) return true;
- var option=document.createElement("option");
- option.text=member_read_by_id(id,2);
- option.value=id;
- try {
-   d.add(option,selvmn.options[null]);
- } catch (e) {
-   d.add(option,null);
- }
- d.selectedIndex=d.length-1;
- return true;
-}
-
 function createRequestObject(){
  if (typeof XMLHttpRequest==='undefined'){
   XMLHttpRequest=function(){
@@ -341,7 +269,8 @@ function createRequestObject(){
  }} return new XMLHttpRequest();
 }
 
-function queue_otf_request(action, value, option, option2, option3){ // options are optional
+function queue_otf_request(action, value, option, option2, option3) // options are optional
+{
   var q=Array(action,value);
   if(typeof option!='undefined')
   { q[2]=option;
@@ -356,58 +285,66 @@ function queue_otf_request(action, value, option, option2, option3){ // options 
   if(len==1) start_otf_control();
 }
 
-function start_otf_control(){
- if(otf_in_progress)
- {
-   dmsg('Request will be delayed for 333 ms');
-   return setTimeout(start_otf_control,333);
- }
- otf_in_progress=true;
- if(otfrq.length==0) { otf_in_progress=false; return; }
- var data=otfrq.pop();
- var cmd='room='+encodeURIComponent(roomName)
-   + '&otfc=1'
-   + '&action='+data[0]
-   + '&v='+data[1];
- if(2 in data) cmd+='&o='+encodeURIComponent(data[2]);
- if(3 in data) cmd+='&o2='+encodeURIComponent(data[3]);
- if(4 in data) cmd+='&o3='+encodeURIComponent(data[4]);
- dmsg('Sending <font color="green">'+cmd+'</font>');
- otf_timer=setTimeout(otf_fail,5555);
- cro_otf=createRequestObject();
- cro_otf.open('POST','Select',true);
- cro_otf.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
- cro_otf.setRequestHeader("Content-length", cmd.length);
- cro_otf.setRequestHeader("Connection", "close");
- cro_otf.onreadystatechange=otf_result;
- cro_otf.send(cmd);
- dmsg('Sent');
-}
-
-function otf_result(){
- try {
-  if (cro_otf.readyState==4) {
-   if (cro_otf.status==200) {
-    clearTimeout(otf_timer);
-    dmsg('Server responded: <b>'+cro_otf.responseText+'</b>, queue length: '+otfrq.length);
-    cro_otf.abort();
-    otf_in_progress=false;
-    if(otfrq.length>0) start_otf_control();
-   } else {
-    otfrq=Array();
-    cro_otf.abort();
-    clearTimeout(otf_timer);
-    my_alert('On-the-Fly Control error: reply code='+cro_otf.status+'.');
-    otf_in_progress=false;
-   }
+function start_otf_control()
+{
+  if(otf_in_progress)
+  {
+    dmsg('Request will be delayed for 333 ms');
+    return setTimeout(start_otf_control,333);
   }
- } catch (e) {
- }
+  otf_in_progress=true;
+  if(otfrq.length==0) { otf_in_progress=false; return; }
+
+  var data=otfrq.pop();
+  var cmd='room='+encodeURIComponent(roomName)
+    + '&otfc=1'
+    + '&action='+data[0]
+    + '&v='+data[1];
+  if(2 in data) cmd+='&o='+encodeURIComponent(data[2]);
+  if(3 in data) cmd+='&o2='+encodeURIComponent(data[3]);
+  if(4 in data) cmd+='&o3='+encodeURIComponent(data[4]);
+  dmsg('Sending <font color="green">'+cmd+'</font>');
+  otf_timer=setTimeout(otf_fail,5555);
+  cro_otf=createRequestObject();
+  cro_otf.open('POST','Select',true);
+  cro_otf.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+  cro_otf.setRequestHeader("Content-length", cmd.length);
+  cro_otf.setRequestHeader("Connection", "close");
+  cro_otf.onreadystatechange=otf_result;
+  cro_otf.send(cmd);
+  dmsg('Sent');
 }
 
-function otf_fail(){
- cro_otf.abort(); otf_in_progress=false; otfrq=Array();
- my_alert('On-the-Fly Control request cancelled by timeout.');
+function otf_result()
+{
+  try
+  {
+    if(cro_otf.readyState==4)
+    {
+      if(cro_otf.status==200) //OK
+      {
+        clearTimeout(otf_timer);
+        dmsg('Server responded: <b>'+cro_otf.responseText+'</b>, queue length: '+otfrq.length);
+        cro_otf.abort();
+        otf_in_progress=false;
+        if(otfrq.length>0) start_otf_control();
+      }
+      else //NOT OK
+      {
+        otfrq=Array();
+        cro_otf.abort();
+        clearTimeout(otf_timer);
+        my_alert('On-the-Fly Control error: reply code='+cro_otf.status+'.');
+        otf_in_progress=false;
+      }
+    }
+  } catch (e) {}
+}
+
+function otf_fail()
+{
+  cro_otf.abort(); otf_in_progress=false; otfrq=Array();
+  my_alert('On-the-Fly Control request cancelled by timeout.');
 }
 
 function member_modify_by_id(id,index,value)
@@ -421,11 +358,12 @@ function member_modify_by_id(id,index,value)
   return false;
 }
 
-function member_read_by_id(id,index){
- if(typeof members==='undefined') return false;
- //for(var i=0;i<members.length;i++) if(members[i][0]) if(members[i][1]==id) return members[i][index];
- for(var i=0;i<members.length;i++) if(members[i][1]==id) return members[i][index];
- return false;
+function member_read_by_id(id,index)
+{
+  if(typeof members!='undefined')
+    for(var i=0;i<members.length;i++)
+      if(members[i][1]==id) return members[i][index];
+  return false;
 }
 
 function muteunmute(obj,mid,mask)
@@ -676,14 +614,14 @@ function rtp_state(id, bit, state)
         members[i][9]&=~bit;
       if(bit < 16)
       {
-        obj=object_return('mrpan'+bit+'_',idid(id));
+        obj=document.getElementById('mrpan'+bit+'_'+idid(id));
         if(obj)
           if(state) obj.style.borderStyle='none';
           else      obj.style.borderStyle='solid';
       }
       else if(bit&16)
       {
-        obj=object_return('srpan_',idid(id));
+        obj=document.getElementById('srpan_'+idid(id));
         if(obj)
           if(state) obj.className='mutespr30';
           else      obj.className='vlevel';
@@ -1043,7 +981,7 @@ function invite_panel(){
   var b2x = b1x + bwidth;
   s+=dpre+proto_posx+"px'><div id='divInvProto' class='btn' style='font-size:12px;width:"+proto_width+"px;height:20px;padding:0px;border-radius:0px;' onclick='javascript:{if(this.innerHTML==\"h323\")this.innerHTML=\"rtsp\";else if(this.innerHTML==\"rtsp\")this.innerHTML=\"sip\";else if(this.innerHTML==\"sip\")this.innerHTML=\"h323\";document.getElementById(\"invite_input\").focus();}'>"+get_default_proto()+"</div></div>";
   s+=dpre+input_posx+"px'><input id='invite_input' type='text' style='font-size:12px;width:"+input_width+"px;height:20px;padding:0px;border-radius:0px;border-right:0px;' onkeyup='javascript:{if(mlgctr1){document.getElementById(\"binpinv\").src=\"i15_inv.gif\";mlgctr1=0;};if(event.keyCode==13){dial_from_input(document.getElementById(\"binpinv\"));mlgctr1=1;}}' /></div>";
-  s+=dpre+b1x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='dial_from_input(this);abgctr1=1;'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='"+window.l_invite+"' /></div></div>";
+  s+=dpre+b1x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='dial_from_input(this)'><img id='binpinv' style='cursor:pointer' src='i15_inv.gif' width="+width+" height="+height+" title='"+window.l_invite+"' /></div></div>";
   s+=dpre+b2x+"px'>"+dbutton+"width:"+(bwidth)+"px;' onclick='add_to_abook_input()'><img src='i16_abook_plus.png' title='"+window.l_add_to_abook+"' /></div></div>";
   s+="</form>";
   return s;
@@ -1192,9 +1130,8 @@ function members_refresh()
   if(mmbr[0])
    if(visible_ids.indexOf(','+mmbr[1]+',')>=0) vmr+=format_mmbr_button(mmbr,2);
    else amr+=format_mmbr_button(mmbr,1);
-  else {imr+=format_mmbr_button(mmbr,0);offliners=true;}
+  else imr+=format_mmbr_button(mmbr,0);
  }
- recallflag=(visible_ids!=',');
  result='<div style="width:"+panel_width+"px" id="right_pan">'+amr+vmr+imr+'</div>';
 
  var mp=document.getElementById('right_scroller');
@@ -1278,12 +1215,6 @@ function abook_change(account)
   alive();
   members_refresh();
   abook_refresh();
-}
-
-function inviteall(){
-  invall=1;
-  queue_otf_request(OTFC_INVITE_ALL_INACT_MMBRS,0);
-  invall=false;
 }
 
 function audio(id,vol)
@@ -1423,16 +1354,6 @@ function drop_all(){
   for(var i=members.length-1;i>0;i--) for(var j=i-1;i>=0;j--) if(members[i][2]==members[j][2]) {members.splice(j,1); break;}
   members_refresh();
   alive();
-}
-
-function object_return(o,id){
-  id+='';
-  if(id.substr(0,1)=='-')o+='_'+id.substr(1);else o+=id;
-  try{
-    if(document.getElementById(o)==='undefined')return false;
-    o=document.getElementById(o);
-  } catch(e) { return false; }
-  return o;
 }
 
 function set_mute_sprite(bitMask,id,value)
