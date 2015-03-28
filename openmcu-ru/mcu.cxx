@@ -322,10 +322,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("text/javascript"          , "local_ru.js");
   WEBSERVER_LINK_MIME("text/javascript"          , "local_uk.js");
   WEBSERVER_LINK_MIME("text/css"                 , "main.css");
-  WEBSERVER_LINK_MIME("image/gif"                , "i15_getNoVideo.gif");
-  WEBSERVER_LINK_MIME("image/gif"                , "vad_vad.gif");
-  WEBSERVER_LINK_MIME("image/gif"                , "vad_disable.gif");
-  WEBSERVER_LINK_MIME("image/gif"                , "vad_chosenvan.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "i15_inv.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "launched.gif");
   WEBSERVER_LINK_MIME("image/gif"                , "i20_close.gif");
@@ -341,7 +337,6 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME("image/gif"                , "i24_revert.gif");
   WEBSERVER_LINK_MIME("image/png"                , "logo_text.png");
   WEBSERVER_LINK_MIME("image/png"                , "menu_left.png");
-  WEBSERVER_LINK_MIME("image/png"                , "s15_ch.png");
   WEBSERVER_LINK_MIME("image/png"                , "s32_ch.png");
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.ico");
   WEBSERVER_LINK_MIME("image/vnd.microsoft.icon" , "mcu.gif");
