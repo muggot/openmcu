@@ -1232,6 +1232,7 @@ function abook_change(account)
 
 function audio(id,vol)
 {
+  if(vol>32767)vol=32767; // signal has been amplified with overload - fix it
   for(var i=0;i<members.length;i++) if(members[i][1]==id)
   {
     members[i][6]=vol;
