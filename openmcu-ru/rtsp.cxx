@@ -1169,6 +1169,9 @@ int MCURtspServer::OnReceived(MCUSocket *socket, PString data)
 {
   PWaitAndSignal m(rtspMutex);
 
+  if(socket->ReadData(data) == FALSE || data.GetLength() == 0)
+    return 0;
+
   MCUTRACE(1, trace_section << "read from " << socket->GetAddress() << " "  << data.GetLength() << " bytes\n" << data);
 
   msg_t *msg = ParseMsg(data);
