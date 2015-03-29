@@ -97,10 +97,9 @@ class MCURtspServer
     bool CreateConnection(const PString & room, const PString & address, const PString & callToken);
 
     void StartListeners();
-    void AddListener(PString address);
-    void RemoveListener(PString address);
-    BOOL HasListener(PString host, PString port);
     void RemoveListeners();
+    void AddListener(const PString & address);
+    BOOL HasListener(const PString & host, const PString & port);
 
   protected:
 
@@ -113,13 +112,13 @@ class MCURtspServer
     { return ((MCURtspServer *)context)->OnReceived(socket, data); }
     int OnReceived(MCUSocket *socket, PString data);
 
-    typedef std::map<PString /* address */, MCUListener *> ListenersMapType;
-    ListenersMapType Listeners;
+    MCUListenerList listenerList;
 
     MCUH323EndPoint *ep;
     MCUSipEndPoint *sep;
 
     PMutex rtspMutex;
+    PMutex listenerListMutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

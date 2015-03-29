@@ -6,6 +6,13 @@
 
 MCUURL::MCUURL(const PString & str)
 {
+  Parse(str);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUURL::Parse(const PString & str)
+{
   PINDEX delim1 = str.FindLast("[");
   PINDEX delim2 = str.FindLast("]");
   PINDEX delim3 = str.FindLast("<");
@@ -47,7 +54,7 @@ MCUURL::MCUURL(const PString & str)
     transport = url_party.Tokenise(":")[0];
     hostname = url_party.Tokenise(":")[1];
     port = url_party.Tokenise(":")[2].AsInteger();
-    return;
+    return TRUE;
   }
 
   if(url_scheme == "sip" || url_scheme == "h323")
@@ -63,7 +70,7 @@ MCUURL::MCUURL(const PString & str)
     }
   }
 
-  Parse((const char *)url_party, url_scheme);
+  PURL::Parse((const char *)url_party, url_scheme);
   // parse old H.323 scheme
   if(url_scheme == "h323" && url_party.Left(5) != "h323" && url_party.Find("@") == P_MAX_INDEX &&
      hostname == "" && username != "")
@@ -79,6 +86,8 @@ MCUURL::MCUURL(const PString & str)
     if(url_party.Find("transport=tcp") != P_MAX_INDEX) transport = "tcp";
     if(url_party.Find("transport=tls") != P_MAX_INDEX) transport = "tls";
   }
+
+  return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

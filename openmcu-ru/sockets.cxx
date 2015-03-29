@@ -16,17 +16,17 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSocket::GetFromIP(PString & local_ip, PString remote_host, PString remote_port)
+BOOL MCUSocket::GetFromIP(PString & ip, const PString & host, const PString & port)
 {
-  PTRACE(1, "GetFromIP host:" << remote_host << " port:" << remote_port);
-  if(remote_host == "" || remote_port == "")
+  PTRACE(1, "MCUSocket GetFromIP host:" << host << " port:" << port);
+  if(host == "" || port == "")
     return FALSE;
 
   int err = 0;
   int sock = socket(AF_INET, SOCK_DGRAM, 0);
   if(sock == -1)
   {
-    PTRACE(1, "GetFromIP error " << errno << " " << strerror(errno));
+    PTRACE(1, "MCUSocket error " << errno << " " << strerror(errno));
     return FALSE;
   }
 
@@ -35,17 +35,17 @@ BOOL MCUSocket::GetFromIP(PString & local_ip, PString remote_host, PString remot
   memset((void *)&serv, 0, sizeof(serv));
   serv.ai_family = AF_INET;
   serv.ai_socktype = SOCK_DGRAM;
-  err = getaddrinfo((const char *)remote_host, (const char *)remote_port, &serv, &res);
+  err = getaddrinfo((const char *)host, (const char *)port, &serv, &res);
   if(err != 0 || res == NULL)
   {
-    PTRACE(1, "GetFromIP error " << errno << " " << strerror(errno));
+    PTRACE(1, "MCUSocket error " << errno << " " << strerror(errno));
     return FALSE;
   }
 
   err = connect(sock, res->ai_addr, res->ai_addrlen);
   if(err == -1)
   {
-    PTRACE(1, "GetFromIP error " << errno << " " << strerror(errno));
+    PTRACE(1, "MCUSocket error " << errno << " " << strerror(errno));
     return FALSE;
   }
 
@@ -54,7 +54,7 @@ BOOL MCUSocket::GetFromIP(PString & local_ip, PString remote_host, PString remot
   err = getsockname(sock, (sockaddr*) &name, &namelen);
   if(err == -1)
   {
-    PTRACE(1, "GetFromIP error " << errno << " " << strerror(errno));
+    PTRACE(1, "MCUSocket error " << errno << " " << strerror(errno));
     return FALSE;
   }
 
@@ -62,29 +62,37 @@ BOOL MCUSocket::GetFromIP(PString & local_ip, PString remote_host, PString remot
   char buffer[16] = {0};
   inet_ntop(AF_INET, (const void *)&name.sin_addr, buffer, 16);
   close(sock);
-  local_ip = buffer;
+  ip = buffer;
 #else
-  local_ip = PIPSocket::Address(name.sin_addr).AsString();
+  ip = PIPSocket::Address(name.sin_addr).AsString();
   closesocket(sock);
 #endif
 
-  PTRACE(1, "GetFromIP ip: " << local_ip);
+  PTRACE(1, "MCUSocket GetFromIP ip: " << ip);
   return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSocket::GetHostIP(PString & ip, PString host, PString port)
+BOOL MCUSocket::GetHostIP(PString & ip, const PString & host, const PString & port)
 {
-  PTRACE(1, "GetHostIP host:" << host << " port:" << port);
+  PTRACE(1, "MCUSocket GetHostIP host:" << host << " port:" << port);
+
   if(host == "")
     return FALSE;
+
+  if(MCUSocket::IsValidHost(host))
+  {
+    ip = host;
+    PTRACE(1, "MCUSocket GetHostIP ip: " << ip);
+    return TRUE;
+  }
 
   int err = 0;
   int sock = socket(AF_INET, SOCK_DGRAM, 0);
   if(sock == -1)
   {
-    PTRACE(1, "GetHostIP error " << errno << " " << strerror(errno));
+    PTRACE(1, "MCUSocket error " << errno << " " << strerror(errno));
     return FALSE;
   }
 
@@ -96,7 +104,7 @@ BOOL MCUSocket::GetHostIP(PString & ip, PString host, PString port)
   err = getaddrinfo((const char *)host, (const char *)port, &serv, &res);
   if(err != 0 || res == NULL)
   {
-    PTRACE(1, "GetHostIP error " << errno << " " << strerror(errno));
+    PTRACE(1, "MCUSocket error " << errno << " " << strerror(errno));
     return FALSE;
   }
 
@@ -104,23 +112,44 @@ BOOL MCUSocket::GetHostIP(PString & ip, PString host, PString port)
   err = getnameinfo(res->ai_addr, res->ai_addrlen, buffer, (socklen_t)sizeof(buffer), NULL, 0, NI_NUMERICHOST);
   if(err != 0)
   {
-    PTRACE(1, "GetHostIP error " << errno << " " << strerror(errno));
+    PTRACE(1, "MCUSocket error " << errno << " " << strerror(errno));
     return FALSE;
   }
 
   ip = buffer;
-  PTRACE(1, "GetHostIP ip: " << ip);
+  PTRACE(1, "MCUSocket GetHostIP ip: " << ip);
   return TRUE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUSocket::MCUSocket(int fd, int proto, PString host, int port)
+BOOL MCUSocket::IsValidHost(const PString & host)
+{
+  if(host == "*" || host == "0.0.0.0")
+    return TRUE;
+  return PIPSocket::Address(host).IsValid();
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSocket::IsLocalHost(const PString & host)
+{
+  if(host == "*" || host == "0.0.0.0")
+    return TRUE;
+  return PIPSocket::IsLocalHost(host);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUSocket::MCUSocket(int fd, int proto, const PString & host, int port)
 {
   socket_fd = fd;
   socket_proto = proto;
   socket_host = host;
   socket_port = port;
+
+  if(socket_host == "*")
+    socket_host = "0.0.0.0";
 
   socket_timeout_sec = 0;
   socket_timeout_usec = 250000;
@@ -132,6 +161,7 @@ MCUSocket::MCUSocket(int fd, int proto, PString host, int port)
 
   socket_address += socket_host+":"+PString(socket_port);
   trace_section = "MCU socket ("+socket_address+"): ";
+  MCUTRACE(1, trace_section << "create");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -148,15 +178,12 @@ MCUSocket::~MCUSocket()
 
 MCUSocket * MCUSocket::Create(int proto, PString host, int port)
 {
-  if(host == "")
-    host = "0.0.0.0";
-
-  if(host != "0.0.0.0" && MCUSocket::GetHostIP(host, host) == FALSE)
+  if(!MCUSocket::IsValidHost(host) && !MCUSocket::GetHostIP(host, host))
   {
     MCUTRACE(1, "MCUSocket incorrect host " << host);
     return NULL;
   }
-  if(port == 0)
+  if(port < 1 || port > 65535)
   {
     MCUTRACE(1, "MCUSocket incorrect port " << port);
     return NULL;
@@ -169,13 +196,13 @@ MCUSocket * MCUSocket::Create(int proto, PString host, int port)
 
 MCUSocket * MCUSocket::Create(int fd)
 {
-  int socket_proto;
-  PString socket_host;
-  int socket_port;
-  if(MCUSocket::GetSocketAddress(fd, socket_proto, socket_host, socket_port) == FALSE)
+  int proto;
+  PString host;
+  int port;
+  if(MCUSocket::GetSocketAddress(fd, proto, host, port) == FALSE)
     return NULL;
 
-  return new MCUSocket(fd, socket_proto, socket_host, socket_port);
+  return new MCUSocket(fd, proto, host, port);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -218,9 +245,9 @@ BOOL MCUSocket::Connect()
   socklen_t addr_len = sizeof(addr);
 
 # ifndef _WIN32
-  bzero(&addr, sizeof(addr));
+    bzero(&addr, sizeof(addr));
 # else
-  memset(&addr, 0, sizeof(addr));
+    memset(&addr, 0, sizeof(addr));
 # endif
   addr.sin_family = AF_INET;
   inet_pton(AF_INET, socket_host, &addr.sin_addr);
@@ -247,9 +274,9 @@ BOOL MCUSocket::Listen()
   socklen_t addr_len = sizeof(addr);
 
 # ifndef _WIN32
-  bzero(&addr, sizeof(addr));
+    bzero(&addr, sizeof(addr));
 # else
-  memset(&addr, 0, sizeof(addr));
+    memset(&addr, 0, sizeof(addr));
 # endif
   addr.sin_family = AF_INET;
   inet_pton(AF_INET, socket_host, &addr.sin_addr);
@@ -257,7 +284,7 @@ BOOL MCUSocket::Listen()
 
   // allows other sockets to bind() to this port, unless there is an active listening socket bound to the port already
   int reuse = 1;
-  if(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&reuse, sizeof(int)) == -1)
+  if(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *)(&reuse), sizeof(int)) == -1)
   {
     MCUTRACE(1, trace_section << "setsockopt error " << errno << " " << strerror(errno));
     return FALSE;
@@ -318,7 +345,7 @@ BOOL MCUSocket::GetSocketAddress(int fd, int & proto, PString & host, int & port
   port = ntohs(addr.sin_port);
 
   socklen_t proto_len = sizeof(int);
-  if(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)&proto, &proto_len) == -1)
+  if(getsockopt(fd, SOL_SOCKET, SO_TYPE, (char *)(&proto), &proto_len) == -1)
     return FALSE;
 
   return TRUE;
@@ -342,7 +369,6 @@ BOOL MCUSocket::SendData(char *buffer)
 BOOL MCUSocket::RecvData(PString & data)
 {
   char buffer[16384];
-  // one less for finall \0
   int buffer_size = 16383;
   int len;
 
@@ -383,7 +409,6 @@ BOOL MCUSocket::RecvData(PString & data)
 BOOL MCUSocket::ReadData(PString & data)
 {
   char buffer[16384];
-  // one less for finall \0
   int buffer_size = 16383;
   int len;
 
@@ -425,12 +450,7 @@ BOOL MCUSocket::ReadData(PString & data)
 
 void MCUListenerHandler::Main()
 {
-  PString data;
-
-  if(socket->ReadData(data) == FALSE || data.GetLength() == 0)
-    goto error;
-
-  if(callback(callback_context, socket, data) == 0)
+  if(callback(callback_context, socket, "") == 0)
     goto error;
 
   (*handler_count)--;
@@ -492,6 +512,12 @@ MCUListener * MCUListener::Create(MCUListenerType type, const PString & host, in
   else
     proto = SOCK_DGRAM;
 
+  if(type == MCU_LISTENER_TCP_SERVER && !MCUSocket::IsLocalHost(host))
+  {
+    MCUTRACE(1, "MCUListener incorrect host " << host << ", this is not a local address");
+    return NULL;
+  }
+
   MCUSocket *socket = MCUSocket::Create(proto, host, port);
   if(socket == NULL)
   {
@@ -501,11 +527,13 @@ MCUListener * MCUListener::Create(MCUListenerType type, const PString & host, in
   if(type == MCU_LISTENER_TCP_SERVER && !socket->Listen())
   {
     MCUTRACE(1, "MCU listener cannot create socket");
+    delete socket;
     return NULL;
   }
   if(type == MCU_LISTENER_TCP_CLIENT && !socket->Connect())
   {
     MCUTRACE(1, "MCU listener cannot create socket");
+    delete socket;
     return NULL;
   }
 

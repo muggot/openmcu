@@ -822,6 +822,9 @@ typedef MCUSharedList<MCUH323Connection> MCUConnectionList;
 
 typedef MCUSharedList<AbookAccount> MCUAbookList;
 
+typedef MCUSharedList<MCUListener> MCUListenerList;
+typedef MCUSharedList<MCUTelnetSession> MCUTelnetSessionList;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif // _MCU_UTILS_LIST_H
