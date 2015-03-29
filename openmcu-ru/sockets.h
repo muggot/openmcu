@@ -18,7 +18,7 @@ enum MCUListenerType
 class MCUSocket
 {
   public:
-    MCUSocket(int fd, int proto, PString host, int port);
+    MCUSocket(int fd, int proto, const PString & host, int port);
     ~MCUSocket();
 
     static MCUSocket * Create(int proto, PString host, int port);
@@ -38,8 +38,11 @@ class MCUSocket
     static BOOL TestSocket(int fd);
     static BOOL GetSocketAddress(int fd, int & proto, PString & host, int & port);
 
-    static BOOL GetFromIP(PString & local_ip, PString remote_host, PString remote_port);
-    static BOOL GetHostIP(PString & ip, PString host, PString port = "");
+    static BOOL GetFromIP(PString & ip, const PString & host, const PString & port);
+    static BOOL GetHostIP(PString & ip, const PString & host, const PString & port = "");
+
+    static BOOL IsValidHost(const PString & host);
+    static BOOL IsLocalHost(const PString & host);
 
     PString GetAddress()
     { return socket_address; }

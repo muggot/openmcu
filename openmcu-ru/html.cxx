@@ -134,9 +134,8 @@ static int SplitConfigKey(const PString & fullName,
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 DefaultPConfigPage::DefaultPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-    : PConfigPage(app,title,section,auth)
+    : PConfigPage(app,title,section,auth), cfg(section)
 {
-  cfg = MCUConfig(section);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -244,7 +243,6 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
     : TablePConfigPage(app,title,section,auth)
 {
   OpenMCU & mcu = OpenMCU::Current();
-  cfg = MCUConfig(section);
 
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
@@ -371,8 +369,6 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
 ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
-
   firstEditRow = 2;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
@@ -462,16 +458,14 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-TelnetServerPConfigPage::TelnetServerPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+TelnetServerPConfigPage::TelnetServerPConfigPage(PHTTPServiceProcess & app, const PString & title, const PString & section, const PHTTPAuthority & auth)
   : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
-
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
   s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
-  s << ArrayField(TelnetListenerKey, "Telnet "+JsLocal("listener"), cfg.GetString(TelnetListenerKey), 150);
+  s << ArrayField(TelnetListenerKey, "Telnet "+JsLocal("listener"), cfg.GetString(TelnetListenerKey, TelnetDefaultListener), 150);
   s << StringField(UserNameKey, JsLocal("name_user"), cfg.GetString(UserNameKey, "admin"), 150);
   s << StringField(PasswordKey, JsLocal("name_password"), cfg.GetString(PasswordKey), 150);
 
@@ -488,8 +482,6 @@ TelnetServerPConfigPage::TelnetServerPConfigPage(PHTTPServiceProcess & app,const
 RegistrarPConfigPage::RegistrarPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
-
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
@@ -558,7 +550,6 @@ RegistrarPConfigPage::RegistrarPConfigPage(PHTTPServiceProcess & app,const PStri
 ControlCodesPConfigPage::ControlCodesPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
@@ -596,7 +587,6 @@ ControlCodesPConfigPage::ControlCodesPConfigPage(PHTTPServiceProcess & app,const
 RoomCodesPConfigPage::RoomCodesPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
@@ -631,7 +621,6 @@ RoomCodesPConfigPage::RoomCodesPConfigPage(PHTTPServiceProcess & app,const PStri
 ManagingUsersPConfigPage::ManagingUsersPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   s << BeginTable();
@@ -677,7 +666,6 @@ ManagingUsersPConfigPage::ManagingUsersPConfigPage(PHTTPServiceProcess & app,con
 ManagingGroupsPConfigPage::ManagingGroupsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
@@ -704,7 +692,6 @@ ManagingGroupsPConfigPage::ManagingGroupsPConfigPage(PHTTPServiceProcess & app,c
 VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
@@ -745,7 +732,6 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
 ExportPConfigPage::ExportPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
 
@@ -818,7 +804,6 @@ void VideoResolutionRestore(PString & capname, PString & res)
 H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
   OpenMCU & mcu = OpenMCU::Current();
 
   firstEditRow = 2;
@@ -1066,8 +1051,6 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 RtspEndpointsPConfigPage::RtspEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
-
   firstEditRow = 1;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
@@ -1113,8 +1096,6 @@ RtspEndpointsPConfigPage::RtspEndpointsPConfigPage(PHTTPServiceProcess & app,con
 SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
-
   firstEditRow = 2;
   rowBorders = TRUE;
   PStringStream html_begin, html_end, html_page, s;
@@ -1534,8 +1515,6 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
 ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
-
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
 
@@ -1642,8 +1621,6 @@ ProxySIPPConfigPage::ProxySIPPConfigPage(PHTTPServiceProcess & app,const PString
 RoomAccessSIPPConfigPage::RoomAccessSIPPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
-
   firstEditRow = 2;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
@@ -1705,7 +1682,6 @@ H323PConfigPage::H323PConfigPage(PHTTPServiceProcess & app,const PString & title
     : TablePConfigPage(app,title,section,auth)
 {
   OpenMCU & mcu = OpenMCU::Current();
-  cfg = MCUConfig(section);
 
   mcu.GetEndpoint().Initialise(cfg);
 
@@ -1744,7 +1720,7 @@ SIPPConfigPage::SIPPConfigPage(PHTTPServiceProcess & app,const PString & title, 
     : TablePConfigPage(app,title,section,auth)
 {
   OpenMCU & mcu = OpenMCU::Current();
-  cfg = MCUConfig(section);
+
   PStringStream html_begin, html_end, html_page, s;
   s << BeginTable();
   s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
@@ -1827,8 +1803,6 @@ BOOL SectionPConfigPage::OnPOST(PHTTPServer & server,
 SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
-
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonDelete = 1;
   s << BeginTable();
@@ -1913,8 +1887,6 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
 CodecsPConfigPage::CodecsPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
-  cfg = MCUConfig(section);
-
   buttonUp = buttonDown = buttonDelete = 1;
   firstEditRow = firstDeleteRow = 0;
   PStringStream html_begin, html_end, html_page, s;

@@ -64,11 +64,8 @@ void MCUTelnetServer::StartListeners()
     if(listenerArray[i] != "")
       AddListener(listenerArray[i]);
   }
-  if(listenerArray.GetSize() == 0 && listenerList.GetSize() == 0)
-  {
-    cfg.SetString(TelnetListenerKey, TelnetDefaultListener);
+  if(listenerArray.GetSize() == 0)
     AddListener(TelnetDefaultListener);
-  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -95,26 +92,8 @@ void MCUTelnetServer::AddListener(PString address)
   MCUURL url(address);
   PString socket_host = url.GetHostName();
   unsigned socket_port = url.GetPort().AsInteger();
-  if(socket_host == "*")
-    socket_host = "0.0.0.0";
-  if(socket_host != "0.0.0.0" && PIPSocket::Address(socket_host).IsValid() == FALSE)
-  {
-    MCUTRACE(1, trace_section << "incorrect listener host " << socket_host);
-    return;
-  }
-  if(socket_host != "0.0.0.0" && PIPSocket::IsLocalHost(socket_host) == FALSE)
-  {
-    MCUTRACE(1, trace_section << "incorrect listener host " << socket_host << ", this is not a local address");
-    return;
-  }
-  if(socket_port == 0)
-  {
-    MCUTRACE(1, trace_section << "incorrect listener port " << socket_port);
-    return;
-  }
 
   PWaitAndSignal m(telnetMutex);
-
   MCUListener *listener = MCUListener::Create(MCU_LISTENER_TCP_SERVER, socket_host, socket_port, OnReceived_wrap, this);
   if(listener)
     listenerList.Insert(listener, (long)listener, address);
