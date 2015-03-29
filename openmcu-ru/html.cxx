@@ -1461,7 +1461,8 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       // bandwidth from MCU
       s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // RTP timeout
-      s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), RTPInputTimeoutSelect, 70)+"</tr>";
+      if(name == "*") s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
+      else            s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
       //
       s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
