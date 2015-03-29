@@ -335,3 +335,5 @@ window.l_disconnect                                = "Disconnect";
 window.l_add_to_abook                              = "Add to address book";
 window.l_accounts                                  = "Accounts";
 ///
+window.l_param_telserver = 'Telnet server';
+window.l_info_telserver = '';

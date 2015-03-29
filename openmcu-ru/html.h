@@ -645,6 +645,20 @@ class ConferencePConfigPage : public TablePConfigPage
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class TelnetServerPConfigPage : public TablePConfigPage
+{
+  public:
+    TelnetServerPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth);
+    virtual BOOL Post(PHTTPRequest & request, const PStringToString & data, PHTML & replyMessage)
+    {
+      BOOL ret = TablePConfigPage::Post(request, data, replyMessage);
+      OpenMCU::Current().GetTelnetServer()->StartListeners();
+      return ret;
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class ManagingUsersPConfigPage : public TablePConfigPage
 {
   public:

@@ -342,3 +342,5 @@ window.l_disconnect                                = "Отключить";
 window.l_add_to_abook                              = "Добавить в адресную книгу";
 window.l_accounts                                  = "Учетные записи";
 ///
+window.l_param_telserver = 'Telnet сервер';
+window.l_info_telserver = '';

@@ -275,6 +275,7 @@ BOOL OpenMCU::Initialise(const char * initMsg)
 
   CreateHTTPResource("Parameters");
   CreateHTTPResource("ConferenceParameters");
+  CreateHTTPResource("TelnetServer");
   CreateHTTPResource("ExportParameters");
   CreateHTTPResource("RegistrarParameters");
   CreateHTTPResource("ManagingUsers");
@@ -449,6 +450,8 @@ void OpenMCU::CreateHTTPResource(const PString & name)
     httpNameSpace.AddResource(new ControlCodesPConfigPage(*this, name, "Control Codes", authSettings), PHTTPSpace::Overwrite);
   //else if(name == "RoomCodes")
   //  httpNameSpace.AddResource(new RoomCodesPConfigPage(*this, name, "Room Codes", authSettings), PHTTPSpace::Overwrite);
+  else if(name == "TelnetServer")
+    httpNameSpace.AddResource(new TelnetServerPConfigPage(*this, name, "Telnet Server", authSettings), PHTTPSpace::Overwrite);
   else if(name == "H323Parameters")
     httpNameSpace.AddResource(new H323PConfigPage(*this, name, "H323 Parameters", authSettings), PHTTPSpace::Overwrite);
   else if(name == "SIPParameters")

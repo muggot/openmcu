@@ -67,6 +67,9 @@ static const char AllowLoopbackCallsKey[]  = "Allow loopback calls";
 
 static const char SipListenerKey[]         = "SIP Listener";
 
+static const char TelnetListenerKey[]      = "Telnet Listener";
+static const char TelnetDefaultListener[]  = "*:1423";
+
 const unsigned int DefaultVideoFrameRate = 10;
 const unsigned int DefaultVideoQuality   = 10;
 
@@ -312,6 +315,9 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
 
     MCURtspServer *GetRtspServer()
     { return rtspServer; };
+
+    MCUTelnetServer *GetTelnetServer()
+    { return telnetServer; }
 
     const PString & GetServerId() const
     { return serverId; }

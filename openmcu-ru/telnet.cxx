@@ -54,8 +54,21 @@ MCUTelnetServer::~MCUTelnetServer()
 void MCUTelnetServer::StartListeners()
 {
   PWaitAndSignal m(telnetMutex);
+
   RemoveListeners();
-  AddListener("0.0.0.0:1423");
+
+  MCUConfig cfg("Telnet Server");
+  PStringArray listenerArray = cfg.GetString(TelnetListenerKey).Tokenise(",");
+  for(int i = 0; i < listenerArray.GetSize(); i++)
+  {
+    if(listenerArray[i] != "")
+      AddListener(listenerArray[i]);
+  }
+  if(listenerArray.GetSize() == 0 && listenerList.GetSize() == 0)
+  {
+    cfg.SetString(TelnetListenerKey, TelnetDefaultListener);
+    AddListener(TelnetDefaultListener);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -82,6 +95,8 @@ void MCUTelnetServer::AddListener(PString address)
   MCUURL url(address);
   PString socket_host = url.GetHostName();
   unsigned socket_port = url.GetPort().AsInteger();
+  if(socket_host == "*")
+    socket_host = "0.0.0.0";
   if(socket_host != "0.0.0.0" && PIPSocket::Address(socket_host).IsValid() == FALSE)
   {
     MCUTRACE(1, trace_section << "incorrect listener host " << socket_host);
@@ -130,11 +145,12 @@ MCUTelnetSession::MCUTelnetSession(MCUTelnetServer *_server, MCUSocket *socket)
   trace_section = "Telnet Session "+socket->GetAddress()+": ";
 
   state = 1;
-  auth.username = "admin";
-  auth.password = "admin";
   cur_path = "# ";
-
   opt_echo = FALSE;
+
+  MCUConfig cfg("Telnet Server");
+  auth.username = cfg.GetString(UserNameKey, "admin");
+  auth.password = cfg.GetString(PasswordKey);
 
   // create listener
   listener = MCUListener::Create(MCU_LISTENER_TCP_CLIENT, socket, OnReceived_wrap, this);

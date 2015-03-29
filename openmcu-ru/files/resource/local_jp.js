@@ -337,3 +337,6 @@ window.l_accounts                                  = "Accounts";
 window.l_room_mute_all                             = 'Mute all participants (microphones)';
 window.l_room_unmute_all                           = 'Unmute all participants (microphones)';
 window.l_room_dial_all_members                     = 'Run continuous dialing ALL members';
+///
+window.l_param_telserver = 'Telnet server';
+window.l_info_telserver = '';

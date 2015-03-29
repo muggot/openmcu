@@ -462,6 +462,29 @@ ConferencePConfigPage::ConferencePConfigPage(PHTTPServiceProcess & app,const PSt
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+TelnetServerPConfigPage::TelnetServerPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
+  : TablePConfigPage(app,title,section,auth)
+{
+  cfg = MCUConfig(section);
+
+  PStringStream html_begin, html_end, html_page, s;
+  s << BeginTable();
+
+  s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
+  s << ArrayField(TelnetListenerKey, "Telnet "+JsLocal("listener"), cfg.GetString(TelnetListenerKey), 150);
+  s << StringField(UserNameKey, JsLocal("name_user"), cfg.GetString(UserNameKey, "admin"), 150);
+  s << StringField(PasswordKey, JsLocal("name_password"), cfg.GetString(PasswordKey), 150);
+
+  s << EndTable();
+  BuildHTML("");
+  BeginPage(html_begin, section, "window.l_param_telserver","window.l_info_telserver");
+  EndPage(html_end,OpenMCU::Current().GetHtmlCopyright());
+  html_page << html_begin << s << html_end;
+  string = html_page;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 RegistrarPConfigPage::RegistrarPConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
     : TablePConfigPage(app,title,section,auth)
 {
