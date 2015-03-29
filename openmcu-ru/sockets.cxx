@@ -342,7 +342,6 @@ BOOL MCUSocket::SendData(char *buffer)
 BOOL MCUSocket::RecvData(PString & data)
 {
   char buffer[16384];
-  // one less for finall \0
   int buffer_size = 16383;
   int len;
 
@@ -383,7 +382,6 @@ BOOL MCUSocket::RecvData(PString & data)
 BOOL MCUSocket::ReadData(PString & data)
 {
   char buffer[16384];
-  // one less for finall \0
   int buffer_size = 16383;
   int len;
 
@@ -425,12 +423,7 @@ BOOL MCUSocket::ReadData(PString & data)
 
 void MCUListenerHandler::Main()
 {
-  PString data;
-
-  if(socket->ReadData(data) == FALSE || data.GetLength() == 0)
-    goto error;
-
-  if(callback(callback_context, socket, data) == 0)
+  if(callback(callback_context, socket, "") == 0)
     goto error;
 
   (*handler_count)--;

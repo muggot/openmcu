@@ -72,6 +72,7 @@ class HTTPAuth
     HTTPAuth()
     {
       type = AUTH_NONE;
+      attempts = 0;
       scheme = "Digest";
       realm = "openmcu-ru";
       nonce = PGloballyUniqueID().AsString();
@@ -95,6 +96,7 @@ class HTTPAuth
     PString MakeAuthenticateStr();
 
     AuthTypes type;
+    int attempts;
     PString scheme;
     PString username;
     PString password;

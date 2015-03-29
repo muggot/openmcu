@@ -31,6 +31,7 @@ class MCUSocket
     MCUSocket * Accept();
 
     BOOL SendData(char *buffer);
+
     BOOL RecvData(PString & data);
     BOOL ReadData(PString & data);
 

@@ -102,6 +102,7 @@ BOOL OpenMCU::OnStart()
   sipendpoint = new MCUSipEndPoint(endpoint);
   registrar = new Registrar(endpoint, sipendpoint);
   rtspServer = new MCURtspServer(endpoint, sipendpoint);
+  telnetServer = new MCUTelnetServer();
 
   //
   httpNameSpace.AddResource(new PHTTPDirectory("data", "data"));
@@ -122,6 +123,9 @@ void OpenMCU::OnStop()
 {
   // shutdown http listener
   MCUHTTPListenerShutdown();
+
+  // telnet
+  delete telnetServer;
 
   // close endpoints listeners
   rtspServer->RemoveListeners();

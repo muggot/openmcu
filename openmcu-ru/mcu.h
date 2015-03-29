@@ -15,6 +15,7 @@
 #include "mcu_caps.h"
 #include "mcu_codecs.h"
 #include "sockets.h"
+#include "telnet.h"
 
 #if P_SSL
 typedef PSecureHTTPServiceProcess OpenMCUProcessAncestor;
@@ -531,6 +532,7 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     MCUSipEndPoint * sipendpoint;
     Registrar *registrar;
     MCURtspServer *rtspServer;
+    MCUTelnetServer *telnetServer;
 
     PString    serverId;
     PString    defaultRoomName;
