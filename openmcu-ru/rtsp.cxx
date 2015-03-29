@@ -1082,91 +1082,72 @@ MCURtspServer::~MCURtspServer()
 
 void MCURtspServer::StartListeners()
 {
-  PWaitAndSignal m(rtspMutex);
-
-  RemoveListeners();
+  PWaitAndSignal m(listenerListMutex);
 
   MCUConfig cfg("RTSP Parameters");
   if(cfg.GetBoolean(EnableKey, TRUE) == FALSE)
+  {
+    RemoveListeners();
     return;
-
-  PStringArray list = cfg.GetString("Listener", "0.0.0.0:1554").Tokenise(",");
-  for(PINDEX i = 0; i < list.GetSize(); ++i)
-  {
-    if(list[i] == "") continue;
-    AddListener(list[i]);
   }
-}
+  PStringArray listenerArray = cfg.GetString("Listener", "0.0.0.0:1554").Tokenise(",");
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCURtspServer::AddListener(PString address)
-{
-  address.Replace(" ","",TRUE,0);
-  if(address.Find("tcp:") == P_MAX_INDEX)
-    address = "tcp:"+address;
-
-  MCUURL url(address);
-  PString socket_host = url.GetHostName();
-  unsigned socket_port = url.GetPort().AsInteger();
-
-  PWaitAndSignal m(rtspMutex);
-  MCUListener *listener = MCUListener::Create(MCU_LISTENER_TCP_SERVER, socket_host, socket_port, OnReceived_wrap, this);
-  if(listener)
-    Listeners.insert(ListenersMapType::value_type(address, listener));
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-void MCURtspServer::RemoveListener(PString address)
-{
-  address.Replace(" ","",TRUE,0);
-  if(address.Find("tcp:") == P_MAX_INDEX)
-    address = "tcp:"+address;
-
-  PWaitAndSignal m(rtspMutex);
-
-  for(ListenersMapType::iterator it = Listeners.begin(); it != Listeners.end(); ++it)
+  // delete listeners
+  for(MCUListenerList::shared_iterator it = listenerList.begin(); it != listenerList.end(); ++it)
   {
-    if(address == it->first)
+    if(listenerArray.GetStringsIndex(it.GetName()) == P_MAX_INDEX)
     {
-      delete it->second;
-      Listeners.erase(it);
-      break;
+      MCUListener *listener = *it;
+      if(listenerList.Erase(it))
+        delete listener;
     }
   }
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BOOL MCURtspServer::HasListener(PString host, PString port)
-{
-  PWaitAndSignal m(rtspMutex);
-
-  for(ListenersMapType::iterator it = Listeners.begin(); it != Listeners.end(); ++it)
-  {
-    if(it->second->GetSocketPort() == port)
-    {
-      if(it->second->GetSocketHost() == host)
-        return TRUE;
-      if(it->second->GetSocketHost() == "0.0.0.0" && PIPSocket::IsLocalHost(host))
-        return TRUE;
-    }
-  }
-  return FALSE;
+  // add listeners
+  for(int i = 0; i < listenerArray.GetSize(); i++)
+    AddListener(listenerArray[i]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCURtspServer::RemoveListeners()
 {
-  PWaitAndSignal m(rtspMutex);
-
-  for(ListenersMapType::iterator it = Listeners.begin(); it != Listeners.end(); )
+  PWaitAndSignal m(listenerListMutex);
+  for(MCUListenerList::shared_iterator it = listenerList.begin(); it != listenerList.end(); ++it)
   {
-    delete it->second;
-    Listeners.erase(it++);
+    MCUListener *listener = *it;
+    if(listenerList.Erase(it))
+      delete listener;
   }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void MCURtspServer::AddListener(const PString & address)
+{
+  PWaitAndSignal m(listenerListMutex);
+
+  if(listenerList.Find(address) != listenerList.end())
+    return;
+
+  MCUURL url(address);
+  PString socket_host = url.GetHostName();
+  unsigned socket_port = url.GetPort().AsInteger();
+
+  MCUListener *listener = MCUListener::Create(MCU_LISTENER_TCP_SERVER, socket_host, socket_port, OnReceived_wrap, this);
+  if(listener)
+    listenerList.Insert(listener, (long)listener, address);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCURtspServer::HasListener(const PString & host, const PString & port)
+{
+  for(MCUListenerList::shared_iterator it = listenerList.begin(); it != listenerList.end(); ++it)
+  {
+    if(it->GetSocketHost() == host && it->GetSocketPort() == port)
+      return TRUE;
+  }
+  return FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

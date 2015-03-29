@@ -45,6 +45,10 @@ class MCUH323_RTPChannel;
 class MCU_RTP_UDP;
 class MCUSIP_RTP_UDP;
 
+class MCUSocket;
+class MCUListener;
+class MCUTelnetSession;
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 typedef void * ConferenceMemberId;
@@ -443,6 +447,8 @@ class MCUURL : public PURL
   public:
     MCUURL() { }
     MCUURL(const PString & str);
+
+    BOOL Parse(const PString & str);
 
     const PString & GetUserName() const
     { return username; }

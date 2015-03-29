@@ -17,8 +17,8 @@ class MCUTelnetSessionCleaner : public PThread
 
     void Main()
     {
-      MCUSharedList<MCUTelnetSession> & sessionList = server->GetSessionList();
-      MCUSharedList<MCUTelnetSession>::shared_iterator it = sessionList.Find(session);
+      MCUTelnetSessionList & sessionList = server->GetSessionList();
+      MCUTelnetSessionList::shared_iterator it = sessionList.Find(session);
       if(it != sessionList.end())
       {
         if(sessionList.Erase(it))
@@ -47,33 +47,49 @@ MCUTelnetServer::MCUTelnetServer()
 MCUTelnetServer::~MCUTelnetServer()
 {
   RemoveListeners();
+  for(MCUTelnetSessionList::shared_iterator it = sessionList.begin(); it != sessionList.end(); ++it)
+  {
+    MCUTelnetSession *session = *it;
+    if(sessionList.Erase(it))
+      delete session;
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUTelnetServer::StartListeners()
 {
-  PWaitAndSignal m(telnetMutex);
-
-  RemoveListeners();
+  PWaitAndSignal m(listenerListMutex);
 
   MCUConfig cfg("Telnet Server");
-  PStringArray listenerArray = cfg.GetString(TelnetListenerKey).Tokenise(",");
-  for(int i = 0; i < listenerArray.GetSize(); i++)
+  if(cfg.GetBoolean(EnableKey, TRUE) == FALSE)
   {
-    if(listenerArray[i] != "")
-      AddListener(listenerArray[i]);
+    RemoveListeners();
+    return;
   }
-  if(listenerArray.GetSize() == 0)
-    AddListener(TelnetDefaultListener);
+  PStringArray listenerArray = cfg.GetString(TelnetListenerKey, TelnetDefaultListener).Tokenise(",");
+
+  // delete listeners
+  for(MCUListenerList::shared_iterator it = listenerList.begin(); it != listenerList.end(); ++it)
+  {
+    if(listenerArray.GetStringsIndex(it.GetName()) == P_MAX_INDEX)
+    {
+      MCUListener *listener = *it;
+      if(listenerList.Erase(it))
+        delete listener;
+    }
+  }
+  // add listeners
+  for(int i = 0; i < listenerArray.GetSize(); i++)
+    AddListener(listenerArray[i]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUTelnetServer::RemoveListeners()
 {
-  PWaitAndSignal m(telnetMutex);
-  for(ListenerList::shared_iterator it = listenerList.begin(); it != listenerList.end(); ++it)
+  PWaitAndSignal m(listenerListMutex);
+  for(MCUListenerList::shared_iterator it = listenerList.begin(); it != listenerList.end(); ++it)
   {
     MCUListener *listener = *it;
     if(listenerList.Erase(it))
@@ -83,17 +99,17 @@ void MCUTelnetServer::RemoveListeners()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUTelnetServer::AddListener(PString address)
+void MCUTelnetServer::AddListener(const PString & address)
 {
-  address.Replace(" ","",TRUE,0);
-  if(address.Find("tcp:") == P_MAX_INDEX)
-    address = "tcp:"+address;
+  PWaitAndSignal m(listenerListMutex);
+
+  if(listenerList.Find(address) != listenerList.end())
+    return;
 
   MCUURL url(address);
   PString socket_host = url.GetHostName();
   unsigned socket_port = url.GetPort().AsInteger();
 
-  PWaitAndSignal m(telnetMutex);
   MCUListener *listener = MCUListener::Create(MCU_LISTENER_TCP_SERVER, socket_host, socket_port, OnReceived_wrap, this);
   if(listener)
     listenerList.Insert(listener, (long)listener, address);
@@ -103,11 +119,14 @@ void MCUTelnetServer::AddListener(PString address)
 
 int MCUTelnetServer::OnReceived(MCUSocket *socket, PString data)
 {
-  PWaitAndSignal m(telnetMutex);
+  PWaitAndSignal m(sessionListMutex);
 
-  MCUSharedList<MCUTelnetSession>::shared_iterator it = sessionList.Find(socket->GetAddress());
+  MCUTelnetSessionList::shared_iterator it = sessionList.Find(socket->GetAddress());
   if(it != sessionList.end())
+  {
+    MCUTRACE(1, trace_section << "error");
     return 0;
+  }
 
   MCUTelnetSession *session = MCUTelnetSession::Create(this, socket);
   if(session == NULL)
@@ -134,9 +153,8 @@ MCUTelnetSession::MCUTelnetSession(MCUTelnetServer *_server, MCUSocket *socket)
   // create listener
   listener = MCUListener::Create(MCU_LISTENER_TCP_CLIENT, socket, OnReceived_wrap, this);
 
-  ProcessState("");
-
   MCUTRACE(1, trace_section << "create");
+  ProcessState("");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -146,6 +164,7 @@ MCUTelnetSession::~MCUTelnetSession()
   if(listener)
     delete listener;
   listener = NULL;
+  MCUTRACE(1, trace_section << "close");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

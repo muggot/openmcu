@@ -465,6 +465,8 @@ TelnetServerPConfigPage::TelnetServerPConfigPage(PHTTPServiceProcess & app, cons
   s << BeginTable();
 
   s << BoolField("RESTORE DEFAULTS", JsLocal("restore_defaults"), FALSE);
+
+  s << BoolField(EnableKey, "Telnet "+JsLocal("name_enable"), cfg.GetBoolean(EnableKey, TRUE));
   s << ArrayField(TelnetListenerKey, "Telnet "+JsLocal("listener"), cfg.GetString(TelnetListenerKey, TelnetDefaultListener), 150);
   s << StringField(UserNameKey, JsLocal("name_user"), cfg.GetString(UserNameKey, "admin"), 150);
   s << StringField(PasswordKey, JsLocal("name_password"), cfg.GetString(PasswordKey), 150);

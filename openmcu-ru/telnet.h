@@ -89,7 +89,7 @@ class MCUTelnetServer
 
     void StartListeners();
     void RemoveListeners();
-    void AddListener(PString address);
+    void AddListener(const PString & address);
 
     MCUSharedList<MCUTelnetSession> & GetSessionList()
     { return sessionList; }
@@ -102,13 +102,11 @@ class MCUTelnetServer
     { return ((MCUTelnetServer *)context)->OnReceived(socket, data); }
     int OnReceived(MCUSocket *socket, PString data);
 
-    typedef MCUSharedList<MCUListener> ListenerList;
-    ListenerList listenerList;
+    MCUListenerList listenerList;
+    MCUTelnetSessionList sessionList;
 
-    typedef MCUSharedList<MCUTelnetSession> TelnetSessionList;
-    TelnetSessionList sessionList;
-
-    PMutex telnetMutex;
+    PMutex listenerListMutex;
+    PMutex sessionListMutex;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
