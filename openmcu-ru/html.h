@@ -10,9 +10,8 @@ class TablePConfigPage : public PConfigPage
 {
   public:
     TablePConfigPage(PHTTPServiceProcess & app,const PString & title, const PString & section, const PHTTPAuthority & auth)
-      : PConfigPage(app,title,section,auth)
+      : PConfigPage(app,title,section,auth), cfg(section)
     {
-      cfg = MCUConfig(section);
       deleteSection = TRUE;
       columnColor = "#d9e5e3";
       rowColor = "#d9e5e3";
@@ -440,7 +439,15 @@ class TablePConfigPage : public PConfigPage
        if(deleteSection)
          cfg.DeleteSection();
        for(PINDEX i = 0; i < dataDict.GetSize(); i++)
-         cfg.SetString(dataDict.GetKeyAt(i), dataDict.GetValueAt(i));
+       {
+         PString value = dataDict.GetValueAt(i);
+         if(value == "" && deleteSection)
+           continue;
+         if(value == "")
+           cfg.DeleteKey(dataDict.GetKeyAt(i));
+         else
+           cfg.SetString(dataDict.GetKeyAt(i), value);
+       }
        if(cfg.GetBoolean("RESTORE DEFAULTS", FALSE))
          cfg.DeleteSection();
      } else {
@@ -828,7 +835,6 @@ class CodecsPConfigPage : public TablePConfigPage
       const PHTTPConnectionInfo & connectInfo
     );
   private:
-    PConfig cfg;
     PStringArray dataArray;
     PStringArray fmtpArray;
 };
@@ -851,8 +857,6 @@ class SectionPConfigPage : public DefaultPConfigPage
       const PStringToString & data,
       const PHTTPConnectionInfo & connectInfo
     );
-  private:
-    PConfig cfg;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
