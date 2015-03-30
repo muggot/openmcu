@@ -63,7 +63,8 @@ class MCUTelnetSession
     PString username_recv;
     PString password_recv;
 
-    BOOL Send(const char *format, ...);
+    BOOL Send(const char *buffer);
+    BOOL Sendf(const char *format, ...);
     BOOL SendEcho();
 
     BOOL ProcessState(const PString & data);

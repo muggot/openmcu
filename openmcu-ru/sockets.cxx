@@ -353,7 +353,7 @@ BOOL MCUSocket::GetSocketAddress(int fd, int & proto, PString & host, int & port
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSocket::SendData(char *buffer)
+BOOL MCUSocket::SendData(const char *buffer)
 {
   int len = strlen(buffer);
   if(send(socket_fd, buffer, len, 0) == -1)
@@ -551,7 +551,7 @@ MCUListener * MCUListener::Create(MCUListenerType type, MCUSocket *socket, mcu_l
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUListener::Send(char *buffer)
+BOOL MCUListener::Send(const char *buffer)
 {
   return socket->SendData(buffer);
 }

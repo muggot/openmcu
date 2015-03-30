@@ -208,7 +208,7 @@ int MCUTelnetSession::OnReceived(MCUSocket *socket, PString data)
         if(databuf.GetLength() > 0)
         {
           databuf.Delete(databuf.GetLength()-1, 1);
-          if(!Send("%c%c%c", TEL_BACKSPACE, TEL_SPACE, TEL_BACKSPACE))
+          if(!Sendf("%c%c%c", TEL_BACKSPACE, TEL_SPACE, TEL_BACKSPACE))
             return 0;
         }
         break;
@@ -281,31 +281,31 @@ BOOL MCUTelnetSession::ProcessState(const PString & data)
   switch(state)
   {
     case(1):
-      if(!Send("%c%c%c", TEL_IAC, TEL_DO, TEL_ECHO))
+      if(!Sendf("%c%c%c", TEL_IAC, TEL_DO, TEL_ECHO))
         return FALSE;
       state = 2;
     case(2):
-      if(!Send("%s", "Login: "))
+      if(!Send("Login: "))
         return FALSE;
       state = 3;
       return TRUE;
     case(3):
       username_recv = data;
-      if(!opt_echo && !Send("%c%c%c", TEL_IAC, TEL_WILL, TEL_ECHO))
+      if(!opt_echo && !Sendf("%c%c%c", TEL_IAC, TEL_WILL, TEL_ECHO))
         return FALSE;
-      if(!Send("%s", "Password: "))
+      if(!Send("Password: "))
         return FALSE;
       state = 4;
       return TRUE;
     case(4):
       password_recv = data;
-      if(!opt_echo && !Send("%c%c%c", TEL_IAC, TEL_WONT, TEL_ECHO))
+      if(!opt_echo && !Sendf("%c%c%c", TEL_IAC, TEL_WONT, TEL_ECHO))
         return FALSE;
-      if(!Send("%s", "\r\n"))
+      if(!Send("\r\n"))
         return FALSE;
       if(username_recv != auth.username || password_recv != auth.password)
       {
-        if(!Send("%s", "Login incorrect\r\n\r\n"))
+        if(!Send("Login incorrect\r\n\r\n"))
           return FALSE;
         auth.attempts++;
         if(auth.attempts == 3)
@@ -320,7 +320,7 @@ BOOL MCUTelnetSession::ProcessState(const PString & data)
       break;
   }
 
-  if(!Send("%s%s", (const char *)TEL_WELCOME, (const char *)cur_path))
+  if(!Sendf("%s%s", (const char *)TEL_WELCOME, (const char *)cur_path))
     return FALSE;
 
   return TRUE;
@@ -342,7 +342,7 @@ BOOL MCUTelnetSession::OnReceivedData(const PString & data)
 
   //////////////////////////////////////////////////
 
-  if(!Send("%s", (const char *)cur_path))
+  if(!Send((const char *)cur_path))
     return FALSE;
 
   return TRUE;
@@ -354,7 +354,7 @@ BOOL MCUTelnetSession::SendEcho()
 {
   if(opt_echo && echobuf.GetLength() != 0)
   {
-    if(state != 4 && !Send("%s", (const char *)echobuf))
+    if(state != 4 && !Send((const char *)echobuf))
       return FALSE;
     else
       echobuf = "";
@@ -364,15 +364,8 @@ BOOL MCUTelnetSession::SendEcho()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUTelnetSession::Send(const char* format, ...)
+BOOL MCUTelnetSession::Send(const char *buffer)
 {
-  char buffer[65536];
-  int buffer_size = 65535;
-  va_list args;
-  va_start(args, format);
-  vsnprintf(buffer, buffer_size, format, args);
-  va_end(args);
-
   if(listener->Send(buffer) == FALSE)
   {
     Close();
@@ -381,6 +374,19 @@ BOOL MCUTelnetSession::Send(const char* format, ...)
 
   MCUTRACE(1, trace_section << "send " << strlen(buffer) << " bytes\n" << buffer);
   return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUTelnetSession::Sendf(const char *format, ...)
+{
+  char buffer[65536];
+  int buffer_size = 65535;
+  va_list args;
+  va_start(args, format);
+  vsnprintf(buffer, buffer_size, format, args);
+  va_end(args);
+  return Send(buffer);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

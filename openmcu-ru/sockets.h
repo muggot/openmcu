@@ -30,7 +30,7 @@ class MCUSocket
 
     MCUSocket * Accept();
 
-    BOOL SendData(char *buffer);
+    BOOL SendData(const char *buffer);
 
     BOOL RecvData(PString & data);
     BOOL ReadData(PString & data);
@@ -85,7 +85,7 @@ class MCUListener
     static MCUListener * Create(MCUListenerType type, const PString & host, int port, mcu_listener_cb *callback, void *callback_context);
     static MCUListener * Create(MCUListenerType type, MCUSocket *socket, mcu_listener_cb *callback, void *callback_context);
 
-    BOOL Send(char *buffer);
+    BOOL Send(const char *buffer);
 
     BOOL IsRunning()
     { return running; }
