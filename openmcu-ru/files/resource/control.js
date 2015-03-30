@@ -745,7 +745,7 @@ function mute_button(member, st, bitN)
     + " onmouseover='prvnt=1'"
     + " onmouseout='prvnt=0'"
     + " onclick='muteunmute(this," + member[1] + "," + bitN + ")'"
-    + " class='mutespr" + bitN + ((member[3]&1)?"0":"1") + "'"
+    + " class='mutespr" + bitN + ((member[3]&bitN)?"0":"1") + "'"
     + " title='" + ((member[3]&bitN)?"Unmute":"Mute") + "'"
   + "></div>";
 }
