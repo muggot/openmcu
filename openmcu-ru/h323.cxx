@@ -4631,6 +4631,19 @@ void MCUConnection_ConferenceMember::UnsetChannelPauses(unsigned mask)
   if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
 }
 
+void MCUConnection_ConferenceMember::SetChannelState(unsigned newMask)
+{
+  unsigned oldMask = ConferenceMember::muteMask; //(Un)SetChannelPauses() will change muteMask
+  unsigned operationalMask = oldMask ^ newMask; // get changes only
+  if(!operationalMask) return; // no changes
+  
+  SetChannelPauses(newMask & operationalMask); // change to mute state
+  UnsetChannelPauses(oldMask & operationalMask); // change to unmute state
+
+  PTRACE_IF(3, newMask!=ConferenceMember::muteMask, // final check
+    "MCUConn\tSetChState(" << newMask << "): " << ConferenceMember::muteMask);
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::LogCall(const BOOL accepted)

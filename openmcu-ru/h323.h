@@ -595,6 +595,7 @@ class MCUConnection_ConferenceMember : public ConferenceMember
 
     virtual void SetChannelPauses(unsigned mask);
     virtual void UnsetChannelPauses(unsigned mask);
+    virtual void SetChannelState(unsigned newMask);
 
   protected:
     PStringStream iISequence; // input indication sequence

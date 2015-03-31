@@ -124,7 +124,7 @@ void Conference::LoadTemplate(PString tpl)
 {
   PTRACE(4,"Conference\tLoading template");
   confTpl=tpl;
-  if(tpl=="") return;
+  if(tpl.IsEmpty()) return;
   PStringArray lines=tpl.Lines();
   int level=0;
   unsigned mixerId=0;
@@ -135,8 +135,7 @@ void Conference::LoadTemplate(PString tpl)
   for(PINDEX i=0; i<lines.GetSize(); i++)
   {
     PString l=lines[i].Trim();
-    if(l=="{") level++;
-    else if(l=="}") level--;
+    if(l=="{") level++; else if(l=="}") level--;
     else
     {
       PINDEX space=l.Find(" ");
@@ -257,7 +256,7 @@ void Conference::LoadTemplate(PString tpl)
             BOOL hasGainOptions = (maskAndGain.GetSize() > 1);
             if(hasGainOptions)
             {
-              member->muteMask      = maskAndGain[0].AsInteger();
+              member->SetChannelState(maskAndGain[0].AsInteger());
               member->kManualGainDB = maskAndGain[1].AsInteger()-20;
               member->kOutputGainDB = maskAndGain[2].AsInteger()-20;
               member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
@@ -429,7 +428,7 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
         member->muteMask     = v[1].AsInteger();
         if(hasGainOptions)
         {
-          member->muteMask      = maskAndGain[0].AsInteger();
+          member->SetChannelState(maskAndGain[0].AsInteger());
           member->kManualGainDB = maskAndGain[1].AsInteger()-20;
           member->kOutputGainDB = maskAndGain[2].AsInteger()-20;
           member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);

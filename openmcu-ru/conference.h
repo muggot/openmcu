@@ -355,7 +355,7 @@ class ConferenceMember : public PObject
     unsigned muteMask;
     unsigned channelMask;
     BOOL disableVAD;
-    BOOL chosenVan; // allways visible, but can change place on frame, used in 5+1 layout
+    BOOL chosenVan; // allways visible, but can change place on frame ("priority")
     int vad;
     unsigned long audioCounter;
     unsigned audioLevelIndicator;
@@ -367,8 +367,19 @@ class ConferenceMember : public PObject
     int kManualGainDB, kOutputGainDB;
 
     // functions H323Connection_ConferenceMember
-    virtual void SetChannelPauses(unsigned mask) {};
-    virtual void UnsetChannelPauses(unsigned mask) {};
+    virtual void SetChannelPauses(unsigned mask)
+    {
+      PTRACE(2,"Conference\tIncorrent call of SetChannelPauses() with mask " << mask);
+    };
+    virtual void UnsetChannelPauses(unsigned mask)
+    {
+      PTRACE(2,"Conference\tIncorrent call of UnsetChannelPauses() with mask " << mask);
+    };
+    virtual void SetChannelState(unsigned newMask)
+    {
+      PTRACE(2,"Conference\tSetChannelState() with mask " << newMask);
+      muteMask = newMask;
+    };
 
     void SendRoomControl(int state);
 
