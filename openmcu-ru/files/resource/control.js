@@ -767,11 +767,10 @@ function vad_button(member)
 
 function format_mmbr_button(m,st)
 {
-  var sname='mmbr', id=idid(m[1]), memberName=''+m[2];
-  sname+=st;
+  var sname='mmbr'+st, id=idid(m[1]), memberName=''+m[2];
 
   var s="<div class='"+sname+"' style='width:"+(panel_width-4)+"px'";
-  if(st) s+=" id='rpan_"+id+"' onmousedown='{highlight("+m[1]+",0);ddstart(event,this,\"panel\","+m[1]+");}' onmouseover='highlight("+m[1]+",1)' onmouseout='highlight("+m[1]+",0)'";
+  s+=" id='rpan_"+id+"' onmousedown='{highlight("+m[1]+",0);ddstart(event,this,\"panel\","+m[1]+");}' onmouseover='highlight("+m[1]+",1)' onmouseout='highlight("+m[1]+",0)'";
   s+=">";
 
   var ip=get_addr_url_without_param(memberName);

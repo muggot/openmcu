@@ -412,6 +412,7 @@ class MCUVideoMixer
     virtual MCUVideoMixer * Clone() const = 0;
     virtual BOOL ReadFrame(ConferenceMember & mbr, void * buffer, int width, int height, PINDEX & amount) = 0;
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount) = 0;
+    virtual BOOL OfflineFrame(ConferenceMemberId id) = 0;
 
     virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount) = 0;
     virtual PString GetFrameStoreMonitorList() = 0;
@@ -542,6 +543,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 
     virtual BOOL ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount);
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount);
+    virtual BOOL OfflineFrame(ConferenceMemberId id);
 
 #if USE_FREETYPE
     virtual unsigned printsubs_calc(unsigned v, char s[10]);

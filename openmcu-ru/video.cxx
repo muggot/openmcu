@@ -3167,6 +3167,26 @@ BOOL MCUSimpleVideoMixer::WriteFrame(ConferenceMemberId id, const void * buffer,
   return TRUE;
 }
 
+BOOL MCUSimpleVideoMixer::OfflineFrame(ConferenceMemberId id)
+{
+  PWaitAndSignal m(mutex);
+
+  // write data into sub frame of mixed image
+  VideoMixPosition *pVMP = VMPListFindVMP(id);
+  if(pVMP==NULL) return FALSE;
+
+  void * buffer = OpenMCU::Current().GetOfflineFramePointer();
+  if(!buffer) return FALSE;
+
+  unsigned
+    width=OpenMCU::Current().GetOfflineFrameWidth(),
+    height=OpenMCU::Current().GetOfflineFrameHeight();
+  
+  WriteSubFrame(*pVMP, buffer, width, height, width*height*3/2);
+
+  return TRUE;
+}
+
 void MCUSimpleVideoMixer::CalcVideoSplitSize(unsigned int imageCount, int & subImageWidth, int & subImageHeight, int & cols, int & rows)
 {
   if (!forceScreenSplit && imageCount < 2) {

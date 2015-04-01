@@ -384,9 +384,10 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 
 .mmbr0,.mmbr1,.mmbr2,.mmbrp15,.mmbrp1,.mmbrp2,.mmbrdd{margin-left:2px;margin-bottom:0px;padding:2px;overflow:hidden;border-radius:0px;text-align:left;height:32px}
 .mmbrdd {border-bottom:1px solid #000    ;background-color:#aaf;position:absolute;cursor:move}
+.mmbr0,.mmbr1,.mmbr2{cursor:move}
 .mmbr0  {border-bottom:1px solid #000    ;background-color:#d3d4d5}
-.mmbr1  {border-bottom:1px solid green   ;background-color:#f5fffa;cursor:move}
-.mmbr2  {border-bottom:1px solid magenta ;background-color:#f5ccff;cursor:move}
+.mmbr1  {border-bottom:1px solid green   ;background-color:#f5fffa}
+.mmbr2  {border-bottom:1px solid magenta ;background-color:#f5ccff}
 .mmbrp15{border-bottom:1px solid red     ;background-color:#ffaaaa;cursor:move}
 .mmbrp1 {border-bottom:1px solid #070    ;background-color:#9a9   ;cursor:move}
 .mmbrp2 {border-bottom:1px solid #707    ;background-color:#a5a   ;cursor:move}

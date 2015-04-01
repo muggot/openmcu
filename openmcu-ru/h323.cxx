@@ -2780,7 +2780,8 @@ void MCUH323Connection::OnCleared()
   {
     // Удалить из конференции без удаления из списка
     conference->RemoveMember(conferenceMember, FALSE);
-    conferenceMember->SetVisible(FALSE);
+//сохраняем возможность редактирования раскладки
+//    conferenceMember->SetVisible(FALSE);
     // В последнюю очередь очистить callToken
     // проверяется при удалении в IsOnline()
     conferenceMember->SetCallToken("");
@@ -4327,7 +4328,7 @@ MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _con
 {
   memberType = MEMBER_TYPE_CONN;
   callToken = _callToken;
-  if(callToken != "")
+//  if(callToken != "")
     visible = TRUE;
   isMCU = _isMCU;
   MCUURL url(_memberName);

@@ -3,9 +3,15 @@
 #include "mcu.h"
 
 extern unsigned char ImageData[];
-unsigned char *logo = NULL;
-unsigned logo_width, logo_height;
-PMutex logo_mutex;
+unsigned char
+  *logo = NULL,
+  *offlineFrame = NULL;
+unsigned
+  logo_width, logo_height,
+  offlineFrame_width, offlineFrame_height;
+PMutex
+  logo_mutex,
+  offlineFrame_mutex;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -21,6 +27,12 @@ class MyMCU : public OpenMCU
 #if MCU_VIDEO
     void RemovePreMediaFrame();
     BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount);
+    BOOL GetOfflineFrame(void * buffer, int width, int height, PINDEX & amount);
+    void * GetOfflineFramePointer();
+    void * LoadFrame(PString fileName, unsigned & width, unsigned & height);
+    unsigned GetOfflineFrameWidth(){ return offlineFrame_width; }
+    unsigned GetOfflineFrameHeight(){ return offlineFrame_height; }
+
 #endif // MCU_VIDEO
 
   protected:
@@ -139,6 +151,42 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
 
   MCUVideoMixer::ResizeYUV420P(ImageData, buffer, QCIF_WIDTH, QCIF_HEIGHT, width, height);
   return TRUE;
+}
+
+void * MyMCU::GetOfflineFramePointer()
+{
+  PWaitAndSignal m(offlineFrame_mutex);
+  if(!offlineFrame) offlineFrame=(unsigned char*)LoadFrame("offlineFrame.jpg", offlineFrame_width, offlineFrame_height);
+  return offlineFrame;
+}
+
+void * MyMCU::LoadFrame(PString fileName, unsigned & width, unsigned & height)
+{
+  void * buffer = NULL;
+  PString filename = PString(SYS_CONFIG_DIR) + PATH_SEPARATOR + fileName;
+  if(PFile::Exists(filename))
+  {
+    int frame_size = 5000000, frame_width, frame_height;
+    MCUBuffer frame_buffer(frame_size);
+    if(MCU_AVDecodeFrameFromFile(filename, frame_buffer.GetPointer(), frame_size, frame_width, frame_height))
+    {
+      if(frame_width > 16 && frame_width % 2 == 0 && frame_height > 16 && frame_height % 2 == 0)
+      {
+        width = frame_width;
+        height = frame_height;
+        buffer = new unsigned char[frame_size];
+        memcpy(buffer, frame_buffer.GetPointer(), frame_size);
+      }
+    }
+  }
+  if(!buffer)
+  {
+    width=height=16;
+    unsigned amount = width*height*3/2;
+    buffer = new unsigned char[amount];
+    memset(buffer,0,amount);
+  }
+  return buffer;
 }
 
 #endif // MCU_VIDEO

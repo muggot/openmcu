@@ -865,7 +865,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
     return TRUE;
 
   // counter visible members
-  visibleMemberCount--;
+//  visibleMemberCount--;
 
   // remove ConferenceConnection
   RemoveAudioConnection(memberToRemove);
@@ -874,6 +874,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   {
     if(moderated == FALSE || number == "testroom")
     {
+      visibleMemberCount--;
       MCUSimpleVideoMixer *mixer = manager.GetVideoMixerWithLock(this);
       mixer->RemoveVideoSource(memberToRemove->GetID(), *memberToRemove);
       mixer->Unlock();
@@ -883,7 +884,8 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
       for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
-        mixer->MyRemoveVideoSourceById(memberToRemove->GetID(), FALSE);
+//        mixer->MyRemoveVideoSourceById(memberToRemove->GetID(), FALSE);
+        mixer->OfflineFrame(memberToRemove->GetID());
       }
     }
   }

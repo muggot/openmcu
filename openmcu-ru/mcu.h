@@ -405,6 +405,10 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     virtual BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount)
     { return FALSE; }
 
+    virtual void * GetOfflineFramePointer() { return NULL; }
+    virtual unsigned GetOfflineFrameWidth() { return 0; }
+    virtual unsigned GetOfflineFrameHeight() { return 0; }
+
     virtual BOOL GetEmptyMediaFrame(void * buffer, int width, int height, PINDEX & amount)
     { return GetPreMediaFrame(buffer, width, height, amount); }
 
