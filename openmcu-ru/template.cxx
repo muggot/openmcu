@@ -33,7 +33,7 @@ PString Conference::SaveTemplate(PString tplName)
       if((long)id==-1) vmpText << "VMP 2";         // - it may be "VMP 2" (VAD type)
       else if((long)id==-2) vmpText << "VMP 3";    // - or        "VMP 3" (VAD2 type)
       else
-      if(id!=0)                                    // - or        "VMP 1, memberName" (static type)
+      if(id!=NULL)                                 // - or        "VMP 1, memberName" (static type)
       {
         for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
         {

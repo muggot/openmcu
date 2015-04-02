@@ -1019,7 +1019,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
           else if(status == -1 && member->disableVAD == FALSE) //find new vad position for active member
           {
             ConferenceMemberId id = mixer->SetVADPosition(member, member->chosenVan, VAtimeout);
-            if(id != 0)
+            if(id != NULL)
             {
               FreezeVideo(id);
               member->SetFreezeVideo(FALSE);
@@ -1097,7 +1097,7 @@ void Conference::FreezeVideo(ConferenceMemberId id)
 {
   PWaitAndSignal m(memberListMutex);
 
-  if(id != 0)
+  if(id != NULL)
   {
     MCUMemberList::shared_iterator it = memberList.Find((long)id);
     if(it == memberList.end())
@@ -1176,7 +1176,7 @@ BOOL Conference::PutChosenVan()
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
         if(mixer->GetPositionStatus(member->GetID()) < 0)
-          put |= (0 != mixer->SetVADPosition(member, member->chosenVan, VAtimeout));
+          put |= (NULL != mixer->SetVADPosition(member, member->chosenVan, VAtimeout));
       }
     }
   }
@@ -1200,7 +1200,7 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
       return;
 
     ConferenceMemberId id=member.GetID();
-    if(id == 0)
+    if(id == NULL)
       return;
 
     MCUSimpleVideoMixer *mixer = manager.GetVideoMixerWithLock(this);
@@ -1228,7 +1228,7 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   memberType = MEMBER_TYPE_NONE;
   visible = FALSE;
   isMCU = FALSE;
-  id = OpenMCU::GetUniqueMemberID();
+  id = (ConferenceMemberId)OpenMCU::GetUniqueMemberID();
   channelMask = 0;
   audioLevel = 0;
   audioCounter = 0;

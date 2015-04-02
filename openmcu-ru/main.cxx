@@ -184,7 +184,7 @@ void * MyMCU::LoadFrame(PString fileName, unsigned & width, unsigned & height)
     width=height=16;
     unsigned amount = width*height*3/2;
     buffer = new unsigned char[amount];
-    MCUVideoMixer::FillYUVFrame(buffer, 0, 0, 0, width, height);
+    memset(buffer,0,amount);
   }
   return buffer;
 }
