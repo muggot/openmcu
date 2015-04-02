@@ -1839,7 +1839,7 @@ BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & dat
     if(mixer == NULL)
       return FALSE;
     ConferenceMemberId id=mixer->GetHonestId(pos);
-    int type=-1; if(id!=NULL) type=mixer->GetPositionType(id);
+    int type=-1; if(id!=0) type=mixer->GetPositionType(id);
     if((type==2)||(type==3))
     {
       if((unsigned long)id<100) //empty VAD pos, operator probably wants to remove it completely
@@ -3706,8 +3706,8 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     videoReceiveChannel = ((MCUVideoCodec &)codec).GetLogicalChannel();
     videoReceiveCodecName = codec.GetMediaFormat();
 
-    if(conference && conference->IsModerated() == "+")
-      conference->FreezeVideo(this);
+    if(conference && conference->IsModerated() == "+" && conferenceMember)
+      conference->FreezeVideo(conferenceMember->GetID());
 
     videoDisplay = new MCUPVideoOutputDevice(*this);
 
