@@ -3417,7 +3417,7 @@ void MCUSimpleVideoMixer::InsertVideoSource(ConferenceMember * member, int pos)
       {
         VideoMixPosition * v2 = VMPListFindVMP(id2);
         v2->id=v3->id;
-        v3->id=(void*)(long)(endPos-1);
+        v3->id=(long)(endPos-1);
         v2->endpointName=v3->endpointName;
 #if USE_FREETYPE
         RemoveSubtitles(*v2);
@@ -3678,7 +3678,7 @@ void MCUSimpleVideoMixer::SetPositionType(int pos, int type)
 
   if(type==1) return;
 
-  ConferenceMemberId id=(void*)(long)pos;
+  ConferenceMemberId id=(long)pos;
   VideoMixPosition * newPosition = CreateVideoMixPosition(id, o.posx, o.posy, o.width, o.height);
   newPosition->type=type;
   newPosition->n=pos;
@@ -3733,7 +3733,7 @@ ConferenceMemberId MCUSimpleVideoMixer::GetPositionId(int pos)
     VideoMixPosition & vmp = *r;
     if (vmp.n == pos )
     {
-      if(vmp.type>1) return (void *)(long)(1-vmp.type);
+      if(vmp.type>1) return (long)(1-vmp.type);
       else return vmp.id;
     }
     r=r->next;
@@ -3791,7 +3791,7 @@ ConferenceMemberId MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * memb
 ConferenceMemberId MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout)
 {
   int maxStatus=0;
-  ConferenceMemberId maxId=(void *)(-1);
+  ConferenceMemberId maxId = -1;
   VideoMixPosition *VADvmp=NULL;
  
   PWaitAndSignal m(mutex);
@@ -3819,7 +3819,7 @@ ConferenceMemberId MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member
   RemoveSubtitles(*VADvmp);
 #endif
   cout << "SetVADPosition\n";
-  if(maxId==NULL) return (void *)1;
+  if(maxId==NULL) return 1;
   return maxId;
 }
 
@@ -3965,7 +3965,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
           v->chosenVan=member->chosenVan;
           v->endpointName=member->GetName();
         }
-        else v->id=(void*)(long)v->n;
+        else v->id=(long)v->n;
 #if USE_FREETYPE
         RemoveSubtitles(*v);
 #endif
@@ -3992,7 +3992,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
   if(type>1000) type-=1000;
   if((type==1) && (id==NULL)) return;
   PString name;
-  if(id==NULL) id=(void *)(long)pos; //vad
+  if(id==NULL) id=(long)pos; //vad
   else name=member->GetName();
 
   VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[pos];
@@ -4031,7 +4031,7 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
     VideoMixPosition * newPosition = NULL;
     if(isVAD&&(!isVADtoNULL)) // VAD or VAD2
     {
-      newPosition               = CreateVideoMixPosition((void *)(long)v2->n, v2->xpos, v2->ypos, v2->width, v2->height);
+      newPosition               = CreateVideoMixPosition((long)v2->n, v2->xpos, v2->ypos, v2->width, v2->height);
       newPosition->type         = 2 /* v2->type */ ; //force VAD1
       newPosition->n            = v2->n;
       newPosition->endpointName = "Voice-activated " + PString(newPosition->type-1); //just VAD with no any member
@@ -4104,7 +4104,7 @@ void MCUSimpleVideoMixer::MyRemoveVideoSource(int pos, BOOL flag)
     {
      NullRectangle(vmp.xpos,vmp.ypos,vmp.width,vmp.height,vmp.border);
      if(flag) { VMPListDelVMP(r); delete r; } // static pos
-     else { vmp.status = 0; vmp.id = (void *)(long)pos; } // vad pos
+     else { vmp.status = 0; vmp.id = (long)pos; } // vad pos
      return;
     }
     r = r->next;
@@ -4344,7 +4344,7 @@ BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
       newPosition->type=1;
     }
     else
-    { newPosition = CreateVideoMixPosition((void *)(long)i, o->posx, o->posy, o->width, o->height);
+    { newPosition = CreateVideoMixPosition((long)i, o->posx, o->posy, o->width, o->height);
       newPosition->type=2;
     }
     PStringStream s; s << "Mix Position " << i; newPosition->endpointName=s;
@@ -4381,7 +4381,7 @@ void TestVideoMixer::MyChangeLayout(unsigned newLayout)
       newPosition->type=1;
     }
     else
-    { newPosition = CreateVideoMixPosition((void *)(long)i, o->posx, o->posy, o->width, o->height);
+    { newPosition = CreateVideoMixPosition((long)i, o->posx, o->posy, o->width, o->height);
       newPosition->type=2;
     }
     PStringStream s; s << "Mix Position " << i; newPosition->endpointName=s;
