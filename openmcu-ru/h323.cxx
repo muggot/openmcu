@@ -3706,8 +3706,8 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     videoReceiveChannel = ((MCUVideoCodec &)codec).GetLogicalChannel();
     videoReceiveCodecName = codec.GetMediaFormat();
 
-    if(conference && conference->IsModerated() == "+")
-      conference->FreezeVideo(this);
+    if(conference && conference->IsModerated() == "+" && conferenceMember)
+      conference->FreezeVideo(conferenceMember->GetID());
 
     videoDisplay = new MCUPVideoOutputDevice(*this);
 
