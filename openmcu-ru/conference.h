@@ -87,21 +87,21 @@ class AudioBuffer
 class ConferenceConnection : public PObject {
   PCLASSINFO(ConferenceConnection, PObject);
   public:
-    ConferenceConnection(long _id)
+    ConferenceConnection(ConferenceMemberId _id)
       : id(_id)
     { }
 
     ~ConferenceConnection()
     { }
 
-    long GetID() const
+    ConferenceMemberId GetID() const
     { return id; }
 
     virtual PString GetName() const
-    { return id; }
+    { return (long)id; }
 
   protected:
-    long id;
+    ConferenceMemberId id;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -111,7 +111,7 @@ class ConferenceAudioConnection : public ConferenceConnection
   PCLASSINFO(ConferenceAudioConnection, ConferenceConnection);
 
   public:
-    ConferenceAudioConnection(long _id, int _sampleRate = 8000, int _channels = 1);
+    ConferenceAudioConnection(ConferenceMemberId _id, int _sampleRate = 8000, int _channels = 1);
     ~ConferenceAudioConnection();
 
     virtual void WriteAudio(const uint64_t & srcTimestamp, const BYTE * data, int amount);
