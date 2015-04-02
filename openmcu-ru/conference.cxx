@@ -1024,7 +1024,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, const uint64_t & tim
   for(MCUAudioConnectionList::shared_iterator it = audioConnectionList.begin(); it != audioConnectionList.end(); ++it)
   {
     ConferenceAudioConnection * conn = it.GetObject();
-    if(conn->GetID() == (long)member->GetID())
+    if(conn->GetID() == member->GetID())
       continue;
 
     BOOL skip = moderated&&muteUnvisible;
@@ -1062,7 +1062,7 @@ void Conference::WriteMemberAudio(ConferenceMember * member, const uint64_t & ti
   }
   if(conn == NULL)
   {
-    conn = new ConferenceAudioConnection((long)member->GetID(), sampleRate, channels);
+    conn = new ConferenceAudioConnection(member->GetID(), sampleRate, channels);
     it = audioConnectionList.Insert(conn, (long)member->GetID());
     conn = *it;
   }
@@ -1335,7 +1335,7 @@ void ConferenceProfile::Unlock()
 ConferenceMember::ConferenceMember(Conference * _conference)
   : conference(_conference)
 {
-  id = this;
+  id = (ConferenceMemberId)OpenMCU::GetUniqueMemberID();
   memberType = MEMBER_TYPE_NONE;
   channelCheck=0;
   audioLevel = 0;
@@ -1610,7 +1610,7 @@ PString ConferenceMember::GetMonitorInfo(const PString & /*hdr*/)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ConferenceAudioConnection::ConferenceAudioConnection(long _id, int _sampleRate, int _channels)
+ConferenceAudioConnection::ConferenceAudioConnection(ConferenceMemberId _id, int _sampleRate, int _channels)
   : ConferenceConnection(_id)
 {
   sampleRate = _sampleRate;

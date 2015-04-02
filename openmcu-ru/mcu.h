@@ -318,6 +318,9 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     const PString & GetDefaultRoomName() const
     { return defaultRoomName; }
 
+    static long GetUniqueMemberID()
+    { return sync_increment(&(OpenMCU::Current().uniqueMemberID)); }
+
     void LogMessage(const PString & str);
     void LogMessageHTML(PString str);
 
@@ -530,6 +533,8 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     PString    serverId;
     PString    defaultRoomName;
     BOOL       allowLoopbackCalls;
+
+    long volatile uniqueMemberID;
 
     PString connectingWAVFile;
     PString enteringWAVFile;

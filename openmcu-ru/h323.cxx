@@ -1507,7 +1507,7 @@ int MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMemb
   conn->Unlock();
 
   PStringStream cmd;
-  cmd << "chmix(" << (long)member << "," << newMixerNumber << ")";
+  cmd << "chmix(" << (long)member->GetID() << "," << newMixerNumber << ")";
   OpenMCU::Current().HttpWriteCmdRoom(cmd, conference.GetNumber());
 
   return newMixerNumber;
@@ -3615,8 +3615,8 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
     if(conferenceMember && conferenceMember->muteMask & 4)
       conferenceMember->SetChannelPauses(4);
 
-    if(conference && conference->IsModerated() == "+")
-      conference->FreezeVideo(this);
+    if(conference && conference->IsModerated() == "+" && conferenceMember)
+      conference->FreezeVideo(conferenceMember->GetID());
 
     videoDisplay = new MCUPVideoOutputDevice(*this);
 
