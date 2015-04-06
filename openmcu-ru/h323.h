@@ -7,55 +7,6 @@
 #include "utils.h"
 #include "mcu_caps.h"
 
-// don't forget to add the same into quote.txt:
-#define OTFC_UNMUTE                    0
-#define OTFC_MUTE                      1
-#define OTFC_MUTE_ALL                  2
-#define OTFC_REMOVE_FROM_VIDEOMIXERS   3
-#define OTFC_REFRESH_VIDEO_MIXERS      4
-#define OTFC_ADD_AND_INVITE            5
-#define OTFC_DROP_MEMBER               7
-#define OTFC_VAD_NORMAL                8
-#define OTFC_VAD_CHOSEN_VAN            9
-#define OTFC_VAD_DISABLE_VAD          10
-#define OTFC_REMOVE_VMP               11
-#define OTFC_MOVE_VMP                 12
-#define OTFC_SET_VMP_STATIC           13
-#define OTFC_VAD_CLICK                14
-#define OTFC_MIXER_ARRANGE_VMP        15
-#define OTFC_MIXER_SCROLL_LEFT        16
-#define OTFC_MIXER_SHUFFLE_VMP        17
-#define OTFC_MIXER_SCROLL_RIGHT       18
-#define OTFC_MIXER_CLEAR              19
-#define OTFC_MIXER_REVERT             20
-#define OTFC_GLOBAL_MUTE              21
-#define OTFC_SET_VAD_VALUES           22
-#define OTFC_TEMPLATE_RECALL          23
-#define OTFC_SAVE_TEMPLATE            24
-#define OTFC_DELETE_TEMPLATE          25
-#define OTFC_REMOVE_VMP_MEMBER        26
-#define OTFC_INVITE                   32
-#define OTFC_REMOVE_OFFLINE_MEMBER    33
-#define OTFC_DIAL                     34
-#define OTFC_DROP_ALL_ACTIVE_MEMBERS  64
-#define OTFC_INVITE_ALL_INACT_MMBRS   65
-#define OTFC_REMOVE_ALL_INACT_MMBRS   66
-#define OTFC_YUV_FILTER_MODE          68
-#define OTFC_TAKE_CONTROL             69
-#define OTFC_DECONTROL                70
-#define OTFC_ADD_VIDEO_MIXER          71
-#define OTFC_DELETE_VIDEO_MIXER       72
-#define OTFC_SET_VIDEO_MIXER_LAYOUT   73
-#define OTFC_SET_MEMBER_VIDEO_MIXER   74
-#define OTFC_VIDEO_RECORDER_START     75
-#define OTFC_VIDEO_RECORDER_STOP      76
-#define OTFC_TOGGLE_TPL_LOCK          77
-#define OTFC_UNMUTE_ALL               78
-#define OTFC_AUDIO_GAIN_LEVEL_SET     79
-#define OTFC_OUTPUT_GAIN_SET          80
-#define OTFC_ADD_TO_ABOOK             90
-#define OTFC_REMOVE_FROM_ABOOK        91
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString H323GetAliasUserName(const H225_ArrayOf_AliasAddress & aliases);
@@ -107,7 +58,6 @@ class MCUH323EndPoint : public H323EndPoint
     PString GetMemberListOptsJavascript(Conference & conference);
     PString GetAddressBookOptsJavascript();
     int SetMemberVideoMixer(Conference & conference, ConferenceMember * victim, int newVideoMixer);
-    BOOL OTFControl(const PString room, const PStringToString & data);
     PString GetRoomList(const PString & block);
     PString SetRoomParams(const PStringToString & data);
     void UnmoderateConference(Conference & conference);

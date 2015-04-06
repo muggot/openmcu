@@ -103,7 +103,9 @@ class MCUJSON
     { ostr << json.AsString(); return ostr; }
 
     std::string   AsString();
-    std::string & ToString(std::string &str);
+    std::string & ToString(std::string &str, bool print_keys = true, bool print_esc = false, int esc_level = 0);
+
+    void PrintEsc(std::string &str, bool print_esc, int esc_level);
 
   protected:
     std::string json_key;

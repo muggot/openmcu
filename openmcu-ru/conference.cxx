@@ -1383,6 +1383,29 @@ void ConferenceMember::SendRoomControl(int state)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+MCUJSON * ConferenceMember::AsJSON(int state)
+{
+  MCUJSON *json = new MCUJSON(MCUJSON::JSON_ARRAY);
+  json->Insert("online", (state && IsOnline()));
+  json->Insert("id", id);
+  json->Insert("name", name);
+  json->Insert("muteMask", muteMask);
+  json->Insert("disableVad", disableVAD);
+  json->Insert("chosenVan", chosenVan);
+  json->Insert("audioLevel", GetAudioLevel());
+  json->Insert("videoMixerMumber", GetVideoMixerNumber());
+  json->Insert("nameID", GetNameID());
+  json->Insert("channelMask", channelMask);
+  json->Insert("kManualGainDB", kManualGainDB);
+  json->Insert("kOutputGainDB", kOutputGainDB);
+  json->Insert("mixer", "[]");
+  json->Insert("memberType", memberType);
+  json->Insert("autoDial", autoDial);
+  return json;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void ConferenceMember::ChannelStateUpdate(unsigned bit, BOOL state)
 {
   if(state)

@@ -491,9 +491,9 @@ std::string MCUJSON::AsString()
   return ToString(str);
 }
 
-std::string & MCUJSON::ToString(std::string &str)
+std::string & MCUJSON::ToString(std::string &str, bool print_keys, bool print_esc, int esc_level)
 {
-  if(!json_key.empty())
+  if(print_keys && !json_key.empty())
   {
     JsQuoteScreen(json_key, str);
     str.push_back(':');
@@ -536,6 +536,8 @@ std::string & MCUJSON::ToString(std::string &str)
     case(JSON_ARRAY):
     case(JSON_OBJECT):
     {
+      if(print_keys && !json_key.empty())
+        PrintEsc(str, print_esc, esc_level);
       if(json_type == JSON_OBJECT)
         str.push_back('{');
       else
@@ -546,9 +548,11 @@ std::string & MCUJSON::ToString(std::string &str)
       {
         if(i > 0)
           str.push_back(',');
-        it->ToString(str);
+        PrintEsc(str, print_esc, esc_level+1);
+        it->ToString(str, print_keys, print_esc, esc_level+1);
       }
 
+      PrintEsc(str, print_esc, esc_level);
       if(json_type == JSON_OBJECT)
         str.push_back('}');
       else
@@ -561,6 +565,17 @@ std::string & MCUJSON::ToString(std::string &str)
   }
 
   return str;
+}
+
+void MCUJSON::PrintEsc(std::string &str, bool print_esc, int esc_level)
+{
+  if(print_esc)
+  {
+    str.push_back('\r');
+    str.push_back('\n');
+    for(int i = 0; i < esc_level; ++i)
+      str.push_back(' ');
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

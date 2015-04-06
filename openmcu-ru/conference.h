@@ -382,6 +382,7 @@ class ConferenceMember : public PObject
     };
 
     void SendRoomControl(int state);
+    MCUJSON * AsJSON(int state = 1);
 
   protected:
     unsigned videoMixerNumber;

@@ -330,7 +330,7 @@ BOOL MCUTelnetSession::ProcessState(const PString & data)
 
 BOOL MCUTelnetSession::OnReceivedData(const PString & data)
 {
-  MCUTRACE(1, trace_section << "recv " << databuf.GetLength() << " bytes\n" << databuf);
+  MCUTRACE(6, trace_section << "recv " << databuf.GetLength() << " bytes\n" << databuf);
 
   if(!SendEcho())
     return FALSE;
@@ -338,11 +338,14 @@ BOOL MCUTelnetSession::OnReceivedData(const PString & data)
   if(state)
     return ProcessState(data);
 
-  //////////////////////////////////////////////////
+  PString rdata;
+  if(!OpenMCU::Current().OTFControl(data, rdata))
+    rdata += "error!";
 
-  //////////////////////////////////////////////////
+  rdata += "\r\n";
+  rdata += cur_path;
 
-  if(!Send((const char *)cur_path))
+  if(!Send((const char *)rdata))
     return FALSE;
 
   return TRUE;
@@ -372,7 +375,7 @@ BOOL MCUTelnetSession::Send(const char *buffer)
     return FALSE;
   }
 
-  MCUTRACE(1, trace_section << "send " << strlen(buffer) << " bytes\n" << buffer);
+  MCUTRACE(6, trace_section << "send " << strlen(buffer) << " bytes\n" << buffer);
   return TRUE;
 }
 

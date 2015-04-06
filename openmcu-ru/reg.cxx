@@ -101,38 +101,34 @@ void AbookAccount::SaveConfig()
 
 PString AbookAccount::AsJsArray(int state)
 {
+  MCUJSON *json = AsJSON(state);
+  std::string str;
+  json->ToString(str, false, false);
+  delete json;
+  return str;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+MCUJSON * AbookAccount::AsJSON(int state)
+{
   PString memberName = display_name+" ["+GetUrl()+"]";
   PString memberNameID = MCUURL(memberName).GetMemberNameId();
-  MCUJSON json(MCUJSON::JSON_ARRAY);
-  /*
-  json.Insert(MCUJSON::Int   (state));
-  json.Insert(MCUJSON::String(memberNameID));
-  json.Insert(MCUJSON::String(memberName));
-  json.Insert(MCUJSON::Int   (is_abook));
-  json.Insert(MCUJSON::String(remote_application));
-  json.Insert(MCUJSON::Int   (reg_state));
-  json.Insert(MCUJSON::String(reg_info));
-  json.Insert(MCUJSON::Int   (conn_state));
-  json.Insert(MCUJSON::String(conn_info));
-  json.Insert(MCUJSON::Int   (ping_state));
-  json.Insert(MCUJSON::String(ping_info));
-  json.Insert(MCUJSON::Int   (is_account));
-  json.Insert(MCUJSON::Int   (is_saved_account));
-  */
-  json.Insert(state);
-  json.Insert(memberNameID);
-  json.Insert(memberName);
-  json.Insert(is_abook);
-  json.Insert(remote_application);
-  json.Insert(reg_state);
-  json.Insert(reg_info);
-  json.Insert(conn_state);
-  json.Insert(conn_info);
-  json.Insert(ping_state);
-  json.Insert(ping_info);
-  json.Insert(is_account);
-  json.Insert(is_saved_account);
-  return json.AsString();
+  MCUJSON *json = new MCUJSON(MCUJSON::JSON_ARRAY);
+  json->Insert("state", state);
+  json->Insert("memberNameID", memberNameID);
+  json->Insert("memberName", memberName);
+  json->Insert("is_abook", is_abook);
+  json->Insert("remote_application", remote_application);
+  json->Insert("reg_state", reg_state);
+  json->Insert("reg_info", reg_info);
+  json->Insert("conn_state", conn_state);
+  json->Insert("conn_info", conn_info);
+  json->Insert("ping_state", ping_state);
+  json->Insert("ping_info", ping_info);
+  json->Insert("is_account", is_account);
+  json->Insert("is_saved_account", is_saved_account);
+  return json;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

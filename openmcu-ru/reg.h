@@ -235,6 +235,7 @@ class AbookAccount
     }
 
     PString AsJsArray(int state = 0);
+    MCUJSON * AsJSON(int state = 0);
     void SendRoomControl(int state = 0);
     void SaveConfig();
     PString GetUrl();

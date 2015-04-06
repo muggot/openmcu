@@ -1478,733 +1478,6 @@ int MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMemb
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUH323EndPoint::OTFControl(const PString room, const PStringToString & data)
-{
-  PTRACE(6,"WebCtrl\tRoom " << room << ", action " << data("action") << ", value " << data("v") << ", options " << data("o") << ", " << data("o2") << ", " << data("o3"));
-
-  if(!data.Contains("action"))
-    return FALSE;
-  int action = data("action").AsInteger();
-
-  if(!data.Contains("v"))
-    return FALSE;
-  PString value = data("v");
-  long v = value.AsInteger();
-
-  if(action == OTFC_YUV_FILTER_MODE)
-  {
-    PString filterName = OpenMCU::Current().SetScaleFilterType(v);
-    OpenMCU::Current().HttpWriteEventRoom("filter: "+filterName, room);
-    PStringStream cmd;
-    cmd << "conf[0][10]=" << v;
-    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-    OpenMCU::Current().HttpWriteCmdRoom("top_panel()",room);
-    OpenMCU::Current().HttpWriteCmdRoom("alive()",room);
-    return TRUE;
-  }
-  if(action == OTFC_ADD_TO_ABOOK)
-  {
-    OpenMCU::Current().GetRegistrar()->AddAbookAccount(value);
-    return TRUE;
-  }
-  if(action == OTFC_REMOVE_FROM_ABOOK)
-  {
-    OpenMCU::Current().GetRegistrar()->RemoveAbookAccount(value);
-    return TRUE;
-  }
-
-  MCUConferenceList & conferenceList = conferenceManager.GetConferenceList();
-  MCUConferenceList::shared_iterator cit = conferenceList.Find(room);
-  if(cit == conferenceList.end())
-    return FALSE;
-  Conference *conference = *cit;
-
-  if(action == OTFC_REFRESH_VIDEO_MIXERS)
-  {
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("mixrfr()",room);
-    return TRUE;
-  }
-  if(action == OTFC_VIDEO_RECORDER_START)
-  {
-    if(conference->StartRecorder())
-    {
-      return TRUE;
-    }
-    return FALSE;
-  }
-  if(action == OTFC_VIDEO_RECORDER_STOP)
-  {
-    conference->StopRecorder();
-    return TRUE;
-  }
-  if(action == OTFC_TEMPLATE_RECALL)
-  {
-    OpenMCU::Current().HttpWriteCmdRoom("alive()",room);
-
-    if(conference->IsModerated()=="-")
-    {
-      conference->SetModerated(TRUE);
-      MCUSimpleVideoMixer * mixer = conferenceManager.GetVideoMixerWithLock(conference);
-      if(mixer)
-      {
-        mixer->SetForceScreenSplit(TRUE);
-        mixer->Unlock();
-      }
-      conference->PutChosenVan();
-      OpenMCU::Current().HttpWriteEventRoom("<span style='background-color:#bfb'>Operator took the control</span>",room);
-      OpenMCU::Current().HttpWriteCmdRoom("r_moder()",room);
-    }
-
-    conference->confTpl = conference->ExtractTemplate(value);
-    conference->LoadTemplate(conference->confTpl);
-    conference->SetLastUsedTemplate(value);
-    PStringStream msg;
-    msg << GetMemberListOptsJavascript(*conference) << "\n"
-        << "p." << GetConferenceOptsJavascript(*conference) << "\n"
-        << "p.tl=Array" << conference->GetTemplateList() << "\n"
-        << "p.seltpl=\"" << conference->GetSelectedTemplateName() << "\"\n"
-        << "p.build_page()";
-    OpenMCU::Current().HttpWriteCmdRoom(msg,room);
-    return TRUE;
-  }
-  if(action == OTFC_SAVE_TEMPLATE)
-  {
-    OpenMCU::Current().HttpWriteCmdRoom("alive()",room);
-    PString templateName=value.Trim();
-    if(templateName=="") return FALSE;
-    if(templateName.Right(1) == "*") templateName=templateName.Left(templateName.GetLength()-1).RightTrim();
-    if(templateName=="") return FALSE;
-    conference->confTpl = conference->SaveTemplate(templateName);
-    conference->TemplateInsertAndRewrite(templateName, conference->confTpl);
-    conference->LoadTemplate(conference->confTpl);
-    PStringStream msg;
-    msg << GetMemberListOptsJavascript(*conference) << "\n"
-        << "p." << GetConferenceOptsJavascript(*conference) << "\n"
-        << "p.tl=Array" << conference->GetTemplateList() << "\n"
-        << "p.seltpl=\"" << conference->GetSelectedTemplateName() << "\"\n"
-        << "p.build_page()";
-      OpenMCU::Current().HttpWriteCmdRoom(msg,room);
-    return TRUE;
-  }
-  if(action == OTFC_DELETE_TEMPLATE)
-  {
-    OpenMCU::Current().HttpWriteCmdRoom("alive()",room);
-    PString templateName=value.Trim();
-    if(templateName=="") return FALSE;
-    if(templateName.Right(1) == "*") return FALSE;
-    conference->DeleteTemplate(templateName);
-    conference->LoadTemplate("");
-    conference->SetLastUsedTemplate("");
-    PStringStream msg;
-    msg << GetMemberListOptsJavascript(*conference) << "\n"
-        << "p." << GetConferenceOptsJavascript(*conference) << "\n"
-        << "p.tl=Array" << conference->GetTemplateList() << "\n"
-        << "p.seltpl=\"" << conference->GetSelectedTemplateName() << "\"\n"
-        << "p.build_page()";
-      OpenMCU::Current().HttpWriteCmdRoom(msg,room);
-    return TRUE;
-  }
-  if(action == OTFC_TOGGLE_TPL_LOCK)
-  {
-    PString templateName=value.Trim();
-    if((templateName.IsEmpty())||(templateName.Right(1) == "*")) if(!conference->lockedTemplate) return FALSE;
-    conference->lockedTemplate = !conference->lockedTemplate;
-    if(conference->lockedTemplate) OpenMCU::Current().HttpWriteCmdRoom("tpllck(1)",room);
-    else OpenMCU::Current().HttpWriteCmdRoom("tpllck(0)",room);
-    return TRUE;
-  }
-  if(action == OTFC_INVITE)
-  {
-    action = OTFC_ADD_AND_INVITE;
-  }
-  if(action == OTFC_ADD_AND_INVITE)
-  {
-    PString memberName = value;
-    if(memberName.Find("[") == P_MAX_INDEX)
-      memberName = "["+memberName+"]";
-    ConferenceMember *member = conferenceManager.FindMemberWithLock(conference, memberName);
-    if(member == NULL)
-    {
-      member = new MCUConnection_ConferenceMember(conference, memberName, "");
-      MCUMemberList::shared_iterator it = conference->AddMemberToList(member);
-      if(it == conference->GetMemberList().end())
-      {
-        delete member;
-        member = NULL;
-      }
-      else
-        member = it.GetCapturedObject();
-    }
-    if(member)
-    {
-      member->Dial();
-      member->Unlock();
-      return TRUE;
-    }
-    return FALSE;
-  }
-  if(action == OTFC_REMOVE_OFFLINE_MEMBER)
-  {
-    PWaitAndSignal m(conference->GetMemberListMutex());
-    MCUMemberList & memberList = conference->GetMemberList();
-    MCUMemberList::shared_iterator it = memberList.Find(value);
-    if(it != memberList.end())
-    {
-      ConferenceMember *member = *it;
-      if(!member->IsSystem() && !member->IsOnline())
-      {
-        member->Close();
-        if(memberList.Erase(it))
-          delete member;
-      }
-    }
-    PStringStream msg;
-    msg << GetMemberListOptsJavascript(*conference) << "\n"
-        << "p.members_refresh()";
-    OpenMCU::Current().HttpWriteCmdRoom(msg,room);
-    return TRUE;
-  }
-  if(action == OTFC_DROP_ALL_ACTIVE_MEMBERS)
-  {
-    PWaitAndSignal m(conference->GetMemberListMutex());
-    MCUMemberList & memberList = conference->GetMemberList();
-    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-    {
-      ConferenceMember * member = *it;
-      if(!member->IsSystem())
-      {
-        member->SetAutoDial(FALSE);
-        if(member->IsOnline())
-          member->Close();
-      }
-    }
-    OpenMCU::Current().HttpWriteEventRoom("Active members dropped by operator",room);
-    OpenMCU::Current().HttpWriteCmdRoom("drop_all()",room);
-    return TRUE;
-  }
-  if(action == OTFC_MUTE_ALL || action == OTFC_UNMUTE_ALL)
-  {
-    MCUMemberList & memberList = conference->GetMemberList();
-    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-    {
-      ConferenceMember * member = *it;
-      if(member->IsSystem())
-        continue;
-      if(action == OTFC_MUTE_ALL) member->SetChannelPauses  (1);
-      else                        member->UnsetChannelPauses(1);
-    }
-    return TRUE;
-  }
-  if(action == OTFC_INVITE_ALL_INACT_MMBRS)
-  {
-    PWaitAndSignal m(conference->GetMemberListMutex());
-    MCUMemberList & memberList = conference->GetMemberList();
-    BOOL dial=(v==1);
-    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-    {
-      ConferenceMember * member = *it;
-      if(!member->IsSystem())
-      {
-        if(member->IsOnline())
-          member->SetAutoDial(dial);
-        else
-          member->Dial(dial);
-      }
-    }
-    return TRUE;
-  }
-  if(action == OTFC_REMOVE_ALL_INACT_MMBRS)
-  {
-    PWaitAndSignal m(conference->GetMemberListMutex());
-    MCUMemberList & memberList = conference->GetMemberList();
-    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-    {
-      ConferenceMember *member = *it;
-      if(!member->IsSystem() && !member->IsOnline())
-      {
-        member->Close();
-        if(memberList.Erase(it))
-          delete member;
-      }
-    }
-    OpenMCU::Current().HttpWriteEventRoom("Offline members removed by operator",room);
-    OpenMCU::Current().HttpWriteCmdRoom("remove_all()",room);
-    return TRUE;
-  }
-  if(action == OTFC_TAKE_CONTROL)
-  {
-    if(conference->IsModerated()=="-")
-    {
-      conference->SetModerated(TRUE);
-      MCUSimpleVideoMixer * mixer = conferenceManager.GetVideoMixerWithLock(conference);
-      if(mixer)
-      {
-        mixer->SetForceScreenSplit(TRUE);
-        mixer->Unlock();
-      }
-      conference->PutChosenVan();
-      OpenMCU::Current().HttpWriteEventRoom("<span style='background-color:#bfb'>Operator took the control</span>",room);
-      OpenMCU::Current().HttpWriteCmdRoom("r_moder()",room);
-    }
-    return TRUE;
-  }
-  if(action == OTFC_DECONTROL)
-  {
-    if(conference->IsModerated()=="+")
-    {
-      conference->SetModerated(FALSE);
-      MCUSimpleVideoMixer * mixer = conferenceManager.GetVideoMixerWithLock(conference);
-      if(mixer)
-      {
-        mixer->SetForceScreenSplit(FALSE);
-        mixer->Unlock();
-      }
-      UnmoderateConference(*conference);
-      OpenMCU::Current().HttpWriteEventRoom("<span style='background-color:#acf'>Operator resigned</span>",room);
-      OpenMCU::Current().HttpWriteCmdRoom("r_unmoder()",room);
-      OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-      OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    }
-    return TRUE;
-  }
-  if(action == OTFC_ADD_VIDEO_MIXER)
-  {
-    if(conference->GetVideoMixerList().GetSize() == 0)
-      return FALSE;
-    if(conference->IsModerated()=="+")
-    {
-      unsigned n = conferenceManager.AddVideoMixer(conference);
-      PStringStream msg; msg << "Video mixer " << n << " added";
-      OpenMCU::Current().HttpWriteEventRoom(msg,room);
-      OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-      OpenMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()",room);
-      return TRUE;
-    }
-    return FALSE;
-  }
-  if(action == OTFC_DELETE_VIDEO_MIXER)
-  {
-    if(conference->GetVideoMixerList().GetSize() == 0)
-      return FALSE;
-    if(conference->IsModerated()=="+")
-    {
-      unsigned n_old = conference->GetVideoMixerList().GetSize();
-      unsigned n = conferenceManager.DeleteVideoMixer(conference, v);
-      if(n_old != n)
-      {
-        PStringStream msg; msg << "Video mixer " << v << " removed";
-        OpenMCU::Current().HttpWriteEventRoom(msg,room);
-        OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-        OpenMCU::Current().HttpWriteCmdRoom("mmw=-1;p.build_page()",room);
-        return TRUE;
-      }
-    }
-    return FALSE;
-  }
-  if(action == OTFC_SET_VIDEO_MIXER_LAYOUT)
-  {
-    long option = data("o").AsInteger();
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, option);
-    if(mixer == NULL)
-      return FALSE;
-    mixer->MyChangeLayout(v);
-    mixer->Unlock();
-    conference->PutChosenVan();
-    conference->FreezeVideo(NULL);
-    if(conference->GetVideoMixerList().GetSize() != 0)
-      OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    else
-      OpenMCU::Current().HttpWriteCmdRoom(GetMemberListOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_REMOVE_VMP)
-  {
-    unsigned pos = data("o").AsInteger();
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
-    if(mixer == NULL)
-      return FALSE;
-    mixer->MyRemoveVideoSource(pos,TRUE);
-    mixer->Unlock();
-    conference->FreezeVideo(NULL);
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_REMOVE_VMP_MEMBER)
-  {
-    unsigned pos = data("o").AsInteger();
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
-    if(mixer == NULL)
-      return FALSE;
-    ConferenceMemberId id=mixer->GetHonestId(pos);
-    int type=-1; if(id!=NULL) type=mixer->GetPositionType(id);
-    if((type==2)||(type==3))
-    {
-      if((unsigned long)id<100) //empty VAD pos, operator probably wants to remove it completely
-        mixer->MyRemoveVideoSource(pos,TRUE);
-      else
-        mixer->MyRemoveVideoSource(pos,FALSE);
-    }
-    else mixer->MyRemoveVideoSource(pos,TRUE);
-    mixer->Unlock();
-    conference->FreezeVideo(NULL);
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_MIXER_ARRANGE_VMP)
-  {
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
-    if(mixer == NULL)
-      return FALSE;
-    MCUMemberList & memberList = conference->GetMemberList();
-    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-    {
-      ConferenceMember * member = *it;
-      if(member->IsVisible())
-      {
-        if(mixer->AddVideoSourceToLayout(member->GetID(), *(member)))
-           member->SetFreezeVideo(FALSE);
-        else
-          break;
-      }
-    }
-    mixer->Unlock();
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_MIXER_CLEAR)
-  {
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
-    if(mixer == NULL)
-      return FALSE;
-    mixer->MyRemoveAllVideoSource();
-    mixer->Unlock();
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_MIXER_SHUFFLE_VMP)
-  {
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
-    if(mixer == NULL)
-      return FALSE;
-    mixer->Shuffle();
-    mixer->Unlock();
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_MIXER_SCROLL_LEFT)
-  {
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
-    if(mixer == NULL)
-      return FALSE;
-    mixer->Scroll(TRUE);
-    mixer->Unlock();
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_MIXER_SCROLL_RIGHT)
-  {
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
-    if(mixer == NULL)
-      return FALSE;
-    mixer->Scroll(FALSE);
-    mixer->Unlock();
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_MIXER_REVERT)
-  {
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
-    if(mixer == NULL)
-      return FALSE;
-    mixer->Revert();
-    mixer->Unlock();
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_GLOBAL_MUTE)
-  {
-    if(data("v") == "true") v = 1;
-    if(data("v") == "false") v = 0;
-    conference->SetMuteUnvisible((BOOL)v);
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_SET_VAD_VALUES)
-  {
-    conference->VAlevel   = (unsigned short int) v;
-    conference->VAdelay   = (unsigned short int) (data("o").AsInteger());
-    conference->VAtimeout = (unsigned short int) (data("o2").AsInteger());
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_MOVE_VMP)
-  {
-    if(!data.Contains("o2"))
-      return FALSE;
-    long option2 = data("o2").AsInteger();
-    MCUSimpleVideoMixer *mixer1 = conferenceManager.FindVideoMixerWithLock(conference, v);
-    if(mixer1 == NULL)
-      return FALSE;
-    MCUSimpleVideoMixer *mixer2 = conferenceManager.FindVideoMixerWithLock(conference, option2);
-    if(mixer2 == NULL)
-    {
-      mixer1->Unlock();
-      return FALSE;
-    }
-    int pos1 = data("o").AsInteger(); int pos2 = data("o3").AsInteger();
-    if(mixer1 == mixer2)
-    {
-      mixer1->Exchange(pos1,pos2);
-    } else {
-      ConferenceMemberId id = mixer1->GetHonestId(pos1); if(((long)id<100)&&((long)id>=0)) id=NULL;
-      ConferenceMemberId id2 = mixer2->GetHonestId(pos2); if(((long)id2<100)&&((long)id2>=0)) id2=NULL;
-      ConferenceMember *member1 = conferenceManager.FindMemberWithLock(conference, (long)id);
-      ConferenceMember *member2 = conferenceManager.FindMemberWithLock(conference, (long)id2);
-      mixer2->PositionSetup(pos2, 1001, member1);
-      mixer1->PositionSetup(pos1, 1001, member2);
-      if(member1)
-        member1->Unlock();
-      if(member2)
-        member2->Unlock();
-    }
-    mixer1->Unlock();
-    mixer2->Unlock();
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if(action == OTFC_VAD_CLICK)
-  {
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, v);
-    if(mixer == NULL)
-      return FALSE;
-    unsigned pos = data("o").AsInteger();
-    int type = data("o2").AsInteger();
-    if((type<1)||(type>3)) type=2;
-    long id = (long)mixer->GetHonestId(pos);
-//    if((type==1)&&(id>=0)&&(id<100)) //static but no member
-    if((id>=0)&&(id<100)) //just no member (and we want to add him for some reason)
-    {
-      BOOL setup = FALSE;
-      MCUMemberList & memberList = conference->GetMemberList();
-      for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-      {
-        ConferenceMember * member = *it;
-        if(member->IsVisible())
-        {
-          if(  (mixer->VMPListFindVMP(member->GetID()) == NULL)  &&  ((type==1)||(!member->disableVAD))  )
-          {
-            mixer->PositionSetup(pos, type, member);
-            member->SetFreezeVideo(FALSE);
-            setup = TRUE;
-            break;
-          }
-        }
-      }
-      if(setup == FALSE)
-        mixer->PositionSetup(pos,type,NULL);
-    }
-//    else if((id>=0)&&(id<100))
-//      mixer->PositionSetup(pos,type,NULL);
-    else
-      mixer->SetPositionType(pos,type);
-    mixer->Unlock();
-    conference->FreezeVideo(NULL);
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-
-  MCUMemberList & memberList = conference->GetMemberList();
-  MCUMemberList::shared_iterator mit = memberList.Find(v);
-  if(mit == memberList.end())
-    return FALSE;
-  ConferenceMember * member = *mit;
-  PStringStream cmd;
-
-  if(action == OTFC_DIAL)
-  {
-    member->Dial(!member->autoDial);
-    cmd << "dspr(" << (long)member->GetID() << ",'" << member->IsOnline() << member->autoDial << "')";
-    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-    return TRUE;
-  }
-  if(action == OTFC_SET_VMP_STATIC )
-  {
-    if(member->IsSystem())
-      return FALSE;
-    long n = data("o").AsInteger();
-    MCUSimpleVideoMixer *mixer = conferenceManager.FindVideoMixerWithLock(conference, n);
-    if(mixer == NULL)
-      return FALSE;
-    int pos = data("o2").AsInteger();
-    mixer->PositionSetup(pos, 1001, member);
-    mixer->Unlock();
-    member->SetFreezeVideo(FALSE);
-    OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-    OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-    return TRUE;
-  }
-  if( action == OTFC_AUDIO_GAIN_LEVEL_SET )
-  {
-    int n=data("o").AsInteger();
-    if(n<0) n=0;
-    if(n>80) n=80;
-    member->kManualGainDB=n-20;
-    member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
-    cmd << "setagl(" << v << "," << member->kManualGainDB << ")";
-    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-    return TRUE;
-  }
-  if( action == OTFC_OUTPUT_GAIN_SET )
-  {
-    int n=data("o").AsInteger();
-    if(n<0) n=0;
-    if(n>80) n=80;
-    member->kOutputGainDB=n-20;
-    member->kOutputGain=(float)pow(10.0,((float)member->kOutputGainDB)/20.0);
-    cmd << "setogl(" << v << "," << member->kOutputGainDB << ")";
-    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-    return TRUE;
-  }
-  if(action == OTFC_MUTE)
-  {
-    if(!member->IsSystem())
-      member->SetChannelPauses(data("o").AsInteger());
-    return TRUE;
-  }
-  if(action == OTFC_UNMUTE)
-  {
-    if(!member->IsSystem())
-      member->UnsetChannelPauses(data("o").AsInteger());
-    return TRUE;
-  }
-  if(action == OTFC_REMOVE_FROM_VIDEOMIXERS)
-  {
-    if(conference->IsModerated()=="+")
-    {
-      MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-      if(videoMixerList.GetSize() != 0)
-      {
-        for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
-        {
-          MCUSimpleVideoMixer *mixer = it.GetObject();
-          ConferenceMemberId id = member->GetID();
-          int oldPos = mixer->GetPositionNum(id);
-          if(oldPos != -1)
-            mixer->MyRemoveVideoSource(oldPos, (mixer->GetPositionType(id) & 2) != 2);
-        }
-      }
-      else // classic MCU mode
-      {
-        MCUMemberList & memberList = conference->GetMemberList();
-        for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-        {
-          ConferenceMember * member = *it;
-          MCUVideoMixer * mixer = member->videoMixer;
-          ConferenceMemberId id = member->GetID();
-          int oldPos = mixer->GetPositionNum(id);
-          if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, (mixer->GetPositionType(id) & 2) != 2);
-        }
-      }
-      if(!member->IsSystem())
-        member->SetFreezeVideo(TRUE);
-      OpenMCU::Current().HttpWriteCmdRoom(GetConferenceOptsJavascript(*conference),room);
-      OpenMCU::Current().HttpWriteCmdRoom("build_page()",room);
-      return TRUE;
-    }
-    return TRUE;
-  }
-  if(action == OTFC_DROP_MEMBER )
-  {
-    member->SetAutoDial(FALSE);
-    if(member->IsOnline())
-      member->Close();
-    return TRUE;
-  }
-  if(action == OTFC_VAD_NORMAL)
-  {
-    member->disableVAD=FALSE;
-    member->chosenVan=FALSE;
-    conference->PutChosenVan();
-    cmd << "ivad(" << v << ",0)";
-    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-    return TRUE;
-  }
-  if(action == OTFC_VAD_CHOSEN_VAN)
-  {
-    member->disableVAD=FALSE;
-    member->chosenVan=TRUE;
-    conference->PutChosenVan();
-    conference->FreezeVideo(member->GetID());
-    cmd << "ivad(" << v << ",1)";
-    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-    return TRUE;
-  }
-  if(action == OTFC_VAD_DISABLE_VAD)
-  {
-    member->disableVAD=TRUE;
-    member->chosenVan=FALSE;
-    conference->PutChosenVan();
-#if 1 // DISABLING VAD WILL CAUSE MEMBER REMOVAL FROM VAD POSITIONS
-    {
-      ConferenceMemberId id = member->GetID();
-      MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-      if(videoMixerList.GetSize() != 0)
-      {
-        for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
-        {
-          MCUSimpleVideoMixer *mixer = it.GetObject();
-          int type = mixer->GetPositionType(id);
-          if(type == 2 || type == 3)
-            mixer->MyRemoveVideoSourceById(id, FALSE);
-        }
-      }
-      else
-      {
-        MCUMemberList & memberList = conference->GetMemberList();
-        for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-        {
-          ConferenceMember * member = *it;
-          MCUVideoMixer * mixer = member->videoMixer;
-          int type = mixer->GetPositionType(id);
-          if(type<2 || type>3) continue; //-1:not found, 1:static, 2&3:VAD
-          mixer->MyRemoveVideoSourceById(id, FALSE);
-        }
-      }
-      conference->FreezeVideo(id);
-    }
-#endif
-    cmd << "ivad(" << v << ",2)";
-    OpenMCU::Current().HttpWriteCmdRoom(cmd,room);
-    return TRUE;
-  }
-  if(action == OTFC_SET_MEMBER_VIDEO_MIXER)
-  {
-    int option = data("o").AsInteger();
-    int newMixerNumber = SetMemberVideoMixer(*conference, member, option);
-    if(newMixerNumber == -1)
-      return FALSE;
-    return TRUE;
-  }
-
-  return FALSE;
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
 PString MCUH323EndPoint::GetRoomList(const PString & block)
 {
   PString substitution;
@@ -2304,11 +1577,11 @@ void MCUH323EndPoint::UnmoderateConference(Conference & conference)
 
 PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
 {
-  PString room = data("room");
-
   // "On-the-Fly" Control via XMLHTTPRequest:
   if(data.Contains("otfc"))
-    return (OTFControl(room, data) ? "OK" : "FAIL");
+    return (OpenMCU::Current().OTFControl(data) ? "OK" : "FAIL");
+
+  PString room = data("room");
 
   if(data.Contains("refresh")) // JavaScript data refreshing
   {
@@ -4484,11 +3757,13 @@ void MCUConnection_ConferenceMember::SetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
   MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
+  if(conn)
+    conn->GetChannelsMutex().Wait();
+
   if(mask & 1)
   {
     if(conn)
     {
-      PWaitAndSignal m(conn->GetChannelsMutex());
       MCU_RTPChannel * channel = conn->GetAudioReceiveChannel();
       if(channel)
       {
@@ -4503,7 +3778,6 @@ void MCUConnection_ConferenceMember::SetChannelPauses(unsigned mask)
   {
     if(conn)
     {
-      PWaitAndSignal m(conn->GetChannelsMutex());
       MCU_RTPChannel * channel = conn->GetAudioTransmitChannel();
       if(channel)
       {
@@ -4518,7 +3792,6 @@ void MCUConnection_ConferenceMember::SetChannelPauses(unsigned mask)
   {
     if(conn)
     {
-      PWaitAndSignal m(conn->GetChannelsMutex());
       MCU_RTPChannel * channel = conn->GetVideoReceiveChannel();
       if(channel)
       {
@@ -4533,7 +3806,6 @@ void MCUConnection_ConferenceMember::SetChannelPauses(unsigned mask)
   {
     if(conn)
     {
-      PWaitAndSignal m(conn->GetChannelsMutex());
       MCU_RTPChannel * channel = conn->GetVideoTransmitChannel();
       if(channel)
       {
@@ -4545,14 +3817,14 @@ void MCUConnection_ConferenceMember::SetChannelPauses(unsigned mask)
     sumMask |= 8;
   }
 
-  if(conn)
-    conn->Unlock();
-
-  PString room;
-  if(conference)
-    room = conference->GetNumber();
   PStringStream cmd; cmd << "imute(" << dec << (long)id << "," << sumMask << ")";
-  if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
+  OpenMCU::Current().HttpWriteCmdRoom(cmd, conference->GetNumber());
+
+  if(conn)
+  {
+    conn->GetChannelsMutex().Signal();
+    conn->Unlock();
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -4561,11 +3833,13 @@ void MCUConnection_ConferenceMember::UnsetChannelPauses(unsigned mask)
 {
   unsigned sumMask = 0;
   MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
+  if(conn)
+    conn->GetChannelsMutex().Wait();
+
   if(mask & 1)
   {
     if(conn)
     {
-      PWaitAndSignal m(conn->GetChannelsMutex());
       MCU_RTPChannel * channel = conn->GetAudioReceiveChannel();
       if(channel)
       {
@@ -4580,7 +3854,6 @@ void MCUConnection_ConferenceMember::UnsetChannelPauses(unsigned mask)
   {
     if(conn)
     {
-      PWaitAndSignal m(conn->GetChannelsMutex());
       MCU_RTPChannel * channel = conn->GetAudioTransmitChannel();
       if(channel)
       {
@@ -4595,7 +3868,6 @@ void MCUConnection_ConferenceMember::UnsetChannelPauses(unsigned mask)
   {
     if(conn)
     {
-      PWaitAndSignal m(conn->GetChannelsMutex());
       MCU_RTPChannel * channel = conn->GetVideoReceiveChannel();
       if(channel)
       {
@@ -4610,7 +3882,6 @@ void MCUConnection_ConferenceMember::UnsetChannelPauses(unsigned mask)
   {
     if(conn)
     {
-      PWaitAndSignal m(conn->GetChannelsMutex());
       MCU_RTPChannel * channel = conn->GetVideoTransmitChannel();
       if(channel)
       {
@@ -4622,14 +3893,14 @@ void MCUConnection_ConferenceMember::UnsetChannelPauses(unsigned mask)
     sumMask |= 8;
   }
 
-  if(conn)
-    conn->Unlock();
-
-  PString room;
-  if(conference)
-    room = conference->GetNumber();
   PStringStream cmd; cmd << "iunmute(" << dec << (long)id << "," << sumMask << ")";
-  if(room.IsEmpty()) OpenMCU::Current().HttpWriteCmd(cmd); else OpenMCU::Current().HttpWriteCmdRoom(cmd, room);
+  OpenMCU::Current().HttpWriteCmdRoom(cmd, conference->GetNumber());
+
+  if(conn)
+  {
+    conn->GetChannelsMutex().Signal();
+    conn->Unlock();
+  }
 }
 
 void MCUConnection_ConferenceMember::SetChannelState(unsigned newMask)
