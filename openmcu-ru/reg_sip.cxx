@@ -83,7 +83,7 @@ int Registrar::OnReceivedSipMessage(msg_t *msg)
 
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username_in = url.GetUserName();
-  PString username_out = url.GetUserNameTo();
+  PString username_out = url.GetLocalUserName();
 
   if(username_in == username_out)
     return sep->SipReqReply(msg, NULL, 406); // SIP_406_NOT_ACCEPTABLE
@@ -146,7 +146,7 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
 
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username_in = url.GetUserName();
-  PString username_out = url.GetUserNameTo();
+  PString username_out = url.GetLocalUserName();
 
   if(username_in == username_out)
     return sep->SipReqReply(msg, NULL, 406); // SIP_406_NOT_ACCEPTABLE
@@ -268,7 +268,7 @@ int Registrar::OnReceivedSipSubscribe(msg_t *msg)
 
   MCUURL_SIP url(msg, DIRECTION_INBOUND);
   PString username_in = url.GetUserName();
-  PString username_out = url.GetUserNameTo();
+  PString username_out = url.GetLocalUserName();
   PString username_pair = username_in+"@"+username_out;
 
   if(username_in == username_out)
