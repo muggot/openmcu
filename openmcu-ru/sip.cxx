@@ -89,27 +89,48 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Directions dir)
   if(transport != "" && transport != "*")
     url_party += ";transport="+transport;
 
-  // username_to
+  // local_username
   if(dir == DIRECTION_INBOUND && sip->sip_request && sip->sip_request->rq_url->url_user && PString(sip->sip_request->rq_url->url_user) != "")
-    username_to = sip->sip_request->rq_url->url_user;
+    local_username = sip->sip_request->rq_url->url_user;
   else if(sip_to->a_url->url_user && PString(sip_to->a_url->url_user) != "")
-    username_to = sip_to->a_url->url_user;
-  username_to.Replace("sip:","",TRUE,0);
-  username_to.Replace("\"","",TRUE,0);
-  username_to = PURL::UntranslateString(username_to, PURL::QueryTranslation);
+    local_username = sip_to->a_url->url_user;
+  local_username.Replace("sip:","",TRUE,0);
+  local_username.Replace("\"","",TRUE,0);
+  local_username = PURL::UntranslateString(local_username, PURL::QueryTranslation);
 
-  // hostname_to
-  if(dir == DIRECTION_INBOUND && sip->sip_request && sip->sip_request->rq_url->url_host && PString(sip->sip_request->rq_url->url_host) != "")
-    hostname_to = sip->sip_request->rq_url->url_host;
-  else if(sip_to->a_url->url_host && PString(sip_to->a_url->url_host) != "")
-    hostname_to = sip_to->a_url->url_host;
+  // local_url
+  if(OpenMCU::Current().GetSipEndpoint()->GetLocalSipAddress(local_url, msg) == TRUE)
+  {
+    MCUURL lurl(local_url);
+    lurl.SetUserName(local_username);
+    local_url = lurl.GetUrl();
+  }
+  else
+  {
+    local_url = "*";
+    /*
+    // local_hostname
+    PString local_hostname;
+    PString local_port;
+    if(dir == DIRECTION_INBOUND && sip->sip_request && sip->sip_request->rq_url->url_host && PString(sip->sip_request->rq_url->url_host) != "")
+    {
+      local_hostname = sip->sip_request->rq_url->url_host;
+      local_port = sip->sip_request->rq_url->url_port;
+    }
+    else if(sip_to->a_url->url_host && PString(sip_to->a_url->url_host) != "")
+    {
+      local_hostname = sip_to->a_url->url_host;
+      local_port = sip_to->a_url->url_port;
+    }
+    if(local_port == "")
+      local_port = "5060";
+    local_url = url_scheme+":"+local_username+"@"+local_hostname+":"+local_port;
+    if(transport != "" && transport != "*")
+      local_url += ";transport="+transport;
+    */
+  }
 
-  // url_to
-  url_to = url_scheme+":"+username_to+"@"+hostname_to;
-  if(transport != "" && transport != "*")
-    url_to += ";transport="+transport;
-
-  PTRACE(1, "MCUURL_SIP url: " << url_party << " url_to: " << url_to);
+  PTRACE(1, "MCUURL_SIP url: " << url_party << " local_url: " << local_url);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -486,7 +507,7 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
     MCUURL_SIP url(msg, DIRECTION_INBOUND);
     ruri_str = url.GetUrl();
     remotePartyAddress = ruri_str;
-    contact_str = url.GetUrlTo();
+    contact_str = url.GetLocalUrl();
     sip_from = sip->sip_to;
     sip_to = sip->sip_from;
   }
@@ -3498,12 +3519,33 @@ BOOL MCUSipEndPoint::GetLocalSipAddress(PString & local_addr, const PString & ru
     goto error;
 
   local_addr = "sip:@"+(PString)tp_name->tpn_host+":"+(PString)tp_name->tpn_port+";transport="+(PString)tp_name->tpn_proto;
-  MCUTRACE(1, "MCUSIP\tfound local SIP address " << local_addr << " for remote " << ruri_str);
+  MCUTRACE(1, "MCUSIP found local SIP address " << local_addr << " for remote " << ruri_str);
   return TRUE;
 
   error:
-    MCUTRACE(1, "MCUSIP\tnot found local SIP address for remote " << ruri_str);
+    MCUTRACE(1, "MCUSIP not found local SIP address for remote " << ruri_str);
     return FALSE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUSipEndPoint::GetLocalSipAddress(PString & local_addr, const msg_t *msg)
+{
+  PWaitAndSignal m(sipMutex);
+  for(tport_t *tp = nta_agent_tports(agent); tp != NULL; tp = tport_next(tp))
+  {
+    tport_t *msg_tp = tport_delivered_by(tp, msg);
+    if(msg_tp)
+    {
+      tp_name_t const *tp_name = tport_name(msg_tp);
+      local_addr = "sip:"+(PString)tp_name->tpn_host+":"+(PString)tp_name->tpn_port+";transport="+(PString)tp_name->tpn_proto;
+      MCUTRACE(1, "MCUSIP found local SIP address " << local_addr << " from msg " << msg);
+      return TRUE;
+    }
+  }
+
+  MCUTRACE(1, "MCUSIP not found local SIP address from msg " << msg);
+  return FALSE;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

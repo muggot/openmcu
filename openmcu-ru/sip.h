@@ -44,15 +44,13 @@ class MCUURL_SIP : public MCUURL
 {
   public:
     MCUURL_SIP(const msg_t *msg, Directions dir = DIRECTION_INBOUND);
-    const PString & GetUserNameTo() const { return username_to; }
-    const PString & GetHostNameTo() const { return hostname_to; }
-    const PString & GetUrlTo() const { return url_to; }
+    const PString & GetLocalUserName() const { return local_username; }
+    const PString & GetLocalUrl() const { return local_url; }
     const PString & GetRemoteApplication() const { return remote_application; }
     const PString & GetDomainName() const { return domain_name; }
   protected:
-    PString username_to;
-    PString hostname_to;
-    PString url_to;
+    PString local_username;
+    PString local_url;
     PString domain_name;
     PString remote_application;
 };
@@ -412,6 +410,7 @@ class MCUSipEndPoint : public PThread
     void RemoveListeners();
 
     BOOL GetLocalSipAddress(PString & local_addr, const PString & ruri_str);
+    BOOL GetLocalSipAddress(PString & local_addr, const msg_t *msg);
 
     PSTUNClient * CreateStun(PString address);
     PSTUNClient * GetPreferedStun(PString address);
