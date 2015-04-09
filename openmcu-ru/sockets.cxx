@@ -217,10 +217,6 @@ BOOL MCUSocket::Open()
     return FALSE;
   }
 
-  // set socket non-blocking
-  int flags = fcntl(socket_fd, F_GETFD);
-  fcntl(socket_fd, F_SETFD, flags | O_NONBLOCK);
-
   // recv timeout
   struct timeval tv;
   tv.tv_sec = socket_timeout_sec;
@@ -243,6 +239,7 @@ BOOL MCUSocket::Connect()
 
   struct sockaddr_in addr;
   socklen_t addr_len = sizeof(addr);
+  int flags;
 
 # ifndef _WIN32
     bzero(&addr, sizeof(addr));
@@ -253,12 +250,45 @@ BOOL MCUSocket::Connect()
   inet_pton(AF_INET, socket_host, &addr.sin_addr);
   addr.sin_port = htons(socket_port);
 
-  // Connect
+  // set socket non-blocking
+  flags = fcntl(socket_fd, F_GETFL);
+  fcntl(socket_fd, F_SETFL, flags | O_NONBLOCK);
+
   if(connect(socket_fd, (const sockaddr *)&addr, addr_len) == -1)
   {
-    MCUTRACE(1, trace_section << "connect error " << socket_host << ":" << socket_port);
-    return FALSE;
+    if(errno == EINPROGRESS)
+    {
+      struct timeval tv;
+      fd_set fdset;
+      tv.tv_sec = 3;
+      tv.tv_usec = 0;
+      FD_ZERO(&fdset);
+      FD_SET(socket_fd, &fdset);
+      if(select(socket_fd+1, NULL, &fdset, NULL, &tv) > 0)
+      {
+        int opt;
+        socklen_t opt_len = sizeof(int);
+        getsockopt(socket_fd, SOL_SOCKET, SO_ERROR, (char *)(&opt), &opt_len);
+        if(opt)
+        {
+          MCUTRACE(1, trace_section << "connect error " << opt << " " << strerror(opt));
+          return FALSE;
+        }
+      } else {
+        MCUTRACE(1, trace_section << "connect timeout " << errno << " " << strerror(errno));
+        return FALSE;
+      }
+    }
+    else
+    {
+      MCUTRACE(1, trace_section << "connect error " << errno << " " << strerror(errno));
+      return FALSE;
+    }
   }
+
+  // set socket blocking
+  flags = fcntl(socket_fd, F_GETFL);
+  fcntl(socket_fd, F_SETFL, flags & (~O_NONBLOCK));
 
   return TRUE;
 }
