@@ -309,8 +309,8 @@ BOOL MCURtspConnection::SendOptions()
   char buffer[1024];
   snprintf(buffer, 1024,
   	   "OPTIONS %s RTSP/1.0\r\n"
-	   "CSeq: %d %s\r\n"
-	   , (const char *)ruri_str, cseq++, (const char *)METHOD_OPTIONS);
+	   "CSeq: %d\r\n"
+	   , (const char *)ruri_str, cseq++);
 
   AddHeaders(buffer, METHOD_OPTIONS);
   if(!SendRequest(buffer))
@@ -326,10 +326,10 @@ BOOL MCURtspConnection::SendPlay()
   char buffer[1024];
   snprintf(buffer, 1024,
   	   "PLAY %s RTSP/1.0\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
            "Session: %s\r\n"
            "Range: npt=0.000-\r\n"
-	   , (const char *)ruri_str, cseq++, (const char *)METHOD_PLAY, (const char *)rtsp_session_str);
+	   , (const char *)ruri_str, cseq++, (const char *)rtsp_session_str);
 
   AddHeaders(buffer, METHOD_PLAY);
   if(!SendRequest(buffer))
@@ -367,10 +367,10 @@ BOOL MCURtspConnection::SendSetup(int pt)
   char buffer[1024];
   snprintf(buffer, 1024,
   	   "SETUP %s RTSP/1.0\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
 	   "%s"
            "Transport: RTP/AVP/UDP;unicast;client_port=%d-%d\r\n"
-	   , (const char *)control, cseq++, (const char *)METHOD_SETUP, (const char *)session_header, rtp_port, rtp_port+1);
+	   , (const char *)control, cseq++, (const char *)session_header, rtp_port, rtp_port+1);
 
   AddHeaders(buffer, METHOD_SETUP);
   if(!SendRequest(buffer))
@@ -391,9 +391,9 @@ BOOL MCURtspConnection::SendTeardown()
   char buffer[1024];
   snprintf(buffer, 1024,
   	   "TEARDOWN %s RTSP/1.0\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
 	   "Session: %s\r\n"
-	   , (const char *)ruri_str, cseq++, (const char *)METHOD_TEARDOWN, (const char *)rtsp_session_str);
+	   , (const char *)ruri_str, cseq++, (const char *)rtsp_session_str);
 
   AddHeaders(buffer, METHOD_TEARDOWN);
   if(!SendRequest(buffer))
@@ -410,9 +410,9 @@ BOOL MCURtspConnection::SendDescribe()
   char buffer[1024];
   snprintf(buffer,1024,
   	   "DESCRIBE %s RTSP/1.0\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
 	   "Accept: application/sdp\r\n"
-	   , (const char *)ruri_str, cseq++, (const char *)METHOD_DESCRIBE);
+	   , (const char *)ruri_str, cseq++);
 
   AddHeaders(buffer, METHOD_DESCRIBE);
   if(!SendRequest(buffer))
@@ -542,10 +542,10 @@ BOOL MCURtspConnection::OnRequestOptions(const msg_t *msg)
   char buffer[1024];
   snprintf(buffer, 1024,
   	   "RTSP/1.0 200 OK\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
 	   "Date: %s\r\n"
 	   "Public: OPTIONS, DESCRIBE, SETUP, TEARDOWN, PLAY\r\n"
-	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString());
+	   , sip->sip_cseq->cs_seq, (const char *)PTime().AsString());
 
   AddHeaders(buffer);
   if(SendRequest(buffer) == 0)
@@ -608,12 +608,12 @@ BOOL MCURtspConnection::OnRequestDescribe(const msg_t *msg)
   char buffer[2048];
   snprintf(buffer, 2048,
   	   "RTSP/1.0 200 OK\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
 	   "Date: %s\r\n"
 	   "Content-Type: application/sdp\r\n"
 	   "Cache-Control: no-cache\r\n"
            "Content-Length: %d\r\n"
-	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), strlen(buffer_sdp)+2);
+	   , sip->sip_cseq->cs_seq, (const char *)PTime().AsString(), strlen(buffer_sdp)+2);
 
   AddHeaders(buffer);
   strcat(buffer, buffer_sdp);
@@ -656,8 +656,13 @@ BOOL MCURtspConnection::ParseTransportStr(SipCapability *sc, PString & transport
 
   if(sc->remote_ip == "" || sc->remote_ip == "0.0.0.0" || sc->remote_port == 0)
   {
-    MCUTRACE(1, trace_section << "missing remote ip or remote port");
+    MCUTRACE(1, trace_section << "incorrect remote ip or remote port" << sc->remote_ip << ":" << sc->remote_port);
     return FALSE;
+  }
+  if(!MCUSocket::IsValidHost(sc->remote_ip) && !MCUSocket::GetHostIP(sc->remote_ip, sc->remote_ip))
+  {
+    MCUTRACE(1, trace_section << "incorrect remote ip " << sc->remote_ip);
+    return NULL;
   }
 
   if(direction == DIRECTION_INBOUND)
@@ -734,11 +739,11 @@ BOOL MCURtspConnection::OnRequestSetup(const msg_t *msg)
   char buffer[1024];
   snprintf(buffer, 1024,
   	   "RTSP/1.0 200 OK\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
 	   "Date: %s\r\n"
 	   "Session: %s\r\n"
 	   "Transport: %s\r\n"
-	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), (const char *)rtsp_session_str, (const char *)transport_str);
+	   , sip->sip_cseq->cs_seq, (const char *)PTime().AsString(), (const char *)rtsp_session_str, (const char *)transport_str);
 
   AddHeaders(buffer);
   if(SendRequest(buffer) == 0)
@@ -770,11 +775,11 @@ BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
   char buffer[1024];
   snprintf(buffer, 1024,
   	   "RTSP/1.0 200 OK\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
 	   "Date: %s\r\n"
 	   "Session: %s\r\n"
 	   "Range: npt=0.000-\r\n"
-	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), (const char *)rtsp_session_str);
+	   , sip->sip_cseq->cs_seq, (const char *)PTime().AsString(), (const char *)rtsp_session_str);
 
   AddHeaders(buffer);
   if(!SendRequest(buffer))
@@ -793,10 +798,10 @@ BOOL MCURtspConnection::OnRequestTeardown(const msg_t *msg)
   char buffer[1024];
   snprintf(buffer, 1024,
   	   "RTSP/1.0 200 OK\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
 	   "Date: %s\r\n"
 	   "Session: %s\r\n"
-	   , sip->sip_cseq->cs_seq, sip->sip_request->rq_method_name, (const char *)PTime().AsString(), (const char *)rtsp_session_str);
+	   , sip->sip_cseq->cs_seq, (const char *)PTime().AsString(), (const char *)rtsp_session_str);
 
   AddHeaders(buffer);
   SendRequest(buffer);
@@ -845,10 +850,10 @@ BOOL MCURtspConnection::RtspCheckAuth(const msg_t *msg)
     char buffer[1024];
     snprintf(buffer, 1024,
   	   "RTSP/1.0 401 Unauthorized\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
 	   "Date: %s\r\n"
 	   "WWW-Authenticate: %s\r\n"
-	   , sip->sip_cseq->cs_seq, (const char *)method_name, (const char *)PTime().AsString(), (const char *)auth_str);
+	   , sip->sip_cseq->cs_seq, (const char *)PTime().AsString(), (const char *)auth_str);
     AddHeaders(buffer);
     SendRequest(buffer);
     return FALSE;
@@ -879,9 +884,9 @@ BOOL MCURtspConnection::RtspCheckAuth(const msg_t *msg)
       char buffer[1024];
       snprintf(buffer, 1024,
   	   "RTSP/1.0 403 Forbidden\r\n"
-	   "CSeq: %d %s\r\n"
+	   "CSeq: %d\r\n"
 	   "Date: %s\r\n"
-	   , sip->sip_cseq->cs_seq, (const char *)method_name, (const char *)PTime().AsString());
+	   , sip->sip_cseq->cs_seq, (const char *)PTime().AsString());
       AddHeaders(buffer);
       SendRequest(buffer);
 
