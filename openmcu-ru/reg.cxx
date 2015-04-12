@@ -451,9 +451,8 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
   else if(account_type == ACCOUNT_TYPE_RTSP)
   {
     callToken = PGloballyUniqueID().AsString();
-    MCURtspServer *rtsp = OpenMCU::Current().GetRtspServer();
-    if(!rtsp->CreateConnection(room, address, callToken))
-      callToken = "";
+    PString *cmd = new PString("invite:"+room+","+address+","+callToken);
+    regQueue.Push(cmd);
   }
 
   if(callToken != "")
@@ -910,42 +909,16 @@ void Registrar::QueueThread(PThread &, INT)
 void Registrar::QueueInvite(const PString & data)
 {
   PString from = data.Tokenise(",")[0];
-  PString to = data.Tokenise(",")[1];
+  PString address = data.Tokenise(",")[1];
   PString callToken = data.Tokenise(",")[2];
-  MCUURL url(to);
-  if(url.GetScheme() == "sip")
+  MCUURL url(address);
+  if(url.GetScheme() == "h323")
   {
-    sep->SipMakeCall(from, to, callToken);
   }
-  else if(url.GetScheme() == "h323")
+  else if(url.GetScheme() == "rtsp")
   {
-    RegistrarConnection *rconn = FindRegConnWithLock(callToken);
-    if(rconn == NULL)
-      return;
-    H323Transport * transport = NULL;
-    if(ep->GetGatekeeper())
-    {
-      PString gk_host = ep->GetGatekeeperHostName();
-      if(url.GetHostName() == "" || gk_host == url.GetHostName())
-      {
-        to = url.GetUserName();
-        PTRACE(1, trace_section << "Found gatekeeper, change address " << url.GetUrl() << " -> " << to);
-      }
-      else
-      {
-        H323TransportAddress taddr(url.GetHostName()+":"+url.GetPort());
-        transport = taddr.CreateTransport(*ep);
-        transport->SetRemoteAddress(taddr);
-      }
-    }
-    PString newToken;
-    void *userData = new PString(from);
-    if(ep->MakeCall(to, transport, newToken, userData))
-    {
-      rconn->callToken_in = newToken;
-      rconn->callToken_out = newToken;
-    }
-    rconn->Unlock();
+    MCURtspServer *rtsp = OpenMCU::Current().GetRtspServer();
+    rtsp->CreateConnection(from, address, callToken);
   }
 }
 
