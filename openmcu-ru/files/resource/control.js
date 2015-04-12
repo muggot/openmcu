@@ -800,11 +800,10 @@ function format_mmbr_button(m,st)
   conn_info = "";
   ping_state = 0;
   ping_info = "";
+  addr_url = get_addr_url(memberName);
   for(var i=0;i<addressbook.length;i++)
   {
-    //if(addressbook[i][2]==m[2])
-    nameid = get_addr_nameid(addressbook[i][2]);
-    if(nameid==m[8])
+    if(addr_url == get_addr_url(addressbook[i][2]))
     {
       reg_state = addressbook[i][5];
       reg_info = window.l_name_registered+": "+addressbook[i][6];
@@ -1269,7 +1268,9 @@ function get_addr_url_without_param(addr){
 }
 function get_addr_nameid(addr)
 {
-  url = get_addr_url_without_param(addr)
+  url = get_addr_url(addr)
+  if(url.substring(0,5) == "rtsp:")
+    return url;
   return url.substring(0, url.indexOf('@'));
 }
 

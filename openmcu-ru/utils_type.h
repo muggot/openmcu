@@ -481,8 +481,10 @@ class MCUURL : public PURL
       return memberName;
     }
 
-    const PString GetMemberNameId() const
+    const PString GetMemberNameId()
     {
+      if(url_scheme == "rtsp")
+        return GetUrl();
       PString id = url_scheme+":";
       if(username != "") id += username;
       else               id += hostname;
@@ -498,6 +500,21 @@ class MCUURL : public PURL
           url_party += ":"+PString(port);
         if(transport != "" && transport != "*")
           url_party += ";transport="+transport;
+      }
+      else if(url_scheme == "rtsp")
+      {
+        url_party = url_scheme+"://";
+        if(username != "")
+        {
+          url_party += username;
+          if(password != "")
+            url_party += ":"+password;
+          url_party += "@";
+        }
+        url_party += hostname;
+        if(port != 0)
+          url_party += ":"+PString(port);
+        url_party += pathStr;
       }
       return url_party;
     }
