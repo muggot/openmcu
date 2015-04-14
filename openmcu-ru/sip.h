@@ -70,6 +70,7 @@ class HTTPAuth
     HTTPAuth()
     {
       type = AUTH_NONE;
+      attempts = 0;
       scheme = "Digest";
       realm = "openmcu-ru";
       nonce = PGloballyUniqueID().AsString();
@@ -93,6 +94,7 @@ class HTTPAuth
     PString MakeAuthenticateStr();
 
     AuthTypes type;
+    int attempts;
     PString scheme;
     PString username;
     PString password;
@@ -328,6 +330,7 @@ class MCUSipConnection : public MCUH323Connection
 
     PString local_ip;
     PString nat_ip;
+    PString nat_port;
 
     int scap; // selected audio capability payload type
     int vcap; // selected video capability payload type

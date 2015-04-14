@@ -99,36 +99,26 @@ MCUURL_SIP::MCUURL_SIP(const msg_t *msg, Directions dir)
   local_username = PURL::UntranslateString(local_username, PURL::QueryTranslation);
 
   // local_url
+  /*
   if(OpenMCU::Current().GetSipEndpoint()->GetLocalSipAddress(local_url, msg) == TRUE)
   {
     MCUURL lurl(local_url);
     lurl.SetUserName(local_username);
     local_url = lurl.GetUrl();
   }
-  else
+  */
+  if(dir == DIRECTION_INBOUND && sip->sip_request)
   {
-    local_url = "*";
-    /*
-    // local_hostname
-    PString local_hostname;
-    PString local_port;
-    if(dir == DIRECTION_INBOUND && sip->sip_request && sip->sip_request->rq_url->url_host && PString(sip->sip_request->rq_url->url_host) != "")
-    {
-      local_hostname = sip->sip_request->rq_url->url_host;
-      local_port = sip->sip_request->rq_url->url_port;
-    }
-    else if(sip_to->a_url->url_host && PString(sip_to->a_url->url_host) != "")
-    {
-      local_hostname = sip_to->a_url->url_host;
-      local_port = sip_to->a_url->url_port;
-    }
+    PString local_hostname = sip->sip_request->rq_url->url_host;
+    PString local_port = sip->sip_request->rq_url->url_port;
     if(local_port == "")
       local_port = "5060";
     local_url = url_scheme+":"+local_username+"@"+local_hostname+":"+local_port;
     if(transport != "" && transport != "*")
       local_url += ";transport="+transport;
-    */
   }
+  else
+    local_url = "*";
 
   PTRACE(1, "MCUURL_SIP url: " << url_party << " local_url: " << local_url);
 }
@@ -527,25 +517,21 @@ BOOL MCUSipConnection::Init(Directions _direction, const msg_t *msg)
   // create local capability list
   CreateLocalSipCaps();
 
-  MCUURL local_url(contact_str);
+  MCUURL contact_url(contact_str);
   MCUURL remote_url(ruri_str);
 
-  // local contact
-  requestedRoom = local_url.GetUserName();
-  // default room name
+  // requested room
+  requestedRoom = contact_url.GetUserName();
   if(requestedRoom == "")
     requestedRoom = OpenMCU::Current().GetDefaultRoomName();
-  // set contact username
-  local_url.SetUserName(requestedRoom);
 
-  // nat ip for contact
-  local_url.SetHostName(nat_ip);
-
-  // transport
-  local_url.SetTransport(remote_url.GetTransport());
-
-  // final local contact
-  contact_str = local_url.GetUrl();
+  // contact
+  contact_url.SetUserName(requestedRoom);
+  contact_url.SetHostName(nat_ip);
+  if(nat_port != "")
+    contact_url.SetPort(nat_port.AsInteger());
+  contact_url.SetTransport(remote_url.GetTransport());
+  contact_str = contact_url.GetUrl();
 
   // create call leg
   leg = nta_leg_tcreate(sep->GetAgent(), wrap_invite_request_cb, (nta_leg_magic_t *)this,
@@ -664,7 +650,9 @@ BOOL MCUSipConnection::DetermineLocalIp(const PString & _address)
 BOOL MCUSipConnection::DetermineNAT()
 {
   // NAT router IP
-  nat_ip = GetEndpointParam(NATRouterIPKey);
+  PString nat_addr = GetEndpointParam(NATRouterIPKey);
+  nat_ip = nat_addr.Tokenise(":")[0];
+  nat_port = nat_addr.Tokenise(":")[1];
   if(nat_ip != "" && PIPSocket::Address(nat_ip).IsValid() == FALSE)
   {
     MCUTRACE(1, trace_section << "incorrect NAT router IP " << nat_ip);
