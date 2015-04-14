@@ -330,6 +330,7 @@ class MCUSipConnection : public MCUH323Connection
 
     PString local_ip;
     PString nat_ip;
+    PString nat_port;
 
     int scap; // selected audio capability payload type
     int vcap; // selected video capability payload type

@@ -43,7 +43,7 @@ class TablePConfigPage : public PConfigPage
       rowArray = "<tr valign='middle'><td align='left' style='font-size:"+fontSize+"px;background-color:"+itemColor+";padding:0px 4px 0px 4px;line-height:100%;'>";
 
       js_filters =
-        "function FilterIp(obj)     { obj.value = obj.value.replace(/[^0-9\\.]/g,''); }"
+        "function FilterIp(obj)     { obj.value = obj.value.replace(/[^0-9\\.:]/g,''); }"
         "function FilterAccount(obj){ obj.value = obj.value.replace(/[^A-Za-zА-Яа-я0-9-_\\.]/g,''); }"
         "function FilterInteger(obj) { obj.value = obj.value.replace(/[^0-9]/g,''); }"
         "function FilterMinMax(obj, min, max) { FilterInteger(obj); if(obj.value == '') return; if(obj.value < min) obj.value = min; else if(obj.value > max) obj.value = max; }"
