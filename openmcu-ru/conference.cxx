@@ -168,6 +168,32 @@ ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+ConferenceMember * ConferenceManager::FindMemberUrlWithLock(const PString & roomName, const PString & memberName)
+{
+  Conference *conference = FindConferenceWithLock(roomName);
+  if(conference == NULL)
+    return NULL;
+  ConferenceMember *member = FindMemberUrlWithLock(conference, memberName);
+  conference->Unlock();
+  return member;
+}
+ConferenceMember * ConferenceManager::FindMemberUrlWithLock(Conference * conference, const PString & memberName)
+{
+  MCUMemberList & memberList = conference->GetMemberList();
+  ConferenceMember *member = memberList(memberName);
+  if(member)
+    return member;
+  PString memberUrl = MCUURL(memberName).GetUrl();
+  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  {
+    if(memberUrl == MCUURL(it->GetName()).GetUrl())
+      return it.GetCapturedObject();
+  }
+  return NULL;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ConferenceMember * ConferenceManager::FindMemberNameIDWithLock(const PString & roomName, const PString & memberName)
 {
   Conference *conference = FindConferenceWithLock(roomName);

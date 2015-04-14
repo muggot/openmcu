@@ -1046,9 +1046,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
   if(action == OTFC_ADD_AND_INVITE)
   {
     PString memberName = value;
-    if(memberName.Find("[") == P_MAX_INDEX)
-      memberName = "["+memberName+"]";
-    ConferenceMember *member = manager->FindMemberWithLock(conference, memberName);
+    ConferenceMember *member = manager->FindMemberUrlWithLock(conference, memberName);
     if(member == NULL)
     {
       member = new MCUConnection_ConferenceMember(conference, memberName, "");
