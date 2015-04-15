@@ -69,6 +69,11 @@
 #define _IMGST1 2
 #define _IMGST2 4
 
+#define WSF_VMP_SET_TIME  1
+#define WSF_VMP_SUBTITLES 2
+#define WSF_VMP_BORDER    4
+#define WSF_VMP_COMMON    WSF_VMP_SET_TIME | WSF_VMP_SUBTITLES | WSF_VMP_BORDER
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if USE_FREETYPE
@@ -245,6 +250,9 @@ class MCUVideoMixer
         unsigned minWidthForLabel;
 #endif
         BOOL border;
+        time_t lastWrite;
+        int rule;
+        BOOL offline;
     };
 
     MCUVideoMixer()
@@ -411,10 +419,9 @@ class MCUVideoMixer
 
     virtual MCUVideoMixer * Clone() const = 0;
     virtual BOOL ReadFrame(ConferenceMember & mbr, void * buffer, int width, int height, PINDEX & amount) = 0;
-    virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount) = 0;
-    virtual BOOL OfflineFrame(ConferenceMemberId id) = 0;
+    virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height) = 0;
 
-    virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount) = 0;
+    virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, int options) = 0;
     virtual PString GetFrameStoreMonitorList() = 0;
 //    virtual void WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
 //    virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
@@ -542,8 +549,8 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     { }
 
     virtual BOOL ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount);
-    virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount);
-    virtual BOOL OfflineFrame(ConferenceMemberId id);
+    virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height);
+    virtual BOOL SetOffline(ConferenceMemberId id);
 
 #if USE_FREETYPE
     virtual unsigned printsubs_calc(unsigned v, char s[10]);
@@ -553,12 +560,8 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void InitializeSubtitles();
     virtual MCUSubtitles * RenderSubtitles(unsigned key, VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties);
 #endif
-    virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, PINDEX amount);
-/*
-    virtual void WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
-    virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
-    virtual void WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount);
-*/
+    virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, int options);
+
     virtual void NullRectangle(int x, int y, int w, int h, BOOL border);
     virtual void NullAllFrameStores();
 
@@ -588,18 +591,22 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual ConferenceMemberId TryOnVADPosition(ConferenceMember * member);
     virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout);
     virtual BOOL SetVAD2Position(ConferenceMember * member);
-//    virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
-    virtual void imageStores_operational_size(long w, long h, BYTE mask){
-      long s=w*h*3/2;
-      if(mask&_IMGST)if(s>imageStore_size){imageStore.SetSize(s);imageStore_size=s;}
-      if(mask&_IMGST1)if(s>imageStore1_size){imageStore1.SetSize(s);imageStore1_size=s;}
-      if(mask&_IMGST2)if(s>imageStore2_size){imageStore2.SetSize(s);imageStore2_size=s;}
-     }
+    inline void CheckOperationalSize(long w, long h, BYTE mask);
     virtual BOOL ReadMixedFrame(void * buffer, int width, int height, PINDEX & amount);
     virtual PString GetFrameStoreMonitorList();
+    virtual int GetMostAppropriateLayout(unsigned n);
+    virtual void WriteEmptyFrame(VideoMixPosition&);
+    virtual void WriteOfflineFrame(VideoMixPosition&);
+    virtual void WriteNoVideoFrame(VideoMixPosition&);
+    virtual void VMPTouch(VideoMixPosition&);
+    virtual void VMPDelete(VideoMixPosition&);
+    virtual void VMPMove(VideoMixPosition&, int, int, int, int);
+    virtual void VMPMove(VideoMixPosition&, VideoMixPosition &);
+    virtual void VMPSetOffline(VideoMixPosition&);
+    virtual void VMPChangeNumber(VideoMixPosition&, unsigned);
+    virtual void VMPChangeBorder(VideoMixPosition&, unsigned);
 
   protected:
-    virtual void CalcVideoSplitSize(unsigned int imageCount, int & subImageWidth, int & subImageHeight, int & cols, int & rows);
     virtual void ReallocatePositions();
     BOOL ReadSrcFrame(VideoFrameStoreList & srcFrameStores, void * buffer, int width, int height, PINDEX & amount);
 
@@ -609,7 +616,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     PBYTEArray imageStore1;        // temporary conversion store
     PBYTEArray imageStore2;        // temporary conversion store
     long imageStore_size, imageStore1_size, imageStore2_size;
-//    PColourConverter * converter; // CIF to QCIF converter
     int specialLayout;
 };
 
@@ -621,7 +627,7 @@ class TestVideoMixer : public MCUSimpleVideoMixer
   public:
     TestVideoMixer(unsigned frames);
     BOOL AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
-    BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount);
+    BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height);
     void RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
     virtual void MyChangeLayout(unsigned newLayout);
     virtual void Shuffle() {};
@@ -637,7 +643,7 @@ class TestVideoMixer : public MCUSimpleVideoMixer
     virtual void InsertVideoSource(ConferenceMember * member, int pos) {};
     virtual void SetPositionStatus(ConferenceMemberId id,int newStatus) {};
     virtual void Exchange(int pos1, int pos2) {};
-    virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout) { return NULL; };
+    virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout) { return 0; };
     virtual BOOL SetVAD2Position(ConferenceMember * member) { return FALSE; };
 
   protected:
@@ -654,7 +660,7 @@ class EchoVideoMixer : public MCUSimpleVideoMixer
   public:
     EchoVideoMixer();
     BOOL AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
-    BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount);
+    BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height);
 };
 #endif
 

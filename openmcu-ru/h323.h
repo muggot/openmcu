@@ -340,7 +340,7 @@ class MCUH323Connection : public H323Connection
     PString GetEndpointParam(PString param, PString defaultValue, bool asterisk = true);
 
 #if MCU_VIDEO
-    virtual BOOL OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount);
+    virtual BOOL OnIncomingVideo(const void * buffer, int width, int height);
     virtual BOOL OnOutgoingVideo(void * buffer, int width, int height, PINDEX & amount);
     virtual BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount);
     virtual void RestartGrabber();

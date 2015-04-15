@@ -236,7 +236,7 @@ class ConferenceMember : public PObject
     /**
       *  Called when the conference member wants to send video data to the conference
       */
-    virtual void WriteVideo(const void * buffer, int width, int height, PINDEX amount);
+    virtual void WriteVideo(const void * buffer, int width, int height);
 
     /**
       *  Called when a conference member wants to read a block of video from the conference
@@ -248,7 +248,7 @@ class ConferenceMember : public PObject
       * called when another conference member wants to write a video frame to this endpoint
       * this will only be called when the conference is not "use same video for all members"
       */
-    virtual void OnExternalSendVideo(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount);
+    virtual void OnExternalSendVideo(ConferenceMemberId id, const void * buffer, int width, int height);
 
     /**
       * called to when a new video source added
@@ -384,6 +384,10 @@ class ConferenceMember : public PObject
     void SendRoomControl(int state);
     MCUJSON * AsJSON(int state = 1);
 
+#if MCU_VIDEO
+    int resizerRule; //0=cut, 1=stripes
+#endif
+
   protected:
     unsigned videoMixerNumber;
     Conference * conference;
@@ -512,7 +516,7 @@ class Conference : public PObject
 #if MCU_VIDEO
     virtual void ReadMemberVideo(ConferenceMember * member, void * buffer, int width, int height, PINDEX & amount);
 
-    virtual BOOL WriteMemberVideo(ConferenceMember * member, const void * buffer, int width, int height, PINDEX amount);
+    virtual BOOL WriteMemberVideo(ConferenceMember * member, const void * buffer, int width, int height);
 
     virtual BOOL UseSameVideoForAllMembers()
     { return videoMixerList.GetSize() > 0; }

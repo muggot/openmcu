@@ -43,7 +43,7 @@ PString H323GetAliasUserName(const H225_ArrayOf_AliasAddress & aliases)
   }
   if(aliases.GetSize() > 0)
     return H323GetAliasAddressString(aliases[0]);
-  return NULL;
+  return "";
 }
 
 PString H323GetAliasDisplayName(const H225_ArrayOf_AliasAddress & aliases)
@@ -55,7 +55,7 @@ PString H323GetAliasDisplayName(const H225_ArrayOf_AliasAddress & aliases)
   }
   if(aliases.GetSize() > 0)
     return H323GetAliasAddressString(aliases[0]);
-  return NULL;
+  return "";
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1475,8 +1475,6 @@ int MCUH323EndPoint::SetMemberVideoMixer(Conference & conference, ConferenceMemb
 
   return newMixerNumber;
 }
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 PString MCUH323EndPoint::GetRoomList(const PString & block)
 {
@@ -3577,11 +3575,10 @@ BOOL MCUH323Connection::OnOutgoingVideo(void * buffer, int width, int height, PI
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUH323Connection::OnIncomingVideo(const void * buffer, int width, int height, PINDEX amount)
+BOOL MCUH323Connection::OnIncomingVideo(const void * buffer, int width, int height)
 {
-  if(conferenceMember != NULL)
-    conferenceMember->WriteVideo(buffer, width, height, amount);
-
+  if(conferenceMember == NULL) return FALSE;
+  conferenceMember->WriteVideo(buffer, width, height);
   return TRUE;
 }
 

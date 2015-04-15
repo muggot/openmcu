@@ -910,8 +910,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
       for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
-//        mixer->MyRemoveVideoSourceById(memberToRemove->GetID(), FALSE);
-        mixer->OfflineFrame(memberToRemove->GetID());
+        mixer->SetOffline(memberToRemove->GetID());
       }
     }
   }
@@ -1045,7 +1044,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
           else if(status == -1 && member->disableVAD == FALSE) //find new vad position for active member
           {
             ConferenceMemberId id = mixer->SetVADPosition(member, member->chosenVan, VAtimeout);
-            if(id != NULL)
+            if(id)
             {
               FreezeVideo(id);
               member->SetFreezeVideo(FALSE);
@@ -1097,7 +1096,7 @@ void Conference::ReadMemberVideo(ConferenceMember * member, void * buffer, int w
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL Conference::WriteMemberVideo(ConferenceMember * member, const void * buffer, int width, int height, PINDEX amount)
+BOOL Conference::WriteMemberVideo(ConferenceMember * member, const void * buffer, int width, int height)
 {
   if(UseSameVideoForAllMembers())
   {
@@ -1105,14 +1104,14 @@ BOOL Conference::WriteMemberVideo(ConferenceMember * member, const void * buffer
     for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
     {
       MCUSimpleVideoMixer *mixer = it.GetObject();
-      writeResult |= mixer->WriteFrame(member->GetID(), buffer, width, height, amount);
+      writeResult |= mixer->WriteFrame(member->GetID(), buffer, width, height);
     }
     return writeResult;
   }
   else
   {
     for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-      it->OnExternalSendVideo(member->GetID(), buffer, width, height, amount);
+      it->OnExternalSendVideo(member->GetID(), buffer, width, height);
   }
   return TRUE;
 }
@@ -1123,7 +1122,7 @@ void Conference::FreezeVideo(ConferenceMemberId id)
 {
   PWaitAndSignal m(memberListMutex);
 
-  if(id != NULL)
+  if(id)
   {
     MCUMemberList::shared_iterator it = memberList.Find((long)id);
     if(it == memberList.end())
@@ -1202,7 +1201,7 @@ BOOL Conference::PutChosenVan()
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
         if(mixer->GetPositionStatus(member->GetID()) < 0)
-          put |= (NULL != mixer->SetVADPosition(member, member->chosenVan, VAtimeout));
+          put |= mixer->SetVADPosition(member, member->chosenVan, VAtimeout);
       }
     }
   }
@@ -1226,8 +1225,7 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
       return;
 
     ConferenceMemberId id=member.GetID();
-    if(id == NULL)
-      return;
+    if(!id) return;
 
     MCUSimpleVideoMixer *mixer = manager.GetVideoMixerWithLock(this);
     int pos = mixer->GetPositionNum(id);
@@ -1239,7 +1237,7 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
     mixer->InsertVideoSource(&member,posTo);
     mixer->Unlock();
 
-    FreezeVideo(NULL);
+    FreezeVideo(0);
 
     OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this),number);
     OpenMCU::Current().HttpWriteCmdRoom("build_page()",number);
@@ -1282,6 +1280,7 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   disableVAD = FALSE;
   chosenVan = 0;
   videoMixerNumber = 0;
+  resizerRule = 0;
 #endif
 }
 
@@ -1591,7 +1590,7 @@ void ConferenceMember::ReadVideo(void * buffer, int width, int height, PINDEX & 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 // called whenever the connection receives a frame of video
-void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PINDEX amount)
+void ConferenceMember::WriteVideo(const void * buffer, int width, int height)
 {
   ++totalVideoFramesReceived;
   rxFrameWidth = width;
@@ -1600,14 +1599,14 @@ void ConferenceMember::WriteVideo(const void * buffer, int width, int height, PI
     firstFrameReceiveTime = PTime();
 
   if(conference != NULL)
-    conference->WriteMemberVideo(this, buffer, width, height, amount);
+    conference->WriteMemberVideo(this, buffer, width, height);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceMember::OnExternalSendVideo(ConferenceMemberId id, const void * buffer, int width, int height, PINDEX amount)
+void ConferenceMember::OnExternalSendVideo(ConferenceMemberId id, const void * buffer, int width, int height)
 {
-  videoMixer->WriteFrame(id, buffer, width, height, amount);
+  videoMixer->WriteFrame(id, buffer, width, height);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
