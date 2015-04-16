@@ -835,9 +835,9 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString(FrameRateFromKey);
   optionNames.AppendString(BandwidthFromKey);
   optionNames.AppendString(BandwidthToKey);
-  optionNames.AppendString(ReceivedVFUDelayKey);
   optionNames.AppendString(RTPInputTimeoutKey);
   optionNames.AppendString(VideoCacheKey);
+  optionNames.AppendString(ReceivedVFUDelayKey);
 
   optionNames.AppendString("Audio codec(receive)");
   optionNames.AppendString("Audio codec(transmit)");
