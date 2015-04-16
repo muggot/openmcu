@@ -470,6 +470,8 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     { return FALSE; }
 
     virtual void * GetOfflineFramePointer(unsigned & w, unsigned & h) { return NULL; }
+    virtual void * GetEmptyFramePointer(unsigned & w, unsigned & h) { return NULL; }
+    virtual void * GetBackgroundPointer(unsigned & w, unsigned & h) { return NULL; }
     virtual void * GetNoVideoFramePointer(unsigned & w, unsigned & h) { return NULL; }
 
     virtual BOOL GetEmptyMediaFrame(void * buffer, int width, int height, PINDEX & amount)
