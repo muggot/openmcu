@@ -1628,13 +1628,12 @@ PString MCUH323EndPoint::GetMonitorText()
            << "Member Count: "     << conference->GetMemberList().GetSize() << "\n"
            << "Max Member Count: " << conference->GetMaxMemberCount() << "\n";
 
-    PINDEX num = 0;
     MCUMemberList & memberList = conference->GetMemberList();
     for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
       ConferenceMember * member = *it;
 
-      output << "[Member " << ++num << "]\n";
+      output << "[Member " << member->GetID() << "]\n";
       PStringStream hdr;
       hdr << "  ";
 
