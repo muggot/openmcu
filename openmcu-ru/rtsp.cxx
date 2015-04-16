@@ -613,7 +613,7 @@ BOOL MCURtspConnection::OnRequestDescribe(const msg_t *msg)
 	   "Content-Type: application/sdp\r\n"
 	   "Cache-Control: no-cache\r\n"
            "Content-Length: %d\r\n"
-	   , sip->sip_cseq->cs_seq, (const char *)PTime().AsString(), strlen(buffer_sdp)+2);
+	   , sip->sip_cseq->cs_seq, (const char *)PTime().AsString(), (int)strlen(buffer_sdp)+2);
 
   AddHeaders(buffer);
   strcat(buffer, buffer_sdp);
@@ -662,7 +662,7 @@ BOOL MCURtspConnection::ParseTransportStr(SipCapability *sc, PString & transport
   if(!MCUSocket::IsValidHost(sc->remote_ip) && !MCUSocket::GetHostIP(sc->remote_ip, sc->remote_ip))
   {
     MCUTRACE(1, trace_section << "incorrect remote ip " << sc->remote_ip);
-    return NULL;
+    return FALSE;
   }
 
   if(direction == DIRECTION_INBOUND)

@@ -1234,7 +1234,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     mixer->MyChangeLayout(v);
     mixer->Unlock();
     conference->PutChosenVan();
-    conference->FreezeVideo(NULL);
+    conference->FreezeVideo(0);
     if(conference->GetVideoMixerList().GetSize() != 0)
       HttpWriteCmdRoom(endpoint->GetConferenceOptsJavascript(*conference),room);
     else
@@ -1250,7 +1250,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
       return FALSE;
     mixer->MyRemoveVideoSource(pos,TRUE);
     mixer->Unlock();
-    conference->FreezeVideo(NULL);
+    conference->FreezeVideo(0);
     HttpWriteCmdRoom(endpoint->GetConferenceOptsJavascript(*conference),room);
     HttpWriteCmdRoom("build_page()",room);
     return TRUE;
@@ -1262,7 +1262,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     if(mixer == NULL)
       return FALSE;
     ConferenceMemberId id=mixer->GetHonestId(pos);
-    int type=-1; if(id!=NULL) type=mixer->GetPositionType(id);
+    int type=-1; if(id) type=mixer->GetPositionType(id);
     if((type==2)||(type==3))
     {
       if((unsigned long)id<100) //empty VAD pos, operator probably wants to remove it completely
@@ -1272,7 +1272,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     }
     else mixer->MyRemoveVideoSource(pos,TRUE);
     mixer->Unlock();
-    conference->FreezeVideo(NULL);
+    conference->FreezeVideo(0);
     HttpWriteCmdRoom(endpoint->GetConferenceOptsJavascript(*conference),room);
     HttpWriteCmdRoom("build_page()",room);
     return TRUE;
@@ -1391,16 +1391,16 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     {
       mixer1->Exchange(pos1,pos2);
     } else {
-      ConferenceMemberId id = mixer1->GetHonestId(pos1); if(((long)id<100)&&((long)id>=0)) id=NULL;
-      ConferenceMemberId id2 = mixer2->GetHonestId(pos2); if(((long)id2<100)&&((long)id2>=0)) id2=NULL;
-      ConferenceMember *member1 = manager->FindMemberWithLock(conference, (long)id);
-      ConferenceMember *member2 = manager->FindMemberWithLock(conference, (long)id2);
+      ConferenceMemberId id = mixer1->GetHonestId(pos1); if(((long)id<100)&&((long)id>=0)) id=0;
+      ConferenceMemberId id2 = mixer2->GetHonestId(pos2); if(((long)id2<100)&&((long)id2>=0)) id2=0;
+      ConferenceMember *member1 = NULL;
+      ConferenceMember *member2 = NULL;
+      if(id) member1 = manager->FindMemberWithLock(conference, id);
+      if(id2) member2 = manager->FindMemberWithLock(conference, id2);
       mixer2->PositionSetup(pos2, 1001, member1);
       mixer1->PositionSetup(pos1, 1001, member2);
-      if(member1)
-        member1->Unlock();
-      if(member2)
-        member2->Unlock();
+      if(member1) member1->Unlock();
+      if(member2) member2->Unlock();
     }
     mixer1->Unlock();
     mixer2->Unlock();
@@ -1444,7 +1444,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     else
       mixer->SetPositionType(pos,type);
     mixer->Unlock();
-    conference->FreezeVideo(NULL);
+    conference->FreezeVideo(0);
     HttpWriteCmdRoom(endpoint->GetConferenceOptsJavascript(*conference),room);
     HttpWriteCmdRoom("build_page()",room);
     return TRUE;

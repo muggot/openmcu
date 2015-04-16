@@ -1038,7 +1038,7 @@ void Registrar::InitConfig()
     registrarGk = new RegistrarGk(ep, this);
     PString mcuName = OpenMCU::Current().GetName();
     registrarGk->SetGatekeeperIdentifier(mcuName);
-    registrarGk->CreateListener(new H323TransportUDP(*ep, address, port, NULL));
+    registrarGk->CreateListener(new H323TransportUDP(*ep, address, port, 0));
   }
   if(!enable_gatekeeper && registrarGk != NULL)
   {
