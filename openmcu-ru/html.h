@@ -17,6 +17,7 @@ class TablePConfigPage : public PConfigPage
       : PConfigPage(app,title,section,auth), cfg(section)
     {
       deleteSection = TRUE;
+      buttonShowAdvanced = FALSE;
       columnColor = "#d9e5e3";
       rowColor = "#d9e5e3";
       itemColor = "#f7f4d8";
@@ -25,8 +26,9 @@ class TablePConfigPage : public PConfigPage
       firstEditRow = 1;
       firstDeleteRow = 1;
       tableId = 0;
-      PString itemSize = "16";
-      PString fontSize = "12";
+      fontSize = "12";
+      itemSize = "16";
+      rowHeight = "28";
       buttonUp = buttonDown = buttonClone = buttonDelete = FALSE;
       colStyle = "<td align='middle' style='background-color:"+columnColor+";padding:0px;border-right:inherit;";
       rowStyle = "<td align='left' valign='top' style='background-color:"+rowColor+";padding:0px 4px 0px 4px;border-right:inherit;'>";
@@ -40,7 +42,6 @@ class TablePConfigPage : public PConfigPage
       checkboxStyle = "margin-top:8px;margin-bottom:8px;margin-left:3px;";
       rowBorders = FALSE;
       rowBordersStyle = "3px ridge;";
-      rowArray = "<tr valign='middle'><td align='left' style='font-size:"+fontSize+"px;background-color:"+itemColor+";padding:0px 4px 0px 4px;line-height:100%;'>";
 
       js_filters =
         "function FilterIp(obj)     { obj.value = obj.value.replace(/[^0-9\\.:]/g,''); }"
@@ -128,9 +129,17 @@ class TablePConfigPage : public PConfigPage
         "  }\n"
         "  sel.value = value;\n"
         "}\n";
-    }
+     }
 
    /////////////////////////////////////////////////////////////////////////////////////////////////
+   PString RowArray(PString name = "", BOOL advanced = FALSE)
+   {
+     PString id = GetTableId();
+     if(advanced)
+       advancedItems += name+"="+id;
+     PString display = (advanced ? "none" : "table-row");
+     return "<tr id='"+id+"' valign='middle' height='"+rowHeight+"' style='display:"+display+";'><td align='left' style='font-size:"+fontSize+"px;padding:0px 4px 0px 4px;line-height:100%;'>";
+   }
    PString SeparatorField(PString name="")
    {
      PString s = "<tr><td align='left' colspan='3' style='background-color:white;padding:0px;'><p style='text-align:center;"+textStyle+"'><b>"+name+"</b></p></td>";
@@ -182,9 +191,9 @@ class TablePConfigPage : public PConfigPage
    {
      PString s;
      if(rowBorders)
-       s = "<tr style='padding:0px;margin:0px;border-right:2px solid white;border-top:"+rowBordersStyle+";border-bottom:"+rowBordersStyle+";'>";
+       s = "<tr style='padding:0px;margin:0px;height:"+rowHeight+"px;border-right:2px solid white;border-top:"+rowBordersStyle+";border-bottom:"+rowBordersStyle+";'>";
      else
-       s = "<tr style='padding:0px;margin:0px;border-bottom:2px solid white;border-right:2px solid white;'>";
+       s = "<tr style='padding:0px;margin:0px;height:"+rowHeight+"px;border-bottom:2px solid white;border-right:2px solid white;'>";
      return s;
    }
    /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -230,6 +239,8 @@ class TablePConfigPage : public PConfigPage
      s += rowStyle+"<input onkeyup='"+filter+"' onchange='"+filter+"' type='text' name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'";
      if(!readonly) s += "></input>"; else s += "readonly></input>";
      if(!readonly) s += buttons(); else s += buttons(TRUE, TRUE, FALSE, FALSE);
+     if(buttonShowAdvanced)
+       s += "<input type='checkbox' onclick='show_advanced_items(this, \""+name+"\")' style='"+inputStyle+checkboxStyle+"'></input>";
      s += "</td>";
      return s;
    }
@@ -349,20 +360,15 @@ class TablePConfigPage : public PConfigPage
    PString EmptyInputItem(PString name, BOOL hidden=FALSE)
    {
      PString s = "<input name='TABLEID' value='"+GetTableId()+"' type='hidden'>";
-     s += "<td style='height:100%;background-color:"+itemColor+";border-right:inherit;'><input name='"+name+"' type='hidden'>";
+     s += "<td style='border-right:inherit;'><input name='"+name+"' type='hidden'>";
      if(hidden) s += "</input>";
      else s += "&nbsp</input>";
-     return s;
-   }
-   PString EmptyTextItem()
-   {
-     PString s = "<td style='height:100%;background-color:"+itemColor+";border-right:inherit;'>&nbsp</td>";
      return s;
    }
 
    PString NewItemArray(PString name, int width=0)
    {
-     return "<td height='100%' width='"+PString(width)+"%'><table id='"+name+"' cellspacing='0' width='100%' height='100%'><tbody>";
+     return "<td height='100%' width='"+PString(width)+"%'><table id='"+name+"' cellspacing='0' width='100%' height='100%' style='background-color:"+itemColor+";'><tbody>";
    }
    PString EndItemArray()
    {
@@ -398,6 +404,28 @@ class TablePConfigPage : public PConfigPage
      PString s = "<tr></tr></tbody></table></div><p><input id='button_accept' name='submit' value='Accept' type='submit'><input id='button_reset' name='reset' value='Reset' type='reset'></p></form>";
      javascript += js_row_up + js_row_down + js_row_clone + js_row_delete;
      javascript += js_filters;
+     javascript += "var advanced_items = Array(";
+     for(PINDEX i = 0; i <advancedItems.GetSize(); i++)
+     {
+       if(i > 0)
+         javascript += ",";
+       javascript += "\""+advancedItems[i]+"\"";
+     }
+     javascript += ");";
+     javascript +=
+       "function show_advanced_items(obj, name)\n"
+       "{\n"
+       "  checked=obj.checked;\n"
+       "  for(i=0;i<advanced_items.length;i++)\n"
+       "  {\n"
+       "    tokens=advanced_items[i].split('=');\n"
+       "    if(tokens[0] == name)\n"
+       "      if(checked)\n"
+       "        document.getElementById(tokens[1]).style.display = 'table-row';\n"
+       "      else\n"
+       "        document.getElementById(tokens[1]).style.display = 'none';\n"
+       "  }\n"
+       "}\n";
      s += "<script type='text/javascript'>\n"+javascript+"</script>\n";
      return s;
    }
@@ -569,9 +597,12 @@ class TablePConfigPage : public PConfigPage
    PString columnColor, rowColor, itemColor, itemInfoColor;
    int firstEditRow, firstDeleteRow;
    BOOL buttonUp, buttonDown, buttonClone, buttonDelete;
+   BOOL buttonShowAdvanced;
    int tableId;
    PStringToString passwordFields;
    PString javascript;
+   PString itemSize, fontSize, rowHeight;
+   PStringArray advancedItems;
 
    PStringArray optionNames;
    PString sectionPrefix;

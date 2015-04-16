@@ -810,6 +810,7 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 
   firstEditRow = 2;
   rowBorders = TRUE;
+  buttonShowAdvanced = TRUE;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   javascript += js_video_receive_res_toggle + js_video_transmit_res_toggle;
@@ -924,25 +925,21 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
     {
       PString s2;
       s2 += NewItemArray(name, 25);
-      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
-      s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
-      s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", "direct"), "full,direct")+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += RowArray()+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
+      s2 += RowArray()+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
+      s2 += RowArray()+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", "direct"), "full,direct")+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
       PString s2;
       s2 += NewItemArray(name);
-      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
-      s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
-      s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
-      s2 += rowArray+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey), ","+PingIntervalSelect)+"</tr>";
-      s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += RowArray()+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
+      s2 += RowArray()+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
+      s2 += RowArray()+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
+      s2 += RowArray()+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey), ","+PingIntervalSelect)+"</tr>";
+      s2 += RowArray()+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -951,12 +948,10 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      if(name == "*") s2 += rowArray+JsLocal("name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocal("name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
+      if(name == "*") s2 += RowArray()+JsLocal("name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
+      else            s2 += RowArray()+JsLocal("name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
       //
-      s2 += rowArray+"H.323 "+JsLocal("name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
-      //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += RowArray()+"H.323 "+JsLocal("name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;
@@ -966,20 +961,20 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
+      s2 += RowArray()+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
+      s2 += RowArray()+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
-      // VFU delay
-      if(name == "*") s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey, DisableKey), ReceivedVFUDelaySelect, 70)+"</tr>";
-      else            s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ","+ReceivedVFUDelaySelect, 70)+"</tr>";
+      s2 += RowArray()+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // RTP timeout
-      if(name == "*") s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
-      else            s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
+      if(name == "*") s2 += RowArray()+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
+      else            s2 += RowArray()+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
       // Video cache
-      if(name == "*") s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey, EnableKey), EnableSelect, 70)+"</tr>";
-      else            s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ","+EnableSelect, 70)+"</tr>";
+      if(name == "*") s2 += RowArray()+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey, EnableKey), EnableSelect, 70)+"</tr>";
+      else            s2 += RowArray()+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ","+EnableSelect, 70)+"</tr>";
+      // VFU delay
+      if(name == "*") s2 += RowArray(name, TRUE)+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey, DisableKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      else            s2 += RowArray(name, TRUE)+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ","+ReceivedVFUDelaySelect, 70)+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;
@@ -1015,24 +1010,24 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
 
       PString s2;
       s2 += NewItemArray(name, 25);
-      s2 += rowArray+JsLocal("name_audio_receive")+SelectItem(name, ra_codec, ra_caps)+"</tr>";
-      s2 += rowArray+JsLocal("name_audio_transmit")+SelectItem(name, ta_codec, ta_caps)+"</tr>";
+      s2 += RowArray()+JsLocal("name_audio_receive")+SelectItem(name, ra_codec, ra_caps)+"</tr>";
+      s2 += RowArray()+JsLocal("name_audio_transmit")+SelectItem(name, ta_codec, ta_caps)+"</tr>";
       //
       PString rv_id = GetTableId();
       PString rres_id = GetTableId();
       PString rres_value = scfg.GetString("Video resolution(receive)");
       PString rv_onchange = "video_receive_res_toggle(\""+rres_id+"\", this.value);";
       javascript += "video_receive_res_toggle('"+rres_id+"', '"+rv_codec+"');\n";
-      s2 += rowArray+JsLocal("name_video_receive")+SelectItem(name, rv_codec, rv_caps, 0, rv_id, rv_onchange)+"</tr>";
-      s2 += rowArray+JsLocal("name_video_resolution")+SelectItem(name, rres_value, rres_value, 0, rres_id)+"</tr>";
+      s2 += RowArray()+JsLocal("name_video_receive")+SelectItem(name, rv_codec, rv_caps, 0, rv_id, rv_onchange)+"</tr>";
+      s2 += RowArray()+JsLocal("name_video_resolution")+SelectItem(name, rres_value, rres_value, 0, rres_id)+"</tr>";
       //
       PString tv_id = GetTableId();
       PString tres_id = GetTableId();
       PString tres_value = scfg.GetString("Video resolution(transmit)");
       PString tv_onchange = "video_transmit_res_toggle(\""+tres_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+tres_id+"', '"+tv_codec+"');\n";
-      s2 += rowArray+JsLocal("name_video_transmit")+SelectItem(name, tv_codec, tv_caps, 0, tv_id, tv_onchange)+"</tr>";
-      s2 += rowArray+JsLocal("name_video_resolution")+SelectItem(name, tres_value, tres_value, 0, tres_id)+"</tr>";
+      s2 += RowArray()+JsLocal("name_video_transmit")+SelectItem(name, tv_codec, tv_caps, 0, tv_id, tv_onchange)+"</tr>";
+      s2 += RowArray()+JsLocal("name_video_resolution")+SelectItem(name, tres_value, tres_value, 0, tres_id)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1100,6 +1095,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
 {
   firstEditRow = 2;
   rowBorders = TRUE;
+  buttonShowAdvanced = TRUE;
   PStringStream html_begin, html_end, html_page, s;
   buttonUp = buttonDown = buttonClone = buttonDelete = 1;
   javascript += js_video_transmit_res_toggle;
@@ -1127,9 +1123,9 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString(FrameRateFromKey);
   optionNames.AppendString(BandwidthFromKey);
   optionNames.AppendString(BandwidthToKey);
-  optionNames.AppendString(ReceivedVFUDelayKey);
   optionNames.AppendString(RTPInputTimeoutKey);
   optionNames.AppendString(VideoCacheKey);
+  optionNames.AppendString(ReceivedVFUDelayKey);
 
   optionNames.AppendString(AudioCodecKey);
   optionNames.AppendString(VideoCodecKey);
@@ -1222,23 +1218,21 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
     {
       PString s2;
       s2 += NewItemArray(name, 25);
-      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
-      s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
-      s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += RowArray()+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
+      s2 += RowArray()+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
+      s2 += RowArray()+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
       PString s2;
       s2 += NewItemArray(name);
-      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
-      s2 += rowArray+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
-      s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
-      s2 += rowArray+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey), ","+PingIntervalSelect)+"</tr>";
-      s2 += rowArray+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
+      s2 += RowArray()+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
+      s2 += RowArray()+JsLocal("name_display_name")+StringItem(name, scfg.GetString(DisplayNameKey))+"</tr>";
+      s2 += RowArray()+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
+      s2 += RowArray()+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey), ","+PingIntervalSelect)+"</tr>";
+      s2 += RowArray()+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1247,17 +1241,17 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      if(name == "*") s2 += rowArray+JsLocal("name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
-      else            s2 += rowArray+JsLocal("name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
+      if(name == "*") s2 += RowArray()+JsLocal("name_host")+StringItem(name, "", 0, TRUE)+"</tr>";
+      else            s2 += RowArray()+JsLocal("name_host")+StringItem(name, scfg.GetString(HostKey))+"</tr>";
       //
-      s2 += rowArray+"SIP "+JsLocal("name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
+      s2 += RowArray()+"SIP "+JsLocal("name_port")+IntegerItem(name, scfg.GetString(PortKey), 1, 65535)+"</tr>";
       //
-      s2 += rowArray+JsLocal("name_transport")+SelectItem(name, scfg.GetString(TransportKey), ",udp,tcp,tls")+"</tr>";
+      s2 += RowArray()+JsLocal("name_transport")+SelectItem(name, scfg.GetString(TransportKey), ",udp,tcp,tls")+"</tr>";
       //
-      if(name == "*") s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey, "RTP"), RtpProtoSelect)+"</tr>";
-      else            s2 += rowArray+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), ","+RtpProtoSelect)+"</tr>";
+      if(name == "*") s2 += RowArray()+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey, "RTP"), RtpProtoSelect)+"</tr>";
+      else            s2 += RowArray()+"RTP"+SelectItem(name, scfg.GetString(RtpProtoKey), ","+RtpProtoSelect)+"</tr>";
       //
-      s2 += rowArray+JsLocal("nat_router_ip")+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
+      s2 += RowArray()+JsLocal("nat_router_ip")+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
       PString stun_name = scfg.GetString(NATStunServerKey);
       PString stun_list = MCUConfig("SIP Parameters").GetString(NATStunListKey);
@@ -1265,7 +1259,7 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
         stun_list = ",auto,"+stun_list;
       if(stun_list.Find(stun_name) == P_MAX_INDEX)
         stun_list = stun_name+","+stun_list;
-      s2 += rowArray+"STUN "+JsLocal("server")+SelectItem(name, stun_name, stun_list)+"</tr>";
+      s2 += RowArray()+"STUN "+JsLocal("server")+SelectItem(name, stun_name, stun_list)+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;
@@ -1275,20 +1269,20 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
+      s2 += RowArray()+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
+      s2 += RowArray()+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // bandwidth to MCU
-      s2 += rowArray+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
-      // VFU delay
-      if(name == "*") s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey, DisableKey), ReceivedVFUDelaySelect, 70)+"</tr>";
-      else            s2 += rowArray+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ","+ReceivedVFUDelaySelect, 70)+"</tr>";
+      s2 += RowArray()+JsLocal("name_bandwidth_to_mcu")+IntegerItem(name, scfg.GetString(BandwidthToKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // RTP timeout
-      if(name == "*") s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
-      else            s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
+      if(name == "*") s2 += RowArray()+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
+      else            s2 += RowArray()+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
       // Video cache
-      if(name == "*") s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey, EnableKey), EnableSelect, 70)+"</tr>";
-      else            s2 += rowArray+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ","+EnableSelect, 70)+"</tr>";
+      if(name == "*") s2 += RowArray()+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey, EnableKey), EnableSelect, 70)+"</tr>";
+      else            s2 += RowArray()+JsLocal("video_cache")+SelectItem(name, scfg.GetString(VideoCacheKey), ","+EnableSelect, 70)+"</tr>";
+      // VFU delay
+      if(name == "*") s2 += RowArray(name, TRUE)+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey, DisableKey), ReceivedVFUDelaySelect, 70)+"</tr>";
+      else            s2 += RowArray(name, TRUE)+JsLocal("received_vfu_delay")+SelectItem(name, scfg.GetString(ReceivedVFUDelayKey), ","+ReceivedVFUDelaySelect, 70)+"</tr>";
       //
       s2 += EndItemArray();
       s << s2;
@@ -1313,24 +1307,22 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      s2 += rowArray+JsLocal("name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
+      s2 += RowArray()+JsLocal("name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
       //
       PString video_id = GetTableId();
       PString res_id = GetTableId();
       PString res_value = scfg.GetString(VideoResolutionKey);
       PString video_onchange = "video_transmit_res_toggle(\""+res_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+res_id+"', '"+v_codec+"');\n";
-      s2 += rowArray+JsLocal("name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
+      s2 += RowArray()+JsLocal("name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
       //
-      s2 += rowArray+(JsLocal("name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
+      s2 += RowArray()+(JsLocal("name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
       //
       //PString select_pt; for(int i = 96; i < 128; i++) select_pt += ","+PString(i);
-      //s2 += rowArray+(JsLocal("name_video")+" payload type")+SelectItem(name, scfg.GetString("Video payload type"), select_pt)+"</tr>";
+      //s2 += RowArray()+(JsLocal("name_video")+" payload type")+SelectItem(name, scfg.GetString("Video payload type"), select_pt)+"</tr>";
       //
-      s2 += rowArray+(JsLocal("name_video")+" fmtp")+StringItem(name, scfg.GetString("Video fmtp"))+"</tr>";
+      s2 += RowArray()+(JsLocal("name_video")+" fmtp")+StringItem(name, scfg.GetString("Video fmtp"))+"</tr>";
       //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1423,19 +1415,19 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
     {
       PString s2;
       s2 += NewItemArray(name, 25);
-      s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyInputItem(name)+"</tr>";
-      s2 += rowArray+EmptyInputItem(name)+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
       PString s2;
       s2 += NewItemArray(name);
-      s2 += rowArray+JsLocal("name_enable")+BoolItem(name, scfg.GetBoolean(EnableKey))+"</tr>";
-      s2 += rowArray+JsLocal("name_user")+StringItem(name, scfg.GetString(UserNameKey));
-      s2 += rowArray+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey));
-      s2 += rowArray+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
+      s2 += RowArray()+JsLocal("name_enable")+BoolItem(name, scfg.GetBoolean(EnableKey))+"</tr>";
+      s2 += RowArray()+JsLocal("name_user")+StringItem(name, scfg.GetString(UserNameKey));
+      s2 += RowArray()+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey));
+      s2 += RowArray()+JsLocal("name_roomname")+StringItem(name, scfg.GetString(RoomNameKey))+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1444,7 +1436,7 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      s2 += rowArray+JsLocal("nat_router_ip")+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
+      s2 += RowArray()+JsLocal("nat_router_ip")+IpItem(name, scfg.GetString(NATRouterIPKey))+"</tr>";
       //
       PString stun_name = scfg.GetString(NATStunServerKey);
       PString stun_list = MCUConfig("SIP Parameters").GetString(NATStunListKey);
@@ -1452,10 +1444,8 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
         stun_list = ",auto,"+stun_list;
       if(stun_list.Find(stun_name) == P_MAX_INDEX)
         stun_list = stun_name+","+stun_list;
-      s2 += rowArray+"STUN "+JsLocal("server")+SelectItem(name, stun_name, stun_list)+"</tr>";
+      s2 += RowArray()+"STUN "+JsLocal("server")+SelectItem(name, stun_name, stun_list)+"</tr>";
       //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1464,14 +1454,13 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       PString s2;
       s2 += NewItemArray(name, 25);
       // frame rate from MCU
-      s2 += rowArray+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
+      s2 += RowArray()+JsLocal("name_frame_rate_from_mcu")+IntegerItem(name, scfg.GetString(FrameRateFromKey), 1, MCU_MAX_FRAME_RATE, 70)+"</tr>";
       // bandwidth from MCU
-      s2 += rowArray+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
+      s2 += RowArray()+JsLocal("name_bandwidth_from_mcu")+IntegerItem(name, scfg.GetString(BandwidthFromKey), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 70)+"</tr>";
       // RTP timeout
-      if(name == "*") s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
-      else            s2 += rowArray+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
+      if(name == "*") s2 += RowArray()+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey, DefaultRTPInputTimeout), RTPInputTimeoutSelect, 70)+"</tr>";
+      else            s2 += RowArray()+JsLocal("rtp_input_timeout")+SelectItem(name, scfg.GetString(RTPInputTimeoutKey), ","+RTPInputTimeoutSelect, 70)+"</tr>";
       //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1485,18 +1474,17 @@ RtspServersPConfigPage::RtspServersPConfigPage(PHTTPServiceProcess & app,const P
       PString s2;
       s2 += NewItemArray(name, 25);
       //
-      s2 += rowArray+JsLocal("name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
+      s2 += RowArray()+JsLocal("name_audio")+SelectItem(name, a_codec, a_caps)+"</tr>";
       //
       PString video_id = GetTableId();
       PString res_id = GetTableId();
       PString res_value = scfg.GetString(VideoResolutionKey);
       PString video_onchange = "video_transmit_res_toggle(\""+res_id+"\", this.value);";
       javascript += "video_transmit_res_toggle('"+res_id+"', '"+v_codec+"');\n";
-      s2 += rowArray+JsLocal("name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
+      s2 += RowArray()+JsLocal("name_video")+SelectItem(name, v_codec, v_caps, 0, video_id, video_onchange)+"</tr>";
       //
-      s2 += rowArray+(JsLocal("name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
+      s2 += RowArray()+(JsLocal("name_video_resolution"))+SelectItem(name, res_value, res_value, 0, res_id)+"</tr>";
       //
-      s2 += rowArray+EmptyTextItem()+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1859,8 +1847,6 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
         s << "<input name='"+fname+"' value='"+fname+"' type='hidden'>";
         s << StringItem(fname, cfg.GetString(fname), 200);
       }
-      else
-        s << EmptyTextItem();
       // codec parameters
       if(name.Left(4).ToLower() == "opus" || name.Left(5).ToLower() == "speex")
       {
@@ -1868,8 +1854,6 @@ SIPCodecsPConfigPage::SIPCodecsPConfigPage(PHTTPServiceProcess & app,const PStri
         s << "<input name='"+fname+"' value='"+fname+"' type='hidden'>";
         s << StringItem(fname, cfg.GetString(fname), 200);
       }
-      else
-        s << EmptyTextItem();
     }
     s << InfoItem(fmtp);
   }
