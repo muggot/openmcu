@@ -3433,16 +3433,20 @@ int MCUSimpleVideoMixer::VMPListFindEmptyIndex()
   
 MCUSimpleVideoMixer::VideoMixPosition * MCUSimpleVideoMixer::VMPCreator(int n, ConferenceMember * m, int type)
 {
+  if(m==NULL && type==1) return NULL;
+  if(n<0) return NULL;
+  if((unsigned)n >= OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return NULL;
   VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[n];
   VideoMixPosition * newPosition = CreateVideoMixPosition(m->GetID(), o.posx, o.posy, o.width, o.height);
   if(newPosition==NULL) return NULL;
   newPosition->n = n;
   newPosition->type = type;
-  newPosition->rule = m->resizerRule;
+  if(m!=NULL) newPosition->rule = m->resizerRule;
 # if USE_FREETYPE
     RemoveSubtitles(*newPosition);
 # endif
-  newPosition->endpointName = m->GetName();
+  if(m!=NULL)newPosition->endpointName = m->GetName();
+  else newPosition->endpointName = "VAD" + PString(type-1) + "/" + PString(n);
   newPosition->border=o.border;
   if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
     VMPListInsVMP(newPosition);
@@ -3518,9 +3522,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
   }
 
   BOOL result = (newPosition != NULL);
-
   PTRACE_IF(!result, 2, "AddVideoSource " << id << " " << vmpNum << " could not find empty video position");
-
   return result;
 }
 
@@ -3564,31 +3566,18 @@ int MCUSimpleVideoMixer::GetPositionNum(ConferenceMemberId id)
 }
 
 void MCUSimpleVideoMixer::SetPositionType(int pos, int type)
-{ PWaitAndSignal m(mutex);
+{
+  PWaitAndSignal m(mutex);
   VideoMixPosition *r = vmpList->next;
-  while(r!=NULL) if (r->n == pos)
-  {  r->type=type;
-     return;
-  } else r=r->next;
+  while(r!=NULL)
+    if (r->n == pos){ r->type=type; return; }
+    else r=r->next;
 
   if((unsigned)pos>=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return;
-  VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[pos];
-
   if(type==1) return;
 
-  ConferenceMemberId id=(long)pos;
-  VideoMixPosition * newPosition = CreateVideoMixPosition(id, o.posx, o.posy, o.width, o.height);
-  newPosition->type=type;
-  newPosition->n=pos;
-#if USE_FREETYPE
-  RemoveSubtitles(*newPosition);
-#endif
-  newPosition->endpointName = "Voice-activated " + PString(type-1);
-  newPosition->border=o.border;
-
-  if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
-    VMPListInsVMP(newPosition);
-  else VMPListAddVMP(newPosition);
+  VideoMixPosition * newPosition = VMPCreator(pos, NULL, type);
+  if(newPosition!=NULL) VMPTouch(*newPosition);
 }
 
 int MCUSimpleVideoMixer::GetPositionStatus(ConferenceMemberId id)
@@ -3650,7 +3639,6 @@ ConferenceMemberId MCUSimpleVideoMixer::GetHonestId(int pos)
   }
   return 0;
 }
-
 
 ConferenceMemberId MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * member)
 {
