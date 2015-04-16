@@ -1554,6 +1554,8 @@ void MCUH323EndPoint::UnmoderateConference(Conference & conference)
       SetMemberVideoMixer(conference, member, 0);
     if(!member->IsVisible())
       continue;
+    if(!member->IsOnline())
+      continue;
     if(mixer->AddVideoSource(member->GetID(), *member))
       member->SetFreezeVideo(FALSE);
     else
