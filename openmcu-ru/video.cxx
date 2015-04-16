@@ -745,7 +745,7 @@ void MCUVideoMixer::FillYUVRect(void * frame, int frameWidth, int frameHeight, B
 
   BYTE * Yptr = (BYTE*)frame + offset;
   BYTE * UPtr = (BYTE*)frame + (frameWidth * frameHeight) + colourOffset;
-  BYTE * VPtr = (BYTE*)frame + (frameWidth * frameHeight) + (frameWidth * frameHeight/4)  + colourOffset;
+  BYTE * VPtr = (BYTE*)frame + (frameWidth * frameHeight) + ((frameWidth/2) * (frameHeight/2))  + colourOffset;
 
   int rr ;
   int halfRectWidth = rectWidth >> 1;
