@@ -606,6 +606,8 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void VMPSetOffline(VideoMixPosition&);
     virtual void VMPChangeNumber(VideoMixPosition&, unsigned);
     virtual void VMPChangeBorder(VideoMixPosition&, unsigned);
+    virtual int VMPListFindEmptyIndex();
+    virtual VideoMixPosition * VMPCreator(int n, ConferenceMember * m, int type);
 
   protected:
     virtual void ReallocatePositions();

@@ -3185,8 +3185,8 @@ void MCUSimpleVideoMixer::WriteNoVideoFrame(VideoMixPosition & vmp)
 {
   unsigned width, height, options;
   void * buffer = OpenMCU::Current().GetNoVideoFramePointer(width, height);
-  if(width==16 && height==16) options=WSF_VMP_COMMON|WSF_VMP_FORCE_CUT;
-  else options=WSF_VMP_COMMON;
+  if(width==16 && height==16) options=WSF_VMP_SUBTITLES|WSF_VMP_BORDER|WSF_VMP_FORCE_CUT;
+  else options=WSF_VMP_SUBTITLES|WSF_VMP_BORDER;
   if(buffer) WriteSubFrame(vmp, buffer, width, height, options);
 }
 
@@ -3400,65 +3400,83 @@ void MCUSimpleVideoMixer::Revert()
 {
   PWaitAndSignal m(mutex);
   if(vmpList->next==NULL) return;
-  unsigned n=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
-  if(n<2) return;
+  unsigned & vidnum = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
+  if(vidnum < 2) return;
+  NullAllFrameStores();
   VideoMixPosition * v = vmpList->next;
-  while(v!=NULL)
-  { v->n=n-v->n-1;
-    VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[v->n];
-    v->xpos=o.posx; v->ypos=o.posy; v->width=o.width; v->height=o.height; v->border=o.border;
-#if USE_FREETYPE
-    RemoveSubtitles(*v);
-#endif
+  while(v != NULL)
+  {
+    WriteEmptyFrame(*v);
+    unsigned n = vidnum-1-v->n;
+    VMPChangeNumber(*v, n);
+    VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[n];
+    VMPChangeBorder(*v, o.border);
+    VMPMove(*v, o.posx, o.posy, o.width, o.height);
     v=v->next;
   }
-  NullAllFrameStores();
+}
+
+int MCUSimpleVideoMixer::VMPListFindEmptyIndex()
+{
+  for(int i=0; (unsigned)i<OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum; i++)
+  {
+    VideoMixPosition * vmp = vmpList->next;
+    while (vmp != NULL)
+    {
+      if (vmp->n != i) vmp=vmp->next;
+      else break;
+    }
+    if(vmp == NULL) return i;
+  }
+ return -1;
+}
+  
+MCUSimpleVideoMixer::VideoMixPosition * MCUSimpleVideoMixer::VMPCreator(int n, ConferenceMember * m, int type)
+{
+  VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[n];
+  VideoMixPosition * newPosition = CreateVideoMixPosition(m->GetID(), o.posx, o.posy, o.width, o.height);
+  if(newPosition==NULL) return NULL;
+  newPosition->n = n;
+  newPosition->type = type;
+  newPosition->rule = m->resizerRule;
+# if USE_FREETYPE
+    RemoveSubtitles(*newPosition);
+# endif
+  newPosition->endpointName = m->GetName();
+  newPosition->border=o.border;
+  if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
+    VMPListInsVMP(newPosition);
+  else VMPListAddVMP(newPosition);
+  return newPosition;
 }
 
 BOOL MCUSimpleVideoMixer::AddVideoSourceToLayout(ConferenceMemberId id, ConferenceMember & mbr)
 {
   PWaitAndSignal m(mutex);
 
-  if (vmpNum == OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum)
-  {
-    PTRACE(3, "AddVideoSource " << id << " " << vmpNum << " layout capacity exceeded (" << OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum << ")");
-    return FALSE;
-  }
-
   // make sure this source is not already in the list
-  VideoMixPosition *newPosition = VMPListFindVMP(id); if(newPosition != NULL)
+  VideoMixPosition *newPosition = VMPListFindVMP(id);
+  if(newPosition != NULL)
   {
     PTRACE(3, "AddVideoSource " << id << " " << vmpNum << " already in list (" << newPosition << ")");
     return TRUE;
   }
 
-  for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;i++)
+  int i = VMPListFindEmptyIndex();
+  if ((vmpNum == OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) || (i<0))
   {
-    newPosition = vmpList->next;
-    while (newPosition != NULL) { if (newPosition->n != (int)i) newPosition=newPosition->next; else break; }
-    if(newPosition==NULL) // empty position found
-    {
-      newPosition = CreateVideoMixPosition(id, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].posx, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].posy, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].width, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].height);
-      newPosition->n=i;
-      newPosition->type=1;
-#if USE_FREETYPE
-      RemoveSubtitles(*newPosition);
-#endif
-      newPosition->endpointName = mbr.GetName();
-      newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].border;
-      if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin) VMPListInsVMP(newPosition); else VMPListAddVMP(newPosition);
-      PTRACE(3, "AddVideoSource " << id << " " << vmpNum << " added as " << i << " (" << newPosition << ")");
-      break;
-    }
+    PTRACE(3, "AddVideoSource " << id << " " << vmpNum << " layout capacity exceeded (" << OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum << ")");
+    return FALSE;
   }
 
-  if (newPosition != NULL)
+  newPosition = VMPCreator(i, &mbr, 1);
+  if(newPosition!=NULL)
   {
-    unsigned w, h; void * f=OpenMCU::Current().GetNoVideoFramePointer(w, h);
-    if(f)WriteSubFrame(*newPosition, f, w, h, WSF_VMP_COMMON);
+    VMPTouch(*newPosition);
     return TRUE;
   }
-  else return FALSE;
+
+  return FALSE;
 }
 
 BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
@@ -3483,11 +3501,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
   if ((newsL != specialLayout)||(vmpNum==0)) // split changed or first vmp
   {
     specialLayout=newsL;
-    newPosition = CreateVideoMixPosition(id, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmpNum].posx, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmpNum].posy, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmpNum].width, OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmpNum].height);
-    newPosition->type=1;
-    newPosition->n=vmpNum;
-    newPosition->endpointName=mbr.GetName();
-    newPosition->rule = mbr.resizerRule;
+    newPosition = VMPCreator(vmpNum, &mbr, 1);
     newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmpNum].border;
     if(OpenMCU::vmcfg.vmconf[newsL].splitcfg.new_from_begin) VMPListInsVMP(newPosition);
     else VMPListAddVMP(newPosition);
@@ -3495,38 +3509,17 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
   }
   else  // otherwise find an empty position
   {
-    for(unsigned i=0;i<OpenMCU::vmcfg.vmconf[newsL].splitcfg.vidnum;i++)
+    int i=VMPListFindEmptyIndex();
+    if(i>=0)
     {
-      newPosition = vmpList->next;
-      while (newPosition != NULL) { if (newPosition->n != (int)i) newPosition=newPosition->next; else break; }
-      if(newPosition==NULL) // empty position found
-      {
-        VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i];
-        newPosition = CreateVideoMixPosition(id, vmpcfg.posx, vmpcfg.posy, vmpcfg.width, vmpcfg.height);
-        newPosition->n=i;
-        newPosition->type=1;
-#if USE_FREETYPE
-        RemoveSubtitles(*newPosition);
-#endif
-        newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].border;
-        newPosition->rule = mbr.resizerRule;
-        newPosition->endpointName = mbr.GetName();
-        if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin) VMPListInsVMP(newPosition);
-        else VMPListAddVMP(newPosition);
-        break;
-      }
+      newPosition = VMPCreator(i, &mbr, 1);
+      if(newPosition!=NULL) VMPTouch(*newPosition);
     }
   }
 
   BOOL result = (newPosition != NULL);
 
   PTRACE_IF(!result, 2, "AddVideoSource " << id << " " << vmpNum << " could not find empty video position");
-
-  if(result)
-  {
-    unsigned w, h; void * f = OpenMCU::Current().GetNoVideoFramePointer(w, h);
-    if(f) WriteSubFrame(*newPosition, f, w, h, WSF_VMP_COMMON);
-  }
 
   return result;
 }
@@ -3536,21 +3529,16 @@ void MCUSimpleVideoMixer::RemoveVideoSource(ConferenceMemberId id, ConferenceMem
   PWaitAndSignal m(mutex);
 
   // make sure this source is in the list
-  {
-    VideoMixPosition *pVMP = VMPListFindVMP(id);
-    if(pVMP == NULL) return;
+  VideoMixPosition *pVMP = VMPListFindVMP(id);
+  if(pVMP == NULL) return;
 
-    // clear the position where the frame was
-    VideoMixPosition & vmp = *pVMP;
-    if (vmpNum == 1) NullAllFrameStores();
-    else NullRectangle(vmp.xpos,vmp.ypos,vmp.width,vmp.height,vmp.border);
+  WriteEmptyFrame(*pVMP);
 
-    // remove the source from the list
-    VMPListDelVMP(pVMP);
+  // remove the source from the list
+  VMPListDelVMP(pVMP);
 
-    // erase the video position information
-    delete pVMP;
-  }
+  // erase the video position information
+  delete pVMP;
 
   int newsL=GetMostAppropriateLayout(vmpNum);
   if (newsL!=specialLayout || OpenMCU::vmcfg.vmconf[newsL].splitcfg.reallocate_on_disconnect)
