@@ -1425,7 +1425,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
       for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
       {
         ConferenceMember * member = *it;
-        if(member->IsVisible())
+        if(member->IsVisible() && member->IsOnline())
         {
           if(  (mixer->VMPListFindVMP(member->GetID()) == NULL)  &&  ((type==1)||(!member->disableVAD))  )
           {

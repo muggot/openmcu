@@ -72,6 +72,7 @@
 #define WSF_VMP_SET_TIME  1
 #define WSF_VMP_SUBTITLES 2
 #define WSF_VMP_BORDER    4
+#define WSF_VMP_FORCE_CUT 8
 #define WSF_VMP_COMMON    WSF_VMP_SET_TIME | WSF_VMP_SUBTITLES | WSF_VMP_BORDER
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

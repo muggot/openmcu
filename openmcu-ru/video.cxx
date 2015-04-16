@@ -8,11 +8,6 @@
 #define MAX_SUBFRAMES        100
 #define FRAMESTORE_TIMEOUT 60 /* s */
 
-#define USERIMG_NO_VIDEO     1
-#define ESERIMG_EMPTY        2
-#define USERIMG_BG           3
-#define USERIMG_OFFLINE      4
-
 #if USE_FREETYPE
 FT_Library ft_library;
 FT_Face ft_face;
@@ -3171,23 +3166,28 @@ BOOL MCUSimpleVideoMixer::SetOffline(ConferenceMemberId id)
 
 void MCUSimpleVideoMixer::WriteEmptyFrame(VideoMixPosition & vmp)
 {
-  unsigned width, height;
+  unsigned width, height, options;
   void * buffer = OpenMCU::Current().GetEmptyFramePointer(width, height);
-  if(buffer) WriteSubFrame(vmp, buffer, width, height, 0);
+  if(width==16 && height==16) options=WSF_VMP_FORCE_CUT; else options=0;
+  if(buffer) WriteSubFrame(vmp, buffer, width, height, options);
 }
 
 void MCUSimpleVideoMixer::WriteOfflineFrame(VideoMixPosition & vmp)
 {
-  unsigned width, height;
+  unsigned width, height, options;
   void * buffer = OpenMCU::Current().GetOfflineFramePointer(width, height);
-  if(buffer) WriteSubFrame(vmp, buffer, width, height, WSF_VMP_COMMON);
+  if(width==16 && height==16) options=WSF_VMP_COMMON|WSF_VMP_FORCE_CUT;
+  else options=WSF_VMP_COMMON;
+  if(buffer) WriteSubFrame(vmp, buffer, width, height, options);
 }
 
 void MCUSimpleVideoMixer::WriteNoVideoFrame(VideoMixPosition & vmp)
 {
-  unsigned width, height;
+  unsigned width, height, options;
   void * buffer = OpenMCU::Current().GetNoVideoFramePointer(width, height);
-  if(buffer) WriteSubFrame(vmp, buffer, width, height, WSF_VMP_COMMON);
+  if(width==16 && height==16) options=WSF_VMP_COMMON|WSF_VMP_FORCE_CUT;
+  else options=WSF_VMP_COMMON;
+  if(buffer) WriteSubFrame(vmp, buffer, width, height, options);
 }
 
 void MCUSimpleVideoMixer::VMPTouch(VideoMixPosition & vmp)
@@ -3262,9 +3262,9 @@ void MCUSimpleVideoMixer::Shuffle()
   PWaitAndSignal m(mutex);
   if(vmpList->next==NULL) return;
   VideoMixPosition * v = vmpList->next;
-  unsigned n=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
-  unsigned * used = new unsigned [n];
-  memset((void*)used, 0, n*sizeof(unsigned));
+  unsigned & vidnum = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
+  unsigned * used = new unsigned [vidnum];
+  memset((void*)used, 0, vidnum*sizeof(unsigned));
   unsigned done=0;
 #ifdef _WIN32
   unsigned seed=rand();
@@ -3278,14 +3278,18 @@ void MCUSimpleVideoMixer::Shuffle()
     {
 #ifdef _WIN32
       unsigned xxx = static_cast<unsigned>(time(0));
-      unsigned r = ( (((( (xxx>>(xxx&15))+seed) ^ 0x555) & 0x777) + 0x400) * (n-1) / 0x777 )%n;
+      unsigned r = ( (((( (xxx>>(xxx&15))+seed) ^ 0x555) & 0x777) + 0x400) * (vidnum-1) / 0x777 )%vidnum;
       seed++;
 #else
-      unsigned r = rand()%n;
+      unsigned r = rand()%vidnum;
 #endif
       unsigned i;
-      for(i=0;i<done;i++) if(used[i]==r) break;
-      if(used[i]!=r)
+      BOOL flag=(done==0);
+      if(!flag)
+      {
+        for(i=0;i<done;i++) if(used[i]==r) {flag=FALSE;break;}
+      }
+      if(flag)
       {
         used[done]=r;
         VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[r];
@@ -3878,13 +3882,11 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
 
       if(v->id == id) return;
 
-//      v->Fill();
       v->id=id;
 #if USE_FREETYPE
       RemoveSubtitles(*v);
 #endif
       v->endpointName=member->GetName();
-//      FillVideoPosition(v,USERIMG_NO_VIDEO);
       return;
     }
 
@@ -3913,7 +3915,6 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
   if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
     VMPListInsVMP(newPosition);
   else VMPListAddVMP(newPosition);
-//  v->Fill();
 }
 
 void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
@@ -4119,6 +4120,8 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
   PWaitAndSignal m(mutex);
   if(options & WSF_VMP_SET_TIME)
     vmp.lastWrite=now;
+  unsigned rule;
+  if(options & WSF_VMP_FORCE_CUT) rule=0; else rule=vmp.rule;
   VideoFrameStoreList::VideoFrameStoreListMapType theCopy(frameStores.videoFrameStoreList);
   for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
   {
@@ -4158,14 +4161,14 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     }
     else if(pw*height<ph*width) //broader:  +---------+     pw     rule 0 => cut width
     {                           //          |  width  |    +--+
-      if(vmp.rule==0)           //    height|         | -> |  |ph   rule 1 => add stripes
+      if(rule==0)               //    height|         | -> |  |ph   rule 1 => add stripes
       {                         //          +---------+    +--+                  to top and bottom
         int dstWidth = ph*width/height; //bigger than we need
         CheckOperationalSize(dstWidth, ph, _IMGST+_IMGST1);
         ResizeYUV420P((const BYTE *)buffer, imageStore1.GetPointer(), width, height, dstWidth, ph);
         CopyRectFromFrame(imageStore1.GetPointer(), imageStore.GetPointer(), (dstWidth-pw)/2, 0, pw, ph, dstWidth, ph);
       }
-      else if(vmp.rule==1)
+      else if(rule==1)
       {
         int dstHeight = pw*height/width; //smaller than we need
         CheckOperationalSize(pw, ph, _IMGST+_IMGST1);
@@ -4178,14 +4181,14 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     }                           //                   width
     else if(pw*height>ph*width) //narrower (higher): +-+      pw      rule 0 => cut height
     {                           //                   | |    +----+
-      if(vmp.rule==0)           //             height| | -> |    | ph  rule 1 => add stripes
+      if(rule==0)               //             height| | -> |    | ph  rule 1 => add stripes
       {                         //                   +-+    +----+                to left and right
         int dstHeight = pw*height/width; //bigger than we need
         CheckOperationalSize(pw, dstHeight, _IMGST+_IMGST1);
         ResizeYUV420P((const BYTE *)buffer, imageStore1.GetPointer(), width, height, pw, dstHeight);
         CopyRectFromFrame(imageStore1.GetPointer(),imageStore.GetPointer(), 0, (dstHeight-ph)/2, pw, ph, pw, dstHeight);
       }
-      else if(vmp.rule==1)
+      else if(rule==1)
       {
         int dstWidth = ph*width/height; //smaller than we need
         CheckOperationalSize(pw, ph, _IMGST+_IMGST1);
