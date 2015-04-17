@@ -216,7 +216,14 @@ void Conference::LoadTemplate(PString tpl)
             {
               PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
               ConferenceMember *member = manager.FindMemberNameIDWithLock(this, name);
-              if(member)
+              if(member==NULL)
+              {
+                member = new MCUConnection_ConferenceMember(this, name, "");
+                MCUMemberList::shared_iterator it = AddMemberToList(member);
+                if(it == memberList.end()) { delete member; member = NULL; }
+                else member = it.GetCapturedObject();
+              }
+              if(member!=NULL)
               {
                 if(mixer && member->IsVisible())
                 {
