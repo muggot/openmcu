@@ -462,6 +462,9 @@ class Conference : public PObject
     int GetMemberCount()
     { return memberList.GetSize(); }
 
+    int GetOnlineMemberCount() const
+    { return onlineMemberCount; }
+
     int GetVisibleMemberCount() const
     { return visibleMemberCount; }
 
@@ -573,6 +576,7 @@ class Conference : public PObject
 
     MCUVideoMixerList videoMixerList;
 
+    PINDEX onlineMemberCount;
     PINDEX visibleMemberCount;
     PINDEX maxMemberCount;
 

@@ -563,7 +563,7 @@ int ConferenceMonitor::Perform(Conference * conference)
 
   // auto delete empty room
   BOOL autoDeleteEmpty = GetConferenceParam(conference->GetNumber(), RoomAutoDeleteEmptyKey, FALSE);
-  if(autoDeleteEmpty && !conference->GetVisibleMemberCount())
+  if(autoDeleteEmpty && !conference->GetOnlineMemberCount())
   {
     return 1; // delete conference
   }
@@ -579,11 +579,11 @@ int ConferenceMonitor::Perform(Conference * conference)
     PString autoRecordStart = GetConferenceParam(conference->GetNumber(), RoomAutoRecordStartKey, "Disable");
     PString autoRecordStop = GetConferenceParam(conference->GetNumber(), RoomAutoRecordStopKey, "Disable");
 
-    PINDEX visibleMembers = conference->GetVisibleMemberCount();
+    PINDEX onlineMembers = conference->GetOnlineMemberCount();
 
-    if(autoRecordStop != "Disable" && visibleMembers <= autoRecordStop.AsInteger())
+    if(autoRecordStop != "Disable" && onlineMembers <= autoRecordStop.AsInteger())
       conference->StopRecorder();
-    else if(autoRecordStart != "Disable" && autoRecordStart.AsInteger() > autoRecordStop.AsInteger() && visibleMembers >= autoRecordStart.AsInteger())
+    else if(autoRecordStart != "Disable" && autoRecordStart.AsInteger() > autoRecordStop.AsInteger() && onlineMembers >= autoRecordStart.AsInteger())
       conference->StartRecorder();
   }
 
@@ -626,6 +626,7 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
     videoMixerList.Insert(mixer, mixer->GetID());
   }
 #endif
+  onlineMemberCount = 0;
   visibleMemberCount = 0;
   maxMemberCount = 0;
   moderated = FALSE;
@@ -810,9 +811,13 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
   if(!memberToAdd->IsVisible())
     return TRUE;
 
-  // counter visible members
+  // counter members
   visibleMemberCount++;
-  maxMemberCount = PMAX(maxMemberCount, visibleMemberCount);
+  if(memberToAdd->IsOnline())
+  {
+    onlineMemberCount++;
+    maxMemberCount = PMAX(maxMemberCount, onlineMemberCount);
+  }
 
   if(UseSameVideoForAllMembers())
   {
@@ -893,8 +898,9 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   if(!memberToRemove->IsVisible())
     return TRUE;
 
-  // counter visible members
-//  visibleMemberCount--;
+  // counter members
+  if(memberToRemove->IsOnline())
+    onlineMemberCount--;
 
   // remove ConferenceConnection
   RemoveAudioConnection(memberToRemove);
