@@ -254,6 +254,10 @@ class MCUVideoMixer
         time_t lastWrite;
         int rule;
         BOOL offline;
+
+        MCUSharedList<MCUBufferArray> bufferList;
+        int vmpbuf_index;
+        PMutex bufferListMutex;
     };
 
     MCUVideoMixer()

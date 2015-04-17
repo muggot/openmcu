@@ -361,6 +361,7 @@ MCUVideoMixer::VideoMixPosition::VideoMixPosition(ConferenceMemberId _id,  int _
   rule = 1;
   offline = FALSE; //dont show offline banner for 1st time
   lastWrite = 0;
+  vmpbuf_index = -1;
 }
 
 MCUVideoMixer::VideoMixPosition::~VideoMixPosition()
@@ -3104,36 +3105,56 @@ BOOL MCUSimpleVideoMixer::ReadSrcFrame(VideoFrameStoreList & srcFrameStores, voi
 {
   PWaitAndSignal m(mutex);
 
-  VideoFrameStoreList::FrameStore & Fs = srcFrameStores.GetFrameStore(width, height);
-  if (!Fs.valid) 
-  {
-//   if (!OpenMCU::Current().GetPreMediaFrame(Fs.data.GetPointer(), width, height, amount))
-    MCUVideoMixer::FillYUVFrame(Fs.data.GetPointer(), 0, 0, 0, width, height);
-
-    if(width>=2 && height >=2) // grid
-    for (unsigned i=0; i<OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum; i++)
+  VideoFrameStoreList::FrameStore & fs = srcFrameStores.GetFrameStore(width, height);
+  MCUVideoMixer::FillYUVFrame(buffer, 0, 0, 0, width, height);
+  // grid
+  for(unsigned i = 0; i < OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum; i++)
     if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].border)
     {
-      VMPCfgOptions & vmpcfg=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i];
-      int pw=vmpcfg.width*width/CIF4_WIDTH; // pixel w&h of vmp-->fs
-      int ph=vmpcfg.height*height/CIF4_HEIGHT;
+      VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i];
+      int pw = vmpcfg.width*width/CIF4_WIDTH; // pixel w&h of vmp-->fs
+      int ph = vmpcfg.height*height/CIF4_HEIGHT;
+      int px = vmpcfg.posx*width/CIF4_WIDTH; // pixel x&y of vmp-->fs
+      int py = vmpcfg.posy*height/CIF4_HEIGHT;
       if(pw<2 || ph<2) continue;
-      CheckOperationalSize(pw,ph,_IMGST);
-      const void *ist = imageStore.GetPointer();
-      FillYUVFrame(imageStore.GetPointer(), 0, 0, 0, pw, ph);
-      VideoSplitLines(imageStore.GetPointer(), pw, ph);
-      int px=vmpcfg.posx*width/CIF4_WIDTH; // pixel x&y of vmp-->fs
-      int py=vmpcfg.posy*height/CIF4_HEIGHT;
-      CopyRectIntoFrame(ist,Fs.data.GetPointer(),px,py,pw,ph,width,height);
+      MCUBuffer buf(pw*ph*3/2);
+      FillYUVFrame(buf.GetPointer(), 0, 0, 0, pw, ph);
+      VideoSplitLines(buf.GetPointer(), pw, ph);
+      CopyRectIntoFrame(buf.GetPointer(), buffer, px, py, pw, ph, width, height);
     }
-    Fs.valid = TRUE;
+
+  for(VideoMixPosition *vmp = vmpList->next; vmp != NULL; vmp = vmp->next)
+  {
+    MCUSharedList<MCUBufferArray>::shared_iterator it = vmp->bufferList.Find((long)&fs);
+    if(it == vmp->bufferList.end())
+    {
+      PWaitAndSignal m(vmp->bufferListMutex);
+      it = vmp->bufferList.Find((long)&fs);
+      if(it == vmp->bufferList.end())
+        it = vmp->bufferList.Insert(new MCUBufferArray(3, 0), (long)&fs);
+    }
+    int vmpbuf_index = vmp->vmpbuf_index;
+    if(vmpbuf_index < 0)
+      continue;
+
+    MCUBuffer *vmpbuf = (**it)[vmpbuf_index];
+    if(vmpbuf->GetSize() == 0)
+      continue;
+
+    VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp->n];
+    int pw = vmp->width *fs.width /CIF4_WIDTH;
+    int ph = vmp->height*fs.height/CIF4_HEIGHT;
+    int px = vmp->xpos  *fs.width /CIF4_WIDTH; // pixel offset in frame store
+    int py = vmp->ypos  *fs.height/CIF4_HEIGHT;
+    for(unsigned i = 0; i < vmpcfg.blks; i++)
+      CopyRFromRIntoR(vmpbuf->GetPointer(), buffer, px, py, pw, ph,
+        AlignUp2(vmpcfg.blk[i].posx*fs.width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*fs.height/CIF4_HEIGHT),
+        AlignUp2(vmpcfg.blk[i].width*fs.width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*fs.height/CIF4_HEIGHT),
+        fs.width, fs.height, pw, ph );
   }
-  memcpy(buffer, Fs.data.GetPointer(), amount);
-  Fs.lastRead=time(NULL);
 
   return TRUE;
 }
-
 
 
 BOOL MCUSimpleVideoMixer::ReadMixedFrame(void * buffer, int width, int height, PINDEX & amount)
@@ -4117,8 +4138,12 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     vmp.lastWrite=now;
   unsigned rule;
   if(options & WSF_VMP_FORCE_CUT) rule=0; else rule=vmp.rule;
-  VideoFrameStoreList::VideoFrameStoreListMapType theCopy(frameStores.videoFrameStoreList);
-  for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
+
+  int vmpbuf_index = vmp.vmpbuf_index + 1;
+  if(vmpbuf_index == 3)
+    vmpbuf_index = 0;
+
+  for(VideoFrameStoreList::VideoFrameStoreListMapType::iterator r = frameStores.videoFrameStoreList.begin(); r != frameStores.videoFrameStoreList.end(); ++r)
   {
     VideoFrameStoreList::FrameStore & vf = *(r->second);
     if(vf.lastRead<removalDeadline)
@@ -4138,93 +4163,89 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     int ph=vmp.height*vf.height/CIF4_HEIGHT;
     if(pw<2 || ph<2) continue;
 
-    void *ist;
+    MCUSharedList<MCUBufferArray>::shared_iterator it = vmp.bufferList.Find((long)&vf);
+    if(it == vmp.bufferList.end())
+    {
+      PWaitAndSignal m(vmp.bufferListMutex);
+      it = vmp.bufferList.Find((long)&vf);
+      if(it == vmp.bufferList.end())
+        it = vmp.bufferList.Insert(new MCUBufferArray(3, 0), (long)&vf);
+    }
+    MCUBuffer *vmpbuf = (**it)[vmpbuf_index];
+
     if(pw==width && ph==height) //same size
     {
-#     if USE_FREETYPE
-        if(!((options & WSF_VMP_SUBTITLES) || (options & WSF_VMP_BORDER)))
-          ist = (void*)buffer; //no changes
-        else
-        {
-          CheckOperationalSize(pw,ph,_IMGST);
-          ist = imageStore.GetPointer(); 
-          memcpy(ist, buffer, pw*ph*3/2); //making copy for subtitles & border
-        }
-#     else
-        ist = (void*)buffer; //no changes
-#     endif
+      vmpbuf->SetSize(pw*ph*3*2);
+      MCUVideoMixer::FillYUVFrame(vmpbuf->GetPointer(), 0, 0, 0, pw, ph);
+      memcpy(vmpbuf->GetPointer(), buffer, pw*ph*3/2); //making copy for subtitles & border
     }
     else if(pw*height<ph*width) //broader:  +---------+     pw     rule 0 => cut width
     {                           //          |  width  |    +--+
       if(rule==0)               //    height|         | -> |  |ph   rule 1 => add stripes
       {                         //          +---------+    +--+                  to top and bottom
         int dstWidth = ph*width/height; //bigger than we need
-        CheckOperationalSize(dstWidth, ph, _IMGST+_IMGST1);
-        ResizeYUV420P((const BYTE *)buffer, imageStore1.GetPointer(), width, height, dstWidth, ph);
-        CopyRectFromFrame(imageStore1.GetPointer(), imageStore.GetPointer(), (dstWidth-pw)/2, 0, pw, ph, dstWidth, ph);
+        vmpbuf->SetSize(dstWidth*ph*3*2);
+        MCUVideoMixer::FillYUVFrame(vmpbuf->GetPointer(), 0, 0, 0, dstWidth, ph);
+        ResizeYUV420P((const BYTE *)buffer, vmpbuf->GetPointer(), width, height, dstWidth, ph);
+        CopyRectFromFrame(vmpbuf->GetPointer(), vmpbuf->GetPointer(), (dstWidth-pw)/2, 0, pw, ph, dstWidth, ph);
       }
       else if(rule==1)
       {
         int dstHeight = pw*height/width; //smaller than we need
-        CheckOperationalSize(pw, ph, _IMGST+_IMGST1);
-        ResizeYUV420P((const BYTE *)buffer, imageStore1.GetPointer(), width, height, pw, dstHeight);
-        FillYUVRect(imageStore.GetPointer(),pw,ph,127,127,127, 0,0, pw,(ph-dstHeight)/2);
-        FillYUVRect(imageStore.GetPointer(),pw,ph,127,127,127, 0,ph-(ph-dstHeight)/2, pw,(ph-dstHeight)/2);
-        CopyRectIntoFrame(imageStore1.GetPointer(), imageStore.GetPointer(), 0, (ph-dstHeight)/2, pw, dstHeight, pw, ph);
+        vmpbuf->SetSize(pw*ph*3*2);
+        MCUVideoMixer::FillYUVFrame(vmpbuf->GetPointer(), 0, 0, 0, pw, ph);
+        MCUBuffer buf(pw*ph*3*2);
+        ResizeYUV420P((const BYTE *)buffer, buf.GetPointer(), width, height, pw, dstHeight);
+        //FillYUVRect(buf.GetPointer(),pw,ph,127,127,127, 0,0, pw,(ph-dstHeight)/2);
+        //FillYUVRect(buf.GetPointer(),pw,ph,127,127,127, 0,ph-(ph-dstHeight)/2, pw,(ph-dstHeight)/2);
+        CopyRectIntoFrame(buf.GetPointer(), vmpbuf->GetPointer(), 0, (ph-dstHeight)/2, pw, dstHeight, pw, ph);
       }
-      ist=imageStore.GetPointer();
     }                           //                   width
     else if(pw*height>ph*width) //narrower (higher): +-+      pw      rule 0 => cut height
     {                           //                   | |    +----+
       if(rule==0)               //             height| | -> |    | ph  rule 1 => add stripes
       {                         //                   +-+    +----+                to left and right
         int dstHeight = pw*height/width; //bigger than we need
-        CheckOperationalSize(pw, dstHeight, _IMGST+_IMGST1);
-        ResizeYUV420P((const BYTE *)buffer, imageStore1.GetPointer(), width, height, pw, dstHeight);
-        CopyRectFromFrame(imageStore1.GetPointer(),imageStore.GetPointer(), 0, (dstHeight-ph)/2, pw, ph, pw, dstHeight);
+        vmpbuf->SetSize(pw*dstHeight*3*2);
+        MCUVideoMixer::FillYUVFrame(vmpbuf->GetPointer(), 0, 0, 0, pw, dstHeight);
+        ResizeYUV420P((const BYTE *)buffer, vmpbuf->GetPointer(), width, height, pw, dstHeight);
+        CopyRectFromFrame(vmpbuf->GetPointer(), vmpbuf->GetPointer(), 0, (dstHeight-ph)/2, pw, ph, pw, dstHeight);
       }
       else if(rule==1)
       {
         int dstWidth = ph*width/height; //smaller than we need
-        CheckOperationalSize(pw, ph, _IMGST+_IMGST1);
-        ResizeYUV420P((const BYTE *)buffer, imageStore1.GetPointer(), width, height, dstWidth, ph);
-        FillYUVRect(imageStore.GetPointer(),pw,ph,127,127,127, 0,0, (pw-dstWidth)/2, ph);
-        FillYUVRect(imageStore.GetPointer(),pw,ph,127,127,127, pw-(pw-dstWidth)/2,0, (pw-dstWidth)/2,ph);
-        CopyRectIntoFrame(imageStore1.GetPointer(),imageStore.GetPointer(), (pw-dstWidth)/2, 0, dstWidth, ph, pw, ph);
+        vmpbuf->SetSize(pw*ph*3*2);
+        MCUVideoMixer::FillYUVFrame(vmpbuf->GetPointer(), 0, 0, 0, pw, ph);
+        MCUBuffer buf(pw*ph*3*2);
+        ResizeYUV420P((const BYTE *)buffer, buf.GetPointer(), width, height, dstWidth, ph);
+        //FillYUVRect(buf.GetPointer(),pw,ph,127,127,127, 0,0, (pw-dstWidth)/2, ph);
+        //FillYUVRect(buf.GetPointer(),pw,ph,127,127,127, pw-(pw-dstWidth)/2,0, (pw-dstWidth)/2,ph);
+        CopyRectIntoFrame(buf.GetPointer(), vmpbuf->GetPointer(), (pw-dstWidth)/2, 0, dstWidth, ph, pw, ph);
       }
-      ist=imageStore.GetPointer();
     }
     else
     { // fit. scale
-      CheckOperationalSize(pw,ph,_IMGST);
-      ResizeYUV420P((const BYTE *)buffer,    imageStore.GetPointer() , width, height, pw, ph);
-      ist=imageStore.GetPointer();
+      vmpbuf->SetSize(pw*ph*3*2);
+      MCUVideoMixer::FillYUVFrame(vmpbuf->GetPointer(), 0, 0, 0, pw, ph);
+      ResizeYUV420P((const BYTE *)buffer, vmpbuf->GetPointer() , width, height, pw, ph);
     }
 
     // border (split lines):
     if(options & WSF_VMP_BORDER)
       if(vmpcfg.border)
-        VideoSplitLines((void *)ist, pw, ph);
+        VideoSplitLines((void *)vmpbuf->GetPointer(), pw, ph);
 
 #if USE_FREETYPE
     if(options & WSF_VMP_SUBTITLES)
       if(!(vmpcfg.label_mask&FT_P_DISABLED))
-        PrintSubtitles(vmp,(void *)ist,pw,ph,vmpcfg.label_mask);
+        PrintSubtitles(vmp, (void *)vmpbuf->GetPointer(),pw,ph,vmpcfg.label_mask);
 #endif
-
-    int px=vmp.xpos*vf.width/CIF4_WIDTH; // pixel offset in frame store
-    int py=vmp.ypos*vf.height/CIF4_HEIGHT;
-    for(unsigned i=0;i<vmpcfg.blks;i++)
-      CopyRFromRIntoR( ist, vf.data.GetPointer(), px, py, pw, ph,
-        AlignUp2(vmpcfg.blk[i].posx*vf.width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*vf.height/CIF4_HEIGHT),
-        AlignUp2(vmpcfg.blk[i].width*vf.width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*vf.height/CIF4_HEIGHT),
-        vf.width, vf.height, pw, ph );
-
-    vf.valid=1;
   }
+
+  vmp.vmpbuf_index = vmpbuf_index;
   return TRUE;
 }
-    
+
 PString MCUSimpleVideoMixer::GetFrameStoreMonitorList()
 {
   PStringStream s;

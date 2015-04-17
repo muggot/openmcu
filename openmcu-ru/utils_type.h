@@ -185,6 +185,42 @@ class MCUBuffer
     uint8_t *buffer;
 };
 
+class MCUBufferArray
+{
+  public:
+    MCUBufferArray(int _array_size = 1, int buffer_size = 2048, bool aligned = true)
+    {
+      array_size = _array_size;
+      if(array_size < 1)
+        array_size = 1;
+
+      buffers = new MCUBuffer * [array_size];
+      for(int i = 0; i < array_size; i++)
+        buffers[i] = new MCUBuffer(buffer_size, aligned);
+    }
+    ~MCUBufferArray()
+    {
+      for(int i = 0; i < array_size; i++)
+      {
+        delete buffers[i];
+        buffers[i] = NULL;
+      }
+      delete [] buffers;
+      buffers = NULL;
+    }
+
+    MCUBuffer * operator[] (int index)
+    {
+      if(index >= array_size)
+        return NULL;
+      return buffers[index];
+    }
+
+  protected:
+    int array_size;
+    int buffer_size;
+    MCUBuffer **buffers;
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
