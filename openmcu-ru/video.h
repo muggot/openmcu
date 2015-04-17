@@ -552,6 +552,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual BOOL ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount);
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height);
     virtual BOOL SetOffline(ConferenceMemberId id);
+    virtual BOOL SetOnline(ConferenceMemberId id);
 
 #if USE_FREETYPE
     virtual unsigned printsubs_calc(unsigned v, char s[10]);

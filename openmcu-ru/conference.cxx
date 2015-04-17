@@ -827,11 +827,14 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
     }
     else
     {
-      if(!memberToAdd->disableVAD)
       for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
-        mixer->TryOnVADPosition(memberToAdd);
+        if(!mixer->SetOnline(memberToAdd->GetID()))
+        {
+          if(!memberToAdd->disableVAD)
+            mixer->TryOnVADPosition(memberToAdd);
+        }
       }
     }
   }

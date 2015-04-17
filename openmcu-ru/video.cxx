@@ -3165,11 +3165,24 @@ BOOL MCUSimpleVideoMixer::SetOffline(ConferenceMemberId id)
   return TRUE;
 }
 
+BOOL MCUSimpleVideoMixer::SetOnline(ConferenceMemberId id)
+{
+  PWaitAndSignal m(mutex);
+
+  // write data into sub frame of mixed image
+  VideoMixPosition *pVMP = VMPListFindVMP(id);
+  if(pVMP==NULL) return FALSE;
+  pVMP->offline = FALSE;
+  WriteNoVideoFrame(*pVMP);
+  return TRUE;
+}
+
 void MCUSimpleVideoMixer::WriteEmptyFrame(VideoMixPosition & vmp)
 {
   unsigned width, height, options;
   void * buffer = OpenMCU::Current().GetEmptyFramePointer(width, height);
-  if(width==16 && height==16) options=WSF_VMP_FORCE_CUT; else options=0;
+  if(width==16 && height==16) options=WSF_VMP_BORDER|WSF_VMP_FORCE_CUT;
+  else options=WSF_VMP_BORDER;
   if(buffer) WriteSubFrame(vmp, buffer, width, height, options);
 }
 
@@ -3286,12 +3299,14 @@ void MCUSimpleVideoMixer::Shuffle()
   unsigned & vidnum = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
   ConferenceMemberId * tempMemberList = new ConferenceMemberId [vidnum];
   PString * tempNameList = new PString [vidnum];
+  BOOL * tempOfflineList = new BOOL [vidnum];
   unsigned memberCount=0;
   while(v!=NULL)
   {
     VideoMixPosition *v0 = v;
     v=v->next;
     tempNameList[memberCount]=v0->endpointName;
+    tempOfflineList[memberCount]=v0->offline;
     tempMemberList[memberCount++]=v0->id;
     VMPDelete(*v0);
   }
@@ -3309,6 +3324,7 @@ void MCUSimpleVideoMixer::Shuffle()
       {
         vmp->id = tempMemberList[i];
         vmp->endpointName = tempNameList[i];
+        vmp->offline = tempOfflineList[i];
         vmp->type = 1;
       }
     }
@@ -3321,6 +3337,7 @@ void MCUSimpleVideoMixer::Shuffle()
         vmp->endpointName = tempNameList[i];
         vmp->lastWrite = 0;
         vmp->status = 0;
+        vmp->offline = tempOfflineList[i];
       }
     }
 #   if USE_FREETYPE
@@ -3330,6 +3347,7 @@ void MCUSimpleVideoMixer::Shuffle()
   }
   delete[]tempNameList;
   delete[]tempMemberList;
+  delete[]tempOfflineList;
 }
 
 void MCUSimpleVideoMixer::Scroll(BOOL reverse)
