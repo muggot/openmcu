@@ -969,7 +969,7 @@ void Conference::ReadMemberAudio(ConferenceMember * member, const uint64_t & tim
       for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
-        if(mixer->GetPositionStatus((ConferenceMemberId)conn->GetID()) >= 0)
+        if(mixer->VMPExists((ConferenceMemberId)conn->GetID()))
         {
           skip = FALSE;
           break;
@@ -1032,24 +1032,22 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
     for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
     {
       MCUSimpleVideoMixer *mixer = it.GetObject();
-      int status = mixer->GetPositionStatus(member->GetID());
-      if(audioLevel > VAlevel)
+      int silenceCounter = mixer->GetSilenceCounter(member->GetID());
+      if(audioLevel > VAlevel) // we have a signal
       {
         if(member->vad >= VAdelay) // voice-on trigger delay
         {
-          if(status > 0)
-            mixer->SetPositionStatus(member->GetID(),0);
-          else if(status == 0 && member->disableVAD == FALSE)
+          if(silenceCounter > 0) mixer->ResetSilenceCounter(member->GetID());
+          else if(silenceCounter == 0 && member->disableVAD == FALSE)
           {
             if(member->vad-VAdelay>500) // execute every 500 ms of voice activity
               mixer->SetVAD2Position(member);
           }
-          else if(status == -1 && member->disableVAD == FALSE) //find new vad position for active member
+          else if(silenceCounter == -1 && member->disableVAD == FALSE) //find new vad position for active member
           {
-            ConferenceMemberId id = mixer->SetVADPosition(member, member->chosenVan, VAtimeout);
-            if(id)
+            if(mixer->SetVADPosition(member, member->chosenVan, VAtimeout))
             {
-              FreezeVideo(id);
+              FreezeVideo(member->GetID());
               member->SetFreezeVideo(FALSE);
             }
           }
@@ -1057,10 +1055,9 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
       }
       else
       {
-        if(status >= 0) // increase silence counter
-          mixer->SetPositionStatus(member->GetID(),status + tint);
+        if(silenceCounter >= 0) mixer->IncreaseSilenceCounter(member->GetID(),tint);
       }
-      if(audioLevel > VAlevel && status == 0 && member->disableVAD == FALSE && member->vad-VAdelay > 500)
+      if(audioLevel > VAlevel && silenceCounter == 0 && member->disableVAD == FALSE && member->vad-VAdelay > 500)
         resetMemberVad = TRUE;
     }
     if(resetMemberVad)
@@ -1137,7 +1134,7 @@ void Conference::FreezeVideo(ConferenceMemberId id)
       for(MCUVideoMixerList::shared_iterator it2 = videoMixerList.begin(); it2 != videoMixerList.end(); ++it2)
       {
         MCUSimpleVideoMixer *mixer = it2.GetObject();
-        if(mixer->GetPositionStatus(id) >= 0)
+        if(mixer->VMPExists(id))
         {
           member->SetFreezeVideo(FALSE);
           return;
@@ -1147,7 +1144,7 @@ void Conference::FreezeVideo(ConferenceMemberId id)
       for(MCUMemberList::shared_iterator it2 = memberList.begin(); it2 != memberList.end(); ++it2)
       {
         ConferenceMember *member = it2.GetObject();
-        if(member->videoMixer && member->videoMixer->GetPositionStatus(id) >= 0)
+        if(member->videoMixer && member->videoMixer->VMPExists(id))
         {
           member->SetFreezeVideo(FALSE);
           return;
@@ -1167,7 +1164,7 @@ void Conference::FreezeVideo(ConferenceMemberId id)
       for(MCUVideoMixerList::shared_iterator it2 = videoMixerList.begin(); it2 != videoMixerList.end(); ++it2)
       {
         MCUSimpleVideoMixer *mixer = it2.GetObject();
-        if(mixer->GetPositionStatus(mid) >= 0)
+        if(mixer->VMPExists(mid))
         {
           member->SetFreezeVideo(FALSE);
           return;
@@ -1178,7 +1175,7 @@ void Conference::FreezeVideo(ConferenceMemberId id)
       for(it2 = memberList.begin(); it2 != memberList.end(); ++it2)
       {
         ConferenceMember *member = it2.GetObject();
-        if(member->videoMixer && member->videoMixer->GetPositionStatus(mid) >= 0)
+        if(member->videoMixer && member->videoMixer->VMPExists(mid))
         {
           member->SetFreezeVideo(FALSE);
           break;
@@ -1203,7 +1200,7 @@ BOOL Conference::PutChosenVan()
       for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
-        if(mixer->GetPositionStatus(member->GetID()) < 0)
+        if(mixer->VMPExists(member->GetID()))
           put |= mixer->SetVADPosition(member, member->chosenVan, VAtimeout);
       }
     }

@@ -242,7 +242,7 @@ class MCUVideoMixer
         ConferenceMemberId id;
 	int n;
         int xpos, ypos, width, height;
-        int status; // static | vad visibility
+        int silenceCounter; // static | vad visibility
         volatile int type; // static, vad, vad2, vad3
         int chosenVan; // always visible vad members (can switched between vad and vad2)
 	PString endpointName;
@@ -445,16 +445,16 @@ class MCUVideoMixer
     virtual void MyRemoveAllVideoSource() = 0;
     virtual int GetPositionSet() = 0;
     virtual int GetPositionNum(ConferenceMemberId id) = 0;
-    virtual int GetPositionStatus(ConferenceMemberId id) = 0;
+    virtual int GetSilenceCounter(ConferenceMemberId id) = 0;
+    virtual void ResetSilenceCounter(ConferenceMemberId id) = 0;
+    virtual void IncreaseSilenceCounter(ConferenceMemberId, int) = 0;
     virtual int GetPositionType(ConferenceMemberId id) = 0;
     virtual void SetPositionType(int pos, int type) = 0;
     virtual void InsertVideoSource(ConferenceMember * member, int pos) = 0;
-    virtual void SetPositionStatus(ConferenceMemberId id,int newStatus) = 0;
     virtual ConferenceMemberId GetPositionId(int pos) = 0;
-    virtual ConferenceMemberId GetHonestId(int pos) = 0;
     virtual void Exchange(int pos1, int pos2) = 0;
-    virtual ConferenceMemberId TryOnVADPosition(ConferenceMember * member) = 0;
-    virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout) = 0;
+    virtual BOOL TryOnVADPosition(ConferenceMember * member) = 0;
+    virtual BOOL SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout) = 0;
     virtual BOOL SetVAD2Position(ConferenceMember * member) = 0;
 
     virtual VideoMixPosition * CreateVideoMixPosition(ConferenceMemberId _id, 
@@ -582,16 +582,16 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void MyRemoveAllVideoSource();
     virtual int GetPositionSet();
     virtual int GetPositionNum(ConferenceMemberId id);
-    virtual int GetPositionStatus(ConferenceMemberId id);
+    virtual int GetSilenceCounter(ConferenceMemberId id);
+    virtual void ResetSilenceCounter(ConferenceMemberId id);
+    virtual void IncreaseSilenceCounter(ConferenceMemberId, int);
     virtual int GetPositionType(ConferenceMemberId id);
     virtual void SetPositionType(int pos, int type);
     virtual void InsertVideoSource(ConferenceMember * member, int pos);
-    virtual void SetPositionStatus(ConferenceMemberId id,int newStatus);
     virtual ConferenceMemberId GetPositionId(int pos);
-    virtual ConferenceMemberId GetHonestId(int pos);
     virtual void Exchange(int pos1, int pos2);
-    virtual ConferenceMemberId TryOnVADPosition(ConferenceMember * member);
-    virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout);
+    virtual BOOL TryOnVADPosition(ConferenceMember * member);
+    virtual BOOL SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout);
     virtual BOOL SetVAD2Position(ConferenceMember * member);
     inline void CheckOperationalSize(long w, long h, BYTE mask);
     virtual BOOL ReadMixedFrame(void * buffer, int width, int height, PINDEX & amount);
@@ -606,11 +606,16 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void VMPMoveAndTouch(VideoMixPosition&, int, int, int, int);
     virtual void VMPTouchAll();
     virtual void VMPMove(VideoMixPosition&, VideoMixPosition &);
+    virtual void VMPMoveAndTouch(VideoMixPosition&, VideoMixPosition &);
+    virtual void VMPCopy(VideoMixPosition&, VideoMixPosition &);
+    virtual void VMPSwap(VideoMixPosition&, VideoMixPosition &);
+    virtual void VMPSwapAndTouch(VideoMixPosition&, VideoMixPosition &);
     virtual void VMPSetOffline(VideoMixPosition&);
     virtual void VMPChangeNumber(VideoMixPosition&, unsigned);
     virtual void VMPChangeBorder(VideoMixPosition&, unsigned);
     virtual int VMPListFindEmptyIndex();
     virtual VideoMixPosition * VMPCreator(int n, ConferenceMember * m, int type);
+    virtual BOOL VMPExists(ConferenceMemberId);
 
   protected:
     virtual void ReallocatePositions();
@@ -647,9 +652,8 @@ class TestVideoMixer : public MCUSimpleVideoMixer
     virtual void MyRemoveAllVideoSource() {};
     virtual void SetPositionType(int pos, int type) {};
     virtual void InsertVideoSource(ConferenceMember * member, int pos) {};
-    virtual void SetPositionStatus(ConferenceMemberId id,int newStatus) {};
     virtual void Exchange(int pos1, int pos2) {};
-    virtual ConferenceMemberId SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout) { return 0; };
+    virtual BOOL SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout) { return 0; };
     virtual BOOL SetVAD2Position(ConferenceMember * member) { return FALSE; };
 
   protected:

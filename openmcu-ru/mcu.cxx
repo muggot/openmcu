@@ -1261,7 +1261,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     MCUSimpleVideoMixer *mixer = manager->FindVideoMixerWithLock(conference, v);
     if(mixer == NULL)
       return FALSE;
-    ConferenceMemberId id=mixer->GetHonestId(pos);
+    ConferenceMemberId id=mixer->GetPositionId(pos);
     int type=-1; if(id) type=mixer->GetPositionType(id);
     if((type==2)||(type==3))
     {
@@ -1391,8 +1391,8 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     {
       mixer1->Exchange(pos1,pos2);
     } else {
-      ConferenceMemberId id = mixer1->GetHonestId(pos1); if(((long)id<100)&&((long)id>=0)) id=0;
-      ConferenceMemberId id2 = mixer2->GetHonestId(pos2); if(((long)id2<100)&&((long)id2>=0)) id2=0;
+      ConferenceMemberId id = mixer1->GetPositionId(pos1); if(((long)id<100)&&((long)id>=0)) id=0;
+      ConferenceMemberId id2 = mixer2->GetPositionId(pos2); if(((long)id2<100)&&((long)id2>=0)) id2=0;
       ConferenceMember *member1 = NULL;
       ConferenceMember *member2 = NULL;
       if(id) member1 = manager->FindMemberWithLock(conference, id);
@@ -1416,7 +1416,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     unsigned pos = data("o").AsInteger();
     int type = data("o2").AsInteger();
     if((type<1)||(type>3)) type=2;
-    long id = (long)mixer->GetHonestId(pos);
+    long id = (long)mixer->GetPositionId(pos);
 //    if((type==1)&&(id>=0)&&(id<100)) //static but no member
     if((id>=0)&&(id<100)) //just no member (and we want to add him for some reason)
     {

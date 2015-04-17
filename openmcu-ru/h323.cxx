@@ -1677,7 +1677,7 @@ PString MCUH323EndPoint::GetMonitorText()
         {
           output << hdr << "[Position " << r->n << "]\n"
                  << hdr << "  Member Id: " << r->id << "\n"
-                 << hdr << "  Type: " << r->type << ", status: " << r->status << "\n"
+                 << hdr << "  Type: " << r->type << ", silence counter: " << r->silenceCounter << "\n"
                  << hdr << "  Frame: " << r->width << "*" << r->height << " at (" << r->xpos << "," << r->ypos << ")\n"
                  << hdr << "  Offline: " << r->offline << ", last write: " << r->lastWrite << "\n";
           r=r->next;
@@ -1701,7 +1701,7 @@ PString MCUH323EndPoint::GetMonitorText()
       {
         output << "  [Position " << r->n << "]\n"
                << "    Member Id: " << r->id << "\n"
-               << "    Type: " << r->type << ", status: " << r->status << "\n"
+               << "    Type: " << r->type << ", silence counter: " << r->silenceCounter << "\n"
                << "    Frame: " << r->width << "*" << r->height << " at (" << r->xpos << "," << r->ypos << ")\n"
                << "    Offline: " << r->offline << ", last write: " << r->lastWrite << "\n";
         r=r->next;

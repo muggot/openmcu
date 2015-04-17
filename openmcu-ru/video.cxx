@@ -352,7 +352,7 @@ static inline int ABS(int v)
 MCUVideoMixer::VideoMixPosition::VideoMixPosition(ConferenceMemberId _id,  int _x, int _y, int _w, int _h)
   : id(_id), xpos(_x), ypos(_y), width(_w), height(_h)
 { 
-  status = 0;
+  silenceCounter = 0;
   type = 0;
   chosenVan = 0;
   prev = NULL;
@@ -3252,18 +3252,47 @@ void MCUSimpleVideoMixer::VMPChangeNumber(VideoMixPosition & vmp, unsigned n)
 
 void MCUSimpleVideoMixer::VMPMove(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
 {
+  VMPCopy(vmp1, vmp2);
+  VMPDelete(vmp1);
+}
+
+void MCUSimpleVideoMixer::VMPMoveAndTouch(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
+{
+  VMPCopy(vmp1, vmp2);
+  VMPDelete(vmp1);
+  VMPTouch(vmp2);
+}
+
+void MCUSimpleVideoMixer::VMPCopy(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
+{
 # if USE_FREETYPE
   RemoveSubtitles(vmp2);
 # endif
-  vmp2.id           = vmp1.id;
-  vmp2.endpointName = vmp1.endpointName;
-  vmp2.lastWrite    = vmp1.lastWrite;
-  vmp2.type         = vmp1.type;
-  vmp2.status       = vmp1.status;
-  vmp2.rule         = vmp1.rule;
-  vmp2.chosenVan    = vmp1.chosenVan;
-  vmp2.offline      = vmp1.offline;
-  VMPDelete(vmp1);
+  vmp2.id             = vmp1.id;
+  vmp2.endpointName   = vmp1.endpointName;
+  vmp2.lastWrite      = vmp1.lastWrite;
+  vmp2.silenceCounter = vmp1.silenceCounter;
+  vmp2.rule           = vmp1.rule;
+  vmp2.chosenVan      = vmp1.chosenVan;
+  vmp2.offline        = vmp1.offline;
+  vmp2.chosenVan      = vmp1.chosenVan;
+  if((vmp2.type<1)||(vmp2.type>3)) vmp2.type = vmp1.type;
+}
+
+void MCUSimpleVideoMixer::VMPSwap(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
+{
+  VideoMixPosition vmp(0, 0, 0, 0, 0);
+  VMPCopy(vmp2, vmp);
+  VMPCopy(vmp1, vmp2);
+  VMPCopy(vmp, vmp1);
+}
+
+void MCUSimpleVideoMixer::VMPSwapAndTouch(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
+{
+  VideoMixPosition vmp = vmp2;
+  VMPCopy(vmp1, vmp2);
+  VMPCopy(vmp, vmp1);
+  VMPTouch(vmp1);
   VMPTouch(vmp2);
 }
 
@@ -3315,7 +3344,7 @@ void MCUSimpleVideoMixer::Shuffle()
     unsigned r=rand()%vidnum, a=1;
     if(r&1) a=vidnum-1;
     ConferenceMemberId id;
-    while((unsigned long)(id=GetHonestId(r))>99) r=(r+a)%vidnum;
+    while((unsigned long)(id=GetPositionId(r))>99) r=(r+a)%vidnum;
     VideoMixPosition * vmp = NULL;
     if(id==0)
     {
@@ -3336,7 +3365,7 @@ void MCUSimpleVideoMixer::Shuffle()
         vmp->id = tempMemberList[i];
         vmp->endpointName = tempNameList[i];
         vmp->lastWrite = 0;
-        vmp->status = 0;
+        vmp->silenceCounter = 0;
         vmp->offline = tempOfflineList[i];
       }
     }
@@ -3373,7 +3402,7 @@ void MCUSimpleVideoMixer::Scroll(BOOL reverse)
 }
 
 void MCUSimpleVideoMixer::InsertVideoSource(ConferenceMember * member, int pos)
-{
+{ // rarely used, needs to be fixed for vad-type vmps or redesigned
   if(member==NULL) return;
   ConferenceMemberId id=member->GetID();
 
@@ -3477,17 +3506,25 @@ MCUSimpleVideoMixer::VideoMixPosition * MCUSimpleVideoMixer::VMPCreator(int n, C
   if((unsigned)n >= OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return NULL;
   VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[n];
   VideoMixPosition * newPosition;
-  if(m!=NULL) newPosition=CreateVideoMixPosition(m->GetID(), o.posx, o.posy, o.width, o.height);
-  else newPosition=CreateVideoMixPosition((ConferenceMemberId)((long)n), o.posx, o.posy, o.width, o.height);
+  newPosition=VMPListFindVMP(n);
+  if(newPosition==NULL)
+  {
+    if(m!=NULL) newPosition=CreateVideoMixPosition(m->GetID(), o.posx, o.posy, o.width, o.height);
+    else newPosition=CreateVideoMixPosition((ConferenceMemberId)((long)n), o.posx, o.posy, o.width, o.height);
+    if(newPosition!=NULL) newPosition->n = n;
+  }
   if(newPosition==NULL) return NULL;
-  newPosition->n = n;
   newPosition->type = type;
-  if(m!=NULL) newPosition->rule = m->resizerRule;
+  if(m!=NULL)
+  {
+    newPosition->rule = m->resizerRule;
+    newPosition->endpointName = m->GetName();
+    newPosition->chosenVan = m->chosenVan;
+  }
+  else newPosition->endpointName = "VAD" + PString(type-1) + "/" + PString(n);
 # if USE_FREETYPE
     RemoveSubtitles(*newPosition);
 # endif
-  if(m!=NULL)newPosition->endpointName = m->GetName();
-  else newPosition->endpointName = "VAD" + PString(type-1) + "/" + PString(n);
   newPosition->border=o.border;
   if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
     VMPListInsVMP(newPosition);
@@ -3547,10 +3584,13 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
   {
     specialLayout=newsL;
     newPosition = VMPCreator(vmpNum, &mbr, 1);
-    newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmpNum].border;
-    if(OpenMCU::vmcfg.vmconf[newsL].splitcfg.new_from_begin) VMPListInsVMP(newPosition);
-    else VMPListAddVMP(newPosition);
-    ReallocatePositions();
+    if(newPosition!=NULL)
+    {
+      newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmpNum].border;
+      if(OpenMCU::vmcfg.vmconf[newsL].splitcfg.new_from_begin) VMPListInsVMP(newPosition);
+      else VMPListAddVMP(newPosition);
+      ReallocatePositions();
+    }
   }
   else  // otherwise find an empty position
   {
@@ -3616,14 +3656,34 @@ void MCUSimpleVideoMixer::SetPositionType(int pos, int type)
   if(newPosition!=NULL) VMPTouch(*newPosition);
 }
 
-int MCUSimpleVideoMixer::GetPositionStatus(ConferenceMemberId id)
+BOOL MCUSimpleVideoMixer::VMPExists(ConferenceMemberId id)
 {
   PWaitAndSignal m(mutex);
+  return VMPListFindVMP(id) != NULL;
+}
 
+int MCUSimpleVideoMixer::GetSilenceCounter(ConferenceMemberId id)
+{
+  PWaitAndSignal m(mutex);
   VideoMixPosition *pVMP = VMPListFindVMP(id);
   if(pVMP == NULL) return -1;
+  return pVMP->silenceCounter;
+}
 
-  return pVMP->status;
+void MCUSimpleVideoMixer::ResetSilenceCounter(ConferenceMemberId id)
+{
+  PWaitAndSignal m(mutex);
+  VideoMixPosition *pVMP = VMPListFindVMP(id);
+  if(pVMP == NULL) return;
+  pVMP->silenceCounter = 0;
+}
+
+void MCUSimpleVideoMixer::IncreaseSilenceCounter(ConferenceMemberId id, int milliseconds)
+{
+  PWaitAndSignal m(mutex);
+  VideoMixPosition *pVMP = VMPListFindVMP(id);
+  if(pVMP == NULL) return;
+  pVMP->silenceCounter+=milliseconds;
 }
 
 int MCUSimpleVideoMixer::GetPositionType(ConferenceMemberId id)
@@ -3636,37 +3696,9 @@ int MCUSimpleVideoMixer::GetPositionType(ConferenceMemberId id)
   return pVMP->type;
 }
 
-void MCUSimpleVideoMixer::SetPositionStatus(ConferenceMemberId id,int newStatus)
-{
-  PWaitAndSignal m(mutex);
-
-  VideoMixPosition *pVMP = VMPListFindVMP(id);
-  if(pVMP == NULL) return;
-
-  pVMP->status=newStatus;
-}
-
 ConferenceMemberId MCUSimpleVideoMixer::GetPositionId(int pos)
 {
   PWaitAndSignal m(mutex);
-
-  VideoMixPosition *r = vmpList->next;
-  while(r!=NULL)
-  {
-    VideoMixPosition & vmp = *r;
-    if (vmp.n == pos )
-    {
-      if(vmp.type>1) return (long)(1-vmp.type);
-      else return vmp.id;
-    }
-    r=r->next;
-  }
-
-  return 0;
-}
-
-ConferenceMemberId MCUSimpleVideoMixer::GetHonestId(int pos)
-{ PWaitAndSignal m(mutex);
   VideoMixPosition *r = vmpList->next;
   while(r!=NULL)
   { VideoMixPosition & vmp = *r;
@@ -3676,7 +3708,7 @@ ConferenceMemberId MCUSimpleVideoMixer::GetHonestId(int pos)
   return 0;
 }
 
-ConferenceMemberId MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * member)
+BOOL MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * member)
 {
   VideoMixPosition *VADvmp=NULL;
   PWaitAndSignal m(mutex);
@@ -3687,7 +3719,7 @@ ConferenceMemberId MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * memb
     VideoMixPosition & vmp = *r;
     if((vmp.type!=2)&&(vmp.type!=3)) {r=r->next; continue;}
     if(((long)vmp.id<0)||((long)vmp.id>=100)) {r=r->next; continue;}
-    long currentOrderKey=((long)vmp.type<<16)-(long)vmp.id; //at least 128K-x where x=0..99
+    long currentOrderKey=((long)vmp.type<<16)-(long)vmp.id; //at least 131072-x where x=0..99
     if(currentOrderKey>orderKey)
     {
       orderKey=currentOrderKey;
@@ -3695,93 +3727,97 @@ ConferenceMemberId MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * memb
     }
     r=r->next;
   }
-  if(!(VADvmp&&orderKey)) return (ConferenceMemberId)(void*)-1;
-
-  ConferenceMemberId result = VADvmp->id;
+  if(!(VADvmp&&orderKey)) return FALSE;
 
   VADvmp->id=member->GetID();
-  VADvmp->status=0;
+  VADvmp->silenceCounter=0;
   VADvmp->chosenVan=member->chosenVan;
   VADvmp->endpointName=member->GetName();
 #if USE_FREETYPE
   RemoveSubtitles(*VADvmp);
 #endif
 
-  return result;
+  return TRUE;
 }
 
-ConferenceMemberId MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout)
+BOOL MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout)
 {
-  int maxStatus=0;
-  ConferenceMemberId maxId = -1;
-  VideoMixPosition *VADvmp=NULL;
+  if(member==NULL) return FALSE;
+  int maxSilence = -1;
+  VideoMixPosition *VADvmp = NULL;
  
   PWaitAndSignal m(mutex);
   
   VideoMixPosition *r = vmpList->next;
   while(r != NULL)
   {
-   VideoMixPosition & vmp = *r;
-   if(vmp.type==1) {r=r->next; continue;}
-   if(vmp.chosenVan!=0) { r=r->next; continue; } // don`n consider chosenVan
-   if((long)vmp.id>=0 && (long)vmp.id<100) { maxId=vmp.id; maxStatus=timeout; VADvmp = r; break; }
-   if(vmp.type==2 && vmp.status>maxStatus) { maxId=vmp.id; maxStatus=vmp.status; VADvmp = r; }
-   if(vmp.type==3 && chosenVan==1 && vmp.status>maxStatus) { maxId=vmp.id; maxStatus=vmp.status; VADvmp = r; }
-   r=r->next;
+    VideoMixPosition & vmp = *r;
+    if((vmp.type&~1) != 2) {r=r->next; continue;} //only look for VAD & VAD2
+    if(vmp.chosenVan) { r=r->next; continue; } // skip chosenVan
+
+    if((unsigned long)vmp.id<1000) // free VAD position
+    {
+      int silence = 0x3fffffff-vmp.n;
+      if(vmp.type==2) silence += 0x40000000; // VAD1 better than VAD2
+      if(silence>maxSilence) {maxSilence=silence; VADvmp=r;}
+      r=r->next; continue;
+    }
+    // busy VAD position:
+    if(vmp.type==2 && vmp.silenceCounter > maxSilence) { maxSilence=vmp.silenceCounter; VADvmp=r;  }
+    // busy VAD2 position:
+    if(vmp.type==3 && chosenVan && vmp.silenceCounter>maxSilence) { maxSilence=vmp.silenceCounter; VADvmp = r; }
+    r=r->next;
   }
 
-  if(maxId == -1) return 0;
-
-  if((maxStatus < timeout) && (!chosenVan)) return 0;
-  VADvmp->id=member->GetID(); VADvmp->status=0; VADvmp->chosenVan=chosenVan;
-  VADvmp->endpointName=member->GetName();
-#if USE_FREETYPE
-  RemoveSubtitles(*VADvmp);
-#endif
-  if(!maxId) return 1;
-  return maxId;
+  if(maxSilence == -1) return FALSE;
+  if(VADvmp==NULL) return FALSE;
+  if((maxSilence < timeout) && (!chosenVan)) return FALSE;
+  if(VADvmp->id == member->GetID()) { VADvmp->silenceCounter=0; return TRUE; }
+  
+  VADvmp = VMPCreator(VADvmp->n, member, VADvmp->type);
+  if(VADvmp==NULL) return FALSE;
+  VADvmp->silenceCounter=0;
+  VMPTouch(*VADvmp);
+  return TRUE;
 }
 
 BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
 {
+  if(member==NULL) return FALSE;
   ConferenceMemberId id=member->GetID();
-  int maxStatus=0;
-  VideoMixPosition *VAD2vmp=NULL;
+  int maxStatus=-1;
+  VideoMixPosition * target = NULL;
  
   PWaitAndSignal m(mutex);
 
-  if(GetPositionType(id)!=2) return FALSE;
+  if(GetPositionType(id)!=2) return FALSE; // must be VAD1 to be switched to VAD2
 
   VideoMixPosition *r = vmpList->next;
-  ConferenceMemberId maxId=r->id;
-  while(r != NULL)
+  while(r!=NULL)
   {
     VideoMixPosition & vmp = *r;
-    if(vmp.type==3 && (long)vmp.id>=0 && (long)vmp.id<100) { maxId=vmp.id; maxStatus=6000; VAD2vmp = r; break; }
-    if(vmp.type==3 && vmp.status>maxStatus) { maxId=vmp.id; maxStatus=vmp.status; VAD2vmp = r; }
-    r = r->next;
+    if(vmp.type==3) //only look for VAD2-type positions
+    {
+      int silenceCounter;
+      if((unsigned long)vmp.id < 1000) silenceCounter=0x7fffffff-vmp.n;
+      else silenceCounter=vmp.silenceCounter;
+      if(silenceCounter > maxStatus) { maxStatus=silenceCounter; target = r; }
+    }
+    r=r->next;
   }
 
+  if(target==NULL) return FALSE;
   if(maxStatus < 3000) return FALSE;
-  if(id==maxId) { cout << "Bad VAD2 switch\n"; VAD2vmp->status=0; return FALSE; }
+
+  VideoMixPosition & VAD2vmp = *target;
+  if(VAD2vmp.id == id) { VAD2vmp.silenceCounter = 0; return TRUE; }
+
   VideoMixPosition *oldVMP = VMPListFindVMP(id);
   if(oldVMP==NULL) return FALSE;
-  int pos = GetPositionNum(id);
-  int cv = VAD2vmp->chosenVan;
-  PString tn  = VAD2vmp->endpointName;
-  VAD2vmp->id=id; VAD2vmp->status=0; VAD2vmp->chosenVan=oldVMP->chosenVan;
-  VAD2vmp->endpointName=member->GetName();
-#if USE_FREETYPE
-  RemoveSubtitles(*VAD2vmp);
-#endif
-  if((long)maxId>=0 && (long)maxId<100) maxId=(ConferenceMemberId)(long)pos;
-  oldVMP->id=maxId; oldVMP->status=0; oldVMP->chosenVan=cv;
-  oldVMP->endpointName=tn;
-#if USE_FREETYPE
-  RemoveSubtitles(*oldVMP);
-#endif
-  if((long)maxId>=0 && (long)maxId<100) NullRectangle(oldVMP->xpos,oldVMP->ypos,oldVMP->width,oldVMP->height,oldVMP->border);
- 
+
+  oldVMP->silenceCounter = 0; VAD2vmp.silenceCounter = 0;
+  VMPSwapAndTouch(*oldVMP, VAD2vmp);
+
   return TRUE;
 }
 
@@ -3879,7 +3915,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
         if(id && (!disableVAD))
         {
           v->id=id;
-          v->status=0;
+          v->silenceCounter=0;
           v->chosenVan=member->chosenVan;
           v->endpointName=member->GetName();
         }
@@ -3939,75 +3975,19 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
   VideoMixPosition * v1 = VMPListFindVMP(pos1);
   VideoMixPosition * v2 = VMPListFindVMP(pos2);
   if((v1==NULL)&&(v2==NULL)) return;
-
   if(v2==NULL) {pos1=pos2; v2=v1; v1=NULL;} // lazy to type the following twice
 
   if(v1==NULL)
   {
-    BOOL isVAD = (v2->type == 2) || (v2->type == 3);
-    BOOL isVADtoNULL = (unsigned long)v2->id<100;
-    VideoMixPosition * newPosition = NULL;
-    if(isVAD&&(!isVADtoNULL)) // VAD or VAD2
-    {
-      newPosition               = CreateVideoMixPosition((long)v2->n, v2->xpos, v2->ypos, v2->width, v2->height);
-      newPosition->type         = 2 /* v2->type */ ; //force VAD1
-      newPosition->n            = v2->n;
-      newPosition->endpointName = "Voice-activated " + PString(newPosition->type-1); //just VAD with no any member
-      newPosition->border       = v2->border;
-    }
+    WriteEmptyFrame(*v2);
     VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[pos1];
-    NullRectangle(v2->xpos, v2->ypos, v2->width, v2->height, v2->border);
-    v2->xpos=o.posx;
-    v2->ypos=o.posy;
-    v2->width=o.width;
-    v2->height=o.height;
-    v2->border=o.border;
-    v2->n=pos1;
-    if((unsigned long)v2->id < 100) v2->id=(ConferenceMemberId)pos1; //this fixes empty VAD Id
-#if USE_FREETYPE
-    RemoveSubtitles(*v2);
-#endif
-    if(isVAD&&(!isVADtoNULL))
-    {
-#     if USE_FREETYPE
-        RemoveSubtitles(*newPosition);
-#     endif
-      if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
-        VMPListInsVMP(newPosition);
-      else VMPListAddVMP(newPosition);
-    }
+    VMPChangeNumber(*v2, pos1);
+    VMPChangeBorder(*v2, o.border);
+    VMPMoveAndTouch(*v2, o.posx, o.posy, o.width, o.height);
     return;
   }
 
-  ConferenceMemberId id0=v1->id;
-  PString tn0=v1->endpointName;
-//  int t=v1->type, st=v1->status;
-
-  v1->id           = v2->id;
-//  v1->type         = v2->type;
-//  v1->status       = v2->status;
-  v1->endpointName = v2->endpointName;
-#if USE_FREETYPE
-  RemoveSubtitles(*v1);
-#endif
-  if((unsigned long)v1->id < 100)
-  {
-    if(v1->type==1) MyRemoveVideoSource(v1->n, TRUE); //static
-    else NullRectangle(v1->xpos, v1->ypos, v1->width, v1->height, v1->border);
-  }
-
-  v2->id=id0;
-//  v2->type         = t;
-//  v2->status       = st;
-  v2->endpointName=tn0;
-#if USE_FREETYPE
-  RemoveSubtitles(*v2);
-#endif
-  if((unsigned long)id0 < 100)
-  {
-    if(v2->type==1) MyRemoveVideoSource(v2->n, TRUE); //static
-    else NullRectangle(v2->xpos, v2->ypos, v2->width, v2->height, v2->border);
-  }
+  VMPSwapAndTouch(*v1, *v2);
 }
 
 void MCUSimpleVideoMixer::VMPDelete(VideoMixPosition & vmp)
@@ -4021,7 +4001,7 @@ void MCUSimpleVideoMixer::VMPDelete(VideoMixPosition & vmp)
   }
   else
   {
-    vmp.status = 0;
+    vmp.silenceCounter = 0;
     vmp.id = (long)vmp.n;
   }
 }
