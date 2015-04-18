@@ -93,14 +93,12 @@ class VideoFrameStoreList {
     class FrameStore {
       public:
         FrameStore(int _w, int _h)
-          : valid(FALSE), width(_w), height(_h)
-        { valid = FALSE; PAssert(_w != 0 && _h != 0, "Cannot create zero size framestore"); data.SetSize(_w * _h * 3 / 2); }
+          : width(_w), height(_h)
+        { PAssert(_w != 0 && _h != 0, "Cannot create zero size framestore"); }
 
-      BOOL valid;
       int width;
       int height;
       time_t lastRead;
-      PBYTEArray data;
     };
 
     inline unsigned WidthHeightToKey(int width, int height)
@@ -112,8 +110,6 @@ class VideoFrameStoreList {
     ~VideoFrameStoreList();
     FrameStore & AddFrameStore(int width, int height);
     FrameStore & GetFrameStore(int width, int height);
-    FrameStore & GetNearestFrameStore(int width, int height, BOOL & found);
-    void InvalidateExcept(int w, int h);
 
     typedef std::map<unsigned, FrameStore *> VideoFrameStoreListMapType;
     VideoFrameStoreListMapType videoFrameStoreList;
@@ -425,13 +421,9 @@ class MCUVideoMixer
     virtual MCUVideoMixer * Clone() const = 0;
     virtual BOOL ReadFrame(ConferenceMember & mbr, void * buffer, int width, int height, PINDEX & amount) = 0;
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height) = 0;
-
     virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, int options) = 0;
+
     virtual PString GetFrameStoreMonitorList() = 0;
-//    virtual void WriteCIFSubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
-//    virtual void WriteCIF4SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
-//    virtual void WriteCIF16SubFrame(VideoMixPosition & vmp, const void * buffer, PINDEX amount) = 0;
-    virtual void NullRectangle(int x, int y, int w, int h, BOOL border) = 0;
     virtual void NullAllFrameStores() = 0;
 
     virtual void Shuffle() = 0;
@@ -530,11 +522,12 @@ class MCUVideoMixer
     PINDEX jpegSize;
     unsigned long jpegTime;
 
-    static void VideoSplitLines(void * dst, unsigned fw, unsigned fh);
+    static void VideoSplitLines(BYTE *dst, unsigned fw, unsigned fh);
     static void LeftSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
     static void RightSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
     static void TopSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
     static void BottomSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
+
     virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
 
   protected:
@@ -572,7 +565,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 #endif
     virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, int options);
 
-    virtual void NullRectangle(int x, int y, int w, int h, BOOL border);
     virtual void NullAllFrameStores();
 
     virtual void Shuffle();

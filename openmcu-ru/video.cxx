@@ -302,38 +302,6 @@ VideoFrameStoreList::FrameStore & VideoFrameStoreList::GetFrameStore(int width, 
   return *vf;
 }
 
-void VideoFrameStoreList::InvalidateExcept(int w, int h)
-{
-  VideoFrameStoreListMapType::iterator r;
-  for (r = videoFrameStoreList.begin(); r != videoFrameStoreList.end(); ++r) {
-    unsigned int key = r->first;
-    int kw, kh; KeyToWidthHeight(key, kw, kh);
-    r->second->valid = (w == kw) && (h == kh);
-  }
-}
-
-VideoFrameStoreList::FrameStore & VideoFrameStoreList::GetNearestFrameStore(int width, int height, BOOL & found)
-{
-  // see if exact match, and valid
-  VideoFrameStoreListMapType::iterator r = videoFrameStoreList.find(WidthHeightToKey(width, height));
-  if ((r != videoFrameStoreList.end()) && r->second->valid) {
-    found = TRUE;
-    return *(r->second);
-  }
-
-  // return the first valid framestore
-  for (r = videoFrameStoreList.begin(); r != videoFrameStoreList.end(); ++r) {
-    if (r->second->valid) {
-      found = TRUE;
-      return *(r->second);
-    }
-  }
-
-  // return not found
-  found = FALSE;
-  return *(videoFrameStoreList.end()->second);
-}
-
 ///////////////////////////////////////////////////////////////////////////////////////
 
 void MCUVideoMixer::Unlock()
@@ -3043,9 +3011,8 @@ void MCUVideoMixer::ConvertQCIFToCIF4(const void * _src, void * _dst)
 }
 //#endif // #if !USE_LIBYUV && !USE_SWSCALE
 
-void MCUVideoMixer::VideoSplitLines(void * dst, unsigned fw, unsigned fh){
+void MCUVideoMixer::VideoSplitLines(BYTE *d, unsigned fw, unsigned fh){
  unsigned int i;
- BYTE * d = (BYTE *)dst;
  for(i=1;i<fh-1;i++){
   if(d[i*fw]>127)d[i*fw]=255;else if(d[i*fw]<63)d[i*fw]=64; else d[i*fw]<<=1;
   d[i*fw+fw-1]>>=1;
@@ -4084,15 +4051,13 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
 
       if((v->type==1) && (!id)) // special case: VMP needs to be removed
       {
-        NullRectangle(v->xpos, v->ypos, v->width, v->height, v->border);
-        { VMPListDelVMP(v); delete v; }
+        VMPListDelVMP(v); delete v;
         return;
       }
 
       if((v->type==2)||(v->type==3))
       {
         if(v->chosenVan) return;
-        NullRectangle(v->xpos, v->ypos, v->width, v->height, v->border);
         BOOL disableVAD=FALSE;
         if(id)disableVAD=member->disableVAD;
         if(id && (!disableVAD))
@@ -4240,53 +4205,6 @@ void MCUSimpleVideoMixer::NullAllFrameStores()
       frameStores.videoFrameStoreList.erase(r->first);
       continue;
     }
-    if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
-    unsigned w,h; void * background=OpenMCU::Current().GetBackgroundPointer(w,h);
-    if(background)
-      ResizeYUV420P((const BYTE *)background, vf.data.GetPointer(), w, h, vf.width, vf.height);
-    else
-      FillYUVFrame(vf.data.GetPointer(), 0, 0, 0, vf.width, vf.height);
-
-    vf.valid=1;
-  }
-
-  for (unsigned i=0; i<OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum; i++) //slow, fix it
-  if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].border)
-  {
-    VMPCfgOptions & vmpcfg=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i];
-    NullRectangle(vmpcfg.posx, vmpcfg.posy, vmpcfg.width, vmpcfg.height, vmpcfg.border);
-  }
-}
-
-void MCUSimpleVideoMixer::NullRectangle(int x, int y, int w, int h, BOOL border)
-{ PWaitAndSignal m(mutex);
-  time_t removalDeadline = time(NULL) - FRAMESTORE_TIMEOUT;
-  VideoFrameStoreList::VideoFrameStoreListMapType theCopy(frameStores.videoFrameStoreList);
-  for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
-  { VideoFrameStoreList::FrameStore & vf = *(r->second);
-    if(vf.lastRead<removalDeadline)
-    {
-#if USE_FREETYPE
-      DeleteSubtitlesByFS(vf.width,vf.height);
-#endif
-      delete r->second; r->second=NULL;
-      frameStores.videoFrameStoreList.erase(r->first);
-      continue;
-    }
-    if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
-    int pw=w*vf.width/CIF4_WIDTH; // pixel w&h of vmp-->fs
-    int ph=h*vf.height/CIF4_HEIGHT;
-    if(pw<2 || ph<2) continue; //PINDEX amount=pw*ph*3/2;
-    CheckOperationalSize(pw,ph,_IMGST);
-    const void *ist = imageStore.GetPointer();
-    unsigned w0,h0; void * p0=OpenMCU::Current().GetEmptyFramePointer(w0,h0);
-    if(p0!=NULL) ResizeYUV420P(p0,imageStore.GetPointer(), w0, h0, pw, ph);
-    else FillYUVFrame(imageStore.GetPointer(), 0, 0, 0, pw, ph);
-    if (border) VideoSplitLines(imageStore.GetPointer(), pw, ph);
-    int px=x*vf.width/CIF4_WIDTH; // pixel x&y of vmp-->fs
-    int py=y*vf.height/CIF4_HEIGHT;
-    CopyRectIntoFrame(ist,vf.data.GetPointer(),px,py,pw,ph,vf.width,vf.height);
-    vf.valid=1;
   }
 }
 
