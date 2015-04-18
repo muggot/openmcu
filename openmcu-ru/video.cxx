@@ -3439,7 +3439,8 @@ void MCUSimpleVideoMixer::VMPSwap(VideoMixPosition & vmp1, VideoMixPosition & vm
 
 void MCUSimpleVideoMixer::VMPSwapAndTouch(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
 {
-  VideoMixPosition vmp = vmp2;
+  VideoMixPosition vmp(0);
+  VMPCopy(vmp2, vmp);
   VMPCopy(vmp1, vmp2);
   VMPCopy(vmp, vmp1);
   VMPTouch(vmp1);
