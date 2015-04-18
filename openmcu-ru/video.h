@@ -531,6 +531,10 @@ class MCUVideoMixer
     unsigned long jpegTime;
 
     static void VideoSplitLines(void * dst, unsigned fw, unsigned fh);
+    static void LeftSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
+    static void RightSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
+    static void TopSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
+    static void BottomSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
     virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
 
   protected:
@@ -623,7 +627,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 
   protected:
     virtual void ReallocatePositions();
-    BOOL ReadSrcFrame(VideoFrameStoreList & srcFrameStores, void * buffer, int width, int height, PINDEX & amount);
+    BOOL ReadMixedFrame(VideoFrameStoreList & srcFrameStores, void * buffer, int width, int height, PINDEX & amount);
 
     VideoFrameStoreList frameStores;  // list of framestores for data
 
