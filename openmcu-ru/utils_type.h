@@ -17,6 +17,7 @@ class MCUSipConnnection;
 class SipRTP_UDP;
 
 class MCUSimpleVideoMixer;
+class VideoMixPosition;
 
 class ConferenceAudioConnection;
 class ConferenceProfile;

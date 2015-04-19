@@ -823,8 +823,9 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
   {
     if(moderated == FALSE
 #if ENABLE_TEST_ROOMS
-       || number == "testroom")
+       || number == "testroom"
 #endif
+      )
     {
       MCUSimpleVideoMixer * mixer = manager.GetVideoMixerWithLock(this);
       mixer->AddVideoSource(memberToAdd->GetID(), *memberToAdd);
@@ -1240,7 +1241,7 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
       mixer->Unlock();
       return;
     }
-    mixer->InsertVideoSource(&member,posTo);
+    //mixer->InsertVideoSource(&member,posTo); // ???
     mixer->Unlock();
 
     FreezeVideo(0);

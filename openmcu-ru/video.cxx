@@ -5,9 +5,6 @@
 
 #include "mcu.h"
 
-#define MAX_SUBFRAMES        100
-#define FRAMESTORE_TIMEOUT 60 /* s */
-
 #if USE_FREETYPE
 FT_Library ft_library;
 FT_Face ft_face;
@@ -275,31 +272,21 @@ BOOL MCUPVideoOutputDevice::EndFrame()
 
 VideoFrameStoreList::~VideoFrameStoreList()
 {
-  while (videoFrameStoreList.begin() != videoFrameStoreList.end()) {
-    FrameStore * vf = videoFrameStoreList.begin()->second;
-    delete vf;
-    videoFrameStoreList.erase(videoFrameStoreList.begin());
+  for(shared_iterator it = frameStoreList.begin(); it != frameStoreList.end(); ++it)
+  {
+    FrameStore *vf = *it;
+    if(frameStoreList.Erase(it))
+      delete vf;
   }
 }
 
-VideoFrameStoreList::FrameStore & VideoFrameStoreList::AddFrameStore(int width, int height)
-{ 
-  VideoFrameStoreListMapType::iterator r = videoFrameStoreList.find(WidthHeightToKey(width, height));
-  if (r != videoFrameStoreList.end())
-    return *(r->second);
-  FrameStore * vf = new FrameStore(width, height);
-  videoFrameStoreList.insert(VideoFrameStoreListMapType::value_type(WidthHeightToKey(width, height), vf)); 
-  return *vf;
-}
-
-VideoFrameStoreList::FrameStore & VideoFrameStoreList::GetFrameStore(int width, int height) 
+VideoFrameStoreList::shared_iterator VideoFrameStoreList::GetFrameStore(int width, int height) 
 {
-  VideoFrameStoreListMapType::iterator r = videoFrameStoreList.find(WidthHeightToKey(width, height));
-  if (r != videoFrameStoreList.end())
-    return *(r->second);
+  shared_iterator it = frameStoreList.Find(WidthHeightToKey(width, height));
+  if(it != frameStoreList.end())
+    return it;
   FrameStore * vf = new FrameStore(width, height);
-  videoFrameStoreList.insert(VideoFrameStoreListMapType::value_type(WidthHeightToKey(width, height), vf)); 
-  return *vf;
+  return frameStoreList.Insert(vf, WidthHeightToKey(width, height));
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -317,14 +304,12 @@ void MCUVideoMixer::Unlock()
 static inline int ABS(int v)
 {  return (v >= 0) ? v : -v; }
 
-MCUVideoMixer::VideoMixPosition::VideoMixPosition(ConferenceMemberId _id,  int _x, int _y, int _w, int _h)
+VideoMixPosition::VideoMixPosition(ConferenceMemberId _id,  int _x, int _y, int _w, int _h)
   : id(_id), xpos(_x), ypos(_y), width(_w), height(_h)
 { 
   silenceCounter = 0;
   type = 0;
   chosenVan = 0;
-  prev = NULL;
-  next = NULL;
   border = TRUE;
   rule = 1;
   offline = FALSE; //dont show offline banner for 1st time
@@ -332,15 +317,15 @@ MCUVideoMixer::VideoMixPosition::VideoMixPosition(ConferenceMemberId _id,  int _
   vmpbuf_index = -1;
 }
 
-MCUVideoMixer::VideoMixPosition::~VideoMixPosition()
+VideoMixPosition::~VideoMixPosition()
 {
 #if USE_FREETYPE
-  for(MCUSubtitlesMapType::iterator q=subtitlesList.begin(), e=subtitlesList.end(); q!=e; ++q)
+  for(MCUSubtitlesList::shared_iterator it = subtitlesList.begin(); it != subtitlesList.end(); ++it)
   {
-    if(q->second->b)free(q->second->b);
-    delete q->second;
+    MCUSubtitles *sub = *it;
+    if(subtitlesList.Erase(it))
+      delete sub;
   }
-  subtitlesList.clear();
 #endif
 }
 
@@ -359,31 +344,29 @@ unsigned MCUSimpleVideoMixer::printsubs_calc(unsigned v, char s[10])
 
 void MCUSimpleVideoMixer::RemoveSubtitles(VideoMixPosition & vmp)
 {
-  for(MCUSubtitlesMapType::iterator q=vmp.subtitlesList.begin(), e=vmp.subtitlesList.end(); q!=e; ++q)
+  for(VideoMixPosition::MCUSubtitlesList::shared_iterator it = vmp.subtitlesList.begin(); it != vmp.subtitlesList.end(); ++it)
   {
-    if(q->second->b)free(q->second->b);
-    delete q->second;
+    MCUSubtitles *sub = *it;
+    if(vmp.subtitlesList.Erase(it))
+      delete sub;
   }
-  vmp.subtitlesList.clear();
 }
 
 void MCUSimpleVideoMixer::DeleteSubtitlesByFS(unsigned w, unsigned h)
 {
-  VideoMixPosition *r = vmpList->next;
-  while(r != NULL)
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
-    VideoMixPosition & vmp = *r;
-    unsigned pw=vmp.width*w/CIF4_WIDTH;
-    unsigned ph=vmp.height*h/CIF4_HEIGHT;
+    VideoMixPosition *vmp = *it;
+    unsigned pw=vmp->width*w/CIF4_WIDTH;
+    unsigned ph=vmp->height*h/CIF4_HEIGHT;
     unsigned key=(ph<<16) | pw;
-    MCUSubtitlesMapType::iterator q = vmp.subtitlesList.find(key);
-    if(q != vmp.subtitlesList.end())
+    VideoMixPosition::MCUSubtitlesList::shared_iterator q = vmp->subtitlesList.Find(key);
+    if(q != vmp->subtitlesList.end())
     {
-      if(q->second->b)free(q->second->b);
-      delete q->second;
-      vmp.subtitlesList.erase(key);
+      MCUSubtitles *sub = *q;
+      if(vmp->subtitlesList.Erase(q))
+        delete sub;
     }
-    r = r->next;
   }
 }
 
@@ -392,16 +375,16 @@ void MCUSimpleVideoMixer::PrintSubtitles(VideoMixPosition & vmp, void * buffer, 
   MCUSubtitles * st;
 
   unsigned key=(fh << 16) | fw;
-  MCUSubtitlesMapType::iterator q = vmp.subtitlesList.find(key);
+  VideoMixPosition::MCUSubtitlesList::shared_iterator q = vmp.subtitlesList.Find(key);
 
   if(q == vmp.subtitlesList.end())
   {
     st = RenderSubtitles(key, vmp, buffer, fw, fh, ft_properties);
-    if(st!=NULL)vmp.subtitlesList.insert(MCUSubtitlesMapType::value_type(key, st)); 
+    if(st!=NULL) q = vmp.subtitlesList.Insert(st, key);
   }
   else
   {
-    st = q->second;
+    st = *q;
   }
 
   if(st == NULL) return;
@@ -3085,7 +3068,6 @@ MCUSimpleVideoMixer::MCUSimpleVideoMixer(BOOL _forceScreenSplit)
   PTRACE(1,"MixerCtrl\tNew MCUSimpleVideoMixer created");
   forceScreenSplit = _forceScreenSplit;
   VMPListInit();
-//  frameStores.AddFrameStore(CIF4_WIDTH, CIF4_HEIGHT);
   imageStore_size=0;
   imageStore1_size=0;
   imageStore2_size=0;
@@ -3106,9 +3088,8 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(void * buffer, int width, int height, P
 
 BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, void * buffer, int width, int height, PINDEX & amount)
 {
-  PWaitAndSignal m(mutex);
-
-  VideoFrameStoreList::FrameStore & fs = srcFrameStores.GetFrameStore(width, height);
+  VideoFrameStoreList::shared_iterator fsit = srcFrameStores.GetFrameStore(width, height);
+  VideoFrameStoreList::FrameStore & fs = **fsit;
 
   // background
   unsigned bgw, bgh;
@@ -3117,7 +3098,7 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
     ResizeYUV420P(bg, buffer, bgw, bgh, width, height);
   else
   {
-    if(!forceScreenSplit && vmpNum == 0 && !OpenMCU::Current().GetPreMediaFrame(buffer, width, height, amount))
+    if(!forceScreenSplit && vmpList.GetSize() == 0 && !OpenMCU::Current().GetPreMediaFrame(buffer, width, height, amount))
       MCUVideoMixer::FillYUVFrame(buffer, 0, 0, 0, width, height);
     else
       MCUVideoMixer::FillYUVFrame(buffer, 0, 0, 0, width, height);
@@ -3132,9 +3113,10 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
     int ph = vmpcfg.height*height/CIF4_HEIGHT;
     if(pw<2 || ph<2) continue;
 
-    VideoMixPosition *vmp = VMPListFindVMP((int)i);
-    if(vmp)
+    MCUVMPList::shared_iterator it = FindVMP((int)i);
+    if(it != vmpList.end())
     {
+      VideoMixPosition *vmp = *it;
       MCUSharedList<MCUBufferArray>::shared_iterator it = vmp->bufferList.Find((long)&fs);
       if(it == vmp->bufferList.end())
       {
@@ -3181,14 +3163,12 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
 
 BOOL MCUSimpleVideoMixer::WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height)
 {
-  PWaitAndSignal m(mutex);
-
-  // write data into sub frame of mixed image
-  VideoMixPosition *pVMP = VMPListFindVMP(id);
-  if(pVMP==NULL) return FALSE;
-  pVMP->offline=FALSE;
-
-  return WriteSubFrame(*pVMP, buffer, width, height, WSF_VMP_COMMON);
+  MCUVMPList::shared_iterator it = FindVMP(id);
+  if(it == vmpList.end())
+    return FALSE;
+  VideoMixPosition *vmp = *it;
+  vmp->offline = FALSE;
+  return WriteSubFrame(*vmp, buffer, width, height, WSF_VMP_COMMON);
 }
 
 BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, int options)
@@ -3196,7 +3176,7 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
   VMPCfgOptions & vmpcfg=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
   time_t now = time(NULL);
   time_t removalDeadline = now - FRAMESTORE_TIMEOUT;
-  PWaitAndSignal m(mutex);
+
   if(options & WSF_VMP_SET_TIME)
     vmp.lastWrite=now;
   unsigned rule;
@@ -3206,17 +3186,16 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
   if(vmpbuf_index == 3)
     vmpbuf_index = 0;
 
-  for(VideoFrameStoreList::VideoFrameStoreListMapType::iterator r = frameStores.videoFrameStoreList.begin(); r != frameStores.videoFrameStoreList.end(); ++r)
+  for(VideoFrameStoreList::shared_iterator it = frameStores.frameStoreList.begin(); it != frameStores.frameStoreList.end(); ++it)
   {
-    VideoFrameStoreList::FrameStore & vf = *(r->second);
+    VideoFrameStoreList::FrameStore & vf = **it;
     if(vf.lastRead<removalDeadline)
     {
 #if USE_FREETYPE
       DeleteSubtitlesByFS(vf.width,vf.height);
 #endif
-      delete r->second;
-      r->second=NULL;
-      frameStores.videoFrameStoreList.erase(r->first);
+      if(frameStores.frameStoreList.Erase(it))
+        delete &vf;
       continue;
     }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
@@ -3306,24 +3285,35 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 
 BOOL MCUSimpleVideoMixer::SetOffline(ConferenceMemberId id)
 {
-  PWaitAndSignal m(mutex);
+  MCUVMPList::shared_iterator it = FindVMP(id);
+  if(it == vmpList.end())
+    return FALSE;
+  VideoMixPosition *vmp = *it;
 
-  // write data into sub frame of mixed image
-  VideoMixPosition *pVMP = VMPListFindVMP(id);
-  if(pVMP==NULL) return FALSE;
-  VMPSetOffline(*pVMP);
+  PWaitAndSignal m(vmpListMutex);
+  if(vmpList.Erase(it))
+  {
+    vmp->offline = TRUE;
+    WriteOfflineFrame(*vmp);
+    InsertVMP(vmp);
+  }
   return TRUE;
 }
 
 BOOL MCUSimpleVideoMixer::SetOnline(ConferenceMemberId id)
 {
-  PWaitAndSignal m(mutex);
+  MCUVMPList::shared_iterator it = FindVMP(id);
+  if(it == vmpList.end())
+    return FALSE;
+  VideoMixPosition *vmp = *it;
 
-  // write data into sub frame of mixed image
-  VideoMixPosition *pVMP = VMPListFindVMP(id);
-  if(pVMP==NULL) return FALSE;
-  pVMP->offline = FALSE;
-  WriteNoVideoFrame(*pVMP);
+  PWaitAndSignal m(vmpListMutex);
+  if(vmpList.Erase(it))
+  {
+    vmp->offline = FALSE;
+    WriteNoVideoFrame(*vmp);
+    InsertVMP(vmp);
+  }
   return TRUE;
 }
 
@@ -3361,56 +3351,15 @@ void MCUSimpleVideoMixer::VMPTouch(VideoMixPosition & vmp)
   else if((time(NULL)-vmp.lastWrite) > 1) WriteNoVideoFrame(vmp);
 }
 
-void MCUSimpleVideoMixer::VMPMove(VideoMixPosition & vmp, int x, int y, int w, int h)
+void MCUSimpleVideoMixer::VMPSetConfig(VideoMixPosition *vmp)
 {
-# if USE_FREETYPE
-  RemoveSubtitles(vmp);
-# endif
-  vmp.xpos=x; vmp.ypos=y; vmp.width=w; vmp.height=h;
-}
-
-void MCUSimpleVideoMixer::VMPMoveAndTouch(VideoMixPosition & vmp, int x, int y, int w, int h)
-{
-# if USE_FREETYPE
-  RemoveSubtitles(vmp);
-# endif
-  vmp.xpos=x; vmp.ypos=y; vmp.width=w; vmp.height=h;
-  VMPTouch(vmp);
-}
-
-void MCUSimpleVideoMixer::VMPTouchAll()
-{
-  PWaitAndSignal m(mutex);
-  VideoMixPosition * v = vmpList->next;
-  while(v!=NULL)
-  {
-    VMPTouch(*v);
-    v=v->next;
-  }
-}
-
-void MCUSimpleVideoMixer::VMPSetOffline(VideoMixPosition & vmp)
-{
-  vmp.offline = TRUE;
-  WriteOfflineFrame(vmp);
-}
-
-void MCUSimpleVideoMixer::VMPChangeNumber(VideoMixPosition & vmp, unsigned n)
-{
-  vmp.n = n;
-}
-
-void MCUSimpleVideoMixer::VMPMove(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
-{
-  VMPCopy(vmp1, vmp2);
-  VMPDelete(vmp1);
-}
-
-void MCUSimpleVideoMixer::VMPMoveAndTouch(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
-{
-  VMPCopy(vmp1, vmp2);
-  VMPDelete(vmp1);
-  VMPTouch(vmp2);
+  VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp->n];
+  vmp->border = o.border;
+  vmp->xpos = o.posx;
+  vmp->ypos = o.posy;
+  vmp->width = o.width;
+  vmp->height = o.height;
+  VMPTouch(*vmp);
 }
 
 void MCUSimpleVideoMixer::VMPCopy(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
@@ -3429,14 +3378,6 @@ void MCUSimpleVideoMixer::VMPCopy(VideoMixPosition & vmp1, VideoMixPosition & vm
   if((vmp2.type<1)||(vmp2.type>3)) vmp2.type = vmp1.type;
 }
 
-void MCUSimpleVideoMixer::VMPSwap(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
-{
-  VideoMixPosition vmp(0, 0, 0, 0, 0);
-  VMPCopy(vmp2, vmp);
-  VMPCopy(vmp1, vmp2);
-  VMPCopy(vmp, vmp1);
-}
-
 void MCUSimpleVideoMixer::VMPSwapAndTouch(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
 {
   VideoMixPosition vmp(0);
@@ -3447,48 +3388,40 @@ void MCUSimpleVideoMixer::VMPSwapAndTouch(VideoMixPosition & vmp1, VideoMixPosit
   VMPTouch(vmp2);
 }
 
-void MCUSimpleVideoMixer::VMPChangeBorder(VideoMixPosition & vmp, unsigned newBorder)
-{
-  vmp.border = newBorder;
-}
-
 void MCUSimpleVideoMixer::ReallocatePositions()
 {
-  PWaitAndSignal m(mutex);
-  NullAllFrameStores();
-  unsigned i = 0;
-  VideoMixPosition *r = vmpList->next;
-  while(r != NULL)
+  PWaitAndSignal m(vmpListMutex);
+  int i = 0;
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it, ++i)
   {
-    VideoMixPosition & vmp = *r;
-    VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i];
-    VMPChangeBorder(vmp, o.border);
-    VMPChangeNumber(vmp, i);
-    VMPMoveAndTouch(vmp, o.posx, o.posy, o.width, o.height);
-    ++i;
-    r = r->next;
+    VideoMixPosition *vmp = *it;
+    if(vmpList.Erase(it))
+    {
+      vmp->n = i;
+      VMPSetConfig(vmp);
+      InsertVMP(vmp);
+    }
   }
 }
 
 void MCUSimpleVideoMixer::Shuffle()
 {
-  PWaitAndSignal m(mutex);
-  VideoMixPosition * v = vmpList->next;
-  if(v==NULL) return;
-
+  if(vmpList.GetSize() == 0) return;
   unsigned & vidnum = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
   ConferenceMemberId * tempMemberList = new ConferenceMemberId [vidnum];
   PString * tempNameList = new PString [vidnum];
   BOOL * tempOfflineList = new BOOL [vidnum];
   unsigned memberCount=0;
-  while(v!=NULL)
+
+  PWaitAndSignal m(vmpListMutex);
+
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
-    VideoMixPosition *v0 = v;
-    v=v->next;
-    tempNameList[memberCount]=v0->endpointName;
-    tempOfflineList[memberCount]=v0->offline;
-    tempMemberList[memberCount++]=v0->id;
-    VMPDelete(*v0);
+    VideoMixPosition *v = *it;
+    tempNameList[memberCount]=v->endpointName;
+    tempOfflineList[memberCount]=v->offline;
+    tempMemberList[memberCount++]=v->id;
+    VMPDelete(it);
   }
   for(unsigned i=0;i<memberCount;i++)
   {
@@ -3496,12 +3429,12 @@ void MCUSimpleVideoMixer::Shuffle()
     if(r&1) a=vidnum-1;
     ConferenceMemberId id;
     while((unsigned long)(id=GetPositionId(r))>99) r=(r+a)%vidnum;
-    VideoMixPosition * vmp = NULL;
     if(id==0)
     {
-      vmp = VMPCreator(r, NULL, 2);
-      if(vmp!=NULL)
+      MCUVMPList::shared_iterator it = VMPCreator(NULL, r, 2);
+      if(it != vmpList.end())
       {
+        VideoMixPosition *vmp = *it;
         vmp->id = tempMemberList[i];
         vmp->endpointName = tempNameList[i];
         vmp->offline = tempOfflineList[i];
@@ -3510,20 +3443,21 @@ void MCUSimpleVideoMixer::Shuffle()
     }
     else
     {
-      vmp=VMPListFindVMP(id);
-      if(vmp!=NULL)
+      MCUVMPList::shared_iterator it = FindVMP(id);
+      if(it != vmpList.end())
       {
+        VideoMixPosition *vmp = *it;
         vmp->id = tempMemberList[i];
         vmp->endpointName = tempNameList[i];
         vmp->lastWrite = 0;
         vmp->silenceCounter = 0;
         vmp->offline = tempOfflineList[i];
+#   if USE_FREETYPE
+        RemoveSubtitles(*vmp);
+#   endif
+        VMPTouch(*vmp);
       }
     }
-#   if USE_FREETYPE
-      if(vmp!=NULL) RemoveSubtitles(*vmp);
-#   endif
-    if(vmp!=NULL)VMPTouch(*vmp);
   }
   delete[]tempNameList;
   delete[]tempMemberList;
@@ -3532,244 +3466,151 @@ void MCUSimpleVideoMixer::Shuffle()
 
 void MCUSimpleVideoMixer::Scroll(BOOL reverse)
 {
-  PWaitAndSignal m(mutex);
-  if(vmpList->next==NULL) return;
+  if(vmpList.GetSize() == 0) return;
   unsigned & vidnum=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
   if(vidnum < 2) return;
 
-  VideoMixPosition * v = vmpList->next;
-  NullAllFrameStores();
-  while(v!=NULL)
+  PWaitAndSignal m(vmpListMutex);
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
-    unsigned n = v->n;
-    if(reverse) n = (n + vidnum - 1) % vidnum;
-    else        n = (n +          1) % vidnum;
-    VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[n];
-    VMPChangeNumber(*v, n);
-    VMPChangeBorder(*v, o.border);
-    VMPMoveAndTouch(*v, o.posx, o.posy, o.width, o.height);
-    v=v->next;
-  }
-}
-
-void MCUSimpleVideoMixer::InsertVideoSource(ConferenceMember * member, int pos)
-{ // rarely used, needs to be fixed for vad-type vmps or redesigned
-  if(member==NULL) return;
-  ConferenceMemberId id=member->GetID();
-
-  PWaitAndSignal m(mutex);
-
-  unsigned & vidnum = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
-  if((unsigned)pos >= vidnum) return;
-
-  int oldPos=GetPositionNum(id);
-  ConferenceMemberId id0=GetPositionId(pos);
-  if(oldPos!=-1) // remove from old vmp
-  {
-    MyRemoveVideoSource(oldPos,TRUE);
-    if(id0) for(int i=oldPos;i<(int)vidnum-1;i++)
+    VideoMixPosition *v = *it;
+    if(vmpList.Erase(it))
     {
-      VideoMixPosition *v = VMPListFindVMP(i+1);
-      if(v==NULL) continue;
-      VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i];
-      VMPChangeNumber(*v, i);
-      VMPChangeBorder(*v, o.border);
-      VMPMoveAndTouch(*v, o.posx, o.posy, o.width, o.height);
+      if(reverse) v->n = (v->n + vidnum - 1) % vidnum;
+      else        v->n = (v->n +          1) % vidnum;
+      VMPSetConfig(v);
+      InsertVMP(v);
     }
   }
-
-  if(!id0) // if free - just get it
-  {
-    PositionSetup(pos,1,member);
-    return;
-  }
-
-  int endPos=(int)vidnum;
-  for(int i=pos+1;i<(int)vidnum;i++) if(VMPListFindVMP(i)==NULL) { endPos=i+1; break; }
-
-  while(endPos>pos+1)
-  {
-    endPos--;
-    if((unsigned)endPos>=vidnum) continue;
-    ConferenceMemberId id2=GetPositionId(endPos);
-    ConferenceMemberId id3=GetPositionId(endPos-1);
-    if(id3)
-    {
-      VideoMixPosition * v3 = VMPListFindVMP(id3);
-      PAssert(v3!=NULL, "InsertVideoSource v3 failure");
-      if(!id2)
-      {
-        VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[endPos];
-        VMPChangeNumber(*v3, endPos);
-        VMPChangeBorder(*v3, o.border);
-        VMPMoveAndTouch(*v3, o.posx, o.posy, o.width, o.height);
-      }
-      else
-      {
-        VideoMixPosition * v2 = VMPListFindVMP(id2);
-        PAssert(v2!=NULL, "InsertVideoSource v2 failure");
-        VMPMove(*v3,*v2);
-      }
-    }
-  }
-  PositionSetup(pos,1001,member);
 }
 
 void MCUSimpleVideoMixer::Revert()
 {
-  PWaitAndSignal m(mutex);
-  if(vmpList->next==NULL) return;
+  if(vmpList.GetSize() == 0) return;
   unsigned & vidnum = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
   if(vidnum < 2) return;
-  NullAllFrameStores();
-  VideoMixPosition * v = vmpList->next;
-  while(v != NULL)
+
+  PWaitAndSignal m(vmpListMutex);
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
-    WriteEmptyFrame(*v);
-    unsigned n = vidnum-1-v->n;
-    VMPChangeNumber(*v, n);
-    VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[n];
-    VMPChangeBorder(*v, o.border);
-    VMPMoveAndTouch(*v, o.posx, o.posy, o.width, o.height);
-    v=v->next;
+    VideoMixPosition *v = *it;
+    if(vmpList.Erase(it))
+    {
+      v->n = vidnum-1-v->n;
+      VMPSetConfig(v);
+      InsertVMP(v);
+    }
   }
 }
 
 int MCUSimpleVideoMixer::VMPListFindEmptyIndex()
 {
+  MCUVMPList::shared_iterator it;
   for(int i=0; (unsigned)i<OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum; i++)
   {
-    VideoMixPosition * vmp = vmpList->next;
-    while (vmp != NULL)
+    for(it = vmpList.begin(); it != vmpList.end(); ++it)
     {
-      if (vmp->n != i) vmp=vmp->next;
-      else break;
+      if(it->n == i)
+        break;
     }
-    if(vmp == NULL) return i;
+    if(it == vmpList.end()) return i;
   }
- return -1;
+  return -1;
 }
-  
-MCUSimpleVideoMixer::VideoMixPosition * MCUSimpleVideoMixer::VMPCreator(int n, ConferenceMember * m, int type)
+
+MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * member, int n, int type)
 {
-  if(m==NULL && type==1) return NULL;
-  if(n<0) return NULL;
-  if((unsigned)n >= OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return NULL;
+  MCUVMPList::shared_iterator it;
+  if(member==NULL && type==1) return it;
+  if(n<0) return it;
+  if((unsigned)n >= OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return it;
   VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[n];
-  VideoMixPosition * newPosition;
-  newPosition=VMPListFindVMP(n);
-  if(newPosition==NULL)
+
+  PWaitAndSignal m(vmpListMutex);
+
+  it = FindVMP(n);
+  VideoMixPosition *newPosition = *it;
+
+  if(it == vmpList.end())
   {
-    if(m!=NULL) newPosition=CreateVideoMixPosition(m->GetID(), o.posx, o.posy, o.width, o.height);
-    else newPosition=CreateVideoMixPosition((ConferenceMemberId)((long)n), o.posx, o.posy, o.width, o.height);
-    if(newPosition!=NULL) newPosition->n = n;
+    if(member != NULL) newPosition = CreateVideoMixPosition(member->GetID(), o.posx, o.posy, o.width, o.height);
+    else newPosition = CreateVideoMixPosition(n, o.posx, o.posy, o.width, o.height);
+    if(newPosition != NULL) newPosition->n = n;
   }
-  if(newPosition==NULL) return NULL;
+  if(newPosition == NULL)
+    return it;
+
   newPosition->type = type;
-  if(m!=NULL)
+  newPosition->border = o.border;
+  if(member != NULL)
   {
-    newPosition->rule = m->resizerRule;
-    newPosition->endpointName = m->GetName();
-    newPosition->chosenVan = m->chosenVan;
+    newPosition->rule = member->resizerRule;
+    newPosition->endpointName = member->GetName();
+    newPosition->chosenVan = member->chosenVan;
   }
-  else newPosition->endpointName = "VAD" + PString(type-1) + "/" + PString(n);
+  else
+    newPosition->endpointName = "VAD" + PString(type-1) + "/" + PString(n);
 # if USE_FREETYPE
-    RemoveSubtitles(*newPosition);
+  RemoveSubtitles(*newPosition);
 # endif
   newPosition->border=o.border;
-  if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
-    VMPListInsVMP(newPosition);
-  else VMPListAddVMP(newPosition);
-  return newPosition;
+  VMPTouch(*newPosition);
+
+  return InsertVMP(newPosition);
 }
 
 BOOL MCUSimpleVideoMixer::AddVideoSourceToLayout(ConferenceMemberId id, ConferenceMember & mbr)
 {
-  PWaitAndSignal m(mutex);
-
-  // make sure this source is not already in the list
-  VideoMixPosition *newPosition = VMPListFindVMP(id);
-  if(newPosition != NULL)
-  {
-    PTRACE(3, "AddVideoSource " << id << " " << vmpNum << " already in list (" << newPosition << ")");
-    return TRUE;
-  }
+  PWaitAndSignal m(vmpListMutex);
 
   int i = VMPListFindEmptyIndex();
-  if ((vmpNum == OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) || (i<0))
-  {
-    PTRACE(3, "AddVideoSource " << id << " " << vmpNum << " layout capacity exceeded (" << OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum << ")");
+  if(i < 0)
     return FALSE;
-  }
 
-  newPosition = VMPCreator(i, &mbr, 1);
-  if(newPosition!=NULL)
-  {
-    VMPTouch(*newPosition);
+  MCUVMPList::shared_iterator it = VMPCreator(&mbr, i, 1);
+  if(it != vmpList.end())
     return TRUE;
-  }
 
   return FALSE;
 }
 
 BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(vmpListMutex);
+  MCUVMPList::shared_iterator it;
 
-  if (vmpNum == MAX_SUBFRAMES)
-  {
-    cout << "AddVideoSource " << id << " " << vmpNum << " maximum exceeded (" << MAX_SUBFRAMES << ")\n";
-    PTRACE(2, "AddVideoSource " << id << " " << vmpNum << " maximum exceeded (" << MAX_SUBFRAMES << ")");
-    return FALSE;
-  }
-
-  // make sure this source is not already in the list
-  VideoMixPosition *newPosition = VMPListFindVMP(id); if(newPosition != NULL)
-  {
-    PTRACE(2, "AddVideoSource " << id << " " << vmpNum << " already in list (" << newPosition << ")");
-    return TRUE;
-  }
-
-  int newsL=GetMostAppropriateLayout(vmpNum+1);
-  if ((newsL != specialLayout)||(vmpNum==0)) // split changed or first vmp
+  int newsL=GetMostAppropriateLayout(vmpList.GetSize()+1);
+  if(newsL != specialLayout || vmpList.GetSize() == 0) // split changed or first vmp
   {
     specialLayout=newsL;
-    newPosition = VMPCreator(vmpNum, &mbr, 1);
-    if(newPosition!=NULL)
+    it = VMPCreator(&mbr, vmpList.GetSize(), 1);
+    if(it != vmpList.end())
     {
-      newPosition->border=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmpNum].border;
-      if(OpenMCU::vmcfg.vmconf[newsL].splitcfg.new_from_begin) VMPListInsVMP(newPosition);
-      else VMPListAddVMP(newPosition);
+      it.Release();
       ReallocatePositions();
+      it = FindVMP(id);
     }
   }
   else  // otherwise find an empty position
   {
-    int i=VMPListFindEmptyIndex();
-    if(i>=0)
-    {
-      newPosition = VMPCreator(i, &mbr, 1);
-      if(newPosition!=NULL) VMPTouch(*newPosition);
-    }
+    int i = VMPListFindEmptyIndex();
+    if(i >= 0)
+      it = VMPCreator(&mbr, i, 1);
   }
 
-  BOOL result = (newPosition != NULL);
-  PTRACE_IF(!result, 2, "AddVideoSource " << id << " " << vmpNum << " could not find empty video position");
+  BOOL result = (it != vmpList.end());
+  PTRACE_IF(!result, 2, "AddVideoSource " << id << " could not find empty video position");
   return result;
 }
 
 void MCUSimpleVideoMixer::RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
-  PWaitAndSignal m(mutex);
+  MCUVMPList::shared_iterator it = FindVMP(id);
+  if(it == vmpList.end())
+    return;
+  VMPDelete(it);
 
-  // make sure this source is in the list
-  VideoMixPosition *pVMP = VMPListFindVMP(id);
-  if(pVMP == NULL) return;
-
-  WriteEmptyFrame(*pVMP);
-  VMPDelete(*pVMP);
-
-  int newsL=GetMostAppropriateLayout(vmpNum);
+  int newsL=GetMostAppropriateLayout(vmpList.GetSize());
   if (newsL!=specialLayout || OpenMCU::vmcfg.vmconf[newsL].splitcfg.reallocate_on_disconnect)
   {
     specialLayout=newsL;
@@ -3784,109 +3625,107 @@ int MCUSimpleVideoMixer::GetPositionSet()
 
 int MCUSimpleVideoMixer::GetPositionNum(ConferenceMemberId id)
 {
-  PWaitAndSignal m(mutex);
-
-  VideoMixPosition *pVMP = VMPListFindVMP(id);
-  if(pVMP == NULL) return -1;
-
-  return pVMP->n;
+  MCUVMPList::shared_iterator it = FindVMP(id);
+  if(it == vmpList.end())
+    return -1;
+  return it->n;
 }
 
 void MCUSimpleVideoMixer::SetPositionType(int pos, int type)
 {
-  PWaitAndSignal m(mutex);
-  VideoMixPosition *r = vmpList->next;
-  while(r!=NULL)
-    if (r->n == pos){ r->type=type; return; }
-    else r=r->next;
+  MCUVMPList::shared_iterator it = FindVMP(pos);
+  if(it != vmpList.end())
+  {
+    it->type=type;
+    return;
+  }
 
   if((unsigned)pos>=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return;
   if(type==1) return;
 
-  VideoMixPosition * newPosition = VMPCreator(pos, NULL, type);
-  if(newPosition!=NULL) VMPTouch(*newPosition);
+  VMPCreator(NULL, pos, type);
 }
 
 BOOL MCUSimpleVideoMixer::VMPExists(ConferenceMemberId id)
 {
-  PWaitAndSignal m(mutex);
-  return VMPListFindVMP(id) != NULL;
+  return (FindVMP(id) != vmpList.end());
 }
 
 int MCUSimpleVideoMixer::GetSilenceCounter(ConferenceMemberId id)
 {
-  PWaitAndSignal m(mutex);
-  VideoMixPosition *pVMP = VMPListFindVMP(id);
-  if(pVMP == NULL) return -1;
-  return pVMP->silenceCounter;
+  MCUVMPList::shared_iterator it = FindVMP(id);
+  if(it == vmpList.end())
+    return -1;
+  return it->silenceCounter;
 }
 
 void MCUSimpleVideoMixer::ResetSilenceCounter(ConferenceMemberId id)
 {
-  PWaitAndSignal m(mutex);
-  VideoMixPosition *pVMP = VMPListFindVMP(id);
-  if(pVMP == NULL) return;
-  pVMP->silenceCounter = 0;
+  MCUVMPList::shared_iterator it = FindVMP(id);
+  if(it == vmpList.end())
+    return;
+  it->silenceCounter = 0;
 }
 
 void MCUSimpleVideoMixer::IncreaseSilenceCounter(ConferenceMemberId id, int milliseconds)
 {
-  PWaitAndSignal m(mutex);
-  VideoMixPosition *pVMP = VMPListFindVMP(id);
-  if(pVMP == NULL) return;
-  pVMP->silenceCounter+=milliseconds;
+  MCUVMPList::shared_iterator it = FindVMP(id);
+  if(it == vmpList.end())
+    return;
+  it->silenceCounter+=milliseconds;
 }
 
 int MCUSimpleVideoMixer::GetPositionType(ConferenceMemberId id)
 {
-  PWaitAndSignal m(mutex);
-
-  VideoMixPosition *pVMP = VMPListFindVMP(id);
-  if(pVMP == NULL) return -1;
-
-  return pVMP->type;
+  MCUVMPList::shared_iterator it = FindVMP(id);
+  if(it == vmpList.end())
+    return -1;
+  return it->type;
 }
 
 ConferenceMemberId MCUSimpleVideoMixer::GetPositionId(int pos)
 {
-  PWaitAndSignal m(mutex);
-  VideoMixPosition *r = vmpList->next;
-  while(r!=NULL)
-  { VideoMixPosition & vmp = *r;
-    if (vmp.n == pos ) return vmp.id;
-    r=r->next;
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
+  {
+    if(it->n == pos)
+      return it->id;
   }
   return 0;
 }
 
 BOOL MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * member)
 {
-  VideoMixPosition *VADvmp=NULL;
-  PWaitAndSignal m(mutex);
-  VideoMixPosition *r = vmpList->next;
+  MCUVMPList::shared_iterator vit;
   long orderKey=0;
-  while(r != NULL)
+
+  PWaitAndSignal m(vmpListMutex);
+
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
-    VideoMixPosition & vmp = *r;
-    if((vmp.type!=2)&&(vmp.type!=3)) {r=r->next; continue;}
-    if(((long)vmp.id<0)||((long)vmp.id>=100)) {r=r->next; continue;}
-    long currentOrderKey=((long)vmp.type<<16)-(long)vmp.id; //at least 131072-x where x=0..99
+    VideoMixPosition *vmp = *it;
+    if((vmp->type!=2)&&(vmp->type!=3)) { continue;}
+    if((vmp->id<0)||(vmp->id>=100)) { continue;}
+    long currentOrderKey=(vmp->type<<16)-vmp->id; //at least 131072-x where x=0..99
     if(currentOrderKey>orderKey)
     {
       orderKey=currentOrderKey;
-      VADvmp=r;
+      vit = it;
     }
-    r=r->next;
   }
-  if(!(VADvmp&&orderKey)) return FALSE;
+  if(!(vit != vmpList.end() && orderKey)) return FALSE;
 
-  VADvmp->id=member->GetID();
-  VADvmp->silenceCounter=0;
-  VADvmp->chosenVan=member->chosenVan;
-  VADvmp->endpointName=member->GetName();
+  VideoMixPosition *vmp = *vit;
+  if(vmpList.Erase(vit))
+  {
+    vmp->id=member->GetID();
+    vmp->silenceCounter=0;
+    vmp->chosenVan=member->chosenVan;
+    vmp->endpointName=member->GetName();
 #if USE_FREETYPE
-  RemoveSubtitles(*VADvmp);
+    RemoveSubtitles(*vmp);
 #endif
+    InsertVMP(vmp);
+  }
 
   return TRUE;
 }
@@ -3895,40 +3734,37 @@ BOOL MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVa
 {
   if(member==NULL) return FALSE;
   int maxSilence = -1;
-  VideoMixPosition *VADvmp = NULL;
- 
-  PWaitAndSignal m(mutex);
-  
-  VideoMixPosition *r = vmpList->next;
-  while(r != NULL)
-  {
-    VideoMixPosition & vmp = *r;
-    if((vmp.type&~1) != 2) {r=r->next; continue;} //only look for VAD & VAD2
-    if(vmp.chosenVan) { r=r->next; continue; } // skip chosenVan
+  MCUVMPList::shared_iterator vit;
 
-    if((unsigned long)vmp.id<1000) // free VAD position
+  PWaitAndSignal m(vmpListMutex);
+
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
+  {
+    VideoMixPosition *vmp = *it;
+    if((vmp->type&~1) != 2) { continue;} //only look for VAD & VAD2
+    if(vmp->chosenVan) { continue; } // skip chosenVan
+
+    if(vmp->id<1000) // free VAD position
     {
-      int silence = 0x3fffffff-vmp.n;
-      if(vmp.type==2) silence += 0x40000000; // VAD1 better than VAD2
-      if(silence>maxSilence) {maxSilence=silence; VADvmp=r;}
-      r=r->next; continue;
+      int silence = 0x3fffffff-vmp->n;
+      if(vmp->type==2) silence += 0x40000000; // VAD1 better than VAD2
+      if(silence>maxSilence) {maxSilence=silence; vit=it;}
+      continue;
     }
     // busy VAD position:
-    if(vmp.type==2 && vmp.silenceCounter > maxSilence) { maxSilence=vmp.silenceCounter; VADvmp=r;  }
+    if(vmp->type==2 && vmp->silenceCounter > maxSilence) { maxSilence = vmp->silenceCounter; vit = it;  }
     // busy VAD2 position:
-    if(vmp.type==3 && chosenVan && vmp.silenceCounter>maxSilence) { maxSilence=vmp.silenceCounter; VADvmp = r; }
-    r=r->next;
+    if(vmp->type==3 && chosenVan && vmp->silenceCounter>maxSilence) { maxSilence = vmp->silenceCounter; vit = it; }
   }
 
   if(maxSilence == -1) return FALSE;
-  if(VADvmp==NULL) return FALSE;
-  if((maxSilence < timeout) && (!chosenVan)) return FALSE;
-  if(VADvmp->id == member->GetID()) { VADvmp->silenceCounter=0; return TRUE; }
-  
-  VADvmp = VMPCreator(VADvmp->n, member, VADvmp->type);
-  if(VADvmp==NULL) return FALSE;
-  VADvmp->silenceCounter=0;
-  VMPTouch(*VADvmp);
+  if(vit == vmpList.end()) return FALSE;
+  if(maxSilence < timeout && !chosenVan) return FALSE;
+  if(vit->id == member->GetID()) { vit->silenceCounter=0; return TRUE; }
+
+  vit = VMPCreator(member, vit->n, vit->type);
+  if(vit == vmpList.end()) return FALSE;
+  vit->silenceCounter=0;
   return TRUE;
 }
 
@@ -3937,37 +3773,43 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
   if(member==NULL) return FALSE;
   ConferenceMemberId id=member->GetID();
   int maxStatus=-1;
-  VideoMixPosition * target = NULL;
- 
-  PWaitAndSignal m(mutex);
+
+  PWaitAndSignal m(vmpListMutex);
 
   if(GetPositionType(id)!=2) return FALSE; // must be VAD1 to be switched to VAD2
 
-  VideoMixPosition *r = vmpList->next;
-  while(r!=NULL)
+  MCUVMPList::shared_iterator vit;
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
-    VideoMixPosition & vmp = *r;
-    if(vmp.type==3) //only look for VAD2-type positions
+    VideoMixPosition *vmp = *it;
+    if(vmp->type==3) //only look for VAD2-type positions
     {
       int silenceCounter;
-      if((unsigned long)vmp.id < 1000) silenceCounter=0x7fffffff-vmp.n;
-      else silenceCounter=vmp.silenceCounter;
-      if(silenceCounter > maxStatus) { maxStatus=silenceCounter; target = r; }
+      if(vmp->id < 1000) silenceCounter = 0x7fffffff-vmp->n;
+      else silenceCounter = vmp->silenceCounter;
+      if(silenceCounter > maxStatus) { maxStatus=silenceCounter; vit = it; }
     }
-    r=r->next;
   }
 
-  if(target==NULL) return FALSE;
+  if(vit == vmpList.end()) return FALSE;
   if(maxStatus < 3000) return FALSE;
+  if(vit->id == id) { vit->silenceCounter = 0; return TRUE; }
 
-  VideoMixPosition & VAD2vmp = *target;
-  if(VAD2vmp.id == id) { VAD2vmp.silenceCounter = 0; return TRUE; }
+  MCUVMPList::shared_iterator old_vit = FindVMP(id);
+  if(old_vit == vmpList.end()) return FALSE;
+  old_vit->silenceCounter = 0; vit->silenceCounter = 0;
 
-  VideoMixPosition *oldVMP = VMPListFindVMP(id);
-  if(oldVMP==NULL) return FALSE;
-
-  oldVMP->silenceCounter = 0; VAD2vmp.silenceCounter = 0;
-  VMPSwapAndTouch(*oldVMP, VAD2vmp);
+  VideoMixPosition *vmp = *vit;
+  VideoMixPosition *old_vmp = *old_vit;
+  if(vmpList.Erase(old_vit))
+  {
+    if(vmpList.Erase(vit))
+    {
+      VMPSwapAndTouch(*old_vmp, *vmp);
+      InsertVMP(vmp);
+    }
+    InsertVMP(old_vmp);
+  }
 
   return TRUE;
 }
@@ -3976,10 +3818,10 @@ void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
 {
   if(newLayout>=OpenMCU::vmcfg.vmconfs) return;
   int newCount=OpenMCU::vmcfg.vmconf[newLayout].splitcfg.vidnum;
-  PWaitAndSignal m(mutex); specialLayout=newLayout; NullAllFrameStores();
-  VideoMixPosition *r = vmpList->next; while(r!=NULL)
+  specialLayout=newLayout;
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
-    VideoMixPosition * vmp = r;
+    VideoMixPosition *vmp = *it;
     if(vmp->n < newCount){
 #if USE_FREETYPE
       if((unsigned)vmp->width != OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].width || (unsigned)vmp->height != OpenMCU::vmcfg.vmconf[newLayout].vmpcfg[vmp->n].height)
@@ -3995,64 +3837,56 @@ void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
     }
     else
     {
-      r=r->prev;
-      VMPListDelVMP(vmp);
-      delete vmp;
+      if(vmpList.Erase(it))
+        delete vmp;
     }
-    r=r->next;
   }
 }
 
 void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * member) //types 1000, 1001, 1002, 1003 means type will not changed
 {
-  if((unsigned)pos>=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return; // n out of range
+  if((unsigned)pos>=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum)
+    return; // n out of range
 
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(vmpListMutex);
 
-  VideoMixPosition * old;
+  MCUVMPList::shared_iterator old_it;
   ConferenceMemberId id;
   if(member!=NULL)
   {
     id = member->GetID();
-    old = VMPListFindVMP(member->GetID());
+    old_it = FindVMP(member->GetID());
   }
   else
-  {
     id = 0;
-    old = NULL;
-  }
 
-  if(old!=NULL)
+  if(old_it != vmpList.end())
   {
-    if(old->n == pos)
+    if(old_it->n == pos)
     {
       if(type<1000)
       {
-        old->type=type;
+        old_it->type=type;
       }
       return;
     }
-    if(old->type == 1)
-    {
-      MyRemoveVideoSource(old->n, TRUE);
-    }
-    else
-    {
-      MyRemoveVideoSource(old->n, FALSE);
-    }
+    int n = old_it->n;
+    int type = old_it->type;
+    old_it.Release();
+    MyRemoveVideoSource(n, (type == 1));
   }
 
-  VideoMixPosition * v = vmpList->next;
-
-  while(v!=NULL)
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
+    VideoMixPosition *v = *it;
     if(v->n==pos) // we found it
     {
       if(type<1000) v->type=type;
 
       if((v->type==1) && (!id)) // special case: VMP needs to be removed
       {
-        VMPListDelVMP(v); delete v;
+        if(vmpList.Erase(it))
+          delete v;
         return;
       }
 
@@ -4068,7 +3902,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
           v->chosenVan=member->chosenVan;
           v->endpointName=member->GetName();
         }
-        else v->id=(long)v->n;
+        else v->id = v->n;
 #if USE_FREETYPE
         RemoveSubtitles(*v);
 #endif
@@ -4086,8 +3920,6 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
       v->endpointName=member->GetName();
       return;
     }
-
-    v=v->next;
   }
 
 // creating new video mix position:
@@ -4108,115 +3940,92 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
   RemoveSubtitles(*newPosition);
 #endif
   newPosition->border=o.border;
-
-  if(OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.new_from_begin)
-    VMPListInsVMP(newPosition);
-  else VMPListAddVMP(newPosition);
+  InsertVMP(newPosition);
 }
 
 void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(vmpListMutex);
 
   unsigned layoutCapacity = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
   if(((unsigned)pos1>=layoutCapacity)||((unsigned)pos2>=layoutCapacity)) return;
 
-  VideoMixPosition * v1 = VMPListFindVMP(pos1);
-  VideoMixPosition * v2 = VMPListFindVMP(pos2);
-  if((v1==NULL)&&(v2==NULL)) return;
-  if(v2==NULL) {pos1=pos2; v2=v1; v1=NULL;} // lazy to type the following twice
+  MCUVMPList::shared_iterator it1 = FindVMP(pos1);
+  MCUVMPList::shared_iterator it2 = FindVMP(pos2);
+  if(it1 == vmpList.end() && it2 == vmpList.end())
+    return;
 
-  if(v1==NULL)
+  VideoMixPosition *v1 = *it1;
+  VideoMixPosition *v2 = *it2;
+
+  if(it2 == vmpList.end()) // lazy to type the following twice
   {
-    WriteEmptyFrame(*v2);
-    VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[pos1];
-    VMPChangeNumber(*v2, pos1);
-    VMPChangeBorder(*v2, o.border);
-    VMPMoveAndTouch(*v2, o.posx, o.posy, o.width, o.height);
+    if(vmpList.Erase(it1))
+    {
+      v1->n = pos2;
+      VMPSetConfig(v1);
+      InsertVMP(v1);
+    }
     return;
   }
 
-  VMPSwapAndTouch(*v1, *v2);
+  if(vmpList.Erase(it1))
+  {
+    if(vmpList.Erase(it2))
+    {
+      VMPSwapAndTouch(*v1, *v2);
+      InsertVMP(v2);
+    }
+    InsertVMP(v1);
+  }
 }
 
-void MCUSimpleVideoMixer::VMPDelete(VideoMixPosition & vmp)
+void MCUSimpleVideoMixer::VMPDelete(MCUVMPList::shared_iterator & it)
 {
-  PWaitAndSignal m(mutex);
-  WriteEmptyFrame(vmp);
-  if(vmp.type==1)
+  VideoMixPosition *vmp = *it;
+
+  PWaitAndSignal m(vmpListMutex);
+  if(vmpList.Erase(it))
   {
-    VMPListDelVMP(&vmp);
-    delete &vmp;
-  }
-  else
-  {
-    vmp.silenceCounter = 0;
-    vmp.id = (long)vmp.n;
+    if(vmp->type==1)
+      delete vmp;
+    else
+    {
+      vmp->silenceCounter = 0;
+      vmp->id = vmp->n;
+      InsertVMP(vmp);
+    }
   }
 }
 
 void MCUSimpleVideoMixer::MyRemoveVideoSource(int pos, BOOL flag)
 {
-  PWaitAndSignal m(mutex);
-
-  VideoMixPosition *r = vmpList->next;
-  while(r != NULL)
-  {
-    VideoMixPosition & vmp = *r;
-    if (vmp.n == pos ) 
-    {
-//      if(flag) vmp.type = 1;
-//      else if(vmp.type == 1) vmp.type = 2;
-      VMPDelete(vmp);
-      return;
-    }
-    r = r->next;
-  }
+  MCUVMPList::shared_iterator it = FindVMP(pos);
+  if(it != vmpList.end())
+    VMPDelete(it);
 }
 
 void MCUSimpleVideoMixer::MyRemoveVideoSourceById(ConferenceMemberId id, BOOL flag)
 {
-  PWaitAndSignal m(mutex);
-  VideoMixPosition * p = VMPListFindVMP(id);
-  if(p!=NULL) VMPDelete(*p);
+  MCUVMPList::shared_iterator it = FindVMP(id);
+  if(it != vmpList.end())
+    VMPDelete(it);
 }
 
 
 void MCUSimpleVideoMixer::MyRemoveAllVideoSource()
 {
-  PWaitAndSignal m(mutex);
   VMPListClear();
-  NullAllFrameStores();
-}
-
-void MCUSimpleVideoMixer::NullAllFrameStores()
-{
-  PWaitAndSignal m(mutex);
-
-  time_t removalDeadline = time(NULL) - FRAMESTORE_TIMEOUT;
-  VideoFrameStoreList::VideoFrameStoreListMapType theCopy(frameStores.videoFrameStoreList);
-  for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r=theCopy.begin(), e=theCopy.end(); r!=e; ++r)
-  { VideoFrameStoreList::FrameStore & vf = *(r->second);
-    if(vf.lastRead<removalDeadline)
-    {
-#if USE_FREETYPE
-      DeleteSubtitlesByFS(vf.width,vf.height);
-#endif
-      delete r->second; r->second=NULL;
-      frameStores.videoFrameStoreList.erase(r->first);
-      continue;
-    }
-  }
 }
 
 PString MCUSimpleVideoMixer::GetFrameStoreMonitorList()
 {
   PStringStream s;
-  for (VideoFrameStoreList::VideoFrameStoreListMapType::iterator r = frameStores.videoFrameStoreList.begin();
-    r != frameStores.videoFrameStoreList.end(); r++)
+  for(VideoFrameStoreList::shared_iterator it = frameStores.frameStoreList.begin(); it != frameStores.frameStoreList.end(); ++it)
   {
-    s << "  Frame store [" << r->second->width << "x" << r->second->height << "] "
-      << "last read time: " << r->second->lastRead << "\n";
+    VideoFrameStoreList::FrameStore *fs = *it;
+    s << "  Frame store [" << fs->width << "x" << fs->height << "] "
+      << "last read time: " << fs->lastRead << "\n";
   }
   return s;
 }
@@ -4298,7 +4107,7 @@ TestVideoMixer::TestVideoMixer(unsigned _frames)
 
 BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
-  PWaitAndSignal m(mutex);
+  PWaitAndSignal m(vmpListMutex);
   if (allocated) return TRUE;
 
   allocated=TRUE;
@@ -4317,7 +4126,7 @@ BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
       newPosition->type=1;
     }
     else
-    { newPosition = CreateVideoMixPosition((long)i, o->posx, o->posy, o->width, o->height);
+    { newPosition = CreateVideoMixPosition(i, o->posx, o->posy, o->width, o->height);
       newPosition->type=2;
     }
     PStringStream s; s << "Mix Position " << i; newPosition->endpointName=s;
@@ -4326,7 +4135,7 @@ BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
 #endif
     newPosition->n=i; 
     newPosition->border=o->border;
-    VMPListAddVMP(newPosition);
+    InsertVMP(newPosition);
   }
 
   return TRUE;
@@ -4334,9 +4143,17 @@ BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
 
 void TestVideoMixer::MyChangeLayout(unsigned newLayout)
 {
-  PWaitAndSignal m(mutex); specialLayout=newLayout; NullAllFrameStores();
+  specialLayout=newLayout;
 
-  ConferenceMemberId id = 0; if ((vmpList->next) != NULL) id=vmpList->next->id;
+  PWaitAndSignal m(vmpListMutex);
+
+  ConferenceMemberId id = 0;
+  MCUVMPList::shared_iterator it = vmpList.begin();
+  if(it != vmpList.end())
+  {
+    id = it->id;
+    it.Release();
+  }
 
   VMPListClear();
 
@@ -4354,7 +4171,7 @@ void TestVideoMixer::MyChangeLayout(unsigned newLayout)
       newPosition->type=1;
     }
     else
-    { newPosition = CreateVideoMixPosition((long)i, o->posx, o->posy, o->width, o->height);
+    { newPosition = CreateVideoMixPosition(i, o->posx, o->posy, o->width, o->height);
       newPosition->type=2;
     }
     PStringStream s; s << "Mix Position " << i; newPosition->endpointName=s;
@@ -4363,29 +4180,32 @@ void TestVideoMixer::MyChangeLayout(unsigned newLayout)
 #endif
     newPosition->n=i; 
     newPosition->border=o->border;
-    VMPListAddVMP(newPosition);
+    InsertVMP(newPosition);
   }
 }
 
 void TestVideoMixer::RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
-{ PWaitAndSignal m(mutex);
-  if(vmpList->next!=NULL) if(vmpList->next->id==id) { allocated=FALSE; NullAllFrameStores(); }
+{
+  MCUVMPList::shared_iterator it = vmpList.begin();
+  if(it != vmpList.end() && it->id == id)
+    allocated = FALSE;
 }
 
 BOOL TestVideoMixer::WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height)
 {
-  PWaitAndSignal m(mutex);
-  if(vmpList->next==NULL) return FALSE;
+  if(vmpList.GetSize() == 0) return FALSE;
 
-  if(vmpList->next->id != id)
-  { if(allocated) return FALSE;
-    else { vmpList->next->id=id; allocated=TRUE; }
+  MCUVMPList::shared_iterator it = vmpList.begin();
+  if(it->id != id)
+  {
+    if(allocated) return FALSE;
+    else { it->id=id; allocated=TRUE; }
   }
 
-  VideoMixPosition * vmp = vmpList->next;
-  while(vmp!=NULL)
-  { WriteSubFrame(*vmp, buffer, width, height, WSF_VMP_COMMON);
-    vmp=vmp->next;
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
+  {
+    VideoMixPosition * vmp = *it;
+    WriteSubFrame(*vmp, buffer, width, height, WSF_VMP_COMMON);
   }
 
   return TRUE;
@@ -4427,20 +4247,21 @@ BOOL EchoVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
 {
   PTRACE(6,"EchoVideoMixer\tAddVideoSource" << flush);
   if(specialLayout<0) return FALSE;
-  PWaitAndSignal m(mutex);
-  if(vmpList->next==NULL)
+  MCUVMPList::shared_iterator it = vmpList.begin();
+  if(it == vmpList.end())
   {
     VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[0];
     VideoMixPosition * newPosition;
     newPosition = CreateVideoMixPosition(id, o.posx, o.posy, o.width, o.height);
     newPosition->border=o.border;
-    VMPListInsVMP(newPosition);
+    it = InsertVMP(newPosition);
   }
-  vmpList->next->n=0;
-  vmpList->next->id=id;
-  vmpList->next->endpointName = mbr.GetName();
+  VideoMixPosition *vmp = *it;
+  vmp->n=0;
+  vmp->id=id;
+  vmp->endpointName = mbr.GetName();
 #if USE_FREETYPE
-  RemoveSubtitles(*(vmpList->next));
+  RemoveSubtitles(*vmp);
 #endif
   return TRUE;
 }
@@ -4448,10 +4269,13 @@ BOOL EchoVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
 BOOL EchoVideoMixer::WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height)
 {
   if(specialLayout<0) return FALSE;
-  PWaitAndSignal m(mutex);
-  if(vmpList->next == NULL) return FALSE;
-  if(vmpList->next->id != id) return FALSE;
-  WriteSubFrame(*(vmpList->next), buffer, width, height, WSF_VMP_COMMON);
+  MCUVMPList::shared_iterator it = vmpList.begin();
+  if(it == vmpList.end())
+    return FALSE;
+  VideoMixPosition *vmp = *it;
+  if(vmp->id != id)
+    return FALSE;
+  WriteSubFrame(*vmp, buffer, width, height, WSF_VMP_COMMON);
   return TRUE;
 }
 
