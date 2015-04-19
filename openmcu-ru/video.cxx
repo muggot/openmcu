@@ -289,6 +289,19 @@ VideoFrameStoreList::shared_iterator VideoFrameStoreList::GetFrameStore(int widt
   return frameStoreList.Insert(vf, WidthHeightToKey(width, height));
 }
 
+VideoFrameStoreList::FrameStore::FrameStore(int _w, int _h)
+  : width(_w), height(_h), frame_size(_w*_h*3/2)
+{
+  PAssert(_w != 0 && _h != 0, "Cannot create zero size framestore");
+  bgframe.SetSize(frame_size);
+  unsigned bgw, bgh;
+  void *bg = OpenMCU::Current().GetBackgroundPointer(bgw, bgh);
+  if(bg)
+    MCUVideoMixer::ResizeYUV420P(bg, bgframe.GetPointer(), bgw, bgh, width, height);
+  else
+    MCUVideoMixer::FillYUVFrame(bgframe.GetPointer(), 0, 0, 0, width, height);
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 
 void MCUVideoMixer::Unlock()
@@ -3092,17 +3105,8 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
   VideoFrameStoreList::FrameStore & fs = **fsit;
 
   // background
-  unsigned bgw, bgh;
-  void *bg = OpenMCU::Current().GetBackgroundPointer(bgw, bgh);
-  if(bg)
-    ResizeYUV420P(bg, buffer, bgw, bgh, width, height);
-  else
-  {
-    if(!forceScreenSplit && vmpList.GetSize() == 0 && !OpenMCU::Current().GetPreMediaFrame(buffer, width, height, amount))
-      MCUVideoMixer::FillYUVFrame(buffer, 0, 0, 0, width, height);
-    else
-      MCUVideoMixer::FillYUVFrame(buffer, 0, 0, 0, width, height);
-  }
+  if(fs.bgframe.GetSize() != 0)
+    memcpy(buffer, fs.bgframe.GetPointer(), fs.frame_size);
 
   for(unsigned i = 0; i < OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum; i++)
   {

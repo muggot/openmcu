@@ -92,15 +92,15 @@
 
 class VideoFrameStoreList {
   public:
-    class FrameStore {
+    class FrameStore
+    {
       public:
-        FrameStore(int _w, int _h)
-          : width(_w), height(_h)
-        { PAssert(_w != 0 && _h != 0, "Cannot create zero size framestore"); }
-
-      int width;
-      int height;
-      time_t lastRead;
+        FrameStore(int _w, int _h);
+        int width;
+        int height;
+        int frame_size;
+        time_t lastRead;
+        MCUBuffer bgframe;
     };
     typedef MCUSharedList<FrameStore> MCUFrameStoreList;
     MCUFrameStoreList frameStoreList;
