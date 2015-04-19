@@ -3205,15 +3205,15 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     int ph=vmp.height*vf.height/CIF4_HEIGHT;
     if(pw<2 || ph<2) continue;
 
-    MCUSharedList<MCUBufferArray>::shared_iterator it = vmp.bufferList.Find((long)&vf);
-    if(it == vmp.bufferList.end())
+    MCUSharedList<MCUBufferArray>::shared_iterator vmpbuf_it = vmp.bufferList.Find((long)&vf);
+    if(vmpbuf_it == vmp.bufferList.end())
     {
       PWaitAndSignal m(vmp.bufferListMutex);
-      it = vmp.bufferList.Find((long)&vf);
-      if(it == vmp.bufferList.end())
-        it = vmp.bufferList.Insert(new MCUBufferArray(3, 0), (long)&vf);
+      vmpbuf_it = vmp.bufferList.Find((long)&vf);
+      if(vmpbuf_it == vmp.bufferList.end())
+        vmpbuf_it = vmp.bufferList.Insert(new MCUBufferArray(3, 0), (long)&vf);
     }
-    MCUBuffer *vmpbuf = (**it)[vmpbuf_index];
+    MCUBuffer *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
 
     if(pw==width && ph==height) //same size
     {
