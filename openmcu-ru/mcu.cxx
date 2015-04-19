@@ -1427,7 +1427,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
         ConferenceMember * member = *it;
         if(member->IsVisible() && member->IsOnline())
         {
-          if(mixer->FindVMP(member->GetID()) == mixer->vmpList.end() && ((type==1)||(!member->disableVAD)))
+          if(mixer->VMPFind(member->GetID()) == mixer->vmpList.end() && ((type==1)||(!member->disableVAD)))
           {
             mixer->PositionSetup(pos, type, member);
             member->SetFreezeVideo(FALSE);

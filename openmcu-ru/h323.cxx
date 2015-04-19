@@ -1674,12 +1674,13 @@ PString MCUH323EndPoint::GetMonitorText()
           << hdr << "Video Mixer Layout capacity: " << dec << OpenMCU::vmcfg.vmconf[n].splitcfg.vidnum << hex << "\n";
         for(MCUVMPList::shared_iterator it = member->videoMixer->vmpList.begin(); it != member->videoMixer->vmpList.end(); ++it)
         {
-          VideoMixPosition *r = *it;
-          output << hdr << "[Position " << r->n << "]\n"
-                 << hdr << "  Member Id: " << r->id << "\n"
-                 << hdr << "  Type: " << r->type << ", silence counter: " << r->silenceCounter << "\n"
-                 << hdr << "  Frame: " << r->width << "*" << r->height << " at (" << r->xpos << "," << r->ypos << ")\n"
-                 << hdr << "  Offline: " << r->offline << ", last write: " << r->lastWrite << "\n";
+          VideoMixPosition *vmp = *it;
+          VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[member->videoMixer->GetLayout()].vmpcfg[vmp->n];
+          output << hdr << "[Position " << vmp->n << "]\n"
+                 << hdr << "  Member Id: " << vmp->id << "\n"
+                 << hdr << "  Type: " << vmp->type << ", silence counter: " << vmp->silenceCounter << "\n"
+                 << hdr << "  Frame: " << vmpcfg.width << "*" << vmpcfg.height << " at (" << vmpcfg.posx << "," << vmpcfg.posy << ")\n"
+                 << hdr << "  Offline: " << vmp->offline << ", last write: " << vmp->lastWrite << "\n";
         }
       }
     }
@@ -1697,12 +1698,13 @@ PString MCUH323EndPoint::GetMonitorText()
 
       for(MCUVMPList::shared_iterator it = mixer->vmpList.begin(); it != mixer->vmpList.end(); ++it)
       {
-        VideoMixPosition *r = *it;
-        output << "  [Position " << r->n << "]\n"
-               << "    Member Id: " << r->id << "\n"
-               << "    Type: " << r->type << ", silence counter: " << r->silenceCounter << "\n"
-               << "    Frame: " << r->width << "*" << r->height << " at (" << r->xpos << "," << r->ypos << ")\n"
-               << "    Offline: " << r->offline << ", last write: " << r->lastWrite << "\n";
+        VideoMixPosition *vmp = *it;
+        VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[mixer->GetLayout()].vmpcfg[vmp->n];
+        output << "  [Position " << vmp->n << "]\n"
+               << "    Member Id: " << vmp->id << "\n"
+               << "    Type: " << vmp->type << ", silence counter: " << vmp->silenceCounter << "\n"
+               << "    Frame: " << vmpcfg.width << "*" << vmpcfg.height << " at (" << vmpcfg.posx << "," << vmpcfg.posy << ")\n"
+               << "    Offline: " << vmp->offline << ", last write: " << vmp->lastWrite << "\n";
       }
     }
   }

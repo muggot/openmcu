@@ -229,11 +229,10 @@ class VideoMixConfigurator {
 
 class VideoMixPosition {
   public:
-    VideoMixPosition(ConferenceMemberId _id, int _x = 0, int _y = 0, int _w = 0, int _h = 0);
+    VideoMixPosition(ConferenceMemberId _id);
     virtual ~VideoMixPosition();
     ConferenceMemberId id;
     int n;
-    int xpos, ypos, width, height;
     int silenceCounter; // static | vad visibility
     volatile int type; // static, vad, vad2, vad3
     int chosenVan; // always visible vad members (can switched between vad and vad2)
@@ -282,7 +281,7 @@ class MCUVideoMixer
     void VMPListInit()
     { }
 
-    MCUVMPList::shared_iterator InsertVMP(VideoMixPosition *vmp)
+    MCUVMPList::shared_iterator VMPInsert(VideoMixPosition *vmp)
     {
       if(vmpList.GetSize() == MAX_SUBFRAMES)
       {
@@ -299,7 +298,7 @@ class MCUVideoMixer
         PTRACE(1, "VMP insert " << vmp << ", already in list");
         return vmpList.end();
       }
-      if(FindVMP(vmp->id) != vmpList.end())
+      if(VMPFind(vmp->id) != vmpList.end())
       {
         PTRACE(1, "VMP insert " << vmp->id << ", duplicate key error: " << vmp->id);
         return vmpList.end();
@@ -323,13 +322,6 @@ class MCUVideoMixer
       return r;
     }
 
-    void VMPListDelVMP(VideoMixPosition *vmp)
-    {
-      MCUVMPList::shared_iterator it = vmpList.Find(vmp->id);
-      if(it != vmpList.end())
-        vmpList.Erase(it);
-    }
-
     void VMPListClear()
     {
       for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
@@ -340,7 +332,7 @@ class MCUVideoMixer
       }
     }
 
-    MCUVMPList::shared_iterator FindVMP(ConferenceMemberId id)
+    MCUVMPList::shared_iterator VMPFind(ConferenceMemberId id)
     {
       for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
       {
@@ -350,7 +342,7 @@ class MCUVideoMixer
       return vmpList.end();
     }
 
-    MCUVMPList::shared_iterator FindVMP(int pos)
+    MCUVMPList::shared_iterator VMPFind(int pos)
     {
       for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
       {
@@ -398,12 +390,8 @@ class MCUVideoMixer
     virtual BOOL SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout) = 0;
     virtual BOOL SetVAD2Position(ConferenceMember * member) = 0;
 
-    virtual VideoMixPosition * CreateVideoMixPosition(ConferenceMemberId _id, 
-                                                         int _x, 
-                                                         int _y,
-                                                         int _w, 
-                                                         int _h)
-    { return new VideoMixPosition(_id, _x, _y, _w, _h); }
+    virtual VideoMixPosition * CreateVideoMixPosition(ConferenceMemberId _id)
+    { return new VideoMixPosition(_id); }
 
     static void ConvertRGBToYUV(BYTE R, BYTE G, BYTE B, BYTE & Y, BYTE & U, BYTE & V);
     static void FillYUVFrame(void * buffer, BYTE R, BYTE G, BYTE B, int w, int h);
@@ -555,6 +543,9 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual int VMPListFindEmptyIndex();
     virtual MCUVMPList::shared_iterator VMPCreator(ConferenceMember * m, int n, int type);
     virtual BOOL VMPExists(ConferenceMemberId);
+
+    const int GetLayout() const
+    { return specialLayout; }
 
   protected:
     virtual void ReallocatePositions();
