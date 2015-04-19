@@ -3285,12 +3285,13 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 
 BOOL MCUSimpleVideoMixer::SetOffline(ConferenceMemberId id)
 {
+  PWaitAndSignal m(vmpListMutex);
+
   MCUVMPList::shared_iterator it = VMPFind(id);
   if(it == vmpList.end())
     return FALSE;
   VideoMixPosition *vmp = *it;
 
-  PWaitAndSignal m(vmpListMutex);
   if(vmpList.Erase(it))
   {
     vmp->offline = TRUE;
@@ -3302,12 +3303,13 @@ BOOL MCUSimpleVideoMixer::SetOffline(ConferenceMemberId id)
 
 BOOL MCUSimpleVideoMixer::SetOnline(ConferenceMemberId id)
 {
+  PWaitAndSignal m(vmpListMutex);
+
   MCUVMPList::shared_iterator it = VMPFind(id);
   if(it == vmpList.end())
     return FALSE;
   VideoMixPosition *vmp = *it;
 
-  PWaitAndSignal m(vmpListMutex);
   if(vmpList.Erase(it))
   {
     vmp->offline = FALSE;
@@ -3390,6 +3392,7 @@ void MCUSimpleVideoMixer::VMPSwapAndTouch(VideoMixPosition & vmp1, VideoMixPosit
 void MCUSimpleVideoMixer::ReallocatePositions()
 {
   PWaitAndSignal m(vmpListMutex);
+
   int i = 0;
   for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it, ++i)
   {
@@ -3405,14 +3408,14 @@ void MCUSimpleVideoMixer::ReallocatePositions()
 
 void MCUSimpleVideoMixer::Shuffle()
 {
+  PWaitAndSignal m(vmpListMutex);
+
   if(vmpList.GetSize() == 0) return;
   unsigned & vidnum = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
   ConferenceMemberId * tempMemberList = new ConferenceMemberId [vidnum];
   PString * tempNameList = new PString [vidnum];
   BOOL * tempOfflineList = new BOOL [vidnum];
   unsigned memberCount=0;
-
-  PWaitAndSignal m(vmpListMutex);
 
   for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
@@ -3465,11 +3468,12 @@ void MCUSimpleVideoMixer::Shuffle()
 
 void MCUSimpleVideoMixer::Scroll(BOOL reverse)
 {
+  PWaitAndSignal m(vmpListMutex);
+
   if(vmpList.GetSize() == 0) return;
   unsigned & vidnum=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
   if(vidnum < 2) return;
 
-  PWaitAndSignal m(vmpListMutex);
   for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
     VideoMixPosition *v = *it;
@@ -3485,11 +3489,12 @@ void MCUSimpleVideoMixer::Scroll(BOOL reverse)
 
 void MCUSimpleVideoMixer::Revert()
 {
+  PWaitAndSignal m(vmpListMutex);
+
   if(vmpList.GetSize() == 0) return;
   unsigned & vidnum = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum;
   if(vidnum < 2) return;
 
-  PWaitAndSignal m(vmpListMutex);
   for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
     VideoMixPosition *v = *it;
@@ -3519,13 +3524,13 @@ int MCUSimpleVideoMixer::VMPListFindEmptyIndex()
 
 MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * member, int n, int type)
 {
+  PWaitAndSignal m(vmpListMutex);
+
   MCUVMPList::shared_iterator it;
   if(member==NULL && type==1) return it;
   if(n<0) return it;
   if((unsigned)n >= OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return it;
   VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[n];
-
-  PWaitAndSignal m(vmpListMutex);
 
   it = VMPFind(n);
   VideoMixPosition *newPosition = *it;
@@ -3576,8 +3581,8 @@ BOOL MCUSimpleVideoMixer::AddVideoSourceToLayout(ConferenceMemberId id, Conferen
 BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
   PWaitAndSignal m(vmpListMutex);
-  MCUVMPList::shared_iterator it;
 
+  MCUVMPList::shared_iterator it;
   int newsL=GetMostAppropriateLayout(vmpList.GetSize()+1);
   if(newsL != specialLayout || vmpList.GetSize() == 0) // split changed or first vmp
   {
@@ -3694,10 +3699,10 @@ ConferenceMemberId MCUSimpleVideoMixer::GetPositionId(int pos)
 
 BOOL MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * member)
 {
+  PWaitAndSignal m(vmpListMutex);
+
   MCUVMPList::shared_iterator vit;
   long orderKey=0;
-
-  PWaitAndSignal m(vmpListMutex);
 
   for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
@@ -3731,11 +3736,11 @@ BOOL MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * member)
 
 BOOL MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout)
 {
+  PWaitAndSignal m(vmpListMutex);
+
   if(member==NULL) return FALSE;
   int maxSilence = -1;
   MCUVMPList::shared_iterator vit;
-
-  PWaitAndSignal m(vmpListMutex);
 
   for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
@@ -3769,11 +3774,11 @@ BOOL MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVa
 
 BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
 {
+  PWaitAndSignal m(vmpListMutex);
+
   if(member==NULL) return FALSE;
   ConferenceMemberId id=member->GetID();
   int maxStatus=-1;
-
-  PWaitAndSignal m(vmpListMutex);
 
   if(GetPositionType(id)!=2) return FALSE; // must be VAD1 to be switched to VAD2
 
@@ -3815,34 +3820,39 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
 
 void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
 {
-  if(newLayout>=OpenMCU::vmcfg.vmconfs) return;
-  int newCount=OpenMCU::vmcfg.vmconf[newLayout].splitcfg.vidnum;
-  specialLayout=newLayout;
+  PWaitAndSignal m(vmpListMutex);
+
+  if(newLayout >= OpenMCU::vmcfg.vmconfs) return;
+  int newCount = OpenMCU::vmcfg.vmconf[newLayout].splitcfg.vidnum;
+
+  MCUVMPList list; // temporary
   for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
   {
     VideoMixPosition *vmp = *it;
-    if(vmp->n < newCount)
+    if(vmpList.Erase(it))
     {
-      if(vmpList.Erase(it))
-      {
-        VMPSetConfig(vmp);
-        VMPInsert(vmp);
-      }
-    }
-    else
-    {
-      if(vmpList.Erase(it))
+      if(vmp->n < newCount)
+        list.Insert(vmp, vmp->id);
+      else
         delete vmp;
     }
+  }
+
+  specialLayout = newLayout; // change mixer layout
+  for(MCUVMPList::shared_iterator it = list.begin(); it != list.end(); ++it)
+  {
+    VideoMixPosition *vmp = *it;
+    VMPSetConfig(vmp);
+    VMPInsert(vmp);
   }
 }
 
 void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * member) //types 1000, 1001, 1002, 1003 means type will not changed
 {
+  PWaitAndSignal m(vmpListMutex);
+
   if((unsigned)pos>=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum)
     return; // n out of range
-
-  PWaitAndSignal m(vmpListMutex);
 
   MCUVMPList::shared_iterator old_it;
   ConferenceMemberId id;
@@ -3977,8 +3987,6 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
 void MCUSimpleVideoMixer::VMPDelete(MCUVMPList::shared_iterator & it)
 {
   VideoMixPosition *vmp = *it;
-
-  PWaitAndSignal m(vmpListMutex);
   if(vmpList.Erase(it))
   {
     if(vmp->type==1)
@@ -4102,8 +4110,8 @@ TestVideoMixer::TestVideoMixer(unsigned _frames)
 BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
   PWaitAndSignal m(vmpListMutex);
-  if (allocated) return TRUE;
 
+  if (allocated) return TRUE;
   allocated=TRUE;
   VMPListClear();
 
@@ -4137,9 +4145,9 @@ BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
 
 void TestVideoMixer::MyChangeLayout(unsigned newLayout)
 {
-  specialLayout=newLayout;
-
   PWaitAndSignal m(vmpListMutex);
+
+  specialLayout=newLayout;
 
   ConferenceMemberId id = 0;
   MCUVMPList::shared_iterator it = vmpList.begin();
