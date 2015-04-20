@@ -144,12 +144,8 @@ class MCUBuffer
 
     void SetSize(int newsize)
     {
-      if(newsize < 0)
-        newsize = 0;
-
-      if(newsize == size)
+      if(newsize <= size)
         return;
-
       size = newsize;
       aligned_free(buffer);
       buffer = (uint8_t *)aligned_malloc(size);
