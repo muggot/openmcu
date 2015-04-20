@@ -76,31 +76,46 @@ void FillYUVRect(void * frame, int frameWidth, int frameHeight, BYTE R, BYTE G, 
   //This routine fills a region of the video image with data. It is used as the central
   //point because one only has to add other image formats here.
 
-  int offset       = ( yPos * frameWidth ) + xPos;
-  int colourOffset = ((yPos>>1) * (frameWidth>>1)) + (xPos >> 1);
+  if((frameWidth<2)||(frameHeight<2)) return;
+  if(xPos<0) xPos=0;
+  if(yPos<0) yPos=0;
+  if(xPos+rectWidth >frameWidth ) rectWidth =frameWidth -xPos;
+  if(yPos+rectHeight>frameHeight) rectHeight=frameHeight-yPos;
+  if((rectWidth<2)||(rectHeight<2)) return;
+
+  int halfRectWidth   = rectWidth   >> 1;
+  int halfRectHeight  = rectHeight  >> 1;
+  int halfFrameWidth  = frameWidth  >> 1;
+  int halfFrameHeight = frameHeight >> 1;
+  int halfXPos        = (xPos)      >> 1;
+  int halfYPos        = (yPos)      >> 1;
+  halfRectWidth  += (rectWidth  & xPos & 1);
+  halfRectHeight += (rectHeight & yPos & 1);
+
+  int grayscaleOffset = (    yPos *     frameWidth) +     xPos;
+  int colourOffset =    (halfYPos * halfFrameWidth) + halfXPos;
 
   BYTE Y, U, V;
   ConvertRGBToYUV(R, G, B, Y, U, V);
 
-  BYTE * Yptr = (BYTE*)frame + offset;
+  BYTE * Yptr = (BYTE*)frame + grayscaleOffset;
   BYTE * UPtr = (BYTE*)frame + (frameWidth * frameHeight) + colourOffset;
-  BYTE * VPtr = (BYTE*)frame + (frameWidth * frameHeight) + ((frameWidth/2) * (frameHeight/2))  + colourOffset;
+  BYTE * VPtr = (BYTE*)frame + (frameWidth * frameHeight) + colourOffset + (halfFrameWidth * halfFrameHeight);
 
-  int rr ;
-  int halfRectWidth = rectWidth >> 1;
-  int halfWidth     = frameWidth >> 1;
-  
-  for (rr = 0; rr < rectHeight;rr+=2) {
+  int rr;
+
+  for (rr = 0; rr < rectHeight;rr++)
+  {
     memset(Yptr, Y, rectWidth);
     Yptr += frameWidth;
-    memset(Yptr, Y, rectWidth);
-    Yptr += frameWidth;
+  }
 
+  for (rr = 0; rr < halfRectHeight;rr++)
+  {
     memset(UPtr, U, halfRectWidth);
     memset(VPtr, V, halfRectWidth);
-
-    UPtr += halfWidth;
-    VPtr += halfWidth;
+    UPtr += halfFrameWidth;
+    VPtr += halfFrameWidth;
   }
 }
 

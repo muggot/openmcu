@@ -144,11 +144,21 @@ class MCUBuffer
 
     void SetSize(int newsize)
     {
-      if(newsize <= size)
+      if(newsize <= size) // quick check before lock
+        return;
+
+      PWaitAndSignal m(mutex);
+
+      if(newsize <= size) // again after unlock
         return;
       size = newsize;
       aligned_free(buffer);
       buffer = (uint8_t *)aligned_malloc(size);
+    }
+
+    void SetSize2(int w, int h)
+    {
+      SetSize((w+1)*(h+1)*3/2); // +1 for swscale
     }
 
     uint8_t * GetPointer()
@@ -180,6 +190,7 @@ class MCUBuffer
     int size;
     bool aligned;
     uint8_t *buffer;
+    PMutex mutex;
 };
 
 class MCUBufferArray
