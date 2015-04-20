@@ -3212,9 +3212,9 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
       if(rule==0)               //    height|         | -> |  |ph   rule 1 => add stripes
       {                         //          +---------+    +--+                  to top and bottom
         int dstWidth = ph*width/height; //bigger than we need
-        vmpbuf->SetSize(dstWidth*ph*3/2);
-        vmp.tmpbuf.SetSize(vmpbuf->GetSize());
-        MCUVideoMixer::FillYUVFrame(vmp.tmpbuf.GetPointer(), 0, 0, 0, dstWidth, ph);
+        vmpbuf->SetSize(pw*ph*3/2);
+        vmp.tmpbuf.SetSize(dstWidth*ph*3/2);
+        MCUVideoMixer::FillYUVFrame(vmpbuf->GetPointer(), 0, 0, 0, pw, ph);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, dstWidth, ph);
         CopyRectFromFrame(vmp.tmpbuf.GetPointer(), vmpbuf->GetPointer(), (dstWidth-pw)/2, 0, pw, ph, dstWidth, ph);
       }
@@ -3222,8 +3222,8 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
       {
         int dstHeight = pw*height/width; //smaller than we need
         vmpbuf->SetSize(pw*ph*3/2);
-        vmp.tmpbuf.SetSize(vmpbuf->GetSize());
-        MCUVideoMixer::FillYUVFrame(vmp.tmpbuf.GetPointer(), 0, 0, 0, pw, ph);
+        vmp.tmpbuf.SetSize(pw*dstHeight*3/2);
+        MCUVideoMixer::FillYUVFrame(vmpbuf->GetPointer(), 0, 0, 0, pw, ph);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, pw, dstHeight);
         CopyRectIntoFrame(vmp.tmpbuf.GetPointer(), vmpbuf->GetPointer(), 0, (ph-dstHeight)/2, pw, dstHeight, pw, ph);
       }
@@ -3233,9 +3233,9 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
       if(rule==0)               //             height| | -> |    | ph  rule 1 => add stripes
       {                         //                   +-+    +----+                to left and right
         int dstHeight = pw*height/width; //bigger than we need
-        vmpbuf->SetSize(pw*dstHeight*3/2);
-        vmp.tmpbuf.SetSize(vmpbuf->GetSize());
-        MCUVideoMixer::FillYUVFrame(vmp.tmpbuf.GetPointer(), 0, 0, 0, pw, dstHeight);
+        vmpbuf->SetSize(pw*ph*3/2);
+        vmp.tmpbuf.SetSize(pw*dstHeight*3/2);
+        MCUVideoMixer::FillYUVFrame(vmpbuf->GetPointer(), 0, 0, 0, pw, ph);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, pw, dstHeight);
         CopyRectFromFrame(vmp.tmpbuf.GetPointer(), vmpbuf->GetPointer(), 0, (dstHeight-ph)/2, pw, ph, pw, dstHeight);
       }
@@ -3243,8 +3243,8 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
       {
         int dstWidth = ph*width/height; //smaller than we need
         vmpbuf->SetSize(pw*ph*3/2);
-        vmp.tmpbuf.SetSize(vmpbuf->GetSize());
-        MCUVideoMixer::FillYUVFrame(vmp.tmpbuf.GetPointer(), 0, 0, 0, pw, ph);
+        vmp.tmpbuf.SetSize(dstWidth*ph*3/2);
+        MCUVideoMixer::FillYUVFrame(vmpbuf->GetPointer(), 0, 0, 0, pw, ph);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, dstWidth, ph);
         CopyRectIntoFrame(vmp.tmpbuf.GetPointer(), vmpbuf->GetPointer(), (pw-dstWidth)/2, 0, dstWidth, ph, pw, ph);
       }
