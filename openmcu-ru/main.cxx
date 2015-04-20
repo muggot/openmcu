@@ -1,6 +1,7 @@
 
 #include "precompile.h"
 #include "mcu.h"
+#include "yuv.h"
 
 extern unsigned char ImageData[];
 unsigned char
@@ -153,13 +154,13 @@ BOOL MyMCU::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amou
   if(logo)
   {
     PTRACE(5, "MCU\tGetPreMediaFrame with logo:" << width << "x" << height);
-    MCUVideoMixer::ResizeYUV420P(logo,buffer,logo_width,logo_height,width,height);
+    ResizeYUV420P(logo,buffer,logo_width,logo_height,width,height);
     logo_mutex.Signal();
     return TRUE;
   }
   logo_mutex.Signal();
 
-  MCUVideoMixer::ResizeYUV420P(ImageData, buffer, QCIF_WIDTH, QCIF_HEIGHT, width, height);
+  ResizeYUV420P(ImageData, buffer, QCIF_WIDTH, QCIF_HEIGHT, width, height);
   return TRUE;
 }
 
@@ -234,7 +235,7 @@ void * MyMCU::LoadFrame(PString fileName, unsigned & width, unsigned & height, B
       width=height=16;
       unsigned amount = width*height*3/2;
       buffer = new unsigned char[amount];
-      MCUVideoMixer::FillYUVFrame(buffer, 0, 0, 0, width, height);
+      FillYUVFrame(buffer, 0, 0, 0, width, height);
     }
   }
   return buffer;

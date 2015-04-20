@@ -35,6 +35,64 @@ extern PMutex avcodecMutex;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#define CIF_WIDTH     352
+#define CIF_HEIGHT    288
+#define CIF_SIZE      (CIF_WIDTH*CIF_HEIGHT*3/2)
+
+#define QCIF_WIDTH    (CIF_WIDTH / 2)
+#define QCIF_HEIGHT   (CIF_HEIGHT / 2)
+#define QCIF_SIZE     (QCIF_WIDTH*QCIF_HEIGHT*3/2)
+
+#define SQCIF_WIDTH    (QCIF_WIDTH / 2)
+#define SQCIF_HEIGHT   (QCIF_HEIGHT / 2)
+#define SQCIF_SIZE     (SQCIF_WIDTH*SQCIF_HEIGHT*3/2)
+
+#define CIF4_WIDTH     (CIF_WIDTH * 2)
+#define CIF4_HEIGHT    (CIF_HEIGHT * 2)
+#define CIF4_SIZE      (CIF4_WIDTH*CIF4_HEIGHT*3/2)
+
+#define CIF16_WIDTH     (CIF4_WIDTH * 2)
+#define CIF16_HEIGHT    (CIF4_HEIGHT * 2)
+#define CIF16_SIZE      (CIF16_WIDTH*CIF16_HEIGHT*3/2)
+
+#define SQ3CIF_WIDTH    116
+#define SQ3CIF_HEIGHT   96
+#define SQ3CIF_SIZE     (SQ3CIF_WIDTH*SQ3CIF_HEIGHT*3/2)
+
+#define Q3CIF_WIDTH    (2*SQ3CIF_WIDTH)
+#define Q3CIF_HEIGHT   (2*SQ3CIF_HEIGHT)
+#define Q3CIF_SIZE     (Q3CIF_WIDTH*Q3CIF_HEIGHT*3/2)
+
+#define Q3CIF4_WIDTH    (4*SQ3CIF_WIDTH)
+#define Q3CIF4_HEIGHT   (4*SQ3CIF_HEIGHT)
+#define Q3CIF4_SIZE     (Q3CIF4_WIDTH*Q3CIF4_HEIGHT*3/2)
+
+#define Q3CIF16_WIDTH    (8*SQ3CIF_WIDTH)
+#define Q3CIF16_HEIGHT   (8*SQ3CIF_HEIGHT)
+#define Q3CIF16_SIZE     (Q3CIF16_WIDTH*Q3CIF16_HEIGHT*3/2)
+
+#define SQ5CIF_WIDTH    140
+#define SQ5CIF_HEIGHT   112
+#define SQ5CIF_SIZE     (SQ5CIF_WIDTH*SQ5CIF_HEIGHT*3/2)
+
+#define Q5CIF_WIDTH    (2*SQ5CIF_WIDTH)
+#define Q5CIF_HEIGHT   (2*SQ5CIF_HEIGHT)
+#define Q5CIF_SIZE     (Q5CIF_WIDTH*Q5CIF_HEIGHT*3/2)
+
+#define TCIF_WIDTH    (CIF_WIDTH*3)
+#define TCIF_HEIGHT   (CIF_HEIGHT*3)
+#define TCIF_SIZE     (TCIF_WIDTH*TCIF_HEIGHT*3/2)
+
+#define TQCIF_WIDTH    (CIF_WIDTH*3 / 2)
+#define TQCIF_HEIGHT   (CIF_HEIGHT*3 / 2)
+#define TQCIF_SIZE     (TQCIF_WIDTH*TQCIF_HEIGHT*3/2)
+
+#define TSQCIF_WIDTH    (CIF_WIDTH*3 / 4)
+#define TSQCIF_HEIGHT   (CIF_HEIGHT*3 / 4)
+#define TSQCIF_SIZE     (TSQCIF_WIDTH*TSQCIF_HEIGHT*3/2)
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void * dst, int & dst_size, int src_width, int src_height);
 BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, int & dst_width, int & dst_height);
 
@@ -273,5 +331,10 @@ inline int AlignUp2(int size)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static inline int ABS(int v)
+{  return (v >= 0) ? v : -v; }
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #endif // _MCU_UTILS_H

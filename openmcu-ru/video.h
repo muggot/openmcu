@@ -5,65 +5,9 @@
 #define _MCU_VIDEO_H
 
 #include "utils.h"
+#include "yuv.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define CIF_WIDTH     352
-#define CIF_HEIGHT    288
-#define CIF_SIZE      (CIF_WIDTH*CIF_HEIGHT*3/2)
-
-#define QCIF_WIDTH    (CIF_WIDTH / 2)
-#define QCIF_HEIGHT   (CIF_HEIGHT / 2)
-#define QCIF_SIZE     (QCIF_WIDTH*QCIF_HEIGHT*3/2)
-
-#define SQCIF_WIDTH    (QCIF_WIDTH / 2)
-#define SQCIF_HEIGHT   (QCIF_HEIGHT / 2)
-#define SQCIF_SIZE     (SQCIF_WIDTH*SQCIF_HEIGHT*3/2)
-
-#define CIF4_WIDTH     (CIF_WIDTH * 2)
-#define CIF4_HEIGHT    (CIF_HEIGHT * 2)
-#define CIF4_SIZE      (CIF4_WIDTH*CIF4_HEIGHT*3/2)
-
-#define CIF16_WIDTH     (CIF4_WIDTH * 2)
-#define CIF16_HEIGHT    (CIF4_HEIGHT * 2)
-#define CIF16_SIZE      (CIF16_WIDTH*CIF16_HEIGHT*3/2)
-
-#define SQ3CIF_WIDTH    116
-#define SQ3CIF_HEIGHT   96
-#define SQ3CIF_SIZE     (SQ3CIF_WIDTH*SQ3CIF_HEIGHT*3/2)
-
-#define Q3CIF_WIDTH    (2*SQ3CIF_WIDTH)
-#define Q3CIF_HEIGHT   (2*SQ3CIF_HEIGHT)
-#define Q3CIF_SIZE     (Q3CIF_WIDTH*Q3CIF_HEIGHT*3/2)
-
-#define Q3CIF4_WIDTH    (4*SQ3CIF_WIDTH)
-#define Q3CIF4_HEIGHT   (4*SQ3CIF_HEIGHT)
-#define Q3CIF4_SIZE     (Q3CIF4_WIDTH*Q3CIF4_HEIGHT*3/2)
-
-#define Q3CIF16_WIDTH    (8*SQ3CIF_WIDTH)
-#define Q3CIF16_HEIGHT   (8*SQ3CIF_HEIGHT)
-#define Q3CIF16_SIZE     (Q3CIF16_WIDTH*Q3CIF16_HEIGHT*3/2)
-
-#define SQ5CIF_WIDTH    140
-#define SQ5CIF_HEIGHT   112
-#define SQ5CIF_SIZE     (SQ5CIF_WIDTH*SQ5CIF_HEIGHT*3/2)
-
-#define Q5CIF_WIDTH    (2*SQ5CIF_WIDTH)
-#define Q5CIF_HEIGHT   (2*SQ5CIF_HEIGHT)
-#define Q5CIF_SIZE     (Q5CIF_WIDTH*Q5CIF_HEIGHT*3/2)
-
-#define TCIF_WIDTH    (CIF_WIDTH*3)
-#define TCIF_HEIGHT   (CIF_HEIGHT*3)
-#define TCIF_SIZE     (TCIF_WIDTH*TCIF_HEIGHT*3/2)
-
-#define TQCIF_WIDTH    (CIF_WIDTH*3 / 2)
-#define TQCIF_HEIGHT   (CIF_HEIGHT*3 / 2)
-#define TQCIF_SIZE     (TQCIF_WIDTH*TQCIF_HEIGHT*3/2)
-
-#define TSQCIF_WIDTH    (CIF_WIDTH*3 / 4)
-#define TSQCIF_HEIGHT   (CIF_HEIGHT*3 / 4)
-#define TSQCIF_SIZE     (TSQCIF_WIDTH*TSQCIF_HEIGHT*3/2)
-
 
 #define _IMGST 1
 #define _IMGST1 2
@@ -392,64 +336,6 @@ class MCUVideoMixer
 
     virtual VideoMixPosition * CreateVideoMixPosition(ConferenceMemberId _id)
     { return new VideoMixPosition(_id); }
-
-    static void ConvertRGBToYUV(BYTE R, BYTE G, BYTE B, BYTE & Y, BYTE & U, BYTE & V);
-    static void FillYUVFrame(void * buffer, BYTE R, BYTE G, BYTE B, int w, int h);
-    static void FillYUVFrame_YUV(void * buffer, BYTE Y, BYTE U, BYTE V, int w, int h);
-    static void FillCIFYUVFrame(void * buffer, BYTE R, BYTE G, BYTE B);
-    static void FillQCIFYUVFrame(void * buffer, BYTE R, BYTE G, BYTE B);
-    static void FillCIF4YUVFrame(void * buffer, BYTE R, BYTE G, BYTE B);
-    static void FillCIF16YUVFrame(void * buffer, BYTE R, BYTE G, BYTE B);
-    static void FillCIFYUVRect(void * frame, BYTE R, BYTE G, BYTE B, int xPos, int yPos, int rectWidth, int rectHeight);
-    static void FillCIF4YUVRect(void * frame, BYTE R, BYTE G, BYTE B, int xPos, int yPos, int rectWidth, int rectHeight);
-    static void FillCIF16YUVRect(void * frame, BYTE R, BYTE G, BYTE B, int xPos, int yPos, int rectWidth, int rectHeight);
-    static void FillYUVRect(void * frame, int frameWidth, int frameHeight, BYTE R, BYTE G, BYTE B, int xPos, int yPos, int rectWidth, int rectHeight);
-    static void ReplaceUV_Rect(void * frame, int frameWidth, int frameHeight, BYTE U, BYTE V, int xPos, int yPos, int rectWidth, int rectHeight);
-    static void CopyRectIntoQCIF(const void * _src, void * _dst, int xpos, int ypos, int width, int height);
-    static void CopyRectIntoCIF(const void * _src, void * _dst, int xpos, int ypos, int width, int height);
-    static void CopyRectIntoCIF4(const void * _src, void * _dst, int xpos, int ypos, int width, int height);
-    static void CopyGrayscaleIntoCIF(const void * _src, void * _dst, int xpos, int ypos, int width, int height);
-    static void CopyGrayscaleIntoCIF4(const void * _src, void * _dst, int xpos, int ypos, int width, int height);
-    static void CopyGrayscaleIntoCIF16(const void * _src, void * _dst, int xpos, int ypos, int width, int height);
-    static void CopyGrayscaleIntoFrame(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh);
-    static void CopyRectIntoCIF16(const void * _src, void * _dst, int xpos, int ypos, int width, int height);
-    static void CopyRFromRIntoR(const void *_s, void * _d, int xp, int yp, int w, int h, int rx_abs, int ry_abs, int rw, int rh, int fw, int fh, int lim_w, int lim_h);
-    static void CopyRectIntoFrame(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh);
-    static void MixRectIntoFrameGrayscale(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh, BYTE wide);
-#if USE_FREETYPE
-    static void MixRectIntoFrameSubsMode(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh, BYTE wide);
-#endif
-    static void CopyRectIntoRect(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh);
-    static void CopyRectFromFrame(const void * _src, void * _dst, int xpos, int ypos, int width, int height, int fw, int fh);
-    static void ResizeYUV420P(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh);
-//#if !USE_LIBYUV && !USE_SWSCALE
-    static void ConvertQCIFToCIF(const void * _src, void * _dst);
-    static void ConvertCIFToCIF4(const void * _src, void * _dst);
-    static void ConvertCIF4ToCIF16(const void * _src, void * _dst);
-//    static void ConvertFRAMEToFRAME4(const void * _src, void * _dst, unsigned w, unsigned h);
-    static void ConvertFRAMEToCUSTOM_FRAME(const void * _src, void * _dst, unsigned int sw, unsigned int sh, unsigned int dw, unsigned int dh);
-    static void ConvertCIFToTQCIF(const void * _src, void * _dst);
-    static void ConvertCIF4ToTCIF(const void * _src, void * _dst);
-    static void ConvertCIF16ToTCIF(const void * _src, void * _dst);
-    static void ConvertCIF4ToTQCIF(const void * _src, void * _dst);
-    static void ConvertCIFToTSQCIF(const void * _src, void * _dst);
-    static void ConvertQCIFToCIF4(const void * _src, void * _dst);
-    static void ConvertCIF4ToCIF(const void * _src, void * _dst);
-    static void ConvertCIF16ToCIF4(const void * _src, void * _dst);
-    static void ConvertCIFToQCIF(const void * _src, void * _dst);
-    static void Convert2To1(const void * _src, void * _dst, unsigned int w, unsigned int h);
-    static void Convert1To2(const void * _src, void * _dst, unsigned int w, unsigned int h);
-//    static void ConvertCIFToQCIF3(const void * _src, void * _dst);
-    static void ConvertCIFToQ3CIF(const void * _src, void * _dst);
-    static void ConvertCIF4ToQ3CIF4(const void * _src, void * _dst);
-    static void ConvertCIF16ToQ3CIF16(const void * _src, void * _dst);
-    static void ConvertCIFToSQ3CIF(const void*, void*);
-    static void ConvertCIF4ToQ3CIF(const void*, void*);
-    static void ConvertCIF16ToQ3CIF4(const void*, void*);
-    static void ConvertCIF16ToCIF(const void * _src, void * _dst);
-    static void ConvertCIF4ToQCIF(const void * _src, void * _dst);
-    static void ConvertCIFToSQCIF(const void * _src, void * _dst);
-//#endif
 
     PBYTEArray myjpeg;
     PINDEX jpegSize;

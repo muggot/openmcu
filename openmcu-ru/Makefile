@@ -8,7 +8,7 @@ UNAME          := $(shell uname)
 MACHTYPE	= x86
 PROG		= openmcu-ru
 SOURCES	       := main.cxx video.cxx conference.cxx filemembers.cxx custom.cxx h323.cxx html.cxx mcu.cxx sip.cxx template.cxx \
-                   utils.cxx utils_av.cxx utils_list.cxx utils_type.cxx utils_json.cxx \
+                   utils.cxx utils_av.cxx utils_list.cxx utils_type.cxx utils_json.cxx yuv.cxx \
                    mcu_rtp.cxx mcu_rtp_cache.cxx mcu_rtp_secure.cxx \
                    sockets.cxx telnet.cxx \
                    reg.cxx reg_sip.cxx reg_h323.cxx rtsp.cxx recorder.cxx mcu_caps.cxx mcu_codecs.cxx
