@@ -323,7 +323,6 @@ VideoMixPosition::VideoMixPosition(ConferenceMemberId _id)
   silenceCounter = 0;
   type = 0;
   chosenVan = 0;
-  border = TRUE;
   rule = 1;
   offline = FALSE; //dont show offline banner for 1st time
   lastWrite = 0;
@@ -3024,53 +3023,36 @@ void MCUVideoMixer::VideoSplitLines(BYTE *d, unsigned fw, unsigned fh){
  return;
 }
 
-void MCUVideoMixer::LeftSplitLine(BYTE *d, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height)
+void MCUVideoMixer::SplitLine(BYTE *d, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh)
 {
-  unsigned int i, p;
-  for(i = py; i < py+ph; i++)
+  d = d + (y * fw) + x;
+  for(unsigned i = 0; i < h; ++i)
   {
-    p = i*width+px;
-    if(d[p] == 16)
-      d[p] = 63;
-    else if(d[p] != 63)
-      d[p] = 0;
+    for(unsigned j = 0; j < w; ++j)
+    {
+      if(d[j] == 16)
+        d[j] = 63;
+      else if(d[j] != 63)
+        d[j] = 0;
+    }
+    d += fw;
   }
 }
-void MCUVideoMixer::RightSplitLine(BYTE *d, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height)
+void MCUVideoMixer::SplitLineLeft(BYTE *d, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh)
 {
-  unsigned int i, p;
-  for(i = py; i < py+ph; i++)
-  {
-    p = i*width+px+pw-1;
-    if(d[p] == 16)
-      d[p] = 63;
-    else if(d[p] != 63)
-      d[p] = 0;
-  }
+  SplitLine(d, x, y, 1, h, fw, fh);
 }
-void MCUVideoMixer::TopSplitLine(BYTE *d, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height)
+void MCUVideoMixer::SplitLineRight(BYTE *d, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh)
 {
-  unsigned int i, p;
-  p = py*width+px;
-  for(i = p; i < p+pw; i++)
-  {
-    if(d[i] == 16)
-      d[i] = 63;
-    else if(d[p] != 63)
-      d[i] = 0;
-  }
+  SplitLine(d, w-1, y, 1, h, fw, fh);
 }
-void MCUVideoMixer::BottomSplitLine(BYTE *d, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height)
+void MCUVideoMixer::SplitLineTop(BYTE *d, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh)
 {
-  unsigned int i, p;
-  p = (py+ph-1)*width+px;
-  for(i = p; i < p+pw; i++)
-  {
-    if(d[i] == 16)
-      d[i] = 63;
-    else if(d[p] != 63)
-      d[i] = 0;
-  }
+  SplitLine(d, x, y, w, 1, fw, fh);
+}
+void MCUVideoMixer::SplitLineBottom(BYTE *d, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh)
+{
+  SplitLine(d, x, h-1, w, 1, fw, fh);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -3087,6 +3069,10 @@ MCUSimpleVideoMixer::MCUSimpleVideoMixer(BOOL _forceScreenSplit)
 
 //  converter = PColourConverter::Create("YUV420P", "YUV420P", CIF16_WIDTH, CIF16_HEIGHT);
   specialLayout = 0;
+}
+
+MCUSimpleVideoMixer::~MCUSimpleVideoMixer()
+{
 }
 
 BOOL MCUSimpleVideoMixer::ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount)
@@ -3117,29 +3103,25 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
     int ph = vmpcfg.height*height/CIF4_HEIGHT;
     if(pw<2 || ph<2) continue;
 
-    MCUVMPList::shared_iterator it = VMPFind((int)i);
-    if(it != vmpList.end())
+    MCUVMPList::shared_iterator vmp_it = VMPFind((int)i);
+    if(vmp_it != vmpList.end())
     {
-      VideoMixPosition *vmp = *it;
-      MCUSharedList<MCUBufferArray>::shared_iterator it = vmp->bufferList.Find((long)&fs);
-      if(it == vmp->bufferList.end())
+      VideoMixPosition *vmp = *vmp_it;
+      MCUSharedList<MCUBufferArray>::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)&fs);
+      if(vmpbuf_it != vmp->bufferList.end())
       {
-        PWaitAndSignal m(vmp->bufferListMutex);
-        it = vmp->bufferList.Find((long)&fs);
-        if(it == vmp->bufferList.end())
-          it = vmp->bufferList.Insert(new MCUBufferArray(3, 0), (long)&fs);
-      }
-      int vmpbuf_index = vmp->vmpbuf_index;
-      if(vmpbuf_index >= 0)
-      {
-        MCUBuffer *vmpbuf = (**it)[vmpbuf_index];
-        if(vmpbuf->GetSize() > 0)
+        int vmpbuf_index = vmp->vmpbuf_index;
+        if(vmpbuf_index >= 0)
         {
-          for(unsigned i = 0; i < vmpcfg.blks; i++)
-            CopyRFromRIntoR(vmpbuf->GetPointer(), buffer, px, py, pw, ph,
-              AlignUp2(vmpcfg.blk[i].posx*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*height/CIF4_HEIGHT),
-              AlignUp2(vmpcfg.blk[i].width*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*height/CIF4_HEIGHT),
-              width, height, pw, ph );
+          MCUBuffer *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
+          if(vmpbuf->GetSize() > 0)
+          {
+            for(unsigned i = 0; i < vmpcfg.blks; i++)
+              CopyRFromRIntoR(vmpbuf->GetPointer(), buffer, px, py, pw, ph,
+                AlignUp2(vmpcfg.blk[i].posx*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*height/CIF4_HEIGHT),
+                AlignUp2(vmpcfg.blk[i].width*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*height/CIF4_HEIGHT),
+                width, height, pw, ph );
+          }
         }
       }
     }
@@ -3148,17 +3130,17 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
     if(OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i].border)
     {
       if(px != 0)
-        LeftSplitLine((BYTE *)buffer, px, py, pw, ph, width, height);
+        SplitLineLeft((BYTE *)buffer, px, py, pw, ph, width, height);
       if(py != 0)
-        TopSplitLine((BYTE *)buffer, px, py, pw, ph, width, height);
+        SplitLineTop((BYTE *)buffer, px, py, pw, ph, width, height); // top
     }
   }
 
   // grid
-  LeftSplitLine((BYTE *)buffer, 0, 0, width, height, width, height);
-  RightSplitLine((BYTE *)buffer, 0, 0, width, height, width, height);
-  TopSplitLine((BYTE *)buffer, 0, 0, width, height, width, height);
-  BottomSplitLine((BYTE *)buffer, 0, 0, width, height, width, height);
+  SplitLineLeft((BYTE *)buffer, 0, 0, width, height, width, height);
+  SplitLineRight((BYTE *)buffer, 0, 0, width, height, width, height);
+  SplitLineTop((BYTE *)buffer, 0, 0, width, height, width, height);
+  SplitLineBottom((BYTE *)buffer, 0, 0, width, height, width, height);
 
   fs.lastRead = time(NULL);
   return TRUE;
@@ -3281,6 +3263,7 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
       if(!(vmpcfg.label_mask&FT_P_DISABLED))
         PrintSubtitles(vmp, (void *)vmpbuf->GetPointer(),pw,ph,vmpcfg.label_mask);
 #endif
+
   }
 
   vmp.vmpbuf_index = vmpbuf_index;
@@ -3359,8 +3342,6 @@ void MCUSimpleVideoMixer::VMPTouch(VideoMixPosition & vmp)
 
 void MCUSimpleVideoMixer::VMPSetConfig(VideoMixPosition *vmp)
 {
-  VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp->n];
-  vmp->border = vmpcfg.border;
 # if USE_FREETYPE
   RemoveSubtitles(*vmp);
 # endif
@@ -3534,7 +3515,6 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
   if(member==NULL && type==1) return it;
   if(n<0) return it;
   if((unsigned)n >= OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return it;
-  VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[n];
 
   it = VMPFind(n);
   VideoMixPosition *newPosition = *it;
@@ -3549,7 +3529,6 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
     return it;
 
   newPosition->type = type;
-  newPosition->border = vmpcfg.border;
   if(member != NULL)
   {
     newPosition->rule = member->resizerRule;
@@ -3561,7 +3540,6 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
 # if USE_FREETYPE
   RemoveSubtitles(*newPosition);
 # endif
-  newPosition->border = vmpcfg.border;
   VMPTouch(*newPosition);
 
   return VMPInsert(newPosition);
@@ -3938,8 +3916,6 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
   if(!id) id=pos; //vad
   else name=member->GetName();
 
-  VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[pos];
-
   VideoMixPosition * newPosition = CreateVideoMixPosition(id);
   newPosition->type=type;
   newPosition->n=pos;
@@ -3947,7 +3923,6 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
 #if USE_FREETYPE
   RemoveSubtitles(*newPosition);
 #endif
-  newPosition->border=o.border;
   VMPInsert(newPosition);
 }
 
@@ -4140,7 +4115,6 @@ BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
     RemoveSubtitles(*newPosition);
 #endif
     newPosition->n=i; 
-    newPosition->border=o->border;
     VMPInsert(newPosition);
   }
 
@@ -4185,7 +4159,6 @@ void TestVideoMixer::MyChangeLayout(unsigned newLayout)
     RemoveSubtitles(*newPosition);
 #endif
     newPosition->n=i; 
-    newPosition->border=o->border;
     VMPInsert(newPosition);
   }
 }
@@ -4256,10 +4229,8 @@ BOOL EchoVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
   MCUVMPList::shared_iterator it = vmpList.begin();
   if(it == vmpList.end())
   {
-    VMPCfgOptions & o = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[0];
     VideoMixPosition * newPosition;
     newPosition = CreateVideoMixPosition(id);
-    newPosition->border=o.border;
     it = VMPInsert(newPosition);
   }
   VideoMixPosition *vmp = *it;

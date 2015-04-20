@@ -242,7 +242,6 @@ class VideoMixPosition {
     MCUSubtitlesList subtitlesList; // one per framestore
     unsigned minWidthForLabel;
 #endif
-    BOOL border;
     time_t lastWrite;
     int rule;
     BOOL offline;
@@ -459,10 +458,11 @@ class MCUVideoMixer
     PMutex vmpListMutex;
 
     static void VideoSplitLines(BYTE *dst, unsigned fw, unsigned fh);
-    static void LeftSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
-    static void RightSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
-    static void TopSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
-    static void BottomSplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
+    static void SplitLine(BYTE *dst, unsigned px, unsigned py, unsigned pw, unsigned ph, unsigned width, unsigned height);
+    static void SplitLineLeft(BYTE *dst, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh);
+    static void SplitLineRight(BYTE *dst, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh);
+    static void SplitLineTop(BYTE *dst, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh);
+    static void SplitLineBottom(BYTE *dst, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh);
 
     virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
 
@@ -483,8 +483,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual MCUVideoMixer * Clone() const
     { return new MCUSimpleVideoMixer(*this); }
 
-    ~MCUSimpleVideoMixer()
-    { }
+    ~MCUSimpleVideoMixer();
 
     virtual BOOL ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount);
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height);
