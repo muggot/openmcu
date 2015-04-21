@@ -1205,6 +1205,8 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
 
 void MCUSimpleVideoMixer::RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr)
 {
+  PWaitAndSignal m(vmpListMutex);
+
   MCUVMPList::shared_iterator it = VMPFind(id);
   if(it == vmpList.end())
     return;
@@ -1595,6 +1597,7 @@ void MCUSimpleVideoMixer::VMPDelete(MCUVMPList::shared_iterator & it)
 
 void MCUSimpleVideoMixer::MyRemoveVideoSource(int pos, BOOL flag)
 {
+  PWaitAndSignal m(vmpListMutex);
   MCUVMPList::shared_iterator it = VMPFind(pos);
   if(it != vmpList.end())
     VMPDelete(it);
@@ -1602,6 +1605,7 @@ void MCUSimpleVideoMixer::MyRemoveVideoSource(int pos, BOOL flag)
 
 void MCUSimpleVideoMixer::MyRemoveVideoSourceById(ConferenceMemberId id, BOOL flag)
 {
+  PWaitAndSignal m(vmpListMutex);
   MCUVMPList::shared_iterator it = VMPFind(id);
   if(it != vmpList.end())
     VMPDelete(it);
@@ -1610,6 +1614,7 @@ void MCUSimpleVideoMixer::MyRemoveVideoSourceById(ConferenceMemberId id, BOOL fl
 
 void MCUSimpleVideoMixer::MyRemoveAllVideoSource()
 {
+  PWaitAndSignal m(vmpListMutex);
   VMPListClear();
 }
 
