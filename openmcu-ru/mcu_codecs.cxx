@@ -410,11 +410,11 @@ BOOL MCUFramedAudioCodec::Write(const BYTE * buffer, unsigned length, const RTP_
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUStreamedAudioCodec::MCUStreamedAudioCodec(const OpalMediaFormat & fmtName, Direction direction, unsigned samplesPerFrame, unsigned bits, PluginCodec_Definition * _codec)
+MCUStreamedAudioCodec::MCUStreamedAudioCodec(const OpalMediaFormat & fmtName, Direction direction, unsigned samples, unsigned bits, PluginCodec_Definition * _codec)
   : MCUFramedAudioCodec(fmtName, direction, _codec)
 {
-  samplesPerFrame = samplesPerFrame;
-  bytesPerFrame = (samplesPerFrame*bits+7)/8;
+  samplesPerFrame = samples;
+  bytesPerFrame = (samples*bits+7)/8;
   bitsPerSample = bits;
 }
 

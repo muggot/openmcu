@@ -248,7 +248,7 @@ class MCUStreamedAudioCodec : public MCUFramedAudioCodec
 {
   PCLASSINFO(MCUStreamedAudioCodec, MCUFramedAudioCodec);
   public:
-    MCUStreamedAudioCodec(const OpalMediaFormat & mediaFormat, Direction direction, unsigned samplesPerFrame, unsigned bits, PluginCodec_Definition * _codec);
+    MCUStreamedAudioCodec(const OpalMediaFormat & mediaFormat, Direction direction, unsigned samples, unsigned bits, PluginCodec_Definition * _codec);
 
     virtual BOOL EncodeFrame(BYTE * buffer, unsigned & length);
     virtual BOOL DecodeFrame(const BYTE * buffer, unsigned length, unsigned & written, unsigned & samples);
