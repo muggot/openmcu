@@ -1291,6 +1291,16 @@ int MCUSimpleVideoMixer::GetPositionType(ConferenceMemberId id)
   return it->type;
 }
 
+int MCUSimpleVideoMixer::GetPositionType(int pos)
+{
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
+  {
+    if(it->n == pos)
+      return it->type;
+  }
+  return 0;
+}
+
 ConferenceMemberId MCUSimpleVideoMixer::GetPositionId(int pos)
 {
   for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)

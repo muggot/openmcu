@@ -1018,14 +1018,19 @@ void Conference::WriteMemberAudio(ConferenceMember * member, const uint64_t & ti
 void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel, int tint)
 {
   member->audioLevelIndicator|=audioLevel;
-  if(!((++member->audioCounter)&31)){
+  member->audioCounter+=tint;
+  if(member->audioCounter>1999) //2s
+  {
     if (member->audioLevelIndicator < 64) member->audioLevelIndicator = 0;
-    if((member->previousAudioLevel != member->audioLevelIndicator)||((member->audioLevelIndicator!=0) && ((member->audioCounter&255)==0))){
-      PStringStream msg; msg << "audio(" << (long)member->GetID() << "," << member->audioLevelIndicator << ")";
+    if((member->previousAudioLevel != member->audioLevelIndicator)||((member->audioLevelIndicator!=0) && ((member->audioCounter&255)==0)))
+    {
+      PStringStream msg;
+      msg << "audio(" << (long)member->GetID() << "," << member->audioLevelIndicator << ")";
       OpenMCU::Current().HttpWriteCmdRoom(msg,number);
       member->previousAudioLevel=member->audioLevelIndicator;
-      member->audioLevelIndicator=audioLevel;
     }
+    member->audioCounter=0;
+    member->audioLevelIndicator=0;
   }
 #if MCU_VIDEO
   if(UseSameVideoForAllMembers())
@@ -1048,7 +1053,9 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
           else if(silenceCounter == 0 && member->disableVAD == FALSE)
           {
             if(member->vad-VAdelay>500) // execute every 500 ms of voice activity
+            {
               mixer->SetVAD2Position(member);
+            }
           }
           else if(silenceCounter == -1 && member->disableVAD == FALSE) //find new vad position for active member
           {
@@ -1289,6 +1296,9 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   videoMixerNumber = 0;
   resizerRule = 0;
 #endif
+  write_audio_time_microseconds=0;
+  write_audio_average_level=0;
+  write_audio_write_counter=0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1455,7 +1465,9 @@ void ConferenceMember::ChannelStateUpdate(unsigned bit, BOOL state)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceMember::WriteAudioAutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef, unsigned* signalLevel, float kManual)
+void ConferenceMember::WriteAudioAutoGainControl(const short * pcm, unsigned samplesPerFrame,
+  unsigned codecChannels, unsigned sampleRate,
+  unsigned level, float* currVolCoef, unsigned* signalLevel, float kManual)
 {
   unsigned samplesCount = samplesPerFrame*codecChannels;
   if(!samplesCount) return;
@@ -1484,24 +1496,25 @@ void ConferenceMember::WriteAudioAutoGainControl(const short * pcm, unsigned sam
   float & cvc = *currVolCoef;
   float   vc0= cvc;
   
-  unsigned wLevel;
-  if(kManual>10) wLevel = (unsigned)(level*10/kManual); else wLevel=level;
+  unsigned wLevel; // AGC level
+//  wLevel = (unsigned)((float)(level*10)/kManual); //worst result
+  if(kManual>10) wLevel = (unsigned)((float)(level*10)/kManual);
+  else wLevel=level;
 
-  if((unsigned)c_avg_vol > wLevel)
+  if((unsigned)c_avg_vol > wLevel) // signal detected
   {
-    if(c_max_vol*cvc >= overload) // есть перегрузка
+    if(c_max_vol*cvc >= overload) // overload
       cvc = overload / c_max_vol;
     else
-    if(c_max_vol*cvc < max_vol) // нужно увеличить усиление
+    if(c_max_vol*cvc < max_vol) // ++ amplification
       cvc += inc_vol;
   }
-  else // не должен срабатывать, но временно грубая защита от перегрузки:
+  else // no signal (just a noise) but check it for overload for safety reason
   {
-    if(c_max_vol*cvc >= overload) // есть перегрузка
+    if(c_max_vol*cvc >= overload) // overload
       cvc = (float)overload / c_max_vol;
   }
   *signalLevel = (unsigned)((float)c_avg_vol*cvc);
-  PTRACE(9,"AGC\tavg" << c_avg_vol << " max" << c_max_vol << " vc" << vc0 << ">" << cvc);
 
   float delta0=(cvc-vc0)/samplesCount;
 
@@ -1522,17 +1535,28 @@ void ConferenceMember::WriteAudio(const uint64_t & timestamp, const void * buffe
 {
   if(conference != NULL)
   {
-    // Автоматическая? регулировка усиления
+    // Автоматическая регулировка усиления
     // calculate average signal level for this member
     unsigned signalLevel=0;
     WriteAudioAutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 2000, &currVolCoef, &signalLevel, kManualGain);
     audioLevel = ((signalLevel * 2) + audioLevel) / 3;
 
-    // Записать аудио в буфер
+    // Записать аудио в буфер // Write to buffer
     conference->WriteMemberAudio(this, timestamp, buffer, amount, sampleRate, channels);
 
-    // Индикатор уровня, VAD
-    conference->WriteMemberAudioLevel(this, audioLevel, amount/32);
+
+    // Индикатор уровня, VAD // Level indication, VAD
+#   define MINIMUM_VAD_INTERVAL_MS 250
+    write_audio_time_microseconds += amount*1000000/2/channels/sampleRate;
+    write_audio_average_level += audioLevel;
+    write_audio_write_counter++;
+    if(write_audio_time_microseconds >= MINIMUM_VAD_INTERVAL_MS * 1000)
+    {
+      conference->WriteMemberAudioLevel(this, write_audio_average_level/write_audio_write_counter, write_audio_time_microseconds/1000);
+      write_audio_average_level = 0;
+      write_audio_time_microseconds = 0;
+      write_audio_write_counter = 0;
+    }
   }
 }
 

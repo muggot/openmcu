@@ -402,6 +402,9 @@ class ConferenceMember : public PObject
     float currVolCoef;
     BOOL visible;
     BOOL isMCU;
+    unsigned write_audio_time_microseconds;
+    unsigned write_audio_average_level;
+    unsigned write_audio_write_counter;
 
 #if MCU_VIDEO
     PTime firstFrameSendTime;

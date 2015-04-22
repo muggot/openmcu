@@ -29,18 +29,17 @@ PString Conference::SaveTemplate(PString tplName)
     unsigned skipCounter=0;
     for(unsigned i=0; i<o.vidnum; i++)             // video mix position will be set here:
     { PStringStream vmpText;
-      ConferenceMemberId id=m.GetPositionId(i);
-      if((long)id==-1) vmpText << "VMP 2";         // - it may be "VMP 2" (VAD type)
-      else if((long)id==-2) vmpText << "VMP 3";    // - or        "VMP 3" (VAD2 type)
-      else
-      if(id)                                       // - or        "VMP 1, memberName" (static type)
+      int type=m.GetPositionType((int)i);
+      if(type)
       {
+        ConferenceMemberId id=m.GetPositionId(i);
+        vmpText << "VMP " << type; // 2=VAD or 3=VAD2
         for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
         {
           ConferenceMember * member = *it;
           if(member->GetID() == id)
           {
-            vmpText << "VMP 1, " << member->GetName();
+            vmpText << ", " << member->GetName();
             break;
           }
         }
@@ -68,14 +67,15 @@ PString Conference::SaveTemplate(PString tplName)
               else if(cmd=="SKIP") prev_vmpN+=value.AsInteger();
               else if(cmd=="VMP")
               {
-                if(mixMatch) if(prev_vmpN == i) if(value.Left(1)=="1")
+                if(mixMatch) if(prev_vmpN == i) if(value.Mid(1,2)==", ")
                 {
+                  PString memberName=value.Mid(3,P_MAX_INDEX);
                   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
                   {
                     ConferenceMember * member = *it;
                     if(member->IsSystem())
                       continue;
-                    if(("1, "+(member->GetName())) == value)
+                    if(member->GetName() == memberName)
                     {
                       vmpText << "VMP " << value;
                       break;
@@ -207,12 +207,12 @@ void Conference::LoadTemplate(PString tpl)
           {
             if(mixer!=NULL) mixer->MyRemoveVideoSource(vmpN,TRUE);
           }
-          else if(value=="2") { mixer->SetPositionType(vmpN, 2); }
-          else if(value=="3") { mixer->SetPositionType(vmpN, 3); }
           else
           {
+            int type=1; if(value.Left(1)=="2") type=2; else if(value.Left(1)=="3") type=3;
             PINDEX commaPosition = value.Find(',');
-            if(commaPosition != P_MAX_INDEX)
+            if(commaPosition == P_MAX_INDEX) mixer->SetPositionType(vmpN, type);
+            else
             {
               PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
               ConferenceMember *member = manager.FindMemberNameIDWithLock(this, name);
@@ -227,7 +227,7 @@ void Conference::LoadTemplate(PString tpl)
               {
                 if(mixer && member->IsVisible())
                 {
-                  mixer->PositionSetup(vmpN, 1, member);
+                  mixer->PositionSetup(vmpN, type, member);
                   member->SetFreezeVideo(FALSE);
                 }
                 member->Unlock();

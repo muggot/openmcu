@@ -327,6 +327,7 @@ class MCUVideoMixer
     virtual void ResetSilenceCounter(ConferenceMemberId id) = 0;
     virtual void IncreaseSilenceCounter(ConferenceMemberId, int) = 0;
     virtual int GetPositionType(ConferenceMemberId id) = 0;
+    virtual int GetPositionType(int) = 0;
     virtual void SetPositionType(int pos, int type) = 0;
     virtual ConferenceMemberId GetPositionId(int pos) = 0;
     virtual void Exchange(int pos1, int pos2) = 0;
@@ -406,6 +407,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void ResetSilenceCounter(ConferenceMemberId id);
     virtual void IncreaseSilenceCounter(ConferenceMemberId, int);
     virtual int GetPositionType(ConferenceMemberId id);
+    virtual int GetPositionType(int);
     virtual void SetPositionType(int pos, int type);
     virtual ConferenceMemberId GetPositionId(int pos);
     virtual void Exchange(int pos1, int pos2);
