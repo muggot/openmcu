@@ -328,6 +328,12 @@ VideoMixPosition::VideoMixPosition(ConferenceMemberId _id)
 
 VideoMixPosition::~VideoMixPosition()
 {
+  for(MCUSharedList<MCUBufferArray>::shared_iterator it = bufferList.begin(); it != bufferList.end(); ++it)
+  {
+    MCUBufferArray *buffer = *it;
+    if(bufferList.Erase(it))
+      delete buffer;
+  }
 #if USE_FREETYPE
   for(MCUSubtitlesList::shared_iterator it = subtitlesList.begin(); it != subtitlesList.end(); ++it)
   {
@@ -718,6 +724,7 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
     int py = vmpcfg.posy  *height/CIF4_HEIGHT;
     int pw = vmpcfg.width *width/CIF4_WIDTH; // pixel w&h of vmp-->fs
     int ph = vmpcfg.height*height/CIF4_HEIGHT;
+    int vmp_frame_size = pw*ph*3/2;
     if(pw<2 || ph<2) continue;
 
     MCUVMPList::shared_iterator vmp_it = VMPFind((int)i);
@@ -731,7 +738,7 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
         if(vmpbuf_index >= 0)
         {
           MCUBuffer *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
-          if(vmpbuf->GetSize() > 0)
+          if(vmpbuf->GetSize() >= vmp_frame_size)
           {
             for(unsigned i = 0; i < vmpcfg.blks; i++)
               CopyRFromRIntoR(vmpbuf->GetPointer(), buffer, px, py, pw, ph,
@@ -832,7 +839,6 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
         vmp.tmpbuf.SetSize2(dstWidth, ph);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, dstWidth, ph);
         CopyRectFromFrame(vmp.tmpbuf.GetPointer(), vmpbuf->GetPointer(), (dstWidth-pw)/2, 0, pw, ph, dstWidth, ph);
-                                        
       }
       else if(rule==1)
       {
