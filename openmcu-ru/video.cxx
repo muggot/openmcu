@@ -148,7 +148,6 @@ BOOL MCUPVideoInputDevice::GetFrameSizeLimits(unsigned & minWidth,
 
 BOOL MCUPVideoInputDevice::SetFrameSize(unsigned width, unsigned height)
 {
-  cout << "SetFrameSize " << width << " " << height << "\n";
   PTRACE(4,"SetFrameSize " << width << " " << height);
   if (!PVideoDevice::SetFrameSize(width, height))
     return FALSE;
@@ -681,16 +680,13 @@ void MCUVideoMixer::SplitLineBottom(BYTE *d, unsigned x, unsigned y, unsigned w,
 ///////////////////////////////////////////////////////////////////////////////////////
 
 MCUSimpleVideoMixer::MCUSimpleVideoMixer(BOOL _forceScreenSplit)
-//  : forceScreenSplit(_forceScreenSplit)
 {
-  PTRACE(1,"MixerCtrl\tNew MCUSimpleVideoMixer created");
+  PTRACE(2,"VideoMixer\tMCUSimpleVideoMixer(" << _forceScreenSplit << ") created");
   forceScreenSplit = _forceScreenSplit;
   VMPListInit();
   imageStore_size=0;
   imageStore1_size=0;
   imageStore2_size=0;
-
-//  converter = PColourConverter::Create("YUV420P", "YUV420P", CIF16_WIDTH, CIF16_HEIGHT);
   specialLayout = 0;
 }
 
@@ -1137,16 +1133,22 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
   if((unsigned)n >= OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return it;
 
   it = VMPFind(n);
-  VideoMixPosition *newPosition = *it;
-
-  if(it == vmpList.end())
+  VideoMixPosition *newPosition = NULL;
+  BOOL create = it == vmpList.end();
+  if(create)
   {
     if(member != NULL) newPosition = CreateVideoMixPosition(member->GetID());
     else newPosition = CreateVideoMixPosition(n);
     if(newPosition != NULL) newPosition->n = n;
   }
-  if(newPosition == NULL)
-    return it;
+  else
+  {
+    newPosition = *it;
+    if(member!=NULL) newPosition->id=member->GetID();
+    else newPosition->id=(ConferenceMemberId)n;
+  }
+
+  if(newPosition == NULL) return it;
 
   newPosition->type = type;
   if(member != NULL)
@@ -1156,13 +1158,16 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
     newPosition->chosenVan = member->chosenVan;
   }
   else
+  {
     newPosition->endpointName = "VAD" + PString(type-1) + "/" + PString(n);
+    newPosition->chosenVan = 0;
+  }
 # if USE_FREETYPE
   RemoveSubtitles(*newPosition);
 # endif
+  if(create) VMPInsert(newPosition);
   VMPTouch(*newPosition);
-
-  return VMPInsert(newPosition);
+  return it;
 }
 
 BOOL MCUSimpleVideoMixer::AddVideoSourceToLayout(ConferenceMemberId id, ConferenceMember & mbr)
@@ -1205,7 +1210,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
   }
 
   BOOL result = (it != vmpList.end());
-  PTRACE_IF(!result, 2, "AddVideoSource " << id << " could not find empty video position");
+  PTRACE_IF(!result, 2, "VideoMixer\tAddVideoSource " << id << " could not find empty video position");
   return result;
 }
 
@@ -1383,6 +1388,10 @@ BOOL MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVa
   vit = VMPCreator(member, vit->n, vit->type);
   if(vit == vmpList.end()) return FALSE;
   vit->silenceCounter=0;
+
+  PTRACE(3,"VideoMixer\tSetVADPosition(" << member->GetName() << ", " << chosenVan << ", " << timeout
+    << "): maxSilence=" << maxSilence << ", n=" << vit->n);
+
   return TRUE;
 }
 
@@ -1392,7 +1401,7 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
 
   if(member==NULL) return FALSE;
   ConferenceMemberId id=member->GetID();
-  int maxStatus=-1;
+  int maxSilence=-1;
 
   if(GetPositionType(id)!=2) return FALSE; // must be VAD1 to be switched to VAD2
 
@@ -1405,12 +1414,12 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
       int silenceCounter;
       if(vmp->id < 1000) silenceCounter = 0x7fffffff-vmp->n;
       else silenceCounter = vmp->silenceCounter;
-      if(silenceCounter > maxStatus) { maxStatus=silenceCounter; vit = it; }
+      if(silenceCounter > maxSilence) { maxSilence=silenceCounter; vit = it; }
     }
   }
 
   if(vit == vmpList.end()) return FALSE;
-  if(maxStatus < 3000) return FALSE;
+  if(maxSilence < 3000) return FALSE;
   if(vit->id == id) { vit->silenceCounter = 0; return TRUE; }
 
   MCUVMPList::shared_iterator old_vit = VMPFind(id);
@@ -1428,6 +1437,9 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
     }
     VMPInsert(old_vmp);
   }
+
+  PTRACE(3,"VideoMixer\tSetVAD2Position(" << member->GetName()
+    << "): maxSilence=" << maxSilence << ", n=" << vmp->n);
 
   return TRUE;
 }
