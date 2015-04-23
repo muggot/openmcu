@@ -232,8 +232,8 @@ class SipCapability
 };
 typedef std::map<int, SipCapability *> SipCapMapType;
 
-SipCapability * FindSipCap(SipCapMapType & SipCapMap, int payload);
-SipCapability * FindSipCap(SipCapMapType & SipCapMap, PString capname);
+SipCapability * FindSipCap(SipCapMapType & SipCapMap, MediaTypes mtype, int payload);
+SipCapability * FindSipCap(SipCapMapType & SipCapMap, MediaTypes mtype, PString capname);
 void ClearSipCaps(SipCapMapType & SipCaps);
 void CreateSipCaps(SipCapMapType & SipCaps, PString audio_section, PString video_section);
 
@@ -277,11 +277,11 @@ class MCUSipConnection : public MCUH323Connection
     void OnReceivedVFU();
     void OnReceivedDTMF(PString payload);
 
-    void StartMediaChannel(int pt, int rtp_dir);
+    void StartMediaChannel(MediaTypes mtype, int pt, int rtp_dir);
     void StartMediaChannels();
-    void DeleteMediaChannel(int pt, int rtp_dir);
+    void DeleteMediaChannel(MediaTypes mtype, int pt, int rtp_dir);
     void DeleteMediaChannels();
-    BOOL CreateMediaChannel(int pt, int rtp_dir);
+    BOOL CreateMediaChannel(MediaTypes mtype, int pt, int rtp_dir);
     void CreateMediaChannels();
     BOOL CreateDefaultRTPSessions();
     MCUSIP_RTP_UDP *CreateRTPSession(MediaTypes media);

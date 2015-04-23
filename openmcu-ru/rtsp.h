@@ -51,7 +51,7 @@ class MCURtspConnection : public MCUSipConnection
     void CreateLocalSipCaps();
     BOOL CreateInboundCaps();
 
-    BOOL SendSetup(int pt);
+    BOOL SendSetup(MediaTypes mtype, int pt);
     BOOL SendPlay();
     BOOL SendOptions();
     BOOL SendTeardown();

@@ -322,12 +322,12 @@ PString GetSipCallToken(const msg_t *msg)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SipCapability * FindSipCap(SipCapMapType & SipCapMap, int payload)
+SipCapability * FindSipCap(SipCapMapType & SipCapMap, MediaTypes mtype, int payload)
 {
   if(payload < 0) return NULL;
   for(SipCapMapType::iterator it = SipCapMap.begin(); it != SipCapMap.end(); it++)
   {
-    if(it->second->payload == payload)
+    if(it->second->media == mtype && it->second->payload == payload)
       return it->second;
   }
   return NULL;
@@ -335,11 +335,11 @@ SipCapability * FindSipCap(SipCapMapType & SipCapMap, int payload)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-SipCapability * FindSipCap(SipCapMapType & SipCapMap, PString capname)
+SipCapability * FindSipCap(SipCapMapType & SipCapMap, MediaTypes mtype, PString capname)
 {
   for(SipCapMapType::iterator it = SipCapMap.begin(); it != SipCapMap.end(); it++)
   {
-    if(it->second->capname == capname || it->second->capname == capname+"{sw}")
+    if(it->second->media == mtype && (it->second->capname == capname || it->second->capname == capname+"{sw}"))
       return it->second;
   }
   return NULL;
@@ -760,10 +760,10 @@ MCUSIP_RTP_UDP *MCUSipConnection::CreateRTPSession(SipCapability *sc)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
+BOOL MCUSipConnection::CreateMediaChannel(MediaTypes mtype, int pt, int rtp_dir)
 {
   if(pt < 0) return TRUE;
-  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
+  SipCapability *sc = FindSipCap(RemoteSipCaps, mtype, pt);
   if(!sc) return FALSE;
 
   MCUCapability * cap = sc->cap;
@@ -778,7 +778,7 @@ BOOL MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
   // Для исходящего потока использовать payload полученный от терминала, для входящего исходный payload.
   if(direction == DIRECTION_OUTBOUND && rtp_dir == 0)
   {
-    SipCapability *local_sc = FindSipCap(LocalSipCaps, sc->capname);
+    SipCapability *local_sc = FindSipCap(LocalSipCaps, mtype, sc->capname);
     if(local_sc && local_sc->payload > 0 && local_sc->payload != pt)
     {
       pt = local_sc->payload;
@@ -858,18 +858,18 @@ BOOL MCUSipConnection::CreateMediaChannel(int pt, int rtp_dir)
 
 void MCUSipConnection::CreateMediaChannels()
 {
-  CreateMediaChannel(scap, 0);
-  CreateMediaChannel(scap, 1);
-  CreateMediaChannel(vcap, 0);
-  CreateMediaChannel(vcap, 1);
+  CreateMediaChannel(MEDIA_TYPE_AUDIO, scap, 0);
+  CreateMediaChannel(MEDIA_TYPE_AUDIO, scap, 1);
+  CreateMediaChannel(MEDIA_TYPE_VIDEO, vcap, 0);
+  CreateMediaChannel(MEDIA_TYPE_VIDEO, vcap, 1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::StartMediaChannel(int pt, int dir)
+void MCUSipConnection::StartMediaChannel(MediaTypes mtype, int pt, int dir)
 {
   if(pt < 0) return;
-  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
+  SipCapability *sc = FindSipCap(RemoteSipCaps, mtype, pt);
   if(!sc) return;
   PTRACE(1, trace_section << "start " << ((dir == 0) ? "receive" : "transmit") << " channel " << pt);
   if(dir == 0 && (sc->mode&2) && sc->inpChan && !sc->inpChan->IsRunning()) sc->inpChan->Start();
@@ -880,18 +880,18 @@ void MCUSipConnection::StartMediaChannel(int pt, int dir)
 
 void MCUSipConnection::StartMediaChannels()
 {
-  StartMediaChannel(scap,0);
-  StartMediaChannel(scap,1);
-  StartMediaChannel(vcap,0);
-  StartMediaChannel(vcap,1);
+  StartMediaChannel(MEDIA_TYPE_AUDIO, scap, 0);
+  StartMediaChannel(MEDIA_TYPE_AUDIO, scap, 1);
+  StartMediaChannel(MEDIA_TYPE_VIDEO, vcap, 0);
+  StartMediaChannel(MEDIA_TYPE_VIDEO, vcap, 1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void MCUSipConnection::DeleteMediaChannel(int pt, int dir)
+void MCUSipConnection::DeleteMediaChannel(MediaTypes mtype, int pt, int dir)
 {
   if(pt < 0) return;
-  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
+  SipCapability *sc = FindSipCap(RemoteSipCaps, mtype, pt);
   if(!sc) return;
   PTRACE(1, trace_section << "delete " << ((dir == 0) ? "receive" : "transmit") << " channel " << pt);
   if(dir==0 && sc->inpChan) { sc->inpChan->CleanUpOnTermination(); delete sc->inpChan; sc->inpChan = NULL; }
@@ -902,10 +902,10 @@ void MCUSipConnection::DeleteMediaChannel(int pt, int dir)
 
 void MCUSipConnection::DeleteMediaChannels()
 {
-  DeleteMediaChannel(scap, 0);
-  DeleteMediaChannel(scap, 1);
-  DeleteMediaChannel(vcap, 0);
-  DeleteMediaChannel(vcap, 1);
+  DeleteMediaChannel(MEDIA_TYPE_AUDIO, scap, 0);
+  DeleteMediaChannel(MEDIA_TYPE_AUDIO, scap, 1);
+  DeleteMediaChannel(MEDIA_TYPE_VIDEO, vcap, 0);
+  DeleteMediaChannel(MEDIA_TYPE_VIDEO, vcap, 1);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -976,11 +976,11 @@ int MCUSipConnection::CreateSdpOk()
   SipCapMapType SipCaps;
   if(scap >= 0)
   {
-    SipCapability *remote_sc = FindSipCap(RemoteSipCaps, scap);
+    SipCapability *remote_sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_AUDIO, scap);
     if(remote_sc)
     {
       SipCapability *sc = new SipCapability(*remote_sc);
-      SipCapability *local_sc = FindSipCap(LocalSipCaps, sc->capname);
+      SipCapability *local_sc = FindSipCap(LocalSipCaps, MEDIA_TYPE_AUDIO, sc->capname);
       if(local_sc)
       {
         // send back the received fmtp
@@ -991,11 +991,11 @@ int MCUSipConnection::CreateSdpOk()
   }
   if(vcap >= 0)
   {
-    SipCapability *remote_sc = FindSipCap(RemoteSipCaps, vcap);
+    SipCapability *remote_sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_VIDEO, vcap);
     if(remote_sc)
     {
       SipCapability *sc = new SipCapability(*remote_sc);
-      SipCapability *local_sc = FindSipCap(LocalSipCaps, sc->capname);
+      SipCapability *local_sc = FindSipCap(LocalSipCaps, MEDIA_TYPE_VIDEO, sc->capname);
       if(local_sc)
       {
         // send back the received fmtp
@@ -1244,13 +1244,13 @@ void MCUSipConnection::SelectCapability_H261(SipCapMapType & LocalCaps, SipCapab
 
   if(!sc->cap)
   {
-    if(FindSipCap(LocalCaps, "H.261{sw}"))
+    if(FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, "H.261{sw}"))
       sc->cap = MCUCapability::Create("H.261{sw}");
     if(!sc->cap)
       return;
   }
 
-  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  SipCapability *local_sc = FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, sc->cap->GetFormatName());
   if(local_sc->video_width) sc->video_width = local_sc->video_width;
   if(local_sc->video_height) sc->video_height = local_sc->video_height;
   if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
@@ -1289,13 +1289,13 @@ void MCUSipConnection::SelectCapability_H263(SipCapMapType & LocalCaps, SipCapab
 
   if(!sc->cap)
   {
-    if(FindSipCap(LocalCaps, "H.263{sw}"))
+    if(FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, "H.263{sw}"))
       sc->cap = MCUCapability::Create("H.263{sw}");
     if(!sc->cap)
       return;
   }
 
-  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  SipCapability *local_sc = FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, sc->cap->GetFormatName());
   if(local_sc->video_width) sc->video_width = local_sc->video_width;
   if(local_sc->video_height) sc->video_height = local_sc->video_height;
   if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
@@ -1340,13 +1340,13 @@ void MCUSipConnection::SelectCapability_H263p(SipCapMapType & LocalCaps, SipCapa
 
   if(!sc->cap)
   {
-    if(FindSipCap(LocalCaps, "H.263p{sw}"))
+    if(FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, "H.263p{sw}"))
       sc->cap = MCUCapability::Create("H.263p{sw}");
     if(!sc->cap)
       return;
   }
 
-  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  SipCapability *local_sc = FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, sc->cap->GetFormatName());
   if(local_sc->video_width) sc->video_width = local_sc->video_width;
   if(local_sc->video_height) sc->video_height = local_sc->video_height;
   if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
@@ -1391,13 +1391,13 @@ void MCUSipConnection::SelectCapability_H264(SipCapMapType & LocalCaps, SipCapab
 
   if(!sc->cap)
   {
-    if(FindSipCap(LocalCaps, "H.264{sw}"))
+    if(FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, "H.264{sw}"))
       sc->cap = MCUCapability::Create("H.264{sw}");
     if(!sc->cap)
       return;
   }
 
-  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  SipCapability *local_sc = FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, sc->cap->GetFormatName());
   if(local_sc->video_width) sc->video_width = local_sc->video_width;
   if(local_sc->video_height) sc->video_height = local_sc->video_height;
   if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
@@ -1432,13 +1432,13 @@ void MCUSipConnection::SelectCapability_VP8(SipCapMapType & LocalCaps, SipCapabi
 
   if(!sc->cap)
   {
-    if(FindSipCap(LocalCaps, "VP8{sw}"))
+    if(FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, "VP8{sw}"))
       sc->cap = MCUCapability::Create("VP8{sw}");
     if(!sc->cap)
       return;
   }
 
-  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  SipCapability *local_sc = FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, sc->cap->GetFormatName());
   if(local_sc->video_width) sc->video_width = local_sc->video_width;
   if(local_sc->video_height) sc->video_height = local_sc->video_height;
   if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
@@ -1476,13 +1476,13 @@ void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapa
 
   if(!sc->cap)
   {
-    if(FindSipCap(LocalCaps, "MP4V-ES{sw}"))
+    if(FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, "MP4V-ES{sw}"))
       sc->cap = MCUCapability::Create("MP4V-ES{sw}");
     if(!sc->cap)
       return;
   }
 
-  SipCapability *local_sc = FindSipCap(LocalCaps, sc->cap->GetFormatName());
+  SipCapability *local_sc = FindSipCap(LocalCaps, MEDIA_TYPE_VIDEO, sc->cap->GetFormatName());
   if(local_sc->video_width) sc->video_width = local_sc->video_width;
   if(local_sc->video_height) sc->video_height = local_sc->video_height;
   if(local_sc->video_frame_rate) sc->video_frame_rate = local_sc->video_frame_rate;
@@ -1511,14 +1511,14 @@ void MCUSipConnection::SelectCapability_MPEG4(SipCapMapType & LocalCaps, SipCapa
 void MCUSipConnection::SelectCapability_SPEEX(SipCapMapType & LocalCaps, SipCapability *sc)
 {
   PString capname;
-  if(sc->clock == 8000 && FindSipCap(LocalCaps, "Speex_8K{sw}"))        capname = "Speex_8K{sw}";
-  else if(sc->clock == 16000 && FindSipCap(LocalCaps, "Speex_16K{sw}")) capname = "Speex_16K{sw}";
-  else if(sc->clock == 32000 && FindSipCap(LocalCaps, "Speex_32K{sw}")) capname = "Speex_32K{sw}";
+  if(sc->clock == 8000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "Speex_8K{sw}"))        capname = "Speex_8K{sw}";
+  else if(sc->clock == 16000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "Speex_16K{sw}")) capname = "Speex_16K{sw}";
+  else if(sc->clock == 32000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "Speex_32K{sw}")) capname = "Speex_32K{sw}";
   else return;
 
   PString fmtp = sc->fmtp;
   // replace fmtp from codec parameters
-  SipCapability *local_sc = FindSipCap(LocalCaps, capname);
+  SipCapability *local_sc = FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, capname);
   if(local_sc && local_sc->local_fmtp != "")
     fmtp = local_sc->local_fmtp;
 
@@ -1553,20 +1553,20 @@ void MCUSipConnection::SelectCapability_SPEEX(SipCapMapType & LocalCaps, SipCapa
 void MCUSipConnection::SelectCapability_OPUS(SipCapMapType & LocalCaps, SipCapability *sc)
 {
   PString capname;
-  if(sc->clock == 8000 && FindSipCap(LocalCaps, "OPUS_8K{sw}"))
+  if(sc->clock == 8000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "OPUS_8K{sw}"))
     capname = "OPUS_8K{sw}";
-  else if(sc->clock == 16000 && FindSipCap(LocalCaps, "OPUS_16K{sw}"))
+  else if(sc->clock == 16000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "OPUS_16K{sw}"))
     capname = "OPUS_16K{sw}";
-  else if(sc->clock == 48000 && sc->params.AsInteger() <= 1 && FindSipCap(LocalCaps, "OPUS_48K{sw}"))
+  else if(sc->clock == 48000 && sc->params.AsInteger() <= 1 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "OPUS_48K{sw}"))
     capname = "OPUS_48K{sw}";
-  else if(sc->clock == 48000 && sc->params.AsInteger() == 2 && FindSipCap(LocalCaps, "OPUS_48K2{sw}"))
+  else if(sc->clock == 48000 && sc->params.AsInteger() == 2 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "OPUS_48K2{sw}"))
     capname = "OPUS_48K2{sw}";
   else
     return;
 
   PString fmtp = sc->fmtp;
   // replace fmtp from codec parameters
-  SipCapability *local_sc = FindSipCap(LocalCaps, capname);
+  SipCapability *local_sc = FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, capname);
   if(local_sc && local_sc->local_fmtp != "")
     fmtp = local_sc->local_fmtp;
 
@@ -1612,20 +1612,20 @@ void MCUSipConnection::SelectCapability_G7221(SipCapMapType & LocalCaps, SipCapa
   }
 
   PString capname;
-  if(sc->clock == 16000 && bitrate == 24000 && FindSipCap(LocalCaps, "G.722.1-24K{sw}"))
+  if(sc->clock == 16000 && bitrate == 24000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.722.1-24K{sw}"))
     capname = "G.722.1-24K{sw}";
-  else if(sc->clock == 16000 && bitrate == 32000 && FindSipCap(LocalCaps, "G.722.1-32K{sw}"))
+  else if(sc->clock == 16000 && bitrate == 32000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.722.1-32K{sw}"))
     capname = "G.722.1-32K{sw}";
-  else if(sc->clock == 32000 && bitrate == 24000 && FindSipCap(LocalCaps, "G.722.1C-24K{sw}"))
+  else if(sc->clock == 32000 && bitrate == 24000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.722.1C-24K{sw}"))
     capname = "G.722.1C-24K{sw}";
-  else if(sc->clock == 32000 && bitrate == 32000 && FindSipCap(LocalCaps, "G.722.1C-32K{sw}"))
+  else if(sc->clock == 32000 && bitrate == 32000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.722.1C-32K{sw}"))
     capname = "G.722.1C-32K{sw}";
-  else if(sc->clock == 32000 && bitrate == 48000 && FindSipCap(LocalCaps, "G.722.1C-48K{sw}"))
+  else if(sc->clock == 32000 && bitrate == 48000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.722.1C-48K{sw}"))
     capname = "G.722.1C-48K{sw}";
   else
     return;
 
-  SipCapability *local_sc = FindSipCap(LocalCaps, capname);
+  SipCapability *local_sc = FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, capname);
   local_sc->fmtp = sc->fmtp;
   local_sc->local_fmtp = sc->fmtp;
   sc->cap = MCUCapability::Create(capname);
@@ -1636,7 +1636,7 @@ void MCUSipConnection::SelectCapability_G7221(SipCapMapType & LocalCaps, SipCapa
 void MCUSipConnection::SelectCapability_G7222(SipCapMapType & LocalCaps, SipCapability *sc)
 {
   PString capname;
-  if(sc->clock == 16000 && FindSipCap(LocalCaps, "G.722.2{sw}"))
+  if(sc->clock == 16000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.722.2{sw}"))
     capname = "G.722.2{sw}";
   else
     return;
@@ -1662,9 +1662,9 @@ void MCUSipConnection::SelectCapability_G7222(SipCapMapType & LocalCaps, SipCapa
 void MCUSipConnection::SelectCapability_AC3(SipCapMapType & LocalCaps, SipCapability *sc)
 {
   PString capname;
-  if(sc->clock == 48000 && sc->params.AsInteger() <= 1 && FindSipCap(LocalCaps, "AC3_48K{sw}"))
+  if(sc->clock == 48000 && sc->params.AsInteger() <= 1 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "AC3_48K{sw}"))
     capname = "AC3_48K{sw}";
-  else if(sc->clock == 48000 && sc->params.AsInteger() == 2 && FindSipCap(LocalCaps, "AC3_48K2{sw}"))
+  else if(sc->clock == 48000 && sc->params.AsInteger() == 2 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "AC3_48K2{sw}"))
     capname = "AC3_48K2{sw}";
   else
     return;
@@ -1846,7 +1846,7 @@ int MCUSipConnection::ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & Remo
 
       for(sdp_rtpmap_t *rm = m->m_rtpmaps; rm != NULL; rm = rm->rm_next)
       {
-        if(FindSipCap(RemoteCaps, rm->rm_pt)) continue;
+        if(FindSipCap(RemoteCaps, media_type, rm->rm_pt)) continue;
         SipCapability *sc = new SipCapability();
         sc->payload = rm->rm_pt;
         sc->media = media_type;
@@ -1892,12 +1892,12 @@ int MCUSipConnection::ProcessSDP(SipCapMapType & LocalCaps, SipCapMapType & Remo
 
   if(scap >= 0)
   {
-    SipCapability *sc = FindSipCap(RemoteCaps, scap);
+    SipCapability *sc = FindSipCap(RemoteCaps, MEDIA_TYPE_AUDIO, scap);
     if(sc) sc->Print();
   }
   if(vcap >= 0)
   {
-    SipCapability *sc = FindSipCap(RemoteCaps, vcap);
+    SipCapability *sc = FindSipCap(RemoteCaps, MEDIA_TYPE_VIDEO, vcap);
     if(sc) sc->Print();
   }
 
@@ -1914,46 +1914,46 @@ BOOL MCUSipConnection::MergeSipCaps(SipCapMapType & LocalCaps, SipCapMapType & R
     {
       if(scap >= 0) continue;
       // PCMU
-      if((remote_sc->format == "pcmu" || remote_sc->payload == 0) && FindSipCap(LocalCaps, "G.711-uLaw-64k{sw}"))
+      if((remote_sc->format == "pcmu" || remote_sc->payload == 0) && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.711-uLaw-64k{sw}"))
       { remote_sc->capname = "G.711-uLaw-64k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // PCMA
-      else if((remote_sc->format == "pcma" || remote_sc->payload == 8) && FindSipCap(LocalCaps, "G.711-ALaw-64k{sw}"))
+      else if((remote_sc->format == "pcma" || remote_sc->payload == 8) && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.711-ALaw-64k{sw}"))
       { remote_sc->capname = "G.711-ALaw-64k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.722
-      else if(remote_sc->format == "g722" && FindSipCap(LocalCaps, "G.722-64k{sw}"))
+      else if(remote_sc->format == "g722" && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.722-64k{sw}"))
       { remote_sc->capname = "G.722-64k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.723.1
-      else if(remote_sc->format == "g723" && FindSipCap(LocalCaps, "G.7231-6.3k[e]{sw}"))
+      else if(remote_sc->format == "g723" && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.7231-6.3k[e]{sw}"))
       { remote_sc->capname = "G.7231-6.3k[e]{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.726-16
-      else if(remote_sc->format == "g726-16" && FindSipCap(LocalCaps, "G.726-16k{sw}"))
+      else if(remote_sc->format == "g726-16" && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.726-16k{sw}"))
       { remote_sc->capname = "G.726-16k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.726-24
-      else if(remote_sc->format == "g726-24" && FindSipCap(LocalCaps, "G.726-24k{sw}"))
+      else if(remote_sc->format == "g726-24" && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.726-24k{sw}"))
       { remote_sc->capname = "G.726-24k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.726-32
-      else if(remote_sc->format == "g726-32" && FindSipCap(LocalCaps, "G.726-32k{sw}"))
+      else if(remote_sc->format == "g726-32" && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.726-32k{sw}"))
       { remote_sc->capname = "G.726-32k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.726-40
-      else if(remote_sc->format == "g726-40" && FindSipCap(LocalCaps, "G.726-40k{sw}"))
+      else if(remote_sc->format == "g726-40" && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.726-40k{sw}"))
       { remote_sc->capname = "G.726-40k{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.728
-      else if(remote_sc->format == "g728" && FindSipCap(LocalCaps, "G.728-16k[e]"))
+      else if(remote_sc->format == "g728" && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.728-16k[e]"))
       { remote_sc->capname = "G.728-16k[e]"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // G.729A
-      else if(remote_sc->format == "g729" && remote_sc->fmtp == "annexb=no;" && FindSipCap(LocalCaps, "G.729A-8k[e]{sw}"))
+      else if(remote_sc->format == "g729" && remote_sc->fmtp == "annexb=no;" && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "G.729A-8k[e]{sw}"))
       { remote_sc->capname = "G.729A-8k[e]{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // iLBC-13k3
-      else if(remote_sc->format == "ilbc" && remote_sc->fmtp == "mode=30;" && FindSipCap(LocalCaps, "iLBC-13k3{sw}"))
+      else if(remote_sc->format == "ilbc" && remote_sc->fmtp == "mode=30;" && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "iLBC-13k3{sw}"))
       { remote_sc->capname = "iLBC-13k3{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // iLBC-15k2
-      else if(remote_sc->format == "ilbc" && remote_sc->fmtp == "mode=20;" && FindSipCap(LocalCaps, "iLBC-15k2{sw}"))
+      else if(remote_sc->format == "ilbc" && remote_sc->fmtp == "mode=20;" && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "iLBC-15k2{sw}"))
       { remote_sc->capname = "iLBC-15k2{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // SILK 16000
-      else if(remote_sc->format == "silk" && remote_sc->clock == 16000 && FindSipCap(LocalCaps, "SILK_B40{sw}"))
+      else if(remote_sc->format == "silk" && remote_sc->clock == 16000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "SILK_B40{sw}"))
       { remote_sc->capname = "SILK_B40{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // SILK 24000
-      else if(remote_sc->format == "silk" && remote_sc->clock == 24000 && FindSipCap(LocalCaps, "SILK_B40_24K{sw}"))
+      else if(remote_sc->format == "silk" && remote_sc->clock == 24000 && FindSipCap(LocalCaps, MEDIA_TYPE_AUDIO, "SILK_B40_24K{sw}"))
       { remote_sc->capname = "SILK_B40_24K{sw}"; remote_sc->cap = MCUCapability::Create(remote_sc->capname); }
       // SPEEX
       else if(remote_sc->format == "speex")
@@ -2102,8 +2102,8 @@ int MCUSipConnection::ProcessReInvite(const msg_t *msg)
   int sflag = 1; // 0 - no changes
   if(scap >= 0 && cur_scap >= 0)
   {
-    SipCapability *cur_sc = FindSipCap(RemoteSipCaps, cur_scap);
-    SipCapability *new_sc = FindSipCap(SipCaps , scap);
+    SipCapability *cur_sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_AUDIO, cur_scap);
+    SipCapability *new_sc = FindSipCap(SipCaps , MEDIA_TYPE_AUDIO, scap);
     sflag = new_sc->CmpSipCaps(*cur_sc);
   }
   else if(scap < 0 && cur_scap < 0)
@@ -2112,15 +2112,15 @@ int MCUSipConnection::ProcessReInvite(const msg_t *msg)
   }
   if(sflag && cur_scap >= 0)
   {
-    DeleteMediaChannel(cur_scap, 0);
-    DeleteMediaChannel(cur_scap, 1);
+    DeleteMediaChannel(MEDIA_TYPE_AUDIO, cur_scap, 0);
+    DeleteMediaChannel(MEDIA_TYPE_AUDIO, cur_scap, 1);
   }
 
   int vflag = 1; // 0 - no changes
   if(vcap >= 0 && cur_vcap >= 0)
   {
-    SipCapability *cur_sc = FindSipCap(RemoteSipCaps, cur_vcap);
-    SipCapability *new_sc = FindSipCap(SipCaps , vcap);
+    SipCapability *cur_sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_VIDEO, cur_vcap);
+    SipCapability *new_sc = FindSipCap(SipCaps, MEDIA_TYPE_VIDEO, vcap);
     vflag = new_sc->CmpSipCaps(*cur_sc);
   }
   else if(vcap < 0 && cur_vcap < 0)
@@ -2129,8 +2129,8 @@ int MCUSipConnection::ProcessReInvite(const msg_t *msg)
   }
   if(vflag && cur_vcap >= 0)
   {
-    DeleteMediaChannel(cur_vcap, 0);
-    DeleteMediaChannel(cur_vcap, 1);
+    DeleteMediaChannel(MEDIA_TYPE_VIDEO, cur_vcap, 0);
+    DeleteMediaChannel(MEDIA_TYPE_VIDEO, cur_vcap, 1);
   }
 
   if(!sflag && !vflag) // nothing changed
@@ -2145,13 +2145,13 @@ int MCUSipConnection::ProcessReInvite(const msg_t *msg)
 
   if(sflag && scap >= 0)
   {
-    CreateMediaChannel(scap,0);
-    CreateMediaChannel(scap,1);
+    CreateMediaChannel(MEDIA_TYPE_AUDIO, scap, 0);
+    CreateMediaChannel(MEDIA_TYPE_AUDIO, scap, 1);
   }
   if(vflag && vcap >= 0)
   {
-    CreateMediaChannel(vcap,0);
-    CreateMediaChannel(vcap,1);
+    CreateMediaChannel(MEDIA_TYPE_VIDEO, vcap, 0);
+    CreateMediaChannel(MEDIA_TYPE_VIDEO, vcap, 1);
   }
 
   return 0;

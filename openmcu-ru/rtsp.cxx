@@ -255,7 +255,7 @@ BOOL MCURtspConnection::CreateInboundCaps()
   unsigned video_height = video_resolution.Tokenise("x")[1].AsInteger();
 
   // setup audio capability
-  SipCapability *audio_sc = FindSipCap(RemoteSipCaps, audio_codec);
+  SipCapability *audio_sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_AUDIO, audio_codec);
   if(audio_sc)
   {
     audio_sc->cap = MCUCapability::Create(audio_codec);
@@ -269,7 +269,7 @@ BOOL MCURtspConnection::CreateInboundCaps()
     scap = audio_sc->payload;
   }
   // setup video capability
-  SipCapability *video_sc = FindSipCap(RemoteSipCaps, video_codec);
+  SipCapability *video_sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_VIDEO, video_codec);
   if(video_sc)
   {
     video_sc->cap = MCUCapability::Create(video_codec);
@@ -341,9 +341,9 @@ BOOL MCURtspConnection::SendPlay()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL MCURtspConnection::SendSetup(int pt)
+BOOL MCURtspConnection::SendSetup(MediaTypes mtype, int pt)
 {
-  SipCapability *sc = FindSipCap(RemoteSipCaps, pt);
+  SipCapability *sc = FindSipCap(RemoteSipCaps, mtype, pt);
   if(sc->attr.GetAt("control") == NULL)
   {
     MCUTRACE(1, trace_section << "capability attribute \"control\" not found");
@@ -355,9 +355,9 @@ BOOL MCURtspConnection::SendSetup(int pt)
     control = ruri_str+"/"+control;
 
   unsigned rtp_port = 0;
-  if(pt == scap)
+  if(mtype == MEDIA_TYPE_AUDIO && pt == scap)
     rtp_port = audio_rtp_port;
-  else
+  else if(mtype == MEDIA_TYPE_VIDEO && pt == vcap)
     rtp_port = video_rtp_port;
 
   PString session_header;
@@ -376,9 +376,9 @@ BOOL MCURtspConnection::SendSetup(int pt)
   if(!SendRequest(buffer))
     return FALSE;
 
-  if(pt == scap)
+  if(mtype == MEDIA_TYPE_AUDIO && pt == scap)
     rtsp_state = RTSP_SETUP_AUDIO;
-  else
+  else if(mtype == MEDIA_TYPE_VIDEO && pt == vcap)
     rtsp_state = RTSP_SETUP_VIDEO;
 
   return TRUE;
@@ -439,22 +439,22 @@ BOOL MCURtspConnection::OnResponsePlay(const msg_t *msg)
   OnEstablished();
 
   // create and start channels
-  CreateMediaChannel(scap, 0);
-  CreateMediaChannel(vcap, 0);
-  StartMediaChannel(scap, 0);
-  StartMediaChannel(vcap, 0);
+  CreateMediaChannel(MEDIA_TYPE_AUDIO, scap, 0);
+  CreateMediaChannel(MEDIA_TYPE_VIDEO, vcap, 0);
+  StartMediaChannel(MEDIA_TYPE_AUDIO, scap, 0);
+  StartMediaChannel(MEDIA_TYPE_VIDEO, vcap, 0);
 
   // is connected
   connectionState = EstablishedConnection;
 
   if(scap > 0)
   {
-    SipCapability *sc = FindSipCap(RemoteSipCaps, scap);
+    SipCapability *sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_AUDIO, scap);
     MCUTRACE(1, trace_section << "audio " << sc->capname << " " << sc->remote_ip << ":" << sc->remote_port);
   }
   if(vcap > 0)
   {
-    SipCapability *sc = FindSipCap(RemoteSipCaps, vcap);
+    SipCapability *sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_VIDEO, vcap);
     MCUTRACE(1, trace_section << "video " << sc->capname << " " << sc->remote_ip << ":" << sc->remote_port);
   }
 
@@ -479,9 +479,9 @@ BOOL MCURtspConnection::OnResponseSetup(const msg_t *msg)
 
   SipCapability *sc = NULL;
   if(rtsp_state == RTSP_SETUP_AUDIO)
-    sc = FindSipCap(RemoteSipCaps, scap);
+    sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_AUDIO, scap);
   else
-    sc = FindSipCap(RemoteSipCaps, vcap);
+    sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_VIDEO, vcap);
 
   if(ParseTransportStr(sc, transport_str) == FALSE)
   {
@@ -491,7 +491,7 @@ BOOL MCURtspConnection::OnResponseSetup(const msg_t *msg)
 
   if(rtsp_state == RTSP_SETUP_AUDIO && vcap > 0)
   {
-    SendSetup(vcap);
+    SendSetup(MEDIA_TYPE_VIDEO, vcap);
     return TRUE;
   }
 
@@ -526,9 +526,9 @@ BOOL MCURtspConnection::OnResponseDescribe(const msg_t *msg)
     remoteApplication = sip->sip_server->g_string;
 
   if(scap >= 0)
-    SendSetup(scap);
+    SendSetup(MEDIA_TYPE_AUDIO, scap);
   else
-    SendSetup(vcap);
+    SendSetup(MEDIA_TYPE_VIDEO, vcap);
 
   return TRUE;
 }
@@ -576,7 +576,7 @@ BOOL MCURtspConnection::OnRequestDescribe(const msg_t *msg)
 
   if(scap >= 0)
   {
-    SipCapability *sc = FindSipCap(RemoteSipCaps, scap);
+    SipCapability *sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_AUDIO, scap);
     if(sc)
     {
       snprintf(buffer_sdp + strlen(buffer_sdp), 1024,
@@ -590,7 +590,7 @@ BOOL MCURtspConnection::OnRequestDescribe(const msg_t *msg)
 
   if(vcap >= 0)
   {
-    SipCapability *sc = FindSipCap(RemoteSipCaps, vcap);
+    SipCapability *sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_VIDEO, vcap);
     if(sc)
     {
       snprintf(buffer_sdp + strlen(buffer_sdp), 1024,
@@ -714,9 +714,9 @@ BOOL MCURtspConnection::OnRequestSetup(const msg_t *msg)
   }
 
   if(setup_media == "audio")
-    sc = FindSipCap(RemoteSipCaps, scap);
+    sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_AUDIO, scap);
   else if(setup_media == "video")
-    sc = FindSipCap(RemoteSipCaps, vcap);
+    sc = FindSipCap(RemoteSipCaps, MEDIA_TYPE_VIDEO, vcap);
   else
   {
     MCUTRACE(1, trace_section << "unknown media " << setup_media);
@@ -764,10 +764,10 @@ BOOL MCURtspConnection::OnRequestPlay(const msg_t *msg)
     return FALSE;
 
   // start rtp channels
-  CreateMediaChannel(scap, 1);
-  CreateMediaChannel(vcap, 1);
-  StartMediaChannel(scap, 1);
-  StartMediaChannel(vcap, 1);
+  CreateMediaChannel(MEDIA_TYPE_AUDIO, scap, 1);
+  CreateMediaChannel(MEDIA_TYPE_VIDEO, vcap, 1);
+  StartMediaChannel(MEDIA_TYPE_AUDIO, scap, 1);
+  StartMediaChannel(MEDIA_TYPE_VIDEO, vcap, 1);
 
   // is connected
   connectionState = EstablishedConnection;
