@@ -425,7 +425,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void WriteNoVideoFrame(VideoMixPosition&);
 
     virtual void VMPDelete(MCUVMPList::shared_iterator &it);
-    virtual void VMPSetConfig(VideoMixPosition *vmp);
     virtual void VMPCopy(VideoMixPosition&, VideoMixPosition &);
     virtual void VMPTouch(VideoMixPosition&);
     virtual void VMPSwapAndTouch(VideoMixPosition&, VideoMixPosition &);

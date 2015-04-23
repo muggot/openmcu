@@ -981,14 +981,6 @@ void MCUSimpleVideoMixer::VMPTouch(VideoMixPosition & vmp)
   else if((time(NULL)-vmp.lastWrite) > 1) WriteNoVideoFrame(vmp);
 }
 
-void MCUSimpleVideoMixer::VMPSetConfig(VideoMixPosition *vmp)
-{
-# if USE_FREETYPE
-  RemoveSubtitles(*vmp);
-# endif
-  VMPTouch(*vmp);
-}
-
 void MCUSimpleVideoMixer::VMPCopy(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
 {
 # if USE_FREETYPE
@@ -1026,7 +1018,10 @@ void MCUSimpleVideoMixer::ReallocatePositions()
     if(vmpList.Erase(it))
     {
       vmp->n = i;
-      VMPSetConfig(vmp);
+#if USE_FREETYPE
+      RemoveSubtitles(*vmp);
+#endif
+      VMPTouch(*vmp);
       VMPInsert(vmp);
     }
   }
@@ -1107,7 +1102,10 @@ void MCUSimpleVideoMixer::Scroll(BOOL reverse)
     {
       if(reverse) v->n = (v->n + vidnum - 1) % vidnum;
       else        v->n = (v->n +          1) % vidnum;
-      VMPSetConfig(v);
+#if USE_FREETYPE
+      RemoveSubtitles(*v);
+#endif
+      VMPTouch(*v);
       VMPInsert(v);
     }
   }
@@ -1127,7 +1125,10 @@ void MCUSimpleVideoMixer::Revert()
     if(vmpList.Erase(it))
     {
       v->n = vidnum-1-v->n;
-      VMPSetConfig(v);
+#if USE_FREETYPE
+      RemoveSubtitles(*v);
+#endif
+      VMPTouch(*v);
       VMPInsert(v);
     }
   }
@@ -1493,7 +1494,10 @@ void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
   for(MCUVMPList::shared_iterator it = list.begin(); it != list.end(); ++it)
   {
     VideoMixPosition *vmp = *it;
-    VMPSetConfig(vmp);
+#if USE_FREETYPE
+    RemoveSubtitles(*vmp);
+#endif
+    VMPTouch(*vmp);
     VMPInsert(vmp);
   }
 }
@@ -1615,7 +1619,10 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
     if(vmpList.Erase(it1))
     {
       v1->n = pos2;
-      VMPSetConfig(v1);
+#if USE_FREETYPE
+      RemoveSubtitles(*v1);
+#endif
+      VMPTouch(*v1);
       VMPInsert(v1);
     }
     return;
