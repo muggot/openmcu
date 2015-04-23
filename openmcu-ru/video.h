@@ -80,23 +80,24 @@ class VideoFrameStoreList {
 #define VMPC_DEFAULT_MOCKUP_HEIGHT              218
 
 #ifdef USE_FREETYPE
-#  define VMPC_DEFAULT_LABEL_MASK               89
-//#  define VMPC_DEFAULT_LABEL_COLOR              0x0ffffff
-#  define VMPC_DEFAULT_LABEL_BGCOLOR            0xA85D //RGB 0x115599
-#  define VMPC_DEFAULT_FONTFILE                 "Russo_One.ttf"
-#  define VMPC_DEFAULT_FONTSIZE                 "1/16"
-#  define VMPC_DEFAULT_BORDER_LEFT              "5/80"
-#  define VMPC_DEFAULT_BORDER_RIGHT             "5/80"
-#  define VMPC_DEFAULT_BORDER_TOP               "1/200"
-#  define VMPC_DEFAULT_BORDER_BOTTOM            "1/100"
-#  define VMPC_DEFAULT_H_PAD                    "1/16"
-#  define VMPC_DEFAULT_V_PAD                    "1/24"
-#  define VMPC_DEFAULT_SHADOW_L                 "1/200"
-#  define VMPC_DEFAULT_SHADOW_R                 "1/80"
-#  define VMPC_DEFAULT_SHADOW_T                 "1/150"
-#  define VMPC_DEFAULT_SHADOW_B                 "1/65"
-#  define VMPC_DEFAULT_CUT_BEFORE_BRACKET       1
-#  define VMPC_DEFAULT_MINIMUM_WIDTH_FOR_LABEL  "1/5"
+# define VMPC_DEFAULT_LABEL_MASK               89
+//# define VMPC_DEFAULT_LABEL_COLOR              0x0ffffff
+# define VMPC_DEFAULT_LABEL_BGCOLOR            0xA85D //RGB 0x115599
+# define VMPC_DEFAULT_FONTFILE                 "Russo_One.ttf"
+# define VMPC_DEFAULT_FONTSIZE                 "1/16"
+# define VMPC_DEFAULT_BORDER_LEFT              "5/80"
+# define VMPC_DEFAULT_BORDER_RIGHT             "5/80"
+# define VMPC_DEFAULT_BORDER_TOP               "1/200"
+# define VMPC_DEFAULT_BORDER_BOTTOM            "1/100"
+# define VMPC_DEFAULT_H_PAD                    "1/16"
+# define VMPC_DEFAULT_V_PAD                    "1/24"
+# define VMPC_DEFAULT_SHADOW_L                 "1/200"
+# define VMPC_DEFAULT_SHADOW_R                 "1/80"
+# define VMPC_DEFAULT_SHADOW_T                 "1/150"
+# define VMPC_DEFAULT_SHADOW_B                 "1/65"
+# define VMPC_DEFAULT_CUT_BEFORE_BRACKET       1
+# define VMPC_DEFAULT_MINIMUM_WIDTH_FOR_LABEL  "1/5"
+  void RemoveSubtitles(VideoMixPosition & vmp);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -373,6 +374,8 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 
     ~MCUSimpleVideoMixer();
 
+    virtual void FillBlackHoles();
+
     virtual BOOL ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount);
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height);
     virtual BOOL SetOffline(ConferenceMemberId id);
@@ -382,7 +385,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual unsigned printsubs_calc(unsigned v, char s[10]);
     virtual void DeleteSubtitlesByFS(unsigned w, unsigned h);
     virtual void PrintSubtitles(VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties);
-    virtual void RemoveSubtitles(VideoMixPosition & vmp);
     virtual void InitializeSubtitles();
     virtual MCUSubtitles * RenderSubtitles(unsigned key, VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties);
 #endif
@@ -434,6 +436,8 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 
     const int GetLayout() const
     { return specialLayout; }
+
+    int blackHoles;
 
   protected:
     virtual void ReallocatePositions();

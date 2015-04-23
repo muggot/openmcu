@@ -436,6 +436,8 @@ class Conference : public PObject
 
     ~Conference();
 
+    void FillBlackHoles();
+
     void Unlock();
 
     ConferenceManager & GetManager()

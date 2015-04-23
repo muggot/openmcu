@@ -601,6 +601,9 @@ int ConferenceMonitor::Perform(Conference * conference)
     member->dialToken = ep.Invite(conference->GetNumber(), member->GetName());
   }
 
+  // fill "black holes"
+  conference->FillBlackHoles();
+
   return 0;
 }
 
@@ -787,6 +790,29 @@ MCUMemberList::shared_iterator Conference::AddMemberToList(ConferenceMember * me
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Conference::FillBlackHoles()
+{
+  if(UseSameVideoForAllMembers())
+  {
+    for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+    {
+      MCUSimpleVideoMixer *mixer = it.GetObject();
+      if(mixer->blackHoles) mixer->FillBlackHoles();
+    }
+  }
+  else
+  { // classic mode
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+    {
+      ConferenceMember *member = it.GetObject();
+      if(member)
+      {
+        if(member->videoMixer) if(member->videoMixer->blackHoles) member->videoMixer->FillBlackHoles();
+      }
+    }
+  }
+}
 
 BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
 {

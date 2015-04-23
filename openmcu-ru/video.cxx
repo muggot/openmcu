@@ -327,20 +327,16 @@ VideoMixPosition::VideoMixPosition(ConferenceMemberId _id)
 
 VideoMixPosition::~VideoMixPosition()
 {
+  PTRACE(5,"VideoMixer\tVMP " << n << " destructor: " << endpointName);
+#if USE_FREETYPE
+  RemoveSubtitles(*this);
+#endif
   for(MCUSharedList<MCUBufferArray>::shared_iterator it = bufferList.begin(); it != bufferList.end(); ++it)
   {
     MCUBufferArray *buffer = *it;
     if(bufferList.Erase(it))
       delete buffer;
   }
-#if USE_FREETYPE
-  for(MCUSubtitlesList::shared_iterator it = subtitlesList.begin(); it != subtitlesList.end(); ++it)
-  {
-    MCUSubtitles *sub = *it;
-    if(subtitlesList.Erase(it))
-      delete sub;
-  }
-#endif
 }
 
 #if USE_FREETYPE
@@ -356,7 +352,7 @@ unsigned MCUSimpleVideoMixer::printsubs_calc(unsigned v, char s[10])
   return 1;
 }
 
-void MCUSimpleVideoMixer::RemoveSubtitles(VideoMixPosition & vmp)
+void RemoveSubtitles(VideoMixPosition & vmp)
 {
   for(VideoMixPosition::MCUSubtitlesList::shared_iterator it = vmp.subtitlesList.begin(); it != vmp.subtitlesList.end(); ++it)
   {
@@ -688,10 +684,18 @@ MCUSimpleVideoMixer::MCUSimpleVideoMixer(BOOL _forceScreenSplit)
   imageStore1_size=0;
   imageStore2_size=0;
   specialLayout = 0;
+  blackHoles = 0;
 }
 
 MCUSimpleVideoMixer::~MCUSimpleVideoMixer()
 {
+}
+
+void MCUSimpleVideoMixer::FillBlackHoles()
+{
+  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
+    VMPTouch(**it);
+  blackHoles=0;
 }
 
 BOOL MCUSimpleVideoMixer::ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount)
@@ -723,26 +727,47 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
     int vmp_frame_size = pw*ph*3/2;
     if(pw<2 || ph<2) continue;
 
+    int vmpReadError = 1; //not found
+    BYTE * framePointer = NULL;
     MCUVMPList::shared_iterator vmp_it = VMPFind((int)i);
     if(vmp_it != vmpList.end())
     {
       VideoMixPosition *vmp = *vmp_it;
       MCUSharedList<MCUBufferArray>::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)&fs);
-      if(vmpbuf_it != vmp->bufferList.end())
+      if(vmpbuf_it == vmp->bufferList.end()) vmpReadError = 2; // no buffer
+      else
       {
         int vmpbuf_index = vmp->vmpbuf_index;
-        if(vmpbuf_index >= 0)
+        if(vmpbuf_index < 0) vmpReadError = 3; // buffer index not set
+        else if(vmpbuf_index >= 0)
         {
           MCUBuffer *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
           if(vmpbuf->GetSize() >= vmp_frame_size)
           {
-            for(unsigned i = 0; i < vmpcfg.blks; i++)
-              CopyRFromRIntoR(vmpbuf->GetPointer(), buffer, px, py, pw, ph,
-                AlignUp2(vmpcfg.blk[i].posx*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*height/CIF4_HEIGHT),
-                AlignUp2(vmpcfg.blk[i].width*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*height/CIF4_HEIGHT),
-                width, height, pw, ph );
+            framePointer = vmpbuf->GetPointer();
+            vmpReadError = 0; //no error
           }
+          else vmpReadError = 4; // too big vmp_frame_size
         }
+      }
+    }
+
+    //simple error handler here:
+    if(vmpReadError==1) vmpReadError=0; //not an error: vmp not defined
+    PTRACE_IF(vmpReadError!=0, 1, "VideoMixer\tVMP read error " << vmpReadError << ": n=" << i << ", fw=" << width << ", fh=" << height);
+    if(vmpReadError) cout << "VMP read error " << vmpReadError << ": n=" << i << ", fw=" << width << ", fh=" << height << "\n";
+    if(vmpReadError==2 || vmpReadError==3) blackHoles=1; //"black holes" detected - to fill them later from confernce monitoring thread
+
+  // 4??????????
+
+    if(framePointer!=NULL)
+    {
+      for(unsigned i = 0; i < vmpcfg.blks; i++)
+      {
+        CopyRFromRIntoR(framePointer, buffer, px, py, pw, ph,
+          AlignUp2(vmpcfg.blk[i].posx*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*height/CIF4_HEIGHT),
+          AlignUp2(vmpcfg.blk[i].width*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*height/CIF4_HEIGHT),
+          width, height, pw, ph );
       }
     }
 
