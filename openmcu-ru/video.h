@@ -97,7 +97,11 @@ class VideoFrameStoreList {
 # define VMPC_DEFAULT_SHADOW_B                 "1/65"
 # define VMPC_DEFAULT_CUT_BEFORE_BRACKET       1
 # define VMPC_DEFAULT_MINIMUM_WIDTH_FOR_LABEL  "1/5"
-  void RemoveSubtitles(VideoMixPosition & vmp);
+  void MCURemoveSubtitles(VideoMixPosition & vmp);
+  unsigned MCUSubsCalc(const unsigned, const PString);
+  void MCUPrintSubtitles(VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties, unsigned bgColor);
+  void InitializeSubtitles();
+  MCUSubtitles * MCURenderSubtitles(unsigned key, VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties, unsigned layout);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -380,13 +384,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual BOOL SetOffline(ConferenceMemberId id);
     virtual BOOL SetOnline(ConferenceMemberId id);
 
-#if USE_FREETYPE
-    virtual unsigned printsubs_calc(unsigned v, char s[10]);
-    virtual void DeleteSubtitlesByFS(unsigned w, unsigned h);
-    virtual void PrintSubtitles(VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties);
-    virtual void InitializeSubtitles();
-    virtual MCUSubtitles * RenderSubtitles(unsigned key, VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties);
-#endif
     virtual BOOL WriteSubFrame(VideoMixPosition & vmp, const void * buffer, int width, int height, int options);
 
     virtual void Shuffle();
@@ -397,8 +394,9 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
     virtual void MyChangeLayout(unsigned newLayout);
     virtual void PositionSetup(int pos, int type, ConferenceMember * member);
-//    virtual BOOL MyAddVideoSource(int num, ConferenceMemberId *idp);
-
+#   if USE_FREETYPE
+    virtual void DeleteSubtitlesByFS(unsigned w, unsigned h);
+#   endif
     virtual void MyRemoveVideoSource(int pos, BOOL flag);
     virtual void MyRemoveVideoSourceById(ConferenceMemberId id, BOOL flag);
     virtual void MyRemoveAllVideoSource();

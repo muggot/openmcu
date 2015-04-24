@@ -329,7 +329,7 @@ VideoMixPosition::~VideoMixPosition()
 {
   PTRACE(5,"VideoMixer\tVMP " << n << " destructor: " << endpointName);
 #if USE_FREETYPE
-  RemoveSubtitles(*this);
+  MCURemoveSubtitles(*this);
 #endif
   for(MCUSharedList<MCUBufferYUVArray>::shared_iterator it = bufferList.begin(); it != bufferList.end(); ++it)
   {
@@ -340,19 +340,25 @@ VideoMixPosition::~VideoMixPosition()
 }
 
 #if USE_FREETYPE
-unsigned MCUSimpleVideoMixer::printsubs_calc(unsigned v, char s[10])
-{ int slashpos=-1; char s2[10];
-  for(int i=0;i<10;i++){ s2[i]=s[i]; if(s[i]==0) break; if(s[i]=='/') slashpos=i; }
-  if (slashpos==-1) return atoi(s);
-  s2[slashpos]=0; unsigned mul=atoi(s2);
-  for(int i=slashpos+1;i<10;i++) s2[i-slashpos-1]=s[i];
-  s2[9-slashpos]=0; unsigned div=atoi(s2);
-  if(div>0) return v*mul/div;
-  PTRACE(1,"FreeType\tprintsubs_calc() DIVISION BY ZERO: " << v << "*" << mul << "/" << div);
-  return 1;
+unsigned MCUSubsCalc(const unsigned v, const PString s)
+{
+  if(s.Find("/")==P_MAX_INDEX) return s.AsInteger();
+  PStringArray fraction=s.Tokenise("/");
+  if(fraction.GetSize() != 2)
+  {
+    PTRACE(1, "FreeType\tMCUSubsCals bad value: " << s);
+    return 1;
+  }
+  unsigned divisor = fraction[1].AsInteger();
+  if(divisor==0)
+  {
+    PTRACE(1, "FreeType\tMCUSubsCals division by zero (" << s << "): " << v << "*" << fraction[0] << "/" << fraction[1]);
+    return 1;
+  }
+  return v * fraction[0].AsInteger() / divisor;
 }
 
-void RemoveSubtitles(VideoMixPosition & vmp)
+void MCURemoveSubtitles(VideoMixPosition & vmp)
 {
   for(VideoMixPosition::MCUSubtitlesList::shared_iterator it = vmp.subtitlesList.begin(); it != vmp.subtitlesList.end(); ++it)
   {
@@ -384,7 +390,7 @@ void MCUSimpleVideoMixer::DeleteSubtitlesByFS(unsigned w, unsigned h)
   }
 }
 
-void MCUSimpleVideoMixer::PrintSubtitles(VideoMixPosition & vmp, void * buffer, unsigned int fw, unsigned int fh, unsigned int ft_properties)
+void MCUPrintSubtitles(VideoMixPosition & vmp, void * buffer, unsigned int fw, unsigned int fh, unsigned int ft_properties, unsigned layout)
 {
   MCUSubtitles * st;
 
@@ -393,7 +399,7 @@ void MCUSimpleVideoMixer::PrintSubtitles(VideoMixPosition & vmp, void * buffer, 
 
   if(q == vmp.subtitlesList.end())
   {
-    st = RenderSubtitles(key, vmp, buffer, fw, fh, ft_properties);
+    st = MCURenderSubtitles(key, vmp, buffer, fw, fh, ft_properties, layout);
     if(st!=NULL) q = vmp.subtitlesList.Insert(st, key);
   }
   else
@@ -405,7 +411,7 @@ void MCUSimpleVideoMixer::PrintSubtitles(VideoMixPosition & vmp, void * buffer, 
 
   if(!(st->w)) return;
 
-  VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
+  unsigned bgcolor = OpenMCU::vmcfg.vmconf[layout].vmpcfg[vmp.n].label_bgcolor;
 
   if(ft_properties & FT_P_SUBTITLES) MixRectIntoFrameSubsMode(st->b,(BYTE *)buffer,st->x,st->y,st->w,st->h,fw,fh,0);
 
@@ -414,7 +420,7 @@ void MCUSimpleVideoMixer::PrintSubtitles(VideoMixPosition & vmp, void * buffer, 
   if(ft_properties & FT_P_TRANSPARENT)
   {
 //    MixRectIntoFrameGrayscale(st->b.GetPointer(),(BYTE *)buffer,st->x,st->y,st->w,st->h,fw,fh,1);
-    ReplaceUV_Rect((BYTE *)buffer,fw,fh,vmpcfg.label_bgcolor>>8,vmpcfg.label_bgcolor&0xFF,0,st->y,fw,st->h);
+    ReplaceUV_Rect((BYTE *)buffer,fw,fh,bgcolor>>8,bgcolor,0,st->y,fw,st->h);
   }
 
 //  if(ft_properties & FT_P_SUBTITLES) MixRectIntoFrameSubsMode(st->b.GetPointer(),(BYTE *)buffer,st->x,st->y,st->w,st->h,fw,fh,0);
@@ -423,7 +429,7 @@ void MCUSimpleVideoMixer::PrintSubtitles(VideoMixPosition & vmp, void * buffer, 
 
 }
 
-void MCUSimpleVideoMixer::InitializeSubtitles()
+void InitializeSubtitles()
 {
   PWaitAndSignal m(ft_mutex);
   if(ft_error != FT_INITIAL_ERROR) return;
@@ -475,34 +481,34 @@ void SubtitlesDropShadow(void * s, unsigned w, unsigned h, unsigned l, unsigned 
 }
 
 
-MCUSubtitles * MCUSimpleVideoMixer::RenderSubtitles(unsigned key, VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties)
+MCUSubtitles * MCURenderSubtitles(unsigned key, VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties, unsigned layout)
 {
 
   MCUSubtitles * st = new MCUSubtitles;
   st->w = 0;
   st->b = NULL;
 
-  VMPCfgSplitOptions & split = OpenMCU::vmcfg.vmconf[specialLayout].splitcfg;
-  VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
+  VMPCfgSplitOptions & split = OpenMCU::vmcfg.vmconf[layout].splitcfg;
+  VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[layout].vmpcfg[vmp.n];
 
   if((fw < 2) || (fh < 2)) return st;
 
-  if(fw < printsubs_calc(fw * OpenMCU::vmcfg.bfw / vmpcfg.width, split.minimum_width_for_label)) return st;
+  if(fw < MCUSubsCalc(fw * OpenMCU::vmcfg.bfw / vmpcfg.width, split.minimum_width_for_label)) return st;
 
   if(ft_error==FT_INITIAL_ERROR) InitializeSubtitles();
   if(ft_error) return st; // Stop using freetype on fail
 
-  unsigned bl = printsubs_calc (fw, vmpcfg.border_left  ),
-           br = printsubs_calc (fw, vmpcfg.border_right ),
-           bt = printsubs_calc (fh, vmpcfg.border_top   ),
-           bb = printsubs_calc (fh, vmpcfg.border_bottom),
-           hp = printsubs_calc (fw, vmpcfg.h_pad        ),
-           vp = printsubs_calc (fh, vmpcfg.v_pad        ),
-          dsl = printsubs_calc (fw, vmpcfg.dropshadow_l ),
-          dsr = printsubs_calc (fw, vmpcfg.dropshadow_r ),
-          dst = printsubs_calc (fh, vmpcfg.dropshadow_t ),
-          dsb = printsubs_calc (fh, vmpcfg.dropshadow_b ),
-  fontsizepix = printsubs_calc (fh, vmpcfg.fontsize)     ;
+  unsigned bl = MCUSubsCalc (fw, vmpcfg.border_left  ),
+           br = MCUSubsCalc (fw, vmpcfg.border_right ),
+           bt = MCUSubsCalc (fh, vmpcfg.border_top   ),
+           bb = MCUSubsCalc (fh, vmpcfg.border_bottom),
+           hp = MCUSubsCalc (fw, vmpcfg.h_pad        ),
+           vp = MCUSubsCalc (fh, vmpcfg.v_pad        ),
+          dsl = MCUSubsCalc (fw, vmpcfg.dropshadow_l ),
+          dsr = MCUSubsCalc (fw, vmpcfg.dropshadow_r ),
+          dst = MCUSubsCalc (fh, vmpcfg.dropshadow_t ),
+          dsb = MCUSubsCalc (fh, vmpcfg.dropshadow_b ),
+  fontsizepix = MCUSubsCalc (fh, vmpcfg.fontsize)     ;
 
   if(fontsizepix < 4) return st;
 
@@ -899,7 +905,7 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 #if USE_FREETYPE
     if(options & WSF_VMP_SUBTITLES)
       if(!(vmpcfg.label_mask&FT_P_DISABLED))
-        PrintSubtitles(vmp, (void *)vmpbuf->GetPointer(),pw,ph,vmpcfg.label_mask);
+        MCUPrintSubtitles(vmp, (void *)vmpbuf->GetPointer(),pw,ph,vmpcfg.label_mask,specialLayout);
 #endif
 
   }
@@ -981,7 +987,7 @@ void MCUSimpleVideoMixer::VMPTouch(VideoMixPosition & vmp)
 void MCUSimpleVideoMixer::VMPCopy(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
 {
 # if USE_FREETYPE
-  RemoveSubtitles(vmp2);
+  MCURemoveSubtitles(vmp2);
 # endif
   vmp2.id             = vmp1.id;
   vmp2.endpointName   = vmp1.endpointName;
@@ -1016,7 +1022,7 @@ void MCUSimpleVideoMixer::ReallocatePositions()
     {
       vmp->n = i;
 #if USE_FREETYPE
-      RemoveSubtitles(*vmp);
+      MCURemoveSubtitles(*vmp);
 #endif
       VMPTouch(*vmp);
       VMPInsert(vmp);
@@ -1073,7 +1079,7 @@ void MCUSimpleVideoMixer::Shuffle()
         vmp->silenceCounter = 0;
         vmp->offline = tempOfflineList[i];
 #   if USE_FREETYPE
-        RemoveSubtitles(*vmp);
+        MCURemoveSubtitles(*vmp);
 #   endif
         VMPTouch(*vmp);
       }
@@ -1100,7 +1106,7 @@ void MCUSimpleVideoMixer::Scroll(BOOL reverse)
       if(reverse) v->n = (v->n + vidnum - 1) % vidnum;
       else        v->n = (v->n +          1) % vidnum;
 #if USE_FREETYPE
-      RemoveSubtitles(*v);
+      MCURemoveSubtitles(*v);
 #endif
       VMPTouch(*v);
       VMPInsert(v);
@@ -1123,7 +1129,7 @@ void MCUSimpleVideoMixer::Revert()
     {
       v->n = vidnum-1-v->n;
 #if USE_FREETYPE
-      RemoveSubtitles(*v);
+      MCURemoveSubtitles(*v);
 #endif
       VMPTouch(*v);
       VMPInsert(v);
@@ -1186,7 +1192,7 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
     newPosition->chosenVan = 0;
   }
 # if USE_FREETYPE
-  RemoveSubtitles(*newPosition);
+  MCURemoveSubtitles(*newPosition);
 # endif
   if(create) VMPInsert(newPosition);
   VMPTouch(*newPosition);
@@ -1368,7 +1374,7 @@ BOOL MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * member)
     vmp->chosenVan=member->chosenVan;
     vmp->endpointName=member->GetName();
 #if USE_FREETYPE
-    RemoveSubtitles(*vmp);
+    MCURemoveSubtitles(*vmp);
 #endif
     VMPInsert(vmp);
   }
@@ -1492,10 +1498,10 @@ void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
   {
     VideoMixPosition *vmp = *it;
 #if USE_FREETYPE
-    RemoveSubtitles(*vmp);
+    MCURemoveSubtitles(*vmp);
 #endif
-    VMPTouch(*vmp);
     VMPInsert(vmp);
+    VMPTouch(*vmp);
   }
 }
 
@@ -1560,7 +1566,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
         }
         else v->id = v->n;
 #if USE_FREETYPE
-        RemoveSubtitles(*v);
+        MCURemoveSubtitles(*v);
 #endif
         if(id)v->endpointName = member->GetName();
         else v->endpointName="Voice-activated " + PString(type-1);
@@ -1571,7 +1577,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
 
       v->id=id;
 #if USE_FREETYPE
-      RemoveSubtitles(*v);
+      MCURemoveSubtitles(*v);
 #endif
       v->endpointName=member->GetName();
       return;
@@ -1591,7 +1597,7 @@ void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * me
   newPosition->n=pos;
   newPosition->endpointName = name;
 #if USE_FREETYPE
-  RemoveSubtitles(*newPosition);
+  MCURemoveSubtitles(*newPosition);
 #endif
   VMPInsert(newPosition);
 }
@@ -1617,7 +1623,7 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
     {
       v1->n = pos2;
 #if USE_FREETYPE
-      RemoveSubtitles(*v1);
+      MCURemoveSubtitles(*v1);
 #endif
       VMPTouch(*v1);
       VMPInsert(v1);
@@ -1788,7 +1794,7 @@ BOOL TestVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
     }
     PStringStream s; s << "Mix Position " << i; newPosition->endpointName=s;
 #if USE_FREETYPE
-    RemoveSubtitles(*newPosition);
+    MCURemoveSubtitles(*newPosition);
 #endif
     newPosition->n=i; 
     VMPInsert(newPosition);
@@ -1832,7 +1838,7 @@ void TestVideoMixer::MyChangeLayout(unsigned newLayout)
     }
     PStringStream s; s << "Mix Position " << i; newPosition->endpointName=s;
 #if USE_FREETYPE
-    RemoveSubtitles(*newPosition);
+    MCURemoveSubtitles(*newPosition);
 #endif
     newPosition->n=i; 
     VMPInsert(newPosition);
@@ -1914,7 +1920,7 @@ BOOL EchoVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
   vmp->id=id;
   vmp->endpointName = mbr.GetName();
 #if USE_FREETYPE
-  RemoveSubtitles(*vmp);
+  MCURemoveSubtitles(*vmp);
 #endif
   return TRUE;
 }
