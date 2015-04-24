@@ -358,7 +358,10 @@ void RemoveSubtitles(VideoMixPosition & vmp)
   {
     MCUSubtitles *sub = *it;
     if(vmp.subtitlesList.Erase(it))
+    {
+      if(sub->b) free(sub->b);
       delete sub;
+    }
   }
 }
 
