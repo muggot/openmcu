@@ -14,6 +14,7 @@ FT_UInt ft_glyph_index,ft_previous;
 BOOL ft_subtitles=FALSE;
 // Fake error code mean that we need initialize labels from scratch:
 #define FT_INITIAL_ERROR 555
+#define FT_FINAL_ERROR 5555
 // Number of frames skipped before render label:
 #define FT_SKIPFRAMES    1
 // Number of getting username attempts:
@@ -449,10 +450,7 @@ void InitializeSubtitles()
     ft_use_kerning=FT_HAS_KERNING(ft_face);
     PTRACE(3,"FreeType\tTruetype font " << OpenMCU::vmcfg.fontfile << " loaded with" << (ft_use_kerning?"":"out") << " kerning");
   }
-  else
-  {
-    PTRACE(3,"FreeType\tCould not load truetype font: " << OpenMCU::vmcfg.fontfile);
-  }
+  PTRACE_IF(1,ft_error,"FreeType\tCould not load truetype font: " << OpenMCU::vmcfg.fontfile);
 }
 
 void SubtitlesDropShadow(void * s, unsigned w, unsigned h, unsigned l, unsigned t, unsigned r, unsigned b)
@@ -499,7 +497,15 @@ MCUSubtitles * MCURenderSubtitles(unsigned key, VideoMixPosition & vmp, void * b
   if(fw < MCUSubsCalc(fw * OpenMCU::vmcfg.bfw / vmpcfg.width, split.minimum_width_for_label)) return st;
 
   if(ft_error==FT_INITIAL_ERROR) InitializeSubtitles();
-  if(ft_error) return st; // Stop using freetype on fail
+
+  // Stop using freetype on fail
+  if(ft_error==FT_FINAL_ERROR) return st;
+  if(ft_error)
+  {
+    PTRACE(1,"FreeType\tError " << ft_error <<", bye-bye");
+    ft_error=FT_FINAL_ERROR;
+    return st;
+  }
 
   unsigned bl = MCUSubsCalc (fw, vmpcfg.border_left  ),
            br = MCUSubsCalc (fw, vmpcfg.border_right ),
@@ -765,11 +771,9 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
 
     //simple error handler here:
     if(vmpReadError==1) vmpReadError=0; //not an error: vmp not defined
-    PTRACE_IF(vmpReadError!=0, 1, "VideoMixer\tVMP read error " << vmpReadError << ": n=" << i << ", fw=" << width << ", fh=" << height);
+    PTRACE_IF(1, vmpReadError!=0, "VideoMixer\tVMP read error " << vmpReadError << ": n=" << i << ", fw=" << width << ", fh=" << height);
     if(vmpReadError) cout << "VMP read error " << vmpReadError << ": n=" << i << ", fw=" << width << ", fh=" << height << "\n";
-    if(vmpReadError==2 || vmpReadError==3) blackHoles=1; //"black holes" detected - to fill them later from confernce monitoring thread
-
-  // 4??????????
+    if(vmpReadError==2) blackHoles=1; //"black holes" detected - to fill them later from confernce monitoring thread
 
     if(framePointer!=NULL)
     {
@@ -1242,7 +1246,7 @@ BOOL MCUSimpleVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember
   }
 
   BOOL result = (it != vmpList.end());
-  PTRACE_IF(!result, 2, "VideoMixer\tAddVideoSource " << id << " could not find empty video position");
+  PTRACE_IF(2, !result, "VideoMixer\tAddVideoSource " << id << " could not find empty video position");
   return result;
 }
 
