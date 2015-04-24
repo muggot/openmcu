@@ -385,7 +385,10 @@ void MCUSimpleVideoMixer::DeleteSubtitlesByFS(unsigned w, unsigned h)
     {
       MCUSubtitles *sub = *q;
       if(vmp->subtitlesList.Erase(q))
+      {
+        if(sub->b) free(sub->b);
         delete sub;
+      }
     }
   }
 }
