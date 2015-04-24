@@ -484,7 +484,6 @@ void SubtitlesDropShadow(void * s, unsigned w, unsigned h, unsigned l, unsigned 
 
 MCUSubtitles * MCURenderSubtitles(unsigned key, VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties, unsigned layout)
 {
-
   MCUSubtitles * st = new MCUSubtitles;
   st->w = 0;
   st->b = NULL;
@@ -526,6 +525,8 @@ MCUSubtitles * MCURenderSubtitles(unsigned key, VideoMixPosition & vmp, void * b
   if((wi<2)||(hi<2)) return st;
   unsigned w = (unsigned)wi;
   unsigned h = (unsigned)hi;
+
+  PWaitAndSignal m(ft_mutex);
 
   if((ft_error = FT_Set_Pixel_Sizes(ft_face,0,fontsizepix))) return st;
 
