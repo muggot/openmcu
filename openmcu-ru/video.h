@@ -193,7 +193,6 @@ class VideoMixPosition {
 
     MCUSharedList<MCUBufferYUVArray> bufferList;
     int vmpbuf_index;
-    PMutex bufferListMutex;
     MCUBufferYUV tmpbuf;
 };
 

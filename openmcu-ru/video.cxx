@@ -837,12 +837,7 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 
     MCUSharedList<MCUBufferYUVArray>::shared_iterator vmpbuf_it = vmp.bufferList.Find((long)&vf);
     if(vmpbuf_it == vmp.bufferList.end())
-    {
-      PWaitAndSignal m(vmp.bufferListMutex);
-      vmpbuf_it = vmp.bufferList.Find((long)&vf);
-      if(vmpbuf_it == vmp.bufferList.end())
-        vmpbuf_it = vmp.bufferList.Insert(new MCUBufferYUVArray(3, 0, 0), (long)&vf);
-    }
+      vmpbuf_it = vmp.bufferList.Insert(new MCUBufferYUVArray(3, 0, 0), (long)&vf);
     MCUBufferYUV *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
 
     if(pw==width && ph==height) //same size
