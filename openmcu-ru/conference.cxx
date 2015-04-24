@@ -604,6 +604,10 @@ int ConferenceMonitor::Perform(Conference * conference)
   // fill "black holes"
   conference->FillBlackHoles();
 
+  MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
+  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+    it->Monitor();
+
   return 0;
 }
 

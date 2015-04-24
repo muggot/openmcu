@@ -49,6 +49,7 @@ class VideoFrameStoreList {
     typedef MCUSharedList<FrameStore> MCUFrameStoreList;
     MCUFrameStoreList frameStoreList;
     typedef MCUFrameStoreList::shared_iterator shared_iterator;
+    PMutex frameStoreListMutex;
 
     inline unsigned WidthHeightToKey(int width, int height)
     { return width << 16 | height; }
@@ -377,6 +378,8 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 
     ~MCUSimpleVideoMixer();
 
+    void Monitor();
+
     virtual void FillBlackHoles();
 
     virtual BOOL ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount);
@@ -394,9 +397,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void RemoveVideoSource(ConferenceMemberId id, ConferenceMember & mbr);
     virtual void MyChangeLayout(unsigned newLayout);
     virtual void PositionSetup(int pos, int type, ConferenceMember * member);
-#   if USE_FREETYPE
-    virtual void DeleteSubtitlesByFS(unsigned w, unsigned h);
-#   endif
     virtual void MyRemoveVideoSource(int pos, BOOL flag);
     virtual void MyRemoveVideoSourceById(ConferenceMemberId id, BOOL flag);
     virtual void MyRemoveAllVideoSource();
@@ -432,6 +432,8 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 
     const int GetLayout() const
     { return specialLayout; }
+
+    void RemoveFrameStore(VideoFrameStoreList::shared_iterator & it);
 
     int blackHoles;
 

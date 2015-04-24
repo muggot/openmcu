@@ -283,10 +283,17 @@ VideoFrameStoreList::~VideoFrameStoreList()
 VideoFrameStoreList::shared_iterator VideoFrameStoreList::GetFrameStore(int width, int height) 
 {
   shared_iterator it = frameStoreList.Find(WidthHeightToKey(width, height));
-  if(it != frameStoreList.end())
-    return it;
-  FrameStore * vf = new FrameStore(width, height);
-  return frameStoreList.Insert(vf, WidthHeightToKey(width, height));
+  if(it == frameStoreList.end())
+  {
+    PWaitAndSignal m(frameStoreListMutex);
+    it = frameStoreList.Find(WidthHeightToKey(width, height));
+    if(it == frameStoreList.end())
+    {
+      FrameStore * vf = new FrameStore(width, height);
+      it = frameStoreList.Insert(vf, WidthHeightToKey(width, height));
+    }
+  }
+  return it;
 }
 
 VideoFrameStoreList::FrameStore::FrameStore(int _w, int _h)
@@ -368,28 +375,6 @@ void MCURemoveSubtitles(VideoMixPosition & vmp)
     {
       if(sub->b) free(sub->b);
       delete sub;
-    }
-  }
-}
-
-void MCUSimpleVideoMixer::DeleteSubtitlesByFS(unsigned w, unsigned h)
-{
-  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
-  {
-    VideoMixPosition *vmp = *it;
-    VMPCfgOptions & vmpcfg=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp->n];
-    unsigned pw = vmpcfg.width *w/CIF4_WIDTH;
-    unsigned ph = vmpcfg.height*h/CIF4_HEIGHT;
-    unsigned key=(ph<<16) | pw;
-    VideoMixPosition::MCUSubtitlesList::shared_iterator q = vmp->subtitlesList.Find(key);
-    if(q != vmp->subtitlesList.end())
-    {
-      MCUSubtitles *sub = *q;
-      if(vmp->subtitlesList.Erase(q))
-      {
-        if(sub->b) free(sub->b);
-        delete sub;
-      }
     }
   }
 }
@@ -822,7 +807,6 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 {
   VMPCfgOptions & vmpcfg=OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp.n];
   time_t now = time(NULL);
-  time_t removalDeadline = now - FRAMESTORE_TIMEOUT;
 
   if(options & WSF_VMP_SET_TIME)
     vmp.lastWrite=now;
@@ -836,15 +820,6 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
   for(VideoFrameStoreList::shared_iterator it = frameStores.frameStoreList.begin(); it != frameStores.frameStoreList.end(); ++it)
   {
     VideoFrameStoreList::FrameStore & vf = **it;
-    if(vf.lastRead<removalDeadline)
-    {
-#if USE_FREETYPE
-      DeleteSubtitlesByFS(vf.width,vf.height);
-#endif
-      if(frameStores.frameStoreList.Erase(it))
-        delete &vf;
-      continue;
-    }
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
 
     // pixel w&h of vmp-->fs:
@@ -920,6 +895,56 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 
   vmp.vmpbuf_index = vmpbuf_index;
   return TRUE;
+}
+
+void MCUSimpleVideoMixer::RemoveFrameStore(VideoFrameStoreList::shared_iterator & it)
+{
+  VideoFrameStoreList::FrameStore *fs = *it;
+  if(frameStores.frameStoreList.Erase(it))
+  {
+    for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
+    {
+      VideoMixPosition *vmp = *it;
+#if USE_FREETYPE
+      VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp->n];
+      unsigned pw = vmpcfg.width *fs->width/CIF4_WIDTH;
+      unsigned ph = vmpcfg.height*fs->height/CIF4_HEIGHT;
+      unsigned key= (ph<<16) | pw;
+      VideoMixPosition::MCUSubtitlesList::shared_iterator q = vmp->subtitlesList.Find(key);
+      if(q != vmp->subtitlesList.end())
+      {
+        MCUSubtitles *sub = *q;
+        if(vmp->subtitlesList.Erase(q))
+        {
+          if(sub->b) free(sub->b);
+          delete sub;
+        }
+      }
+#endif
+      MCUSharedList<MCUBufferYUVArray>::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)fs);
+      if(vmpbuf_it != vmp->bufferList.end())
+      {
+        MCUBufferYUVArray *buffer = *vmpbuf_it;
+        if(vmp->bufferList.Erase(vmpbuf_it))
+          delete buffer;
+      }
+    }
+    delete fs;
+  }
+}
+
+void MCUSimpleVideoMixer::Monitor()
+{
+  PWaitAndSignal m(vmpListMutex);
+  for(VideoFrameStoreList::shared_iterator it = frameStores.frameStoreList.begin(); it != frameStores.frameStoreList.end(); ++it)
+  {
+    VideoFrameStoreList::FrameStore *fs = *it;
+    if(fs->lastRead < (time(NULL) - FRAMESTORE_TIMEOUT))
+    {
+      RemoveFrameStore(it);
+      continue;
+    }
+  }
 }
 
 BOOL MCUSimpleVideoMixer::SetOffline(ConferenceMemberId id)
