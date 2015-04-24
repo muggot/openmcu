@@ -191,10 +191,10 @@ class VideoMixPosition {
     int rule;
     BOOL offline;
 
-    MCUSharedList<MCUBufferArray> bufferList;
+    MCUSharedList<MCUBufferYUVArray> bufferList;
     int vmpbuf_index;
     PMutex bufferListMutex;
-    MCUBuffer tmpbuf;
+    MCUBufferYUV tmpbuf;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -331,9 +331,9 @@ VideoMixPosition::~VideoMixPosition()
 #if USE_FREETYPE
   RemoveSubtitles(*this);
 #endif
-  for(MCUSharedList<MCUBufferArray>::shared_iterator it = bufferList.begin(); it != bufferList.end(); ++it)
+  for(MCUSharedList<MCUBufferYUVArray>::shared_iterator it = bufferList.begin(); it != bufferList.end(); ++it)
   {
-    MCUBufferArray *buffer = *it;
+    MCUBufferYUVArray *buffer = *it;
     if(bufferList.Erase(it))
       delete buffer;
   }
@@ -724,7 +724,6 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
     int py = vmpcfg.posy  *height/CIF4_HEIGHT;
     int pw = vmpcfg.width *width/CIF4_WIDTH; // pixel w&h of vmp-->fs
     int ph = vmpcfg.height*height/CIF4_HEIGHT;
-    int vmp_frame_size = pw*ph*3/2;
     if(pw<2 || ph<2) continue;
 
     int vmpReadError = 1; //not found
@@ -733,7 +732,7 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
     if(vmp_it != vmpList.end())
     {
       VideoMixPosition *vmp = *vmp_it;
-      MCUSharedList<MCUBufferArray>::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)&fs);
+      MCUSharedList<MCUBufferYUVArray>::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)&fs);
       if(vmpbuf_it == vmp->bufferList.end()) vmpReadError = 2; // no buffer
       else
       {
@@ -741,8 +740,8 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
         if(vmpbuf_index < 0) vmpReadError = 3; // buffer index not set
         else if(vmpbuf_index >= 0)
         {
-          MCUBuffer *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
-          if(vmpbuf->GetSize() >= vmp_frame_size)
+          MCUBufferYUV *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
+          if(vmpbuf->GetWidth() == pw && vmpbuf->GetHeight() == ph)
           {
             framePointer = vmpbuf->GetPointer();
             vmpReadError = 0; //no error
@@ -836,19 +835,19 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     int ph = vmpcfg.height*vf.height/CIF4_HEIGHT;
     if(pw<2 || ph<2) continue;
 
-    MCUSharedList<MCUBufferArray>::shared_iterator vmpbuf_it = vmp.bufferList.Find((long)&vf);
+    MCUSharedList<MCUBufferYUVArray>::shared_iterator vmpbuf_it = vmp.bufferList.Find((long)&vf);
     if(vmpbuf_it == vmp.bufferList.end())
     {
       PWaitAndSignal m(vmp.bufferListMutex);
       vmpbuf_it = vmp.bufferList.Find((long)&vf);
       if(vmpbuf_it == vmp.bufferList.end())
-        vmpbuf_it = vmp.bufferList.Insert(new MCUBufferArray(3, 0), (long)&vf);
+        vmpbuf_it = vmp.bufferList.Insert(new MCUBufferYUVArray(3, 0, 0), (long)&vf);
     }
-    MCUBuffer *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
+    MCUBufferYUV *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
 
     if(pw==width && ph==height) //same size
     {
-      vmpbuf->SetSize2(pw, ph);
+      vmpbuf->SetFrameSize(pw, ph);
       memcpy(vmpbuf->GetPointer(), buffer, pw*ph*3/2); //making copy for subtitles & border
     }
     else if(pw*height<ph*width) //broader:  +---------+     pw     rule 0 => cut width
@@ -856,16 +855,16 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
       if(rule==0)               //    height|         | -> |  |ph   rule 1 => add stripes
       {                         //          +---------+    +--+                  to top and bottom
         int dstWidth = ph*width/height; //bigger than we need
-        vmpbuf->SetSize2(pw, ph);
-        vmp.tmpbuf.SetSize2(dstWidth, ph);
+        vmpbuf->SetFrameSize(pw, ph);
+        vmp.tmpbuf.SetFrameSize(dstWidth, ph);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, dstWidth, ph);
         CopyRectFromFrame(vmp.tmpbuf.GetPointer(), vmpbuf->GetPointer(), (dstWidth-pw)/2, 0, pw, ph, dstWidth, ph);
       }
       else if(rule==1)
       {
         int dstHeight = pw*height/width; //smaller than we need
-        vmpbuf->SetSize2(pw, ph);
-        vmp.tmpbuf.SetSize2(pw, dstHeight);
+        vmpbuf->SetFrameSize(pw, ph);
+        vmp.tmpbuf.SetFrameSize(pw, dstHeight);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, pw, dstHeight);
         FillYUVRect(vmpbuf->GetPointer(),pw,ph,127,127,127, 0,0, pw,(ph-dstHeight)/2);
         FillYUVRect(vmpbuf->GetPointer(),pw,ph,127,127,127, 0,ph-(ph-dstHeight)/2, pw,(ph-dstHeight)/2);
@@ -877,16 +876,16 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
       if(rule==0)               //             height| | -> |    | ph  rule 1 => add stripes
       {                         //                   +-+    +----+                to left and right
         int dstHeight = pw*height/width; //bigger than we need
-        vmpbuf->SetSize2(pw, ph);
-        vmp.tmpbuf.SetSize2(pw, dstHeight);
+        vmpbuf->SetFrameSize(pw, ph);
+        vmp.tmpbuf.SetFrameSize(pw, dstHeight);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, pw, dstHeight);
         CopyRectFromFrame(vmp.tmpbuf.GetPointer(), vmpbuf->GetPointer(), 0, (dstHeight-ph)/2, pw, ph, pw, dstHeight);
       }
       else if(rule==1)
       {
         int dstWidth = ph*width/height; //smaller than we need
-        vmpbuf->SetSize2(pw, ph);
-        vmp.tmpbuf.SetSize2(dstWidth, ph);
+        vmpbuf->SetFrameSize(pw, ph);
+        vmp.tmpbuf.SetFrameSize(dstWidth, ph);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, dstWidth, ph);
         FillYUVRect(vmpbuf->GetPointer(),pw,ph,127,127,127, 0,0, (pw-dstWidth)/2, ph);
         FillYUVRect(vmpbuf->GetPointer(),pw,ph,127,127,127, pw-(pw-dstWidth)/2,0, (pw-dstWidth)/2,ph);
@@ -895,7 +894,7 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     }
     else
     { // fit. scale
-      vmpbuf->SetSize2(pw, ph);
+      vmpbuf->SetFrameSize(pw, ph);
       ResizeYUV420P((const BYTE *)buffer, vmpbuf->GetPointer() , width, height, pw, ph);
     }
 

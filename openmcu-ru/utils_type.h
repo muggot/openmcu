@@ -146,19 +146,9 @@ class MCUBuffer
     {
       if(newsize <= size) // quick check before lock
         return;
-
-      PWaitAndSignal m(mutex);
-
-      if(newsize <= size) // again after unlock
-        return;
       size = newsize;
       aligned_free(buffer);
       buffer = (uint8_t *)aligned_malloc(size);
-    }
-
-    void SetSize2(int w, int h)
-    {
-      SetSize((w+1)*(h+1)*3/2); // +1 for swscale
     }
 
     uint8_t * GetPointer()
@@ -190,44 +180,6 @@ class MCUBuffer
     int size;
     bool aligned;
     uint8_t *buffer;
-    PMutex mutex;
-};
-
-class MCUBufferArray
-{
-  public:
-    MCUBufferArray(int _array_size = 1, int buffer_size = 2048, bool aligned = true)
-    {
-      array_size = _array_size;
-      if(array_size < 1)
-        array_size = 1;
-
-      buffers = new MCUBuffer * [array_size];
-      for(int i = 0; i < array_size; i++)
-        buffers[i] = new MCUBuffer(buffer_size, aligned);
-    }
-    ~MCUBufferArray()
-    {
-      for(int i = 0; i < array_size; i++)
-      {
-        delete buffers[i];
-        buffers[i] = NULL;
-      }
-      delete [] buffers;
-      buffers = NULL;
-    }
-
-    MCUBuffer * operator[] (int index)
-    {
-      if(index >= array_size)
-        return NULL;
-      return buffers[index];
-    }
-
-  protected:
-    int array_size;
-    int buffer_size;
-    MCUBuffer **buffers;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

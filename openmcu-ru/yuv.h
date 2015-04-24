@@ -57,4 +57,80 @@ void ConvertCIF16ToCIF(const void * _src, void * _dst);
 void ConvertCIF4ToQCIF(const void * _src, void * _dst);
 void ConvertCIFToSQCIF(const void * _src, void * _dst);
 
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUBufferYUV : public MCUBuffer
+{
+  public:
+    MCUBufferYUV(int w = 0, int h = 0)
+      : MCUBuffer(AlignUp2(w)*AlignUp2(h)*3/2), width(w), height(h)
+    {
+      if(size == 0)
+      {
+        width = 0;
+        height = 0;
+      }
+    }
+
+    void SetFrameSize(int w, int h)
+    {
+      SetSize(AlignUp2(w)*AlignUp2(h)*3/2); // +1 for swscale
+      if(size != 0)
+      {
+        width = w;
+        height = h;
+      }
+    }
+
+    const int GetWidth() const
+    { return width; }
+
+    const int GetHeight() const
+    { return height; }
+
+  protected:
+    int width;
+    int height;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+class MCUBufferYUVArray
+{
+  public:
+    MCUBufferYUVArray(int _array_size, int w, int h)
+    {
+      array_size = _array_size;
+      if(array_size < 1)
+        array_size = 1;
+
+      buffers = new MCUBufferYUV * [array_size];
+      for(int i = 0; i < array_size; i++)
+        buffers[i] = new MCUBufferYUV(w, h);
+    }
+    ~MCUBufferYUVArray()
+    {
+      for(int i = 0; i < array_size; i++)
+      {
+        delete buffers[i];
+        buffers[i] = NULL;
+      }
+      delete [] buffers;
+      buffers = NULL;
+    }
+
+    MCUBufferYUV * operator[] (int index)
+    {
+      if(index < 0 || index >= array_size)
+        return NULL;
+      return buffers[index];
+    }
+
+  protected:
+    int array_size;
+    MCUBufferYUV **buffers;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 #endif //ifndef _MCU_YUV_H
