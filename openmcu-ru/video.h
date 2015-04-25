@@ -255,20 +255,21 @@ class MCUVideoMixer
       return vmpList.Insert(vmp, vmp->id);
     }
 
-    PString VMPListScanJS() // returns associative javascript "{0:id1, 1:-1, 2:id2, ...}"
+    MCUJSON * VMPListScanJS() // returns associative javascript "{0:id1, 1:-1, 2:id2, ...}"
     {
-      PStringStream r, q;
-      r << "{";
-      q=r;
+      MCUJSON *r=new MCUJSON(MCUJSON::JSON_OBJECT);
+      MCUJSON *q=new MCUJSON(MCUJSON::JSON_OBJECT);
       for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
       {
         VideoMixPosition *vmp = *it;
-        r << vmp->n << ":" << vmp->id;
-        q << vmp->n << ":" << vmp->type;
-        if(vmp!=NULL) { r << ","; q << ","; }
+        const PString idx = PString(vmp->n);
+        r->Insert(idx, vmp->id);
+        q->Insert(idx, vmp->type);
       }
-      r << "}," << q << "}";
-      return r;
+      MCUJSON* a=new MCUJSON(MCUJSON::JSON_ARRAY);
+      a->Insert(r);
+      a->Insert(q);
+      return a;
     }
 
     void VMPListClear()

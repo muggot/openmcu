@@ -1753,10 +1753,7 @@ function build_page()
   b=document.getElementById('cb3');
   mixers=conf[0][0]; bfw=conf[0][1]; bfh=conf[0][2]; room=conf[0][3]; roomLink=encodeURIComponent(room);
   classicMode=(mixers==0);
-  if(classicMode)
-  {
-    dmsg('CLASSIC MCU MODE, NO CACHES');
-  }
+  dmsg('*BUILDPAGE|mixers='+mixers+'|bfw='+bfw+'|roomlink='+roomLink+'|CM='+classicMode+'*');
 
   var page_width = document.body.clientWidth || default_page_width;
   if(page_width != default_page_width) {
@@ -1904,9 +1901,9 @@ function get_mixers_content()
     s+="<div id='mixercontrol"+mixer_number+"'>";
 // walking through the mixer's positions
     for(var j=0;j<conf[i+1][1].length;j++)
-    { var id=false; try { if(typeof conf[i+1][2][j] != 'undefined') id=conf[i+1][2][j]; } catch(e) {id=false;}
+    { var id=false; try { if(typeof conf[i+1][2][0][j] != 'undefined') id=conf[i+1][2][0][j]; } catch(e) {id=false;}
       if(id!==false) if((id!=0)&&(id!=-1)&&(id!=-2)) visible_ids += ''+id+',';
-      var type=false; if(id!==false) try { if(typeof conf[i+1][3][j]!='undefined') type=conf[i+1][3][j]; } catch(e) {type=false;}
+      var type=false; if(id!==false) try { if(typeof conf[i+1][2][1][j]!='undefined') type=conf[i+1][2][1][j]; } catch(e) {type=false;}
       var x=Math.round(conf[i+1][1][j][0]/bfw*mw); var y=Math.round(conf[i+1][1][j][1]/bfh*mh);
       var w=Math.round(conf[i+1][1][j][2]/bfw*mw); var h=Math.round(conf[i+1][1][j][3]/bfh*mh);
       var border='1px solid '+MIX_BORDER_COLOR; if(type===2)border='1px solid red'; else if(type===3) border='0;border-right:2px solid yellow;border-bottom:2px solid yellow';
@@ -1962,9 +1959,10 @@ function get_mixers_content_classic()
     var mw=members[i][12][0][0]; var mh=members[i][12][0][1]; var pos_x=(mmw-mw)>>1;
 // walking through the mixer's positions
     for(var j=0;j<members[i][12][1].length;j++)
-    { var id=false; try { if(typeof members[i][12][2][j] != 'undefined') id=members[i][12][2][j]; } catch(e) {id=false;}
+    {
+      var id=false; try { if(typeof members[i][12][2][0][j] != 'undefined') id=members[i][12][2][0][j]; } catch(e) {id=false;}
       if(id!==false) if((id!=0)&&(id!=-1)&&(id!=-2)) visible_ids += ''+id+',';
-      var type=false; if(id!==false) try { if(typeof members[i][12][3][j]!='undefined') type=members[i][12][3][j]; } catch(e) {type=false;}
+      var type=false; if(id!==false) try { if(typeof members[i][12][2][1][j]!='undefined') type=members[i][12][2][1][j]; } catch(e) {type=false;}
       var x=Math.round(members[i][12][1][j][0]/bfw*mw); var y=Math.round(members[i][12][1][j][1]/bfh*mh);
       var w=Math.round(members[i][12][1][j][2]/bfw*mw); var h=Math.round(members[i][12][1][j][3]/bfh*mh);
       var border='1px solid '+MIX_BORDER_COLOR; if(type===2)border='1px solid red'; else if(type===3) border='0;border-right:2px solid yellow;border-bottom:2px solid yellow';
@@ -2024,8 +2022,12 @@ function mixrfr()
     if(classicMode) mixerData=members[i][12];
     else mixerData=conf[i+1];
 
-    var mw=mixerData[0][0]; var mh=mixerData[0][1]; var pos_x=(mmw-mw)>>1;
-    var mixer_number=mixerData[0][3];
+    try
+    {
+      var mw=mixerData[0][0]; var mh=mixerData[0][1]; var pos_x=(mmw-mw)>>1;
+      var mixer_number=mixerData[0][3];
+    }
+    catch(e) { return alive(); }
 
     var obj = null;
     try { obj=document.getElementById('mixercontrol'+mixer_number); } catch(e) {obj=null;}
@@ -2087,9 +2089,9 @@ function get_mixer_position_html(mixer, position)
   }
   var mw=c[0][0]; var mh=c[0][1]; var p=position;
 
-  var id=false; if(typeof c[2][p]!='undefined') id=c[2][p];
+  var id=false; if(typeof c[2][0][p]!='undefined') id=c[2][0][p];
 
-  var type=false; if(id!==false) if(typeof c[3][p]!='undefined') type=c[3][p];
+  var type=false; if(id!==false) if(typeof c[2][1][p]!='undefined') type=c[2][1][p];
 
   var x=Math.round(c[1][p][0]/bfw*mw); var y=Math.round(c[1][p][1]/bfh*mh); //where?
   var w=Math.round(c[1][p][2]/bfw*mw); var h=Math.round(c[1][p][3]/bfh*mh);

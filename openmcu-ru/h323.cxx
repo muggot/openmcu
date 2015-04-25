@@ -1340,7 +1340,9 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
   for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
   {
     MCUSimpleVideoMixer *mixer = it.GetObject();
-    r << "," << GetVideoMixerConfiguration(mixer, it.GetIndex());
+    MCUJSON* vmc=GetVideoMixerConfiguration(mixer, it.GetIndex());
+    r << "," << vmc->AsString();
+    delete vmc; //FIXME? Delete structure?
   }
 
   r << "];"; //l1 close
@@ -1349,34 +1351,38 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer, int number)
+MCUJSON* MCUH323EndPoint::GetVideoMixerConfiguration(MCUVideoMixer * mixer, int number)
 {
-  if(mixer == NULL)
-    return "[]";
+  MCUJSON* a = new MCUJSON(MCUJSON::JSON_ARRAY);
+  if(mixer == NULL) return a;
   unsigned n = mixer->GetPositionSet();
   VMPCfgSplitOptions & split=OpenMCU::vmcfg.vmconf[n].splitcfg;
   VMPCfgOptions      * p    =OpenMCU::vmcfg.vmconf[n].vmpcfg;
-  PStringStream r;
-  r << "[";
+  
+  MCUJSON* b = new MCUJSON(MCUJSON::JSON_ARRAY);
+  b->Insert(split.mockup_width);
+  b->Insert(split.mockup_height);   //   a[0][0-1] = mw * mh
+  b->Insert(n);                     //   a[0][2]   = position set (layout)
+  b->Insert(number);                //   a[0][3]   = number
 
-  r << "["                                                // a[0]: base parameters:
-    << split.mockup_width << "," << split.mockup_height   //   a[0][0-1] = mw * mh
-    << "," << n                                           //   a[0][2]   = position set (layout)
-    << "," << number                                      //   a[0][3]   = number
-    << "],[";
-
+  a->Insert(b);
+  
+  MCUJSON* c=new MCUJSON(MCUJSON::JSON_ARRAY); // a[1]: frame geometry for each position i:
   for(unsigned i=0;i<split.vidnum;i++)
-    r << "[" << p[i].posx                                 // a[1]: frame geometry for each position i:
-      << "," << p[i].posy                                 // a[1][i][0-1]= posx & posy
-      << "," << p[i].width                                // a[1][i][2-3]= width & height
-      << "," << p[i].height
-      << "," << p[i].border                               // a[1][i][4]  = border
-      << "]" << ((i==split.vidnum-1) ? "" : ",");
+  {
+    MCUJSON* b = new MCUJSON(MCUJSON::JSON_ARRAY);
+    b->Insert(p[i].posx); // a[1][i][0-1]= posx & posy
+    b->Insert(p[i].posy);
+    b->Insert(p[i].width);  // a[1][i][2-3]= width & height
+    b->Insert(p[i].height);
+    b->Insert(p[i].border);  // a[1][i][4]  = border
+    c->Insert(b);
+  }
+  a->Insert(c);
+  
+  a->Insert(mixer->VMPListScanJS()); // a[2], a[3]: members' ids & types
 
-  r << "]," << mixer->VMPListScanJS()                     // a[2], a[3]: members' ids & types
-    << "]";
-
-  return r;
+  return a;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
