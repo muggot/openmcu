@@ -35,7 +35,17 @@ H323Codec * MCUCapability::CreateCodec(const H323Capability * capability, MCUCod
   if(defn)
   {
     if(capability->GetMainType() == MCUCapability::e_Audio)
-      return new MCUFramedAudioCodec(capability->GetMediaFormat(), direction, defn);
+    {
+      if(formatName.Find("G726") != P_MAX_INDEX || formatName.Find("G.726") != P_MAX_INDEX)
+      {
+        int bitsPerSample = (defn->flags & PluginCodec_BitsPerSampleMask) >> PluginCodec_BitsPerSamplePos;
+        if (bitsPerSample == 0)
+          bitsPerSample = 16;
+        return new MCUStreamedAudioCodec(capability->GetMediaFormat(), direction, defn->parm.audio.samplesPerFrame, bitsPerSample, defn);
+      }
+      else
+        return new MCUFramedAudioCodec(capability->GetMediaFormat(), direction, defn);
+    }
     else
       return new MCUVideoCodec(capability->GetMediaFormat(), direction, defn);
   }

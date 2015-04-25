@@ -244,6 +244,23 @@ class MCUFramedAudioCodec : public H323AudioCodec
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class MCUStreamedAudioCodec : public MCUFramedAudioCodec
+{
+  PCLASSINFO(MCUStreamedAudioCodec, MCUFramedAudioCodec);
+  public:
+    MCUStreamedAudioCodec(const OpalMediaFormat & mediaFormat, Direction direction, unsigned samples, unsigned bits, PluginCodec_Definition * _codec);
+
+    virtual BOOL EncodeFrame(BYTE * buffer, unsigned & length);
+    virtual BOOL DecodeFrame(const BYTE * buffer, unsigned length, unsigned & written, unsigned & samples);
+    virtual int Encode(short sample) const;
+    virtual short Decode(int sample) const;
+
+  protected:
+    unsigned bitsPerSample;
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 class MCUVideoCodec : public H323VideoCodec
 {
   PCLASSINFO(MCUVideoCodec, H323VideoCodec);

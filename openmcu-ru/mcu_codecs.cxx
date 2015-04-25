@@ -410,6 +410,305 @@ BOOL MCUFramedAudioCodec::Write(const BYTE * buffer, unsigned length, const RTP_
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+MCUStreamedAudioCodec::MCUStreamedAudioCodec(const OpalMediaFormat & fmtName, Direction direction, unsigned samples, unsigned bits, PluginCodec_Definition * _codec)
+  : MCUFramedAudioCodec(fmtName, direction, _codec)
+{
+  samplesPerFrame = samples;
+  bytesPerFrame = (samples*bits+7)/8;
+  bitsPerSample = bits;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUStreamedAudioCodec::EncodeFrame(BYTE * buffer, unsigned &)
+{
+  PINDEX i;
+  unsigned short position = 0;
+  BYTE encoded;
+  switch (bitsPerSample) {
+    case 8 :
+      for (i = 0; i < (PINDEX)samplesPerFrame; i++)
+        *buffer++ = (BYTE)Encode(sampleBuffer[i]);
+      break;
+    case 5 : // g.726-40 payload encoding....
+      for (i = 0; i < (PINDEX)samplesPerFrame;i++)
+      {
+        // based on a 40 bits encoding, we have 8 words of 5 bits each
+        encoded = (BYTE)Encode(sampleBuffer[i]);
+        switch(position)
+        {
+          case 0: // 0 bits overflow
+            *buffer = encoded;
+            position++;
+            break;
+          case 1: // 2 bits overflow
+            *buffer++ |= (encoded << 5);
+            *buffer = (BYTE)(encoded >> 3);
+            position++;
+            break;
+          case 2: 
+            *buffer |= (encoded << 2);
+            position++;
+            break;
+          case 3: // one bit left for word 4
+            *buffer++ |= (encoded << 7);
+            *buffer = (BYTE)(encoded >> 1);
+            position++;
+            break;
+          case 4:
+            *buffer++ |= (encoded << 4);
+            *buffer = (BYTE)(encoded >> 4);
+            position++;
+            break;
+          case 5:
+            *buffer |= (encoded << 1);
+            position++;
+            break;
+          case 6: //two bits left for the new encoded word
+            *buffer++ |= (encoded << 6);
+            *buffer =  (BYTE)(encoded >> 2);
+            position++;
+            break;
+          case 7: // now five bits left for the last word
+            *buffer++ |= (encoded << 3);
+            position = 0;
+            break;
+        }
+      }
+      break;
+
+    case 4 :
+      for (i = 0; i < (PINDEX)samplesPerFrame; i++) {
+        if ((i&1) == 0)
+          *buffer = (BYTE)Encode(sampleBuffer[i]);
+        else
+          *buffer++ |= (BYTE)(Encode(sampleBuffer[i]) << 4);
+      }
+      break;
+
+    case 3 :
+      for (i = 0;i < (PINDEX)samplesPerFrame;i++)
+      {
+        encoded = (BYTE)Encode(sampleBuffer[i]);
+        switch(position)
+        {
+          case 0: // 0 bits overflow
+            *buffer = encoded;
+            position++;
+            break;
+          case 1: // 2 bits overflow
+            *buffer |= (encoded << 3);
+            position++;
+            break;
+          case 2: 
+            *buffer++ |= (encoded << 6);
+            *buffer = (BYTE)(encoded >> 2);
+            position++;
+            break;
+          case 3: // one bit left for word 4
+            *buffer |= (encoded << 1);
+            position++;
+            break;
+          case 4:
+            *buffer |= (encoded << 4);
+            position++;
+            break;
+          case 5:
+            *buffer++ |= (encoded << 7);
+            *buffer = (BYTE)(encoded >> 1);
+            position++;
+            break;
+          case 6: //two bits left for the new encoded word
+            *buffer |= (encoded << 2);
+            position++;
+            break;
+          case 7: // now five bits left for the last word
+            *buffer++ |= (encoded << 5);
+            position = 0;
+            break;
+        }
+      }
+      break;
+
+    case 2:
+      for (i = 0; i < (PINDEX)samplesPerFrame; i++) 
+      {
+        switch(position)
+        {
+          case 0:
+            *buffer = (BYTE)Encode(sampleBuffer[i]);
+            position++;
+            break;
+          case 1:
+            *buffer |= (BYTE)(Encode(sampleBuffer[i]) << 2);
+            position++;
+            break;
+          case 2:
+            *buffer |= (BYTE)(Encode(sampleBuffer[i]) << 4);
+            position++;
+            break;
+          case 3:
+            *buffer++ |= (BYTE)(Encode(sampleBuffer[i]) << 6);
+            position = 0;
+            break;
+        }
+      }
+      break;
+
+    default :
+      PAssertAlways("Unsupported bit size");
+      return FALSE;
+  }
+
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL MCUStreamedAudioCodec::DecodeFrame(const BYTE * buffer, unsigned length, unsigned & written, unsigned & decodedBytes)
+{
+  unsigned i;
+  short * sampleBufferPtr = sampleBuffer.GetPointer(samplesPerFrame);
+  short * out = sampleBufferPtr;
+  unsigned short position = 0;
+  unsigned remaining = 0;
+
+  switch (bitsPerSample) {
+    case 8 :
+      for (i = 0; i < length; i++)
+        *out++ = Decode(*buffer++);
+      break;
+
+    // those case are for ADPCM G.726
+    case 5 :
+      for (i = 0; i < length; i++) {
+        switch(position)
+        {
+          case 0:
+            *out++ = Decode(*buffer & 31);
+            remaining = *buffer >> 5; // get the three remaining bytes for the next word
+            buffer++;
+            position++;
+            break;
+          case 1: // we can decode more than one word in second buffer
+            *out++ = Decode (((*buffer&3) << 3) | remaining);
+            *out++ = Decode( (*buffer >> 2) & 31);
+            remaining = *buffer >> 7;
+            buffer++;
+            position++;
+            break;
+          case 2:
+            *out++ = Decode( remaining | ((*buffer&15) << 1));
+            remaining = *buffer >> 4;
+            buffer++;
+            position++;
+            break;
+          case 3:
+            *out++ = Decode( remaining | ((*buffer&1) << 4));
+            *out++ = Decode( (*buffer >> 1) & 31);
+            remaining = *buffer >> 6;
+            buffer++;
+            position++;
+            break;
+          case 4 :
+            *out++ = Decode( remaining | ((*buffer&7) << 2));
+            *out++ = Decode(*buffer >> 3);
+            buffer++;
+            position = 0;
+            break;
+        }
+      }
+      break;
+
+    case 4 :
+      for (i = 0; i < length; i++) {
+        *out++ = Decode(*buffer & 15);
+        *out++ = Decode(*buffer >> 4);
+        buffer++;
+      }
+      break;
+
+    case 3:
+      for (i = 0; i < length; i++) {
+        switch(position)
+        {
+        case 0:
+          *out++ = Decode(*buffer & 7);
+          *out++ = Decode((*buffer>>3)&7);
+          remaining = *buffer >> 6;
+          buffer++;
+          position++;
+          break;
+        case 1:
+          *out++ = Decode(remaining | ((*buffer&1) << 2));
+          *out++ = Decode((*buffer >> 1) & 7);
+          *out++ = Decode((*buffer >> 4)&7);
+          remaining = *buffer >> 7;
+          buffer++;
+          position++;
+          break;
+        case 2:
+          *out++ = Decode(remaining | ((*buffer&3) << 1));
+          *out++ = Decode((*buffer >> 2) & 7);
+          *out++ = Decode((*buffer >> 5) & 7);
+          buffer++;
+          position = 0;
+          break;
+        }
+      }
+      break;
+
+    case 2:
+      for (i = 0; i < length; i++) 
+      {
+        *out++ = Decode(*buffer & 3);
+        *out++ = Decode((*buffer >> 2) & 3);
+        *out++ = Decode((*buffer >> 4) & 3);
+        *out++ = Decode((*buffer >> 6) & 3);
+        buffer++;
+      }
+      break;
+
+    default :
+      PAssertAlways("Unsupported bit size");
+      return FALSE;
+  }
+
+  written = length;
+  decodedBytes = (out - sampleBufferPtr)*2;
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+int MCUStreamedAudioCodec::Encode(short sample) const
+{
+  if(codec == NULL || direction != Encoder)
+    return 0;
+  unsigned int fromLen = sizeof(sample);
+  int to;
+  unsigned toLen = sizeof(to);
+  unsigned flags = 0;
+  (codec->codecFunction)(codec, context, (const unsigned char *)&sample, &fromLen, (unsigned char *)&to, &toLen, &flags);
+   return to;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+short MCUStreamedAudioCodec::Decode(int sample) const
+{
+  if(codec == NULL || direction != Decoder)
+    return 0;
+  unsigned fromLen = sizeof(sample);
+  short to;
+  unsigned toLen   = sizeof(to);
+  unsigned flags = 0;
+  (codec->codecFunction)(codec, context,(const unsigned char *)&sample, &fromLen, (unsigned char *)&to, &toLen, &flags);
+  return to;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 MCUVideoCodec::MCUVideoCodec(const OpalMediaFormat & fmt, Direction direction, PluginCodec_Definition * _codec)
   : H323VideoCodec(fmt, direction), codec(_codec)
 {
