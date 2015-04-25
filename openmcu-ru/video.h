@@ -378,9 +378,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 
     ~MCUSimpleVideoMixer();
 
-    void Monitor();
-
-    virtual void FillBlackHoles();
+    void Monitor(Conference *conference);
 
     virtual BOOL ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount);
     virtual BOOL WriteFrame(ConferenceMemberId id, const void * buffer, int width, int height);
@@ -424,7 +422,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void VMPDelete(MCUVMPList::shared_iterator &it);
     virtual void VMPCopy(VideoMixPosition&, VideoMixPosition &);
     virtual void VMPTouch(VideoMixPosition&);
-    virtual void VMPSwapAndTouch(VideoMixPosition&, VideoMixPosition &);
+    virtual void VMPSwap(VideoMixPosition&, VideoMixPosition &);
 
     virtual int VMPListFindEmptyIndex();
     virtual MCUVMPList::shared_iterator VMPCreator(ConferenceMember * m, int n, int type);
@@ -434,8 +432,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     { return specialLayout; }
 
     void RemoveFrameStore(VideoFrameStoreList::shared_iterator & it);
-
-    int blackHoles;
 
   protected:
     virtual void ReallocatePositions();

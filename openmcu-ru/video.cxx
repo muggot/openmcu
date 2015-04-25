@@ -666,7 +666,7 @@ void MCUVideoMixer::SplitLineLeft(BYTE *d, unsigned x, unsigned y, unsigned w, u
 }
 void MCUVideoMixer::SplitLineRight(BYTE *d, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh)
 {
-  SplitLine(d, w-1, y, 1, h, fw, fh);
+  SplitLine(d, x+w-1, y, 1, h, fw, fh);
 }
 void MCUVideoMixer::SplitLineTop(BYTE *d, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh)
 {
@@ -674,7 +674,7 @@ void MCUVideoMixer::SplitLineTop(BYTE *d, unsigned x, unsigned y, unsigned w, un
 }
 void MCUVideoMixer::SplitLineBottom(BYTE *d, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh)
 {
-  SplitLine(d, x, h-1, w, 1, fw, fh);
+  SplitLine(d, x, y+h-1, w, 1, fw, fh);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -688,18 +688,10 @@ MCUSimpleVideoMixer::MCUSimpleVideoMixer(BOOL _forceScreenSplit)
   imageStore1_size=0;
   imageStore2_size=0;
   specialLayout = 0;
-  blackHoles = 0;
 }
 
 MCUSimpleVideoMixer::~MCUSimpleVideoMixer()
 {
-}
-
-void MCUSimpleVideoMixer::FillBlackHoles()
-{
-  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
-    VMPTouch(**it);
-  blackHoles=0;
 }
 
 BOOL MCUSimpleVideoMixer::ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount)
@@ -730,45 +722,27 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
     int ph = vmpcfg.height*height/CIF4_HEIGHT;
     if(pw<2 || ph<2) continue;
 
-    int vmpReadError = 1; //not found
-    BYTE * framePointer = NULL;
     MCUVMPList::shared_iterator vmp_it = VMPFind((int)i);
     if(vmp_it != vmpList.end())
     {
       VideoMixPosition *vmp = *vmp_it;
-      MCUSharedList<MCUBufferYUVArray>::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)&fs);
-      if(vmpbuf_it == vmp->bufferList.end()) vmpReadError = 2; // no buffer
-      else
+      if(vmp->vmpbuf_index >= 0)
       {
-        int vmpbuf_index = vmp->vmpbuf_index;
-        if(vmpbuf_index < 0) vmpReadError = 3; // buffer index not set
-        else if(vmpbuf_index >= 0)
+        MCUSharedList<MCUBufferYUVArray>::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)&fs);
+        if(vmpbuf_it != vmp->bufferList.end())
         {
-          MCUBufferYUV *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
+          MCUBufferYUV *vmpbuf = (**vmpbuf_it)[vmp->vmpbuf_index];
           if(vmpbuf->GetWidth() == pw && vmpbuf->GetHeight() == ph)
           {
-            framePointer = vmpbuf->GetPointer();
-            vmpReadError = 0; //no error
+            for(unsigned i = 0; i < vmpcfg.blks; i++)
+              CopyRFromRIntoR(vmpbuf->GetPointer(), buffer, px, py, pw, ph,
+                AlignUp2(vmpcfg.blk[i].posx*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*height/CIF4_HEIGHT),
+                AlignUp2(vmpcfg.blk[i].width*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*height/CIF4_HEIGHT),
+                width, height, pw, ph );
           }
-          else vmpReadError = 4; // too big vmp_frame_size
+          else
+            MCUTRACE(6, "VideoMixer: VMP read error0: n=" << vmp->n << " fs=" << width << "x" << height << " pos=" << pw << "x" << ph << " buf=" << vmpbuf->GetWidth() << "x" << vmpbuf->GetHeight());
         }
-      }
-    }
-
-    //simple error handler here:
-    if(vmpReadError==1) vmpReadError=0; //not an error: vmp not defined
-    PTRACE_IF(1, vmpReadError!=0, "VideoMixer\tVMP read error " << vmpReadError << ": n=" << i << ", fw=" << width << ", fh=" << height);
-    if(vmpReadError) cout << "VMP read error " << vmpReadError << ": n=" << i << ", fw=" << width << ", fh=" << height << "\n";
-    if(vmpReadError==2) blackHoles=1; //"black holes" detected - to fill them later from confernce monitoring thread
-
-    if(framePointer!=NULL)
-    {
-      for(unsigned i = 0; i < vmpcfg.blks; i++)
-      {
-        CopyRFromRIntoR(framePointer, buffer, px, py, pw, ph,
-          AlignUp2(vmpcfg.blk[i].posx*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*height/CIF4_HEIGHT),
-          AlignUp2(vmpcfg.blk[i].width*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*height/CIF4_HEIGHT),
-          width, height, pw, ph );
       }
     }
 
@@ -778,15 +752,13 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
       if(px != 0)
         SplitLineLeft((BYTE *)buffer, px, py, pw, ph, width, height);
       if(py != 0)
-        SplitLineTop((BYTE *)buffer, px, py, pw, ph, width, height); // top
+        SplitLineTop((BYTE *)buffer, px, py, pw, ph, width, height);
+      //if(px+pw != width)
+        //SplitLineRight((BYTE *)buffer, px, py, pw, ph, width, height);
+      //if(py+ph != height)
+        //SplitLineBottom((BYTE *)buffer, px, py, pw, ph, width, height);
     }
   }
-
-  // grid
-  SplitLineLeft((BYTE *)buffer, 0, 0, width, height, width, height);
-  SplitLineRight((BYTE *)buffer, 0, 0, width, height, width, height);
-  SplitLineTop((BYTE *)buffer, 0, 0, width, height, width, height);
-  SplitLineBottom((BYTE *)buffer, 0, 0, width, height, width, height);
 
   fs.lastRead = time(NULL);
   return TRUE;
@@ -929,13 +901,15 @@ void MCUSimpleVideoMixer::RemoveFrameStore(VideoFrameStoreList::shared_iterator 
           delete buffer;
       }
     }
+    MCUTRACE(1, "VideoMixer: remove FrameStore " << fs->width << "x" << fs->height);
     delete fs;
   }
 }
 
-void MCUSimpleVideoMixer::Monitor()
+void MCUSimpleVideoMixer::Monitor(Conference *conference)
 {
   PWaitAndSignal m(vmpListMutex);
+
   for(VideoFrameStoreList::shared_iterator it = frameStores.frameStoreList.begin(); it != frameStores.frameStoreList.end(); ++it)
   {
     VideoFrameStoreList::FrameStore *fs = *it;
@@ -943,6 +917,33 @@ void MCUSimpleVideoMixer::Monitor()
     {
       RemoveFrameStore(it);
       continue;
+    }
+  }
+
+  for(MCUVMPList::shared_iterator vmp_it = vmpList.begin(); vmp_it != vmpList.end(); ++vmp_it)
+  {
+    VideoMixPosition *vmp = *vmp_it;
+    if(vmp->vmpbuf_index == -1)
+    {
+      if(vmpList.Erase(vmp_it))
+      {
+        VMPTouch(*vmp);
+        VMPInsert(vmp);
+      }
+      continue;
+    }
+    for(VideoFrameStoreList::shared_iterator fs_it = frameStores.frameStoreList.begin(); fs_it != frameStores.frameStoreList.end(); ++fs_it)
+    {
+      VideoFrameStoreList::FrameStore *fs = *fs_it;
+      if(vmp->bufferList.Find((long)fs) == vmp->bufferList.end())
+      {
+        if(vmpList.Erase(vmp_it))
+        {
+          VMPTouch(*vmp);
+          VMPInsert(vmp);
+        }
+        break;
+      }
     }
   }
 }
@@ -955,11 +956,10 @@ BOOL MCUSimpleVideoMixer::SetOffline(ConferenceMemberId id)
   if(it == vmpList.end())
     return FALSE;
   VideoMixPosition *vmp = *it;
-
   if(vmpList.Erase(it))
   {
     vmp->offline = TRUE;
-    WriteOfflineFrame(*vmp);
+    vmp->vmpbuf_index = -1;
     VMPInsert(vmp);
   }
   return TRUE;
@@ -973,11 +973,10 @@ BOOL MCUSimpleVideoMixer::SetOnline(ConferenceMemberId id)
   if(it == vmpList.end())
     return FALSE;
   VideoMixPosition *vmp = *it;
-
   if(vmpList.Erase(it))
   {
     vmp->offline = FALSE;
-    WriteNoVideoFrame(*vmp);
+    vmp->vmpbuf_index = -1;
     VMPInsert(vmp);
   }
   return TRUE;
@@ -1012,6 +1011,7 @@ void MCUSimpleVideoMixer::WriteNoVideoFrame(VideoMixPosition & vmp)
 
 void MCUSimpleVideoMixer::VMPTouch(VideoMixPosition & vmp)
 {
+  MCUTRACE(6, "VideoMixer: touch n=" << vmp.n << " id=" << vmp.id << " offline=" << vmp.offline << " write=" << (time(NULL)-vmp.lastWrite));
   if(!vmp.id) WriteEmptyFrame(vmp);
   else if(vmp.offline) WriteOfflineFrame(vmp);
   else if((time(NULL)-vmp.lastWrite) > 1) WriteNoVideoFrame(vmp);
@@ -1033,14 +1033,12 @@ void MCUSimpleVideoMixer::VMPCopy(VideoMixPosition & vmp1, VideoMixPosition & vm
   if((vmp2.type<1)||(vmp2.type>3)) vmp2.type = vmp1.type;
 }
 
-void MCUSimpleVideoMixer::VMPSwapAndTouch(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
+void MCUSimpleVideoMixer::VMPSwap(VideoMixPosition & vmp1, VideoMixPosition & vmp2)
 {
   VideoMixPosition vmp(0);
   VMPCopy(vmp2, vmp);
   VMPCopy(vmp1, vmp2);
   VMPCopy(vmp, vmp1);
-  VMPTouch(vmp1);
-  VMPTouch(vmp2);
 }
 
 void MCUSimpleVideoMixer::ReallocatePositions()
@@ -1057,7 +1055,7 @@ void MCUSimpleVideoMixer::ReallocatePositions()
 #if USE_FREETYPE
       MCURemoveSubtitles(*vmp);
 #endif
-      VMPTouch(*vmp);
+      vmp->vmpbuf_index = -1;
       VMPInsert(vmp);
     }
   }
@@ -1114,7 +1112,7 @@ void MCUSimpleVideoMixer::Shuffle()
 #   if USE_FREETYPE
         MCURemoveSubtitles(*vmp);
 #   endif
-        VMPTouch(*vmp);
+        vmp->vmpbuf_index = -1;
       }
     }
   }
@@ -1141,7 +1139,7 @@ void MCUSimpleVideoMixer::Scroll(BOOL reverse)
 #if USE_FREETYPE
       MCURemoveSubtitles(*v);
 #endif
-      VMPTouch(*v);
+      v->vmpbuf_index = -1;
       VMPInsert(v);
     }
   }
@@ -1164,7 +1162,7 @@ void MCUSimpleVideoMixer::Revert()
 #if USE_FREETYPE
       MCURemoveSubtitles(*v);
 #endif
-      VMPTouch(*v);
+      v->vmpbuf_index = -1;
       VMPInsert(v);
     }
   }
@@ -1208,6 +1206,7 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
     newPosition = *it;
     if(member!=NULL) newPosition->id=member->GetID();
     else newPosition->id=(ConferenceMemberId)n;
+    newPosition->vmpbuf_index = -1;
   }
 
   if(newPosition == NULL) return it;
@@ -1227,8 +1226,7 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
 # if USE_FREETYPE
   MCURemoveSubtitles(*newPosition);
 # endif
-  if(create) VMPInsert(newPosition);
-  VMPTouch(*newPosition);
+  if(create) it = VMPInsert(newPosition);
   return it;
 }
 
@@ -1494,9 +1492,11 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
   {
     if(vmpList.Erase(vit))
     {
-      VMPSwapAndTouch(*old_vmp, *vmp);
+      VMPSwap(*old_vmp, *vmp);
+      vmp->vmpbuf_index = -1;
       VMPInsert(vmp);
     }
+    old_vmp->vmpbuf_index = -1;
     VMPInsert(old_vmp);
   }
 
@@ -1533,8 +1533,8 @@ void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
 #if USE_FREETYPE
     MCURemoveSubtitles(*vmp);
 #endif
+    vmp->vmpbuf_index = -1;
     VMPInsert(vmp);
-    VMPTouch(*vmp);
   }
 }
 
@@ -1658,7 +1658,7 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
 #if USE_FREETYPE
       MCURemoveSubtitles(*v1);
 #endif
-      VMPTouch(*v1);
+      v1->vmpbuf_index = -1;
       VMPInsert(v1);
     }
     return;
@@ -1668,9 +1668,11 @@ void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
   {
     if(vmpList.Erase(it2))
     {
-      VMPSwapAndTouch(*v1, *v2);
+      VMPSwap(*v1, *v2);
+      v2->vmpbuf_index = -1;
       VMPInsert(v2);
     }
+    v1->vmpbuf_index = -1;
     VMPInsert(v1);
   }
 }
