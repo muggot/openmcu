@@ -102,7 +102,7 @@ class VideoFrameStoreList {
   unsigned MCUSubsCalc(const unsigned, const PString);
   void MCUPrintSubtitles(VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties, unsigned bgColor);
   void InitializeSubtitles();
-  MCUSubtitles * MCURenderSubtitles(unsigned key, VideoMixPosition & vmp, void * buffer, unsigned fw, unsigned fh, unsigned ft_properties, unsigned layout);
+  MCUSubtitles * MCURenderSubtitles(VideoMixPosition & vmp, unsigned pw, unsigned ph, unsigned ft_properties, unsigned layout);
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
