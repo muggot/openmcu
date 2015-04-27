@@ -374,6 +374,7 @@ class MCUVideoMixer
     static void SplitLineBottom(BYTE *dst, unsigned x, unsigned y, unsigned w, unsigned h, unsigned fw, unsigned fh);
 
     virtual void SetForceScreenSplit(BOOL newForceScreenSplit){ forceScreenSplit=newForceScreenSplit; }
+    virtual void Update(ConferenceMember * member) = 0;
 
   protected:
     Conference * conference;
@@ -421,6 +422,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual void IncreaseSilenceCounter(ConferenceMemberId, int);
     virtual int GetPositionType(ConferenceMemberId id);
     virtual int GetPositionType(int);
+    virtual void Update(ConferenceMember * member);
     virtual void SetPositionType(int pos, int type);
     virtual ConferenceMemberId GetPositionId(int pos);
     virtual void Exchange(int pos1, int pos2);

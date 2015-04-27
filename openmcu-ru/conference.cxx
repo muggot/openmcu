@@ -1423,6 +1423,7 @@ void ConferenceMember::SendRoomControl(int state)
        << ",[]"
        << "," << memberType
        << "," << autoDial
+       << "," << resizerRule
        << ")";
   OpenMCU::Current().HttpWriteCmdRoom(msg, conference->GetNumber());
 }

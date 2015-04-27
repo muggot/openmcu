@@ -220,7 +220,7 @@ static PString MCUControlCodes = "NO ACTION,"
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-// don't forget to add the same into quote.txt:
+// don't forget to add the same into control.js:
 #define OTFC_UNMUTE                    0
 #define OTFC_MUTE                      1
 #define OTFC_MUTE_ALL                  2
@@ -247,6 +247,7 @@ static PString MCUControlCodes = "NO ACTION,"
 #define OTFC_SAVE_TEMPLATE            24
 #define OTFC_DELETE_TEMPLATE          25
 #define OTFC_REMOVE_VMP_MEMBER        26
+#define OTFC_CHANGE_RESIZER_RULE      27
 #define OTFC_INVITE                   32
 #define OTFC_REMOVE_OFFLINE_MEMBER    33
 #define OTFC_DIAL                     34

@@ -22,7 +22,7 @@ var VAD_FIELD_STYLE="width:40px;background-color:#fce;border-radius:5px;color:bl
 var MIX_BORDER_COLOR='#5ce';
 
 
-var OTFC_UNMUTE                  =  0; // corresponds to h323.h
+var OTFC_UNMUTE                  =  0; // corresponds to mcu.h
 var OTFC_MUTE                    =  1;
 var OTFC_MUTE_ALL                =  2;
 var OTFC_REMOVE_FROM_VIDEOMIXERS =  3;
@@ -48,6 +48,7 @@ var OTFC_TEMPLATE_RECALL         = 23;
 var OTFC_SAVE_TEMPLATE           = 24;
 var OTFC_DELETE_TEMPLATE         = 25;
 var OTFC_REMOVE_VMP_MEMBER       = 26;
+var OTFC_CHANGE_RESIZER_RULE     = 27;
 var OTFC_INVITE                  = 32;
 var OTFC_REMOVE_OFFLINE_MEMBER   = 33;
 var OTFC_DIAL                    = 34;
@@ -775,7 +776,7 @@ function format_mmbr_button(m,st)
 
   var ip=get_addr_url_without_param(memberName);
   var uname=get_addr_name(memberName);
-  var kick, hide, kdb, kdb2, mixer=m[7], mixerb, levelb, remove, invite;
+  var kick, hide, kdb, kdb2, mixer=m[7], mixerb, levelb, remove, invite, resize;
 
   if(mixer==-1) mixer='va';
   ip="<span style='color:"+((st==0)?"#576":"blue")+";font-size:10px'>"+ip+"</span>";
@@ -836,6 +837,7 @@ function format_mmbr_button(m,st)
   var vad=vad_button(m);
   kick   ="<img "+b1style+" src='i16_close_red.png' onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\");' onmouseover='prvnt=1' onmouseout='prvnt=0' alt='Drop'>";
   hide   ="<div class='hidespr'" + prCode + " title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'></div>";
+  resize ="<div id='rsz_"+id+"' class='rszspr" + m[15] + "'" + prCode + " title='&laquo;&raquo;/&uArr;&dArr;' onclick='this.className=\"launchspr\";queue_otf_request("+OTFC_CHANGE_RESIZER_RULE+","+m[1]+")'></div>";
   kdb    ="<div "+b2style+" id='agl_"+id+"' class='kdb'" + prCode + " onclick='javascript:{gain_selector(this,"+m[1]+"  );return false;}'>"+nice_db(m[10])+"</div>";
   kdbo   ="<div "+b2style+" id='ogl_"+id+"' class='kdb'" + prCode + " onclick='javascript:{gain_selector(this,"+m[1]+",1);return false;}'>"+nice_db(m[11])+"</div>";
   mixerb ="<div "+b3style+" onclick='javascript:{if(checkcontrol())queue_otf_request("+OTFC_SET_MEMBER_VIDEO_MIXER+","+m[1]+","+(m[7]+1)+");}' class='mmbrmi'>#"+mixer+"</div>";
@@ -851,12 +853,13 @@ function format_mmbr_button(m,st)
 
   if(mtype!=4)
   {
+    s+=dpre+(width-10*bwidth)+"px'>"+vad+"</div>";
     if(st)
       s+=dpre+(width-9*bwidth)+"px'>"+levelb+"</div>";
     s+=dpre+(width-8*bwidth)+"px'>"+kdb+"</div>";
     s+=dpre+(width-6*bwidth)+"px'>"+mute1+"</div>";
     s+=dpre+(width-5*bwidth)+"px'>"+mute4+"</div>";
-    s+=dpre+(width-4*bwidth)+"px'>"+vad+"</div>";
+    s+=dpre+(width-4*bwidth)+"px'>"+resize+"</div>";
     if(st)
       s+=dpre+(width-3*bwidth)+"px'>"+hide+"</div>";
 //    if(!st)
@@ -2359,5 +2362,13 @@ function dspr(id,spr)
   if(ad=='1') r=member_modify_by_id(id,14,1);
   if(ad=='0') r=member_modify_by_id(id,14,0);
   dmsg('dial sprite['+id+']='+ad+', result: '+r);
+  alive();
+}
+
+function rszspr(id,state)
+{
+  var o=document.getElementById('rsz_'+idid(id));
+  if(o)o.className='rszspr'+state;
+  member_modify_by_id(id,15,state);
   alive();
 }

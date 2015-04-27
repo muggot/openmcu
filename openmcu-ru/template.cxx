@@ -105,10 +105,12 @@ PString Conference::SaveTemplate(PString tplName)
     ConferenceMember *member = *it;
     if(member->IsSystem())
       continue;
+    unsigned value3 = member->resizerRule << 1;
+    if(member->disableVAD) value3++;
     t << "  MEMBER "
       << (member->autoDial?"1":"0") << ", "
       << member->muteMask << "/" << (member->kManualGainDB+20) << "/" << (member->kOutputGainDB+20) << ", "
-      << (member->disableVAD?"1":"0") << ", "
+      << value3 << ", "
       << (member->chosenVan?"1":"0") << ", "
       << member->GetVideoMixerNumber() << ", "
       << member->GetName() << "\n";
@@ -273,6 +275,9 @@ void Conference::LoadTemplate(PString tpl)
             {
               member->muteMask      = v[1].AsInteger();
             }
+            unsigned value3=(unsigned)(v[2].AsInteger());
+            member->disableVAD      = value3&1;
+            member->resizerRule     = (value3>>1)&127;
             member->disableVAD      = (v[2]=="1");
             member->chosenVan       = (v[3]=="1");
             OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
@@ -445,7 +450,9 @@ void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PStrin
         {
           member->muteMask      = v[1].AsInteger();
         }
-        member->disableVAD   = (v[2] == "1");
+        unsigned value3=(unsigned)(v[2].AsInteger());
+        member->disableVAD   = value3&1;
+        member->resizerRule  = (value3>>1)&127;
         member->chosenVan    = (v[3] == "1");
         if(member->chosenVan) if(PutChosenVan()) member->SetFreezeVideo(FALSE);
 

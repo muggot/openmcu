@@ -1246,6 +1246,17 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
   return it;
 }
 
+void MCUSimpleVideoMixer::Update(ConferenceMember * member)
+{
+  if(member==NULL) return;
+  PWaitAndSignal m(vmpListMutex);
+  MCUVMPList::shared_iterator it = VMPFind(member->GetID());
+  if(it == vmpList.end()) return;
+  VideoMixPosition *vmp = *it;
+
+  vmp->rule = member->resizerRule;
+}
+
 BOOL MCUSimpleVideoMixer::AddVideoSourceToLayout(ConferenceMemberId id, ConferenceMember & mbr)
 {
   PWaitAndSignal m(vmpListMutex);

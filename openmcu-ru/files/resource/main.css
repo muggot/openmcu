@@ -434,3 +434,6 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .vadspr9  {width:15px;height:15px;background:url(s32_ch.png) -105px -138px;cursor:pointer}
 .vadspr10 {width:15px;height:15px;background:url(s32_ch.png) -137px -138px;cursor:pointer}
 .hidespr  {width:15px;height:15px;background:url(s32_ch.png) -201px -137px;cursor:pointer}
+
+.rszspr0  {width:15px;height:15px;background:url(s32_ch.png)  -72px -168px;cursor:pointer}
+.rszspr1  {width:15px;height:15px;background:url(s32_ch.png) -104px -168px;cursor:pointer}

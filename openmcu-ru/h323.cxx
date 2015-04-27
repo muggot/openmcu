@@ -1406,6 +1406,7 @@ MCUJSON* MCUH323EndPoint::GetMemberDataJS(ConferenceMember * member)
   a->Insert(GetVideoMixerConfiguration(member->videoMixer, 0)); //12: mixer configuration
   a->Insert(member->GetType()); //13
   a->Insert(member->autoDial); //14
+  a->Insert(member->resizerRule); //15
   return a;
 }
 
