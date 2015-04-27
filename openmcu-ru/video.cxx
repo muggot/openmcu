@@ -1199,8 +1199,17 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
 
   MCUVMPList::shared_iterator it;
   if(member==NULL && type==1) return it;
-  if(n<0) return it;
   if((unsigned)n >= OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum) return it;
+
+  if(member!=NULL)
+  {
+    MCUVMPList::shared_iterator old_it = VMPFind(member->GetID());
+    if(old_it != vmpList.end()) if(old_it->n != n)  // check whether source already exists in layout
+    {
+      old_it.Release();
+      VMPDelete(old_it);
+    }
+  }
 
   it = VMPFind(n);
   VideoMixPosition *newPosition = NULL;
@@ -1404,15 +1413,7 @@ BOOL MCUSimpleVideoMixer::TryOnVADPosition(ConferenceMember * member)
   }
   if(!(vit != vmpList.end() && orderKey)) return FALSE;
 
-  VideoMixPosition *vmp = *vit;
-  if(vmpList.Erase(vit))
-  {
-    vmp->id=member->GetID();
-    vmp->silenceCounter=0;
-    vmp->chosenVan=member->chosenVan;
-    vmp->SetEndpointName(member->GetName());
-    VMPInsert(vmp);
-  }
+  VMPCreator(member, (*vit)->n, (*vit)->type);
 
   return TRUE;
 }
@@ -1541,90 +1542,15 @@ void MCUSimpleVideoMixer::MyChangeLayout(unsigned newLayout)
 
 void MCUSimpleVideoMixer::PositionSetup(int pos, int type, ConferenceMember * member) //types 1000, 1001, 1002, 1003 means type will not changed
 {
+  int old_type = 0;
   PWaitAndSignal m(vmpListMutex);
-
-  if((unsigned)pos>=OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum)
-    return; // n out of range
-
-  MCUVMPList::shared_iterator old_it;
-  ConferenceMemberId id;
-  if(member!=NULL)
+  if(type>=1000)
   {
-    id = member->GetID();
-    old_it = VMPFind(member->GetID());
+    MCUVMPList::shared_iterator it = VMPFind(pos);
+    if(it != vmpList.end()) old_type=(*it)->type;
   }
-  else
-    id = 0;
-
-  if(old_it != vmpList.end())
-  {
-    if(old_it->n == pos)
-    {
-      if(type<1000)
-      {
-        old_it->type=type;
-      }
-      return;
-    }
-    int n = old_it->n;
-    int type = old_it->type;
-    old_it.Release();
-    MyRemoveVideoSource(n, (type == 1));
-  }
-
-  for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
-  {
-    VideoMixPosition *v = *it;
-    if(v->n==pos) // we found it
-    {
-      if(type<1000) v->type=type;
-
-      if((v->type==1) && (!id)) // special case: VMP needs to be removed
-      {
-        if(vmpList.Erase(it))
-          delete v;
-        return;
-      }
-
-      if((v->type==2)||(v->type==3))
-      {
-        if(v->chosenVan) return;
-        BOOL disableVAD=FALSE;
-        if(id)disableVAD=member->disableVAD;
-        if(id && (!disableVAD))
-        {
-          v->id=id;
-          v->silenceCounter=0;
-          v->chosenVan=member->chosenVan;
-          v->SetEndpointName(member->GetName());
-        }
-        else v->id = v->n;
-        if(id) v->SetEndpointName(member->GetName());
-        else v->SetEndpointName("Voice-activated " + PString(type-1));
-        return;
-      }
-
-      if(v->id == id) return;
-
-      v->id=id;
-      v->SetEndpointName(member->GetName());
-      return;
-    }
-  }
-
-// creating new video mix position:
-
-  if(type>1000) type-=1000;
-  if((type==1) && (!id)) return;
-  PString name;
-  if(!id) id=pos; //vad
-  else name=member->GetName();
-
-  VideoMixPosition * newPosition = CreateVideoMixPosition(id);
-  newPosition->type=type;
-  newPosition->n=pos;
-  newPosition->SetEndpointName(name);
-  VMPInsert(newPosition);
+  MCUVMPList::shared_iterator it = VMPCreator(member, pos, type % 1000);
+  if(it!=vmpList.end()) if(old_type) (*it)->type = old_type;
 }
 
 void MCUSimpleVideoMixer::Exchange(int pos1, int pos2)
