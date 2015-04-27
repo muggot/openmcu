@@ -29,6 +29,7 @@
   {
     unsigned x, y, w, h;
     void* b;
+    PString text;
   };
 #endif
 
@@ -186,7 +187,6 @@ class VideoMixPosition {
     int silenceCounter; // static | vad visibility
     volatile int type; // static, vad, vad2, vad3
     int chosenVan; // always visible vad members (can switched between vad and vad2)
-    PString endpointName;
 #if USE_FREETYPE
     typedef MCUSharedList<MCUSubtitles> MCUSubtitlesList;
     MCUSubtitlesList subtitlesList; // one per framestore
@@ -199,6 +199,21 @@ class VideoMixPosition {
     MCUSharedList<MCUBufferYUVArray> bufferList;
     int vmpbuf_index;
     MCUBufferYUV tmpbuf;
+
+    void SetEndpointName(const PString & name)
+    {
+      if(name != endpointName)
+#if USE_FREETYPE
+        MCURemoveSubtitles(*this);
+#endif
+      endpointName = name;
+    }
+
+    const PString & GetEndpointName()
+    { return endpointName; }
+
+  protected:
+    PString endpointName;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
