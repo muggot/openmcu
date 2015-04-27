@@ -1236,11 +1236,13 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
     newPosition->rule = member->resizerRule;
     newPosition->SetEndpointName(member->GetName());
     newPosition->chosenVan = member->chosenVan;
+    newPosition->offline = !member->IsOnline();
   }
   else
   {
     newPosition->SetEndpointName("VAD" + PString(type-1) + "/" + PString(n));
     newPosition->chosenVan = 0;
+    newPosition->offline = FALSE;
   }
   if(create) it = VMPInsert(newPosition);
   return it;
