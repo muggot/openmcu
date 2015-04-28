@@ -336,3 +336,5 @@ window.l_room_dial_all_members                     = 'Run continuous dialing ALL
 ///
 window.l_param_telserver = 'Telnet server';
 window.l_info_telserver = '';
+window.l_auto_dial_delay                           = "Auto dial delay, s";
+///

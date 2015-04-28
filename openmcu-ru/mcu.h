@@ -64,6 +64,7 @@ static const char DefaultRoomKey[]         = "Default room";
 static const char DefaultCallLogFilename[] = "mcu_log.txt"; 
 static const char DefaultRoom[]            = "room101";
 static const char AllowLoopbackCallsKey[]  = "Allow loopback calls";
+static const char AutoDialDelayKey[]       = "Auto dial delay";
 
 static const char SipListenerKey[]         = "SIP Listener";
 
@@ -584,6 +585,7 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     unsigned long videoResizeDeltaTSCSum;
     unsigned short videoResizeDeltaTSCCounter;
     time_t videoResizeDeltaTSCReportTime;
+    int autoDialDelay;
 
   protected:
 

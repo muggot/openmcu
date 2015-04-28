@@ -276,6 +276,7 @@ window.l_copy_web_log                              = "Copy web log to call log";
 window.l_default_room                              = "Default room";
 window.l_reject_duplicate_name                     = "Reject duplicate name";
 window.l_allow_loopback_calls                      = "Allow loopback calls";
+window.l_auto_dial_delay                           = "Auto dial delay, s";
 ///
 window.l_allow_internal_calls                      = "Allow internal calls";
 window.l_sip_allow_reg_without_auth                = "SIP allow registration without authentication";

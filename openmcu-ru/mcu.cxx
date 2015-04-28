@@ -259,6 +259,11 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   }
 #endif
 
+  // auto dial delay
+  PString addtmp=cfg.GetString(AutoDialDelayKey, 1);
+  if(addtmp=="X") autoDialDelay = 999999;
+  else autoDialDelay = addtmp.AsInteger();
+
   // get default "room" (conference) name
   defaultRoomName = cfg.GetString(DefaultRoomKey, DefaultRoom);
 

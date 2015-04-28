@@ -344,3 +344,5 @@ window.l_room_dial_all_members                     = 'Дозвон всем уч
 ///
 window.l_param_telserver = 'Telnet сервер';
 window.l_info_telserver = '';
+window.l_auto_dial_delay                           = "Интервал автодозвона, с";
+///

@@ -301,6 +301,8 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   s << BoolField(RejectDuplicateNameKey, JsLocal("reject_duplicate_name"), cfg.GetBoolean(RejectDuplicateNameKey, FALSE));
   // allow/disallow self-invite:
   s << BoolField(AllowLoopbackCallsKey, JsLocal("allow_loopback_calls"), cfg.GetBoolean(AllowLoopbackCallsKey, FALSE));
+  // auto dial delay:
+  s << SelectField(AutoDialDelayKey, JsLocal("auto_dial_delay"), cfg.GetString(AutoDialDelayKey, cfg.GetString(AutoDialDelayKey,1)), "1,2,3,5,8,10,12,15,20,25,30,45,60,90,120,150,180,300,X");
 
   s << SeparatorField("");
   s << SeparatorField("");

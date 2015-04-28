@@ -563,6 +563,8 @@ class Conference : public PObject
     BOOL stopping;
     BOOL lockedTemplate;
 
+    int dialCountdown;
+
   protected:
     ConferenceManager & manager;
 

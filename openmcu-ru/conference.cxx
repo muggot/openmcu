@@ -588,17 +588,24 @@ int ConferenceMonitor::Perform(Conference * conference)
   }
 
   // autodial
-  MCUMemberList & memberList = conference->GetMemberList();
-  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  if(OpenMCU::Current().autoDialDelay != 999999) //disable
   {
-    ConferenceMember *member = *it;
-    PWaitAndSignal m(member->GetDialMutex());
-    if(!member->autoDial || member->IsSystem() || member->IsOnline())
-      continue;
-    MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-    if(member->dialToken != "" && ep.HasConnection(member->dialToken))
-      continue;
-    member->dialToken = ep.Invite(conference->GetNumber(), member->GetName());
+    if((conference->dialCountdown--) <= 0)
+    {
+      MCUMemberList & memberList = conference->GetMemberList();
+      for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+      {
+        ConferenceMember *member = *it;
+        PWaitAndSignal m(member->GetDialMutex());
+        if(!member->autoDial || member->IsSystem() || member->IsOnline())
+          continue;
+        MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
+        if(member->dialToken != "" && ep.HasConnection(member->dialToken))
+          continue;
+        member->dialToken = ep.Invite(conference->GetNumber(), member->GetName());
+      }
+      conference->dialCountdown = OpenMCU::Current().autoDialDelay;
+    }
   }
 
   MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
@@ -643,6 +650,7 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
   forceScreenSplit = GetConferenceParam(number, ForceSplitVideoKey, TRUE);
   lockedTemplate = GetConferenceParam(number, LockTemplateKey, FALSE);
   pipeMember = NULL;
+  dialCountdown = OpenMCU::Current().autoDialDelay;
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 
