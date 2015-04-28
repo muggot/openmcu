@@ -465,19 +465,11 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
 #if MCU_VIDEO
     static VideoMixConfigurator vmcfg;
 
-    virtual void RemovePreMediaFrame()
-    { }
-
-    virtual BOOL GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount)
-    { return FALSE; }
-
+    virtual void * GetPreMediaFrame(unsigned & w, unsigned & h) { return NULL; }
     virtual void * GetOfflineFramePointer(unsigned & w, unsigned & h) { return NULL; }
     virtual void * GetEmptyFramePointer(unsigned & w, unsigned & h) { return NULL; }
     virtual void * GetBackgroundPointer(unsigned & w, unsigned & h) { return NULL; }
     virtual void * GetNoVideoFramePointer(unsigned & w, unsigned & h) { return NULL; }
-
-    virtual BOOL GetEmptyMediaFrame(void * buffer, int width, int height, PINDEX & amount)
-    { return GetPreMediaFrame(buffer, width, height, amount); }
 
     PString SetScaleFilterType(int type)
     {

@@ -3592,13 +3592,6 @@ BOOL MCUH323Connection::OnIncomingVideo(const void * buffer, int width, int heig
   return TRUE;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
-
-BOOL MCUH323Connection::GetPreMediaFrame(void * buffer, int width, int height, PINDEX & amount)
-{
-  return OpenMCU::Current().GetPreMediaFrame(buffer, width, height, amount);
-}
-
 #endif // MCU_VIDEO
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

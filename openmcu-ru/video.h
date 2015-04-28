@@ -195,6 +195,7 @@ class VideoMixPosition {
     time_t lastWrite;
     int rule;
     BOOL offline;
+    BOOL shows_logo;
 
     MCUSharedList<MCUBufferYUVArray> bufferList;
     int vmpbuf_index;

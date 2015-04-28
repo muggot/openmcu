@@ -331,6 +331,7 @@ VideoMixPosition::VideoMixPosition(ConferenceMemberId _id)
   offline = FALSE; //dont show offline banner for 1st time
   lastWrite = 0;
   vmpbuf_index = -1;
+  shows_logo = FALSE;
 }
 
 VideoMixPosition::~VideoMixPosition()
@@ -961,11 +962,22 @@ void MCUSimpleVideoMixer::Monitor(Conference *conference)
       }
     }
     // touch
-    if(vmp->vmpbuf_index == -1)
+    if(vmp->vmpbuf_index == -1 || vmp->shows_logo)
     {
       if(vmpList.Erase(vmp_it))
       {
-        VMPTouch(*vmp);
+        if(vmp->vmpbuf_index == -1)
+        {
+          vmp->shows_logo = TRUE;
+          unsigned width, height;
+          void *buffer = OpenMCU::Current().GetPreMediaFrame(width, height);
+          WriteSubFrame(*vmp, buffer, width, height, WSF_VMP_BORDER|WSF_VMP_FORCE_CUT);
+        }
+        else if(vmp->shows_logo)
+        {
+          vmp->shows_logo = FALSE;
+          VMPTouch(*vmp);
+        }
         VMPInsert(vmp);
       }
       continue;
@@ -1009,6 +1021,7 @@ BOOL MCUSimpleVideoMixer::SetOnline(ConferenceMemberId id)
 
 void MCUSimpleVideoMixer::WriteEmptyFrame(VideoMixPosition & vmp)
 {
+  MCUTRACE(6, "VideoMixer: WriteEmptyFrame n=" << vmp.n << " id=" << vmp.id << " offline=" << vmp.offline << " write=" << (time(NULL)-vmp.lastWrite));
   unsigned width, height, options;
   void * buffer = OpenMCU::Current().GetEmptyFramePointer(width, height);
   if(width==16 && height==16) options=WSF_VMP_BORDER|WSF_VMP_FORCE_CUT;
@@ -1018,6 +1031,7 @@ void MCUSimpleVideoMixer::WriteEmptyFrame(VideoMixPosition & vmp)
 
 void MCUSimpleVideoMixer::WriteOfflineFrame(VideoMixPosition & vmp)
 {
+  MCUTRACE(6, "VideoMixer: WriteOfflineFrame n=" << vmp.n << " id=" << vmp.id << " offline=" << vmp.offline << " write=" << (time(NULL)-vmp.lastWrite));
   unsigned width, height, options;
   void * buffer = OpenMCU::Current().GetOfflineFramePointer(width, height);
   if(width==16 && height==16) options=WSF_VMP_COMMON|WSF_VMP_FORCE_CUT;
@@ -1027,6 +1041,7 @@ void MCUSimpleVideoMixer::WriteOfflineFrame(VideoMixPosition & vmp)
 
 void MCUSimpleVideoMixer::WriteNoVideoFrame(VideoMixPosition & vmp)
 {
+  MCUTRACE(6, "VideoMixer: WriteNoVideoFrame n=" << vmp.n << " id=" << vmp.id << " offline=" << vmp.offline << " write=" << (time(NULL)-vmp.lastWrite));
   unsigned width, height, options;
   void * buffer = OpenMCU::Current().GetNoVideoFramePointer(width, height);
   if(width==16 && height==16) options=WSF_VMP_SUBTITLES|WSF_VMP_BORDER|WSF_VMP_FORCE_CUT;
@@ -1036,7 +1051,6 @@ void MCUSimpleVideoMixer::WriteNoVideoFrame(VideoMixPosition & vmp)
 
 void MCUSimpleVideoMixer::VMPTouch(VideoMixPosition & vmp)
 {
-  MCUTRACE(6, "VideoMixer: touch n=" << vmp.n << " id=" << vmp.id << " offline=" << vmp.offline << " write=" << (time(NULL)-vmp.lastWrite));
   if(!vmp.id) WriteEmptyFrame(vmp);
   else if(vmp.offline) WriteOfflineFrame(vmp);
   else if((time(NULL)-vmp.lastWrite) > 1) WriteNoVideoFrame(vmp);

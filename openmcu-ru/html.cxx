@@ -2110,7 +2110,7 @@ BOOL WelcomePage::OnPOST(PHTTPServer & server, const PURL & url, const PMIMEInfo
     server.Write((const char*)message,message.GetLength());
   }
   server.flush();
-  OpenMCU::Current().RemovePreMediaFrame();
+  //OpenMCU::Current().RemovePreMediaFrame();
 
   return FALSE;
 }
