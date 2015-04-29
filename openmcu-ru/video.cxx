@@ -970,7 +970,7 @@ void MCUSimpleVideoMixer::Monitor(Conference *conference)
         {
           vmp->shows_logo = TRUE;
           unsigned width, height;
-          void *buffer = OpenMCU::Current().GetPreMediaFrame(width, height);
+          void *buffer = OpenMCU::Current().GetLogoFramePointer(width, height);
           WriteSubFrame(*vmp, buffer, width, height, WSF_VMP_BORDER|WSF_VMP_FORCE_CUT);
         }
         else if(vmp->shows_logo)

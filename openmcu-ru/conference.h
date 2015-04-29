@@ -386,6 +386,7 @@ class ConferenceMember : public PObject
 
 #if MCU_VIDEO
     int resizerRule; //0=cut, 1=stripes
+    PTime firstFrameSendTime;
 #endif
 
   protected:
@@ -407,7 +408,6 @@ class ConferenceMember : public PObject
     unsigned write_audio_write_counter;
 
 #if MCU_VIDEO
-    PTime firstFrameSendTime;
     PINDEX totalVideoFramesSent;
 
     PTime firstFrameReceiveTime;

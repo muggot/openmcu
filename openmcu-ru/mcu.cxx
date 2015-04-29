@@ -370,6 +370,9 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   WEBSERVER_LINK_MIME_CFG("image/png"            , "logo.png");
   WEBSERVER_LINK_MIME_CFG("image/gif"            , "logo.gif");
 
+  // determine logo filename
+  GetLogoFilename();
+
   for(PINDEX i=-1; i<rotationLevel; i++)
   {
     PString s="trace";

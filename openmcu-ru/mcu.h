@@ -466,6 +466,7 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     static VideoMixConfigurator vmcfg;
 
     virtual void * GetPreMediaFrame(unsigned & w, unsigned & h) { return NULL; }
+    virtual void * GetLogoFramePointer(unsigned & w, unsigned & h) { return NULL; }
     virtual void * GetOfflineFramePointer(unsigned & w, unsigned & h) { return NULL; }
     virtual void * GetEmptyFramePointer(unsigned & w, unsigned & h) { return NULL; }
     virtual void * GetBackgroundPointer(unsigned & w, unsigned & h) { return NULL; }
