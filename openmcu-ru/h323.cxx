@@ -2939,7 +2939,7 @@ BOOL MCUH323Connection::OpenVideoChannel(BOOL isEncoding, H323VideoCodec & codec
 
     // videoGrabber
     // Нужен в режиме без кэша или для потока кэша
-    if(cacheMode == 0 || cacheMode == 1)
+    //if(cacheMode == 0 || cacheMode == 1)
     {
       PVideoChannel * channel = new PVideoChannel;
       if(videoGrabber)

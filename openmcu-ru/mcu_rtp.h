@@ -56,9 +56,12 @@ class MCU_RTPChannel : public H323_RTPChannel
     void OnFastUpdatePicture()
     {
       if(cache)
-        cache->OnFastUpdatePicture();
-      else
+      {
         fastUpdate = true;
+        cache->OnFastUpdatePicture();
+      }
+      else
+        ((H323VideoCodec *)codec)->OnFastUpdatePicture();
     }
 
     void SetFreeze(bool enable);

@@ -300,13 +300,23 @@ VideoFrameStoreList::FrameStore::FrameStore(int _w, int _h)
   : width(_w), height(_h), frame_size(_w*_h*3/2)
 {
   PAssert(_w != 0 && _h != 0, "Cannot create zero size framestore");
-  bgframe.SetSize(frame_size);
+  lastRead = time(NULL);
+
+  bg_frame.SetSize(frame_size);
   unsigned bgw, bgh;
   void *bg = OpenMCU::Current().GetBackgroundPointer(bgw, bgh);
   if(bg)
-    ResizeYUV420P(bg, bgframe.GetPointer(), bgw, bgh, width, height);
+    ResizeYUV420P(bg, bg_frame.GetPointer(), bgw, bgh, width, height);
   else
-    FillYUVFrame(bgframe.GetPointer(), 0, 0, 0, width, height);
+    FillYUVFrame(bg_frame.GetPointer(), 0, 0, 0, width, height);
+
+  logo_frame.SetSize(frame_size);
+  unsigned logo_width, logo_height;
+  void *logo = OpenMCU::Current().GetLogoFramePointer(logo_width, logo_height);
+  if(logo)
+    ResizeYUV420P(logo, logo_frame.GetPointer(), logo_width, logo_height, width, height);
+  else
+    FillYUVFrame(logo_frame.GetPointer(), 0, 0, 0, width, height);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -685,8 +695,16 @@ MCUSimpleVideoMixer::~MCUSimpleVideoMixer()
 {
 }
 
-BOOL MCUSimpleVideoMixer::ReadFrame(ConferenceMember &, void * buffer, int width, int height, PINDEX & amount)
+BOOL MCUSimpleVideoMixer::ReadFrame(ConferenceMember & member, void * buffer, int width, int height, PINDEX & amount)
 {
+  if(member.GetType() != MEMBER_TYPE_CACHE && PTime()-member.firstFrameSendTime < 3000)
+  {
+    VideoFrameStoreList::shared_iterator fsit = frameStores.GetFrameStore(width, height);
+    VideoFrameStoreList::FrameStore & fs = **fsit;
+    if(fs.logo_frame.GetSize() != 0)
+      memcpy(buffer, fs.logo_frame.GetPointer(), fs.frame_size);
+    return TRUE;
+  }
   return ReadMixedFrame(frameStores, buffer, width, height, amount);
 }
 
@@ -701,8 +719,8 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
   VideoFrameStoreList::FrameStore & fs = **fsit;
 
   // background
-  if(fs.bgframe.GetSize() != 0)
-    memcpy(buffer, fs.bgframe.GetPointer(), fs.frame_size);
+  if(fs.bg_frame.GetSize() != 0)
+    memcpy(buffer, fs.bg_frame.GetPointer(), fs.frame_size);
 
   for(unsigned i = 0; i < OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum; i++)
   {
@@ -962,6 +980,7 @@ void MCUSimpleVideoMixer::Monitor(Conference *conference)
       }
     }
     // touch
+    /*
     if(vmp->vmpbuf_index == -1 || vmp->shows_logo)
     {
       if(vmpList.Erase(vmp_it))
@@ -970,7 +989,7 @@ void MCUSimpleVideoMixer::Monitor(Conference *conference)
         {
           vmp->shows_logo = TRUE;
           unsigned width, height;
-          void *buffer = OpenMCU::Current().GetLogoFramePointer(width, height);
+          void *buffer = OpenMCU::Current().GetPreMediaFrame(width, height);
           WriteSubFrame(*vmp, buffer, width, height, WSF_VMP_BORDER|WSF_VMP_FORCE_CUT);
         }
         else if(vmp->shows_logo)
@@ -978,6 +997,16 @@ void MCUSimpleVideoMixer::Monitor(Conference *conference)
           vmp->shows_logo = FALSE;
           VMPTouch(*vmp);
         }
+        VMPInsert(vmp);
+      }
+      continue;
+    }
+    */
+    if(vmp->vmpbuf_index == -1)
+    {
+      if(vmpList.Erase(vmp_it))
+      {
+        VMPTouch(*vmp);
         VMPInsert(vmp);
       }
       continue;

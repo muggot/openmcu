@@ -26,7 +26,7 @@ CacheRTP * CreateCacheRTP(const PString & key);
 void DeleteCacheRTP(CacheRTP *& cache);
 bool FindCacheRTP(const PString & key);
 void PutCacheRTP(CacheRTP *& cache, RTP_DataFrame & frame, unsigned int len, unsigned int flags);
-void GetCacheRTP(CacheRTP *& cache, RTP_DataFrame & frame, unsigned & toLen, unsigned & seqN, unsigned & flags);
+bool GetCacheRTP(CacheRTP *& cache, RTP_DataFrame & frame, unsigned & toLen, unsigned & seqN, unsigned & flags);
 bool AttachCacheRTP(CacheRTP *& cache, const PString & key, unsigned & encoderSeqN);
 void DetachCacheRTP(CacheRTP *& cache);
 

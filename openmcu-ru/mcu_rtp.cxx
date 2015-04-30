@@ -224,7 +224,7 @@ void MCU_RTPChannel::SetFreeze(bool enable)
     freezeWrite = enable;
     // Отправка intra-frame
     if(!isAudio && !enable)
-      ((H323VideoCodec *)codec)->OnFastUpdatePicture();
+      OnFastUpdatePicture();
   }
   MCUTRACE(1, "MCU_RTPChannel " << (receiver ? "Receive" : "Transmit") << " " << (isAudio ? "audio" : "video") << " thread " << (enable ? "freeze" : "unfreeze"));
 }
@@ -452,36 +452,50 @@ void MCU_RTPChannel::Transmit()
     codecReadAnalysis = new CodecReadAnalyser;
 #endif
 
+  BOOL preVideoFrames = FALSE;
+  if(!isAudio)
+    preVideoFrames = TRUE;
+
   while(1)
   {
-    // periodic intra-frame refresh
-    if(!isAudio && intraRefreshPeriod > 0 && rtpSession.GetPacketsSent() % intraRefreshPeriod == 0)
-      ((H323VideoCodec *)codec)->OnFastUpdatePicture();
-
     BOOL retval = FALSE;
 
-    if(cacheMode == -1 || cacheMode == 0 || cacheMode == 1 || encoderSeqN == 0xFFFFFFFF)
-      retval = codec->Read(frame.GetPayloadPtr() + frameOffset, length, frame);
-
-    if(cacheMode == 2 && encoderSeqN != 0xFFFFFFFF)
+    // setup cache
+    if(cacheMode == 2 && (cache == NULL || cache->GetName() != cacheName))
     {
-      if(cache == NULL || cache->GetName() != cacheName)
+      DetachCacheRTP(cache);
+      while(!AttachCacheRTP(cache, cacheName, encoderSeqN))
+        MCUTime::Sleep(100);
+      OnFastUpdatePicture();
+    }
+
+    // periodic intra-frame refresh
+    if(!isAudio && intraRefreshPeriod > 0 && rtpSession.GetPacketsSent() % intraRefreshPeriod == 0)
+      OnFastUpdatePicture();
+
+    // read frame
+    if(cacheMode < 2 || encoderSeqN == 0xFFFFFFFF)
+    {
+      retval = codec->Read(frame.GetPayloadPtr() + frameOffset, length, frame);
+    }
+    else if(cacheMode == 2)
+    {
+      if(preVideoFrames && (PTimer::Tick()-firstFrameTick).GetInterval() > 2500 && frameOffset == 0)
       {
-        DetachCacheRTP(cache);
-        while(!AttachCacheRTP(cache, cacheName, encoderSeqN))
-          MCUTime::Sleep(100);
+        preVideoFrames = FALSE;
+        OnFastUpdatePicture();
       }
-
-      unsigned flags = 0;
-      if(!isAudio && fastUpdate)
-        flags = PluginCodec_CoderForceIFrame;
-
-      GetCacheRTP(cache, frame, length, encoderSeqN, flags);
-
-      if(!isAudio && flags & PluginCodec_ReturnCoderIFrame)
-        fastUpdate = false;
-
-      retval = TRUE;
+      if(preVideoFrames)
+        retval = codec->Read(frame.GetPayloadPtr() + frameOffset, length, frame);
+      else
+      {
+        unsigned flags = 0;
+        if(!isAudio && fastUpdate)
+          flags = PluginCodec_CoderForceIFrame;
+        retval = GetCacheRTP(cache, frame, length, encoderSeqN, flags);
+        if(!isAudio && flags & PluginCodec_ReturnCoderIFrame)
+          fastUpdate = false;
+      }
     }
 
     if(retval == FALSE)

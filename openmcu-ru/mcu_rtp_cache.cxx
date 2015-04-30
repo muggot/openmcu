@@ -121,17 +121,18 @@ void PutCacheRTP(CacheRTP *& cache, RTP_DataFrame & frame, unsigned int len, uns
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void GetCacheRTP(CacheRTP *& cache, RTP_DataFrame & frame, unsigned & toLen, unsigned & seqN, unsigned & flags)
+bool GetCacheRTP(CacheRTP *& cache, RTP_DataFrame & frame, unsigned & toLen, unsigned & seqN, unsigned & flags)
 {
   if(!cache)
   {
     MCUTRACE(1, "CacheRTP Get - No cache!");
     seqN = 0xFFFFFFFF;
-    return;
+    return false;
   }
   if(flags & PluginCodec_CoderForceIFrame)
     cache->OnFastUpdatePicture();
   cache->GetFrame(frame, toLen, seqN, flags);
+  return true;
   //cout << "GetCacheRTP length=" << toLen << " marker=" << frame.GetMarker() << " flags=" << flags  << "\n";
 }
 

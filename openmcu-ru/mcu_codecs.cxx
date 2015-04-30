@@ -800,6 +800,12 @@ MCUVideoCodec::~MCUVideoCodec()
 
 BOOL MCUVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame & dst)
 {
+  unsigned flags = 0;
+  return Read(buffer, length, dst, flags);
+}
+
+BOOL MCUVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame & dst, unsigned & flags)
+{
   PWaitAndSignal mutex(videoHandlerActive);
 
   if(direction != Encoder)
@@ -882,7 +888,7 @@ BOOL MCUVideoCodec::Read(BYTE * buffer, unsigned & length, RTP_DataFrame & dst)
 
   unsigned int fromLen = bufferRTP.GetHeaderSize() + bufferRTP.GetPayloadSize();
   unsigned int toLen = outputDataSize;
-  unsigned int flags = sendIntra ? PluginCodec_CoderForceIFrame : 0;
+  flags = sendIntra ? PluginCodec_CoderForceIFrame : 0;
   int retval = 0;
 
   retval = (codec->codecFunction)(codec, context, bufferRTP.GetPointer(), &fromLen, dst.GetPointer(), &toLen, &flags);

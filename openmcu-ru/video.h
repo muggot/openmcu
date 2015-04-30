@@ -45,7 +45,8 @@ class VideoFrameStoreList {
         int height;
         int frame_size;
         time_t lastRead;
-        MCUBuffer bgframe;
+        MCUBuffer bg_frame;
+        MCUBuffer logo_frame;
     };
     typedef MCUSharedList<FrameStore> MCUFrameStoreList;
     MCUFrameStoreList frameStoreList;

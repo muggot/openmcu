@@ -285,7 +285,11 @@ void ConferenceCacheMember::CacheThread(PThread &, INT)
           ((H323VideoCodec *)codec)->OnFastUpdatePicture();
       }
 
-      codec->Read(frame.GetPayloadPtr(), length, frame);
+      if(isAudio)
+        codec->Read(frame.GetPayloadPtr(), length, frame);
+      else
+        ((MCUVideoCodec *)codec)->Read(frame.GetPayloadPtr(), length, frame, flags);
+
       PutCacheRTP(cache, frame, length, flags);
     }
   }

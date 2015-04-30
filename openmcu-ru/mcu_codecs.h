@@ -268,6 +268,7 @@ class MCUVideoCodec : public H323VideoCodec
     MCUVideoCodec(const OpalMediaFormat & fmt, Direction direction, PluginCodec_Definition * _codec);
     ~MCUVideoCodec();
 
+    BOOL Read(BYTE * buffer, unsigned & length, RTP_DataFrame & dst, unsigned & flags);
     virtual BOOL Read(BYTE * buffer, unsigned & length, RTP_DataFrame & dst);
     virtual BOOL Write(const BYTE * buffer, unsigned length, const RTP_DataFrame & src, unsigned & written);
 
