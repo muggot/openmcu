@@ -221,7 +221,7 @@ void Conference::LoadTemplate(PString tpl)
             if(commaPosition != P_MAX_INDEX)
             {
               PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
-              ConferenceMember *member = manager.FindMemberNameIDWithLock(this, name);
+              ConferenceMember *member = manager.FindMemberSimilarWithLock(this, name);
               if(member)
               {
                 if(mixer)
@@ -244,9 +244,8 @@ void Conference::LoadTemplate(PString tpl)
 
           PString memberInternalName = v[5].Trim();
           for(int i=6; i<v.GetSize(); i++) memberInternalName += "," + v[i];
-          PString memberAddress = MCUURL(memberInternalName).GetUrl();
 
-          ConferenceMember *member = manager.FindMemberNameIDWithLock(this, memberInternalName);
+          ConferenceMember *member = manager.FindMemberSimilarWithLock(this, memberInternalName);
           if(member)
           {
             PStringArray maskAndGain = v[1].Tokenise("/");
@@ -277,7 +276,7 @@ void Conference::LoadTemplate(PString tpl)
               PString token;
               PString numberWithMixer=number;
               if(v[4]!="0") numberWithMixer+="/"+v[4];
-              OpenMCU::Current().GetEndpoint().Invite(numberWithMixer, memberAddress);
+              OpenMCU::Current().GetEndpoint().Invite(numberWithMixer, memberInternalName);
             }
           }
           validatedMembers.AppendString(memberInternalName);

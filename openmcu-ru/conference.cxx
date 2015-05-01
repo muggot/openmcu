@@ -185,28 +185,40 @@ ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ConferenceMember * ConferenceManager::FindMemberNameIDWithLock(const PString & roomName, const PString & memberName)
+ConferenceMember * ConferenceManager::FindMemberSimilarWithLock(const PString & roomName, const PString & memberName)
 {
   Conference *conference = FindConferenceWithLock(roomName);
   if(conference == NULL)
     return NULL;
-  ConferenceMember *member = FindMemberNameIDWithLock(conference, memberName);
+  ConferenceMember *member = FindMemberSimilarWithLock(conference, memberName);
   conference->Unlock();
   return member;
 }
-ConferenceMember * ConferenceManager::FindMemberNameIDWithLock(Conference * conference, const PString & memberName)
+ConferenceMember * ConferenceManager::FindMemberSimilarWithLock(Conference * conference, const PString & memberName)
 {
   MCUMemberList & memberList = conference->GetMemberList();
   ConferenceMember *member = memberList(memberName);
-  if(member)
-    return member;
-  PString memberNameID = MCUURL(memberName).GetMemberNameId();
-  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+  if(!member)
   {
-    if(it->GetNameID() == memberNameID)
-      return it.GetCapturedObject();
+    PString memberUrl = MCUURL(memberName).GetUrl();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+      if(memberUrl == MCUURL(it->GetName()).GetUrl())
+      {
+        member = it.GetCapturedObject();
+        break;
+      }
   }
-  return NULL;
+  if(!member)
+  {
+    PString memberNameID = MCUURL(memberName).GetMemberNameId();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+      if(memberNameID == MCUURL(it->GetName()).GetMemberNameId())
+      {
+        member = it.GetCapturedObject();
+        break;
+      }
+  }
+  return member;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
