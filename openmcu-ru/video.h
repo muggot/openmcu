@@ -9,10 +9,6 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define _IMGST 1
-#define _IMGST1 2
-#define _IMGST2 4
-
 #define WSF_VMP_SET_TIME  1
 #define WSF_VMP_SUBTITLES 2
 #define WSF_VMP_BORDER    4
@@ -204,8 +200,8 @@ class VideoMixPosition {
 
     void SetEndpointName(const PString & name)
     {
-      if(name != endpointName)
 #if USE_FREETYPE
+      if(name != endpointName)
         MCURemoveSubtitles(*this);
 #endif
       endpointName = name;
@@ -224,7 +220,6 @@ class MCUVideoMixer
 {
   public:
     MCUVideoMixer()
-      : subImageWidth(0), subImageHeight(0)
     {
       conference = NULL;
       jpegTime=0; jpegSize=0;
@@ -318,11 +313,6 @@ class MCUVideoMixer
       }
       return vmpList.end();
     }
-
-    int rows;
-    int cols;
-    int subImageWidth;
-    int subImageHeight;
 
     virtual MCUVideoMixer * Clone() const = 0;
     virtual BOOL ReadFrame(ConferenceMember & mbr, void * buffer, int width, int height, PINDEX & amount) = 0;
@@ -431,7 +421,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     virtual BOOL TryOnVADPosition(ConferenceMember * member);
     virtual BOOL SetVADPosition(ConferenceMember * member, int chosenVan, unsigned short timeout);
     virtual BOOL SetVAD2Position(ConferenceMember * member);
-    inline void CheckOperationalSize(long w, long h, BYTE mask);
     virtual BOOL ReadMixedFrame(void * buffer, int width, int height, PINDEX & amount);
     virtual PString GetFrameStoreMonitorList();
     virtual int GetMostAppropriateLayout(unsigned n);
@@ -459,10 +448,6 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 
     VideoFrameStoreList frameStores;  // list of framestores for data
 
-    PBYTEArray imageStore;        // temporary conversion store
-    PBYTEArray imageStore1;        // temporary conversion store
-    PBYTEArray imageStore2;        // temporary conversion store
-    long imageStore_size, imageStore1_size, imageStore2_size;
     int specialLayout;
 };
 

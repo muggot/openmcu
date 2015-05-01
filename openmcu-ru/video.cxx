@@ -685,9 +685,6 @@ MCUSimpleVideoMixer::MCUSimpleVideoMixer(BOOL _forceScreenSplit)
   PTRACE(2,"VideoMixer\tMCUSimpleVideoMixer(" << _forceScreenSplit << ") created");
   forceScreenSplit = _forceScreenSplit;
   VMPListInit();
-  imageStore_size=0;
-  imageStore1_size=0;
-  imageStore2_size=0;
   specialLayout = 0;
 }
 
@@ -1699,25 +1696,6 @@ PString MCUSimpleVideoMixer::GetFrameStoreMonitorList()
   return s;
 }
 
-inline void MCUSimpleVideoMixer::CheckOperationalSize(long w, long h, BYTE mask)
-{
-# define MY_IS_CHECK_SET_SIZE(store)\
-    if(s > store##_size)\
-    {\
-      /* Width/height might be not multiple of 2, increase buffer for swscale +1 */ \
-      /* Ширина/высота может быть не кратна 2, для swscale увеличить буфер +1 */ \
-      store.SetSize(s+w+1);\
-      store##_size=s;\
-    }
-
-  long s=w*h*3/2;
-  if(mask & _IMGST ) MY_IS_CHECK_SET_SIZE(imageStore);
-  if(mask & _IMGST1) MY_IS_CHECK_SET_SIZE(imageStore1);
-  if(mask & _IMGST2) MY_IS_CHECK_SET_SIZE(imageStore2);
-
-# undef MY_IS_CHECK_SET_SIZE
-}
-
 int MCUSimpleVideoMixer::GetMostAppropriateLayout(unsigned n)
 {
   int newLayout=-1, maxL=-1;
@@ -1752,9 +1730,6 @@ TestVideoMixer::TestVideoMixer(unsigned _frames)
 {
   forceScreenSplit=TRUE;
   VMPListInit();
-  imageStore_size=0;
-  imageStore1_size=0;
-  imageStore2_size=0;
 
   specialLayout=-1;
   int specialLayoutMaxFrames=-1; int maxV=-1;
@@ -1882,9 +1857,6 @@ EchoVideoMixer::EchoVideoMixer()
 {
   forceScreenSplit=TRUE;
   VMPListInit();
-  imageStore_size=0;
-  imageStore1_size=0;
-  imageStore2_size=0;
 
   specialLayout=-1;
   int specialLayoutMaxFrames=-1; int maxV=-1;
