@@ -635,15 +635,10 @@ class ConferenceManager : public PObject
 
     ConferenceMember * FindMemberWithLock(const PString & roomName, const PString & memberName);
     ConferenceMember * FindMemberWithLock(Conference * conference, const PString & memberName);
-
-    ConferenceMember * FindMemberUrlWithLock(const PString & roomName, const PString & memberName);
-    ConferenceMember * FindMemberUrlWithLock(Conference * conference, const PString & memberName);
-
-    ConferenceMember * FindMemberNameIDWithLock(const PString & roomName, const PString & memberName);
-    ConferenceMember * FindMemberNameIDWithLock(Conference * conference, const PString & memberName);
-
     ConferenceMember * FindMemberWithLock(const PString & roomName, long id);
     ConferenceMember * FindMemberWithLock(Conference * conference, long id);
+    ConferenceMember * FindMemberSimilarWithLock(const PString & roomName, const PString & memberName);
+    ConferenceMember * FindMemberSimilarWithLock(Conference * conference, const PString & memberName);
 
     MCUSimpleVideoMixer * FindVideoMixerWithLock(const PString & room, long number);
     MCUSimpleVideoMixer * FindVideoMixerWithLock(Conference * conference, long number);

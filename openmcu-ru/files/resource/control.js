@@ -801,19 +801,29 @@ function format_mmbr_button(m,st)
   conn_info = "";
   ping_state = 0;
   ping_info = "";
-  addr_url = get_addr_url(memberName);
+  account = null;
   for(var i=0;i<addressbook.length;i++)
+    if(m[2] == addressbook[i][2]) { account = addressbook[i]; break; }
+  if(!account)
   {
-    if(addr_url == get_addr_url(addressbook[i][2]))
-    {
-      reg_state = addressbook[i][5];
-      reg_info = window.l_name_registered+": "+addressbook[i][6];
-      conn_state = addressbook[i][7];
-      conn_info = window.l_name_connected+": "+addressbook[i][8];
-      ping_state = addressbook[i][9];
-      ping_info = window.l_name_last_ping_response+": "+addressbook[i][10];
-      break;
-    }
+    addr_url = get_addr_url(memberName);
+    for(var i=0;i<addressbook.length;i++)
+      if(addr_url == get_addr_url(addressbook[i][2])) { account = addressbook[i]; break; }
+  }
+  if(!account)
+  {
+    addr_nameid = get_addr_nameid(memberName);
+    for(var i=0;i<addressbook.length;i++)
+      if(addr_nameid == get_addr_nameid(addressbook[i][2])) { account = addressbook[i]; break; }
+  }
+  if(account)
+  {
+    reg_state = account[5];
+    reg_info = window.l_name_registered+": "+account[6];
+    conn_state = account[7];
+    conn_info = window.l_name_connected+": "+account[8];
+    ping_state = account[9];
+    ping_info = window.l_name_last_ping_response+": "+account[10];
   }
   reg_icon = "";
   st_style = "style='width:16px;height:16px;cursor:help'";

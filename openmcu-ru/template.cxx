@@ -217,7 +217,7 @@ void Conference::LoadTemplate(PString tpl)
             else
             {
               PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
-              ConferenceMember *member = manager.FindMemberNameIDWithLock(this, name);
+              ConferenceMember *member = manager.FindMemberSimilarWithLock(this, name);
               if(member==NULL)
               {
                 member = new MCUConnection_ConferenceMember(this, name, "");
@@ -246,7 +246,7 @@ void Conference::LoadTemplate(PString tpl)
           PString memberInternalName = v[5].Trim();
           for(int i=6; i<v.GetSize(); i++) memberInternalName += "," + v[i];
 
-          ConferenceMember *member = manager.FindMemberNameIDWithLock(this, memberInternalName);
+          ConferenceMember *member = manager.FindMemberSimilarWithLock(this, memberInternalName);
           if(member == NULL)
           {
             member = new MCUConnection_ConferenceMember(this, memberInternalName, "");
