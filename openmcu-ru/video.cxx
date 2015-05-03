@@ -740,11 +740,14 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
           MCUBufferYUV *vmpbuf = (**vmpbuf_it)[vmp->vmpbuf_index];
           if(vmpbuf->GetWidth() == pw && vmpbuf->GetHeight() == ph)
           {
-            for(unsigned i = 0; i < vmpcfg.blks; i++)
-              CopyRFromRIntoR(vmpbuf->GetPointer(), buffer, px, py, pw, ph,
-                AlignUp2(vmpcfg.blk[i].posx*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*height/CIF4_HEIGHT),
-                AlignUp2(vmpcfg.blk[i].width*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*height/CIF4_HEIGHT),
-                width, height, pw, ph );
+            if(vmpcfg.blks == 1)
+              CopyRectIntoFrame(vmpbuf->GetPointer(), buffer, px, py, pw, ph, width, height);
+            else
+              for(unsigned i = 0; i < vmpcfg.blks; i++)
+                CopyRFromRIntoR(vmpbuf->GetPointer(), buffer, px, py, pw, ph,
+                  AlignUp2(vmpcfg.blk[i].posx*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].posy*height/CIF4_HEIGHT),
+                  AlignUp2(vmpcfg.blk[i].width*width/CIF4_WIDTH), AlignUp2(vmpcfg.blk[i].height*height/CIF4_HEIGHT),
+                  width, height, pw, ph );
           }
           else
             MCUTRACE(6, "VideoMixer: VMP read error0: n=" << vmp->n << " fs=" << width << "x" << height << " pos=" << pw << "x" << ph << " buf=" << vmpbuf->GetWidth() << "x" << vmpbuf->GetHeight());
