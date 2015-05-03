@@ -250,6 +250,7 @@ class MCUSipConnection : public MCUH323Connection
     ~MCUSipConnection();
 
     virtual BOOL ClearCall(CallEndReason reason = EndedByLocalUser);
+    virtual BOOL ClearCall(CallEndReason reason, const PString & event);
     virtual void CleanUpOnCallEnd();
 
     virtual BOOL WriteSignalPDU(H323SignalPDU & pdu) { return TRUE; }

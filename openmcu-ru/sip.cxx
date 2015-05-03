@@ -581,6 +581,15 @@ MCUSipConnection * MCUSipConnection::CreateConnection(Directions _direction, con
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCUSipConnection::ClearCall(H323Connection::CallEndReason reason, const PString & event)
+{
+  if(requestedRoom != "")
+    OpenMCU::Current().HttpWriteEventRoom(event, requestedRoom);
+  return ClearCall(reason);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUSipConnection::ClearCall(H323Connection::CallEndReason reason)
 {
   if(PThread::Current() != sep)
@@ -2551,7 +2560,9 @@ int MCUSipConnection::invite_response_cb(nta_outgoing_t *orq, const sip_t *sip)
   }
   if(status > 299)
   {
-    ClearCall(EndedByRemoteUser);
+    PStringStream event;
+    event << remotePartyAddress << " " << sip->sip_status->st_status << " " << sip->sip_status->st_phrase;
+    ClearCall(EndedByRemoteUser, event);
     return 0;
   }
 

@@ -2035,6 +2035,15 @@ void MCUH323Connection::SetCallEndReason(CallEndReason reason, PSyncPoint * sync
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL MCUH323Connection::ClearCall(H323Connection::CallEndReason reason, const PString & event)
+{
+  if(requestedRoom != "")
+    OpenMCU::Current().HttpWriteEventRoom(event, requestedRoom);
+  return ep.ClearCall(callToken, reason);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 BOOL MCUH323Connection::ClearCall(H323Connection::CallEndReason reason)
 {
   return ep.ClearCall(callToken, reason);

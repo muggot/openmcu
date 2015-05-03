@@ -279,6 +279,7 @@ class MCUH323Connection : public H323Connection
 
     virtual void OnCreated();
     virtual BOOL ClearCall(CallEndReason reason = EndedByLocalUser);
+    virtual BOOL ClearCall(CallEndReason reason, const PString & event);
     virtual void CleanUpOnCallEnd();
     virtual void OnEstablished();
     virtual void OnCleared();
