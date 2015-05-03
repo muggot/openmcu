@@ -722,10 +722,10 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
   for(unsigned i = 0; i < OpenMCU::vmcfg.vmconf[specialLayout].splitcfg.vidnum; i++)
   {
     VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[i];
-    int px = vmpcfg.posx  *width/CIF4_WIDTH; // pixel x&y of vmp-->fs
-    int py = vmpcfg.posy  *height/CIF4_HEIGHT;
-    int pw = vmpcfg.width *width/CIF4_WIDTH; // pixel w&h of vmp-->fs
-    int ph = vmpcfg.height*height/CIF4_HEIGHT;
+    int px = (float)vmpcfg.posx  *width/CIF4_WIDTH; // pixel x&y of vmp-->fs
+    int py = (float)vmpcfg.posy  *height/CIF4_HEIGHT;
+    int pw = (float)vmpcfg.width *width/CIF4_WIDTH; // pixel w&h of vmp-->fs
+    int ph = (float)vmpcfg.height*height/CIF4_HEIGHT;
     if(pw<2 || ph<2) continue;
 
     MCUVMPList::shared_iterator vmp_it = VMPFind((int)i);
@@ -804,55 +804,62 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
 
     // pixel w&h of vmp-->fs:
-    int pw = vmpcfg.width *vf.width /CIF4_WIDTH;
-    int ph = vmpcfg.height*vf.height/CIF4_HEIGHT;
+    int pw = (float)vmpcfg.width *vf.width /CIF4_WIDTH;
+    int ph = (float)vmpcfg.height*vf.height/CIF4_HEIGHT;
     if(pw<2 || ph<2) continue;
 
     MCUSharedList<MCUBufferYUVArray>::shared_iterator vmpbuf_it = vmp.bufferList.Find((long)&vf);
     if(vmpbuf_it == vmp.bufferList.end())
       vmpbuf_it = vmp.bufferList.Insert(new MCUBufferYUVArray(3, 0, 0), (long)&vf);
     MCUBufferYUV *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
+    vmpbuf->SetFrameSize(pw, ph);
+
+    float src_aspect_ratio = (float)width/height;
+    float dst_aspect_ratio = (float)pw/ph;
 
     if(pw==width && ph==height) //same size
     {
-      vmpbuf->SetFrameSize(pw, ph);
       memcpy(vmpbuf->GetPointer(), buffer, pw*ph*3/2); //making copy for subtitles & border
     }
-    else if(pw*height<ph*width) //broader:  +---------+     pw     rule 0 => cut width
-    {                           //          |  width  |    +--+
-      if(rule==0)               //    height|         | -> |  |ph   rule 1 => add stripes
-      {                         //          +---------+    +--+                  to top and bottom
-        int dstWidth = ph*width/height; //bigger than we need
-        vmpbuf->SetFrameSize(pw, ph);
+    else if(src_aspect_ratio > dst_aspect_ratio+0.05)
+    {
+      //broader:  +---------+     pw      rule 0 => cut width
+      //          |  width  |    +--+     rule 1 => add stripes to top and bottom
+      //    height|         | -> |  |ph
+      //          +---------+    +--+
+      if(rule==0)
+      {
+        int dstWidth = (float)ph*width/height; //bigger than we need
         vmp.tmpbuf.SetFrameSize(dstWidth, ph);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, dstWidth, ph);
         CopyRectFromFrame(vmp.tmpbuf.GetPointer(), vmpbuf->GetPointer(), (dstWidth-pw)/2, 0, pw, ph, dstWidth, ph);
       }
       else if(rule==1)
       {
-        int dstHeight = pw*height/width; //smaller than we need
-        vmpbuf->SetFrameSize(pw, ph);
+        int dstHeight = (float)pw*height/width; //smaller than we need
         vmp.tmpbuf.SetFrameSize(pw, dstHeight);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, pw, dstHeight);
         FillYUVRect(vmpbuf->GetPointer(),pw,ph,127,127,127, 0,0, pw,(ph-dstHeight)/2);
         FillYUVRect(vmpbuf->GetPointer(),pw,ph,127,127,127, 0,ph-(ph-dstHeight)/2, pw,(ph-dstHeight)/2);
         CopyRectIntoFrame(vmp.tmpbuf.GetPointer(), vmpbuf->GetPointer(), 0, (ph-dstHeight)/2, pw, dstHeight, pw, ph);
       }
-    }                           //                   width
-    else if(pw*height>ph*width) //narrower (higher): +-+      pw      rule 0 => cut height
-    {                           //                   | |    +----+
-      if(rule==0)               //             height| | -> |    | ph  rule 1 => add stripes
-      {                         //                   +-+    +----+                to left and right
-        int dstHeight = pw*height/width; //bigger than we need
-        vmpbuf->SetFrameSize(pw, ph);
+    }
+    else if(src_aspect_ratio < dst_aspect_ratio-0.05)
+    {
+      //narrower (higher): +-+      pw      rule 0 => cut height
+      //                   | |    +----+    rule 1 => add stripes to left and right
+      //             height| | -> |    | ph
+      //                   +-+    +----+
+      if(rule==0)
+      {
+        int dstHeight = (float)pw*height/width; //bigger than we need
         vmp.tmpbuf.SetFrameSize(pw, dstHeight);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, pw, dstHeight);
         CopyRectFromFrame(vmp.tmpbuf.GetPointer(), vmpbuf->GetPointer(), 0, (dstHeight-ph)/2, pw, ph, pw, dstHeight);
       }
       else if(rule==1)
       {
-        int dstWidth = ph*width/height; //smaller than we need
-        vmpbuf->SetFrameSize(pw, ph);
+        int dstWidth = (float)ph*width/height; //smaller than we need
         vmp.tmpbuf.SetFrameSize(dstWidth, ph);
         ResizeYUV420P((const BYTE *)buffer, vmp.tmpbuf.GetPointer(), width, height, dstWidth, ph);
         FillYUVRect(vmpbuf->GetPointer(),pw,ph,127,127,127, 0,0, (pw-dstWidth)/2, ph);
@@ -862,7 +869,6 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     }
     else
     { // fit. scale
-      vmpbuf->SetFrameSize(pw, ph);
       ResizeYUV420P((const BYTE *)buffer, vmpbuf->GetPointer() , width, height, pw, ph);
     }
 
