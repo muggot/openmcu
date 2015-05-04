@@ -499,6 +499,8 @@ class MCUH323Connection : public H323Connection
     Directions direction;
     PString trace_section;
 
+    PString callEndReasonEvent;
+
     PString dtmfBuffer;
 
 #if MCU_VIDEO

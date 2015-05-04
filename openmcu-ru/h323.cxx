@@ -2031,14 +2031,20 @@ void MCUH323Connection::SetCallEndReason(CallEndReason reason, PSyncPoint * sync
     callEndReason = reason;
     callEndTime = PTime();
   }
+
+  if(requestedRoom != "")
+  {
+    PStringStream event;
+    event << remotePartyAddress << " " << callEndReason << " " << callEndReasonEvent;
+    OpenMCU::Current().HttpWriteEventRoom(event, requestedRoom);
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 BOOL MCUH323Connection::ClearCall(H323Connection::CallEndReason reason, const PString & event)
 {
-  if(requestedRoom != "")
-    OpenMCU::Current().HttpWriteEventRoom(event, requestedRoom);
+  callEndReasonEvent = event;
   return ep.ClearCall(callToken, reason);
 }
 
