@@ -87,7 +87,6 @@ class CacheRTP
       MCUTRACE(1, "CacheRTP " << name << " FastUpdate needed");
       flags |= PluginCodec_CoderForceIFrame;
       fastUpdate = false;
-      iframeN = (seqN & FRAME_MASK) + FRAME_OFFSET;
     }
 
     unsigned int GetLastFrameNum()
@@ -102,7 +101,7 @@ class CacheRTP
     {
       CacheRTPUnit *unit;
       unsigned int l;
-      //cout << "Frame seqN/lastN " << seqN << "/" << lastN << "\n";
+      //MCUTRACE(6, "CacheRTP " << name << " seqN/lastN " << seqN << "/" << lastN);
       CacheRTPUnitMap::iterator r = unitList.find(lastN);
       while(r == unitList.end() && seqN - lastN >= FRAME_BUF_SIZE)
       {
@@ -118,8 +117,12 @@ class CacheRTP
       unit->len = len;
       unit->lock = 0;
       unitList.insert(CacheRTPUnitMap::value_type(seqN, unit));
-      //if(flags&PluginCodec_ReturnCoderIFrame)
-      //{ fastUpdate = false; iframeN = seqN;  cout << "IFrame found\n"; }
+      //MCUTRACE(6, "CacheRTP " << name << " put frame " << seqN);
+      if(flags & PluginCodec_ReturnCoderIFrame && seqN > (iframeN & FRAME_MASK) + FRAME_OFFSET)
+      {
+        iframeN = seqN;
+        MCUTRACE(6, "CacheRTP " << name << " new iframe " << iframeN);
+      }
       if(GetMarker(frame.GetPointer()))
       {
 	seqN = (seqN & FRAME_MASK) + FRAME_OFFSET;

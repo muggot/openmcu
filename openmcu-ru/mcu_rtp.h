@@ -56,10 +56,7 @@ class MCU_RTPChannel : public H323_RTPChannel
     void OnFastUpdatePicture()
     {
       if(cache)
-      {
-        fastUpdate = true;
         cache->OnFastUpdatePicture();
-      }
       else
         ((H323VideoCodec *)codec)->OnFastUpdatePicture();
     }
@@ -76,7 +73,6 @@ class MCU_RTPChannel : public H323_RTPChannel
     { audioJitterEnable = enable; }
 
   protected:
-    bool fastUpdate;
     bool freezeWrite;
     bool isAudio;
     bool audioJitterEnable;

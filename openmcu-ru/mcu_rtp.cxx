@@ -15,7 +15,6 @@ MCU_RTPChannel::MCU_RTPChannel(H323Connection & conn, const H323Capability & cap
   GetCodec();
 
   isAudio = (capability->GetMainType() == MCUCapability::e_Audio);
-  fastUpdate = true;
   freezeWrite = false;
   audioJitterEnable = true;
 
@@ -440,6 +439,7 @@ void MCU_RTPChannel::Transmit()
   unsigned length;
   unsigned frameOffset = 0;
   unsigned frameCount = 0;
+  unsigned flags;
   DWORD rtpFirstTimestamp = rand();
   DWORD rtpTimestamp = rtpFirstTimestamp;
   PTimeInterval firstFrameTick = PTimer::Tick();
@@ -480,21 +480,30 @@ void MCU_RTPChannel::Transmit()
     }
     else if(cacheMode == 2)
     {
-      if(preVideoFrames && (PTimer::Tick()-firstFrameTick).GetInterval() > 2500 && frameOffset == 0)
-      {
-        preVideoFrames = FALSE;
-        OnFastUpdatePicture();
-      }
       if(preVideoFrames)
-        retval = codec->Read(frame.GetPayloadPtr() + frameOffset, length, frame);
+      {
+        if((PTimer::Tick()-firstFrameTick).GetInterval() > 2000 && frame.GetMarker())
+        {
+          preVideoFrames = FALSE;
+          encoderSeqN = cache->GetLastFrameNum();
+          OnFastUpdatePicture();
+          while(1)
+          {
+            flags = 0;
+            retval = GetCacheRTP(cache, frame, length, encoderSeqN, flags);
+            if(flags & PluginCodec_ReturnCoderIFrame)
+              break;
+            if(terminating)
+              break;
+          }
+        }
+        else
+          retval = codec->Read(frame.GetPayloadPtr() + frameOffset, length, frame);
+      }
       else
       {
-        unsigned flags = 0;
-        if(!isAudio && fastUpdate)
-          flags = PluginCodec_CoderForceIFrame;
+        flags = 0;
         retval = GetCacheRTP(cache, frame, length, encoderSeqN, flags);
-        if(!isAudio && flags & PluginCodec_ReturnCoderIFrame)
-          fastUpdate = false;
       }
     }
 
