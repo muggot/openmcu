@@ -193,7 +193,7 @@ int MCUTelnetSession::OnReceived(MCUSocket *socket, PString data)
     return 0;
   }
 
-  for(PINDEX i = 0; i < data.GetLength(); ++i)
+  for(int i = 0; i < data.GetLength(); ++i)
   {
     switch((unsigned char)data[i])
     {
