@@ -777,10 +777,6 @@ MCUMemberList::shared_iterator Conference::AddMemberToList(ConferenceMember * me
   // send event
   memberToAdd->SendRoomControl(1);
 
-  // template
-//  if(!memberToAdd->IsSystem())
-//    PullMemberOptionsFromTemplate(memberToAdd, confTpl);
-
   return it;
 }
 
@@ -1253,6 +1249,25 @@ void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
 
     OpenMCU::Current().HttpWriteCmdRoom(OpenMCU::Current().GetEndpoint().GetConferenceOptsJavascript(*this),number);
     OpenMCU::Current().HttpWriteCmdRoom("build_page()",number);
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void Conference::UpdateVideoMixOptions(ConferenceMember * member)
+{
+  if(videoMixerList.GetSize() != 0)
+  {
+    for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+    it.GetObject()->Update(member);
+  }
+  else // classic MCU mode
+  {
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+    {
+      MCUVideoMixer * mixer = (*it)->videoMixer;
+      if(mixer!=NULL) mixer->Update(member);
+    }
   }
 }
 

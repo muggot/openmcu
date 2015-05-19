@@ -533,6 +533,8 @@ class Conference : public PObject
 
     void HandleFeatureAccessCode(ConferenceMember & member, PString fac);
 
+    void UpdateVideoMixOptions(ConferenceMember * member);
+    
     unsigned short int VAdelay;
     unsigned short int VAtimeout;
     unsigned short int VAlevel;
@@ -545,7 +547,6 @@ class Conference : public PObject
     virtual PString GetTemplateList();
     virtual PString GetSelectedTemplateName();
     virtual PString ExtractTemplate(PString tplName);
-    virtual void PullMemberOptionsFromTemplate(ConferenceMember * member, PString tpl);
     virtual void TemplateInsertAndRewrite(PString tplName, PString tpl);
     virtual void SetLastUsedTemplate(PString tplName);
     virtual void DeleteTemplate(PString tplName);

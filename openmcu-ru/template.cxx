@@ -261,6 +261,7 @@ void Conference::LoadTemplate(PString tpl)
           }
           if(member)
           {
+            int oldResizerRule = member->resizerRule;
             PStringArray maskAndGain = v[1].Tokenise("/");
             BOOL hasGainOptions = (maskAndGain.GetSize() > 1);
             if(hasGainOptions)
@@ -282,6 +283,7 @@ void Conference::LoadTemplate(PString tpl)
             member->chosenVan       = (v[3]=="1");
             OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
             member->SetAutoDial((v[0]=="1"));
+            if(member->resizerRule != oldResizerRule) UpdateVideoMixOptions(member);
             member->Unlock();
           }
           validatedMembers.AppendString(memberInternalName);
@@ -385,88 +387,6 @@ PString Conference::ExtractTemplate(PString tplName) // returns single template 
     }
   }
   return "";
-}
-
-void Conference::PullMemberOptionsFromTemplate(ConferenceMember * member, PString tpl)
-{
-  PTRACE(6,"Conference\tPullMemberOptionsFromTemplate");
-  if(member==NULL) return;
-  if(tpl.Trim()=="") return;
-  PStringArray lines=tpl.Lines();
-  PString memberName = member->GetName();
-  unsigned mixerCounter=0;
-  unsigned vmpCounter=0;
-  PINDEX i;
-  for(i=0;i<lines.GetSize();i++)
-  {
-    PString l = lines[i].Trim();
-    PINDEX sp = l.Find(' ');
-    if(sp==P_MAX_INDEX) continue;
-    PString cmd = l.Left(sp);
-    if(cmd=="MIXER") { mixerCounter++; vmpCounter=0; }
-    else if(cmd=="VMP")
-    {
-      vmpCounter++;
-      PString p=l.Mid(sp+1,P_MAX_INDEX).Trim();
-      PINDEX cp=p.Find(',');
-      if(cp==P_MAX_INDEX) continue;
-      PString vmpMemberName=p.Mid(cp+1,P_MAX_INDEX).LeftTrim();
-      if(MCUURL(vmpMemberName).GetMemberNameId() == MCUURL(memberName).GetMemberNameId())
-      {
-        if(mixerCounter>0)
-        {
-          MCUSimpleVideoMixer * mixer = manager.FindVideoMixerWithLock(this, mixerCounter-1);
-          if(mixer != NULL)
-          {
-            mixer->PositionSetup(vmpCounter-1, 1, member);
-            member->SetFreezeVideo(FALSE);
-            mixer->Unlock();
-          }
-        }
-      }
-    }
-    else if(cmd=="SKIP") vmpCounter+=l.Mid(sp+1,P_MAX_INDEX).Trim().AsInteger();
-    else if(cmd=="MEMBER")
-    {
-      PStringArray v=l.Mid(sp+1,P_MAX_INDEX).LeftTrim().Tokenise(',');
-      if(v.GetSize()>4) for(int i=0; i<=4;i++) v[i]=v[i].Trim();
-      PString iterationMemberName = v[5].LeftTrim();
-      for (PINDEX j=6; j<v.GetSize(); j++) iterationMemberName+=","+v[j];
-      if(MCUURL(iterationMemberName).GetMemberNameId() == MCUURL(memberName).GetMemberNameId())
-      {
-        PStringArray maskAndGain = v[1].Tokenise("/");
-        BOOL hasGainOptions = (maskAndGain.GetSize() > 1);
-        member->SetAutoDial((v[0] == "1"));
-        member->muteMask     = v[1].AsInteger();
-        if(hasGainOptions)
-        {
-          member->SetChannelState(maskAndGain[0].AsInteger());
-          member->kManualGainDB = maskAndGain[1].AsInteger()-20;
-          member->kOutputGainDB = maskAndGain[2].AsInteger()-20;
-          member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
-          member->kOutputGain=(float)pow(10.0,((float)member->kOutputGainDB)/20.0);
-        }
-        else // stay compatible with old-style templates:
-        {
-          member->muteMask      = v[1].AsInteger();
-        }
-        unsigned value3=(unsigned)(v[2].AsInteger());
-        member->disableVAD   = value3&1;
-        member->resizerRule  = (value3>>1)&127;
-        member->chosenVan    = (v[3] == "1");
-        if(member->chosenVan) if(PutChosenVan()) member->SetFreezeVideo(FALSE);
-
-// As we assume PullMemberOptionsFromTemplate() called from AddMember(), we don't need to SWITCH mixer here.
-// That's why the following is commented and the next will just make member->videoMixerNumber set.
-// Right mixer will be attached to connection via userData value during making the call.
-
-//        OpenMCU::Current().GetEndpoint().SetMemberVideoMixer(*this, member, v[4].AsInteger());
-        member->SetVideoMixerNumber(v[4].AsInteger());
-
-        return;
-      }
-    }
-  }
 }
 
 void Conference::TemplateInsertAndRewrite(PString tplName, PString tpl)

@@ -1467,22 +1467,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     member->resizerRule=(!member->resizerRule)&1;
     cmd << "rszspr(" << member->GetID() << ", " << member->resizerRule << ")";
     HttpWriteCmdRoom(cmd,room);
-
-    MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-    if(videoMixerList.GetSize() != 0)
-    {
-      for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
-        it.GetObject()->Update(member);
-    }
-    else // classic MCU mode
-    {
-      MCUMemberList & memberList = conference->GetMemberList();
-      for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-      {
-        MCUVideoMixer * mixer = (*it)->videoMixer;
-        if(mixer!=NULL) mixer->Update(member);
-      }
-    }
+    conference->UpdateVideoMixOptions(member);
     return TRUE;
   }
 
