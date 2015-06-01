@@ -1501,6 +1501,8 @@ BOOL MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVa
       if(silence>maxSilence) {maxSilence=silence; vit=it;}
       continue;
     }
+    // wrap-around for offline endpoints:
+    if(vmp->offline) vmp->silenceCounter = timeout;
     // busy VAD position:
     if(vmp->type==2 && vmp->silenceCounter > maxSilence) { maxSilence = vmp->silenceCounter; vit = it;  }
     // busy VAD2 position:
@@ -1524,6 +1526,8 @@ BOOL MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVa
 
 BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
 {
+  int timeout = 3000;
+
   PWaitAndSignal m(vmpListMutex);
 
   if(member==NULL) return FALSE;
@@ -1541,12 +1545,13 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
       int silenceCounter;
       if(vmp->id < 1000) silenceCounter = 0x7fffffff-vmp->n;
       else silenceCounter = vmp->silenceCounter;
+      if(vmp->offline) silenceCounter = timeout;
       if(silenceCounter > maxSilence) { maxSilence=silenceCounter; vit = it; }
     }
   }
 
   if(vit == vmpList.end()) return FALSE;
-  if(maxSilence < 3000) return FALSE;
+  if(maxSilence < timeout) return FALSE;
   if(vit->id == id) { vit->silenceCounter = 0; return TRUE; }
 
   MCUVMPList::shared_iterator old_vit = VMPFind(id);
@@ -1675,7 +1680,10 @@ void MCUSimpleVideoMixer::MyRemoveVideoSource(int pos, BOOL flag)
   PWaitAndSignal m(vmpListMutex);
   MCUVMPList::shared_iterator it = VMPFind(pos);
   if(it != vmpList.end())
+  {
+    if(flag) (*it)->type=1;
     VMPDelete(it);
+  }
 }
 
 void MCUSimpleVideoMixer::MyRemoveVideoSourceById(ConferenceMemberId id, BOOL flag)
@@ -1683,7 +1691,10 @@ void MCUSimpleVideoMixer::MyRemoveVideoSourceById(ConferenceMemberId id, BOOL fl
   PWaitAndSignal m(vmpListMutex);
   MCUVMPList::shared_iterator it = VMPFind(id);
   if(it != vmpList.end())
+  {
+    if(flag) (*it)->type=1;
     VMPDelete(it);
+  }
 }
 
 

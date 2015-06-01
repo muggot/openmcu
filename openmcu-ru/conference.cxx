@@ -1375,7 +1375,7 @@ void ConferenceMember::Dial(BOOL _autoDial)
     return;
   PWaitAndSignal m(dialMutex);
   autoDial = _autoDial;
-  if(autoDial || IsOnline())
+  if((autoDial && (OpenMCU::Current().autoDialDelay < 20)) || IsOnline())
     return;
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
   if(dialToken != "" && ep.HasConnection(dialToken))
