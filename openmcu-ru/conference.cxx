@@ -1552,7 +1552,7 @@ void ConferenceMember::WriteAudio(const uint64_t & timestamp, const void * buffe
     // Автоматическая регулировка усиления
     // calculate average signal level for this member
     unsigned signalLevel=0;
-    WriteAudioAutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 2000, &currVolCoef, &signalLevel, kManualGain);
+    WriteAudioAutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 900, &currVolCoef, &signalLevel, kManualGain);
     audioLevel = ((signalLevel * 2) + audioLevel) / 3;
 
     // Записать аудио в буфер // Write to buffer
