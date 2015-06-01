@@ -1145,18 +1145,21 @@ function members_refresh()
  members.sort(members_sort_name_asc_func);
 
  offliners=false;
- var vmr='';
+// var vmr='';
  var amr='';
- var imr='';
+// var imr='';
  for(i=0;i<members.length;i++)
  {
   mmbr=members[i];
   if(mmbr[0])
-   if(visible_ids.indexOf(','+mmbr[1]+',')>=0) vmr+=format_mmbr_button(mmbr,2);
+//   if(visible_ids.indexOf(','+mmbr[1]+',')>=0) vmr+=format_mmbr_button(mmbr,2);
+   if(visible_ids.indexOf(','+mmbr[1]+',')>=0) amr+=format_mmbr_button(mmbr,2);
    else amr+=format_mmbr_button(mmbr,1);
-  else imr+=format_mmbr_button(mmbr,0);
+//  else imr+=format_mmbr_button(mmbr,0);
+  else amr+=format_mmbr_button(mmbr,0);
  }
- result='<div style="width:"+panel_width+"px" id="right_pan">'+amr+vmr+imr+'</div>';
+// result='<div style="width:"+panel_width+"px" id="right_pan">'+amr+vmr+imr+'</div>';
+ result='<div style="width:"+panel_width+"px" id="right_pan">'+amr+'</div>';
 
  var mp=document.getElementById('right_scroller');
  if(mp.innerHTML!=result)
@@ -2050,9 +2053,9 @@ function mixrfr()
     var s='';
 // walking through the mixer's positions
     for(var j=0;j<mixerData[1].length;j++)
-    { var id=false; try { if(typeof mixerData[2][j]!='undefined') id=mixerData[2][j]; } catch(e) {id=false;}
+    { var id=false; try { if(typeof mixerData[2][0][j]!='undefined') id=mixerData[2][0][j]; } catch(e) {id=false;}
       if(id !== false) if((id!=0)&&(id!=-1)&&(id!=-2)) visible_ids+=''+id+',';
-      var type=false; if(id!==false) try {if(typeof mixerData[3][j]!='undefined') type=mixerData[3][j];} catch(e) {type=false;}
+      var type=false; if(id!==false) try {if(typeof mixerData[2][1][j]!='undefined') type=mixerData[2][1][j];} catch(e) {type=false;}
       var x=0, y=0, w=0, h=0;
       try
       { x=Math.round(mixerData[1][j][0]/bfw*mw); y=Math.round(mixerData[1][j][1]/bfh*mh);
