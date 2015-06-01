@@ -45,7 +45,7 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
-    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\libs\libzrtp\third_party\bnlib;..\..\libs\libzrtp\third_party\bgaes;..\..\libs\libzrtp\include;..\..\libs\srtp\crypto\include;..\..\libs\srtp\include;..\..\libs\ptlib\include;..\..\libs\h323plus\include;..\..\libjpeg-turbo;..\..\yuvlib\trunk\include;..\..\libs\sofia-sip\libsofia-sip-ua\su;..\..\libs\sofia-sip\libsofia-sip-ua\tport;..\..\libs\sofia-sip\win32;..\..\libs\sofia-sip\libsofia-sip-ua\nta;..\..\libs\sofia-sip\libsofia-sip-ua\sip;..\..\libs\sofia-sip\libsofia-sip-ua\msg;..\..\libs\sofia-sip\libsofia-sip-ua\url;..\..\libs\sofia-sip\libsofia-sip-ua\stun;..\..\libs\sofia-sip\libsofia-sip-ua\iptsec;..\..\libs\sofia-sip\libsofia-sip-ua\features;..\..\libs\sofia-sip\libsofia-sip-ua\sdp;..\..\libs\sofia-sip\libsofia-sip-ua\sresolv;..\..\freetype-2.5.0.1\include;$(ProgramFiles)\GnuWin32\include;$(ProgramFiles)\GnuWin32\include\freetype2;..\..\mingw\msys\1.0\local\include;$(IncludePath)</IncludePath>
+    <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\libs\libzrtp\third_party\bnlib;..\..\libs\libzrtp\third_party\bgaes;..\..\libs\libzrtp\include;..\..\libs\ptlib\include;..\..\libs\h323plus\include;..\..\libjpeg-turbo;..\..\yuvlib\trunk\include;..\..\libs\sofia-sip\libsofia-sip-ua\su;..\..\libs\sofia-sip\libsofia-sip-ua\tport;..\..\libs\sofia-sip\win32;..\..\libs\sofia-sip\libsofia-sip-ua\nta;..\..\libs\sofia-sip\libsofia-sip-ua\sip;..\..\libs\sofia-sip\libsofia-sip-ua\msg;..\..\libs\sofia-sip\libsofia-sip-ua\url;..\..\libs\sofia-sip\libsofia-sip-ua\stun;..\..\libs\sofia-sip\libsofia-sip-ua\iptsec;..\..\libs\sofia-sip\libsofia-sip-ua\features;..\..\libs\sofia-sip\libsofia-sip-ua\sdp;..\..\libs\sofia-sip\libsofia-sip-ua\sresolv;..\..\freetype-2.5.0.1\include;$(ProgramFiles)\GnuWin32\include;$(ProgramFiles)\GnuWin32\include\freetype2;..\..\mingw\msys\1.0\local\include;..\..\mingw\msys\1.0\local\include\srtp;$(IncludePath)</IncludePath>
     <LibraryPath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release;..\..\libs\libzrtp\projects\win\Release;..\..\libs\srtp\Release;..\..\libs\ptlib\Lib;..\..\libs\h323plus\lib;..\..\libjpeg-turbo\release;..\..\yuvlib\trunk\build\Release;..\..\freetype-2.5.0.1\objs\win32\vc2010;..\..\libs\sofia-sip\win32\libsofia-sip-ua\Release;$(ProgramFiles)\GnuWin32\lib;..\..\mingw\msys\1.0\local\bin;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -81,7 +81,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>Winmm.lib;h323plus.lib;ptlibs.lib;turbojpeg-static.lib;libyuv.lib;freetype250MT.lib;libsofia_sip_ua.lib;Ws2_32.lib;libSRTP.lib;libzrtp.lib;avcodec.lib;avutil.lib;swresample.lib;swscale.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>Winmm.lib;h323plus.lib;ptlibs.lib;turbojpeg-static.lib;libyuv.lib;freetype250MT.lib;libsofia_sip_ua.lib;Ws2_32.lib;avcodec.lib;avformat.lib;avutil.lib;swresample.lib;swscale.lib;srtp.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)openmcu.exe</OutputFile>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>
@@ -110,12 +110,14 @@
     <ClCompile Include="..\reg_sip.cxx" />
     <ClCompile Include="..\rtsp.cxx" />
     <ClCompile Include="..\sip.cxx" />
+    <ClCompile Include="..\telnet.cxx" />
     <ClCompile Include="..\utils.cxx" />
     <ClCompile Include="..\utils_av.cxx" />
     <ClCompile Include="..\utils_json.cxx" />
     <ClCompile Include="..\utils_list.cxx" />
     <ClCompile Include="..\utils_type.cxx" />
     <ClCompile Include="..\video.cxx" />
+    <ClCompile Include="..\yuv.cxx" />
     <ClCompile Include="..\template.cxx" />
     <ClCompile Include="..\sockets.cxx" />
   </ItemGroup>
@@ -142,7 +144,9 @@
     <ClInclude Include="..\utils_list.h" />
     <ClInclude Include="..\utils_type.h" />
     <ClInclude Include="..\sockets.h" />
+    <ClInclude Include="..\telnet.h" />
     <ClInclude Include="..\video.h" />
+    <ClInclude Include="..\yuv.h" />
     <ClInclude Include="..\version.h" />
   </ItemGroup>
   <ItemGroup>
