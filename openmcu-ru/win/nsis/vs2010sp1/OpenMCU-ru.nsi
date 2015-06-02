@@ -33,7 +33,7 @@ Var StartMenuFolder
 
 ; Pages
 
-!define MUI_ICON "openmcu-ru\share\openmcu.ico"
+!define MUI_ICON "openmcu-ru\share\mcu.ico"
 !define MUI_LICENSEPAGE_TEXT_BOTTOM "$(LicenseText)"
 !define MUI_LICENSEPAGE_BUTTON "$(LicenseNext)"
 !insertmacro MUI_PAGE_LICENSE "openmcu-ru\COPYING"

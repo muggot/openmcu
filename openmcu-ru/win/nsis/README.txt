@@ -18,7 +18,7 @@ https://github.com/muggot/openmcu/blob/master/COPYING
 It will be used for License page in installer.
 
 Icon for the installer is searched here:
-C:\BuildSetup\openmcu-ru\share\openmcu.ico
+C:\BuildSetup\openmcu-ru\share\mcu.ico
 
 Files needed for building installer must be placed in "C:\BuildSetup\".
 
