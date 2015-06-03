@@ -209,7 +209,11 @@ class MCUTime
 
     const uint32_t GetSeconds() const
     {
-      return timestamp/1000000;
+#     ifdef _WIN32
+        return (const uint32_t)(timestamp/1000000);
+#     else
+        return timestamp/1000000;
+#     endif
     }
 
     operator uint64_t()
@@ -313,7 +317,7 @@ class MCUDelay
       now = MCUTime::GetMonoTimestampUsec();
       if(now < delay_time)
       {
-        uint32_t interval = delay_time - now;
+        uint32_t interval = (uint32_t)(delay_time - now);
         MCUTime::SleepUsec(interval);
       }
       //else // restart
