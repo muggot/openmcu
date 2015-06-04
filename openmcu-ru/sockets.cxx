@@ -217,7 +217,12 @@ MCUSocket::MCUSocket(int fd, int proto, const PString & host, int port)
 MCUSocket::~MCUSocket()
 {
   // close cocket
-  close(socket_fd);
+  if(socket_fd!=-1)
+#   ifdef _WIN32
+      closesocket(socket_fd);
+#   else
+      close(socket_fd);
+#   endif
 
   MCUTRACE(1, trace_section << "close");
 }
@@ -578,7 +583,13 @@ MCUListener::~MCUListener()
   running = FALSE;
   if(tcp_thread)
   {
-    tcp_thread->WaitForTermination(10000);
+#   ifdef _WIN32
+      if(!tcp_thread->WaitForTermination(2000))
+        tcp_thread->Terminate(); // because socket->Accept() blocks
+#   else
+      tcp_thread->WaitForTermination(10000);
+#   endif
+
     delete tcp_thread;
   }
 
@@ -661,6 +672,9 @@ void MCUListener::ListenerThread(PThread &, INT)
     while(running)
     {
       MCUSocket *client_socket = socket->Accept();
+
+      if(!running) return; // ??
+
       if(client_socket == NULL)
         continue;
 
