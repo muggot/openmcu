@@ -125,6 +125,8 @@ var roomName, globalMute, isModerated;
 
 var classicMode = false;
 
+var sortMode = 1;
+
 function index_exists(a, i)
 {
   try
@@ -1145,21 +1147,31 @@ function members_refresh()
  members.sort(members_sort_name_asc_func);
 
  offliners=false;
-// var vmr='';
+ var vmr='';
  var amr='';
-// var imr='';
+ var imr='';
  for(i=0;i<members.length;i++)
  {
-  mmbr=members[i];
-  if(mmbr[0])
-//   if(visible_ids.indexOf(','+mmbr[1]+',')>=0) vmr+=format_mmbr_button(mmbr,2);
-   if(visible_ids.indexOf(','+mmbr[1]+',')>=0) amr+=format_mmbr_button(mmbr,2);
-   else amr+=format_mmbr_button(mmbr,1);
-//  else imr+=format_mmbr_button(mmbr,0);
-  else amr+=format_mmbr_button(mmbr,0);
+   mmbr=members[i];
+   if(sortMode==0)
+   {
+     if(mmbr[0])
+       if(visible_ids.indexOf(','+mmbr[1]+',')>=0) vmr+=format_mmbr_button(mmbr,2);
+       else amr+=format_mmbr_button(mmbr,1);
+     else imr+=format_mmbr_button(mmbr,0);
+   }
+   else
+   {
+     if(mmbr[0])
+       if(visible_ids.indexOf(','+mmbr[1]+',')>=0) amr+=format_mmbr_button(mmbr,2);
+       else amr+=format_mmbr_button(mmbr,1);
+     else amr+=format_mmbr_button(mmbr,0);
+   }
  }
-// result='<div style="width:"+panel_width+"px" id="right_pan">'+amr+vmr+imr+'</div>';
- result='<div style="width:"+panel_width+"px" id="right_pan">'+amr+'</div>';
+ if(sortMode==0)
+   result='<div style="width:"+panel_width+"px" id="right_pan">'+amr+vmr+imr+'</div>';
+ else
+   result='<div style="width:"+panel_width+"px" id="right_pan">'+amr+'</div>';
 
  var mp=document.getElementById('right_scroller');
  if(mp.innerHTML!=result)
@@ -1571,6 +1583,10 @@ function top_panel()
   try{ recState=conf[0][11]; } catch(e) { recState=0; }
   if(recState==1) title=window.l_videorecorderstop; else title=window.l_videorecorder;
   c+=" <button title='" + title + "' onclick='javascript:{queue_otf_request(OTFC_VIDEO_RECORDER_" + (recState?"STOP":"START") + ",0);return false;}' class='recordspr" + recState + "'></button>";
+
+  c+=" <button title='Sort mode'"
+    +" onclick='javascript:{sortMode=(sortMode+1)%2;this.className=\"sortspr\"+sortMode;members_refresh();return false;}'"
+    +" class='sortspr" + sortMode + "'></button>";
 
   var i; try{ i=conf[0][10]; }catch(e){i=0;} //if((i<1)||(i>3))i=0;
   title=window.l_filtermode[i-1];
@@ -2327,7 +2343,7 @@ function getLeftPos(el) {
 
 function resize_timing(s)
 {
-  document.getElementById('ScaleTiming').innerHTML=Math.floor(s/1000)+'K cycles of CPU avg.';
+  document.getElementById('ScaleTiming').innerHTML=Math.floor(s/1000)+'K CPU cycles avg.';
   alive();
 }
 
@@ -2351,7 +2367,7 @@ function get_resizer(i)
     "swscale|SWS_SPLINE"
   ];
   
-  var r = "&nbsp;Resize algorythm: <select class='btn btn-small' style='height:28px;' name='FilterSelector' onchange='{queue_otf_request("
+  var r = "&nbsp;Filter: <select class='btn btn-small' style='height:28px;' name='FilterSelector' onchange='{queue_otf_request("
     + OTFC_YUV_FILTER_MODE + ",this.value);return false;}'>";
   
   for(j=0;j<a.length;j++)

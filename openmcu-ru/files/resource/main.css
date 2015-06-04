@@ -376,11 +376,13 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 
 .recordspr0 {width:24px;height:24px;background:url(s32_ch.png) -133px  -69px; border:2px solid #f00; background-color:#ccc}
 .recordspr1 {width:24px;height:24px;background:url(s32_ch.png) -165px  -69px; border:2px solid #f00; background-color:#ccc}
+.sortspr0   {width:24px;height:24px;background:url(s32_ch.png) -133px -165px; border:2px solid #cce; background-color:#ccc}
+.sortspr1   {width:24px;height:24px;background:url(s32_ch.png) -165px -165px; border:2px solid #aae; background-color:#ccc}
 .vadsetupspr{width:24px;height:24px;background:url(s32_ch.png)  -69px -101px; border:2px solid #000; background-color:#fff}
 .mutespr0   {width:24px;height:24px;background:url(s32_ch.png)   -7px -103px; border:2px solid #fa3; background-color:#fff}
 .mutespr1   {width:24px;height:24px;background:url(s32_ch.png)  -39px -103px; border:2px solid #830; background-color:#fff}
-.recordspr0,.recordspr1,.vadsetupspr,.mutespr0,.mutespr1{cursor:pointer;vertical-align:middle;border-radius:3px;overflow:hidden;margin:2px}
-.vadsetupspr:hover,.recordspr0:hover,.recordspr1:hover,.fltspr0:hover,.fltspr1:hover,.fltspr2:hover,.robotspr:hover,.humanspr:hover,.mutespr1:hover,.mutespr0:hover{border-style:dotted}
+.recordspr0,.recordspr1,.vadsetupspr,.mutespr0,.mutespr1,.sortspr0,.sortspr1{cursor:pointer;vertical-align:middle;border-radius:3px;overflow:hidden;margin:2px}
+.vadsetupspr:hover,.recordspr0:hover,.recordspr1:hover,.fltspr0:hover,.fltspr1:hover,.fltspr2:hover,.robotspr:hover,.humanspr:hover,.mutespr1:hover,.mutespr0:hover,.sortspr0:hover,.sortspr1:hover{border-style:dotted}
 
 .mmbr0,.mmbr1,.mmbr2,.mmbrp15,.mmbrp1,.mmbrp2,.mmbrdd{margin-left:2px;margin-bottom:0px;padding:2px;overflow:hidden;border-radius:0px;text-align:left;height:32px}
 .mmbrdd {border-bottom:1px solid #000    ;background-color:#aaf;position:absolute;cursor:move}
