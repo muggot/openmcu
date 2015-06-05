@@ -125,7 +125,7 @@ var roomName, globalMute, isModerated;
 
 var classicMode = false;
 
-var sortMode = 1;
+var sortMode = parseInt(getcookie('sortMode')); if(sortMode!=0) sortMode=1;
 
 function index_exists(a, i)
 {
@@ -1585,7 +1585,8 @@ function top_panel()
   c+=" <button title='" + title + "' onclick='javascript:{queue_otf_request(OTFC_VIDEO_RECORDER_" + (recState?"STOP":"START") + ",0);return false;}' class='recordspr" + recState + "'></button>";
 
   c+=" <button title='Sort mode'"
-    +" onclick='javascript:{sortMode=(sortMode+1)%2;this.className=\"sortspr\"+sortMode;members_refresh();return false;}'"
+    +" onclick='javascript:{sortMode=(sortMode+1)%2;this.className=\"sortspr\"+sortMode;"
+    + "document.cookie=\"sortMode=\"+sortMode+\"; expires=Fri, 31 Dec 2999 23:59:59 GMT\";members_refresh();return false;}'"
     +" class='sortspr" + sortMode + "'></button>";
 
   var i; try{ i=conf[0][10]; }catch(e){i=0;} //if((i<1)||(i>3))i=0;
