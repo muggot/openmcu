@@ -379,7 +379,7 @@ class TablePConfigPage : public PConfigPage
      if(width == 0) width = 90;
      PString id = GetTableId();
      PString s = "<input name='TABLEID' value='"+id+"' type='hidden'>";
-     s += rowArray+"<input type=text name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'></input>";
+     s += RowArray()+"<input type=text name='"+name+"' value='"+value+"' style='width:"+PString(width)+"px;"+inputStyle+"'></input>";
      s += "<input type=button value='↑' onClick='rowUp(this,0)' style='"+buttonStyle+"'>";
      s += "<input type=button value='↓' onClick='rowDown(this)' style='"+buttonStyle+"'>";
      s += "<input type=button value='+' onClick='rowClone(this)' style='"+buttonStyle+"'>";
@@ -592,7 +592,6 @@ class TablePConfigPage : public PConfigPage
    BOOL deleteSection;
    PString separator;
    PString colStyle, rowStyle, rowFieldStyle, itemStyle, itemInfoStyle, itemInfoStyleRowSpan, textStyle, inputStyle, buttonStyle, selectStyle, checkboxStyle;
-   PString rowArray;
    MCUStringDictionary dataDict;
    PString columnColor, rowColor, itemColor, itemInfoColor;
    int firstEditRow, firstDeleteRow;
