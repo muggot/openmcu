@@ -274,7 +274,7 @@ VideoFrameStoreList::~VideoFrameStoreList()
 {
   for(shared_iterator it = frameStoreList.begin(); it != frameStoreList.end(); ++it)
   {
-    FrameStore *vf = *it;
+    VideoFrameStore *vf = *it;
     if(frameStoreList.Erase(it))
       delete vf;
   }
@@ -289,14 +289,14 @@ VideoFrameStoreList::shared_iterator VideoFrameStoreList::GetFrameStore(int widt
     it = frameStoreList.Find(WidthHeightToKey(width, height));
     if(it == frameStoreList.end())
     {
-      FrameStore * vf = new FrameStore(width, height);
+      VideoFrameStore * vf = new VideoFrameStore(width, height);
       it = frameStoreList.Insert(vf, WidthHeightToKey(width, height));
     }
   }
   return it;
 }
 
-VideoFrameStoreList::FrameStore::FrameStore(int _w, int _h)
+VideoFrameStore::VideoFrameStore(int _w, int _h)
   : width(_w), height(_h), frame_size(_w*_h*3/2)
 {
   PAssert(_w != 0 && _h != 0, "Cannot create zero size framestore");
@@ -350,7 +350,7 @@ VideoMixPosition::~VideoMixPosition()
 #if USE_FREETYPE
   MCURemoveSubtitles(*this);
 #endif
-  for(MCUSharedList<MCUBufferYUVArray>::shared_iterator it = bufferList.begin(); it != bufferList.end(); ++it)
+  for(MCUBufferYUVArrayList::shared_iterator it = bufferList.begin(); it != bufferList.end(); ++it)
   {
     MCUBufferYUVArray *buffer = *it;
     if(bufferList.Erase(it))
@@ -379,7 +379,7 @@ unsigned MCUSubsCalc(const unsigned v, const PString s)
 
 void MCURemoveSubtitles(VideoMixPosition & vmp)
 {
-  for(VideoMixPosition::MCUSubtitlesList::shared_iterator it = vmp.subtitlesList.begin(); it != vmp.subtitlesList.end(); ++it)
+  for(MCUSubtitlesList::shared_iterator it = vmp.subtitlesList.begin(); it != vmp.subtitlesList.end(); ++it)
   {
     MCUSubtitles *sub = *it;
     if(vmp.subtitlesList.Erase(it))
@@ -393,7 +393,7 @@ void MCURemoveSubtitles(VideoMixPosition & vmp)
 void MCUPrintSubtitles(VideoMixPosition & vmp, void * buffer, unsigned int fw, unsigned int fh, unsigned int ft_properties, unsigned layout)
 {
   unsigned key=(fh << 16) | fw;
-  VideoMixPosition::MCUSubtitlesList::shared_iterator q = vmp.subtitlesList.Find(key);
+  MCUSubtitlesList::shared_iterator q = vmp.subtitlesList.Find(key);
   if(q == vmp.subtitlesList.end())
     return;
   MCUSubtitles * st = *q;
@@ -697,7 +697,7 @@ BOOL MCUSimpleVideoMixer::ReadFrame(ConferenceMember & member, void * buffer, in
   if(member.GetType() != MEMBER_TYPE_CACHE && PTime()-member.firstFrameSendTime < 3000)
   {
     VideoFrameStoreList::shared_iterator fsit = frameStores.GetFrameStore(width, height);
-    VideoFrameStoreList::FrameStore & fs = **fsit;
+    VideoFrameStore & fs = **fsit;
     if(fs.logo_frame.GetSize() != 0)
       memcpy(buffer, fs.logo_frame.GetPointer(), fs.frame_size);
     return TRUE;
@@ -713,7 +713,7 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(void * buffer, int width, int height, P
 BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, void * buffer, int width, int height, PINDEX & amount)
 {
   VideoFrameStoreList::shared_iterator fsit = srcFrameStores.GetFrameStore(width, height);
-  VideoFrameStoreList::FrameStore & fs = **fsit;
+  VideoFrameStore & fs = **fsit;
 
   // background
   if(fs.bg_frame.GetSize() != 0)
@@ -734,7 +734,7 @@ BOOL MCUSimpleVideoMixer::ReadMixedFrame(VideoFrameStoreList & srcFrameStores, v
       VideoMixPosition *vmp = *vmp_it;
       if(vmp->vmpbuf_index >= 0)
       {
-        MCUSharedList<MCUBufferYUVArray>::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)&fs);
+        MCUBufferYUVArrayList::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)&fs);
         if(vmpbuf_it != vmp->bufferList.end())
         {
           MCUBufferYUV *vmpbuf = (**vmpbuf_it)[vmp->vmpbuf_index];
@@ -800,7 +800,7 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 
   for(VideoFrameStoreList::shared_iterator it = frameStores.frameStoreList.begin(); it != frameStores.frameStoreList.end(); ++it)
   {
-    VideoFrameStoreList::FrameStore & vf = **it;
+    VideoFrameStore & vf = **it;
     if(vf.width<2 || vf.height<2) continue; // minimum size 2*2
 
     // pixel w&h of vmp-->fs:
@@ -808,7 +808,7 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
     int ph = (float)vmpcfg.height*vf.height/CIF4_HEIGHT;
     if(pw<2 || ph<2) continue;
 
-    MCUSharedList<MCUBufferYUVArray>::shared_iterator vmpbuf_it = vmp.bufferList.Find((long)&vf);
+    MCUBufferYUVArrayList::shared_iterator vmpbuf_it = vmp.bufferList.Find((long)&vf);
     if(vmpbuf_it == vmp.bufferList.end())
       vmpbuf_it = vmp.bufferList.Insert(new MCUBufferYUVArray(3, 0, 0), (long)&vf);
     MCUBufferYUV *vmpbuf = (**vmpbuf_it)[vmpbuf_index];
@@ -886,7 +886,7 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 
 void MCUSimpleVideoMixer::RemoveFrameStore(VideoFrameStoreList::shared_iterator & it)
 {
-  VideoFrameStoreList::FrameStore *fs = *it;
+  VideoFrameStore *fs = *it;
   if(frameStores.frameStoreList.Erase(it))
   {
     for(MCUVMPList::shared_iterator it = vmpList.begin(); it != vmpList.end(); ++it)
@@ -897,7 +897,7 @@ void MCUSimpleVideoMixer::RemoveFrameStore(VideoFrameStoreList::shared_iterator 
       unsigned pw = vmpcfg.width *fs->width/CIF4_WIDTH;
       unsigned ph = vmpcfg.height*fs->height/CIF4_HEIGHT;
       unsigned key= (ph<<16) | pw;
-      VideoMixPosition::MCUSubtitlesList::shared_iterator q = vmp->subtitlesList.Find(key);
+      MCUSubtitlesList::shared_iterator q = vmp->subtitlesList.Find(key);
       if(q != vmp->subtitlesList.end())
       {
         MCUSubtitles *sub = *q;
@@ -908,7 +908,7 @@ void MCUSimpleVideoMixer::RemoveFrameStore(VideoFrameStoreList::shared_iterator 
         }
       }
 #endif
-      MCUSharedList<MCUBufferYUVArray>::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)fs);
+      MCUBufferYUVArrayList::shared_iterator vmpbuf_it = vmp->bufferList.Find((long)fs);
       if(vmpbuf_it != vmp->bufferList.end())
       {
         MCUBufferYUVArray *buffer = *vmpbuf_it;
@@ -916,7 +916,7 @@ void MCUSimpleVideoMixer::RemoveFrameStore(VideoFrameStoreList::shared_iterator 
           delete buffer;
       }
     }
-    MCUTRACE(1, "VideoMixer: remove FrameStore " << fs->width << "x" << fs->height);
+    MCUTRACE(1, "VideoMixer: remove VideoFrameStore " << fs->width << "x" << fs->height);
     delete fs;
   }
 }
@@ -927,7 +927,7 @@ void MCUSimpleVideoMixer::Monitor(Conference *conference)
 
   for(VideoFrameStoreList::shared_iterator fs_it = frameStores.frameStoreList.begin(); fs_it != frameStores.frameStoreList.end(); ++fs_it)
   {
-    VideoFrameStoreList::FrameStore *fs = *fs_it;
+    VideoFrameStore *fs = *fs_it;
     // remove FrameStore
     if(fs->lastRead < (time(NULL) - FRAMESTORE_TIMEOUT))
     {
@@ -941,13 +941,13 @@ void MCUSimpleVideoMixer::Monitor(Conference *conference)
     VideoMixPosition *vmp = *vmp_it;
     VMPCfgOptions & vmpcfg = OpenMCU::vmcfg.vmconf[specialLayout].vmpcfg[vmp->n];
     // remove subtitles
-    for(VideoMixPosition::MCUSubtitlesList::shared_iterator sub_it = vmp->subtitlesList.begin(); sub_it != vmp->subtitlesList.end(); ++sub_it)
+    for(MCUSubtitlesList::shared_iterator sub_it = vmp->subtitlesList.begin(); sub_it != vmp->subtitlesList.end(); ++sub_it)
     {
       MCUSubtitles *sub = *sub_it;
       VideoFrameStoreList::shared_iterator fs_it;
       for(fs_it = frameStores.frameStoreList.begin(); fs_it != frameStores.frameStoreList.end(); ++fs_it)
       {
-        VideoFrameStoreList::FrameStore *fs = *fs_it;
+        VideoFrameStore *fs = *fs_it;
         int pw = vmpcfg.width *fs->width /CIF4_WIDTH;
         int ph = vmpcfg.height*fs->height/CIF4_HEIGHT;
         if(sub_it.GetID() == ((ph << 16) | pw))
@@ -963,12 +963,12 @@ void MCUSimpleVideoMixer::Monitor(Conference *conference)
     //
     for(VideoFrameStoreList::shared_iterator fs_it = frameStores.frameStoreList.begin(); fs_it != frameStores.frameStoreList.end(); ++fs_it)
     {
-      VideoFrameStoreList::FrameStore *fs = *fs_it;
+      VideoFrameStore *fs = *fs_it;
       // render subtitles
       int pw = vmpcfg.width *fs->width /CIF4_WIDTH;
       int ph = vmpcfg.height*fs->height/CIF4_HEIGHT;
       long sub_key = (ph << 16) | pw;
-      VideoMixPosition::MCUSubtitlesList::shared_iterator sub_it = vmp->subtitlesList.Find(sub_key);
+      MCUSubtitlesList::shared_iterator sub_it = vmp->subtitlesList.Find(sub_key);
       if(sub_it == vmp->subtitlesList.end())
       {
         MCUTRACE(6, "VideoMixer: render subtitles n=" << vmp->n << " fs=" << fs->width << "x" << fs->height << " pos=" << pw << "x" << ph << " key=" << sub_key);
@@ -1709,7 +1709,7 @@ PString MCUSimpleVideoMixer::GetFrameStoreMonitorList()
   PStringStream s;
   for(VideoFrameStoreList::shared_iterator it = frameStores.frameStoreList.begin(); it != frameStores.frameStoreList.end(); ++it)
   {
-    VideoFrameStoreList::FrameStore *fs = *it;
+    VideoFrameStore *fs = *it;
     s << "  Frame store [" << fs->width << "x" << fs->height << "] "
       << "last read time: " << fs->lastRead << "\n";
   }

@@ -92,7 +92,7 @@ class MCUTelnetServer
     void RemoveListeners();
     void AddListener(const PString & address);
 
-    MCUSharedList<MCUTelnetSession> & GetSessionList()
+    MCUTelnetSessionList & GetSessionList()
     { return sessionList; }
 
   protected:

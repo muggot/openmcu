@@ -793,7 +793,7 @@ class ConnectionMonitor : public PThread
   PCLASSINFO(ConnectionMonitor, PThread);
   public:
     ConnectionMonitor(MCUH323EndPoint & _ep)
-      : PThread(10000, NoAutoDeleteThread), ep(_ep), monitorList(1024)
+      : PThread(10000, NoAutoDeleteThread), ep(_ep)
     {
       Resume();
     }

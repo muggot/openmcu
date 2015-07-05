@@ -131,7 +131,7 @@ void H323CallThread::Main()
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 MCUH323EndPoint::MCUH323EndPoint(ConferenceManager & _conferenceManager)
-  : conferenceManager(_conferenceManager), connectionList(1024), connectionDeleteList(1024)
+  : conferenceManager(_conferenceManager)
 {
   rsCaps = NULL;
   tsCaps = NULL;

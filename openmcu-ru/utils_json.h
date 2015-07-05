@@ -17,7 +17,7 @@ class MCUJSON
 {
   public:
 
-    typedef MCUSharedListSharedIterator<MCUSharedList<MCUJSON>, MCUJSON> shared_iterator;
+    typedef MCUSharedListSharedIterator<MCUJSONList, MCUJSON> shared_iterator;
     const shared_iterator & end() const { return iterator_end; }
 
     enum JsonTypes
@@ -31,7 +31,7 @@ class MCUJSON
       JSON_OBJECT
     };
 
-    MCUJSON(JsonTypes type = JSON_OBJECT, const std::string &key = "", int size = 256);
+    MCUJSON(JsonTypes type = JSON_OBJECT, const std::string &key = "", int size = MCU_SHARED_LIST_SIZE);
     ~MCUJSON();
 
     static MCUJSON * Null();
@@ -51,8 +51,8 @@ class MCUJSON
     static MCUJSON * Double(const double value);
     static MCUJSON * String(const std::string &key, const std::string &value);
     static MCUJSON * String(const std::string &value);
-    static MCUJSON * Array(const std::string &key = "", int size = 256);
-    static MCUJSON * Object(const std::string &key = "", int size = 256);
+    static MCUJSON * Array(const std::string &key = "", int size = MCU_SHARED_LIST_SIZE);
+    static MCUJSON * Object(const std::string &key = "", int size = MCU_SHARED_LIST_SIZE);
 
     bool Insert(MCUJSON *json);
     bool Insert(const std::string &key, bool value);
@@ -90,7 +90,7 @@ class MCUJSON
     MCUJSON & operator = (const char *value);
     MCUJSON & operator = (const std::string &value);
     MCUJSON & operator = (const PString &value);
-    MCUJSON & operator = (MCUSharedList<MCUJSON> *value);
+    MCUJSON & operator = (MCUJSONList *value);
     MCUJSON & operator = (MCUJSON &json);
 
     bool operator == (MCUJSON &json)
@@ -116,7 +116,7 @@ class MCUJSON
     long long value_int;
     double value_double;
     std::string value_string;
-    MCUSharedList<MCUJSON> * value_array;
+    MCUJSONList * value_array;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

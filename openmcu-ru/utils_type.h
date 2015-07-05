@@ -16,8 +16,13 @@ class MCUH323Connection;
 class MCUSipConnnection;
 class SipRTP_UDP;
 
+class CacheRTP;
+
 class MCUSimpleVideoMixer;
 class VideoMixPosition;
+class VideoFrameStore;
+class MCUBufferYUVArray;
+class MCUSubtitles;
 
 class ConferenceAudioConnection;
 class ConferenceProfile;
@@ -49,6 +54,7 @@ class MCUSIP_RTP_UDP;
 class MCUSocket;
 class MCUListener;
 class MCUTelnetSession;
+class MCUJSON;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 

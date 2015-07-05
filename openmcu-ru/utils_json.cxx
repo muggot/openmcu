@@ -64,7 +64,7 @@ MCUJSON::MCUJSON(JsonTypes type, const std::string &key, int size)
   {
     json_key = key;
     json_type = type;
-    value_array = new MCUSharedList<MCUJSON>(size);
+    value_array = new MCUJSONList(size);
   } else {
     json_key = key;
     json_type = type;
@@ -357,7 +357,7 @@ bool MCUJSON::Remove(const std::string &key)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUSharedListSharedIterator<MCUSharedList<MCUJSON>, MCUJSON> MCUJSON::Find(const std::string &key)
+MCUSharedListSharedIterator<MCUJSONList, MCUJSON> MCUJSON::Find(const std::string &key)
 {
   if(value_array)
     return value_array->Find(key);
@@ -437,7 +437,7 @@ MCUJSON & MCUJSON::operator = (const PString &value)
   return *this;
 }
 
-MCUJSON & MCUJSON::operator = (MCUSharedList<MCUJSON> *value)
+MCUJSON & MCUJSON::operator = (MCUJSONList *value)
 {
   if(value_array)
   {

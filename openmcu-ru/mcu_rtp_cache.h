@@ -210,7 +210,6 @@ class CacheRTP
     CacheRTPUnitMap unitList;
 };
 
-typedef MCUSharedList<CacheRTP> MCUCacheRTPList;
 extern MCUCacheRTPList cacheRTPList;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

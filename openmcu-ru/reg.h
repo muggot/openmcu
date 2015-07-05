@@ -495,7 +495,7 @@ class MCUH323Gatekeeper : public H323Gatekeeper
       if(pdu.GetPDU().GetTag() == H323RasPDU::e_admissionRequest)
       {
         H225_AdmissionRequest arq((H225_AdmissionRequest &)request.requestPDU.GetChoice().GetObject());
-        MCUConnectionIgnoreList::shared_iterator it = ignoreList.Find((long)arq.m_callReferenceValue);
+        MCUConnectionList::shared_iterator it = ignoreList.Find((long)arq.m_callReferenceValue);
         if(it != ignoreList.end())
           return TRUE;
 
@@ -503,7 +503,7 @@ class MCUH323Gatekeeper : public H323Gatekeeper
       else if(pdu.GetPDU().GetTag() == H323RasPDU::e_disengageRequest)
       {
         H225_DisengageRequest arq((H225_DisengageRequest &)request.requestPDU.GetChoice().GetObject());
-        MCUConnectionIgnoreList::shared_iterator it = ignoreList.Find((long)arq.m_callReferenceValue);
+        MCUConnectionList::shared_iterator it = ignoreList.Find((long)arq.m_callReferenceValue);
         if(it != ignoreList.end())
           return TRUE;
       }
@@ -513,8 +513,7 @@ class MCUH323Gatekeeper : public H323Gatekeeper
     //InfoRequestResponse(*this, pdu.m_h323_uu_pdu, TRUE);
 
   protected:
-    typedef MCUSharedList<MCUH323Connection> MCUConnectionIgnoreList;
-    MCUConnectionIgnoreList ignoreList;
+    MCUConnectionList ignoreList;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

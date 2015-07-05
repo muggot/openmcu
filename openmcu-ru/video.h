@@ -31,20 +31,20 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+class VideoFrameStore
+{
+  public:
+    VideoFrameStore(int _w, int _h);
+    int width;
+    int height;
+    int frame_size;
+    time_t lastRead;
+    MCUBuffer bg_frame;
+    MCUBuffer logo_frame;
+};
+
 class VideoFrameStoreList {
   public:
-    class FrameStore
-    {
-      public:
-        FrameStore(int _w, int _h);
-        int width;
-        int height;
-        int frame_size;
-        time_t lastRead;
-        MCUBuffer bg_frame;
-        MCUBuffer logo_frame;
-    };
-    typedef MCUSharedList<FrameStore> MCUFrameStoreList;
     MCUFrameStoreList frameStoreList;
     typedef MCUFrameStoreList::shared_iterator shared_iterator;
     PMutex frameStoreListMutex;
@@ -185,7 +185,6 @@ class VideoMixPosition {
     volatile int type; // static, vad, vad2, vad3
     int chosenVan; // always visible vad members (can switched between vad and vad2)
 #if USE_FREETYPE
-    typedef MCUSharedList<MCUSubtitles> MCUSubtitlesList;
     MCUSubtitlesList subtitlesList; // one per framestore
     unsigned minWidthForLabel;
 #endif
@@ -194,7 +193,7 @@ class VideoMixPosition {
     BOOL offline;
     BOOL shows_logo;
 
-    MCUSharedList<MCUBufferYUVArray> bufferList;
+    MCUBufferYUVArrayList bufferList;
     int vmpbuf_index;
     MCUBufferYUV tmpbuf;
 
