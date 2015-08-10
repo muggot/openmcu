@@ -326,10 +326,10 @@ function member_get_nice_lost_percent(roomName, m)
   if(ms<=1) return ":(";
 
   return ""+
-    calc_lost_percent(m[23], m0[23], m[5], m0[5]) + "<br/>" +
-    calc_lost_percent(m[25], m0[25], m[6], m0[6]) + "<br/>" +
-    calc_lost_percent(m[24], m0[24], m[7], m0[7]) + "<br/>" +
-    calc_lost_percent(m[26], m0[26], m[8], m0[8]);
+    calc_lost_percent(m[23], m0[23], m[18], m0[18]) + "<br/>" +
+    calc_lost_percent(m[25], m0[25], m[20], m0[20]) + "<br/>" +
+    calc_lost_percent(m[24], m0[24], m[19], m0[19]) + "<br/>" +
+    calc_lost_percent(m[26], m0[26], m[21], m0[21]);
 }
 
 function member_get_nice_fps(m)
