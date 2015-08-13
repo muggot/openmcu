@@ -124,9 +124,9 @@ PString Conference::SaveTemplate(PString tplName)
 
 void Conference::LoadTemplate(PString tpl)
 {
-  PTRACE(4,"Conference\tLoading template");
-  confTpl=tpl;
+  PTRACE(3,"Conference\tLoadtemplate");
   if(tpl.IsEmpty()) return;
+  confTpl=tpl;
   PStringArray lines=tpl.Lines();
   int level=0;
   unsigned mixerId=0;
@@ -147,7 +147,16 @@ void Conference::LoadTemplate(PString tpl)
         PString value=l.Mid(space+1,P_MAX_INDEX).LeftTrim();
         if(cmd=="GLOBAL_MUTE") muteUnvisible=(value=="on");
         else if(cmd=="CONTROL_TYPE") moderated=(value=="manual");
-        else if(cmd=="VAD_VALUES") {PStringArray v=value.Tokenise(",");if(v.GetSize()==3){ VAdelay=(unsigned short int)(v[0].Trim().AsInteger()); VAtimeout=(unsigned short int)(v[1].Trim().AsInteger()); VAlevel=(unsigned short int)(v[2].Trim().AsInteger());}}
+        else if(cmd=="VAD_VALUES")
+        {
+          PStringArray v=value.Tokenise(",");
+          if(v.GetSize()==3)
+          {
+            VAdelay  =(unsigned short int)(v[0].Trim().AsInteger());
+            VAtimeout=(unsigned short int)(v[1].Trim().AsInteger());
+            VAlevel  =(unsigned short int)(v[2].Trim().AsInteger());
+          }
+        }
         else if(cmd=="MIXER")
         {
           mixerId = value.AsInteger();
@@ -321,7 +330,9 @@ void Conference::LoadTemplate(PString tpl)
     {
       ConferenceMemberId id = member->GetID();
       PTRACE(6,"Conference\tLoading template - closing connection with " << name << " (id " << id << ")" << flush);
+      member->SetAutoDial(FALSE);
       member->Close();
+      if(memberList.Erase(it)) delete member;
     }
   }
 
