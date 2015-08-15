@@ -3026,12 +3026,13 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
 
   if(fileList.GetSize()==0) shtml << "<script>document.write(window.l_dir_no_records);</script> " << freeSpace; else
   {
+    PString sm=PString("&nbsp;<span style='color:red'>&") + ((sortMode&1)?'u':'d') + "Arr;</span>";
     shtml << freeSpace << "<table style='border:2px solid #82b8e3'><tr>"
       << "<th class='h1' style='color:#afc'>N</th>"
-      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=0)?'0':'1') << "'><script>document.write(window.l_startdatetime)</script></a></th>"
-      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=2)?'2':'3') << "'><script>document.write(window.l_connections_word_room)</script></a></th>"
-      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=4)?'4':'5') << "'><script>document.write(window.l_resolution)</script></th>"
-      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=6)?'6':'7') << "'><script>document.write(window.l_filesize)</script></th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=0)?'0':'1') << "'><script>document.write(window.l_startdatetime)</script>" << ((!(sortMode>>1))?sm:"") << "</a></th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=2)?'2':'3') << "'><script>document.write(window.l_connections_word_room)</script>" << (((sortMode>>1)==1)?sm:"") << "</a></th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=4)?'4':'5') << "'><script>document.write(window.l_resolution)</script>" << (((sortMode>>1)==2)?sm:"") << "</a></th>"
+      << "<th class='h1'><a style='color:#fff' href='/Records?sort=" << ((sortMode!=6)?'6':'7') << "'><script>document.write(window.l_filesize)</script>" << (((sortMode>>1)==3)?sm:"") << "</a></th>"
       << "<th class='h1' style='color:#afc'><script>document.write(window.l_download)</script></th>"
       << "<th class='h1' style='color:#afc'><script>document.write(window.l_delete)</script></th>"
       << "</tr>";
@@ -3043,7 +3044,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
         { PString dateTime1 = s.Left(pos1); s=s.Mid(pos1+2,P_MAX_INDEX);
           PString videoResolution1; pos1=s.Find('.'); PINDEX pos2=s.Find(',');
           if(pos1!=P_MAX_INDEX) videoResolution1=s.Left(pos1); else videoResolution1=s.Left(pos2);
-          PINDEX fileSize1 = s.Mid(pos2+1,P_MAX_INDEX).AsInteger();
+          unsigned long fileSize1 = strtoul(s.Mid(pos2+1,P_MAX_INDEX),NULL,10);
           for(PINDEX j=i+1;j<fileList.GetSize(); j++)
           { PString s=fileList[j]; pos1=s.Find("__"); if(pos1!=P_MAX_INDEX)
             { PString roomName2 = s.Left(pos1); s=s.Mid(pos1+2,P_MAX_INDEX);
@@ -3051,18 +3052,27 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
               { PString dateTime2 = s.Left(pos1); s=s.Mid(pos1+2,P_MAX_INDEX);
                 PString videoResolution2; pos1=s.Find('.'); PINDEX pos2=s.Find(',');
                 if(pos1!=P_MAX_INDEX) videoResolution2=s.Left(pos1); else videoResolution2=s.Left(pos2);
-                PINDEX fileSize2 = s.Mid(pos2+1,P_MAX_INDEX).AsInteger();
-
-                if     ((!sortMode) && (!(dateTime2 >= dateTime1))){}
-                else if((sortMode==1) && (dateTime2 >= dateTime1)) {}
-                else if((sortMode==2) && (roomName2 >= roomName1)) {}
-                else if((sortMode==3) && (roomName2 <= roomName1)) {}
-                else if((sortMode==4) && (videoResolution2 <= videoResolution1)) {}
-                else if((sortMode==5) && (videoResolution2 >= videoResolution1)) {}
-                else if((sortMode==6) && (fileSize2 <= fileSize1)) {}
-                else if((sortMode==7) && (fileSize2 >= fileSize1)) {}
-                else { PString s=fileList[i]; fileList[i]=fileList[j]; fileList[j]=s; } // or just swap PString pointers?
-
+                unsigned long fileSize2 = strtoul(s.Mid(pos2+1,P_MAX_INDEX),NULL,10);
+                BOOL sw;
+                switch(sortMode)
+                {
+                  case 1:  sw=strcmp(dateTime2, dateTime1)<0; break;
+                  case 2:  sw=strcmp(roomName2, roomName1)>0; break;
+                  case 3:  sw=strcmp(roomName2, roomName1)<0; break;
+                  case 4:  sw=strcmp(videoResolution2, videoResolution1)>0; break;
+                  case 5:  sw=strcmp(videoResolution2, videoResolution1)<0; break;
+                  case 6:  sw=fileSize2 > fileSize1; break;
+                  case 7:  sw=fileSize2 < fileSize1; break;
+                  default: sw=strcmp(dateTime2, dateTime1)>0; break;
+                }
+                if(sw)
+                {
+                  swap(fileList[i], fileList[j]);
+                  dateTime1=dateTime2;
+                  roomName1=roomName2;
+                  videoResolution1=videoResolution2;
+                  fileSize1=fileSize2;
+                }
               }
             }
           }
