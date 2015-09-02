@@ -122,7 +122,7 @@
 
 #ifdef _WIN32
 #  undef  USE_SWRESAMPLE
-#  define USE_SWRESAMPLE     0
+#  define USE_SWRESAMPLE     1
 #  undef  USE_LIBSAMPLERATE
 #  define USE_LIBSAMPLERATE  0
 #  undef  USE_AVRESAMPLE
