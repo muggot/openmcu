@@ -16,6 +16,8 @@ PString convert_ucs2_to_utf8(PString str);
 PString GetSectionParamFromUrl(PString param, PString url, bool asterisk = true);
 PString GetSectionParamFromUrl(PString param, PString url, PString defaultValue, bool asterisk = true);
 
+void SaveParameterByURL(PString param, PString addr, PString value);
+
 PString GetConferenceParam(PString room, PString param, PString defaultValue);
 int GetConferenceParam(PString room, PString param, int defaultValue);
 

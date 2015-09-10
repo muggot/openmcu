@@ -1503,6 +1503,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
     cmd << "setagl(" << v << "," << member->kManualGainDB << ")";
     HttpWriteCmdRoom(cmd,room);
+    SaveParameterByURL("Input Gain", MCUURL(member->GetName()).GetUrl(), member->kManualGainDB);
     return TRUE;
   }
   if( action == OTFC_OUTPUT_GAIN_SET )
@@ -1514,6 +1515,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     member->kOutputGain=(float)pow(10.0,((float)member->kOutputGainDB)/20.0);
     cmd << "setogl(" << v << "," << member->kOutputGainDB << ")";
     HttpWriteCmdRoom(cmd,room);
+    SaveParameterByURL("Output Gain", MCUURL(member->GetName()).GetUrl(), member->kOutputGainDB);
     return TRUE;
   }
   if(action == OTFC_MUTE)

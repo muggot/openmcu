@@ -47,6 +47,11 @@ PString GetSectionParam(PString section_prefix, PString param, PString addr, boo
   return value;
 }
 
+void SetSectionParam(PString section_prefix, PString param, PString addr, PString value)
+{
+  MCUConfig(section_prefix+addr).SetString(param, value);
+}
+
 PString GetSectionParamFromUrl(PString param, PString addr, bool asterisk)
 {
   PString section_prefix;
@@ -69,6 +74,28 @@ PString GetSectionParamFromUrl(PString param, PString addr, bool asterisk)
   PString value = GetSectionParam(section_prefix, param, addr, asterisk);
   PTRACE(1, "Get parameter (" << addr << ") \"" << param << "\" = " << value);
   return value;
+}
+
+void SaveParameterByURL(PString param, PString addr, PString value)
+{
+  PString section_prefix;
+  if(addr.Find("RTSP Server ") == 0)
+  {
+    section_prefix = "RTSP Server ";
+    addr.Replace("RTSP Server ","",TRUE,0);
+  } else {
+    MCUURL url(addr);
+    if(url.GetScheme() == "h323")
+      section_prefix = "H323 Endpoint ";
+    else if(url.GetScheme() == "sip")
+      section_prefix = "SIP Endpoint ";
+    else if(url.GetScheme() == "rtsp")
+      section_prefix = "RTSP Endpoint ";
+    else
+      return;
+  }
+
+  SetSectionParam(section_prefix, param, addr, value);
 }
 
 PString GetSectionParamFromUrl(PString param, PString addr, PString defaultValue, bool asterisk)

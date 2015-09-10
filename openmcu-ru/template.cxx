@@ -109,7 +109,7 @@ PString Conference::SaveTemplate(PString tplName)
     if(member->disableVAD) value3++;
     t << "  MEMBER "
       << (member->autoDial?"1":"0") << ", "
-      << member->muteMask << "/" << (member->kManualGainDB+20) << "/" << (member->kOutputGainDB+20) << ", "
+      << member->muteMask << ", "
       << value3 << ", "
       << (member->chosenVan?"1":"0") << ", "
       << member->GetVideoMixerNumber() << ", "
@@ -274,14 +274,14 @@ void Conference::LoadTemplate(PString tpl)
             PStringArray maskAndGain = v[1].Tokenise("/");
             BOOL hasGainOptions = (maskAndGain.GetSize() > 1);
             if(hasGainOptions)
-            {
+            { // stay compatible with temp. style templates:
               member->SetChannelState(maskAndGain[0].AsInteger());
-              member->kManualGainDB = maskAndGain[1].AsInteger()-20;
-              member->kOutputGainDB = maskAndGain[2].AsInteger()-20;
-              member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
-              member->kOutputGain=(float)pow(10.0,((float)member->kOutputGainDB)/20.0);
+//              member->kManualGainDB = maskAndGain[1].AsInteger()-20;
+//              member->kOutputGainDB = maskAndGain[2].AsInteger()-20;
+//              member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
+//              member->kOutputGain=(float)pow(10.0,((float)member->kOutputGainDB)/20.0);
             }
-            else // stay compatible with old-style templates:
+            else 
             {
               member->muteMask      = v[1].AsInteger();
             }

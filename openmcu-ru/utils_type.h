@@ -22,7 +22,7 @@ class MCUSimpleVideoMixer;
 class VideoMixPosition;
 class VideoFrameStore;
 class MCUBufferYUVArray;
-class MCUSubtitles;
+struct MCUSubtitles;
 
 class ConferenceAudioConnection;
 class ConferenceProfile;

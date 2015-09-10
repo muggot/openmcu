@@ -2173,6 +2173,25 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
       conferenceMember = new MCUConnection_ConferenceMember(conference, memberName, callToken, isMCU);
   }
 
+  { // restore input & output gain level
+    PString gain;
+
+    gain = GetSectionParamFromUrl("Input Gain", MCUURL(conferenceMember->GetName()).GetUrl(), false);
+    if(!gain.IsEmpty())
+    {
+      conferenceMember->kManualGainDB = gain.AsInteger();
+      conferenceMember->kManualGain=(float)pow(10.0,((float)conferenceMember->kManualGainDB)/20.0);
+    }
+
+    gain = GetSectionParamFromUrl("Output Gain", MCUURL(conferenceMember->GetName()).GetUrl(), false);
+    if(!gain.IsEmpty())
+    {
+      conferenceMember->kOutputGainDB = gain.AsInteger();
+      conferenceMember->kOutputGain=(float)pow(10.0,((float)conferenceMember->kOutputGainDB)/20.0);
+    }
+  }
+
+
   conference->AddMember(conferenceMember);
   conference->Unlock();
 }
