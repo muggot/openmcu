@@ -1438,7 +1438,10 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
         }
       }
       if(setup == FALSE)
+      {
+        if(type==1) type++;
         mixer->PositionSetup(pos,type,NULL);
+      }
     }
 //    else if((id>=0)&&(id<100))
 //      mixer->PositionSetup(pos,type,NULL);
