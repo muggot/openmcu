@@ -302,7 +302,7 @@ function start_otf_control()
   var cmd='room='+encodeURIComponent(roomName)
     + '&otfc=1'
     + '&action='+data[0]
-    + '&v='+data[1];
+    + '&v='+encodeURIComponent(data[1]);
   if(2 in data) cmd+='&o='+encodeURIComponent(data[2]);
   if(3 in data) cmd+='&o2='+encodeURIComponent(data[3]);
   if(4 in data) cmd+='&o3='+encodeURIComponent(data[4]);
