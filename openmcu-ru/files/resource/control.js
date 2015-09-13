@@ -1,7 +1,7 @@
 var max_subframes=100;
 var default_page_width=942; //CHANGE IT IF YOU WISH, IT'LL BE AUTO-INCREASED IF NEEDED
 var page_border_width=70;   //for detect panel width
-var debug=0;
+var debug=1;
 var MIXER_PANEL_BGCOLOR='#575';
 var MIXER_PANEL_BGCOLOR2='#242';
 var MIXER_PANEL_MIXER_STYLE='font-weight:bold;background-color:'+MIXER_PANEL_BGCOLOR2+';padding-left:3px;padding-right:3px;border-radius:2px;border:2px solid #484;color:#fc5';
@@ -564,7 +564,7 @@ function invite_checked_abook(obj){
     {
       if(check_box.checked)
       {
-        inviteoffline(document.getElementById('abook_inv_'+addressbook[i][1]),encodeURIComponent(addressbook[i][2]),1);
+        inviteoffline(document.getElementById('abook_inv_'+addressbook[i][1]),addressbook[i][2],1);
         check_box.checked = false;
       }
     }
@@ -847,7 +847,7 @@ function format_mmbr_button(m,st)
   var mute4=mute_button(m, st, 4);
   var mute8=mute_button(m, st, 8);
   var vad=vad_button(m);
-  kick   ="<img "+b1style+" src='i16_close_red.png' onclick='kick_confirm(this,"+m[1]+",\""+encodeURIComponent(m[2])+"\");' onmouseover='prvnt=1' onmouseout='prvnt=0' alt='Drop'>";
+  kick   ="<img "+b1style+" src='i16_close_red.png' onclick='kick_confirm(this,"+m[1]+",\""+m[2]+"\");' onmouseover='prvnt=1' onmouseout='prvnt=0' alt='Drop'>";
   hide   ="<div class='hidespr'" + prCode + " title='Remove from video mixers' onclick='if(checkcontrol())queue_otf_request("+OTFC_REMOVE_FROM_VIDEOMIXERS+","+m[1]+")'></div>";
   resize ="<div id='rsz_"+id+"' class='rszspr" + m[15] + "'" + prCode + " title='&laquo;&raquo;/&uArr;&dArr;' onclick='this.className=\"launchspr\";queue_otf_request("+OTFC_CHANGE_RESIZER_RULE+","+m[1]+")'></div>";
   kdb    ="<div "+b2style+" id='agl_"+id+"' class='kdb'" + prCode + " onclick='javascript:{gain_selector(this,"+m[1]+"  );return false;}'>"+nice_db(m[10])+"</div>";
@@ -856,7 +856,7 @@ function format_mmbr_button(m,st)
   levelb ="<div "+b4style+" class='"+((m[9]&16)?"mutespr10":"vlevel")+"' id='srpan_"+id+"'>&nbsp;</div>";
   var autoDial=m[14], adspr="adspr"+(st?"1":"0")+(m[14]?"1":"0");
   var invite = "<div" + prCode + " onclick='this.className=\"launchspr\";queue_otf_request(" + OTFC_DIAL + "," + m[1] + ")' id='dial_"+id+"' class='"+adspr+"'></div>";
-  remove ="<img"+prCode+" "+b1style+" onclick='removeoffline(this,\""+encodeURIComponent(m[2])+"\")' src='i16_close_gray.png' alt='Remove' title='"+l_room_remove_from_list+"'>";
+  remove ="<img"+prCode+" "+b1style+" onclick='removeoffline(this,\""+m[2]+"\")' src='i16_close_gray.png' alt='Remove' title='"+l_room_remove_from_list+"'>";
 
   s+=dpre+"2px'><div class='mmbrname' "+namestyle+">"+uname+"</div></div>";
   s+=dpre2+"2px'><div class='mmbrip' "+namestyle+">"+ip+"</div></div>";
@@ -956,9 +956,9 @@ function format_mmbr_abook(num,mmbr)
 
   var save_icon = "";
   if(!is_abook)
-    save_icon = "<img src='i16_abook_plus.png' style='cursor:pointer' onclick='add_to_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_add_to_abook+"' >";
+    save_icon = "<img src='i16_abook_plus.png' style='cursor:pointer' onclick='add_to_abook(this,\""+mmbr[2]+"\")' title='"+window.l_add_to_abook+"' >";
   else if(is_abook && abook_list_display == 1)
-    save_icon = "<img src='i16_close_gray.png' style='cursor:pointer' onclick='remove_from_abook(this,\""+encodeURIComponent(mmbr[2])+"\")' title='"+window.l_delete+"' >";
+    save_icon = "<img src='i16_close_gray.png' style='cursor:pointer' onclick='remove_from_abook(this,\""+mmbr[2]+"\")' title='"+window.l_delete+"' >";
 
   var ip_decor = "";
   if(!is_saved_account && abook_list_display == 2)
