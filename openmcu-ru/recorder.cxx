@@ -744,6 +744,8 @@ void ConferenceRecorder::RecorderVideo(PThread &, INT)
   if(delay_us <= 1000)
     delay_us = 1000000/video_framerate;
 
+  firstFrameSendTime = PTime();
+
   MCUDelay delay;
 
   running = TRUE;

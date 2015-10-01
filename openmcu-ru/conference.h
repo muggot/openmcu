@@ -300,12 +300,12 @@ class ConferenceMember : public PObject
     void SetJoined(BOOL isJoinedNow)
     { memberIsJoined = isJoinedNow; }
 
-    BOOL IsJoined() const
+    inline BOOL IsJoined() const
     { return memberIsJoined; }
 
     virtual void SetName(PString newName) {}
 
-    virtual PString GetName() const
+    inline virtual PString GetName() const
     { return name; }
 
     virtual PString GetNameID() const
@@ -317,7 +317,7 @@ class ConferenceMember : public PObject
     virtual void SetCallToken(const PString & token)
     { callToken = token; }
 
-    MemberTypes GetType()
+    inline MemberTypes GetType()
     { return memberType; }
 
     BOOL IsMCU()
