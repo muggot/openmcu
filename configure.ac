@@ -108,7 +108,8 @@ case "$target_cpu" in
    x86 | i686 | i586 | i486 | i386) MACHTYPE=x86
                    ;;
 
-   x86_64 | amd64 | hppa64 | ppc64 | s390x) MACHTYPE=$target_cpu ;
+   x86_64 | amd64 | hppa64 | ppc64 | s390x | aarch64)
+                   MACHTYPE=$target_cpu
                    P_64BIT=1 ;
                    LIB64=1 ;
                    ;;
