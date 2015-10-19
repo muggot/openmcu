@@ -2938,6 +2938,11 @@ case "$target_cpu" in
    s390)	   MACHTYPE=s390 ;
 		   ;;
 
+   aarch64)	   MACHTYPE=aarch64
+		   P_64BIT=1
+		   LIB64=1
+		   ;;
+
    * )		   MACHTYPE=$target_cpu ;
 		   { $as_echo "$as_me:$LINENO: WARNING: \"CPU $target_cpu not recognized - proceed with caution!\"" >&5
 $as_echo "$as_me: WARNING: \"CPU $target_cpu not recognized - proceed with caution!\"" >&2;} ;;

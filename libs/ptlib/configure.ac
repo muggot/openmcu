@@ -201,6 +201,11 @@ case "$target_cpu" in
    s390)	   MACHTYPE=s390 ;
 		   ;;
 
+   aarch64)	   MACHTYPE=aarch64
+		   P_64BIT=1
+		   LIB64=1
+		   ;;
+
    * )		   MACHTYPE=$target_cpu ;
 		   AC_MSG_WARN("CPU $target_cpu not recognized - proceed with caution!") ;;
 esac
