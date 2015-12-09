@@ -197,9 +197,9 @@ BOOL ConferenceRecorder::Start()
   video_framerate = cfg.GetInteger(RecorderFrameRateKey, DefaultRecorderFrameRate);
 
   unsigned max_fs = GetVideoMacroBlocks(video_width, video_height);
-  for(int i = 0; recorder_resolutions[i].macroblocks != 0; ++i)
+  for(int i = 0; recorder_resolutions[i].width; ++i)
   {
-    if(max_fs > recorder_resolutions[i].macroblocks && recorder_resolutions[i+1].macroblocks != 0)
+    if(max_fs > recorder_resolutions[i].macroblocks && recorder_resolutions[i+1].width)
       continue;
 
     if(video_width != recorder_resolutions[i].width || video_height != recorder_resolutions[i].height)
@@ -210,8 +210,8 @@ BOOL ConferenceRecorder::Start()
     break;
   }
 
-  if(video_framerate < 1)       { video_framerate = 1; PTRACE(1, trace_section << "resolution changed to 1"); }
-  else if(video_framerate > 30) { video_framerate = 30; PTRACE(1, trace_section << "resolution changed to 30"); }
+  if(video_framerate < 1)       { video_framerate = 1; PTRACE(1, trace_section << "frame rate changed to 1"); }
+  else if(video_framerate > 100) { video_framerate = 100; PTRACE(1, trace_section << "frame rate changed to 30"); }
 
   video_bitrate = cfg.GetInteger(RecorderVideoBitrateKey);
   if(video_bitrate == 0) video_bitrate = video_width*video_height*video_framerate/10000;

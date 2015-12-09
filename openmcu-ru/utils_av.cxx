@@ -9,7 +9,7 @@ PMutex avcodecMutex;
 unsigned GetVideoMacroBlocks(unsigned width, unsigned height)
 {
   if(width == 0 || height == 0) return 0;
-  return ((width+15) & ~15) * ((height+15) & ~15);
+  return ((width+15) >> 4) * ((height+15) >> 4);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
