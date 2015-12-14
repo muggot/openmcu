@@ -599,9 +599,10 @@ void MCU_RTPChannel::Transmit()
       // Traffic shaper experimental (c)kay27 14.12.2015
       if(shaperStep)
       {
-        shaperReminder += frame.GetPayloadSize() * 1000; // delay in ms
-        shaperDelay.Delay(shaperReminder / shaperStep);
+        unsigned d = shaperReminder / shaperStep;
+        if(d) shaperDelay.Delay(d);
         shaperReminder = shaperReminder % shaperStep;
+        shaperReminder += frame.GetPayloadSize() * 1000; // delay in ms
       }
 
       // Send the frame of coded data we have so far to RTP transport
