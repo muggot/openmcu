@@ -1898,6 +1898,7 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
 
 #if MCU_VIDEO
   videoMixerNumber = 0;
+  shaperBPS = 0;
 #endif
 
   if(userData != NULL)
@@ -2328,6 +2329,10 @@ void MCUH323Connection::OnSetLocalCapabilities()
   unsigned width = video_res.Tokenise("x")[0].AsInteger();
   unsigned height = video_res.Tokenise("x")[1].AsInteger();
   unsigned bandwidth_to = GetEndpointParam(BandwidthToKey, "0").AsInteger();
+#if MCU_VIDEO
+  shaperBPS = bandwidth_to*128;
+  if(shaperBPS<0) shaperBPS=0;
+#endif
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
   {

@@ -456,6 +456,11 @@ void MCU_RTPChannel::Transmit()
   if(!isAudio)
     preVideoFrames = TRUE;
 
+  PAdaptiveDelay shaperDelay;
+  unsigned shaperStep = 0;
+  if(!isAudio) shaperStep = (unsigned)(((MCUH323Connection &)connection).GetShaperBPS());
+  unsigned shaperReminder = 0;
+
   while(1)
   {
     BOOL retval = FALSE;
@@ -591,6 +596,14 @@ void MCU_RTPChannel::Transmit()
 
     if(sendPacket || (silent && frame.GetPayloadSize() > 0))
     {
+      // Traffic shaper experimental (c)kay27 14.12.2015
+      if(shaperStep)
+      {
+        shaperReminder += frame.GetPayloadSize() * 1000; // delay in ms
+        shaperDelay.Delay(shaperReminder / shaperStep);
+        shaperReminder = shaperReminder % shaperStep;
+      }
+
       // Send the frame of coded data we have so far to RTP transport
       if(!WriteFrame(frame))
          break;

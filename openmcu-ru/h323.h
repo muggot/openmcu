@@ -388,6 +388,8 @@ class MCUH323Connection : public H323Connection
 
     MCUConnectionTypes GetConnectionType() const
     { return connectionType; }
+    
+    inline long GetShaperBPS() const { return shaperBPS; }
 
     int rtpInputTimeout;
     int rtpInputLostInterval;
@@ -502,6 +504,7 @@ class MCUH323Connection : public H323Connection
 #if MCU_VIDEO
     MCUPVideoInputDevice * videoGrabber;
     MCUPVideoOutputDevice * videoDisplay;
+    long shaperBPS;
 #endif
 
     PMutex connMutex;
