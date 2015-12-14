@@ -389,6 +389,7 @@ class MCUH323Connection : public H323Connection
     MCUConnectionTypes GetConnectionType() const
     { return connectionType; }
     
+    // Get Bytes-Per-Second value for RTP shaping
     inline long GetShaperBPS() const { return shaperBPS; }
 
     int rtpInputTimeout;

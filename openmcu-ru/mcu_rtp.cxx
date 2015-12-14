@@ -457,9 +457,8 @@ void MCU_RTPChannel::Transmit()
     preVideoFrames = TRUE;
 
   PAdaptiveDelay shaperDelay;
-  unsigned shaperStep = 0;
-  if(!isAudio) shaperStep = (unsigned)(((MCUH323Connection &)connection).GetShaperBPS());
-  unsigned shaperReminder = 0;
+  unsigned shaperStep = 0, shaperReminder = 0;
+  if(!isAudio) shaperStep = (unsigned)(((MCUH323Connection &)connection).GetShaperBPS()); // shape video, don't shape audio
 
   while(1)
   {
@@ -599,10 +598,13 @@ void MCU_RTPChannel::Transmit()
       // Traffic shaper experimental (c)kay27 14.12.2015
       if(shaperStep)
       {
+        // First delay next packed by precalculated amount of time
         unsigned d = shaperReminder / shaperStep;
         if(d) shaperDelay.Delay(d);
+
+        // Then calculate data for next time
         shaperReminder = shaperReminder % shaperStep;
-        shaperReminder += frame.GetPayloadSize() * 1000; // delay in ms
+        shaperReminder += frame.GetPayloadSize() * 1000; // 1000 because PAdaptiveDelay uses milliseconds
       }
 
       // Send the frame of coded data we have so far to RTP transport

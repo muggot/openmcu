@@ -2330,8 +2330,8 @@ void MCUH323Connection::OnSetLocalCapabilities()
   unsigned height = video_res.Tokenise("x")[1].AsInteger();
   unsigned bandwidth_to = GetEndpointParam(BandwidthToKey, "0").AsInteger();
 #if MCU_VIDEO
-  shaperBPS = bandwidth_to*128;
-  if(shaperBPS<0) shaperBPS=0;
+  shaperBPS = bandwidth_to << 7; // Optimized operation: /8 (convert bits to bytes) * 1024 (remove Kilo)
+  if(shaperBPS<0) shaperBPS=0; // 0 to disable traffic shaping
 #endif
 
   for(PINDEX i = 0; i < localCapabilities.GetSize(); )
