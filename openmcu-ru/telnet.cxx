@@ -204,6 +204,10 @@ int MCUTelnetSession::OnReceived(MCUSocket *socket, PString data)
         OnReceivedData(databuf);
         databuf = "";
         break;
+      case('?'):
+        { PString databuf_tmp=databuf+'?'; OnReceivedData(databuf_tmp); }
+        Sendf(databuf);
+        break;
       case(TEL_BACKSPACE):
         if(databuf.GetLength() > 0)
         {
@@ -338,9 +342,12 @@ BOOL MCUTelnetSession::OnReceivedData(const PString & data)
   if(state)
     return ProcessState(data);
 
-  PString rdata;
-  if(!OpenMCU::Current().OTFControl(data, rdata))
+  PString rdata; PINDEX cursor = -1;
+  if(!OpenMCU::Current().OTFControl(data, rdata, cursor))
+  {
     rdata += "error!";
+    if(cursor>=0) rdata +="at pos "+cursor;
+  }
 
   rdata += "\r\n";
   rdata += cur_path;

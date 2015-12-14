@@ -751,23 +751,65 @@ void OpenMCU::PrintOnStartInfo()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL OpenMCU::OTFControl(const PString & data, PString & rdata)
+BOOL OpenMCU::OTFControl(const PString & data, PString & rdata, PINDEX & cursor)
 {
+  PString location = rdata;
+  if(data.IsEmpty()) { rdata=""; return TRUE; }
+  
+  BOOL help = (data.Right(1) == "?");
+  BOOL topLevel = location.IsEmpty();
+  BOOL inRoom = location.Left(4) *= "room";
+  PString roomName; if(inRoom) roomName=location.Mid(5,P_MAX_INDEX);
+
   PStringToString command;
   command.SetAt("v", "0");
+
   PStringArray tokens = data.Tokenise(" ");
-  if(tokens[0] == "?")
+  PINDEX tokensCount = tokens.GetSize();
+  if(help) tokens[tokensCount-1]=tokens[tokensCount-1].Left(tokens[tokensCount-1].GetLength()-1);
+  PINDEX l0=tokens[0].GetLength();
+
+  if(tokens[0].IsEmpty() || tokens[0]==PString("help").Left(l0))
   {
-    rdata = "room 'name' ...\r\n"
-            "show ...\r\n"
-            ;
+    rdata =
+      "\r\ndrop    Drop specified connections"
+      "\r\nexit    "
+        + PString(topLevel?"Same as logout":"") + PString(inRoom?"Exit from room":"") +
+      "\r\nhelp    Show help"
+      "\r\nkick    Same as drop command"
+      "\r\nlogout  End this control session"
+      "\r\nquit    Same as logout command"
+      "\r\nroom    Choose conference room to operate"
+      "\r\nshow    Show various info"
+      "\r\nwho     Show active control sessions"
+      "\r\n"
+    ;
     return TRUE;
   }
-  if(tokens[0] == "room")
+
+  if(tokens[0] == PString("room").Left(l0))
   {
-    if(tokens[1] == "?" || tokens.GetSize() < 3)
+    if(help)
     {
-      rdata = "room 'name' ...\r\n"
+      rdata =
+        "room RoomName   Enter conference room RoomName.\r\n"
+        "                If there is no conference RoomName, it will created\r\n";
+        return TRUE;
+    }
+    if(tokensCount > 2)
+    {
+      rdata = "";
+      cursor = tokens[1].GetLength()+2+l0;
+      return FALSE;
+    }
+    if(tokens[1].IsEmpty()) { rdata=""; cursor=l0+1; return FALSE; }
+    command.SetAt("room", tokens[1]);
+    command.SetAt("action",OTFC_ROOM_CREATE);
+    OTFControl(command, rdata);
+    rdata="#room_"+tokens[1];
+    return TRUE;
+  }
+/*    
               "            create\r\n"
               "            delete\r\n"
               "            dial 'id'\r\n"
@@ -778,8 +820,8 @@ BOOL OpenMCU::OTFControl(const PString & data, PString & rdata)
               "            stop_recorder\r\n"
               ;
       return TRUE;
-    }
-    command.SetAt("room", tokens[1]);
+    }*/
+/*
     if(tokens[2] == "create")
     {
       command.SetAt("action", OTFC_ROOM_CREATE);
@@ -828,6 +870,7 @@ BOOL OpenMCU::OTFControl(const PString & data, PString & rdata)
       return OTFControl(command, rdata);
     }
   }
+*/
   if(tokens[0] == "show")
   {
     if(tokens[1] == "?")
@@ -1046,14 +1089,16 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
   }
   if(action == OTFC_INVITE || action == OTFC_ADD_AND_INVITE)
   {
-    PString memberName = value;
-    ConferenceMember *member = manager->FindMemberSimilarWithLock(conference, memberName);
+    PTRACE(2,"OTFC\tINVITE " << value);
+    PString url = value;
+    ConferenceMember *member = manager->FindMemberWithLock(conference, url);
     if(member == NULL)
     {
-      member = new MCUConnection_ConferenceMember(conference, memberName, "");
+      member = new MCUConnection_ConferenceMember(conference, url, "", "");
       MCUMemberList::shared_iterator it = conference->AddMemberToList(member);
       if(it == conference->GetMemberList().end())
       {
+        PTRACE(1,"OTFC\tNo room for new member");
         delete member;
         member = NULL;
       }
@@ -1064,8 +1109,10 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     {
       member->Dial();
       member->Unlock();
+      PTRACE(2,"OTFC\tINVITE " << value << " PASSED: TRUE");
       return TRUE;
     }
+    PTRACE(2,"OTFC\tINVITE " << value << ": FALSE");
     return FALSE;
   }
   if(action == OTFC_REMOVE_OFFLINE_MEMBER)
@@ -1502,7 +1549,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
     cmd << "setagl(" << v << "," << member->kManualGainDB << ")";
     HttpWriteCmdRoom(cmd,room);
-    SaveParameterByURL("Input Gain", MCUURL(member->GetName()).GetUrl(), member->kManualGainDB);
+    SaveParameterByURL("Input Gain", member->GetURI(), member->kManualGainDB);
     return TRUE;
   }
   if( action == OTFC_OUTPUT_GAIN_SET )
@@ -1514,7 +1561,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     member->kOutputGain=(float)pow(10.0,((float)member->kOutputGainDB)/20.0);
     cmd << "setogl(" << v << "," << member->kOutputGainDB << ")";
     HttpWriteCmdRoom(cmd,room);
-    SaveParameterByURL("Output Gain", MCUURL(member->GetName()).GetUrl(), member->kOutputGainDB);
+    SaveParameterByURL("Output Gain", member->GetURI(), member->kOutputGainDB);
     return TRUE;
   }
   if(action == OTFC_MUTE)

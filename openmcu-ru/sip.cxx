@@ -448,8 +448,10 @@ MCUSipConnection::MCUSipConnection(MCUH323EndPoint *_ep, const PString & _callTo
   callToken = _callToken;
   trace_section = "SIP Connection "+callToken+": ";
 
-  remoteUserName = "";
-  remoteDisplayName = "";
+//  remoteUserName = "";
+//  remoteDisplayName = "";
+//  uri = "";
+  visibleName = "";
   remoteApplication = "SIP terminal";
   requestedRoom = OpenMCU::Current().GetDefaultRoomName();
   connectedTime = PTime();
@@ -2017,7 +2019,8 @@ int MCUSipConnection::ProcessConnect()
   }
 
   MCUURL_SIP url(c_sip_msg, direction);
-  remoteDisplayName = url.GetDisplayName();
+//  remoteDisplayName = url.GetDisplayName();
+  visibleName = url.GetDisplayName();
   remoteApplication = url.GetRemoteApplication();
 
   // set endpoint member name

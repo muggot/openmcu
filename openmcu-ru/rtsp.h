@@ -128,20 +128,20 @@ class ConferenceStreamMember : public ConferenceMember
   PCLASSINFO(ConferenceStreamMember, ConferenceMember);
 
   public:
-    ConferenceStreamMember(Conference *_conference, const PString & _name, const PString & _callToken)
+    ConferenceStreamMember(Conference *_conference, const PString & _uri, const PString & _visibleName, const PString & _callToken)
       : ConferenceMember(_conference)
     {
       memberType = MEMBER_TYPE_STREAM;
       callToken = _callToken;
-      name = _name;
-      nameID = MCUURL(name).GetMemberNameId();
+      uri = _uri;
+      visibleName = _visibleName;
     }
     ~ConferenceStreamMember()
     {
     }
 
-    virtual PString GetName() const
-    { return name; }
+//    virtual PString GetName() const
+//    { return name; }
 
 };
 

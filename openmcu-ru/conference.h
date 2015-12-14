@@ -303,31 +303,27 @@ class ConferenceMember : public PObject
     inline BOOL IsJoined() const
     { return memberIsJoined; }
 
-    virtual void SetName(PString newName) {}
+//    virtual void SetName(PString newName) {}
 
-    inline virtual PString GetName() const
-    { return name; }
+    inline virtual PString GetVisibleName() const { return visibleName; }
 
-    virtual PString GetNameID() const
-    { return nameID; }
+    inline virtual void SetVisibleName(const PString & s) { visibleName = s; }
 
-    virtual PString GetCallToken() const
-    { return callToken; }
+    inline virtual MCUURL GetURI() const { return uri; }
+    
+    inline virtual void SetURI(const PString s) { uri = s; }
 
-    virtual void SetCallToken(const PString & token)
-    { callToken = token; }
+    inline virtual PString GetCallToken() const { return callToken; }
 
-    inline MemberTypes GetType()
-    { return memberType; }
+    inline virtual void SetCallToken(const PString & token) { callToken = token; }
 
-    BOOL IsMCU()
-    { return isMCU; }
+    inline MemberTypes GetType() { return memberType; }
 
-    virtual void SetFreezeVideo(BOOL) const
-    { }
+    inline BOOL IsMCU() { return isMCU; }
 
-    virtual unsigned GetAudioLevel() const
-    { return audioLevel;  }
+    virtual void SetFreezeVideo(BOOL) const { }
+
+    inline virtual unsigned GetAudioLevel() const { return audioLevel; }
 
     void ResetCounters()
     {
@@ -390,16 +386,15 @@ class ConferenceMember : public PObject
 #endif
 
   protected:
-    unsigned videoMixerNumber;
     Conference * conference;
     ConferenceMemberId id;
+    MCUURL uri;
     BOOL memberIsJoined;
     PTime startTime;
-    unsigned audioLevel;
     PString callToken;
     MemberTypes memberType;
-    PString name;
-    PString nameID;
+    PString visibleName;
+    unsigned audioLevel;
     float currVolCoef;
     BOOL visible;
     BOOL isMCU;
@@ -408,6 +403,7 @@ class ConferenceMember : public PObject
     unsigned write_audio_write_counter;
 
 #if MCU_VIDEO
+    unsigned videoMixerNumber;
     PINDEX totalVideoFramesSent;
 
     PTime firstFrameReceiveTime;
@@ -638,8 +634,8 @@ class ConferenceManager : public PObject
     ConferenceMember * FindMemberWithLock(Conference * conference, const PString & memberName);
     ConferenceMember * FindMemberWithLock(const PString & roomName, long id);
     ConferenceMember * FindMemberWithLock(Conference * conference, long id);
-    ConferenceMember * FindMemberSimilarWithLock(const PString & roomName, const PString & memberName);
-    ConferenceMember * FindMemberSimilarWithLock(Conference * conference, const PString & memberName);
+//    ConferenceMember * FindMemberSimilarWithLock(const PString & roomName, const PString & memberName);
+//    ConferenceMember * FindMemberSimilarWithLock(Conference * conference, const PString & memberName);
 
     MCUSimpleVideoMixer * FindVideoMixerWithLock(const PString & room, long number);
     MCUSimpleVideoMixer * FindVideoMixerWithLock(Conference * conference, long number);

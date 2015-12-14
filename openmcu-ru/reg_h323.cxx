@@ -6,28 +6,42 @@
 
 H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connection *conn)
 {
-  PTRACE(1, trace_section << "OnReceivedH323Invite");
+  // default response
+  H323Connection::AnswerCallResponse response = H323Connection::AnswerCallDenied;
 
   PWaitAndSignal m(mutex);
 
-  MCUURL url(conn->GetMemberName());
-  if(url.GetUserName() == "" || url.GetHostName() == "")
-    return H323Connection::AnswerCallDenied;
-
-  if(HasRegConn(conn->GetCallToken()))
-    return H323Connection::AnswerCallDenied;
-
-  PString username_in = url.GetUserName();
+  MCUURL  url          = conn->GetURI();
+  PString tk           = conn->GetCallToken();
+  PString username_in  = url.GetUserName();
   PString username_out = conn->GetRequestedRoom();
 
-  if(username_in == username_out)
+  PTRACE(1, trace_section << "OnReceivedH323Invite url: " << url << ", token: " << tk << ", requested room: " << username_out);
+
+  if(url.GetUserName().IsEmpty())
   {
-    PTRACE(1, trace_section << "error " << username_in);
+    PTRACE(1, trace_section << "No user name - call denied");
     return H323Connection::AnswerCallDenied;
   }
 
-  // default response
-  H323Connection::AnswerCallResponse response = H323Connection::AnswerCallDenied;
+  if(url.GetHostName().IsEmpty())
+  {
+    PTRACE(1, trace_section << "No host name - call denied");
+    return response;
+  }
+
+  if(HasRegConn(tk))
+  {
+    PTRACE(1, trace_section << "Duplicate token - call denied");
+    return response;
+  }
+/*
+  if(username_in == username_out)
+  {
+    PTRACE(1, trace_section << "Loopback call from " << username_in << " to " << username_out << " - call denied");
+    return response;
+  }
+*/
 
   RegistrarAccount *raccount_in = NULL;
   RegistrarAccount *raccount_out = NULL;
@@ -42,10 +56,7 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
   {
     ConferenceManager *manager = OpenMCU::Current().GetConferenceManager();
     if(!manager->CheckJoinConference(username_out))
-    {
-      response = H323Connection::AnswerCallDenied;
       goto return_response;
-    }
   }
 
   if((!raccount_in && !raccount_out && h323_allow_unreg_mcu_calls) ||
@@ -54,18 +65,12 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
     raccount_in = InsertAccountWithLock(ACCOUNT_TYPE_H323, username_in);
   }
   if(!raccount_in)
-  {
-    response = H323Connection::AnswerCallDenied;
     goto return_response;
-  }
 
   if((!raccount_out && !h323_allow_unreg_mcu_calls) || (raccount_out && !h323_allow_unreg_internal_calls))
   {
     if(raccount_in->h323CallIdentifier != conn->GetCallIdentifier())
-    {
-      response = H323Connection::AnswerCallDenied;
       goto return_response;
-    }
   }
 
   // update account data ???

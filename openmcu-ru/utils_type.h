@@ -476,7 +476,7 @@ class MCUURL : public PURL
 
     const PString & GetTransport() const
     { return transport; }
-
+/*
     const PString GetMemberName()
     {
       PString memberName;
@@ -496,9 +496,24 @@ class MCUURL : public PURL
       else               id += hostname;
       return id;
     }
-
+*/
     const PString & GetUrl()
     {
+      url_party =
+        url_scheme
+          + ":"
+          + ((url_scheme*="rtsp") ? "//" : "")
+          + username
+          + (((url_scheme*="rtsp")&&(!password.IsEmpty())) ? (":"+password) : "")
+          + (((!username.IsEmpty())&&(!hostname.IsEmpty())) ? "@" : "")
+          + hostname
+          + ((port && ((port!=1720)||(!(url_scheme*="h323"))) && ((port!=5060)||(!(url_scheme*="sip"))) && ((port!=554)||(!(url_scheme*="rtsp")))) ? (":" + port) : "")
+          + ((url_scheme*="rtsp") ? pathStr : "")
+          + ((!transport.IsEmpty()) ? (";transport="+transport) : "")
+        ;
+
+      PString a=url_party;
+
       if(url_scheme == "h323" || url_scheme == "sip")
       {
         url_party = url_scheme+":"+username+"@"+hostname;
@@ -522,12 +537,23 @@ class MCUURL : public PURL
           url_party += ":"+PString(port);
         url_party += pathStr;
       }
+
+      PTRACE(1, "URL_OLD=" << url_party << " URL_NEW=" << a);
+      cout << url_party << " -> " << a << "\n";
+
+      url_party=a;
+
       return url_party;
     }
 
     const PString & AsString()
     { return GetUrl(); }
 
+    friend ostream & operator << (ostream &ostr, MCUURL &url)
+    { ostr << url.AsString(); return ostr; }
+
+    operator const PString() { return AsString(); }
+                
   protected:
     PString display_name;
     PString url_scheme;

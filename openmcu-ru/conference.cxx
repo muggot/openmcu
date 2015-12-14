@@ -167,7 +167,7 @@ ConferenceMember * ConferenceManager::FindMemberWithLock(Conference * conference
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
+/*
 ConferenceMember * ConferenceManager::FindMemberSimilarWithLock(const PString & roomName, const PString & memberName)
 {
   Conference *conference = FindConferenceWithLock(roomName);
@@ -177,25 +177,31 @@ ConferenceMember * ConferenceManager::FindMemberSimilarWithLock(const PString & 
   conference->Unlock();
   return member;
 }
-ConferenceMember * ConferenceManager::FindMemberSimilarWithLock(Conference * conference, const PString & memberName)
+
+ConferenceMember * ConferenceManager::FindMemberSimilarWithLock(Conference * conference, const PString & memberURI)
 {
+  PTRACE(4,"FindMemberSimilarWithLock " << conference->GetNumber() << " " << memberURI);
   MCUMemberList & memberList = conference->GetMemberList();
-  ConferenceMember *member = memberList(memberName);
+  ConferenceMember *member = memberList(memberURI);
   if(!member)
   {
-    PString memberUrl = MCUURL(memberName).GetUrl();
+    PTRACE(4,"FindMemberSimilarWithLock !member");
+    PString memberUrl = MCUURL(memberURI).GetUrl();
+    PTRACE(4,"FindMemberSimilarWithLock memberUrl=" << memberUrl);
     for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-      if(memberUrl == MCUURL(it->GetName()).GetUrl())
+      if(memberUrl == it->GetURI())
       {
         member = it.GetCapturedObject();
         break;
       }
+    PTRACE(4,"FindMemberSimilarWithLock !member--");
   }
   if(!member)
   {
-    PString memberNameID = MCUURL(memberName).GetMemberNameId();
+    PTRACE(4,"FindMemberSimilarWithLock !!member");
+    PString memberNameID = MCUURL(memberURI).GetMemberNameId();
     for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-      if(memberNameID == MCUURL(it->GetName()).GetMemberNameId())
+      if(memberNameID == it->GetURI().GetMemberNameId())
       {
         member = it.GetCapturedObject();
         break;
@@ -203,7 +209,7 @@ ConferenceMember * ConferenceManager::FindMemberSimilarWithLock(Conference * con
   }
   return member;
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ConferenceMember * ConferenceManager::FindMemberWithLock(const PString & roomName, long id)
@@ -588,7 +594,7 @@ int ConferenceMonitor::Perform(Conference * conference)
         MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
         if(member->dialToken != "" && ep.HasConnection(member->dialToken))
           continue;
-        member->dialToken = ep.Invite(conference->GetNumber(), member->GetName());
+        member->dialToken = ep.Invite(conference->GetNumber(), member->GetURI());
       }
       conference->dialCountdown = OpenMCU::Current().autoDialDelay;
     }
@@ -744,7 +750,7 @@ MCUMemberList::shared_iterator Conference::AddMemberToList(ConferenceMember * me
 
   if(memberList.Find((long)memberToAdd->GetID()) != memberList.end())
   {
-    PTRACE(1, trace_section << "Rejected duplicate member ID: " << (long)memberToAdd->GetID() << " " << memberToAdd->GetName());
+    PTRACE(1, trace_section << "Rejected duplicate member ID: " << (long)memberToAdd->GetID() << " " << memberToAdd->GetURI());
     return it;
   }
 
@@ -752,27 +758,27 @@ MCUMemberList::shared_iterator Conference::AddMemberToList(ConferenceMember * me
   if(!memberToAdd->IsSystem())
   {
     // check for duplicate name or very fast reconnect
-    PString memberName = memberToAdd->GetName();
+    PString memberURI = memberToAdd->GetURI();
     for(PINDEX i = 0; ; i++)
     {
-      MCUMemberList::shared_iterator mit = memberList.Find(memberToAdd->GetName());
+      MCUMemberList::shared_iterator mit = memberList.Find(memberURI);
       if(mit == memberList.end())
         break;
       if(MCUConfig("Parameters").GetBoolean(RejectDuplicateNameKey, FALSE))
       {
         PStringStream msg;
-        msg << JsQuoteScreen(memberToAdd->GetName()) << " REJECTED - DUPLICATE NAME";
+        msg << JsQuoteScreen(memberURI) << " REJECTED - DUPLICATE ENDPOINT";
         OpenMCU::Current().HttpWriteEventRoom(msg, number);
-        PTRACE(1, trace_section << "Rejected duplicate name: " << memberToAdd->GetName());
+        PTRACE(1, trace_section << "Rejected duplicate endpoint: " << memberURI);
         return it;
       }
-      memberToAdd->SetName(memberName+" ##"+PString(i+2));
+//      memberToAdd->SetName(memberName+" ##"+PString(i+2));
     }
   }
 
   // add to list
   if(addToList)
-    it = memberList.Insert(memberToAdd, (long)memberToAdd->GetID(), memberToAdd->GetName());
+    it = memberList.Insert(memberToAdd, (long)memberToAdd->GetID(), memberToAdd->GetURI().AsString());
 
   // send event
   memberToAdd->SendRoomControl(1);
@@ -784,7 +790,7 @@ MCUMemberList::shared_iterator Conference::AddMemberToList(ConferenceMember * me
 
 BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
 {
-  MCUTRACE(3, trace_section << "Adding member: " << memberToAdd << " " << memberToAdd->GetName() << " type:" << memberToAdd->GetType() << " joined:" << memberToAdd->IsJoined());
+  MCUTRACE(3, trace_section << "Adding member: " << memberToAdd << " " << memberToAdd->GetURI() << " type:" << memberToAdd->GetType() << " joined:" << memberToAdd->IsJoined());
 
   // lock the member lists
   PWaitAndSignal m(memberListMutex);
@@ -792,7 +798,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
   // notify that member is joined
   if(memberToAdd->IsJoined())
   {
-    PTRACE(4, trace_section << "member already joined " << memberToAdd->GetName());
+    PTRACE(4, trace_section << "member already joined " << memberToAdd->GetURI());
     return TRUE;
   }
   memberToAdd->SetJoined(TRUE);
@@ -866,7 +872,7 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
 
 BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFromList)
 {
-  MCUTRACE(3, trace_section << "Removing member: " << memberToRemove << " " << memberToRemove->GetName() << " type:" << memberToRemove->GetType() << " joined:" << memberToRemove->IsJoined());
+  MCUTRACE(3, trace_section << "Removing member: " << memberToRemove << " " << memberToRemove->GetURI() << " type:" << memberToRemove->GetType() << " joined:" << memberToRemove->IsJoined());
 
   // lock memberList
   PWaitAndSignal m(memberListMutex);
@@ -874,7 +880,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   // notify that member is not joined anymore
   if(!memberToRemove->IsJoined())
   {
-    PTRACE(4, trace_section << "member not joined " << memberToRemove->GetName());
+    PTRACE(4, trace_section << "member not joined " << memberToRemove->GetURI());
     return TRUE;
   }
   memberToRemove->SetJoined(FALSE);
@@ -1220,7 +1226,7 @@ BOOL Conference::PutChosenVan()
 
 void Conference::HandleFeatureAccessCode(ConferenceMember & member, PString fac)
 {
-  PTRACE(3, trace_section << "Handling feature access code " << fac << " from " << member.GetName());
+  PTRACE(3, trace_section << "Handling feature access code " << fac << " from " << member.GetURI());
   PStringArray s = fac.Tokenise("*");
   if(s[0]=="1")
   {
@@ -1378,9 +1384,9 @@ void ConferenceMember::Dial(BOOL _autoDial)
   if((autoDial && (OpenMCU::Current().autoDialDelay < 20)) || IsOnline())
     return;
   MCUH323EndPoint & ep = OpenMCU::Current().GetEndpoint();
-  if(dialToken != "" && ep.HasConnection(dialToken))
+  if(!dialToken.IsEmpty() && ep.HasConnection(dialToken))
     return;
-  dialToken = ep.Invite(conference->GetNumber(), GetName());
+  dialToken = ep.Invite(conference->GetNumber(), uri);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1405,10 +1411,10 @@ void ConferenceMember::SendRoomControl(int state)
   {
     if(state == 1)
     {
-      msg << "<font color=green><b>+</b>" << GetName() << "</font>";
+      msg << "<font color=green><b>+</b>" << visibleName << "<" << uri << "></font>";
       OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
     } else {
-      msg << "<font color=red><b>-</b>" << GetName() << "</font>";
+      msg << "<font color=red><b>-</b>" << visibleName << "<" << uri << "></font>";
       OpenMCU::Current().HttpWriteEventRoom(msg, conference->GetNumber());
     }
   }
@@ -1419,13 +1425,13 @@ void ConferenceMember::SendRoomControl(int state)
     msg = "remmmbr(";
   msg  << (state && IsOnline())
        << "," << (long)GetID()
-       << "," << JsQuoteScreen(GetName())
+       << "," << JsQuoteScreen(uri.AsString())
        << "," << muteMask
        << "," << disableVAD
        << "," << chosenVan
        << "," << GetAudioLevel()
        << "," << GetVideoMixerNumber()
-       << "," << JsQuoteScreen(GetNameID())
+       << "," << JsQuoteScreen(GetVisibleName())
        << "," << dec << channelMask
        << "," << kManualGainDB
        << "," << kOutputGainDB
@@ -1444,13 +1450,13 @@ MCUJSON * ConferenceMember::AsJSON(int state)
   MCUJSON *json = new MCUJSON(MCUJSON::JSON_ARRAY);
   json->Insert("online", (state && IsOnline()));
   json->Insert("id", id);
-  json->Insert("name", name);
+  json->Insert("name", uri);
   json->Insert("muteMask", muteMask);
   json->Insert("disableVad", disableVAD);
   json->Insert("chosenVan", chosenVan);
   json->Insert("audioLevel", GetAudioLevel());
   json->Insert("videoMixerMumber", GetVideoMixerNumber());
-  json->Insert("nameID", GetNameID());
+  json->Insert("nameID", GetVisibleName());
   json->Insert("channelMask", channelMask);
   json->Insert("kManualGainDB", kManualGainDB);
   json->Insert("kOutputGainDB", kOutputGainDB);
@@ -1471,7 +1477,7 @@ void ConferenceMember::ChannelStateUpdate(unsigned bit, BOOL state)
 
   PStringStream msg;
   msg << "rtp_state(" << dec << (long)id << "," << bit << "," << state << ")";
-  PTRACE(1, name << " " << msg);
+  PTRACE(1, uri << " " << msg);
 
   if(conference)
     OpenMCU::Current().HttpWriteCmdRoom(msg, conference->GetNumber());

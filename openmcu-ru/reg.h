@@ -554,7 +554,7 @@ class Registrar : public PThread
     void ConnectionCleared(const PString & callToken);
     void SetRequestedRoom(const PString & callToken, PString & requestedRoom);
 
-    BOOL MakeCall(const PString & room, const PString & to, PString & callToken);
+    BOOL MakeCall(const PString & room, MCUURL url, PString & callToken);
 
     int OnReceivedSipRegister(const msg_t *msg);
     int OnReceivedSipInvite(const msg_t *msg);

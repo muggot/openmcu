@@ -39,7 +39,7 @@ PString Conference::SaveTemplate(PString tplName)
           ConferenceMember * member = *it;
           if(member->GetID() == id)
           {
-            vmpText << ", " << member->GetName();
+            vmpText << ", " << member->GetURI();
             break;
           }
         }
@@ -69,13 +69,13 @@ PString Conference::SaveTemplate(PString tplName)
               {
                 if(mixMatch) if(prev_vmpN == i) if(value.Mid(1,2)==", ")
                 {
-                  PString memberName=value.Mid(3,P_MAX_INDEX);
+                  PString memberURI=value.Mid(3,P_MAX_INDEX);
                   for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
                   {
                     ConferenceMember * member = *it;
                     if(member->IsSystem())
                       continue;
-                    if(member->GetName() == memberName)
+                    if(member->GetURI() == memberURI)
                     {
                       vmpText << "VMP " << value;
                       break;
@@ -113,7 +113,7 @@ PString Conference::SaveTemplate(PString tplName)
       << value3 << ", "
       << (member->chosenVan?"1":"0") << ", "
       << member->GetVideoMixerNumber() << ", "
-      << member->GetName() << "\n";
+      << member->GetURI() << "\n";
   }
   t << "}\n\n";
 
@@ -137,7 +137,9 @@ void Conference::LoadTemplate(PString tpl)
   for(PINDEX i=0; i<lines.GetSize(); i++)
   {
     PString l=lines[i].Trim();
-    if(l=="{") level++; else if(l=="}") level--;
+    if(l.IsEmpty()) continue;
+    if(l=="{") level++;
+    else if(l=="}") level--;
     else
     {
       PINDEX space=l.Find(" ");
@@ -225,14 +227,30 @@ void Conference::LoadTemplate(PString tpl)
             if(commaPosition == P_MAX_INDEX) mixer->SetPositionType(vmpN, type);
             else
             {
-              PString name=value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
-              ConferenceMember *member = manager.FindMemberSimilarWithLock(this, name);
+              PTRACE(1,"Conference\tLoadTemplate VMP section!: " << value);
+              BOOL isOldStyle = (value.Right(1) == "]");
+              PString uri;
+              if(isOldStyle)
+              {
+                PString vn = value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
+                PINDEX bPos = vn.Find("[");
+                if(bPos == P_MAX_INDEX) continue;
+                uri = vn.Mid(bPos+1, vn.GetLength()-bPos-2);
+                PTRACE(1,"Conference\tLoadTemplate Old Style! uri=" << uri);
+              }
+              else
+              {
+                uri = value.Mid(commaPosition+1,P_MAX_INDEX).LeftTrim();
+                PTRACE(1,"Conference\tLoadTemplate New Style! uri=" << uri);
+              }
+              ConferenceMember *member = manager.FindMemberWithLock(this, uri);
               if(member==NULL)
               {
-                member = new MCUConnection_ConferenceMember(this, name, "");
+                member = new MCUConnection_ConferenceMember(this, uri, "", "");
                 MCUMemberList::shared_iterator it = AddMemberToList(member);
                 if(it == memberList.end()) { delete member; member = NULL; }
                 else member = it.GetCapturedObject();
+                PTRACE(1,"1");
               }
               if(member!=NULL)
               {
@@ -242,23 +260,43 @@ void Conference::LoadTemplate(PString tpl)
                   member->SetFreezeVideo(FALSE);
                 }
                 member->Unlock();
+                PTRACE(1,"2");
               }
+            PTRACE(1,"3");
             }
           }
           vmpN++;
         }
         else if(cmd=="MEMBER")
         {
+          PTRACE(1,"Conference\tLoadTemplate MEMBER section!: " << value);
           PStringArray v=value.Tokenise(",");
-          if(v.GetSize()>4) for(int i=0; i<=4;i++) v[i]=v[i].Trim();
+          if(v.GetSize() < 6) continue;
+          for(int i=0; i<=5;i++) v[i]=v[i].Trim();
+          BOOL isOldStyle = (value.Right(1) == "]");
+          PString memberUri, memberVisibleName;
+          if(isOldStyle)
+          {
+            memberVisibleName = v[5];
+            for(PINDEX i=6; i<v.GetSize(); i++) memberVisibleName += "," + v[i];
+            PINDEX bPos = memberVisibleName.Find("[");
+            if(bPos == P_MAX_INDEX) continue;
+            memberUri = memberVisibleName.Mid(bPos+1, memberVisibleName.GetLength()-bPos-2);
+            memberVisibleName = memberVisibleName.Left(bPos-1);
+            PTRACE(1,"Conference\tLoadTemplate Old Style! uri=" << memberUri << " visibleName=" << memberVisibleName);
+          }
+          else
+          {
+            memberUri = v[5];
+            memberVisibleName = v[6].Trim();
+            for(PINDEX i=7; i<v.GetSize(); i++) memberVisibleName += "," + v[i];
+            PTRACE(1,"Conference\tLoadTemplate New Style! uri=" << memberUri << " visibleName=" << memberVisibleName);
+          }
 
-          PString memberInternalName = v[5].Trim();
-          for(int i=6; i<v.GetSize(); i++) memberInternalName += "," + v[i];
-
-          ConferenceMember *member = manager.FindMemberSimilarWithLock(this, memberInternalName);
+          ConferenceMember *member = manager.FindMemberWithLock(this, memberUri);
           if(member == NULL)
           {
-            member = new MCUConnection_ConferenceMember(this, memberInternalName, "");
+            member = new MCUConnection_ConferenceMember(this, memberUri, memberVisibleName, "");
             MCUMemberList::shared_iterator it = AddMemberToList(member);
             if(it == memberList.end())
             {
@@ -270,16 +308,13 @@ void Conference::LoadTemplate(PString tpl)
           }
           if(member)
           {
+            member->SetVisibleName(memberVisibleName);
             int oldResizerRule = member->resizerRule;
             PStringArray maskAndGain = v[1].Tokenise("/");
             BOOL hasGainOptions = (maskAndGain.GetSize() > 1);
             if(hasGainOptions)
             { // stay compatible with temp. style templates:
               member->SetChannelState(maskAndGain[0].AsInteger());
-//              member->kManualGainDB = maskAndGain[1].AsInteger()-20;
-//              member->kOutputGainDB = maskAndGain[2].AsInteger()-20;
-//              member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
-//              member->kOutputGain=(float)pow(10.0,((float)member->kOutputGainDB)/20.0);
             }
             else 
             {
@@ -295,7 +330,7 @@ void Conference::LoadTemplate(PString tpl)
             if(member->resizerRule != oldResizerRule) UpdateVideoMixOptions(member);
             member->Unlock();
           }
-          validatedMembers.AppendString(memberInternalName);
+          validatedMembers.AppendString(memberUri);
 
         } // else if(cmd=="MEMBER")
 
@@ -325,11 +360,11 @@ void Conference::LoadTemplate(PString tpl)
     ConferenceMember *member = *it;
     if(member->IsSystem())
       continue;
-    PString name = member->GetName();
-    if(validatedMembers.GetStringsIndex(name) == P_MAX_INDEX) // remove unwanted members
+    PString uri = member->GetURI();
+    if(validatedMembers.GetStringsIndex(uri) == P_MAX_INDEX) // remove unwanted members
     {
       ConferenceMemberId id = member->GetID();
-      PTRACE(6,"Conference\tLoading template - closing connection with " << name << " (id " << id << ")" << flush);
+      PTRACE(6,"Conference\tLoading template - closing connection with " << uri << " (id " << id << ")" << flush);
       member->SetAutoDial(FALSE);
       member->Close();
       if(memberList.Erase(it)) delete member;

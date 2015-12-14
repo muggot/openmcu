@@ -70,7 +70,7 @@ class MCUH323EndPoint : public H323EndPoint
     virtual H323Gatekeeper * CreateGatekeeper(H323Transport * transport);
 
     PString GetGatekeeperHostName();
-    PString Invite(PString room, PString memberName);
+    PString Invite(PString room, MCUURL uri);
 
     void AddCapabilitiesMCU();
     PINDEX AddCapabilitiesMCU(PINDEX descriptorNum, PINDEX simultaneous, const char **caps);
@@ -310,13 +310,8 @@ class MCUH323Connection : public H323Connection
     void SetRemoteName(const H323SignalPDU & pdu);
     void SetMemberName();
 
-    PString GetRemoteUserName();
-
-    PString GetRemoteDisplayName()
-    { return remoteDisplayName; }
-
-    virtual PString GetMemberName() const
-    { return memberName; }
+    inline virtual MCUURL GetURI() const { return uri; }
+    inline virtual PString GetVisibleName() const { return visibleName; }
 
     void SetEndpointDefaultVideoParams(H323VideoCodec & codec);
 
@@ -452,9 +447,10 @@ class MCUH323Connection : public H323Connection
     //  stopped. Use welcomeState to know the current state.
     virtual void OnWelcomeWaveEnded();
 
-    PString remoteUserName;
-    PString remoteDisplayName;
-    PString memberName;
+//    PString remoteUserName;
+//    PString remoteDisplayName;
+    PString visibleName;
+    MCUURL uri;
 
     MCUConnectionTypes connectionType;
 
@@ -518,15 +514,17 @@ class MCUConnection_ConferenceMember : public ConferenceMember
 {
   PCLASSINFO(MCUConnection_ConferenceMember, ConferenceMember);
   public:
-    MCUConnection_ConferenceMember(Conference * _conference, const PString & _memberName, const PString & _callToken, BOOL _isMCU = FALSE);
+    MCUConnection_ConferenceMember(Conference * _conference,
+      const PString & _uri, const PString _visibleName, const PString & _callToken, BOOL _isMCU = FALSE);
+
     ~MCUConnection_ConferenceMember();
 
-    virtual void SetName(PString newName)
-    {
-      MCUURL url(newName);
-      name = url.GetMemberName();
-      nameID = url.GetMemberNameId();
-    }
+//    virtual void SetName(PString newName)
+//    {
+//      MCUURL url(newName);
+//      name = url.GetMemberName();
+//      nameID = url.GetMemberNameId();
+//    }
 
     virtual void SetFreezeVideo(BOOL) const;
 

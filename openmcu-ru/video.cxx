@@ -1283,7 +1283,7 @@ MCUVMPList::shared_iterator MCUSimpleVideoMixer::VMPCreator(ConferenceMember * m
   if(member != NULL)
   {
     newPosition->rule = member->resizerRule;
-    newPosition->SetEndpointName(member->GetName());
+    newPosition->SetEndpointName(member->GetVisibleName());
     newPosition->chosenVan = member->chosenVan;
     newPosition->offline = !member->IsOnline();
   }
@@ -1518,7 +1518,7 @@ BOOL MCUSimpleVideoMixer::SetVADPosition(ConferenceMember * member, int chosenVa
   if(vit == vmpList.end()) return FALSE;
   vit->silenceCounter=0;
 
-  PTRACE(3,"VideoMixer\tSetVADPosition(" << member->GetName() << ", " << chosenVan << ", " << timeout
+  PTRACE(3,"VideoMixer\tSetVADPosition(" << member->GetURI() << ", " << chosenVan << ", " << timeout
     << "): maxSilence=" << maxSilence << ", n=" << vit->n);
 
   return TRUE;
@@ -1572,7 +1572,7 @@ BOOL MCUSimpleVideoMixer::SetVAD2Position(ConferenceMember *member)
     VMPInsert(old_vmp);
   }
 
-  PTRACE(3,"VideoMixer\tSetVAD2Position(" << member->GetName()
+  PTRACE(3,"VideoMixer\tSetVAD2Position(" << member->GetURI()
     << "): maxSilence=" << maxSilence << ", n=" << vmp->n);
 
   return TRUE;
@@ -1910,7 +1910,7 @@ BOOL EchoVideoMixer::AddVideoSource(ConferenceMemberId id, ConferenceMember & mb
   VideoMixPosition *vmp = *it;
   vmp->n=0;
   vmp->id=id;
-  vmp->SetEndpointName(mbr.GetName());
+  vmp->SetEndpointName(mbr.GetVisibleName());
   return TRUE;
 }
 

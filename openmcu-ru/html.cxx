@@ -255,7 +255,7 @@ GeneralPConfigPage::GeneralPConfigPage(PHTTPServiceProcess & app,const PString &
   // MCU Server Id
   s << StringField(ServerIdKey, JsLocal("server_id"), OpenMCU::Current().GetServerId(), 250);
 
-  s << SelectField(DefaultProtocolKey, JsLocal("default_protocol_for_outgoing_calls"), cfg.GetString(DefaultProtocolKey, "sip"), "h323,sip");
+  s << SelectField(DefaultProtocolKey, JsLocal("default_protocol_for_outgoing_calls"), cfg.GetString(DefaultProtocolKey, "SIP"), "h323,sip,rtsp");
 
   s << SeparatorField("");
   s << SeparatorField("");

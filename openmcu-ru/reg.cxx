@@ -113,10 +113,10 @@ PString AbookAccount::AsJsArray(int state)
 MCUJSON * AbookAccount::AsJSON(int state)
 {
   PString memberName = display_name+" ["+GetUrl()+"]";
-  PString memberNameID = MCUURL(memberName).GetMemberNameId();
+//  PString memberNameID = MCUURL(memberName).GetMemberNameId();
   MCUJSON *json = new MCUJSON(MCUJSON::JSON_ARRAY);
   json->Insert("state", state);
-  json->Insert("memberNameID", memberNameID);
+//  json->Insert("memberNameID", memberNameID);
   json->Insert("memberName", memberName);
   json->Insert("is_abook", is_abook);
   json->Insert("remote_application", remote_application);
@@ -392,106 +392,74 @@ BOOL Registrar::RemoveAbookAccount(const PString & address)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & callToken)
+BOOL Registrar::MakeCall(const PString & room, MCUURL url, PString & callToken)
 {
-  // the default protocol H.323
-  // correct formats - proto:username, proto:username@, proto:ip, proto:@ip
-  // wrong formats - proto:@username, proto:ip@
-
   PWaitAndSignal m(mutex);
 
-  MCUURL url(to);
-  PString address = url.GetUrl();
-
   RegAccountTypes account_type = ACCOUNT_TYPE_UNKNOWN;
-  if(url.GetScheme() == "sip")
-    account_type = ACCOUNT_TYPE_SIP;
-  else if(url.GetScheme() == "h323")
-    account_type = ACCOUNT_TYPE_H323;
-  else if(url.GetScheme() == "rtsp")
+
+  if(url.GetScheme() == "sip") account_type = ACCOUNT_TYPE_SIP;
+  else if(url.GetScheme() == "h323") account_type = ACCOUNT_TYPE_H323;
+  else if(url.GetScheme() == "rtsp") account_type = ACCOUNT_TYPE_RTSP;
+  else
   {
-    account_type = ACCOUNT_TYPE_RTSP;
-    url.SetUserName(url.GetUrl());
+    PString dp = MCUConfig("Parameters").GetString(DefaultProtocolKey, "sip");
+    if(dp=="sip") account_type = ACCOUNT_TYPE_SIP;
+    else if(dp=="h323") account_type = ACCOUNT_TYPE_H323;
+    else if(dp=="rtsp") account_type = ACCOUNT_TYPE_RTSP;
+    else return FALSE;
   }
-  else
-    return FALSE;
 
-  PString username_out;
-  if(url.GetUserName() != "")
-    username_out = url.GetUserName();
-  else if(url.GetHostName() != "")
-    username_out = url.GetHostName();
-  else
-    return FALSE;
+  PString calleeName = url.GetUserName();
+  if(calleeName.IsEmpty()) return FALSE;
 
-  RegistrarAccount *raccount_out = NULL;
+  RegistrarAccount *calleeAccount = NULL;
   RegistrarConnection *rconn = NULL;
 
-  raccount_out = FindAccountWithLock(account_type, username_out);
-  if(raccount_out)
+  calleeAccount = FindAccountWithLock(account_type, calleeName);
+  if(calleeAccount)
   {
     // update address from account
-    address = raccount_out->GetUrl();
-    raccount_out->Unlock();
-    // update url
-    url = MCUURL(address);
-    PTRACE(1, "Registrar MakeCall: found the account, changed address " << address);
-  } else {
-    raccount_out = InsertAccountWithLock(account_type, username_out);
-    raccount_out->host = url.GetHostName();
-    raccount_out->port = url.GetPort().AsInteger();
-    raccount_out->transport = url.GetTransport();
-    raccount_out->display_name = url.GetDisplayName();
-    PTRACE(1, "Registrar MakeCall: create new account " << raccount_out->GetUrl());
-    raccount_out->Unlock();
+    url = calleeAccount->GetUrl();
+    calleeAccount->Unlock();
+    PTRACE(1, "Registrar MakeCall: account found, address changed to " << url);
   }
 
   if(account_type == ACCOUNT_TYPE_SIP)
   {
     callToken = PGloballyUniqueID().AsString();
-    PString *cmd = new PString("invite:"+room+","+address+","+callToken);
+    PString *cmd = new PString("invite:"+room+","+url+","+callToken);
     sep->GetSipQueue().Push(cmd);
   }
   else if(account_type == ACCOUNT_TYPE_H323)
   {
-    // Звонок по IP адресу
-    if(url.GetHostName() == "")
-    {
-      address = url.GetUserName();
-      PTRACE(1, "Registrar MakeCall: changed address " << address);
-    }
-    // gatekeeper
     H323Transport * transport = NULL;
     if(ep->GetGatekeeper())
     {
-      PString gk_host = ep->GetGatekeeperHostName();
-      if(url.GetHostName() == "" || gk_host == url.GetHostName())
-      {
-        address = url.GetUserName();
-        PTRACE(1, "Registrar MakeCall: changed address " << address);
-      }
-      else
-      {
-        H323TransportAddress taddr(url.GetHostName()+":"+url.GetPort());
-        transport = taddr.CreateTransport(*ep);
-        transport->SetRemoteAddress(taddr);
-        PTRACE(1, "Registrar MakeCall: use transport " << taddr);
-      }
+      H323TransportAddress taddr(url.GetHostName()+":"+url.GetPort());
+      transport = taddr.CreateTransport(*ep);
+      transport->SetRemoteAddress(taddr);
+      PTRACE(1, "Registrar MakeCall: use transport " << taddr);
     }
     void *userData = new PString(room);
-    if(!ep->MakeCall(address, transport, callToken, userData))
-      callToken = "";
+    if(!ep->MakeCall(url, transport, callToken, userData))
+    {
+      delete (PString*) userData; userData = NULL;
+      callToken="";
+    }
   }
   else if(account_type == ACCOUNT_TYPE_RTSP)
   {
     callToken = PGloballyUniqueID().AsString();
-    PString *cmd = new PString("invite:"+room+","+address+","+callToken);
+    PString *cmd = new PString("invite:"+room+","+url+","+callToken);
     regQueue.Push(cmd);
   }
 
-  if(callToken != "")
+  if(callToken.IsEmpty()) return FALSE;
+
+  if(calleeAccount)
   {
-    rconn = InsertRegConnWithLock(callToken, room, username_out);
+    rconn = InsertRegConnWithLock(callToken, room, calleeName);
     rconn->account_type_out = account_type;
     rconn->callToken_out = callToken;
     rconn->roomname = room;
@@ -499,8 +467,6 @@ BOOL Registrar::MakeCall(const PString & room, const PString & to, PString & cal
     rconn->Unlock();
   }
 
-  if(callToken == "")
-    return FALSE;
   return TRUE;
 }
 
@@ -976,7 +942,7 @@ void Registrar::QueueEstablished(const PString & data)
       MCUH323Connection *conn = ep->FindConnectionWithLock(callToken);
       if(conn)
       {
-        MCUURL url(conn->GetMemberName());
+        MCUURL url = conn->GetURI();
         raccount->host = url.GetHostName();
         raccount->port = url.GetPort().AsInteger();
         raccount->transport = url.GetTransport();

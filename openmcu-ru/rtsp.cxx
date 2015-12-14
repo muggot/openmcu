@@ -136,7 +136,7 @@ BOOL MCURtspConnection::Connect(PString room, PString address)
     goto error;
 
   // display name
-  remoteDisplayName = GetEndpointParam(DisplayNameKey, url.GetPathStr());
+  visibleName = GetEndpointParam(DisplayNameKey, url.GetPathStr());
 
   // auth
   auth.username = GetEndpointParam(UserNameKey, url.GetUserName());
@@ -186,7 +186,7 @@ BOOL MCURtspConnection::Connect(MCUSocket *socket, const msg_t *msg)
   // used in GetEndpointParam
   remotePartyAddress = "RTSP Server "+rtsp_path;
 
-  memberName = "rtsp stream "+rtsp_path+" ["+ruri_str+"]";
+  uri = ruri_str;
 
   // requested room
   requestedRoom = GetEndpointParam(RoomNameKey);

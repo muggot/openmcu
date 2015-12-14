@@ -939,7 +939,7 @@ PString MCUH323EndPoint::GetRoomStatusJS()
         if(!firstMember) c << ",";
         c << "Array("                                                          // c[r][4][m]: member m descriptor
           << (long)member->GetID()                                             // c[r][4][m][0]: member id
-          << "," << JsQuoteScreen(member->GetName())                           // c[r][4][m][1]: member name
+          << "," << JsQuoteScreen(member->GetURI().AsString())                 // c[r][4][m][1]: member name
           << "," << (member->IsOnline() ? "1" : "0")                           // c[r][4][m][2]: is member visible: 1/0
           << "," << PString(member->GetType())                                 // c[r][4][m][3]: 0-NONE, 1-MCU ...
         ;
@@ -1141,7 +1141,7 @@ PString MCUH323EndPoint::GetRoomStatus(const PString & block)
           members
             << (visible? "" : "<b>[Hidden]</b> ")
             << (member->IsMCU() ? "<b>[MCU]</b> " : "")
-            << member->GetName() << "</td>";
+            << member->GetVisibleName() << "</td>";
 
         MCUH323Connection * conn = NULL;
         if(!member->IsSystem())
@@ -1393,13 +1393,13 @@ MCUJSON* MCUH323EndPoint::GetMemberDataJS(ConferenceMember * member)
   if(!member) return a;
   a->Insert(member->IsOnline()); //0: 1=online
   a->Insert((long)member->GetID()); //1: long id
-  a->Insert(member->GetName()); //2: name [ip]
+  a->Insert(member->GetURI()); //2: URI
   a->Insert(member->muteMask); //3: mute
   a->Insert(member->disableVAD); //4
   a->Insert(member->chosenVan); //5
   a->Insert(member->GetAudioLevel()); //6: audio level
   a->Insert(member->GetVideoMixerNumber()); //7: number of mixer member receiving
-  a->Insert(member->GetNameID()); //8: memberName id
+  a->Insert(member->GetVisibleName()); //8: visible name
   a->Insert(member->channelMask); //9: RTP channels check bit mask 0000vVaA
   a->Insert(member->kManualGainDB); //10: Audio level gain for manual tune, integer: -20..60
   a->Insert(member->kOutputGainDB); //11: Output audio gain, integer: -20..60
@@ -1646,7 +1646,7 @@ PString MCUH323EndPoint::GetMonitorText()
       PStringStream hdr;
       hdr << "  ";
 
-      output << hdr << "Name: " << member->GetName() << "\n"
+      output << hdr << "URI: " << member->GetURI() << "\n"
              << hdr << "Outgoing video mixer: " << member->GetVideoMixerNumber() << "\n"
              << hdr << "Duration: " << (PTime() - member->GetStartTime()) << "\n"
              << member->GetMonitorInfo(hdr);
@@ -1721,55 +1721,29 @@ PString MCUH323EndPoint::GetMonitorText()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-PString MCUH323EndPoint::Invite(PString room, PString memberName)
+PString MCUH323EndPoint::Invite(PString room, MCUURL uri)
 {
-  MCUURL url(memberName);
-  if(url.GetUserName() == "" && url.GetHostName() == "")
-    return "";
+  PStringStream msg;
+  msg << "Inviting " << uri << ": ";
 
   PString callToken;
-  PStringStream msg;
-  msg << "Inviting: " << memberName << " ";
 
-  if(url.GetScheme() == "h323")
-  {
-    BOOL allowLoopbackCalls = MCUConfig("Parameters").GetBoolean(AllowLoopbackCallsKey, FALSE);
-    if(!allowLoopbackCalls && HasListener(url.GetHostName(), url.GetPort()))
-    {
-      msg << "failed, Loopback call rejected";
-      goto end;
-    }
-  }
-  else if(url.GetScheme() == "sip")
-  {
-    MCUSipEndPoint * sep = OpenMCU::Current().GetSipEndpoint();
-    if(sep->HasListener(url.GetUrl()))
-    {
-      msg << "failed, Loopback call rejected";
-      goto end;
-    }
-  }
-  else if(url.GetScheme() == "rtsp")
-  {
-    MCURtspServer *rtsp = OpenMCU::Current().GetRtspServer();
-    if(rtsp->HasListener(url.GetHostName(), url.GetPort()))
-    {
-      msg << "failed, Loopback call rejected";
-      goto end;
-    }
-  }
+  if(uri.GetUserName().IsEmpty() && uri.GetHostName().IsEmpty()) msg << "Empty URI";
 
-  {
-    Registrar *registrar = OpenMCU::Current().GetRegistrar();
-    registrar->MakeCall(room, memberName, callToken);
-    if(callToken == "")
-      msg << ", failed";
-  }
+  else //check for loopback
+  if( ((uri.GetScheme() == "h323") && HasListener(uri.GetHostName(), uri.GetPort()) && (!MCUConfig("Parameters").GetBoolean(AllowLoopbackCallsKey, FALSE)))
+    ||((uri.GetScheme() == "sip")  && OpenMCU::Current().GetSipEndpoint()->HasListener(uri))
+    ||((uri.GetScheme() == "rtsp") && OpenMCU::Current().GetRtspServer()->HasListener(uri.GetHostName(), uri.GetPort())) )
+    msg << "Loopback call rejected";
 
-  end:
-    PTRACE(1, trace_section << msg);
-    OpenMCU::Current().HttpWriteEventRoom(msg, room);
-    return callToken;
+  else
+    OpenMCU::Current().GetRegistrar()->MakeCall(room, uri, callToken);
+  
+  if(callToken.IsEmpty()) msg << "failed"; else msg << "done: " << callToken;
+
+  PTRACE(1, trace_section << msg);
+  OpenMCU::Current().HttpWriteEventRoom(msg, room);
+  return callToken;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2101,7 +2075,8 @@ void MCUH323Connection::SetRequestedRoom()
 
 void MCUH323Connection::JoinConference(const PString & roomToJoin)
 {
-  PTRACE(1, trace_section << "Join conference: " << roomToJoin << " memberName: " << memberName);
+//  PTRACE(1, trace_section << "Join conference: " << roomToJoin << " memberName: " << memberName);
+  PTRACE(1, trace_section << "Join conference: " << roomToJoin << " memberUri: " << uri);
 
   PWaitAndSignal m(connMutex);
 
@@ -2138,9 +2113,10 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
     if(it == memberList.end())
     {
       for(it = memberList.begin(); it != memberList.end(); ++it)
-        if(!it->IsOnline() && it->GetName() == memberName)
+        if(!it->IsOnline() && it->GetURI() == uri)
           break;
     }
+/*
     if(it == memberList.end())
     {
       PString memberNameID = MCUURL(memberName).GetMemberNameId();
@@ -2148,6 +2124,7 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
         if(!it->IsOnline() && it->GetNameID() == memberNameID)
           break;
     }
+*/
     if(it != memberList.end())
     {
       ConferenceMember *member = *it;
@@ -2155,7 +2132,7 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
       {
         conferenceMember = member;
         conferenceMember->ResetCounters();
-        conferenceMember->SetName(memberName);
+        conferenceMember->SetURI(uri);
         conferenceMember->SetVisible(TRUE);
         conferenceMember->SetCallToken(callToken);
         conferenceMember->dialToken = "";
@@ -2167,23 +2144,23 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
   // create member connection
   if(conferenceMember == NULL)
   {
-    if(memberName.Find("rtsp stream") == 0)
-      conferenceMember = new ConferenceStreamMember(conference, memberName, callToken);
+    if(visibleName.Find("rtsp stream") == 0)
+      conferenceMember = new ConferenceStreamMember(conference, uri, visibleName, callToken);
     else
-      conferenceMember = new MCUConnection_ConferenceMember(conference, memberName, callToken, isMCU);
+      conferenceMember = new MCUConnection_ConferenceMember(conference, uri, visibleName, callToken, isMCU);
   }
 
   { // restore input & output gain level
     PString gain;
 
-    gain = GetSectionParamFromUrl("Input Gain", MCUURL(conferenceMember->GetName()).GetUrl(), false);
+    gain = GetSectionParamFromUrl("Input Gain", uri, false);
     if(!gain.IsEmpty())
     {
       conferenceMember->kManualGainDB = gain.AsInteger();
       conferenceMember->kManualGain=(float)pow(10.0,((float)conferenceMember->kManualGainDB)/20.0);
     }
 
-    gain = GetSectionParamFromUrl("Output Gain", MCUURL(conferenceMember->GetName()).GetUrl(), false);
+    gain = GetSectionParamFromUrl("Output Gain", uri, false);
     if(!gain.IsEmpty())
     {
       conferenceMember->kOutputGainDB = gain.AsInteger();
@@ -2265,8 +2242,7 @@ H323Channel * MCUH323Connection::CreateRealTimeLogicalChannel(const H323Capabili
 
 void MCUH323Connection::SetupCacheConnection(PString & format, Conference * conf, ConferenceMember * memb)
 {
- remoteUserName = format;
- remoteDisplayName = format;
+ visibleName = format;
  conference = conf;
  conferenceIdentifier = conference->GetGUID();
  conferenceMember = memb;
@@ -2580,8 +2556,11 @@ BOOL MCUH323Connection::StartControlNegotiations(BOOL renegotiate)
 
 H323Connection::CallEndReason MCUH323Connection::SendSignalSetup(const PString & alias, const H323TransportAddress & address)
 {
-  if(alias != "")
-    remoteUserName = alias;
+  if(!alias.IsEmpty())
+  {
+//    remoteUserName = alias;
+    PTRACE(1,"!ALIAS! " << alias << " address=" << address);
+  }
   CallEndReason reason = H323Connection::SendSignalSetup(alias, address);
   return reason;
 }
@@ -2678,8 +2657,8 @@ BOOL MCUH323Connection::CheckVFU()
     if(vfuCount > vfuLimit)
     {
       // only show warning if the number of received VFU requests(vfuCount) for a certain interval(vfuInterval) more than vfuLimit
-      PString username = MCUURL(memberName).GetUrl();
-      PString event = "too many VFU from \""+username+"\", limit "+PString(vfuLimit)+"/"+PString(vfuInterval)+", received "+PString(vfuCount);
+//      PString username = MCUURL(memberName).GetUrl();
+      PString event = "too many VFU from \""+PString(uri)+"\", limit "+PString(vfuLimit)+"/"+PString(vfuInterval)+", received "+PString(vfuCount);
       PTRACE(6, trace_section << "RTP " << event);
       OpenMCU::Current().HttpWriteEventRoom("<font color=red>"+event+"</font>", requestedRoom);
     }
@@ -2800,7 +2779,8 @@ PString MCUH323Connection::GetEndpointParam(PString param, bool asterisk)
   {
     PINDEX pos = url.Find("ip$");
     if(pos != P_MAX_INDEX) url=url.Mid(pos+3);
-    url = GetRemoteUserName()+"@"+url;
+    url = uri.GetUserName()+"@"+url;
+    PTRACE(1,"MCUH323Connection\t!!!uri: " << uri << " url: " << url);
   }
   return GetSectionParamFromUrl(param, url, asterisk);
 }
@@ -3197,8 +3177,9 @@ void MCUH323Connection::OnUserInputString(const PString & str)
       if(params[1] != "") text = params[1];
       else text = params[0];
     }
-    name = memberName;
-    codeMsg << "<font color=blue><b>" << name << "</b>: " << text;
+//    name = memberName;
+//    codeMsg << "<font color=blue><b>" << name << "</b>: " << text;
+    codeMsg << "<font color=blue><b>" << uri << "</b>: " << text;
 
     if(codeRoom == "")
     {
@@ -3234,7 +3215,7 @@ void MCUH323Connection::OnUserInputString(const PString & str)
           if(pos == atoi(codePos))
           {
             codeConferenceMember = member;
-            codeMsg << "<br>-> action:"+codeAction+" room:"+codeRoomName+" pos:"+codePos+" found:" << member->GetName();
+            codeMsg << "<br>-> action:"+codeAction+" room:"+codeRoomName+" pos:"+codePos+" found:" << member->GetURI();
             break;
           }
         }
@@ -3362,7 +3343,7 @@ void MCUH323Connection::OnWelcomeWaveEnded()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-
+/*
 PString MCUH323Connection::GetRemoteUserName()
 {
   PString username;
@@ -3380,12 +3361,13 @@ PString MCUH323Connection::GetRemoteUserName()
     username = "undefined";
   return username;
 }
-
+*/
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
 {
   // remoteUserName
+  PString remoteUserName;
   switch(pdu.m_h323_uu_pdu.m_h323_message_body.GetTag())
   {
     case(H225_H323_UU_PDU_h323_message_body::e_setup):
@@ -3408,15 +3390,15 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
     remoteUserName = signallingChannel->GetRemoteAddress().GetHostName();
 
   // remoteDisplayName
-  remoteDisplayName = pdu.GetQ931().GetDisplayName();
-  if(remoteDisplayName == "" && pdu.m_h323_uu_pdu.m_h323_message_body.GetTag() == H225_H323_UU_PDU_h323_message_body::e_setup)
+  visibleName = pdu.GetQ931().GetDisplayName();
+  if(visibleName.IsEmpty() && pdu.m_h323_uu_pdu.m_h323_message_body.GetTag() == H225_H323_UU_PDU_h323_message_body::e_setup)
   {
     const H225_Setup_UUIE & setup = pdu.m_h323_uu_pdu.m_h323_message_body;
     if(setup.HasOptionalField(H225_Setup_UUIE::e_sourceAddress))
-      remoteDisplayName = H323GetAliasDisplayName(setup.m_sourceAddress);
+      visibleName = H323GetAliasDisplayName(setup.m_sourceAddress);
   }
-  if(remoteDisplayName == "")
-    remoteDisplayName = remoteUserName;
+  if(visibleName == "")
+    visibleName = remoteUserName;
 
   // remotePartyAddress
   if(remotePartyAddress == "")
@@ -3424,7 +3406,7 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
 
   // ??? h323plus 1.25.0
   remoteUserName.Replace("h323:", "", TRUE, 0);
-  remoteDisplayName.Replace("h323:", "", TRUE, 0);
+  visibleName.Replace("h323:", "", TRUE, 0);
   remotePartyAddress.Replace("h323:", "", TRUE, 0);
   for(int i = 0; i < remoteAliasNames.GetSize(); ++i)
     remoteAliasNames[i].Replace("h323:", "", TRUE, 0);
@@ -3432,12 +3414,12 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
   if(remoteApplication.Find("MyPhone") != P_MAX_INDEX || remoteApplication.Find("Polycom ViaVideo\tRelease 8.0") != P_MAX_INDEX)
   {
     // convert
-    remoteUserName = convert_cp1251_to_utf8(remoteUserName);
-    remoteDisplayName = convert_cp1251_to_utf8(remoteDisplayName);
+//    remoteUserName = convert_cp1251_to_utf8(remoteUserName);
+    visibleName = convert_cp1251_to_utf8(visibleName);
   }
 
-  PTRACE(1, trace_section << "SetRemoteName remoteUserName: " << remoteUserName);
-  PTRACE(1, trace_section << "SetRemoteName remoteDisplayName: " << remoteDisplayName);
+//  PTRACE(1, trace_section << "SetRemoteName remoteUserName: " << remoteUserName);
+  PTRACE(1, trace_section << "SetRemoteName visibleName: " << visibleName);
   SetMemberName();
 }
 
@@ -3446,6 +3428,7 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
 void MCUH323Connection::SetMemberName()
 {
   PString address;
+/*
   if(connectionType == CONNECTION_TYPE_SIP)
   {
     address = remotePartyAddress;
@@ -3477,23 +3460,24 @@ void MCUH323Connection::SetMemberName()
       port = host.Tokenise(":")[1];
       host = host.Tokenise(":")[0];
     }
+//    alias = uri.GetUserName();
     alias = GetRemoteUserName();
 
     address = "h323:"+alias+"@"+host;
     if(!HadAnsweredCall() && port != "") address += ":"+port;
   }
-
+*/
   // remoteDisplayName
-  remoteDisplayName = GetEndpointParam(DisplayNameKey, remoteDisplayName);
+  visibleName = GetEndpointParam(DisplayNameKey, visibleName);
 
-  memberName = remoteDisplayName+" ["+address+"]";
+  uri = remotePartyAddress;
 
-  PTRACE(1, trace_section << "SetMemberName remote account: " << GetRemoteUserName());
-  PTRACE(1, trace_section << "SetMemberName remoteUserName: " << remoteUserName);
-  PTRACE(1, trace_section << "SetMemberName remoteDisplayName: " << remoteDisplayName);
-  PTRACE(1, trace_section << "SetMemberName remotePartyAddress: " << remotePartyAddress);
-  PTRACE(1, trace_section << "SetMemberName remotePartyAliases: " << remoteAliasNames);
-  PTRACE(1, trace_section << "SetMemberName memberName: " << memberName);
+//  PTRACE(1, trace_section << "SetMemberName remote account: " << GetRemoteUserName());
+//  PTRACE(1, trace_section << "SetMemberName remoteUserName: " << remoteUserName);
+//  PTRACE(1, trace_section << "SetMemberName remoteDisplayName: " << remoteDisplayName);
+//  PTRACE(1, trace_section << "SetMemberName remotePartyAddress: " << remotePartyAddress);
+//  PTRACE(1, trace_section << "SetMemberName remotePartyAliases: " << remoteAliasNames);
+//  PTRACE(1, trace_section << "SetMemberName memberName: " << memberName);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3630,29 +3614,20 @@ BOOL MCUH323Connection::OnIncomingVideo(const void * buffer, int width, int heig
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _conference, const PString & _memberName, const PString & _callToken, BOOL _isMCU)
+MCUConnection_ConferenceMember::MCUConnection_ConferenceMember(Conference * _conference,
+  const PString & _uri, const PString _visibleName, const PString & _callToken, BOOL _isMCU)
+
   : ConferenceMember(_conference), ep(OpenMCU::Current().GetEndpoint())
 {
+  PTRACE(6,"MCUConnection_ConferenceMember constructor(" << _uri << ", " << _visibleName << ", " << _callToken << ", " << _isMCU << ")");
   memberType = MEMBER_TYPE_CONN;
   callToken = _callToken;
   visible = TRUE;
   isMCU = _isMCU;
-  MCUURL url(_memberName);
-
-    // quick fix for URL parameters, http://openmcu.ru/forum/index.php?topic=1086.msg14951#msg14951
-    PString query, name0;
-    name0 = url.GetMemberName();
-    PINDEX n = _memberName.Find('?');
-    if(n!=P_MAX_INDEX) query=_memberName.Mid(n, P_MAX_INDEX);
-    if(name0.Right(1) == "]")
-    {
-      name0=name0.Left(name0.GetLength()-1);
-      query += "]";
-    }
-    name = name0 + query;
-
-//  name = url.GetMemberName();
-  nameID = url.GetMemberNameId();
+  uri = _uri;
+  if(!visibleName.IsEmpty()) visibleName=uri.GetUserName();
+  else visibleName = _visibleName;
+  PTRACE(6,"MCUConnection_ConferenceMember constructor-");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3741,7 +3716,7 @@ void MCUConnection_ConferenceMember::SendUserInputIndication(const PString & str
   else
     utfmsg << str;
 
-  msg << "<font color=blue><b>" << name << "</b>: " << utfmsg << "</font>";
+  msg << "<font color=blue><b>" << visibleName << " " << uri << "</b>: " << utfmsg << "</font>";
   OpenMCU::Current().HttpWriteEvent(msg);
 
   if(conn->GetConferenceMember() != this && conn->GetConferenceMember() != NULL)
@@ -3751,7 +3726,7 @@ void MCUConnection_ConferenceMember::SendUserInputIndication(const PString & str
     return;
   }
 
-  PString sendmsg = "[" + conn->GetRemoteUserName() + "]: " + str;
+  PString sendmsg = "[" + PString(conn->GetURI()) + "]: " + str;
 
   // unlock
   conn->Unlock();
@@ -3971,7 +3946,7 @@ void MCUH323Connection::LogCall(const BOOL accepted)
 
   PStringStream stringStream, timeStream;
   timeStream << GetConnectionStartTime().AsString("hh:mm:ss");
-  stringStream << " caller: " << memberName
+  stringStream << " caller: " << uri
                << " room: " << ((conference != NULL) ? conference->GetNumber() : PString());
 
   if(accepted)

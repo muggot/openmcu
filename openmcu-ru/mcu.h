@@ -392,7 +392,7 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
     { PString rdata; return OTFControl(data, rdata); }
 
     BOOL OTFControl(const PStringToString & data, PString & rdata);
-    BOOL OTFControl(const PString & data, PString & rdata);
+    BOOL OTFControl(const PString & data, PString & rdata, PINDEX & cursor);
 
     int GetHttpBuffer() const { return httpBuffer; }
 
