@@ -598,7 +598,7 @@ void MCU_RTPChannel::Transmit()
       // Traffic shaper experimental (c)kay27 14.12.2015
       if(shaperStep)
       {
-        // First delay next packed by precalculated amount of time
+        // First, delay next packet by precalculated amount of time
         unsigned d = shaperReminder / shaperStep;
         if(d) shaperDelay.Delay(d);
 
