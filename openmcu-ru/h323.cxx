@@ -4337,7 +4337,7 @@ void MCUConnection_ConferenceMember::SendUserInputIndication(const PString & str
     return;
   }
 
-  PString sendmsg = "[" + conn->GetRemoteUserName() + "]: " + str;
+  PString sendmsg = "[" + conn->GetRemoteDisplayName() + "]: " + str;
 
   // unlock
   conn->Unlock();
