@@ -533,7 +533,7 @@ BOOL Registrar::SipSendMessage(RegistrarAccount *raccount_in, RegistrarAccount *
 
   sip_cseq_t *sip_cseq = sip_cseq_create(GetHome(), 1, SIP_METHOD_MESSAGE);
   sip_request_t *sip_rq = sip_request_create(GetHome(), SIP_METHOD_MESSAGE, URL_STRING_MAKE((const char *)raccount_out->GetUrl()), NULL);
-  sip_call_id_t* sip_call_id = sip_call_id_create(GetHome(), "");
+  sip_call_id_t* sip_call_id = sip_call_id_create(GetHome(), NULL);
 
   sip_route_t* sip_route = NULL;
   if(raccount_out->registered)

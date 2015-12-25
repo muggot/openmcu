@@ -2017,6 +2017,7 @@ int MCUSipConnection::ProcessConnect()
   }
 
   MCUURL_SIP url(c_sip_msg, direction);
+  remoteUserName = url.GetUserName();
   remoteDisplayName = url.GetDisplayName();
   remoteApplication = url.GetRemoteApplication();
 
@@ -2305,7 +2306,7 @@ void MCUSipConnection::SendRequest(sip_method_t method, const char *method_name,
   }
   if(method == sip_method_message)
   {
-    sip_call_id = sip_call_id_create(sep->GetHome(), "");
+    sip_call_id = sip_call_id_create(sep->GetHome(), NULL);
     sip_content = sip_content_type_make(sep->GetHome(), "text/plain");
     sip_payload = sip_payload_format(sep->GetHome(), payload);
     sip_date = sip_date_create(sep->GetHome(), sip_now());
