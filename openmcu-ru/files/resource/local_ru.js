@@ -345,3 +345,6 @@ window.l_accounts                                  = "Учетные запис�
 ///
 window.l_param_telserver = 'Telnet сервер';
 window.l_info_telserver = '';
+///
+window.l_mute_new_conference_users                 = 'Заглушить новых участников конференции';
+window.l_unmute_new_conference_users               = 'Включать звук от новых участников конференции';

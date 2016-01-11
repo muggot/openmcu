@@ -270,6 +270,8 @@ static PString MCUControlCodes = "NO ACTION,"
 #define OTFC_OUTPUT_GAIN_SET          80
 #define OTFC_ADD_TO_ABOOK             90
 #define OTFC_REMOVE_FROM_ABOOK        91
+#define OTFC_MUTE_NEW_USERS           92
+#define OTFC_UNMUTE_NEW_USERS         93
 #define OTFC_ROOM_CREATE              201
 #define OTFC_ROOM_DELETE              202
 #define OTFC_ROOM_SHOW_MEMBERS        211

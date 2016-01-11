@@ -70,6 +70,8 @@ var OTFC_AUDIO_GAIN_LEVEL_SET    = 79;
 var OTFC_OUTPUT_GAIN_SET         = 80;
 var OTFC_ADD_TO_ABOOK            = 90;
 var OTFC_REMOVE_FROM_ABOOK       = 91;
+var OTFC_MUTE_NEW_USERS          = 92;
+var OTFC_UNMUTE_NEW_USERS        = 93;
 
 var mmw = -1; // build_page() initializer
 var visible_ids='';
@@ -126,6 +128,8 @@ var roomName, globalMute, isModerated;
 var classicMode = false;
 
 var sortMode = parseInt(getcookie('sortMode')); if(sortMode!=0) sortMode=1;
+
+var muteNewUsers = 0;
 
 function index_exists(a, i)
 {
@@ -1588,6 +1592,12 @@ function top_panel()
     +" onclick='javascript:{sortMode=(sortMode+1)%2;this.className=\"sortspr\"+sortMode;"
     + "document.cookie=\"sortMode=\"+sortMode+\"; expires=Fri, 31 Dec 2999 23:59:59 GMT\";members_refresh();return false;}'"
     +" class='sortspr" + sortMode + "'></button>";
+
+  try{ muteNewUsers=conf[0][13]; } catch(e) { }
+  if(muteNewUsers==1) title=window.l_unmute_new_conference_users; else title=window.l_mute_new_conference_users;
+  c+=" <button title='" + title + "' onclick='javascript:{if(checkcontrol())queue_otf_request("
+    + (muteNewUsers?"OTFC_UNMUTE_NEW_USERS":"OTFC_MUTE_NEW_USERS") + ",0);return false;}' class='mutenewusers"
+    + muteNewUsers + "'></button>";
 
   var i; try{ i=conf[0][10]; }catch(e){i=0;} //if((i<1)||(i>3))i=0;
   title=window.l_filtermode[i-1];

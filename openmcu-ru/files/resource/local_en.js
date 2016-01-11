@@ -338,3 +338,6 @@ window.l_accounts                                  = "Accounts";
 ///
 window.l_param_telserver = 'Telnet server';
 window.l_info_telserver = '';
+///
+window.l_mute_new_conference_users                 = 'Mute new conference users';
+window.l_unmute_new_conference_users               = 'Unmute new conference users';
