@@ -1453,6 +1453,18 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     HttpWriteCmdRoom("build_page()",room);
     return TRUE;
   }
+  if(action == OTFC_MUTE_NEW_USERS) {
+    conference->muteNewUsers = TRUE;
+    HttpWriteCmdRoom(endpoint->GetConferenceOptsJavascript(*conference),room);
+    HttpWriteCmdRoom("build_page()",room);
+    return TRUE;
+  }
+  if(action == OTFC_UNMUTE_NEW_USERS) {
+    conference->muteNewUsers = FALSE;
+    HttpWriteCmdRoom(endpoint->GetConferenceOptsJavascript(*conference),room);
+    HttpWriteCmdRoom("build_page()",room);
+    return TRUE;
+  }
 
   MCUMemberList & memberList = conference->GetMemberList();
   MCUMemberList::shared_iterator mit = memberList.Find(v);

@@ -346,3 +346,5 @@ window.l_param_telserver = 'Telnet сервер';
 window.l_info_telserver = '';
 window.l_auto_dial_delay                           = "Интервал автодозвона, с";
 ///
+window.l_mute_new_conference_users                 = 'Mute new conference users';
+window.l_unmute_new_conference_users               = 'Unmute new conference users';

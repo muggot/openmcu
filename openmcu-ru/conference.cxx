@@ -635,6 +635,7 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
   conferenceRecorder = NULL;
   forceScreenSplit = GetConferenceParam(number, ForceSplitVideoKey, TRUE);
   lockedTemplate = GetConferenceParam(number, LockTemplateKey, FALSE);
+  muteNewUsers = FALSE;
   pipeMember = NULL;
   dialCountdown = OpenMCU::Current().autoDialDelay;
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
@@ -858,6 +859,13 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
   // update the statistics
   // trigger H245 thread for join message
   //new NotifyH245Thread(*this, TRUE, memberToAdd);
+
+  if (muteNewUsers) {
+    memberToAdd->SetChannelPauses(1);
+  }
+  else {
+    memberToAdd->UnsetChannelPauses(1);
+  }
 
   return TRUE;
 }
