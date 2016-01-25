@@ -7,9 +7,6 @@
 //
 ////////////////////////////////////////////////////
 
-#define	PRODUCT_NAME_TEXT	"OpenMCU-ru"
-#define	EXE_NAME_TEXT	        "openmcu-ru"
-#define	MANUFACTURER_TEXT	"OpenMCU-ru Team"
 #define	COPYRIGHT_HOLDER	MANUFACTURER_TEXT
 
 #define	EMAIL                   ""

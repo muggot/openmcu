@@ -72,7 +72,7 @@ class HTTPAuth
       type = AUTH_NONE;
       attempts = 0;
       scheme = "Digest";
-      realm = "openmcu-ru";
+      realm = PRODUCT_NAME_TEXT;
       nonce = PGloballyUniqueID().AsString();
       algorithm = "MD5";
     }

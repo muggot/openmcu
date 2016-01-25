@@ -18,13 +18,13 @@ void MCUSignalHandler(int sig)
   switch(sig)
   {
     case SIGINT:
-      MCUTRACE(0, "OpenMCU-ru received signal " << sig << " SIGINT");
+      MCUTRACE(0, PRODUCT_NAME_TEXT << " received signal " << sig << " SIGINT");
       process.Terminate();
     case SIGTERM:
-      MCUTRACE(0, "OpenMCU-ru received signal " << sig << " SIGTERM");
+      MCUTRACE(0, PRODUCT_NAME_TEXT << " received signal " << sig << " SIGTERM");
       process.Terminate();
     case SIGPIPE:
-      MCUTRACE(0, "OpenMCU-ru received signal " << sig << " SIGPIPE");
+      MCUTRACE(0, PRODUCT_NAME_TEXT << " received signal " << sig << " SIGPIPE");
     default:
       return;
   }
@@ -91,7 +91,7 @@ BOOL OpenMCU::OnStart()
 #endif
 
   SetConfigurationPath(CONFIG_PATH);
-  trace_section = "OpenMCU-ru ";
+  trace_section = PString(PRODUCT_NAME_TEXT) + " ";
   InitialiseTrace();
   PrintOnStartInfo();
 
@@ -511,7 +511,7 @@ void OpenMCU::CreateHTTPResource(const PString & name)
   {
     PString monitorText =
 #ifdef GIT_REVISION
-                        (PString("OpenMCU-ru REVISION ") + MCU_STRINGIFY(GIT_REVISION) +"\n\n") +
+                        (PString(PRODUCT_NAME_TEXT) + " REVISION " + MCU_STRINGIFY(GIT_REVISION) +"\n\n") +
 #endif
                         "<!--#equival monitorinfo-->"
                         "<!--#equival mcuinfo-->";

@@ -1,3 +1,23 @@
+/*
+ * telnet.h
+ *
+ * Copyright (C) 2015 Andrey Burbovskiy, OpenMCU-ru, All Rights Reserved
+ *
+ * The Initial Developer of the Original Code is Andrey Burbovskiy (andrewb@yandex.ru), All Rights Reserved
+ *
+ * The contents of this file are subject to the Mozilla Public License
+ * Version 1.0 (the "License"); you may not use this file except in
+ * compliance with the License. You may obtain a copy of the License at
+ * http://www.mozilla.org/MPL/
+ *
+ * Software distributed under the License is distributed on an "AS IS"
+ * basis, WITHOUT WARRANTY OF ANY KIND, either express or implied. See
+ * the License for the specific language governing rights and limitations
+ * under the License.
+ *
+ * Contributor(s):  Andrey Burbovskiy (andrewb@yandex.ru)
+ *
+ */
 
 #include "precompile.h"
 
@@ -26,7 +46,7 @@ const unsigned char TEL_DO         = 253;
 const unsigned char TEL_DONT       = 254;
 const unsigned char TEL_IAC        = 255;
 
-const PString TEL_WELCOME = "OpenMCU-ru/"+PString(MAJOR_VERSION)+"."+PString(MINOR_VERSION)+"."+PString(BUILD_NUMBER)+" "+"Copyright (c) 2015 by OpenMCU-ru Team\r\n"
+const PString TEL_WELCOME = PString(PRODUCT_NAME_TEXT)+"/"+PString(MAJOR_VERSION)+"."+PString(MINOR_VERSION)+"."+PString(BUILD_NUMBER)+" "+"Copyright (c) 2015 by "+PString(MANUFACTURER_TEXT)+"\r\n"
                             +"git revision: "
 #ifdef GIT_REVISION
                             +MCU_STRINGIFY(GIT_REVISION)

@@ -2,6 +2,10 @@
 #ifndef _MCU_PRECOMPILE_H
 #define _MCU_PRECOMPILE_H
 
+#define	PRODUCT_NAME_TEXT	"OpenMCU-ru"
+#define	EXE_NAME_TEXT	        "openmcu-ru"
+#define	MANUFACTURER_TEXT	"OpenMCU-ru Team"
+
 // msvc warnings
 #ifdef _WIN32
 #pragma warning(disable:4100)

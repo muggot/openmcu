@@ -2134,7 +2134,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
     if((q=request.Find("?"))!=P_MAX_INDEX) { request=request.Mid(q+1,P_MAX_INDEX); PURL::SplitQueryVars(request,data); }
   }
   PStringStream shtml;
-  BeginPage(shtml,"OpenMCU-ru","window.l_welcome","window.l_info_welcome");
+  BeginPage(shtml,PRODUCT_NAME_TEXT,"window.l_welcome","window.l_info_welcome");
 
   PString timeFormat = "yyyyMMdd hhmmss z";
   PTime now;
@@ -2142,7 +2142,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
 
   shtml << "<br><b>Monitor Text (<span style='cursor:pointer;text-decoration:underline' onclick='javascript:{if(document.selection){var range=document.body.createTextRange();range.moveToElementText(document.getElementById(\"monitorTextId\"));range.select();}else if(window.getSelection){var range=document.createRange();range.selectNode(document.getElementById(\"monitorTextId\"));window.getSelection().addRange(range);}}'>select all</span>)</b><div style='padding:5px;border:1px dotted #595;width:100%;height:auto;max-height:300px;overflow:auto'><pre style='margin:0px;padding:0px' id='monitorTextId'>"
 #ifdef GIT_REVISION
-        << "OpenMCU-ru REVISION " << MCU_STRINGIFY(GIT_REVISION) << "\n"
+        << PRODUCT_NAME_TEXT << " REVISION " << MCU_STRINGIFY(GIT_REVISION) << "\n"
 #endif
 
               << "Program: "          << OpenMCU::Current().GetProductName() << "\n"
@@ -2171,7 +2171,7 @@ BOOL WelcomePage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInfo 
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU-ru\r\n"
+      << "Server: " << PRODUCT_NAME_TEXT << "\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2245,7 +2245,7 @@ BOOL MainStatusPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
   PStringStream message;
   message << "HTTP/1.1 200 OK\r\n"
           << "Date: " << PTime().AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-          << "Server: OpenMCU-ru\r\n"
+          << "Server: " << PRODUCT_NAME_TEXT << "\r\n"
           << "MIME-Version: 1.0\r\n"
           << "Cache-Control: no-cache, must-revalidate\r\n"
           << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2438,7 +2438,7 @@ BOOL JpegFrameHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEInf
   PStringStream message;
   message << "HTTP/1.1 200 OK\r\n"
           << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-          << "Server: OpenMCU-ru\r\n"
+          << "Server: " << PRODUCT_NAME_TEXT << "\r\n"
           << "MIME-Version: 1.0\r\n"
           << "Cache-Control: no-cache, must-revalidate\r\n"
           << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2493,7 +2493,7 @@ BOOL InteractiveHTTP::OnGET (PHTTPServer & server, const PURL &url, const PMIMEI
 
   message << "HTTP/1.1 200 OK\r\n"
           << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-          << "Server: OpenMCU-ru\r\n"
+          << "Server: " << PRODUCT_NAME_TEXT << "\r\n"
           << "MIME-Version: 1.0\r\n"
           << "Cache-Control: no-cache, must-revalidate\r\n"
           << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2773,7 +2773,7 @@ BOOL SelectRoomPage::OnGET (PHTTPServer & server, const PURL &url, const PMIMEIn
     PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU-ru\r\n"
+      << "Server: " << PRODUCT_NAME_TEXT << "\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2830,7 +2830,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       PStringStream message; PTime now; message
         << "HTTP/1.1 404 Not Found\r\n"
         << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-        << "Server: OpenMCU-ru\r\n"
+        << "Server: " << PRODUCT_NAME_TEXT << "\r\n"
         << "MIME-Version: 1.0\r\n"
         << "Cache-Control: no-cache, must-revalidate\r\n"
         << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2850,7 +2850,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
       PStringStream message; PTime now; message
         << "HTTP/1.1 403 Forbidden\r\n"
         << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-        << "Server: OpenMCU-ru\r\n"
+        << "Server: " << PRODUCT_NAME_TEXT << "\r\n"
         << "MIME-Version: 1.0\r\n"
         << "Cache-Control: no-cache, must-revalidate\r\n"
         << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2866,7 +2866,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU-ru\r\n"
+      << "Server: " << PRODUCT_NAME_TEXT << "\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -2926,7 +2926,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
     PStringStream message; PTime now; message
       << "HTTP/1.1 404 Not Found\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU-ru\r\n"
+      << "Server: " << PRODUCT_NAME_TEXT << "\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"
@@ -3111,7 +3111,7 @@ BOOL RecordsBrowserPage::OnGET (PHTTPServer & server, const PURL &url, const PMI
   { PStringStream message; PTime now; message
       << "HTTP/1.1 200 OK\r\n"
       << "Date: " << now.AsString(PTime::RFC1123, PTime::GMT) << "\r\n"
-      << "Server: OpenMCU-ru\r\n"
+      << "Server: " << PRODUCT_NAME_TEXT << "\r\n"
       << "MIME-Version: 1.0\r\n"
       << "Cache-Control: no-cache, must-revalidate\r\n"
       << "Expires: Sat, 26 Jul 1997 05:00:00 GMT\r\n"

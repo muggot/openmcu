@@ -33,7 +33,7 @@ static const PString MCU_INTERNAL_CALL_PREFIX("INTERNAL_CALL_");
 
 const WORD DefaultHTTPPort = 1420;
 
-static const char ServerIdKey[]           = "OpenMCU-ru Server Id";
+static PString ServerIdKey                = PString(PRODUCT_NAME_TEXT)+" Server Id";
 static const char LogLevelKey[]           = "Log Level";
 static const char TraceLevelKey[]         = "Trace level";
 static const char TraceRotateKey[]        = "Rotate trace files at startup";
@@ -193,7 +193,7 @@ static const char OPTION_DECODER_CHANNELS[] = "Decoder Channels";
 static const char OPTION_TX_KEY_FRAME_PERIOD[] = "Tx Key Frame Period";
 
 static PString MCUScaleFilterNames =
-                                  "openmcu-ru built-in"
+                                  "built-in"
                                   ",libyuv|kFilterNone"
                                   ",libyuv|kFilterBilinear"
                                   ",libyuv|kFilterBox"

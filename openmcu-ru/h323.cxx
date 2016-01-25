@@ -1608,7 +1608,7 @@ PString MCUH323EndPoint::SetRoomParams(const PStringToString & data)
 
   Conference *conference = conferenceManager.FindConferenceWithLock(room);
   if(conference == NULL)
-    return "OpenMCU-ru: Bad room";
+    return PString(PRODUCT_NAME_TEXT)+": Bad room";
   conference->Unlock();
 
   return RoomCtrlPage(room);
