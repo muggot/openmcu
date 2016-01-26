@@ -934,6 +934,8 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += RowArray()+EmptyInputItem(name)+"</tr>";
       s2 += RowArray()+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
       s2 += RowArray()+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", "direct"), "full,direct")+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {
@@ -1231,6 +1233,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += RowArray()+EmptyInputItem(name)+"</tr>";
       s2 += RowArray()+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey, "Disable"), PingIntervalSelect)+"</tr>";
       s2 += RowArray()+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", "redirect"), "full,redirect")+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
+      s2 += RowArray()+EmptyInputItem(name)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     } else {

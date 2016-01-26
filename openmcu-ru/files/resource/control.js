@@ -2361,7 +2361,7 @@ function resize_timing(s)
 function get_resizer(i)
 {
   var a=[
-    'openmcu-ru built-in',
+    'built-in',
     "libyuv|kFilterNone",
     "libyuv|kFilterBilinear",
     "libyuv|kFilterBox",
