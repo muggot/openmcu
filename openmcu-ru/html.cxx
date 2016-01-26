@@ -830,6 +830,8 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
   optionNames.AppendString(PasswordKey);
   optionNames.AppendString(PingIntervalKey);
   optionNames.AppendString("H.323 call processing");
+  optionNames.AppendString("Input Gain");
+  optionNames.AppendString("Output Gain");
 
   optionNames.AppendString(HostKey);
   optionNames.AppendString(PortKey);
@@ -942,6 +944,8 @@ H323EndpointsPConfigPage::H323EndpointsPConfigPage(PHTTPServiceProcess & app,con
       s2 += RowArray()+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
       s2 += RowArray()+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey), ","+PingIntervalSelect)+"</tr>";
       s2 += RowArray()+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("H.323 call processing", ""), ",full,direct")+"</tr>";
+      s2 += RowArray(name, TRUE)+"Input Gain"+SelectItem(name, scfg.GetString("Input Gain"), ","+InputOutputGainSelect)+"</tr>";
+      s2 += RowArray(name, TRUE)+"Output Gain"+SelectItem(name, scfg.GetString("Output Gain"), ","+InputOutputGainSelect)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }
@@ -1114,6 +1118,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
   optionNames.AppendString(PasswordKey);
   optionNames.AppendString(PingIntervalKey);
   optionNames.AppendString("SIP call processing");
+  optionNames.AppendString("Input Gain");
+  optionNames.AppendString("Output Gain");
 
   optionNames.AppendString(HostKey);
   optionNames.AppendString(PortKey);
@@ -1235,6 +1241,8 @@ SipEndpointsPConfigPage::SipEndpointsPConfigPage(PHTTPServiceProcess & app,const
       s2 += RowArray()+JsLocal("name_password")+StringItem(name, scfg.GetString(PasswordKey))+"</tr>";
       s2 += RowArray()+"Keep-Alive "+JsLocal("interval")+SelectItem(name, scfg.GetString(PingIntervalKey), ","+PingIntervalSelect)+"</tr>";
       s2 += RowArray()+JsLocal("internal_call_processing")+SelectItem(name, scfg.GetString("SIP call processing", ""), ",full,redirect")+"</tr>";
+      s2 += RowArray(name, TRUE)+"Input Gain"+SelectItem(name, scfg.GetString("Input Gain"), ","+InputOutputGainSelect)+"</tr>";
+      s2 += RowArray(name, TRUE)+"Output Gain"+SelectItem(name, scfg.GetString("Output Gain"), ","+InputOutputGainSelect)+"</tr>";
       s2 += EndItemArray();
       s << s2;
     }

@@ -49,7 +49,40 @@ PString GetSectionParam(PString section_prefix, PString param, PString addr, boo
 
 void SetSectionParam(PString section_prefix, PString param, PString addr, PString value)
 {
-  MCUConfig(section_prefix+addr).SetString(param, value);
+  PString user, host;
+  PString httpResource;
+  if(section_prefix == "H323 Endpoint ")
+  {
+    MCUURL url(addr);
+    user = url.GetUserName();
+    host = url.GetHostName();
+    httpResource = "H323EndpointsParameters";
+  }
+  else if(section_prefix == "SIP Endpoint ")
+  {
+    MCUURL url(addr);
+    user = url.GetUserName();
+    host = url.GetHostName();
+    httpResource = "SipEndpointsParameters";
+  }
+  else if(section_prefix == "RTSP Endpoint ")
+  {
+    user = addr;
+    user.Replace("rtsp://","",TRUE,0);
+    //httpResource = "RtspEndpoints";
+  }
+
+  if(MCUConfig::HasSection(section_prefix+addr))
+    MCUConfig(section_prefix+addr).SetString(param, value);
+  else if(MCUConfig::HasSection(section_prefix+user))
+    MCUConfig(section_prefix+user).SetString(param, value);
+  else if(MCUConfig::HasSection(section_prefix+host))
+    MCUConfig(section_prefix+host).SetString(param, value);
+  else
+    MCUConfig(section_prefix+user).SetString(param, value);
+
+  // refresh the settings page
+  OpenMCU::Current().CreateHTTPResource(httpResource);
 }
 
 PString GetSectionParamFromUrl(PString param, PString addr, bool asterisk)

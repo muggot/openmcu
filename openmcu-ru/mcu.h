@@ -116,6 +116,8 @@ static const char RoomRecallLastTemplateKey[]   = "Recall last template";
 static const char RoomTimeLimitKey[]            = "Room time limit";
 static const char LockTemplateKey[]             = "Template locks conference by default";
 
+static PString InputOutputGainSelect            = "-20,-18,-16,-14,-12,-10,-8,-6,-4,-2,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60";
+
 static const char ReceivedVFUDelayKey[]         = "Received VFU delay";
 static PString ReceivedVFUDelaySelect           = "Disable,0/0,5/5,5/10,10/5,10/10";
 static const char SendVFUDelayKey[]             = "Send VFU delay";

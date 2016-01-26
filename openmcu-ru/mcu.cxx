@@ -868,6 +868,8 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
   if(!data.Contains("v"))
     return FALSE;
   PString value = data("v");
+  value = PURL::UntranslateString(value, PURL::QueryTranslation);
+
   long v = value.AsInteger();
 
   BOOL otfc_web = data.Contains("otfc");

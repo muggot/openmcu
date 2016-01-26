@@ -509,6 +509,7 @@ class MCUURL : public PURL
       }
       else if(url_scheme == "rtsp")
       {
+        /*
         url_party = url_scheme+"://";
         if(username != "")
         {
@@ -521,6 +522,7 @@ class MCUURL : public PURL
         if(port != 0)
           url_party += ":"+PString(port);
         url_party += pathStr;
+        */
       }
       return url_party;
     }
