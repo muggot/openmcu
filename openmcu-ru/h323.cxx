@@ -1329,7 +1329,8 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 
     r << "]"; // l3 close
 
-  r << "," << OpenMCU::Current().GetScaleFilterType();                      // [0][10] = yuv resizer filter mode
+  int scaleFilterType = OpenMCU::Current().GetScaleFilterType();
+  r << "," << "\"" << OpenMCU::GetScaleFilterName(scaleFilterType) << "\""; // [0][10] = yuv resizer filter mode
 
   if(c.conferenceRecorder != NULL && c.conferenceRecorder->IsRunning()) r << ",1"; else r << ",0"; // [0][11] = video recording state (1=recording, 0=NO)
   if(c.lockedTemplate) r << ",1"; else r << ",0";                         // [0][12] = member list locked by template (1=yes, 0=no)

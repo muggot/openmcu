@@ -55,7 +55,6 @@ var OTFC_DIAL                    = 34;
 var OTFC_DROP_ALL_ACTIVE_MEMBERS = 64;
 var OTFC_INVITE_ALL_INACT_MMBRS  = 65;
 var OTFC_REMOVE_ALL_INACT_MMBRS  = 66;
-var OTFC_YUV_FILTER_MODE         = 68;
 var OTFC_TAKE_CONTROL            = 69;
 var OTFC_DECONTROL               = 70;
 var OTFC_ADD_VIDEO_MIXER         = 71;
@@ -1599,9 +1598,8 @@ function top_panel()
     + (muteNewUsers?"OTFC_UNMUTE_NEW_USERS":"OTFC_MUTE_NEW_USERS") + ",0);return false;}' class='mutenewusers"
     + muteNewUsers + "'></button>";
 
-  var i; try{ i=conf[0][10]; }catch(e){i=0;} //if((i<1)||(i>3))i=0;
-  title=window.l_filtermode[i-1];
-  c+=' '+ get_resizer(i);
+  var scaleFilter; try{ scaleFilter=conf[0][10]; }catch(e){scaleFilter="";}
+  c+=' '+ get_resizer(scaleFilter);
 
   c+="</td><td width='30%' align=right id='savetpl' name='savetpl'><nobr>";
 
@@ -2358,37 +2356,10 @@ function resize_timing(s)
   alive();
 }
 
-function get_resizer(i)
-{
-  var a=[
-    'built-in',
-    "libyuv|kFilterNone",
-    "libyuv|kFilterBilinear",
-    "libyuv|kFilterBox",
-    "swscale|SWS_FAST_BILINEAR",
-    "swscale|SWS_BILINEAR",
-    "swscale|SWS_BICUBIC",
-    "swscale|SWS_X",
-    "swscale|SWS_POINT",
-    "swscale|SWS_AREA",
-    "swscale|SWS_BICUBLIN",
-    "swscale|SWS_GAUSS",
-    "swscale|SWS_SINC",
-    "swscale|SWS_LANCZOS",
-    "swscale|SWS_SPLINE"
-  ];
-  
-  var r = "&nbsp;Filter: <select class='btn btn-small' style='height:28px;' name='FilterSelector' onchange='{queue_otf_request("
-    + OTFC_YUV_FILTER_MODE + ",this.value);return false;}'>";
-  
-  for(j=0;j<a.length;j++)
-  {
-    r+="<option value=\""+j+"\"";
-    if(i==j) r+=" selected";
-    r+=">"+a[j]+"</option>";
-  }
-  r+="</select>";
 
+function get_resizer(scaleFilter)
+{
+  var r = "&nbsp;Filter: "+scaleFilter;
   r+="&nbsp;<span id='ScaleTiming'>-</span>";
 
   return r;

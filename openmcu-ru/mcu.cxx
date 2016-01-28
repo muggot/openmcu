@@ -238,11 +238,17 @@ BOOL OpenMCU::Initialise(const char * initMsg)
   endpoint->videoFrameRate = MCUConfig("Video").GetInteger("Video frame rate", DefaultVideoFrameRate);
   endpoint->videoTxQuality = cfg.GetInteger("Video quality", DefaultVideoQuality);
 
-#if USE_LIBYUV
-  SetScaleFilterType(libyuv::LIBYUV_FILTER+1);
-#else
-  SetScaleFilterType(SCALE_FILTER);
-#endif
+  // scale filter
+  PString _scaleFilterName = MCUConfig("Video").GetString(VideoScaleFilterKey);
+  int _scaleFilterType = OpenMCU::GetScaleFilterType(_scaleFilterName);
+  if(_scaleFilterType == P_MAX_INDEX)
+  #if USE_LIBYUV
+    _scaleFilterType = libyuv::LIBYUV_FILTER+1;
+  #else
+    _scaleFilterType = SCALE_FILTER;
+  #endif
+  SetScaleFilterType(_scaleFilterType);
+
 #endif
 
 #if P_SSL
@@ -920,17 +926,6 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
   if(action == OTFC_ROOM_DELETE)
   {
     manager->RemoveConference(room);
-    return TRUE;
-  }
-  if(action == OTFC_YUV_FILTER_MODE)
-  {
-    PString filterName = SetScaleFilterType(v);
-    HttpWriteEventRoom("filter: "+filterName, room);
-    PStringStream cmd;
-    cmd << "conf[0][10]=" << v;
-    HttpWriteCmdRoom(cmd,room);
-    HttpWriteCmdRoom("top_panel()",room);
-    HttpWriteCmdRoom("alive()",room);
     return TRUE;
   }
 

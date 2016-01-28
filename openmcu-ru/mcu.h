@@ -194,6 +194,8 @@ static const char OPTION_ENCODER_CHANNELS[] = "Encoder Channels";
 static const char OPTION_DECODER_CHANNELS[] = "Decoder Channels";
 static const char OPTION_TX_KEY_FRAME_PERIOD[] = "Tx Key Frame Period";
 
+static const char VideoScaleFilterKey[] = "Video scale filter";
+
 static PString MCUScaleFilterNames =
                                   "built-in"
                                   ",libyuv|kFilterNone"
@@ -485,12 +487,19 @@ class OpenMCU : public OpenMCUPreInit, public OpenMCUProcessAncestor
         type = 4;
 #endif
       scaleFilterType = type;
-      return GetScaleFilterName(type);
+      PString scaleFilterName = GetScaleFilterName(scaleFilterType);
+      MCUTRACE(1, trace_section << "set scale filter: " << scaleFilterType << " " << scaleFilterName);
+      return scaleFilterName;
     }
 
     int GetScaleFilterType()
     {
       return scaleFilterType;
+    }
+
+    static PINDEX GetScaleFilterType(const PString & name)
+    {
+      return MCUScaleFilterNames.Tokenise(",").GetStringsIndex(name);
     }
 
     static PString GetScaleFilterName(int type)
