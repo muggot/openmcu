@@ -179,12 +179,12 @@ case "$target_cpu" in
    ppc )           MACHTYPE=ppc ;
 		   ;;
 
-   powerpc64 )     MACHTYPE=ppc64 ;
+   powerpc64*)     MACHTYPE=ppc64 ;
 		   P_64BIT=1 ;
                    LIB64=1 ;
 		   ;;
 
-   ppc64 )         MACHTYPE=ppc64 ;
+   ppc64*)         MACHTYPE=ppc64 ;
 		   P_64BIT=1 ;
                    LIB64=1 ;
 		   ;;
