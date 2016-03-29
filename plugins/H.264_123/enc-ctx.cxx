@@ -164,7 +164,8 @@ void X264EncoderContext::SetTargetBitrate(unsigned rate, unsigned maxBr, unsigne
   _context.rc.i_bitrate = rate;
   _context.rc.i_vbv_max_bitrate = maxBr;
   _context.rc.i_vbv_buffer_size = cpb;
-//  if(rate>2000) _context.rc.i_vbv_buffer_size = rate/25;
+  if(_context.rc.i_vbv_buffer_size == 0)
+    _context.rc.i_vbv_buffer_size = _context.rc.i_vbv_max_bitrate;
 }
 
 void X264EncoderContext::SetFrameWidth(unsigned width)
