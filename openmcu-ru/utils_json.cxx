@@ -41,11 +41,11 @@ std::string & JsQuoteScreen(const std::string &str, std::string &r)
     {
       case(0x22):
         // "
-        r.push_back('\\'); r.push_back('\\'); r.push_back('x'); r.push_back('2'); r.push_back('2');
+        r.push_back('\\'); r.push_back('"');
         break;
       case(0x5c):
         // backslash
-        r.push_back('\\'); r.push_back('\\'); r.push_back('x'); r.push_back('5'); r.push_back('c');
+        r.push_back('\\'); r.push_back('\\');
         break;
       case ('<'):
         r.push_back('&'); r.push_back('l'); r.push_back('t');
