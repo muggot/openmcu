@@ -269,9 +269,15 @@ int Registrar::OnReceivedSipInvite(const msg_t *msg)
     if(raccount_out) raccount_out->Unlock();
     if(rconn) rconn->Unlock();
     if(response_code == 0)
+    {
+		msg_destroy(msg_reply);
       return 0;
+	}
     else if(response_code == -1)
+    {
       sep->CreateIncomingConnection(msg); // MCU call
+		msg_destroy(msg_reply);
+	}
     else
       sep->SipReqReply(msg, msg_reply, response_code);
     return 1;
