@@ -476,14 +476,14 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
   }
 
   end:
-    if(fmt_ctx)
-      avformat_close_input(&fmt_ctx);
     if(context)
     {
       avcodecMutex.Wait();
       avcodec_close(context);
       avcodecMutex.Signal();
     }
+    if(fmt_ctx)
+      avformat_close_input(&fmt_ctx);
     if(frame)
       AVFrameFree(&frame);
 

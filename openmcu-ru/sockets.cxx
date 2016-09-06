@@ -119,6 +119,7 @@ BOOL MCUSocket::GetFromIP(PString & ip, const PString & host, const PString & po
     PTRACE(1, "MCUSocket error " << errno << " " << strerror(errno));
     return FALSE;
   }
+  freeaddrinfo(res);
 
   sockaddr_in name;
   socklen_t namelen = sizeof(name);
