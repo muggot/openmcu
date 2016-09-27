@@ -89,7 +89,7 @@ More info can be found in <b>Help</b> (link leads to official Internet site).<br
 ';
 window.l_welcome_logo ='\
 <p>\
-<b>Custom logo iamge</b>\
+<b>Custom logo image</b>\
 </p>\
 <p>\
 This image is shown when no input video in mixer. Accepted only BMP, JPEG(maximum 500kB), PNG, GIF.\
