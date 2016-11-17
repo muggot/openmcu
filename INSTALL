@@ -31,6 +31,18 @@ OpenMCU-ru contains the following required libraries in the repository:
   * libSRTP          - http://srtp.sourceforge.net/srtp.html
   * libzrtp          - http://zfoneproject.com/prod_sdk.html
   * libyuv           - http://www.code.google.com/p/libyuv
+  
+Use following lines to install build dependencies on Ubuntu:
+  apt-get install gcc make flex bison autoconf automake pkg-config
+  apt-get install libtool
+  apt-get install libavcodec-dev
+  apt-get install libavformat-dev
+  apt-get install libswscale-dev
+  apt-get install libfreetype6-dev
+  apt-get install libssl-dev
+  apt-get install libx264-dev
+  apt-get install libvpx-dev
+
 
 
 --------------
