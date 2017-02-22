@@ -1,4 +1,4 @@
-FROM videoswitch/base-image:3.4.x
+FROM videoswitch/base-image:3.4x
 
 RUN echo "--------УСТАНОВКА OPENMCU---------" \
  && cd /tmp && git clone git://github.com/muggot/openmcu.git ./openmcu-ru \
