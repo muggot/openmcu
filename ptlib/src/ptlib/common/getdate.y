@@ -117,9 +117,9 @@ static int yyparse(void *);
 static int yylex();
 
 #ifdef __GNUC__
-static int yyerror();
+static int yyerror(void *, char const *msg);
 #else
-static void yyerror();
+static void yyerror(void *, char const *msg);
 #endif
 
 
@@ -128,7 +128,8 @@ static void SetPossibleDate(struct Variables*, time_t, time_t, time_t);
 
 %}
 
-%pure_parser
+%pure-parser
+%parse-param {void *parseParam}
 
 %union {
     time_t		Number;
@@ -1008,12 +1009,12 @@ time_t STDAPICALLTYPE PTimeParse(void * inputStream, struct tm * now, int timezo
 #endif
 
 #ifdef __GNUC__
-int yyerror(const char * s)
+int yyerror(void *var, const char * s)
 {
   return 0;
 }
 #else
-static void yyerror(const char * s)
+static void yyerror(void *var, const char * s)
 {
 }
 #endif
