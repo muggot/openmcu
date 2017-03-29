@@ -1500,9 +1500,9 @@ Optional Features:
   --enable-dependency-tracking   do not reject slow dependency extractors
 
   --disable-resample                    Disable resampling (default enabled)
-  --disable-resampler-ffmpeg            Enable check only libswresample resampler(default auto)
-  --disable-resampler-libav             Enable check only libavresample resampler(default auto)
-  --disable-resampler-libsamplerate     Enable check only libsamplerate resampler(default auto)
+  --disable-resampler-ffmpeg            Disable libswresample from ffmpeg (default auto)
+  --disable-resampler-libav             Disable libavresample from libav (default auto)
+  --disable-resampler-libsamplerate     Disable libsamplerate (default auto)
 
   --disable-libfreetype                 Disable subtitles (default enabled)
   --enable-libjpeg                      Enable JPEG Frame Encoder for browser (default disabled)

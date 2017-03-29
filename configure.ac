@@ -525,9 +525,9 @@ dnl check for resampling library
 
 AC_ARG_ENABLE(separator, [ ])
 AC_ARG_ENABLE(resample, [AS_HELP_STRING([--disable-resample],[Disable resampling (default enabled)],[40],[100])], [resample="$enableval"])
-AC_ARG_ENABLE(resampler-ffmpeg, [AS_HELP_STRING([--disable-resampler-ffmpeg],[Enable check only libswresample resampler(default auto)],[40],[100])], [resampler_ffmpeg="yes" resampler_libav="no" resampler_libsamplerate="no"])
-AC_ARG_ENABLE(resampler-libav, [AS_HELP_STRING([--disable-resampler-libav],[Enable check only libavresample resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="yes" resampler_libsamplerate="no"])
-AC_ARG_ENABLE(resampler-libsamplerate, [AS_HELP_STRING([--disable-resampler-libsamplerate],[Enable check only libsamplerate resampler(default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="no" resampler_libsamplerate="yes"])
+AC_ARG_ENABLE(resampler-ffmpeg, [AS_HELP_STRING([--disable-resampler-ffmpeg],[Disable libswresample from ffmpeg (default auto)],[40],[100])], [resampler_ffmpeg="yes" resampler_libav="no" resampler_libsamplerate="no"])
+AC_ARG_ENABLE(resampler-libav, [AS_HELP_STRING([--disable-resampler-libav],[Disable libavresample from libav (default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="yes" resampler_libsamplerate="no"])
+AC_ARG_ENABLE(resampler-libsamplerate, [AS_HELP_STRING([--disable-resampler-libsamplerate],[Disable libsamplerate (default auto)],[40],[100])], [resampler_ffmpeg="no" resampler_libav="no" resampler_libsamplerate="yes"])
 
 AC_SUBST(USE_SWRESAMPLE, 0)
 AC_SUBST(USE_AVRESAMPLE, 0)
