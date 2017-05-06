@@ -222,7 +222,9 @@ class ConferenceMember : public PObject
       */
     virtual void WriteAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels);
 
-    void WriteAudioAutoGainControl(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate, unsigned level, float* currVolCoef, unsigned* signalLevel, float kManual);
+    void Gain(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate);
+
+    BOOL DetectSilence(unsigned level, int tint);
 
     /**
       *  Called when the conference member wants to read a block of audio from the conference
@@ -406,6 +408,10 @@ class ConferenceMember : public PObject
     unsigned write_audio_time_microseconds;
     unsigned write_audio_average_level;
     unsigned write_audio_write_counter;
+    
+    unsigned avgLevel, maxLevel, silenceDetectorFrameCounter, signalDetectorThreshold, silenceDeadbandFrames, signalDeadbandFrames, signalMinimum, silenceMaximum, signalFramesReceived, silenceFramesReceived;
+    BOOL inTalkBurst;
+
 
 #if MCU_VIDEO
     PINDEX totalVideoFramesSent;

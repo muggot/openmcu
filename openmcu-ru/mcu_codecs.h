@@ -222,7 +222,6 @@ class MCUFramedAudioCodec : public H323AudioCodec
     virtual BOOL EncodeFrame(BYTE * buffer, unsigned int & length);
     virtual BOOL DecodeFrame(const BYTE * buffer, unsigned length, unsigned & written, unsigned & bytesDecoded);
 
-    virtual unsigned GetAverageSignalLevel();
     virtual BOOL DetectSilence();
     virtual void DecodeSilenceFrame(void * buffer, unsigned length);
 

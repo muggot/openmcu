@@ -23,6 +23,13 @@ const static struct audio_resolution {
   { 0 }
 };
 
+extern "C" {
+  unsigned char linear2ulaw(int pcm_val);
+  int ulaw2linear(unsigned char u_val);
+  unsigned char linear2alaw(int pcm_val);
+  int alaw2linear(unsigned char u_val);
+};
+        
 ////////////////////////////////////////////////////////////////////////////////////
 
 ConferenceManager::ConferenceManager()
@@ -1320,6 +1327,14 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   write_audio_time_microseconds=0;
   write_audio_average_level=0;
   write_audio_write_counter=0;
+  inTalkBurst = FALSE;
+  avgLevel = maxLevel = silenceDetectorFrameCounter = signalDetectorThreshold = 0;
+  silenceDeadbandFrames = 2;
+  signalDeadbandFrames = 2;
+  signalMinimum = UINT_MAX;
+  silenceMaximum = 0;
+  signalFramesReceived = 0;
+  silenceFramesReceived = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1487,58 +1502,32 @@ void ConferenceMember::ChannelStateUpdate(unsigned bit, BOOL state)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceMember::WriteAudioAutoGainControl(const short * pcm, unsigned samplesPerFrame,
-  unsigned codecChannels, unsigned sampleRate,
-  unsigned level, float* currVolCoef, unsigned* signalLevel, float kManual)
+void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigned codecChannels, unsigned sampleRate)
 {
   unsigned samplesCount = samplesPerFrame*codecChannels;
-  if(!samplesCount) return;
+  if(!samplesCount) return;        // empty buffer - nothing to do
 
-  const short * end = pcm + samplesCount;
-  short *buf = (short*)pcm;
-  int c_max_vol = 0, c_avg_vol = 0;
-  while (pcm != end) 
-  {
-    if (*pcm < 0) 
-    { if(-*pcm > c_max_vol) c_max_vol = -*pcm; c_avg_vol -= *pcm++; }
-    else 
-    { if( *pcm > c_max_vol) c_max_vol =  *pcm; c_avg_vol += *pcm++; }
-  }
-  c_avg_vol /= samplesPerFrame;
+  short       * buf = (short*)pcm; // for 2nd pass
 
-  if(!level)
-  {
-    *signalLevel = c_avg_vol;
-    return;
-  }
+  float overload = (float)32768.0 * kManualGain; //optimize!!
+  float good = 1.414 * overload;
 
-  float   max_vol = (float)23170.0 * kManual;
-  float   overload = 32768 * kManual;
-  float   inc_vol = (float)0.05*(float)8000.0/sampleRate;
-  float & cvc = *currVolCoef;
+  float maxChangeDB = (float)0.8 * ((float)samplesPerFrame / (float)sampleRate);
+  if(maxChangeDB > 10.0     ) maxChangeDB = 10.0    ;
+  if(maxChangeDB <  0.00001 ) maxChangeDB =  0.00001;
+
+  float & cvc = currVolCoef;
   float   vc0= cvc;
   
-  unsigned wLevel; // AGC level
-//  wLevel = (unsigned)((float)(level*10)/kManual); //worst result
-  if(kManual>10) wLevel = (unsigned)((float)(level*10)/kManual);
-  else wLevel=level;
-
-  if((unsigned)c_avg_vol > wLevel) // signal detected
+  if(maxLevel*cvc >= overload) cvc = overload / maxLevel; // overload
+  else if(inTalkBurst && (maxLevel*cvc < good)) // amplify
   {
-    if(c_max_vol*cvc >= overload) // overload
-      cvc = overload / c_max_vol;
-    else
-    if(c_max_vol*cvc < max_vol) // ++ amplification
-      cvc += inc_vol;
+    cvc *= pow(10.0,maxChangeDB/20.0);
+    if(maxLevel*cvc >= overload) cvc = overload / maxLevel;
   }
-  else // no signal (just a noise) but check it for overload for safety reason
-  {
-    if(c_max_vol*cvc >= overload) // overload
-      cvc = (float)overload / c_max_vol;
-  }
-  *signalLevel = (unsigned)((float)c_avg_vol*cvc);
+  else return;
 
-  float delta0=(cvc-vc0)/samplesCount;
+  float delta0 = pow(cvc/vc0, 1.0/(float)samplesCount);
 
   for(unsigned i=0; i<samplesCount; i++) 
   {
@@ -1547,38 +1536,143 @@ void ConferenceMember::WriteAudioAutoGainControl(const short * pcm, unsigned sam
     if(v > 32767) buf[i]=32767;
     else if(v < -32768) buf[i]=-32768;
     else buf[i] = (short)v;
-    vc0+=delta0;
+    vc0*=delta0;
   }
+  PTRACE(6, "AGC\tname=" << name << " spf=" << samplesPerFrame << " cs=" << codecChannels << " sr=" << sampleRate << " level=" << avgLevel << "/" << maxLevel << " cvc=" << cvc << " kM=" << kManualGain << " delta0=" << delta0 << " overload=" << overload << " good=" << good << " maxChngDB=" << maxChangeDB);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+BOOL ConferenceMember::DetectSilence(unsigned level, int tint)
+{
+  // Convert to a logarithmic scale - use uLaw which is complemented
+  level = linear2ulaw(level) ^ 0xff;
+    
+  // Now if signal level above threshold we are "talking"
+  BOOL haveSignal = level > signalDetectorThreshold;
+        
+  if(inTalkBurst == haveSignal) silenceDetectorFrameCounter = 0; // If no change ie still talking or still silent, reset frame counter
+  else if((++silenceDetectorFrameCounter) >= (inTalkBurst ? silenceDeadbandFrames : signalDeadbandFrames))
+  {
+    inTalkBurst = !inTalkBurst; // Have had enough consecutive frames talking/silent, swap modes.
+    PTRACE(5, "ConferenceMember\tSilence detector transition: " << (inTalkBurst ? "Talk" : "Silent") << " avg/thrs=" << level << "/" << signalDetectorThreshold);
+
+    signalMinimum = UINT_MAX; silenceMaximum = 0; signalFramesReceived = 0; silenceFramesReceived = 0; // Restart adaptive threshold measurements
+  }
+
+  if(signalDetectorThreshold == 0)
+  {
+    if(level > 1)
+    {
+      // Bootstrap condition, use first frame level as silence level
+      signalDetectorThreshold = 20;
+      PTRACE(5, "Codec\tSilence detection threshold initialised to: " << signalDetectorThreshold);
+    }
+    return TRUE; // inTalkBurst always FALSE here, so return silent
+  }
+
+  // Count the number of silent and signal frames and calculate min/max
+  if(haveSignal)
+  {
+    if (level < signalMinimum) signalMinimum = level;
+    signalFramesReceived++;
+  } else {
+    if (level > silenceMaximum) silenceMaximum = level;
+    silenceFramesReceived++;
+  }
+
+  // See if we have had enough frames to look at proportions of silence/signal
+//  unsigned atff = (unsigned)(((unsigned long)adaptiveThresholdFrames) * sampleRate * channels / 8000);
+  unsigned atff = 7;
+  if((signalFramesReceived + silenceFramesReceived) > atff)
+  {
+    // Now we have had a period of time to look at some average values we can
+    //  make some adjustments to the threshold. There are four cases:
+    if(signalFramesReceived >= atff)
+    {
+      // If every frame was noisy, move threshold up. Don't want to move too
+      // fast so only go a quarter of the way to minimum signal value over the
+      // period. This avoids oscillations, and time will continue to make the
+      // level go up if there really is a lot of background noise.
+      int delta = (signalMinimum - signalDetectorThreshold)/4;
+      if(delta != 0)
+      {
+        signalDetectorThreshold += delta;
+        if(signalDetectorThreshold > 20) signalDetectorThreshold=20;
+        PTRACE(5, "Codec\tSilence detection threshold increased to: " << signalDetectorThreshold);
+      }
+    }
+    else if (silenceFramesReceived >= atff)
+    {
+      // If every frame was silent, move threshold down. Again do not want to
+      // move too quickly, but we do want it to move faster down than up, so
+      // move to halfway to maximum value of the quiet period. As a rule the
+      // lower the threshold the better as it would improve response time to
+      // the start of a talk burst.
+      unsigned newThreshold = (signalDetectorThreshold + silenceMaximum)/2 + 1;
+      if(signalDetectorThreshold > newThreshold)
+      {
+        signalDetectorThreshold = PMIN(newThreshold, 20);
+        PTRACE(5, "Codec\tSilence detection threshold decreased to: " << signalDetectorThreshold);
+      }
+    }
+    else if (signalFramesReceived > silenceFramesReceived)
+    {
+      // We haven't got a definitive silent or signal period, but if we are
+      // constantly hovering at the threshold and have more signal than
+      // silence we should creep up a bit.
+      signalDetectorThreshold++;
+      PTRACE(5, "Codec\tSilence detection threshold incremented to: " << signalDetectorThreshold
+               << " signal=" << signalFramesReceived << ' ' << signalMinimum
+               << " silence=" << silenceFramesReceived << ' ' << silenceMaximum);
+    }
+    signalMinimum = UINT_MAX; silenceMaximum = 0; signalFramesReceived = 0; silenceFramesReceived = 0;
+  }
+  return !inTalkBurst;
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ConferenceMember::WriteAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-  if(conference != NULL)
-  {
-    // Автоматическая регулировка усиления
-    // calculate average signal level for this member
-    unsigned signalLevel=0;
-    WriteAudioAutoGainControl((short*) buffer, amount/channels/2, channels, sampleRate, 900, &currVolCoef, &signalLevel, kManualGain);
-    audioLevel = ((signalLevel * 2) + audioLevel) / 3;
+  if(conference == NULL) return;
 
-    // Записать аудио в буфер // Write to buffer
-    conference->WriteMemberAudio(this, timestamp, buffer, amount, sampleRate, channels);
-
-
-    // Индикатор уровня, VAD // Level indication, VAD
-#   define MINIMUM_VAD_INTERVAL_MS 250
-    write_audio_time_microseconds += amount*1000000/2/channels/sampleRate;
-    write_audio_average_level += audioLevel;
-    write_audio_write_counter++;
-    if(write_audio_time_microseconds >= MINIMUM_VAD_INTERVAL_MS * 1000)
+  { // set avgLevel & maxLevel
+    unsigned      samplesCount = amount/2;
+    short       * pcm = (short*)buffer;
+    const short * end = pcm + samplesCount;
+    int           c_max_vol=0,
+                  c_avg_vol=0;
+    while (pcm != end)
     {
-      conference->WriteMemberAudioLevel(this, write_audio_average_level/write_audio_write_counter, write_audio_time_microseconds/1000);
-      write_audio_average_level = 0;
-      write_audio_time_microseconds = 0;
-      write_audio_write_counter = 0;
+      short v=*pcm++;   if(v== -0x8000) v=0x7fff;   if(v<0)v= -v;
+      if(v > c_max_vol) c_max_vol=v;
+      c_avg_vol += v;
     }
+    c_avg_vol /= samplesCount;       // avg. volume of all channels
+    avgLevel   = (unsigned)c_avg_vol;
+    maxLevel   = (unsigned)c_max_vol;
+  }
+
+//  unsigned adaptiveThresholdFrames = (unsigned)(10 * sampleRate * channels / 8000);
+
+
+  Gain((short*) buffer, amount/channels/2, channels, sampleRate);
+  conference->WriteMemberAudio(this, timestamp, buffer, amount, sampleRate, channels);
+
+  // For voice level indication
+# define MINIMUM_VAD_INTERVAL_MS 250
+  write_audio_time_microseconds += amount*1000000/2/channels/sampleRate;
+  write_audio_average_level += avgLevel;
+  write_audio_write_counter++;
+  if(write_audio_time_microseconds >= MINIMUM_VAD_INTERVAL_MS * 1000)
+  {
+    DetectSilence(write_audio_average_level/write_audio_write_counter, write_audio_time_microseconds/1000);
+    conference->WriteMemberAudioLevel(this, write_audio_average_level/write_audio_write_counter, write_audio_time_microseconds/1000);
+    write_audio_average_level = 0;
+    write_audio_time_microseconds = 0;
+    write_audio_write_counter = 0;
   }
 }
 

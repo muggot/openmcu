@@ -73,7 +73,7 @@ class MCUConnectionCleaner : public PThread
 
     void Main()
     {
-      PTRACE(1, "MCU Connection cleaner start " << callToken);
+      PTRACE(2, "MCU Connection cleaner start " << callToken);
       MCUConnectionList & connectionList = ep->GetConnectionList();
       MCUConnectionList & connectionDeleteList = ep->GetConnectionDeleteList();
       MCUConnectionList::shared_iterator r = connectionList.Find(callToken);
@@ -91,7 +91,7 @@ class MCUConnectionCleaner : public PThread
             connectionDeleteList.Erase(s);
         }
       }
-      PTRACE(1, "MCU Connection cleaner stop " << callToken);
+      PTRACE(2, "MCU Connection cleaner stop " << callToken);
     }
 
   protected:
@@ -391,7 +391,7 @@ H323Connection * MCUH323EndPoint::InternalMakeCall(const PString & trasferFromTo
       transport = address.CreateTransport(*this);
     if(transport == NULL)
     {
-      PTRACE(1, trace_section << "Invalid transport in \"" << remoteParty << '"');
+      PTRACE(2, trace_section << "Invalid transport in \"" << remoteParty << '"');
       return NULL;
     }
   }
@@ -416,7 +416,7 @@ H323Connection * MCUH323EndPoint::InternalMakeCall(const PString & trasferFromTo
     connection = CreateConnection(lastReference, userData, transport, NULL);
     if(connection == NULL)
     {
-      PTRACE(1, trace_section << "CreateConnection returned NULL");
+      PTRACE(2, trace_section << "CreateConnection returned NULL");
       return NULL;
     }
     connection->Lock();
@@ -483,11 +483,11 @@ BOOL MCUH323EndPoint::ClearCallSynchronous(const PString & callToken, H323Connec
     if(connectionsActive.GetAt(callToken) == NULL)
       return FALSE;
     // Перенаправить в h323plus
-    PTRACE(1, trace_section << "Unknown connection " << callToken << ", redirection to H323EndPoint");
+    PTRACE(2, trace_section << "Unknown connection " << callToken << ", redirection to H323EndPoint");
     return H323EndPoint::ClearCallSynchronous(callToken, reason, sync);
   }
 
-  PTRACE(1, trace_section << "Clearing connection " << callToken << " reason=" << reason << " thread " << PThread::Current()->GetThreadName());
+  PTRACE(2, trace_section << "Clearing connection " << callToken << " reason=" << reason << " thread " << PThread::Current()->GetThreadName());
 
   connection->SetCallEndReason(reason, sync);
 
@@ -544,14 +544,14 @@ BOOL MCUH323EndPoint::OnConnectionCreated(MCUH323Connection * conn)
     if(it.GetObject() == conn)
       return TRUE;
     // Удалить
-    PTRACE(1, trace_section << "Error !");
+    PTRACE(2, trace_section << "Error !");
     PString fakeToken = PGloballyUniqueID().AsString();
     connectionList.Insert(conn, (long)conn, fakeToken);
     ClearCall(fakeToken);
     return FALSE;
   }
 
-  PTRACE(1, trace_section << "Insert connection " << conn->GetCallToken());
+  PTRACE(2, trace_section << "Insert connection " << conn->GetCallToken());
   connectionList.Insert(conn, (long)conn, conn->GetCallToken());
 
   Registrar *registrar = OpenMCU::Current().GetRegistrar();
@@ -1769,7 +1769,7 @@ PString MCUH323EndPoint::Invite(PString room, PString memberName)
   }
 
   end:
-    PTRACE(1, trace_section << msg);
+    PTRACE(2, trace_section << msg);
     OpenMCU::Current().HttpWriteEventRoom(msg, room);
     return callToken;
 }
@@ -2103,7 +2103,7 @@ void MCUH323Connection::SetRequestedRoom()
 
 void MCUH323Connection::JoinConference(const PString & roomToJoin)
 {
-  PTRACE(1, trace_section << "Join conference: " << roomToJoin << " memberName: " << memberName);
+  PTRACE(2, trace_section << "Join conference: " << roomToJoin << " memberName: " << memberName);
 
   PWaitAndSignal m(connMutex);
 
@@ -2341,7 +2341,7 @@ H323Capability * MCUH323Connection::SelectRemoteCapability(H323Capabilities & ca
 
 void MCUH323Connection::OnSetLocalCapabilities()
 {
-  PTRACE(1, trace_section << "OnSetLocalCapabilities");
+  PTRACE(2, trace_section << "OnSetLocalCapabilities");
   PString audio_cap = GetEndpointParam("Audio codec(receive)");
   if(audio_cap.Left(5) == "G.711" && audio_cap.Right(4) == "{sw}") { audio_cap.Replace("{sw}","",TRUE,0); }
   PString video_cap = GetEndpointParam("Video codec(receive)", false);
@@ -3438,8 +3438,8 @@ void MCUH323Connection::SetRemoteName(const H323SignalPDU & pdu)
     remoteDisplayName = convert_cp1251_to_utf8(remoteDisplayName);
   }
 
-  PTRACE(1, trace_section << "SetRemoteName remoteUserName: " << remoteUserName);
-  PTRACE(1, trace_section << "SetRemoteName remoteDisplayName: " << remoteDisplayName);
+  PTRACE(2, trace_section << "SetRemoteName remoteUserName: " << remoteUserName);
+  PTRACE(2, trace_section << "SetRemoteName remoteDisplayName: " << remoteDisplayName);
   SetMemberName();
 }
 
@@ -3490,12 +3490,12 @@ void MCUH323Connection::SetMemberName()
 
   memberName = remoteDisplayName+" ["+address+"]";
 
-  PTRACE(1, trace_section << "SetMemberName remote account: " << GetRemoteUserName());
-  PTRACE(1, trace_section << "SetMemberName remoteUserName: " << remoteUserName);
-  PTRACE(1, trace_section << "SetMemberName remoteDisplayName: " << remoteDisplayName);
-  PTRACE(1, trace_section << "SetMemberName remotePartyAddress: " << remotePartyAddress);
-  PTRACE(1, trace_section << "SetMemberName remotePartyAliases: " << remoteAliasNames);
-  PTRACE(1, trace_section << "SetMemberName memberName: " << memberName);
+  PTRACE(2, trace_section << "SetMemberName remote account: " << GetRemoteUserName());
+  PTRACE(2, trace_section << "SetMemberName remoteUserName: " << remoteUserName);
+  PTRACE(2, trace_section << "SetMemberName remoteDisplayName: " << remoteDisplayName);
+  PTRACE(2, trace_section << "SetMemberName remotePartyAddress: " << remotePartyAddress);
+  PTRACE(2, trace_section << "SetMemberName remotePartyAliases: " << remoteAliasNames);
+  PTRACE(2, trace_section << "SetMemberName memberName: " << memberName);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -3511,39 +3511,9 @@ void MCUH323Connection::SendUserInput(const PString & value)
 
 BOOL MCUH323Connection::OnIncomingAudio(const uint64_t & timestamp, const void * buffer, PINDEX amount, unsigned sampleRate, unsigned channels)
 {
-/*
-  // If record file is open, write data to it
-  if (recordFile.IsOpen()) {
-    recordFile.Write(buffer, amount);
-
-    recordDuration += amount / 2;
-    if (recordDuration > recordLimit) {
-      recordFile.Close();
-      OnFinishRecording();
-    }
-    else {
-      const WORD * samples = (const WORD *)buffer;
-      PINDEX sampleCount = amount / 2;
-      BOOL silence = TRUE;
-      while (sampleCount-- > 0 && silence) {
-        if (*samples > 100 || *samples < -100)
-          silence = FALSE;
-        ++samples;
-      }
-      if (!silence)
-        recordSilenceCount = 0;
-      else {
-        recordSilenceCount += amount / 2;
-        if ((recordSilenceThreshold > 0) && (recordSilenceCount >= recordSilenceThreshold)) {
-          recordFile.Close();
-          OnFinishRecording();
-        }
-      }
-    }
-  }
-
-  else */ if (conferenceMember != NULL)
-    conferenceMember->WriteAudio(timestamp, buffer, amount, sampleRate, channels);
+  if(conferenceMember == NULL) return FALSE;
+  
+  conferenceMember->WriteAudio(timestamp, buffer, amount, sampleRate, channels);
 
   return TRUE;
 }
@@ -3689,7 +3659,7 @@ void MCUConnection_ConferenceMember::SetFreezeVideo(BOOL disable) const
       channel->SetFreeze(disable);
   }
   else
-    PTRACE(1, "MCU\tWrong connection in SetFreezeVideo for " << callToken);
+    PTRACE(2, "MCU\tWrong connection in SetFreezeVideo for " << callToken);
 
   conn->Unlock();
 }
@@ -3736,7 +3706,7 @@ void MCUConnection_ConferenceMember::SendUserInputIndication(const PString & str
   if(conn->GetConferenceMember() != this && conn->GetConferenceMember() != NULL)
   {
     conn->Unlock();
-    PTRACE(1, "MCU\tWrong connection in SendUserInputIndication for " << callToken);
+    PTRACE(2, "MCU\tWrong connection in SendUserInputIndication for " << callToken);
     return;
   }
 
@@ -4149,7 +4119,7 @@ int ConnectionMonitor::RTPTimeoutMonitor(MCUH323Connection * conn)
   }
   if(conn->rtpInputLostInterval >= conn->rtpInputTimeout)
   {
-    PTRACE(1, "MCU\tConnection: " << conn->GetCallToken() << ", " << conn->rtpInputTimeout << " sec timeout waiting incoming stream data.");
+    PTRACE(2, "MCU\tConnection: " << conn->GetCallToken() << ", " << conn->rtpInputTimeout << " sec timeout waiting incoming stream data.");
     return 1; // leave
   }
 
