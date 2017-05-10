@@ -374,15 +374,15 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .fltspr-1 {width:24px;height:24px;background:url(s32_ch.png)  -5px -37px}
 .fltspr0,.fltspr1,.fltspr2,.fltspr-1{cursor:pointer;vertical-align:middle;border-radius:3px;overflow:hidden;border:2px solid #288;margin:2px;background-color:#cef}
 
-.recordspr0 {width:24px;height:24px;background:url(s32_ch.png) -133px  -69px; border:2px solid #f00; background-color:#ccc}
-.recordspr1 {width:24px;height:24px;background:url(s32_ch.png) -165px  -69px; border:2px solid #f00; background-color:#ccc}
-.sortspr0   {width:24px;height:24px;background:url(s32_ch.png) -133px -165px; border:2px solid #cce; background-color:#ccc}
-.sortspr1   {width:24px;height:24px;background:url(s32_ch.png) -165px -165px; border:2px solid #aae; background-color:#ccc}
-.mutenewusers0   {width:24px;height:24px;background: url(s32_ch.png) -136px -8px; border:2px solid #cce; background-color:#ccc}
-.mutenewusers1   {width:24px;height:24px;background: url(s32_ch.png) -168px -8px; border:2px solid #aae; background-color:#ccc}
-.vadsetupspr{width:24px;height:24px;background:url(s32_ch.png)  -69px -101px; border:2px solid #000; background-color:#fff}
-.mutespr0   {width:24px;height:24px;background:url(s32_ch.png)   -7px -103px; border:2px solid #fa3; background-color:#fff}
-.mutespr1   {width:24px;height:24px;background:url(s32_ch.png)  -39px -103px; border:2px solid #830; background-color:#fff}
+.recordspr0   {width:24px;height:24px;background:url(s32_ch.png) -133px  -69px; border:2px solid #faa; background-color:#fff}
+.recordspr1   {width:24px;height:24px;background:url(s32_ch.png) -165px  -69px; border:2px solid #f67; background-color:#0c0}
+.sortspr0     {width:24px;height:24px;background:url(s32_ch.png) -133px -165px; border:2px solid #cce; background-color:#ccc}
+.sortspr1     {width:24px;height:24px;background:url(s32_ch.png) -165px -165px; border:2px solid #aae; background-color:#ccc}
+.mutenewusers0{width:24px;height:24px;background:url(s32_ch.png) -134px   -6px; border:2px solid #ccc; background-color:#faa}
+.mutenewusers1{width:24px;height:24px;background:url(s32_ch.png) -166px   -6px; border:2px solid #aff; background-color:#9f9}
+.vadsetupspr  {width:24px;height:24px;background:url(s32_ch.png)  -69px -101px; border:2px solid #000; background-color:#fff}
+.mutespr0     {width:24px;height:24px;background:url(s32_ch.png)   -7px -103px; border:2px solid #fa3; background-color:#fff}
+.mutespr1     {width:24px;height:24px;background:url(s32_ch.png)  -39px -103px; border:2px solid #830; background-color:#fff}
 .recordspr0,.recordspr1,.vadsetupspr,.mutespr0,.mutespr1,.sortspr0,.sortspr1,.mutenewusers0,.mutenewusers1{cursor:pointer;vertical-align:middle;border-radius:3px;overflow:hidden;margin:2px}
 .vadsetupspr:hover,.recordspr0:hover,.recordspr1:hover,.fltspr0:hover,.fltspr1:hover,.fltspr2:hover,.robotspr:hover,.humanspr:hover,.mutespr1:hover,.mutespr0:hover,.sortspr0:hover,.sortspr1:hover,.mutenewusers0:hover,.mutenewusers1:hover{border-style:dotted}
 

@@ -1583,6 +1583,14 @@ function top_panel()
   title=window.l_vadsetup;
   c+="<button title='" + title + "' onclick='javascript:{if(checkcontrol())vad_setup();return false;}' class='vadsetupspr'></button>";
 
+  c+=" ";
+
+  try{ muteNewUsers=conf[0][13]; } catch(e) { }
+  if(muteNewUsers==1) title=window.l_unmute_new_conference_users; else title=window.l_mute_new_conference_users;
+  c+="<button title='" + title + "' onclick='javascript:{if(checkcontrol())queue_otf_request("
+    + (muteNewUsers?"OTFC_UNMUTE_NEW_USERS":"OTFC_MUTE_NEW_USERS") + ",0);return false;}' class='mutenewusers"
+    + muteNewUsers + "'></button>";
+
   try{ recState=conf[0][11]; } catch(e) { recState=0; }
   if(recState==1) title=window.l_videorecorderstop; else title=window.l_videorecorder;
   c+=" <button title='" + title + "' onclick='javascript:{queue_otf_request(OTFC_VIDEO_RECORDER_" + (recState?"STOP":"START") + ",0);return false;}' class='recordspr" + recState + "'></button>";
@@ -1591,15 +1599,6 @@ function top_panel()
     +" onclick='javascript:{sortMode=(sortMode+1)%2;this.className=\"sortspr\"+sortMode;"
     + "document.cookie=\"sortMode=\"+sortMode+\"; expires=Fri, 31 Dec 2999 23:59:59 GMT\";members_refresh();return false;}'"
     +" class='sortspr" + sortMode + "'></button>";
-
-  try{ muteNewUsers=conf[0][13]; } catch(e) { }
-  if(muteNewUsers==1) title=window.l_unmute_new_conference_users; else title=window.l_mute_new_conference_users;
-  c+=" <button title='" + title + "' onclick='javascript:{if(checkcontrol())queue_otf_request("
-    + (muteNewUsers?"OTFC_UNMUTE_NEW_USERS":"OTFC_MUTE_NEW_USERS") + ",0);return false;}' class='mutenewusers"
-    + muteNewUsers + "'></button>";
-
-  var scaleFilter; try{ scaleFilter=conf[0][10]; }catch(e){scaleFilter="";}
-  c+=' '+ get_resizer(scaleFilter);
 
   c+="</td><td width='30%' align=right id='savetpl' name='savetpl'><nobr>";
 
