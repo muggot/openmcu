@@ -867,12 +867,8 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
   // trigger H245 thread for join message
   //new NotifyH245Thread(*this, TRUE, memberToAdd);
 
-  if (muteNewUsers) {
+  if (muteNewUsers)
     memberToAdd->SetChannelPauses(1);
-  }
-  else {
-    memberToAdd->UnsetChannelPauses(1);
-  }
 
   return TRUE;
 }
