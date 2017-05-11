@@ -365,7 +365,7 @@ class ConferenceMember : public PObject
 
     MCUSimpleVideoMixer * videoMixer;
 
-    float kManualGain, kOutputGain;
+    float kManualGain, kOutputGain, constOverload, constGood;
     int kManualGainDB, kOutputGainDB;
 
     // functions H323Connection_ConferenceMember

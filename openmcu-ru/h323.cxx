@@ -2183,6 +2183,8 @@ void MCUH323Connection::JoinConference(const PString & roomToJoin)
     {
       conferenceMember->kManualGainDB = gain.AsInteger();
       conferenceMember->kManualGain=(float)pow(10.0,((float)conferenceMember->kManualGainDB)/20.0);
+      conferenceMember->constOverload = 32768.0 * 1.05 * conferenceMember->kManualGain;
+      conferenceMember->constGood = conferenceMember->constOverload * 0.67;
     }
 
     gain = GetSectionParamFromUrl("Output Gain", MCUURL(conferenceMember->GetName()).GetUrl(), false);

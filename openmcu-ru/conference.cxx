@@ -1299,6 +1299,8 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   currVolCoef = 1.0;
   kManualGain = 1.0; kManualGainDB = 0;
   kOutputGain = 1.0; kOutputGainDB = 0;
+  constOverload = 32768.0 * 1.05 * kManualGain;
+  constGood = constOverload * 0.67;
   memberIsJoined = FALSE;
 
 #if MCU_VIDEO
@@ -1505,9 +1507,6 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
 
   short       * buf = (short*)pcm; // for 2nd pass
 
-  float overload = (float)32768.0 * kManualGain; //optimize!!
-  float good = 1.414 * overload;
-
   float maxChangeDB = (float)0.8 * ((float)samplesPerFrame / (float)sampleRate);
   if(maxChangeDB > 10.0     ) maxChangeDB = 10.0    ;
   if(maxChangeDB <  0.00001 ) maxChangeDB =  0.00001;
@@ -1515,11 +1514,11 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
   float & cvc = currVolCoef;
   float   vc0= cvc;
   
-  if(maxLevel*cvc >= overload) cvc = overload / maxLevel; // overload
-  else if(inTalkBurst && (maxLevel*cvc < good)) // amplify
+  if(maxLevel*cvc >= constOverload) cvc = constOverload / maxLevel; // overload
+  else if(inTalkBurst && (maxLevel*cvc < constGood)) // amplify
   {
     cvc *= pow(10.0,maxChangeDB/20.0);
-    if(maxLevel*cvc >= overload) cvc = overload / maxLevel;
+    if(maxLevel*cvc >= constOverload) cvc = constOverload / maxLevel;
   }
   else return;
 
@@ -1534,7 +1533,7 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
     else buf[i] = (short)v;
     vc0*=delta0;
   }
-  PTRACE(6, "AGC\tname=" << name << " spf=" << samplesPerFrame << " cs=" << codecChannels << " sr=" << sampleRate << " level=" << avgLevel << "/" << maxLevel << " cvc=" << cvc << " kM=" << kManualGain << " delta0=" << delta0 << " overload=" << overload << " good=" << good << " maxChngDB=" << maxChangeDB);
+  PTRACE(6, "AGC\tname=" << name << " spf=" << samplesPerFrame << " cs=" << codecChannels << " sr=" << sampleRate << " level=" << avgLevel << "/" << maxLevel << " cvc=" << cvc << " kM=" << kManualGain << " delta0=" << delta0 << " ovr=" << constOverload << " good=" << constGood << " maxChngDB=" << maxChangeDB);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
