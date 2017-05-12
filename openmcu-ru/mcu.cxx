@@ -1507,10 +1507,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     int n=data("o").AsInteger();
     if(n<0) n=0;
     if(n>80) n=80;
-    member->kManualGainDB=n-20;
-    member->kManualGain=(float)pow(10.0,((float)member->kManualGainDB)/20.0);
-    member->constOverload = 32768.0 * 1.05 * member->kManualGain;
-    member->constGood = member->constOverload * 0.67;
+    member->SetGainDB(n-20);
     cmd << "setagl(" << v << "," << member->kManualGainDB << ")";
     HttpWriteCmdRoom(cmd,room);
     SaveParameterByURL("Input Gain", MCUURL(member->GetName()).GetUrl(), member->kManualGainDB);

@@ -1297,10 +1297,7 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   previousAudioLevel = 65535;
   audioLevelIndicator = 0;
   currVolCoef = 1.0;
-  kManualGain = 1.0; kManualGainDB = 0;
-  kOutputGain = 1.0; kOutputGainDB = 0;
-  constOverload = 32768.0 * 1.05 * kManualGain;
-  constGood = constOverload * 0.67;
+  SetGainDB(0); kOutputGain = 1.0; kOutputGainDB = 0;
   memberIsJoined = FALSE;
 
 #if MCU_VIDEO
@@ -1505,9 +1502,9 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
   unsigned samplesCount = samplesPerFrame*codecChannels;
   if(!samplesCount) return;        // empty buffer - nothing to do
 
-  short       * buf = (short*)pcm; // for 2nd pass
+  short * buf = (short*)pcm;
 
-  float maxChangeDB = (float)0.8 * ((float)samplesPerFrame / (float)sampleRate);
+  float maxChangeDB = /* (float)0.8 * */ ((float)samplesPerFrame / (float)sampleRate);
   if(maxChangeDB > 10.0     ) maxChangeDB = 10.0    ;
   if(maxChangeDB <  0.00001 ) maxChangeDB =  0.00001;
 
@@ -1518,9 +1515,20 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
   else if(inTalkBurst && (maxLevel*cvc < constGood)) // amplify
   {
     cvc *= pow(10.0,maxChangeDB/20.0);
-    if(maxLevel*cvc >= constOverload) cvc = constOverload / maxLevel;
+    if(maxLevel*cvc > constGoodCheck) cvc = constGoodCheck / maxLevel;
   }
-  else return;
+  else
+  {
+    if((vc0<0.994)||(vc0>1.005)) for(unsigned i=0; i<samplesCount; i++) 
+    {
+      int v = buf[i];
+      v=(int)(v*vc0);
+      if(v > 32767) buf[i]=32767;
+      else if(v < -32768) buf[i]=-32768;
+      else buf[i] = (short)v;
+    }
+    return;
+  }
 
   float delta0 = pow(cvc/vc0, 1.0/(float)samplesCount);
 
@@ -1774,6 +1782,17 @@ void ConferenceMember::RemoveVideoSource(ConferenceMemberId id, ConferenceMember
 PString ConferenceMember::GetMonitorInfo(const PString & /*hdr*/)
 { 
   return PString::Empty(); 
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ConferenceMember::SetGainDB(int newGainLevelDB)
+{
+  kManualGainDB  = newGainLevelDB;
+  kManualGain    = (float)pow(10.0,((float)kManualGainDB)/20.0);
+  constOverload  = 32768.0 * 1.05 * kManualGain;
+  constGood      = constOverload * 0.67;
+  constGoodCheck = constOverload * 0.73;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

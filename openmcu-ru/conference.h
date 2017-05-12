@@ -331,6 +331,8 @@ class ConferenceMember : public PObject
     virtual unsigned GetAudioLevel() const
     { return audioLevel;  }
 
+    void SetGainDB(int newGainLevelDB);
+
     void ResetCounters()
     {
       totalVideoFramesSent = 0;
@@ -365,7 +367,7 @@ class ConferenceMember : public PObject
 
     MCUSimpleVideoMixer * videoMixer;
 
-    float kManualGain, kOutputGain, constOverload, constGood;
+    float kManualGain, kOutputGain, constOverload, constGood, constGoodCheck;
     int kManualGainDB, kOutputGainDB;
 
     // functions H323Connection_ConferenceMember
@@ -385,7 +387,7 @@ class ConferenceMember : public PObject
 
     void SendRoomControl(int state);
     MCUJSON * AsJSON(int state = 1);
-
+    
 #if MCU_VIDEO
     int resizerRule; //0=cut, 1=stripes
     PTime firstFrameSendTime;
