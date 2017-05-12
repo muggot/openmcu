@@ -904,6 +904,8 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   if(!memberToRemove->IsVisible())
     return TRUE;
 
+  visibleMemberCount--;
+
   // counter members
   if(memberToRemove->IsOnline())
     onlineMemberCount--;
@@ -915,7 +917,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   {
     if(moderated == FALSE || number == "testroom")
     {
-      visibleMemberCount--;
+//      visibleMemberCount--;
       MCUSimpleVideoMixer *mixer = manager.GetVideoMixerWithLock(this);
       mixer->RemoveVideoSource(memberToRemove->GetID(), *memberToRemove);
       mixer->Unlock();
