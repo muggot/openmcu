@@ -300,6 +300,7 @@ window.l_encoding_cpu_used                         = "Encoding CPU used";
 ///
 window.l_enable_export                             = "Enable export";
 window.l_video_frame_rate                          = "Video frame rate";
+window.l_video_inter_packet_delay                  = "Video inter-packet delay";
 window.l_video_frame_width                         = "Video frame width";
 window.l_video_frame_height                        = "Video frame height";
 window.l_audio_sample_rate                         = "Audio sample rate";

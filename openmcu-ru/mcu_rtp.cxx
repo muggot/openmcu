@@ -456,6 +456,8 @@ void MCU_RTPChannel::Transmit()
   if(!isAudio)
     preVideoFrames = TRUE;
 
+  unsigned interPacketDelay = PMIN(MCUConfig("Video").GetInteger(VideoInterPacketDelayKey, 0), 30);
+
   while(1)
   {
     BOOL retval = FALSE;
@@ -595,8 +597,7 @@ void MCU_RTPChannel::Transmit()
       if(!WriteFrame(frame))
          break;
 
-      if(!isAudio && !frame.GetMarker())
-        MCUTime::Sleep(1);
+      if(interPacketDelay) if(!isAudio && !frame.GetMarker()) MCUTime::Sleep(interPacketDelay);
 
       // Reset flag for in talk burst
       if(isAudio)

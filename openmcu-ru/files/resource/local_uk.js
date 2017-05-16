@@ -302,6 +302,7 @@ window.l_encoding_cpu_used                         = "Використання �
 ///
 window.l_enable_export                             = "Включити експорт";
 window.l_video_frame_rate                          = "Відео частота кадрів";
+window.l_video_inter_packet_delay                  = "Відео inter-packet delay";
 window.l_video_frame_width                         = "Відео ширина кадрів";
 window.l_video_frame_height                        = "Відео висота кадрів";
 window.l_audio_sample_rate                         = "Аудіо частота дискретизації";

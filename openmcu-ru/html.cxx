@@ -709,6 +709,8 @@ VideoPConfigPage::VideoPConfigPage(PHTTPServiceProcess & app,const PString & tit
   int scaleFilterType = OpenMCU::Current().GetScaleFilterType();
   s << SelectField(VideoScaleFilterKey, VideoScaleFilterKey, OpenMCU::GetScaleFilterName(scaleFilterType), MCUScaleFilterNames);
 
+  s << IntegerField(VideoInterPacketDelayKey, JsLocal("video_inter_packet_delay"), cfg.GetString(VideoInterPacketDelayKey, 2), 0, 10, 0, "range: 0..10");
+
   s << SeparatorField("H.263");
   s << IntegerField("H.263 Max Bit Rate", "H.263 "+JsLocal("max_bit_rate"), cfg.GetString("H.263 Max Bit Rate"), MCU_MIN_BIT_RATE/1000, MCU_MAX_BIT_RATE/1000, 0, "range "+PString(MCU_MIN_BIT_RATE/1000)+".."+PString(MCU_MAX_BIT_RATE/1000)+" kbit (for outgoing video, 0 disable)");
   s << IntegerField("H.263 Tx Key Frame Period", "H.263 "+JsLocal("tx_key_frame_period"), cfg.GetString("H.263 Tx Key Frame Period"), 0, 600, 0, "range 0..600 (for outgoing video, the number of pictures in a group of pictures, or 0 for intra_only)");

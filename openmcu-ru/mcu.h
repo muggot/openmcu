@@ -196,6 +196,8 @@ static const char OPTION_TX_KEY_FRAME_PERIOD[] = "Tx Key Frame Period";
 
 static const char VideoScaleFilterKey[] = "Video scale filter";
 
+static const char VideoInterPacketDelayKey[] = "Video inter-packet delay ms";
+
 static PString MCUScaleFilterNames =
                                   "built-in"
                                   ",libyuv|kFilterNone"

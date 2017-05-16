@@ -307,6 +307,7 @@ window.l_encoding_cpu_used                         = "Использование
 ///
 window.l_enable_export                             = "Включить экспорт";
 window.l_video_frame_rate                          = "Видео частота кадров";
+window.l_video_inter_packet_delay                  = "Видео задержка между пакетами";
 window.l_video_frame_width                         = "Видео ширина кадра";
 window.l_video_frame_height                        = "Видео высота кадра";
 window.l_audio_sample_rate                         = "Аудио частота дискретизации";
