@@ -18,7 +18,7 @@ var MIXER_LAYOUT_SCROLL_LEFT_STYLE="line-height:10px;font-weight:bold;color:#fff
 var MIXER_LAYOUT_SCROLL_RIGHT_STYLE=MIXER_LAYOUT_SCROLL_LEFT_STYLE;
 var MIXER_LAYOUT_SCROLL_LEFT_BUTTON="&#9668;";
 var MIXER_LAYOUT_SCROLL_RIGHT_BUTTON="&#9658;";
-var VAD_FIELD_STYLE="width:40px;background-color:#fce;border-radius:5px;color:blue;font-weight:bold";
+var VAD_FIELD_STYLE="width:40px;background-color:#fce;border-radius:5px;color:blue;font-weight:bold;text-align:right";
 var MIX_BORDER_COLOR='#5ce';
 
 
@@ -1581,7 +1581,7 @@ function top_panel()
   c+=" ";
 
   title=window.l_vadsetup;
-  c+="<button title='" + title + "' onclick='javascript:{if(checkcontrol())vad_setup();return false;}' class='vadsetupspr'></button>";
+  c+="<button title='" + title + "' onclick='javascript:{vad_setup();return false;}' class='vadsetupspr'></button>";
 
   c+=" ";
 
@@ -1674,7 +1674,7 @@ function vad_setup(){
   var sfx="</span>&nbsp;&nbsp;&nbsp;";
   
   var c ="<div style='border-radius:15px;background-color:#dec;border:1px solid #acb;padding-left:15px'><form name='fakeform2'><div class='input-prepend input-append'>";
-    c  +="<br><b>Voice Activation Volume:</b> "+inputst+"name='vad1' id='vad1' value='"+vad1+"' size=5 maxlength=5>"+pfx3+"level: 25...25000"+sfx;
+    c  +="<br><b>Voice Activation Volume:</b> "+inputst+"name='vad1' id='vad1' value='"+vad1+"' size=3 maxlength=3>"+pfx3+"level: 1...99"+sfx;
     c  +="<b>Delay:</b> " +inputst+"name='vad2' id='vad2' value='"+vad2+"' size=5 maxlength=5>"+pfx3+"ms: 0...65535"   +sfx;
     c  +="<b>Timeout:</b> "          +inputst+"name='vad3' id='vad3' value='"+vad3+"' size=5 maxlength=5>"+pfx3+"ms: 0...65535"   +sfx;
   c+="<input type='button' onclick='javascript:vad_save()' class='btn btn-danger' value='Save'> ";

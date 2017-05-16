@@ -3,6 +3,10 @@
 #include "conference.h"
 #include "mcu.h"
 
+extern "C" {
+  unsigned char linear2ulaw(int pcm_val);
+}
+
 PString Conference::SaveTemplate(PString tplName)
 {
   PTRACE(4,"Conference\tSaving template \"" << tplName << "\"");
@@ -155,6 +159,7 @@ void Conference::LoadTemplate(PString tpl)
             VAdelay  =(unsigned short int)(v[0].Trim().AsInteger());
             VAtimeout=(unsigned short int)(v[1].Trim().AsInteger());
             VAlevel  =(unsigned short int)(v[2].Trim().AsInteger());
+            if(VAlevel>99) VAlevel=linear2ulaw(VAlevel) ^ 0xff;
           }
         }
         else if(cmd=="MIXER")

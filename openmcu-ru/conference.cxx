@@ -637,7 +637,7 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
   muteUnvisible = FALSE;
   VAdelay = 1000;
   VAtimeout = 10000;
-  VAlevel = 100;
+  VAlevel = 20;
   echoLevel = 0;
   conferenceRecorder = NULL;
   forceScreenSplit = GetConferenceParam(number, ForceSplitVideoKey, TRUE);
@@ -1042,17 +1042,14 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
 #if MCU_VIDEO
   if(UseSameVideoForAllMembers())
   {
-    if(audioLevel > VAlevel)
-      member->vad += tint;
-    else
-      member->vad = 0;
+    if(member->inTalkBurst) member->vad += tint; else member->vad = 0;
 
     BOOL resetMemberVad = FALSE;
     for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
     {
       MCUSimpleVideoMixer *mixer = it.GetObject();
       int silenceCounter = mixer->GetSilenceCounter(member->GetID());
-      if(audioLevel > VAlevel) // we have a signal
+      if(member->inTalkBurst) // we have a signal
       {
         if(member->vad >= VAdelay) // voice-on trigger delay
         {
@@ -1078,7 +1075,7 @@ void Conference::WriteMemberAudioLevel(ConferenceMember * member, int audioLevel
       {
         if(silenceCounter >= 0) mixer->IncreaseSilenceCounter(member->GetID(),tint);
       }
-      if(audioLevel > VAlevel && silenceCounter == 0 && member->disableVAD == FALSE && member->vad-VAdelay > 500)
+      if(member->inTalkBurst && silenceCounter == 0 && member->disableVAD == FALSE && member->vad-VAdelay > 500)
         resetMemberVad = TRUE;
     }
     if(resetMemberVad)
@@ -1552,6 +1549,7 @@ BOOL ConferenceMember::DetectSilence(unsigned level, int tint)
 {
   // Convert to a logarithmic scale - use uLaw which is complemented
   level = linear2ulaw(level) ^ 0xff;
+  unsigned short int & VAlevel = conference->VAlevel;
     
   // Now if signal level above threshold we are "talking"
   BOOL haveSignal = level > signalDetectorThreshold;
@@ -1570,7 +1568,7 @@ BOOL ConferenceMember::DetectSilence(unsigned level, int tint)
     if(level > 1)
     {
       // Bootstrap condition, use first frame level as silence level
-      signalDetectorThreshold = 20;
+      signalDetectorThreshold = PMIN(level, VAlevel);
       PTRACE(5, "Codec\tSilence detection threshold initialised to: " << signalDetectorThreshold);
     }
     return TRUE; // inTalkBurst always FALSE here, so return silent
@@ -1603,7 +1601,7 @@ BOOL ConferenceMember::DetectSilence(unsigned level, int tint)
       if(delta != 0)
       {
         signalDetectorThreshold += delta;
-        if(signalDetectorThreshold > 20) signalDetectorThreshold=20;
+        if(signalDetectorThreshold > VAlevel) signalDetectorThreshold=VAlevel;
         PTRACE(5, "Codec\tSilence detection threshold increased to: " << signalDetectorThreshold);
       }
     }
@@ -1617,7 +1615,7 @@ BOOL ConferenceMember::DetectSilence(unsigned level, int tint)
       unsigned newThreshold = (signalDetectorThreshold + silenceMaximum)/2 + 1;
       if(signalDetectorThreshold > newThreshold)
       {
-        signalDetectorThreshold = PMIN(newThreshold, 20);
+        signalDetectorThreshold = PMIN(newThreshold, VAlevel);
         PTRACE(5, "Codec\tSilence detection threshold decreased to: " << signalDetectorThreshold);
       }
     }
@@ -1674,7 +1672,7 @@ void ConferenceMember::WriteAudio(const uint64_t & timestamp, const void * buffe
   if(write_audio_time_microseconds >= MINIMUM_VAD_INTERVAL_MS * 1000)
   {
     DetectSilence(write_audio_average_level/write_audio_write_counter, write_audio_time_microseconds/1000);
-    conference->WriteMemberAudioLevel(this, write_audio_average_level/write_audio_write_counter, write_audio_time_microseconds/1000);
+    conference->WriteMemberAudioLevel(this, (int)((float)write_audio_average_level/write_audio_write_counter*currVolCoef), write_audio_time_microseconds/1000);
     write_audio_average_level = 0;
     write_audio_time_microseconds = 0;
     write_audio_write_counter = 0;

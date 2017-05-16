@@ -392,6 +392,7 @@ class ConferenceMember : public PObject
     int resizerRule; //0=cut, 1=stripes
     PTime firstFrameSendTime;
 #endif
+    BOOL inTalkBurst;
 
   protected:
     unsigned videoMixerNumber;
@@ -412,7 +413,6 @@ class ConferenceMember : public PObject
     unsigned write_audio_write_counter;
     
     unsigned avgLevel, maxLevel, silenceDetectorFrameCounter, signalDetectorThreshold, silenceDeadbandFrames, signalDeadbandFrames, signalMinimum, silenceMaximum, signalFramesReceived, silenceFramesReceived;
-    BOOL inTalkBurst;
 
 
 #if MCU_VIDEO
