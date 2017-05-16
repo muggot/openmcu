@@ -314,8 +314,8 @@ function start_otf_control()
   cro_otf=createRequestObject();
   cro_otf.open('POST','Select',true);
   cro_otf.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-  cro_otf.setRequestHeader("Content-length", cmd.length);
-  cro_otf.setRequestHeader("Connection", "close");
+//  cro_otf.setRequestHeader("Content-length", cmd.length);
+//  cro_otf.setRequestHeader("Connection", "close");
   cro_otf.onreadystatechange=otf_result;
   cro_otf.send(cmd);
   dmsg('Sent');
@@ -1600,6 +1600,9 @@ function top_panel()
     + "document.cookie=\"sortMode=\"+sortMode+\"; expires=Fri, 31 Dec 2999 23:59:59 GMT\";members_refresh();return false;}'"
     +" class='sortspr" + sortMode + "'></button>";
 
+  c+="&nbsp;<span id='ScaleTiming'>&nbsp;</span>";
+
+
   c+="</td><td width='30%' align=right id='savetpl' name='savetpl'><nobr>";
 
   c+=get_template_lock();
@@ -2351,17 +2354,8 @@ function getLeftPos(el) {
 
 function resize_timing(s)
 {
-  document.getElementById('ScaleTiming').innerHTML=Math.floor(s/1000)+'K CPU cycles avg.';
+  document.getElementById('ScaleTiming').innerHTML='Resizer: ' + Math.floor(s/1000)+'K CPU cycles avg.';
   alive();
-}
-
-
-function get_resizer(scaleFilter)
-{
-  var r = "&nbsp;Filter: "+scaleFilter;
-  r+="&nbsp;<span id='ScaleTiming'>-</span>";
-
-  return r;
 }
 
 function dspr(id,spr)
