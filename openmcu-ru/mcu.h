@@ -119,7 +119,7 @@ static const char LockTemplateKey[]             = "Template locks conference by 
 static PString InputOutputGainSelect            = "-20,-18,-16,-14,-12,-10,-8,-6,-4,-2,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60";
 
 static const char ReceivedVFUDelayKey[]         = "Received VFU delay";
-static PString ReceivedVFUDelaySelect           = "Disable,0/0,5/5,5/10,10/5,10/10";
+static PString ReceivedVFUDelaySelect           = "Disable,0/0,1/1,1/2,1/3,1/4,1/5,1/6,1/8,1/10,1/15,2/5,5/5,10/5,2/10,5/10,10/10";
 static const char SendVFUDelayKey[]             = "Send VFU delay";
 
 static const char RTPInputTimeoutKey[]          = "RTP Input Timeout";

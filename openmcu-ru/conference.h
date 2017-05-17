@@ -542,7 +542,9 @@ class Conference : public PObject
     void HandleFeatureAccessCode(ConferenceMember & member, PString fac);
 
     void UpdateVideoMixOptions(ConferenceMember * member);
-    
+
+    void RemoveFromVideoMixers(ConferenceMember * member);
+
     unsigned short int VAdelay;
     unsigned short int VAtimeout;
     unsigned short int VAlevel;

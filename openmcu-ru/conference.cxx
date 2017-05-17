@@ -1283,6 +1283,30 @@ void Conference::UpdateVideoMixOptions(ConferenceMember * member)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+void Conference::RemoveFromVideoMixers(ConferenceMember * member)
+{
+  if(!member) return; ConferenceMemberId id = member->GetID();
+  if(!member->IsSystem()) member->SetFreezeVideo(TRUE);
+  if(videoMixerList.GetSize() != 0)
+    for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+    {
+      MCUSimpleVideoMixer *mixer = it.GetObject();
+      int oldPos = mixer->GetPositionNum(id);
+      if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, (mixer->GetPositionType(id) & 2) != 2);
+    }
+  else // classic MCU mode
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+    {
+      ConferenceMember * member = *it;
+      MCUVideoMixer * mixer = member->videoMixer;
+      ConferenceMemberId id = member->GetID();
+      int oldPos = mixer->GetPositionNum(id);
+      if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, (mixer->GetPositionType(id) & 2) != 2);
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ConferenceMember::ConferenceMember(Conference * _conference)
   : conference(_conference)
 {

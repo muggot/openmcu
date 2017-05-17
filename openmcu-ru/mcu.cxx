@@ -1075,15 +1075,15 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
       ConferenceMember *member = *it;
       if(!member->IsSystem() && !member->IsOnline())
       {
+        conference->RemoveFromVideoMixers(member);
         member->Close();
         if(memberList.Erase(it))
           delete member;
       }
     }
-    PStringStream msg;
-    msg << endpoint->GetMemberListOptsJavascript(*conference) << "\n"
-        << "p.members_refresh()";
-    HttpWriteCmdRoom(msg,room);
+    HttpWriteCmdRoom(endpoint->GetMemberListOptsJavascript(*conference),room);
+    HttpWriteCmdRoom(endpoint->GetConferenceOptsJavascript(*conference),room);
+    HttpWriteCmdRoom("build_page()",room);
     return TRUE;
   }
   if(action == OTFC_DROP_ALL_ACTIVE_MEMBERS)
@@ -1144,6 +1144,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
       ConferenceMember *member = *it;
       if(!member->IsSystem() && !member->IsOnline())
       {
+        conference->RemoveFromVideoMixers(member);
         member->Close();
         if(memberList.Erase(it))
           delete member;
@@ -1151,6 +1152,8 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     }
     HttpWriteEventRoom("Offline members removed by operator",room);
     HttpWriteCmdRoom("remove_all()",room);
+    HttpWriteCmdRoom(endpoint->GetConferenceOptsJavascript(*conference),room);
+    HttpWriteCmdRoom("build_page()",room);
     return TRUE;
   }
   if(action == OTFC_TAKE_CONTROL)
@@ -1539,38 +1542,9 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
   }
   if(action == OTFC_REMOVE_FROM_VIDEOMIXERS)
   {
-    if(conference->IsModerated()=="+")
-    {
-      MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-      if(videoMixerList.GetSize() != 0)
-      {
-        for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
-        {
-          MCUSimpleVideoMixer *mixer = it.GetObject();
-          ConferenceMemberId id = member->GetID();
-          int oldPos = mixer->GetPositionNum(id);
-          if(oldPos != -1)
-            mixer->MyRemoveVideoSource(oldPos, (mixer->GetPositionType(id) & 2) != 2);
-        }
-      }
-      else // classic MCU mode
-      {
-        MCUMemberList & memberList = conference->GetMemberList();
-        for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
-        {
-          ConferenceMember * member = *it;
-          MCUVideoMixer * mixer = member->videoMixer;
-          ConferenceMemberId id = member->GetID();
-          int oldPos = mixer->GetPositionNum(id);
-          if(oldPos != -1) mixer->MyRemoveVideoSource(oldPos, (mixer->GetPositionType(id) & 2) != 2);
-        }
-      }
-      if(!member->IsSystem())
-        member->SetFreezeVideo(TRUE);
-      HttpWriteCmdRoom(endpoint->GetConferenceOptsJavascript(*conference),room);
-      HttpWriteCmdRoom("build_page()",room);
-      return TRUE;
-    }
+    conference->RemoveFromVideoMixers(member);
+    HttpWriteCmdRoom(endpoint->GetConferenceOptsJavascript(*conference),room);
+    HttpWriteCmdRoom("build_page()",room);
     return TRUE;
   }
   if(action == OTFC_DROP_MEMBER )

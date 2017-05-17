@@ -337,6 +337,7 @@ void Conference::LoadTemplate(PString tpl)
       PTRACE(6,"Conference\tLoading template - closing connection with " << name << " (id " << id << ")" << flush);
       member->SetAutoDial(FALSE);
       member->Close();
+      RemoveFromVideoMixers(member);
       if(memberList.Erase(it)) delete member;
     }
   }
