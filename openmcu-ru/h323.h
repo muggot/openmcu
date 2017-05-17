@@ -245,6 +245,9 @@ class MCUH323Connection : public H323Connection
     virtual ConferenceMember * GetConferenceMember()
     { return conferenceMember; }
 
+    virtual void SetConferenceMember(ConferenceMember * member)
+    { conferenceMember = member; }
+
     virtual Conference * GetConference()
     { return conference; }
 

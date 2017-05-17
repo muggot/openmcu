@@ -325,23 +325,33 @@ void Conference::LoadTemplate(PString tpl)
   if(!lockedTemplate) return; // room not locked - don't touch member list
 
 
-  for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
   {
-    ConferenceMember *member = *it;
-    if(member->IsSystem())
-      continue;
-    PString name = member->GetName();
-    if(validatedMembers.GetStringsIndex(name) == P_MAX_INDEX) // remove unwanted members
+    PWaitAndSignal m(memberListMutex);
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
     {
-      ConferenceMemberId id = member->GetID();
-      PTRACE(6,"Conference\tLoading template - closing connection with " << name << " (id " << id << ")" << flush);
-      member->SetAutoDial(FALSE);
-      member->Close();
-      RemoveFromVideoMixers(member);
-      if(memberList.Erase(it)) delete member;
+      ConferenceMember *member = *it;
+      if(member->IsSystem()) continue;
+      PString name = member->GetName();
+      if(validatedMembers.GetStringsIndex(name) == P_MAX_INDEX) // remove unwanted members
+      {
+        PTRACE(6,"Conference\tLoading template - closing connection with " << name << " (id " << member->GetID() << ")" << flush);
+        member->SetAutoDial(FALSE);
+        if(member->IsOnline())
+        {
+          MCUH323Connection * conn = OpenMCU::Current().GetEndpoint().FindConnectionWithLock(member->GetCallToken());
+          if(conn)
+          {
+            conn->SetConferenceMember(NULL);
+            conn->Unlock();
+          }
+        }
+        member->Close();
+        RemoveFromVideoMixers(member);
+        if(memberList.Erase(it)) delete member;
+      }
     }
   }
-
+  
 }
 
 PString Conference::GetTemplateList()
