@@ -1465,6 +1465,16 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     HttpWriteCmdRoom("build_page()",room);
     return TRUE;
   }
+  if( action == OTFC_SET_MASTER_VOLUME )
+  {
+    if(v <-40) v = -40;
+    if(v > 40) v =  40;
+    conference->SetMasterVolumeDB(v);
+    PStringStream cmd; cmd << "mvdb(" << v << ")"; HttpWriteCmdRoom(cmd,room);
+    return TRUE;
+  }
+
+
 
   MCUMemberList & memberList = conference->GetMemberList();
   MCUMemberList::shared_iterator mit = memberList.Find(v);

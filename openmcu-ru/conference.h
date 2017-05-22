@@ -567,6 +567,8 @@ class Conference : public PObject
 
     BOOL GetForceScreenSplit() { return forceScreenSplit; }
 
+    BOOL SetMasterVolumeDB(int n);
+
     BOOL RecorderCheckSpace();
     BOOL StartRecorder();
     BOOL StopRecorder();
@@ -576,6 +578,9 @@ class Conference : public PObject
     BOOL muteNewUsers;
 
     int dialCountdown;
+
+    float masterVolumeMultiplier;
+    int masterVolumeDB;
 
   protected:
     ConferenceManager & manager;

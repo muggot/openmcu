@@ -645,6 +645,7 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
   muteNewUsers = FALSE;
   pipeMember = NULL;
   dialCountdown = OpenMCU::Current().autoDialDelay;
+  masterVolumeMultiplier = 1.0; masterVolumeDB = 0;
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 
@@ -1307,6 +1308,18 @@ void Conference::RemoveFromVideoMixers(ConferenceMember * member)
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
+BOOL Conference::SetMasterVolumeDB(int n)
+{
+  if((n < -40) || (n > 40)) return FALSE;
+  masterVolumeMultiplier = (float)pow(10.0,((float)n)/20.0);
+//  masterVolumeDB         = n * 0.5; // 1/2 of power
+//  masterVolumeDB         = n; // full power
+  masterVolumeDB         = n * 0.75;
+  return TRUE;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 ConferenceMember::ConferenceMember(Conference * _conference)
   : conference(_conference)
 {
@@ -1527,18 +1540,19 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
 
   short * buf = (short*)pcm;
 
-  float maxChangeDB = /* (float)0.8 * */ ((float)samplesPerFrame / (float)sampleRate);
+  float maxChangeDB = (float)1.2 * ((float)samplesPerFrame / (float)sampleRate);
   if(maxChangeDB > 10.0     ) maxChangeDB = 10.0    ;
   if(maxChangeDB <  0.00001 ) maxChangeDB =  0.00001;
 
   float & cvc = currVolCoef;
   float   vc0= cvc;
-  
-  if(maxLevel*cvc >= constOverload) cvc = constOverload / maxLevel; // overload
-  else if(inTalkBurst && (maxLevel*cvc < constGood)) // amplify
+  float mVol = conference->masterVolumeMultiplier;
+
+  if(maxLevel*cvc >= constOverload*mVol) cvc = constOverload*mVol / maxLevel; // overload
+  else if(inTalkBurst && (avgLevel*cvc < constGood*mVol)) // amplify
   {
     cvc *= pow(10.0,maxChangeDB/20.0);
-    if(maxLevel*cvc > constGoodCheck) cvc = constGoodCheck / maxLevel;
+    if(maxLevel*cvc > constGoodCheck*mVol) cvc = constGoodCheck*mVol / maxLevel;
   }
   else
   {
@@ -1558,7 +1572,7 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
   for(unsigned i=0; i<samplesCount; i++) 
   {
     int v = buf[i];
-    v=(int)(v*vc0);
+    v=(int)(v*vc0*kManualGain);
     if(v > 32767) buf[i]=32767;
     else if(v < -32768) buf[i]=-32768;
     else buf[i] = (short)v;
@@ -1814,7 +1828,8 @@ void ConferenceMember::SetGainDB(int newGainLevelDB)
 {
   kManualGainDB  = newGainLevelDB;
   kManualGain    = (float)pow(10.0,((float)kManualGainDB)/20.0);
-  constOverload  = 32768.0 * 1.05 * kManualGain;
+//  constOverload  = 32768.0 * 1.05 * kManualGain;
+  constOverload  = 32768.0 * 1.05;
   constGood      = constOverload * 0.67;
   constGoodCheck = constOverload * 0.73;
 }

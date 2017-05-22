@@ -441,3 +441,9 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 
 .rszspr0  {width:15px;height:15px;background:url(s32_ch.png)  -72px -168px;cursor:pointer}
 .rszspr1  {width:15px;height:15px;background:url(s32_ch.png) -104px -168px;cursor:pointer}
+
+.sliderbl, .sliderleft{height:6px;border-radius:3px;;user-select:none;}
+.sliderbg{width:162px;background-color:#cce;border:11px solid #fff;user-select:none;}
+.sliderleft{position:relative;top:0px;left:0px;width:122px;background-color:#00a;}
+.sliderhandle,.sliderhandle:hover{position:relative;top:-8px;left:114px;width:20px;background-color:#acf;height:20px;border-radius:5px;border:2px solid #00a;cursor:pointer;font-size:9px;text-align:center;user-select:none;}
+.sliderhandle:hover{border:2px solid #acf;background-color:#00a;border-radius:10px;color:#ffc;}

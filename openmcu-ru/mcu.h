@@ -274,6 +274,7 @@ static PString MCUControlCodes = "NO ACTION,"
 #define OTFC_UNMUTE_ALL               78
 #define OTFC_AUDIO_GAIN_LEVEL_SET     79
 #define OTFC_OUTPUT_GAIN_SET          80
+#define OTFC_SET_MASTER_VOLUME        81
 #define OTFC_ADD_TO_ABOOK             90
 #define OTFC_REMOVE_FROM_ABOOK        91
 #define OTFC_MUTE_NEW_USERS           92

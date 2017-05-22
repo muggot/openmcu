@@ -67,6 +67,7 @@ var OTFC_TOGGLE_TPL_LOCK         = 77;
 var OTFC_UNMUTE_ALL              = 78;
 var OTFC_AUDIO_GAIN_LEVEL_SET    = 79;
 var OTFC_OUTPUT_GAIN_SET         = 80;
+var OTFC_SET_MASTER_VOLUME       = 81;
 var OTFC_ADD_TO_ABOOK            = 90;
 var OTFC_REMOVE_FROM_ABOOK       = 91;
 var OTFC_MUTE_NEW_USERS          = 92;
@@ -129,6 +130,8 @@ var classicMode = false;
 var sortMode = parseInt(getcookie('sortMode')); if(sortMode!=0) sortMode=1;
 
 var muteNewUsers = 0;
+
+var masterVolume = 40, slidermove = 0, slidervalue, sliderstartx, slidertemp;
 
 function index_exists(a, i)
 {
@@ -859,8 +862,7 @@ function format_mmbr_button(m,st)
   levelb ="<div "+b4style+" class='"+((m[9]&16)?"mutespr10":"vlevel")+"' id='srpan_"+id+"'>&nbsp;</div>";
   var autoDial=m[14], adspr="adspr"+(st?"1":"0")+(m[14]?"1":"0");
   var invite = "<div" + prCode + " onclick='this.className=\"launchspr\";queue_otf_request(" + OTFC_DIAL + "," + m[1] + ")' id='dial_"+id+"' class='"+adspr+"'></div>";
-  remove ="<img"+prCode+" "+b1style+" onclick='removeoffline(this,\""+m[2]+"\")' src='i16_close_gray.png' alt='Remove' title='"+l_room_remove_from_list+"'>";
-
+  remove ="<img"+prCode+" "+b1style+" onclick='removeoffline(this,\""+m[2].replace('"','\\x22')+"\")' src='i16_close_gray.png' alt='Remove' title='"+l_room_remove_from_list+"'>";
   s+=dpre+"2px'><div class='mmbrname' "+namestyle+">"+uname+"</div></div>";
   s+=dpre2+"2px'><div class='mmbrip' "+namestyle+">"+ip+"</div></div>";
 
@@ -1554,7 +1556,7 @@ function top_panel()
 
   var title;
   
-  var c="<table width='100%'><tr><td width='70%'>";
+  var c="<table width='100%'><tr><td width='60%'>";
   c+="<form style='margin:0px;margin-left:8px;padding:0px' name='FakeForm1'>";
 
   var who='robot'; if(isModerated) {who='human'; title=window.l_decontrol;} else title=window.l_takecontrol;
@@ -1600,10 +1602,17 @@ function top_panel()
     + "document.cookie=\"sortMode=\"+sortMode+\"; expires=Fri, 31 Dec 2999 23:59:59 GMT\";members_refresh();return false;}'"
     +" class='sortspr" + sortMode + "'></button>";
 
-  c+="&nbsp;<span id='ScaleTiming'>&nbsp;</span>";
+  c+="&nbsp;Resizer: <span id='ScaleTiming'>&nbsp;</span>";
 
 
-  c+="</td><td width='30%' align=right id='savetpl' name='savetpl'><nobr>";
+  c+="</td><td width='15%'>";
+  c+="<div id='slb1' class='sliderbg' onmouseleave='slidercheck()' onmouseup='slidercheck()' onmousemove='if(slidermove)moveslider(event)'>";
+  c+=  "<div id='sll1' class='sliderleft' />";
+  c+=  "<div title='level' id='slh1' class='sliderhandle' onselectstart='return false' onmousedown='startslidermove(event)'>" + getdb(masterVolume) + "</div>";
+  c+="</div>";
+
+
+  c+="</td><td width='25%' align=right id='savetpl' name='savetpl'><nobr>";
 
   c+=get_template_lock();
   c+="<input type='button' class='btn btn-large btn-danger' style='width:20px;padding-left:0px;padding-right:0px;margin-right:1px' value='&ndash;' onclick='" +
@@ -1625,6 +1634,8 @@ function top_panel()
   c+="</nobr></td></tr></table>";
 
   t.innerHTML=c;
+
+  setslider(masterVolume);
 }
 
 function save_template(finalName)
@@ -2354,7 +2365,7 @@ function getLeftPos(el) {
 
 function resize_timing(s)
 {
-  document.getElementById('ScaleTiming').innerHTML='Resizer: ' + Math.floor(s/1000)+'K CPU cycles avg.';
+  document.getElementById('ScaleTiming').innerHTML=Math.floor(s/1000);
   alive();
 }
 
@@ -2376,4 +2387,39 @@ function rszspr(id,state)
   if(o)o.className='rszspr'+state;
   member_modify_by_id(id,15,state);
   alive();
+}
+
+function setsliderpos(v)
+{
+  if(document.getElementById('sll1')) document.getElementById('sll1').style.width = v*2 + 'px';
+  if(document.getElementById('slh1'))
+  {
+    var slh1        = document.getElementById('slh1');
+    slh1.style.left = (v*2-10) + 'px';
+    slh1.innerHTML  = getdb(v);
+  }
+}
+function setslider(v){ slidervalue = v; setsliderpos(v); slidertemp = v; }
+function slidercheck()
+{
+  if(!slidermove) return; slidermove=0;
+  if(slidertemp != slidervalue) setslider(slidertemp);
+  queue_otf_request(OTFC_SET_MASTER_VOLUME, slidertemp-40);
+}
+function moveslider(e)
+{
+  slidertemp = slidervalue + ((e.pageX - sliderstartx)>>1);
+  if(slidertemp>80) slidertemp=80; if(slidertemp<0) slidertemp=0;
+  setsliderpos(slidertemp);
+}
+function startslidermove(e)
+{
+  if(slidermove) return; slidermove=1
+  sliderstartx = e.pageX;
+}
+function getdb(v){ if(v==40) return '//'; return ((v>40)?'+':'') + (v-40); }
+function mvdb(v)
+{
+  masterVolume=v+40;
+  setslider(masterVolume);
 }
