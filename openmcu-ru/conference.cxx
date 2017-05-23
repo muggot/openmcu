@@ -645,7 +645,7 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
   muteNewUsers = FALSE;
   pipeMember = NULL;
   dialCountdown = OpenMCU::Current().autoDialDelay;
-  masterVolumeMultiplier = 1.0; masterVolumeDB = 0;
+  SetMasterVolumeDB(0);
   PTRACE(3, "Conference\tNew conference started: ID=" << guid << ", number = " << number);
 }
 
@@ -1311,10 +1311,9 @@ void Conference::RemoveFromVideoMixers(ConferenceMember * member)
 BOOL Conference::SetMasterVolumeDB(int n)
 {
   if((n < -40) || (n > 40)) return FALSE;
-  masterVolumeMultiplier = (float)pow(10.0,((float)n)/20.0);
-//  masterVolumeDB         = n * 0.5; // 1/2 of power
-//  masterVolumeDB         = n; // full power
-  masterVolumeDB         = n * 0.75;
+  masterVolumeMultiplier  = (float)pow(10.0,((float)n)/20.0);
+  masterVolumeDB          = n;
+  masterVolumeMultiplier *= 0.636619; // avg. level of sine
   return TRUE;
 }
 
