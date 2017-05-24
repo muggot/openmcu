@@ -1365,6 +1365,8 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   silenceMaximum = 0;
   signalFramesReceived = 0;
   silenceFramesReceived = 0;
+  oldMasterVolumeDB = conference->GetMasterVolumeDB();
+  oldMasterVolumeMultiplier = conference->GetMasterVolumeMultiplier();
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1539,13 +1541,20 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
 
   short * buf = (short*)pcm;
 
+  float   mVol      = conference->GetMasterVolumeMultiplier();
+  float & cvc       = currVolCoef;
+  float   vc0       = cvc;
+
   float maxChangeDB = (float)1.2 * ((float)samplesPerFrame / (float)sampleRate);
   if(maxChangeDB > 10.0     ) maxChangeDB = 10.0    ;
   if(maxChangeDB <  0.00001 ) maxChangeDB =  0.00001;
 
-  float & cvc = currVolCoef;
-  float   vc0= cvc;
-  float mVol = conference->masterVolumeMultiplier;
+  if(oldMasterVolumeDB != conference->GetMasterVolumeDB())
+  {
+    cvc *= mVol / oldMasterVolumeMultiplier;
+    oldMasterVolumeDB         = conference->GetMasterVolumeDB();
+    oldMasterVolumeMultiplier = mVol;
+  }
 
   if(maxLevel*cvc >= constOverload*mVol) cvc = constOverload*mVol / maxLevel; // overload
   else if(inTalkBurst && (avgLevel*cvc < constGood*mVol)) // amplify

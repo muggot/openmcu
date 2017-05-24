@@ -414,6 +414,7 @@ class ConferenceMember : public PObject
     
     unsigned avgLevel, maxLevel, silenceDetectorFrameCounter, signalDetectorThreshold, silenceDeadbandFrames, signalDeadbandFrames, signalMinimum, silenceMaximum, signalFramesReceived, silenceFramesReceived;
 
+    int oldMasterVolumeDB; float oldMasterVolumeMultiplier;
 
 #if MCU_VIDEO
     PINDEX totalVideoFramesSent;
@@ -568,6 +569,8 @@ class Conference : public PObject
     BOOL GetForceScreenSplit() { return forceScreenSplit; }
 
     BOOL SetMasterVolumeDB(int n);
+    inline int GetMasterVolumeDB(){ return masterVolumeDB; }
+    inline float GetMasterVolumeMultiplier(){ return masterVolumeMultiplier; }
 
     BOOL RecorderCheckSpace();
     BOOL StartRecorder();
