@@ -810,6 +810,13 @@ BOOL Conference::AddMember(ConferenceMember * memberToAdd, BOOL addToList)
   if(AddMemberToList(memberToAdd, addToList) == memberList.end())
     return FALSE;
 
+  { // restore input & output gain level
+    PString gain = GetSectionParamFromUrl("Input Gain", MCUURL(memberToAdd->GetName()).GetUrl(), false);
+    if(!gain.IsEmpty()) memberToAdd->SetGainDB(gain.AsInteger());
+    gain = GetSectionParamFromUrl("Output Gain", MCUURL(memberToAdd->GetName()).GetUrl(), false);
+    if(!gain.IsEmpty()){  memberToAdd->kOutputGainDB = gain.AsInteger();   memberToAdd->kOutputGain=(float)pow(10.0,((float)memberToAdd->kOutputGainDB)/20.0);  }
+  }
+  
   // nothing more!
   if(!memberToAdd->IsVisible())
     return TRUE;
