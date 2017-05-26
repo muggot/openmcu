@@ -415,6 +415,7 @@ class ConferenceMember : public PObject
     unsigned avgLevel, maxLevel, silenceDetectorFrameCounter, signalDetectorThreshold, silenceDeadbandFrames, signalDeadbandFrames, signalMinimum, silenceMaximum, signalFramesReceived, silenceFramesReceived;
 
     int oldMasterVolumeDB; float oldMasterVolumeMultiplier;
+    int gainNeverCorrected;
 
 #if MCU_VIDEO
     PINDEX totalVideoFramesSent;

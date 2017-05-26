@@ -1374,6 +1374,7 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   silenceFramesReceived = 0;
   oldMasterVolumeDB = conference->GetMasterVolumeDB();
   oldMasterVolumeMultiplier = conference->GetMasterVolumeMultiplier();
+  gainNeverCorrected = 1; // initial volume correction
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1556,7 +1557,8 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
   if(maxChangeDB > 10.0     ) maxChangeDB = 10.0    ;
   if(maxChangeDB <  0.00001 ) maxChangeDB =  0.00001;
 
-  if(oldMasterVolumeDB != conference->GetMasterVolumeDB())
+  BOOL masterVolumeChanged = (oldMasterVolumeDB != conference->GetMasterVolumeDB());
+  if(masterVolumeChanged)
   {
     cvc *= mVol / oldMasterVolumeMultiplier;
     oldMasterVolumeDB         = conference->GetMasterVolumeDB();
@@ -1566,12 +1568,17 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
   if(maxLevel*cvc >= constOverload*mVol) cvc = constOverload*mVol / maxLevel; // overload
   else if(inTalkBurst && (avgLevel*cvc < constGood*mVol)) // amplify
   {
-    cvc *= pow(10.0,maxChangeDB/20.0);
+    if(gainNeverCorrected)
+    {
+      cvc = constGood*mVol / maxLevel; // 1st time correction might be big
+      gainNeverCorrected = 0;
+    }
+    else cvc *= pow(10.0,maxChangeDB/20.0);
     if(maxLevel*cvc > constGoodCheck*mVol) cvc = constGoodCheck*mVol / maxLevel;
   }
   else
   {
-    if((vc0<0.994)||(vc0>1.005)) for(unsigned i=0; i<samplesCount; i++) 
+    if( (!masterVolumeChanged) && ((vc0<0.994)||(vc0>1.005)) ) for(unsigned i=0; i<samplesCount; i++) 
     {
       int v = buf[i];
       v=(int)(v*vc0);
