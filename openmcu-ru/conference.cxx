@@ -1568,7 +1568,7 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
   if(maxLevel*cvc >= constOverload*mVol) cvc = constOverload*mVol / maxLevel; // overload
   else if(inTalkBurst && (avgLevel*cvc < constGood*mVol)) // amplify
   {
-    if(gainNeverCorrected)
+    if(gainNeverCorrected && (avgLevel>299) && (maxLevel>599))
     {
       cvc = constGood*mVol / maxLevel; // 1st time correction might be big
       gainNeverCorrected = 0;
