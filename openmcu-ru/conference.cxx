@@ -1619,10 +1619,10 @@ BOOL ConferenceMember::DetectSilence(unsigned level, int tint)
   // Convert to a logarithmic scale - use uLaw which is complemented
   level = linear2ulaw(level) ^ 0xff;
   unsigned short int & VAlevel = conference->VAlevel;
-    
+
   // Now if signal level above threshold we are "talking"
-  BOOL haveSignal = level > signalDetectorThreshold;
-        
+  BOOL haveSignal = (signalDetectorThreshold && (level > signalDetectorThreshold));
+
   if(inTalkBurst == haveSignal) silenceDetectorFrameCounter = 0; // If no change ie still talking or still silent, reset frame counter
   else if((++silenceDetectorFrameCounter) >= (inTalkBurst ? silenceDeadbandFrames : signalDeadbandFrames))
   {
