@@ -2365,7 +2365,7 @@ function getLeftPos(el) {
 
 function resize_timing(s)
 {
-  document.getElementById('ScaleTiming').innerHTML=Math.floor(s/1000);
+  if(document.getElementById('ScaleTiming')) document.getElementById('ScaleTiming').innerHTML=Math.floor(s/1000);
   alive();
 }
 
