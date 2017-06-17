@@ -1375,6 +1375,7 @@ ConferenceMember::ConferenceMember(Conference * _conference)
   oldMasterVolumeDB = conference->GetMasterVolumeDB();
   oldMasterVolumeMultiplier = conference->GetMasterVolumeMultiplier();
   gainNeverCorrected = 1; // initial volume correction
+  overloadCounter = 1;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1553,7 +1554,7 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
   float & cvc       = currVolCoef;
   float   vc0       = cvc;
 
-  float maxChangeDB = (float)1.2 * ((float)samplesPerFrame / (float)sampleRate);
+  float maxChangeDB = (float)1.2 * ((float)samplesPerFrame / (float)sampleRate) / overloadCounter;
   if(maxChangeDB > 10.0     ) maxChangeDB = 10.0    ;
   if(maxChangeDB <  0.00001 ) maxChangeDB =  0.00001;
 
@@ -1565,7 +1566,11 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
     oldMasterVolumeMultiplier = mVol;
   }
 
-  if(maxLevel*cvc >= constOverload*mVol) cvc = constOverload*mVol / maxLevel; // overload
+  if(maxLevel*cvc >= constOverload*mVol) // overload
+  {
+    cvc = constOverload*mVol / maxLevel;
+    overloadCounter++; if(overloadCounter>99) overloadCounter=99;
+  }
   else if(inTalkBurst && (avgLevel*cvc < constGood*mVol)) // amplify
   {
     if(gainNeverCorrected && (avgLevel>299) && (maxLevel>599))
@@ -1574,7 +1579,11 @@ void ConferenceMember::Gain(const short * pcm, unsigned samplesPerFrame, unsigne
       gainNeverCorrected = 0;
     }
     else cvc *= pow(10.0,maxChangeDB/20.0);
-    if(maxLevel*cvc > constGoodCheck*mVol) cvc = constGoodCheck*mVol / maxLevel;
+    if(maxLevel*cvc > constGoodCheck*mVol) // overload
+    {
+      cvc = constGoodCheck*mVol / maxLevel;
+      overloadCounter++; if(overloadCounter>99) overloadCounter=99;
+    }
   }
   else
   {
