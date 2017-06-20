@@ -770,7 +770,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
       AddCapability(new_cap);
     }
   }
-  // add fake H.264 capabilities, need only for H.323
+  // add H.264 capabilities for H.323
   if(CheckCapability("H.264{sw}"))
   {
     for(int i = 0; h264_profile_levels[i].level != 0; ++i)
@@ -784,7 +784,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
       AddCapability(new_cap);
     }
   }
-  // add fake H.263p capabilities, need only for H.323
+  // add H.263p capabilities for H.323
   if(CheckCapability("H.263p{sw}"))
   {
     for(int i = 0; h263_resolutions[i].width != 0; ++i)
@@ -797,7 +797,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
       AddCapability(new_cap);
     }
   }
-  // add fake H.263 capabilities, need only for H.323
+  // add H.263 capabilities for H.323
   if(CheckCapability("H.263{sw}"))
   {
     for(int i = 0; h263_resolutions[i].width != 0; ++i)
@@ -810,7 +810,7 @@ void MCUH323EndPoint::AddCapabilitiesMCU()
       AddCapability(new_cap);
     }
   }
-  // add fake H.261 capabilities, need only for H.323
+  // add H.261 capabilities for H.323
   if(CheckCapability("H.261{sw}"))
   {
     for(int i = 0; h263_resolutions[i].width != 0; ++i)
