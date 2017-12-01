@@ -405,7 +405,7 @@ function createRequestObject()
 
 function show_error()
 {
-  alert('Communitation lost');
+  alert('Communication lost');
   location.href='/';
 }
 

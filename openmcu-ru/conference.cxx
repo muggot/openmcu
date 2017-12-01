@@ -601,9 +601,23 @@ int ConferenceMonitor::Perform(Conference * conference)
     }
   }
 
-  MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
-  for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
-    it->Monitor(conference);
+  if(conference->UseSameVideoForAllMembers())
+  {
+    MCUVideoMixerList & videoMixerList = conference->GetVideoMixerList();
+    for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+      it->Monitor(conference);
+  }
+  else
+  {
+    MCUMemberList & memberList = conference->GetMemberList();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+    {
+      ConferenceMember *member = it.GetObject();
+      if(member)
+        if(member->videoMixer)
+          member->videoMixer->Monitor(conference);
+    }
+  }
 
   return 0;
 }

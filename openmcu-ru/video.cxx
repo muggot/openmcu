@@ -12,13 +12,9 @@ PMutex ft_mutex;
 FT_Bool ft_use_kerning;
 FT_UInt ft_glyph_index,ft_previous;
 BOOL ft_subtitles=FALSE;
-// Fake error code mean that we need initialize labels from scratch:
+// 555 = need to initialize, 5555 = stop further usage:
 #define FT_INITIAL_ERROR 555
 #define FT_FINAL_ERROR 5555
-// Number of frames skipped before render label:
-#define FT_SKIPFRAMES    1
-// Number of getting username attempts:
-#define FT_ATTEMPTS      100
 // Label's options:
 #define FT_P_H_CENTER    0x0001
 #define FT_P_V_CENTER    0x0002
