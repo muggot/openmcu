@@ -1192,6 +1192,13 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     }
     return TRUE;
   }
+  if(action == OTFC_ENABLE_SUBTITLES)
+  {
+    conference->EnableSubtitles(v);
+    PStringStream cmd; cmd << "conf[0][14]=" << v << ";p.top_panel();p.alive()";
+    HttpWriteCmdRoom(cmd,room);
+    return TRUE;
+  }
   if(action == OTFC_ADD_VIDEO_MIXER)
   {
     if(conference->GetVideoMixerList().GetSize() == 0)

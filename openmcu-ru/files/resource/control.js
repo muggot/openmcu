@@ -55,6 +55,7 @@ var OTFC_DIAL                    = 34;
 var OTFC_DROP_ALL_ACTIVE_MEMBERS = 64;
 var OTFC_INVITE_ALL_INACT_MMBRS  = 65;
 var OTFC_REMOVE_ALL_INACT_MMBRS  = 66;
+var OTFC_ENABLE_SUBTITLES        = 68;
 var OTFC_TAKE_CONTROL            = 69;
 var OTFC_DECONTROL               = 70;
 var OTFC_ADD_VIDEO_MIXER         = 71;
@@ -130,6 +131,7 @@ var classicMode = false;
 var sortMode = parseInt(getcookie('sortMode')); if(sortMode!=0) sortMode=1;
 
 var muteNewUsers = 0;
+var enableSubtitles = 1;
 
 var masterVolume = 40, slidermove = 0, slidervalue, sliderstartx, slidertemp;
 
@@ -1587,7 +1589,7 @@ function top_panel()
 
   c+=" ";
 
-  try{ muteNewUsers=conf[0][13]; } catch(e) { }
+  try{ muteNewUsers=conf[0][13]; enableSubtitles=conf[0][14]; } catch(e) { }
   if(muteNewUsers==1) title=window.l_unmute_new_conference_users; else title=window.l_mute_new_conference_users;
   c+="<button title='" + title + "' onclick='javascript:{if(checkcontrol())queue_otf_request("
     + (muteNewUsers?"OTFC_UNMUTE_NEW_USERS":"OTFC_MUTE_NEW_USERS") + ",0);return false;}' class='mutenewusers"
@@ -1601,6 +1603,8 @@ function top_panel()
     +" onclick='javascript:{sortMode=(sortMode+1)%2;this.className=\"sortspr\"+sortMode;"
     + "document.cookie=\"sortMode=\"+sortMode+\"; expires=Fri, 31 Dec 2999 23:59:59 GMT\";members_refresh();return false;}'"
     +" class='sortspr" + sortMode + "'></button>";
+
+  c+=" <button title='Subtitles' onclick='queue_otf_request(" + OTFC_ENABLE_SUBTITLES + ", (enableSubtitles+1)%2);return false;' class='subtitles" + enableSubtitles + "'></button>";
 
   c+="&nbsp;Resizer: <span id='ScaleTiming'>&nbsp;</span>";
 

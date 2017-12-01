@@ -1334,7 +1334,8 @@ PString MCUH323EndPoint::GetConferenceOptsJavascript(Conference & c)
 
   if(c.conferenceRecorder != NULL && c.conferenceRecorder->IsRunning()) r << ",1"; else r << ",0"; // [0][11] = video recording state (1=recording, 0=NO)
   if(c.lockedTemplate) r << ",1"; else r << ",0";                         // [0][12] = member list locked by template (1=yes, 0=no)
-  if(c.muteNewUsers) r << ",1"; else r << ",0";                         // [0][13] = mute new conference users (1=yes, 0=no)
+  if(c.muteNewUsers) r << ",1"; else r << ",0";                           // [0][13] = mute new conference users (1=yes, 0=no)
+  if(c.enableSubtitles) r << ",1"; else r << ",0";                        // [0][14] = enable subtitles (1=yes, 0=no)
 
   r << "]"; //l2 close
 

@@ -682,6 +682,7 @@ MCUSimpleVideoMixer::MCUSimpleVideoMixer(BOOL _forceScreenSplit)
   forceScreenSplit = _forceScreenSplit;
   VMPListInit();
   specialLayout = 0;
+  enableSubtitles1 = 1;
 }
 
 MCUSimpleVideoMixer::~MCUSimpleVideoMixer()
@@ -871,7 +872,8 @@ BOOL MCUSimpleVideoMixer::WriteSubFrame(VideoMixPosition & vmp, const void * buf
 #if USE_FREETYPE
     if(options & WSF_VMP_SUBTITLES)
       if(!(vmpcfg.label_mask&FT_P_DISABLED))
-        MCUPrintSubtitles(vmp, (void *)vmpbuf->GetPointer(),pw,ph,vmpcfg.label_mask,specialLayout);
+        if(enableSubtitles1)
+          MCUPrintSubtitles(vmp, (void *)vmpbuf->GetPointer(),pw,ph,vmpcfg.label_mask,specialLayout);
 #endif
 
   }

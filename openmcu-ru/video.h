@@ -441,6 +441,9 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
 
     void RemoveFrameStore(VideoFrameStoreList::shared_iterator & it);
 
+    virtual void EnableSubtitles()  { enableSubtitles1 = 1; }
+    virtual void DisableSubtitles() { enableSubtitles1 = 0; }
+
   protected:
     virtual void ReallocatePositions();
     BOOL ReadMixedFrame(VideoFrameStoreList & srcFrameStores, void * buffer, int width, int height, PINDEX & amount);
@@ -448,6 +451,7 @@ class MCUSimpleVideoMixer : public MCUVideoMixer
     VideoFrameStoreList frameStores;  // list of framestores for data
 
     int specialLayout;
+    int enableSubtitles1;
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -563,6 +563,7 @@ class Conference : public PObject
     virtual void SetLastUsedTemplate(PString tplName);
     virtual void DeleteTemplate(PString tplName);
     virtual BOOL RewriteMembersConf();
+    virtual void EnableSubtitles(int enable);
 
     ConferenceRecorder * conferenceRecorder;
     ConferenceMember * pipeMember;
@@ -585,6 +586,7 @@ class Conference : public PObject
 
     float masterVolumeMultiplier;
     int masterVolumeDB;
+    int enableSubtitles;
 
   protected:
     ConferenceManager & manager;

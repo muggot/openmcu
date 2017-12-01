@@ -261,7 +261,7 @@ static PString MCUControlCodes = "NO ACTION,"
 #define OTFC_DROP_ALL_ACTIVE_MEMBERS  64
 #define OTFC_INVITE_ALL_INACT_MMBRS   65
 #define OTFC_REMOVE_ALL_INACT_MMBRS   66
-#define OTFC_YUV_FILTER_MODE          68
+#define OTFC_ENABLE_SUBTITLES         68
 #define OTFC_TAKE_CONTROL             69
 #define OTFC_DECONTROL                70
 #define OTFC_ADD_VIDEO_MIXER          71

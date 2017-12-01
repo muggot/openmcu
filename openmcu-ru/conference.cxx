@@ -635,6 +635,7 @@ Conference::Conference(ConferenceManager & _manager, long _listID,
   : manager(_manager), listID(_listID), guid(_guid), number(_number), name(_name)
 {
   stopping = FALSE;
+  enableSubtitles = 1;
   trace_section = "Conference "+number+": ";
 #if MCU_VIDEO
   if(mixer)
@@ -1336,6 +1337,40 @@ BOOL Conference::SetMasterVolumeDB(int n)
   masterVolumeDB          = n;
   masterVolumeMultiplier *= 0.636619; // avg. level of sine
   return TRUE;
+}
+
+void Conference::EnableSubtitles(int enable)
+{
+  enableSubtitles = enable;
+  if(UseSameVideoForAllMembers())
+  {
+    for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
+    {
+      MCUSimpleVideoMixer *mixer = it.GetObject();
+      if(mixer)
+      {
+        if(enable)
+          mixer->EnableSubtitles();
+        else
+          mixer->DisableSubtitles();
+      }
+    }
+  }
+  else
+  {
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+    {
+      ConferenceMember *member = it.GetObject();
+      if(member)
+      {
+        if(member->videoMixer)
+        {
+          if(enable) member->videoMixer->EnableSubtitles();
+          else       member->videoMixer->DisableSubtitles();
+        }
+      }
+    }
+  }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

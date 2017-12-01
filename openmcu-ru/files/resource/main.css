@@ -116,7 +116,6 @@ legend{display:block;width:100%;padding:0;margin-bottom:27px;font-size:19.5px;li
 label,input,button,select,textarea{font-size:13px;font-weight:normal;line-height:18px;}
 input,button,select,textarea{font-family:"Helvetica Neue",Helvetica,Arial,sans-serif;}
 label{display:block;margin-bottom:5px;color:#333333;}
-//input,textarea,select,.uneditable-input{display:inline-block;width:210px;height:18px;padding:4px;margin-bottom:9px;font-size:13px;line-height:18px;color:#555555;background-color:#ffffff;border:1px solid #cccccc;-webkit-border-radius:3px;-moz-border-radius:3px;border-radius:3px;}
 input,textarea,select,.uneditable-input{display:inline-block;height:18px;padding:4px;margin-bottom:9px;font-size:13px;line-height:18px;color:#555555;background-color:#ffffff;border:1px solid #cccccc;-webkit-border-radius:3px;-moz-border-radius:3px;border-radius:3px;}
 .uneditable-textarea{width:auto;height:auto;}
 label input,label textarea,label select{display:block;}
@@ -126,7 +125,6 @@ input[type="file"]{width:auto;padding:initial;line-height:initial;background-col
 input[type="button"],input[type="reset"],input[type="submit"]{width:auto;height:auto;}
 select,input[type="file"]{height:28px;*margin-top:4px;line-height:28px;}
 input[type="file"]{line-height:18px \9;}
-//select{width:220px;background-color:#ffffff;}
 select{background-color:#ffffff;}
 select[multiple],select[size]{height:auto;}
 input[type="image"]{-webkit-box-shadow:none;-moz-box-shadow:none;box-shadow:none;}
@@ -383,7 +381,11 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .vadsetupspr  {width:24px;height:24px;background:url(s32_ch.png)  -69px -101px; border:2px solid #000; background-color:#fff}
 .mutespr0     {width:24px;height:24px;background:url(s32_ch.png)   -7px -103px; border:2px solid #fa3; background-color:#fff}
 .mutespr1     {width:24px;height:24px;background:url(s32_ch.png)  -39px -103px; border:2px solid #830; background-color:#fff}
+.subtitles0   {width:30px;height:30px;background:url(s32_ch.png) -191px -162px; border:0px; background-color:#fff}
+.subtitles1   {width:30px;height:30px;background:url(s32_ch.png) -225px -162px; border:0px; background-color:#fff}
 .recordspr0,.recordspr1,.vadsetupspr,.mutespr0,.mutespr1,.sortspr0,.sortspr1,.mutenewusers0,.mutenewusers1{cursor:pointer;vertical-align:middle;border-radius:3px;overflow:hidden;margin:2px}
+.subtitles0,.subtitles1{cursor:pointer;vertical-align:middle;overflow:hidden;margin:0px}
+.subtitles0:hover,.subtitles1:hover{width:26px;height:26px;margin:2px;}
 .vadsetupspr:hover,.recordspr0:hover,.recordspr1:hover,.fltspr0:hover,.fltspr1:hover,.fltspr2:hover,.robotspr:hover,.humanspr:hover,.mutespr1:hover,.mutespr0:hover,.sortspr0:hover,.sortspr1:hover,.mutenewusers0:hover,.mutenewusers1:hover{border-style:dotted}
 
 .mmbr0,.mmbr1,.mmbr2,.mmbrp15,.mmbrp1,.mmbrp2,.mmbrdd{margin-left:2px;margin-bottom:0px;padding:2px;overflow:hidden;border-radius:0px;text-align:left;height:32px}
@@ -395,8 +397,6 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .mmbrp15{border-bottom:1px solid red     ;background-color:#ffaaaa;cursor:move}
 .mmbrp1 {border-bottom:1px solid #070    ;background-color:#9a9   ;cursor:move}
 .mmbrp2 {border-bottom:1px solid #707    ;background-color:#a5a   ;cursor:move}
-/*.mmbrp1 {border-bottom:1px solid green   ;background-color:#f5fffa;cursor:move}*/
-/*.mmbrp2 {border-bottom:1px solid magenta ;background-color:#f5ccff;cursor:move}*/
 .mbrpos1{width:0px;height:0px;position:relative;top:0px}
 .mbrpos11{width:0px;height:0px;position:relative;top:16px}
 .vlevel{overflow:hidden;width:15px;height:15px;line-height:15px}
