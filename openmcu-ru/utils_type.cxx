@@ -64,7 +64,14 @@ BOOL MCUURL::Parse(const PString & str)
     {
       // если не указан порт
       if(url_party.FindLast(":") == url_scheme.GetLength())
-        url_party += "@";
+      {
+        PINDEX dot1 = str.Find(".");
+        PINDEX dot2 = str.FindLast(".");
+        if(dot1!=dot2) // at least 2 - it might be IP address or domain name
+          url_party.Replace(url_scheme+":",url_scheme+":@",TRUE,0);
+        else
+          url_party += "@";
+      }
       else
         url_party.Replace(url_scheme+":",url_scheme+":@",TRUE,0);
     }
