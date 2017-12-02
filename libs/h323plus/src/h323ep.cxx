@@ -2269,6 +2269,7 @@ BOOL H323EndPoint::ParsePartyName(const PString & _remoteParty,
   {
     alias = url.GetUserName();
     hostOnly = remoteParty.Mid(remoteParty.Find('@')+1);
+    hostOnly = hostOnly.Left(hostOnly.Find(':'));
   } else {
     alias = url.GetUserName();
     hostOnly = url.GetHostName();
