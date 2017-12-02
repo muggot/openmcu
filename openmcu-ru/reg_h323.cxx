@@ -42,8 +42,9 @@ H323Connection::AnswerCallResponse Registrar::OnReceivedH323Invite(MCUH323Connec
 
   if(username_in == username_out)
   {
-    PTRACE(1, trace_section << "error " << username_in);
-    return H323Connection::AnswerCallDenied;
+    PTRACE(2, trace_section << "loopback call error: username_in=" << username_in << " username_out=" << username_out);
+    if(!MCUConfig("Parameters").GetBoolean(AllowLoopbackCallsKey, FALSE))
+      return H323Connection::AnswerCallDenied;
   }
 
   // default response

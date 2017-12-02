@@ -103,7 +103,7 @@ class MCUConnectionCleaner : public PThread
 
 void H323CallThread::Main()
 {
-  PTRACE(3, "H225\tStarted call thread");
+  PTRACE(3, "H225\tStarted call thread alias=" << alias << " address=" << address);
   if(connection.Lock())
   {
     H323Connection::CallEndReason reason = connection.SendSignalSetup(alias, address);
@@ -435,7 +435,7 @@ H323Connection * MCUH323EndPoint::InternalMakeCall(const PString & trasferFromTo
   }
 #endif
 
-  PTRACE(3, trace_section << "Created new connection: " << newToken);
+  PTRACE(3, trace_section << "Created new connection: " << newToken << " address=" << address);
   new H323CallThread(*this, *connection, *transport, alias, address);
   return connection;
 }
@@ -1951,7 +1951,7 @@ MCUH323Connection::MCUH323Connection(MCUH323EndPoint & _ep, unsigned callReferen
   if(!ep.IsRegisteredWithGatekeeper())
   {
     localAliasNames.RemoveAll();
-    localAliasNames.AppendString(OpenMCU::Current().GetName());
+//    localAliasNames.AppendString(OpenMCU::Current().GetName());
     localAliasNames.AppendString(requestedRoom);
   }
 
