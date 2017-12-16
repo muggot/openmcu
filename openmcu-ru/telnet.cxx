@@ -220,6 +220,12 @@ int MCUTelnetSession::OnReceived(MCUSocket *socket, PString data)
       case(TEL_LF):
         break;
       case(TEL_CR):
+        if(!state) if((databuf*="exit")||(databuf*="logout")||(databuf*="quit"))
+        {
+          MCUTRACE(1, trace_section << "connection close by user");
+          Sendf("\r\n\r\nBye! :)\r\n");
+          Close(); return 0;
+        }
         echobuf += "\r\n";
         OnReceivedData(databuf);
         databuf = "";

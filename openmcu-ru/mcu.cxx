@@ -1425,8 +1425,7 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     int type = data("o2").AsInteger();
     if((type<1)||(type>3)) type=2;
     long id = (long)mixer->GetPositionId(pos);
-//    if((type==1)&&(id>=0)&&(id<100)) //static but no member
-    if((id>=0)&&(id<100)) //just no member (and we want to add him for some reason)
+    if((id>=0)&&(id<100)) // no member (and we want to add someone for some reason)
     {
       BOOL setup = FALSE;
       MCUMemberList & memberList = conference->GetMemberList();
@@ -1450,8 +1449,6 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
         mixer->PositionSetup(pos,type,NULL);
       }
     }
-//    else if((id>=0)&&(id<100))
-//      mixer->PositionSetup(pos,type,NULL);
     else
       mixer->SetPositionType(pos,type);
     mixer->Unlock();

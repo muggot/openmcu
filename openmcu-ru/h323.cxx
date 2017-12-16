@@ -1771,7 +1771,7 @@ PString MCUH323EndPoint::Invite(PString room, PString memberName)
 
   end:
     PTRACE(2, trace_section << msg);
-    OpenMCU::Current().HttpWriteEventRoom(msg, room);
+//    OpenMCU::Current().HttpWriteEventRoom(msg, room);
     return callToken;
 }
 
@@ -2035,12 +2035,14 @@ void MCUH323Connection::SetCallEndReason(CallEndReason reason, PSyncPoint * sync
     callEndTime = PTime();
   }
 
+/*
   if(requestedRoom != "")
   {
     PStringStream event;
     event << remotePartyAddress << " " << callEndReason << " " << callEndReasonEvent;
     OpenMCU::Current().HttpWriteEventRoom(event, requestedRoom);
   }
+*/
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////

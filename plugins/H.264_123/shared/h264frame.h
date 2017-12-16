@@ -64,7 +64,7 @@ const static struct h264_level {
     unsigned mbps;        /* max macroblock processing rate (macroblocks/sec) */
     unsigned frame_size;  /* max frame size (macroblocks) */
     unsigned dpb;         /* max decoded picture buffer (bytes) */
-    long unsigned bitrate;/* max bitrate (bit/sec) */
+    long unsigned bitrate;/* max bitrate (kbit/sec) */
     unsigned cpb;         /* max vbv buffer (kbit) */
     unsigned mv_range;    /* max vertical mv component range (pixels) */
     unsigned mvs_per_2mb; /* max mvs per 2 consecutive mbs. */

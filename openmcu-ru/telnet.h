@@ -46,7 +46,7 @@ const unsigned char TEL_DO         = 253;
 const unsigned char TEL_DONT       = 254;
 const unsigned char TEL_IAC        = 255;
 
-const PString TEL_WELCOME = PString(PRODUCT_NAME_TEXT)+"/"+PString(MAJOR_VERSION)+"."+PString(MINOR_VERSION)+"."+PString(BUILD_NUMBER)+" "+"Copyright (c) 2015 by "+PString(MANUFACTURER_TEXT)+"\r\n"
+const PString TEL_WELCOME = PString(PRODUCT_NAME_TEXT)+"/"+PString(MAJOR_VERSION)+"."+PString(MINOR_VERSION)+"."+PString(BUILD_NUMBER)+" "+"Copyright (c) by "+PString(MANUFACTURER_TEXT)+"\r\n"
                             +"git revision: "
 #ifdef GIT_REVISION
                             +MCU_STRINGIFY(GIT_REVISION)

@@ -930,8 +930,7 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   visibleMemberCount--;
 
   // counter members
-  if(memberToRemove->IsOnline())
-    onlineMemberCount--;
+  if(memberToRemove->IsOnline()) onlineMemberCount--;
 
   // remove ConferenceConnection
   RemoveAudioConnection(memberToRemove);
@@ -940,7 +939,6 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
   {
     if(moderated == FALSE || number == "testroom")
     {
-//      visibleMemberCount--;
       MCUSimpleVideoMixer *mixer = manager.GetVideoMixerWithLock(this);
       mixer->RemoveVideoSource(memberToRemove->GetID(), *memberToRemove);
       mixer->Unlock();
@@ -950,7 +948,28 @@ BOOL Conference::RemoveMember(ConferenceMember * memberToRemove, BOOL removeFrom
       for(MCUVideoMixerList::shared_iterator it = videoMixerList.begin(); it != videoMixerList.end(); ++it)
       {
         MCUSimpleVideoMixer *mixer = it.GetObject();
-        mixer->SetOffline(memberToRemove->GetID());
+        ConferenceMemberId mtrid = memberToRemove->GetID();
+
+        BOOL replaced = FALSE; int n = mixer->GetPositionNum(mtrid), type = mixer->GetPositionType(mtrid);
+
+        if(n >=0 && (type == 2 || type == 3)) // VAD position - put someone there
+        {
+          for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+          {
+            ConferenceMember * member = *it; if(member->IsVisible() && member->IsOnline())
+            {
+              if(mixer->VMPFind(member->GetID()) == mixer->vmpList.end() && (!member->disableVAD))
+              {
+                mixer->PositionSetup(n, type, member);
+                member->SetFreezeVideo(FALSE);
+                replaced = TRUE;
+              }
+            }
+          }
+        }
+
+        if(!replaced) mixer->SetOffline(mtrid);
+
       }
     }
   }
