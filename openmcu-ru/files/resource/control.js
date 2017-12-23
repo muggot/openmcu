@@ -52,6 +52,7 @@ var OTFC_CHANGE_RESIZER_RULE     = 27;
 var OTFC_INVITE                  = 32;
 var OTFC_REMOVE_OFFLINE_MEMBER   = 33;
 var OTFC_DIAL                    = 34;
+var OTFC_CHAT                    = 35;
 var OTFC_DROP_ALL_ACTIVE_MEMBERS = 64;
 var OTFC_INVITE_ALL_INACT_MMBRS  = 65;
 var OTFC_REMOVE_ALL_INACT_MMBRS  = 66;
@@ -1865,6 +1866,15 @@ function build_page()
     l2.style.width=(log_width-8)+'px'; l2.style.height=(total_height-2)+'px';
     l0=document.getElementById('cb2');
     l0.style.width=''+mmw+'px'; l0.style.height=total_height+'px';
+
+    var chatBlock=document.createElement('div'); chatBlock.id='chatBlock'; chatBlock.className='chatBlock';
+    l1.appendChild(chatBlock); chatBlock=document.getElementById('chatBlock');
+    var chatText=document.createElement('input'); chatText.id='chatText'; chatText.className='chatText';
+    chatBlock.appendChild(chatText); chatText=document.getElementById('chatText');
+    var chatButton=document.createElement('button'); chatButton.id='chatButton'; chatButton.className='chatButton'; chatButton.innerHTML='&gt;&gt;';
+    chatBlock.appendChild(chatButton); chatButton=document.getElementById('chatButton');
+    chatText.addEventListener('keydown', function(event){ if(event.key==="Enter")sendMsg(); });
+    chatButton.addEventListener('click', function(event){ sendMsg(); });
   } catch(e) {};
 
   mockup_content=""; var pos_y=0;
@@ -1946,6 +1956,16 @@ function build_page()
   {
     for(i=0;i<members.length;i++)frameload(i);
   }
+}
+
+function sendMsg()
+{
+  if(!document.getElementById('chatText')) return;
+  var chatText = document.getElementById('chatText');
+  var chatMsg = chatText.value;
+  if(chatMsg=="") return;
+  queue_otf_request(OTFC_CHAT,chatMsg);
+  chatText.value="";
 }
 
 function get_mixers_content()

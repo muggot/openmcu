@@ -1065,6 +1065,18 @@ BOOL OpenMCU::OTFControl(const PStringToString & data, PString & rdata)
     }
     return FALSE;
   }
+  if(action == OTFC_CHAT)
+  {
+    PWaitAndSignal m(conference->GetMemberListMutex());
+    MCUMemberList & memberList = conference->GetMemberList();
+    for(MCUMemberList::shared_iterator it = memberList.begin(); it != memberList.end(); ++it)
+    {
+      ConferenceMember * member = *it;
+      if(!member->IsSystem()) member->OnReceivedUserInputIndication(PString("Operator: ") + value);
+    }
+    HttpWriteEventRoom(PString("<b>Operator:</b> ") + value, room);
+    return TRUE;
+  }
   if(action == OTFC_REMOVE_OFFLINE_MEMBER)
   {
     PWaitAndSignal m(conference->GetMemberListMutex());
