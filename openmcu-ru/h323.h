@@ -543,7 +543,9 @@ class MCUConnection_ConferenceMember : public ConferenceMember
       MCUH323Connection * conn = ep.FindConnectionWithLock(callToken);
       if (conn != NULL)
       {
-        conn->SendUserInput(str); 
+        if (conn->GetRemoteApplication().Find("MyPhone") != P_MAX_INDEX)
+          conn->SendUserInput(convert_utf8_to_cp1251(str));
+        else conn->SendUserInput(str); 
         conn->Unlock();
       }
     }
