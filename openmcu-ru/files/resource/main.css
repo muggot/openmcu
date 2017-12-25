@@ -447,6 +447,6 @@ button.btn.btn-mini,input[type="submit"].btn.btn-mini{*padding-top:1px;*padding-
 .sliderleft{position:relative;top:0px;left:0px;width:122px;background-color:#00a;}
 .sliderhandle,.sliderhandle:hover{position:relative;top:-8px;left:114px;width:20px;background-color:#acf;height:20px;border-radius:5px;border:2px solid #00a;cursor:pointer;font-size:9px;text-align:center;user-select:none;}
 .sliderhandle:hover{border:2px solid #acf;background-color:#00a;border-radius:10px;color:#ffc;}
-.chatBlock{width:100%;position:relative;bottom:20px;left:px;height:20px;margin:0px;padding:0px;}
-.chatText{width:90%;position:absolute;left:0px;bottom:0px;height:16px;border:2px solid gray;margin:0px;}
-.chatButton{width:8%;position:absolute;right:0px;bottom:0px;height:20px;margin:0px;}
+.chatBlock{width:100%;position:relative;bottom:-2px;left:-2px;height:18px;margin:0px;padding:0px;}
+.chatText{width:50px;position:absolute;left:0px;bottom:0px;height:14px;border:2px solid gray;margin:0px;}
+.chatButton{width:20px;position:absolute;right:-4px;bottom:-10px;height:14px;}

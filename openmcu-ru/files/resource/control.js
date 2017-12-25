@@ -78,6 +78,7 @@ var OTFC_UNMUTE_NEW_USERS        = 93;
 var mmw = -1; // build_page() initializer
 var visible_ids='';
 var mixers=0, bfw=704, bfh=576, room='';
+var log_width=200;
 
 var mixer_refresh_timer = null;
 
@@ -135,6 +136,12 @@ var muteNewUsers = 0;
 var enableSubtitles = 1;
 
 var masterVolume = 40, slidermove = 0, slidervalue, sliderstartx, slidertemp;
+
+function resize_timing(s)
+{
+  if(document.getElementById('ScaleTiming')) document.getElementById('ScaleTiming').innerHTML=Math.floor(s/1000);
+  alive();
+}
 
 function index_exists(a, i)
 {
@@ -404,7 +411,9 @@ function vadoptions(obj,mid)
 
 function checking_failed(){
   check_alive=0;
-  if(!iframe_reconnection){
+  if(!iframe_reconnection)
+  {
+    remove_chat();
     var ifr=document.getElementById('loggingframe');
     var doc=ifr.contentWindow.document.open('text/html','replace');
     doc.write('<body style="font-face:Verdana,Arial;color:red;font-size:10px;font-weight:bold">Connection dropped :(<br>Trying to reconnect...');
@@ -416,10 +425,12 @@ function checking_failed(){
 function reconnect_iframe(){
   iframe_reconnection=1;
   var ifr=document.getElementById('loggingframe');
-  try{
-  document.getElementById('logging1').removeChild(ifr);
-  document.getElementById('logging1').innerHTML=link_was_lost;
-  check_alive=setTimeout(checking_failed,5500);
+  try
+  {
+    document.getElementById('logging1').removeChild(ifr);
+    document.getElementById('logging1').innerHTML=link_was_lost;
+    add_chat();
+    check_alive=setTimeout(checking_failed,5500);
   } catch(e){ location.href=location.href; }
 }
 
@@ -1863,20 +1874,13 @@ function build_page()
     var l2=document.getElementById('loggingframe');
     l0.style.left='-'+(log_width-5)+'px';
     l1.style.width=(log_width-8)+'px'; l1.style.height=(total_height-2)+'px';
-    l2.style.width=(log_width-8)+'px'; l2.style.height=(total_height-2)+'px';
+    l2.style.width=(log_width-8)+'px'; l2.style.height=(total_height-20)+'px';
     l0=document.getElementById('cb2');
     l0.style.width=''+mmw+'px'; l0.style.height=total_height+'px';
 
-    var chatBlock=document.createElement('div'); chatBlock.id='chatBlock'; chatBlock.className='chatBlock';
-    l1.appendChild(chatBlock); chatBlock=document.getElementById('chatBlock');
-    var chatText=document.createElement('input'); chatText.id='chatText'; chatText.className='chatText';
-    chatBlock.appendChild(chatText); chatText=document.getElementById('chatText');
-    var chatButton=document.createElement('button'); chatButton.id='chatButton'; chatButton.className='chatButton'; chatButton.innerHTML='&gt;&gt;';
-    chatBlock.appendChild(chatButton); chatButton=document.getElementById('chatButton');
-    chatText.addEventListener('keydown', function(event){ if(event.key==="Enter")sendMsg(); });
-    chatButton.addEventListener('click', function(event){ sendMsg(); });
-  } catch(e) {};
-
+    add_chat();
+  } catch(e) {}
+    
   mockup_content=""; var pos_y=0;
   if(!classicMode)
   {
@@ -1958,7 +1962,46 @@ function build_page()
   }
 }
 
-function sendMsg()
+function add_chat()
+{
+  if(typeof log_width == 'undefined') return;
+  if(document.getElementById('chatBlock')) remove_chat();
+  var l1 = document.getElementById('logging1');
+  
+  var chatBlock=document.createElement('div'); chatBlock.id='chatBlock'; chatBlock.className='chatBlock';
+  l1.appendChild(chatBlock); chatBlock=document.getElementById('chatBlock');
+
+  var chatText=document.createElement('input'); chatText.id='chatText'; chatText.className='chatText';
+  chatText.style.width=(log_width-36)+'px';
+  chatBlock.appendChild(chatText); chatText=document.getElementById('chatText');
+
+  var chatButton=document.createElement('input'); chatButton.setAttribute('type','button'); chatButton.id='chatButton'; chatButton.className='chatButton'; chatButton.value=String.fromCharCode(9166);
+  chatBlock.appendChild(chatButton); chatButton=document.getElementById('chatButton');
+
+  document.getElementById('chatText').addEventListener('keydown', checkEnterSendMsg);
+  document.getElementById('chatButton').addEventListener('click', sendMsg);
+}
+
+function remove_chat()
+{
+  var l1 = document.getElementById('logging1');
+  var chatBlock = document.getElementById('chatBlock');
+  var chatText = document.getElementById('chatText');
+  var chatButton = document.getElementById('chatButton');
+  chatButton.removeEventListener('click', checkEnterSendMsg, true);
+  chatText.removeEventListener('keydown', sendMsg, true);
+  chatbutton = chatBlock.removeChild(chatButton); chatButton=0;
+  chatText = chatBlock.removeChild(chatText); chatText=0;
+  chatBlock = l1.removeChild(chatBlock); chatBlock=0;
+}
+
+function checkEnterSendMsg(event)
+{
+  if (event.key!=="Enter") return;
+  sendMsg(event);
+}
+
+function sendMsg(event)
 {
   if(!document.getElementById('chatText')) return;
   var chatText = document.getElementById('chatText');
@@ -2385,12 +2428,6 @@ function getTopPos(el) {
 function getLeftPos(el) {
   for (var leftPos=0; el!=null; leftPos+=el.offsetLeft, el=el.offsetParent);
   return leftPos;
-}
-
-function resize_timing(s)
-{
-  if(document.getElementById('ScaleTiming')) document.getElementById('ScaleTiming').innerHTML=Math.floor(s/1000);
-  alive();
 }
 
 function dspr(id,spr)
