@@ -45,8 +45,8 @@ Var StartMenuFolder
 !define MUI_FINISHPAGE_TEXT "$(FinishText)"
 !define MUI_FINISHPAGE_SHOWREADME "http://127.0.0.1:1420/"
 !define MUI_FINISHPAGE_SHOWREADME_TEXT "$(FinishWebInt)"
-;!define MUI_FINISHPAGE_LINK "$(FinishLink) http://openmcu.ru/"
-;!define MUI_FINISHPAGE_LINK_LOCATION "http://openmcu.ru/"
+;!define MUI_FINISHPAGE_LINK "$(FinishLink) http://videoswitch.ru/"
+;!define MUI_FINISHPAGE_LINK_LOCATION "http://videoswitch.ru/"
 !insertmacro MUI_PAGE_FINISH
 
 !insertmacro MUI_UNPAGE_CONFIRM

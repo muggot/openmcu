@@ -162,7 +162,7 @@ function member_get_nice_duration(m)
 }
 
 function member_get_nice_stream(isAudio, isCached, streamName, streamText, streamNegErrorText)
-{ // функция посвящается уважаемому palexa, http://openmcu.ru/forum/index.php/topic,611.0.html
+{ // функция посвящается уважаемому palexa, http://videoswitch.ru/forum/index.php/topic,611.0.html
   // её можно и нужно настроить по своему усмотрению, как это сделать - см. комментарии далее:
 
   var r='<nobr><b>'; // будем формировать строку <nobr><b>ПОТОК:</b> кодек</nobr>

@@ -385,7 +385,7 @@ static struct PluginCodec_information licenseInfo =
   "kay27",                                                   // source code author
   "1.0",                                                     // source code version
   "kay27@bk.ru",                                             // source code email
-  "http://openmcu.ru/",                                      // source code URL
+  "http://videoswitch.ru/",                                  // source code URL
   "(C)2013 Konstantin Yeliseyev, (C)2012 Andrey Varnavskiy", // source code copyright
   "MPL 1.0",                                                 // source code license
   PluginCodec_License_MPL,                                   // source code license

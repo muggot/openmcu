@@ -6441,7 +6441,7 @@ fi
 
     { eval $as_ac_File=; unset $as_ac_File;}
     if test ${USE_SRC_ZRTP} = 0; then
-      (wget --directory-prefix=libs http://openmcu.ru/public/OpenMCU-ru/libs/libzrtp.tar.gz)
+      (wget --directory-prefix=libs http://videoswitch.ru/public/OpenMCU-ru/libs/libzrtp.tar.gz)
       as_ac_File=`$as_echo "ac_cv_file_${top_srcdir}/libs/libzrtp.tar.gz" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for ${top_srcdir}/libs/libzrtp.tar.gz" >&5
 $as_echo_n "checking for ${top_srcdir}/libs/libzrtp.tar.gz... " >&6; }

@@ -10,7 +10,7 @@
 #define	COPYRIGHT_HOLDER	MANUFACTURER_TEXT
 
 #define	EMAIL                   ""
-#define	HOME_PAGE               "http://www.openmcu.ru"
+#define	HOME_PAGE               "http://www.videoswitch.ru/"
 #define	PRODUCT_NAME_HTML       PRODUCT_NAME_TEXT
 
 #ifndef GIF_NAME

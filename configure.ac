@@ -787,7 +787,7 @@ if test "${libzrtp}" = "yes"; then
     AC_CHECK_FILE(${top_srcdir}/libs/libzrtp.tar.gz, USE_SRC_ZRTP=1, USE_SRC_ZRTP=0)
     AS_UNSET([$as_ac_File])
     if test ${USE_SRC_ZRTP} = 0; then
-      (wget --directory-prefix=libs http://openmcu.ru/public/OpenMCU-ru/libs/libzrtp.tar.gz)
+      (wget --directory-prefix=libs http://videoswitch.ru/public/OpenMCU-ru/libs/libzrtp.tar.gz)
       AC_CHECK_FILE(${top_srcdir}/libs/libzrtp.tar.gz, USE_SRC_ZRTP=1, USE_SRC_ZRTP=0)
       AS_UNSET([$as_ac_File])
     fi
