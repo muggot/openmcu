@@ -1501,7 +1501,7 @@ void ConferenceMember::Dial()
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void ConferenceMember::Dial(BOOL _autoDial)
+void ConferenceMember::Dial(int _autoDial)
 {
   if(IsSystem())
     return;
