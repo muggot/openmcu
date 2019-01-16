@@ -1,5 +1,18 @@
 #include "g7231codec.h"
 
+#if LIBAVCODEC_VERSION_MAJOR >= 55
+void avcodec_get_frame_defaults(AVFrame *frame)
+{
+     // extended_data should explicitly be freed when needed, this code is unsafe currently
+     // also this is not compatible to the <55 ABI/API
+    if (frame->extended_data != frame->data && 0)
+        av_freep(&frame->extended_data);
+
+    memset(frame, 0, sizeof(AVFrame));
+    av_frame_unref(frame);
+}
+#endif
+
 //////////////////////////////////////////////////////////////////////////////
 
 G7231_DecoderContext::G7231_DecoderContext()
@@ -11,7 +24,11 @@ G7231_DecoderContext::G7231_DecoderContext()
   if (_context == NULL) 
    { cout << "Failed to allocate context for g7231 decoder\n"; return; }
 
+#if LIBAVUTIL_VERSION_MAJOR<55
   _outputFrame = avcodec_alloc_frame();
+#else
+  _outputFrame = av_frame_alloc();
+#endif
   if (_outputFrame == NULL) 
    { cout << "Failed to allocate frame for g7231 decoder\n"; return; }
 
@@ -88,7 +105,11 @@ G7231_EncoderContext::G7231_EncoderContext()
   if (_context == NULL) 
    { cout << "Failed to allocate context for g7231 encoder\n"; return; }
 
+#if LIBAVUTIL_VERSION_MAJOR<55
   _inputFrame = avcodec_alloc_frame();
+#else
+  _inputFrame = av_frame_alloc();
+#endif
   if (_inputFrame == NULL) 
    { cout << "Failed to allocate frame for g7231 encoder\n"; return; }
 

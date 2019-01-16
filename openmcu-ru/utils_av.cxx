@@ -210,7 +210,11 @@ BOOL MCU_AVEncodeFrame(AVCodecID codec_id, const void * src, int src_size, void 
   AVCodec *codec = NULL;
   AVFrame *frame = NULL;
   AVPacket pkt = { 0 };
+#if LIBAVUTIL_VERSION_MAJOR<55
   PixelFormat frame_pix_fmt;
+#else
+  AVPixelFormat frame_pix_fmt;
+#endif
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(54,1,0)
   MCUBuffer pkt_buffer(dst_size);
 #endif
@@ -447,9 +451,16 @@ BOOL MCU_AVDecodeFrameFromFile(PString & filename, void *dst, int & dst_size, in
       goto end;
     }
 
+#if LIBAVUTIL_VERSION_MAJOR<55
     struct SwsContext *sws_ctx = sws_getContext(frame->width, frame->height, (PixelFormat)frame->format,
                                                 frame->width, frame->height, AV_PIX_FMT_YUV420P,
                                                 SWS_BILINEAR, NULL, NULL, NULL);
+#else
+    struct SwsContext *sws_ctx = sws_getContext(frame->width, frame->height, (AVPixelFormat)frame->format,
+                                                frame->width, frame->height, AV_PIX_FMT_YUV420P,
+                                                SWS_BILINEAR, NULL, NULL, NULL);
+#endif
+
     if(sws_ctx == NULL)
     {
       MCUTRACE(1, trace_section << "Impossible to create scale context for the conversion "

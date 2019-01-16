@@ -82,7 +82,9 @@ extern "C"
 #include "libavutil/opt.h"
 #include "libavutil/mem.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/audioconvert.h"
+#if LIBAVUTIL_VERSION_MAJOR<55
+  #include "libavutil/audioconvert.h"
+#endif
 #if USE_SWSCALE
   #include "libswscale/swscale.h"
 #endif

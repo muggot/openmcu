@@ -225,7 +225,11 @@ H264DecoderContext::H264DecoderContext()
     return;
   }
 
+#if LIBAVUTIL_VERSION_MAJOR<55
   _outputFrame = avcodec_alloc_frame();
+#else
+  _outputFrame = av_frame_alloc();
+#endif
   if (_outputFrame == NULL) {
     cout << "H264\tDecoder\tFailed to allocate frame for encoder\n";
     return;

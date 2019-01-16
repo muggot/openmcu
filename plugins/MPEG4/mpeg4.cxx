@@ -381,7 +381,11 @@ class Decoder : public PluginVideoDecoder<CODEC>
         return false;
       }
 
+#if LIBAVUTIL_VERSION_MAJOR<55
       m_outputFrame = avcodec_alloc_frame();
+#else
+      m_outputFrame = av_frame_alloc();
+#endif
       if(m_outputFrame == NULL)
       {
         PTRACE(1, m_description, "Failed to allocate frame");

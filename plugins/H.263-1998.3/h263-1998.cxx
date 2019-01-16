@@ -262,7 +262,11 @@ bool H263_Base_EncoderContext::Open(const char *codec_name)
     return false;
   }
 
+#if LIBAVUTIL_VERSION_MAJOR<55
   _inputFrame = avcodec_alloc_frame();
+#else
+  _inputFrame = av_frame_alloc();
+#endif
   if (_inputFrame == NULL) {
     TRACE_AND_LOG(tracer, 1, "Failed to allocate frame for encoder");
     return false;
@@ -279,7 +283,11 @@ bool H263_Base_EncoderContext::Open(const char *codec_name)
   _context->me_method = ME_EPZS;
 
   _context->max_b_frames = 0;
+#if LIBAVUTIL_VERSION_MAJOR<55
   _context->pix_fmt = PIX_FMT_YUV420P;
+#else
+  _context->pix_fmt = AV_PIX_FMT_YUV420P;
+#endif
 
   // X-Lite does not like Custom Picture frequency clocks...
   _context->time_base.num = 100; 
@@ -1000,7 +1008,11 @@ H263_Base_DecoderContext::H263_Base_DecoderContext(const char * _prefix)
     return;
   }
 
+#if LIBAVUTIL_VERSION_MAJOR<55
   _outputFrame = avcodec_alloc_frame();
+#else
+  _outputFrame = av_frame_alloc();
+#endif
   if (_outputFrame == NULL) {
     TRACE_AND_LOG(tracer, 1, "Failed to allocate frame for decoder");
     return;
