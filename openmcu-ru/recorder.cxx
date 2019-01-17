@@ -419,7 +419,7 @@ AVStream * ConferenceRecorder::AddStream(AVMediaType codec_type)
 
   // Some formats want stream headers to be separate
   if(fmt_context->oformat->flags & AVFMT_GLOBALHEADER)
-    context->flags |= CODEC_FLAG_GLOBAL_HEADER;
+    context->flags |= (1 << 22); //AV_CODEC_FLAG_GLOBAL_HEADER
 
   return st;
 }

@@ -294,6 +294,9 @@ void H264DecoderContext::SetSpropParameter(const char *value)
     packet_size = av_base64_decode(decoded_packet, base64packet, sizeof(decoded_packet));
     if(packet_size > 0)
     {
+#ifndef FF_INPUT_BUFFER_PADDING_SIZE
+#  define FF_INPUT_BUFFER_PADDING_SIZE AV_INPUT_BUFFER_PADDING_SIZE
+#endif
       uint8_t *dest = (uint8_t *)av_malloc(packet_size + sizeof(start_sequence) +
                                           _context->extradata_size +
                                           FF_INPUT_BUFFER_PADDING_SIZE);

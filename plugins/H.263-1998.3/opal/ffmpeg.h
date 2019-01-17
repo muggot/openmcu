@@ -126,4 +126,12 @@ extern "C" {
 # define DIR_TOKENISER ":"
 #endif
 
+# ifndef FF_INPUT_BUFFER_PADDING_SIZE
+#   define FF_INPUT_BUFFER_PADDING_SIZE AV_INPUT_BUFFER_PADDING_SIZE
+# endif
+
+# ifndef FF_DEBUG_MV
+#   define FF_DEBUG_MV 32
+# endif
+
 #endif // __FFMPEG_H__

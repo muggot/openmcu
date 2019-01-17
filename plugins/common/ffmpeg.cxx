@@ -95,6 +95,18 @@ static void logCallbackFFMPEG(void * avcl, int severity, const char* fmt , va_li
 }
 #endif
 
+#ifndef AV_CODEC_FLAG_EMU_EDGE
+# define AV_CODEC_FLAG_EMU_EDGE 0
+#endif
+#ifndef CODEC_FLAG_EMU_EDGE
+# define CODEC_FLAG_EMU_EDGE AV_CODEC_FLAG_EMU_EDGE
+#endif
+#ifndef AV_CODEC_FLAG_TRUNCATED
+# define AV_CODEC_FLAG_TRUNCATED 0
+#endif
+#ifndef CODEC_FLAG_TRUNCATED
+# define CODEC_FLAG_TRUNCATED AV_CODEC_FLAG_TRUNCATED
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -296,7 +308,9 @@ bool FFMPEGCodec::SetResolution(unsigned width, unsigned height)
     if (width > 352)
       m_context->flags &= ~CODEC_FLAG_EMU_EDGE; // Totally bizarre! FFMPEG crashes if on for CIF4
 
+#if LIBAVUTIL_VERSION_MAJOR<56
     avcodec_set_dimensions(m_context, width, height);
+#endif
   }
 
   if (m_picture != NULL) {
@@ -342,6 +356,7 @@ void FFMPEGCodec::SetEncoderOptions(unsigned frameTime,
   // no effect.
   m_context->rc_initial_buffer_occupancy = m_context->rc_buffer_size * 1/2;
 
+#if LIBAVUTIL_VERSION_MAJOR<56
   // And this is set to 1.
   // It seems to affect how aggressively the library will raise and lower
   // quantization to keep bandwidth constant. Except it's in reference to
@@ -351,6 +366,7 @@ void FFMPEGCodec::SetEncoderOptions(unsigned frameTime,
 
   // This is set to 0 in ffmpeg.c, the command-line utility.
   m_context->rc_initial_cplx = 0.0f;
+#endif
 
   // FFMPEG requires bit rate tolerance to be at least one frame size
   m_context->bit_rate_tolerance = maxBitRate/10;
@@ -366,9 +382,11 @@ void FFMPEGCodec::SetEncoderOptions(unsigned frameTime,
   m_context->max_qdiff = 10;  // was 3      // max q difference between frames
   m_context->qcompress = 0.5;               // qscale factor between easy & hard scenes (0.0-1.0)
 
+#if LIBAVUTIL_VERSION_MAJOR<56
   // Lagrange multipliers - this is how the context defaults do it:
   m_context->lmin = m_context->qmin * FF_QP2LAMBDA;
   m_context->lmax = m_context->qmax * FF_QP2LAMBDA; 
+#endif
 
   m_context->rtp_payload_size = maxRTPSize;
 

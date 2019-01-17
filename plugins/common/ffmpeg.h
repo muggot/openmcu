@@ -52,6 +52,10 @@ extern "C"
 #include "platform.h"
 #include "opalplugin.hpp"
 
+#ifndef FF_INPUT_BUFFER_PADDING_SIZE
+# define FF_INPUT_BUFFER_PADDING_SIZE AV_INPUT_BUFFER_PADDING_SIZE
+#endif
+
 /////////////////////////////////////////////////////////////////
 
 class FFMPEGCodec

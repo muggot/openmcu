@@ -280,7 +280,9 @@ bool H263_Base_EncoderContext::Open(const char *codec_name)
   _context->codec = NULL;
   // use rd instead simple as default mb_decision, as it's default in libav/ffmpeg
   _context->mb_decision = FF_MB_DECISION_RD;
+#ifdef ME_EPZS
   _context->me_method = ME_EPZS;
+#endif
 
   _context->max_b_frames = 0;
 #if LIBAVUTIL_VERSION_MAJOR<55
@@ -294,9 +296,18 @@ bool H263_Base_EncoderContext::Open(const char *codec_name)
   _context->time_base.den = 2997;
 
   // avoid copying input/output
+#ifdef CODEC_FLAG_INPUT_PRESERVED
   _context->flags |= CODEC_FLAG_INPUT_PRESERVED; // we guarantee to preserve input for max_b_frames+1 frames
+#endif
+#ifdef CODEC_FLAG_EMU_EDGE
   _context->flags |= CODEC_FLAG_EMU_EDGE;        // don't draw edges
+#endif
+#ifdef CODEC_FLAG_PASS1
   _context->flags |= CODEC_FLAG_PASS1;
+#endif
+#ifdef AV_CODEC_FLAG_PASS1
+  _context->flags |= AV_CODEC_FLAG_PASS1;
+#endif
 
   _context->error_concealment = 3;
 #if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(54,23,0)
@@ -353,17 +364,21 @@ void H263_Base_EncoderContext::SetTargetBitrate (unsigned rate)
   if(_context->bit_rate_tolerance < tolerance_min)
     _context->bit_rate_tolerance = tolerance_min;
 
+#if LIBAVUTIL_VERSION_MAJOR<56
   // limit q by clipping
   _context->rc_qsquish = 0;
 
   // rate control equation
   _context->rc_eq = strdup("1");
+#endif
 }
 
 void H263_Base_EncoderContext::SetFrameWidth (unsigned width)
 {
   _width = width;
+#if LIBAVUTIL_VERSION_MAJOR<56
   avcodec_set_dimensions(_context, _width, _height);
+#endif
 
   _inputFrame->linesize[0] = width;
   _inputFrame->linesize[1] = width / 2;
@@ -375,7 +390,9 @@ void H263_Base_EncoderContext::SetFrameWidth (unsigned width)
 void H263_Base_EncoderContext::SetFrameHeight (unsigned height)
 {
   _height = height;
+#if LIBAVUTIL_VERSION_MAJOR<56
   avcodec_set_dimensions(_context, _width, _height);
+#endif
   CODEC_TRACER(tracer, "frame height set to " << height);
 }
 
@@ -393,8 +410,10 @@ void H263_Base_EncoderContext::SetTSTO (unsigned tsto)
   _context->qmax = min( _context->qmax, 31);
 
   // Lagrange multipliers - this is how the context defaults do it:
+#if LIBAVUTIL_VERSION_MAJOR<56
   _context->lmin = _context->qmin * FF_QP2LAMBDA;
   _context->lmax = _context->qmax * FF_QP2LAMBDA; 
+#endif
 
   CODEC_TRACER(tracer, "TSTO set to " << tsto);
 }
@@ -429,7 +448,11 @@ void H263_Base_EncoderContext::EnableAnnex (Annex annex)
       // Annex I: Advanced Intra Coding
       // Level 3+
       // works with eyeBeam
+#if LIBAVUTIL_VERSION_MAJOR<56
       _context->flags |= CODEC_FLAG_AC_PRED; 
+#else
+      _context->flags |= AV_CODEC_FLAG_AC_PRED; 
+#endif
       break;
     case K:
       // Annex K: 
@@ -439,7 +462,11 @@ void H263_Base_EncoderContext::EnableAnnex (Annex annex)
     case J:
       // Annex J: Deblocking Filter
       // works with eyeBeam
+#if LIBAVUTIL_VERSION_MAJOR<56
       _context->flags |= CODEC_FLAG_LOOP_FILTER;
+#else
+      _context->flags |= AV_CODEC_FLAG_LOOP_FILTER;
+#endif
       break;
     case T:
       break;
@@ -473,7 +500,11 @@ void H263_Base_EncoderContext::DisableAnnex (Annex annex)
       // Annex I: Advanced Intra Coding
       // Level 3+
       // works with eyeBeam
-      _context->flags &= ~CODEC_FLAG_AC_PRED; 
+#if LIBAVUTIL_VERSION_MAJOR<56
+      _context->flags &= ~CODEC_FLAG_AC_PRED;
+#else
+      _context->flags &= ~AV_CODEC_FLAG_AC_PRED;
+#endif
       break;
     case K:
       // Annex K: 
@@ -483,7 +514,11 @@ void H263_Base_EncoderContext::DisableAnnex (Annex annex)
     case J:
       // Annex J: Deblocking Filter
       // works with eyeBeam
+#if LIBAVUTIL_VERSION_MAJOR<56
       _context->flags &= ~CODEC_FLAG_LOOP_FILTER;  
+#else
+      _context->flags &= ~AV_CODEC_FLAG_LOOP_FILTER;  
+#endif
       break;
     case T:
       break;
@@ -610,7 +645,11 @@ bool H263_RFC2190_EncoderContext::Open()
   _context->opaque = (H263_RFC2190_EncoderContext *)this; // used to separate out packets from different encode threads
 
   _context->flags &= ~CODEC_FLAG_H263P_UMV;
+#if LIBAVUTIL_VERSION_MAJOR<56
   _context->flags &= ~CODEC_FLAG_4MV;
+#else
+  _context->flags &= ~AV_CODEC_FLAG_4MV;
+#endif
 #if LIBAVCODEC_RTP_MODE
   _context->flags &= ~CODEC_FLAG_H263P_AIC;
 #endif

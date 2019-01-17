@@ -243,11 +243,13 @@ class Encoder : public PluginVideoEncoder<CODEC>, public FFMPEGCodec
       if(m_context->bit_rate_tolerance < tolerance_min)
         m_context->bit_rate_tolerance = tolerance_min;
 
+#if LIBAVUTIL_VERSION_MAJOR<56
       // limit q by clipping
       m_context->rc_qsquish = 0;
 
       // rate control equation
       m_context->rc_eq = strdup("1");
+#endif
 
       // default libavcodec settings
       m_context->max_qdiff = 3;                 // max q difference between frames
@@ -261,13 +263,21 @@ class Encoder : public PluginVideoEncoder<CODEC>, public FFMPEGCodec
         m_context->qmax = m_context->qmin+1;
 
       // Lagrange multipliers - this is how the context defaults do it:
+#if LIBAVUTIL_VERSION_MAJOR<56
       m_context->lmin = m_context->qmin * FF_QP2LAMBDA;
       m_context->lmax = m_context->qmax * FF_QP2LAMBDA;
+#endif
 
       m_context->rtp_payload_size = maxRTPSize;
       m_context->gop_size = 125;
 
       m_context->max_b_frames = 0;
+#ifndef CODEC_FLAG_PASS1
+# define CODEC_FLAG_PASS1 AV_CODEC_FLAG_PASS1
+#endif
+#ifndef CODEC_FLAG_AC_PRED
+# define CODEC_FLAG_AC_PRED AV_CODEC_FLAG_AC_PRED
+#endif
       m_context->flags |= CODEC_FLAG_PASS1;
       m_context->flags |= CODEC_FLAG_AC_PRED;
     }
