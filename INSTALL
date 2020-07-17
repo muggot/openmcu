@@ -73,3 +73,11 @@ Build using Microsoft Visual Studio in the following order:
   * ptlib\ptlib_*.sln
   * h323plus\h323plus_*.sln
   * openmcu-ru\win\openmcu_*.sln
+
+----------------
+Build and start in Docker
+----------------
+
+cd Docker/openmcu-ru/centos-7
+docker build -t openmcu-ru .
+docker run --network=host -d openmcu-ru
