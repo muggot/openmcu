@@ -132,8 +132,9 @@ bool MPIList::getNegotiatedMPI( unsigned* width, unsigned* height, unsigned* _fr
   // to the desired one or matches it
   for (i=0; i < MPIs.size(); i++) {
     // we square the value in order to get absolute distances
-    distance = ( abs(MPIs[i].width  - desiredWidth ) *
-                 abs(MPIs[i].height - desiredHeight) );
+    // std::fabs - path for gcc 8
+    distance = ( std::fabs(MPIs[i].width  - desiredWidth ) *
+                 std::fabs(MPIs[i].height - desiredHeight) );
 
     if (distance < minDistance) {
       minDistance = distance;

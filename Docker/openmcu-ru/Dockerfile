@@ -1,7 +1,5 @@
 FROM centos:8
 
-# fail if build with libvpx > 1.5
-
 ENV NASM_VER="2.13.01" \
  MCU_CONF_OPTS="--enable-static --disable-v4l --disable-v4l2" \
  FFMPEG_VER="4.3" \

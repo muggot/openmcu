@@ -162,6 +162,10 @@
 #include <ptlib.h>
 #include <sys/ioctl.h>
 
+// ptlib gcc8 patch
+#include <sys/uio.h>
+#include <unistd.h>
+//
 
 #include "../common/pchannel.cxx"
 
