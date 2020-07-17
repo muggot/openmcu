@@ -28,7 +28,7 @@ RUN mkdir -p /tmp/build \
  && cd ./openmcu-ru \
  && ./autogen.sh && ./configure $MCU_CONF_OPTS && make -j 3 && make install \
  && rm -rf /tmp/* \
- && yum remove -y wget bzip2 which git freetype-devel flex bison autoconf automake pkgconfig \
+ && yum remove -y wget bzip2 git freetype-devel flex bison autoconf automake pkgconfig \
  rpm-build libtool libtool-ltdl-devel openssl-devel \
  && yum clean all || echo "not all clean" \
  && rm -rf /var/cache/yum
