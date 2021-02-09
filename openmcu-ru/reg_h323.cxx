@@ -173,8 +173,12 @@ H323GatekeeperRequest::Response RegistrarGk::OnRegistration(H323GatekeeperRRQ & 
     }
     if(remote_application.Find("RealPresence") != P_MAX_INDEX)
     {
+#if MCU_PTLIB_VERSION < MCU_PTLIB_VERSION_INT(2,10,9)
       username = PWORDArrayToPString(username.AsUCS2());
       display_name = PWORDArrayToPString(display_name.AsUCS2());
+#else
+      // TODO: add version for new PTLib
+#endif
     }
   }
   if(username == "")
